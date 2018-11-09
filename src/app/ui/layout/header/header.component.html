@@ -1,0 +1,31 @@
+<clr-header class="header-5">
+    <div class="branding">
+        <a  [routerLink]="['/aktuell']" class="nav-icon">
+          <img src="favicon.ico" height="32pt" alt="BATbern" />
+          <span class="title">BATbern</span>
+        </a>
+    </div>
+    <div class="header-nav" [clr-nav-level]="1">
+      <a [routerLink]="['/aktuell']" class="nav-link nav-text">
+        Aktuell
+      </a>
+      <a [routerLink]="['/anmeldung']" class="nav-link nav-text">
+        Anmeldung
+      </a>
+      <a [routerLink]="['/themen']" class="nav-link nav-text">
+        Themen
+      </a>
+      <a [routerLink]="['/archiv']" class="nav-link nav-text">
+        Archiv
+      </a>
+      <a [routerLink]="['/verein']" class="nav-link nav-text">
+        Verein
+      </a>
+      <a [routerLink]="['/kontakt']" class="nav-link nav-text">
+        Kontakt
+      </a>
+     <a href="http://twitter.com/BATbern" class="nav-link nav-icon" target="_blank">
+        <clr-icon shape="share"></clr-icon>
+    </a>
+  	</div>
+  </clr-header>
