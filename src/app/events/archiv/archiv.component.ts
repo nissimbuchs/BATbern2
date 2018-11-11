@@ -8,6 +8,10 @@ import { TopicService } from '../topic.service';
   styles: [`
     .leftCol {
       text-align: left;
+    }
+    .card {
+        background-color: beige
+      
     }`]
 })
 export class ArchivComponent implements OnInit {
