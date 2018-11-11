@@ -1,0 +1,42 @@
+<div class="card bigcard">
+    <div class="card-header">
+      Archiv
+    </div>
+    <div class="card-block">
+      <div class="card-text">
+        Alle Unterlagen der neueren Austragungen befinden sich auf Slideshare:
+        <a href="https://www.slideshare.net/batbern/presentations">BAT Unterlagen ab BAT40</a>
+      </div>
+      <div class="card-text">
+        Hier finden Sie alles &uuml;ber die fr&uuml;heren BAT-Treffen:
+      </div>
+
+      <div class='table-responsive'>
+        <table class='table'
+               *ngIf='topics && topics.length'>
+          <thead>
+            <tr>
+              <th>BAT</th>
+              <th>Thema</th>
+              <th>Datum</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor='let topic of topics'>
+              <td>
+                <a [routerLink]="['/archiv', topic.bat]">
+                  {{ topic.bat }}
+                </a>
+              </td>
+              <td class="leftCol">
+                  <a [routerLink]="['/archiv', topic.bat]">
+                    {{ topic.topic}}
+                  </a>
+                </td>
+              <td>{{ topic.datum }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+  </div>
+</div>

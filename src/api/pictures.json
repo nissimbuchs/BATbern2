@@ -1,0 +1,606 @@
+[
+    {
+      "bat": 1,
+      "image": "01.jpg"
+    },
+    {
+      "bat": 1,
+      "image": "02.jpg"
+    },
+    {
+      "bat": 1,
+      "image": "03.jpg"
+    },
+    {
+      "bat": 1,
+      "image": "04.jpg"
+    },
+    {
+      "bat": 1,
+      "image": "05.jpg"
+    },
+    {
+      "bat": 1,
+      "image": "06.jpg"
+    },
+    {
+      "bat": 1,
+      "image": "07.jpg"
+    },
+    {
+      "bat": 1,
+      "image": "08.jpg"
+    },
+    {
+      "bat": 1,
+      "image": "09.jpg"
+    },
+    {
+      "bat": 1,
+      "image": "10.jpg"
+    },
+    {
+      "bat": 1,
+      "image": "11.jpg"
+    },
+    {
+      "bat": 1,
+      "image": "12.jpg"
+    },
+    {
+      "bat": 1,
+      "image": "13.jpg"
+    },
+    {
+      "bat": 2,
+      "image": "01_130_80.jpg"
+    },
+    {
+      "bat": 2,
+      "image": "02_52_80.jpg"
+    },
+    {
+      "bat": 2,
+      "image": "03_52_80.jpg"
+    },
+    {
+      "bat": 2,
+      "image": "04_50_80.jpg"
+    },
+    {
+      "bat": 2,
+      "image": "05_54_80.jpg"
+    },
+    {
+      "bat": 2,
+      "image": "06_52_80.jpg"
+    },
+    {
+      "bat": 2,
+      "image": "07_126_80.jpg"
+    },
+    {
+      "bat": 2,
+      "image": "08_120_80.jpg"
+    },
+    {
+      "bat": 3,
+      "image": "01_140_80.jpg"
+    },
+    {
+      "bat": 3,
+      "image": "02_47_80.jpg"
+    },
+    {
+      "bat": 3,
+      "image": "03_53_80.jpg"
+    },
+    {
+      "bat": 3,
+      "image": "04_50_80.jpg"
+    },
+    {
+      "bat": 3,
+      "image": "05_53_80.jpg"
+    },
+    {
+      "bat": 3,
+      "image": "06_51_80.jpg"
+    },
+    {
+      "bat": 3,
+      "image": "07_137_80.jpg"
+    },
+    {
+      "bat": 3,
+      "image": "08_121_80.jpg"
+    },
+    {
+      "bat": 4,
+      "image": "01_148_80.jpg"
+    },
+    {
+      "bat": 4,
+      "image": "02_50_80.jpg"
+    },
+    {
+      "bat": 4,
+      "image": "03_56_80.jpg"
+    },
+    {
+      "bat": 4,
+      "image": "04_52_80.jpg"
+    },
+    {
+      "bat": 4,
+      "image": "05_58_80.jpg"
+    },
+    {
+      "bat": 4,
+      "image": "06_133_80.jpg"
+    },
+    {
+      "bat": 4,
+      "image": "06_142_80.jpg"
+    },
+    {
+      "bat": 4,
+      "image": "07_107_80.jpg"
+    },
+    {
+      "bat": 4,
+      "image": "08_126_80.jpg"
+    },
+    {
+      "bat": 5,
+      "image": "01_123_80.jpg"
+    },
+    {
+      "bat": 5,
+      "image": "02_46_80.jpg"
+    },
+    {
+      "bat": 5,
+      "image": "03_51_80.jpg"
+    },
+    {
+      "bat": 5,
+      "image": "04_55_80.jpg"
+    },
+    {
+      "bat": 5,
+      "image": "05_50_80.jpg"
+    },
+    {
+      "bat": 5,
+      "image": "06_56_80.jpg"
+    },
+    {
+      "bat": 5,
+      "image": "07_129_80.jpg"
+    },
+    {
+      "bat": 6,
+      "image": "01_129_80.jpg"
+    },
+    {
+      "bat": 6,
+      "image": "02_56_80.jpg"
+    },
+    {
+      "bat": 6,
+      "image": "03_48_80.jpg"
+    },
+    {
+      "bat": 6,
+      "image": "04_46_80.jpg"
+    },
+    {
+      "bat": 6,
+      "image": "05_43_80.jpg"
+    },
+    {
+      "bat": 6,
+      "image": "06_41_80.jpg"
+    },
+    {
+      "bat": 6,
+      "image": "07_46_80.jpg"
+    },
+    {
+      "bat": 6,
+      "image": "08_44_80.jpg"
+    },
+    {
+      "bat": 6,
+      "image": "09_49_80.jpg"
+    },
+    {
+      "bat": 6,
+      "image": "10_121_80.jpg"
+    },
+    {
+      "bat": 7,
+      "image": "01_158_80.jpg"
+    },
+    {
+      "bat": 7,
+      "image": "02_59_80.jpg"
+    },
+    {
+      "bat": 7,
+      "image": "03_53_80.jpg"
+    },
+    {
+      "bat": 7,
+      "image": "04_51_80.jpg"
+    },
+    {
+      "bat": 7,
+      "image": "05_55_80.jpg"
+    },
+    {
+      "bat": 8,
+      "image": "01_132_80.jpg"
+    },
+    {
+      "bat": 8,
+      "image": "02_68_80.jpg"
+    },
+    {
+      "bat": 8,
+      "image": "03_55_80.jpg"
+    },
+    {
+      "bat": 8,
+      "image": "04_55_80.jpg"
+    },
+    {
+      "bat": 8,
+      "image": "05_51_80.jpg"
+    },
+    {
+      "bat": 8,
+      "image": "06_136_80.jpg"
+    },
+    {
+      "bat": 9,
+      "image": "01_143_80.jpg"
+    },
+    {
+      "bat": 9,
+      "image": "02_50_80.jpg"
+    },
+    {
+      "bat": 9,
+      "image": "03_48_80.jpg"
+    },
+    {
+      "bat": 9,
+      "image": "04_57_80.jpg"
+    },
+    {
+      "bat": 9,
+      "image": "05_57_80.jpg"
+    },
+    {
+      "bat": 9,
+      "image": "06_56_80.jpg"
+    },
+    {
+      "bat": 9,
+      "image": "07_110_80.jpg"
+    },
+    {
+      "bat": 10,
+      "image": "00_120_80.jpg"
+    },
+    {
+      "bat": 10,
+      "image": "01_148_80.jpg"
+    },
+    {
+      "bat": 10,
+      "image": "02_44_80.jpg"
+    },
+    {
+      "bat": 10,
+      "image": "03_53_80.jpg"
+    },
+    {
+      "bat": 10,
+      "image": "04_55_80.jpg"
+    },
+    {
+      "bat": 10,
+      "image": "05_141_80.jpg"
+    },
+    {
+      "bat": 10,
+      "image": "06_118_80.jpg"
+    },
+    {
+      "bat": 10,
+      "image": "07_51_80.jpg"
+    },
+    {
+      "bat": 10,
+      "image": "08_54_80.jpg"
+    },
+    {
+      "bat": 10,
+      "image": "09_58_80.jpg"
+    },
+    {
+      "bat": 10,
+      "image": "10_51_80.jpg"
+    },
+    {
+      "bat": 10,
+      "image": "11_52_80.jpg"
+    },
+    {
+      "bat": 10,
+      "image": "12_50_80.jpg"
+    },
+    {
+      "bat": 16,
+      "image": "16-1.jpg"
+    },
+    {
+      "bat": 16,
+      "image": "16-2.jpg"
+    },
+    {
+      "bat": 16,
+      "image": "16-3.jpg"
+    },
+    {
+      "bat": 16,
+      "image": "16-4.jpg"
+    },
+    {
+      "bat": 16,
+      "image": "16-5.jpg"
+    },
+    {
+      "bat": 16,
+      "image": "16-6.jpg"
+    },
+    {
+      "bat": 17,
+      "image": "cuno_vuillemin.jpg"
+    },
+    {
+      "bat": 18,
+      "image": "18-1.jpg"
+    },
+    {
+      "bat": 18,
+      "image": "18-2.jpg"
+    },
+    {
+      "bat": 18,
+      "image": "18-3.jpg"
+    },
+    {
+      "bat": 18,
+      "image": "18-4.jpg"
+    },
+    {
+      "bat": 18,
+      "image": "18-5.jpg"
+    },
+    {
+      "bat": 18,
+      "image": "18-6.jpg"
+    },
+    {
+      "bat": 18,
+      "image": "18-7.jpg"
+    },
+    {
+      "bat": 18,
+      "image": "18-8.jpg"
+    },
+    {
+      "bat": 18,
+      "image": "18-9.jpg"
+    },
+    {
+      "bat": 19,
+      "image": "19-1.jpg"
+    },
+    {
+      "bat": 19,
+      "image": "19-2.jpg"
+    },
+    {
+      "bat": 19,
+      "image": "19-3.jpg"
+    },
+    {
+      "bat": 19,
+      "image": "19-4.jpg"
+    },
+    {
+      "bat": 19,
+      "image": "19-5.jpg"
+    },
+    {
+      "bat": 19,
+      "image": "19-6.jpg"
+    },
+    {
+      "bat": 19,
+      "image": "19-7.jpg"
+    },
+    {
+      "bat": 19,
+      "image": "19-8.jpg"
+    },
+    {
+      "bat": 19,
+      "image": "19-9.jpg"
+    },
+    {
+      "bat": 20,
+      "image": "20-1.jpg"
+    },
+    {
+      "bat": 20,
+      "image": "20-2.jpg"
+    },
+    {
+      "bat": 20,
+      "image": "20-3.jpg"
+    },
+    {
+      "bat": 20,
+      "image": "20-4.jpg"
+    },
+    {
+      "bat": 20,
+      "image": "20-5.jpg"
+    },
+    {
+      "bat": 20,
+      "image": "20-6.jpg"
+    },
+    {
+      "bat": 20,
+      "image": "20-7.jpg"
+    },
+    {
+      "bat": 21,
+      "image": "21-1.jpg"
+    },
+    {
+      "bat": 21,
+      "image": "21-2.jpg"
+    },
+    {
+      "bat": 21,
+      "image": "21-3.jpg"
+    },
+    {
+      "bat": 21,
+      "image": "21-4.jpg"
+    },
+    {
+      "bat": 21,
+      "image": "21-5.jpg"
+    },
+    {
+      "bat": 21,
+      "image": "21-6.jpg"
+    },
+    {
+      "bat": 21,
+      "image": "21-7.jpg"
+    },
+    {
+      "bat": 21,
+      "image": "21-8.jpg"
+    },
+    {
+      "bat": 21,
+      "image": "21-9.jpg"
+    },
+    {
+      "bat": 22,
+      "image": "22-1.jpg"
+    },
+    {
+      "bat": 22,
+      "image": "22-2.jpg"
+    },
+    {
+      "bat": 22,
+      "image": "22-3.jpg"
+    },
+    {
+      "bat": 22,
+      "image": "22-4.jpg"
+    },
+    {
+      "bat": 22,
+      "image": "22-5.jpg"
+    },
+    {
+      "bat": 22,
+      "image": "22-6.jpg"
+    },
+    {
+      "bat": 22,
+      "image": "22-7.jpg"
+    },
+    {
+      "bat": 22,
+      "image": "22-8.jpg"
+    },
+    {
+      "bat": 23,
+      "image": "23-1.jpg"
+    },
+    {
+      "bat": 23,
+      "image": "23-2.jpg"
+    },
+    {
+      "bat": 23,
+      "image": "23-3.jpg"
+    },
+    {
+      "bat": 23,
+      "image": "23-4.jpg"
+    },
+    {
+      "bat": 23,
+      "image": "23-5.jpg"
+    },
+    {
+      "bat": 23,
+      "image": "23-6.jpg"
+    },
+    {
+      "bat": 23,
+      "image": "23-7.jpg"
+    },
+    {
+      "bat": 23,
+      "image": "23-8.jpg"
+    },
+    {
+      "bat": 24,
+      "image": "24-1.jpg"
+    },
+    {
+      "bat": 24,
+      "image": "24-2.jpg"
+    },
+    {
+      "bat": 24,
+      "image": "24-3.jpg"
+    },
+    {
+      "bat": 24,
+      "image": "24-4.jpg"
+    },
+    {
+      "bat": 24,
+      "image": "24-5.jpg"
+    },
+    {
+      "bat": 24,
+      "image": "24-6.jpg"
+    },
+    {
+      "bat": 24,
+      "image": "24-7.jpg"
+    },
+    {
+      "bat": 24,
+      "image": "24-8.jpg"
+    }
+   ]
