@@ -1,0 +1,53 @@
+.main-container .content-container .content-area {
+
+  padding: 0pt;
+}
+
+.card {
+  background-color: beige
+
+}
+.fill-screen {
+  background-size: cover;
+  background-position: center;
+  /*min-height: 800px;*/
+  height: 800;
+}
+
+.title-row {
+  position: relative;
+}
+
+.title-img {
+  position: absolute;
+  max-height: 300px;
+  height: auto;
+  padding: 20px;
+  top: 50%;
+  left: 50%;
+  margin-right: -50%;
+  transform: translate(-50%, -50%);
+  -webkit-transform: translate(-50%, -50%);
+}
+
+.btn {
+  height: 2.5rem;
+  color: #4988C7;
+  border-color: #4988C7;
+}
+
+.down-btn {
+  position: absolute;
+  bottom: 40px;
+  width: 100%;
+  text-align: center;
+}
+
+.fixed-attachement {
+  background-attachment: fixed;
+}
+@media (max-width: 1024px){
+  .fixed-attachement {
+      background-attachment: scroll;
+  }	
+}

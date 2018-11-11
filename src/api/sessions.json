@@ -1,0 +1,1334 @@
+[
+    {
+      "bat": 1,
+      "pdf": "BAT_Nr.01.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 1,
+      "pdf": "BAT01_Mobiliar_UserInterface.pdf",
+      "authoren": "Thomas Goetz (Die Mobiliar)",
+      "title": "User Interface"
+    },
+    {
+      "bat": 1,
+      "pdf": "BAT01_PostFinance_GUIs.pdf",
+      "authoren": "Volkert Barr (Postfinance)",
+      "title": "GUIs - Heute und Morgen in PostFinance"
+    },
+    {
+      "bat": 1,
+      "pdf": "BAT01_RTC_IBISDesktop.pdf",
+      "authoren": "Dr. Nissim J. Buchs (RTC)",
+      "title": "IBIS Desktop"
+    },
+    {
+      "bat": 2,
+      "pdf": "BAT_Nr.02.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 2,
+      "pdf": "BAT-architecturemobi-v1.0.pdf",
+      "authoren": "Peter Kummer (Die Mobiliar)",
+      "title": "Enterprise Architecture"
+    },
+    {
+      "bat": 2,
+      "pdf": "CS_2005-11-11 - BAT-Vortrag.pdf",
+      "authoren": "Matilda Anello (Credit Suisse)",
+      "title": "Herausforderung und Implikationen"
+    },
+    {
+      "bat": 2,
+      "pdf": "EAPM_Erfa-Ber.pdf",
+      "authoren": "Beat M. Stöckli / Alain Jacot-Guillarmod (PostMail)",
+      "title": "Ein Erfahrungsbericht"
+    },
+    {
+      "bat": 3,
+      "pdf": "BAT_Nr.03.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 3,
+      "pdf": "BAT03_SBB.pdf",
+      "authoren": "Stefan Meichtry (SBB AG) / Stefan Becker (Network 24/7 AG)",
+      "title": "Der SBB-Online Ticketshop - mit SOA zum Erfolg"
+    },
+    {
+      "bat": 3,
+      "pdf": "SOA_bei_Postfinance.pdf",
+      "authoren": "Dr. Harald Aust (PostFinance)",
+      "title": "Service Oriented Architecture bei PostFinance"
+    },
+    {
+      "bat": 3,
+      "pdf": "SOA_Swisscom_Fixnet.pdf",
+      "authoren": "Walter Grolimund (Swisscom Fixnet)",
+      "title": "Swisscom Fixnet, SOA - Aller Anfang ist schwer"
+    },
+    {
+      "bat": 4,
+      "pdf": "BAT_Nr.04.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 4,
+      "pdf": "Workflow_anaptecs_Integration.pdf",
+      "authoren": "Tillmann Schall (anaptecs GmbH)",
+      "title": "Integration von Workflow-Management Systemen in der Praxis"
+    },
+    {
+      "bat": 4,
+      "pdf": "Workflow_ISB_Flexible_Prozesse.pdf",
+      "authoren": "Marc Schaffroth (Informatikstrategieorgan Bund ISB)",
+      "title": "Flexible Prozesse - Modulare Gestaltungskonzepte und Umsetzungsbeispiele aus der öffentlichen Verwaltung"
+    },
+    {
+      "bat": 4,
+      "pdf": "Workflow_RTC_BPM_IBIS.pdf",
+      "authoren": "Jean-Marc Terrettaz (RTC AG)",
+      "title": "BPM für IBIS"
+    },
+    {
+      "bat": 5,
+      "pdf": "BAT_Nr.05.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 5,
+      "pdf": "SAP_BKW_SAP_Plattformstrategie.pdf",
+      "authoren": "Dr. Thomas Wettstein und Christian Hürlimann (BKW FMB Energie AG)",
+      "title": "Chancen und Grenzen der SAP Plattform-Strategie der BKW FMB Energie AG"
+    },
+    {
+      "bat": 5,
+      "pdf": "SAP_ISB_ERP_in_der_Bundesverwaltung.pdf",
+      "authoren": "Richard Schären (Informatikstrategieorgan Bund ISB)",
+      "title": "Enterprise Resource Planning in der Bundesverwaltung � Gestern, Heute und Morgen"
+    },
+    {
+      "bat": 5,
+      "pdf": "SAP_RTC_SAP_Bestandteil_von_IBIS.pdf",
+      "authoren": "Guido Steiner (RTC AG)",
+      "title": "SAP ein Bestandteil von IBIS?"
+    },
+    {
+      "bat": 6,
+      "pdf": "BAT_CHOOSE_Architekturforum.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 6,
+      "pdf": "BAT_Mobiliar_Semture_Koenig_Fachprozess.pdf",
+      "authoren": "Dr. Andreas Dietzsch und Dr. Steffen Greiffenberg (Die Mobiliar und Semture GmbH)",
+      "title": "König Fachprozess - Nutzerorientierte Fachprozessmodellierung"
+    },
+    {
+      "bat": 6,
+      "pdf": "BAT_PostFinance_UML_Framework.pdf",
+      "authoren": "Dr. Andreas Spichiger (PostFinance)",
+      "title": "Erarbeitung und Einsatz des UML-Frameworks bei PostFinance"
+    },
+    {
+      "bat": 6,
+      "pdf": "BAT_RTC_FRAGen.pdf",
+      "authoren": "Andreas Grütter (RTC AG)",
+      "title": "FRAGen (Full RTC Application Generator)"
+    },
+    {
+      "bat": 6,
+      "pdf": "CHOOSE_SoftMetaWare_Transitioning_To_MDSD.pdf",
+      "authoren": "Jorn Bettin (SoftMetaWare)",
+      "title": "Transitioning to Model Driven Software Development: Preparing for the Paradigm Shift"
+    },
+    {
+      "bat": 6,
+      "pdf": "CHOOSE_Zuehlke_MDSD_with_OpenSource.pdf",
+      "authoren": "Ulrich Brawand (Zühlke Engineering)",
+      "title": "MDSD mit Open Source Tools � eine schrittweise Einführung"
+    },
+    {
+      "bat": 7,
+      "pdf": "BAT_Nr.07.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 7,
+      "pdf": "Messen_Verkaufen_CSC_Architekturmarketing.pdf",
+      "authoren": "Daniel Bernasconi (CSC Switzerland)",
+      "title": "Der richtige Mix"
+    },
+    {
+      "bat": 7,
+      "pdf": "Messen_Verkaufen_RTC_Architektursteuerung.pdf",
+      "authoren": "Felix Grimm (RTC AG) und Matthias Stutz (Universität St. Gallen)",
+      "title": "Wertorientierte Architektursteuerung bei der RTC"
+    },
+    {
+      "bat": 8,
+      "pdf": "BAT_Nr.08.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 8,
+      "pdf": "EA-Tools_PostFinance_Tooleinfuehrung_pragmatisch.pdf",
+      "authoren": "Reto Peter (PostFinance)",
+      "title": "Einführung eines EA Tools - ein pragmatischer Ansatz"
+    },
+    {
+      "bat": 8,
+      "pdf": "EA-Tools_SBB_EA_Werkzeug_Erfahrungsbericht.pdf",
+      "authoren": "Bernhard Rytz (SBB)",
+      "title": "Ein Werkzeug ist nicht alles, aber ohne Werkzeug ist Enterprise Architecture Management unrealistisch - ein Erfahrungsbericht der SBB"
+    },
+    {
+      "bat": 8,
+      "pdf": "EA-Tools_TUM_Evaluating_Selecting_EAM_Tools.pdf",
+      "authoren": "Josef Lankes (TU München)",
+      "title": "Bewertung und Auswahl von Enterprise Architecture Management-Werkzeugen: Tool Survey von 2005 und 2008"
+    },
+    {
+      "bat": 9,
+      "pdf": "BAT_Nr.09.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 9,
+      "pdf": "Business_Rules_PF_Innovations_BRM.pdf",
+      "authoren": "Patrice Witschi (RTC)",
+      "title": "Business Rules Ansatz - it's a long way..."
+    },
+    {
+      "bat": 9,
+      "pdf": "Business_Rules_RTC_Business_Rules_Ansatz.pdf",
+      "authoren": "Elmar Boschung (PostFinance), Thomas Fries (innovations)",
+      "title": "Business rules management im Bereich Compliance der PostFinance"
+    },
+    {
+      "bat": 9,
+      "pdf": "Business_Rules_syngenio_drools.pdf",
+      "authoren": "Michael Frandsen (syngenio AG)",
+      "title": "Integration der Drools Rule Engine in IT-Architekturen"
+    },
+    {
+      "bat": 10,
+      "pdf": "BAT_Architekturforum_RIA.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 10,
+      "pdf": "BAT_Forum_RIA_AJAX_for_Enterprise.pdf",
+      "authoren": "Björn Müller (CaptainCasa)",
+      "title": "AJAX for Enterprise Applications"
+    },
+    {
+      "bat": 10,
+      "pdf": "BAT_Forum_RIA_Eclipse_RAP.pdf",
+      "authoren": "Frank Appel (Innoopract)",
+      "title": "Die Eclipse Rich Ajax Platform"
+    },
+    {
+      "bat": 10,
+      "pdf": "BAT_Forum_RIA_KomplexeGUIs_DHL.pdf",
+      "authoren": "Michael Schwendimann, Marco Venzi (ipt)",
+      "title": "Interaktive komplexe GUI's bei DHL"
+    },
+    {
+      "bat": 10,
+      "pdf": "BAT_Forum_RIA_KomplexeGUIs_RIA@DHL.pdf",
+      "authoren": "Michael Schwendimann, Marco Venzi (ipt)",
+      "title": "Interaktive komplexe GUI's bei DHL"
+    },
+    {
+      "bat": 10,
+      "pdf": "BAT_Forum_RIA_MS_Silverlight2.pdf",
+      "authoren": "Sascha P. Corti (Microsoft)",
+      "title": "Silverlight 2 und die RIA Plattform von Microsoft"
+    },
+    {
+      "bat": 10,
+      "pdf": "BAT_Forum_RIA_TaxMe_Online.pdf",
+      "authoren": "Hans Frauchiger (kant. Steuerverw.), Matthias Germann, Thomas Meister (DV Bern)",
+      "title": "TaxMe-Online - die Steuererklärung online ausfüllen"
+    },
+    {
+      "bat": 11,
+      "pdf": "BAT_N11_Moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 11,
+      "pdf": "BAT_N11_PFGUI_Vision_Strategie2010_BAT.pdf",
+      "authoren": "Rudolf Oppliger (PostFinance)",
+      "title": "GUI Vision, GUI Strategie und GUI Framework für Rich Client"
+    },
+    {
+      "bat": 11,
+      "pdf": "BAT_N11_RTC_Workplace.pdf",
+      "authoren": "Mauro Sala (RTC)",
+      "title": "Evolution der Workplaces und Herausforderungen in ihrem Management"
+    },
+    {
+      "bat": 11,
+      "pdf": "BAT_N11_SBB_Einflussfaktoren_IT-Arbeitsplatz.pdf",
+      "authoren": "Ernst Kammermann-Gerber (SBB)",
+      "title": "Einflussfaktoren bei der Gestaltung eines IT-Arbeitsplatzes"
+    },
+    {
+      "bat": 11,
+      "pdf": "BAT_N11_SC_Future_Workplace_Teil1.pdf",
+      "authoren": "Andreas R. Lehmann (Swisscom)",
+      "title": "Future Workplace, oder wie arbeitet der KnowledgeWorker der Zukunft"
+    },
+    {
+      "bat": 11,
+      "pdf": "BAT_N11_SC_Future_Workplace_Teil2.pdf",
+      "authoren": "Andreas R. Lehmann (Swisscom)",
+      "title": "Future Workplace, oder wie arbeitet der KnowledgeWorker der Zukunft"
+    },
+    {
+      "bat": 11,
+      "pdf": "BAT_No11.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 12,
+      "pdf": "BAT_N12_BKW_IT-Architekturmanagement.pdf",
+      "authoren": "Christian Beyeler, BKW FMB Energie AG",
+      "title": "Zusammenarbeit mit dem Business in der IT-Architekturentwicklung"
+    },
+    {
+      "bat": 12,
+      "pdf": "BAT_N12_RTC_Architekturgetriebene_Gesamtplanung.pdf",
+      "authoren": "Dr. Nissim Buchs, RTC AG",
+      "title": "Architekturgetriebene Gesamtplanung bei der RTC"
+    },
+    {
+      "bat": 12,
+      "pdf": "BAT_N12_SBB_Handout_Bebauungsplanung.pdf",
+      "authoren": "Hans-Jakob Gfeller, SBB",
+      "title": "Bebauungsplanung bei der SBB"
+    },
+    {
+      "bat": 12,
+      "pdf": "BAT_No12.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 13,
+      "pdf": "BAT_13_Alain_Wegmann.pdf",
+      "authoren": "Prof. Dr. Alain Wegmann, Systemic Modeling Laboratory (LAMS), EPFL",
+      "title": "Are your ITIL and your SOA services aligned? Should they be?"
+    },
+    {
+      "bat": 13,
+      "pdf": "BAT_13_Dierk_Matthaeus.pdf",
+      "authoren": "Dierk Matthäus, Medizinische Fakultät und Informatikdienste der Universität Bern",
+      "title": "SOA Reloaded: DEI: Alles wird besser!"
+    },
+    {
+      "bat": 13,
+      "pdf": "BAT_13_Hans_Ulrich_Wiedmer.pdf",
+      "authoren": "Hans Ulrich Wiedmer, swisstopo",
+      "title": "Geoinformations-Services für Geschäftsprozesse mit Raumbezug."
+    },
+    {
+      "bat": 13,
+      "pdf": "BAT_13_Robert_Winter.pdf",
+      "authoren": "Prof. Dr. Robert Winter, Institut für Wirtschaftsinformatik der Universität St. Gallen",
+      "title": "One size fits all? Unternehmensarchitekturmanagement im Spannungsfeld von Standardisierung und (unternehmens-)individueller Nutzenmaximierung."
+    },
+    {
+      "bat": 13,
+      "pdf": "BAT_13_Stephan_Aier.pdf",
+      "authoren": "Dr. Stephan Aier, Institut für Wirtschaftsinformatik der Universität St. Gallen",
+      "title": "Serviceorientierung in Unternehmensarchitekturen: Die \"richtige\" Transparenz als Basis von Flexibilität und Agilität."
+    },
+    {
+      "bat": 13,
+      "pdf": "BAT_13_Willy_Mueller.pdf",
+      "authoren": "Willy Müller, Eidgenössisches Finanzdepartement EFD, Informatikstrategieorgan Bund ISB",
+      "title": "SOA: Herausforderungen in einem Multi-Organisationskontext."
+    },
+    {
+      "bat": 13,
+      "pdf": "BAT_No13.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 14,
+      "pdf": "0_bat_14_moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 14,
+      "pdf": "1_bat_14_sbb.pdf",
+      "authoren": "Bruno Linder, Michael T. Pilawa, SBB",
+      "title": "Testautomatisierung bei der SBB - Ein Bericht aus der Praxis."
+    },
+    {
+      "bat": 14,
+      "pdf": "2_bat_14_ige.pdf",
+      "authoren": "Eric Lewis, IGE",
+      "title": "Continuous Integration in der Praxis."
+    },
+    {
+      "bat": 14,
+      "pdf": "3_bat_14_rtc.pdf",
+      "authoren": "Pascal Auderset, RTC",
+      "title": "Qualitätssichernde Architekturvorgaben in der IBIS3G Kontoführung."
+    },
+    {
+      "bat": 14,
+      "pdf": "BAT_No14.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 15,
+      "pdf": "0_bat_15_moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 15,
+      "pdf": "1_BI_BKW.pdf",
+      "authoren": "Olivier Raemy, BKW FMB Energie AG",
+      "title": "Business Intelligence bei BKW - der Weg ist das Ziel"
+    },
+    {
+      "bat": 15,
+      "pdf": "2_Agilitaet_BI_SC.pdf",
+      "authoren": "Peter Kühni, Swisscom AG",
+      "title": "BI Architektur bei der Swisscom"
+    },
+    {
+      "bat": 15,
+      "pdf": "3_ Informationslogistik_UniSG.pdf",
+      "authoren": "Dr. Christian Wilhelmi, alpiq AG",
+      "title": "Unternehmensweite Informationslogistik"
+    },
+    {
+      "bat": 15,
+      "pdf": "BAT_No15.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 16,
+      "pdf": "0_BAT16_moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 16,
+      "pdf": "1_BAT16_Haemmerli.pdf",
+      "authoren": "Prof. Bernhard Hämmerli, Hochschule Luzern",
+      "title": "Herausforderungen der Informationssicherheit"
+    },
+    {
+      "bat": 16,
+      "pdf": "2_BAT16_SuisseID.pdf",
+      "authoren": "Urs Bürge, Urs Bürge Beratung GmbH",
+      "title": "Die SuisseID für Identitäts- und Funktionsnachweis"
+    },
+    {
+      "bat": 16,
+      "pdf": "3_BAT16_SWITCHaai .pdf",
+      "authoren": "Thomas Lenggenhager, SWITCH",
+      "title": "AAI - Die Authentifizierungs- und Autorisierungs- Infrastruktur der Schweizer Hochschulen"
+    },
+    {
+      "bat": 16,
+      "pdf": "4_BAT16_Architektur_Sicherheit_BIT.pdf",
+      "authoren": "Reto Inversini, Thierry Perroud, BIT",
+      "title": "Sicherheits- und Architekturkonformität in Projekten"
+    },
+    {
+      "bat": 16,
+      "pdf": "5_BAT16_branchenkonforme_IT-Sicherheit.pdf",
+      "authoren": "Markus Siffert, PostFinance",
+      "title": "Branchenkonforme IT-Sicherheit"
+    },
+    {
+      "bat": 16,
+      "pdf": "6_BAT16_IBIS3G_Security.pdf",
+      "authoren": "Michael Held, HP Banking Service Center Bern",
+      "title": "IBIS3G Security (applikatorische Sicht)"
+    },
+    {
+      "bat": 16,
+      "pdf": "7_AXSionics_im_E-Banking_IT.pdf",
+      "authoren": "Stefan Wyss, BEKB und Alain Rollier, Axsionics",
+      "title": "Innovative Bankenprodukte benötigen eine sichere Technologieumgebung"
+    },
+    {
+      "bat": 16,
+      "pdf": "BAT_No16.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 17,
+      "pdf": "0_bat_17_moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 17,
+      "pdf": "1_PostFinance_iApp.pdf",
+      "authoren": "Vivian Cina, PostFinance",
+      "title": "PostFinance iApp"
+    },
+    {
+      "bat": 17,
+      "pdf": "2_HPBSC_IP-Storage.pdf",
+      "authoren": "Markus Gerber, HP BSC; Cuno Vuillemin, VR2Swiss AG",
+      "title": "IP-Storage und -Backup Architektur"
+    },
+    {
+      "bat": 17,
+      "pdf": "3_Canoo_FindIT.pdf",
+      "authoren": "Dr. Stephan Gillmeier, Canoo AG",
+      "title": "FindIT � Innovative Suche in Medienarchiven"
+    },
+    {
+      "bat": 17,
+      "pdf": "bat_17_flyer_a4_v0.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 17,
+      "pdf": "BAT_No17.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 18,
+      "pdf": "0_bat_18_moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 18,
+      "pdf": "1_EVD_ArchitekturGovernance.pdf",
+      "authoren": "Hans Ulrich Wiedmer, Information Service Center, EVD",
+      "title": "Architektur-Governance, Informations-Architektur und Unternehmensdaten im EVD"
+    },
+    {
+      "bat": 18,
+      "pdf": "2_RUAG_NAF.pdf",
+      "authoren": "Philippe Chammartin, RUAG",
+      "title": "Enterprise Architektur-Modellierung mit dem NATO Architecture Framework � Ein Erfahrungsbericht"
+    },
+    {
+      "bat": 18,
+      "pdf": "3_SNB_LangzeiterhaltungVonE-Daten.pdf",
+      "authoren": "Hansueli Locher, Schweizerische Nationalbibliothek, EDI",
+      "title": "Strategien und Massnahmen der Schweizerischen Nationalbibliothek zur Langzeiterhaltung digitaler Daten"
+    },
+    {
+      "bat": 18,
+      "pdf": "BAT_No18.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 19,
+      "pdf": "0_bat_19_moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 19,
+      "pdf": "1_ZKB_Vortrag_aktuell.pdf",
+      "authoren": "Dr. Pascal Kurtansky, ZKB",
+      "title": "Erneuerung Integrationsplattform"
+    },
+    {
+      "bat": 19,
+      "pdf": "2_Integrationsarchitektur bei der BKW FMB Energie AG.pdf",
+      "authoren": "Dr. Felix Grimm und Baltisar Oswald, BKW FMB Energie AG",
+      "title": "Integrationsarchitektur bei der BKW FMB Energie AG"
+    },
+    {
+      "bat": 19,
+      "pdf": "3_BAT Integration - Foederalismus v3.pdf",
+      "authoren": "Stefan Haller, Bedag Informatik AG",
+      "title": "Herausforderungen im föderalistischen Staat"
+    },
+    {
+      "bat": 19,
+      "pdf": "4_BAT19_Keynote.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Aufwärmrunde"
+    },
+    {
+      "bat": 19,
+      "pdf": "5_itServeSwissdec20110631All.pdf",
+      "authoren": "Anton Böhm, itServe",
+      "title": "swissdec - Architektur zur Integration und Automatisation von Geschäftsprozessen zwischen Unternehmen, Versicherern und Behörden in der Schweiz"
+    },
+    {
+      "bat": 19,
+      "pdf": "6_E-Government Web Services bei e-dec V 1.1.pdf",
+      "authoren": "Dr. Stefan Hüsemann, ipt",
+      "title": "eGovernment Web Services zur Integration von Bund und Wirtschaft � standardbasierte e-dec Services für elektronische Verzollungen"
+    },
+    {
+      "bat": 19,
+      "pdf": "7_SBB-IT-AQ_IT_EOL_einer_hochintegrierten_Anwendung_BAT_v008.pdf",
+      "authoren": "Peter Moosmann und Jakob Erber, SBB",
+      "title": "End-of-Life einer hochintegrierten Anwendung - wie Unternehmensarchitektur helfen kann"
+    },
+    {
+      "bat": 19,
+      "pdf": "BAT_No19.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 20,
+      "pdf": "0_bat_20_moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 20,
+      "pdf": "BAT_No20.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 21,
+      "pdf": "1_bls_andreas_kronawitter.pdf",
+      "authoren": "Andreas Kronawitter, BLS AG",
+      "title": "Emergente und geplante Strategien für Social Medi"
+    },
+    {
+      "bat": 21,
+      "pdf": "2_tirsus_ursula_deriu.pdf",
+      "authoren": "Ursula Deriu, Tirsus GmbH",
+      "title": "Veränderung der Unternehmenskultur durch Enterprise 2.0"
+    },
+    {
+      "bat": 21,
+      "pdf": "BAT_No21_v1.1.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 22,
+      "pdf": "03_Praesentation_BAT22_SWISSCOM.pdf",
+      "authoren": "David C. Gürlet, RFIDnet und Gerhard Schedler, Swisscom",
+      "title": "RFID, IoT, M-to-M - from Hype to Reality"
+    },
+    {
+      "bat": 22,
+      "pdf": "1_BAT-BYOD_bei_SBB.pdf",
+      "authoren": "Philip Büchler, SBB",
+      "title": "Bring your own Device"
+    },
+    {
+      "bat": 22,
+      "pdf": "2_FIS-Kommunikation.pdf",
+      "authoren": "Marco Knaeple, BLS",
+      "title": "Fahrgastinformation - die Kommunikation mit fahrenden LANs, genannt Züge"
+    },
+    {
+      "bat": 22,
+      "pdf": "5_BAT22-Mobilkommunikation-Geoinformation-SNP-BAFU-EVD.pdf",
+      "authoren": "Dr. Thomas Klingl, BAFU, Hans Ulrich Wiedmer, EVD und Dr. Ruedi Haller, Schweiz. Nationalpark",
+      "title": "Mobilkommunikation und Geoinformation: Realitäten und Visionen im EVD und im BAFU"
+    },
+    {
+      "bat": 22,
+      "pdf": "BAT_No22_v1.1.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 23,
+      "pdf": "BAT_No23_V1.0.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 23,
+      "pdf": "BAT_No23_V1.1.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 23,
+      "pdf": "BAT23_BKW.pdf",
+      "authoren": "Martin Kochert, BKW FMB Energie AG",
+      "title": "Projektportfolio-Management in Verbindung mit Architektur-Management bei der BKW"
+    },
+    {
+      "bat": 23,
+      "pdf": "BAT23_Entris.pdf",
+      "authoren": "Thomas Spahr, Entris Banking",
+      "title": "IT-Plattformmigration von 43 Banken in time / on budget / on quality"
+    },
+    {
+      "bat": 23,
+      "pdf": "BAT23_Moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 23,
+      "pdf": "BAT23_SBB.pdf",
+      "authoren": "Hans-Jakob Gfeller und Stephan Hofstetter, SBB CFF FFS",
+      "title": "IT-Projektportfoliomanagement im Spannungsfeld zwischen Geschäftsbedürfnis und Architekturplanung"
+    },
+    {
+      "bat": 24,
+      "pdf": "0_bat_24_moderation_v1.0.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 24,
+      "pdf": "02_ESB Eval_v3.pdf",
+      "authoren": "Jérémie Granat und Felix Winistoerfer, HP Banking Service Center",
+      "title": "Evaluation einer JMS- und ESB-Plattform: Ist Open Source wirklich konkurrenzfähig?"
+    },
+    {
+      "bat": 24,
+      "pdf": "03_jubla_final.pdf",
+      "authoren": "Martin Zust, Jungwacht Blauring Kanton Luzern; Pascal Zumkehr und Mark Waber, Puzzle ITC",
+      "title": "Open Source Mitglieder-Datenbank für die Jubla"
+    },
+    {
+      "bat": 24,
+      "pdf": "1_bat_M-Stuermer.pdf",
+      "authoren": "Dr. Matthias Stürmer, /ch/open",
+      "title": "Das Potential von Open Source Software nutzen und die Risiken minimieren"
+    },
+    {
+      "bat": 24,
+      "pdf": "BAT_No24_V1.0.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 25,
+      "pdf": "0_bat_25_moderation_v1.0.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 25,
+      "pdf": "1_BAT_25_Willy_Mueller.pdf",
+      "authoren": "Willy Müller, Informatiksteuerungsorgan des Bundes",
+      "title": "Fertigungstiefe im Zeitalter des Cloud Computing - Implikationen der Cloud-Strategie der Schweizer Behörden"
+    },
+    {
+      "bat": 25,
+      "pdf": "2_BAT_25_Thomas_Zerndt.pdf",
+      "authoren": "Thomas Zerndt, Business Engineering Institute, St. Gallen",
+      "title": "Sourcing im Bankenumfeld"
+    },
+    {
+      "bat": 25,
+      "pdf": "3_BAT_25_Michele_De_Lorenzi.pdf",
+      "authoren": "Dr. Michele De Lorenzi, Centro Svizzero di Calcolo Scientifico",
+      "title": "Sourcing im Scientific Computing"
+    },
+    {
+      "bat": 25,
+      "pdf": "4_BAT_25_Wolfgang_Giersche.pdf",
+      "authoren": "Zacharias Laibi, Swisscom (Schweiz) AG und Wolfgang Giersche, Zühlke Engineering AG",
+      "title": "Outsourcing - Wie wir unsere eigene Lieferfähigkeit steigern"
+    },
+    {
+      "bat": 25,
+      "pdf": "4_BAT_25_Zacharias_Laibi.pdf",
+      "authoren": "Zacharias Laibi, Swisscom (Schweiz) AG und Wolfgang Giersche, Zühlke Engineering AG",
+      "title": "Outsourcing - Wie wir unsere eigene Lieferfähigkeit steigern"
+    },
+    {
+      "bat": 25,
+      "pdf": "5_BAT_Simon_Martinelli.pdf",
+      "authoren": "Simon Martinelli, simas GmbH",
+      "title": "1+n = Outsourcing für Kleinfirmen und Individualsoftware für Vereine und Verbände dank Offshoring"
+    },
+    {
+      "bat": 25,
+      "pdf": "6_BAT_Hans_Ulrich_Wiedmer-Stephan_Sutter.pdf",
+      "authoren": "Hans Ulrich Wiedmer, Eidgenössisches Departement für Wirtschaft, Bildung und Forschung und Stephan Sutter, ti&m AG",
+      "title": "Industrialisierung: Vergleiche zwischen Maschinenbau, Elektrotechnik, Städtebau und Informatik"
+    },
+    {
+      "bat": 25,
+      "pdf": "BAT_No25.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 26,
+      "pdf": "0_bat_26_moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 26,
+      "pdf": "1_bat_26_glue.pdf",
+      "authoren": "Erich Helwin (PostAuto), Roland Loser (Glue)",
+      "title": "Reiseplanung Tür-zu-Tür und intermodal bei der PostAuto App"
+    },
+    {
+      "bat": 26,
+      "pdf": "1_bat_26_postauto.pdf",
+      "authoren": "Erich Helwin (PostAuto), Roland Loser (Glue)",
+      "title": "Reiseplanung Tür-zu-Tür und intermodal bei der PostAuto App"
+    },
+    {
+      "bat": 26,
+      "pdf": "2_bat_26_sbb.pdf",
+      "authoren": "Tobias Röthlisberger, Erich Siegrist (SBB)",
+      "title": "Mobile Enterprise Application Plattform − die Zukunft mobiler Anwendungen bei der SBB"
+    },
+    {
+      "bat": 26,
+      "pdf": "3_bat_26_netcetera_HSLU.pdf",
+      "authoren": "Stefan Fraefel (HSLU), Angela Bühler (Netcetera)",
+      "title": "Indoor Navigation − von der Forschung zur App"
+    },
+    {
+      "bat": 26,
+      "pdf": "BAT_No26.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 27,
+      "pdf": "0_bat27_moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 27,
+      "pdf": "1_bat27_melani.pdf",
+      "authoren": "Max Klaus, Melde- und Analysestelle Informationssicherung MELANI",
+      "title": "MELANI und der tägliche Kampf gegen die Internetkriminalität"
+    },
+    {
+      "bat": 27,
+      "pdf": "2_bat27_sbb.pdf",
+      "authoren": "Ernst Kammermann und Thomas Ragaz, SBB IT und ProBIT AG",
+      "title": "Die neue Netzwerkzonierung der SBB"
+    },
+    {
+      "bat": 27,
+      "pdf": "3_bat27_ejpd.pdf",
+      "authoren": "Peter Andres, ISC-EJPD",
+      "title": "MobileID - die neue Authentisierungsart am SSO-Portal EJPD"
+    },
+    {
+      "bat": 27,
+      "pdf": "BAT_No27.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 28,
+      "pdf": "0_bat28_moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 28,
+      "pdf": "2_bat28_postfinance.pdf",
+      "authoren": "David Kauer, PostFinance AG",
+      "title": "Die digitale Revolution"
+    },
+    {
+      "bat": 28,
+      "pdf": "3_bat28_inventique.pdf",
+      "authoren": "Marcel Altherr, Inventique GmbH",
+      "title": "Requirements Engineering mit Design Thinking"
+    },
+    {
+      "bat": 28,
+      "pdf": "BAT_No28.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 29,
+      "pdf": "1_bat29_swisscom.pdf",
+      "authoren": "Victor Schlegel, Swisscom AG",
+      "title": "Nutzen von BigData heute und morgen"
+    },
+    {
+      "bat": 29,
+      "pdf": "2_bat29_postfinance.pdf",
+      "authoren": "Eric Müller, PostFinance AG",
+      "title": "Operational Intelligence"
+    },
+    {
+      "bat": 29,
+      "pdf": "3_bat29_sbb.pdf",
+      "authoren": "Bernhard Rytz und Jürg Frühauf, SBB IT",
+      "title": "BigData macht sich an den Datenschatz der SBB"
+    },
+    {
+      "bat": 29,
+      "pdf": "BAT_No29.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 30,
+      "pdf": "0_bat_30_moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 30,
+      "pdf": "1_bat_30_mguenter.pdf",
+      "authoren": "Matthias Günter, GnostX GmbH",
+      "title": "Wie agil kann und soll Architektur sein?"
+    },
+    {
+      "bat": 30,
+      "pdf": "2_bat_30_wschaefer.pdf",
+      "authoren": "Werner Schäfer, PostFinance AG",
+      "title": "IT-Architektur im Spannungsfeld von Veränderungen und Unsicherheiten"
+    },
+    {
+      "bat": 30,
+      "pdf": "3_bat_30_afuhrer.pdf",
+      "authoren": "Andreas Fuhrer, SBB Informatik",
+      "title": "Wer bewegt wen? Architektur in Grossprojekten"
+    },
+    {
+      "bat": 30,
+      "pdf": "BAT_No30.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 31,
+      "pdf": "BAT31_Moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 31,
+      "pdf": "BAT31_OpenData.pdf",
+      "authoren": "André Golliez, Opendata.ch",
+      "title": "Open Data und Datenwirtschaft in der Schweiz - eine Standortbestimmung"
+    },
+    {
+      "bat": 31,
+      "pdf": "BAT31_Programmheft.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 31,
+      "pdf": "n/a",
+      "authoren": "Christian Trachsel, SBB",
+      "title": "ÖV Information 2.0 auf Basis von offenen Daten - wie macht die SBB da mit?"
+    },
+    {
+      "bat": 31,
+      "pdf": "n/a",
+      "authoren": "Dr. Matthias Stürmer, Uni Bern",
+      "title": "Open Data Highlights aus der Theorie und Praxis"
+    },
+    {
+      "bat": 31,
+      "pdf": "n/a",
+      "authoren": "Adrian Gschwend, zazuko GmbH",
+      "title": "ÖV 3.0: Hands-on mit Fahrplandaten der SBB als Linked Open Data"
+    },
+    {
+      "bat": 31,
+      "pdf": "n/a",
+      "authoren": "Christian Trachsel, SBB",
+      "title": ""
+    },
+    {
+      "bat": 31,
+      "pdf": "n/a",
+      "authoren": "Hannes Gassert",
+      "title": "Open Data Geschäftsmodelle, konkret"
+    },
+    {
+      "bat": 32,
+      "pdf": "BAT32_Dolfus_Basler__IoT_SBB.pdf",
+      "authoren": "Kirsten Dolfus, Markus Basler, SBB",
+      "title": "Elektrisches Lastmanagement mithilfe von Internet-of-Things"
+    },
+    {
+      "bat": 32,
+      "pdf": "BAT32_Furrer_Inniger_IoT_in_der_Sicherheitstechnik.pdf",
+      "authoren": "Jörg Furrer, Securiton AG, Hansjürg Inniger, Zühlke AG",
+      "title": "Internet-of-Things − Buzzword oder ernstzunehmender Trend für neue Geschäftsfelder?"
+    },
+    {
+      "bat": 32,
+      "pdf": "BAT32_Haller_IoT-Referenzmodell.pdf",
+      "authoren": "Stephan Haller, Berner Fachhochschule",
+      "title": "Ein Referenzmodell für das Internet der Dinge?"
+    },
+    {
+      "bat": 32,
+      "pdf": "BAT32_Moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 32,
+      "pdf": "BAT32_Programmheft.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 33,
+      "pdf": "BAT33_Esser_Enterprise-NoSQL-mit-MarkLogic.pdf",
+      "authoren": "Andreas Esser, Tripons GmbH",
+      "title": "Enterprise NoSQL mit der MarkLogic-Datenbank"
+    },
+    {
+      "bat": 33,
+      "pdf": "BAT33_Leipner_NoSQL_Datenbanken.pdf",
+      "authoren": "Ralf Leipner, PostFinance AG",
+      "title": "NoSQL Datenbanksysteme: Übersicht, Abgrenzung & Charakteristik"
+    },
+    {
+      "bat": 33,
+      "pdf": "BAT33_Moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 33,
+      "pdf": "BAT33_Programmheft.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 33,
+      "pdf": "BAT33_Suter_Mangold_InformationenEffizientBereitstellen.pdf",
+      "authoren": "Pirmin Suter, PENTAG Informatik AG, Johannes Mangold, Trivadis AG",
+      "title": "Informationen effizient bereitstellen"
+    },
+    {
+      "bat": 34,
+      "pdf": "BAT34_Amberg_LoRaWAN_IoT_Infrastruktur.pdf",
+      "authoren": "Thomas Amberg, IoT Zürich Meetup / Yaler.net",
+      "title": "LoRaWAN IoT Infrastruktur - vom Sensor zur Cloud"
+    },
+    {
+      "bat": 34,
+      "pdf": "BAT34_Basler_IT_als_bremsende_Kraft_der_digitalen_Transformation.pdf",
+      "authoren": "Markus Basler, SBB",
+      "title": "Die IT als bremsende Kraft der Digitalen Transformation?"
+    },
+    {
+      "bat": 34,
+      "pdf": "BAT34_Boenzli_Linder_Datengetriebene_Entscheidfindung.pdf",
+      "authoren": "Patrick Bönzli, soom-it GmbH und Manuel Linder, Noser Group",
+      "title": "Datengetriebene Entscheidungsfindung"
+    },
+    {
+      "bat": 34,
+      "pdf": "BAT34_Gruetter_Der_Weg_der_Mobiliar_ins_digitale_Zeitalter.pdf",
+      "authoren": "Andreas Grütter, Die Mobiliar",
+      "title": "Persönlich - auch digital. Der Weg der Mobiliar ins digitale Zeitalter"
+    },
+    {
+      "bat": 34,
+      "pdf": "BAT34_Helwin_Autonomes_Fahren.pdf",
+      "authoren": "Erich Helwin, PostAuto Schweiz",
+      "title": "Autonomes Fahren – Traum oder Realität"
+    },
+    {
+      "bat": 34,
+      "pdf": "BAT34_Horster_InternetderDinge.pdf",
+      "authoren": "Dr. Bettina Horster, Vivai Software AG",
+      "title": "Das Internet der Dinge - Erfahrungen, Innovationen und Umsetzungstipps"
+    },
+    {
+      "bat": 34,
+      "pdf": "BAT34_Knolmayer_Industrie4.0_Revolution_Evolution_Hype.pdf",
+      "authoren": "Prof. Dr. Gerhard Knolmayer, Universität Bern",
+      "title": "Industrie 4.0: Revolution, Evolution und/oder Hype?"
+    },
+    {
+      "bat": 34,
+      "pdf": "BAT34_Kronawitter_Edel_MobileTicketing_Digitalisierung_Infrastruktur.pdf",
+      "authoren": "Dr. Andreas Kronawitter und Marcel Edel, BLS",
+      "title": "Mobile Ticketing und Digitalisierung in der Infrastruktur"
+    },
+    {
+      "bat": 34,
+      "pdf": "BAT34_Moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 34,
+      "pdf": "BAT34_Programmheft.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 34,
+      "pdf": "BAT34_Stalder_Digitalisierung_bei_der_Post.pdf",
+      "authoren": "Roman Stalder, Post",
+      "title": "Digitalisierung bei der Post - wo wir stehen und was uns fordert"
+    },
+    {
+      "bat": 35,
+      "pdf": "BAT35_Affentranger_Hochverfuegbar_als_Service.pdf",
+      "authoren": "Paul Affentranger, afca.",
+      "title": "Hochverfügbar als Service - erste Erfahrungen mit AWS Lambda und Azure Service Fabric"
+    },
+    {
+      "bat": 35,
+      "pdf": "BAT35_Andres_Hochverfuegbarkeit_ISCEJPD.pdf",
+      "authoren": "Peter Andres, ISC-EJPD",
+      "title": "Hochverfügbare Applikationen und Services im EJPD"
+    },
+    {
+      "bat": 35,
+      "pdf": "BAT35_Aust_Hochverfuegbarkeit_PostFinance.pdf",
+      "authoren": "Harald Aust, PostFinance",
+      "title": "Von 'normalverfügbar' zu 'always-on' - Hochverfügbares Rechenzentrum mit zwei Standorten"
+    },
+    {
+      "bat": 35,
+      "pdf": "BAT35_Moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 35,
+      "pdf": "BAT35_Programmheft.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 35,
+      "pdf": "BAT35_Schmid_Cluster_Pacemaker.pdf",
+      "authoren": "Philippe Schmid, Puzzle",
+      "title": "HA Cluster mit Pacemaker und Corosync"
+    },
+    {
+      "bat": 36,
+      "pdf": "BAT36_Mobiliar_Container_als_Immutable_Infrastructure.pdf",
+      "authoren": "John Hutchison, Die Mobiliar",
+      "title": "Container als Immutable Infrastructure"
+    },
+    {
+      "bat": 36,
+      "pdf": "BAT36_Moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 36,
+      "pdf": "BAT36_PostFinance_Erfahrungsbericht-Container.pdf",
+      "authoren": "Mathias Herzog, PostFinance",
+      "title": "Linux Container im Betrieb – ein Erfahrungsbericht"
+    },
+    {
+      "bat": 36,
+      "pdf": "BAT36_Programmheft.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 36,
+      "pdf": "BAT36_SBB_ContainerVirtualisierung.pdf",
+      "authoren": "Baltisar Oswald und Szabolcs Szádeczky-Kardoss, SBB",
+      "title": "Sind Container die Virtualisierung der Zukunft? – Ein Erfahrungsbericht der SBB"
+    },
+    {
+      "bat": 37,
+      "pdf": "BAT37_Bandi_JavaScript_Universal_Platform.pdf",
+      "authoren": "Jonas Bandi",
+      "title": "Write once, run everywhere"
+    },
+    {
+      "bat": 37,
+      "pdf": "BAT37_ETH_Bedeutung_von_Paralleler_Programmierung.pdf",
+      "authoren": "Michael Faes, ETH Zürich",
+      "title": "Bedeutung von paralleler Programmierung"
+    },
+    {
+      "bat": 37,
+      "pdf": "BAT37_linkyard_Scala_wo_macht_der_Einsatz_Sinn.pdf",
+      "authoren": "Mario Siegenthaler, linkyard ag",
+      "title": "Scala - wo macht der Einsatz Sinn?"
+    },
+    {
+      "bat": 37,
+      "pdf": "BAT37_Moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 37,
+      "pdf": "BAT37_PostFinance_NotonlyJava.pdf",
+      "authoren": "Barbara Marti, PostFinance",
+      "title": "Stellenwert von Java heute aus der Sicht des IT Managements"
+    },
+    {
+      "bat": 37,
+      "pdf": "BAT37_Programmheft.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 38,
+      "pdf": "BAT38_AouiniBogosAlvarado_zk-SNARK_Blockchain.pdf",
+      "authoren": "Nagib Aouini, Sonia Bogos und Jorge Alvarado, ELCA",
+      "title": "Privacy-preserving techniques using zero knowledge proof in public Ethereum blockchain"
+    },
+    {
+      "bat": 38,
+      "pdf": "BAT38_FischliLocherFankhauser_Evoting.pdf",
+      "authoren": "Stephan Fischli, Philipp Locher und Benjamin Fankhauser, Berner Fachhochschule",
+      "title": "E-Voting - Herausforderung an Kryptographie und Praxis"
+    },
+    {
+      "bat": 38,
+      "pdf": "BAT38_Goetz_Zauber_von_Blockchain.pdf",
+      "authoren": "Thomas Goetz, PostFinance",
+      "title": "Der Zauber von Blockchain"
+    },
+    {
+      "bat": 38,
+      "pdf": "BAT38_Moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 38,
+      "pdf": "BAT38_Programmheft.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 39,
+      "pdf": "BAT39_BoenzliZaugg_SPOUD.pdf",
+      "authoren": "Patrick Bönzli und Lukas Zaugg, SPOUD",
+      "title": "From Zero to Cloud and Back: Cloud als Startup-Enabler"
+    },
+    {
+      "bat": 39,
+      "pdf": "BAT39_Imsand_ServerlessApplicationFramework.pdf",
+      "authoren": "Matthias Imsand, Amanox Solutions",
+      "title": "Serverless Application Framework"
+    },
+    {
+      "bat": 39,
+      "pdf": "BAT39_Programmheft.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 39,
+      "pdf": "BAT39_SzadeczkyKardoss_SBBPublicCloud.pdf",
+      "authoren": "Szabolcs Szadeczky-Kardoss, SBB",
+      "title": "Public Cloud Erfahrungsbericht"
+    },
+    {
+      "bat": 40,
+      "pdf": "BAT40_Programmheft.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 40,
+      "pdf": "n/a",
+      "authoren": "Thilo Stadelmann, ZHAW ",
+      "title": "Deep Learning-based Pattern Recognition in Business "
+    },
+    {
+      "bat": 40,
+      "pdf": "n/a",
+      "authoren": "Edy Portmann, Universität Freiburg ",
+      "title": "Smart Cities: Cognitive-Computing für Städte "
+    },
+    {
+      "bat": 40,
+      "pdf": "n/a",
+      "authoren": "Thomas Zerndt, Stefanie Auge-Dickhut, CC Sourcing ",
+      "title": "AI an der Kundenschnittstelle? "
+    },
+    {
+      "bat": 40,
+      "pdf": "n/a",
+      "authoren": "Olga Endrich, Matthias Kämpf, Insel Gruppe und Tomas Dikk, Zühlke Engineering ",
+      "title": "Multilabel Text-Klassifikation von medizinischen Berichten "
+    },
+    {
+      "bat": 40,
+      "pdf": "n/a",
+      "authoren": "Andreas Mösching, Jérôme Koller, Die Mobiliar ",
+      "title": "Wie AI-Services in der Mobiliar gebaut und eingesetzt werden "
+    },
+    {
+      "bat": 40,
+      "pdf": "n/a",
+      "authoren": "Lothar Jöckel, SBB ",
+      "title": "Optische Zuglokalisation mit Machine Learning "
+    },
+    {
+      "bat": 40,
+      "pdf": "n/a",
+      "authoren": "Marc Stampfli, NVIDIA ",
+      "title": "Künstliche Intelligenz, Roboter und autonome Fahrzeuge – Revolution und Chance? "
+    },
+    {
+      "bat": 41,
+      "pdf": "BAT41_Programmheft.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 41,
+      "pdf": "n/a",
+      "authoren": "Pascal Auderset, Die Mobiliar ",
+      "title": "Die Evolution zu Microservices "
+    },
+    {
+      "bat": 41,
+      "pdf": "n/a",
+      "authoren": "Gion Sialm, BIT ",
+      "title": "SOA vs. Microservices oder SOA & Microservices? "
+    },
+    {
+      "bat": 41,
+      "pdf": "n/a",
+      "authoren": "Florian Seidel, SBB CFF FFS ",
+      "title": "Microservices@Enterprise "
+    }
+   ]
