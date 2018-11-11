@@ -1,24 +1,22 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 
 @Component({
   selector: 'app-layout',
   template: `
-  <clr-main-container>
+  <clr-main-container >
     <app-header></app-header>
     <div class="content-container">
-    <div class="content-area">
-      <ng-content></ng-content>
+      <div class="content-area" data-spy="scroll" data-target="app-header">
+        <ng-content></ng-content>
+      </div>
     </div>
-  </div>
   </clr-main-container>
   `,
-  styles: []
+  styles: [`
+  .main-container .content-container .content-area {
+
+    padding: 0pt;
+  }`
+]
 })
-export class LayoutComponent implements OnInit {
-
-  constructor() { }
-
-  ngOnInit() {
-  }
-
-}
+export class LayoutComponent { }

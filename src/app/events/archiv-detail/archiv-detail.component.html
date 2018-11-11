@@ -1,0 +1,18 @@
+<div class='card' *ngIf='sessions'>
+  <div class='card-header' *ngIf='topic'>
+    BAT{{topic.bat}} zu "{{topic.topic}}" vom {{topic.datum}}
+  </div>
+
+  <div class='card-body'>
+    <div class='card-block' *ngFor='let session of sessions'>
+      <div class="row">
+        <div class='col-md-4'>{{session.authoren}}</div>
+        <div class='col-md-8'>
+          <a href="http://www.berner-architekten-treffen.ch/archiv/{{session.bat}}/{{session.pdf}}">
+              {{session.title}}
+          </a>
+        </div>
+    </div>
+    </div>
+  </div>
+</div>

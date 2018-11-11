@@ -1,4 +1,16 @@
 /* You can add global styles to this file, and also import other style files */
-.bigcard {
-    margin-top: 2.5rem;
+
+body {
+    background-color: beige;
+    font-family: 'Open Sans', sans-serif;
 }
+
+/* .bigcard {
+    margin-top: 2.5rem;
+} */
+
+.bigcard {
+    background-color: beige;
+ 
+  }
+  

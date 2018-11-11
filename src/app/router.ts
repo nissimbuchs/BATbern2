@@ -5,14 +5,16 @@ import { AnmeldungComponent } from './events/anmeldung/anmeldung.component';
 import { ThemenComponent } from './events/themen/themen.component';
 import { ArchivComponent } from './events/archiv/archiv.component';
 import { KontaktComponent } from './events/kontakt/kontakt.component';
+import { ArchivDetailComponent } from './events/archiv-detail/archiv-detail.component';
 
 export const appRoutes:Routes = [
-  { path: 'aktuell', component: AktuellComponent},
-  { path: 'anmeldung', component: AnmeldungComponent},
-  { path: 'themen', component: ThemenComponent},
+   { path: '', component: AktuellComponent},
+  // { path: 'anmeldung', component: AnmeldungComponent},
+  // { path: 'themen', component: ThemenComponent},
   { path: 'archiv', component: ArchivComponent},
-  { path: 'verein', component: VereinComponent},
-  { path: 'kontakt', component: KontaktComponent},
-  { path: '', redirectTo: '/aktuell', pathMatch: 'full'},
-  { path: '**', redirectTo: '/aktuell'}
+  { path: 'archiv/:bat', component: ArchivDetailComponent},
+  // { path: 'verein', component: VereinComponent},
+  // { path: 'kontakt', component: KontaktComponent},
+  // { path: '', redirectTo: '/aktuell', pathMatch: 'full'},
+  // { path: '**', redirectTo: '/aktuell'}
 ]

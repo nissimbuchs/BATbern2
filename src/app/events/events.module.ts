@@ -7,10 +7,14 @@ import { ThemenComponent } from './themen/themen.component';
 import { ArchivComponent } from './archiv/archiv.component';
 import { KontaktComponent } from './kontakt/kontakt.component';
 import { ClarityModule, ClrFormsNextModule } from '@clr/angular';
+import { RouterModule } from '@angular/router';
+import { appRoutes } from '../router';
+import { ArchivDetailComponent } from './archiv-detail/archiv-detail.component';
 
 @NgModule({
   imports: [
     CommonModule,
+    RouterModule.forRoot(appRoutes),
     ClarityModule,
     ClrFormsNextModule
   ],
@@ -20,7 +24,8 @@ import { ClarityModule, ClrFormsNextModule } from '@clr/angular';
     AnmeldungComponent,
     ThemenComponent,
     ArchivComponent,
-    KontaktComponent
+    KontaktComponent,
+    ArchivDetailComponent
   ],
   exports: [
     AktuellComponent
