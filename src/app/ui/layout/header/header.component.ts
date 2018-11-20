@@ -1,4 +1,5 @@
 import { Component, OnInit, AfterViewInit, Input} from '@angular/core';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-header',
@@ -13,17 +14,24 @@ import { Component, OnInit, AfterViewInit, Input} from '@angular/core';
   clr-header .branding a .title {
     margin-left: 0.5rem;
     font-size: 1rem;
+    text-overflow: unset;
   }
   @media screen and (max-width: 576px) {
     clr-header .branding {
       max-width: 12rem;
-  }
+    }
   }
   `]
 })
 export class HeaderComponent implements OnInit {
 
-  constructor() { }
+  title: string = "BATbern2";
+
+  constructor() {
+    if(environment.production) {
+      this.title = "BATbern"
+    }
+   }
 
   ngOnInit(): void {
   }

@@ -1,8 +1,8 @@
 <clr-header class="header-5">
   <div class="branding">
-    <a  href="#aktuell" class="nav-icon">
+    <a href="#top" class="nav-icon">
       <img src="favicon.ico" height="32pt" alt="BATbern" />
-        <span class="title">BATbern</span>
+      <span class="title">{{title}}</span>
     </a>
   </div>
   <div class="header-nav" [clr-nav-level]="1">
@@ -21,7 +21,7 @@
     <a href="#kontakt" class="nav-link nav-text">
       Kontakt
     </a>
-    <a [routerLink]="['/archiv']" class="nav-link nav-text">
+    <a [routerLink]="['/event']" class="nav-link nav-text">
       Archiv
     </a>
     <a href="http://twitter.com/BATbern" class="nav-link nav-icon" target="_blank">

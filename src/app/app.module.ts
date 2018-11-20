@@ -9,14 +9,17 @@ import { UiModule } from './ui/ui.module';
 import { EventsModule } from './events/events.module';
 import { RouterModule } from '@angular/router';
 import { HttpClientModule } from '@angular/common/http';
-
+ 
 @NgModule({
   imports: [
     BrowserModule,
     HttpClientModule,
     ClarityModule,
     BrowserAnimationsModule,
-    RouterModule.forRoot(appRoutes),
+    RouterModule.forRoot(appRoutes, {
+      scrollPositionRestoration: 'enabled',
+      anchorScrolling: 'enabled',
+    }),
     UiModule,
     EventsModule
   ],

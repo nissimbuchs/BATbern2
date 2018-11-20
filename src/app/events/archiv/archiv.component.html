@@ -1,4 +1,4 @@
-<div class="card bigcard">
+<div class="card">
   <div class="card-header">
     Archiv
   </div>
@@ -6,6 +6,11 @@
     <div class="card-text">
       Alle Unterlagen der neueren Austragungen befinden sich auf Slideshare:
       <a href="https://www.slideshare.net/batbern/presentations">BAT Unterlagen ab BAT40</a>
+      <br>
+      <iframe class="slideshareframe" _ngcontent-c6="" allowfullscreen="" frameborder="0" height="470px" marginheight="0"
+        marginwidth="0" mozallowfullscreen="" scrolling="yes" src="https://www.slideshare.net/batbern/slideshelf" style="border:none;"
+        webkitallowfullscreen="" width="610px">
+      </iframe>
     </div>
     <div class="card-text">
       Hier finden Sie alles &uuml;ber die fr&uuml;heren BAT-Treffen:
@@ -15,7 +20,7 @@
       <div class="row">
         <div class='col-md-1'>{{topic.bat}}</div>
         <div class='col-md-8'>
-          <a [routerLink]="['/archiv', topic.bat]">
+          <a [routerLink]="['/event', topic.bat]">
             {{ topic.topic}}
           </a>
         </div>

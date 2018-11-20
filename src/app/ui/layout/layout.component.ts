@@ -8,12 +8,13 @@ import { Component } from '@angular/core';
     <div class="content-container">
       <div class="content-area" data-spy="scroll" data-target="app-header">
         <ng-content></ng-content>
-      </div>
+        <router-outlet></router-outlet>
+        </div>
     </div>
   </clr-main-container>
   `,
   styles: [`
-  .main-container .content-container .content-area {
+  clr-main-container .content-container .content-area {
 
     padding: 0pt;
   }`

@@ -9,10 +9,10 @@ import { TopicService } from '../topic.service';
     .leftCol {
       text-align: left;
     }
-    .card {
-        background-color: beige
-      
-    }`]
+    @media (max-width: 630px) {
+    .slideshareframe {
+      display:none;
+    }}`]
 })
 export class ArchivComponent implements OnInit {
 
