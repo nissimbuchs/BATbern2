@@ -1,12 +1,4 @@
-.main-container .content-container .content-area {
 
-  padding: 0pt;
-}
-
-.card {
-  background-color: beige
-
-}
 .fill-screen {
   background-size: cover;
   background-position: center;
@@ -33,12 +25,13 @@
 .btn {
   height: 2.5rem;
   color: #4988C7;
+  background-color: transparent;
   border-color: #4988C7;
 }
 
 .down-btn {
   position: absolute;
-  bottom: 40px;
+  bottom: 100px;
   width: 100%;
   text-align: center;
 }

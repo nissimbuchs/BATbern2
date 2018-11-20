@@ -14,12 +14,12 @@ export class AktuellComponent implements OnInit {
   }
 
   onResize(event) {
-    console.log("resize "+event.target.innerHeight);
+    //console.log("resize "+event.target.innerHeight);
   }
 
   calculateHeight() {
-    let style =+window.innerHeight+"px";
-    console.log("innerHeight: "+style);
+    let style =+(window.innerHeight-60)+"px";
+    //console.log("innerHeight: "+style);
     return style;
   }
 }

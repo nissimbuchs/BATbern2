@@ -5,12 +5,8 @@ body {
     font-family: 'Open Sans', sans-serif;
 }
 
-/* .bigcard {
-    margin-top: 2.5rem;
-} */
-
-.bigcard {
+.card {
     background-color: beige;
- 
+    margin-top: 0px;
   }
   
