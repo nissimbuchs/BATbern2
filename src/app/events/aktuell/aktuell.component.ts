@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { $ } from 'protractor';
+import { ITopic } from '../topic';
+import { TopicService } from '../topic.service';
 
 @Component({
   selector: 'app-aktuell',
@@ -8,9 +9,19 @@ import { $ } from 'protractor';
 })
 export class AktuellComponent implements OnInit {
 
-  constructor() { }
+  errorMessage = '';
+  currentTopic: ITopic;
 
-  ngOnInit() {
+  constructor(private topicService: TopicService) {
+  }
+
+  ngOnInit(): void {
+    this.topicService.getCurrentTopic().subscribe(
+      product => {
+        this.currentTopic = product;
+      },
+      error => this.errorMessage = <any>error
+    );
   }
 
   onResize(event) {
@@ -22,4 +33,5 @@ export class AktuellComponent implements OnInit {
     //console.log("innerHeight: "+style);
     return style;
   }
+
 }
