@@ -23,6 +23,12 @@ export class TopicService {
     );
   }
 
+  getCurrentTopic(): Observable<ITopic | undefined> {
+    return this.getTopics().pipe(
+      map((topics: ITopic[]) => topics.find(p => p.bat === topics.length))
+    );
+  }
+
   private handleError(err: HttpErrorResponse) {
     // in a real world app, we may send the server to some remote logging infrastructure
     // instead of just logging it to the console

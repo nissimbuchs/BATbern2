@@ -12,19 +12,19 @@
 
   <div class="card" id="aktuell">
     <div class="card-header">
-      Infos zum nächsten BATbern42 vom 8. März 2019
+      Infos zum nächsten BATbern{{currentTopic.bat}} vom {{currentTopic.datum}}
     </div>
     <div class="card-block">
       <div class="card-text">
-        Das nächste BATbern findet als Abend-BAT wie folgt statt
+        Das nächste BATbern{{currentTopic.bat}} findet wie folgt statt
         <table border="0" cellspacing="2" cellpadding="2" style="margin-left:25px">
           <tr>
             <td>Datum:</td>
-            <td><b>Freitag, 8. März 2019</b>, 16:00&minus;18:30 Uhr, anschl. Apéro</td>
+            <td><b>{{currentTopic.datum}}</b></td>
           </tr>
           <tr>
             <td>Thema:</td>
-            <td><b>noch offen</b></td>
+            <td><b>{{currentTopic.topic}}</b></td>
           </tr>
           <tr>
             <td>Ort:</td>
@@ -33,6 +33,14 @@
         </table>
       </div>
     </div>
+
+    <app-archiv-detail [bat]=currentTopic.bat></app-archiv-detail>
+
+    <div [ngStyle]="{'height':calculateHeight()}" class="fill-screen fixed-attachement" style="background-image: url('assets/bilder/bat_forum_beitrag.jpg')">
+    </div>
+
+    <app-anmeldung id="anmeldung"></app-anmeldung>
+
     <div class="card-block">
       <div class="card-title">
         BAT-Termine 2019:
@@ -40,36 +48,29 @@
       Damit Sie sich bereits die Termine der n&auml;chsten Treffen reservieren k&ouml;nnen:<br>
       <table border="0" cellspacing="2" cellpadding="2" style="margin-left:25px">
         <tr>
-          <td>BAT42:</td>
+          <td>BATbern42:</td>
           <td>Freitag, 08.03.2019</td>
-          <td><i>Thema offen</i></td>
+          <td><i>Large-scale Frontends</i></td>
           <td>Abend-BAT</td>
         </tr>
         <tr>
-          <td>BAT43:</td>
+          <td>BATbern43:</td>
           <td>Freitag, 28.06.2019</td>
           <td><i>Thema offen</i></td>
           <td>Ganztägiges BAT Forum</td>
         </tr>
         <tr>
-          <td>BAT44:</td>
+          <td>BATbern44:</td>
           <td>Freitag, 01.11.2019</td>
           <td><i>Thema offen</i></td>
           <td>Abend-BAT</td>
         </tr>
       </table>
 
-      <p>Die Themen sind noch nicht fix definiet. Wir freuen uns auf Beitr&auml;ge zu diesen Themen.
+      <p>Die Themen sind noch nicht fix definiert. Wir freuen uns auf Beitr&auml;ge zu diesen Themen.
         Bitte Vorschl&auml;ge einfach an <a href="mailto:info@berner-architekten-treffen.ch">info@berner-architekten-treffen.ch</a>
         mailen.
     </div>
-
-    <div [ngStyle]="{'height':calculateHeight()}" class="fill-screen fixed-attachement" style="background-image: url('assets/bilder/bat_forum_beitrag.jpg')">
-    </div>
-
-    <app-anmeldung id="anmeldung"></app-anmeldung>
-
-    <app-archiv-detail [bat]=41></app-archiv-detail>
 
     <div [ngStyle]="{'height':calculateHeight()}" class="fill-screen fixed-attachement" style="background-image: url('assets/bilder/bat_auditorium_voll.jpg')">
     </div>
