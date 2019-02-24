@@ -1341,13 +1341,43 @@
       "bat": 42,
       "pdf": "n/a",
       "authoren": "Emanuel Indermühle, Die Mobiliar",
-      "title": "Vom Frontend Monolithen zu Micro-Frontends"
+      "title": "Vom Frontend Monolithen zu Micro-Frontends",
+      "abstract": "In der  Mobiliar sind wir vermehrt mit der Herausforderung konfrontiert, schneller und agiler Funktionalität auszuliefern. Das Rezept der Stunde dazu ist die Microservice Architektur. Auch im Frontend verbreitet sich der Bedürfnis nach Möglichkeiten grosse Applikationen in kleinere, interagierende, unabhängig auszuliefernde Teilapplikationen aufzuteilen. In den letzten zwei Jahren hat die Mobiliar das Vorhaben angepackt ihr Mitarbeiterportal (B2E) in kleinere SPAs aufzuteilen. In diesem Vortrag werden die verschiedenen Herausforderungen auf dem Weg zu Micro-Frontends  thematisiert. Es wird die Abfolge von Motivation, Visionen, Entscheidungen, Problemen, Lösungen und Alternativen aufgezeigt.",
+      "referenten": [
+        {
+          "name": "Emanuel Indermühle, Die Mobiliar",
+          "bio": "Emanuel Indermühle arbeitet in der Technologie Architektur der Mobiliar und verantwortet Techstacks für Angular und Node.js. In dieser Rolle treibt er die Modularisierung im Frontend und die LifeCycle Migration nach Angular voran. Zuvor arbeitete er beim Softwaredienstleister Mimacom und studierte Informatik an der Universität Bern.",
+          "portrait": "Emanuel_Indermuehle.jpg",
+          "company": "mobiliar.jpg"
+        }
+      ]
     },
     {
       "bat": 42,
       "pdf": "n/a",
-      "authoren": "",
-      "title": ""
+      "authoren": "Christoph Bühlmann, SBB AG; Daniel Wiehl und Simon Eggler, mtrail GmbH",
+      "title": "End-to-End Verantwortlichkeit in der Praxis: Scion Workbench",
+      "abstract": "Das neue Traffic Management System der SBB basiert auf einer Microservice Architektur. Unterschiedliche Problemstellungen erfordern dediziertes Knowhow und haben sehr unterschiedliche Anforderungen an Time-to-Market, Verfügbarkeit, Technologie, Lifecycle, etc. Wir glauben, dass wir mit ganzheitlich verantwortlichen Teams die Effizienz und Qualität der einzelnen Services erheblich steigern können. Die einzelnen Teams entwickeln ihre Microservices vertikal über den gesamten Stack - von der Persistenz bis hin zum UI. Eine der Herausforderungen liegt in der GUI Integration der verschiedenen Microfrontends. Hier hilft uns das eigens dafür entwickelte Opensource Framework SCION Workbench, welches einen leichtgewichtigen Applikationsrahmen zur Verfügung stellt und die einfache und kohärente Integration verschiedener Webanwendungen ermöglicht. Inhalte können als View, Popup oder Activity eingebunden werden. Views ihrerseits können durch den Benutzer flexibel angeordnet werden. Grundsätzlich kann jede Webapplikation eingebunden werden. Die Applikationen sind frei in der Wahl ihrer Technologien und geben in einem Manifest ihre Fähigkeiten und Absichten an. Dies ermöglicht eine lose gekoppelte Interaktion zwischen den Applikationen. Im einfachsten Fall sind keine Anpassungen in der einzubindenden Applikation erforderlich. Wenn eine Applikation aber mit der Plattform interagieren möchte, kann sie ein Framework agnostisches Gast API einbinden.",
+      "referenten": [
+        {
+          "name": "Christoph Bühlmann, SBB AG",
+          "bio": "Christoph Bühlmann arbeitet als Software Ingenieur bei SBB AG. Zu seinem Glück ist seine Vergangenheit mit RCP und JEE nicht ganz so lang. Aktuell beschäftigt er sich als Full-Stack Entwickler, Architekt und DevOps Evangelist mit der Automatisierung der Infrastruktur-Planung.",
+          "portrait": "Christoph_Buehlmann.jpg",
+          "company": "sbb.jpg"
+        },
+        {
+          "name": "Daniel Wiehl, mtrail GmbH",
+          "bio": "Daniel Wiehl arbeitet als Software Ingenieur bei der mtrail GmbH. Daniel ist Projektlead der SCION Workbench. Er kommt aus einem Java- und Eclipse-RCP-Hintergrund. Sein Schwerpunkt liegt nun auf der Entwicklung moderner Webanwendungen auf Basis von Angular.",
+          "portrait": "Daniel_Wiehl.jpg",
+          "company": "mtrail.jpg"
+        },
+        {
+          "name": "Simon Eggler, mtrail GmbH",
+          "bio": "Simon Eggler arbeitet als Software Ingenieur bei mtrail GmbH. Unglaublich viele Jahre lang hat er für die Postfinance und die SBB Rich Clients programmiert. Aktuell liegt sein Fokus als Full-Stack Entwickler auf der Umsetzung von Optimierungs-Algorithmen für die Planungsautomatisierung.",
+          "portrait": "Simon_Eggler.jpg",
+          "company": "mtrail.jpg"
+        }
+      ]
     },
     {
       "bat": 42,
