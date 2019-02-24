@@ -5,14 +5,48 @@
 
   <div class='card-body'>
     <div class='card-block' *ngFor='let session of sessions'>
-      <div class="row">
+
+      <div *ngIf='session.abstract'>
+        <div class="card-title">
+          <a href="http://www.berner-architekten-treffen.ch/archiv/{{session.bat}}/{{session.pdf}}">
+            {{session.title}}
+        </a>
+      </div>
+
+        <div class="card-text">
+          {{session.abstract}}
+        </div>
+
+        <div class="card-media-block" *ngFor='let referent of session.referenten'>
+        <div class="row">
+          <div class='col-md-1'>
+            <img width=84 src="http://www.berner-architekten-treffen.ch/archiv/{{session.bat}}/{{referent.portrait}}" alt="{{referent.portrait}}">
+          </div>
+          <div class='col-md-10'>
+            <div class="card-media-description">
+              <span class="card-media-title">
+                <b>{{referent.name}}</b>
+              </span>
+              <span class="card-media-text">
+                {{referent.bio}}
+              </span>
+            </div>
+            </div>
+          <div class='col-md-1'>
+            <img width=84 src="http://www.berner-architekten-treffen.ch/archiv/{{session.bat}}/{{referent.company}}" alt="{{referent.company}}">
+          </div>
+        </div>
+      </div>
+      </div>
+
+      <div class="row" *ngIf='!session.abstract'>
         <div class='col-md-4'>{{session.authoren}}</div>
         <div class='col-md-8'>
           <a href="http://www.berner-architekten-treffen.ch/archiv/{{session.bat}}/{{session.pdf}}">
               {{session.title}}
           </a>
         </div>
-    </div>
+      </div>
     </div>
   </div>
 </div>
