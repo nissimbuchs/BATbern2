@@ -1333,12 +1333,6 @@
     },
     {
       "bat": 42,
-      "pdf": "BAT42_Programmheft.pdf",
-      "authoren": "",
-      "title": "Programmheft"
-    },
-    {
-      "bat": 42,
       "pdf": "n/a",
       "authoren": "Emanuel Indermühle, Die Mobiliar",
       "title": "Vom Frontend Monolithen zu Micro-Frontends",
