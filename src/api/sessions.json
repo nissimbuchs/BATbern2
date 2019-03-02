@@ -1382,7 +1382,22 @@
     {
       "bat": 42,
       "pdf": "n/a",
-      "authoren": "",
-      "title": ""
+      "authoren": "Simon Scheidegger, CSL Behring; Paul Affentranger, afca.",
+      "title": "Large-scale Frontends mit Mixed Reality",
+      "abstract": "Frontends sind dank Augmented- und Mixed Reality immer öfters in der reellen Welt eingebettet und werden sich in Zukunft mehr und mehr von Screens lösen. Traditionelle GUIs werden so durch Mixed Reality kombiniert mit AI-basierten virtuellen Assistenten erweitert oder ersetzt. Dies gilt insbesondere für Firstline-Workers welche nur sporadisch an einem festen Arbeitsplatz sitzen. So entsteht ein neues Interaktions-Paradigma mit geringerem 'cognitive load' für die Benutzer. Diese neuartigen Frontends erleichtern für viele Mitarbeiter den Zugang zu Informationen und Funktionalitäten. Simon Scheidegger und Paul Affentranger zeigen anhand eines konkreten Projekts bei CSL Behring Möglichkeiten, erste Erfahrungen, Limitierungen und werfen einen Blick auf die Zukunft von Mixed Reality Frontends.",
+      "referenten": [
+        {
+          "name": "Simon Scheidegger, CSL Behring",
+          "bio": "Simon Scheidegger arbeitet als Leiter Fraktionierung bei der CSL Behring. Ursprünglich Biochemiker beschäftigt er sich heute intensiv mit der prozessseitigen und technischen Entwicklung des Produktionsbereiches.",
+          "portrait": "Simon_Scheidegger.jpg",
+          "company": "cslbehring.jpg"
+        },
+        {
+          "name": "Paul Affentranger, afca.",
+          "bio": "Paul Affentranger arbeitet als Software Architekt und Entwickler bei afca. ag. Sein primärer Fokus ist das Zusammenspiel von Mixed- und Augmented Reality mit AI und Cloud Services.",
+          "portrait": "Paul_Affentranger.jpg",
+          "company": "afca.jpg"
+        }
+      ]
     }
-   ]
+  ]
