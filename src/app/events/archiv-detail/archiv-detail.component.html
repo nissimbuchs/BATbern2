@@ -10,33 +10,35 @@
         <div class="card-title">
           <a href="http://www.berner-architekten-treffen.ch/archiv/{{session.bat}}/{{session.pdf}}">
             {{session.title}}
-        </a>
-      </div>
+          </a>
+        </div>
 
         <div class="card-text">
           {{session.abstract}}
         </div>
 
-        <div class="card-media-block" *ngFor='let referent of session.referenten'>
-        <div class="row">
-          <div class='col-md-1'>
-            <img width=84 src="http://www.berner-architekten-treffen.ch/archiv/{{session.bat}}/{{referent.portrait}}" alt="{{referent.portrait}}">
-          </div>
-          <div class='col-md-10'>
-            <div class="card-media-description">
-              <span class="card-media-title">
-                <b>{{referent.name}}</b>
-              </span>
-              <span class="card-media-text">
-                {{referent.bio}}
-              </span>
+        <div class="clr-row">
+          <div class="clr-col-lg-4 clr-col-12" *ngFor='let referent of session.referenten'>
+            <div class="card referent">
+              <div class="card-block">
+                <div class="card-media-block">
+                  <img class="card-media-image portrait-image" src="http://www.berner-architekten-treffen.ch/archiv/{{session.bat}}/{{referent.portrait}}" alt="{{referent.portrait}}">
+                  <div class="card-media-description">
+                    <span class="card-media-title">
+                      {{referent.name}}
+                    </span>
+                    <span class="card-media-text">
+                      <img class="company-image" src="http://www.berner-architekten-treffen.ch/archiv/{{session.bat}}/{{referent.company}}" alt="{{referent.company}}">
+                    </span>
+                  </div>
+                </div>
+                <p class="card-text">
+                  {{referent.bio}}
+                </p>
+              </div>
             </div>
-            </div>
-          <div class='col-md-1'>
-            <img width=84 src="http://www.berner-architekten-treffen.ch/archiv/{{session.bat}}/{{referent.company}}" alt="{{referent.company}}">
           </div>
         </div>
-      </div>
       </div>
 
       <div class="row" *ngIf='!session.abstract'>
