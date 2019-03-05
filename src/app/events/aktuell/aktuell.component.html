@@ -41,35 +41,62 @@
 
     <app-anmeldung id="anmeldung"></app-anmeldung>
 
-    <div class="card-block">
-      <div class="card-title">
+    <div class="card">
+      <div class="card-header">
         BAT-Termine 2019:
       </div>
-      Damit Sie sich bereits die Termine der n&auml;chsten Treffen reservieren k&ouml;nnen:<br>
-      <table border="0" cellspacing="2" cellpadding="2" style="margin-left:25px">
-        <tr>
-          <td>BATbern42:</td>
-          <td>Freitag, 08.03.2019</td>
-          <td><i>Large-scale Frontends</i></td>
-          <td>Abend-BAT</td>
-        </tr>
-        <tr>
-          <td>BATbern43:</td>
-          <td>Freitag, 28.06.2019</td>
-          <td><i>Thema offen</i></td>
-          <td>Ganztägiges BAT Forum</td>
-        </tr>
-        <tr>
-          <td>BATbern44:</td>
-          <td>Freitag, 01.11.2019</td>
-          <td><i>Thema offen</i></td>
-          <td>Abend-BAT</td>
-        </tr>
-      </table>
+      <div class="card-block">
+        Damit Sie sich bereits die Termine der n&auml;chsten Treffen reservieren k&ouml;nnen:
+      </div>
+      <div class="card-block">
 
-      <p>Die Themen sind noch nicht fix definiert. Wir freuen uns auf Beitr&auml;ge zu diesen Themen.
+        <div class="clr-row">
+          <div class="clr-col-lg-4 clr-col-12">
+            <div class="card">
+              <div class="card-block">
+                <h3 class="card-title">#BATbern42</h3>
+                <p class="card-text">
+                    Large-scale Frontends
+                </p>
+              </div>
+              <div class="card-footer">
+                Abend-BAT am 8.3.2019
+              </div>
+            </div>
+          </div>
+          <div class="clr-col-lg-4 clr-col-12">
+            <div class="card">
+              <div class="card-block">
+                <h3 class="card-title">#BATbern43</h3>
+                <p class="card-text">
+                    Thema noch offen
+                </p>
+              </div>
+              <div class="card-footer">
+                Ganztages-BAT am 26.6.2019
+              </div>
+            </div>
+          </div>
+          <div class="clr-col-lg-4 clr-col-12">
+            <div class="card">
+              <div class="card-block">
+                <h3 class="card-title">#BATbern44</h3>
+                <p class="card-text">
+                    Thema noch offen
+                </p>
+              </div>
+              <div class="card-footer">
+                Abend-BAT am 1.11.2019
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-block">
+        Die Themen sind noch nicht fix definiert. Wir freuen uns auf Beitr&auml;ge zu diesen Themen.
         Bitte Vorschl&auml;ge einfach an <a href="mailto:info@berner-architekten-treffen.ch">info@berner-architekten-treffen.ch</a>
         mailen.
+      </div>
     </div>
 
     <div [ngStyle]="{'height':calculateHeight()}" class="fill-screen fixed-attachement" style="background-image: url('assets/bilder/bat_auditorium_voll.jpg')">

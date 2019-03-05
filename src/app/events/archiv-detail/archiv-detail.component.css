@@ -1,4 +1,14 @@
 .card {
-  background-color: beige
+  background-color: beige;
 }
   
+
+.referent {
+  border: 0px;
+  box-shadow: 0 0;
+}
+
+.company-image {
+  max-height: 40px;
+  max-width: 80px;
+}
