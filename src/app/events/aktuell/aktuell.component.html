@@ -51,42 +51,16 @@
       <div class="card-block">
 
         <div class="clr-row">
-          <div class="clr-col-lg-4 clr-col-12">
+          <div class="clr-col-lg-4 clr-col-12" *ngFor='let topic of plannedTopics'>
             <div class="card">
               <div class="card-block">
-                <h3 class="card-title">#BATbern42</h3>
+                <h3 class="card-title">#BATbern{{topic.bat}}</h3>
                 <p class="card-text">
-                    Large-scale Frontends
+                  {{topic.topic}}
                 </p>
               </div>
               <div class="card-footer">
-                Abend-BAT am 8.3.2019
-              </div>
-            </div>
-          </div>
-          <div class="clr-col-lg-4 clr-col-12">
-            <div class="card">
-              <div class="card-block">
-                <h3 class="card-title">#BATbern43</h3>
-                <p class="card-text">
-                    Thema noch offen
-                </p>
-              </div>
-              <div class="card-footer">
-                Ganztages-BAT am 26.6.2019
-              </div>
-            </div>
-          </div>
-          <div class="clr-col-lg-4 clr-col-12">
-            <div class="card">
-              <div class="card-block">
-                <h3 class="card-title">#BATbern44</h3>
-                <p class="card-text">
-                    Thema noch offen
-                </p>
-              </div>
-              <div class="card-footer">
-                Abend-BAT am 1.11.2019
+                {{topic.eventType}} am {{topic.datum}}
               </div>
             </div>
           </div>
