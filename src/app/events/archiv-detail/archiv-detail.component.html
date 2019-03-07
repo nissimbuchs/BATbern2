@@ -3,8 +3,7 @@
     BATbern{{topic.bat}} zu "{{topic.topic}}" vom {{topic.datum}}
   </div>
 
-  <div class='card-body'>
-    <div class='card-block' *ngFor='let session of sessions'>
+  <div class='card-block' *ngFor='let session of sessions'>
 
       <div *ngIf='session.abstract'>
         <div class="card-title">
@@ -50,5 +49,4 @@
         </div>
       </div>
     </div>
-  </div>
 </div>

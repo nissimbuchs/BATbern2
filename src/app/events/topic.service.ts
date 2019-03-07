@@ -25,7 +25,13 @@ export class TopicService {
 
   getCurrentTopic(): Observable<ITopic | undefined> {
     return this.getTopics().pipe(
-      map((topics: ITopic[]) => topics.find(p => p.bat === topics.length))
+      map((topics: ITopic[]) => topics.find(p => p.next))
+    );
+  }
+
+  getPlannedTopics(): Observable<ITopic[] | undefined> {
+    return this.getTopics().pipe(
+      map((topics: ITopic[]) => topics.filter(p => p.planned))
     );
   }
 

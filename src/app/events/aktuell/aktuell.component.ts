@@ -11,6 +11,7 @@ export class AktuellComponent implements OnInit {
 
   errorMessage = '';
   currentTopic: ITopic;
+  plannedTopics: ITopic[];
 
   constructor(private topicService: TopicService) {
   }
@@ -19,6 +20,13 @@ export class AktuellComponent implements OnInit {
     this.topicService.getCurrentTopic().subscribe(
       product => {
         this.currentTopic = product;
+      },
+      error => this.errorMessage = <any>error
+    );
+
+    this.topicService.getPlannedTopics().subscribe(
+      plannedTopics => {
+        this.plannedTopics = plannedTopics;
       },
       error => this.errorMessage = <any>error
     );
