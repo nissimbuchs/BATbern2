@@ -208,20 +208,19 @@
       "bat": 42,
       "topic": " Large-scale Frontends ",
       "datum": "08. März 19",
-      "eventType": "Abend-BAT",
+      "eventType": "Abend-BAT"
+    },
+    {
+      "bat": 43,
+      "topic": " Event Driven Architecture ",
+      "datum": "28. Juni 19",
+      "eventType": "Ganztages-BAT",
       "next": 1,
       "planned": 1
     },
     {
-      "bat": 43,
-      "topic": " Thema noch offen ",
-      "datum": "28. Juni 19",
-      "eventType": "Ganztages-BAT",
-      "planned": 1
-    },
-    {
       "bat": 44,
-      "topic": " Thema noch offen ",
+      "topic": " Chatbots ",
       "datum": "01. November 19",
       "eventType": "Abend-BAT",
       "planned": 1
