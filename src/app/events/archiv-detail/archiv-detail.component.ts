@@ -4,6 +4,7 @@ import { ISession } from '../session';
 import { SessionService } from '../session.service';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TopicService } from '../topic.service';
+import { stringify } from '@angular/compiler/src/util';
 
 @Component({
   selector: 'app-archiv-detail',
@@ -41,4 +42,18 @@ export class ArchivDetailComponent implements OnInit {
       sessions => this.sessions = sessions,
       error => this.errorMessage = <any>error);
   }
+
+  getUrl(session: ISession) {
+    let pdf: string;
+    if (session.pdf.startsWith("http"))
+    {
+      pdf = session.pdf;
+    }
+    else
+    {
+      pdf = "http://www.berner-architekten-treffen.ch/archiv/"+session.bat+"/"+session.pdf;
+    }
+    return pdf;
+  }
+
 }
