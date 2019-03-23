@@ -1267,43 +1267,43 @@
     },
     {
       "bat": 40,
-      "pdf": "n/a",
+      "pdf": "https://www.slideshare.net/batbern/bat40-zhaw-stadelmann-deep-learningbased-pattern-recognition-in-business",
       "authoren": "Thilo Stadelmann, ZHAW ",
       "title": "Deep Learning-based Pattern Recognition in Business "
     },
     {
       "bat": 40,
-      "pdf": "n/a",
+      "pdf": "https://www.slideshare.net/batbern/bat40-humanist-portmann-smart-citys-cognitive-computing-fr-stdte",
       "authoren": "Edy Portmann, Universität Freiburg ",
       "title": "Smart Cities: Cognitive-Computing für Städte "
     },
     {
       "bat": 40,
-      "pdf": "n/a",
+      "pdf": "https://www.slideshare.net/batbern/bat40-ccsourcing-auge-zerndt-artificial-intelligence-an-der-kundenschnittstelle",
       "authoren": "Thomas Zerndt, Stefanie Auge-Dickhut, CC Sourcing ",
       "title": "AI an der Kundenschnittstelle? "
     },
     {
       "bat": 40,
-      "pdf": "n/a",
+      "pdf": "https://www.slideshare.net/batbern/bat40-inselgruppe-zuehlke-endrich-kmpf-dikk-multilabel-textklassifikation-von-med-berichten",
       "authoren": "Olga Endrich, Matthias Kämpf, Insel Gruppe und Tomas Dikk, Zühlke Engineering ",
       "title": "Multilabel Text-Klassifikation von medizinischen Berichten "
     },
     {
       "bat": 40,
-      "pdf": "n/a",
+      "pdf": "https://www.slideshare.net/batbern/bat40-mobiliar-koller-msching-aimobiliar-wie-aiservices-in-der-mobiliar-gebaut-und-eingesetzt-werden",
       "authoren": "Andreas Mösching, Jérôme Koller, Die Mobiliar ",
       "title": "Wie AI-Services in der Mobiliar gebaut und eingesetzt werden "
     },
     {
       "bat": 40,
-      "pdf": "n/a",
+      "pdf": "https://www.slideshare.net/batbern/bat40-sbb-jckel-optische-zuglokalisation-mit-machine-learning",
       "authoren": "Lothar Jöckel, SBB ",
       "title": "Optische Zuglokalisation mit Machine Learning "
     },
     {
       "bat": 40,
-      "pdf": "n/a",
+      "pdf": "https://www.slideshare.net/batbern/bat40-nvidia-stampfli-knstliche-intelligenz-roboter-und-autonome-fahrzeuge-revolution-und-chance",
       "authoren": "Marc Stampfli, NVIDIA ",
       "title": "Künstliche Intelligenz, Roboter und autonome Fahrzeuge – Revolution und Chance? "
     },
@@ -1315,25 +1315,31 @@
     },
     {
       "bat": 41,
-      "pdf": "n/a",
+      "pdf": "https://www.slideshare.net/batbern/die-evolution-zu-microservices",
       "authoren": "Pascal Auderset, Die Mobiliar ",
       "title": "Die Evolution zu Microservices "
     },
     {
       "bat": 41,
-      "pdf": "n/a",
+      "pdf": "https://www.slideshare.net/batbern/soa-vs-microservices-oder-soa-microservices",
       "authoren": "Gion Sialm, BIT ",
       "title": "SOA vs. Microservices oder SOA & Microservices? "
     },
     {
       "bat": 41,
-      "pdf": "n/a",
+      "pdf": "https://www.slideshare.net/batbern/microservicesenterprise",
       "authoren": "Florian Seidel, SBB CFF FFS ",
       "title": "Microservices@Enterprise "
     },
     {
       "bat": 42,
-      "pdf": "n/a",
+      "pdf": "BATbern42_Moderation.pdf",
+      "authoren": "Nissim Buchs",
+      "title": "Moderation"
+    },
+    {
+      "bat": 42,
+      "pdf": "https://www.slideshare.net/batbern/batbern42-vom-frontend-monolithen-zu-microfrontends",
       "authoren": "Emanuel Indermühle, Die Mobiliar",
       "title": "Vom Frontend Monolithen zu Micro-Frontends",
       "abstract": "In der  Mobiliar sind wir vermehrt mit der Herausforderung konfrontiert, schneller und agiler Funktionalität auszuliefern. Das Rezept der Stunde dazu ist die Microservice Architektur. Auch im Frontend verbreitet sich der Bedürfnis nach Möglichkeiten grosse Applikationen in kleinere, interagierende, unabhängig auszuliefernde Teilapplikationen aufzuteilen. In den letzten zwei Jahren hat die Mobiliar das Vorhaben angepackt ihr Mitarbeiterportal (B2E) in kleinere SPAs aufzuteilen. In diesem Vortrag werden die verschiedenen Herausforderungen auf dem Weg zu Micro-Frontends  thematisiert. Es wird die Abfolge von Motivation, Visionen, Entscheidungen, Problemen, Lösungen und Alternativen aufgezeigt.",
@@ -1348,7 +1354,7 @@
     },
     {
       "bat": 42,
-      "pdf": "n/a",
+      "pdf": "https://www.slideshare.net/batbern/batbern42-endtoend-verantwortlichkeit-in-der-praxis-scion-workbench",
       "authoren": "Christoph Bühlmann, SBB AG; Daniel Wiehl und Simon Eggler, mtrail GmbH",
       "title": "End-to-End Verantwortlichkeit in der Praxis: Scion Workbench",
       "abstract": "Das neue Traffic Management System der SBB basiert auf einer Microservice Architektur. Unterschiedliche Problemstellungen erfordern dediziertes Knowhow und haben sehr unterschiedliche Anforderungen an Time-to-Market, Verfügbarkeit, Technologie, Lifecycle, etc. Wir glauben, dass wir mit ganzheitlich verantwortlichen Teams die Effizienz und Qualität der einzelnen Services erheblich steigern können. Die einzelnen Teams entwickeln ihre Microservices vertikal über den gesamten Stack - von der Persistenz bis hin zum UI. Eine der Herausforderungen liegt in der GUI Integration der verschiedenen Microfrontends. Hier hilft uns das eigens dafür entwickelte Opensource Framework SCION Workbench, welches einen leichtgewichtigen Applikationsrahmen zur Verfügung stellt und die einfache und kohärente Integration verschiedener Webanwendungen ermöglicht. Inhalte können als View, Popup oder Activity eingebunden werden. Views ihrerseits können durch den Benutzer flexibel angeordnet werden. Grundsätzlich kann jede Webapplikation eingebunden werden. Die Applikationen sind frei in der Wahl ihrer Technologien und geben in einem Manifest ihre Fähigkeiten und Absichten an. Dies ermöglicht eine lose gekoppelte Interaktion zwischen den Applikationen. Im einfachsten Fall sind keine Anpassungen in der einzubindenden Applikation erforderlich. Wenn eine Applikation aber mit der Plattform interagieren möchte, kann sie ein Framework agnostisches Gast API einbinden.",
@@ -1375,7 +1381,7 @@
     },
     {
       "bat": 42,
-      "pdf": "n/a",
+      "pdf": "https://www.slideshare.net/batbern/batbern42-largescale-frontends-mit-mixed-reality",
       "authoren": "Simon Scheidegger, CSL Behring; Paul Affentranger, afca.",
       "title": "Large-scale Frontends mit Mixed Reality",
       "abstract": "Frontends sind dank Augmented- und Mixed Reality immer öfters in der reellen Welt eingebettet und werden sich in Zukunft mehr und mehr von Screens lösen. Traditionelle GUIs werden so durch Mixed Reality kombiniert mit AI-basierten virtuellen Assistenten erweitert oder ersetzt. Dies gilt insbesondere für Firstline-Workers welche nur sporadisch an einem festen Arbeitsplatz sitzen. So entsteht ein neues Interaktions-Paradigma mit geringerem 'cognitive load' für die Benutzer. Diese neuartigen Frontends erleichtern für viele Mitarbeiter den Zugang zu Informationen und Funktionalitäten. Simon Scheidegger und Paul Affentranger zeigen anhand eines konkreten Projekts bei CSL Behring Möglichkeiten, erste Erfahrungen, Limitierungen und werfen einen Blick auf die Zukunft von Mixed Reality Frontends.",

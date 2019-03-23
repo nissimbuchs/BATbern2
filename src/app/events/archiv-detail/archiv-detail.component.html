@@ -7,7 +7,7 @@
 
       <div *ngIf='session.abstract'>
         <div class="card-title">
-          <a href="http://www.berner-architekten-treffen.ch/archiv/{{session.bat}}/{{session.pdf}}">
+          <a href={{getUrl(session)}}>
             {{session.title}}
           </a>
         </div>
@@ -43,7 +43,7 @@
       <div class="row" *ngIf='!session.abstract'>
         <div class='col-md-4'>{{session.authoren}}</div>
         <div class='col-md-8'>
-          <a href="http://www.berner-architekten-treffen.ch/archiv/{{session.bat}}/{{session.pdf}}">
+          <a href={{getUrl(session)}}>
               {{session.title}}
           </a>
         </div>
