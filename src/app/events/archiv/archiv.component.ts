@@ -31,6 +31,7 @@ export class ArchivComponent implements OnInit {
     this.topicService.getTopics().subscribe(
       products => {
         this.topics = products;
+        this.topics.sort((a,b) => b.bat - a.bat);
       },
       error => this.errorMessage = <any>error
     );
