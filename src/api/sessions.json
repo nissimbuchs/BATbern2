@@ -1399,5 +1399,59 @@
           "company": "afca.jpg"
         }
       ]
+    },
+    {
+      "bat": 43,
+      "pdf": "BATbern43_Moderation.pdf",
+      "authoren": "Daniel Kühni",
+      "title": "Moderation"
+    },
+    {
+      "bat": 43,
+      "pdf": "https://www.slideshare.net/batbern/",
+      "authoren": "Beat Winistörfer, Die Mobiliar",
+      "title": "Commands & Events – Divide and Conquer in Microservice Architekturen"
+    },
+    {
+      "bat": 43,
+      "pdf": "https://www.slideshare.net/batbern/",
+      "authoren": "Andreas Spichiger, BFH/ISB",
+      "title": "Events aus Business Sicht bei der Verwaltung"
+    },
+    {
+      "bat": 43,
+      "pdf": "https://www.slideshare.net/batbern/",
+      "authoren": "Konstantine Karantasis, Confluent",
+      "title": "Stream All Things - Patterns of Data Integration in Event Driven Systems"
+    },
+    {
+      "bat": 43,
+      "pdf": "https://www.slideshare.net/batbern/",
+      "authoren": "Markus Ehrenmann, Sqooba + Vertreter Swissport",
+      "title": "Events - lessons learnt building an enterprise data bus"
+    },
+    {
+      "bat": 43,
+      "pdf": "https://www.slideshare.net/batbern/",
+      "authoren": "Christoph Meier, Swisscom",
+      "title": "Morpholgischer Kasten als Architektur Framework"
+    },
+    {
+      "bat": 43,
+      "pdf": "https://www.slideshare.net/batbern/",
+      "authoren": "Marc Hoffmann, Erwann Wernli, SBB",
+      "title": "Rail Control System: Hochverfügbare Anwendungen für die Bahnproduktion"
+    },
+    {
+      "bat": 43,
+      "pdf": "https://www.slideshare.net/batbern/",
+      "authoren": "Matej Ilicic, PostFinance und Zacharias Kull, ELCA",
+      "title": "Fraud Detection mit Stream Analytics"
+    },
+    {
+      "bat": 43,
+      "pdf": "https://www.slideshare.net/batbern/",
+      "authoren": "Sammy Ramareddy und Thibaud Chardonnens, Swisscom",
+      "title": "Self Service on a Big Data Platform"
     }
   ]
