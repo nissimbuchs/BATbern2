@@ -1408,50 +1408,208 @@
     },
     {
       "bat": 43,
-      "pdf": "https://www.slideshare.net/batbern/",
+      "pdf": "https://www.slideshare.net/batbern/batbern43-command-events-divide-and-conquer-in-microservice-architekturen",
       "authoren": "Beat Winistörfer, Die Mobiliar",
-      "title": "Commands & Events – Divide and Conquer in Microservice Architekturen"
+      "title": "Commands & Events – Divide and Conquer in Microservice Architekturen",
+      "abstract": "Das Teilen liegt in der Natur von Microservice Architekturen. Business Prozesse machen aber selten halt an den Microservice Grenzen. In diesem Vortrag wird besprochen wie mit Commands und Events die Umsetzung von Business Prozessen beherscht werden kann, so dass schlussendlich ein konsistenter Zustand erreicht wird. Und wie mit Fällen und Aufgaben die Benutzer dabei involviert werden und ihnen damit die Übersicht über die verteilten Prozesse ermöglicht wird.",
+      "referenten": [
+        {
+          "name": "Beat Winistörfer, Die Mobiliar",
+          "bio": "Beat Winistörfer arbeitet seit über 5 Jahren in der Applikationsarchitektur der Mobiliar als Domänenarchitekt Partner und Basisdienste sowie als Systemarchitekt in einem der Release Trains der agilen Software Delivery Organisation. In diesen Rollen beschäftigt er sich intensiv mit der Umsetzung von Business Prozessen und den damit einhergehenden Anforderungen an die Arbeitsorganisation. Zuvor war er bei hp und rtc für die BEKB tätig, auch dort mit Schwerpunkt Business Transaktionen. Er hat an der Universität Zürich Wirtschaftsinformatik studiert.",
+          "portrait": "Beat_Winistoerfer.png",
+          "company": "mobiliar.jpg"
+        }
+      ]
     },
     {
       "bat": 43,
-      "pdf": "https://www.slideshare.net/batbern/",
+      "pdf": "https://www.slideshare.net/batbern/batbern43-events-aus-business-sicht-bei-der-verwaltung",
       "authoren": "Andreas Spichiger, BFH/ISB",
-      "title": "Events aus Business Sicht bei der Verwaltung"
+      "title": "Events aus Business Sicht bei der Verwaltung",
+      "abstract": "Heiraten ist eine ziemlich komplizierte Sache – erst recht, wenn man sich mal überlegt, was da dahintersteckt. Im Rahmen der Implementierung der Registerharmonisierung hat man festgestellt, dass das Muster der Prozessintegration für diesen Kontext nicht taugt. Man hat daher auf Events gesetzt. Dies ist ein schlankes Mittel der Implementierung – wenn man die Semantik beherrscht. Und nicht immer läuft alles rund …",
+      "referenten": [
+        {
+          "name": "Andreas Spichiger, BFH/ISB",
+          "bio": "Ein bunter und sehr spannender Strauss von Architektur-bezogenen Tätigkeiten im Rucksack kam Andreas Spichiger 2008 an die Berner Fachhochschule. Hier hat er mitgewirkt, die Vertiefung Enterprise Architecture im Bachelor Wirtschaftsinformatik zu verankern und auch das CAS Enterprise Architecture Management aufzubauen. Per 1. Juli 2019 ist nun Zeit für einen Seitenwechsel: er wechselt als Leiter Architektur zum Informatiksteuerungsorgan des Bundes ISB.",
+          "portrait": "Andreas_Spichiger.png"
+        }
+      ]	  
     },
     {
       "bat": 43,
-      "pdf": "https://www.slideshare.net/batbern/",
+      "pdf": "https://www.slideshare.net/batbern/batbern43-stream-all-things-patterns-of-data-integration-in-event-driven-systems",
       "authoren": "Konstantine Karantasis, Confluent",
-      "title": "Stream All Things - Patterns of Data Integration in Event Driven Systems"
+      "title": "Stream All Things - Patterns of Data Integration in Event Driven Systems",
+	  "abstract": "In this presentation, we’ll discuss the basic challenges of data integration in the context of event driven systems. We'll separate what is really important from what is merely nice to have and introduce design and architecture patterns that are used to tackle these challenges. We will then explore how these patterns can be implemented on streams of events and Apache Kafka. We offer no silver bullets. Instead, we will share pragmatic solutions that many engineering organizations used to build fast, scalable and manageable streaming data pipelines.",
+      "referenten": [
+        {
+          "name": "Konstantine Karantasis, Confluent",
+          "bio": "Konstantine Karantasis is a software engineer at Confluent. He’s a main contributor to Apache Kafka and its Connect API, and an author of widely used software, such as Confluent’s S3 and Replicator connectors, class loading isolation in Kafka Connect, Incremental Cooperative Rebalancing in Kafka, the Confluent CLI and more. Previously, he built scalable open source web services at Yahoo! and researched high-performance computing at the University of Illinois at Urbana-Champaign. Konstantine holds a Ph.D. from the University of Patras.",
+          "portrait": "Konstantine_Karantasis.png",
+          "company": "confluent.jpg"
+        }
+      ]
     },
     {
       "bat": 43,
-      "pdf": "https://www.slideshare.net/batbern/",
-      "authoren": "Markus Ehrenmann, Sqooba + Vertreter Swissport",
-      "title": "Events - lessons learnt building an enterprise data bus"
+      "pdf": "https://www.slideshare.net/batbern/batbern43-events-lessons-learnt-building-an-enterprise-data-bus",
+      "authoren": "Stefan Brock, Swissport; Markus Ehrenmann, Sqooba",
+      "title": "Events - Lessons learnt building an Enterprise Data Bus",
+      "abstract": "Swissport ist weltweit der führende Dienstleister im Groundhandling und bei Cargo. Über 300 Flughäfen in 50 Ländern werden bedient. Dabei spielen Daten eine führende Rolle: wann und wo hebt ein Flugzeug ab, wie lange dauerte die Betankung, welche Gepäcktücke sind auszuladen? Aufgrund von Wachstum durch Übernahmen ist die IT Landschaft durch eine Vielzahl von Silos charakterisiert - was übergreifende Analytik und die Nutzung von Daten in neuen Kontexten erschwert. Gleichzeitig werden weltweit verschiedene IT Governance Modelle verfolgt, was zu Inkonsistenzen in Prozessen, Datenzugriffen und Datenqualitätsverlusten führt. Diese Situation wird adressiert durch eine Vision für eine Eventgetriebene Architektur und deren Verankerung im Management Prozessen und Prinzipien zur Realisierung der Vision - sowie deren Umsetzung den Aufbau eines Enterprise Datenmodells, Governance für den Zugriff und die Dokumentation von Daten. Erfahrungen aus diesen Schritten werden in der Präsentation reflektiert. Dabei ist zu beachten, dass der Aufbau der zugrundeliegenden Plattform unter strikter Kostenkontrolle stand und lediglich 10 zweiwöchentliche Sprints für die erste Produktivsetzung genutzt werden konnten.",
+      "referenten": [
+        {
+          "name": "Stefan Brock, Swissport",
+          "bio": "Head of IT Architecture Swissport, davor Head Production Architecture bei Swisscom und CTO bei mehreren Startups.",
+          "portrait": "Stefan_Brock.png",
+          "company": "swissport.jpg"
+        },
+        {
+          "name": "Markus Ehrenmann, Sqooba",
+          "bio": "Co-Creator bei sqooba, davor Lead Architect AI, Head BI & Big Data Architecture bei Swisscom.",
+          "portrait": "Markus_Ehrenmann.png",
+          "company": "sqooba.jpg"
+        }
+      ]
     },
     {
       "bat": 43,
-      "pdf": "https://www.slideshare.net/batbern/",
+      "pdf": "https://www.slideshare.net/batbern/batbern43-morphologischer-kasten-als-architektur-framework",
       "authoren": "Christoph Meier, Swisscom",
-      "title": "Morpholgischer Kasten als Architektur Framework"
+      "title": "Morphologischer Kasten als Architektur Framework",
+	  "abstract": "Swisscom hat ihre Arbeitsweise auf agile Organisationsstrukturen nach Safe umgestellt. Um den agilen, dezentralen Umsetzungseinheiten einen gemeinsamen Leitstern zu geben wurde der Auftrag erteilt, eine Architekturvision 2025 zu erstellen. Basis der Architekturvision ist das Swisscom Architecture Framework, das die Gesamtarchitektur in sechs entkoppelte Bereiche einteilt. Ziel des Vortrags ist es, das Framework und seine wichtigsten Eigenschaften zu beleuchten.",
+      "referenten": [
+        {
+          "name": "Christoph Meier, Swisscom",
+          "bio": "Christoph Meier ist gelernter Physiker und arbeitet seit 13 Jahren bei Swisscom in diversen Architekturrollen. Seit Sommer 2018 leitet er das Team Architecture Vision in der Abteilung Enterprise Architecture und Innovation.",
+          "portrait": "Christoph_Meier.png",
+          "company": "swisscom.jpg"
+        }
+      ]
     },
     {
       "bat": 43,
-      "pdf": "https://www.slideshare.net/batbern/",
-      "authoren": "Marc Hoffmann, Erwann Wernli, SBB",
-      "title": "Rail Control System: Hochverfügbare Anwendungen für die Bahnproduktion"
+      "pdf": "https://www.slideshare.net/batbern/batbern43-rail-control-system-hochverfgbare-anwendungen-fr-die-bahnproduktion",
+      "authoren": "Marc Hoffmann, mtrail und Erwann Wernli, SBB",
+      "title": "Rail Control System: Hochverfügbare Anwendungen für die Bahnproduktion",
+	  "abstract": "Die Schweizerischen Bundesbahnen betreiben eines der weltweit dichtest befahrenen Bahnnetze der Welt. Zur Überwachung und Steuerung ist seit nunmehr 10 Jahren das eigenentwickelte Rail Control System (RCS) im Einsatz und wird laufend weiterentwickelt. In dieser Präsentation stellen wir die auf Event-Verarbeitung basierenden Lösungsansätze vor, welche die hohen Anforderungen bezüglich Latenz und Hochverfügbarkeit für Systeme der Bahnproduktion adressieren",
+      "referenten": [
+        {
+          "name": "Marc Hoffmann, mtrail",
+          "bio": "Marc beschäftigt sich seit über 10 Jahren als Softwareentwickler und Architekt mit Lösungen für die Bahnproduktion. Der regelmässige Sprecher auf Konferenzen und Open Source Autor wurde er 2014 als Java Champion ausgezeichnet. Marc ist CTO bei der mtrail GmbH in Bern. Auf Twitter ist Marc unter @marcandsweep zu finden.",
+          "portrait": "Marc_Hoffmann.png",
+          "company": "mtrail.jpg"
+        },
+        {
+          "name": "Erwann Wernli, SBB",
+          "bio": "Erwann Wernli arbeitet als Software Architekt bei der SBB und begleitet die Weiterentwicklung der Gesamtarchitektur RCS in einem dezentralisierten agilen Umfeld. Er hat früher an die Universität geforscht und Lösungen für Enterprise Content Management entwickelt. Online kann er auf Twitter unter @wrnli gefunden werden.",
+          "portrait": "Erwann_Wernli.png",
+          "company": "sbb.jpg"
+        }
+      ]
     },
     {
       "bat": 43,
-      "pdf": "https://www.slideshare.net/batbern/",
+      "pdf": "https://www.slideshare.net/batbern/batbern43-fraud-detection-mit-stream-analytics",
       "authoren": "Matej Ilicic, PostFinance und Zacharias Kull, ELCA",
-      "title": "Fraud Detection mit Stream Analytics"
+      "title": "Fraud Detection mit Stream Analytics",
+	  "abstract": "Die Postfinance hat zusammen mit ELCA die bestehende Betrugserkennung-Lösung auf eine neue Stream Analytics Plattform mit BigData Stack (Apache Kafka, Apache Spark Streaming, Cloudian S3 Storage und Kubernetes) migriert. In der Präsentation wird die neue Lösung sowie Erfahrungen und Erkenntnisse mit den neuen Technologien vorgestellt.",
+      "referenten": [
+        {
+          "name": "Matej Ilicic, PostFinance",
+          "bio": "Matej Ilicic hat 2011 den Master of Science in Software Engineering an der Universität Zagreb abgeschlossen, war 5 Jahre als Software-Engineer tätig, und ist in den letzten 2,5 Jahren bei der PostFinance als Solution Architekt hauptsächlich in Compliance & Risk Bereich tätig.",
+          "portrait": "Matej_Ilicic.png",
+          "company": "postfinance.jpg"
+        },
+        {
+          "name": "Zacharias Kull, ELCA",
+          "bio": "Zacharias Kull hat Software Entwicklung studiert und ist Datenexperte bei ELCA. Er ist fasziniert von den Möglichkeiten neuer Technologien wie Kafka und Spark und wie dadurch verschiedene Disziplinen wie Batch, Streaming und DevOps zusammenkommen.",
+          "portrait": "Zacharias_Kull.png",
+          "company": "elca.jpg"
+        }
+      ]
     },
     {
       "bat": 43,
-      "pdf": "https://www.slideshare.net/batbern/",
+      "pdf": "https://www.slideshare.net/batbern/batbern43-self-service-on-a-big-data-platform",
       "authoren": "Sammy Ramareddy und Thibaud Chardonnens, Swisscom",
-      "title": "Self Service on a Big Data Platform"
+      "title": "Self Service on a Big Data Platform",
+	  "abstract": "Kafka has been used for several years at Swisscom to stream data from various sources to sinks such as Hadoop. Providing Kafka and Hadoop as a Service to multiple teams in a large company presents governance, security and multi-tenancy challenges. In this talk we will present how we have built our self-service Swisscom Big Data Platform which enables teams to use Kafka, Hadoop and Kubernetes internally. We will explain how we have tackled these challenges by describing our governance model, our identity & ACLs management, and our self-service capabilities. We will also present how we leverage Kubernetes and how it simplifies our operations.",
+      "referenten": [
+        {
+          "name": "Sammy Ramareddy, Swisscom",
+          "bio": "Sammy Ramareddy is a system architect at Swisscom, where he started on the initial engineering big data platform team. He has a mixed software and system engineering background, which makes him feel home when it’s about platforms and infrastructure. For the last three years, he has been building the self-service big data platform within Swisscom.",
+          "portrait": "Sammy_Ramareddy.png",
+          "company": "swisscom.jpg"
+        },
+        {
+          "name": "Thibaud Chardonnens, Swisscom",
+          "bio": "Thibaud Chardonnens is a technical product owner at Swisscom where he was one of the first engineers involved in the development of the big data platform. For the last five years, he was mainly building streaming applications and integrating the Kafka ecosystem within Swisscom.",
+          "portrait": "Thibaud_Chardonnens.png",
+          "company": "swisscom.jpg"
+        }
+      ]
+    },
+    {
+      "bat": 44,
+      "pdf": "https://www.slideshare.net/batbern/",
+      "authoren": "Baltisar Oswald",
+      "title": "Moderation"
+    },
+	{
+      "bat": 44,
+      "pdf": "https://www.slideshare.net/batbern/",
+      "authoren": "Ioannis Martinis, Coop Rechtsschutz",
+      "title": "Rechtsberatung & intelligente Bots",
+	  "abstract": "Die Art und Weise wie Rechtsdienstleistungen erbracht, wie sie konsumiert und nachgefragt werden, ist im Umbruch begriffen. Die Coop Rechtsschutz AG und ihre Tochtergesellschaft YLEX versuchen mit der Vermählung von Recht und Technologie diesen Veränderungen Rechnung zu tragen und gleichzeitig dem Bürger den Zugang zum Recht zu erleichtern. Ioannis Martinis, Head of Legal Tech der Coop Rechtsschutz AG und Head of Communication der YLEX AG, gibt einen Einblick in die Legal Tech Projekte und erzählt von den Hürden, die es zu meistern gilt.",
+      "referenten": [
+        {
+          "name": "Ioannis Martinis, Coop Rechtsschutz",
+          "bio": "Ioannis Martinis - Head of Legal Tech der Coop Rechtsschutz AG, Kommunikationsverantwortlicher bei YLEX, Executive Board Member der Swiss LegalTech Association, Mitgründer der Digital Minds Society und Dozent für Recht im digitalen Zeitalter an der Hochschule für Wirtschaft Zürich.",
+          "portrait": "Ioannis_Martinis.png",
+          "company": "cooprechtsschutz.jpg"
+        }
+      ]
+    },
+	{
+      "bat": 44,
+      "pdf": "https://www.slideshare.net/batbern/",
+      "authoren": "Dominic Spalinger, PostFinance und Andreas Hess, ELCA",
+      "title": "Vom Chatbot zum Voicebot – Aufbau und Transformation",
+	  "abstract": "Die Referenten geben einen Überblick über das Virtual Assistant-Projekt von PostFinance. Der Hauptfokus der Präsentation liegt auf der Art und Weise, wie ein solches System funktioniert und bedient wird, sowie die grössten Herausforderungen, welche mit der Einführung und Weiterentwicklung eines Virtual Assistant gemeistert werden müssen.",
+      "referenten": [
+        {
+          "name": "Dominic Spalinger, PostFinance",
+          "bio": "Dominic Spalinger ist als Product Owner Chatbot tätig. Zuvor arbeitete er als Scrum Master und Projektleiter. Er besitzt einen MSc. in Business Information Systems, sowie einen BSc. in Engineering and Management.",
+          "portrait": "Dominic_Spalinger.png",
+          "company": "logo-pf.jpg"
+        },
+        {
+          "name": "Andreas Hess, ELCA",
+          "bio": "Andreas Hess, lic. rer. pol. Universität Basel ist als Business Consultant und Projekt Manager bei ELCA Informatik AG tätig. Er verfügt über 18 Jahre Erfahrung in Beratung und Projekt Management in der IT-, Retail- und Finanz-Industrie.",
+          "portrait": "Andreas_Hess.png",
+          "company": "elca.jpg"
+        }
+      ]
+    },
+	{
+      "bat": 44,
+      "pdf": "https://www.slideshare.net/batbern/conversational-ai-wie-funktioniert-es-und-was-sind-die-anwendungen",
+      "authoren": "Philipp Egolf und Mario Paonessa, Swisscom",
+      "title": "Conversational AI - Wie funktioniert es und was sind die Anwendungen?",
+	  "abstract": "Die Swisscom Data, Analytik and KI-Experten Mario Paonessa und Philipp Egolf zeigen, wie künstliche Intelligenz mit Kundeninteraktionen verknüpft ist, was ihr zugrunde liegt und wofür sie verwendet wird. Plato, die Dialogplattform von Swisscom die alle digitalen Kundeninteraktionen verwaltet, wird ebenso vorgestellt wie Alltagsanwendungen.",
+      "referenten": [
+        {
+          "name": "Philipp Egolf, Swisscom",
+          "bio": "Philipp Egolf ist Principal Product Manager für Daten, Analytik und KI bei Swisscom. Er ist verantwortlich für die Entdeckung neuer Geschäftsfelder im Bereich Künstliche Intelligenz und die Produktentwicklung rund um Robotic Process Automation, Chatbots und Spracherkennung. Philipp Egolf verfügt über mehrjährige Erfahrung im Umfeld der Künstlichen Intelligenz mit einem Hintergrund im Maschinenbau, der Entwicklung von Produktvisionen und -strategien und Human Centered Design Thinking.",
+          "portrait": "Philipp_Egolf.png",
+          "company": "swisscom.jpg"
+        },
+        {
+          "name": "Mario Paonessa, Swisscom",
+          "bio": "Mario Paonessa ist System Architekt für Daten, Analytik und KI bei Swisscom. Er ist verantwortlich für die technische Entwicklung der Dialogplattform Plato. Er hat einen Hintergrund in Informatik und verfügt neben Erfahrungen im Bereich der künstlichen Intelligenz über langjährige und fundierte Kenntnisse im Bereich der Softwareentwicklung und Geschäftsprozessautomatisierung. Er hat neben KI-Services erfolgreich verschiedene Systeme rund um Contact Center Lösungen aufgebaut.",
+          "portrait": "Mario_Paonessa.png",
+          "company": "swisscom.jpg"
+        }
+      ]
     }
   ]
