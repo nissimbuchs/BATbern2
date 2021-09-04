@@ -6,7 +6,7 @@ import { AnmeldungComponent } from './anmeldung/anmeldung.component';
 import { ThemenComponent } from './themen/themen.component';
 import { ArchivComponent } from './archiv/archiv.component';
 import { KontaktComponent } from './kontakt/kontakt.component';
-import { ClarityModule, ClrFormsNextModule } from '@clr/angular';
+import { ClarityModule } from '@clr/angular';
 import { RouterModule } from '@angular/router';
 import { appRoutes } from '../router';
 import { ArchivDetailComponent } from './archiv-detail/archiv-detail.component';
@@ -15,8 +15,7 @@ import { ArchivDetailComponent } from './archiv-detail/archiv-detail.component';
   imports: [
     CommonModule,
     RouterModule.forRoot(appRoutes, { relativeLinkResolution: 'legacy' }),
-    ClarityModule,
-    ClrFormsNextModule
+    ClarityModule
   ],
   declarations: [
     VereinComponent,

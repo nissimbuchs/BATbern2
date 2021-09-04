@@ -214,15 +214,20 @@
       "bat": 43,
       "topic": " Event Driven Architecture ",
       "datum": "28. Juni 2019, 09:00h - 16:45h",
-      "eventType": "Ganztages-BAT",
-      "next": 1,
-      "planned": 1
+      "eventType": "Ganztages-BAT"
     },
     {
       "bat": 44,
       "topic": " Chatbots ",
       "datum": "01. November 2019, 16:00h",
+      "eventType": "Abend-BAT"
+    },
+	    {
+      "bat": 45,
+      "topic": " Endlich wieder ein BAT, Thema noch offen",
+      "datum": "5. November 2021, 16:00h",
       "eventType": "Abend-BAT",
-      "planned": 1
+      "planned": 1,
+      "next": 1
     }
    ]
