@@ -17,9 +17,10 @@ import { HttpClientModule } from '@angular/common/http';
     ClarityModule,
     BrowserAnimationsModule,
     RouterModule.forRoot(appRoutes, {
-      scrollPositionRestoration: 'enabled',
-      anchorScrolling: 'enabled',
-    }),
+    scrollPositionRestoration: 'enabled',
+    anchorScrolling: 'enabled',
+    relativeLinkResolution: 'legacy'
+}),
     UiModule,
     EventsModule
   ],

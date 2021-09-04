@@ -14,7 +14,7 @@ import { ArchivDetailComponent } from './archiv-detail/archiv-detail.component';
 @NgModule({
   imports: [
     CommonModule,
-    RouterModule.forRoot(appRoutes),
+    RouterModule.forRoot(appRoutes, { relativeLinkResolution: 'legacy' }),
     ClarityModule,
     ClrFormsNextModule
   ],
