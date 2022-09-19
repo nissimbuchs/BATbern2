@@ -1592,24 +1592,297 @@
       ]
     },
 	{
-      "bat": 44,
-      "pdf": "https://www.slideshare.net/batbern/conversational-ai-wie-funktioniert-es-und-was-sind-die-anwendungen",
-      "authoren": "Philipp Egolf und Mario Paonessa, Swisscom",
-      "title": "Conversational AI - Wie funktioniert es und was sind die Anwendungen?",
-	  "abstract": "Die Swisscom Data, Analytik and KI-Experten Mario Paonessa und Philipp Egolf zeigen, wie künstliche Intelligenz mit Kundeninteraktionen verknüpft ist, was ihr zugrunde liegt und wofür sie verwendet wird. Plato, die Dialogplattform von Swisscom die alle digitalen Kundeninteraktionen verwaltet, wird ebenso vorgestellt wie Alltagsanwendungen.",
-      "referenten": [
-        {
-          "name": "Philipp Egolf, Swisscom",
-          "bio": "Philipp Egolf ist Principal Product Manager für Daten, Analytik und KI bei Swisscom. Er ist verantwortlich für die Entdeckung neuer Geschäftsfelder im Bereich Künstliche Intelligenz und die Produktentwicklung rund um Robotic Process Automation, Chatbots und Spracherkennung. Philipp Egolf verfügt über mehrjährige Erfahrung im Umfeld der Künstlichen Intelligenz mit einem Hintergrund im Maschinenbau, der Entwicklung von Produktvisionen und -strategien und Human Centered Design Thinking.",
-          "portrait": "Philipp_Egolf.png",
-          "company": "swisscom.jpg"
-        },
-        {
-          "name": "Mario Paonessa, Swisscom",
-          "bio": "Mario Paonessa ist System Architekt für Daten, Analytik und KI bei Swisscom. Er ist verantwortlich für die technische Entwicklung der Dialogplattform Plato. Er hat einen Hintergrund in Informatik und verfügt neben Erfahrungen im Bereich der künstlichen Intelligenz über langjährige und fundierte Kenntnisse im Bereich der Softwareentwicklung und Geschäftsprozessautomatisierung. Er hat neben KI-Services erfolgreich verschiedene Systeme rund um Contact Center Lösungen aufgebaut.",
-          "portrait": "Mario_Paonessa.png",
-          "company": "swisscom.jpg"
-        }
-      ]
-    }
-  ]
+    "bat": 44,
+    "pdf": "https://www.slideshare.net/batbern/conversational-ai-wie-funktioniert-es-und-was-sind-die-anwendungen",
+    "authoren": "Philipp Egolf und Mario Paonessa, Swisscom",
+    "title": "Conversational AI - Wie funktioniert es und was sind die Anwendungen?",
+    "abstract": "Die Swisscom Data, Analytik and KI-Experten Mario Paonessa und Philipp Egolf zeigen, wie künstliche Intelligenz mit Kundeninteraktionen verknüpft ist, was ihr zugrunde liegt und wofür sie verwendet wird. Plato, die Dialogplattform von Swisscom die alle digitalen Kundeninteraktionen verwaltet, wird ebenso vorgestellt wie Alltagsanwendungen.",
+    "referenten": [
+      {
+        "name": "Philipp Egolf, Swisscom",
+        "bio": "Philipp Egolf ist Principal Product Manager für Daten, Analytik und KI bei Swisscom. Er ist verantwortlich für die Entdeckung neuer Geschäftsfelder im Bereich Künstliche Intelligenz und die Produktentwicklung rund um Robotic Process Automation, Chatbots und Spracherkennung. Philipp Egolf verfügt über mehrjährige Erfahrung im Umfeld der Künstlichen Intelligenz mit einem Hintergrund im Maschinenbau, der Entwicklung von Produktvisionen und -strategien und Human Centered Design Thinking.",
+        "portrait": "Philipp_Egolf.png",
+        "company": "swisscom.jpg"
+      },
+      {
+        "name": "Mario Paonessa, Swisscom",
+        "bio": "Mario Paonessa ist System Architekt für Daten, Analytik und KI bei Swisscom. Er ist verantwortlich für die technische Entwicklung der Dialogplattform Plato. Er hat einen Hintergrund in Informatik und verfügt neben Erfahrungen im Bereich der künstlichen Intelligenz über langjährige und fundierte Kenntnisse im Bereich der Softwareentwicklung und Geschäftsprozessautomatisierung. Er hat neben KI-Services erfolgreich verschiedene Systeme rund um Contact Center Lösungen aufgebaut.",
+        "portrait": "Mario_Paonessa.png",
+        "company": "swisscom.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 45,
+    "pdf": "https://www.slideshare.net/batbern/umgang-mit-legacy-in-der-digitalen-transformation-andreas-grtter-die-mobiliar",
+    "authoren": "Andreas Grütter, Die Mobiliar",
+    "title": "Umgang mit Legacy in der Digitalen Transformation",
+    "abstract": "Digitalisierung, Cloud, AI, Microservices, Agile etc. all diese Themen prägen unseren Alltag bei der Modernisierung des Versicherungsgeschäfts und der dafür notwendigen IT Lösungen. Was aber geschieht mit den Systemen, mit denen heute immer noch ein Grossteil des Geldes verdient wird und auf Technologien wie Smalltalk, Cobol oder Siebel basieren? Hierfür gibt es unterschiedliche Strategien und Massnahmen, deren konkrete Anwendung in der Mobiliar in diesem Vortrag aufgezeigt werden.",
+    "referenten": [
+      {
+        "name": "Andreas Grütter, Die Mobiliar",
+        "bio": "Arbeitet seit 2013 bei der Mobiliar und hat die IT Architektur inklusive der notwendigen Prozesse und Praktiken für die digitale Transformation Mobiliar neu aufgebaut. Zusammen mit seinem Team hat er diese auf die strategischen Geschäftsziele ausgerichtet und in der Organisation etabliert. Zuvor arbeitete er u.a. als IT Architekt, Projektleiter und Software Engineer bei RTC, HP und der Bank Julius Bär. Sein Spezialgebiet ist die IT Modernisierung, damit die digitale Transformation gemeistert werden kann. Andreas Grütter hat an der Fachhochschule Nordwestschweiz Informatik studiert und besitzt einen EMBA in Innovation Management der Berner Fachhochschule.",
+        "portrait": "andreas_gruetter.png",
+        "company": "mobiliar.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 45,
+    "pdf": "https://www.slideshare.net/batbern/legacy-wsjf-baltisar-oswald-sbb-cff-ffs-250625003",
+    "authoren": "Baltisar Oswald, SBB CFF FFS",
+    "title": "Legacy WSJF!",
+    "abstract": "Legacy sind schwer wiegende technische Schulden einer IT. Dies ist bei der SBB IT nicht anders. Deshalb haben wir uns entschieden, diese Schulden aktiv und kontinuierlich zu priorisieren und abzubauen. Der kontinuierliche Abbau respektive Umgang mit Legacy ist dabei das hehre Ziel. Denn sobald eine Plattform/Applikation in Betrieb ist, steht sie kurz davor, Legacy zu werden.",
+    "referenten": [
+      {
+        "name": "Baltisar Oswald, SBB CFF FFS",
+        "bio": "Baltisar Oswald ist als Stackverantwortlicher (PO) Cloud Stack, sowie Teamleiter Delivery für die Umsetzung der Cloud Strategie der SBB verantwortlich. Davor war er als Software Architekt und Methodik Leiter der Software Entwicklung bei der SBB, sowie als Software Entwickler und Architekt in diversen Firmen im Raum Bern tätig. Baltisar Oswald hat an der Universität Bern Mathematik und Informatik studiert.",
+        "portrait": "ok_baltisar_oswald.jpg",
+        "company": "sbb.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 45,
+    "pdf": "https://www.slideshare.net/batbern/automatisierungsmglichkeiten-beim-legacyreengineering-andres-koch-object-engineering",
+    "authoren": "Andres Koch, Object Engineering",
+    "title": "Automatisierungsmöglichkeiten beim Legacy-Reengineering",
+    "abstract": "Wenn man die Menge an Code und die Anzahl anderer Artefakte in Betracht zieht, welcher sich in Legacy-Applikationen über die Jahre angesammelt haben, dann sieht man schnell, dass diese ohne maschinelle Hilfe weder zu analysieren noch sinnvoll zu modernisieren sind. Ein:e Software-Architekt:in muss wissen, was in der zu modernisierenden Applikation enthalten ist, um die richtigen Entscheide in Bezug auf das modernisierte Zielsystem zu fällen. Eine häufige Lösung ist, alles neu zu entwickeln und das Alte wegzuwerfen. Wenn das in bestimmten Fällen auch der richtige Weg sein kann, gehen dabei gerne die verborgenen Wissens-Schätze in der bestehenden Applikation vergessen, welche dann in einer neuen Applikation auf die harte Weise wiedergefunden und entwickelt werden müssen. Ein Tabu für Entwickler ist, dass aus bestehenden Metadaten generierter Code nicht wartbar ist und darum eine maschinelle Hilfe vorneweg ausgeschlossen wird. Dieser Vortrag soll aufzeigen, inwieweit ein maschinelles Reengineering in vernünftigem Mass erfolgreich sein kann und unter welchen Umständen es nicht angewendet werden soll. Mit Praxis-Beispielen mit Kennzahlen aus kleineren und grösseren Projekten werden die gemachten Aussagen untermalt.",
+    "referenten": [
+      {
+        "name": "Andres Koch, Object Engineering",
+        "bio": "Andres Koch promovierte 1976 als Elektro-Ingenieur an der Ingenieurschule des Interkantonalen Technikums in Rapperswil und 1981 mit dem Master Degree in Computer Science der University of Waterloo, Kanada. Mehrere Jahre arbeitete er als Software-Ingenieur in der Industrie, darauf als Entwicklungsleiter eines mittleren Softwarehauses im kommerziellen Softwarebereich. Seit 1989 ist er als lehrbeauftragter Dozent am Nachdiplom-Studium (MAS) für Software-Engineering der Hochschule für Technik, Rapperswil tätig. Er ist Geschäftsführer der Object Engineering GmbH, welche seit 26 Jahren auf die Modernisierung von Software-Systemen spezialisiert ist. Andres Koch befasste sich viele Jahre mit Software-Architektur objektorientierter und verteilter Systeme und hat mehrere Migrations- und Modernisierungs-Projekte und servicebasierte Systeme in der Praxis realisiert. Er veröffentlichte verschiedene Vorträge und Artikel zum Thema Legacy-Modernisierung.",
+        "portrait": "AKOPortrait.jpeg",
+        "company": "oe_logo.png"
+      }
+    ]
+  },
+  {
+    "bat": 46,
+    "pdf": "https://www.slideshare.net/batbern/batbern46swisstopoapiinderffentlichenverwaltungpdf",
+    "authoren": "Gilbert Jeiziner, swisstopo",
+    "title": "API’s entwickeln und betreiben in der öffentlichen Verwaltung",
+    "abstract": "swisstopo entwickelt und betreibt seit über 12 Jahren API’s, welche mehrheitlich von Fachkunden und der breiten Öffentlichkeit genutzt werden. Zu den Erfolgsfaktoren gehören der offene Zugang, die auf mehrheitlich offenen Standards basierten API Spezifikationen und der frühe Einsatz von Cloud Technologien. Nichts desto trotz stand auch die Swisstopo vor grossen Herausforderungen und mit dem Erfolg kamen auch (mit Grüssen aus Russland) unvorhersehbare Ansprüche.",
+    "referenten": [
+      {
+        "name": "Gilbert Jeiziner, swisstopo",
+        "bio": "Gilbert Jeiziner ist gelernter Geomatiker und ist seit knapp 10 Jahren in verschiedenen Rollen im Bereich API Entwicklung und Betrieb tätig. Er ist ein Open Source, Open Data und Open Standards Advokat und zeigt mit seinem Geodaten Team, dass Innovation und agiles Vorgehen auch in der öffentlichen Verwaltung möglich ist.",
+        "portrait": "Jeiziner_Gilbert 1.jpg",
+        "company": "swisstopo.JPG"
+      }
+    ]
+  },
+  {
+    "bat": 46,
+    "pdf": "https://www.slideshare.net/batbern/batbern46syncier-marketplacepdf",
+    "authoren": "Wolfgang Heinz und Fabian Kolbe, Syncier",
+    "title": "API-Ökosysteme für die Versicherungsbranche",
+    "abstract": "Nur durch qualitativ hochwertiges und zielgerichtetes API Management können lebendige API-Ökosysteme geschaffen werden. Diese API-Ökosysteme bieten Unternehmen die Chance ihre IT-Assets optimal an interne und externe Stakeholder anzubinden. Dadurch bietet sich ein hohes Potenzial, Unternehmen können sowohl bestehende IT-Systeme optimieren als auch komplett neue Geschäftsideen und Partnerschaften umsetzen. Doch was bedeutet qualitativ hochwertiges und zielgerichtetes API Management? Und wie kann man die Integration in bestehende, stark regulierte IT Landschaften schaffen und dabei Mehrwert für interne Beteiligten als auch externe Partner generieren? Wir stellen unseren Ansatz und Erfahrungen mit der SaaS Plattform und API Marketplace 'Syncier Marketplace' vor und gehen auf die Herausforderungen in der Versicherungsbranche ein.",
+    "referenten": [
+      {
+        "name": "Wolfgang Heinz, Syncier",
+        "bio": "Wolfgang Heinz ist seit 2019 als Product Owner verantwortlich für die Produktstrategie des Syncier Marketplace als API-Ökosystem sowie der dazugehörigen Software-as-a-Service Plattform. Er verfügt über langjährige Erfahrung im Aufbau und der Entwicklung von B2B und B2C SaaS-Produkten im E-Commerce und bei globalen Finanzdienstleistern.",
+        "portrait": "WolfgangHeinz.jpeg",
+        "company": "syncier.JPG"
+      },
+	  {
+        "name": "Fabian Kolbe, Syncier",
+        "bio": "Fabian Kolbe ist als IT Consultant für das Onboarding von API Services in den Syncier Marketplace und das Ausrollen und die technische Integration der API Services in Unternehmen verantwortlich. Er ist seit dem Start des Syncier Marketplace 2018 dabei und hat die Plattform und das Ecosystem ausgebaut. Zuvor arbeitete er für die Allianz in München und Bangkok als IT-Trainee und IT Consultant. Er hat in München und Stockholm studiert und besitzt einen Master Wirtschaftsinformatik der TU München.",
+        "portrait": "FabianKolbe.jpeg",
+        "company": "syncier.JPG"
+      }
+    ]
+  },
+  {
+    "bat": 46,
+    "pdf": "https://www.slideshare.net/batbern/batbern46bcgeapimanagmentpdf",
+    "authoren": "Frédéric Maye, BCGE and Florent Martin, ELCA",
+    "title": "The BCGE journey to API management",
+    "abstract": "In this presentation we will present the BCGE journey to API management in a banking context. We will introduce BCGE business drivers and technical challenges regarding API management. We will discuss the prerequisites for a successful API management program, such as API governance, API development best practices, security concepts. Then we will describe BCGE transformation roadmap and the technical challenges/best practices we faced at each phase, e.g. identity propagation, complex transformation and change management. We will conclude on the benefit of implementing an API Management as a core building bloc within the information systems in the context of multiple third-party integrators.",
+    "referenten": [
+      {
+        "name": "Frédéric Maye, Banque Cantonale de Genève",
+        "bio": "Frédéric Maye joined BCGE in 2018 as an IT project manager. In 2019, he moved to the IT architecture section within the IT department. The IT architecture section is in charge of providing upstream support for all projects that have an impact on the bank's information systems to ensure consistency, integration and compliance with the guiding principles. Before joining BCGE, he acquired over 15 years of banking experience as a developer, project manager and development manager.",
+        "portrait": "FredericMaye.png",
+        "company": "bcge.jpg"
+      },
+	  {
+        "name": "Florent Martin, ELCA",
+        "bio": "Florent Martin joined ELCA in 2017 as a solution Architect. He developed a strong expertise on modern integration strategy (API management, IPaaS, decentralized integration) and cybersecurity (API security, IAM/IdP). With more than 20 years of professional experience in IT,  he has proven practice in API management training, API governance, API best practices, product selection, architecture design and implementation.",
+        "portrait": "FlorentMartin.png",
+        "company": "elca.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 46,
+    "pdf": "https://www.slideshare.net/batbern/batbern46openbankingpdf",
+    "authoren": "Simon Bleher, BEI St. Gallen, Sven Biellmann, Finnova und Olivier Châtelain, DXC Technology",
+    "title": "Open Banking – ein Konzept mit viel Potenzial auch für die Schweizer Finanzindustrie und darüber hinaus",
+    "abstract": "Weltweit gewinnt Open Banking an Bedeutung. In Grossbritannien beispielsweise erfolgen in diesem Bereich monatlich rund 800 Millionen API-Aufrufe. Auch für die Schweiz ist dieses Konzept, dass den Kunden im Umgang mit seinen Daten stärkt, hochrelevant und erste Umsetzungen sind produktiv. Dieses Referat gibt eine Kurzeinführung ins Thema, schafft einen Überblick aus fachlicher sowie technischer Sicht und geht auf wesentliche Bausteine in der Schweiz inklusive erster Praxiserfahrungen ein.",
+    "referenten": [
+      {
+        "name": "Simon Bleher, Business Engineering Institute St. Gallen",
+        "bio": "Simon Bleher ist Projektleiter der Initiative OpenBankingProject.ch. Als Senior Consultant des Business Engineering Institute St. Gallen unterstützt er Unternehmen von der Gestaltung ihrer Strategien bis zu deren konkreter Umsetzung mit Fokus auf Geschäftsarchitekturen und Digitalisierung in der Finanzindustrie.",
+        "portrait": "Simon Bleher.jpg",
+        "company": "BEI.png"
+      },
+	  {
+        "name": "Sven Biellmann, Finnova",
+        "bio": "Sven Biellmann arbeitet seit gut 4 Jahren als Product Manager Open Finance bei der finnova AG Bankware. In dieser Funktion beschäftigt er sich intensiv mit den Themen Open Finance, Wertschöpfungsintegration und digitale Ökosysteme und deren Auswirkung auf die Finanzindustrie und die Anbieter von Bankensoftware. Vor seinem Wechsel zu Finnova war Sven über 10 Jahre bei der UBS AG in verschiedenen Bereichen als IT Service & Product Manager tätig. Zwischenzeitliche Abstecher in die (Rück-)Versicherungsindustrie sowie in den Energiehandel haben es ihm ermöglicht Erfahrung ausserhalb der Finanzdienstleistungsbranche zu sammeln. Sven hält einen Master of Science Abschluss in Communication Systems der ETH Lausanne.",
+        "portrait": "Sven Biellmann.jpg",
+        "company": "Finnova_Logo.jpg"
+      },
+	  {
+        "name": "Olivier Châtelain, DXC Technology",
+        "bio": "Olivier Chatelain arbeitet seit 20 Jahren in der Bankinformatik, in den letzten 10 Jahren mit Fokus auf Electronic- & Internet-Banking als Business Analyst mit Fokus auf technische Integrationen. In dieser Funktion beschäftigt er sich die letzten 2 Jahre intensiv mit dem Thema Open Banking und steht er im regen Kontakt und Austausch zu nationalen und internationalen Normierungsgremien, wie dem Open-Banking Project, der Berlin-Group Advisory Group, SIF, der SIX und dem SFTI. Olivier hält einen Abschluss als Informatikingenieur der EPFL",
+        "portrait": "Olivier Chatelain.jpg",
+        "company": "DXC Logo.png"
+      }
+    ]
+  },
+    {
+      "bat": 47,
+      "pdf": "https://de.slideshare.net/batbern/00batbern47moderationpptx",
+      "authoren": "Daniel Kühni",
+      "title": "Moderation"
+    },
+  {
+    "bat": 47,
+    "pdf": "https://de.slideshare.net/batbern/01batbern47rainergraupdf",
+    "authoren": "Rainer Grau, pragmatic solutions GmbH",
+    "title": "Shift Left fängt ganz links an",
+    "abstract": "Shift Left ist der Ansatz das Testen ganz zum Anfang der Produktentwicklung zu verschieben. Haben wir das auch richtig verstanden? Was bedeutet «ganz am Anfang»?! Wenn wir in den Mindset von Lean Startup oder Design Thinking eintauchen, dann steht «ganz am Anfang» die Kundin, deren Bedürfnisse wir (leider noch) nicht kennen. Lean Startup ist das Testen, das Experimentieren mit dem Kunden, das Shift Left bis in die reale Welt des kompetitiven Markets. Diese Kunst zu beherrschen, bringt Dynamik und Geschwindigkeit in die Entwicklung von Produkten die unsere Kund:innen lieben. Denn Dynamik und Geschwindigkeit sind die neuen Gewinner am Markt – Fast is the new Big. Dieser Talk will Impulse setzen dem Shift Left konsequent bis ganz links zu folgen, gewürzt mit Beispielen aus dem Erlebnisschatz des Vortragenden.",
+    "referenten": [
+      {
+        "name": "Rainer Grau, pragmatic solutions",
+        "bio": "Rainer Grau begleitet seit über zwanzig Jahren Unternehmen auf dem Weg fokussiert, schlank und wertorientiert zu agieren. Vom Software Nerd über den IT-Architect sind weitere Stationen seines Werdeganges: Distinguished Consultant und Partner bei Zühlke Engineering, Head Business Development bei Digitec Galaxus, Aufbau und Durchführung von Lehrgängen in den Themen Innovation, Business Agility, Lean Portfolio Management an Fachhochschulen, Gründer des Swiss Agile Leaders Circle, Vorstand des IREB und noch ein paar mehr. Rainer ist Mit-Inhaber und Think Tank der pragmatic solutions GmbH. Die anderen 24h des Tages verbringt Rainer Grau gerne mit seiner Familie, bei Sport und mit seiner Gibson Les Paul.",
+        "portrait": "Rainer_Grau.png",
+        "company": "pragmaticsolutions.png"
+      }
+    ]
+  },
+  {
+    "bat": 47,
+    "pdf": "https://de.slideshare.net/batbern/erfolgreich-scheitern-mit-shift-left-und-devops",
+    "authoren": "Matthias Fritschi, avega IT",
+    "title": "Erfolgreich scheitern mit Shift Left und DevOps",
+    "abstract": "Mit einem Augenzwinkern wird eine Anleitung dafür gegeben, wie man mit Shift Left und DevOps erfolgreich scheitert. Wie probieren wir die Kultur zu beeinflussen, damit sie garantiert niemand lebt? Wie wird verhindert, dass Teams miteinander sprechen? Wie stellen wir sicher, dass sich niemand um betriebliche Themen kümmert? Welcher Entwicklungsprozess ist am besten dafür geeignet, unsichere Applikationen zu entwickeln? Wie machen wir Deployments und Releases möglichst mühsam und stellen dabei eine tiefbleibende Qualität sicher? Wie können wir uns möglichst von Stakeholdern und Nutzerinnen abschotten? Dabei werden Theorie und Praxis gegenübergestellt und einige Erfahrungen - sei es durch Scheitern oder Erfolg - aus dem Alltag damit verwoben.",
+    "referenten": [
+      {
+        "name": "Matthias Fritschi, avega IT",
+        "bio": "Matthias ist seit vielen Jahren in der Software-Entwicklung in verschiedenen Rollen tätig. Am liebsten arbeitet er in der Nähe des Maschinenraums, fährt aber mit dem Architektur-Lift auch gerne mal ins Penthouse, um den Blick etwas weiter schweifen zu lassen und über Methoden und Prozesse nachzudenken, um möglichst nahe an den Kund:innen „Working Software” zu produzieren. Neben der Arbeit als IT-Architekt und Consultant bei avega IT AG ist er auch an der BFH Bern als Dozent tätig und einer der Mitgründer des Berner DevOps Meetups.",
+        "portrait": "Matthias_Fritschi.jpg",
+        "company": "avega.png"
+      }
+    ]
+  },
+  {
+    "bat": 47,
+    "pdf": "https://de.slideshare.net/batbern/shift-left-security-252037095",
+    "authoren": "Florian Kammermann, Swisscom",
+    "title": "Shift Left Security",
+    "abstract": "The presentation focuses on the responsibilities, practices, processes, tools, and techniques that systematically increase security in the software development lifecycle (SSDLC). Software should be provisioned uniformly declarative regardless of whether software artifacts are produced in-house or purchased. This is the foundation for effective quality and security standardization, which are key facilitators of reliability engineering.",
+    "referenten": [
+      {
+        "name": "Florian Kammermann, Swisscom",
+        "bio": "In my professional life so far, I have worked in many different IT areas. I am interested in everything (practices, technology, human aspects) that makes software development and system engineering faster, more valuable, more reliable and more transparent. At the moment I work at Swisscom as Reliability Enterprise Architect. I help the company to shape modern Operation. I am also part of the SRE Community of Practice, where we try to implement SRE practices in Swisscom.",
+        "portrait": "Florian_Kammermann.jpg",
+        "company": "swisscom.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 47,
+    "pdf": "https://de.slideshare.net/batbern/compliance-und-governance-in-der-devopsacht",
+    "authoren": "Stefan Johner und Christof Leuenberger, die Mobiliar",
+    "title": "Compliance und Governance in der DevOps-Acht",
+    "abstract": "In der Cloud leben wir im Spannungsfeld zwischen Enterprise Compliance und Continuous Delivery. Wie schaffen wir es, dass Entwickler:innen schnell Wert liefern können, ohne dabei Compliance und Governance zu vernachlässigen oder die DevOps-Acht zu unterbrechen? Wir zeigen anhand von verschiedenen Beispielen wie wir diese Herausforderungen lösen und wie bei uns Shift Left gelebt wird.",
+    "referenten": [
+      {
+        "name": "Stefan Johner, die Mobiliar",
+        "bio": "Stefan Johner, Mathias Schnydrig und Christof Leuenberger führen zusammen den agilen Release Train 'Skywalker'. Dieser entwickelt und betreibt die System- und Applikationsplattform der Mobiliar in der Cloud. Alle drei sind Ende 2018 bei der Mobiliar eingestiegen und kombinieren ihre Erfahrungen aus den Bereichen Infrastruktur, Public Cloud und Softwareentwicklung um die Entwickler:innen der Mobiliar die Plattform der Zukunft zur Verfügung zu stellen.",
+        "portrait": "Stefan_Johner.png",
+        "company": "mobiliar.jpg"
+      },
+	  {
+        "name": "Christof Leuenberger, die Mobiliar",
+        "bio": "",
+        "portrait": "Christof_Leuenberger.png",
+        "company": "mobiliar.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 47,
+    "pdf": "https://de.slideshare.net/batbern/devsecopsteams-das-securitysteuer-berlassen",
+    "authoren": "Michael Ullrich, Nuvibit und Jann Wild, Simon Messerli, AWS",
+    "title": "DevSecOps-Teams das Security-Steuer überlassen",
+    "abstract": "Public-Cloud Kunden, haben Multi-Account Architekturen (z.B. Landing Zone), um den DevOps-Teams Autonomie und Geschwindigkeit zu geben. In diesem Umfeld zentrale Security Anforderungen im Bezug Governance und Compliance zu erfüllen, ist eine Herausforderung. Nuvibit Semper unterstützt die Reise vom DevOps- zum DevSecOps-Team, indem es erlaubt, Security Anforderungen durch das Applikations-Team zu spezifizieren und direkt zu applizieren. Unterschiedliche Anforderungen für z.B. Dev, Test, Prod können mit Policies spezifiziert werden. Die Lösung zeigt, was mit AWS nativen Security Services erreicht werden kann.",
+    "referenten": [
+      {
+        "name": "Michael Ullrich, Nuvibit",
+        "bio": "Michael ist Experte, wenn es um Sicherheit und Compliance in der Cloud geht und verfügt über mehr als 25 Jahre Beratungserfahrung! Er ist Diplomingenieur, hat einen MBA, ist zertifizierter AWS Solutions Architect Professional und AWS DevOps Engineer Professional.",
+        "portrait": "Michael Ullrich.jpg",
+        "company": "nuvibit-logo.png"
+      },
+      {
+        "name": "Jann Wild, AWS",
+        "bio": "Solutions Architect bei AWS in der Schweiz. Unterstützt Kunden seit 4 Jahren in der effizienten Nutzung der AWS Services, mit einem Fokus auf Sicherheit und Compliance. Im früheren Leben als Consultant und Software Architekt für regulierte Unternehmen tätig.",
+        "portrait": "Jann_Wild.jpg",
+        "company": "aws-logo.png"
+      },
+      {
+        "name": "Simon Messerli, AWS",
+        "bio": "Solutions Architect bei AWS in der Schweiz. Unterstützt Kunden auf der Cloud Journey mit Best Practices & Erfahrungen. Hintergrund in System- & Software Engineering, sowie als AWS Trainer",
+        "portrait": "Simon_Messerli.jpg",
+        "company": "aws-logo.png"
+      }
+    ]
+  },
+  {
+    "bat": 47,
+    "pdf": "https://de.slideshare.net/batbern/why-did-the-shiftleft-end-up-in-the-cloud-for-bank-julius-baer",
+    "authoren": "Jürg Haldimann, Bank Julius Baer",
+    "title": "Why did the shift-left end up in the cloud for Bank Julius Baer?",
+    "abstract": "The efficient collaboration with development partners and the requirement to deliver high quality software led to an evolutionary journey where BJB has shifted the software engineering discipline all the way from on-prem to DevCloud. In this session you will learn how ‘Scotty’ ensures release quality, while experimentation and fast on-boarding of new developers is guaranteed.",
+    "referenten": [
+      {
+        "name": "Jürg Haldimann, Bank Julius Baer",
+        "bio": "Jürg Haldimann is leading the global Software Architecture discipline as part of the Architecture Center of Excellence at Bank Julius Baer. He has been passionate about creating customer value by automating and standardizing the software delivery value chain across technologies and locations in order to deliver quality software in a fast way. He studied Computer Science at Bern University of Applied Sciences and holds a Master in Advanced Studies ETH in Management, Technology, and Economics.",
+        "portrait": "Jürg_Haldimann.png",
+        "company": "JB_LA_RGB_blue.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 47,
+    "pdf": "https://de.slideshare.net/batbern/zeitnahe-reaktion-auf-verordnungsnderungen-mit-feature-toggles",
+    "authoren": "Iris Hunkeler, ti&m",
+    "title": "Zeitnahe Reaktion auf Verordnungsänderungen mit Feature Toggles",
+    "abstract": "Häufige und kurzfristige Änderungen an gesetzlichen Grundlagen, die berücksichtigt werden müssen, stellen selbst kurze Releasezyklen vor Herausforderungen. Das Team vom Covid Zertifikat zeigt, wie sie solche Herausforderungen vor allem auch von Features die deaktiviert werden, gelöst haben.",
+    "referenten": [
+      {
+        "name": "Iris Hunkeler, ti&m",
+        "bio": "Iris Hunkeler arbeitet als Lead Engineer bei der ti&m. Davor war sie auch als Requirements Engineer und Projektleiterin tätig. Sie ist gelernte Softwareentwicklerin und studierte Wirtschaftsinformatik an der ZHAW (BSc) und FHNW (MSc).",
+        "portrait": "Iris Hunkeler.jpg",
+        "company": "ti8m.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 47,
+    "pdf": "https://de.slideshare.net/batbern/creating-a-product-through-devops-the-story-of-appuio-cloud",
+    "authoren": "Adrian Kosmaczewski, VSHN",
+    "title": "Creating a Product through DevOps: The Story of APPUiO Cloud",
+    "abstract": "Since its foundation in 2014, the slogan of VSHN has been 'The DevOps Company'. Following that ethos, VSHN applied all of its practice of DevOps and Agile to the creation of its latest product, APPUiO Cloud. In this session we are going to see how DevOps shaped product and human management decisions throughout the process, from idea to market.",
+    "referenten": [
+      {
+        "name": "Adrian Kosmaczewski, VSHN",
+        "bio": "Adrian Kosmaczewski is a writer, a software developer and a trainer. He is a published author, and has worked as a professional software developer since 1996. Adrian holds a Master in Information Technology from the University of Liverpool.",
+        "portrait": "Adrian_Kosmaczewski.png",
+        "company": "vshn.png"
+      }
+    ]
+  }
+]

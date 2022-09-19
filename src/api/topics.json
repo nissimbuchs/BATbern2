@@ -222,12 +222,72 @@
       "datum": "01. November 2019, 16:00h",
       "eventType": "Abend-BAT"
     },
-	    {
+	  {
       "bat": 45,
-      "topic": " Endlich wieder ein BAT, Thema noch offen",
-      "datum": "5. November 2021, 16:00h",
-      "eventType": "Abend-BAT",
-      "planned": 1,
-      "next": 1
+      "topic": " Legacy? WTF!",
+      "datum": "5. November 2021, 16:00h, GGG Zertifikat obligatorisch",
+      "eventType": "Abend-BAT"
+    },
+    {
+    "bat": 46,
+    "topic": " API Management / Open Banking",
+    "datum": "25. Februar 2022, 16:00h - 19:00h",
+    "eventType": "Abend-BAT"
+    },
+    {
+    "bat": 47,
+    "topic": " Shift Left Everything",
+    "datum": "17. Juni 2022, 09:00h - 16:45h",
+    "eventType": "Ganztages-BAT",
+    "next": 1
+    },
+    {
+    "bat": 48,
+    "topic": " Zero Trust",
+    "datum": "11. November 2022, 16:00h - 18:30h",
+    "eventType": "Abend-BAT",
+    "next": 1
+    },
+    {
+    "bat": 49,
+    "topic": " Thema noch offen",
+    "datum": "24. Februar 2023, 16:00h - 19:00h",
+    "eventType": "Abend-BAT",
+    "planned": 1
+    },
+    {
+    "bat": 50,
+    "topic": " Jubiläums-BAT",
+    "datum": "9. Juni 2023, 09:00h - 16:45h",
+    "eventType": "Ganztages-BAT",
+    "planned": 1
+    },
+    {
+    "bat": 51,
+    "topic": " Thema noch offen",
+    "datum": "10. November 2023, 16:00h - 18:30h",
+    "eventType": "Abend-BAT",
+    "planned": 1
+    },
+    {
+    "bat": 52,
+    "topic": " Thema noch offen",
+    "datum": "8. März 2024, 16:00h - 19:00h",
+    "eventType": "Abend-BAT",
+    "planned": 1
+    },
+    {
+    "bat": 53,
+    "topic": " Thema noch offen",
+    "datum": "21. Juni 2024, 09:00h - 16:45h",
+    "eventType": "Ganztages-BAT",
+    "planned": 1
+    },
+    {
+    "bat": 54,
+    "topic": " Thema noch offen",
+    "datum": "8. November 2024, 16:00h - 18:30h",
+    "eventType": "Abend-BAT",
+    "planned": 1
     }
-   ]
+  ]
