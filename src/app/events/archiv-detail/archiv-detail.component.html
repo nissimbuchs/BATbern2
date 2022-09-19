@@ -5,48 +5,60 @@
 
   <div class='card-block' *ngFor='let session of sessions'>
 
-      <div *ngIf='session.abstract'>
-        <div class="card-title">
-          <a href={{getUrl(session)}}>
-            {{session.title}}
-          </a>
-        </div>
+    <div *ngIf='session.abstract'>
+      <div class="card-title">
+        <a href={{getUrl(session)}}>
+          {{session.title}}
+        </a>
+      </div>
 
-        <div class="card-text">
-          {{session.abstract}}
-        </div>
+      <div class="card-text">
+        {{session.abstract}}
+      </div>
 
-        <div class="clr-row">
-          <div class="clr-col-lg-4 clr-col-12" *ngFor='let referent of session.referenten'>
-            <div class="card referent">
-              <div class="card-block">
-                <div class="card-media-block">
-                  <img class="card-media-image portrait-image" src="http://www.berner-architekten-treffen.ch/archiv/{{session.bat}}/{{referent.portrait}}" alt="{{referent.portrait}}">
-                  <div class="card-media-description">
-                    <span class="card-media-title">
-                      {{referent.name}}
-                    </span>
-                    <span class="card-media-text">
-                      <img class="company-image" src="http://www.berner-architekten-treffen.ch/archiv/{{session.bat}}/{{referent.company}}" alt="{{referent.company}}">
-                    </span>
-                  </div>
+      <div class="clr-row">
+        <div class="clr-col-lg-4 clr-col-12" *ngFor='let referent of session.referenten'>
+          <div class="card referent">
+            <div class="card-block">
+              <div class="card-media-block">
+                <img class="card-media-image portrait-image" src="http://www.berner-architekten-treffen.ch/archiv/{{session.bat}}/{{referent.portrait}}" alt="{{referent.portrait}}">
+                <div class="card-media-description">
+                  <span class="card-media-title">
+                    {{referent.name}}
+                  </span>
+                  <span class="card-media-text">
+                    <img class="company-image" src="http://www.berner-architekten-treffen.ch/archiv/{{session.bat}}/{{referent.company}}" alt="{{referent.company}}">
+                  </span>
                 </div>
-                <p class="card-text">
-                  {{referent.bio}}
-                </p>
               </div>
+              <p class="card-text">
+                {{referent.bio}}
+              </p>
             </div>
           </div>
         </div>
       </div>
+    </div>
 
-      <div class="row" *ngIf='!session.abstract'>
-        <div class='col-md-4'>{{session.authoren}}</div>
-        <div class='col-md-8'>
-          <a href={{getUrl(session)}}>
-              {{session.title}}
-          </a>
-        </div>
+    <div class="row" *ngIf='!session.abstract'>
+      <div class='col-md-4'>{{session.authoren}}</div>
+      <div class='col-md-8'>
+        <a href={{getUrl(session)}}>
+            {{session.title}}
+        </a>
       </div>
     </div>
+  </div>
+
+  <div class='card-header' *ngIf='pictures.length'>
+    Impressionen
+  </div>
+  <p></p>
+  <div class="clr-row clr-align-items-center clr-justify-content-around" *ngIf='pictures.length'>
+    <div  *ngFor='let picture of pictures'>
+      <a href="http://www.berner-architekten-treffen.ch/archiv/{{picture.bat}}/{{picture.image}}" target="_blank">
+        <img class="picture-image" src="http://www.berner-architekten-treffen.ch/archiv/{{picture.bat}}/{{picture.image}}" />
+      </a>
+    </div>
+  </div>
 </div>

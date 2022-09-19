@@ -1,9 +1,11 @@
 import { Component, OnInit, Input } from '@angular/core';
 import { ITopic } from '../topic';
+import { TopicService } from '../topic.service';
 import { ISession } from '../session';
 import { SessionService } from '../session.service';
+import { IPicture } from '../picture';
+import { PictureService } from '../picture.service';
 import { Router, ActivatedRoute } from '@angular/router';
-import { TopicService } from '../topic.service';
 import { stringify } from '@angular/compiler/src/util';
 
 @Component({
@@ -19,10 +21,13 @@ export class ArchivDetailComponent implements OnInit {
   errorMessage = '';
   sessions: ISession[];
   topic: ITopic;
+  pictures: IPicture[];
 
   constructor(private route: ActivatedRoute,
     private router: Router,
-    private sessionService: SessionService, private topicService: TopicService) {
+    private sessionService: SessionService,
+    private topicService: TopicService,
+    private pictureService: PictureService) {
   }
 
   ngOnInit() {
@@ -34,6 +39,9 @@ export class ArchivDetailComponent implements OnInit {
     this.getSessionByBat(this.bat);
     this.topicService.getTopicByBat(this.bat).subscribe(
       topic => this.topic = topic,
+      error => this.errorMessage = <any>error);;
+    this.pictureService.getPicturesByBat(this.bat).subscribe(
+      pictures => this.pictures = pictures,
       error => this.errorMessage = <any>error);;
   }
 
