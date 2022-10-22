@@ -13,6 +13,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
+            "baseHref": "/my-path/",
             "outputPath": "dist/BATbern2",
             "index": "src/index.html",
             "main": "src/main.ts",
