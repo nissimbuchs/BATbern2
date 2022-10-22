@@ -9,6 +9,7 @@ import { UiModule } from './ui/ui.module';
 import { EventsModule } from './events/events.module';
 import { RouterModule } from '@angular/router';
 import { HttpClientModule } from '@angular/common/http';
+import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
  
 @NgModule({
   imports: [
@@ -22,7 +23,8 @@ import { HttpClientModule } from '@angular/common/http';
     relativeLinkResolution: 'legacy'
 }),
     UiModule,
-    EventsModule
+    EventsModule,
+    NgbModule
   ],
   declarations: [
     AppComponent
