@@ -6,7 +6,6 @@ import { SessionService } from '../session.service';
 import { IPicture } from '../picture';
 import { PictureService } from '../picture.service';
 import { Router, ActivatedRoute } from '@angular/router';
-import { stringify } from '@angular/compiler/src/util';
 
 @Component({
   selector: 'app-archiv-detail',

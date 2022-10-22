@@ -50,11 +50,11 @@
     </div>
   </div>
 
-  <div class='card-header' *ngIf='pictures.length'>
+  <div class='card-header'>
     Impressionen
   </div>
   <p></p>
-  <div class="clr-row clr-align-items-center clr-justify-content-around" *ngIf='pictures.length'>
+  <div class="clr-row clr-align-items-center clr-justify-content-around">
     <div  *ngFor='let picture of pictures'>
       <a href="http://www.berner-architekten-treffen.ch/archiv/{{picture.bat}}/{{picture.image}}" target="_blank">
         <img class="picture-image" src="http://www.berner-architekten-treffen.ch/archiv/{{picture.bat}}/{{picture.image}}" />
