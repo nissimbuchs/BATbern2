@@ -8,11 +8,11 @@ import { PictureService } from '../picture.service';
 import { Router, ActivatedRoute } from '@angular/router';
 
 @Component({
-  selector: 'app-archiv-detail',
-  templateUrl: './archiv-detail.component.html',
-  styleUrls: ['./archiv-detail.component.css']
+  selector: 'app-archiv-overview',
+  templateUrl: './archiv-overview.component.html',
+  styleUrls: ['./archiv-overview.component.css']
 })
-export class ArchivDetailComponent implements OnInit {
+export class ArchivOverviewComponent implements OnInit {
 
   @Input()
   bat: number;
@@ -48,22 +48,6 @@ export class ArchivDetailComponent implements OnInit {
     this.sessionService.getSessionsByBat(id).subscribe(
       sessions => this.sessions = sessions,
       error => this.errorMessage = <any>error);
-  }
-
-  getUrl(session: ISession) {
-    let pdf: string;
-    if(session?.pdf)
-    {
-      if (session.pdf.startsWith("http"))
-      {
-        pdf = session.pdf;
-      }
-      else
-      {
-        pdf = "http://www.berner-architekten-treffen.ch/archiv/"+session.bat+"/"+session.pdf;
-      }
-    }
-    return pdf;
   }
 
 }
