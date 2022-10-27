@@ -7,9 +7,12 @@
 
     <div *ngIf='session.abstract'>
       <div class="card-title">
-        <a href={{getUrl(session)}}>
+        <a href={{getUrl(session)}} *ngIf='session?.pdf'>
           {{session.title}}
         </a>
+        <div *ngIf='!session.pdf'>
+          {{session.title}}
+        </div>
       </div>
 
       <div class="card-text">
@@ -41,12 +44,15 @@
     </div>
 
     <div class="row" *ngIf='!session.abstract'>
-      <div class='col-md-4'>{{session.authoren}}</div>
-      <div class='col-md-8'>
-        <a href={{getUrl(session)}}>
-            {{session.title}}
+      <div class='col-md-4'>
+        <a href={{getUrl(session)}} *ngIf='session?.pdf'>
+          {{session.title}}
         </a>
+        <div *ngIf='!session.pdf'>
+          {{session.title}}
+        </div>
       </div>
+      <div class='col-md-8'>{{session.authoren}}</div>
     </div>
   </div>
 

@@ -10,6 +10,7 @@ import { ClarityModule } from '@clr/angular';
 import { RouterModule } from '@angular/router';
 import { appRoutes } from '../router';
 import { ArchivDetailComponent } from './archiv-detail/archiv-detail.component';
+import { ArchivOverviewComponent } from './aktuell/archiv-overview.component';
 
 @NgModule({
   imports: [
@@ -24,7 +25,8 @@ import { ArchivDetailComponent } from './archiv-detail/archiv-detail.component';
     ThemenComponent,
     ArchivComponent,
     KontaktComponent,
-    ArchivDetailComponent
+    ArchivDetailComponent,
+    ArchivOverviewComponent
   ],
   exports: [
     AktuellComponent

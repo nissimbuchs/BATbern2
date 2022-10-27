@@ -1,0 +1,21 @@
+<table border="0" cellspacing="2" cellpadding="2" style="margin-left:25px">
+
+  <div *ngIf='sessions'>
+    <tr>Beiträge:</tr>
+    <tr *ngFor='let session of sessions'>
+      <div *ngIf='session.abstract'>
+        <li>"{{session.title}}", 
+          <b *ngFor='let referent of session.referenten'>
+            {{referent.name}},
+          </b>
+        </li>
+      </div>
+
+      <div *ngIf='!session.abstract && session.title != "Moderation"'>
+        <td >"{{session.title}}",</td>
+        <td>{{session.authoren}}</td>
+      </div>
+    </tr>
+  </div>
+
+</table>
