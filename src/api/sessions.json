@@ -1866,8 +1866,13 @@
         "bio": "Peter Andres ein Software-Architekt, welcher versucht Management, Politik und Technologie zusammenzubringen, so dass innovative, sichere und nachhaltige Lösungen gebaut werden können.",
         "portrait": "peter_andres.jpg",
         "company": "isc-ejpd.png"
-      }
-    ]
+      },
+      {
+        "name": "Matthias Germann, ISC-EJPD",
+        "bio": "Matthias Germann ist der Leiter der Architektur und Architekt aus Leidenschaft. In der Architektur sind Konzepte wie Security by design und by default, sowie eine Zero Trust Architektur zentrale Pfeiler der Gesamtarchitektur.",
+        "portrait": "matthias_germann.jpeg",
+        "company": "isc-ejpd.png"
+      }	    ]
   },
   {
     "bat": 48,
