@@ -1858,6 +1858,7 @@
   },
   {
     "bat": 48,
+    "pdf": "https://www.slideshare.net/batbern/batbern48zero-trust-architektur-des-iscejpdpdf",
     "title": "Zero Trust Architektur des ISC-EJPD",
     "abstract": "Das Zero-Trust-Modell ist ein Sicherheitskonzept, das auf dem Grundsatz basiert, keinem Gerät, Nutzer oder Dienst innerhalb oder ausserhalb des eigenen Netzwerks zu vertrauen. Dieses Konzept wird im EJPD schon seit 2003 – Einführung des SSO-Portals – aktiv umgesetzt.",
     "referenten": [
@@ -1876,6 +1877,7 @@
   },
   {
     "bat": 48,
+    "pdf": "https://www.slideshare.net/batbern/batbern48how-zero-trust-can-help-your-organisation-keep-safepdf",
     "title": "How Zero Trust can help your organisation keep safe",
     "abstract": "This presentation will bring insights into how the Zero Trust framework can help organizations improve their cybersecurity posture and resilience and what the organizational challenges are.",
     "referenten": [
@@ -1889,6 +1891,7 @@
   },
   {
     "bat": 48,
+    "pdf": "https://www.slideshare.net/batbern/batbern48zerotrustkonzept-und-realittpdf",
     "title": "Zero Trust - Konzept und Realität",
     "abstract": "Bei Zero Trust wird keinem Akteur, der Zugang zu Ressorucen oder Diensten im Netzwerk will, von vornherein vertraut. Gemäss dem Motto «never trust, always verify» erfordert jede Abfrage im System eine neue Verifizierung. Es wird aufgezeigt, wie dies in einer Umgebung mit vielen verschiedenen Akteuren durchgängig umgesetzt werden kann. Dabei nehmen OAuth-Token und die Funktionalität Token-Exchange eine zentrale Rolle ein.",
     "referenten": [
