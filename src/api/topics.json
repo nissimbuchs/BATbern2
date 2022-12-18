@@ -244,15 +244,14 @@
     "bat": 48,
     "topic": " Zero-Trust",
     "datum": "11. November 2022, 16:00h - 18:30h",
-    "eventType": "Abend-BAT",
-    "next": 1
+    "eventType": "Abend-BAT"
     },
     {
     "bat": 49,
-    "topic": " Thema noch offen",
+    "topic": " AI / MLOps in Produktion",
     "datum": "24. Februar 2023, 16:00h - 19:00h",
     "eventType": "Abend-BAT",
-    "planned": 1
+    "next": 1
     },
     {
     "bat": 50,
