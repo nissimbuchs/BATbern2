@@ -274,27 +274,25 @@
     "bat": 53,
     "topic": " Daten, Persistenz, und alles drumherum",
     "datum": "21. Juni 2024, 09:00h - 16:45h",
-    "eventType": "Ganztages-BAT",
-    "planned": 1
+    "eventType": "Ganztages-BAT"
     },
     {
     "bat": 54,
     "topic": " Platform Engineering",
     "datum": "8. November 2024, 16:00h - 18:30h",
-    "eventType": "Abend-BAT",
-    "planned": 1,
-	  "next": 1
+    "eventType": "Abend-BAT"
     },
 	{
     "bat": 55,
-    "topic": " Thema noch offen",
+    "topic": " Architektur in agilen Organisationen",
     "datum": "7. März 2025, 16:00h - 18:30h",
     "eventType": "Abend-BAT",
-    "planned": 1
+    "planned": 1,
+    "next": 1
     },
 	{
     "bat": 56,
-    "topic": " Thema noch offen",
+    "topic": " GenAI - Generative künstliche Intelligenz",
     "datum": "27. Juni 2025, 09:00h - 16:45h",
     "eventType": "Ganztages-BAT",
     "planned": 1

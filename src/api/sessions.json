@@ -2385,14 +2385,14 @@
   },
   {
     "bat": 54,
-    "pdf": "",
+    "pdf": "https://www.slideshare.net/slideshow/batbern54-build-run-on-the-same-platform-embracing-platform-engineering-devops-to-build-saas/273562294",
     "title": "Build & Run on the same platform, embracing Platform Engineering & DevOps to build SaaS",
     "abstract": "Embracing DevOps requires a fundamental shift in team mindset, breaking down silos within the organization. Our Platform Engineering team goes beyond simply providing a platform; we actively support development teams in adopting DevOps principles, encouraging accountability for both the Build and Run phases of their projects. In an organization primarily composed of development teams, leveraging Cloud Provider services has been key factor: New projects can be quickly bootstrapped. Costs are directly allocated to the projects, and charged back accordingly. The underlying infrastructure is robust, removing the need to grasp complex, low-level concepts. There is a wealth of mature technologies available to automate and scale as needed. In this session, we will showcase how we’ve built our platform to offer a self-service portal that enables teams to be operational in less than a day. We will also demonstrate how our Platform Engineering team collaborates with development teams to empower them by fully embracing DevOps practices.",
     "referenten": [
       {
-        "name": "Florian Bois, ELCA",
-        "bio": "Florian began his career as a developer, progressing into Lead Developer and Architect roles, and later transitioned into Project Management. His journey in Platform Engineering started 14 years ago when he centralized CI services for various company projects. To streamline processes and avoid interruptions, he built a GUI allowing project teams to self-manage their configurations. Over time, as CI/CD and DevOps needs grew, Florian took on the leadership of a dedicated team of seven engineers, all with development backgrounds, driving innovation in the DevOps area.",
-        "portrait": "florian_bois.png",
+        "name": "Fabian Nicollier, ELCA",
+        "bio": "Fabian Nicollier is a Senior Solutions Architect at ELCA Group with over 20 years of experience designing and building software solutions. Since joining ELCA in 2018, he has focused on delivering solutions on the Azure public cloud for customers in diverse industries. He also coaches customers and colleagues on cloud practices while promoting cloud adoption.",
+        "portrait": "FabianNicollier.jpg",
         "company": "elca.jpg"
       },
       {
@@ -2400,6 +2400,54 @@
         "bio": " Michele Monforte is a Senior DevOps Expert at ELCA group. Passionate about technology, he loves building software. His experience spans the whole Software Development Lifecycle and allows him to tackle issues from different perspectives. His current focus is on platform engineering as he actively coaches and supports teams while promoting DevOps and Agile.",
         "portrait": "michele_monforte.jpg",
         "company": "elca.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 55,
+    "pdf": "",
+    "title": "Bridging the Gap from Telco to Techco with Agile Architecture",
+    "abstract": "The Telco industry is undergoing a major IT transformation, shifting from Telco to Techco. This shift is driven by a breakneck pace of technological change that traditional architectures simply cannot keep up with. In my presentation, I will explore the profound impact of digitization on Telco architecture. Using examples from Swisscom's Network Division, I will show why Agile Architecture is crucial for cutting complexity, accelerating time-to-market, and sparking innovation within the organization. This approach isn't just strategic; it's vital for the future success of our industry. Join me to uncover how Swisscom is navigating this transformation and what lessons can be applied to your organization.",
+    "referenten": [
+      {
+        "name": "Rudolf Strijkers, Swisscom",
+        "bio": "Dr. Rudolf Strijkers is Enterprise Architect at Swisscom where he leads the re-architecting of Swisscom’s IT. As the initiator and lead architect of Swisscom Digital Architecture, he has been instrumental in the design of the IT Framework that coordinates digital transformation across the company. In previous roles at Swisscom, he led network operations, the transition from traditional Network Development and Operations to Agile as Solution Train Engineer, and he was in charge of technical strategy of Networks and Infrastructure IT. Before Swisscom, Rudolf worked as research scientist for TNO in the Netherlands. He led several research projects around Software Defined Networks. He holds several patents in Mobile Networks and Cloud Computing, an MSc and PhD in Computer Science from the University of Amsterdam, and he is a candidate International Executive MBA at the University of St. Gallen.",
+        "portrait": "RudolfStrijkers.jpg",
+        "company": "swisscom.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 55,
+    "pdf": "",
+    "title": "How can TWINT be agile in an inert ecosystem?",
+    "abstract": "The Swiss banking Ecosystem works as a trustworthy and reliable basis for personal and business-related financial transactions. A fintech in this field is dealing with large and globally active players who can’t (and likely shouldn’t) adapt as fast and as agile as the fintech can, and must, to secure its position in the market. In this presentation I will elaborate in which ways TWINT strives for agility and innovation in an otherwise slow-moving and slowly innovating ecosystem.",
+    "referenten": [
+      {
+        "name": "Sandro Montanari, TWINT",
+        "bio": "Sandro Montanari obtained a master’s degree in Robotics and Automation at EPFL in 2012. Starting his professional career as a software developer at Swisscom, he transitioned into the field of BigData and finally Product Owner at Swisscom. As the 5th member in an IT (cryptographic) startup working in Switzerland and the US he honed his skills in… well everything… startup life. With the start of Covid, he moved back to Switzerland and joined TWINT as lead enterprise architect, before taking over as head of technology and architecture.",
+        "portrait": "SandroMontanari.jpg",
+        "company": "twint-logo.png"
+      }
+    ]
+  },
+  {
+    "bat": 55,
+    "pdf": "",
+    "title": "Agile Architektur @PF",
+    "abstract": "Die Architektur spielt eine zentrale Rolle in der agilen Transformation und strategischen Ausrichtung in der PostFinance. Mit diesem Vortrag, soll aufgezeigt werden, wie Architektur-Management-Prozesse gestaltet werden müssen, um flexibel auf Veränderungen zu reagieren, während strategische Leitplanken erhalten bleiben. Zudem werden der Aufbau und die Entwicklung einer agilen Architektur sowie deren Nutzen und Herausforderungen dargestellt. Ein Praxisbeispiel veranschaulicht Herausforderungen und Nutzen agiler Architektur. Abschliessend werden Lessons Learned reflektiert, um Strategien für eine zukunftsfähige Architektur abzuleiten.",
+    "referenten": [
+      {
+        "name": "Dominik Wüst, PostFinance",
+        "bio": "Dominik Wüst leitet seit mehreren Jahren die Enterprise Architektur von PostFinance. Davor war er in den letzten 15 Jahren in verschiedenen Rollen bei PostFinance unterwegs. Dominik sein Fokus liegt auf der Schnittstelle zwischen Fach und IT. Dabei beschäftigt er sich intensiv mit der Disziplin Enterprise Design und des Einflusses von agilen Veränderungen auf die Architekturprozesse und Entscheide.",
+        "portrait": "DominikWuest.jpg",
+        "company": "logo-pf.jpg"
+      },
+      {
+        "name": "Mustapha Bouaaoud, PostFinance",
+        "bio": "Mustapha Bouaaoud leitet die IT-Architektur bei PostFinance und verantwortet zentrale Architekturthemen in den Bereichen Technologie, IT-Betrieb, Security, Integration, Cloud, Softwareentwicklung und KI. In seiner früheren Rolle als Lead Architekt leitete er die Modernisierung grosser Applikationen und den Übergang von monolithischen zu Microservice-Architekturen. Sein Fokus liegt auf nachhaltiger Modernisierung, technologischem und strategischem Wandel sowie der Einführung neuer Technologie-Stacks in komplexen IT-Landschaften.",
+        "portrait": "MustaphaBouaaoud.jpg",
+        "company": "logo-pf.jpg"
       }
     ]
   }
