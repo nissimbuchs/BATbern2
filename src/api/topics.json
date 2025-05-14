@@ -287,21 +287,43 @@
     "topic": " Architektur in agilen Organisationen",
     "datum": "7. März 2025, 16:00h - 18:30h",
     "eventType": "Abend-BAT",
-    "planned": 1,
-    "next": 1
+    "planned": 1
     },
 	{
     "bat": 56,
     "topic": " GenAI - Generative künstliche Intelligenz",
     "datum": "27. Juni 2025, 09:00h - 16:45h",
     "eventType": "Ganztages-BAT",
-    "planned": 1
-    },
+    "planned": 1,
+    "next": 1
+  },
 	{
     "bat": 57,
-    "topic": " Thema noch offen",
+    "topic": " Zero Trust Journey",
     "datum": "7. November 2025, 16:00h - 18:30h",
     "eventType": "Abend-BAT",
     "planned": 1
-    }
-  ]
+  },
+  {
+    "bat": 58,
+    "topic": " Thema noch offen",
+    "datum": "6. März 2026, 16:00h - 18:30h",
+    "eventType": "Abend-BAT",
+    "planned": 1
+  },
+  {
+    "bat": 59,
+    "topic": " Thema noch offen",
+    "datum": "19. Juni 2026, 09:00h - 16:45h",
+    "eventType": "Ganztages-BAT",
+    "planned": 1,
+    "next": 1
+  },
+  {
+    "bat": 60,
+    "topic": " Thema noch offen",
+    "datum": "6. November 2026, 16:00h - 18:30h",
+    "eventType": "Abend-BAT",
+    "planned": 1
+  }
+]

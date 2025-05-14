@@ -2450,6 +2450,121 @@
         "company": "logo-pf.jpg"
       }
     ]
+  },
+  {
+    "bat": 56,
+    "pdf": "",
+    "title": "RAG in Produktion",
+    "abstract": "Allgemeine Versicherungsbedingungen (AVBs) sind dutzende Seiten umfassende PDFs und dementsprechend nicht Kunden- und Prozessfreundlich. Wie kann eine effizientere Informationsbeschaffung und Prozessverbesserung ermöglicht werden? Im Fokus stehen die Nutzung von XML-Daten, KI-gestützten Q&A-Systemen und der Ansatz der Retrieval-Augmented Generation (RAG), um strukturelle Informationen zu bewahren und relevante Inhalte schnell zugänglich zu machen. Es wird aufgezeigt, wie diese Ansätze die bisherigen Einschränkungen von PDF-Viewern überwinden und eine skalierbare Grundlage für zukünftige Anwendungen schaffen. Lessons Learned und ein Ausblick auf weitere Use Cases runden den Vortrag ab.",
+    "referenten": [
+      {
+        "name": "Alex Meier, die Mobiliar",
+        "bio": "Alexander Meier ist ein erfahrener Cloud ML DevOps Engineer bei der Mobiliar und Experte im Bereich Generative KI. Seine Laufbahn umfasst Stationen im Big Data Engineering sowie eine Spezialisierung auf Generative KI, in der er seine Expertise in führenden Technologieunternehmen unter Beweis gestellt hat. Er ist spezialisiert auf Data Engineering, Data Analysis, Apache Kafka und Big Data Technologien. Als gefragter Speaker zu Themen wie GenAI und KI-Technologien bietet Alexander wertvolle Impulse zur Nutzung innovativer Cloud- und KI-Lösungen in der Geschäftswelt. Zusätzlich engagiert sich Alexander als Snowboardcross-Trainer und Renn-Organisator im Leistungssport bei der Boarding Association Berne - BABE.",
+        "portrait": "AlexanderMeier.jpg",
+        "company": "mobiliar.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 56,
+    "pdf": "",
+    "title": "TrainVision – ein ehrlicher Erfahrungsbericht vom Prototyp bis zur produktiven Lösung",
+    "abstract": "Train Vision, die Erfassung von Zugformationsinformationen mittels Computer Vision, begann als CAS-Arbeit mit dem Ziel, erste praktische Erfahrungen im Bereich Machine Learning und Deep Neural Networks zu sammeln. Doch es blieb nicht bei einem Experiment: Nach Abschluss der Arbeit entschieden wir uns, unser Know-how konsequent auszubauen – und wie lernt man besser, als Dinge selbst umzusetzen? Unser Ziel war es, die CAS-Arbeit in ein stabiles, produktionstaugliches System zu überführen. Der Weg dahin war jedoch alles andere als trivial: Von der Datenbeschaffung über tagelanges Training und den hartnäckigen Kampf gegen False Positives bis hin zur Reproduzierbarkeit von Ergebnissen brachte jede Phase eigene Herausforderungen mit sich. Besonders zentral war die Frage: Wie erreichen wir die für den Einsatz in einem produktiven Umfeld notwendige Genauigkeit? Dabei zeigte sich: Technische Exzellenz allein reicht nicht aus. Erst die Kombination mit durchdachter Business-Logik machte das System robust und alltagstauglich. Der Vortrag ist ein ehrlicher Erfahrungsbericht darüber, was es wirklich bedeutet, aus einem schnellen YouTube-Prototyp ein verlässliches Produktivsystem zu machen.",
+    "referenten": [
+      {
+        "name": "Marco Sommerfeld, mtrail",
+        "bio": "Marco Sommerfeld hat Mathematik in Berlin studiert und über 15 Jahre hinweg seine Expertise in der Travel- und Transportbranche aufgebaut. Bei mtrail hat er das Machine-Learning-Team aufgebaut und leitet es heute. Vor vier Jahren entdeckte er im Rahmen eines CAS im Bereich Machine Learning seine Leidenschaft für Computer Vision – ein Thema, das ihn seither nicht mehr loslässt.",
+        "portrait": "MarcoSommerfeld.jpg",
+        "company": "mtrail.jpg"
+      },
+      {
+        "name": "Aeneas Grüter, mtrail",
+        "bio": "Aeneas Grüter ist Softwareentwickler mit Masterabschluss in Computer Science und fundierter Erfahrung in der Entwicklung komplexer Webapplikationen. Seine technische Bandbreite reicht von Java über TypeScript bis hin zu Kubernetes, wobei er stets den Fokus auf saubere Architektur, Skalierbarkeit und agile Arbeitsweisen legt. Vor seiner IT-Laufbahn hat er Geografie in Bern studiert.",
+        "portrait": "AeneasGrueter.jpg",
+        "company": "mtrail.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 56,
+    "pdf": "",
+    "title": "Rechtskonformer Einsatz von GenAI",
+    "abstract": "Der rechtskonforme Einsatz generativer KI (GenAI) erfordert eine sorgfältige Beurteilung diverser Vorgaben nach Schweizer und EU-Recht. Der Vortrag analysiert zentrale Regelungswerke und beleuchtet deren Bedeutung für Entwicklung und Nutzung von GenAI-Systemen.",
+    "referenten": [
+      {
+        "name": "Martina Arioli, Arioli Law",
+        "bio": "Martina Arioli ist bernische Fürsprecherin und Partnerin bei Arioli Law, Zurich. Arioli Law bietet Unternehmen und dem öffentlichen Sektor Rechtsberatung im Technologiesektor und in der Datenwirtschaft. Martina Arioli unterstützt Projekte in den Bereichen IT-Sourcing, Outsourcing, Cloud, Datenschutz und Datenrecht, sowie Beschaffung künstlicher Intelligenz. Sie doziert an der Universität Zürich sowie der ZHAW und ist Beirätin des CAS Datenschutz des Europa Instituts.",
+        "portrait": "MartinaArioli.jpg",
+        "company": "ariolilaw.png"
+      }
+    ]
+  },
+  {
+    "bat": 56,
+    "pdf": "",
+    "title": "Vom Experiment zur Wirkung – Die KI-Initiative im ISC-EJPD",
+    "abstract": "Wie bringt man Künstliche Intelligenz in einem sicherheitsrelevanten Umfeld wie dem EJPD zum Fliegen? Im Jahr 2024 hat das ISC-EJPD die Initiative „KI in der Praxis erleben“ gestartet – mit dem Ziel, KI-Technologien nicht nur theoretisch zu verstehen, sondern in der eigenen Systemlandschaft zu praxisnah zu erproben. Nach einer breiten Schulung wurden mehrere konkrete «Experimente» von verschiedenen Teams umgesetzt.  Auch wenn die Initiative nicht auf eine Produktivsetzung abzielte, sind heute mehrere Lösungen in der aktiven Nutzung – und der Lerneffekt war enorm. Der Vortrag zeigt, wie man eine KI-Initiative im öffentlichen, sensitiven Sektor pragmatisch, sicher und nachhaltig aufgleisen kann – und was dabei wirklich zählt.",
+    "referenten": [
+      {
+        "name": "Peter Andres, ISC-EJPD",
+        "bio": "Peter Andres ist CTO des Informatik Service Centers im EJPD (ISC-EJPD) und gestaltet seit über 20 Jahren die IT-Infrastruktur der inneren Sicherheit der Schweiz mit. Als Initiator der KI-Initiative „KI in der Praxis erleben“ verbindet er technologische Innovationskraft mit pragmatischer Umsetzung – stets mit Blick auf Sicherheit, Nachhaltigkeit und Mehrwert für die öffentliche Verwaltung. Neben seiner Rolle im ISC ist er als Dozent an der BFH aktiv und bringt komplexe Themen wie Zero-Trust, Mobile-ID und KI verständlich und praxisnah auf den Punkt. Fazit – ich bin ein Techniker, welcher versucht Management, Politik und Technologie zusammenzubringen, so dass innovative, sichere und nachhaltige Lösungen gebaut werden können.",
+        "portrait": "PeterAndres.jpg",
+        "company": "isc-ejpd.png"
+      }
+    ]
+  },
+  {
+    "bat": 56,
+    "pdf": "",
+    "title": "Virtueller Assistent RoBIT: Vom Servicedesk zur Supervisor-Agent-Architektur – GenAI im Support neu gedacht",
+    "abstract": "RoBIT ist der virtuelle Assistent des Bundesamts für Informatik und Telekommunikation (BIT). Über 40’000 Mitarbeitende der Bundesverwaltung können über den AI-basierten Support Chatbot Hilfe zu IT Problemen einholen. Wie lassen sich Komplexität, Skalierbarkeit und Nutzerzentrierung im IT-Support neu denken – jenseits klassischer Chatbots und Ticket-Tools?  In diesem Beitrag zeigen wir auf, wie wir im BIT ein Multi-Agenten-System mit einem Supervisor-Agent entwickelt haben, das die Rolle eines virtuellen Servicedesks übernimmt. Anhand eines interaktiven Rollenspiels demonstrieren wir die Herausforderungen im Support-Alltag und wie unsere GenAI-gestützte Architektur – inspiriert u.a. von LangGraph – diese adressiert. Der Fokus liegt auf dem praktischen Nutzen für Endnutzer und Supporter, dem zugrunde liegenden RAG-Design sowie den Lessons Learned aus dem Aufbau eines produktionsnahen GenAI-Ökosystems innerhalb der Bundesverwaltung.",
+    "referenten": [
+      {
+        "name": "Ralph Schroll, Bundesamt für Informatik und Telekommunikation (BIT)",
+        "bio": "Ralph Schroll ist Product Owner und Projektleiter beim Bundesamt für Informatik und Telekommunikation (BIT) mit über 20 Jahren IT-Erfahrung. Sein aktueller Schwerpunkt liegt auf der Entwicklung smarter Supportlösungen mit Generativer KI – etwa im Projekt RoBIT, wo digitale Assistenten auf Basis von Multi-Agent-Architekturen das Incident- und Knowledge-Management modernisieren. Ralph vereint technische Tiefe mit einem Gespür für Nutzerbedürfnisse, Kulturwandel und Prozessoptimierung. Mit seinem Hintergrund als Systemintegrator und seiner Leidenschaft für kreative, menschenzentrierte Lösungen bringt er innovative Ideen pragmatisch in die Umsetzung – stets mit dem Ziel: Give time back.",
+        "portrait": "RalphSchroll.jpg",
+        "company": "bit_logo.png"
+      },
+      {
+        "name": "Andreas Schneider, Innovation Process Technology AG (ipt)",
+        "bio": "Andreas Schneider ist promovierter Informatiker mit Fokus auf die Operationalisierung von KI-Systemen. Er entwickelt produktionsreife ML- und GenAI-Lösungen – von der Datenverarbeitung über Modelltraining bis zur Integration in skalierbare Cloud-Infrastrukturen. Als erfahrener ML-Architekt und Entwickler bringt er KI-Technologien zuverlässig in den produktiven Einsatz und sorgt mit durchdachten MLOps-Praktiken dafür, dass sie im Unternehmenskontext echten Mehrwert liefern.",
+        "portrait": "AndreasSchneider.jpg",
+        "company": "ipt.png"
+      }
+    ]
+  },
+  {
+    "bat": 56,
+    "pdf": "",
+    "title": "GenAI beim Bund: Wie das BAFU komplexe Anfragen meistert!",
+    "abstract": "Das Bundesamt für Umwelt (BAFU) modernisiert seine Arbeitsweise mit einem innovativen, auf Generativer KI basierenden digitalen Assistenten. Mithilfe RAG-Technologie (Retrieval-Augmented Generation) und Agenten verknüpft das System interne und externe Datenquellen und unterstützt Mitarbeitende bei der effizienten Bearbeitung komplexer Anfragen, der Bildanalyse und der Dokumentenauswertung. In dieser Präsentation erhalten Sie Einblicke in die technische Umsetzung des Projekts, das das BAFU gemeinsam mit ipt auf AWS und Amazon Bedrock realisiert hat. Dabei beleuchten wir nicht nur die technologischen Aspekte, sondern widmen uns auch den kritischen Themen Datenschutz und IT-Sicherheit in der Bundesverwaltung.",
+    "referenten": [
+      {
+        "name": "Patrick Koller, Bundesamt für Umwelt BAFU",
+        "bio": "",
+        "portrait": "PatrickKoller.jpg",
+        "company": "bafu_logo.png"
+      },
+      {
+        "name": "Philipp Knecht, Amazon Web Services (AWS) Schweiz",
+        "bio": "",
+        "portrait": "PhilippKnecht.jpg",
+        "company": "aws-logo.png"
+      }
+    ]
+  },
+  {
+    "bat": 56,
+    "pdf": "",
+    "title": "Swiss AI Platform: Erkenntnisse aus dem Aufbau einer souveränen AI Infrastruktur für die Schweiz",
+    "abstract": "In diesem Erfahrungsbericht, möchte ich ein paar Einblicke geben, wie wir von der Swisscom zusammen mit Nvidia in nur 9 Monaten eine souveräne und spezifisch für die Schweiz entwickelte AI Platform geschaffen haben. Beginnend mit einer simplen Architektur-Vision, mussten bis hin zu einer skalierbaren, sicheren und mehrmandantenfähigen Platform zahlreiche Herausforderungen gemeistert werden.",
+    "referenten": [
+      {
+        "name": "Simon Sax, Swisscom",
+        "bio": "",
+        "portrait": "SimonSax.jpg",
+        "company": "swisscom.jpg"
+      }
+    ]
   }
-
 ]
