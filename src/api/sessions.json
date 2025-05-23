@@ -2541,13 +2541,13 @@
     "referenten": [
       {
         "name": "Patrick Koller, Bundesamt für Umwelt BAFU",
-        "bio": "",
+        "bio": "Patrick Koller hat einen M.Sc. in Umwelt- und Atmosphärenwissenschaften mit dem Schwerpunkt Meteorologie/Hydrogeologie/Fernerkundung abgeschlossen – ein Anwendungsgebiet, in dem DataSciene eine zentrale Rolle spielt. Im Verlauf seiner beruflichen Entwicklung wirkte er verschiedenen DataScience und DevOps Projekten mit. Er interessiert sich für Cloud- und Kubernetes-Technologien, sowie Anwendungen in Analytics, Machine Learning, Künstlicher Intelligenz und das Monitoring und die Modellierung von komplexen Prozessen in der Umwelt. Aktuell ist er als Senior Data Scientist beim Bundesamt für Umwelt (BAFU) tätig. Zuvor war er in Funktionen beim Bundesamt für Informatik und Telekommunikation (BIT), bei MeteoSwiss, der ETH Zürich und bei Swiss Re in technologieorientierten Bereichen tätig.",
         "portrait": "PatrickKoller.jpg",
         "company": "bafu_logo.png"
       },
       {
         "name": "Philipp Knecht, Amazon Web Services (AWS) Schweiz",
-        "bio": "",
+        "bio": "Philipp Knecht ist ein Manager Solutions Architecture bei Amazon Web Services (AWS) Schweiz. Er leitet ein Team von Solution Architects (SAs) mit einem Fokus auf Public Sector Kunden. Die SAs im Team unterstützen die Kunden auf ihrem Weg in die Cloud, beraten bezüglich AWS Services oder Partner Lösungen, und stellen sicher, dass die Kunden mit den Services von AWS langfristig zufrieden sind. Philipp hat einen Abschluss in Informatik, Computer-, und Nachrichtentechnik am Tech Rapperswil (heute Ostschweizer Fachhochschule) und ein Nachdiplomstudium in Wirtschaft. Vor seiner Zeit bei AWS war Philipp viele Jahre als Consultant, Architekt, und Manager in diversen Rollen bei Kunden unterwegs.",
         "portrait": "PhilippKnecht.jpg",
         "company": "aws-logo.png"
       }
@@ -2561,7 +2561,7 @@
     "referenten": [
       {
         "name": "Simon Sax, Swisscom",
-        "bio": "",
+        "bio": "Tagsüber leitet Simon Sax ein Team von Solution Architekten in der Cloud Advisory Division von Swisscom und berät Geschäftskunden bei Cloud- und Migrationsprojekten. Nachts widmet er sich leidenschaftlich seinen App- und Raspberry Pi-Projekten. Im vergangenen Jahr übernahm Simon die Verantwortung für die Gesamtarchitektur und den Aufbau der Datacenter-Infrastruktur der Swiss AI Platform. In früheren Positionen unterstützte er als Product Owner die Einführung des 5G-Mobilfunkstandards und war als technischer Stratege im CTO Office von Swisscom B2B tätig. Davor engagierte sich Simon in einem eigenen Startup und arbeitete in verschiedenen technischen Positionen bei Postfinance.",
         "portrait": "SimonSax.jpg",
         "company": "swisscom.jpg"
       }
