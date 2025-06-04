@@ -2454,6 +2454,26 @@
   {
     "bat": 56,
     "pdf": "",
+    "title": "Die Architektur der intelligenten Zukunft: Vom Code zum kooperativen Agenten",
+    "abstract": "Die GenAI-Experimente sind vorbei. Wir alle haben gesehen, was möglich ist. Die Frage ist nicht mehr \"ob\", sondern \"wie\". Wie schaffen wir echten, skalierbaren Business-Wert? Wie bauen wir Architekturen, die nicht in einem Jahr veraltet sind? Jede intelligente Anwendung beginnt mit Wissen. Aber Wissen ist mehr als nur Text. Unsere Welt ist multimodal – Bilder, Videos, Sensordaten. Die nächste Stufe der KI-Architektur muss diese Vielfalt verarbeiten können, um wirklich transformative Lösungen zu schaffen. Die Rolle des IT-Architekten wandelt sich vom \"Klempner des Datenflusses\" zum \"Komponisten eines intelligenten Orchesters\". Die Aufgabe ist, die richtigen Agenten zu entwerfen, ihnen die richtigen Ziele zu geben und die Leitplanken für ihre Zusammenarbeit zu definieren.",
+    "referenten": [
+      {
+        "name": "Marcel Trümpy, Google",
+        "bio": "Marcel ist ein erfahrener IT Experte, der seit 2019 als Customer Engineer für Google Cloud tätig ist. Mit einem Fokus auf die Handels- und Konsumgüterbranche hilft er Unternehmen, ihre digitale Transformation durch die Modernisierung ihrer Anwendungs- und SAP-Landschaften in der Cloud zu beschleunigen. Seine über 35-jährige Karriere begann als Wirtschaftsinformatiker in der Softwareentwicklung für Banken und führte ihn über strategische Positionen bei Technologieführern wie Sun Microsystems, Microsoft und SAP zu seiner heutigen Rolle bei Google.",
+        "portrait": "MarcelTruempy.jpeg",
+        "company": "google.png"
+      },
+      {
+        "name": "Sam Kruklis, Google",
+        "bio": "Sam hat einen Background in Computer Engineering sowie einen Master-Abschluss in Wirtschaftsinformatik. Nach einigen Jahren in der Industrie, wechselte er in den Bereich Datentechnik und künstliche Intelligenz. Bei Roche leitete er zum Beispiel Data Analytics Projekte, wo KI Modelle im Rahmen der Produktentwicklung zum Einsatz kamen. 2019 wechselte er zu Google und ist seitdem Teil des Enterprise Cloud Engineering Teams und trägt signifikant zur Data Analytics AI & ML Practice von Google Cloud bei.",
+        "portrait": "SamKruklis.jpeg",
+        "company": "google.png"
+      }
+    ]
+  },
+  {
+    "bat": 56,
+    "pdf": "",
     "title": "RAG in Produktion",
     "abstract": "Allgemeine Versicherungsbedingungen (AVBs) sind dutzende Seiten umfassende PDFs und dementsprechend nicht Kunden- und Prozessfreundlich. Wie kann eine effizientere Informationsbeschaffung und Prozessverbesserung ermöglicht werden? Im Fokus stehen die Nutzung von XML-Daten, KI-gestützten Q&A-Systemen und der Ansatz der Retrieval-Augmented Generation (RAG), um strukturelle Informationen zu bewahren und relevante Inhalte schnell zugänglich zu machen. Es wird aufgezeigt, wie diese Ansätze die bisherigen Einschränkungen von PDF-Viewern überwinden und eine skalierbare Grundlage für zukünftige Anwendungen schaffen. Lessons Learned und ein Ausblick auf weitere Use Cases runden den Vortrag ab.",
     "referenten": [
