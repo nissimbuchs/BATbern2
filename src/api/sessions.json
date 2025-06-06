@@ -2488,20 +2488,20 @@
   {
     "bat": 56,
     "pdf": "",
-    "title": "TrainVision – ein ehrlicher Erfahrungsbericht vom Prototyp bis zur produktiven Lösung",
-    "abstract": "Train Vision, die Erfassung von Zugformationsinformationen mittels Computer Vision, begann als CAS-Arbeit mit dem Ziel, erste praktische Erfahrungen im Bereich Machine Learning und Deep Neural Networks zu sammeln. Doch es blieb nicht bei einem Experiment: Nach Abschluss der Arbeit entschieden wir uns, unser Know-how konsequent auszubauen – und wie lernt man besser, als Dinge selbst umzusetzen? Unser Ziel war es, die CAS-Arbeit in ein stabiles, produktionstaugliches System zu überführen. Der Weg dahin war jedoch alles andere als trivial: Von der Datenbeschaffung über tagelanges Training und den hartnäckigen Kampf gegen False Positives bis hin zur Reproduzierbarkeit von Ergebnissen brachte jede Phase eigene Herausforderungen mit sich. Besonders zentral war die Frage: Wie erreichen wir die für den Einsatz in einem produktiven Umfeld notwendige Genauigkeit? Dabei zeigte sich: Technische Exzellenz allein reicht nicht aus. Erst die Kombination mit durchdachter Business-Logik machte das System robust und alltagstauglich. Der Vortrag ist ein ehrlicher Erfahrungsbericht darüber, was es wirklich bedeutet, aus einem schnellen YouTube-Prototyp ein verlässliches Produktivsystem zu machen.",
+    "title": "GenAI beim Bund: Wie das BAFU komplexe Anfragen meistert!",
+    "abstract": "Das Bundesamt für Umwelt (BAFU) modernisiert seine Arbeitsweise mit einem innovativen, auf Generativer KI basierenden digitalen Assistenten. Mithilfe RAG-Technologie (Retrieval-Augmented Generation) und Agenten verknüpft das System interne und externe Datenquellen und unterstützt Mitarbeitende bei der effizienten Bearbeitung komplexer Anfragen, der Bildanalyse und der Dokumentenauswertung. In dieser Präsentation erhalten Sie Einblicke in die technische Umsetzung des Projekts, das das BAFU gemeinsam mit ipt auf AWS und Amazon Bedrock realisiert hat. Dabei beleuchten wir nicht nur die technologischen Aspekte, sondern widmen uns auch den kritischen Themen Datenschutz und IT-Sicherheit in der Bundesverwaltung.",
     "referenten": [
       {
-        "name": "Marco Sommerfeld, mtrail",
-        "bio": "Marco Sommerfeld hat Mathematik in Berlin studiert und über 15 Jahre hinweg seine Expertise in der Travel- und Transportbranche aufgebaut. Bei mtrail hat er das Machine-Learning-Team aufgebaut und leitet es heute. Vor vier Jahren entdeckte er im Rahmen eines CAS im Bereich Machine Learning seine Leidenschaft für Computer Vision – ein Thema, das ihn seither nicht mehr loslässt.",
-        "portrait": "MarcoSommerfeld.jpg",
-        "company": "mtrail.jpg"
+        "name": "Patrick Koller, Bundesamt für Umwelt BAFU",
+        "bio": "Patrick Koller hat einen M.Sc. in Umwelt- und Atmosphärenwissenschaften mit dem Schwerpunkt Meteorologie/Hydrogeologie/Fernerkundung abgeschlossen – ein Anwendungsgebiet, in dem DataSciene eine zentrale Rolle spielt. Im Verlauf seiner beruflichen Entwicklung wirkte er verschiedenen DataScience und DevOps Projekten mit. Er interessiert sich für Cloud- und Kubernetes-Technologien, sowie Anwendungen in Analytics, Machine Learning, Künstlicher Intelligenz und das Monitoring und die Modellierung von komplexen Prozessen in der Umwelt. Aktuell ist er als Senior Data Scientist beim Bundesamt für Umwelt (BAFU) tätig. Zuvor war er in Funktionen beim Bundesamt für Informatik und Telekommunikation (BIT), bei MeteoSwiss, der ETH Zürich und bei Swiss Re in technologieorientierten Bereichen tätig.",
+        "portrait": "PatrickKoller.jpg",
+        "company": "bafu_logo.png"
       },
       {
-        "name": "Aeneas Grüter, mtrail",
-        "bio": "Aeneas Grüter ist Softwareentwickler mit Masterabschluss in Computer Science und fundierter Erfahrung in der Entwicklung komplexer Webapplikationen. Seine technische Bandbreite reicht von Java über TypeScript bis hin zu Kubernetes, wobei er stets den Fokus auf saubere Architektur, Skalierbarkeit und agile Arbeitsweisen legt. Vor seiner IT-Laufbahn hat er Geografie in Bern studiert.",
-        "portrait": "AeneasGrueter.jpg",
-        "company": "mtrail.jpg"
+        "name": "Philipp Knecht, Amazon Web Services (AWS) Schweiz",
+        "bio": "Philipp Knecht ist ein Manager Solutions Architecture bei Amazon Web Services (AWS) Schweiz. Er leitet ein Team von Solution Architects (SAs) mit einem Fokus auf Public Sector Kunden. Die SAs im Team unterstützen die Kunden auf ihrem Weg in die Cloud, beraten bezüglich AWS Services oder Partner Lösungen, und stellen sicher, dass die Kunden mit den Services von AWS langfristig zufrieden sind. Philipp hat einen Abschluss in Informatik, Computer-, und Nachrichtentechnik am Tech Rapperswil (heute Ostschweizer Fachhochschule) und ein Nachdiplomstudium in Wirtschaft. Vor seiner Zeit bei AWS war Philipp viele Jahre als Consultant, Architekt, und Manager in diversen Rollen bei Kunden unterwegs.",
+        "portrait": "PhilippKnecht.jpg",
+        "company": "aws-logo.png"
       }
     ]
   },
@@ -2556,20 +2556,20 @@
   {
     "bat": 56,
     "pdf": "",
-    "title": "GenAI beim Bund: Wie das BAFU komplexe Anfragen meistert!",
-    "abstract": "Das Bundesamt für Umwelt (BAFU) modernisiert seine Arbeitsweise mit einem innovativen, auf Generativer KI basierenden digitalen Assistenten. Mithilfe RAG-Technologie (Retrieval-Augmented Generation) und Agenten verknüpft das System interne und externe Datenquellen und unterstützt Mitarbeitende bei der effizienten Bearbeitung komplexer Anfragen, der Bildanalyse und der Dokumentenauswertung. In dieser Präsentation erhalten Sie Einblicke in die technische Umsetzung des Projekts, das das BAFU gemeinsam mit ipt auf AWS und Amazon Bedrock realisiert hat. Dabei beleuchten wir nicht nur die technologischen Aspekte, sondern widmen uns auch den kritischen Themen Datenschutz und IT-Sicherheit in der Bundesverwaltung.",
+    "title": "TrainVision – ein ehrlicher Erfahrungsbericht vom Prototyp bis zur produktiven Lösung",
+    "abstract": "Train Vision, die Erfassung von Zugformationsinformationen mittels Computer Vision, begann als CAS-Arbeit mit dem Ziel, erste praktische Erfahrungen im Bereich Machine Learning und Deep Neural Networks zu sammeln. Doch es blieb nicht bei einem Experiment: Nach Abschluss der Arbeit entschieden wir uns, unser Know-how konsequent auszubauen – und wie lernt man besser, als Dinge selbst umzusetzen? Unser Ziel war es, die CAS-Arbeit in ein stabiles, produktionstaugliches System zu überführen. Der Weg dahin war jedoch alles andere als trivial: Von der Datenbeschaffung über tagelanges Training und den hartnäckigen Kampf gegen False Positives bis hin zur Reproduzierbarkeit von Ergebnissen brachte jede Phase eigene Herausforderungen mit sich. Besonders zentral war die Frage: Wie erreichen wir die für den Einsatz in einem produktiven Umfeld notwendige Genauigkeit? Dabei zeigte sich: Technische Exzellenz allein reicht nicht aus. Erst die Kombination mit durchdachter Business-Logik machte das System robust und alltagstauglich. Der Vortrag ist ein ehrlicher Erfahrungsbericht darüber, was es wirklich bedeutet, aus einem schnellen YouTube-Prototyp ein verlässliches Produktivsystem zu machen.",
     "referenten": [
       {
-        "name": "Patrick Koller, Bundesamt für Umwelt BAFU",
-        "bio": "Patrick Koller hat einen M.Sc. in Umwelt- und Atmosphärenwissenschaften mit dem Schwerpunkt Meteorologie/Hydrogeologie/Fernerkundung abgeschlossen – ein Anwendungsgebiet, in dem DataSciene eine zentrale Rolle spielt. Im Verlauf seiner beruflichen Entwicklung wirkte er verschiedenen DataScience und DevOps Projekten mit. Er interessiert sich für Cloud- und Kubernetes-Technologien, sowie Anwendungen in Analytics, Machine Learning, Künstlicher Intelligenz und das Monitoring und die Modellierung von komplexen Prozessen in der Umwelt. Aktuell ist er als Senior Data Scientist beim Bundesamt für Umwelt (BAFU) tätig. Zuvor war er in Funktionen beim Bundesamt für Informatik und Telekommunikation (BIT), bei MeteoSwiss, der ETH Zürich und bei Swiss Re in technologieorientierten Bereichen tätig.",
-        "portrait": "PatrickKoller.jpg",
-        "company": "bafu_logo.png"
+        "name": "Marco Sommerfeld, mtrail",
+        "bio": "Marco Sommerfeld hat Mathematik in Berlin studiert und über 15 Jahre hinweg seine Expertise in der Travel- und Transportbranche aufgebaut. Bei mtrail hat er das Machine-Learning-Team aufgebaut und leitet es heute. Vor vier Jahren entdeckte er im Rahmen eines CAS im Bereich Machine Learning seine Leidenschaft für Computer Vision – ein Thema, das ihn seither nicht mehr loslässt.",
+        "portrait": "MarcoSommerfeld.jpg",
+        "company": "mtrail.jpg"
       },
       {
-        "name": "Philipp Knecht, Amazon Web Services (AWS) Schweiz",
-        "bio": "Philipp Knecht ist ein Manager Solutions Architecture bei Amazon Web Services (AWS) Schweiz. Er leitet ein Team von Solution Architects (SAs) mit einem Fokus auf Public Sector Kunden. Die SAs im Team unterstützen die Kunden auf ihrem Weg in die Cloud, beraten bezüglich AWS Services oder Partner Lösungen, und stellen sicher, dass die Kunden mit den Services von AWS langfristig zufrieden sind. Philipp hat einen Abschluss in Informatik, Computer-, und Nachrichtentechnik am Tech Rapperswil (heute Ostschweizer Fachhochschule) und ein Nachdiplomstudium in Wirtschaft. Vor seiner Zeit bei AWS war Philipp viele Jahre als Consultant, Architekt, und Manager in diversen Rollen bei Kunden unterwegs.",
-        "portrait": "PhilippKnecht.jpg",
-        "company": "aws-logo.png"
+        "name": "Aeneas Grüter, mtrail",
+        "bio": "Aeneas Grüter ist Softwareentwickler mit Masterabschluss in Computer Science und fundierter Erfahrung in der Entwicklung komplexer Webapplikationen. Seine technische Bandbreite reicht von Java über TypeScript bis hin zu Kubernetes, wobei er stets den Fokus auf saubere Architektur, Skalierbarkeit und agile Arbeitsweisen legt. Vor seiner IT-Laufbahn hat er Geografie in Bern studiert.",
+        "portrait": "AeneasGrueter.jpg",
+        "company": "mtrail.jpg"
       }
     ]
   },
