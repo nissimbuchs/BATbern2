@@ -2405,7 +2405,7 @@
   },
   {
     "bat": 55,
-    "pdf": "",
+    "pdf": "https://www.slideshare.net/slideshow/bridging-the-gap-from-telco-to-techco-with-agile-architecture/276517441",
     "title": "Bridging the Gap from Telco to Techco with Agile Architecture",
     "abstract": "The Telco industry is undergoing a major IT transformation, shifting from Telco to Techco. This shift is driven by a breakneck pace of technological change that traditional architectures simply cannot keep up with. In my presentation, I will explore the profound impact of digitization on Telco architecture. Using examples from Swisscom's Network Division, I will show why Agile Architecture is crucial for cutting complexity, accelerating time-to-market, and sparking innovation within the organization. This approach isn't just strategic; it's vital for the future success of our industry. Join me to uncover how Swisscom is navigating this transformation and what lessons can be applied to your organization.",
     "referenten": [
@@ -2419,7 +2419,7 @@
   },
   {
     "bat": 55,
-    "pdf": "",
+    "pdf": "https://www.slideshare.net/slideshow/how-can-twint-be-agile-in-an-inert-ecosystem/276517429",
     "title": "How can TWINT be agile in an inert ecosystem?",
     "abstract": "The Swiss banking Ecosystem works as a trustworthy and reliable basis for personal and business-related financial transactions. A fintech in this field is dealing with large and globally active players who can’t (and likely shouldn’t) adapt as fast and as agile as the fintech can, and must, to secure its position in the market. In this presentation I will elaborate in which ways TWINT strives for agility and innovation in an otherwise slow-moving and slowly innovating ecosystem.",
     "referenten": [
@@ -2433,7 +2433,7 @@
   },
   {
     "bat": 55,
-    "pdf": "",
+    "pdf": "https://de.slideshare.net/slideshow/agile-architektur-und-transformation-postfinance/276517426",
     "title": "Agile Architektur @PF",
     "abstract": "Die Architektur spielt eine zentrale Rolle in der agilen Transformation und strategischen Ausrichtung in der PostFinance. Mit diesem Vortrag, soll aufgezeigt werden, wie Architektur-Management-Prozesse gestaltet werden müssen, um flexibel auf Veränderungen zu reagieren, während strategische Leitplanken erhalten bleiben. Zudem werden der Aufbau und die Entwicklung einer agilen Architektur sowie deren Nutzen und Herausforderungen dargestellt. Ein Praxisbeispiel veranschaulicht Herausforderungen und Nutzen agiler Architektur. Abschliessend werden Lessons Learned reflektiert, um Strategien für eine zukunftsfähige Architektur abzuleiten.",
     "referenten": [
