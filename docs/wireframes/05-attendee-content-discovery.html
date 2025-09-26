@@ -1,0 +1,1864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BATbern - Attendee Content Discovery Wireframe</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: #2C5F7C;
+            color: white;
+            padding: 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            height: 64px;
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 24px;
+            height: 64px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+            text-decoration: none;
+        }
+
+        .role-indicator {
+            background: rgba(255,255,255,0.2);
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 14px;
+            margin-left: 24px;
+        }
+
+        /* Attendee-Specific Features */
+        .ai-search-container {
+            position: relative;
+        }
+
+        .search-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            padding: 16px;
+            margin-top: 8px;
+            z-index: 100;
+        }
+
+        .search-suggestion {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .search-suggestion:hover {
+            background: #f5f5f5;
+        }
+
+        .suggestion-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #27AE60;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+        }
+
+        .suggestion-content {
+            flex: 1;
+        }
+
+        .suggestion-title {
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 2px;
+        }
+
+        .suggestion-meta {
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* Personalized Recommendations */
+        .recommendations-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .recommendation-item {
+            display: flex;
+            gap: 16px;
+            padding: 16px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .recommendation-item:last-child {
+            border-bottom: none;
+        }
+
+        .recommendation-thumb {
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            background: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .recommendation-content {
+            flex: 1;
+        }
+
+        .recommendation-title {
+            font-weight: 600;
+            color: #2C5F7C;
+            margin-bottom: 4px;
+        }
+
+        .recommendation-meta {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .recommendation-reason {
+            font-size: 12px;
+            color: #27AE60;
+            background: #e8f5e8;
+            padding: 4px 8px;
+            border-radius: 12px;
+            display: inline-block;
+        }
+
+        /* PWA Features */
+        .pwa-features {
+            background: linear-gradient(135deg, #27AE60, #2ecc71);
+            color: white;
+            padding: 20px 24px;
+            margin: -24px -24px 24px -24px;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .offline-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .offline-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #fff;
+            animation: pulse 2s infinite;
+        }
+
+        .install-prompt {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        /* Learning Pathways */
+        .pathway-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid #27AE60;
+        }
+
+        .pathway-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .pathway-progress {
+            width: 100%;
+            height: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 16px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #27AE60;
+            transition: width 0.3s;
+        }
+
+        .pathway-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .pathway-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            border-radius: 6px;
+            background: #f8f9fa;
+        }
+
+        .pathway-status {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+
+        .pathway-status.completed {
+            background: #27AE60;
+        }
+
+        .pathway-status.current {
+            background: #F39C12;
+        }
+
+        .pathway-status.pending {
+            background: #e0e0e0;
+        }
+
+        /* Sponsor Ribbons */
+        .sponsor-ribbon {
+            background: linear-gradient(135deg, #f8fafe 0%, #e8f4f8 100%);
+            border: 1px solid #e0f2f1;
+            padding: 16px 0;
+            margin: 32px 0;
+            text-align: center;
+            border-radius: 8px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s ease;
+        }
+
+        .sponsor-ribbon.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .sponsor-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .partner-logo {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #2C5F7C;
+            min-width: 120px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .sponsor-text {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Thank You Micro-Moments */
+        .thank-you-moment {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.15);
+            z-index: 10000;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            max-width: 350px;
+            width: 90%;
+        }
+
+        .thank-you-moment.visible {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+            pointer-events: auto;
+        }
+
+        .thank-you-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2C5F7C;
+            margin-bottom: 12px;
+        }
+
+        .thank-you-logo {
+            background: linear-gradient(135deg, #2C5F7C 0%, #4A90B8 100%);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 16px 0;
+            box-shadow: 0 4px 16px rgba(44, 95, 124, 0.3);
+        }
+
+        .thank-you-subtitle {
+            font-size: 14px;
+            color: #666;
+            margin: 0;
+        }
+
+        /* Community Features */
+        .community-section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .rating-stars {
+            display: flex;
+            gap: 4px;
+            margin: 8px 0;
+        }
+
+        .star {
+            font-size: 16px;
+            color: #F39C12;
+        }
+
+        .community-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            border-color: #27AE60;
+            color: #27AE60;
+        }
+
+        .action-btn.active {
+            background: #27AE60;
+            color: white;
+            border-color: #27AE60;
+        }
+
+        /* Hero Search Section */
+        .hero-section {
+            background: linear-gradient(135deg, #2C5F7C 0%, #4A90B8 100%);
+            color: white;
+            padding: 120px 24px 80px;
+            margin-top: 64px;
+            text-align: center;
+        }
+
+        .hero-title {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .hero-subtitle {
+            font-size: 20px;
+            margin-bottom: 40px;
+            opacity: 0.9;
+        }
+
+        .search-container {
+            max-width: 600px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 16px 60px 16px 24px;
+            border: none;
+            border-radius: 32px;
+            font-size: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            outline: none;
+        }
+
+        .search-btn {
+            position: absolute;
+            right: 8px;
+            top: 8px;
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            background: #E67E22;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .search-suggestions {
+            margin-top: 24px;
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .suggestion-tag {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .suggestion-tag:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+
+        .content-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 32px;
+        }
+
+        /* Sidebar Filters */
+        .filters-sidebar {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 80px;
+        }
+
+        .filter-section {
+            margin-bottom: 32px;
+        }
+
+        .filter-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2C5F7C;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-group {
+            margin-bottom: 16px;
+        }
+
+        .filter-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .filter-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .filter-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 6px 8px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .filter-option:hover {
+            background: #f5f5f5;
+        }
+
+        .filter-option input[type="checkbox"] {
+            margin: 0;
+        }
+
+        .filter-option-label {
+            font-size: 14px;
+            color: #333;
+        }
+
+        .filter-count {
+            font-size: 12px;
+            color: #666;
+            margin-left: auto;
+        }
+
+        .year-slider {
+            width: 100%;
+            margin: 16px 0;
+        }
+
+        /* Main Content Area */
+        .content-main {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .content-header {
+            padding: 24px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .content-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2C5F7C;
+        }
+
+        .view-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .view-btn {
+            padding: 8px 12px;
+            border: 1px solid #e0e0e0;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .view-btn.active {
+            background: #2C5F7C;
+            color: white;
+            border-color: #2C5F7C;
+        }
+
+        .sort-select {
+            padding: 8px 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        /* Personalized Recommendations */
+        .recommendations-section {
+            padding: 24px;
+            border-bottom: 1px solid #f0f0f0;
+            background: linear-gradient(135deg, #f8fafe 0%, #e8f4f8 100%);
+        }
+
+        .recommendations-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2C5F7C;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .recommendations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .recommendation-card {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+            border-left: 4px solid #E67E22;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .recommendation-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .rec-event {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .rec-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .rec-speaker {
+            font-size: 12px;
+            color: #2C5F7C;
+            margin-bottom: 8px;
+        }
+
+        .rec-reason {
+            font-size: 11px;
+            color: #666;
+            background: #f5f5f5;
+            padding: 4px 8px;
+            border-radius: 12px;
+            display: inline-block;
+        }
+
+        /* Content Grid */
+        .content-grid {
+            padding: 24px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 24px;
+        }
+
+        .content-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .content-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        }
+
+        .card-header {
+            height: 120px;
+            background: linear-gradient(135deg, #2C5F7C 0%, #4A90B8 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            font-weight: 600;
+            position: relative;
+        }
+
+        .card-event-number {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(255,255,255,0.2);
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .card-content {
+            padding: 20px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .card-meta {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 12px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .card-speaker {
+            font-size: 14px;
+            color: #2C5F7C;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .speaker-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #4A90B8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .card-abstract {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.4;
+            margin-bottom: 12px;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .card-tags {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            background: #e8f4f8;
+            color: #2C5F7C;
+        }
+
+        .tag.topic {
+            background: #fff3e0;
+            color: #e65100;
+        }
+
+        .tag.tech {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .card-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-downloads {
+            font-size: 12px;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .bookmark-btn {
+            background: none;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .bookmark-btn:hover {
+            background: #f5f5f5;
+        }
+
+        .bookmark-btn.bookmarked {
+            color: #E67E22;
+        }
+
+        /* Learning Pathways */
+        .pathways-section {
+            padding: 24px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .pathways-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2C5F7C;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pathway-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+        }
+
+        .pathway-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .pathway-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .pathway-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .pathway-description {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .pathway-progress {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #4A90B8;
+        }
+
+        .progress-text {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .pathway-sessions {
+            font-size: 12px;
+            color: #999;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sponsor-content {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .partner-logo {
+                width: 100px;
+                height: 50px;
+                font-size: 12px;
+            }
+
+            .sponsor-text {
+                font-size: 14px;
+            }
+
+            .thank-you-moment {
+                padding: 20px 24px;
+                margin: 0 16px;
+                width: calc(100% - 32px);
+                max-width: 300px;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .content-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .filters-sidebar {
+                position: static;
+                order: 2;
+            }
+
+            .content-main {
+                order: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 32px;
+            }
+
+            .hero-subtitle {
+                font-size: 16px;
+            }
+
+            .main-content {
+                padding: 24px 16px;
+            }
+
+            .content-grid {
+                grid-template-columns: 1fr;
+                padding: 16px;
+            }
+
+            .recommendations-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .pathway-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .search-suggestions {
+                gap: 8px;
+            }
+
+            .suggestion-tag {
+                font-size: 12px;
+                padding: 6px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="nav-container">
+            <div style="display: flex; align-items: center;">
+                <a href="#" class="logo">BATbern</a>
+                <div class="role-indicator">🔍 Content Discovery</div>
+            </div>
+            <div style="color: white;">Welcome, Maria! Explore 20+ years of BATbern content</div>
+        </div>
+    </header>
+
+    <!-- Hero Search Section -->
+    <section class="hero-section">
+        <h1 class="hero-title">Discover Swiss IT Architecture Excellence</h1>
+        <p class="hero-subtitle">Search through 20+ years of BATbern presentations, insights, and innovations</p>
+
+        <div class="search-container ai-search-container">
+            <input type="text" class="search-input" placeholder="Ask anything about BATbern content... powered by AI">
+            <button class="search-btn">🤖</button>
+
+            <!-- AI-Powered Search Suggestions -->
+            <div class="search-suggestions" style="display: none;">
+                <div class="search-suggestion">
+                    <div class="suggestion-icon">🎯</div>
+                    <div class="suggestion-content">
+                        <div class="suggestion-title">Best practices for microservices monitoring</div>
+                        <div class="suggestion-meta">Based on your DevOps interests • 3 relevant presentations</div>
+                    </div>
+                </div>
+                <div class="search-suggestion">
+                    <div class="suggestion-icon">📊</div>
+                    <div class="suggestion-content">
+                        <div class="suggestion-title">Cloud security compliance frameworks</div>
+                        <div class="suggestion-meta">Trending topic • 5 recent presentations</div>
+                    </div>
+                </div>
+                <div class="search-suggestion">
+                    <div class="suggestion-icon">⚡</div>
+                    <div class="suggestion-content">
+                        <div class="suggestion-title">Kubernetes performance optimization</div>
+                        <div class="suggestion-meta">Popular search • 7 expert presentations</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="search-suggestions">
+            <span class="suggestion-tag">Microservices</span>
+            <span class="suggestion-tag">Cloud Architecture</span>
+            <span class="suggestion-tag">DevOps</span>
+            <span class="suggestion-tag">AI & Machine Learning</span>
+            <span class="suggestion-tag">Security</span>
+            <span class="suggestion-tag">Kubernetes</span>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-layout">
+            <!-- Filters Sidebar -->
+            <aside class="filters-sidebar">
+                <div class="filter-section">
+                    <h3 class="filter-title">
+                        <span>🗂️</span>
+                        Filters
+                    </h3>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Event Year</label>
+                        <input type="range" class="year-slider" min="2005" max="2024" value="2024">
+                        <div style="display: flex; justify-content: space-between; font-size: 12px; color: #666;">
+                            <span>2005</span>
+                            <span>2024</span>
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Topics</label>
+                        <div class="filter-options">
+                            <label class="filter-option">
+                                <input type="checkbox" checked>
+                                <span class="filter-option-label">Cloud Architecture</span>
+                                <span class="filter-count">23</span>
+                            </label>
+                            <label class="filter-option">
+                                <input type="checkbox">
+                                <span class="filter-option-label">Microservices</span>
+                                <span class="filter-count">18</span>
+                            </label>
+                            <label class="filter-option">
+                                <input type="checkbox">
+                                <span class="filter-option-label">DevOps</span>
+                                <span class="filter-count">15</span>
+                            </label>
+                            <label class="filter-option">
+                                <input type="checkbox">
+                                <span class="filter-option-label">AI & ML</span>
+                                <span class="filter-count">12</span>
+                            </label>
+                            <label class="filter-option">
+                                <input type="checkbox">
+                                <span class="filter-option-label">Security</span>
+                                <span class="filter-count">19</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Technologies</label>
+                        <div class="filter-options">
+                            <label class="filter-option">
+                                <input type="checkbox">
+                                <span class="filter-option-label">Kubernetes</span>
+                                <span class="filter-count">14</span>
+                            </label>
+                            <label class="filter-option">
+                                <input type="checkbox">
+                                <span class="filter-option-label">Docker</span>
+                                <span class="filter-count">16</span>
+                            </label>
+                            <label class="filter-option">
+                                <input type="checkbox">
+                                <span class="filter-option-label">React</span>
+                                <span class="filter-count">8</span>
+                            </label>
+                            <label class="filter-option">
+                                <input type="checkbox">
+                                <span class="filter-option-label">Java</span>
+                                <span class="filter-count">25</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Event Type</label>
+                        <div class="filter-options">
+                            <label class="filter-option">
+                                <input type="checkbox" checked>
+                                <span class="filter-option-label">Abend-BATbern</span>
+                                <span class="filter-count">42</span>
+                            </label>
+                            <label class="filter-option">
+                                <input type="checkbox" checked>
+                                <span class="filter-option-label">Ganztages-BATbern</span>
+                                <span class="filter-count">12</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="padding-top: 16px; border-top: 1px solid #f0f0f0;">
+                    <button style="width: 100%; padding: 10px; background: #f5f5f5; border: none; border-radius: 6px; cursor: pointer;">
+                        Clear All Filters
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Main Content Area -->
+            <div class="content-main">
+                <!-- Content Header -->
+                <div class="content-header">
+                    <h2 class="content-title">247 presentations found</h2>
+                    <div class="view-controls">
+                        <button class="view-btn active">Grid</button>
+                        <button class="view-btn">List</button>
+                        <select class="sort-select">
+                            <option>Most Recent</option>
+                            <option>Most Relevant</option>
+                            <option>Most Downloaded</option>
+                            <option>Highest Rated</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Personalized Recommendations -->
+                <div class="recommendations-section">
+                    <h3 class="recommendations-title">
+                        <span>💡</span>
+                        Recommended for You
+                    </h3>
+                    <div class="recommendations-grid">
+                        <div class="recommendation-card">
+                            <div class="rec-event">BATbern 54 • January 2024</div>
+                            <div class="rec-title">Microservices Monitoring Strategies</div>
+                            <div class="rec-speaker">by Dr. Andreas Mueller</div>
+                            <div class="rec-reason">Based on your interest in DevOps</div>
+                        </div>
+                        <div class="recommendation-card">
+                            <div class="rec-event">BATbern 52 • September 2023</div>
+                            <div class="rec-title">Cloud Security Best Practices</div>
+                            <div class="rec-speaker">by Sarah Johnson</div>
+                            <div class="rec-reason">Trending in your company</div>
+                        </div>
+                        <div class="recommendation-card">
+                            <div class="rec-event">BATbern 51 • June 2023</div>
+                            <div class="rec-title">Kubernetes at Enterprise Scale</div>
+                            <div class="rec-speaker">by Marco Zimmermann</div>
+                            <div class="rec-reason">Similar to recently viewed</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Learning Pathways -->
+                <div class="pathways-section">
+                    <h3 class="pathways-title">
+                        <span>🎯</span>
+                        Learning Pathways
+                    </h3>
+                    <div class="pathway-cards">
+                        <div class="pathway-card">
+                            <div class="pathway-title">Cloud Native Journey</div>
+                            <div class="pathway-description">Master cloud-native architecture from basics to advanced patterns</div>
+                            <div class="pathway-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 60%;"></div>
+                                </div>
+                                <div class="progress-text">3 of 5 complete</div>
+                            </div>
+                            <div class="pathway-sessions">5 sessions • 8 hours total</div>
+                        </div>
+                        <div class="pathway-card">
+                            <div class="pathway-title">Security Architecture</div>
+                            <div class="pathway-description">Build secure systems with enterprise-grade security patterns</div>
+                            <div class="pathway-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 25%;"></div>
+                                </div>
+                                <div class="progress-text">1 of 4 complete</div>
+                            </div>
+                            <div class="pathway-sessions">4 sessions • 6 hours total</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content Grid -->
+                <div class="content-grid">
+                    <div class="content-card">
+                        <div class="card-header">
+                            <span>☁️</span>
+                            <div class="card-event-number">BATbern 55</div>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">Cloud Native Architecture Patterns</h3>
+                            <div class="card-meta">
+                                <span>📅 March 2024</span>
+                                <span>⏱️ 45 min</span>
+                                <span>👥 245 attendees</span>
+                            </div>
+                            <div class="card-speaker">
+                                <div class="speaker-avatar">DW</div>
+                                <span>Dr. Sarah Wilson</span>
+                            </div>
+                            <p class="card-abstract">
+                                Explore modern cloud-native architecture patterns including microservices decomposition,
+                                service mesh implementation, and observability strategies for distributed systems...
+                            </p>
+                            <div class="card-tags">
+                                <span class="tag">Cloud Architecture</span>
+                                <span class="tag topic">Microservices</span>
+                                <span class="tag tech">Kubernetes</span>
+                            </div>
+                            <div class="card-actions">
+                                <div class="card-downloads">
+                                    <span>📥</span>
+                                    <span>1,234 downloads</span>
+                                </div>
+                                <button class="bookmark-btn">🔖</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="content-card">
+                        <div class="card-header">
+                            <span>🔐</span>
+                            <div class="card-event-number">BATbern 54</div>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">Zero Trust Security Architecture</h3>
+                            <div class="card-meta">
+                                <span>📅 January 2024</span>
+                                <span>⏱️ 50 min</span>
+                                <span>👥 198 attendees</span>
+                            </div>
+                            <div class="card-speaker">
+                                <div class="speaker-avatar">AM</div>
+                                <span>Alex Martinez</span>
+                            </div>
+                            <p class="card-abstract">
+                                Implementing zero trust security principles in modern enterprise environments.
+                                This session covers identity verification, least privilege access, and continuous monitoring...
+                            </p>
+                            <div class="card-tags">
+                                <span class="tag">Security</span>
+                                <span class="tag topic">Zero Trust</span>
+                                <span class="tag tech">Identity Management</span>
+                            </div>
+                            <div class="card-actions">
+                                <div class="card-downloads">
+                                    <span>📥</span>
+                                    <span>987 downloads</span>
+                                </div>
+                                <button class="bookmark-btn bookmarked">🔖</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="content-card">
+                        <div class="card-header">
+                            <span>🤖</span>
+                            <div class="card-event-number">BATbern 53</div>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">AI-Powered Code Generation</h3>
+                            <div class="card-meta">
+                                <span>📅 November 2023</span>
+                                <span>⏱️ 40 min</span>
+                                <span>👥 312 attendees</span>
+                            </div>
+                            <div class="card-speaker">
+                                <div class="speaker-avatar">LM</div>
+                                <span>Lisa Müller</span>
+                            </div>
+                            <p class="card-abstract">
+                                Practical applications of AI in software development workflows. Learn how to integrate
+                                code generation tools while maintaining code quality and security standards...
+                            </p>
+                            <div class="card-tags">
+                                <span class="tag">AI & ML</span>
+                                <span class="tag topic">Code Generation</span>
+                                <span class="tag tech">GPT</span>
+                            </div>
+                            <div class="card-actions">
+                                <div class="card-downloads">
+                                    <span>📥</span>
+                                    <span>1,567 downloads</span>
+                                </div>
+                                <button class="bookmark-btn">🔖</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="content-card">
+                        <div class="card-header">
+                            <span>📊</span>
+                            <div class="card-event-number">BATbern 52</div>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">Observability at Scale</h3>
+                            <div class="card-meta">
+                                <span>📅 September 2023</span>
+                                <span>⏱️ 55 min</span>
+                                <span>👥 276 attendees</span>
+                            </div>
+                            <div class="card-speaker">
+                                <div class="speaker-avatar">MZ</div>
+                                <span>Marco Zimmermann</span>
+                            </div>
+                            <p class="card-abstract">
+                                Building comprehensive observability for distributed systems. Covers metrics, logging,
+                                tracing, and alerting strategies for microservices architectures...
+                            </p>
+                            <div class="card-tags">
+                                <span class="tag">DevOps</span>
+                                <span class="tag topic">Observability</span>
+                                <span class="tag tech">Prometheus</span>
+                            </div>
+                            <div class="card-actions">
+                                <div class="card-downloads">
+                                    <span>📥</span>
+                                    <span>892 downloads</span>
+                                </div>
+                                <button class="bookmark-btn">🔖</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="content-card">
+                        <div class="card-header">
+                            <span>🏗️</span>
+                            <div class="card-event-number">BATbern 51</div>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">Event-Driven Architecture</h3>
+                            <div class="card-meta">
+                                <span>📅 June 2023</span>
+                                <span>⏱️ 45 min</span>
+                                <span>👥 189 attendees</span>
+                            </div>
+                            <div class="card-speaker">
+                                <div class="speaker-avatar">JS</div>
+                                <span>Julia Schmidt</span>
+                            </div>
+                            <p class="card-abstract">
+                                Design and implement event-driven systems for better scalability and decoupling.
+                                Learn about event sourcing, CQRS, and messaging patterns...
+                            </p>
+                            <div class="card-tags">
+                                <span class="tag">Architecture</span>
+                                <span class="tag topic">Event Sourcing</span>
+                                <span class="tag tech">Apache Kafka</span>
+                            </div>
+                            <div class="card-actions">
+                                <div class="card-downloads">
+                                    <span>📥</span>
+                                    <span>743 downloads</span>
+                                </div>
+                                <button class="bookmark-btn">🔖</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="content-card">
+                        <div class="card-header">
+                            <span>🌱</span>
+                            <div class="card-event-number">BATbern 50</div>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">Sustainable Software Development</h3>
+                            <div class="card-meta">
+                                <span>📅 March 2023</span>
+                                <span>⏱️ 40 min</span>
+                                <span>👥 156 attendees</span>
+                            </div>
+                            <div class="card-speaker">
+                                <div class="speaker-avatar">TH</div>
+                                <span>Thomas Huber</span>
+                            </div>
+                            <p class="card-abstract">
+                                Green computing practices and energy-efficient system design. Learn how to measure
+                                and reduce the environmental impact of software systems...
+                            </p>
+                            <div class="card-tags">
+                                <span class="tag">Sustainability</span>
+                                <span class="tag topic">Green Computing</span>
+                                <span class="tag tech">Energy Efficiency</span>
+                            </div>
+                            <div class="card-actions">
+                                <div class="card-downloads">
+                                    <span>📥</span>
+                                    <span>432 downloads</span>
+                                </div>
+                                <button class="bookmark-btn">🔖</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Load More -->
+                <div style="text-align: center; padding: 32px;">
+                    <button style="padding: 12px 32px; background: #2C5F7C; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                        Load More Results
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sponsor Ribbon 1 -->
+        <div class="sponsor-ribbon" id="sponsor-ribbon-1">
+            <div class="sponsor-content">
+                <div class="partner-logo" id="partner-logo-1">
+                    Partner Logo
+                </div>
+                <div class="sponsor-text">Technology partner</div>
+            </div>
+        </div>
+
+        <!-- PWA Features Section -->
+        <div class="recommendations-panel">
+            <div class="pwa-features">
+                <div class="offline-indicator">
+                    <div class="offline-dot"></div>
+                    <span>Content available offline</span>
+                </div>
+                <button class="install-prompt">📱 Install BATbern App</button>
+            </div>
+            <h2 style="color: #2C5F7C; margin-bottom: 16px;">📱 Progressive Web App Features</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
+                <div style="padding: 16px; background: #f8f9fa; border-radius: 8px;">
+                    <h4 style="color: #27AE60; margin-bottom: 8px;">📱 Mobile Optimized</h4>
+                    <p style="font-size: 14px; color: #666;">Native app-like experience on all devices</p>
+                </div>
+                <div style="padding: 16px; background: #f8f9fa; border-radius: 8px;">
+                    <h4 style="color: #27AE60; margin-bottom: 8px;">🔄 Offline Access</h4>
+                    <p style="font-size: 14px; color: #666;">Access content without internet connection</p>
+                </div>
+                <div style="padding: 16px; background: #f8f9fa; border-radius: 8px;">
+                    <h4 style="color: #27AE60; margin-bottom: 8px;">🔔 Push Notifications</h4>
+                    <p style="font-size: 14px; color: #666;">Get notified about new content and events</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sponsor Ribbon 2 -->
+        <div class="sponsor-ribbon" id="sponsor-ribbon-2">
+            <div class="sponsor-content">
+                <div class="partner-logo" id="partner-logo-2">
+                    Partner Logo
+                </div>
+                <div class="sponsor-text">Innovation sponsor</div>
+            </div>
+        </div>
+
+        <!-- Personalized Recommendations -->
+        <div class="recommendations-panel">
+            <h2 style="color: #2C5F7C; margin-bottom: 16px;">🎯 Personalized for You</h2>
+            <p style="color: #666; margin-bottom: 24px;">Based on your interests in DevOps, Cloud Architecture, and Microservices</p>
+
+            <div class="recommendation-item">
+                <div class="recommendation-thumb">🐳</div>
+                <div class="recommendation-content">
+                    <div class="recommendation-title">Container Security Best Practices</div>
+                    <div class="recommendation-meta">BATbern 54 • Dr. Andreas Mueller • 45 min</div>
+                    <div class="recommendation-reason">Matches your Docker interests</div>
+                </div>
+            </div>
+
+            <div class="recommendation-item">
+                <div class="recommendation-thumb">☁️</div>
+                <div class="recommendation-content">
+                    <div class="recommendation-title">Multi-Cloud Strategy Implementation</div>
+                    <div class="recommendation-meta">BATbern 53 • Sarah Chen • 38 min</div>
+                    <div class="recommendation-reason">Trending in your network</div>
+                </div>
+            </div>
+
+            <div class="recommendation-item">
+                <div class="recommendation-thumb">⚡</div>
+                <div class="recommendation-content">
+                    <div class="recommendation-title">Performance Monitoring with Prometheus</div>
+                    <div class="recommendation-meta">BATbern 52 • Michael Schmidt • 42 min</div>
+                    <div class="recommendation-reason">Complements your recent views</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sponsor Ribbon 3 -->
+        <div class="sponsor-ribbon" id="sponsor-ribbon-3">
+            <div class="sponsor-content">
+                <div class="partner-logo" id="partner-logo-3">
+                    Partner Logo
+                </div>
+                <div class="sponsor-text">Community sponsor</div>
+            </div>
+        </div>
+
+        <!-- AI-Curated Learning Pathways -->
+        <div class="recommendations-panel">
+            <h2 style="color: #2C5F7C; margin-bottom: 16px;">🎓 Learning Pathways</h2>
+            <p style="color: #666; margin-bottom: 24px;">AI-curated content sequences for skill development</p>
+
+            <div class="pathway-card">
+                <div class="pathway-header">
+                    <h3 style="color: #2C5F7C;">Cloud Native Architecture Journey</h3>
+                    <span style="font-size: 14px; color: #666;">3 of 5 completed</span>
+                </div>
+                <div class="pathway-progress">
+                    <div class="progress-fill" style="width: 60%;"></div>
+                </div>
+                <div class="pathway-content">
+                    <div class="pathway-item">
+                        <div class="pathway-status completed"></div>
+                        <span style="font-size: 14px;">Microservices Fundamentals</span>
+                    </div>
+                    <div class="pathway-item">
+                        <div class="pathway-status completed"></div>
+                        <span style="font-size: 14px;">Container Orchestration</span>
+                    </div>
+                    <div class="pathway-item">
+                        <div class="pathway-status completed"></div>
+                        <span style="font-size: 14px;">Service Mesh Implementation</span>
+                    </div>
+                    <div class="pathway-item">
+                        <div class="pathway-status current"></div>
+                        <span style="font-size: 14px;">Observability & Monitoring</span>
+                    </div>
+                    <div class="pathway-item">
+                        <div class="pathway-status pending"></div>
+                        <span style="font-size: 14px;">Security & Compliance</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pathway-card">
+                <div class="pathway-header">
+                    <h3 style="color: #2C5F7C;">DevOps Transformation Path</h3>
+                    <span style="font-size: 14px; color: #666;">1 of 4 completed</span>
+                </div>
+                <div class="pathway-progress">
+                    <div class="progress-fill" style="width: 25%;"></div>
+                </div>
+                <div class="pathway-content">
+                    <div class="pathway-item">
+                        <div class="pathway-status completed"></div>
+                        <span style="font-size: 14px;">Cultural Transformation</span>
+                    </div>
+                    <div class="pathway-item">
+                        <div class="pathway-status current"></div>
+                        <span style="font-size: 14px;">CI/CD Pipeline Design</span>
+                    </div>
+                    <div class="pathway-item">
+                        <div class="pathway-status pending"></div>
+                        <span style="font-size: 14px;">Infrastructure as Code</span>
+                    </div>
+                    <div class="pathway-item">
+                        <div class="pathway-status pending"></div>
+                        <span style="font-size: 14px;">Monitoring & Alerting</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sponsor Ribbon 4 -->
+        <div class="sponsor-ribbon" id="sponsor-ribbon-4">
+            <div class="sponsor-content">
+                <div class="partner-logo" id="partner-logo-4">
+                    Partner Logo
+                </div>
+                <div class="sponsor-text">Content sponsor</div>
+            </div>
+        </div>
+
+        <!-- Community Engagement Features -->
+        <div class="community-section">
+            <h2 style="color: #2C5F7C; margin-bottom: 16px;">👥 Community Features</h2>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+                <div style="padding: 20px; background: #f8f9fa; border-radius: 12px;">
+                    <h3 style="color: #2C5F7C; margin-bottom: 12px;">📊 Content Ratings</h3>
+                    <div style="margin-bottom: 16px;">
+                        <div style="font-weight: 500; margin-bottom: 4px;">Microservices at Scale</div>
+                        <div class="rating-stars">
+                            <span class="star">★</span>
+                            <span class="star">★</span>
+                            <span class="star">★</span>
+                            <span class="star">★</span>
+                            <span class="star">★</span>
+                            <span style="font-size: 14px; color: #666; margin-left: 8px;">4.8 (127 ratings)</span>
+                        </div>
+                    </div>
+                    <div class="community-actions">
+                        <button class="action-btn">👍 Helpful</button>
+                        <button class="action-btn">📤 Share</button>
+                        <button class="action-btn active">⭐ Bookmark</button>
+                    </div>
+                </div>
+
+                <div style="padding: 20px; background: #f8f9fa; border-radius: 12px;">
+                    <h3 style="color: #2C5F7C; margin-bottom: 12px;">🏷️ Social Learning</h3>
+                    <div style="margin-bottom: 16px;">
+                        <div style="font-size: 14px; color: #666; margin-bottom: 8px;">Popular in your network:</div>
+                        <div style="font-weight: 500;">"Essential Cloud Security Patterns"</div>
+                        <div style="font-size: 12px; color: #666;">Recommended by 3 colleagues</div>
+                    </div>
+                    <div class="community-actions">
+                        <button class="action-btn">👀 View</button>
+                        <button class="action-btn">💬 Discuss</button>
+                        <button class="action-btn">🔗 Connect</button>
+                    </div>
+                </div>
+
+                <div style="padding: 20px; background: #f8f9fa; border-radius: 12px;">
+                    <h3 style="color: #2C5F7C; margin-bottom: 12px;">📚 My Bookmarks</h3>
+                    <div style="margin-bottom: 16px;">
+                        <div style="font-size: 14px; color: #666; margin-bottom: 8px;">15 presentations saved</div>
+                        <div style="font-weight: 500;">Last added: "Kubernetes Networking"</div>
+                        <div style="font-size: 12px; color: #666;">2 days ago</div>
+                    </div>
+                    <div class="community-actions">
+                        <button class="action-btn">📋 View All</button>
+                        <button class="action-btn">📤 Export</button>
+                        <button class="action-btn">🏷️ Organize</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Thank You Micro-Moment -->
+    <div class="thank-you-moment" id="thank-you-moment">
+        <div class="thank-you-title">Thank You!</div>
+        <div class="thank-you-logo" id="thank-you-logo">Partner Name</div>
+        <p class="thank-you-subtitle">Thanks to our partners for making BATbern content freely accessible</p>
+    </div>
+
+    <script>
+        // Partner companies
+        const partners = [
+            'SwissIT Solutions',
+            'TechCorp Zürich',
+            'CloudNative AG',
+            'DataSoft Bern',
+            'Alpine Tech',
+            'Swiss Innovation',
+            'ByteForge GmbH',
+            'Quantum Systems'
+        ];
+
+        // Initialize partner ribbons with random partners
+        function initializePartnerRibbons() {
+            const usedPartners = [];
+
+            for (let i = 1; i <= 4; i++) {
+                let randomPartner;
+                do {
+                    randomPartner = partners[Math.floor(Math.random() * partners.length)];
+                } while (usedPartners.includes(randomPartner) && usedPartners.length < partners.length);
+
+                usedPartners.push(randomPartner);
+                document.getElementById(`partner-logo-${i}`).textContent = randomPartner;
+            }
+        }
+
+        // Get random partner for thank you moments
+        function getRandomPartner() {
+            return partners[Math.floor(Math.random() * partners.length)];
+        }
+
+        // Show thank you micro-moment
+        function showThankYouMoment() {
+            const thankYouMoment = document.getElementById('thank-you-moment');
+            const thankYouLogo = document.getElementById('thank-you-logo');
+
+            thankYouLogo.textContent = getRandomPartner();
+            thankYouMoment.classList.add('visible');
+
+            setTimeout(() => {
+                thankYouMoment.classList.remove('visible');
+            }, 2000);
+        }
+
+        // Intersection Observer for sponsor ribbons
+        function setupSponsorRibbonObserver() {
+            const observerOptions = {
+                threshold: 0.3,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, observerOptions);
+
+            // Observe all sponsor ribbons
+            document.querySelectorAll('.sponsor-ribbon').forEach(ribbon => {
+                observer.observe(ribbon);
+            });
+        }
+
+        // Initialize everything when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializePartnerRibbons();
+            setupSponsorRibbonObserver();
+
+            // Show thank you moment after some content interaction
+            setTimeout(() => {
+                if (Math.random() < 0.3) { // 30% chance
+                    showThankYouMoment();
+                }
+            }, 15000); // After 15 seconds
+        });
+
+        // Enhanced bookmark functionality with thank you moments
+        document.querySelectorAll('.bookmark-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                this.classList.toggle('bookmarked');
+
+                // Show thank you moment occasionally when bookmarking
+                if (Math.random() < 0.2) { // 20% chance
+                    setTimeout(() => {
+                        showThankYouMoment();
+                    }, 500);
+                }
+                console.log('Bookmark toggled');
+            });
+        });
+        // Search functionality
+        document.querySelector('.search-input').addEventListener('input', function() {
+            console.log('Search query:', this.value);
+        });
+
+        // Suggestion tags
+        document.querySelectorAll('.suggestion-tag').forEach(tag => {
+            tag.addEventListener('click', function() {
+                document.querySelector('.search-input').value = this.textContent;
+                console.log('Search suggestion selected:', this.textContent);
+            });
+        });
+
+        // Filter interactions
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                console.log(`Filter ${this.nextElementSibling.textContent} ${this.checked ? 'enabled' : 'disabled'}`);
+            });
+        });
+
+        // View controls
+        document.querySelectorAll('.view-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                console.log('View changed to:', this.textContent);
+            });
+        });
+
+        // Bookmark functionality
+        document.querySelectorAll('.bookmark-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                this.classList.toggle('bookmarked');
+                console.log('Bookmark toggled');
+            });
+        });
+
+        // Content card clicks
+        document.querySelectorAll('.content-card').forEach(card => {
+            card.addEventListener('click', function() {
+                const title = this.querySelector('.card-title').textContent;
+                alert(`Opening: ${title}`);
+            });
+        });
+
+        // Recommendation clicks
+        document.querySelectorAll('.recommendation-card').forEach(card => {
+            card.addEventListener('click', function() {
+                const title = this.querySelector('.rec-title').textContent;
+                alert(`Opening recommendation: ${title}`);
+            });
+        });
+
+        // Learning pathway clicks
+        document.querySelectorAll('.pathway-card').forEach(card => {
+            card.addEventListener('click', function() {
+                const title = this.querySelector('.pathway-title').textContent;
+                alert(`Starting learning pathway: ${title}`);
+            });
+        });
+
+        // Sort functionality
+        document.querySelector('.sort-select').addEventListener('change', function() {
+            console.log('Sort changed to:', this.value);
+        });
+    </script>
+</body>
+</html>

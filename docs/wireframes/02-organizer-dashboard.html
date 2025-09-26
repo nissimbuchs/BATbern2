@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BATbern - Organizer Dashboard Wireframe</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* Header (inherited from shared components) */
+        .header {
+            background: #2C5F7C;
+            color: white;
+            padding: 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            height: 64px;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 24px;
+            height: 64px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+            text-decoration: none;
+        }
+
+        .role-indicator {
+            background: rgba(255,255,255,0.2);
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 14px;
+            margin-left: 24px;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 64px;
+            width: 320px;
+            height: calc(100vh - 64px);
+            background: white;
+            border-right: 1px solid #e0e0e0;
+            padding: 16px 0;
+            z-index: 900;
+            overflow-y: auto;
+        }
+
+        /* AI Smart Actions Panel */
+        .ai-actions-panel {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0 16px 24px 16px;
+            padding: 16px;
+            border-radius: 12px;
+            color: white;
+        }
+
+        .ai-panel-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ai-suggestions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .ai-suggestion {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .ai-suggestion:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* Cross-role Collaboration Hub */
+        .collaboration-hub {
+            background: #f8f9fa;
+            margin: 0 16px 24px 16px;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .collaboration-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #2C5F7C;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .active-users {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .user-dot {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            position: relative;
+        }
+
+        .user-dot.organizer { background: #2C5F7C; }
+        .user-dot.speaker { background: #E67E22; }
+        .user-dot.partner { background: #9B59B6; }
+
+        .user-dot.active::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 10px;
+            height: 10px;
+            background: #27AE60;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        .activity-feed {
+            font-size: 12px;
+            color: #666;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+
+        .activity-item {
+            padding: 4px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        /* Intelligent Workflow Status */
+        .workflow-status-header {
+            background: #e8f4f8;
+            margin: 0 16px 24px 16px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border-left: 4px solid #2C5F7C;
+        }
+
+        .workflow-indicators {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .workflow-stat {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #2C5F7C;
+        }
+
+        .workflow-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .workflow-indicator.automated { background: #27AE60; }
+        .workflow-indicator.manual { background: #F39C12; }
+        .workflow-indicator.blocked { background: #E74C3C; }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* Main Dashboard Content */
+        .main-content {
+            margin-left: 320px;
+            margin-top: 64px;
+            padding: 24px;
+            min-height: calc(100vh - 64px);
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .dashboard-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2C5F7C;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #2C5F7C;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1e4a61;
+        }
+
+        .btn-secondary {
+            background: #4A90B8;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #3a7a9e;
+        }
+
+        /* Dashboard Grid Layout */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        /* Event Timeline Section */
+        .timeline-section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2C5F7C;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .timeline-container {
+            position: relative;
+            padding: 0 0 0 32px;
+        }
+
+        .timeline-line {
+            position: absolute;
+            left: 16px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #e0e0e0;
+        }
+
+        .timeline-event {
+            position: relative;
+            margin-bottom: 32px;
+            background: #f8fafe;
+            border-radius: 8px;
+            padding: 20px;
+            border-left: 4px solid #4A90B8;
+        }
+
+        .timeline-event.active {
+            border-left-color: #E67E22;
+            background: #fff8f0;
+        }
+
+        .timeline-event.completed {
+            border-left-color: #27AE60;
+            background: #f0fdf4;
+        }
+
+        .timeline-event.overdue {
+            border-left-color: #E74C3C;
+            background: #fef2f2;
+        }
+
+        .timeline-dot {
+            position: absolute;
+            left: -41px;
+            top: 20px;
+            width: 12px;
+            height: 12px;
+            background: #4A90B8;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 0 0 2px #4A90B8;
+        }
+
+        .timeline-event.active .timeline-dot {
+            background: #E67E22;
+            box-shadow: 0 0 0 2px #E67E22;
+        }
+
+        .timeline-event.completed .timeline-dot {
+            background: #27AE60;
+            box-shadow: 0 0 0 2px #27AE60;
+        }
+
+        .timeline-event.overdue .timeline-dot {
+            background: #E74C3C;
+            box-shadow: 0 0 0 2px #E74C3C;
+        }
+
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .event-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .event-date {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .event-status {
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-planning {
+            background: #e8f4f8;
+            color: #2C5F7C;
+        }
+
+        .status-active {
+            background: #fff3e0;
+            color: #e65100;
+        }
+
+        .status-completed {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .event-progress {
+            margin-top: 16px;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #4A90B8;
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        /* Task Priority Queue */
+        .tasks-section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .task-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border: 1px solid #f0f0f0;
+            background: #fafafa;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .task-item:hover {
+            background: #f5f5f5;
+            border-color: #2C5F7C;
+        }
+
+        .task-item.urgent {
+            border-left: 4px solid #E74C3C;
+            background: #fef2f2;
+        }
+
+        .task-item.high {
+            border-left: 4px solid #F39C12;
+            background: #fef9e7;
+        }
+
+        .task-priority {
+            width: 8px;
+            height: 40px;
+            border-radius: 4px;
+        }
+
+        .task-content {
+            flex: 1;
+        }
+
+        .task-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .task-meta {
+            font-size: 12px;
+            color: #666;
+            display: flex;
+            gap: 16px;
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .task-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .task-btn.assign {
+            background: #e8f4f8;
+            color: #2C5F7C;
+        }
+
+        .task-btn.complete {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        /* Analytics Overview */
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .metric-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #2C5F7C;
+            margin-bottom: 8px;
+        }
+
+        .metric-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .metric-change {
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .metric-change.positive {
+            color: #27AE60;
+        }
+
+        .metric-change.negative {
+            color: #E74C3C;
+        }
+
+        /* Team Collaboration */
+        .collaboration-section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .team-member {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            background: #f8f9fa;
+        }
+
+        .member-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #4A90B8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .member-info {
+            flex: 1;
+        }
+
+        .member-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .member-status {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .member-activity {
+            font-size: 12px;
+            color: #4A90B8;
+            background: #e8f4f8;
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .analytics-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                margin-left: 0;
+                padding: 16px;
+            }
+
+            .dashboard-header {
+                flex-direction: column;
+                gap: 16px;
+                align-items: flex-start;
+            }
+
+            .quick-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .analytics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .timeline-container {
+                padding-left: 0;
+            }
+
+            .timeline-line {
+                display: none;
+            }
+
+            .timeline-dot {
+                display: none;
+            }
+
+            .timeline-event {
+                border-left: none;
+                border-top: 4px solid #4A90B8;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="nav-container">
+            <div style="display: flex; align-items: center;">
+                <a href="#" class="logo">BATbern</a>
+                <div class="role-indicator">🏢 Event Organizer</div>
+            </div>
+            <div style="color: white;">John Doe - Organizer Dashboard</div>
+        </div>
+    </header>
+
+    <!-- Enhanced Sidebar with Moved Features -->
+    <nav class="sidebar">
+        <!-- AI Smart Actions Panel -->
+        <div class="ai-actions-panel">
+            <div class="ai-panel-title">
+                <span>🤖</span>
+                <span>Smart Actions</span>
+            </div>
+            <div class="ai-suggestions">
+                <div class="ai-suggestion">📧 Send speaker reminders (3 pending)</div>
+                <div class="ai-suggestion">📅 Auto-schedule partner meetings</div>
+                <div class="ai-suggestion">🎯 Suggest optimal speaker matches</div>
+                <div class="ai-suggestion">⚡ Optimize event timeline</div>
+            </div>
+        </div>
+
+        <!-- Cross-role Collaboration Hub -->
+        <div class="collaboration-hub">
+            <div class="collaboration-title">
+                <span>🤝</span>
+                <span>Active Collaboration</span>
+            </div>
+            <div class="active-users">
+                <div class="user-dot organizer active" title="John (You)">JD</div>
+                <div class="user-dot speaker active" title="Anna - Speaker">AS</div>
+                <div class="user-dot partner active" title="Mike - Partner">MP</div>
+                <div class="user-dot organizer" title="Sarah - Organizer">SM</div>
+            </div>
+            <div class="activity-feed">
+                <div class="activity-item">Anna submitted presentation for BATbern 55</div>
+                <div class="activity-item">Mike updated partner requirements</div>
+                <div class="activity-item">Sarah confirmed venue booking</div>
+            </div>
+        </div>
+
+        <!-- Intelligent Workflow Status -->
+        <div class="workflow-status-header">
+            <div class="workflow-indicators">
+                <div class="workflow-stat">
+                    <div class="workflow-indicator automated"></div>
+                    <span>5 Automated</span>
+                </div>
+                <div class="workflow-stat">
+                    <div class="workflow-indicator manual"></div>
+                    <span>2 Manual</span>
+                </div>
+                <div class="workflow-stat">
+                    <div class="workflow-indicator blocked"></div>
+                    <span>1 Blocked</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div style="padding: 0 24px; font-size: 14px; color: #666;">
+            <div style="margin-bottom: 16px; font-weight: 600;">Organizer Portal</div>
+            <div style="color: #2C5F7C; font-weight: 500; margin-bottom: 8px;">📊 Dashboard</div>
+            <div style="color: #666; margin-bottom: 8px;">🎯 Intelligent Event Management</div>
+            <div style="color: #666; margin-bottom: 8px;">🎤 Advanced Speaker Workflow</div>
+            <div style="color: #666; margin-bottom: 8px;">📈 Cross-role Analytics</div>
+        </div>
+    </nav>
+
+    <!-- Main Dashboard Content -->
+    <main class="main-content">
+        <!-- Dashboard Header -->
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">Event Management Dashboard</h1>
+            <div class="quick-actions">
+                <button class="btn btn-primary">
+                    <span>+</span>
+                    Create Event
+                </button>
+                <button class="btn btn-secondary">
+                    <span>👤</span>
+                    Invite Speaker
+                </button>
+                <button class="btn btn-secondary">
+                    <span>📍</span>
+                    Check Venue
+                </button>
+            </div>
+        </div>
+
+        <!-- Analytics Overview -->
+        <div class="analytics-grid">
+            <div class="metric-card">
+                <div class="metric-value">5</div>
+                <div class="metric-label">Active Events</div>
+                <div class="metric-change positive">+2 this month</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">87%</div>
+                <div class="metric-label">Speaker Response Rate</div>
+                <div class="metric-change positive">+5% vs last quarter</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">12</div>
+                <div class="metric-label">Partner Companies</div>
+                <div class="metric-change neutral">No change</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">240</div>
+                <div class="metric-label">Avg. Attendance</div>
+                <div class="metric-change positive">+15% growth</div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard Grid -->
+        <div class="dashboard-grid">
+            <!-- Event Timeline -->
+            <div class="timeline-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <span>📅</span>
+                        Active Event Timeline
+                    </h2>
+                    <button class="btn" style="padding: 6px 12px; font-size: 12px; background: #f5f5f5;">View All</button>
+                </div>
+
+                <div class="timeline-container">
+                    <div class="timeline-line"></div>
+
+                    <div class="timeline-event active">
+                        <div class="timeline-dot"></div>
+                        <div class="event-header">
+                            <div>
+                                <div class="event-title">BATbern 55 - Cloud Native Architecture</div>
+                                <div class="event-date">March 15, 2024</div>
+                            </div>
+                            <span class="event-status status-active">In Progress</span>
+                        </div>
+                        <div class="event-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 65%;"></div>
+                            </div>
+                            <div class="progress-text">65% Complete - Speaker confirmations pending</div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-event">
+                        <div class="timeline-dot"></div>
+                        <div class="event-header">
+                            <div>
+                                <div class="event-title">BATbern 56 - AI in Enterprise</div>
+                                <div class="event-date">May 20, 2024</div>
+                            </div>
+                            <span class="event-status status-planning">Planning</span>
+                        </div>
+                        <div class="event-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 30%;"></div>
+                            </div>
+                            <div class="progress-text">30% Complete - Topic finalized, speaker search started</div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-event completed">
+                        <div class="timeline-dot"></div>
+                        <div class="event-header">
+                            <div>
+                                <div class="event-title">BATbern 54 - Microservices at Scale</div>
+                                <div class="event-date">January 18, 2024</div>
+                            </div>
+                            <span class="event-status status-completed">Completed</span>
+                        </div>
+                        <div class="event-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 100%;"></div>
+                            </div>
+                            <div class="progress-text">Event completed successfully - 245 attendees</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Task Priority Queue -->
+            <div class="tasks-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <span>⚡</span>
+                        Priority Tasks
+                    </h2>
+                    <span style="background: #E74C3C; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px;">3 Urgent</span>
+                </div>
+
+                <div class="task-list">
+                    <div class="task-item urgent">
+                        <div class="task-content">
+                            <div class="task-title">Send speaker reminder for BATbern 55</div>
+                            <div class="task-meta">
+                                <span>📅 Due: Today</span>
+                                <span>👤 Assigned: You</span>
+                            </div>
+                        </div>
+                        <div class="task-actions">
+                            <button class="task-btn complete">Complete</button>
+                        </div>
+                    </div>
+
+                    <div class="task-item urgent">
+                        <div class="task-content">
+                            <div class="task-title">Confirm venue booking for BATbern 55</div>
+                            <div class="task-meta">
+                                <span>📅 Due: Tomorrow</span>
+                                <span>👤 Assigned: Sarah M.</span>
+                            </div>
+                        </div>
+                        <div class="task-actions">
+                            <button class="task-btn assign">Reassign</button>
+                        </div>
+                    </div>
+
+                    <div class="task-item high">
+                        <div class="task-content">
+                            <div class="task-title">Review speaker submissions</div>
+                            <div class="task-meta">
+                                <span>📅 Due: Mar 10</span>
+                                <span>👤 Assigned: Team</span>
+                            </div>
+                        </div>
+                        <div class="task-actions">
+                            <button class="task-btn assign">View</button>
+                        </div>
+                    </div>
+
+                    <div class="task-item">
+                        <div class="task-content">
+                            <div class="task-title">Update partner newsletter</div>
+                            <div class="task-meta">
+                                <span>📅 Due: Mar 12</span>
+                                <span>👤 Assigned: Mike K.</span>
+                            </div>
+                        </div>
+                        <div class="task-actions">
+                            <button class="task-btn assign">View</button>
+                        </div>
+                    </div>
+
+                    <div class="task-item">
+                        <div class="task-content">
+                            <div class="task-title">Plan catering for BATbern 56</div>
+                            <div class="task-meta">
+                                <span>📅 Due: Mar 15</span>
+                                <span>👤 Unassigned</span>
+                            </div>
+                        </div>
+                        <div class="task-actions">
+                            <button class="task-btn assign">Assign</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Team Collaboration -->
+        <div class="collaboration-section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <span>👥</span>
+                    Team Activity
+                </h2>
+                <button class="btn" style="padding: 6px 12px; font-size: 12px; background: #f5f5f5;">View All</button>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
+                <div class="team-member">
+                    <div class="member-avatar">SM</div>
+                    <div class="member-info">
+                        <div class="member-name">Sarah Mitchell</div>
+                        <div class="member-status">Updated venue requirements for BATbern 55</div>
+                    </div>
+                    <div class="member-activity">2 min ago</div>
+                </div>
+
+                <div class="team-member">
+                    <div class="member-avatar">MK</div>
+                    <div class="member-info">
+                        <div class="member-name">Mike Kowalski</div>
+                        <div class="member-status">Sent speaker invitations for BATbern 56</div>
+                    </div>
+                    <div class="member-activity">15 min ago</div>
+                </div>
+
+                <div class="team-member">
+                    <div class="member-avatar">AJ</div>
+                    <div class="member-info">
+                        <div class="member-name">Anna Johnson</div>
+                        <div class="member-status">Reviewed partner analytics for Q1</div>
+                    </div>
+                    <div class="member-activity">1 hour ago</div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

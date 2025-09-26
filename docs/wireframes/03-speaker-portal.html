@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BATbern - Speaker Portal Wireframe</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: #2C5F7C;
+            color: white;
+            padding: 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            height: 64px;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 24px;
+            height: 64px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+            text-decoration: none;
+        }
+
+        .role-indicator {
+            background: rgba(255,255,255,0.2);
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 14px;
+            margin-left: 24px;
+        }
+
+        /* Speaker-Specific Features */
+        .speaker-status-bar {
+            background: linear-gradient(135deg, #E67E22, #f39c12);
+            color: white;
+            padding: 12px 24px;
+            margin: -32px -24px 32px -24px;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #27AE60;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+
+        /* Material Upload Features */
+        .upload-wizard {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .wizard-steps {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 32px;
+            position: relative;
+        }
+
+        .wizard-steps::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            height: 2px;
+            background: #e0e0e0;
+            z-index: 1;
+        }
+
+        .wizard-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #666;
+        }
+
+        .step-circle.completed {
+            background: #27AE60;
+            color: white;
+        }
+
+        .step-circle.active {
+            background: #E67E22;
+            color: white;
+        }
+
+        .step-label {
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+
+        /* Drag and Drop Upload */
+        .upload-area {
+            border: 2px dashed #4A90B8;
+            border-radius: 8px;
+            padding: 48px 24px;
+            text-align: center;
+            background: #f8fafe;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .upload-area:hover {
+            border-color: #2C5F7C;
+            background: #f0f8ff;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            color: #4A90B8;
+            margin-bottom: 16px;
+        }
+
+        /* Communication Hub */
+        .communication-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .message-thread {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .message {
+            padding: 12px;
+            margin-bottom: 12px;
+            border-radius: 8px;
+        }
+
+        .message.organizer {
+            background: #e8f4f8;
+            border-left: 3px solid #2C5F7C;
+        }
+
+        .message.speaker {
+            background: #fff3e0;
+            border-left: 3px solid #E67E22;
+            margin-left: 20px;
+        }
+
+        .message-header {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        /* Timeline Visualization */
+        .submission-timeline {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .timeline-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .timeline-item:last-child {
+            border-bottom: none;
+        }
+
+        .timeline-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: white;
+        }
+
+        .timeline-icon.completed {
+            background: #27AE60;
+        }
+
+        .timeline-icon.current {
+            background: #E67E22;
+        }
+
+        .timeline-icon.pending {
+            background: #e0e0e0;
+            color: #666;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-top: 64px;
+            padding: 32px 24px;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .portal-header {
+            text-align: center;
+            margin-bottom: 48px;
+            padding: 32px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .portal-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #2C5F7C;
+            margin-bottom: 16px;
+        }
+
+        .portal-subtitle {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 24px;
+        }
+
+        .welcome-message {
+            background: #e8f4f8;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #4A90B8;
+        }
+
+        /* Navigation Tabs */
+        .portal-nav {
+            display: flex;
+            background: white;
+            border-radius: 12px;
+            padding: 8px;
+            margin-bottom: 32px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow-x: auto;
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            background: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .nav-tab.active {
+            background: #2C5F7C;
+            color: white;
+        }
+
+        .nav-tab:hover {
+            background: #f5f5f5;
+            color: #2C5F7C;
+        }
+
+        .nav-tab.active:hover {
+            background: #2C5F7C;
+            color: white;
+        }
+
+        /* Content Sections */
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        /* Invitation Response Section */
+        .invitation-card {
+            background: white;
+            border-radius: 12px;
+            padding: 32px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 6px solid #E67E22;
+        }
+
+        .invitation-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .invitation-icon {
+            width: 64px;
+            height: 64px;
+            background: #E67E22;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+
+        .invitation-info h3 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #2C5F7C;
+            margin-bottom: 8px;
+        }
+
+        .invitation-info p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .event-details {
+            background: #f8f9fa;
+            padding: 24px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+
+        .event-details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .detail-icon {
+            width: 20px;
+            height: 20px;
+            background: #4A90B8;
+            border-radius: 4px;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        .detail-value {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .response-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-top: 32px;
+        }
+
+        .btn {
+            padding: 12px 32px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-accept {
+            background: #27AE60;
+            color: white;
+        }
+
+        .btn-accept:hover {
+            background: #219a52;
+        }
+
+        .btn-decline {
+            background: #f5f5f5;
+            color: #333;
+            border: 2px solid #e0e0e0;
+        }
+
+        .btn-decline:hover {
+            border-color: #E74C3C;
+            color: #E74C3C;
+        }
+
+        .btn-maybe {
+            background: #F39C12;
+            color: white;
+        }
+
+        .btn-maybe:hover {
+            background: #e67e22;
+        }
+
+        /* Submission Wizard */
+        .submission-wizard {
+            background: white;
+            border-radius: 12px;
+            padding: 32px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .wizard-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .wizard-steps {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 40px;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .step:not(:last-child)::after {
+            content: '';
+            width: 40px;
+            height: 2px;
+            background: #e0e0e0;
+            margin: 0 16px;
+        }
+
+        .step-number {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            color: #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .step.active .step-number {
+            background: #2C5F7C;
+            color: white;
+        }
+
+        .step.completed .step-number {
+            background: #27AE60;
+            color: white;
+        }
+
+        .step-label {
+            font-size: 14px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .step.active .step-label {
+            color: #2C5F7C;
+            font-weight: 600;
+        }
+
+        /* Form Sections */
+        .form-section {
+            margin-bottom: 32px;
+        }
+
+        .form-section h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2C5F7C;
+            margin-bottom: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #2C5F7C;
+        }
+
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        /* File Upload */
+        .file-upload {
+            border: 2px dashed #e0e0e0;
+            border-radius: 8px;
+            padding: 32px;
+            text-align: center;
+            background: #fafafa;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .file-upload:hover {
+            border-color: #2C5F7C;
+            background: #f8fafe;
+        }
+
+        .file-upload.dragover {
+            border-color: #2C5F7C;
+            background: #e8f4f8;
+        }
+
+        .upload-icon {
+            width: 48px;
+            height: 48px;
+            background: #4A90B8;
+            border-radius: 50%;
+            margin: 0 auto 16px;
+        }
+
+        .upload-text {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .upload-hint {
+            font-size: 14px;
+            color: #666;
+        }
+
+        /* Timeline */
+        .participation-timeline {
+            background: white;
+            border-radius: 12px;
+            padding: 32px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .timeline-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 24px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .timeline-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .timeline-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            margin-top: 4px;
+            flex-shrink: 0;
+        }
+
+        .timeline-item.completed .timeline-dot {
+            background: #27AE60;
+        }
+
+        .timeline-item.current .timeline-dot {
+            background: #E67E22;
+        }
+
+        .timeline-content h4 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .timeline-content p {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .timeline-date {
+            font-size: 12px;
+            color: #999;
+            background: #f5f5f5;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        /* My Events Grid */
+        .events-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .event-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid #4A90B8;
+        }
+
+        .event-card.upcoming {
+            border-left-color: #E67E22;
+        }
+
+        .event-card.completed {
+            border-left-color: #27AE60;
+        }
+
+        .event-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2C5F7C;
+            margin-bottom: 8px;
+        }
+
+        .event-date {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 16px;
+        }
+
+        .event-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 16px;
+        }
+
+        .status-upcoming {
+            background: #fff3e0;
+            color: #e65100;
+        }
+
+        .status-completed {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .status-planning {
+            background: #e8f4f8;
+            color: #2C5F7C;
+        }
+
+        .event-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 4px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 16px;
+            }
+
+            .portal-nav {
+                flex-direction: column;
+                gap: 4px;
+            }
+
+            .nav-tab {
+                justify-content: flex-start;
+            }
+
+            .response-buttons {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .wizard-steps {
+                flex-direction: column;
+                align-items: center;
+                gap: 16px;
+            }
+
+            .step:not(:last-child)::after {
+                width: 2px;
+                height: 20px;
+                margin: 8px 0;
+            }
+
+            .event-details-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="nav-container">
+            <div style="display: flex; align-items: center;">
+                <a href="#" class="logo">BATbern</a>
+                <div class="role-indicator">🎤 Speaker Portal</div>
+            </div>
+            <div style="color: white;">Dr. Sarah Wilson - Speaker</div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Enhanced Portal Header with Speaker Status -->
+        <div class="portal-header">
+            <div class="speaker-status-bar">
+                <div class="status-indicator">
+                    <div class="status-dot"></div>
+                    <span>Submission Active</span>
+                </div>
+                <div style="font-size: 12px;">
+                    Next deadline: March 10, 2024 (7 days remaining)
+                </div>
+            </div>
+            <h1 class="portal-title">Speaker Portal</h1>
+            <p class="portal-subtitle">Manage your BAT speaking engagements and submissions</p>
+            <div class="welcome-message">
+                <strong>Welcome back, Dr. Wilson!</strong> You have 1 pending invitation and 2 upcoming events.
+            </div>
+        </div>
+
+        <!-- Enhanced Navigation Tabs -->
+        <div class="portal-nav">
+            <button class="nav-tab active" onclick="showSection('invitations')">
+                <span>📧</span>
+                Invitation Response
+            </button>
+            <button class="nav-tab" onclick="showSection('upload-wizard')">
+                <span>📤</span>
+                Material Upload
+            </button>
+            <button class="nav-tab" onclick="showSection('timeline')">
+                <span>📅</span>
+                Submission Timeline
+            </button>
+            <button class="nav-tab" onclick="showSection('communication')">
+                <span>💬</span>
+                Communication Hub
+            </button>
+            <button class="nav-tab" onclick="showSection('events')">
+                <span>🎯</span>
+                My Events
+            </button>
+            <button class="nav-tab" onclick="showSection('profile')">
+                <span>👤</span>
+                Profile
+            </button>
+        </div>
+
+        <!-- Invitations Section -->
+        <div id="invitations" class="content-section active">
+            <div class="invitation-card">
+                <div class="invitation-header">
+                    <div class="invitation-icon">📧</div>
+                    <div class="invitation-info">
+                        <h3>Speaking Invitation: BATbern 55</h3>
+                        <p>You've been invited to speak at our upcoming event</p>
+                    </div>
+                </div>
+
+                <div class="event-details">
+                    <h4 style="margin-bottom: 16px; color: #2C5F7C;">Event Details</h4>
+                    <div class="event-details-grid">
+                        <div class="detail-item">
+                            <div class="detail-icon"></div>
+                            <div>
+                                <div class="detail-label">Topic</div>
+                                <div class="detail-value">Cloud Native Architecture</div>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-icon"></div>
+                            <div>
+                                <div class="detail-label">Date</div>
+                                <div class="detail-value">March 15, 2024</div>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-icon"></div>
+                            <div>
+                                <div class="detail-label">Location</div>
+                                <div class="detail-value">Zentrum Paul Klee, Bern</div>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-icon"></div>
+                            <div>
+                                <div class="detail-label">Expected Audience</div>
+                                <div class="detail-value">200+ IT Architects</div>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-icon"></div>
+                            <div>
+                                <div class="detail-label">Presentation Length</div>
+                                <div class="detail-value">45 minutes + Q&A</div>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-icon"></div>
+                            <div>
+                                <div class="detail-label">Submission Deadline</div>
+                                <div class="detail-value">February 15, 2024</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 24px;">
+                    <h4 style="margin-bottom: 12px; color: #2C5F7C;">What We Need From You</h4>
+                    <ul style="padding-left: 20px; color: #666;">
+                        <li>Presentation title and abstract (300 words max)</li>
+                        <li>Speaker bio and professional headshot</li>
+                        <li>Final presentation slides (PDF format)</li>
+                        <li>Dietary requirements and travel information</li>
+                    </ul>
+                </div>
+
+                <div class="response-buttons">
+                    <button class="btn btn-accept">
+                        <span>✓</span>
+                        Accept Invitation
+                    </button>
+                    <button class="btn btn-maybe">
+                        <span>?</span>
+                        Request More Info
+                    </button>
+                    <button class="btn btn-decline">
+                        <span>✗</span>
+                        Decline
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submissions Section -->
+        <div id="submissions" class="content-section">
+            <div class="submission-wizard">
+                <div class="wizard-header">
+                    <h2 style="color: #2C5F7C; margin-bottom: 8px;">BATbern 55 Submission</h2>
+                    <p style="color: #666;">Complete your speaker materials for Cloud Native Architecture</p>
+                </div>
+
+                <div class="wizard-steps">
+                    <div class="step completed">
+                        <div class="step-number">1</div>
+                        <div class="step-label">Basic Info</div>
+                    </div>
+                    <div class="step active">
+                        <div class="step-number">2</div>
+                        <div class="step-label">Presentation</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-label">Materials</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <div class="step-label">Review</div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Presentation Details</h3>
+                    <div class="form-group">
+                        <label class="form-label">Presentation Title *</label>
+                        <input type="text" class="form-input" placeholder="Enter your presentation title" value="Microservices in the Cloud: A Practical Approach">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Abstract (300 words max) *</label>
+                        <textarea class="form-input form-textarea" placeholder="Describe your presentation content, key takeaways, and target audience...">This session explores practical strategies for implementing microservices architectures in cloud environments. We'll cover service decomposition patterns, container orchestration, and monitoring strategies that have proven successful in production environments.</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Key Takeaways</label>
+                        <input type="text" class="form-input" placeholder="What will attendees learn?" value="Service design patterns, deployment strategies, monitoring best practices">
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Upload Presentation Slides</h3>
+                    <div class="file-upload">
+                        <div class="upload-icon"></div>
+                        <div class="upload-text">Drag and drop your presentation file here</div>
+                        <div class="upload-hint">Supported formats: PDF, PPTX (max 50MB)</div>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; margin-top: 32px;">
+                    <button class="btn" style="background: #f5f5f5; color: #333;">Save Draft</button>
+                    <div style="display: flex; gap: 16px;">
+                        <button class="btn" style="background: #f5f5f5; color: #333;">Previous</button>
+                        <button class="btn" style="background: #2C5F7C; color: white;">Next Step</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Event Timeline Section -->
+        <div id="timeline" class="content-section">
+            <div class="participation-timeline">
+                <h2 style="color: #2C5F7C; margin-bottom: 24px;">BATbern 55 Event Timeline</h2>
+
+                <div class="timeline-item completed">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <h4>Invitation Accepted</h4>
+                        <p>You accepted the speaking invitation for BATbern 55</p>
+                        <span class="timeline-date">January 20, 2024</span>
+                    </div>
+                </div>
+
+                <div class="timeline-item current">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <h4>Material Submission</h4>
+                        <p>Submit your presentation abstract, bio, and initial materials</p>
+                        <span class="timeline-date">Due: February 15, 2024</span>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <h4>Final Presentation Upload</h4>
+                        <p>Upload your final presentation slides</p>
+                        <span class="timeline-date">Due: March 1, 2024</span>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <h4>Technical Check</h4>
+                        <p>Review presentation setup and technical requirements</p>
+                        <span class="timeline-date">March 10, 2024</span>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <h4>Event Day</h4>
+                        <p>Present at BATbern 55 - Cloud Native Architecture</p>
+                        <span class="timeline-date">March 15, 2024</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- My Events Section -->
+        <div id="events" class="content-section">
+            <h2 style="color: #2C5F7C; margin-bottom: 24px;">My Speaking Engagements</h2>
+
+            <div class="events-grid">
+                <div class="event-card upcoming">
+                    <div class="event-title">BATbern 55 - Cloud Native Architecture</div>
+                    <div class="event-date">March 15, 2024</div>
+                    <span class="event-status status-upcoming">Upcoming</span>
+                    <p style="color: #666; margin-bottom: 16px;">Microservices in the Cloud: A Practical Approach</p>
+                    <div class="event-actions">
+                        <button class="btn btn-small" style="background: #2C5F7C; color: white;">View Details</button>
+                        <button class="btn btn-small" style="background: #f5f5f5; color: #333;">Edit Submission</button>
+                    </div>
+                </div>
+
+                <div class="event-card completed">
+                    <div class="event-title">BATbern 54 - Microservices at Scale</div>
+                    <div class="event-date">January 18, 2024</div>
+                    <span class="event-status status-completed">Completed</span>
+                    <p style="color: #666; margin-bottom: 16px;">Database Patterns for Distributed Systems</p>
+                    <div class="event-actions">
+                        <button class="btn btn-small" style="background: #27AE60; color: white;">View Feedback</button>
+                        <button class="btn btn-small" style="background: #f5f5f5; color: #333;">Download Materials</button>
+                    </div>
+                </div>
+
+                <div class="event-card">
+                    <div class="event-title">BATbern 56 - AI in Enterprise</div>
+                    <div class="event-date">May 20, 2024</div>
+                    <span class="event-status status-planning">Planning</span>
+                    <p style="color: #666; margin-bottom: 16px;">Invitation pending confirmation</p>
+                    <div class="event-actions">
+                        <button class="btn btn-small" style="background: #F39C12; color: white;">Respond to Invitation</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Material Upload Wizard Section -->
+        <div id="upload-wizard" class="content-section">
+            <div class="upload-wizard">
+                <h2 style="color: #2C5F7C; margin-bottom: 24px;">📤 Material Upload Wizard</h2>
+
+                <!-- Progress Steps -->
+                <div class="wizard-steps">
+                    <div class="wizard-step">
+                        <div class="step-circle completed">✓</div>
+                        <div class="step-label">Basic Info</div>
+                    </div>
+                    <div class="wizard-step">
+                        <div class="step-circle active">2</div>
+                        <div class="step-label">Abstract & Bio</div>
+                    </div>
+                    <div class="wizard-step">
+                        <div class="step-circle">3</div>
+                        <div class="step-label">Presentation</div>
+                    </div>
+                    <div class="wizard-step">
+                        <div class="step-circle">4</div>
+                        <div class="step-label">Review</div>
+                    </div>
+                </div>
+
+                <!-- Upload Area -->
+                <div class="upload-area">
+                    <div class="upload-icon">📤</div>
+                    <h3 style="margin-bottom: 8px;">Upload Your Abstract & Bio</h3>
+                    <p style="color: #666; margin-bottom: 16px;">Drag and drop files here or click to browse</p>
+                    <button style="background: #4A90B8; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer;">Choose Files</button>
+                    <p style="font-size: 12px; color: #999; margin-top: 12px;">Supported formats: PDF, DOC, DOCX (max 5MB)</p>
+                </div>
+
+                <!-- Draft Save & Preview -->
+                <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+                    <button style="background: #f5f5f5; color: #333; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer;">Save Draft</button>
+                    <button style="background: #E67E22; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer;">Preview</button>
+                    <button style="background: #2C5F7C; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer;">Continue</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Timeline Section -->
+        <div id="timeline" class="content-section">
+            <div class="submission-timeline">
+                <h2 style="color: #2C5F7C; margin-bottom: 24px;">📅 Submission Timeline</h2>
+
+                <div class="timeline-item">
+                    <div class="timeline-icon completed">✓</div>
+                    <div>
+                        <h4 style="color: #333; margin-bottom: 4px;">Invitation Accepted</h4>
+                        <p style="color: #666; font-size: 14px;">February 15, 2024 - You accepted the speaking invitation</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-icon current">📝</div>
+                    <div>
+                        <h4 style="color: #333; margin-bottom: 4px;">Submit Materials</h4>
+                        <p style="color: #666; font-size: 14px;">Due: March 10, 2024 - Abstract, bio, and presentation outline</p>
+                        <div style="background: #fff3e0; padding: 8px 12px; border-radius: 4px; margin-top: 8px; font-size: 12px; color: #e65100;">
+                            ⏰ 7 days remaining
+                        </div>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-icon pending">📋</div>
+                    <div>
+                        <h4 style="color: #333; margin-bottom: 4px;">Review & Approval</h4>
+                        <p style="color: #666; font-size: 14px;">March 12-15, 2024 - Organizer review and feedback</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-icon pending">🎤</div>
+                    <div>
+                        <h4 style="color: #333; margin-bottom: 4px;">Event Day</h4>
+                        <p style="color: #666; font-size: 14px;">March 20, 2024 - BATbern 55: Cloud Native Architecture</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Communication Hub Section -->
+        <div id="communication" class="content-section">
+            <div class="communication-panel">
+                <h2 style="color: #2C5F7C; margin-bottom: 24px;">💬 Communication Hub</h2>
+
+                <!-- Message Thread -->
+                <div class="message-thread">
+                    <div class="message organizer">
+                        <div class="message-header">John Doe (Organizer) - Feb 16, 2024 10:30 AM</div>
+                        <div>Welcome to BATbern 55! We're excited to have you speak about Cloud Native Architecture. Please submit your abstract and bio by March 10th. Let us know if you have any questions!</div>
+                    </div>
+
+                    <div class="message speaker">
+                        <div class="message-header">You - Feb 16, 2024 2:15 PM</div>
+                        <div>Thank you for the invitation! I'm looking forward to presenting. I have a question about the target audience technical level - should I focus more on implementation details or strategic overview?</div>
+                    </div>
+
+                    <div class="message organizer">
+                        <div class="message-header">John Doe (Organizer) - Feb 17, 2024 9:00 AM</div>
+                        <div>Great question! Our audience typically includes both architects and senior developers, so a mix of strategic insights with practical implementation examples would be perfect. Think 60% strategy, 40% technical details.</div>
+                    </div>
+                </div>
+
+                <!-- Message Composer -->
+                <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px;">
+                    <textarea style="width: 100%; border: none; outline: none; resize: vertical; min-height: 80px;" placeholder="Type your message to the organizers..."></textarea>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
+                        <div style="font-size: 12px; color: #666;">💡 Tip: Use @organizer to notify all event organizers</div>
+                        <button style="background: #E67E22; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Send Message</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Section -->
+        <div id="profile" class="content-section">
+            <div style="background: white; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <h2 style="color: #2C5F7C; margin-bottom: 24px;">Speaker Profile</h2>
+                <p style="color: #666;">This information will be used in event materials and speaker introductions.</p>
+                <!-- Enhanced profile form would go here -->
+
+                <!-- Presentation History -->
+                <div style="margin-top: 32px; padding: 24px; background: #f8f9fa; border-radius: 8px;">
+                    <h3 style="color: #2C5F7C; margin-bottom: 16px;">📚 Your Presentation History</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
+                        <div style="background: white; padding: 16px; border-radius: 8px; border-left: 3px solid #27AE60;">
+                            <h4 style="margin-bottom: 8px;">BATbern 53 - Microservices</h4>
+                            <p style="font-size: 14px; color: #666;">January 2024 • 45 attendees</p>
+                        </div>
+                        <div style="background: white; padding: 16px; border-radius: 8px; border-left: 3px solid #27AE60;">
+                            <h4 style="margin-bottom: 8px;">BATbern 51 - DevOps Culture</h4>
+                            <p style="font-size: 14px; color: #666;">March 2023 • 52 attendees</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.remove('active');
+            });
+
+            // Remove active class from all tabs
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected section
+            document.getElementById(sectionId).classList.add('active');
+
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+
+        // File upload interaction
+        document.querySelector('.file-upload').addEventListener('click', function() {
+            alert('File upload dialog would open here');
+        });
+
+        // Response buttons
+        document.querySelectorAll('.response-buttons .btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const action = this.textContent.trim();
+                alert(`${action} action selected - next steps would be shown`);
+            });
+        });
+    </script>
+</body>
+</html>
