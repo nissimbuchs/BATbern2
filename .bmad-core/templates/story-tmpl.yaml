@@ -68,81 +68,6 @@ sections:
     owner: scrum-master
     editors: [scrum-master, dev-agent]
 
-  - id: infrastructure-impact
-    title: Infrastructure Impact Assessment ⚠️ REQUIRED
-    instruction: |
-      ⚠️ CRITICAL: Complete this section during story planning to prevent infrastructure gaps.
-      This assessment must be completed BEFORE development begins.
-      Use `npm run story:start` for interactive assessment if needed.
-    elicit: true
-    owner: scrum-master
-    editors: [scrum-master]
-    sections:
-      - id: frontend-changes
-        title: Frontend Changes
-        type: checklist
-        instruction: Check all frontend changes required for this story
-        template: |
-          - [ ] **New Components/Pages** - List components that need creation:
-          - [ ] **State Management** - RxJS service updates needed (BehaviorSubjects, observables):
-          - [ ] **Routing** - New routes or route guards required:
-          - [ ] **API Integration** - New HTTP service methods needed:
-        elicit: true
-        owner: scrum-master
-        editors: [scrum-master]
-
-      - id: backend-changes
-        title: Backend Changes
-        type: checklist
-        instruction: Check all backend changes required for this story
-        template: |
-          - [ ] **New API Endpoints** - List all new REST endpoints:
-            - [ ] `POST /endpoint-name` - Description:
-            - [ ] `GET /endpoint-name` - Description:
-          - [ ] **Lambda Functions** - New Lambda handlers required:
-            - [ ] Handler file: `apps/api/src/handlers/domain/function-name.ts`
-          - [ ] **Database Changes** - Schema modifications needed:
-            - [ ] Migration script: `migrations/xxx-migration-name.sql`
-            - [ ] New tables/columns/indexes:
-          - [ ] **Authentication** - Auth/authorization changes:
-            - [ ] New Cognito groups or permissions:
-            - [ ] API Gateway authorizer updates:
-        elicit: true
-        owner: scrum-master
-        editors: [scrum-master]
-
-      - id: infrastructure-changes
-        title: Infrastructure Changes (AWS CDK)
-        type: checklist
-        instruction: Check all AWS infrastructure changes required
-        template: |
-          - [ ] **API Gateway** - New routes/methods/cors:
-            - File: `infrastructure/src/api-gateway-stack.ts`
-          - [ ] **Lambda Configuration** - Function definitions:
-            - File: `infrastructure/src/lambda-stack.ts`
-          - [ ] **Database** - RDS changes or migrations:
-          - [ ] **Environment Variables** - New config needed:
-            - Development: `docker-compose.yml`
-            - Production: `infrastructure/src/parameter-store.ts`
-          - [ ] **IAM Permissions** - New service permissions:
-          - [ ] **Other AWS Services** - S3, SES, etc.:
-        elicit: true
-        owner: scrum-master
-        editors: [scrum-master]
-
-      - id: development-environment
-        title: Development Environment
-        type: checklist
-        instruction: Check development environment changes needed
-        template: |
-          - [ ] **Docker Services** - New services in docker-compose.yml:
-          - [ ] **LocalStack** - New mocked AWS services:
-          - [ ] **Sample Data** - Database seed updates needed:
-          - [ ] **Environment Setup** - New setup steps required:
-        elicit: true
-        owner: scrum-master
-        editors: [scrum-master]
-
   - id: dev-notes
     title: Dev Notes
     instruction: |
@@ -206,13 +131,10 @@ sections:
         type: checklist
         template: |
           - [ ] All infrastructure changes implemented in CDK
-          - [ ] CDK diff reviewed and approved (`npm run infrastructure:plan`)
-          - [ ] Environment variables configured (dev + prod)
           - [ ] IAM permissions validated
           - [ ] API Gateway routes deployed and tested
           - [ ] Lambda functions deployed and tested
           - [ ] Database migrations applied successfully
-          - [ ] Infrastructure validation passes (`npm run infrastructure:validate`)
         owner: dev-agent
         editors: [dev-agent]
 
