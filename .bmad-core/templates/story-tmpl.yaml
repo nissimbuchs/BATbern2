@@ -199,24 +199,104 @@ sections:
     owner: scrum-master
     editors: [scrum-master]
 
+  - id: test-specifications
+    title: Test Specifications (TDD)
+    instruction: |
+      ⚠️ CRITICAL: Define test cases for each acceptance criterion BEFORE implementation.
+      These tests must be written first following TDD practices (Red-Green-Refactor).
+      Each AC must have at least one test case. Complex ACs require multiple tests.
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+    sections:
+      - id: test-scenarios
+        title: Test Scenarios by Acceptance Criteria
+        instruction: |
+          Map each acceptance criterion to specific test cases.
+          Include both happy path and error scenarios.
+          Use descriptive test names following naming conventions.
+        template: |
+          **AC1 Tests:**
+          - Test 1.1: should_[expected behavior]_when_[condition]
+          - Test 1.2: should_throwError_when_[invalid condition]
+
+          **AC2 Tests:**
+          - Test 2.1: should_[expected behavior]_when_[condition]
+          - Test 2.2: should_handleEdgeCase_when_[edge condition]
+
+          **AC3 Tests:**
+          - Test 3.1: should_[expected behavior]_when_[condition]
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master, dev-agent]
+
+      - id: test-file-mapping
+        title: Test File Locations
+        instruction: |
+          Specify exact test file paths following project structure.
+          Tests must be created in these locations BEFORE implementation files.
+        template: |
+          **Frontend Tests:**
+          - `frontend/src/components/[ComponentName]/[ComponentName].test.tsx`
+          - `frontend/src/hooks/[hookName]/[hookName].test.ts`
+          - `frontend/src/services/[serviceName]/[serviceName].test.ts`
+
+          **Backend Tests:**
+          - Unit: `[service]/src/test/unit/[package]/[ClassName]Test.java`
+          - Integration: `[service]/src/test/integration/[package]/[ClassName]IntegrationTest.java`
+          - Repository: `[service]/src/test/integration/repository/[Repository]Test.java`
+
+          **E2E Tests (if applicable):**
+          - `e2e/workflows/[workflow-name]/[workflow-name].spec.ts`
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master, dev-agent]
+
+      - id: test-data-requirements
+        title: Test Data & Mocks
+        instruction: |
+          Define test data builders, fixtures, and mock services needed.
+          Specify any special test container configurations.
+        template: |
+          **Test Data Builders:**
+          - EventTestDataBuilder for creating test events
+          - UserTestDataBuilder for test users with different roles
+
+          **Mock Services:**
+          - Mock AWS Cognito responses for authentication tests
+          - Mock EventBridge for domain event tests
+
+          **Test Containers:**
+          - PostgreSQL container for integration tests
+          - LocalStack for AWS service mocks
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master, dev-agent]
+
   - id: tasks-subtasks
-    title: Tasks / Subtasks
+    title: Tasks / Subtasks (TDD Workflow)
     type: bullet-list
     instruction: |
-      Break down the story into specific tasks and subtasks needed for implementation.
+      Break down the story following TDD workflow (Red-Green-Refactor).
+      CRITICAL: Tests must be written BEFORE implementation code.
       Reference applicable acceptance criteria numbers where relevant.
-      Include tasks for each involved service and cross-domain integration.
     template: |
-      - [ ] Task 1: Backend Service Implementation (AC: # if applicable)
-        - [ ] Create/update domain entities
-        - [ ] Implement service methods
-        - [ ] Add API endpoints
-        - [ ] Write unit tests
-      - [ ] Task 2: Frontend Components (AC: # if applicable)
-        - [ ] Create React components
-        - [ ] Implement state management
-        - [ ] Connect to APIs
-        - [ ] Add component tests
+      - [ ] Task 1: Write E2E Tests (RED Phase)
+        - [ ] Write failing E2E test for main user journey
+        - [ ] Verify test fails with meaningful error
+
+      - [ ] Task 2: Backend TDD Implementation (AC: # if applicable)
+        - [ ] Write failing integration tests for API endpoints
+        - [ ] Write failing unit tests for service methods
+        - [ ] Write failing unit tests for domain logic
+        - [ ] Implement minimal code to make tests pass (GREEN)
+        - [ ] Refactor code while keeping tests green (REFACTOR)
+
+      - [ ] Task 3: Frontend TDD Implementation (AC: # if applicable)
+        - [ ] Write failing component tests
+        - [ ] Write failing hook tests (if applicable)
+        - [ ] Write failing service tests
+        - [ ] Implement minimal component code to pass tests (GREEN)
+        - [ ] Refactor and optimize components (REFACTOR)
       - [ ] Task 3: Infrastructure Setup (AC: # if applicable)
         - [ ] Update CDK stacks
         - [ ] Configure AWS resources
@@ -307,9 +387,12 @@ sections:
         title: Development Complete
         type: checklist
         template: |
+          - [ ] All tests written BEFORE implementation (TDD followed)
+          - [ ] All acceptance criteria have corresponding tests
           - [ ] All acceptance criteria implemented
-          - [ ] Unit tests written and passing (>80% coverage)
-          - [ ] Integration tests cover new functionality
+          - [ ] Unit tests written and passing (>90% coverage)
+          - [ ] Integration tests cover new functionality (>80% coverage)
+          - [ ] E2E tests pass for user journeys
           - [ ] Code follows project conventions
           - [ ] TypeScript types properly defined
           - [ ] API documentation updated (OpenAPI)

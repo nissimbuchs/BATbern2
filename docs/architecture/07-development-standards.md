@@ -109,8 +109,9 @@ COGNITO_USER_POOL_ID=eu-central-1_dev_pool
 ### For New Developers
 1. **Start Here**: [Technology Stack](./tech-stack.md) - Understand the technology choices
 2. **Setup**: Follow the Local Development Setup above
-3. **Coding**: Review [Coding Standards](./coding-standards.md) for conventions
-4. **Structure**: See [Source Tree Structure](./source-tree.md) for project organization
+3. **TDD Practice**: Read [TDD Workflow Guide](./tdd-workflow.md) - MANDATORY for all development
+4. **Coding**: Review [Coding Standards](./coding-standards.md) for conventions
+5. **Structure**: See [Source Tree Structure](./source-tree.md) for project organization
 
 ### For Code Reviews
 - [Coding Standards - Code Review Checklist](./coding-standards.md#code-review-checklist)
@@ -122,30 +123,46 @@ COGNITO_USER_POOL_ID=eu-central-1_dev_pool
 - [Source Tree Structure - Integration Points](./source-tree.md#integration-points)
 - [Source Tree Structure - Key Directory Conventions](./source-tree.md#key-directory-conventions)
 
+## Test-Driven Development Process
+
+### TDD is Mandatory
+All new features and bug fixes MUST follow Test-Driven Development practices. See [TDD Workflow Guide](./tdd-workflow.md) for detailed instructions.
+
+### TDD Quick Reference
+1. **RED**: Write failing tests first
+2. **GREEN**: Write minimal code to pass tests
+3. **REFACTOR**: Improve code while keeping tests green
+
+### Coverage Requirements
+- Unit Tests: 90% for business logic
+- Integration Tests: 80% for APIs
+- Overall: 85% line coverage (enforced by CI/CD)
+
 ## Development Process Overview
 
 ```mermaid
 graph TD
-    A[Setup Environment] --> B[Read Standards]
+    A[Setup Environment] --> B[Read Standards & TDD Guide]
     B --> C{New Feature?}
     C -->|Yes| D[Create Feature Branch]
     C -->|No| E[Create Hotfix Branch]
-    D --> F[Follow Coding Standards]
-    E --> F
-    F --> G[Write Tests]
-    G --> H[Run Quality Checks]
-    H --> I{Checks Pass?}
-    I -->|No| F
-    I -->|Yes| J[Create Pull Request]
-    J --> K[Code Review]
+    D --> TDD[Write Tests First - RED]
+    E --> TDD
+    TDD --> F[Implement Code - GREEN]
+    F --> REF[Refactor - REFACTOR]
+    REF --> G[Run All Tests]
+    G --> H{Tests Pass & Coverage Met?}
+    H -->|No| TDD
+    H -->|Yes| J[Create Pull Request]
+    J --> K[Code Review - Verify TDD]
     K --> L{Approved?}
-    L -->|No| F
+    L -->|No| TDD
     L -->|Yes| M[Merge to Develop]
     M --> N[Deploy to Staging]
     N --> O[E2E Tests]
     O --> P{Tests Pass?}
-    P -->|No| Q[Fix Issues]
-    Q --> F
+    P -->|No| Q[Fix Issues with TDD]
+    Q --> TDD
     P -->|Yes| R[Deploy to Production]
 ```
 

@@ -103,7 +103,99 @@ As a **user of any role**, I want to authenticate securely and access appropriat
 
 ---
 
-### Story 1.3: Company Management Service Foundation
+### Story 1.3: TDD Testing Infrastructure
+
+**User Story:**
+As a **developer**, I want comprehensive testing infrastructure and utilities following TDD practices, so that I can efficiently write tests before implementation and maintain high code quality.
+
+**Architecture Integration:**
+- **Repository**: `test-infrastructure/` with shared test utilities
+- **Technology**: JUnit 5, Vitest, React Testing Library, Testcontainers
+- **Pattern**: Test data builders, custom assertions, mock services
+- **CI/CD**: GitHub Actions with coverage reporting
+
+**Acceptance Criteria:**
+
+**Test Data Infrastructure:**
+1. **Test Data Builders**: Create builder pattern implementations for all domain entities (Event, Speaker, Company, User) with fluent APIs
+2. **Test Fixtures**: Establish reusable test fixtures for common scenarios (valid/invalid data, edge cases)
+3. **Database Seeders**: Implement database seeding utilities for integration tests with consistent test data
+4. **Test Factories**: Create factory methods for generating test objects with realistic data
+
+**Testing Utilities:**
+5. **Custom Assertions**: Develop domain-specific assertions for validation rules and business logic
+6. **Mock Service Clients**: Create mock implementations for all external service dependencies (AWS services, microservices)
+7. **Test Container Configurations**: Setup Testcontainers for PostgreSQL, Redis, LocalStack (AWS services)
+8. **Test Helper Functions**: Common utilities for authentication, API calls, and data validation
+
+**Coverage and Reporting:**
+9. **Coverage Tools**: Integrate JaCoCo for Java, NYC for TypeScript with unified reporting
+10. **Coverage Gates**: Configure minimum coverage thresholds (85% overall, 90% for business logic)
+11. **PR Integration**: Automatic coverage reports on pull requests with delta analysis
+12. **Test Metrics Dashboard**: Create dashboard showing test counts, coverage trends, and failure rates
+
+**Definition of Done:**
+- [ ] Test data builders created for all domain entities
+- [ ] Custom assertions library documented and tested
+- [ ] Mock services simulate realistic responses and errors
+- [ ] Test containers start reliably in <10 seconds
+- [ ] Coverage reporting integrated with CI/CD pipeline
+- [ ] Coverage gates block merging if thresholds not met
+- [ ] Test utilities documentation with usage examples
+- [ ] Performance: Test suite runs in <5 minutes
+
+---
+
+### Story 1.4: TDD Developer Workflow Setup
+
+**User Story:**
+As a **developer**, I want automated TDD workflows and tooling integrated into my development environment, so that I can follow test-first development practices consistently and efficiently.
+
+**Architecture Integration:**
+- **Git Hooks**: Pre-commit and pre-push hooks for test execution
+- **IDE Configuration**: IntelliJ IDEA and VS Code settings
+- **CI/CD**: GitHub Actions workflows enforcing TDD practices
+- **Documentation**: TDD workflow guides and examples
+
+**Acceptance Criteria:**
+
+**Git Hooks Configuration:**
+1. **Pre-commit Hook**: Run tests for changed files before allowing commit
+2. **Pre-push Hook**: Execute full test suite before pushing to remote
+3. **Commit Message Validation**: Enforce TDD commit message format (test → feat → refactor)
+4. **Hook Installation**: Automatic hook setup via npm/gradle scripts
+
+**IDE Setup:**
+5. **Test Templates**: Configure test file templates for JUnit and Vitest
+6. **Live Test Runner**: Setup continuous test execution on file save
+7. **Coverage Display**: Inline coverage indicators in code editor
+8. **Code Snippets**: TDD-specific snippets for common test patterns
+
+**CI/CD Enforcement:**
+9. **Test-First Validation**: Detect if tests were added after implementation code
+10. **Coverage Regression**: Fail builds if coverage decreases
+11. **Test Execution Reports**: Generate detailed test reports for each build
+12. **Performance Tracking**: Monitor test execution time trends
+
+**Documentation:**
+13. **TDD Workflow Guide**: Step-by-step guide for BATbern TDD practices
+14. **Example Implementations**: Sample stories implemented using TDD
+15. **Troubleshooting Guide**: Common TDD issues and solutions
+16. **Video Tutorials**: Record TDD workflow demonstrations
+
+**Definition of Done:**
+- [ ] Git hooks installed and working for all developers
+- [ ] IDE configurations documented and shared
+- [ ] CI/CD pipeline enforces TDD practices
+- [ ] Test execution time <30 seconds for unit tests
+- [ ] Pre-commit hooks run in <10 seconds
+- [ ] Documentation reviewed and approved by team
+- [ ] Training materials created and distributed
+- [ ] 100% of new code follows TDD workflow
+
+---
+
+### Story 1.5: Company Management Service Foundation
 
 **User Story:**
 As a **partner or attendee**, I want my company affiliation to be properly managed and verified, so that I can access company-specific features and analytics while maintaining data integrity.
@@ -148,7 +240,7 @@ As a **partner or attendee**, I want my company affiliation to be properly manag
 
 ## Sprint 3-4: Historical Data Migration & Basic Events
 
-### Story 1.4: Historical Data Migration Service
+### Story 1.6: Historical Data Migration Service
 
 **User Story:**
 As a **platform stakeholder**, I want all 20+ years of historical BATbern event data migrated accurately, so that the new platform maintains continuity and preserves our valuable content archive.
@@ -198,7 +290,7 @@ As a **platform stakeholder**, I want all 20+ years of historical BATbern event 
 
 ---
 
-### Story 1.5: React Frontend Foundation with Role-Adaptive Architecture
+### Story 1.7: React Frontend Foundation with Role-Adaptive Architecture
 
 **User Story:**
 As a **user of any role**, I want to access a modern, responsive web application that adapts to my specific role and responsibilities, so that I can efficiently perform my tasks without unnecessary complexity.
@@ -249,7 +341,7 @@ As a **user of any role**, I want to access a modern, responsive web application
 
 ## Sprint 5-6: Event Service Foundation & Basic Event Display
 
-### Story 1.6: Event Management Service Core Implementation
+### Story 1.8: Event Management Service Core Implementation
 
 **User Story:**
 As an **organizer**, I want to access and manage events through a robust service that handles the complex event lifecycle, so that I can efficiently plan and coordinate BATbern conferences.
@@ -298,7 +390,7 @@ As an **organizer**, I want to access and manage events through a robust service
 
 ---
 
-### Story 1.7: Basic Event Display & Archive Browsing
+### Story 1.9: Basic Event Display & Archive Browsing
 
 **User Story:**
 As a **visitor or attendee**, I want to browse and view historical BATbern events with rich content and search capabilities, so that I can explore 20+ years of conference knowledge and expertise.

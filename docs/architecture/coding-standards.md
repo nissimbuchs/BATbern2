@@ -74,13 +74,106 @@ npm run prepare
 ```
 
 ### Code Review Checklist
+- [ ] **TDD Followed**: Tests were written before implementation
+- [ ] **Test Coverage**: Each acceptance criterion has corresponding tests
 - [ ] Code follows established patterns and conventions
-- [ ] All tests pass and coverage meets requirements
+- [ ] All tests pass and coverage meets requirements (≥85%)
+- [ ] Test names clearly describe expected behavior
 - [ ] API documentation is updated if needed
 - [ ] Error handling is comprehensive and user-friendly
 - [ ] Security considerations are addressed
 - [ ] Performance impact is considered
 - [ ] Accessibility requirements are met
+
+## Test-Driven Development Standards
+
+### TDD Workflow (Red-Green-Refactor)
+
+**MANDATORY: All new features and bug fixes must follow TDD practices**
+
+1. **RED Phase**: Write failing tests first
+   - Write E2E test for the user journey (if applicable)
+   - Write integration tests for API endpoints
+   - Write unit tests for business logic
+   - Verify all tests fail with meaningful error messages
+
+2. **GREEN Phase**: Write minimal code to pass tests
+   - Implement only what's needed to make tests pass
+   - Don't add features not covered by tests
+   - Focus on making it work, not perfect
+
+3. **REFACTOR Phase**: Improve code while keeping tests green
+   - Extract methods and classes
+   - Remove duplication
+   - Improve naming and readability
+   - Optimize performance if needed
+
+### Test Naming Conventions
+
+**Frontend Tests:**
+```typescript
+// Pattern: should_expectedBehavior_when_condition
+test('should display error message when form validation fails', () => {});
+test('should navigate to dashboard when login succeeds', () => {});
+```
+
+**Backend Tests:**
+```java
+// Pattern: should_expectedBehavior_when_condition
+@Test
+void should_createEvent_when_validRequestProvided() {}
+@Test
+void should_throwException_when_duplicateEventExists() {}
+```
+
+### Test Organization Structure
+
+```
+frontend/
+  src/
+    components/
+      EventCard/
+        EventCard.tsx           # Implementation (written after tests)
+        EventCard.test.tsx      # Unit tests (written first)
+        EventCard.stories.tsx   # Storybook stories
+
+backend/
+  src/test/
+    unit/                      # Fast, isolated tests
+      domain/                  # Domain logic tests
+      service/                 # Service layer tests
+    integration/               # API and database tests
+      controller/              # REST controller tests
+      repository/              # Database integration tests
+    e2e/                      # Full workflow tests
+      workflows/               # Complete user journeys
+```
+
+### Coverage Requirements
+
+**Per Acceptance Criteria:**
+- Each acceptance criterion must have at least one test
+- Complex criteria should have multiple test cases
+- Edge cases and error scenarios must be covered
+
+**Minimum Coverage Targets:**
+- Unit Tests: 90% for business logic
+- Integration Tests: 80% for APIs
+- Overall: 85% line coverage
+
+### Test-First Commit Requirements
+
+**Commit Workflow:**
+1. First commit: Failing tests with clear test names
+2. Second commit: Implementation to make tests pass
+3. Third commit: Refactoring (if needed)
+
+**Example Commit Messages:**
+```bash
+test(event-management): add tests for event creation workflow
+feat(event-management): implement event creation to pass tests
+refactor(event-management): extract event validation logic
+```
 
 ## Testing Standards
 
