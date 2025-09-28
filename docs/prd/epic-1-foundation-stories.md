@@ -2,16 +2,18 @@
 
 ## Epic Overview
 
-**Epic Goal**: Establish the core platform foundation with Domain-Driven Design microservices architecture, multi-role authentication, data migration, and role-adaptive React frontend.
+**Epic Goal**: Establish the core platform foundation with Domain-Driven Design microservices architecture, multi-role authentication, comprehensive infrastructure, and role-adaptive React frontend.
+
+**Story Count**: 19 stories (Stories 1.1 and 1.2 already implemented ✅)
 
 **Architecture Context**:
 - **Frontend**: React 18.2+ with TypeScript, role-adaptive components, PWA capabilities
 - **Backend**: Java 21 LTS + Spring Boot 3.2 microservices with DDD bounded contexts
-- **Infrastructure**: AWS EU-Central-1 (Frankfurt) with API Gateway, ECS Fargate, RDS PostgreSQL
+- **Infrastructure**: AWS EU-Central-1 (Frankfurt) with multi-environment CDK, CI/CD pipelines
 - **Authentication**: AWS Cognito with role-based access control (Organizer, Speaker, Partner, Attendee)
+- **DevOps**: Complete CI/CD, monitoring, resilience, and quality infrastructure
 
 ---
-
 ## Story 1.1: Shared Kernel Infrastructure Setup
 
 **User Story:**
@@ -52,7 +54,6 @@ As a **platform architect**, I want to establish the shared kernel foundation wi
 - [ ] Documentation includes usage examples and architecture patterns
 
 ---
-
 ## Story 1.2: API Gateway & Authentication Service
 
 **User Story:**
@@ -141,8 +142,200 @@ As a **developer**, I want comprehensive testing infrastructure and utilities fo
 - [ ] Performance: Test suite runs in <5 minutes
 
 ---
+## Story 1.3: Multi-Environment CDK Infrastructure Setup
 
-## Story 1.4: TDD Developer Workflow Setup
+**User Story:**
+As a **DevOps engineer**, I want to define and provision complete infrastructure for dev, staging, and production environments using AWS CDK, so that we have consistent, reproducible environments across the development lifecycle.
+
+**Architecture Integration:**
+- **Infrastructure**: `infrastructure/` AWS CDK TypeScript project
+- **Environments**: Development, Staging, Production configurations
+- **Resources**: RDS PostgreSQL, ElastiCache Redis, S3 buckets, VPC networking
+- **Security**: IAM roles, security groups, secrets management
+
+**Acceptance Criteria:**
+
+**Environment Definition:**
+1. **CDK Stack Architecture**: Separate stacks for each environment with shared base stack
+2. **Environment Configuration**: Environment-specific parameters and resource sizing
+3. **Network Isolation**: VPC per environment with proper subnet configuration
+4. **Security Boundaries**: IAM roles and policies enforcing least privilege
+5. **Resource Tagging**: Consistent tagging for cost allocation and management
+
+**Database Infrastructure:**
+6. **RDS Configuration**: Multi-AZ PostgreSQL with environment-appropriate sizing
+7. **Database Migrations**: Flyway integration for schema versioning
+8. **Backup Strategy**: Automated backups with environment-specific retention
+9. **Connection Pooling**: PgBouncer or RDS Proxy configuration
+
+**Application Infrastructure:**
+10. **ECS/Fargate Setup**: Container orchestration for microservices
+11. **Load Balancers**: ALB configuration with health checks
+12. **Auto-scaling**: Environment-specific scaling policies
+13. **Service Discovery**: AWS Cloud Map for service-to-service communication
+
+**Supporting Services:**
+14. **Redis Clusters**: ElastiCache Redis with appropriate clustering
+15. **S3 Buckets**: Content storage with lifecycle policies
+16. **CloudFront**: CDN distribution for static content
+17. **Secrets Manager**: Secure credential storage and rotation
+
+**Definition of Done:**
+- [ ] CDK stacks successfully deploy all three environments
+- [ ] Environment isolation verified with network tests
+- [ ] Resource costs tracked and within budget estimates
+- [ ] Security scan passes with no critical vulnerabilities
+- [ ] Infrastructure as Code reviewed and documented
+- [ ] Disaster recovery tested with RTO < 4 hours
+- [ ] Runbook documentation complete for operations team
+- [ ] Cost optimization recommendations implemented
+
+---
+## Story 1.4: CI/CD Pipeline Implementation
+
+**User Story:**
+As a **developer**, I want automated CI/CD pipelines that build, test, and deploy our applications through environments, so that we can deliver features safely and efficiently.
+
+**Architecture Integration:**
+- **CI Platform**: GitHub Actions workflows
+- **Build Systems**: Gradle for Java, npm/pnpm for Node.js
+- **Artifact Storage**: AWS ECR for containers, S3 for build artifacts
+- **Deployment**: AWS CDK deploy commands with environment promotion
+
+**Acceptance Criteria:**
+
+**Build Pipeline:**
+1. **Automated Builds**: Trigger on push to develop/main branches
+2. **Multi-Service Builds**: Parallel builds for all microservices
+3. **Dependency Caching**: Optimized build times with dependency caching
+4. **Build Versioning**: Semantic versioning with Git tags
+
+**Testing Gates:**
+5. **Unit Tests**: Minimum 90% coverage enforcement
+6. **Integration Tests**: API contract testing for all endpoints
+7. **Security Scanning**: SAST with Snyk/SonarQube
+8. **License Compliance**: Dependency license verification
+
+**Deployment Pipeline:**
+9. **Environment Deployments**: Automated deployments to dev on merge
+10. **Staging Promotion**: Manual approval for staging deployment
+11. **Production Release**: Blue-green deployment with rollback capability
+12. **Database Migrations**: Automated Flyway migrations per environment
+
+**Quality Gates:**
+13. **Code Quality**: SonarQube quality gate enforcement
+14. **Performance Tests**: Load testing before production
+15. **Smoke Tests**: Post-deployment verification
+16. **Rollback Automation**: Automatic rollback on failure
+
+**Definition of Done:**
+- [ ] All microservices have CI/CD pipelines configured
+- [ ] Build times optimized to < 10 minutes per service
+- [ ] Zero-downtime deployments verified in production
+- [ ] Rollback tested and completes in < 5 minutes
+- [ ] Pipeline documentation and runbooks complete
+- [ ] Security scanning integrated with no high vulnerabilities
+- [ ] Test coverage reports published automatically
+- [ ] Deployment notifications configured for team
+
+---
+## Story 1.5: Environment Promotion Automation
+
+**User Story:**
+As a **release manager**, I want automated promotion workflows that safely move code through environments with proper validation, so that we can maintain quality while accelerating delivery.
+
+**Architecture Integration:**
+- **Workflow Engine**: GitHub Actions with environment protection rules
+- **Configuration Management**: AWS Systems Manager Parameter Store
+- **Validation**: Automated test suites per environment
+- **Approval Gates**: Required approvals for production deployments
+
+**Acceptance Criteria:**
+
+**Promotion Workflow:**
+1. **Dev → Staging**: Automated promotion after successful dev testing
+2. **Staging → Production**: Manual approval with automated validation
+3. **Configuration Promotion**: Environment-specific config management
+4. **Feature Flags**: LaunchDarkly integration for feature control
+
+**Validation Gates:**
+5. **Regression Testing**: Full regression suite in staging
+6. **Performance Validation**: Load testing before production
+7. **Security Verification**: Penetration testing in staging
+8. **Data Validation**: Schema compatibility checks
+
+**Deployment Strategies:**
+9. **Blue-Green Deployments**: Zero-downtime production deployments
+10. **Canary Releases**: Gradual rollout with monitoring
+11. **Database Migrations**: Backward-compatible migrations
+12. **Rollback Procedures**: One-click rollback capability
+
+**Operational Controls:**
+13. **Change Management**: JIRA integration for change tracking
+14. **Deployment Windows**: Enforce deployment time restrictions
+15. **Approval Workflows**: Multi-stage approval for production
+16. **Audit Trail**: Complete deployment history and approvals
+
+**Definition of Done:**
+- [ ] Promotion workflows operational for all services
+- [ ] Staging validation catches >95% of issues
+- [ ] Production deployments achieve 99.9% success rate
+- [ ] Rollback procedures tested and documented
+- [ ] Change management process integrated
+- [ ] Audit trail meets compliance requirements
+- [ ] Team trained on promotion procedures
+- [ ] Runbooks updated with promotion workflows
+
+---
+## Story 1.6: Infrastructure Monitoring & Alerting
+
+**User Story:**
+As a **site reliability engineer**, I want comprehensive monitoring and alerting across all environments, so that we can proactively maintain system health and quickly respond to issues.
+
+**Architecture Integration:**
+- **Monitoring**: CloudWatch, X-Ray, Grafana dashboards
+- **Alerting**: PagerDuty integration with escalation policies
+- **Logging**: CloudWatch Logs with centralized aggregation
+- **APM**: Application Performance Monitoring with X-Ray tracing
+
+**Acceptance Criteria:**
+
+**Monitoring Infrastructure:**
+1. **CloudWatch Dashboards**: Environment-specific operational dashboards
+2. **Custom Metrics**: Business and technical metrics collection
+3. **Log Aggregation**: Centralized logging with search capabilities
+4. **Trace Analysis**: Distributed tracing for request flows
+
+**Alert Configuration:**
+5. **SLA Monitoring**: Alerts for SLA violations
+6. **Error Rate Alerts**: Service-specific error thresholds
+7. **Performance Alerts**: Latency and throughput monitoring
+8. **Resource Alerts**: CPU, memory, disk utilization
+
+**Operational Dashboards:**
+9. **Service Health**: Real-time service status dashboard
+10. **Business Metrics**: Event creation, user activity metrics
+11. **Cost Monitoring**: AWS cost and budget alerts
+12. **Security Dashboard**: Security events and compliance
+
+**Incident Management:**
+13. **PagerDuty Integration**: On-call rotation and escalation
+14. **Runbook Automation**: Automated remediation for common issues
+15. **Post-Mortem Process**: Incident review and improvement
+16. **Communication**: StatusPage for public status updates
+
+**Definition of Done:**
+- [ ] All services have monitoring dashboards configured
+- [ ] Alert coverage for all critical user journeys
+- [ ] Mean time to detection (MTTD) < 5 minutes
+- [ ] PagerDuty integration tested with team
+- [ ] Runbooks created for top 10 alert scenarios
+- [ ] Log retention policies configured per compliance
+- [ ] Cost alerts configured with budget thresholds
+- [ ] Team trained on monitoring tools and procedures
+
+---
+## Story 1.7: TDD Developer Workflow Setup
 
 **User Story:**
 As a **developer**, I want automated TDD workflows and tooling integrated into my development environment, so that I can follow test-first development practices consistently and efficiently.
@@ -190,8 +383,295 @@ As a **developer**, I want automated TDD workflows and tooling integrated into m
 - [ ] 100% of new code follows TDD workflow
 
 ---
+## Story 1.8: Development Quality Infrastructure & TDD Automation
 
-## Story 1.5: Company Management Service Foundation
+**User Story:**
+As a **tech lead**, I want automated quality gates and TDD enforcement in our development workflow, so that we maintain high code quality and prevent technical debt accumulation.
+
+**Architecture Integration:**
+- **Git Hooks**: Pre-commit and pre-push hooks
+- **Quality Tools**: SonarQube, JaCoCo, ESLint, Prettier
+- **TDD Workflow**: Automated test execution and coverage gates
+- **Code Review**: Pull request automation and checks
+
+**Acceptance Criteria:**
+
+**Git Hook Configuration:**
+1. **Pre-commit Hooks**: Format check, lint, unit tests
+2. **Pre-push Hooks**: Full test suite execution
+3. **Commit Message**: Conventional commit enforcement
+4. **Branch Protection**: Require PR reviews and passing checks
+
+**Quality Gates:**
+5. **Code Coverage**: Minimum 90% for business logic
+6. **Complexity Metrics**: Cyclomatic complexity limits
+7. **Duplication Check**: Maximum 3% code duplication
+8. **Security Scan**: No high/critical vulnerabilities
+
+**TDD Automation:**
+9. **Test-First Enforcement**: Require tests before implementation
+10. **Coverage Delta**: New code must have >90% coverage
+11. **Test Quality**: Mutation testing for test effectiveness
+12. **Regression Prevention**: Automated regression suite
+
+**Developer Experience:**
+13. **Fast Feedback**: Test results in <30 seconds
+14. **IDE Integration**: Real-time quality feedback
+15. **Documentation**: TDD workflow documentation
+16. **Training Materials**: TDD best practices guide
+
+**Definition of Done:**
+- [ ] Git hooks configured for all repositories
+- [ ] Quality gates enforced in CI/CD pipeline
+- [ ] TDD workflow documented and enforced
+- [ ] Code coverage >90% across all services
+- [ ] No critical SonarQube issues
+- [ ] Mutation testing score >80%
+- [ ] Developer productivity metrics improved
+- [ ] Team trained on TDD practices
+
+---
+## Story 1.9: Comprehensive Error Handling Framework
+
+**User Story:**
+As a **developer**, I want a standardized error handling framework across all services, so that we have consistent error reporting, debugging capabilities, and user experience.
+
+**Architecture Integration:**
+- **Error Hierarchy**: Shared kernel error class hierarchy
+- **Correlation IDs**: Request tracking across services
+- **Error Responses**: Standardized REST error format
+- **Localization**: Multi-language error messages
+
+**Acceptance Criteria:**
+
+**Error Class Hierarchy:**
+1. **Base Exception Classes**: BATbernException with subclasses
+2. **Domain Exceptions**: Service-specific exception types
+3. **Error Codes**: Standardized error code system
+4. **Error Context**: Rich context for debugging
+
+**Global Exception Handling:**
+5. **Spring Exception Handlers**: @ControllerAdvice for REST APIs
+6. **Error Response Format**: Consistent JSON error structure
+7. **Correlation ID Propagation**: Track requests across services
+8. **Stack Trace Management**: Hide in production, show in dev
+
+**Error Tracking:**
+9. **Error Logging**: Structured logging with correlation IDs
+10. **Error Aggregation**: Centralized error tracking
+11. **Error Analytics**: Track error rates and patterns
+12. **Alert Integration**: Critical errors trigger alerts
+
+**User Experience:**
+13. **User-Friendly Messages**: Clear, actionable error messages
+14. **Error Localization**: Support for multiple languages
+15. **Error Recovery**: Suggest recovery actions to users
+16. **Support Integration**: Include support ticket creation
+
+**Definition of Done:**
+- [ ] Error hierarchy implemented in shared kernel
+- [ ] All services use standardized error handling
+- [ ] Correlation IDs tracked across all requests
+- [ ] Error messages localized for supported languages
+- [ ] Error tracking dashboard operational
+- [ ] Alert rules configured for critical errors
+- [ ] Error handling documentation complete
+- [ ] Team trained on error handling patterns
+
+---
+## Story 1.10: Circuit Breaker & Resilience Infrastructure
+
+**User Story:**
+As a **backend developer**, I want resilience patterns implemented for all external service dependencies, so that our system gracefully handles failures and maintains availability.
+
+**Architecture Integration:**
+- **Resilience Library**: Resilience4j for Java services
+- **Circuit Breakers**: Configured for AWS services (SES, S3, Cognito)
+- **Retry Logic**: Exponential backoff with jitter
+- **Fallback Strategies**: Graceful degradation patterns
+
+**Acceptance Criteria:**
+
+**Circuit Breaker Implementation:**
+1. **Service Circuit Breakers**: Configure for each external dependency
+2. **Failure Thresholds**: Define failure rates and timeouts
+3. **Half-Open State**: Implement recovery detection
+4. **Metrics Collection**: Track circuit breaker state changes
+
+**Retry Mechanisms:**
+5. **Retry Policies**: Service-specific retry configurations
+6. **Exponential Backoff**: Implement with jitter to prevent thundering herd
+7. **Retry Budgets**: Limit total retry attempts
+8. **Dead Letter Queues**: Handle permanent failures
+
+**Fallback Strategies:**
+9. **Cache Fallbacks**: Serve stale data when services unavailable
+10. **Default Responses**: Return sensible defaults
+11. **Graceful Degradation**: Disable non-critical features
+12. **Queue Processing**: Async processing for resilience
+
+**Observability:**
+13. **Circuit Breaker Metrics**: Monitor state and transitions
+14. **Failure Tracking**: Log and alert on circuit opens
+15. **Recovery Monitoring**: Track recovery times
+16. **Dashboard Integration**: Visualize resilience metrics
+
+**Definition of Done:**
+- [ ] Circuit breakers configured for all external services
+- [ ] Retry policies implemented and tested
+- [ ] Fallback strategies verified under failure conditions
+- [ ] Chaos engineering tests validate resilience
+- [ ] Metrics dashboard shows circuit breaker health
+- [ ] Documentation includes failure scenarios
+- [ ] Load testing confirms stability under stress
+- [ ] Recovery time objectives (RTO) met
+
+---
+## Story 1.11: Security & Compliance Infrastructure
+
+**User Story:**
+As a **security engineer**, I want comprehensive security controls and compliance infrastructure, so that we protect user data and meet regulatory requirements including GDPR.
+
+**Architecture Integration:**
+- **Security Headers**: CSP, HSTS, X-Frame-Options configuration
+- **Input Validation**: Request validation middleware
+- **GDPR Compliance**: Data privacy controls and audit logging
+- **Security Scanning**: Automated vulnerability scanning
+
+**Acceptance Criteria:**
+
+**Security Controls:**
+1. **Security Headers**: Configure all recommended security headers
+2. **Input Sanitization**: Validate and sanitize all user inputs
+3. **SQL Injection Prevention**: Parameterized queries only
+4. **XSS Protection**: Output encoding and CSP policies
+
+**Authentication & Authorization:**
+5. **Token Validation**: JWT validation with signature verification
+6. **Rate Limiting**: API rate limiting per user/IP
+7. **Session Management**: Secure session handling
+8. **Password Policies**: Strong password requirements
+
+**GDPR Compliance:**
+9. **Consent Management**: Track and manage user consent
+10. **Data Export**: User data export functionality
+11. **Right to Deletion**: Data deletion workflows
+12. **Audit Logging**: Comprehensive audit trail
+
+**Security Monitoring:**
+13. **Security Scanning**: Automated SAST/DAST scanning
+14. **Dependency Scanning**: Vulnerable dependency detection
+15. **Security Alerts**: Real-time security event alerts
+16. **Compliance Reports**: Regular compliance reporting
+
+**Definition of Done:**
+- [ ] Security headers pass security audit
+- [ ] Input validation prevents injection attacks
+- [ ] GDPR compliance features operational
+- [ ] Security scanning integrated in CI/CD
+- [ ] Audit logging covers all sensitive operations
+- [ ] Penetration test findings remediated
+- [ ] Compliance documentation complete
+- [ ] Security training delivered to team
+
+---
+## Story 1.12: Performance Monitoring & SLA Infrastructure
+
+**User Story:**
+As a **platform engineer**, I want comprehensive performance monitoring and SLA tracking, so that we can ensure our platform meets performance commitments and user expectations.
+
+**Architecture Integration:**
+- **Metrics Collection**: Micrometer with CloudWatch backend
+- **APM Tools**: AWS X-Ray for distributed tracing
+- **Performance Testing**: JMeter/K6 integration
+- **SLA Dashboards**: Real-time SLA compliance tracking
+
+**Acceptance Criteria:**
+
+**Metrics Collection:**
+1. **Application Metrics**: Response times, throughput, error rates
+2. **JVM Metrics**: Memory, GC, thread pools
+3. **Database Metrics**: Query performance, connection pools
+4. **Cache Metrics**: Hit rates, eviction rates
+
+**Performance Baselines:**
+5. **API Performance**: Track P50, P95, P99 latencies
+6. **Database Performance**: Query execution times
+7. **Frontend Performance**: Core Web Vitals tracking
+8. **End-to-End Performance**: User journey timings
+
+**SLA Monitoring:**
+9. **Availability SLA**: 99.9% uptime tracking
+10. **Performance SLA**: Response time commitments
+11. **Error Rate SLA**: Maximum error thresholds
+12. **SLA Dashboards**: Real-time compliance visibility
+
+**Performance Testing:**
+13. **Load Testing**: Regular load test execution
+14. **Stress Testing**: Breaking point identification
+15. **Performance Regression**: Automated regression detection
+16. **Capacity Planning**: Predictive scaling analysis
+
+**Definition of Done:**
+- [ ] Metrics collection covers all services
+- [ ] Performance dashboards operational
+- [ ] SLA tracking automated with alerts
+- [ ] Load testing integrated in CI/CD
+- [ ] Performance baselines documented
+- [ ] Capacity planning models created
+- [ ] Performance runbooks complete
+- [ ] Team trained on performance tools
+
+---
+## Story 1.13: Advanced Caching Strategy Implementation
+
+**User Story:**
+As a **backend developer**, I want a comprehensive caching strategy implemented across all services, so that we achieve optimal performance and reduce database load.
+
+**Architecture Integration:**
+- **Cache Layer**: Redis with cluster configuration
+- **Cache Patterns**: Cache-aside, write-through, write-behind
+- **Cache Invalidation**: Event-driven invalidation strategies
+- **Cache Monitoring**: Hit rates and performance tracking
+
+**Acceptance Criteria:**
+
+**Redis Infrastructure:**
+1. **Redis Clusters**: Environment-specific cluster configurations
+2. **Persistence Strategy**: RDB + AOF for data durability
+3. **Replication**: Master-slave replication setup
+4. **Failover**: Automatic failover with Redis Sentinel
+
+**Caching Patterns:**
+5. **Cache-Aside Pattern**: Lazy loading for read-heavy data
+6. **Write-Through Cache**: Synchronous cache updates
+7. **Write-Behind Cache**: Asynchronous batch updates
+8. **Cache Warming**: Preload critical data on startup
+
+**Cache Management:**
+9. **TTL Strategies**: Appropriate TTLs per data type
+10. **Cache Invalidation**: Event-based invalidation
+11. **Cache Versioning**: Handle schema changes
+12. **Memory Management**: Eviction policies configuration
+
+**Performance Optimization:**
+13. **Hit Rate Optimization**: Target >90% cache hit rate
+14. **Serialization**: Efficient serialization formats
+15. **Connection Pooling**: Optimize Redis connections
+16. **Pipeline Operations**: Batch Redis operations
+
+**Definition of Done:**
+- [ ] Redis clusters operational in all environments
+- [ ] Cache patterns implemented consistently
+- [ ] Cache hit rate >90% for hot paths
+- [ ] Invalidation strategies tested and working
+- [ ] Cache monitoring dashboards created
+- [ ] Performance improvements measured and documented
+- [ ] Cache sizing optimized for cost
+- [ ] Team trained on caching patterns
+
+---
+## Story 1.14: Company Management Service Foundation
 
 **User Story:**
 As a **partner or attendee**, I want my company affiliation to be properly managed and verified, so that I can access company-specific features and analytics while maintaining data integrity.
@@ -233,8 +713,7 @@ As a **partner or attendee**, I want my company affiliation to be properly manag
 - [ ] Integration tests verify all company management workflows
 
 ---
-
-## Story 1.6: Historical Data Migration Service
+## Story 1.15: Historical Data Migration Service
 
 **User Story:**
 As a **platform stakeholder**, I want all 20+ years of historical BATbern event data migrated accurately, so that the new platform maintains continuity and preserves our valuable content archive.
@@ -283,57 +762,7 @@ As a **platform stakeholder**, I want all 20+ years of historical BATbern event 
 - [ ] Performance benchmarks meet < 4 hour total migration time requirement
 
 ---
-
-## Story 1.7: React Frontend Foundation with Role-Adaptive Architecture
-
-**User Story:**
-As a **user of any role**, I want to access a modern, responsive web application that adapts to my specific role and responsibilities, so that I can efficiently perform my tasks without unnecessary complexity.
-
-**Architecture Integration:**
-- **Frontend**: React 18.2+ with TypeScript, role-adaptive component architecture
-- **State Management**: Zustand for client state, React Query for server state
-- **UI Framework**: Material-UI (MUI) 5.14+ with Swiss design standards
-- **Build**: Vite 5.0+ with optimized bundling and development experience
-
-**Acceptance Criteria:**
-
-**Role-Adaptive Component Architecture:**
-1. **Base Layout Component**: Implement role-adaptive navigation and layout system
-2. **Role-Based Routing**: Configure React Router with role-based route protection
-3. **Adaptive Navigation**: Navigation menus that adapt based on authenticated user role
-4. **Component Library**: Establish shared component library with consistent design patterns
-
-**Frontend Infrastructure:**
-5. **Authentication Integration**: AWS Cognito integration with automatic token refresh
-6. **API Client Layer**: Implement type-safe API clients for all microservices
-7. **State Management**: Configure Zustand stores for client state and React Query for server caching
-8. **Error Handling**: Global error boundary system with role-appropriate error displays
-
-**User Experience Foundation:**
-9. **Responsive Design**: Mobile-first responsive design with breakpoint optimization
-10. **Accessibility**: WCAG 2.1 Level AA compliance with screen reader support
-11. **Performance**: Code splitting and lazy loading for optimal bundle sizes
-12. **Progressive Web App**: Service worker implementation for offline capabilities
-
-**Development Infrastructure:**
-13. **TypeScript Configuration**: Strict TypeScript setup with comprehensive type safety
-14. **Testing Framework**: Vitest + React Testing Library setup with component test coverage
-15. **Build Optimization**: Vite configuration with proper asset optimization and caching
-16. **Development Environment**: Hot module replacement and optimal developer experience
-
-**Definition of Done:**
-- [ ] Role-adaptive React application deployed and accessible
-- [ ] Four distinct user role experiences properly implemented and tested
-- [ ] Authentication integration working with automatic token refresh
-- [ ] Responsive design verified across mobile, tablet, and desktop
-- [ ] WCAG 2.1 Level AA accessibility compliance verified
-- [ ] Performance benchmarks meet Core Web Vitals requirements
-- [ ] PWA functionality working with offline page caching
-- [ ] Comprehensive test suite with >80% component coverage
-
----
-
-## Story 1.8: Event Management Service Core Implementation
+## Story 1.16: Event Management Service Core Implementation
 
 **User Story:**
 As an **organizer**, I want to access and manage events through a robust service that handles the complex event lifecycle, so that I can efficiently plan and coordinate BATbern conferences.
@@ -381,8 +810,55 @@ As an **organizer**, I want to access and manage events through a robust service
 - [ ] Performance tests meet <150ms P95 response time requirement
 
 ---
+## Story 1.17: React Frontend Foundation with Role-Adaptive Architecture
 
-## Story 1.9: Basic Event Display & Archive Browsing
+**User Story:**
+As a **user of any role**, I want to access a modern, responsive web application that adapts to my specific role and responsibilities, so that I can efficiently perform my tasks without unnecessary complexity.
+
+**Architecture Integration:**
+- **Frontend**: React 18.2+ with TypeScript, role-adaptive component architecture
+- **State Management**: Zustand for client state, React Query for server state
+- **UI Framework**: Material-UI (MUI) 5.14+ with Swiss design standards
+- **Build**: Vite 5.0+ with optimized bundling and development experience
+
+**Acceptance Criteria:**
+
+**Role-Adaptive Component Architecture:**
+1. **Base Layout Component**: Implement role-adaptive navigation and layout system
+2. **Role-Based Routing**: Configure React Router with role-based route protection
+3. **Adaptive Navigation**: Navigation menus that adapt based on authenticated user role
+4. **Component Library**: Establish shared component library with consistent design patterns
+
+**Frontend Infrastructure:**
+5. **Authentication Integration**: AWS Cognito integration with automatic token refresh
+6. **API Client Layer**: Implement type-safe API clients for all microservices
+7. **State Management**: Configure Zustand stores for client state and React Query for server caching
+8. **Error Handling**: Global error boundary system with role-appropriate error displays
+
+**User Experience Foundation:**
+9. **Responsive Design**: Mobile-first responsive design with breakpoint optimization
+10. **Accessibility**: WCAG 2.1 Level AA compliance with screen reader support
+11. **Performance**: Code splitting and lazy loading for optimal bundle sizes
+12. **Progressive Web App**: Service worker implementation for offline capabilities
+
+**Development Infrastructure:**
+13. **TypeScript Configuration**: Strict TypeScript setup with comprehensive type safety
+14. **Testing Framework**: Vitest + React Testing Library setup with component test coverage
+15. **Build Optimization**: Vite configuration with proper asset optimization and caching
+16. **Development Environment**: Hot module replacement and optimal developer experience
+
+**Definition of Done:**
+- [ ] Role-adaptive React application deployed and accessible
+- [ ] Four distinct user role experiences properly implemented and tested
+- [ ] Authentication integration working with automatic token refresh
+- [ ] Responsive design verified across mobile, tablet, and desktop
+- [ ] WCAG 2.1 Level AA accessibility compliance verified
+- [ ] Performance benchmarks meet Core Web Vitals requirements
+- [ ] PWA functionality working with offline page caching
+- [ ] Comprehensive test suite with >80% component coverage
+
+---
+## Story 1.18: Basic Event Display & Archive Browsing
 
 **User Story:**
 As a **visitor or attendee**, I want to browse and view historical BATbern events with rich content and search capabilities, so that I can explore 20+ years of conference knowledge and expertise.
@@ -430,21 +906,91 @@ As a **visitor or attendee**, I want to browse and view historical BATbern event
 - [ ] SEO optimization verified with search engine indexing
 
 ---
+## Story 1.19: Speaker Coordination Service Foundation
+
+**User Story:**
+As an **organizer**, I want the foundational Speaker Coordination Service deployed with core domain models and APIs, so that we can manage speaker workflows in subsequent epics.
+
+**Architecture Integration:**
+- **Service**: `speaker-coordination-service/` (Java 21 + Spring Boot 3.2)
+- **Database**: PostgreSQL with speaker domain schema
+- **Events**: Domain events for speaker state transitions
+- **Cache**: Redis for speaker session data
+
+**Acceptance Criteria:**
+
+**Domain Model Implementation:**
+1. **Speaker Aggregate**: Core speaker entity with profile management
+2. **Invitation Aggregate**: Invitation tracking and response management
+3. **Material Submission**: Domain model for speaker materials
+4. **Workflow States**: State machine for speaker lifecycle
+
+**Service Architecture:**
+5. **REST API Structure**: RESTful endpoints following OpenAPI 3.0
+6. **Domain Event Publishing**: EventBridge integration for speaker events
+7. **Database Schema**: Flyway migrations for speaker tables
+8. **Repository Pattern**: JPA repositories with custom queries
+
+**Integration Points:**
+9. **Event Management Integration**: Interface with Event Management Service
+10. **Authentication Integration**: JWT validation from API Gateway
+11. **Storage Integration**: S3 configuration for material uploads
+12. **Email Integration**: SES setup for speaker communications
+
+**Definition of Done:**
+- [ ] Speaker Coordination Service deployed and healthy
+- [ ] Core domain models implemented with validation
+- [ ] REST APIs documented in OpenAPI specification
+- [ ] Database schema created with sample data
+- [ ] Integration tests covering main workflows
+- [ ] Domain events publishing successfully
+- [ ] Service registered in API Gateway
+- [ ] Health check endpoint operational
+
+---
 
 ## Epic 1 Success Metrics
 
-**MVP Success Criteria (End of Sprint 6):**
+**Extended Foundation Success Criteria (End of Sprint 9-10):**
+
+**Core Platform Foundation:**
 - ✅ **Foundation Complete**: All microservices deployed with proper DDD architecture
 - ✅ **Authentication Working**: Role-based access control operational for all four user types
 - ✅ **Data Migration**: 100% of historical data migrated with integrity verification
 - ✅ **Basic Event Browsing**: Content discovery functional with search capabilities
 - ✅ **Platform Ready**: Foundation established for advanced feature development
 
+**Infrastructure & DevOps (NEW):**
+- ✅ **Multi-Environment Setup**: Dev, Staging, Production environments fully operational
+- ✅ **CI/CD Pipeline**: Automated build, test, deploy pipelines with <10min build time
+- ✅ **Environment Promotion**: Automated promotion with 99.9% deployment success rate
+- ✅ **Infrastructure Monitoring**: CloudWatch + Grafana dashboards with <5min MTTD
+
+**Resilience & Quality (NEW):**
+- ✅ **Circuit Breakers**: All external services protected with resilience patterns
+- ✅ **Error Handling**: Standardized error framework with correlation IDs
+- ✅ **Caching Strategy**: Redis optimization achieving >90% cache hit rate
+- ✅ **TDD Infrastructure**: Git hooks and quality gates enforcing 90% coverage
+
+**Security & Compliance (NEW):**
+- ✅ **Security Controls**: CSP headers, input validation, rate limiting operational
+- ✅ **GDPR Compliance**: Data export, deletion, consent management implemented
+- ✅ **Security Scanning**: Zero high/critical vulnerabilities in production
+- ✅ **Audit Logging**: Complete audit trail for compliance requirements
+
 **Technical KPIs:**
 - **Performance**: API Gateway <50ms, Event Service <150ms, Frontend <2.5s LCP
-- **Reliability**: 99.5% uptime, <0.1% error rate
+- **Reliability**: 99.9% uptime (improved from 99.5%), <0.1% error rate
 - **Security**: Zero authentication vulnerabilities, proper RBAC implementation
 - **Migration**: 100% data integrity verification, <4 hour migration time
 - **User Experience**: WCAG 2.1 AA compliance, mobile-responsive design
+- **Code Quality**: >90% test coverage, <3% duplication, SonarQube quality gate passed
+- **Deployment**: <5 minute rollback capability, blue-green deployments operational
+- **Monitoring**: 100% service coverage, automated alerting with PagerDuty integration
 
-This concludes Epic 1 with a solid foundation for the advanced features in subsequent epics.
+**Timeline & Effort:**
+- **Original Scope**: 9 stories, 6 weeks
+- **Expanded Scope**: 19 stories, 9-10 weeks
+- **Additional Value**: Enterprise-grade infrastructure preventing 6-12 months of technical debt
+
+This expanded Epic 1 establishes not just the application foundation, but the complete operational excellence framework required for a production-grade platform. The additional infrastructure stories ensure scalability, reliability, security, and maintainability from day one.
