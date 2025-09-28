@@ -2,6 +2,42 @@
 # Domain Context Map for BATbern Event Management Platform
 # Maps epics, services, and documentation to DDD bounded contexts
 
+# Functional Requirements from docs/prd-enhanced.md
+functional_requirements_definitions:
+  FR1: "Role-based authentication with distinct interfaces for organizers, speakers, partners, and attendees"
+  FR2: "Event organizers manage complete 16-step event workflow through intelligent task sequencing, automated deadline tracking, stakeholder coordination, and real-time progress dashboards"
+  FR3: "Automated speaker invitation, submission, and material collection workflows with real-time status updates"
+  FR4: "Partner/sponsor users access real-time analytics dashboards showing employee attendance, brand exposure metrics, and ROI data"
+  FR5: "Progressive event publishing with automatic content updates from topic definition through final agenda publication"
+  FR6: "Attendees access prominent current event landing page with complete logistics, speaker lineup, agenda details, and registration"
+  FR7: "Email notification workflows for event updates, speaker deadlines, and newsletter distribution"
+  FR8: "Partner users vote on topic priorities and submit strategic topic suggestions"
+  FR9: "Generate automated reports for partner meetings including attendance statistics, topic performance, and engagement metrics"
+  FR10: "Speaker users access self-service portal for submission management, agenda viewing, and presentation upload"
+  FR11: "Complete event archive with presentation downloads, speaker profiles, and photo galleries accessible via secondary navigation"
+  FR12: "Event organizers manage multi-year venue reservations, catering coordination, partner meeting scheduling, and logistics through integrated workflow tools"
+  FR13: "Attendees access intelligent content discovery across historical BATbern events (20+ years) with AI-powered search and personalized recommendations"
+  FR14: "Attendees manage personal engagement through newsletter subscriptions, content bookmarking, and presentation downloads"
+  FR15: "Mobile-optimized attendee experience with offline content access, event check-in capabilities, and progressive web app functionality"
+  FR16: "Attendees access community features including content ratings, social sharing, and curated learning pathways"
+  FR17: "Intelligent speaker matching and assignment tracking with automated workflow states and real-time organizer collaboration"
+  FR18: "Smart topic backlog management with historical usage tracking, partner influence integration, and duplicate avoidance algorithms"
+  FR19: "Progressive publishing engine with content validation, quality review, and phased publication with automated standards enforcement"
+  FR20: "Intelligent notification system with role-based alerts, cross-stakeholder visibility, and automated escalation workflows"
+  FR21: "Long-term planning capabilities including multi-year venue booking, seasonal partner meeting coordination, and strategic budget planning"
+
+non_functional_requirements_definitions:
+  NFR1: "Responsive design optimized for mobile, tablet, and desktop access"
+  NFR2: "Database supports advanced text search across all historical content with sub-second response times"
+  NFR3: "Integration with external services (email, payment processing, file storage) through configurable APIs"
+  NFR4: "Multi-language content support (German, English) with internationalization framework"
+
+compatibility_requirements_definitions:
+  CR1: "Migrate all existing event data (54+ events, presentations, speaker profiles) without data loss"
+  CR2: "Maintain existing external integrations (Slideshare, Twitter, venue websites) during transition period"
+  CR3: "Preserve existing URL structure for SEO and bookmark compatibility where feasible"
+  CR4: "Export data in standard formats for partner analytics and reporting tools"
+
 domains:
   event-management:
     name: Event Management Domain
@@ -33,7 +69,7 @@ domains:
         components:
           - Multi-organizer Features
           - Real-time Sync
-    functional_requirements: [FR2, FR5, FR7, FR12, FR17, FR18, FR19, FR20, FR21]
+    functional_requirements: [FR2, FR5, FR7, FR12, FR17, FR18, FR19, FR20, FR21]  # Event workflow, publishing, notifications, planning
     workflow_steps: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
 
   speaker-coordination:
@@ -63,7 +99,7 @@ domains:
           - Material Upload
           - Communication Center
           - Event Calendar
-    functional_requirements: [FR3, FR10, FR17]
+    functional_requirements: [FR3, FR10, FR17]  # Speaker workflows, portal, assignment tracking
     content_requirements:
       - Abstract: max 1000 chars with lessons learned
       - CV: required
@@ -97,7 +133,7 @@ domains:
           - Topic Voting Interface
           - Employee Attendance Tracking
           - Strategic Planning Tools
-    functional_requirements: [FR4, FR8, FR9]
+    functional_requirements: [FR4, FR8, FR9]  # Partner analytics, topic voting, reports
 
   attendee-experience:
     name: Attendee Experience Domain
@@ -136,7 +172,7 @@ domains:
           - Event Details
           - Registration Form
           - Speaker Showcase
-    functional_requirements: [FR6, FR11, FR13, FR14, FR15, FR16]
+    functional_requirements: [FR6, FR11, FR13, FR14, FR15, FR16]  # Landing page, archive, discovery, mobile, community
 
   shared-infrastructure:
     name: Shared Infrastructure & Core Services
@@ -168,7 +204,9 @@ domains:
           - User Menu
           - Role Switcher
           - Notification Center
-    functional_requirements: [FR1, NFR1, NFR2, NFR3, NFR4]
+    functional_requirements: [FR1]  # Role-based authentication
+    non_functional_requirements: [NFR1, NFR2, NFR3, NFR4]  # Responsive, search, integrations, i18n
+    compatibility_requirements: [CR1, CR2, CR3, CR4]  # Data migration, integrations, URLs, exports
 
 # Cross-domain integration patterns
 integration_patterns:
@@ -258,3 +296,8 @@ testing_requirements:
     shared-infrastructure:
       focus: Authentication, authorization, data migration
       critical_paths: [User login, Role-based access]
+
+# Requirements Reference
+# All functional (FR), non-functional (NFR), and compatibility (CR) requirements
+# are defined in docs/prd-enhanced.md and mapped to domains above
+# Use the functional_requirements_definitions section for quick reference
