@@ -14,7 +14,7 @@
 
 ## Sprint 1-2: Microservices Foundation & Authentication
 
-### Story 1.1: Shared Kernel Infrastructure Setup
+## Story 1.1: Shared Kernel Infrastructure Setup
 
 **User Story:**
 As a **platform architect**, I want to establish the shared kernel foundation with common types and domain events, so that all microservices can communicate consistently through domain-driven design patterns.
@@ -55,7 +55,7 @@ As a **platform architect**, I want to establish the shared kernel foundation wi
 
 ---
 
-### Story 1.2: API Gateway & Authentication Service
+## Story 1.2: API Gateway & Authentication Service
 
 **User Story:**
 As a **user of any role**, I want to authenticate securely and access appropriate functionality, so that I can interact with the platform according to my permissions and responsibilities.
@@ -103,7 +103,7 @@ As a **user of any role**, I want to authenticate securely and access appropriat
 
 ---
 
-### Story 1.3: TDD Testing Infrastructure
+## Story 1.3: TDD Testing Infrastructure
 
 **User Story:**
 As a **developer**, I want comprehensive testing infrastructure and utilities following TDD practices, so that I can efficiently write tests before implementation and maintain high code quality.
@@ -146,7 +146,7 @@ As a **developer**, I want comprehensive testing infrastructure and utilities fo
 
 ---
 
-### Story 1.4: TDD Developer Workflow Setup
+## Story 1.4: TDD Developer Workflow Setup
 
 **User Story:**
 As a **developer**, I want automated TDD workflows and tooling integrated into my development environment, so that I can follow test-first development practices consistently and efficiently.
@@ -195,7 +195,7 @@ As a **developer**, I want automated TDD workflows and tooling integrated into m
 
 ---
 
-### Story 1.5: Company Management Service Foundation
+## Story 1.5: Company Management Service Foundation
 
 **User Story:**
 As a **partner or attendee**, I want my company affiliation to be properly managed and verified, so that I can access company-specific features and analytics while maintaining data integrity.
@@ -240,7 +240,7 @@ As a **partner or attendee**, I want my company affiliation to be properly manag
 
 ## Sprint 3-4: Historical Data Migration & Basic Events
 
-### Story 1.6: Historical Data Migration Service
+## Story 1.6: Historical Data Migration Service
 
 **User Story:**
 As a **platform stakeholder**, I want all 20+ years of historical BATbern event data migrated accurately, so that the new platform maintains continuity and preserves our valuable content archive.
@@ -290,7 +290,7 @@ As a **platform stakeholder**, I want all 20+ years of historical BATbern event 
 
 ---
 
-### Story 1.7: React Frontend Foundation with Role-Adaptive Architecture
+## Story 1.7: React Frontend Foundation with Role-Adaptive Architecture
 
 **User Story:**
 As a **user of any role**, I want to access a modern, responsive web application that adapts to my specific role and responsibilities, so that I can efficiently perform my tasks without unnecessary complexity.
@@ -341,7 +341,7 @@ As a **user of any role**, I want to access a modern, responsive web application
 
 ## Sprint 5-6: Event Service Foundation & Basic Event Display
 
-### Story 1.8: Event Management Service Core Implementation
+## Story 1.8: Event Management Service Core Implementation
 
 **User Story:**
 As an **organizer**, I want to access and manage events through a robust service that handles the complex event lifecycle, so that I can efficiently plan and coordinate BATbern conferences.
@@ -390,7 +390,7 @@ As an **organizer**, I want to access and manage events through a robust service
 
 ---
 
-### Story 1.9: Basic Event Display & Archive Browsing
+## Story 1.9: Basic Event Display & Archive Browsing
 
 **User Story:**
 As a **visitor or attendee**, I want to browse and view historical BATbern events with rich content and search capabilities, so that I can explore 20+ years of conference knowledge and expertise.
