@@ -16,7 +16,7 @@
 
 ---
 
-## Story 6.1: Partner Analytics Dashboard (from Old Epic 5.1)
+## Story 6.1: Partner Analytics Dashboard
 
 **User Story:**
 As a **partner**, I want to view comprehensive analytics about employee attendance and engagement, so that I can demonstrate sponsorship ROI internally.
@@ -45,7 +45,7 @@ As a **partner**, I want to view comprehensive analytics about employee attendan
 
 ---
 
-## Story 6.2: Brand Exposure Tracking (from Old Epic 5.2)
+## Story 6.2: Brand Exposure Tracking
 
 **User Story:**
 As a **partner**, I want to track brand visibility and marketing impact, so that I can measure the marketing value of sponsorship.
@@ -74,7 +74,7 @@ As a **partner**, I want to track brand visibility and marketing impact, so that
 
 ---
 
-## Story 6.3: ROI Reporting (from Old Epic 5.3)
+## Story 6.3: ROI Reporting
 
 **User Story:**
 As a **partner**, I want automated ROI reports that quantify sponsorship value, so that I can justify continued investment.
@@ -103,7 +103,7 @@ As a **partner**, I want automated ROI reports that quantify sponsorship value, 
 
 ---
 
-## Story 6.4: Topic Voting Integration (from Old Epic 5.4 + 2.1 partial)
+## Story 6.4: Topic Voting Integration
 
 **User Story:**
 As a **partner**, I want to vote on future event topics and submit suggestions, so that events align with our strategic interests.
@@ -132,7 +132,7 @@ As a **partner**, I want to vote on future event topics and submit suggestions, 
 
 ---
 
-## Story 6.5: Partner Meeting Coordination (from Old Epic 2.8)
+## Story 6.5: Partner Meeting Coordination
 
 **User Story:**
 As an **organizer**, I want to coordinate seasonal partner meetings with automated scheduling and materials, so that strategic partnerships are maintained efficiently.

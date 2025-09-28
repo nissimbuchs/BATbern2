@@ -16,7 +16,7 @@
 
 ---
 
-## Story 5.1: Historical Content Discovery (from Old Epic 4.2)
+## Story 5.1: Historical Content Discovery
 
 **User Story:**
 As an **attendee**, I want to explore 20+ years of BATbern content with intelligent search and filtering, so that I can discover relevant presentations and expertise.
@@ -45,7 +45,7 @@ As an **attendee**, I want to explore 20+ years of BATbern content with intellig
 
 ---
 
-## Story 5.2: Personal Engagement Management (from Old Epic 4.3)
+## Story 5.2: Personal Engagement Management
 
 **User Story:**
 As an **attendee**, I want to manage my preferences, bookmarks, and subscriptions, so that I can customize my BATbern experience.
@@ -74,7 +74,7 @@ As an **attendee**, I want to manage my preferences, bookmarks, and subscription
 
 ---
 
-## Story 5.3: Mobile Progressive Web App (from Old Epic 4.4)
+## Story 5.3: Mobile Progressive Web App
 
 **User Story:**
 As an **attendee**, I want to access BATbern content on my mobile device with offline capabilities, so that I can engage with content anywhere.

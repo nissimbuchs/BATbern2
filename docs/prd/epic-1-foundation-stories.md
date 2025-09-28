@@ -12,8 +12,6 @@
 
 ---
 
-## Sprint 1-2: Microservices Foundation & Authentication
-
 ## Story 1.1: Shared Kernel Infrastructure Setup
 
 **User Story:**
@@ -102,8 +100,6 @@ As a **user of any role**, I want to authenticate securely and access appropriat
 - [ ] Performance tests confirm < 50ms authentication overhead
 
 ---
-
-## Story 1.3: TDD Testing Infrastructure
 
 **User Story:**
 As a **developer**, I want comprehensive testing infrastructure and utilities following TDD practices, so that I can efficiently write tests before implementation and maintain high code quality.
@@ -238,8 +234,6 @@ As a **partner or attendee**, I want my company affiliation to be properly manag
 
 ---
 
-## Sprint 3-4: Historical Data Migration & Basic Events
-
 ## Story 1.6: Historical Data Migration Service
 
 **User Story:**
@@ -338,8 +332,6 @@ As a **user of any role**, I want to access a modern, responsive web application
 - [ ] Comprehensive test suite with >80% component coverage
 
 ---
-
-## Sprint 5-6: Event Service Foundation & Basic Event Display
 
 ## Story 1.8: Event Management Service Core Implementation
 

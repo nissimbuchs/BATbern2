@@ -16,7 +16,7 @@
 
 ---
 
-## Story 7.1: Speaker Dashboard (from Old Epic 3.4)
+## Story 7.1: Speaker Dashboard
 
 **User Story:**
 As a **speaker**, I want a comprehensive dashboard showing all my BATbern involvement, so that I can manage my participation effectively.
@@ -45,7 +45,7 @@ As a **speaker**, I want a comprehensive dashboard showing all my BATbern involv
 
 ---
 
-## Story 7.2: Advanced Material Management (from Old Epic 3.5)
+## Story 7.2: Advanced Material Management
 
 **User Story:**
 As a **speaker**, I want advanced material management with version control and collaboration, so that I can maintain high-quality content.
@@ -74,7 +74,7 @@ As a **speaker**, I want advanced material management with version control and c
 
 ---
 
-## Story 7.3: Communication Hub (from Old Epic 3.6)
+## Story 7.3: Communication Hub
 
 **User Story:**
 As a **speaker**, I want a centralized communication hub with organizers, so that all event communication is streamlined.
@@ -103,7 +103,7 @@ As a **speaker**, I want a centralized communication hub with organizers, so tha
 
 ---
 
-## Story 7.4: Community Features (from Old Epic 4.5)
+## Story 7.4: Community Features
 
 **User Story:**
 As an **attendee**, I want to engage with the BATbern community through ratings, discussions, and content sharing, so that I can maximize learning value.
@@ -132,7 +132,7 @@ As an **attendee**, I want to engage with the BATbern community through ratings,
 
 ---
 
-## Story 7.5: Personalized Intelligence (from Old Epic 4.6)
+## Story 7.5: Personalized Intelligence
 
 **User Story:**
 As an **attendee**, I want AI-powered personalized recommendations, so that I discover the most relevant content for my interests.
@@ -161,7 +161,7 @@ As an **attendee**, I want AI-powered personalized recommendations, so that I di
 
 ---
 
-## Story 7.6: Community Feedback System (from Old Epic 5.5)
+## Story 7.6: Community Feedback System
 
 **User Story:**
 As an **attendee**, I want to provide comprehensive event feedback, so that future events continuously improve.

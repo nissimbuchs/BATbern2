@@ -6,7 +6,7 @@
 ✅ **Complete Platform Rewrite** + ✅ New Feature Addition + ✅ UI/UX Overhaul
 
 ### Enhancement Description
-Complete rewrite of BATbern as a comprehensive event management platform using Angular frontend with Java/Spring Boot backend, transforming from static conference website into dynamic event ecosystem with automated workflows, real-time analytics, and intelligent content management.
+Complete rewrite of BATbern as a comprehensive event management platform using React frontend with Java/Spring Boot backend, transforming from static conference website into dynamic event ecosystem with automated workflows, real-time analytics, and intelligent content management.
 
 ### Impact Assessment
 ✅ **Revolutionary Impact** (complete architectural transformation)
@@ -216,6 +216,6 @@ Each epic document contains:
 
 1. **Architecture Review**: Finalize technical approach with architect
 2. **Sprint 0 Planning**: Setup development environment and project structure
-3. **Team Formation**: Assemble development team with Java/Spring Boot and Angular expertise
+3. **Team Formation**: Assemble development team with Java/Spring Boot and React expertise
 4. **Stakeholder Alignment**: Validate approach with organizers, key speakers, and partners
 5. **MVP Planning**: Detailed story breakdown and sprint planning for Epic 1
