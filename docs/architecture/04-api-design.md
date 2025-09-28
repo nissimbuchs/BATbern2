@@ -11,11 +11,11 @@ info:
   version: 1.0.0
   description: Comprehensive API for the BATbern Event Management Platform supporting organizers, speakers, partners, and attendees
 servers:
-  - url: https://api.berner-architekten-treffen.ch
+  - url: https://api.batbern.ch
     description: Production API
-  - url: https://api-staging.berner-architekten-treffen.ch
+  - url: https://api-staging.batbern.ch
     description: Staging API
-  - url: https://api-dev.berner-architekten-treffen.ch
+  - url: https://api-dev.batbern.ch
     description: Development API
 
 security:
@@ -107,6 +107,482 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Speaker'
+
+  # Enhanced Event Workflow Management
+  /api/v1/events/{eventId}/workflow:
+    get:
+      tags: [Event Workflow]
+      summary: Get event workflow state
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Event workflow state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventWorkflow'
+    put:
+      tags: [Event Workflow]
+      summary: Update event workflow state
+      security:
+        - BearerAuth: [organizer]
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateWorkflowRequest'
+      responses:
+        '200':
+          description: Workflow updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventWorkflow'
+
+  # Slot Management
+  /api/v1/events/{eventId}/slots:
+    get:
+      tags: [Slot Management]
+      summary: List event slots
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: slotType
+          in: query
+          schema:
+            $ref: '#/components/schemas/SlotType'
+        - name: assigned
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: List of event slots
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventSlot'
+    post:
+      tags: [Slot Management]
+      summary: Create slot configuration
+      security:
+        - BearerAuth: [organizer]
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSlotConfigRequest'
+      responses:
+        '201':
+          description: Slots created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventSlot'
+
+  /api/v1/events/{eventId}/slots/{slotId}/assign:
+    post:
+      tags: [Slot Management]
+      summary: Assign speaker to slot
+      security:
+        - BearerAuth: [organizer]
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: slotId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignSlotRequest'
+      responses:
+        '200':
+          description: Speaker assigned to slot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SlotAssignment'
+    delete:
+      tags: [Slot Management]
+      summary: Unassign speaker from slot
+      security:
+        - BearerAuth: [organizer]
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: slotId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Speaker unassigned from slot
+
+  # Speaker Preferences & Requirements
+  /api/v1/speakers/{speakerId}/preferences:
+    get:
+      tags: [Speaker Preferences]
+      summary: Get speaker slot preferences
+      parameters:
+        - name: speakerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: eventId
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Speaker preferences
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerSlotPreferences'
+    post:
+      tags: [Speaker Preferences]
+      summary: Submit speaker preferences
+      security:
+        - BearerAuth: [speaker]
+      parameters:
+        - name: speakerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitPreferencesRequest'
+      responses:
+        '201':
+          description: Preferences submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerSlotPreferences'
+    put:
+      tags: [Speaker Preferences]
+      summary: Update speaker preferences
+      security:
+        - BearerAuth: [speaker]
+      parameters:
+        - name: speakerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePreferencesRequest'
+      responses:
+        '200':
+          description: Preferences updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerSlotPreferences'
+
+  # Quality Review Workflow
+  /api/v1/sessions/{sessionId}/quality-review:
+    get:
+      tags: [Quality Review]
+      summary: Get content quality review status
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Quality review status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentQualityReview'
+    post:
+      tags: [Quality Review]
+      summary: Submit content for review
+      security:
+        - BearerAuth: [speaker]
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitContentRequest'
+      responses:
+        '201':
+          description: Content submitted for review
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentQualityReview'
+    put:
+      tags: [Quality Review]
+      summary: Update review status (moderator)
+      security:
+        - BearerAuth: [moderator]
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateReviewRequest'
+      responses:
+        '200':
+          description: Review updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentQualityReview'
+
+  /api/v1/moderators/{moderatorId}/reviews:
+    get:
+      tags: [Quality Review]
+      summary: List pending reviews for moderator
+      security:
+        - BearerAuth: [moderator]
+      parameters:
+        - name: moderatorId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/QualityReviewStatus'
+        - name: eventId
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of reviews
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ContentQualityReview'
+
+  # Overflow Management & Waitlist
+  /api/v1/events/{eventId}/overflow:
+    get:
+      tags: [Overflow Management]
+      summary: List overflow speakers
+      security:
+        - BearerAuth: [organizer]
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Overflow speakers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OverflowManagement'
+    post:
+      tags: [Overflow Management]
+      summary: Vote on speaker selection
+      security:
+        - BearerAuth: [organizer]
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpeakerVoteRequest'
+      responses:
+        '201':
+          description: Vote recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerSelectionVote'
+
+  /api/v1/events/{eventId}/waitlist:
+    get:
+      tags: [Waitlist Management]
+      summary: Get event waitlist
+      security:
+        - BearerAuth: [organizer]
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Waitlisted speakers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WaitlistSpeaker'
+    post:
+      tags: [Waitlist Management]
+      summary: Add speaker to waitlist
+      security:
+        - BearerAuth: [organizer]
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddToWaitlistRequest'
+      responses:
+        '201':
+          description: Speaker added to waitlist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WaitlistSpeaker'
+    delete:
+      tags: [Waitlist Management]
+      summary: Remove speaker from waitlist
+      security:
+        - BearerAuth: [organizer]
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: speakerId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Speaker removed from waitlist
+
+  /api/v1/events/{eventId}/waitlist/{speakerId}/activate:
+    post:
+      tags: [Waitlist Management]
+      summary: Activate waitlisted speaker
+      security:
+        - BearerAuth: [organizer]
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: speakerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Speaker activated from waitlist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WaitlistSpeaker'
 
   # Company Management
   /api/v1/companies:

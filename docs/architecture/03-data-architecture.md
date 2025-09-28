@@ -128,6 +128,9 @@ interface Speaker {
   position: string;
   profile: SpeakerProfile;
   availability: SpeakerAvailability;
+  workflowState: SpeakerWorkflowState;
+  slotPreferences: SpeakerSlotPreferences;
+  qualityReview: QualityReviewStatus;
   communicationPreferences: ContactPreferences;
   speakingHistory: SpeakingEngagement[];
   createdAt: Date;
@@ -146,13 +149,23 @@ interface SpeakerProfile {
   speakingTopics: string[];
 }
 
+enum SpeakerWorkflowState {
+  OPEN = 'open',
+  CONTACTED = 'contacted',
+  READY = 'ready',
+  DECLINED = 'declined',
+  ACCEPTED = 'accepted',
+  SLOT_ASSIGNED = 'slot_assigned',
+  QUALITY_REVIEWED = 'quality_reviewed',
+  FINAL_AGENDA = 'final_agenda',
+  INFORMED = 'informed',
+  WAITLIST = 'waitlist'
+}
+
 enum SpeakerAvailability {
   AVAILABLE = 'available',
   BUSY = 'busy',
-  UNAVAILABLE = 'unavailable',
-  INVITED = 'invited',
-  CONFIRMED = 'confirmed',
-  DECLINED = 'declined'
+  UNAVAILABLE = 'unavailable'
 }
 ```
 
@@ -198,11 +211,16 @@ interface SessionSpeaker {
   speakerId: string;
   role: SpeakerRole;
   presentationTitle?: string; // Speaker-specific title if different
+  workflowState: SpeakerWorkflowState;
   isConfirmed: boolean;
   invitedAt: Date;
   confirmedAt?: Date;
   declinedAt?: Date;
   declineReason?: string;
+  slotAssignment?: SlotAssignment;
+  qualityReview?: ContentQualityReview;
+  isWaitlisted: boolean;
+  waitlistedAt?: Date;
 }
 
 enum SessionType {
@@ -242,13 +260,19 @@ interface Event {
   description: string;
   eventDate: Date;
   registrationDeadline: Date;
+  eventType: EventType;
+  slotConfiguration: EventSlotConfiguration;
   venue: Venue;
   status: EventStatus;
+  workflowState: EventWorkflowState;
   organizerId: string;
   capacity: number;
   currentAttendeeCount: number;
   topics: Topic[];
   sessions: Session[]; // Sessions contain speaker relationships
+  slots: EventSlot[];
+  overflowManagement: OverflowManagement;
+  qualityReview: EventQualityReview;
   createdAt: Date;
   updatedAt: Date;
   publishedAt?: Date;
@@ -267,10 +291,225 @@ enum EventStatus {
   COMPLETED = 'completed',
   ARCHIVED = 'archived'
 }
+
+enum EventType {
+  FULL_DAY = 'full_day',        // 6-8 slots
+  AFTERNOON = 'afternoon',      // 6-8 slots
+  EVENING = 'evening'           // 3-4 slots
+}
+
+enum EventWorkflowState {
+  TOPIC_SELECTION = 'topic_selection',
+  SPEAKER_BRAINSTORMING = 'speaker_brainstorming',
+  SPEAKER_ASSIGNMENT = 'speaker_assignment',
+  SPEAKER_OUTREACH = 'speaker_outreach',
+  CONTENT_COLLECTION = 'content_collection',
+  QUALITY_REVIEW = 'quality_review',
+  SLOT_ASSIGNMENT = 'slot_assignment',
+  AGENDA_FINALIZATION = 'agenda_finalization',
+  PUBLISHED = 'published'
+}
+
+interface EventSlotConfiguration {
+  eventType: EventType;
+  minSlots: number;
+  maxSlots: number;
+  slotDuration: number; // minutes
+  theoreticalSlotsAM: boolean; // theoretical presentations in morning
+  lessonsLearnedSlotsPM: boolean; // lessons learned in afternoon
+  breakSlots: number;
+  lunchSlots: number;
+}
+
+interface EventSlot {
+  id: string;
+  eventId: string;
+  slotNumber: number;
+  startTime: Date;
+  endTime: Date;
+  slotType: SlotType;
+  assignedSessionId?: string;
+  assignedSpeakerId?: string;
+  isFlexible: boolean;
+  technicalRequirements: TechnicalRequirement[];
+}
+
+enum SlotType {
+  THEORETICAL = 'theoretical',
+  LESSONS_LEARNED = 'lessons_learned',
+  KEYNOTE = 'keynote',
+  WORKSHOP = 'workshop',
+  BREAK = 'break',
+  LUNCH = 'lunch',
+  NETWORKING = 'networking'
+}
+
+interface OverflowManagement {
+  eventId: string;
+  overflowSpeakers: OverflowSpeaker[];
+  waitlistSpeakers: WaitlistSpeaker[];
+  selectionVotes: SpeakerSelectionVote[];
+  isVotingComplete: boolean;
+  votingDeadline?: Date;
+}
+
+interface OverflowSpeaker {
+  speakerId: string;
+  sessionId: string;
+  votes: number;
+  topicFitScore: number;
+  isSelected: boolean;
+  declinedAt?: Date;
+  declineReason?: string;
+}
+
+interface WaitlistSpeaker {
+  speakerId: string;
+  sessionId: string;
+  waitlistedAt: Date;
+  priority: number;
+  isActive: boolean;
+  activatedAt?: Date;
+}
+
+interface SpeakerSelectionVote {
+  organizerId: string;
+  speakerId: string;
+  vote: VoteType;
+  reason?: string;
+  votedAt: Date;
+}
+
+enum VoteType {
+  APPROVE = 'approve',
+  REJECT = 'reject',
+  ABSTAIN = 'abstain'
+}
+
+interface EventQualityReview {
+  eventId: string;
+  moderatorId: string;
+  overallStatus: QualityReviewStatus;
+  sessionReviews: ContentQualityReview[];
+  reviewDeadline: Date;
+  completedAt?: Date;
+}
+```
+
+### Enhanced Speaker & Session Entities
+
+```typescript
+interface SpeakerSlotPreferences {
+  speakerId: string;
+  eventId: string;
+  preferredTimeSlots: PreferredTimeSlot[];
+  technicalRequirements: TechnicalRequirement[];
+  cannotPresentAfter?: string; // time constraint (e.g., "16:00")
+  ownLaptopRequired: boolean;
+  specialEquipmentNeeds?: string;
+  accessibilityRequirements?: string;
+  submittedAt: Date;
+  lastUpdatedAt: Date;
+}
+
+interface PreferredTimeSlot {
+  startTime: string; // time format "09:00"
+  endTime: string;   // time format "10:30"
+  preference: PreferenceLevel;
+}
+
+enum PreferenceLevel {
+  STRONGLY_PREFERRED = 'strongly_preferred',
+  PREFERRED = 'preferred',
+  ACCEPTABLE = 'acceptable',
+  NOT_PREFERRED = 'not_preferred',
+  UNAVAILABLE = 'unavailable'
+}
+
+interface TechnicalRequirement {
+  id: string;
+  requirement: string;
+  isRequired: boolean;
+  description?: string;
+}
+
+interface SlotAssignment {
+  slotId: string;
+  assignedAt: Date;
+  assignedBy: string; // organizer ID
+  automaticallyAssigned: boolean;
+  manualOverride: boolean;
+  conflictResolution?: string;
+}
+
+interface ContentQualityReview {
+  id: string;
+  sessionId: string;
+  speakerId: string;
+  reviewerId: string; // moderator ID
+  abstractReview: AbstractReview;
+  materialReview: MaterialReview;
+  status: QualityReviewStatus;
+  submittedAt: Date;
+  reviewedAt?: Date;
+  feedback?: string;
+  revisionRequested: boolean;
+  revisionDeadline?: Date;
+}
+
+interface AbstractReview {
+  content: string;
+  characterCount: number;
+  hasLessonsLearned: boolean;
+  hasProductPromotion: boolean;
+  meetsStandards: boolean;
+  issues: string[];
+}
+
+interface MaterialReview {
+  bioReview: BiographyReview;
+  photoReview: PhotoReview;
+  additionalMaterials: MaterialItem[];
+}
+
+interface BiographyReview {
+  content: string;
+  characterCount: number;
+  isAppropriate: boolean;
+  issues: string[];
+}
+
+interface PhotoReview {
+  photoUrl: string;
+  isAppropriate: boolean;
+  meetsTechnicalStandards: boolean;
+  issues: string[];
+}
+
+interface MaterialItem {
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  uploadedAt: Date;
+  isApproved: boolean;
+  issues: string[];
+}
+
+enum QualityReviewStatus {
+  PENDING = 'pending',
+  IN_REVIEW = 'in_review',
+  APPROVED = 'approved',
+  REQUIRES_CHANGES = 'requires_changes',
+  REJECTED = 'rejected',
+  REVISION_SUBMITTED = 'revision_submitted'
+}
 ```
 
 #### Relationships
 - **One-to-Many:** Event → Sessions (event contains multiple sessions)
+- **One-to-Many:** Event → EventSlots (event contains multiple time slots)
+- **One-to-One:** Event → OverflowManagement (overflow handling per event)
+- **One-to-One:** Event → EventQualityReview (quality review per event)
 - **Many-to-Many:** Event ↔ Attendees (through EventRegistration)
 - **No direct relationship to Speakers** (speakers connected via sessions)
 - **No direct relationship to Partners** (partners participate in all events)

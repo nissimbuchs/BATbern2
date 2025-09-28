@@ -197,6 +197,395 @@ const CompanySelector: React.FC<CompanySelectorProps> = ({
 
 ### Role-Specific Component Specifications
 
+**Enhanced Organizer Workflow Components:**
+
+```typescript
+// Enhanced Event Workflow Dashboard
+interface EventWorkflowDashboardProps {
+  event: Event;
+  workflowState: EventWorkflowState;
+  nextSteps: WorkflowStep[];
+  onStateTransition: (targetState: EventWorkflowState) => Promise<void>;
+}
+
+const EventWorkflowDashboard: React.FC<EventWorkflowDashboardProps> = ({
+  event,
+  workflowState,
+  nextSteps,
+  onStateTransition
+}) => {
+  return (
+    <Container maxWidth="lg">
+      <Typography variant="h4" gutterBottom>
+        Event Workflow: {event.title}
+      </Typography>
+
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={4}>
+          <WorkflowProgressCard
+            currentState={workflowState}
+            completedSteps={getCompletedSteps(workflowState)}
+            totalSteps={16}
+          />
+        </Grid>
+
+        <Grid item xs={12} md={8}>
+          <WorkflowStepDetails
+            currentStep={getCurrentStep(workflowState)}
+            nextSteps={nextSteps}
+            onTransition={onStateTransition}
+          />
+        </Grid>
+
+        <Grid item xs={12}>
+          <WorkflowVisualization
+            steps={getAllWorkflowSteps()}
+            currentState={workflowState}
+            eventType={event.eventType}
+          />
+        </Grid>
+      </Grid>
+    </Container>
+  );
+};
+
+// Slot Assignment Management Interface
+interface SlotAssignmentManagerProps {
+  event: Event;
+  slots: EventSlot[];
+  speakers: SessionSpeaker[];
+  preferences: SpeakerSlotPreferences[];
+  onSlotAssign: (slotId: string, speakerId: string) => Promise<void>;
+  onAutoAssign: () => Promise<void>;
+}
+
+const SlotAssignmentManager: React.FC<SlotAssignmentManagerProps> = ({
+  event,
+  slots,
+  speakers,
+  preferences,
+  onSlotAssign,
+  onAutoAssign
+}) => {
+  const [draggedSpeaker, setDraggedSpeaker] = useState<string | null>(null);
+
+  return (
+    <Container maxWidth="xl">
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+        <Typography variant="h5">Slot Assignment</Typography>
+        <Button
+          variant="contained"
+          onClick={onAutoAssign}
+          startIcon={<AutoAwesomeIcon />}
+        >
+          Auto-Assign Speakers
+        </Button>
+      </Box>
+
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={8}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Event Slots ({event.eventType})
+            </Typography>
+            <SlotGrid
+              slots={slots}
+              eventType={event.eventType}
+              onSlotDrop={(slotId, speakerId) => onSlotAssign(slotId, speakerId)}
+              draggedSpeaker={draggedSpeaker}
+            />
+          </Paper>
+        </Grid>
+
+        <Grid item xs={12} md={4}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Unassigned Speakers
+            </Typography>
+            <UnassignedSpeakersList
+              speakers={speakers.filter(s => !s.slotAssignment)}
+              preferences={preferences}
+              onDragStart={setDraggedSpeaker}
+              onDragEnd={() => setDraggedSpeaker(null)}
+            />
+          </Paper>
+        </Grid>
+      </Grid>
+    </Container>
+  );
+};
+
+// Quality Review Dashboard
+interface QualityReviewDashboardProps {
+  pendingReviews: ContentQualityReview[];
+  completedReviews: ContentQualityReview[];
+  moderatorId: string;
+  onReviewUpdate: (reviewId: string, status: QualityReviewStatus, feedback?: string) => Promise<void>;
+}
+
+const QualityReviewDashboard: React.FC<QualityReviewDashboardProps> = ({
+  pendingReviews,
+  completedReviews,
+  moderatorId,
+  onReviewUpdate
+}) => {
+  const [selectedReview, setSelectedReview] = useState<ContentQualityReview | null>(null);
+
+  return (
+    <Container maxWidth="lg">
+      <Typography variant="h4" gutterBottom>
+        Content Quality Review
+      </Typography>
+
+      <Tabs value={0}>
+        <Tab label={`Pending Reviews (${pendingReviews.length})`} />
+        <Tab label={`Completed Reviews (${completedReviews.length})`} />
+      </Tabs>
+
+      <TabPanel value={0}>
+        <Grid container spacing={2}>
+          {pendingReviews.map((review) => (
+            <Grid item xs={12} md={6} key={review.id}>
+              <ReviewCard
+                review={review}
+                onSelect={() => setSelectedReview(review)}
+                onQuickApprove={() => onReviewUpdate(review.id, QualityReviewStatus.APPROVED)}
+                onRequireChanges={() => setSelectedReview(review)}
+              />
+            </Grid>
+          ))}
+        </Grid>
+      </TabPanel>
+
+      {selectedReview && (
+        <ReviewDetailModal
+          review={selectedReview}
+          open={!!selectedReview}
+          onClose={() => setSelectedReview(null)}
+          onSubmitReview={onReviewUpdate}
+        />
+      )}
+    </Container>
+  );
+};
+
+// Overflow Management & Voting Interface
+interface OverflowManagementProps {
+  event: Event;
+  overflowSpeakers: OverflowSpeaker[];
+  votes: SpeakerSelectionVote[];
+  currentOrganizerId: string;
+  onVote: (speakerId: string, vote: VoteType, reason?: string) => Promise<void>;
+}
+
+const OverflowManagement: React.FC<OverflowManagementProps> = ({
+  event,
+  overflowSpeakers,
+  votes,
+  currentOrganizerId,
+  onVote
+}) => {
+  const [votingReason, setVotingReason] = useState<Record<string, string>>({});
+
+  return (
+    <Container maxWidth="lg">
+      <Alert severity="warning" sx={{ mb: 3 }}>
+        <AlertTitle>Speaker Overflow Detected</AlertTitle>
+        We have {overflowSpeakers.length} speakers for {event.slotConfiguration.maxSlots} available slots.
+        Please vote to select the final speakers.
+      </Alert>
+
+      <Grid container spacing={2}>
+        {overflowSpeakers.map((speaker) => {
+          const userVote = votes.find(v =>
+            v.speakerId === speaker.speakerId && v.organizerId === currentOrganizerId
+          );
+
+          return (
+            <Grid item xs={12} md={6} key={speaker.speakerId}>
+              <SpeakerVotingCard
+                speaker={speaker}
+                currentVote={userVote}
+                totalVotes={votes.filter(v => v.speakerId === speaker.speakerId).length}
+                onVote={(vote, reason) => onVote(speaker.speakerId, vote, reason)}
+                disabled={!!userVote}
+              />
+            </Grid>
+          );
+        })}
+      </Grid>
+
+      <VotingProgressSummary
+        totalOrganizers={getTotalOrganizers()}
+        votesReceived={getVotesReceived()}
+        votingDeadline={event.overflowManagement?.votingDeadline}
+      />
+    </Container>
+  );
+};
+
+// Real-time Notification & Alert System
+interface WorkflowNotificationProps {
+  notifications: WorkflowNotification[];
+  onMarkAsRead: (notificationId: string) => void;
+  onEscalate: (notificationId: string) => void;
+}
+
+const WorkflowNotificationCenter: React.FC<WorkflowNotificationProps> = ({
+  notifications,
+  onMarkAsRead,
+  onEscalate
+}) => {
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+
+  return (
+    <Badge badgeContent={unreadCount} color="error">
+      <IconButton>
+        <NotificationsIcon />
+      </IconButton>
+      <Menu>
+        {notifications.map((notification) => (
+          <NotificationItem
+            key={notification.id}
+            notification={notification}
+            onMarkAsRead={() => onMarkAsRead(notification.id)}
+            onEscalate={() => onEscalate(notification.id)}
+          />
+        ))}
+      </Menu>
+    </Badge>
+  );
+};
+```
+
+**Enhanced Speaker Interface Components:**
+
+```typescript
+// Speaker Preferences Collection Interface
+interface SpeakerPreferencesFormProps {
+  eventId: string;
+  existingPreferences?: SpeakerSlotPreferences;
+  eventSlots: EventSlot[];
+  onSubmit: (preferences: SpeakerSlotPreferences) => Promise<void>;
+}
+
+const SpeakerPreferencesForm: React.FC<SpeakerPreferencesFormProps> = ({
+  eventId,
+  existingPreferences,
+  eventSlots,
+  onSubmit
+}) => {
+  const [preferences, setPreferences] = useState<Partial<SpeakerSlotPreferences>>(
+    existingPreferences || {}
+  );
+
+  return (
+    <Container maxWidth="md">
+      <Typography variant="h5" gutterBottom>
+        Slot Preferences & Requirements
+      </Typography>
+
+      <FormSection title="Time Slot Preferences">
+        <Grid container spacing={2}>
+          {eventSlots.map((slot) => (
+            <Grid item xs={12} md={6} key={slot.id}>
+              <SlotPreferenceCard
+                slot={slot}
+                preference={preferences.preferredTimeSlots?.find(p =>
+                  p.startTime === slot.startTime
+                )?.preference || PreferenceLevel.ACCEPTABLE}
+                onChange={(preference) => updateSlotPreference(slot, preference)}
+              />
+            </Grid>
+          ))}
+        </Grid>
+      </FormSection>
+
+      <FormSection title="Technical Requirements">
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={preferences.ownLaptopRequired || false}
+              onChange={(e) => setPreferences({
+                ...preferences,
+                ownLaptopRequired: e.target.checked
+              })}
+            />
+          }
+          label="I must use my own laptop for presentation"
+        />
+
+        <TextField
+          fullWidth
+          multiline
+          rows={3}
+          label="Special Equipment or Setup Requirements"
+          value={preferences.specialEquipmentNeeds || ''}
+          onChange={(e) => setPreferences({
+            ...preferences,
+            specialEquipmentNeeds: e.target.value
+          })}
+          sx={{ mt: 2 }}
+        />
+      </FormSection>
+
+      <Button
+        variant="contained"
+        onClick={() => onSubmit(preferences as SpeakerSlotPreferences)}
+        fullWidth
+        sx={{ mt: 3 }}
+      >
+        Save Preferences
+      </Button>
+    </Container>
+  );
+};
+
+// Speaker Workflow Status Dashboard
+interface SpeakerWorkflowDashboardProps {
+  speaker: Speaker;
+  sessions: SessionSpeaker[];
+  qualityReviews: ContentQualityReview[];
+  onContentSubmit: (sessionId: string, content: SubmitContentRequest) => Promise<void>;
+}
+
+const SpeakerWorkflowDashboard: React.FC<SpeakerWorkflowDashboardProps> = ({
+  speaker,
+  sessions,
+  qualityReviews,
+  onContentSubmit
+}) => {
+  return (
+    <Container maxWidth="lg">
+      <Typography variant="h4" gutterBottom>
+        My Speaking Engagements
+      </Typography>
+
+      <Grid container spacing={3}>
+        {sessions.map((session) => {
+          const review = qualityReviews.find(r => r.sessionId === session.sessionId);
+
+          return (
+            <Grid item xs={12} md={6} key={session.sessionId}>
+              <SpeakerSessionCard
+                session={session}
+                qualityReview={review}
+                onContentSubmit={(content) => onContentSubmit(session.sessionId, content)}
+              />
+            </Grid>
+          );
+        })}
+      </Grid>
+
+      <WorkflowProgressIndicator
+        sessions={sessions}
+        currentState={getCurrentWorkflowState(sessions)}
+      />
+    </Container>
+  );
+};
+```
+
 **Organizer Components:**
 
 ```typescript

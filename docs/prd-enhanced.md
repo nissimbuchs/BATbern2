@@ -30,7 +30,25 @@ Complete rewrite of BATbern as a comprehensive event management platform using A
 
 **FR1**: The platform shall provide role-based authentication with distinct interfaces for organizers, speakers, partners, and attendees
 
-**FR2**: Event organizers shall manage the complete 12-step event workflow through intelligent task sequencing, automated deadline tracking, stakeholder coordination, and real-time progress dashboards with cross-role visibility
+**FR2**: Event organizers shall manage the complete 16-step event workflow through intelligent task sequencing, automated deadline tracking, stakeholder coordination, and real-time progress dashboards with cross-role visibility
+
+**16-Step Detailed Event Workflow:**
+1. **Topic Selection & Event Type Definition** - Select topic from backlog, define event type (Full-day: 6-8 slots, Afternoon: 6-8 slots, Evening: 3-4 slots)
+2. **Speaker Brainstorming & Research** - Identify potential speakers for topic
+3. **Speaker Assignment & Contact Strategy** - Define organizer-to-speaker contact distribution
+4. **Speaker Outreach & Initial Contact** - Send invitations with context, deadlines, requirements
+5. **Speaker Status Tracking** - Track: open → contacted → ready → declined/accepted → slot-assigned → final agenda → informed
+6. **Speaker Content Collection** - Collect title, abstract (max 1000 chars with lessons learned), CV, photo (1 month before)
+7. **Content Quality Review** - Moderator reviews abstracts/materials for standards compliance
+8. **Minimum Threshold Check** - Wait until minimum slots filled before assignment
+9. **Speaker Selection & Overflow Management** - Organizer voting on topic fit when more speakers than slots
+10. **Speaker-to-Slot Assignment** - Assign speakers considering preferences, technical needs, topic flow (theoretical AM, lessons learned PM)
+11. **Progressive Publishing Engine** - Topic immediate, speakers 1 month before with continuous updates
+12. **Agenda Finalization** - 2 weeks before: finalize agenda, handle dropouts via waitlist
+13. **Newsletter Distribution** - Send progressive then final agenda to mailing list
+14. **Moderation Assignment** - Assign event moderator
+15. **Catering & Venue Coordination** - Caterer quotes 1 month before, venue planning 2+ years advance
+16. **Partner Meeting Coordination** - Spring/autumn sponsor meetings with budgets, statistics, topic brainstorming
 
 **FR3**: The system shall provide automated speaker invitation, submission, and material collection workflows with real-time status updates
 
@@ -60,11 +78,11 @@ Complete rewrite of BATbern as a comprehensive event management platform using A
 
 **FR16**: Attendees shall access community features including content ratings, social sharing, and curated learning pathways connecting related presentations across events
 
-**FR17**: The system shall provide intelligent speaker matching and assignment tracking with automated workflow states (open → contacted → ready → declined/accepted → final agenda → informed) and real-time organizer collaboration
+**FR17**: The system shall provide intelligent speaker matching and assignment tracking with automated workflow states (open → contacted → ready → declined/accepted → slot-assigned → final agenda → informed → waitlist) and real-time organizer collaboration including slot preference collection, technical requirement tracking, and overflow management with organizer voting mechanisms
 
 **FR18**: Event organizers shall access smart topic backlog management with historical usage tracking, partner influence integration, and duplicate avoidance algorithms to streamline event planning decisions
 
-**FR19**: The platform shall implement progressive publishing engine that automatically validates content readiness and publishes event information in phases (topic immediate → speakers 1 month prior → final agenda → post-event materials)
+**FR19**: The platform shall implement progressive publishing engine that automatically validates content readiness (moderator quality review, abstract length limits, lesson learned requirements) and publishes event information in phases (topic immediate → speakers 1 month prior → progressive agenda updates → final agenda → post-event materials) with quality control checkpoints and automated content standards enforcement
 
 **FR20**: Event organizers shall receive intelligent notification system with role-based alerts, cross-stakeholder visibility, and automated escalation workflows for deadline management and task coordination
 
@@ -90,11 +108,43 @@ Complete rewrite of BATbern as a comprehensive event management platform using A
 
 **CR4**: New system shall export data in standard formats for partner analytics and reporting tools
 
-## 3. Technical Constraints and Integration Requirements
+## 3. Technical Architecture and Implementation
 
-**[TO BE DISCUSSED WITH ARCHITECT]**
+### Architecture Overview
+The BATbern Event Management Platform follows a comprehensive **Domain-Driven Design microservices architecture** as detailed in our [Architecture Documentation](./architecture/index.md).
 
-*This section will be populated after architectural discussions regarding technology stack implementation, integration patterns, deployment strategies, and technical constraints.*
+### Technology Stack
+- **Frontend**: React 18.2+ with TypeScript, Material-UI, Zustand + React Query
+- **Backend**: Java 21 LTS with Spring Boot 3.2+, PostgreSQL, Redis
+- **Infrastructure**: AWS (ECS Fargate, Cognito, S3, CloudFront)
+- **Development**: Gradle, Vite, GitHub Actions, AWS CDK
+
+### Architectural Components
+The platform is organized into four distinct bounded contexts with dedicated services:
+
+1. **Event Management Domain** - Organizer workflows and automation
+2. **Speaker Coordination Domain** - Speaker portal and workflows
+3. **Partner Analytics Domain** - ROI tracking and strategic input
+4. **Attendee Experience Domain** - Content discovery and registration
+
+### Detailed Architecture References
+For comprehensive technical implementation details, refer to the following architecture documents:
+
+- **[System Overview](./architecture/01-system-overview.md)** - C4 model and component relationships
+- **[Infrastructure & Deployment](./architecture/02-infrastructure-deployment.md)** - AWS deployment strategy and CI/CD
+- **[Data Architecture](./architecture/03-data-architecture.md)** - Domain models and database schemas
+- **[API Design](./architecture/04-api-design.md)** - REST API specifications and workflows
+- **[Frontend Architecture](./architecture/05-frontend-architecture.md)** - React component patterns and PWA
+- **[Backend Architecture](./architecture/06-backend-architecture.md)** - Service patterns and security
+- **[Development Standards](./architecture/07-development-standards.md)** - Coding standards and setup
+- **[Operations & Security](./architecture/08-operations-security.md)** - Security and performance requirements
+
+### Integration Constraints
+- **Data Migration**: Complete migration of 54+ historical events from existing JSON structure
+- **External Integrations**: Maintain compatibility with Slideshare, venue websites, and partner systems
+- **Performance**: Sub-second search response across 20+ years of content
+- **Security**: Role-based access control with AWS Cognito integration
+- **Scalability**: Multi-tenant architecture supporting concurrent user sessions
 
 ## 4. Epic Structure and Sprint Planning
 

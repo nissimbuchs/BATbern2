@@ -77,7 +77,7 @@ graph TB
     subgraph "External Systems"
         E[Email Service<br/>SMTP Provider]
         F[File Storage<br/>AWS S3]
-        G[DNS Provider<br/>Hostpoint]
+        G[DNS Service<br/>AWS Route53]
         H[Analytics<br/>Google Analytics]
         I[Payment System<br/>Stripe]
     end
@@ -152,7 +152,7 @@ graph TB
 
     subgraph "External Services"
         R[Email Provider<br/>SMTP Service<br/>Notifications]
-        S[DNS Provider<br/>Hostpoint<br/>Domain management]
+        S[DNS Service<br/>AWS Route53<br/>Domain management & health checks]
     end
 
     A --> E
@@ -297,41 +297,63 @@ graph TB
 
 ### Event Management Service
 
-**Responsibility:** Core event lifecycle management, organizer workflows, and automated event planning processes including the 12-step workflow automation.
+**Responsibility:** Core event lifecycle management, organizer workflows, and automated event planning processes including the comprehensive **16-step workflow automation** with slot management, quality control, overflow handling, and real-time collaboration.
+
+**Enhanced Workflow Components:**
+- **Event Workflow State Machine** - Manages 16-step progression from topic selection to publication
+- **Slot Assignment Algorithm Service** - Intelligent speaker-to-slot matching with preferences
+- **Quality Review Workflow Engine** - Automated content validation and moderator review
+- **Overflow Management & Voting System** - Organizer voting for speaker selection when capacity exceeded
+- **Real-time Notification & Escalation** - Cross-stakeholder alerts and deadline management
 
 **Key Interfaces:**
 - `/api/v1/events` - Event CRUD operations and status management
-- `/api/v1/events/{id}/workflow` - Automated workflow state management
+- `/api/v1/events/{id}/workflow` - Enhanced 16-step workflow state management
+- `/api/v1/events/{id}/slots` - Slot configuration and assignment management
+- `/api/v1/events/{id}/overflow` - Speaker overflow voting and waitlist management
 - `/api/v1/events/{id}/timeline` - Event timeline and milestone tracking
 - `/api/v1/organizers` - Organizer role management and permissions
 
 **Dependencies:**
-- Speaker Coordination Service (speaker assignment validation)
+- Speaker Coordination Service (enhanced speaker preferences and workflow states)
 - Partner Analytics Service (partner involvement tracking)
-- Shared Kernel (domain events, common types)
+- Quality Review Service (content validation and moderator workflows)
+- Notification Service (real-time alerts and escalations)
+- Shared Kernel (enhanced domain events, workflow types)
 - AWS Cognito (organizer authentication)
-- PostgreSQL (event data persistence)
+- PostgreSQL (event data persistence with workflow state)
+- Redis (workflow state caching and slot assignment optimization)
 
-**Technology Stack:** Java 21 + Spring Boot 3.2, PostgreSQL, Redis (workflow state caching), EventBridge (domain events)
+**Technology Stack:** Java 21 + Spring Boot 3.2, PostgreSQL, Redis (enhanced workflow state caching), EventBridge (domain events), WebSocket (real-time notifications)
 
 ### Speaker Coordination Service
 
-**Responsibility:** Speaker management, invitation workflows, material collection, and communication coordination between organizers and speakers.
+**Responsibility:** Enhanced speaker management with complex workflow states, slot preferences collection, material collection with quality control, and seamless coordination between organizers and speakers including waitlist management.
+
+**Enhanced Speaker Workflow Features:**
+- **Complex Workflow State Management** - 10-state progression: open → contacted → ready → declined/accepted → slot-assigned → quality-reviewed → final agenda → informed → waitlist
+- **Slot Preferences Collection** - Time slot preferences, technical requirements, accessibility needs
+- **Quality Review Integration** - Abstract validation (1000 char limit, lessons learned requirement)
+- **Waitlist & Overflow Management** - Automatic waitlist handling for speaker dropouts
 
 **Key Interfaces:**
-- `/api/v1/speakers` - Speaker profile and expertise management
-- `/api/v1/invitations` - Speaker invitation workflow
-- `/api/v1/sessions/{id}/speakers` - Speaker-session assignment management
-- `/api/v1/materials` - Presentation material upload and management
+- `/api/v1/speakers` - Enhanced speaker profile and expertise management
+- `/api/v1/speakers/{id}/preferences` - Slot preferences and technical requirements
+- `/api/v1/sessions/{id}/quality-review` - Content quality review workflow
+- `/api/v1/invitations` - Speaker invitation workflow with enhanced context
+- `/api/v1/sessions/{id}/speakers` - Speaker-session assignment with workflow states
+- `/api/v1/materials` - Presentation material upload with quality validation
 
 **Dependencies:**
-- Event Management Service (session data)
+- Event Management Service (enhanced session data and slot assignments)
 - Company Management Service (speaker company relationships)
-- File Storage Service (presentation materials)
-- Email Service (speaker communications)
-- Shared Kernel (speaker domain events)
+- Quality Review Service (content validation and moderator workflows)
+- File Storage Service (presentation materials with versioning)
+- Email Service (enhanced speaker communications and notifications)
+- Notification Service (real-time speaker status updates)
+- Shared Kernel (enhanced speaker domain events)
 
-**Technology Stack:** Java 21 + Spring Boot 3.2, PostgreSQL, AWS S3 (file storage), SES (email notifications)
+**Technology Stack:** Java 21 + Spring Boot 3.2, PostgreSQL, AWS S3 (file storage), SES (email notifications), WebSocket (real-time updates)
 
 ### Partner Analytics Service
 

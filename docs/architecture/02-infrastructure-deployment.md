@@ -26,31 +26,31 @@
 - Manual approval required
 - Blue/Green deployment
 - Health checks and monitoring
-- DNS output for Hostpoint configuration
+- Route53 DNS management with AWS integration
 
 ## Environments
 
 | Environment | Frontend URL | Backend URL | Purpose |
 |-------------|--------------|-------------|---------|
 | Development | http://localhost:3000 | http://localhost:8080 | Local development |
-| Staging | https://staging.berner-architekten-treffen.ch | https://api-staging.berner-architekten-treffen.ch | Pre-production testing |
-| Production | https://www.berner-architekten-treffen.ch | https://api.berner-architekten-treffen.ch | Live Swiss conference platform |
+| Staging | https://staging.batbern.ch | https://api-staging.batbern.ch | Pre-production testing |
+| Production | https://www.batbern.ch | https://api.batbern.ch | Live Swiss conference platform |
 
 ## Infrastructure as Code with DNS and Certificate Management
 
-### DNS Strategy with External Domain Provider
+### DNS Strategy with AWS Route53
 
 **Certificate Stack (us-east-1 only):**
 ```typescript
-// Certificate for berner-architekten-treffen.ch domain
+// Certificate for batbern.ch domain
 const certificate = new Certificate(this, 'BATbernCertificate', {
-  domainName: 'www.berner-architekten-treffen.ch',
+  domainName: 'www.batbern.ch',
   subjectAlternativeNames: [
-    'dev.berner-architekten-treffen.ch',
-    'staging.berner-architekten-treffen.ch',
-    'api.berner-architekten-treffen.ch',
-    'api-dev.berner-architekten-treffen.ch',
-    'api-staging.berner-architekten-treffen.ch'
+    'dev.batbern.ch',
+    'staging.batbern.ch',
+    'api.batbern.ch',
+    'api-dev.batbern.ch',
+    'api-staging.batbern.ch'
   ],
   validation: CertificateValidation.fromDns(), // Manual DNS validation
 });
@@ -62,42 +62,69 @@ const certificate = new Certificate(this, 'BATbernCertificate', {
 new CfnOutput(this, 'HostpointCNAMERecords', {
   value: JSON.stringify({
     "CNAME Records for Hostpoint DNS": {
-      "www.berner-architekten-treffen.ch": productionCloudFront,
-      "staging.berner-architekten-treffen.ch": stagingCloudFront,
-      "dev.berner-architekten-treffen.ch": devCloudFront,
-      "api.berner-architekten-treffen.ch": productionApiGateway,
-      "api-staging.berner-architekten-treffen.ch": stagingApiGateway,
-      "api-dev.berner-architekten-treffen.ch": devApiGateway
+      "www.batbern.ch": productionCloudFront,
+      "staging.batbern.ch": stagingCloudFront,
+      "dev.batbern.ch": devCloudFront,
+      "api.batbern.ch": productionApiGateway,
+      "api-staging.batbern.ch": stagingApiGateway,
+      "api-dev.batbern.ch": devApiGateway
     }
   }, null, 2),
-  description: 'Copy these CNAME records to your Hostpoint DNS configuration'
+  description: 'Route53 DNS records automatically configured'
+});
+
+// Route53 Hosted Zone for batbern.ch
+const hostedZone = new HostedZone(this, 'BATbernHostedZone', {
+  zoneName: 'batbern.ch',
+  comment: 'BATbern Event Management Platform hosted zone'
+});
+
+// DNS Records - automatically configured with Route53
+new ARecord(this, 'ProductionARecord', {
+  zone: hostedZone,
+  recordName: 'www',
+  target: RecordTarget.fromAlias(new CloudFrontTarget(productionCloudFront))
+});
+
+new ARecord(this, 'StagingARecord', {
+  zone: hostedZone,
+  recordName: 'staging',
+  target: RecordTarget.fromAlias(new CloudFrontTarget(stagingCloudFront))
+});
+
+new ARecord(this, 'DevARecord', {
+  zone: hostedZone,
+  recordName: 'dev',
+  target: RecordTarget.fromAlias(new CloudFrontTarget(devCloudFront))
+});
+
+new ARecord(this, 'ProductionApiARecord', {
+  zone: hostedZone,
+  recordName: 'api',
+  target: RecordTarget.fromAlias(new ApiGatewayDomain(productionApiGateway))
+});
+
+new ARecord(this, 'StagingApiARecord', {
+  zone: hostedZone,
+  recordName: 'api-staging',
+  target: RecordTarget.fromAlias(new ApiGatewayDomain(stagingApiGateway))
+});
+
+new ARecord(this, 'DevApiARecord', {
+  zone: hostedZone,
+  recordName: 'api-dev',
+  target: RecordTarget.fromAlias(new ApiGatewayDomain(devApiGateway))
 });
 ```
 
-### Required CNAME Records in Hostpoint
-```
-Record Type: CNAME
-Name: www
-Target: [Output from ProductionWebsiteCNAME]
-TTL: 300
+### AWS Route53 Configuration Benefits
+- **Automatic DNS management** - No manual CNAME configuration required
+- **Health checks and failover** - Built-in monitoring and automatic failover
+- **SSL certificate validation** - Automatic domain validation for Let's Encrypt
+- **Global DNS resolution** - AWS Route53 global network for fast DNS resolution
+- **Cost optimization** - Eliminate external DNS provider costs
 
-Record Type: CNAME
-Name: staging
-Target: [Output from StagingWebsiteCNAME]
-TTL: 300
-
-Record Type: CNAME
-Name: api
-Target: [Output from ProductionApiCNAME]
-TTL: 300
-
-Record Type: CNAME
-Name: api-staging
-Target: [Output from StagingApiCNAME]
-TTL: 300
-```
-
-This approach gives you domain control at Hostpoint while maintaining AWS infrastructure flexibility with proper Swiss hosting compliance.
+This approach provides full AWS infrastructure integration with native Route53 DNS management, eliminating external dependencies while maintaining proper Swiss hosting compliance.
 
 ## Monitoring and Observability Strategy
 
@@ -119,7 +146,7 @@ Sentry.init({
   environment: process.env.NODE_ENV,
   integrations: [
     new Sentry.BrowserTracing({
-      tracingOrigins: ["https://api.berner-architekten-treffen.ch"],
+      tracingOrigins: ["https://api.batbern.ch"],
       routingInstrumentation: Sentry.reactRouterV6Instrumentation(
         React.useEffect,
         useLocation,
