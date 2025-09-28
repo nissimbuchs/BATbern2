@@ -17,7 +17,7 @@
 
 ---
 
-## Story 3.1: Speaker Invitation System
+## Story 3.1: Speaker Invitation System (Workflow Step 3)
 
 **User Story:**
 As an **organizer**, I want to invite speakers efficiently through an automated system that handles bulk invitations and tracks responses, so that I can build event agendas quickly.
@@ -52,7 +52,7 @@ As an **organizer**, I want to invite speakers efficiently through an automated 
 
 ---
 
-## Story 3.2: Speaker Response Management
+## Story 3.2: Speaker Response Management (Workflow Step 4)
 
 **User Story:**
 As a **speaker**, I want to easily respond to invitations with my availability and any constraints, so that organizers can plan the event effectively.
@@ -87,7 +87,7 @@ As a **speaker**, I want to easily respond to invitations with my availability a
 
 ---
 
-## Story 3.3: Basic Material Submission Portal
+## Story 3.3: Basic Material Submission Portal (Workflow Step 5)
 
 **User Story:**
 As a **speaker**, I want to submit my presentation materials through a simple portal, so that organizers have all required content for the event.
@@ -126,7 +126,7 @@ As a **speaker**, I want to submit my presentation materials through a simple po
 
 ---
 
-## Story 3.4: Speaker Brainstorming & Assignment (from Old Epic 2)
+## Story 3.4: Speaker Brainstorming & Assignment (Workflow Step 6)
 
 **User Story:**
 As an **organizer**, I want to brainstorm potential speakers and assign contact responsibilities, so that we can efficiently build a strong speaker lineup.
@@ -161,7 +161,7 @@ As an **organizer**, I want to brainstorm potential speakers and assign contact 
 
 ---
 
-## Story 3.5: Speaker Outreach & Status Tracking (from Old Epic 2)
+## Story 3.5: Speaker Outreach & Status Tracking (Workflow Step 6 continued)
 
 **User Story:**
 As an **organizer**, I want to track speaker outreach with automated reminders and status updates, so that I can ensure timely speaker confirmations and material collection.

@@ -89,7 +89,7 @@ As an **organizer**, I want to manage speaker selection with voting for overflow
 
 ---
 
-## Story 4.3: Full Progressive Publishing (Workflow Steps 11-13)
+## Story 4.3: Full Progressive Publishing (Workflow Steps 11-13, includes Step 12 Agenda Lock)
 
 **User Story:**
 As an **organizer**, I want content to publish progressively with automated agenda updates and newsletter distribution, so that stakeholders stay informed throughout the planning process.
@@ -169,6 +169,41 @@ As an **organizer**, I want to coordinate moderation, catering, and venue throug
 - [ ] Dietary requirements 100% captured
 - [ ] Budget maintained within 5% target
 - [ ] All confirmations documented
+
+---
+
+## Story 4.5: Post-Event Processing (Workflow Step 16)
+
+**User Story:**
+As an **organizer**, I want to handle post-event processing including material publishing, feedback collection, and archival, so that event value extends beyond the live event.
+
+**Architecture Integration:**
+- **Service**: Event Management Service post-event module
+- **Storage**: S3 for archived materials and recordings
+- **Database**: PostgreSQL for feedback and metrics
+- **Frontend**: React post-event dashboard
+
+**Acceptance Criteria:**
+
+**Material Publishing:**
+1. **Presentation Upload**: Collect and publish speaker presentations
+2. **Recording Processing**: Process and publish event recordings
+3. **Access Control**: Manage content access based on permissions
+4. **Searchable Archive**: Index content for discovery
+
+**Feedback Collection:**
+5. **Attendee Surveys**: Automated post-event surveys
+6. **Speaker Feedback**: Collect speaker experience feedback
+7. **Partner Reports**: Generate ROI reports for partners
+8. **Metrics Compilation**: Compile event success metrics
+
+**Definition of Done:**
+- [ ] All materials published within 1 week
+- [ ] Recordings processed and available
+- [ ] Feedback collection >60% response rate
+- [ ] Archive searchable and accessible
+- [ ] Partner reports auto-generated
+- [ ] Event metrics documented
 
 ---
 
