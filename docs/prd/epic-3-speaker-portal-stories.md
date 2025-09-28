@@ -238,12 +238,21 @@ As a **speaker**, I want to submit my presentation materials through a modern, i
 
 **Submission Workflow:**
 8. **Draft Management**: Auto-save draft functionality with recovery capabilities
-9. **Submission Deadlines**: Clear deadline tracking with automated reminders
-10. **Review Process**: Organizer review workflow with feedback and revision capabilities
-11. **Approval Workflow**: Multi-stage approval process with stakeholder notifications
+9. **Content Requirements Management**: Enforce submission requirements:
+   - Title (concise and descriptive)
+   - Abstract (maximum 1000 characters with mandatory lessons learned section)
+   - Speaker CV/biography
+   - Professional photo
+   - Presentation materials (1 month before event deadline)
+10. **Submission Deadlines**: Clear deadline tracking with automated reminders (1 month before event)
+11. **Review Process**: Organizer review workflow with feedback and revision capabilities
+12. **Approval Workflow**: Multi-stage approval process with stakeholder notifications
 
 **Quality Assurance Features:**
-12. **ContentQualityChecker Component**: Automated content quality analysis
+13. **ContentQualityChecker Component**: Automated content quality analysis including:
+   - Abstract length validation (max 1000 chars)
+   - Lessons learned section verification
+   - Required fields completeness check
    ```typescript
    interface ContentQualityCheckerProps {
      content: SubmissionContent;
@@ -253,9 +262,13 @@ As a **speaker**, I want to submit my presentation materials through a modern, i
    }
    ```
 
-13. **SubmissionGuidelines Component**: Interactive guidelines and best practices
-14. **AccessibilityChecker Component**: Ensure uploaded materials meet accessibility standards
-15. **MetadataEditor Component**: Rich metadata editing for better content organization
+14. **SubmissionGuidelines Component**: Interactive guidelines showing:
+   - Abstract requirements (1000 char limit with lessons learned)
+   - Photo specifications and professional standards
+   - CV format and content expectations
+   - Presentation material best practices
+15. **AccessibilityChecker Component**: Ensure uploaded materials meet accessibility standards
+16. **MetadataEditor Component**: Rich metadata editing for better content organization
 
 **Definition of Done:**
 - [ ] File upload system handles large presentation files (up to 100MB) with progress tracking
@@ -264,7 +277,8 @@ As a **speaker**, I want to submit my presentation materials through a modern, i
 - [ ] Preview system supports major presentation and document formats
 - [ ] Draft auto-save prevents loss of work with 30-second intervals
 - [ ] Deadline tracking sends automated reminders at appropriate intervals
-- [ ] Quality checking identifies common issues and provides improvement suggestions
+- [ ] Quality checking validates abstract length (1000 chars) and lessons learned presence
+- [ ] Content requirements enforcement ensures all materials submitted 1 month before event
 - [ ] Accessibility validation ensures materials meet WCAG 2.1 standards
 
 ---

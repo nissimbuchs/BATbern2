@@ -101,10 +101,10 @@ As an **attendee**, I want to quickly understand upcoming events with complete l
 
 ---
 
-### Story 4.2: Intelligent Historical Content Discovery with AWS OpenSearch
+### Story 4.2: Intelligent Historical Content Discovery with AWS OpenSearch (Secondary Functionality)
 
 **User Story:**
-As an **attendee**, I want to explore 20+ years of BATbern content using AI-powered search and personalized recommendations, so that I can discover relevant presentations and expertise that enhance my professional development.
+As an **attendee**, I want to explore 20+ years of BATbern content using AI-powered search and personalized recommendations as secondary functionality (after viewing current events), so that I can discover relevant presentations and expertise that enhance my professional development.
 
 **Architecture Integration:**
 - **Search Engine**: AWS OpenSearch with intelligent ranking and ML-powered recommendations

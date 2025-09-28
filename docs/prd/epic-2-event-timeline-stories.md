@@ -2,338 +2,431 @@
 
 ## Epic Overview
 
-**Epic Goal**: Automate the organizer's complex 12-step event planning workflow with intelligent task management, automated publishing, and multi-stakeholder coordination through sophisticated Spring Boot services.
+**Epic Goal**: Automate the organizer's comprehensive **16-step event planning workflow** with intelligent task management, automated publishing, slot management, quality control, and multi-stakeholder coordination through sophisticated Spring Boot services.
 
 **Architecture Context**:
 - **Core Service**: Event Management Service (Java 21 + Spring Boot 3.2)
-- **Workflow Engine**: State machine implementation with Redis state caching
+- **Workflow Engine**: State machine implementation with Redis state caching for 16-step process
 - **Integration**: EventBridge for domain events, SES for notifications
 - **Frontend**: React organizer dashboard with real-time workflow visualization
-- **AI/ML**: Intelligent topic selection and speaker matching algorithms
+- **AI/ML**: Intelligent topic selection, speaker matching, and slot assignment algorithms
 
 ---
 
-## Sprint 7-8: Intelligent Event Creation & Speaker Assignment System
+## Sprint 7-8: Intelligent Event Creation & Advanced Workflow Management
 
-### Story 2.1: Intelligent Topic Selection & Event Creation Engine
+### Story 2.1: Event Type Definition & Topic Selection System (Steps 1-2)
 
 **User Story:**
-As an **organizer**, I want to create new events with AI-powered topic suggestions that avoid recent duplicates and leverage historical usage data, so that I can plan compelling events that build on our conference legacy while avoiding repetition.
+As an **organizer**, I want to define event types and select topics with AI-powered suggestions that leverage historical data while avoiding recent duplicates, so that I can plan compelling events tailored to our format requirements.
 
 **Architecture Integration:**
 - **Service**: Event Management Service with machine learning integration
 - **AI Components**: AWS Lambda for topic analysis, PostgreSQL for historical data mining
 - **Topic Algorithm**: Similarity detection, usage frequency analysis, attendee feedback integration
-- **Frontend**: React event creation wizard with intelligent suggestions
+- **Frontend**: React event creation wizard with intelligent suggestions and event type configuration
 
 **Acceptance Criteria:**
 
-**Intelligent Topic Engine:**
-1. **Historical Analysis Service**: Implement Spring Boot service for topic usage analysis across 20+ years of events
-2. **Similarity Detection**: Algorithm to detect topic overlap and suggest alternatives using NLP techniques
-3. **Usage Frequency Tracking**: Track topic usage patterns and recommend optimal reuse timing
-4. **Attendee Feedback Integration**: Incorporate post-event feedback to recommend high-performing topics
+**Event Type Configuration (Step 1):**
+1. **Event Type Definition**: Configure event types (Full-day: 6-8 slots, Afternoon: 6-8 slots, Evening: 3-4 slots)
+2. **Slot Requirements**: Define minimum/maximum slot requirements per event type
+3. **Timing Templates**: Create timing templates for different event formats (AM theoretical, PM practical)
+4. **Capacity Planning**: Set attendee capacity limits based on event type and venue
 
-**Event Creation Workflow:**
-5. **Event Creation API**: RESTful endpoints for guided event creation with validation
-6. **Topic Suggestion Engine**: Real-time topic suggestions based on selected criteria (date, theme, target audience)
-7. **Duplicate Avoidance**: Automatic flagging of recently used topics with alternative suggestions
-8. **Strategic Topic Planning**: Multi-year topic planning with strategic themes and progression
+**Intelligent Topic Selection (Step 2):**
+5. **Topic Backlog Management**: Maintain searchable topic backlog with usage history and performance metrics
+6. **Similarity Detection**: NLP-based algorithm to detect topic overlap and suggest alternatives
+7. **Usage Frequency Analysis**: Track topic recency and recommend optimal reuse timing
+8. **Partner Influence Integration**: Include partner voting and suggestions in topic selection
 
 **Data Management:**
-9. **Topic Knowledge Base**: PostgreSQL schema for topic metadata, relationships, and performance metrics
-10. **Machine Learning Pipeline**: Batch processing for topic similarity calculations and recommendation updates
-11. **Redis Caching**: Cache frequently accessed topic suggestions and analysis results
-12. **Version Control**: Track topic evolution and variation over time
+9. **Topic Knowledge Base**: PostgreSQL schema for topic metadata, relationships, and performance
+10. **Machine Learning Pipeline**: Batch processing for topic similarity and recommendation updates
+11. **Redis Caching**: Cache topic suggestions and analysis results for performance
+12. **Historical Analysis**: Analyze 20+ years of event data for topic patterns
 
 **Integration Points:**
-13. **Domain Events**: Publish EventConceptCreatedEvent, TopicSelectedEvent for downstream services
-14. **Partner Integration**: Include partner topic voting data in suggestion algorithms
-15. **Speaker Database**: Cross-reference suggested topics with available speaker expertise
-16. **Performance Metrics**: Track suggestion acceptance rates and event success correlation
+13. **Domain Events**: Publish EventTypeSelectedEvent, TopicSelectedEvent for downstream services
+14. **Slot Configuration**: Pass slot requirements to speaker assignment workflows
+15. **Timeline Generation**: Automatically generate event timeline based on type selection
+16. **Quality Metrics**: Track topic selection success rates and event performance
 
 **Definition of Done:**
-- [ ] Topic analysis service implemented with NLP-based similarity detection
-- [ ] Event creation API provides intelligent topic suggestions in <2 seconds
-- [ ] Historical analysis covers all 54+ events with topic relationship mapping
-- [ ] Duplicate detection identifies similar topics with >90% accuracy
-- [ ] Redis caching reduces topic suggestion response time by >60%
-- [ ] Frontend wizard guides organizers through intelligent event creation
+- [ ] Event type configuration supports all three formats with slot management
+- [ ] Topic analysis covers 54+ historical events with relationship mapping
+- [ ] Similarity detection identifies duplicate topics with >90% accuracy
+- [ ] Redis caching reduces suggestion response time by >60%
+- [ ] Frontend wizard guides organizers through event type and topic selection
 - [ ] Machine learning pipeline processes topic updates nightly
 - [ ] Performance metrics show >70% organizer adoption of suggested topics
 
 ---
 
-### Story 2.2: Advanced Speaker Assignment & Expertise Matching System
+### Story 2.2: Speaker Brainstorming, Research & Assignment (Steps 2-3)
 
 **User Story:**
-As an **organizer**, I want to efficiently identify and assign potential speakers using intelligent expertise matching and workload distribution, so that I can build high-quality speaker lineups while ensuring fair responsibility delegation among the organizing team.
+As an **organizer**, I want to brainstorm potential speakers, conduct research, and assign contact responsibilities efficiently, so that I can build a strong speaker lineup with fair workload distribution.
 
 **Architecture Integration:**
 - **Service**: Speaker Coordination Service with Event Management Service integration
 - **Matching Engine**: Spring Boot service with PostgreSQL speaker expertise database
 - **Workload Tracking**: Redis-based assignment tracking and load balancing
-- **Frontend**: React speaker assignment dashboard with drag-and-drop interface
+- **Frontend**: React speaker brainstorming and assignment dashboard
 
 **Acceptance Criteria:**
 
-**Speaker Expertise Database:**
-1. **Speaker Profile Engine**: Comprehensive speaker database with expertise tags, historical performance, and availability patterns
-2. **Expertise Matching Algorithm**: AI-powered matching between topics and speaker expertise using semantic analysis
-3. **Performance Analytics**: Track speaker ratings, attendance metrics, and feedback scores
-4. **Availability Intelligence**: Predict speaker availability based on historical patterns and external factors
+**Speaker Brainstorming & Research (Step 2):**
+1. **Speaker Discovery Interface**: Collaborative brainstorming tool for identifying potential speakers
+2. **Expertise Matching**: AI-powered matching between topics and speaker expertise
+3. **Speaker Research Tools**: Integration with LinkedIn, company profiles, and past presentations
+4. **Performance History**: Access to historical speaker ratings and attendance metrics
 
-**Assignment Management System:**
-5. **Workload Distribution**: Algorithm to distribute speaker contact responsibilities among organizing team members
-6. **Assignment Tracking**: Real-time tracking of who is responsible for contacting each potential speaker
-7. **Contact History**: Comprehensive history of speaker interactions and response patterns
-8. **Collaboration Tools**: Multi-organizer collaboration features with conflict resolution
+**Contact Assignment Strategy (Step 3):**
+5. **Workload Distribution Algorithm**: Fair distribution of speaker contacts among organizers
+6. **Assignment Tracking**: Real-time tracking of organizer-to-speaker assignments
+7. **Expertise-Based Assignment**: Match organizers to speakers based on domain knowledge
+8. **Backup Assignments**: Automatic backup organizer assignment for risk mitigation
 
-**Speaker Recommendation Engine:**
-9. **Intelligent Speaker Suggestions**: Ranked speaker recommendations based on topic fit, availability, and diversity goals
-10. **Diversity Optimization**: Ensure speaker lineup diversity across companies, experience levels, and demographics
-11. **New Speaker Discovery**: Algorithm to identify and suggest promising new speakers from partner companies
-12. **Backup Speaker Management**: Automatic suggestion of backup speakers for risk mitigation
+**Collaboration Features:**
+9. **Team Brainstorming**: Multi-organizer collaborative speaker suggestion interface
+10. **Research Sharing**: Shared research notes and speaker background information
+11. **Assignment Conflicts**: Prevent duplicate assignments and contact conflicts
+12. **Handoff Management**: Smooth handoff process when reassigning speakers
 
-**Integration & Automation:**
-13. **Event Service Integration**: Seamless integration with event creation workflow
-14. **Automated Notifications**: Trigger speaker invitation workflows based on assignments
-15. **Status Synchronization**: Real-time synchronization of speaker status across organizer team
-16. **Performance Learning**: Continuously improve matching algorithms based on actual outcomes
+**Integration & Intelligence:**
+13. **Speaker Database**: Comprehensive database with 500+ speaker profiles
+14. **Diversity Optimization**: Ensure balanced representation across companies and demographics
+15. **New Speaker Discovery**: Algorithm to identify promising new speakers from partners
+16. **Expertise Evolution**: Track speaker expertise evolution over time
 
 **Definition of Done:**
-- [ ] Speaker expertise database contains >500 speaker profiles with comprehensive metadata
-- [ ] Expertise matching algorithm provides relevant suggestions with >85% organizer satisfaction
-- [ ] Workload distribution system ensures balanced assignment across organizing team
-- [ ] Real-time collaboration features prevent duplicate speaker contacts
-- [ ] Performance analytics track speaker success rates and optimize future suggestions
-- [ ] Diversity optimization achieves target speaker lineup diversity metrics
-- [ ] Integration with event creation provides seamless speaker assignment workflow
-- [ ] New speaker discovery identifies 5+ promising candidates per event
+- [ ] Speaker brainstorming interface supports 5+ concurrent organizers
+- [ ] Research tools provide comprehensive speaker background within 30 seconds
+- [ ] Assignment algorithm ensures balanced workload (±2 speakers per organizer)
+- [ ] Expertise matching provides relevant suggestions with >85% accuracy
+- [ ] Collaboration features prevent 100% of assignment conflicts
+- [ ] New speaker discovery identifies 5+ candidates per event
+- [ ] Integration with speaker database provides instant profile access
 
 ---
 
-### Story 2.3: Advanced Speaker Status Workflow & Multi-Organizer Collaboration
+### Story 2.3: Speaker Outreach, Tracking & Content Collection (Steps 4-6)
 
 **User Story:**
-As an **organizer team member**, I want to track complex speaker states through a visual pipeline with real-time collaboration features, so that multiple team members can coordinate speaker management efficiently without conflicts or confusion.
+As an **organizer**, I want to manage speaker outreach with automated tracking and content collection workflows, so that I can efficiently coordinate speaker communications while ensuring timely material submission.
 
 **Architecture Integration:**
-- **Workflow Engine**: Spring State Machine with PostgreSQL persistence
-- **Real-time Updates**: WebSocket integration for live status updates
-- **Collaboration**: Redis-based conflict resolution and concurrent editing protection
-- **Frontend**: React Kanban-style workflow dashboard with real-time synchronization
+- **Workflow Engine**: Spring State Machine with PostgreSQL persistence for complex state tracking
+- **Communication Platform**: AWS SES for automated emails with tracking
+- **Content Management**: S3 storage for speaker materials with validation
+- **Frontend**: React speaker pipeline with real-time status visualization
 
 **Acceptance Criteria:**
 
-**Speaker Workflow State Machine:**
-1. **Complex State Modeling**: Implement sophisticated state machine: `open → contacted → responded → evaluating → accepted/declined → confirmed → agenda_ready → materials_submitted → informed`
-2. **Automated Transitions**: Configure automatic state transitions based on time triggers and external events
-3. **Business Rules**: Implement complex business logic for state transition validation and conflict resolution
-4. **Audit Trail**: Complete audit trail of all state changes with user attribution and timestamps
+**Speaker Outreach & Initial Contact (Step 4):**
+1. **Invitation Templates**: Customizable invitation templates with context, deadlines, and requirements
+2. **Batch Invitations**: Send personalized invitations to multiple speakers simultaneously
+3. **Communication Tracking**: Track all outreach attempts with response analytics
+4. **Follow-up Automation**: Automated follow-up sequences for non-responsive speakers
 
-**Multi-Organizer Collaboration:**
-5. **Real-time Synchronization**: WebSocket-based real-time updates for all organizer team members
-6. **Concurrent Editing Protection**: Prevent conflicts when multiple organizers update the same speaker
-7. **Assignment Management**: Clear assignment of speakers to specific organizers with handoff capabilities
-8. **Communication History**: Shared communication log accessible to all authorized team members
+**Advanced Status Tracking (Step 5):**
+5. **Complex State Machine**: Implement states: open → contacted → ready → declined/accepted → slot-assigned → final agenda → informed
+6. **Real-time Status Updates**: WebSocket-based live status synchronization across team
+7. **State Transition Rules**: Business logic for valid state transitions with validation
+8. **Audit Trail**: Complete history of status changes with timestamps and attribution
 
-**Visual Workflow Interface:**
-9. **Kanban Dashboard**: Drag-and-drop Kanban interface for visual speaker status management
-10. **Bulk Operations**: Bulk state transitions and operations for efficient workflow management
-11. **Filtering & Search**: Advanced filtering by organizer, status, topic, and speaker characteristics
-12. **Progress Analytics**: Real-time analytics on workflow progress and bottleneck identification
+**Content Collection Workflows (Step 6):**
+9. **Material Requirements**: Define requirements (title, abstract max 1000 chars with lessons learned, CV, photo)
+10. **Submission Portal**: Speaker self-service portal for material submission
+11. **Deadline Management**: Automated reminders 1 month before event for materials
+12. **Validation Rules**: Automatic validation of submitted materials against requirements
 
 **Automation & Intelligence:**
-13. **Deadline Management**: Automated deadline tracking with escalation workflows
-14. **Risk Detection**: Identify at-risk speakers and suggest proactive interventions
-15. **Communication Automation**: Automated follow-up reminders and status update notifications
-16. **Performance Metrics**: Track organizer efficiency and workflow optimization opportunities
+13. **Smart Reminders**: Context-aware reminder scheduling based on speaker history
+14. **Risk Detection**: Identify at-risk speakers who may miss deadlines
+15. **Quality Checks**: Automated content quality validation for completeness
+16. **Escalation Workflows**: Automatic escalation for overdue materials
 
 **Definition of Done:**
-- [ ] Speaker state machine handles all workflow complexity with proper validation
-- [ ] Real-time collaboration prevents conflicts and enables seamless team coordination
-- [ ] Kanban dashboard provides intuitive visual management of 50+ speakers simultaneously
-- [ ] Automated workflows reduce manual deadline tracking by >80%
-- [ ] Multi-organizer features enable 5+ team members to collaborate without conflicts
-- [ ] Performance analytics identify workflow bottlenecks and optimization opportunities
-- [ ] Audit trail provides complete accountability for all speaker management decisions
-- [ ] Risk detection identifies potential speaker issues 2+ weeks before deadlines
+- [ ] Invitation system sends personalized invitations to 50+ speakers efficiently
+- [ ] Status tracking handles all 7 states with proper validation and transitions
+- [ ] Real-time updates synchronize across 5+ organizers without conflicts
+- [ ] Content collection portal achieves >90% on-time submission rate
+- [ ] Automated reminders reduce manual follow-up by >80%
+- [ ] Risk detection identifies potential issues 2+ weeks before deadlines
+- [ ] Audit trail provides complete accountability for all interactions
 
 ---
 
-## Sprint 9-10: Automated Publishing & Multi-Stakeholder Coordination
+## Sprint 9-10: Quality Control, Slot Management & Publishing
 
-### Story 2.4: Intelligent Progressive Publishing Engine
+### Story 2.4: Content Quality Review & Minimum Threshold Management (Steps 7-8)
 
 **User Story:**
-As an **organizer**, I want content to publish automatically based on intelligent readiness validation, so that information flows seamlessly from initial topic definition through final agenda publication without manual intervention.
+As a **moderator**, I want to review speaker content for quality standards and ensure minimum slot thresholds are met before proceeding with assignments, so that we maintain high event quality.
 
 **Architecture Integration:**
-- **Publishing Service**: Spring Boot service with complex business rule engine
-- **Content Validation**: Multi-service validation orchestration with EventBridge coordination
-- **Timeline Engine**: Automated timeline management with deadline enforcement
-- **Frontend**: React publishing dashboard with content readiness visualization
+- **Review Service**: Content moderation service with workflow integration
+- **Quality Engine**: Automated quality checks with manual review workflow
+- **Threshold Management**: Business rules engine for minimum slot validation
+- **Frontend**: React moderation dashboard with review queues
 
 **Acceptance Criteria:**
 
-**Content Readiness Validation Engine:**
-1. **Multi-Service Validation**: Orchestrate validation across Event, Speaker, and Partner services
-2. **Business Rules Engine**: Complex rule engine for content publication prerequisites
-3. **Quality Assurance**: Automated content quality checks (completeness, formatting, accuracy)
-4. **Approval Workflows**: Multi-stakeholder approval workflows for sensitive content
+**Content Quality Review (Step 7):**
+1. **Moderation Queue**: Automated queue for content requiring review
+2. **Quality Criteria**: Enforce standards (abstract quality, lessons learned requirement, length limits)
+3. **Review Workflow**: Multi-stage review with feedback and revision cycles
+4. **Moderator Assignment**: Automatic or manual moderator assignment based on expertise
 
-**Progressive Publishing Pipeline:**
-5. **Phase-Based Publishing**: Implement publishing phases: `Topic Immediate → Speakers 1 Month Prior → Final Agenda → Post-Event Materials`
-6. **Automated Scheduling**: Intelligent scheduling based on event timeline and content readiness
-7. **Rollback Capabilities**: Safe rollback mechanisms for published content with change tracking
-8. **Version Management**: Content versioning with diff tracking and approval history
+**Standards Compliance:**
+5. **Automated Checks**: Validate abstract length (max 1000 chars), required sections
+6. **Lessons Learned Validation**: Ensure practical insights are included
+7. **Technical Requirements**: Verify speaker technical needs are specified
+8. **Feedback System**: Structured feedback to speakers for required revisions
 
-**Stakeholder Notification System:**
-9. **Automated Notifications**: Email and in-app notifications for publishing milestones
-10. **Stakeholder Coordination**: Coordinate notifications across speakers, partners, and attendees
-11. **Content Updates**: Automatic stakeholder notifications when content changes affect them
-12. **Escalation Workflows**: Automated escalation when publishing deadlines are at risk
+**Minimum Threshold Check (Step 8):**
+9. **Threshold Configuration**: Define minimum slots per event type before assignment
+10. **Waitlist Management**: Hold assignment until minimum threshold reached
+11. **Risk Assessment**: Alert organizers if threshold at risk with timeline
+12. **Contingency Planning**: Automatic suggestions for reaching minimum threshold
 
 **Integration & Monitoring:**
-13. **Cross-Service Orchestration**: Coordinate publishing across all microservices
-14. **Publishing Analytics**: Track publishing performance and stakeholder engagement
-15. **Error Handling**: Robust error handling with detailed logging and recovery procedures
-16. **Performance Optimization**: Optimize publishing pipeline for large-scale content operations
+13. **Quality Metrics**: Track review turnaround time and revision rates
+14. **Compliance Reporting**: Generate compliance reports for content standards
+15. **Threshold Analytics**: Monitor threshold achievement across event planning
+16. **Performance Impact**: Analyze quality review impact on speaker satisfaction
 
 **Definition of Done:**
-- [ ] Content validation engine correctly validates readiness across all services
-- [ ] Progressive publishing automatically publishes content based on predefined phases
-- [ ] Stakeholder notification system reaches >95% delivery rate with proper targeting
-- [ ] Publishing pipeline handles 100+ content items without manual intervention
-- [ ] Quality assurance catches >90% of content issues before publication
-- [ ] Rollback capabilities tested and verified for emergency content changes
-- [ ] Performance metrics show <30 second publishing pipeline execution time
-- [ ] Integration tests verify end-to-end publishing workflow reliability
+- [ ] Moderation queue processes 20+ submissions per event efficiently
+- [ ] Automated checks catch >80% of standards violations
+- [ ] Review workflow completes within 48 hours of submission
+- [ ] Threshold management prevents premature slot assignment 100% of time
+- [ ] Feedback system achieves >95% first-revision success rate
+- [ ] Quality metrics demonstrate consistent standards enforcement
+- [ ] Integration with workflow prevents progression until quality approved
 
 ---
 
-### Story 2.5: Multi-Stakeholder Coordination Hub
+### Story 2.5: Speaker Selection, Overflow & Slot Assignment (Steps 9-10)
 
 **User Story:**
-As an **organizer**, I want to coordinate speakers, caterers, venue staff, and partners through integrated workflows with automated dependency tracking, so that I can manage complex event logistics efficiently while ensuring nothing falls through the cracks.
+As an **organizer**, I want to manage speaker selection with voting for overflow situations and intelligent slot assignment considering preferences and requirements, so that we optimize the event agenda.
 
 **Architecture Integration:**
-- **Coordination Service**: Dedicated stakeholder coordination microservice
-- **Dependency Engine**: Graph-based dependency tracking with PostgreSQL storage
-- **Integration Platform**: External system integrations (catering, venue, partner systems)
-- **Frontend**: React coordination dashboard with dependency visualization and automated workflows
+- **Selection Engine**: Voting and ranking system with PostgreSQL storage
+- **Assignment Algorithm**: Intelligent slot assignment with constraint optimization
+- **Overflow Management**: Waitlist system with automatic promotion
+- **Frontend**: React selection interface with voting and assignment tools
 
 **Acceptance Criteria:**
 
-**Stakeholder Management System:**
-1. **Stakeholder Registry**: Comprehensive database of all event stakeholders with contact information and responsibilities
-2. **Role-Based Access**: Differentiated access levels for internal organizers vs. external stakeholders
-3. **Communication Channels**: Multi-channel communication (email, SMS, in-app) with preference management
-4. **External Integrations**: Integration with catering systems, venue booking platforms, and partner portals
+**Speaker Selection & Overflow (Step 9):**
+1. **Overflow Detection**: Automatically identify when speakers exceed available slots
+2. **Voting System**: Multi-organizer voting interface for speaker selection
+3. **Ranking Algorithm**: Score speakers based on topic fit, expertise, and votes
+4. **Waitlist Management**: Maintain ranked waitlist for selected overflow speakers
 
-**Dependency Tracking Engine:**
-5. **Dependency Graph**: Model complex interdependencies between tasks, stakeholders, and deliverables
-6. **Critical Path Analysis**: Identify critical path through event preparation with bottleneck detection
-7. **Risk Assessment**: Automatically identify risks when dependencies are delayed or at risk
-8. **Impact Analysis**: Calculate downstream impact of delays or changes
+**Voting Mechanism:**
+5. **Topic Fit Scoring**: Evaluate speaker-topic alignment with weighted criteria
+6. **Collaborative Voting**: Support synchronous and asynchronous voting rounds
+7. **Conflict Resolution**: Handle tied votes with configurable tiebreakers
+8. **Decision Audit**: Track voting history and selection rationale
 
-**Automated Workflow Management:**
-9. **Task Orchestration**: Automated task creation and assignment based on event timeline
-10. **Deadline Management**: Intelligent deadline calculation with buffer time and risk factors
-11. **Escalation Workflows**: Automated escalation when tasks are overdue or at risk
-12. **Status Synchronization**: Real-time status updates across all stakeholder systems
+**Speaker-to-Slot Assignment (Step 10):**
+9. **Preference Collection**: Gather speaker preferences for time slots
+10. **Technical Requirements**: Consider AV needs, room setup, and equipment
+11. **Flow Optimization**: Assign theoretical sessions AM, practical/lessons learned PM
+12. **Constraint Solver**: Algorithm to optimize assignments with multiple constraints
 
-**Dashboard & Reporting:**
-13. **Coordination Dashboard**: Real-time visibility into all stakeholder activities and dependencies
-14. **Progress Tracking**: Visual progress tracking with Gantt charts and milestone tracking
-15. **Stakeholder Communication Log**: Centralized communication history across all stakeholders
-16. **Performance Analytics**: Track coordination efficiency and identify improvement opportunities
+**Assignment Intelligence:**
+13. **Conflict Prevention**: Prevent speaker scheduling conflicts
+14. **Topic Clustering**: Group related topics for better session flow
+15. **Break Optimization**: Ensure appropriate breaks between intensive sessions
+16. **Flexibility Management**: Handle last-minute changes and speaker swaps
 
 **Definition of Done:**
-- [ ] Stakeholder coordination system manages 20+ external stakeholders per event
-- [ ] Dependency tracking identifies potential conflicts 2+ weeks in advance
-- [ ] Automated workflows reduce manual coordination tasks by >70%
-- [ ] External integrations synchronize with catering and venue systems automatically
-- [ ] Real-time dashboard provides complete visibility into event preparation status
-- [ ] Escalation workflows ensure no critical tasks are missed or delayed
-- [ ] Risk assessment accurately predicts coordination issues with >80% accuracy
-- [ ] Performance metrics show improved coordination efficiency compared to manual processes
+- [ ] Overflow voting handles 20+ excess speakers efficiently
+- [ ] Voting system supports 5+ organizers with real-time results
+- [ ] Ranking algorithm produces consistent, explainable results
+- [ ] Slot assignment satisfies >90% of speaker preferences
+- [ ] Technical requirements 100% accommodated in assignments
+- [ ] Topic flow optimization improves attendee satisfaction scores
+- [ ] Assignment changes handled within 5 minutes of decision
 
 ---
 
-### Story 2.6: Long-term Strategic Planning & Multi-Year Management Tools
+### Story 2.6: Progressive Publishing & Agenda Management (Steps 11-13)
 
 **User Story:**
-As an **organizer**, I want to manage multi-year venue reservations, seasonal partner meetings, and strategic budget planning through automated scheduling systems, so that I can maintain long-term relationships and plan efficiently across multiple event cycles.
+As an **organizer**, I want content to publish progressively with automated agenda finalization and newsletter distribution, so that stakeholders receive timely, accurate event information.
 
 **Architecture Integration:**
-- **Strategic Planning Service**: Dedicated long-term planning microservice
-- **Multi-Year Database**: PostgreSQL with temporal data modeling for long-term planning
-- **Integration Systems**: External venue booking, partner management, and financial planning systems
-- **Frontend**: React strategic planning interface with multi-year calendar visualization
+- **Publishing Engine**: Automated content publishing with validation
+- **Newsletter Service**: AWS SES integration for mass distribution
+- **Finalization Workflow**: Agenda lock and dropout management system
+- **Frontend**: React publishing dashboard with preview and scheduling
 
 **Acceptance Criteria:**
 
-**Multi-Year Planning Engine:**
-1. **Venue Management**: Multi-year venue booking system with availability tracking and conflict resolution
-2. **Partner Relationship Management**: Strategic partner engagement planning with seasonal meeting coordination
-3. **Budget Planning**: Multi-year budget forecasting with cost tracking and variance analysis
-4. **Strategic Calendar**: Integrated calendar system spanning multiple years with milestone tracking
+**Progressive Publishing Engine (Step 11):**
+1. **Publishing Timeline**: Topic immediate, speakers 1 month before, continuous updates
+2. **Content Validation**: Validate readiness before each publishing phase
+3. **Automated Publishing**: Trigger publication based on content completeness
+4. **Version Control**: Track all published versions with rollback capability
 
-**Venue & Resource Management:**
-5. **Venue Database**: Comprehensive venue database with capacity, pricing, and availability information
-6. **Booking Automation**: Automated venue booking workflows with confirmation tracking
-7. **Contract Management**: Digital contract management with renewal reminders and compliance tracking
-8. **Resource Allocation**: Long-term resource planning with capacity management
+**Publishing Phases:**
+5. **Topic Announcement**: Immediate publication upon topic selection
+6. **Speaker Reveal**: Automated speaker announcement 1 month before
+7. **Progressive Updates**: Continuous agenda updates as speakers confirm
+8. **Final Materials**: Post-event publication of presentations and recordings
 
-**Partner Strategic Engagement:**
-9. **Partner Meeting Coordination**: Seasonal partner meeting scheduling with agenda management
-10. **Strategic Planning Integration**: Connect partner meetings to topic planning and event strategy
-11. **Relationship Tracking**: Track partner engagement levels and strategic relationship health
-12. **Partnership Analytics**: Analyze partner contribution and engagement over multiple event cycles
+**Agenda Finalization (Step 12):**
+9. **Two-Week Lock**: Finalize agenda 2 weeks before event
+10. **Dropout Management**: Automatic waitlist promotion for dropouts
+11. **Change Freeze**: Enforce change freeze with emergency override
+12. **Final Validation**: Comprehensive validation before final lock
 
-**Financial & Strategic Planning:**
-13. **Budget Forecasting**: Multi-year budget planning with cost trend analysis
-14. **ROI Tracking**: Long-term ROI analysis for venues, partnerships, and strategic initiatives
-15. **Strategic Goal Tracking**: Track progress against long-term strategic objectives
-16. **Scenario Planning**: Model different strategic scenarios and their resource implications
+**Newsletter Distribution (Step 13):**
+13. **Distribution Lists**: Segmented lists for different stakeholder groups
+14. **Progressive Newsletters**: Send updates matching publishing phases
+15. **Final Announcement**: Comprehensive final agenda newsletter
+16. **Tracking Analytics**: Monitor open rates and engagement metrics
 
 **Definition of Done:**
-- [ ] Multi-year venue booking system manages 3+ years of future reservations
-- [ ] Partner meeting coordination automates seasonal planning cycles
-- [ ] Budget planning system tracks costs across multiple event cycles with variance analysis
-- [ ] Strategic calendar provides clear visibility into long-term planning milestones
-- [ ] Venue management prevents double-booking and optimizes cost efficiency
-- [ ] Partner relationship tracking maintains engagement across extended time periods
-- [ ] Financial forecasting accuracy improves long-term budget planning by >25%
-- [ ] Strategic planning tools enable 5+ year organizational planning horizon
+- [ ] Progressive publishing executes all phases automatically
+- [ ] Content validation prevents premature publication 100% of time
+- [ ] Agenda finalization handles dropouts within 24 hours
+- [ ] Newsletter reaches >95% delivery rate to subscribers
+- [ ] Publishing timeline meets all defined milestones
+- [ ] Version control enables rollback within 5 minutes
+- [ ] Analytics demonstrate improved stakeholder engagement
+
+---
+
+## Sprint 10-11: Event Coordination & Strategic Planning
+
+### Story 2.7: Moderation, Catering & Venue Coordination (Steps 14-15)
+
+**User Story:**
+As an **organizer**, I want to coordinate event moderation, catering, and venue logistics through integrated workflows, so that all event aspects are professionally managed.
+
+**Architecture Integration:**
+- **Coordination Service**: Multi-stakeholder coordination platform
+- **External Integrations**: Catering and venue system integrations
+- **Timeline Management**: Automated deadline and milestone tracking
+- **Frontend**: React coordination dashboard with stakeholder views
+
+**Acceptance Criteria:**
+
+**Moderation Assignment (Step 14):**
+1. **Moderator Database**: Maintain pool of qualified moderators with expertise
+2. **Assignment Workflow**: Match moderators to events based on topic and availability
+3. **Briefing Materials**: Automatically generate moderator briefing packages
+4. **Confirmation Tracking**: Track moderator confirmation and backup assignments
+
+**Catering Coordination (Step 15):**
+5. **Quote Management**: Request and compare caterer quotes 1 month before
+6. **Dietary Management**: Track and communicate dietary requirements
+7. **Order Automation**: Generate catering orders based on registration data
+8. **Budget Tracking**: Monitor catering costs against event budget
+
+**Venue Planning:**
+9. **Long-term Booking**: Manage venue reservations 2+ years in advance
+10. **Capacity Planning**: Match venue selection to expected attendance
+11. **Setup Requirements**: Coordinate room setup and technical requirements
+12. **Contract Management**: Digital contract storage and renewal tracking
+
+**Stakeholder Coordination:**
+13. **Communication Hub**: Centralized communication with all stakeholders
+14. **Timeline Synchronization**: Share relevant timelines with each stakeholder
+15. **Confirmation Workflows**: Track confirmations from all parties
+16. **Contingency Planning**: Maintain backup options for critical services
+
+**Definition of Done:**
+- [ ] Moderator assignment completed 3+ weeks before events
+- [ ] Catering quotes processed within 48 hours of request
+- [ ] Venue bookings confirmed 2+ years in advance
+- [ ] Dietary requirements 100% accurately communicated
+- [ ] Budget tracking maintains costs within 5% of target
+- [ ] Stakeholder confirmations achieved for all critical services
+- [ ] Contingency plans documented for all single points of failure
+
+---
+
+### Story 2.8: Partner Meeting Coordination & Strategic Planning (Step 16)
+
+**User Story:**
+As an **organizer**, I want to coordinate seasonal partner meetings with integrated budget planning and topic brainstorming, so that strategic partnerships drive long-term event success.
+
+**Architecture Integration:**
+- **Partner Platform**: Dedicated partner relationship management service
+- **Strategic Planning**: Multi-year planning and budgeting system
+- **Meeting Management**: Automated meeting scheduling and agenda creation
+- **Frontend**: React partner portal with meeting and strategic tools
+
+**Acceptance Criteria:**
+
+**Partner Meeting Coordination (Step 16):**
+1. **Seasonal Scheduling**: Automate spring/autumn partner meeting scheduling
+2. **Agenda Generation**: Create meeting agendas with budget and statistics
+3. **Topic Brainstorming**: Facilitate partner input on future topics
+4. **Meeting Materials**: Automatically generate reports and presentations
+
+**Strategic Integration:**
+5. **Budget Planning**: Present and discuss event budgets with partners
+6. **ROI Reporting**: Share attendance and engagement statistics
+7. **Strategic Input**: Collect partner strategic priorities and preferences
+8. **Partnership Health**: Track and report partnership health metrics
+
+**Meeting Automation:**
+9. **Invitation Management**: Automated partner meeting invitations
+10. **RSVP Tracking**: Monitor attendance confirmations and dietary needs
+11. **Material Distribution**: Automatic distribution of pre-meeting materials
+12. **Follow-up Workflows**: Post-meeting action item tracking
+
+**Long-term Planning:**
+13. **Multi-year Roadmap**: Maintain 3-5 year strategic event roadmap
+14. **Partner Commitments**: Track multi-year partnership commitments
+15. **Budget Forecasting**: Long-term budget planning with partner input
+16. **Success Metrics**: Define and track long-term success indicators
+
+**Definition of Done:**
+- [ ] Partner meetings scheduled 2+ months in advance
+- [ ] Meeting materials generated automatically with current data
+- [ ] Topic brainstorming captures 10+ suggestions per meeting
+- [ ] Budget discussions result in confirmed partnership commitments
+- [ ] ROI reporting demonstrates value to 100% of partners
+- [ ] Strategic roadmap updated bi-annually with partner input
+- [ ] Follow-up actions tracked to completion within 30 days
 
 ---
 
 ## Epic 2 Success Metrics
 
-**Epic Goal Achievement:**
-- ✅ **Workflow Automation**: 60% reduction in manual organizer planning time achieved
-- ✅ **Intelligent Systems**: AI-powered topic and speaker suggestions adopted by >70% of organizers
-- ✅ **Multi-Organizer Collaboration**: Seamless team coordination with conflict prevention
-- ✅ **Automated Publishing**: Content publishing automation eliminates manual publishing errors
-- ✅ **Stakeholder Coordination**: Integrated workflows improve coordination efficiency by >70%
-- ✅ **Strategic Planning**: Long-term planning capabilities enable 5+ year organizational planning
+**16-Step Workflow Implementation:**
+- ✅ **Complete Automation**: All 16 workflow steps automated with intelligent orchestration
+- ✅ **Event Type Management**: Full support for all three event formats with slot configuration
+- ✅ **Quality Control**: Automated content review with standards enforcement
+- ✅ **Overflow Handling**: Democratic voting system for speaker selection
+- ✅ **Slot Optimization**: Intelligent assignment considering all constraints
+- ✅ **Progressive Publishing**: Phased content publication with validation
+- ✅ **Stakeholder Coordination**: Integrated management of all event stakeholders
+- ✅ **Strategic Planning**: Long-term partner and venue management
 
 **Technical Performance KPIs:**
-- **Response Times**: Event Service <150ms P95, Speaker Service <100ms P95
-- **Automation Success**: >95% successful automated workflow transitions
-- **Collaboration Efficiency**: Zero conflicts in multi-organizer speaker management
-- **Publishing Reliability**: 100% successful automated content publishing
-- **Integration Reliability**: >99% uptime for external stakeholder integrations
-- **Strategic Planning**: Multi-year venue booking 100% conflict-free
+- **Workflow Completion**: >95% successful progression through all 16 steps
+- **Response Times**: Workflow operations <200ms P95
+- **Automation Success**: >90% tasks complete without manual intervention
+- **Publishing Accuracy**: 100% correct progressive publication timing
+- **Integration Reliability**: >99.5% uptime for external integrations
 
 **Business Impact Metrics:**
-- **Planning Efficiency**: 60% reduction in event planning time from 12 weeks to 5 weeks
-- **Speaker Quality**: Improved speaker lineup quality through intelligent matching
-- **Stakeholder Satisfaction**: >90% stakeholder satisfaction with coordination processes
-- **Risk Reduction**: 80% reduction in missed deadlines and coordination failures
-- **Strategic Value**: Enhanced long-term planning enables better partner relationships
+- **Planning Efficiency**: 70% reduction in manual coordination time
+- **Quality Improvement**: 40% reduction in content revision cycles
+- **Speaker Satisfaction**: >90% satisfaction with selection and assignment
+- **Partner Engagement**: 100% partner participation in strategic planning
+- **Event Success**: 25% improvement in attendee satisfaction scores
 
-This establishes a sophisticated event management workflow that revolutionizes the organizer experience while maintaining the high quality standards of BATbern events.
+This comprehensive implementation of the 16-step workflow revolutionizes BATbern event management while maintaining the high-quality standards that define the conference series.

@@ -264,7 +264,7 @@ As an **organizer**, I want to access and manage events through a robust service
 
 **Event Domain Model:**
 1. **Event Aggregate**: Implement Event aggregate root with proper DDD patterns
-2. **Workflow State Management**: Model 12-step event planning workflow with state transitions
+2. **Workflow State Management**: Model 16-step event planning workflow with state transitions
 3. **Topic Management**: Intelligent topic backlog with historical usage tracking
 4. **Timeline Management**: Event timeline with automated deadline tracking
 
@@ -289,7 +289,7 @@ As an **organizer**, I want to access and manage events through a robust service
 **Definition of Done:**
 - [ ] Event Management Service deployed with full API documentation
 - [ ] Event aggregate and workflow models implemented with proper DDD patterns
-- [ ] 12-step workflow engine working with automated state transitions
+- [ ] 16-step workflow engine working with automated state transitions
 - [ ] PostgreSQL schema optimized with proper indexing
 - [ ] Redis caching implementation improves response times by >50%
 - [ ] Domain events properly published and consumable by other services

@@ -1,8 +1,8 @@
 # <!-- Powered by BMAD™ Core -->
 template:
-  id: story-template-v2
-  name: Story Document
-  version: 2.0
+  id: story-template-v3
+  name: Story Document with Enhanced Context
+  version: 3.0
   output:
     format: markdown
     filename: docs/stories/{{epic_num}}.{{story_num}}.{{story_title_short}}.md
@@ -16,6 +16,10 @@ agent_config:
   editable_sections:
     - Status
     - Story
+    - Domain Context
+    - Requirements Context
+    - Architecture Context
+    - Wireframe Context
     - Acceptance Criteria
     - Tasks / Subtasks
     - Dev Notes
@@ -43,10 +47,154 @@ sections:
     owner: scrum-master
     editors: [scrum-master]
 
+  - id: domain-context
+    title: Domain Context
+    instruction: Identify the domain and services involved in this story
+    owner: scrum-master
+    editors: [scrum-master]
+    sections:
+      - id: primary-domain
+        title: Primary Domain
+        instruction: |
+          Identify the bounded context:
+          - Event Management Domain (Organizer workflows)
+          - Speaker Coordination Domain (Speaker portal & workflows)
+          - Partner Analytics Domain (ROI tracking & strategic input)
+          - Attendee Experience Domain (Content discovery & registration)
+          - Shared/Infrastructure (Cross-cutting concerns)
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: involved-services
+        title: Involved Services
+        instruction: |
+          List specific microservices from architecture:
+          - Event Management Service
+          - Speaker Coordination Service
+          - Partner Analytics Service
+          - Attendee Experience Service
+          - Company Management Service
+          - API Gateway
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: cross-domain-dependencies
+        title: Cross-Domain Dependencies
+        instruction: List any services/domains this story depends on or integrates with via EventBridge or API calls
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+  - id: requirements-context
+    title: Requirements Context
+    instruction: Link this story to specific requirements and workflow steps
+    owner: scrum-master
+    editors: [scrum-master]
+    sections:
+      - id: functional-requirements
+        title: Related Functional Requirements
+        instruction: |
+          List specific FRs from prd-enhanced.md that this story implements:
+          Example: FR2 (16-step workflow), FR17 (speaker status tracking)
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: workflow-steps
+        title: Workflow Steps (if applicable)
+        instruction: |
+          For Event Management stories, specify which of the 16 workflow steps are involved:
+          1. Topic Selection & Event Type Definition
+          2. Speaker Brainstorming & Research
+          3. Speaker Assignment & Contact Strategy
+          4. Speaker Outreach & Initial Contact
+          5. Speaker Status Tracking
+          6. Speaker Content Collection
+          7. Content Quality Review
+          8. Minimum Threshold Check
+          9. Speaker Selection & Overflow Management
+          10. Speaker-to-Slot Assignment
+          11. Progressive Publishing Engine
+          12. Agenda Finalization
+          13. Newsletter Distribution
+          14. Moderation Assignment
+          15. Catering & Venue Coordination
+          16. Partner Meeting Coordination
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: acceptance-mapping
+        title: Acceptance Criteria Source
+        instruction: Reference the exact section in the epic file where ACs come from (e.g., Epic 2, Story 2.3, AC 5-8)
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+  - id: architecture-context
+    title: Architecture Context
+    instruction: Reference specific architecture patterns and infrastructure components
+    owner: scrum-master
+    editors: [scrum-master]
+    sections:
+      - id: architecture-patterns
+        title: Architecture Patterns
+        instruction: |
+          Reference specific patterns from architecture docs:
+          - API Design (04-api-design.md): RESTful patterns, OpenAPI specs, endpoint structure
+          - Frontend (05-frontend-architecture.md): React components, state management, PWA
+          - Backend (06-backend-architecture.md): Spring Boot services, DDD patterns, event sourcing
+          - Data Models (03-data-architecture.md): Entities, aggregates, database schemas
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: infrastructure-components
+        title: Infrastructure Components
+        instruction: |
+          List AWS services and infrastructure from 02-infrastructure-deployment.md:
+          - Lambda functions: Name, runtime, trigger
+          - API Gateway: Endpoints, methods, auth
+          - Database: Tables, indexes, relations
+          - S3: Buckets, prefixes, policies
+          - EventBridge: Event types, rules, targets
+          - ElastiCache: Cache keys, TTL
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+  - id: wireframe-context
+    title: Wireframe Context
+    instruction: Link to relevant wireframes and UI components
+    owner: scrum-master
+    editors: [scrum-master]
+    sections:
+      - id: wireframe-references
+        title: Wireframe References
+        instruction: |
+          List relevant wireframe files and specific sections:
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: ui-components
+        title: UI Components
+        instruction: |
+          List React components that need to be created/modified:
+          - Component name
+          - Props interface
+          - Material-UI components used
+          - State management (Zustand/React Query)
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
   - id: acceptance-criteria
     title: Acceptance Criteria
     type: numbered-list
-    instruction: Copy the acceptance criteria numbered list from the epic file
+    instruction: Copy the acceptance criteria numbered list from the epic file referenced in Requirements Context
     elicit: true
     owner: scrum-master
     editors: [scrum-master]
@@ -57,26 +205,51 @@ sections:
     instruction: |
       Break down the story into specific tasks and subtasks needed for implementation.
       Reference applicable acceptance criteria numbers where relevant.
+      Include tasks for each involved service and cross-domain integration.
     template: |
-      - [ ] Task 1 (AC: # if applicable)
+      - [ ] Task 1: Backend Service Implementation (AC: # if applicable)
+        - [ ] Create/update domain entities
+        - [ ] Implement service methods
+        - [ ] Add API endpoints
+        - [ ] Write unit tests
+      - [ ] Task 2: Frontend Components (AC: # if applicable)
+        - [ ] Create React components
+        - [ ] Implement state management
+        - [ ] Connect to APIs
+        - [ ] Add component tests
+      - [ ] Task 3: Infrastructure Setup (AC: # if applicable)
+        - [ ] Update CDK stacks
+        - [ ] Configure AWS resources
+        - [ ] Set up EventBridge rules
+        - [ ] Test infrastructure
+      - [ ] Task 4 (AC: # if applicable)
         - [ ] Subtask1.1...
-      - [ ] Task 2 (AC: # if applicable)
+      - [ ] Task 5 (AC: # if applicable)
         - [ ] Subtask 2.1...
-      - [ ] Task 3 (AC: # if applicable)
+      - [ ] Task 6 (AC: # if applicable)
         - [ ] Subtask 3.1...
     elicit: true
     owner: scrum-master
     editors: [scrum-master, dev-agent]
 
   - id: dev-notes
-    title: Dev Notes
+    title: Dev Notes - Implementation Guide
     instruction: |
-      Populate relevant information, only what was pulled from actual artifacts from docs folder, relevant to this story:
-      - Do not invent information
-      - If known add Relevant Source Tree info that relates to this story
-      - If there were important notes from previous story that are relevant to this one, include them here
-      - Put enough information in this section so that the dev agent should NEVER need to read the architecture documents, these notes along with the tasks and subtasks must give the Dev Agent the complete context it needs to comprehend with the least amount of overhead the information to complete the story, meeting all AC and completing all tasks+subtasks
-      - IMPORTANT: Reference the Infrastructure Impact Assessment above - all infrastructure items must be implemented
+      CONSOLIDATED IMPLEMENTATION GUIDE for the Dev Agent:
+      Based on all context sections above, provide everything needed for implementation.
+      The dev agent should NOT need to read PRD, architecture, or wireframe documents.
+
+      Include:
+      1. **Service Setup**: Exact service locations, package structure, file paths
+      2. **API Specifications**: OpenAPI spec excerpts, endpoint definitions, request/response schemas
+      3. **Database Schema**: CREATE TABLE statements, indexes, foreign keys
+      4. **React Components**: Full TypeScript interfaces, Material-UI usage, component structure
+      5. **Integration Code**: EventBridge event schemas, service-to-service calls
+      6. **Configuration**: Environment variables, AWS resource configs, feature flags
+      7. **Code Patterns**: Actual code snippets from architecture docs
+      8. **Testing Patterns**: Test file locations, testing approach, coverage requirements
+
+      Be extremely specific and include actual code/configuration that can be copy-pasted.
     elicit: true
     owner: scrum-master
     editors: [scrum-master]
@@ -84,24 +257,40 @@ sections:
       - id: technical-design
         title: Technical Design Notes
         instruction: |
-          Describe technical approach, patterns, or architectural decisions:
-          - How infrastructure changes integrate with existing system
-          - Specific implementation patterns to follow
-          - Database design considerations
-          - API design decisions
+          Detailed technical approach including:
+          - Specific design patterns to apply (from architecture)
+          - Service method signatures
+          - Database transaction boundaries
+          - Caching strategies
+          - Error handling patterns
+          - Performance considerations
         elicit: true
         owner: scrum-master
         editors: [scrum-master]
 
-      - id: testing-standards
-        title: Testing
+      - id: api-contracts
+        title: API Contracts
         instruction: |
-          List Relevant Testing Standards from Architecture the Developer needs to conform to:
-          - Test file location
-          - Test standards
-          - Testing frameworks and patterns to use
-          - Any specific testing requirements for this story
-          - Infrastructure testing requirements (CDK synthesis, LocalStack)
+          Complete API specifications including:
+          - OpenAPI YAML for new/modified endpoints
+          - Request/response schemas with validation rules
+          - Error response formats
+          - Authentication/authorization requirements
+          - Rate limiting configurations
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: testing-requirements
+        title: Testing Requirements
+        instruction: |
+          Comprehensive testing specifications:
+          - Unit test requirements and coverage targets
+          - Integration test scenarios
+          - E2E test cases (if applicable)
+          - Performance test criteria
+          - Test data requirements
+          - Mock service configurations
         elicit: true
         owner: scrum-master
         editors: [scrum-master]
@@ -119,10 +308,12 @@ sections:
         type: checklist
         template: |
           - [ ] All acceptance criteria implemented
-          - [ ] Unit tests written and passing
+          - [ ] Unit tests written and passing (>80% coverage)
           - [ ] Integration tests cover new functionality
           - [ ] Code follows project conventions
-          - [ ] TypeScript types properly defined in packages/shared
+          - [ ] TypeScript types properly defined
+          - [ ] API documentation updated (OpenAPI)
+          - [ ] Database migrations created and tested
         owner: dev-agent
         editors: [dev-agent]
 
@@ -131,10 +322,26 @@ sections:
         type: checklist
         template: |
           - [ ] All infrastructure changes implemented in CDK
-          - [ ] IAM permissions validated
+          - [ ] IAM permissions validated (principle of least privilege)
           - [ ] API Gateway routes deployed and tested
-          - [ ] Lambda functions deployed and tested
+          - [ ] Lambda functions deployed with proper configs
           - [ ] Database migrations applied successfully
+          - [ ] EventBridge rules configured and tested
+          - [ ] CloudWatch alarms and dashboards updated
+          - [ ] Cost analysis completed for new resources
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: frontend-complete
+        title: Frontend Complete (if applicable)
+        type: checklist
+        template: |
+          - [ ] React components match wireframe designs
+          - [ ] Responsive design tested (mobile/tablet/desktop)
+          - [ ] Accessibility requirements met (WCAG 2.1 AA)
+          - [ ] Performance metrics achieved (Core Web Vitals)
+          - [ ] Error handling and loading states implemented
+          - [ ] Internationalization support added
         owner: dev-agent
         editors: [dev-agent]
 
@@ -142,11 +349,13 @@ sections:
         title: Review Ready
         type: checklist
         template: |
-          - [ ] PR created with infrastructure checklist completed
-          - [ ] Code review completed
+          - [ ] PR created with detailed description
+          - [ ] Code review completed by team
           - [ ] Infrastructure review completed
-          - [ ] Documentation updated
+          - [ ] Security review passed
+          - [ ] Documentation updated (README, API docs, etc.)
           - [ ] CLAUDE.md updated if commands changed
+          - [ ] Deployment instructions documented
         owner: dev-agent
         editors: [dev-agent]
 
@@ -171,6 +380,12 @@ sections:
         owner: dev-agent
         editors: [dev-agent]
 
+      - id: implementation-approach
+        title: Implementation Approach
+        instruction: Document the actual approach taken, any deviations from the plan, and rationale
+        owner: dev-agent
+        editors: [dev-agent]
+
       - id: debug-log-references
         title: Debug Log References
         instruction: Reference any debug logs or traces generated during development
@@ -178,14 +393,29 @@ sections:
         editors: [dev-agent]
 
       - id: completion-notes
-        title: Completion Notes List
-        instruction: Notes about the completion of tasks and any issues encountered
+        title: Completion Notes
+        instruction: Notes about the completion of tasks, issues encountered, and resolutions
         owner: dev-agent
         editors: [dev-agent]
 
       - id: file-list
-        title: File List
-        instruction: List all files created, modified, or affected during story implementation
+        title: Files Changed
+        instruction: |
+          List all files created, modified, or deleted during story implementation:
+          - Created: [list of new files]
+          - Modified: [list of changed files]
+          - Deleted: [list of removed files]
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: deployment-notes
+        title: Deployment Notes
+        instruction: |
+          Special deployment considerations:
+          - Migration order requirements
+          - Feature flag configurations
+          - Rollback procedures
+          - Monitoring setup
         owner: dev-agent
         editors: [dev-agent]
 
