@@ -44,7 +44,9 @@ Thumbs.db
 # Gradle build artifacts
 .gradle/
 **/build/
+# Exclude bin directories but keep infrastructure/bin (CDK entry points)
 **/bin/
+!infrastructure/bin/
 **/out/
 *.class
 *.jar
@@ -94,3 +96,18 @@ shared-kernel/out/
 # AWS credentials (never commit these!)
 .aws/
 aws-exports.js
+
+# Web frontend build artifacts
+web-frontend/node_modules/
+web-frontend/dist/
+web-frontend/build/
+web-frontend/.next/
+web-frontend/.nuxt/
+web-frontend/coverage/
+web-frontend/.vite/
+web-frontend/.storybook-out/
+
+# Frontend test artifacts
+web-frontend/test-results/
+web-frontend/playwright-report/
+web-frontend/test-results.xml
