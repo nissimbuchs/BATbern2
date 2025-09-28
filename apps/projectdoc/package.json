@@ -10,6 +10,7 @@
     "clean": "rm -rf dist/*"
   },
   "dependencies": {
+    "@aws-sdk/client-acm": "^3.896.0",
     "@aws-sdk/client-cloudfront": "^3.490.0",
     "@aws-sdk/client-route-53": "^3.490.0",
     "@aws-sdk/client-s3": "^3.490.0",
@@ -28,7 +29,8 @@
     "markdown-it-task-lists": "^2.1.1",
     "marked": "^9.1.2",
     "mermaid": "^11.12.0",
-    "mime-types": "^2.1.35"
+    "mime-types": "^2.1.35",
+    "node-fetch": "^2.7.0"
   },
   "devDependencies": {
     "http-server": "^14.1.1"

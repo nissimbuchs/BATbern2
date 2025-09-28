@@ -20,13 +20,21 @@ const {
   CreateDistributionCommand,
   CreateInvalidationCommand,
   GetDistributionCommand,
-  ListDistributionsCommand
+  ListDistributionsCommand,
+  UpdateDistributionCommand
 } = require('@aws-sdk/client-cloudfront');
 const {
   Route53Client,
   ChangeResourceRecordSetsCommand,
-  ListHostedZonesCommand
+  ListHostedZonesCommand,
+  ListResourceRecordSetsCommand
 } = require('@aws-sdk/client-route-53');
+const {
+  ACMClient,
+  RequestCertificateCommand,
+  DescribeCertificateCommand,
+  ListCertificatesCommand
+} = require('@aws-sdk/client-acm');
 
 const config = require('../src/config/site-config');
 const awsConfig = require('../src/config/aws-config');
@@ -38,6 +46,7 @@ class DocumentationDeployer {
     this.s3Client = new S3Client({ region: awsConfig.region });
     this.cloudFrontClient = new CloudFrontClient({ region: 'us-east-1' }); // CloudFront is global
     this.route53Client = new Route53Client({ region: 'us-east-1' }); // Route53 is global
+    this.acmClient = new ACMClient({ region: 'us-east-1' }); // ACM for CloudFront must be in us-east-1
     this.deploymentInfo = {};
   }
 
@@ -54,6 +63,9 @@ class DocumentationDeployer {
 
       // Deploy to S3
       await this.deployToS3();
+
+      // Setup SSL Certificate
+      await this.setupSSLCertificate();
 
       // Setup CloudFront (if needed)
       await this.setupCloudFront();
@@ -285,8 +297,169 @@ class DocumentationDeployer {
     return staticAssets.includes(ext);
   }
 
+  async setupSSLCertificate() {
+    console.log('🔒 Setting up SSL certificate...');
+
+    try {
+      // Check if certificate already exists or use environment variable
+      let certificateArn = this.awsConfig.ssl.certificateArn;
+
+      if (!certificateArn) {
+        // Look for existing certificate
+        certificateArn = await this.findExistingCertificate();
+
+        if (!certificateArn) {
+          console.log('   🔨 Requesting new SSL certificate...');
+          certificateArn = await this.requestCertificate();
+        } else {
+          console.log('   ✅ Using existing SSL certificate');
+        }
+      } else {
+        console.log('   ✅ Using configured SSL certificate');
+      }
+
+      this.deploymentInfo.certificateArn = certificateArn;
+      console.log(`   📜 Certificate ARN: ${certificateArn}`);
+      console.log('✅ SSL certificate setup completed\n');
+
+    } catch (error) {
+      console.error('❌ SSL certificate setup failed:', error.message);
+      throw error;
+    }
+  }
+
+  async findExistingCertificate() {
+    try {
+      const listCommand = new ListCertificatesCommand({
+        CertificateStatuses: ['ISSUED']
+      });
+
+      const response = await this.acmClient.send(listCommand);
+
+      if (response.CertificateSummaryList) {
+        // Find certificate matching our domain
+        for (const cert of response.CertificateSummaryList) {
+          if (cert.DomainName === this.awsConfig.ssl.certificateDomain ||
+              cert.DomainName === '*.batbern.ch') {
+            // Verify certificate is valid
+            const describeCommand = new DescribeCertificateCommand({
+              CertificateArn: cert.CertificateArn
+            });
+            const certDetails = await this.acmClient.send(describeCommand);
+
+            if (certDetails.Certificate.Status === 'ISSUED') {
+              return cert.CertificateArn;
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('   ⚠️  Could not list certificates:', error.message);
+    }
+
+    return null;
+  }
+
+  async requestCertificate() {
+    const domain = this.awsConfig.ssl.certificateDomain;
+
+    const requestParams = {
+      DomainName: domain,
+      ValidationMethod: this.awsConfig.ssl.validationMethod,
+      SubjectAlternativeNames: [domain, ...this.awsConfig.ssl.alternativeNames],
+      DomainValidationOptions: [{
+        DomainName: domain,
+        ValidationDomain: 'batbern.ch'
+      }]
+    };
+
+    const response = await this.acmClient.send(new RequestCertificateCommand(requestParams));
+    const certificateArn = response.CertificateArn;
+
+    console.log('   ⏳ Waiting for certificate validation...');
+    console.log('   📝 Certificate must be validated through DNS');
+
+    // Wait for certificate to be ready for validation
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
+    // Get validation records
+    const describeCommand = new DescribeCertificateCommand({ CertificateArn: certificateArn });
+    const certDetails = await this.acmClient.send(describeCommand);
+
+    // Automatically create Route 53 validation records if we have access
+    if (this.awsConfig.route53.hostedZoneId && certDetails.Certificate.DomainValidationOptions) {
+      await this.createCertificateValidationRecords(certDetails.Certificate.DomainValidationOptions);
+    }
+
+    // Wait for certificate to be issued (with timeout)
+    const maxWaitTime = 300000; // 5 minutes
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < maxWaitTime) {
+      const certStatus = await this.acmClient.send(describeCommand);
+
+      if (certStatus.Certificate.Status === 'ISSUED') {
+        console.log('   ✅ Certificate issued successfully');
+        return certificateArn;
+      } else if (certStatus.Certificate.Status === 'FAILED') {
+        throw new Error('Certificate validation failed');
+      }
+
+      console.log(`   ⏳ Certificate status: ${certStatus.Certificate.Status}`);
+      await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds
+    }
+
+    throw new Error('Certificate validation timeout - please complete DNS validation manually');
+  }
+
+  async createCertificateValidationRecords(validationOptions) {
+    console.log('   🔗 Creating DNS validation records...');
+
+    const changes = [];
+
+    for (const option of validationOptions) {
+      if (option.ResourceRecord) {
+        changes.push({
+          Action: 'UPSERT',
+          ResourceRecordSet: {
+            Name: option.ResourceRecord.Name,
+            Type: option.ResourceRecord.Type,
+            TTL: 300,
+            ResourceRecords: [{
+              Value: option.ResourceRecord.Value
+            }]
+          }
+        });
+      }
+    }
+
+    if (changes.length > 0) {
+      const changeParams = {
+        HostedZoneId: this.awsConfig.route53.hostedZoneId,
+        ChangeBatch: {
+          Comment: 'ACM certificate validation records',
+          Changes: changes
+        }
+      };
+
+      try {
+        await this.route53Client.send(new ChangeResourceRecordSetsCommand(changeParams));
+        console.log('   ✅ DNS validation records created');
+      } catch (error) {
+        console.warn('   ⚠️  Could not create validation records:', error.message);
+        console.log('   📝 Please add the following DNS records manually:');
+
+        for (const option of validationOptions) {
+          if (option.ResourceRecord) {
+            console.log(`      ${option.ResourceRecord.Name} -> ${option.ResourceRecord.Value}`);
+          }
+        }
+      }
+    }
+  }
+
   async setupCloudFront() {
-    if (!this.awsConfig.cloudfront || process.env.SKIP_CLOUDFRONT === 'true') {
+    if (!this.awsConfig.cloudfront.enabled || process.env.SKIP_CLOUDFRONT === 'true') {
       console.log('⏭️  Skipping CloudFront setup (not configured)\n');
       return;
     }
@@ -302,14 +475,19 @@ class DocumentationDeployer {
         this.deploymentInfo.distributionId = existingDistribution.Id;
         this.deploymentInfo.distributionDomain = existingDistribution.DomainName;
 
+        // Update distribution if certificate changed
+        await this.updateDistributionCertificate(existingDistribution);
+
         // Create invalidation
         if (this.awsConfig.deployment.cacheInvalidation) {
           await this.createInvalidation(existingDistribution.Id);
         }
       } else {
         console.log('   🔨 Creating new CloudFront distribution...');
-        // Implementation for creating new distribution would go here
-        console.log('   ⚠️  CloudFront distribution creation not implemented in this version');
+        const distribution = await this.createCloudFrontDistribution();
+        this.deploymentInfo.distributionId = distribution.Id;
+        this.deploymentInfo.distributionDomain = distribution.DomainName;
+        console.log(`   ✅ CloudFront distribution created: ${distribution.DomainName}`);
       }
 
     } catch (error) {
@@ -337,6 +515,90 @@ class DocumentationDeployer {
     }
 
     return null;
+  }
+
+  async createCloudFrontDistribution() {
+    // Prepare the distribution configuration
+    const config = JSON.parse(JSON.stringify(this.awsConfig.cloudfront.distributionConfig));
+
+    // Set the S3 website endpoint as origin
+    const s3WebsiteEndpoint = `${this.awsConfig.s3.bucketName}.s3-website.${this.awsConfig.s3.bucketRegion}.amazonaws.com`;
+    config.Origins.Items[0].DomainName = s3WebsiteEndpoint;
+
+    // Set the certificate ARN
+    if (this.deploymentInfo.certificateArn) {
+      config.ViewerCertificate.ACMCertificateArn = this.deploymentInfo.certificateArn;
+    } else {
+      // Use CloudFront default certificate if no custom certificate
+      config.ViewerCertificate = {
+        CloudFrontDefaultCertificate: true
+      };
+      // Remove custom domain aliases if using default certificate
+      config.Aliases = { Quantity: 0, Items: [] };
+    }
+
+    // Set unique caller reference
+    config.CallerReference = `batbern-docs-${Date.now()}`;
+
+    const createCommand = new CreateDistributionCommand({
+      DistributionConfig: config
+    });
+
+    const response = await this.cloudFrontClient.send(createCommand);
+    const distribution = response.Distribution;
+
+    console.log('   ⏳ Waiting for distribution to deploy (this may take 15-20 minutes)...');
+
+    // Return immediately but note that distribution is still deploying
+    this.deploymentInfo.distributionStatus = 'Deploying';
+
+    return distribution;
+  }
+
+  async updateDistributionCertificate(distribution) {
+    // Check if certificate needs updating
+    const currentCertArn = distribution.ViewerCertificate?.ACMCertificateArn;
+    const newCertArn = this.deploymentInfo.certificateArn;
+
+    if (currentCertArn !== newCertArn && newCertArn) {
+      console.log('   🔄 Updating distribution certificate...');
+
+      try {
+        // Get the current distribution config
+        const getCommand = new GetDistributionCommand({ Id: distribution.Id });
+        const distResponse = await this.cloudFrontClient.send(getCommand);
+
+        const config = distResponse.Distribution.DistributionConfig;
+        const etag = distResponse.ETag;
+
+        // Update certificate
+        config.ViewerCertificate = {
+          ACMCertificateArn: newCertArn,
+          SSLSupportMethod: 'sni-only',
+          MinimumProtocolVersion: 'TLSv1.2_2021'
+        };
+
+        // Ensure aliases are set
+        if (!config.Aliases || config.Aliases.Quantity === 0) {
+          config.Aliases = {
+            Quantity: 1,
+            Items: ['project.batbern.ch']
+          };
+        }
+
+        // Update the distribution
+        const updateCommand = new UpdateDistributionCommand({
+          Id: distribution.Id,
+          DistributionConfig: config,
+          IfMatch: etag
+        });
+
+        await this.cloudFrontClient.send(updateCommand);
+        console.log('   ✅ Distribution certificate updated');
+      } catch (error) {
+        console.warn('   ⚠️  Could not update distribution certificate:', error.message);
+      }
+    }
   }
 
   async createInvalidation(distributionId) {
@@ -367,11 +629,123 @@ class DocumentationDeployer {
       return;
     }
 
+    if (!this.deploymentInfo.distributionDomain) {
+      console.log('⏭️  Skipping DNS setup (CloudFront distribution not available)\n');
+      return;
+    }
+
     console.log('🌐 Setting up DNS records...');
-    console.log('   ⚠️  DNS setup not implemented in this version');
-    console.log('   📝 Manual steps required:');
-    console.log(`   1. Create CNAME record: ${this.awsConfig.route53.recordName} -> ${this.deploymentInfo.websiteUrl.replace('http://', '')}`);
-    console.log('✅ DNS setup completed\n');
+
+    try {
+      // Check if record already exists
+      const existingRecord = await this.checkExistingDNSRecord();
+
+      if (existingRecord) {
+        console.log('   ✅ DNS record already exists');
+
+        // Update if pointing to wrong target
+        if (existingRecord.AliasTarget?.DNSName !== `${this.deploymentInfo.distributionDomain}.`) {
+          await this.updateDNSRecord();
+        }
+      } else {
+        await this.createDNSRecord();
+      }
+
+      console.log('✅ DNS setup completed\n');
+      console.log(`   🌐 Your site will be available at: https://${this.awsConfig.route53.recordName}`);
+
+    } catch (error) {
+      console.warn('   ⚠️  DNS setup failed:', error.message);
+      console.log('   📝 Manual DNS configuration required:');
+      console.log(`   1. Create A record (alias): ${this.awsConfig.route53.recordName} -> ${this.deploymentInfo.distributionDomain}`);
+      console.log(`   2. Alias Hosted Zone ID: ${this.awsConfig.route53.aliasHostedZoneId}`);
+    }
+  }
+
+  async checkExistingDNSRecord() {
+    try {
+      const listCommand = new ListResourceRecordSetsCommand({
+        HostedZoneId: this.awsConfig.route53.hostedZoneId,
+        StartRecordName: this.awsConfig.route53.recordName,
+        StartRecordType: 'A',
+        MaxItems: '1'
+      });
+
+      const response = await this.route53Client.send(listCommand);
+
+      if (response.ResourceRecordSets && response.ResourceRecordSets.length > 0) {
+        const record = response.ResourceRecordSets[0];
+        if (record.Name === `${this.awsConfig.route53.recordName}.`) {
+          return record;
+        }
+      }
+    } catch (error) {
+      console.warn('   ⚠️  Could not check existing DNS records:', error.message);
+    }
+
+    return null;
+  }
+
+  async createDNSRecord() {
+    console.log('   🔨 Creating DNS A record (alias)...');
+
+    const changeParams = {
+      HostedZoneId: this.awsConfig.route53.hostedZoneId,
+      ChangeBatch: {
+        Comment: 'Create alias record for CloudFront distribution',
+        Changes: [{
+          Action: 'CREATE',
+          ResourceRecordSet: {
+            Name: this.awsConfig.route53.recordName,
+            Type: 'A',
+            AliasTarget: {
+              HostedZoneId: this.awsConfig.route53.aliasHostedZoneId,
+              DNSName: this.deploymentInfo.distributionDomain,
+              EvaluateTargetHealth: false
+            }
+          }
+        }]
+      }
+    };
+
+    // Also create AAAA record for IPv6
+    const ipv6Change = JSON.parse(JSON.stringify(changeParams.ChangeBatch.Changes[0]));
+    ipv6Change.ResourceRecordSet.Type = 'AAAA';
+    changeParams.ChangeBatch.Changes.push(ipv6Change);
+
+    await this.route53Client.send(new ChangeResourceRecordSetsCommand(changeParams));
+    console.log('   ✅ DNS records created successfully');
+  }
+
+  async updateDNSRecord() {
+    console.log('   🔄 Updating DNS A record (alias)...');
+
+    const changeParams = {
+      HostedZoneId: this.awsConfig.route53.hostedZoneId,
+      ChangeBatch: {
+        Comment: 'Update alias record for CloudFront distribution',
+        Changes: [{
+          Action: 'UPSERT',
+          ResourceRecordSet: {
+            Name: this.awsConfig.route53.recordName,
+            Type: 'A',
+            AliasTarget: {
+              HostedZoneId: this.awsConfig.route53.aliasHostedZoneId,
+              DNSName: this.deploymentInfo.distributionDomain,
+              EvaluateTargetHealth: false
+            }
+          }
+        }]
+      }
+    };
+
+    // Also update AAAA record for IPv6
+    const ipv6Change = JSON.parse(JSON.stringify(changeParams.ChangeBatch.Changes[0]));
+    ipv6Change.ResourceRecordSet.Type = 'AAAA';
+    changeParams.ChangeBatch.Changes.push(ipv6Change);
+
+    await this.route53Client.send(new ChangeResourceRecordSetsCommand(changeParams));
+    console.log('   ✅ DNS records updated successfully');
   }
 
   async validateDeployment() {
@@ -380,18 +754,43 @@ class DocumentationDeployer {
     // Test if the website is accessible
     try {
       const fetch = (await import('node-fetch')).default;
-      const response = await fetch(this.deploymentInfo.websiteUrl);
 
-      if (response.ok) {
-        console.log('   🌐 Website is accessible');
+      // Test S3 website endpoint
+      const s3Response = await fetch(this.deploymentInfo.websiteUrl);
+      if (s3Response.ok) {
+        console.log('   ✅ S3 website endpoint is accessible');
       } else {
-        console.warn(`   ⚠️  Website returned status ${response.status}`);
+        console.warn(`   ⚠️  S3 website returned status ${s3Response.status}`);
       }
+
+      // Test CloudFront distribution if available
+      if (this.deploymentInfo.distributionDomain) {
+        const cfUrl = `https://${this.deploymentInfo.distributionDomain}`;
+        try {
+          const cfResponse = await fetch(cfUrl);
+          if (cfResponse.ok) {
+            console.log('   ✅ CloudFront distribution is accessible');
+          } else {
+            console.warn(`   ⚠️  CloudFront returned status ${cfResponse.status}`);
+          }
+        } catch (error) {
+          console.warn('   ⚠️  CloudFront not yet available (may still be deploying)');
+        }
+      }
+
+      // Show final URLs
+      console.log('\n📌 Deployment URLs:');
+      console.log(`   S3 Website: ${this.deploymentInfo.websiteUrl}`);
+      if (this.deploymentInfo.distributionDomain) {
+        console.log(`   CloudFront: https://${this.deploymentInfo.distributionDomain}`);
+        console.log(`   Custom Domain: https://${this.awsConfig.route53.recordName}`);
+      }
+
     } catch (error) {
       console.warn('   ⚠️  Could not validate website accessibility:', error.message);
     }
 
-    console.log('✅ Deployment validation completed\n');
+    console.log('\n✅ Deployment validation completed');
   }
 }
 
