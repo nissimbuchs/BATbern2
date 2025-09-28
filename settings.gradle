@@ -1,0 +1,4 @@
+rootProject.name = 'BATbern-Platform'
+
+include 'shared-kernel'
+include 'api-gateway'

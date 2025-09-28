@@ -1,0 +1,107 @@
+spring:
+  application:
+    name: api-gateway-test
+  security:
+    oauth2:
+      client:
+        registration:
+          cognito:
+            client-id: test-client-id
+            client-secret: test-client-secret
+            scope:
+              - openid
+              - email
+              - profile
+        provider:
+          cognito:
+            issuer-uri: https://cognito-idp.eu-central-1.amazonaws.com/eu-central-1_TestPool
+            user-name-attribute: sub
+
+# Cognito Configuration
+cognito:
+  userPoolId: eu-central-1_TestPool
+  region: eu-central-1
+  appClientId: test-client-id
+  jwksUrl: https://cognito-idp.eu-central-1.amazonaws.com/eu-central-1_TestPool/.well-known/jwks.json
+
+# Gateway Configuration
+gateway:
+  routes:
+    - id: event-management-service
+      uri: http://localhost:8081
+      predicates:
+        - Path=/api/events/**
+      filters:
+        - RewritePath=/api/events/(?<segment>.*), /$\{segment}
+
+    - id: speaker-coordination-service
+      uri: http://localhost:8082
+      predicates:
+        - Path=/api/speakers/**
+      filters:
+        - RewritePath=/api/speakers/(?<segment>.*), /$\{segment}
+
+    - id: partner-analytics-service
+      uri: http://localhost:8083
+      predicates:
+        - Path=/api/partners/**
+      filters:
+        - RewritePath=/api/partners/(?<segment>.*), /$\{segment}
+
+    - id: attendee-experience-service
+      uri: http://localhost:8084
+      predicates:
+        - Path=/api/content/**
+      filters:
+        - RewritePath=/api/content/(?<segment>.*), /$\{segment}
+
+# Security Configuration
+security:
+  cors:
+    allowed-origins:
+      - http://localhost:3000
+      - https://staging.batbern.ch
+      - https://www.batbern.ch
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+    allowed-headers:
+      - "*"
+    exposed-headers:
+      - Authorization
+      - X-Request-Id
+    allow-credentials: true
+    max-age: 3600
+
+# Rate Limiting Configuration
+rate-limiting:
+  enabled: true
+  default-limit: 100
+  default-duration: 1m
+  role-limits:
+    organizer: 500
+    speaker: 200
+    partner: 300
+    attendee: 100
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    ch.batbern.gateway: DEBUG
+    org.springframework.security: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always

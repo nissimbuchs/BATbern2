@@ -9,7 +9,7 @@
 | UI Component Library | Material-UI (MUI) | 5.14+ | Swiss-standard design components | Consistent with frontend spec, enterprise-grade accessibility |
 | State Management | Zustand + React Query | 4.4+ / 4.36+ | Client state + server state | Lightweight, TypeScript-first, excellent caching for content discovery |
 | Backend Language | Java | 21 LTS | Enterprise service development | Long-term support, enterprise ecosystem, team expertise |
-| Backend Framework | Spring Boot | 3.2+ | Microservices and REST APIs | Industry standard for Java enterprise, excellent cloud integration |
+| Backend Framework | Spring Boot | 3.5+ | Microservices and REST APIs | Industry standard for Java enterprise, excellent cloud integration |
 | API Style | REST + OpenAPI | 3.1 | Service communication | Clear documentation, tooling support, enterprise standard |
 | Database | PostgreSQL | 15+ | Primary data storage | ACID compliance, JSON support, excellent performance |
 | Cache | Redis | 7.2+ | Session and content caching | High performance, supports complex data structures |
@@ -50,7 +50,7 @@
 
 ### Java Enterprise Stack
 - **Java 21 LTS**: Long-term support, virtual threads, pattern matching
-- **Spring Boot 3.2+**: Auto-configuration, embedded servers, production-ready features
+- **Spring Boot 3.5+**: Auto-configuration, embedded servers, production-ready features
 - **Spring Security 6**: OAuth2, JWT, method-level security
 - **Spring Data JPA**: Repository pattern, query generation, transaction management
 
