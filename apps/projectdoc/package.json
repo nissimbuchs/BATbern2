@@ -1,0 +1,47 @@
+{
+  "name": "batbern-projectdoc",
+  "version": "1.0.0",
+  "description": "BATbern Project Documentation Portal - Generates and deploys public documentation website",
+  "main": "scripts/build.js",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "deploy": "node scripts/deploy.js",
+    "dev": "npm run build && npx http-server dist -p 3000 -o",
+    "clean": "rm -rf dist/*"
+  },
+  "dependencies": {
+    "@aws-sdk/client-cloudfront": "^3.490.0",
+    "@aws-sdk/client-route-53": "^3.490.0",
+    "@aws-sdk/client-s3": "^3.490.0",
+    "cheerio": "^1.0.0-rc.12",
+    "fs-extra": "^11.1.1",
+    "glob": "^10.3.10",
+    "handlebars": "^4.7.8",
+    "highlight.js": "^11.9.0",
+    "markdown-it": "^14.1.0",
+    "markdown-it-anchor": "^9.2.0",
+    "markdown-it-container": "^4.0.0",
+    "markdown-it-footnote": "^4.0.0",
+    "markdown-it-mermaid": "^0.2.5",
+    "markdown-it-table-of-contents": "^1.1.0",
+    "markdown-it-task-lists": "^2.1.1",
+    "marked": "^9.1.2",
+    "mermaid": "^11.12.0",
+    "mime-types": "^2.1.35"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  },
+  "author": "BATbern Team",
+  "license": "ISC",
+  "keywords": [
+    "documentation",
+    "batbern",
+    "static-site-generator",
+    "aws-s3"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/batbern/platform"
+  }
+}

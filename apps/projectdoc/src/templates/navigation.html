@@ -1,0 +1,30 @@
+<!-- Navigation Template -->
+<nav class="documentation-navigation">
+  {{#each categories}}
+  <div class="nav-category" data-category="{{@key}}">
+    <div class="nav-category-header">
+      <span class="nav-category-icon">{{icon}}</span>
+      <h3 class="nav-category-title">{{title}}</h3>
+      <span class="nav-category-count">{{documents.length}}</span>
+    </div>
+
+    {{#if documents}}
+    <ul class="nav-category-items">
+      {{#each documents}}
+      <li class="nav-item">
+        <a href="{{url}}" class="nav-item-link">
+          <span class="nav-item-title">{{title}}</span>
+          {{#if epicInfo}}
+          <span class="nav-item-epic">Epic {{epicInfo.number}}</span>
+          {{/if}}
+          {{#if storyCount}}
+          <span class="nav-item-stories">{{storyCount}} stories</span>
+          {{/if}}
+        </a>
+      </li>
+      {{/each}}
+    </ul>
+    {{/if}}
+  </div>
+  {{/each}}
+</nav>
