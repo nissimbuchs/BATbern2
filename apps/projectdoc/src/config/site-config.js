@@ -1,3 +1,17 @@
+// Load core config
+const fs = require('fs');
+const yaml = require('js-yaml');
+const path = require('path');
+
+let coreConfig = {};
+try {
+  const coreConfigPath = path.resolve(__dirname, '../../../.bmad-core/core-config.yaml');
+  const coreConfigFile = fs.readFileSync(coreConfigPath, 'utf8');
+  coreConfig = yaml.load(coreConfigFile);
+} catch (error) {
+  console.warn('Could not load core config:', error.message);
+}
+
 module.exports = {
   siteName: 'BATbern Platform Rewriting with Claude Code',
   siteDescription: 'Comprehensive documentation for the BATbern event management platform development',
@@ -7,6 +21,9 @@ module.exports = {
   // Source and output directories
   docsPath: '../../docs',
   outputPath: './dist',
+
+  // Core configuration settings
+  markdownExploder: coreConfig.markdownExploder || false,
 
   // Document categories and their configurations
   categories: {
@@ -39,11 +56,18 @@ module.exports = {
       folder: 'prd',
       pattern: 'epic-*.md'
     },
+    'stories': {
+      title: 'User Stories',
+      description: 'Individual user stories and detailed implementation guides',
+      icon: '📝',
+      order: 5,
+      folder: 'stories'
+    },
     'project-docs': {
       title: 'Project Documentation',
       description: 'General project documentation and guides',
       icon: '📚',
-      order: 5,
+      order: 6,
       files: [
         'prd.md',
         'front-end-spec.md',
@@ -57,7 +81,7 @@ module.exports = {
       title: 'AWS & Infrastructure',
       description: 'AWS setup guides and infrastructure documentation',
       icon: '☁️',
-      order: 6,
+      order: 7,
       files: [
         'aws-setup-guide.md',
         'aws-README.md',

@@ -198,11 +198,6 @@ class DocumentationBuilder {
         doc.tableOfContents = processed.tableOfContents;
         doc.rawContent = processed.rawContent;
 
-        // Extract stories if it's an epic file
-        if (doc.relativePath.includes('epic-')) {
-          doc.stories = await this.markdownProcessor.extractStoriesFromEpic(processed.rawContent);
-        }
-
         console.log(' ✅');
       } catch (error) {
         console.log(` ❌ Error: ${error.message}`);
@@ -471,15 +466,86 @@ document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
     anchor.addEventListener('click', function(e) {
       e.preventDefault();
-      const target = document.querySelector(this.getAttribute('href'));
-      if (target) {
-        target.scrollIntoView({ behavior: 'smooth' });
+      const href = this.getAttribute('href');
+
+      // The ID in the HTML is already URL-encoded, so we use it as-is
+      const targetId = href.substring(1); // Remove the # prefix
+
+      try {
+        const target = document.getElementById(targetId);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth' });
+        } else {
+          console.warn('Target element not found:', targetId);
+        }
+      } catch (error) {
+        console.warn('Error scrolling to element:', href, error);
       }
     });
   });
 
+  // Initialize navigation state - all sections expanded except epic stories
+  document.querySelectorAll('.nav-section').forEach(function(section) {
+    section.classList.add('nav-section-expanded');
+    const items = section.querySelector('.nav-section-items');
+    const toggle = section.querySelector('.nav-section-toggle');
+    if (items && toggle) {
+      items.style.display = 'block';
+      toggle.textContent = '▼';
+    }
+  });
+
+  // Initialize epic stories as collapsed
+  document.querySelectorAll('.epic-stories').forEach(function(stories) {
+    stories.style.display = 'none';
+  });
+
+  document.querySelectorAll('.epic-toggle').forEach(function(toggle) {
+    toggle.textContent = '▶';
+  });
+
   console.log('🏔️ BATbern Documentation Portal loaded');
 });
+
+// Navigation section toggle functionality
+function toggleNavSection(element) {
+  const section = element.closest('.nav-section');
+  const items = section.querySelector('.nav-section-items');
+  const toggle = element.querySelector('.nav-section-toggle');
+
+  if (items) {
+    const isExpanded = section.classList.contains('nav-section-expanded');
+
+    if (isExpanded) {
+      section.classList.remove('nav-section-expanded');
+      items.style.display = 'none';
+      toggle.textContent = '▶';
+    } else {
+      section.classList.add('nav-section-expanded');
+      items.style.display = 'block';
+      toggle.textContent = '▼';
+    }
+  }
+}
+
+// Epic stories toggle functionality
+function toggleEpicStories(element) {
+  const epicContainer = element.closest('.nav-epic-container');
+  const stories = epicContainer.querySelector('.epic-stories');
+  const toggle = element.querySelector('.epic-toggle');
+
+  if (stories) {
+    const isVisible = stories.style.display !== 'none';
+
+    if (isVisible) {
+      stories.style.display = 'none';
+      toggle.textContent = '▶';
+    } else {
+      stories.style.display = 'block';
+      toggle.textContent = '▼';
+    }
+  }
+}
 `;
 
     await fs.writeFile(path.join(outputPath, 'scripts/main.js'), jsContent);

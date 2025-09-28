@@ -18,6 +18,7 @@
     "glob": "^10.3.10",
     "handlebars": "^4.7.8",
     "highlight.js": "^11.9.0",
+    "js-yaml": "^4.1.0",
     "markdown-it": "^14.1.0",
     "markdown-it-anchor": "^9.2.0",
     "markdown-it-container": "^4.0.0",

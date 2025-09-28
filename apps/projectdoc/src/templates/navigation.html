@@ -1,26 +1,54 @@
 <!-- Navigation Template -->
 <nav class="documentation-navigation">
   {{#each categories}}
-  <div class="nav-category" data-category="{{@key}}">
-    <div class="nav-category-header">
-      <span class="nav-category-icon">{{icon}}</span>
-      <h3 class="nav-category-title">{{title}}</h3>
-      <span class="nav-category-count">{{documents.length}}</span>
-    </div>
+  <div class="nav-section {{#if @first}}nav-section-expanded{{else}}nav-section-expanded{{/if}}" data-category="{{@key}}">
+    <h3 class="nav-section-title" onclick="toggleNavSection(this)">
+      <span class="nav-section-icon">{{icon}}</span>
+      {{title}}
+      <span class="nav-section-count">{{documents.length}}</span>
+      <span class="nav-section-toggle">▼</span>
+    </h3>
 
     {{#if documents}}
-    <ul class="nav-category-items">
+    <ul class="nav-section-items">
       {{#each documents}}
       <li class="nav-item">
-        <a href="{{url}}" class="nav-item-link">
-          <span class="nav-item-title">{{title}}</span>
-          {{#if epicInfo}}
-          <span class="nav-item-epic">Epic {{epicInfo.number}}</span>
+        {{#if epicInfo}}
+        <!-- Epic with potential stories -->
+        <div class="nav-epic-container">
+          <div class="nav-epic-header" onclick="toggleEpicStories(this)">
+            <a href="{{url}}" class="nav-link epic-link" onclick="event.stopPropagation()">
+              <span class="nav-link-title">{{title}}</span>
+              <span class="epic-badge">Epic {{epicInfo.number}}</span>
+              {{#if storyCount}}
+              <span class="story-count">{{storyCount}} stories</span>
+              {{/if}}
+            </a>
+            {{#if stories}}
+            <span class="epic-toggle">▶</span>
+            {{/if}}
+          </div>
+          {{#if stories}}
+          <ul class="epic-stories">
+            {{#each stories}}
+            <li class="story-item">
+              <a href="{{url}}" class="nav-link story-link">
+                <span class="nav-link-title">{{title}}</span>
+                {{#if storyId}}
+                <span class="story-badge">{{storyId}}</span>
+                {{/if}}
+              </a>
+            </li>
+            {{/each}}
+          </ul>
           {{/if}}
-          {{#if storyCount}}
-          <span class="nav-item-stories">{{storyCount}} stories</span>
-          {{/if}}
+        </div>
+        {{else}}
+        <!-- Regular document -->
+        <a href="{{url}}" class="nav-link">
+          <span class="nav-link-title">{{title}}</span>
         </a>
+        {{/if}}
       </li>
       {{/each}}
     </ul>

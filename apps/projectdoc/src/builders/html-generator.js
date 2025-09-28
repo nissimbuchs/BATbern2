@@ -208,30 +208,75 @@ class HtmlGenerator {
     Object.entries(this.config.categories).forEach(([key, categoryConfig]) => {
       const docs = allDocuments.filter(doc => doc.category === key);
 
-      // Sort epic documents by epic number
-      const sortedDocs = docs.sort((a, b) => {
-        // If both have epic info, sort by epic number
-        if (a.metadata.epicInfo && b.metadata.epicInfo) {
-          return a.metadata.epicInfo.number - b.metadata.epicInfo.number;
-        }
-        // If only one has epic info, put it first
-        if (a.metadata.epicInfo && !b.metadata.epicInfo) return -1;
-        if (!a.metadata.epicInfo && b.metadata.epicInfo) return 1;
-        // If neither has epic info, sort alphabetically by title
-        return a.metadata.title.localeCompare(b.metadata.title);
-      });
+      // Special handling for epics - group stories under them
+      if (key === 'epics') {
+        // Get all stories
+        const stories = allDocuments.filter(doc => doc.category === 'stories');
 
-      navigation[key] = {
-        ...categoryConfig,
-        documents: sortedDocs.map(doc => ({
-          title: doc.metadata.title,
-          url: doc.urlPath,
-          description: doc.metadata.description,
-          lastModified: doc.metadata.lastModified,
-          epicInfo: doc.metadata.epicInfo,
-          storyCount: doc.metadata.storyCount
-        }))
-      };
+        // Sort epic documents by epic number
+        const sortedDocs = docs.sort((a, b) => {
+          if (a.metadata.epicInfo && b.metadata.epicInfo) {
+            return a.metadata.epicInfo.number - b.metadata.epicInfo.number;
+          }
+          return a.metadata.title.localeCompare(b.metadata.title);
+        });
+
+        navigation[key] = {
+          ...categoryConfig,
+          documents: sortedDocs.map(doc => {
+            // Find stories that belong to this epic
+            const epicNumber = doc.metadata.epicInfo?.number;
+            const epicStories = stories.filter(story => {
+              // Extract epic number from story filename (e.g., "1.2.story-name.md")
+              const storyMatch = story.metadata.fileName.match(/^(\d+)\.(\d+)\./);
+              return storyMatch && parseInt(storyMatch[1]) === epicNumber;
+            }).sort((a, b) => {
+              // Sort stories by story number (1.1, 1.2, etc.)
+              const aMatch = a.metadata.fileName.match(/^(\d+)\.(\d+)\./);
+              const bMatch = b.metadata.fileName.match(/^(\d+)\.(\d+)\./);
+              if (aMatch && bMatch) {
+                const aStoryNum = parseInt(aMatch[2]);
+                const bStoryNum = parseInt(bMatch[2]);
+                return aStoryNum - bStoryNum;
+              }
+              return a.metadata.title.localeCompare(b.metadata.title);
+            });
+
+            return {
+              title: doc.metadata.title,
+              url: doc.urlPath,
+              description: doc.metadata.description,
+              lastModified: doc.metadata.lastModified,
+              epicInfo: doc.metadata.epicInfo,
+              storyCount: doc.metadata.storyCount,
+              stories: epicStories.map(story => ({
+                title: story.metadata.title,
+                url: story.urlPath,
+                description: story.metadata.description,
+                storyId: story.metadata.fileName.match(/^(\d+\.\d+)\./)?.[1]
+              }))
+            };
+          })
+        };
+      } else if (key === 'stories') {
+        // Skip stories category since they're now grouped under epics
+        return;
+      } else {
+        // Regular handling for other categories
+        const sortedDocs = docs.sort((a, b) => a.metadata.title.localeCompare(b.metadata.title));
+
+        navigation[key] = {
+          ...categoryConfig,
+          documents: sortedDocs.map(doc => ({
+            title: doc.metadata.title,
+            url: doc.urlPath,
+            description: doc.metadata.description,
+            lastModified: doc.metadata.lastModified,
+            epicInfo: doc.metadata.epicInfo,
+            storyCount: doc.metadata.storyCount
+          }))
+        };
+      }
     });
 
     return navigation;

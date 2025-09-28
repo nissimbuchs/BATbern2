@@ -331,6 +331,108 @@ a:hover {
   border-radius: var(--radius-sm);
 }
 
+/* Collapsible Navigation */
+.nav-section-title {
+  cursor: pointer;
+  user-select: none;
+}
+
+.nav-section-title:hover {
+  color: var(--primary-color);
+}
+
+.nav-section-toggle {
+  margin-left: auto;
+  font-size: var(--text-xs);
+  transition: transform var(--transition-fast);
+}
+
+.nav-section.nav-section-expanded .nav-section-toggle {
+  transform: rotate(0deg);
+}
+
+.nav-section:not(.nav-section-expanded) .nav-section-toggle {
+  transform: rotate(-90deg);
+}
+
+.nav-section:not(.nav-section-expanded) .nav-section-items {
+  display: none;
+}
+
+/* Epic Navigation */
+.nav-epic-container {
+  position: relative;
+}
+
+.nav-epic-header {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  gap: var(--space-2);
+}
+
+.nav-epic-header:hover {
+  background: var(--background-color);
+  border-radius: var(--radius-md);
+}
+
+.epic-link {
+  flex: 0 1 auto;
+  display: flex !important;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.epic-toggle {
+  flex: 0 0 auto;
+  padding: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  transition: transform var(--transition-fast);
+  width: 20px;
+  text-align: center;
+}
+
+.epic-stories {
+  list-style: none;
+  margin: var(--space-2) 0 0 0;
+  padding: 0;
+  display: none;
+  border-left: 2px solid var(--border-color);
+  margin-left: var(--space-4);
+  padding-left: var(--space-3);
+}
+
+.story-item {
+  margin-bottom: var(--space-1);
+}
+
+.story-link {
+  display: flex !important;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  font-size: calc(var(--text-sm) * 0.9);
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+}
+
+.story-link:hover {
+  background: rgba(var(--primary-color-rgb), 0.1);
+  color: var(--primary-color);
+}
+
+.story-badge {
+  background: var(--secondary-color);
+  color: white;
+  font-size: var(--text-xs);
+  padding: 2px var(--space-1);
+  border-radius: var(--radius-xs);
+  font-weight: 500;
+}
+
 /* Main Content */
 .main-content {
   flex: 1;

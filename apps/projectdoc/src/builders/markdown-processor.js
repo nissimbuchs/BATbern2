@@ -144,6 +144,32 @@ class MarkdownProcessor {
         <pre><code class="hljs language-${lang}">${highlighted}</code></pre>
       </div>`;
     };
+
+    // Custom link renderer to transform .md links to .html
+    const defaultLinkOpenRender = this.md.renderer.rules.link_open || function(tokens, idx, options, env, renderer) {
+      return renderer.renderToken(tokens, idx, options);
+    };
+
+    this.md.renderer.rules.link_open = function(tokens, idx, options, env, renderer) {
+      const token = tokens[idx];
+      const hrefIndex = token.attrIndex('href');
+
+      if (hrefIndex >= 0) {
+        const href = token.attrs[hrefIndex][1];
+
+        // Transform .md links to .html (excluding external links and anchors)
+        if (href && !href.startsWith('http') && !href.startsWith('#') && !href.startsWith('mailto:')) {
+          if (href.endsWith('.md')) {
+            token.attrs[hrefIndex][1] = href.replace(/\.md$/, '.html');
+          } else if (href.includes('.md#')) {
+            // Handle links with anchors like ./file.md#section
+            token.attrs[hrefIndex][1] = href.replace(/\.md#/, '.html#');
+          }
+        }
+      }
+
+      return defaultLinkOpenRender(tokens, idx, options, env, renderer);
+    };
   }
 
   async processFile(filePath, relativePath) {
@@ -154,8 +180,16 @@ class MarkdownProcessor {
       // Extract metadata from the file
       const metadata = this.extractMetadata(content, relativePath, stats);
 
+      // Check if this is an epic file and add story links
+      const isEpic = relativePath.match(/epic-\d+.*\.md$/);
+      let processedContent = content;
+
+      if (isEpic) {
+        processedContent = await this.addStoryLinksToEpic(content, relativePath);
+      }
+
       // Process the markdown content
-      const htmlContent = this.md.render(content);
+      const htmlContent = this.md.render(processedContent);
 
       // Generate table of contents
       const toc = this.generateTableOfContents(htmlContent);
@@ -273,6 +307,54 @@ class MarkdownProcessor {
     }
 
     return result;
+  }
+
+  async addStoryLinksToEpic(content, relativePath) {
+    // Extract epic number from the file path
+    const epicMatch = relativePath.match(/epic-(\d+)/);
+    if (!epicMatch) return content;
+
+    const epicNumber = epicMatch[1];
+    const docsPath = path.resolve(this.config.docsPath);
+    const storiesPath = path.join(docsPath, 'stories');
+
+    // Replace story headers with links if corresponding story files exist
+    const storyRegex = /^## (Story \d+\.\d+): (.+)$/gm;
+
+    const processedContent = content.replace(storyRegex, (match, storyPrefix, title) => {
+      const storyMatch = storyPrefix.match(/Story (\d+)\.(\d+)/);
+      if (!storyMatch) return match;
+
+      const [, epicNum, storyNum] = storyMatch;
+      if (epicNum !== epicNumber) return match;
+
+      // Create the expected story filename
+      const storySlug = title.toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+
+      const storyFilename = `${epicNum}.${storyNum}.${storySlug}.md`;
+      const storyFilePath = path.join(storiesPath, storyFilename);
+
+      // Check if story file exists
+      try {
+        if (fs.existsSync(storyFilePath)) {
+          // Create a link to the story
+          const storyUrl = `/stories/${storyFilename.replace('.md', '.html')}`;
+          // Keep the header structure but make just the text a link
+          // This preserves the auto-generated ID from marked
+          return `## ${storyPrefix}: [${title}](${storyUrl})`;
+        }
+      } catch (error) {
+        // If file doesn't exist or can't be accessed, return original
+      }
+
+      return match;
+    });
+
+    return processedContent;
   }
 
   async extractStoriesFromEpic(content) {
