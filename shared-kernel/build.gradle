@@ -1,0 +1,144 @@
+plugins {
+    id 'java-library'
+    id 'org.springframework.boot' version '3.3.5'
+    id 'io.spring.dependency-management' version '1.1.6'
+    id 'maven-publish'
+}
+
+group = 'ch.batbern'
+version = '1.0.0'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Spring Boot dependencies
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // AWS SDK for EventBridge
+    implementation platform('software.amazon.awssdk:bom:2.25.0')
+    implementation 'software.amazon.awssdk:eventbridge'
+
+    // Lombok for boilerplate reduction
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    // Jackson for JSON serialization
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+
+    // Logging
+    implementation 'org.slf4j:slf4j-api'
+    implementation 'ch.qos.logback:logback-classic'
+
+    // Testing dependencies
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api'
+    testImplementation 'org.junit.jupiter:junit-jupiter-engine'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.mockito:mockito-core'
+    testImplementation 'org.assertj:assertj-core'
+    testImplementation 'org.testcontainers:testcontainers'
+    testImplementation 'org.testcontainers:localstack'
+    testImplementation 'org.testcontainers:junit-jupiter'
+}
+
+// Configure JaCoCo for code coverage
+apply plugin: 'jacoco'
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+    }
+}
+
+jacoco {
+    toolVersion = "0.8.10"
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        html.required = true
+        csv.required = false
+    }
+}
+
+test.finalizedBy jacocoTestReport
+
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.90
+            }
+        }
+    }
+}
+
+check.dependsOn jacocoTestCoverageVerification
+
+// Maven publishing configuration
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from components.java
+
+            pom {
+                name = 'BATbern Shared Kernel'
+                description = 'Shared domain types and events for BATbern platform microservices'
+                url = 'https://github.com/batbern/shared-kernel'
+
+                licenses {
+                    license {
+                        name = 'Proprietary'
+                        url = 'https://batbern.ch/license'
+                    }
+                }
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            name = 'internal'
+            url = uri("${project.buildDir}/repo")
+        }
+    }
+}
+
+// Task to generate version info
+task generateVersionInfo {
+    doLast {
+        def versionFile = file("$buildDir/generated/version.properties")
+        versionFile.parentFile.mkdirs()
+        versionFile.text = """
+version=${project.version}
+buildTime=${new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getTimeZone("UTC"))}
+"""
+    }
+}
+
+processResources.dependsOn generateVersionInfo
+processResources {
+    from("$buildDir/generated") {
+        include "version.properties"
+    }
+}
