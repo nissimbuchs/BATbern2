@@ -59,14 +59,12 @@ domains:
       - file: 06-backend-architecture.md
         sections: ["Event Service Architecture", "Workflow State Machine", "Publishing Engine"]
     wireframes:
-      - file: 02-organizer-dashboard.html
+      - file: docs/wireframes/wireframes-organizer.md
         components:
           - Event Timeline View
           - Speaker Pipeline
           - Task Management
           - Publishing Controls
-      - file: 06-cross-role-collaboration.html
-        components:
           - Multi-organizer Features
           - Real-time Sync
     functional_requirements: [FR2, FR5, FR7, FR12, FR17, FR18, FR19, FR20, FR21]  # Event workflow, publishing, notifications, planning
@@ -92,7 +90,7 @@ domains:
       - file: 06-backend-architecture.md
         sections: ["Speaker Service Architecture", "Invitation System", "Content Validation"]
     wireframes:
-      - file: 03-speaker-portal.html
+      - file: docs/wireframes/wireframes-speaker.md
         components:
           - Speaker Dashboard
           - Submission Forms
@@ -126,7 +124,7 @@ domains:
       - file: 09-aiml-architecture.md
         sections: ["Predictive Analytics", "ROI Prediction Models", "Topic Success Analysis"]
     wireframes:
-      - file: 04-partner-analytics.html
+      - file: docs/wireframes/wireframes-partner.md
         components:
           - Analytics Dashboard
           - ROI Reports
@@ -155,19 +153,15 @@ domains:
       - file: 06-backend-architecture.md
         sections: ["Search Service", "Content Delivery", "Registration Workflows"]
     wireframes:
-      - file: 05-attendee-content-discovery.html
+      - file: docs/wireframes/wireframes-attendee.md
         components:
           - Search Interface
           - Content Browser
           - Filter Controls
           - Recommendation Engine
-      - file: 07-mobile-pwa-attendee.html
-        components:
           - Mobile Experience
           - Offline Content
           - Push Notifications
-      - file: 08-current-event-landing.html
-        components:
           - Hero Section
           - Event Details
           - Registration Form
@@ -198,7 +192,7 @@ domains:
       - file: 08-operations-security.md
         sections: ["Security Architecture", "Monitoring", "Compliance"]
     wireframes:
-      - file: 01-shared-navigation.html
+      - file: docs/wireframes/wireframes-organizer.md
         components:
           - Navigation Bar
           - User Menu
