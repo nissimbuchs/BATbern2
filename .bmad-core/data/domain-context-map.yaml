@@ -9,8 +9,8 @@ domains:
     services:
       - Event Management Service
       - API Gateway (event endpoints)
-    epics: [2]
-    stories_prefix: "2."
+    epics: [2, 4]  # Basic creation & finalization
+    stories_prefix: ["2.", "4."]
     architecture_sections:
       - file: 01-system-overview.md
         sections: ["Event Management Service", "Component Diagram"]
@@ -42,8 +42,8 @@ domains:
     services:
       - Speaker Coordination Service
       - API Gateway (speaker endpoints)
-    epics: [3]
-    stories_prefix: "3."
+    epics: [3, 7]  # Core management & enhanced features
+    stories_prefix: ["3.", "7.1-7.3"]
     architecture_sections:
       - file: 01-system-overview.md
         sections: ["Speaker Coordination Service"]
@@ -76,8 +76,8 @@ domains:
     services:
       - Partner Analytics Service
       - API Gateway (partner endpoints)
-    epics: [5]
-    stories_prefix: "5."
+    epics: [6]  # Complete partner platform
+    stories_prefix: "6."
     architecture_sections:
       - file: 01-system-overview.md
         sections: ["Partner Analytics Service"]
@@ -105,8 +105,8 @@ domains:
     services:
       - Attendee Experience Service
       - API Gateway (public endpoints)
-    epics: [4]
-    stories_prefix: "4."
+    epics: [2, 5, 7]  # Landing page, core experience, community
+    stories_prefix: ["2.4", "5.", "7.4-7.6"]
     architecture_sections:
       - file: 01-system-overview.md
         sections: ["Attendee Experience Service"]
