@@ -76,7 +76,7 @@ Complete rewrite of BATbern as a comprehensive event management platform using R
 
 **FR17**: The system shall provide intelligent speaker matching and assignment tracking with automated workflow states (open → contacted → ready → declined/accepted → slot-assigned → final agenda → informed → waitlist) and real-time organizer collaboration including slot preference collection, technical requirement tracking, and overflow management with organizer voting mechanisms
 
-**FR18**: Event organizers shall access smart topic backlog management with historical usage tracking, partner influence integration, and duplicate avoidance algorithms to streamline event planning decisions
+**FR18**: Event organizers shall access smart topic backlog management with visual heat map representation showing topic usage frequency over time, ML-powered similarity scoring to identify duplicate or similar topics with automated avoidance warnings, staleness detection algorithms that calculate recommended wait periods before topic reuse based on historical patterns and partner influence metrics, and intelligent duplicate avoidance that prevents organizers from selecting recently used or semantically similar topics
 
 **FR19**: The platform shall implement progressive publishing engine that automatically validates content readiness (moderator quality review, abstract length limits, lesson learned requirements) and publishes event information in phases (topic immediate → speakers 1 month prior → progressive agenda updates → final agenda → post-event materials) with quality control checkpoints and automated content standards enforcement
 

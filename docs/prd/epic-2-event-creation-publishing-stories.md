@@ -79,11 +79,40 @@ As an **organizer**, I want to select topics from our backlog with intelligent s
 7. **Topic Categories**: Group topics by category for easier selection
 8. **Quick Selection**: Popular topics displayed prominently
 
+**Visual Intelligence:**
+9. **Heat Map Visualization**: Display topic usage heat map showing frequency over last 24 months
+10. **Color-Coded Freshness**: Topics color-coded by staleness (red: <6 months, yellow: 6-12 months, green: >12 months)
+11. **Usage Timeline**: Interactive timeline showing when each topic was previously used
+12. **Similarity Indicators**: Visual indicators showing similar/related topics in backlog
+
+**ML-Powered Duplicate Avoidance:**
+13. **Similarity Scoring**: Calculate similarity scores between topics using TF-IDF and cosine similarity
+14. **Duplicate Warnings**: Automatic warnings when similarity score >70% with recent topics
+15. **Similar Topic Clusters**: Group similar topics visually to aid decision-making
+16. **Semantic Analysis**: Use PostgreSQL full-text search with similarity ranking
+
+**Staleness Detection:**
+17. **Wait Period Calculation**: Algorithm calculates recommended wait time based on topic frequency
+18. **Staleness Score**: Display 0-100 staleness score (100 = safe to reuse, 0 = too recent)
+19. **Reuse Recommendations**: Explicit "Ready to reuse" or "Wait X months" recommendations
+20. **Override Capability**: Allow organizers to override warnings with justification
+
 **Technical Implementation:**
 9. **Topic Entity**: Create Topic aggregate with usage tracking
 10. **REST API**: GET /api/topics with search and filtering
 11. **React Component**: TopicSelector with autocomplete
 12. **Domain Event**: Publish TopicSelectedEvent when topic chosen
+
+**Additional Technical Requirements:**
+13. **Topic Entity Enhancement**: Add fields to Topic aggregate:
+    - lastUsedDate: Date
+    - usageCount: Integer
+    - usageHistory: Date[]
+    - similarityScores: Map<TopicId, Float>
+    - stalenessScore: Float (0-100)
+14. **Similarity Service**: PostgreSQL-based similarity calculation using ts_rank
+15. **Heat Map Component**: React component using Recharts library
+16. **Domain Event**: Publish TopicSimilarityDetectedEvent when duplicates found
 
 **Definition of Done:**
 - [ ] Topic backlog displays all historical topics
@@ -92,6 +121,15 @@ As an **organizer**, I want to select topics from our backlog with intelligent s
 - [ ] New topics can be created inline
 - [ ] Frontend provides intelligent suggestions
 - [ ] Topic selection triggers domain event
+- [ ] Heat map visualization displays 24-month topic usage history
+- [ ] Topics color-coded by staleness (red/yellow/green indicators)
+- [ ] Similarity scoring detects topics with >70% similarity
+- [ ] Automatic warnings displayed for similar/recent topics
+- [ ] Staleness score calculation accurate based on usage patterns
+- [ ] Recommended wait periods shown for recently used topics
+- [ ] Organizers can override warnings with recorded justification
+- [ ] Recharts heat map renders in <500ms
+- [ ] Topic similarity calculations complete in <200ms
 
 ---
 

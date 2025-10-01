@@ -7,6 +7,7 @@
 | Frontend Language | TypeScript | 5.3+ | Type-safe frontend development | Essential for large-scale enterprise app with multiple developer teams |
 | Frontend Framework | React | 18.2+ | Role-adaptive user interface | Mature ecosystem, excellent TypeScript support, component reusability |
 | UI Component Library | Material-UI (MUI) | 5.14+ | Swiss-standard design components | Consistent with frontend spec, enterprise-grade accessibility |
+| Data Visualization | Recharts | 2.10+ | Interactive charts and heat maps | React-native, TypeScript support, Material-UI compatible, declarative API |
 | State Management | Zustand + React Query | 4.4+ / 4.36+ | Client state + server state | Lightweight, TypeScript-first, excellent caching for content discovery |
 | Backend Language | Java | 21 LTS | Enterprise service development | Long-term support, enterprise ecosystem, team expertise |
 | Backend Framework | Spring Boot | 3.5+ | Microservices and REST APIs | Industry standard for Java enterprise, excellent cloud integration |
@@ -32,6 +33,7 @@
 - **React 18.2+**: Concurrent features, automatic batching, Suspense improvements
 - **TypeScript 5.3+**: Advanced type inference, decorators, import attributes
 - **Material-UI 5.14+**: Theming system, accessibility features, Swiss design compliance
+- **Recharts 2.10+**: Declarative charting library for React with TypeScript support
 - **Zustand 4.4+**: Minimal boilerplate, TypeScript-first state management
 - **React Query 4.36+**: Server state management, caching, background updates
 
@@ -126,6 +128,7 @@ gradle --version       # Gradle 8.5+
 ### Frontend Choices
 - **React over Vue/Angular**: Mature ecosystem, excellent TypeScript support, component reusability
 - **Material-UI over Custom CSS**: Swiss design compliance, accessibility features, rapid development
+- **Recharts over D3.js**: React-native components, simpler API, better TypeScript integration, Material-UI compatible
 - **Zustand over Redux**: Simpler API, less boilerplate, better TypeScript integration
 - **React Query over SWR**: More comprehensive caching, better error handling, request deduplication
 

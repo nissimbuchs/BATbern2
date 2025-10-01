@@ -398,6 +398,50 @@ interface EventQualityReview {
 }
 ```
 
+### Topic
+
+**Purpose:** Manages event topics with usage tracking, similarity scoring, and staleness detection for intelligent topic selection during event planning.
+
+#### TypeScript Interface
+
+```typescript
+interface Topic {
+  id: string;
+  title: string;
+  description: string;
+  category: TopicCategory;
+  createdDate: Date;
+  lastUsedDate?: Date;
+  usageCount: number;
+  usageHistory: TopicUsageRecord[];
+  stalenessScore: number; // 0-100, higher = safer to reuse
+  calculatedWaitPeriod?: number; // in months
+  partnerInfluenceScore?: number;
+  isActive: boolean;
+}
+
+interface TopicUsageRecord {
+  eventId: string;
+  usedDate: Date;
+  attendeeCount: number;
+  feedbackScore?: number;
+}
+
+enum TopicCategory {
+  TECHNICAL = 'technical',
+  MANAGEMENT = 'management',
+  SOFT_SKILLS = 'soft_skills',
+  INDUSTRY_TRENDS = 'industry_trends',
+  TOOLS_PLATFORMS = 'tools_platforms'
+}
+```
+
+#### Relationships
+
+- **One-to-Many**: Topic → TopicUsageRecord (one topic has many usage records)
+- **Many-to-Many**: Topic ↔ Event (topics can be used in multiple events, events can have multiple topics)
+- **Reference**: Topic ← PartnerCoordination (partners vote on topics)
+
 ### Enhanced Speaker & Session Entities
 
 ```typescript
@@ -599,10 +643,50 @@ CREATE TABLE sessions (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Topics table with usage tracking
+CREATE TABLE topics (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title VARCHAR(500) NOT NULL,
+    description TEXT,
+    category VARCHAR(50) NOT NULL CHECK (category IN (
+        'technical', 'management', 'soft_skills',
+        'industry_trends', 'tools_platforms'
+    )),
+    created_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    last_used_date TIMESTAMP WITH TIME ZONE,
+    usage_count INTEGER DEFAULT 0,
+    staleness_score NUMERIC(5,2) DEFAULT 100.00,
+    calculated_wait_period INTEGER, -- in months
+    partner_influence_score NUMERIC(5,2),
+    is_active BOOLEAN DEFAULT TRUE,
+    title_vector tsvector GENERATED ALWAYS AS (to_tsvector('english', title)) STORED,
+    description_vector tsvector GENERATED ALWAYS AS (to_tsvector('english', coalesce(description, ''))) STORED,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Topic usage history
+CREATE TABLE topic_usage_history (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    topic_id UUID NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
+    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    used_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    attendee_count INTEGER,
+    feedback_score NUMERIC(3,2),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Indexes for performance
 CREATE INDEX idx_events_status ON events(status);
 CREATE INDEX idx_events_event_date ON events(event_date);
 CREATE INDEX idx_sessions_event_id ON sessions(event_id);
+CREATE INDEX idx_topics_title_vector ON topics USING GIN(title_vector);
+CREATE INDEX idx_topics_description_vector ON topics USING GIN(description_vector);
+CREATE INDEX idx_topics_last_used ON topics(last_used_date);
+CREATE INDEX idx_topics_staleness ON topics(staleness_score);
+CREATE INDEX idx_topics_active ON topics(is_active);
+CREATE INDEX idx_topic_usage_history_topic_id ON topic_usage_history(topic_id);
+CREATE INDEX idx_topic_usage_history_used_date ON topic_usage_history(used_date DESC);
 ```
 
 ### Speaker Coordination Service Database Schema

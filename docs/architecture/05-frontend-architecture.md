@@ -195,6 +195,64 @@ const CompanySelector: React.FC<CompanySelectorProps> = ({
 };
 ```
 
+### Data Visualization Components
+
+**Library:** Recharts 2.10+
+
+**Rationale:** React-native charting library that integrates seamlessly with Material-UI and TypeScript, providing declarative chart components with minimal configuration.
+
+**Usage:**
+- Topic usage heat maps
+- Historical usage timelines
+- Partner engagement analytics
+- Event attendance trends
+
+**Key Components:**
+
+```typescript
+import {
+  HeatMap,
+  BarChart,
+  LineChart,
+  Tooltip,
+  ResponsiveContainer
+} from 'recharts';
+
+// Topic Usage Heat Map Component
+interface TopicHeatMapProps {
+  topics: Topic[];
+  usageHistory: TopicUsageRecord[];
+  timeRange: '12months' | '24months';
+}
+
+const TopicUsageHeatMap: React.FC<TopicHeatMapProps> = ({
+  topics,
+  usageHistory,
+  timeRange
+}) => {
+  const heatMapData = useMemo(() =>
+    calculateHeatMapData(topics, usageHistory, timeRange),
+    [topics, usageHistory, timeRange]
+  );
+
+  return (
+    <ResponsiveContainer width="100%" height={400}>
+      <HeatMap
+        data={heatMapData}
+        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+      >
+        <Tooltip content={<TopicTooltip />} />
+      </HeatMap>
+    </ResponsiveContainer>
+  );
+};
+```
+
+**Performance Requirements:**
+- Heat map rendering: <500ms for 100+ topics
+- Interactive updates: <100ms response time
+- Lazy loading for historical data beyond 24 months
+
 ### Role-Specific Component Specifications
 
 **Enhanced Organizer Workflow Components:**
