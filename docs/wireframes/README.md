@@ -6,6 +6,11 @@ This directory contains all wireframe documentation for the BATbern platform, or
 
 **Status**: ✅ Complete - All wireframes have been sharded into story-specific files
 
+> **⚠️ UPDATE (2025-10-01):** FR13 and FR16 have been removed from MVP scope.
+> - `story-5.1-content-discovery.md` - Superseded (AI features removed)
+> - `story-5.2-personal-dashboard.md` - Partial (remove community sections)
+> - Story 7.4 and 7.5 wireframes - Not created (features removed)
+
 ---
 
 ## Organization Structure
@@ -46,9 +51,9 @@ These files provide overview, navigation structure, and links to detailed wirefr
 - `story-2.4-current-event-landing.md`
 - `story-5.1-content-discovery.md`
 - `story-2.4-event-registration.md`
-- `story-5.2-personal-dashboard.md`
+- `story-5.2-personal-dashboard.md` ⚠️ Contains FR16 features (to be removed)
 - `story-1.18-historical-archive.md`
-- `story-7.4-community-features.md`
+- ~~`story-7.4-community-features.md`~~ ❌ REMOVED (FR16)
 - `story-5.3-mobile-pwa.md`
 - `story-5.3-offline-content.md`
 

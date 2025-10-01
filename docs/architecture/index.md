@@ -60,8 +60,8 @@ The architecture documentation has been organized into 9 comprehensive sections 
 
 ### Future Enhancement Documents
 
-9. **[09-aiml-architecture.md](./09-aiml-architecture.md)** - AI/ML Architecture
-   - Future AI/ML enhancement phases
+9. **[09-aiml-architecture.md](./09-aiml-architecture.md)** - AI/ML Architecture ⚠️ **DEFERRED**
+   - Future AI/ML enhancement phases (OUT OF SCOPE FOR MVP)
    - Recommendation systems
    - Advanced analytics and insights
 
@@ -110,7 +110,7 @@ BATbern-Platform/
 ├── shared-kernel/                 # Shared types, events, utilities
 ├── event-management-service/      # Organizer workflows & automation
 ├── speaker-coordination-service/  # Speaker portal & material collection
-├── partner-analytics-service/     # ROI tracking & strategic features
+├── partner-coordination-service/  # Topic voting & meeting coordination
 ├── attendee-experience-service/   # Content discovery & registration
 ├── api-gateway/                   # Unified API entry point
 ├── web-frontend/                  # React frontend consuming all APIs

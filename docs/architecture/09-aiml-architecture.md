@@ -1,5 +1,16 @@
 # AI/ML Architecture for Future Enhancement Phases
 
+> **⚠️ STATUS: DEFERRED - OUT OF SCOPE FOR MVP**
+>
+> This document describes AI/ML capabilities originally planned for FR13 (Intelligent Content Discovery) and FR16 (Community Features), which have been removed from the MVP scope per strategic refocus decision.
+>
+> This architecture may be reconsidered for future enhancement phases post-MVP launch.
+>
+> **Effective Date:** 2025-10-01
+> **Related Change:** Sprint Change Proposal - Remove FR13 and FR16
+
+---
+
 This section outlines the comprehensive AI/ML architecture designed to enhance the BATbern platform with intelligent features across all user domains.
 
 ## AI/ML Strategic Overview

@@ -1,6 +1,21 @@
 # PRD vs Wireframe Alignment Analysis
 **BATbern Event Management Platform**
 
+> **⚠️ NOTICE: DOCUMENT PARTIALLY OUTDATED**
+>
+> This analysis was performed before FR13 and FR16 were removed from MVP scope.
+> Sections referencing these requirements are no longer relevant:
+> - Section 1.4: Content Discovery AI Features (FR13)
+> - Section 1.6: Speaker Community Features (FR16)
+> - Section 2.3: Content Management sections referencing FR13
+> - Section 4.5: Content Rating System (FR16)
+> - Section 4.6: Learning Path Creation (FR16)
+>
+> **Update Date:** 2025-10-01
+> **Related:** Sprint Change Proposal - Remove FR13 and FR16
+
+---
+
 **Generated:** 2025-10-01
 **Analyst:** John (Product Manager)
 **Scope:** Comprehensive analysis of PRD requirements vs UX wireframe implementations

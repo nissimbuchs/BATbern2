@@ -639,34 +639,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/Company'
 
-  # Partner Analytics Domain
-  /api/v1/partners/{partnerId}/analytics:
-    get:
-      tags: [Partners]
-      summary: Get partner analytics
-      security:
-        - BearerAuth: [organizer, partner]
-      parameters:
-        - name: partnerId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: timeRange
-          in: query
-          schema:
-            type: string
-            enum: [last_quarter, last_year, all_time]
-            default: last_year
-      responses:
-        '200':
-          description: Partner analytics data
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PartnerAnalytics'
-
   # Content Search
   /api/v1/content/search:
     get:
@@ -879,7 +851,7 @@ sequenceDiagram
     participant GW as API Gateway
     participant EM as Event Mgmt Service
     participant SC as Speaker Coord Service
-    participant PA as Partner Analytics Service
+    participant PC as Partner Coordination Service
     participant SK as Shared Kernel
 
     O->>FE: Create New Event
@@ -887,17 +859,17 @@ sequenceDiagram
     GW->>EM: Validate & Route Request
 
     EM->>EM: Check Topic Duplication
-    EM->>PA: Get Partner Topic Preferences
-    PA-->>EM: Strategic Topic Priorities
+    EM->>PC: Get Partner Topic Preferences
+    PC-->>EM: Strategic Topic Priorities
 
     EM->>EM: Create Event (Planning Status)
     EM->>SK: Publish EventCreated Event
 
     SK-->>SC: Event Created Notification
-    SK-->>PA: Event Created Notification
+    SK-->>PC: Event Created Notification
 
     SC->>SC: Initialize Speaker Pipeline
-    PA->>PA: Set Partner Engagement Tracking
+    PC->>PC: Set Partner Engagement Tracking
 
     EM-->>FE: Event Created Response
     FE-->>O: Success + Next Steps
@@ -932,38 +904,13 @@ sequenceDiagram
     SC-->>O: Assignment Results
 ```
 
-### Partner ROI Analytics Generation
-
-```mermaid
-sequenceDiagram
-    participant P as Partner
-    participant PA as Partner Analytics Service
-    participant AE as Attendee Experience Service
-    participant CM as Company Mgmt Service
-    participant Cache as Redis Cache
-
-    P->>PA: Request ROI Dashboard
-
-    PA->>Cache: Check Cached Analytics
-    alt Cache Miss
-        PA->>AE: Get Employee Attendance Data
-        PA->>CM: Get Company Employee Count
-        PA->>PA: Process ROI Calculations
-        PA->>Cache: Cache Results (1 hour TTL)
-    else Cache Hit
-        Cache-->>PA: Cached Analytics Data
-    end
-
-    PA-->>P: Analytics Dashboard Data
-```
-
 ### Content Discovery & Search
 
 ```mermaid
 sequenceDiagram
     participant A as Attendee
     participant AE as Attendee Experience Service
-    participant Search as OpenSearch Engine
+    participant Search as PostgreSQL Search
     participant S3 as AWS S3
     participant Cache as Redis Cache
 
@@ -1020,34 +967,6 @@ sequenceDiagram
         SC->>O: Notify Organizer (Declined)
         SC->>O: Suggest Alternative Speakers
     end
-```
-
-### Cross-Event Partner Participation Tracking
-
-```mermaid
-sequenceDiagram
-    participant PA as Partner Analytics Service
-    participant AE as Attendee Experience Service
-    participant CM as Company Mgmt Service
-    participant Analytics as AWS QuickSight
-
-    Note over PA: Scheduled Job (Daily)
-
-    PA->>CM: Get All Partner Companies
-    CM-->>PA: Partner Company List
-
-    loop For Each Partner
-        PA->>AE: Get Employee Attendance (All Events)
-        AE-->>PA: Attendance Records
-        PA->>PA: Calculate Cross-Event Metrics
-        PA->>PA: Update Partner Analytics
-    end
-
-    PA->>Analytics: Refresh Dashboard Data
-    Analytics-->>PA: Dashboard Updated
-
-    Note over PA: Generate Monthly Reports
-    PA->>Email: Send ROI Reports to Partners
 ```
 
 ## API Design Principles

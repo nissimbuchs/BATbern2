@@ -4,11 +4,11 @@
 
 **Epic Goal**: Deliver comprehensive attendee experience with content discovery, personal engagement management, and mobile access to maximize learning and participation.
 
-**Deliverable**: Attendees can discover 20+ years of content, manage preferences, and access everything via mobile PWA.
+**Deliverable**: Attendees can search 20+ years of content, manage preferences, and access everything via mobile PWA.
 
 **Architecture Context**:
 - **Core Service**: Attendee Experience Service (Java 21 + Spring Boot 3.2)
-- **Search**: AWS OpenSearch for content discovery
+- **Search**: PostgreSQL full-text search for content discovery
 - **Frontend**: React PWA with offline capabilities
 - **Infrastructure**: CloudFront CDN for global delivery
 
@@ -16,24 +16,24 @@
 
 ---
 
-## Story 5.1: Historical Content Discovery
+## Story 5.1: Historical Content Search
 
 **User Story:**
-As an **attendee**, I want to explore 20+ years of BATbern content with intelligent search and filtering, so that I can discover relevant presentations and expertise.
+As an **attendee**, I want to search 20+ years of BATbern content with filtering capabilities, so that I can find relevant presentations and expertise.
 
 **Architecture Integration:**
-- **Search Engine**: AWS OpenSearch with ML ranking
-- **Database**: PostgreSQL for content metadata
+- **Search Engine**: PostgreSQL full-text search
+- **Database**: PostgreSQL for content metadata and search
 - **Frontend**: React search interface with facets
 - **Cache**: Redis for search results
 
 **Acceptance Criteria:**
-1. **Full-Text Search**: Search across titles, abstracts, speakers
+1. **Full-Text Search**: Search across titles, abstracts, speakers, topics
 2. **Advanced Filtering**: By year, topic, company, speaker
 3. **Content Preview**: View abstracts and speaker info
 4. **Download Access**: Download available presentations
-5. **Search Suggestions**: Auto-complete and corrections
-6. **Related Content**: Show similar presentations
+5. **Search Suggestions**: Auto-complete based on existing content
+6. **Sort Options**: Relevance, date, popularity
 
 **Definition of Done:**
 - [ ] Search returns results in <500ms
@@ -41,7 +41,7 @@ As an **attendee**, I want to explore 20+ years of BATbern content with intellig
 - [ ] Faceted filtering works intuitively
 - [ ] Download tracking implemented
 - [ ] Mobile-responsive search interface
-- [ ] ML recommendations >80% relevant
+- [ ] Search accuracy validated with test queries
 
 ---
 
@@ -118,9 +118,9 @@ As an **attendee**, I want to access BATbern content on my mobile device with of
 - **System Availability**: >99.5% uptime
 
 **Business Value:**
-- **Content Discovery**: 300% increase in content access
+- **Content Access**: 200% increase in historical content downloads
 - **User Engagement**: 40% use mobile app
 - **Satisfaction**: >4/5 user rating
-- **Retention**: 60% return visitors
+- **Retention**: 50% return visitors
 
 This epic transforms the attendee experience with modern content discovery and mobile capabilities.

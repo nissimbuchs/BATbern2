@@ -29,11 +29,11 @@
 - [ ] Stories in substories aufteilen. Wie noch unklar. Pro task, pro Screen oder pro screencomponent, …
 
 ## Needed PRD updates:
+- [x] FR04: remove this requirement
+- [x] FR09: remove this requirement
+- [x] FR13: remove this requirement ✅ Completed 2025-10-01 (Sprint Change Proposal)
+- [x] FR16: remove this requirement ✅ Completed 2025-10-01 (Sprint Change Proposal)
 - [ ] FR18: Update PRD to explicitly require: Visual heat map representation, ML similarity scoring with duplicate avoidance staleness detection with recommended wait periods
-- [ ] FR13: remove this requirement
-- [ ] FR04: remove this requirement
-- [ ] FR09: remove this requirement
-- [ ] FR16: remove this requirement
 - [ ] New requirement: Organizers are like administrators, and can promote other users to speakers or organizers
 - [ ] EXPAND PRD Add new section: “4.1 Authentication & Authorization Architecture”:
         Detailed AWS Cognito integration requirements
@@ -54,7 +54,6 @@
 - [ ] FR17: remove state waitlist. this is a separate list of ready, but declined speakers
 - [ ] FR17: remove state informed. this is not a state
 - [ ] FR19: remove lessons learned
-- [ ] remove websocket requirements in all wireframes 
 - [ ] 
 - [ ] 
 - [ ] 
@@ -78,10 +77,6 @@ in the docs/wireframe folder, update the wireframes as follows:\
 - [ ] add Moderator Review Queue Screen
 - [ ] add System Settings/Configuration Screen
 - [ ] add Resource Viewer Screen
-- [ ] remove help icons from all screen
-- [ ] remove contact support from event management dashboard
-- [ ] remove speaker dashboard. is redundant with event-timeline
-- [ ] rename settings according to the contecxt. if its the settings of the event, then call it event settings. if its the user settings, then cll it user settings
 - [ ] add Announcement Details Screen
 - [ ] add Event Details Page (Attendee View)
 - [ ] add Content Viewer Page

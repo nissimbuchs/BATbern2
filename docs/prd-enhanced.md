@@ -15,7 +15,7 @@ Complete rewrite of BATbern as a comprehensive event management platform using R
 - Automate the complex 16-step event planning workflow
 - Eliminate manual speaker coordination and material collection
 - Provide real-time ROI analytics for partners
-- Create intelligent content discovery across 20+ years of conference content
+- Provide searchable content archive across 20+ years of conference content
 - Transform static website into dynamic event management platform
 
 ### Strategic Decisions
@@ -52,8 +52,6 @@ Complete rewrite of BATbern as a comprehensive event management platform using R
 
 **FR3**: The system shall provide automated speaker invitation, submission, and material collection workflows with real-time status updates
 
-**FR4**: Partners shall access real-time analytics dashboards showing employee attendance, brand exposure metrics, and ROI data
-
 **FR5**: The platform shall support progressive event publishing with automatic content updates from topic definition through final agenda publication
 
 **FR6**: Attendees shall access a prominent current event landing page featuring the upcoming BATbern event with complete logistics (date, location, free attendance), speaker lineup, agenda details, and registration functionality
@@ -62,21 +60,19 @@ Complete rewrite of BATbern as a comprehensive event management platform using R
 
 **FR8**: Partner users shall vote on topic priorities and submit strategic topic suggestions outside formal partner meetings
 
-**FR9**: The platform shall generate automated reports for partner meetings including attendance statistics, topic performance, and engagement metrics
-
 **FR10**: Speaker users shall access self-service portal for submission management, agenda viewing, and presentation upload
 
 **FR11**: The system shall maintain complete event archive with presentation downloads, speaker profiles, and photo galleries accessible via secondary navigation
 
 **FR12**: Event organizers shall manage multi-year venue reservations, catering coordination, partner meeting scheduling, and logistics through integrated workflow tools with automated reminders and stakeholder notifications
 
-**FR13**: Attendees shall access intelligent content discovery across historical BATbern events (20+ years) with AI-powered search, personalized recommendations, and advanced filtering as secondary functionality
+**FR13**: [REMOVED - Strategic refocus per Sprint Change Proposal 2025-10-01]
 
 **FR14**: Attendees shall manage personal engagement through newsletter subscriptions, content bookmarking, and presentation downloads with personalized preferences
 
 **FR15**: The platform shall provide mobile-optimized attendee experience with offline content access, event check-in capabilities, and progressive web app functionality
 
-**FR16**: Attendees shall access community features including content ratings, social sharing, and curated learning pathways connecting related presentations across events
+**FR16**: [REMOVED - Strategic refocus per Sprint Change Proposal 2025-10-01]
 
 **FR17**: The system shall provide intelligent speaker matching and assignment tracking with automated workflow states (open → contacted → ready → declined/accepted → slot-assigned → final agenda → informed → waitlist) and real-time organizer collaboration including slot preference collection, technical requirement tracking, and overflow management with organizer voting mechanisms
 
@@ -92,7 +88,7 @@ Complete rewrite of BATbern as a comprehensive event management platform using R
 
 **NFR1**: Platform shall provide responsive design optimized for mobile, tablet, and desktop access
 
-**NFR2**: Database shall support advanced text search across all historical content with sub-second response times
+**NFR2**: Database shall support full-text search across all historical content with sub-second response times
 
 **NFR3**: System shall integrate with external services (email, payment processing, file storage) through configurable APIs
 
@@ -164,7 +160,7 @@ For comprehensive technical implementation details, refer to the following archi
 - **Epic 3**: Weeks 21-30 (Core Speaker Management)
 - **Epic 4**: Weeks 31-38 (Event Finalization & Quality)
 - **Epic 5**: Weeks 39-46 (Attendee Experience)
-- **Epic 6**: Weeks 47-56 (Partner & Analytics Platform)
+- **Epic 6**: Weeks 47-50 (Partner Coordination)
 - **Epic 7**: Weeks 57-62 (Enhanced Features)
 
 ### Detailed Epic Implementation
@@ -176,7 +172,7 @@ The comprehensive epic breakdown follows a vertical slice approach, delivering c
 - **[Epic 3: Core Speaker Management](./prd/epic-3-speaker-management-stories.md)** - Essential speaker invitation and material collection workflow (10 weeks)
 - **[Epic 4: Event Finalization & Quality](./prd/epic-4-event-finalization-stories.md)** - Complete event planning cycle with quality control (8 weeks)
 - **[Epic 5: Attendee Experience](./prd/epic-5-attendee-experience-stories.md)** - Content discovery, personal engagement, and mobile access (8 weeks)
-- **[Epic 6: Partner & Analytics Platform](./prd/epic-6-partner-analytics-stories.md)** - ROI dashboards and strategic partnership tools (10 weeks)
+- **[Epic 6: Partner Coordination](./prd/epic-6-partner-coordination-stories.md)** - Strategic partnership tools including topic voting and meeting coordination (4 weeks)
 - **[Epic 7: Enhanced Features](./prd/epic-7-enhanced-features-stories.md)** - Platform polish with advanced capabilities (6 weeks)
 
 Each epic document contains:
@@ -201,8 +197,8 @@ Each epic document contains:
 - **Epic 2**: Event creation to publication in <30 minutes, landing page live
 - **Epic 3**: 90% speaker invitation acceptance rate, materials collected
 - **Epic 4**: Complete event workflow operational, quality control enforced
-- **Epic 5**: Content discovery across 20+ years functional, mobile access enabled
-- **Epic 6**: Partner dashboard adoption by 100% of partners, ROI visible
+- **Epic 5**: Content search across 20+ years functional, personal preferences managed, mobile access enabled
+- **Epic 6**: Partner topic voting adoption by 100% of partners, efficient meeting coordination
 - **Epic 7**: User satisfaction scores >4.5/5 across all roles
 
 ### Overall Platform Success

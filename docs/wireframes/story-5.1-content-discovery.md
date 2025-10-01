@@ -1,9 +1,18 @@
 # Story: AI-Powered Content Discovery Engine - Wireframe
 
+> **⚠️ STATUS: SUPERSEDED**
+>
+> This wireframe was designed for FR13 (AI-Powered Content Discovery), which has been removed from MVP scope.
+> A simplified version focusing on basic search will be created.
+>
+> **Effective Date:** 2025-10-01
+
+---
+
 **Story**: Epic 5, Story 1
 **Screen**: AI-Powered Content Discovery Engine
 **User Role**: Attendee
-**Related FR**: FR13 (Content Discovery)
+**Related FR**: FR13 (Content Discovery) - REMOVED
 
 ---
 

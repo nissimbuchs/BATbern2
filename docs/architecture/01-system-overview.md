@@ -37,7 +37,7 @@ BATbern-Platform/
 ├── shared-kernel/                 # Shared types, events, utilities
 ├── event-management-service/      # Organizer workflows & automation
 ├── speaker-coordination-service/  # Speaker portal & material collection
-├── partner-analytics-service/     # ROI tracking & strategic features
+├── partner-coordination-service/  # Topic voting & meeting coordination
 ├── attendee-experience-service/   # Content discovery & registration
 ├── api-gateway/                   # Unified API entry point
 ├── web-frontend/                  # React frontend consuming all APIs
@@ -136,7 +136,7 @@ graph TB
         subgraph "Microservices"
             H[Event Management Service<br/>Java 21 + Spring Boot<br/>Event workflows & coordination]
             I[Speaker Coordination Service<br/>Java 21 + Spring Boot<br/>Speaker pipeline management]
-            J[Partner Analytics Service<br/>Java 21 + Spring Boot<br/>ROI analytics & reporting]
+            J[Partner Coordination Service<br/>Java 21 + Spring Boot<br/>Topic voting & meeting coordination]
             K[Attendee Experience Service<br/>Java 21 + Spring Boot<br/>Content discovery & search]
             L[Company Management Service<br/>Java 21 + Spring Boot<br/>Organization data]
         end
@@ -316,7 +316,7 @@ graph TB
 
 **Dependencies:**
 - Speaker Coordination Service (enhanced speaker preferences and workflow states)
-- Partner Analytics Service (partner involvement tracking)
+- Partner Coordination Service (partner topic voting integration)
 - Quality Review Service (content validation and moderator workflows)
 - Notification Service (real-time alerts and escalations)
 - Shared Kernel (enhanced domain events, workflow types)
@@ -355,24 +355,23 @@ graph TB
 
 **Technology Stack:** Java 21 + Spring Boot 3.2, PostgreSQL, AWS S3 (file storage), SES (email notifications), WebSocket (real-time updates)
 
-### Partner Analytics Service
+### Partner Coordination Service
 
-**Responsibility:** Partner relationship management, ROI analytics, strategic input collection, and cross-event participation tracking for all partner companies.
+**Responsibility:** Partner relationship management, strategic topic voting, partner meeting coordination, and partnership lifecycle management.
 
 **Key Interfaces:**
 - `/api/v1/partners` - Partner profile and relationship management
-- `/api/v1/partners/{id}/analytics` - ROI and engagement analytics
-- `/api/v1/partners/{id}/topic-votes` - Strategic topic voting
-- `/api/v1/reports` - Partner meeting reports and presentations
+- `/api/v1/partners/{id}/topic-votes` - Strategic topic voting and suggestions
+- `/api/v1/partners/{id}/meetings` - Partner meeting scheduling and coordination
+- `/api/v1/topics/voting` - Topic voting and prioritization
 
 **Dependencies:**
-- Attendee Experience Service (employee attendance data)
-- Event Management Service (event participation data)
+- Event Management Service (topic backlog integration, event participation data)
 - Company Management Service (partner company data)
-- Analytics Engine (data processing and insights)
+- Notification Service (meeting reminders and voting notifications)
 - Shared Kernel (partner domain events)
 
-**Technology Stack:** Java 21 + Spring Boot 3.2, PostgreSQL (analytics data), ElastiCache Redis (metrics caching), AWS QuickSight (dashboard generation)
+**Technology Stack:** Java 21 + Spring Boot 3.2, PostgreSQL (partnership and voting data), AWS SES (meeting notifications)
 
 ### Attendee Experience Service
 
@@ -387,11 +386,10 @@ graph TB
 **Dependencies:**
 - Event Management Service (event data for registration)
 - Speaker Coordination Service (session and speaker data)
-- Content Search Engine (OpenSearch for full-text search)
-- Recommendation Engine (ML-based content suggestions)
+- Content Search Engine (PostgreSQL full-text search)
 - Shared Kernel (attendee domain events)
 
-**Technology Stack:** Java 21 + Spring Boot 3.2, PostgreSQL (registration data), AWS OpenSearch (content search), Lambda (recommendation algorithms)
+**Technology Stack:** Java 21 + Spring Boot 3.2, PostgreSQL (registration data and content search)
 
 ### Company Management Service
 

@@ -1,9 +1,21 @@
 # Story: Personal Attendee Dashboard - Wireframe
 
+> **⚠️ NOTICE: COMMUNITY FEATURES REMOVED**
+>
+> This wireframe includes community features (ratings, leaderboard, discussions, learning paths) from FR16, which has been removed from MVP scope.
+> Community sections should be removed from the final implementation.
+>
+> **Features to REMOVE:** Community Activity, Leaderboard, Discussions, Learning Paths, Community Stats
+> **Features to KEEP:** Personal bookmarks, preferences, download history, newsletter subscriptions
+>
+> **Effective Date:** 2025-10-01
+
+---
+
 **Story**: Epic 5, Story 2
 **Screen**: Personal Attendee Dashboard
 **User Role**: Attendee
-**Related FR**: FR13 (Personalization)
+**Related FR**: FR14 (Personal Engagement Management)
 
 ---
 
