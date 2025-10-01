@@ -27,7 +27,7 @@
 │  │  │    ⬆ 15%    │    ⬆ 8%     │    ⬆ 22%    │    ⬆ 5%     │    ⬆ 0.3    │      │ │
 │  │  └─────────────┴─────────────┴─────────────┴─────────────┴─────────────┘      │ │
 │  │                                                                                  │ │
-│  │  Key Insight: Your employee engagement is 23% higher than industry average      │ │
+│  │  Key Insight: Strong employee engagement with growing attendance trends         │ │
 │  └──────────────────────────────────────────────────────────────────────────────────┘ │
 │                                                                                       │
 │  ┌──── EMPLOYEE ATTENDANCE TRENDS ─────────────────────────────────────────────────┐ │
@@ -41,13 +41,12 @@
 │  │   0 └──┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬──            │ │
 │  │      Jan  Feb  Mar  Apr  May  Jun  Jul  Aug  Sep  Oct  Nov  Dec               │ │
 │  │                                                                                  │ │
-│  │  Department Breakdown              Level Distribution        Topics of Interest │ │
-│  │  ┌─────────────────────┐          ┌──────────────┐        ┌─────────────────┐ │ │
-│  │  │ IT: 45%  ████████  │          │ Senior: 35%  │        │ Cloud: 42%  ███ │ │ │
-│  │  │ Dev: 30% ██████    │          │ Mid: 45%     │        │ DevOps: 28% ██  │ │ │
-│  │  │ Ops: 15% ███       │          │ Junior: 20%  │        │ Security: 30% ██│ │ │
-│  │  │ Mgmt: 10% ██       │          └──────────────┘        └─────────────────┘ │ │
-│  │  └─────────────────────┘                                                        │ │
+│  │  Level Distribution                   Topics of Interest                          │ │
+│  │  ┌──────────────┐                  ┌─────────────────┐                           │ │
+│  │  │ Senior: 35%  │                  │ Cloud: 42%  ███ │                           │ │
+│  │  │ Mid: 45%     │                  │ DevOps: 28% ██  │                           │ │
+│  │  │ Junior: 20%  │                  │ Security: 30% ██│                           │ │
+│  │  └──────────────┘                  └─────────────────┘                           │ │
 │  │                                                                                  │ │
 │  │  [View Detailed Analytics] [Download Report] [Share with Team]                  │ │
 │  └──────────────────────────────────────────────────────────────────────────────────┘ │
@@ -58,9 +57,9 @@
 │  │  [🗳️ Vote on Topics]           │  May 15 • 12 employees registered           │   │
 │  │  [💡 Suggest Topic]            │  [View Details] [Promote Internally]        │   │
 │  │  [📅 Partner Meeting]          │                                               │   │
-│  │  [📈 Compare with Peers]       │  Partner Planning Meeting                   │   │
-│  │  [💰 Budget Planning]          │  Apr 15 • Quarterly Review                   │   │
-│  │  [👥 Employee List]            │  [RSVP] [Add to Calendar]                   │   │
+│  │  [👥 Employee List]            │  Partner Planning Meeting                   │   │
+│  │                                │  Apr 15 • Quarterly Review                   │   │
+│  │                                │  [RSVP] [Add to Calendar]                   │   │
 │  └────────────────────────────────┴───────────────────────────────────────────────┘  │
 │                                                                                       │
 └─────────────────────────────────────────────────────────────────────────────────────┘
@@ -82,9 +81,9 @@
 When the Partner Analytics Dashboard screen loads, the following APIs are called to provide the necessary data:
 
 1. **GET /api/v1/partners/{partnerId}/analytics/summary**
-   - Query params: year (2025), includeComparisons (true)
-   - Returns: Investment amount, employee attendance, speaker count, downloads, engagement rate, ROI ratio, year-over-year changes, key insights, industry benchmarks
-   - Used for: Populate executive summary panel with all key metrics and comparisons
+   - Query params: year (2025)
+   - Returns: Investment amount, employee attendance, speaker count, downloads, engagement rate, ROI ratio, year-over-year changes, key insights
+   - Used for: Populate executive summary panel with all key metrics
 
 2. **GET /api/v1/partners/{partnerId}/analytics/attendance-trends**
    - Query params: period (12months), groupBy (month)
@@ -92,9 +91,9 @@ When the Partner Analytics Dashboard screen loads, the following APIs are called
    - Used for: Display attendance over time chart
 
 3. **GET /api/v1/partners/{partnerId}/analytics/employee-breakdown**
-   - Query params: dimensions (department, level, topics)
-   - Returns: Department distribution, seniority level breakdown, topic interests with percentages
-   - Used for: Populate department breakdown, level distribution, and topics of interest panels
+   - Query params: dimensions (level, topics)
+   - Returns: Seniority level breakdown, topic interests with percentages
+   - Used for: Populate level distribution and topics of interest panels
 
 4. **GET /api/v1/partners/{partnerId}/events/upcoming**
    - Query params: limit (5), includeRegistrations (true)
@@ -112,10 +111,6 @@ When the Partner Analytics Dashboard screen loads, the following APIs are called
 7. **GET /api/v1/partners/{partnerId}/quick-actions/available**
    - Returns: List of available quick actions with permissions and statuses
    - Used for: Populate quick actions panel
-
-8. **WebSocket /ws/partners/{partnerId}/analytics-updates**
-   - Real-time updates: New employee registrations, downloads, engagement changes, ROI updates
-   - Used for: Live metric updates without page refresh
 
 ---
 
@@ -147,76 +142,66 @@ When the Partner Analytics Dashboard screen loads, the following APIs are called
    - Response: Share confirmation, access tokens
    - Used for: Share analytics dashboard with team members
 
-6. **GET /api/v1/partners/{partnerId}/analytics/compare-peers**
-   - Query params: metrics (attendance, engagement), anonymize (true)
-   - Returns: Industry benchmarks, peer comparisons, percentile rankings, anonymized competitor data
-   - Used for: Navigate to peer comparison view
-
 ### Topic & Content Management
 
-7. **POST /api/v1/partners/{partnerId}/topics/vote**
+6. **POST /api/v1/partners/{partnerId}/topics/vote**
    - Payload: `{ topicId, votes: number, priority: "high|medium|low" }`
    - Response: Updated vote count, topic ranking
    - Used for: Cast votes on proposed topics
 
-8. **POST /api/v1/partners/{partnerId}/topics/suggest**
+7. **POST /api/v1/partners/{partnerId}/topics/suggest**
    - Payload: `{ title, description, relevance, targetAudience, estimatedInterest }`
    - Response: Topic suggestion ID, review status
    - Used for: Suggest new topic for upcoming events
 
-9. **GET /api/v1/partners/{partnerId}/topics/voting-status**
+8. **GET /api/v1/partners/{partnerId}/topics/voting-status**
    - Returns: Active voting sessions, partner's votes, remaining votes, deadlines
    - Used for: Navigate to topic voting interface
 
 ### Event & Meeting Management
 
-10. **GET /api/v1/partners/{partnerId}/events/{eventId}/details**
+9. **GET /api/v1/partners/{partnerId}/events/{eventId}/details**
     - Returns: Full event details, registrations, promotion materials, internal communication tools
     - Used for: Navigate to event detail view
 
-11. **POST /api/v1/partners/{partnerId}/events/{eventId}/promote**
+10. **POST /api/v1/partners/{partnerId}/events/{eventId}/promote**
     - Payload: `{ channels: ["email", "intranet"], customMessage, targetDepartments: [] }`
     - Response: Promotion campaign ID, reach estimate
     - Used for: Launch internal promotion campaign for event
 
-12. **POST /api/v1/partners/{partnerId}/meetings/schedule**
+11. **POST /api/v1/partners/{partnerId}/meetings/schedule**
     - Payload: `{ type: "quarterly|planning|review", proposedDates: [], attendees: [], agenda }`
     - Response: Meeting request ID, availability conflicts
     - Used for: Schedule partner planning meeting
 
-13. **PUT /api/v1/partners/{partnerId}/meetings/{meetingId}/rsvp**
+12. **PUT /api/v1/partners/{partnerId}/meetings/{meetingId}/rsvp**
     - Payload: `{ response: "accept|decline|tentative", attendees: [] }`
     - Response: Updated meeting status, calendar invite
     - Used for: RSVP to partner meeting
 
-14. **POST /api/v1/partners/{partnerId}/meetings/{meetingId}/calendar**
+13. **POST /api/v1/partners/{partnerId}/meetings/{meetingId}/calendar**
     - Response: iCal file URL for calendar integration
     - Used for: Add meeting to calendar
 
-### Budget & Planning
+### Employee Management
 
-15. **GET /api/v1/partners/{partnerId}/budget/overview**
-    - Query params: year (2025)
-    - Returns: Total investment, spending breakdown, ROI by category, forecasts
-    - Used for: Navigate to budget planning interface
-
-16. **GET /api/v1/partners/{partnerId}/employees/list**
+14. **GET /api/v1/partners/{partnerId}/employees/list**
     - Query params: filters (department, level), sortBy (attendance), limit, offset
     - Returns: List of employees with attendance data, engagement metrics, interests
     - Used for: Navigate to employee list view
 
 ### Notifications & Settings
 
-17. **GET /api/v1/partners/{partnerId}/notifications**
+15. **GET /api/v1/partners/{partnerId}/notifications**
     - Query params: limit (20), includeRead (false)
     - Returns: List of notifications with types, timestamps, action links
     - Used for: Display notifications panel
 
-18. **PUT /api/v1/partners/{partnerId}/notifications/{notificationId}/read**
+16. **PUT /api/v1/partners/{partnerId}/notifications/{notificationId}/read**
     - Response: Updated notification status
     - Used for: Mark notification as read
 
-19. **GET /api/v1/partners/{partnerId}/settings**
+17. **GET /api/v1/partners/{partnerId}/settings**
     - Returns: Partner portal settings, notification preferences, reporting preferences
     - Used for: Navigate to settings screen
 

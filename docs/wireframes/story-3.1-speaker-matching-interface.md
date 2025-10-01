@@ -11,103 +11,76 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────┐
-│ ← Back        Speaker Management - Spring Conference 2025              [Import CSV] │
+│ ← Back        Speaker Management - Spring Conference 2025                            │
 ├─────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                       │
 │  Event: Cloud Native Architecture          Slots: 8          Confirmed: 5/8         │
 │                                                                                       │
-│  ┌─── SPEAKER PIPELINE ──────────────────────────────────────────────────────────┐  │
-│  │                                                                               │  │
-│  │  Open     Contacted    Ready    Declined    Accepted    Assigned    Final     │  │
-│  │   (12)       (8)        (3)       (2)         (5)         (5)        (0)      │  │
-│  │                                                                               │  │
-│  │  ┌─────┐   ┌─────┐   ┌─────┐   ┌─────┐    ┌─────┐    ┌─────┐    ┌─────┐    │  │
-│  │  │John │   │Anna │   │Marc │   │Lisa │    │Peter│    │Peter│    │     │    │  │
-│  │  │Smith│──▶│Wong │──▶│Baum │──▶│Chen │───▶│Mull │───▶│Slot2│───▶│     │    │  │
-│  │  │Erik │   │Paul │   │Nina │   │Hans │    │Sara │    │Sara │    │     │    │  │
-│  │  │+9...│   │+5...│   │     │   │     │    │Kim  │    │Slot1│    │     │    │  │
-│  │  └─────┘   └─────┘   └─────┘   └─────┘    └─────┘    └─────┘    └─────┘    │  │
-│  │                                                                               │  │
-│  │  [Bulk Move →] [Send Reminder] [View Waitlist (3)]                          │  │
-│  └───────────────────────────────────────────────────────────────────────────────┘  │
-│                                                                                       │
-│  ┌─── SMART MATCHING ────────────────────┬─── SLOT ASSIGNMENT ─────────────────┐   │
-│  │                                       │                                      │   │
-│  │  For: Cloud Native Architecture       │  Morning (Technical)                │   │
-│  │                                       │  ┌────────────────────────────┐     │   │
-│  │  ┌── Best Matches ─────────────┐      │  │ 09:00 │ Sara Kim - Docker  │     │   │
-│  │  │                              │      │  ├────────────────────────────┤     │   │
-│  │  │ 95% Dr. Thomas Weber          │      │  │ 09:45 │ Peter Muller - K8s │     │   │
-│  │  │     • 5 yrs K8s experience   │      │  ├────────────────────────────┤     │   │
-│  │  │     • Swiss Re, Architecture │      │  │ 10:30 │ [Empty - Assign]   │     │   │
-│  │  │     • Available ✓            │      │  ├────────────────────────────┤     │   │
-│  │  │     [Invite] [View Profile]  │      │  │ 11:15 │ [Empty - Assign]   │     │   │
-│  │  │                              │      │  └────────────────────────────┘     │   │
-│  │  │ 89% Maria Santos             │      │                                      │   │
-│  │  │     • CNCF Ambassador        │      │  Afternoon (Practical)              │   │
-│  │  │     • 50+ conferences        │      │  ┌────────────────────────────┐     │   │
-│  │  │     • Travel required ✈️     │      │  │ 13:30 │ [Empty - Assign]   │     │   │
-│  │  │     [Invite] [View Profile]  │      │  ├────────────────────────────┤     │   │
-│  │  │                              │      │  │ 14:15 │ [Empty - Assign]   │     │   │
-│  │  │ 82% Local: Hans Gerber      │      │  ├────────────────────────────┤     │   │
-│  │  │     • Swisscom, DevOps Lead │      │  │ 15:00 │ [Empty - Assign]   │     │   │
-│  │  │     • First time speaker 🆕  │      │  ├────────────────────────────┤     │   │
-│  │  │     [Invite] [View Profile]  │      │  │ 15:45 │ [Empty - Assign]   │     │   │
-│  │  └──────────────────────────────┘      │  └────────────────────────────┘     │   │
-│  │                                       │                                      │   │
-│  │  Filter by:                           │  ⚠️ Overflow: 2 accepted speakers    │   │
-│  │  □ Local speakers only                │     need slots                       │   │
-│  │  ☑ Industry experience                │     [Start Voting] [Auto-Assign]    │   │
-│  │  □ First-time speakers                │                                      │   │
-│  └───────────────────────────────────────┴──────────────────────────────────────┘   │
-│                                                                                       │
-│  ┌─── TECHNICAL REQUIREMENTS ────────┬─── TEAM COLLABORATION ──────────────────┐   │
-│  │                                   │                                          │   │
-│  │ Speaker          Requirements     │  @sally: Thomas Weber looks perfect!    │   │
-│  │ Sara Kim         ✓ HDMI, ✓ Mic   │  @mark: Agreed, sending invite now      │   │
-│  │ Peter Muller     ✓ All standard   │  @anna: Maria needs travel budget       │   │
-│  │ Marc Baum        ⚠️ Mac adapter    │  @system: 2 speakers auto-reminded      │   │
-│  │                  ⚠️ Remote option  │                                          │   │
-│  └───────────────────────────────────┴──────────────────────────────────────────┘   │
+│  ┌─── ACCEPTED SPEAKERS ────────────────────┬─── SLOT ASSIGNMENT ─────────────────┐ │
+│  │                                           │                                      │ │
+│  │  ┌───────────────────────────────────┐   │  Morning (Technical)                │ │
+│  │  │ Peter Muller                      │   │  ┌────────────────────────────┐     │ │
+│  │  │ Kubernetes Expert • Swiss Re      │   │  │ 09:00 │ Sara Kim - Docker  │     │ │
+│  │  │ [View Profile] [Contact]          │   │  ├────────────────────────────┤     │ │
+│  │  └───────────────────────────────────┘   │  │ 09:45 │ Peter Muller - K8s │     │ │
+│  │            ↓ Drag to assign →            │  ├────────────────────────────┤     │ │
+│  │  ┌───────────────────────────────────┐   │  │ 10:30 │ [Empty - Drop here]│     │ │
+│  │  │ Sara Kim                          │   │  ├────────────────────────────┤     │ │
+│  │  │ Docker & Containers • ZKB         │   │  │ 11:15 │ [Empty - Drop here]│     │ │
+│  │  │ [View Profile] [Contact]          │   │  └────────────────────────────┘     │ │
+│  │  └───────────────────────────────────┘   │                                      │ │
+│  │            ↓ Drag to assign →            │  Afternoon (Practical)              │ │
+│  │  ┌───────────────────────────────────┐   │  ┌────────────────────────────┐     │ │
+│  │  │ Marc Baum                         │   │  │ 13:30 │ [Empty - Drop here]│     │ │
+│  │  │ Cloud Architecture • PostFinance  │   │  ├────────────────────────────┤     │ │
+│  │  │ [View Profile] [Contact]          │   │  │ 14:15 │ [Empty - Drop here]│     │ │
+│  │  └───────────────────────────────────┘   │  ├────────────────────────────┤     │ │
+│  │            ↓ Drag to assign →            │  │ 15:00 │ [Empty - Drop here]│     │ │
+│  │  ┌───────────────────────────────────┐   │  ├────────────────────────────┤     │ │
+│  │  │ Thomas Weber                      │   │  │ 15:45 │ [Empty - Drop here]│     │ │
+│  │  │ DevOps Lead • Swisscom            │   │  └────────────────────────────┘     │ │
+│  │  │ [View Profile] [Contact]          │   │                                      │ │
+│  │  └───────────────────────────────────┘   │  ← Drag speakers from left          │ │
+│  │            ↓ Drag to assign →            │    to assign to time slots          │ │
+│  │  ┌───────────────────────────────────┐   │                                      │ │
+│  │  │ Anna Meyer                        │   │                                      │ │
+│  │  │ Cloud Native • Credit Suisse      │   │                                      │ │
+│  │  │ [View Profile] [Contact]          │   │                                      │ │
+│  │  └───────────────────────────────────┘   │                                      │ │
+│  │                                           │                                      │ │
+│  └───────────────────────────────────────────┴──────────────────────────────────────┘ │
 │                                                                                       │
 └─────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Key Interactive Elements
 
-- **Speaker Pipeline**: Kanban-style view of speaker progression
-- **Match Scoring**: AI-calculated match percentage with explanation
-- **Drag-and-Drop**: Move speakers between pipeline stages
-- **Slot Assignment**: Visual agenda with drag-to-assign capability
-- **Smart Matching**: ML-powered speaker recommendations
-- **Team Chat**: Real-time collaboration on speaker selection
+- **Accepted Speakers List**: Left panel showing all speakers who have accepted invitations
+- **Drag-and-Drop Assignment**: Drag speaker cards from left panel to time slots on right
+- **Slot Assignment Panel**: Right panel showing morning/afternoon agenda with drop zones
+- **Speaker Actions**: View profile or contact speaker directly from speaker card
 
 ## Functional Requirements Met
 
-- **FR17**: AI-powered intelligent speaker matching based on topic, experience, availability
-- **Pipeline Management**: Visual tracking of speaker recruitment process
-- **Slot Assignment**: Interactive agenda planning with conflict detection
-- **Technical Requirements**: Track and manage speaker needs
-- **Team Collaboration**: Real-time communication on speaker decisions
-- **Waitlist Management**: Handle overflow speakers
+- **Speaker Management**: Display accepted speakers for event assignment
+- **Slot Assignment**: Interactive agenda planning with manual speaker assignment
 
 ## User Interactions
 
-1. **View Matches**: See AI-ranked speaker recommendations for topic
-2. **Invite Speaker**: Send invitation with one click
-3. **Drag Speaker**: Move through pipeline or assign to agenda slot
-4. **Filter Matches**: Apply criteria (local, experience, first-time)
-5. **Check Availability**: See speaker calendar and constraints
-6. **Collaborate**: Discuss speaker selection with team in real-time
+1. **View Accepted Speakers**: Browse list of speakers in left panel who have accepted invitations
+2. **Drag Speaker Card**: Drag speaker from left panel to time slot on right
+3. **Drop on Slot**: Drop speaker card into empty time slot to assign
+4. **View Profile**: Click to view detailed speaker information and expertise
+5. **Contact Speaker**: Click to send direct communication to speaker
+6. **Remove Assignment**: Drag speaker out of slot back to left panel to unassign
 
 ## Technical Notes
 
-- ML matching algorithm considers topic expertise, speaking experience, availability, location
-- Real-time WebSocket updates for team collaboration
-- Integration with speaker profiles and historical data
-- Automated email sequences for speaker outreach (FR20)
-- Calendar integration for availability checking
-- Conflict detection for double-booking prevention
+- Drag-and-drop UI using HTML5 drag API or library like react-beautiful-dnd
+- Integration with speaker profiles and speaker status data
+- Slot assignment with conflict detection for double-booking prevention
+- Real-time visual feedback during drag operations
+- Optimistic UI updates for immediate feedback
 
 ---
 
@@ -126,36 +99,10 @@ APIs needed to load and display data for this screen:
    - Query params: None (get all slots)
    - Used for: Slot assignment panel showing morning/afternoon agenda
 
-3. **GET /api/v1/events/{eventId}/speakers/pipeline**
-   - Retrieve all speakers associated with event grouped by pipeline stage
-   - Response includes: speaker details, stage, count per stage
-   - Used for: Speaker pipeline Kanban visualization
-
-4. **GET /api/v1/events/{eventId}/speakers/matches**
-   - Retrieve AI-matched speaker recommendations for event topic
-   - Query params: `limit`, optional filters (local, firstTime, industry)
-   - Response includes: match score, expertise, availability, profile highlights
-   - Used for: Smart matching panel with ranked recommendations
-
-5. **GET /api/v1/events/{eventId}/waitlist**
-   - Retrieve waitlisted speakers (overflow)
-   - Used for: Overflow warning banner count
-
-6. **GET /api/v1/events/{eventId}/speakers/requirements**
-   - Retrieve technical requirements for all assigned speakers
-   - Used for: Technical requirements panel
-
-7. **GET /api/v1/events/{eventId}/collaboration/messages**
-   - Retrieve recent team collaboration messages
-   - Query params: `limit=50`
-   - Used for: Team collaboration chat panel
-
-### WebSocket Connections
-
-8. **WS /api/v1/events/{eventId}/collaboration**
-   - Real-time collaboration updates
-   - Events: new messages, speaker moves, slot assignments
-   - Used for: Live updates across all panels
+3. **GET /api/v1/events/{eventId}/speakers/accepted**
+   - Retrieve all speakers in accepted state for this event
+   - Response includes: speaker details, expertise, company
+   - Used for: Accepted speakers list display
 
 ---
 
@@ -163,82 +110,30 @@ APIs needed to load and display data for this screen:
 
 APIs called by user interactions and actions:
 
-### Speaker Invitation & Management
+### Speaker Management
 
-1. **POST /api/v1/speakers/invite**
-   - Triggered by: [Invite] button in smart matching panel
-   - Payload: `{ eventId, speakerId, sessionDetails }`
-   - Response: Invitation created, moves speaker to "Contacted" stage
-   - Side effect: Triggers email via AWS SES (FR20)
-
-2. **PUT /api/v1/events/{eventId}/speakers/{speakerId}/stage**
-   - Triggered by: Drag-and-drop speaker between pipeline stages
-   - Payload: `{ stage: "contacted|ready|declined|accepted|assigned|final" }`
-   - Response: Updated speaker pipeline position
-
-3. **GET /api/v1/speakers/{speakerId}/profile**
-   - Triggered by: [View Profile] button in matches or pipeline
+1. **GET /api/v1/speakers/{speakerId}/profile**
+   - Triggered by: [View Profile] button in accepted speakers list
    - Response: Full speaker profile with history, expertise, availability
    - Opens: Speaker profile modal/page
 
+2. **POST /api/v1/organizers/{organizerId}/messages/send**
+   - Triggered by: [Contact] button for speaker
+   - Payload: `{ recipientId, recipientType: "speaker", subject, message }`
+   - Response: Message sent confirmation
+   - Side effect: Email sent to speaker
+
 ### Slot Assignment
 
-4. **POST /api/v1/events/{eventId}/slots/{slotId}/assign**
-   - Triggered by: Drag speaker to empty slot or [Auto-Assign] button
+3. **POST /api/v1/events/{eventId}/slots/{slotId}/assign**
+   - Triggered by: Drop speaker card on time slot (drag-and-drop)
    - Payload: `{ speakerId, sessionDetails }`
-   - Response: Slot assignment created, speaker moved to "Assigned" stage
+   - Response: Slot assignment created
    - Validation: Check conflicts, speaker availability
 
-5. **DELETE /api/v1/events/{eventId}/slots/{slotId}/assign**
-   - Triggered by: Remove speaker from assigned slot
-   - Response: Slot cleared, speaker moved back to "Accepted" stage
-
-### Bulk Operations
-
-6. **POST /api/v1/events/{eventId}/speakers/bulk-move**
-   - Triggered by: [Bulk Move →] button with selected speakers
-   - Payload: `{ speakerIds: [], targetStage }`
-   - Response: Multiple speakers moved to new stage
-
-7. **POST /api/v1/events/{eventId}/speakers/send-reminders**
-   - Triggered by: [Send Reminder] button
-   - Payload: `{ speakerIds: [], stage: "contacted" }`
-   - Response: Reminder emails sent via AWS SES
-   - Side effect: Updates last_contacted timestamp
-
-### Filtering & Search
-
-8. **GET /api/v1/events/{eventId}/speakers/matches**
-   - Triggered by: Filter checkboxes (local, industry, first-time)
-   - Query params: `localOnly=true`, `industryExperience=true`, `firstTime=true`
-   - Response: Filtered and re-ranked speaker matches
-
-### Waitlist & Overflow
-
-9. **GET /api/v1/events/{eventId}/waitlist**
-   - Triggered by: [View Waitlist (3)] button
-   - Response: Full waitlist with speaker details
-   - Opens: Waitlist modal/panel
-
-10. **POST /api/v1/events/{eventId}/overflow/vote**
-    - Triggered by: [Start Voting] button for overflow speakers
-    - Opens: Voting interface for team to select speakers
-    - Related: POST /api/v1/events/{eventId}/overflow with vote payload
-
-### Import & Export
-
-11. **POST /api/v1/events/{eventId}/speakers/import**
-    - Triggered by: [Import CSV] button
-    - Payload: CSV file with speaker data
-    - Response: Bulk speaker creation/invitation
-
-### Team Collaboration
-
-12. **POST /api/v1/events/{eventId}/collaboration/messages**
-    - Triggered by: Sending message in team chat
-    - Payload: `{ message, userId, timestamp }`
-    - Response: Message created
-    - Broadcasts: Via WebSocket to all connected organizers
+4. **DELETE /api/v1/events/{eventId}/slots/{slotId}/assign**
+   - Triggered by: Drag speaker out of assigned slot
+   - Response: Slot cleared, speaker returned to available list
 
 ---
 
@@ -252,77 +147,44 @@ Screen transitions triggered by actions and events:
    - **Target**: Event Management Dashboard (Story 1.16)
    - **Context**: Returns to main event overview
 
-2. **[View Profile]** (from Smart Matching or Pipeline)
+2. **[View Profile]** (from accepted speakers list)
    - **Target**: Speaker Profile Page (Story 7.1)
    - **Type**: Modal or new page
    - **Context**: View full speaker details, history, expertise
 
-3. **[Import CSV]**
-   - **Target**: CSV Import Modal/Wizard
+3. **[Contact]** (from accepted speakers list)
+   - **Target**: Message composer modal
    - **Type**: Modal overlay
-   - **Context**: Bulk speaker import workflow
+   - **Context**: Send message to speaker
 
-### Secondary Navigation
-
-4. **[View Waitlist (3)]**
-   - **Target**: Waitlist Management Panel (inline expansion or modal)
-   - **Type**: Modal or panel expansion
-   - **Context**: Manage overflow speakers, see waitlist details
-
-5. **[Start Voting]**
-   - **Target**: Overflow Voting Interface (Story 6.4 - Topic Voting pattern)
-   - **Type**: Modal or dedicated page
-   - **Context**: Team voting on speaker selection for overflow
-
-6. **Speaker Card Click** (in pipeline)
-   - **Target**: Speaker Details Panel (inline or modal)
-   - **Type**: Side panel or modal
-   - **Context**: Quick view of speaker info, requirements, communications
+4. **Drag-and-Drop Speaker to Slot**
+   - **Target**: No navigation, inline interaction
+   - **Type**: Drag-and-drop operation
+   - **Context**: Drag speaker card from left panel to time slot on right panel
+   - **Feedback**: Visual drag preview, drop zone highlighting, success animation
 
 ### Event-Driven Navigation
 
-7. **On Speaker Invite Sent**
+5. **On Slot Assignment Complete**
    - **No Navigation**: Remains on current screen
-   - **Feedback**: Success toast, speaker moved to "Contacted" stage
-   - **Update**: Real-time WebSocket update to pipeline
+   - **Feedback**: Success toast, visual update to agenda
+   - **Update**: Slot assignment updated in display
 
-8. **On Slot Assignment Complete**
-   - **No Navigation**: Remains on current screen
-   - **Feedback**: Success toast, visual update to agenda and pipeline
-   - **Update**: Speaker moved to "Assigned" stage
-
-9. **On All Slots Filled**
+6. **On All Slots Filled**
    - **Suggested Action**: Show success message with option to navigate to:
      - Event Timeline (Story 3.5) - Review full event agenda
      - Publishing Engine (Story 2.3) - Begin event promotion
 
-10. **On Import Complete**
-    - **No Navigation**: Remains on current screen
-    - **Feedback**: Success message with import summary
-    - **Update**: Pipeline refreshed with new speakers
-
 ### Error States & Redirects
 
-11. **On Event Not Found**
-    - **Target**: Event Management Dashboard (Story 1.16)
-    - **Feedback**: Error message "Event not found"
+7. **On Event Not Found**
+   - **Target**: Event Management Dashboard (Story 1.16)
+   - **Feedback**: Error message "Event not found"
 
-12. **On Unauthorized Access**
-    - **Target**: Login page or Permission Denied page
-    - **Feedback**: "Organizer access required"
+8. **On Unauthorized Access**
+   - **Target**: Login page or Permission Denied page
+   - **Feedback**: "Organizer access required"
 
-13. **On Slot Conflict Detected**
-    - **No Navigation**: Remains on current screen
-    - **Feedback**: Error modal showing conflict details with resolution options
-
-### Cross-Feature Navigation
-
-14. **Technical Requirements Link** (speaker row)
-    - **Target**: Logistics Coordination (Story 4.4)
-    - **Type**: Modal or dedicated page
-    - **Context**: Manage speaker technical requirements and logistics
-
-15. **Team Chat User @mention**
-    - **Target**: Communication Hub (Story 7.3) or User Profile
-    - **Type**: Inline action or modal
-    - **Context**: Direct communication with team member
+9. **On Slot Conflict Detected**
+   - **No Navigation**: Remains on current screen
+   - **Feedback**: Error modal showing conflict details with resolution options

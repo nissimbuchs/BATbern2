@@ -72,11 +72,11 @@
 │  ┌──── WHY ATTEND ─────────────┬──── QUICK LINKS ────────────────────────────────┐   │
 │  │                              │                                                  │   │
 │  │  ✓ Learn from industry       │  📚 Browse Past Events                          │   │
-│  │    experts                    │  📊 Download Presentations                      │   │
-│  │  ✓ Network with 200+ IT      │  🔍 Search Archive (20+ years)                  │   │
-│  │    professionals              │  📧 Subscribe to Newsletter                     │   │
-│  │  ✓ Free admission & lunch    │  👥 Join Community                              │   │
-│  │  ✓ Practical takeaways       │  🏢 Become a Partner                            │   │
+│  │    experts                    │  🔍 Search Archive (20+ years)                  │   │
+│  │  ✓ Network with 200+ IT      │  📧 Subscribe to Newsletter                     │   │
+│  │    professionals              │                                                  │   │
+│  │  ✓ Free admission & lunch    │                                                  │   │
+│  │  ✓ Practical takeaways       │                                                  │   │
 │  │  ✓ CPE credits available     │                                                  │   │
 │  └──────────────────────────────┴──────────────────────────────────────────────────┘  │
 │                                                                                       │
@@ -167,41 +167,29 @@ When the Current Event Landing Page loads, the following APIs are called to prov
    - Opens archive home page
    - No context passed
 
-7. **📊 Download Presentations link** → Navigate to `Content Discovery` (story-5.1-content-discovery.md)
-   - Opens content archive with downloadable filter
-   - Context: Filter preset to show downloadable content
-
-8. **🔍 Search Archive (20+ years) link** → Navigate to `Content Discovery` (story-5.1-content-discovery.md)
+7. **🔍 Search Archive (20+ years) link** → Navigate to `Content Discovery` (story-5.1-content-discovery.md)
    - Opens content search interface
    - Context: Opens with empty search
 
-9. **📧 Subscribe to Newsletter link** → Opens `Newsletter Subscription Modal`
+8. **📧 Subscribe to Newsletter link** → Opens `Newsletter Subscription Modal`
    - Shows email input modal (same page)
    - No navigation
 
-10. **👥 Join Community link** → Navigate to `Speaker Community` (story-7.1-speaker-community.md)
-    - Opens community portal
-    - No context passed
-
-11. **🏢 Become a Partner link** → Navigate to `Partner Onboarding Page`
-    - Opens partner registration flow
-    - No context passed
-
 ### Top Navigation
 
-12. **Upcoming Events menu item** → Navigate to `Future Events Listing`
+9. **Upcoming Events menu item** → Navigate to `Future Events Listing`
     - Shows upcoming events list
     - No context passed
 
-13. **Archive menu item** → Navigate to `Historical Archive` (story-1.18-historical-archive.md)
+10. **Archive menu item** → Navigate to `Historical Archive` (story-1.18-historical-archive.md)
     - Opens archive home
     - No context passed
 
-14. **[Login] button** → Navigate to `AWS Cognito Login`
+11. **[Login] button** → Navigate to `AWS Cognito Login`
     - Starts authentication flow
     - Context: Return URL (current page), redirects to dashboard after login
 
-15. **[EN|DE] language switcher** → Reloads current page
+12. **[EN|DE] language switcher** → Reloads current page
     - Same page with language change
     - Context: locale parameter, reloads with translated content
 

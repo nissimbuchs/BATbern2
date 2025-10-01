@@ -57,17 +57,17 @@
 │  │  │                         │      │  ● Progressive (public, partial)         │  │
 │  │  │ Cloud Native            │      │  ○ Complete (all content)                │  │
 │  │  │ Architecture            │      │                                           │  │
-│  │  │                         │      │  Auto-publish rules:                     │  │
-│  │  │ May 15, 2025           │      │  ☑ Publish when validation >= 80%        │  │
-│  │  │ Kursaal Bern           │      │  ☑ Update hourly if changes              │  │
-│  │  │                         │      │  ☐ Require manual approval               │  │
+│  │  │                         │      │                                           │  │
+│  │  │ May 15, 2025           │      │                                           │  │
+│  │  │ Kursaal Bern           │      │                                           │  │
+│  │  │                         │      │                                           │  │
 │  │  │ Speakers:              │      │                                           │  │
 │  │  │ • Sara Kim - Docker    │      │  Version Control:                        │  │
 │  │  │ • Peter Muller - K8s   │      │  Current: v3 (Feb 28, 14:30)            │  │
 │  │  │ • [3 more confirmed]   │      │  [View History] [Rollback]               │  │
 │  │  │ • [3 slots available]  │      │                                           │  │
 │  │  │                         │      │  Actions:                                │  │
-│  │  │ [Register Now]         │      │  [Publish Now] [Schedule] [Preview]      │  │
+│  │  │ [Register Now]         │      │  [Publish Now] [Preview]                 │  │
 │  │  └─────────────────────────┘      │                                           │  │
 │  │                                   │  ⚠️ Warning: 3 validation errors         │  │
 │  │  [Desktop] [Mobile] [Print]       │     Publishing will show partial content  │  │
@@ -82,7 +82,6 @@
 - **Validation Dashboard**: Real-time readiness assessment with detailed checks
 - **Live Preview**: See exactly how content appears to public
 - **Publishing Modes**: Control visibility (draft, progressive, complete)
-- **Auto-publish Rules**: Configure automated publishing logic
 - **Version Control**: Track and rollback content versions
 
 ## Functional Requirements Met
@@ -92,7 +91,7 @@
 - **Content Validation**: Multi-criteria checking before publication
 - **Version Control**: Track all content changes with rollback capability
 - **Preview Modes**: Test on desktop, mobile, and print layouts
-- **Automated Publishing**: Rules-based content release
+- **Manual Publishing**: Explicit publish action required
 
 ## User Interactions
 
@@ -100,15 +99,14 @@
 2. **Fix Issues**: Click action buttons to resolve validation errors
 3. **Preview Content**: See live preview of public-facing page
 4. **Set Publishing Mode**: Choose draft, progressive, or complete visibility
-5. **Configure Rules**: Set auto-publish thresholds and schedules
-6. **Publish/Schedule**: Manually publish or schedule for future release
+5. **Publish**: Manually publish content when ready
 
 ## Technical Notes
 
 - Real-time validation engine checks all content criteria
 - Preview iframe shows actual public site rendering
 - Version control system tracks all content changes
-- Automated publishing based on configurable rules
+- Manual publishing workflow with validation checks
 - Integration with workflow Step 11 (Publish Progress)
 - Responsive preview for mobile/desktop testing
 
@@ -145,8 +143,8 @@ When the Publishing Control Center screen loads, the following APIs are called t
    - Used for: Display current version number and timestamp, populate version history modal, enable rollback functionality
 
 7. **GET /api/v1/events/{eventId}/publishing/config**
-   - Returns: Publishing configuration (autoPublishEnabled, publishThreshold, updateFrequency, requiresApproval)
-   - Used for: Set checkbox states for auto-publish rules, display percentage threshold, show update frequency setting
+   - Returns: Publishing configuration (currentMode, requiresApproval)
+   - Used for: Set radio button state for publishing mode
 
 ### User Action APIs
 
@@ -162,31 +160,25 @@ When the Publishing Control Center screen loads, the following APIs are called t
    - Returns: Publication confirmation with timestamp
    - Used for: Content becomes visible on public site, version incremented
 
-10. **POST /api/v1/events/{eventId}/publishing/schedule**
-    - Triggered by: User clicks [Schedule] button
-    - Payload: `{ scheduledTime: ISO8601, mode: "progressive|complete" }`
-    - Returns: Scheduled publication details
-    - Used for: Creates scheduled task for future publication
-
-11. **PUT /api/v1/events/{eventId}/publishing/config**
-    - Triggered by: User changes publishing mode radio buttons or auto-publish checkboxes
-    - Payload: `{ mode: "draft|progressive|complete", autoPublishRules: {...} }`
+10. **PUT /api/v1/events/{eventId}/publishing/config**
+    - Triggered by: User changes publishing mode radio buttons
+    - Payload: `{ mode: "draft|progressive|complete" }`
     - Returns: Updated configuration
-    - Used for: Changes content visibility rules and auto-publish behavior
+    - Used for: Changes content visibility rules
 
-12. **POST /api/v1/events/{eventId}/publishing/versions/{versionId}/rollback**
+11. **POST /api/v1/events/{eventId}/publishing/versions/{versionId}/rollback**
     - Triggered by: User clicks [Rollback] button in version control
     - Payload: `{ versionId: uuid, reason: string }`
     - Returns: Rolled back version details
     - Used for: Restores previous content version, creates new version entry
 
-13. **GET /api/v1/events/{eventId}/publishing/preview?mode={mode}&device={device}**
+12. **GET /api/v1/events/{eventId}/publishing/preview?mode={mode}&device={device}**
     - Triggered by: User clicks [Desktop], [Mobile], or [Print] preview buttons
     - Query params: mode (current publishing mode), device (desktop|mobile|print)
     - Returns: Rendered preview HTML
     - Used for: Updates preview pane with device-specific rendering
 
-14. **PUT /api/v1/sessions/{sessionId}/quality-review**
+13. **PUT /api/v1/sessions/{sessionId}/quality-review**
     - Triggered by: User clicks [Review] or [Go] on quality review validation items
     - Payload: Session/content for review submission
     - Returns: Updated review status

@@ -24,9 +24,9 @@
 │  │  │ UPCOMING                             │     │  [📊 View Past Talks]          │   │
 │  │  │                                      │     │  [📧 Contact Organizer]        │   │
 │  │  │ Spring Conference 2025               │     │  [📚 Resource Center]          │   │
-│  │  │ May 15, 2025 • Kursaal Bern         │     │  [👥 Speaker Network]          │   │
-│  │  │                                      │     │                                 │   │
-│  │  │ Status: ✓ Confirmed                 │     │  ──────────────────            │   │
+│  │  │ May 15, 2025 • Kursaal Bern         │     │                                 │   │
+│  │  │                                      │     │  ──────────────────            │   │
+│  │  │ Status: ✓ Confirmed                 │     │                                 │   │
 │  │  │ Slot: 09:45 - 10:30 (45 min)       │     │                                 │   │
 │  │  │ Topic: Kubernetes Best Practices     │     │  NOTIFICATIONS                  │   │
 │  │  │                                      │     │                                 │   │
@@ -270,11 +270,6 @@ APIs called by user interactions and actions:
     - Response: Speaker resources, templates, guidelines
     - Opens: Resource center page
 
-14. **GET /api/v1/speakers/network**
-    - Triggered by: [👥 Speaker Network] button
-    - Opens: Speaker Community (Story 7.1)
-    - Type: Navigate to community page
-
 ---
 
 ## Navigation Map
@@ -359,50 +354,45 @@ Screen transitions triggered by actions and events:
     - **Type**: Full page navigation
     - **Context**: Access templates, guides, best practices
 
-14. **[👥 Speaker Network]**
-    - **Target**: Speaker Community (Story 7.1 - Speaker Community)
-    - **Type**: Full page navigation
-    - **Context**: Connect with other speakers, forums, mentorship
-
 ### Notification Actions
 
-15. **[Review Feedback]** (in notification)
+14. **[Review Feedback]** (in notification)
     - **Target**: Material review page or submission wizard
     - **Type**: Direct to specific submission requiring revision
     - **Context**: Depends on notification type
 
-16. **[View Schedule]** (in notification)
+15. **[View Schedule]** (in notification)
     - **Target**: Event Timeline (Story 3.5)
     - **Type**: Full event schedule
     - **Context**: Published event agenda
 
 ### Deadline Actions
 
-17. **[Sync to Calendar]**
+16. **[Sync to Calendar]**
     - **Action**: Downloads .ics file or opens calendar integration
     - **No Navigation**: Remains on dashboard
     - **Feedback**: "Calendar file downloaded" or "Redirecting to calendar"
 
-18. **[Email Reminders]**
+17. **[Email Reminders]**
     - **Action**: Toggles email reminder preferences
     - **Type**: Modal for configuration
     - **Context**: Set reminder frequency and timing
 
 ### Impact Metrics Navigation
 
-19. **"Your Impact" Panel Click**
+18. **"Your Impact" Panel Click**
     - **Target**: Detailed Analytics Dashboard
     - **Type**: Full page or modal
     - **Context**: Deep dive into speaker metrics, trends, comparisons
 
-20. **Topic Link** (in "Top Topics")
+19. **Topic Link** (in "Top Topics")
     - **Target**: Filtered view of talks by topic
     - **Type**: Past talks page with filter applied
     - **Context**: Show all talks on selected topic
 
 ### Activity Feed Navigation
 
-21. **Activity Item Click**
+20. **Activity Item Click**
     - **Target**: Context-specific based on activity type
     - **Examples**:
       - "Abstract reviewed" → Submission wizard with feedback
@@ -412,34 +402,34 @@ Screen transitions triggered by actions and events:
 
 ### Event-Driven Navigation
 
-22. **On New Invitation (WebSocket)**
+21. **On New Invitation (WebSocket)**
     - **No Navigation**: Remains on dashboard
     - **Feedback**: Toast notification "New invitation received"
     - **Update**: Invitation panel refreshes, bell icon badge increments
 
-23. **On Task Overdue**
+22. **On Task Overdue**
     - **Feedback**: Red highlight on task, notification added
     - **Suggested Action**: Modal prompt to complete overdue task
     - **Navigation**: Option to go directly to task (e.g., submit materials)
 
-24. **On Event Approaching (7 days before)**
+23. **On Event Approaching (7 days before)**
     - **Feedback**: Highlight event card with "Coming Soon" badge
     - **Notification**: "Your talk at [Event] is in 7 days"
     - **Action**: Prompt to complete any pending tasks
 
 ### Error States
 
-25. **On Session Timeout**
+24. **On Session Timeout**
     - **Target**: Login page
     - **Context**: Preserve return URL to redirect back after login
 
-26. **On Network Error**
+25. **On Network Error**
     - **No Navigation**: Remains on dashboard
     - **Feedback**: "Unable to load data" banner
     - **Action**: Retry button to reload dashboard
 
 ### Mobile-Specific
 
-27. **Bottom Navigation** (mobile only)
+26. **Bottom Navigation** (mobile only)
     - **Tabs**: Dashboard, Events, Notifications, Profile
     - **Context**: Simplified navigation for small screens

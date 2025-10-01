@@ -14,7 +14,7 @@ Complete rewrite of BATbern as a comprehensive event management platform using R
 ### Goals
 - Automate the complex 16-step event planning workflow
 - Eliminate manual speaker coordination and material collection
-- Provide real-time ROI analytics for sponsor partners
+- Provide real-time ROI analytics for partners
 - Create intelligent content discovery across 20+ years of conference content
 - Transform static website into dynamic event management platform
 
@@ -46,13 +46,13 @@ Complete rewrite of BATbern as a comprehensive event management platform using R
 11. **Progressive Publishing Engine** - Topic immediate, speakers 1 month before with continuous updates
 12. **Agenda Finalization** - 2 weeks before: finalize agenda, handle dropouts via waitlist
 13. **Newsletter Distribution** - Send progressive then final agenda to mailing list
-14. **Moderation Assignment** - Assign event moderator
-15. **Catering & Venue Coordination** - Caterer quotes 1 month before, venue planning 2+ years advance
-16. **Partner Meeting Coordination** - Spring/autumn sponsor meetings with budgets, statistics, topic brainstorming
+14. **Moderation Assignment** - Assign event moderator to the event
+15. **Catering Coordination** - Adds a task to contact Caterer for a menue 1 month before
+16. **Partner Meeting Coordination** - Organizers organize Spring and Autumn partner meetings at lunchtime on same day as BATbern event to discuss BATbern budgets, event statistics and brainstorm on topics for upcoming events, that are then stored on a backlog for voting and topic selection by the organizers.
 
 **FR3**: The system shall provide automated speaker invitation, submission, and material collection workflows with real-time status updates
 
-**FR4**: Partner/sponsor users shall access real-time analytics dashboards showing employee attendance, brand exposure metrics, and ROI data
+**FR4**: Partners shall access real-time analytics dashboards showing employee attendance, brand exposure metrics, and ROI data
 
 **FR5**: The platform shall support progressive event publishing with automatic content updates from topic definition through final agenda publication
 
@@ -202,7 +202,7 @@ Each epic document contains:
 - **Epic 3**: 90% speaker invitation acceptance rate, materials collected
 - **Epic 4**: Complete event workflow operational, quality control enforced
 - **Epic 5**: Content discovery across 20+ years functional, mobile access enabled
-- **Epic 6**: Partner dashboard adoption by 100% of sponsors, ROI visible
+- **Epic 6**: Partner dashboard adoption by 100% of partners, ROI visible
 - **Epic 7**: User satisfaction scores >4.5/5 across all roles
 
 ### Overall Platform Success

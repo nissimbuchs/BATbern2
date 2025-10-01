@@ -15,7 +15,7 @@
 ├─────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                       │
 │  Event: Cloud Native Architecture        Status: Active       Progress: 7/16 (44%)   │
-│  Date: May 15, 2025                     Deadline: March 15   Team: Sally, Mark, Anna│
+│  Date: May 15, 2025                     Deadline: March 15                           │
 │                                                                                       │
 │  ┌─────────────────────────────────────────────────────────────────────────────────┐ │
 │  │                         16-STEP EVENT WORKFLOW                                   │ │
@@ -122,7 +122,7 @@
 When the 16-Step Workflow Visualization screen loads, the following APIs are called to provide the necessary data:
 
 1. **GET /api/v1/events/{eventId}**
-   - Returns: Event basic info (title, date, status, venue, team members, deadline)
+   - Returns: Event basic info (title, date, status, venue, deadline)
    - Used for: Populate event header information
 
 2. **GET /api/v1/events/{eventId}/workflow**

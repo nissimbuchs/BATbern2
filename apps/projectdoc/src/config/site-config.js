@@ -34,6 +34,7 @@ module.exports = {
       order: 1,
       files: [
         'prd-enhanced.md',
+        'prd-wireframe-alignment-analysis.md',
         'todo.md']
     },
     'architecture': {

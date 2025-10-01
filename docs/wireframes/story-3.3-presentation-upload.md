@@ -70,7 +70,7 @@
 │  │  ✓ Duration: Fits 45-minute slot              ✓ Accessibility: High contrast   │ │
 │  │  ✓ Font size: Minimum 24pt                    ⚠️ Page numbers: Add to slides   │ │
 │  │                                                                                  │ │
-│  │  [Download Template] [View Guidelines] [Check Accessibility]                    │ │
+│  │  [Download Template] [View Guidelines]                                          │ │
 │  └──────────────────────────────────────────────────────────────────────────────────┘ │
 │                                                                                       │
 │  [Save Progress] [Submit for Review] [Request Feedback]                              │
@@ -85,14 +85,12 @@
 - **Preview**: View slides before submission
 - **Supplementary Materials**: Add code repos, resources, documentation
 - **Requirements Checklist**: Track compliance with presentation guidelines
-- **Accessibility Check**: Validate slides for accessibility standards
 
 ## Functional Requirements Met
 
 - **FR5**: Speaker management with presentation upload
 - Version control for presentation materials
 - Supplementary resource management
-- Accessibility compliance checking
 - Template and guideline access
 
 ## User Interactions
@@ -109,7 +107,6 @@
 - Resumable file uploads for large presentations
 - PDF preview generation for all formats
 - Version control with S3 versioning
-- Accessibility validation using automated tools
 - Support for multiple file formats (PPTX, PDF, KEY)
 
 ---
@@ -168,7 +165,6 @@ APIs called by user interactions and actions:
    - Processing:
      - Generate PDF preview
      - Extract slide count
-     - Run accessibility scan
      - Create thumbnail previews
    - Max size: 50MB
    - Supported formats: PPTX, PDF, KEY, Google Slides link
@@ -235,13 +231,7 @@ APIs called by user interactions and actions:
 
 ### Compliance & Validation
 
-12. **POST /api/v1/presentations/{fileId}/check-accessibility**
-    - Triggered by: [Check Accessibility] button or auto after upload
-    - Response: Accessibility report with issues and suggestions
-    - Returns: `{ score, issues: [], warnings: [], passed: boolean }`
-    - Checks: Contrast ratios, font sizes, alt text, reading order
-
-13. **POST /api/v1/presentations/{fileId}/validate-requirements**
+12. **POST /api/v1/presentations/{fileId}/validate-requirements**
     - Triggered by: Auto after upload or [Validate] button
     - Payload: `{ eventId }`
     - Response: Compliance check results
@@ -250,7 +240,7 @@ APIs called by user interactions and actions:
 
 ### Submission
 
-14. **POST /api/v1/speakers/{speakerId}/events/{eventId}/presentation/submit**
+13. **POST /api/v1/speakers/{speakerId}/events/{eventId}/presentation/submit**
     - Triggered by: [Submit for Review] button
     - Payload: `{ presentationFileId, supplementaryMaterials: [], notes }`
     - Response: Submission confirmation, review timeline
@@ -261,7 +251,7 @@ APIs called by user interactions and actions:
       - Triggers quality review workflow
     - State change: Presentation status → "under_review"
 
-15. **POST /api/v1/speakers/{speakerId}/events/{eventId}/presentation/request-feedback**
+14. **POST /api/v1/speakers/{speakerId}/events/{eventId}/presentation/request-feedback**
     - Triggered by: [Request Feedback] button
     - Payload: `{ specificQuestions: [] }`
     - Response: Feedback request sent confirmation
@@ -269,7 +259,7 @@ APIs called by user interactions and actions:
 
 ### Progress Tracking
 
-16. **PUT /api/v1/speakers/{speakerId}/events/{eventId}/presentation/progress**
+15. **PUT /api/v1/speakers/{speakerId}/events/{eventId}/presentation/progress**
     - Triggered by: [Save Progress] button or auto-save
     - Payload: All form data including checkboxes, URLs, settings
     - Response: Save confirmation, last saved timestamp
@@ -346,19 +336,7 @@ Screen transitions triggered by actions and events:
 
 ### Compliance & Quality Navigation
 
-12. **[Check Accessibility]**
-    - **Target**: Accessibility report modal
-    - **Type**: Modal overlay with detailed results
-    - **Content**: Issues list, suggestions, score
-    - **Actions**: [View Details], [Download Report], [Fix Issues]
-    - **Close**: Returns to current screen
-
-13. **On Accessibility Issues Found**
-    - **Feedback**: Warning banner with issue count
-    - **Action**: [View Details] opens accessibility report modal
-    - **Recommendation**: "Fix issues before submitting"
-
-14. **Requirements Checklist Item Click**
+12. **Requirements Checklist Item Click**
     - **Target**: Requirement details tooltip or modal
     - **Type**: Tooltip or modal
     - **Content**: Explanation of requirement, how to fix
@@ -366,12 +344,12 @@ Screen transitions triggered by actions and events:
 
 ### Submission Flow
 
-15. **[Save Progress]**
+13. **[Save Progress]**
     - **Action**: Saves all current data
     - **No Navigation**: Remains on screen
     - **Feedback**: "Progress saved" toast notification
 
-16. **[Submit for Review]**
+14. **[Submit for Review]**
     - **Validation**: Checks all requirements met
     - **If Valid**:
       - **Target**: Submission confirmation page
@@ -384,7 +362,7 @@ Screen transitions triggered by actions and events:
       - **Feedback**: Error modal showing missing requirements
       - **Highlight**: Invalid items in requirements checklist
 
-17. **[Request Feedback]**
+15. **[Request Feedback]**
     - **Target**: Feedback request modal
     - **Type**: Modal overlay
     - **Content**: Text area for specific questions
@@ -394,27 +372,26 @@ Screen transitions triggered by actions and events:
 
 ### Event-Driven Navigation
 
-18. **On Upload Complete**
+16. **On Upload Complete**
     - **No Navigation**: Remains on screen
     - **Feedback**: Success toast, file details displayed
     - **Auto-actions**:
-      - Run accessibility check
       - Validate requirements
       - Generate preview
     - **Updates**: Requirements checklist, version history
 
-19. **On Upload Failure**
+17. **On Upload Failure**
     - **No Navigation**: Remains on screen
     - **Feedback**: Error modal with details and retry option
     - **Actions**: [Retry], [Try Different File], [Contact Support]
 
-20. **On Submission Accepted (by organizer)**
+18. **On Submission Accepted (by organizer)**
     - **Notification**: Via email and dashboard notification
     - **Entry**: Link from notification
     - **Feedback**: "Your presentation has been approved" banner
     - **Status**: Presentation status → "approved"
 
-21. **On Revision Requested (by organizer)**
+19. **On Revision Requested (by organizer)**
     - **Notification**: Via email and dashboard notification
     - **Entry**: Link from notification opens this screen
     - **Feedback**: Revision request banner with organizer feedback
@@ -423,28 +400,28 @@ Screen transitions triggered by actions and events:
 
 ### Deadline Management
 
-22. **On Deadline Approaching** (< 7 days)
+20. **On Deadline Approaching** (< 7 days)
     - **Feedback**: Warning banner "Presentation due in 5 days"
     - **Urgency**: Red deadline indicator
 
-23. **On Deadline Passed**
+21. **On Deadline Passed**
     - **Feedback**: Error banner "Presentation overdue"
     - **Action**: [Request Extension] button
     - **Restriction**: May block submission, require organizer approval
 
 ### Error States
 
-24. **On File Too Large**
+22. **On File Too Large**
     - **No Navigation**: Remains on screen
     - **Feedback**: Error message "File exceeds 50MB limit"
     - **Suggestion**: "Compress images or split into multiple files"
 
-25. **On Unsupported Format**
+23. **On Unsupported Format**
     - **No Navigation**: Remains on screen
     - **Feedback**: Error message "Unsupported file format"
     - **Supported**: List supported formats (PPTX, PDF, KEY)
 
-26. **On Network Error During Upload**
+24. **On Network Error During Upload**
     - **No Navigation**: Remains on screen
     - **Feedback**: "Upload paused - connection lost"
     - **Auto-resume**: When connection restored
@@ -452,12 +429,12 @@ Screen transitions triggered by actions and events:
 
 ### Mobile-Specific
 
-27. **Mobile File Upload**
+25. **Mobile File Upload**
     - **Options**: Camera, Photo Library (for photos), Files app
     - **Optimization**: Upload progress visible in notification
     - **Background**: Support background uploads
 
-28. **Mobile Preview**
+26. **Mobile Preview**
     - **Target**: Full-screen slide viewer
     - **Gestures**: Swipe between slides, pinch to zoom
     - **Close**: Back button returns to screen

@@ -59,11 +59,11 @@
 │  │  │ 2030 sustainability goals while maintaining performance.                  │  │ │
 │  │  └──────────────────────────────────────────────────────────────────────────┘  │ │
 │  │                                                                                  │ │
-│  │  Target Audience                    Expected Attendance                         │ │
-│  │  ☑ C-Level/Management              ○ <50  ● 50-100  ○ 100+                    │ │
-│  │  ☑ IT Infrastructure                                                           │ │
-│  │  ☑ Development Teams               Preferred Quarter                           │ │
-│  │  ☐ Security Teams                  ○ Q2  ● Q3  ○ Q4                           │ │
+│  │  Target Audience                                                                │ │
+│  │  ☑ C-Level/Management                                                           │ │
+│  │  ☑ IT Infrastructure                                                            │ │
+│  │  ☑ Development Teams                                                            │ │
+│  │  ☐ Security Teams                                                               │ │
 │  │                                                                                  │ │
 │  │  [Submit Suggestion] [Save Draft]                                               │ │
 │  └──────────────────────────────────────────────────────────────────────────────────┘ │
@@ -148,12 +148,12 @@ When the Strategic Topic Planning screen loads, the following APIs are called to
 ### Topic Suggestion
 
 4. **POST /api/v1/partners/{partnerId}/topics/suggest**
-   - Payload: `{ title, businessJustification, targetAudience: [], expectedAttendance: "50|50-100|100+", preferredQuarter, supportingLinks: [] }`
+   - Payload: `{ title, businessJustification, targetAudience: [], supportingLinks: [] }`
    - Response: Suggestion ID, review status, expected review timeline
    - Used for: Submit new topic suggestion
 
 5. **POST /api/v1/partners/{partnerId}/topics/suggestions/draft**
-   - Payload: `{ title, businessJustification, targetAudience: [], expectedAttendance, preferredQuarter }`
+   - Payload: `{ title, businessJustification, targetAudience: [] }`
    - Response: Draft ID, save confirmation
    - Used for: Save topic suggestion as draft
 
@@ -316,99 +316,89 @@ When the Strategic Topic Planning screen loads, the following APIs are called to
 
 ### Secondary Navigation (Form & Data Interactions)
 
-16. **Target Audience checkboxes** → Updates expected attendance validation
-    - Adjusts attendance estimate ranges
-    - Validates audience-attendance alignment
-    - No screen navigation
-
-17. **Expected Attendance radio buttons** → Updates submission
-    - Changes attendance projection
+16. **Target Audience checkboxes** → Updates submission
+    - Selects target audience
     - May affect review priority
     - No screen navigation
 
-18. **Preferred Quarter radio buttons** → Updates submission
-    - Sets quarter preference
-    - Shows related events in that quarter
-    - No screen navigation
-
-19. **Topic title field (suggestion form)** → Triggers similar topic suggestions
+17. **Topic title field (suggestion form)** → Triggers similar topic suggestions
     - Shows existing similar topics
     - Prevents duplicate suggestions
     - Offers to add existing topic instead
     - No screen navigation
 
-20. **Business Justification field** → Character count and quality feedback
+18. **Business Justification field** → Character count and quality feedback
     - Shows character count
     - Provides writing quality tips
     - No screen navigation
 
 ### Event-Driven Navigation
 
-21. **Vote rankings changed** → Triggers auto-save
+19. **Vote rankings changed** → Triggers auto-save
     - Saves draft rankings periodically
     - Shows subtle save indicator
     - No screen navigation
 
-22. **Votes submitted successfully** → Shows success notification
+20. **Votes submitted successfully** → Shows success notification
     - Confirmation message
     - Updated influence score
     - Voting session status update
     - No automatic navigation
 
-23. **Topic suggestion submitted** → Shows confirmation notification
+21. **Topic suggestion submitted** → Shows confirmation notification
     - Suggestion ID provided
     - Expected review timeline
     - Links to suggestion tracking
     - No automatic navigation
 
-24. **Draft saved** → Shows save notification
+22. **Draft saved** → Shows save notification
     - Save timestamp
     - Draft available in form
     - No automatic navigation
 
-25. **Voting deadline approaching (7 days)** → Shows reminder banner
+23. **Voting deadline approaching (7 days)** → Shows reminder banner
     - Countdown to deadline
     - Current vote status
     - Submit votes prompt
     - No automatic navigation
 
-26. **New topic added to voting pool** → Shows notification
+24. **New topic added to voting pool** → Shows notification
     - New topic alert
     - Link to topic details
     - Option to add to rankings
     - No automatic navigation
 
-27. **Suggestion approved** → Shows success notification
+25. **Suggestion approved** → Shows success notification
     - Approval confirmation
     - Topic added to voting pool
     - Credit to suggesting partner
     - Links to vote for new topic
 
-28. **Suggestion rejected** → Shows notification with feedback
+26. **Suggestion rejected** → Shows notification with feedback
     - Rejection reason
     - Improvement suggestions
     - Option to revise and resubmit
     - No automatic navigation
 
-29. **Voting session closed** → Shows closure notification
+27. **Voting session closed** → Shows closure notification
     - Session ended message
     - Results available date
     - Thank you message
     - No automatic navigation
 
-30. **Voting results published** → Shows notification with results link
+28. **Voting results published** → Shows notification with results link
     - Results available
     - Partner's impact on selections
     - Links to detailed results
     - No automatic navigation
 
-31. **Similar topic detected (during suggestion)** → Shows suggestion modal
+29. **Similar topic detected (during suggestion)** → Shows suggestion modal
     - Lists similar existing topics
     - Suggests voting for existing instead
     - Option to proceed with new suggestion
     - No screen navigation
 
-32. **Influence score updated** → Updates score display
+30. **Influence score updated** → Updates score display
     - Animated score change
     - Highlights contributing factors
     - No screen navigation

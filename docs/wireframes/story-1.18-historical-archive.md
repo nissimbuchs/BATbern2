@@ -31,7 +31,7 @@
 │  │  │ • Container Security - S. Kim                      ⭐ 4.9 • ⬇ 891          │ │ │
 │  │  │ • Zero Trust Architecture - T. Weber               ⭐ 4.7 • ⬇ 445          │ │ │
 │  │  │                                                                             │ │ │
-│  │  │ [View Event] [Browse Presentations] [Photo Gallery] [Attendee List]        │ │ │
+│  │  │ [View Event] [Browse Presentations] [Photo Gallery]                        │ │ │
 │  │  └────────────────────────────────────────────────────────────────────────────┘ │ │
 │  │                                                                                  │ │
 │  │  ┌────────────────────────────────────────────────────────────────────────────┐ │ │

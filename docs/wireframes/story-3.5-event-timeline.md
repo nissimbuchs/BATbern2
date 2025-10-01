@@ -51,21 +51,6 @@
 │  │     [✓ Attending] [Dietary Restrictions]                                       │ │
 │  └──────────────────────────────────────────────────────────────────────────────────┘ │
 │                                                                                       │
-│  ┌─── EVENT DAY SCHEDULE ───────────────────────────────────────────────────────────┐ │
-│  │                                                                                  │ │
-│  │  Your Presentation Day: May 15, 2025                                            │ │
-│  │                                                                                  │ │
-│  │  08:30  Speaker arrival & check-in                                              │ │
-│  │  08:45  Tech setup in main hall                                                 │ │
-│  │  09:00  Morning session begins                                                  │ │
-│  │  09:45  YOUR PRESENTATION (45 min)  ← You are here                             │ │
-│  │  10:30  Q&A Session (15 min)                                                    │ │
-│  │  10:45  Coffee break & networking                                               │ │
-│  │  11:00  Next speaker                                                            │ │
-│  │                                                                                  │ │
-│  │  [View Full Agenda] [Download Schedule] [Add to Calendar]                       │ │
-│  └──────────────────────────────────────────────────────────────────────────────────┘ │
-│                                                                                       │
 │  ┌─── PREPARATION CHECKLIST ────────────────────────────────────────────────────────┐ │
 │  │                                                                                  │ │
 │  │  Pre-Event (Complete by May 10)          Event Day                             │ │
@@ -85,7 +70,6 @@
 - **Visual Timeline**: Gantt-style timeline showing all milestones from invitation to event day
 - **Status Indicators**: ✓ Completed, ⚠️ Overdue, ○ Pending
 - **Milestone Cards**: Interactive cards with actions for each upcoming task
-- **Event Day Schedule**: Hour-by-hour breakdown of presentation day
 - **Preparation Checklist**: Pre-event and event-day checklists with progress tracking
 - **Calendar Integration**: Export timeline to personal calendar
 
@@ -94,7 +78,6 @@
 - **FR5**: Speaker management with event participation tracking
 - Complete visibility into event preparation timeline
 - Milestone and deadline tracking
-- Event day schedule and logistics
 - Preparation checklist with progress indicators
 
 ## User Interactions
@@ -102,9 +85,8 @@
 1. **View Timeline**: See all event milestones from acceptance to event day
 2. **Track Progress**: Monitor completion of required tasks
 3. **Act on Milestones**: Submit materials, RSVP, schedule appointments
-4. **View Schedule**: See event day timeline and personal presentation slot
-5. **Export Calendar**: Add events and deadlines to personal calendar
-6. **Complete Checklist**: Track preparation tasks
+4. **Export Calendar**: Add events and deadlines to personal calendar
+5. **Complete Checklist**: Track preparation tasks
 
 ## Technical Notes
 
@@ -124,7 +106,7 @@ APIs needed to load and display data for this screen:
 
 1. **GET /api/v1/speakers/{speakerId}/events/{eventId}/timeline**
    - Retrieve complete event timeline data
-   - Response includes: all milestones, deadlines, completion status, event day schedule
+   - Response includes: all milestones, deadlines, completion status
    - Used for: Populating timeline visualization and milestone cards
    - Aggregated: Single call for complete timeline
 
@@ -134,18 +116,12 @@ APIs needed to load and display data for this screen:
    - Used for: "Upcoming Milestones" section
    - Filter: `status=pending|overdue`, `limit=5`
 
-3. **GET /api/v1/events/{eventId}/schedule**
-   - Retrieve full event day schedule
-   - Response includes: time slots, sessions, speakers, locations
-   - Used for: "Event Day Schedule" section
-   - Highlight: Speaker's own presentation slot
-
-4. **GET /api/v1/speakers/{speakerId}/events/{eventId}/checklist**
+3. **GET /api/v1/speakers/{speakerId}/events/{eventId}/checklist**
    - Retrieve preparation checklist items
    - Response includes: checklist items, completion status, categories (pre-event, event-day)
    - Used for: "Preparation Checklist" section
 
-5. **GET /api/v1/events/{eventId}/details**
+4. **GET /api/v1/events/{eventId}/details**
    - Retrieve event details
    - Response includes: event name, date, location, topic, speaker slot time
    - Used for: Header information display
@@ -213,45 +189,35 @@ APIs called by user interactions and actions:
    - Response: Presentation guidelines document (PDF or markdown)
    - Opens: Guidelines viewer (modal or new tab)
 
-10. **GET /api/v1/events/{eventId}/agenda**
-    - Triggered by: [View Full Agenda] button
-    - Response: Complete event agenda with all sessions
-    - Opens: Full agenda page
-
 ### Calendar Integration
 
-11. **GET /api/v1/speakers/{speakerId}/events/{eventId}/calendar/export**
+10. **GET /api/v1/speakers/{speakerId}/events/{eventId}/calendar/export**
     - Triggered by: [Export] or [Add to Calendar] buttons
     - Query params: `format=ical|google|outlook`, `includeDeadlines=true`
     - Response: iCal file or calendar service redirect
-    - Downloads: .ics file with all milestones and event day schedule
-
-12. **GET /api/v1/events/{eventId}/schedule/download**
-    - Triggered by: [Download Schedule] button
-    - Response: PDF or iCal file of event day schedule
-    - Downloads: Event schedule document
+    - Downloads: .ics file with all milestones
 
 ### Checklist Management
 
-13. **PUT /api/v1/speakers/{speakerId}/events/{eventId}/checklist/{itemId}**
+11. **PUT /api/v1/speakers/{speakerId}/events/{eventId}/checklist/{itemId}**
     - Triggered by: Checking/unchecking checklist item
     - Payload: `{ completed: true }`
     - Response: Updated checklist item status
     - Updates: Checklist progress, completion percentage
 
-14. **POST /api/v1/speakers/{speakerId}/events/{eventId}/checklist/reset**
+12. **POST /api/v1/speakers/{speakerId}/events/{eventId}/checklist/reset**
     - Triggered by: Optional "Reset Checklist" action
     - Response: All items reset to incomplete
     - Used for: Testing or re-preparation
 
 ### Questions & Support
 
-15. **GET /api/v1/speakers/{speakerId}/events/{eventId}/attendee-questions**
+13. **GET /api/v1/speakers/{speakerId}/events/{eventId}/attendee-questions**
     - Triggered by: "Review attendee questions" checklist item
     - Response: Pre-submitted questions from attendees (if feature enabled)
     - Opens: Questions review interface
 
-16. **POST /api/v1/speakers/{speakerId}/events/{eventId}/support-request**
+14. **POST /api/v1/speakers/{speakerId}/events/{eventId}/support-request**
     - Triggered by: "Need Help" or support button
     - Payload: `{ subject, message, urgency }`
     - Response: Support ticket created
@@ -324,120 +290,81 @@ Screen transitions triggered by actions and events:
     - **Submit**: Saves restrictions
     - **Return**: Closes modal, RSVP updated
 
-### Schedule Navigation
+### Calendar Integration
 
-11. **[View Full Agenda]**
-    - **Target**: Complete event agenda page
-    - **Type**: Full page or modal
-    - **Content**: All sessions, speakers, times, locations
-    - **Features**: Filter by track, search sessions, speaker bios
-
-12. **[Download Schedule]**
-    - **Action**: Downloads event schedule PDF or iCal
-    - **No Navigation**: Remains on screen
-    - **Feedback**: File download initiated
-
-13. **[Add to Calendar]**
+11. **[Add to Calendar]**
     - **Action**: Exports to calendar service
     - **Options**: Google Calendar, Outlook, Apple Calendar, iCal file
     - **Flow**: Select service → Redirect or download
 
 ### Checklist Navigation
 
-14. **Checklist Item Click**
+12. **Checklist Item Click**
     - **Behavior**: Toggle checked/unchecked
     - **No Navigation**: Remains on screen
     - **Updates**: Progress percentage, completion status
     - **Auto-save**: Checkbox state persisted immediately
 
-15. **"Review attendee questions" Item**
+13. **"Review attendee questions" Item**
     - **If Clicked**: Opens attendee questions interface
     - **Target**: Questions review page or modal
     - **Type**: Modal or dedicated page
     - **Content**: Pre-submitted questions from registered attendees
 
-### Event Day Navigation
-
-16. **"Your Presentation" Slot Click** (in event day schedule)
-    - **Target**: Presentation details modal
-    - **Type**: Modal overlay
-    - **Content**: Slot details, location, equipment, organizer contact
-    - **Actions**: [View Location Map], [Contact Organizer]
-
-17. **[View Location Map]**
-    - **Target**: Venue map or Google Maps link
-    - **Type**: New tab or inline map widget
-    - **Content**: Venue layout, presentation room, facilities
-
 ### Timeline Interaction
 
-18. **Timeline Milestone Click**
+14. **Timeline Milestone Click**
     - **Target**: Milestone details modal
     - **Type**: Modal overlay
     - **Content**: Milestone description, requirements, actions
     - **Close**: Returns to timeline view
 
-19. **Overdue Milestone**
+15. **Overdue Milestone**
     - **Visual**: Red color, ⚠️ icon, "OVERDUE" label
     - **Click**: Opens resolution modal
     - **Actions**: [Complete Now], [Request Extension], [Contact Organizer]
 
 ### Event-Driven Navigation
 
-20. **On Milestone Completed** (via other screens)
+16. **On Milestone Completed** (via other screens)
     - **Entry**: Returns to timeline from submission screen
     - **Update**: Timeline refreshes, milestone marked complete
     - **Feedback**: Success toast, visual update (✓ icon)
     - **Progress**: Next milestone highlighted
 
-21. **On Deadline Approaching** (< 7 days)
+17. **On Deadline Approaching** (< 7 days)
     - **Notification**: Push notification or email
     - **Entry**: Link opens timeline, scrolls to relevant milestone
     - **Highlight**: Milestone pulsing or highlighted
 
-22. **On Tech Check Scheduled**
+18. **On Tech Check Scheduled**
     - **Update**: Calendar event added to timeline
     - **Feedback**: "Tech check scheduled for May 10, 14:00" toast
     - **Milestone**: Tech check milestone marked in progress
 
-23. **On Event Day - 1 Day Before**
-    - **Highlight**: Event day schedule becomes prominent
-    - **Checklist**: Event-day items highlighted
-    - **Reminder**: "Your presentation is tomorrow at 09:45" banner
-
-24. **On Event Day**
-    - **Mode**: "Event Day Mode" - simplified view
-    - **Focus**: Event day schedule and logistics only
-    - **Features**: Real-time updates, location info, organizer contact
-
 ### Error & Support
 
-25. **On Overdue Item - Extension Needed**
+19. **On Overdue Item - Extension Needed**
     - **Action**: [Request Extension] button
     - **Target**: Extension request form modal
     - **Payload**: Reason, requested new deadline
     - **Submit**: Sends request to organizer
 
-26. **[Contact Organizer]** (various locations)
+20. **[Contact Organizer]** (various locations)
     - **Target**: Communication Hub (Story 7.3) or message composer
     - **Type**: Modal or navigation
     - **Context**: Pre-filled with event and context info
 
-27. **On Network Error**
+21. **On Network Error**
     - **No Navigation**: Remains on screen
     - **Feedback**: "Unable to load timeline" message
     - **Action**: [Retry] button
 
 ### Mobile-Specific
 
-28. **Mobile Timeline View**
+22. **Mobile Timeline View**
     - **Layout**: Vertical timeline (not horizontal)
     - **Gestures**: Scroll to navigate, tap to expand
     - **Simplified**: Fewer visual elements, focus on next actions
-
-29. **Mobile Event Day View**
-    - **Mode**: Single column layout
-    - **Quick Actions**: Call venue, get directions, view slides
-    - **Sticky**: Current time indicator
 
 ---

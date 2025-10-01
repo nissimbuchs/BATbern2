@@ -22,54 +22,38 @@
 │  │  │ 📅 Spring Conference 2025                           In 45 days            │  │  │
 │  │  │ May 15, 2025 • Kursaal Bern                                              │  │  │
 │  │  │                                                                           │  │  │
-│  │  │ Your Schedule:                              Actions:                     │  │  │
-│  │  │ • 09:45 Kubernetes Best Practices            [📅 Add to Calendar]        │  │  │
-│  │  │ • 13:30 Hands-on Workshop                    [📧 Email Ticket]           │  │  │
-│  │  │ • 15:00 Container Orchestration               [📍 Get Directions]        │  │  │
-│  │  │                                                [👥 Who's Attending]       │  │  │
+│  │  │ Actions:                                                                  │  │  │
+│  │  │ [📅 Add to Calendar]  [📍 Get Directions]  [👥 Who's Attending]         │  │  │
 │  │  └──────────────────────────────────────────────────────────────────────────┘  │  │
 │  │                                                                                 │  │
 │  │  No other events registered. [Browse Upcoming Events →]                        │  │
 │  └─────────────────────────────────────────────────────────────────────────────────┘ │
 │                                                                                       │
-│  ┌──── RECOMMENDED FOR YOU ────────┬──── YOUR CONTENT LIBRARY ──────────────────┐   │
-│  │                                  │                                             │   │
-│  │  Based on your interests:        │  Saved Presentations (12)                  │   │
-│  │                                  │                                             │   │
-│  │  🎯 "Zero Trust in K8s"          │  📄 K8s Security Best Practices            │   │
-│  │     Thomas Weber • 2024          │     Thomas Weber • 2024 • Downloaded       │   │
-│  │     95% match to your interests  │                                             │   │
-│  │     [View] [Save]                │  📄 Container Orchestration Guide          │   │
-│  │                                  │     Sara Kim • 2023 • Downloaded           │   │
-│  │  🔥 "GitOps Workflows"           │                                             │   │
-│  │     Marc Baum • 2024             │  📄 DevOps Transformation                   │   │
-│  │     Trending in your company     │     Peter Muller • 2023 • Bookmarked       │   │
-│  │     [View] [Save]                │                                             │   │
-│  │                                  │  [View All] [Manage Downloads]             │   │
-│  │  [More Recommendations →]         │                                             │   │
-│  └──────────────────────────────────┴─────────────────────────────────────────────┘  │
-│                                                                                       │
-│  ┌──── YOUR LEARNING PATH ─────────────────────────────────────────────────────────┐ │
-│  │                                                                                  │ │
-│  │  Kubernetes Mastery Track                                    Level: Intermediate │ │
-│  │  ━━━━━━━━━━━━━━━━━━━━●━━━━━━━━━━━━━━  60% Complete                             │ │
-│  │                                                                                  │ │
-│  │  ✓ Introduction to Containers        ✓ K8s Fundamentals      ● K8s Security    │ │
-│  │  ✓ Docker Deep Dive                  ✓ Advanced Deployments  ○ Service Mesh    │ │
-│  │                                                                                  │ │
-│  │  Next: "Kubernetes Security" - 45 min estimated                                 │ │
-│  │  [Continue Learning] [Change Path] [View Achievements]                          │ │
-│  └──────────────────────────────────────────────────────────────────────────────────┘ │
+│  ┌──── RECOMMENDED FOR YOU ──────────────────────────────────────────────────────┐   │
+│  │                                                                                 │   │
+│  │  Based on your interests:                                                      │   │
+│  │                                                                                 │   │
+│  │  🎯 "Zero Trust in K8s"                                                        │   │
+│  │     Thomas Weber • 2024                                                        │   │
+│  │     95% match to your interests                                                │   │
+│  │     [View]                                                                     │   │
+│  │                                                                                 │   │
+│  │  🔥 "GitOps Workflows"                                                         │   │
+│  │     Marc Baum • 2024                                                           │   │
+│  │     Trending in your company                                                   │   │
+│  │     [View]                                                                     │   │
+│  │                                                                                 │   │
+│  │  [More Recommendations →]                                                      │   │
+│  └─────────────────────────────────────────────────────────────────────────────────┘ │
 │                                                                                       │
 │  ┌──── COMMUNITY ACTIVITY ──────────────────────────────────────────────────────────┐ │
 │  │                                                                                  │ │
-│  │  🏆 Your Stats                        📊 Community Pulse                       │ │
-│  │  Events Attended: 8                   Hot Topics This Month:                   │ │
-│  │  Presentations Viewed: 47             • AI/ML on Kubernetes (⬆ 45%)            │ │
-│  │  Community Points: 230                • FinOps & Cost Control (⬆ 32%)          │ │
-│  │  Rank: Active Member                  • Platform Engineering (New!)            │ │
+│  │  🏆 Your Stats                                                                  │ │
+│  │  Events Attended: 8                                                             │ │
+│  │  Presentations Viewed: 47                                                       │ │
+│  │  Rank: Active Member                                                            │ │
 │  │                                                                                  │ │
-│  │  [View Profile] [Leaderboard]         [Join Discussion →]                       │ │
+│  │  [View Profile] [Leaderboard]                                                   │ │
 │  └──────────────────────────────────────────────────────────────────────────────────┘ │
 │                                                                                       │
 └─────────────────────────────────────────────────────────────────────────────────────┘
@@ -77,30 +61,24 @@
 
 ## Key Interactive Elements
 
-- **Event Registration**: View upcoming registered events with personalized schedules
+- **Event Registration**: View upcoming registered events
 - **Personalized Recommendations**: AI-curated content based on interests and activity
-- **Content Library**: Saved presentations with download management
-- **Learning Path Tracking**: Visual progress through curated learning sequences
-- **Community Stats**: Gamification with points, ranks, and achievements
-- **Quick Actions**: Calendar export, directions, email tickets, social discovery
+- **Community Stats**: Gamification with ranks and achievements
+- **Quick Actions**: Calendar export, directions, social discovery
 
 ## Functional Requirements Met
 
 - **FR13**: Complete personalization with user-specific content
 - **Event Management**: Registration tracking and schedule management
-- **Content Library**: Personal collection of saved materials
-- **Learning Paths**: Progress tracking and recommendations
-- **Gamification**: Community points, ranks, and engagement tracking
-- **Social Features**: Who's attending, community pulse, discussions
+- **Gamification**: Community ranks and engagement tracking
+- **Social Features**: Who's attending, discussions
 
 ## User Interactions
 
-1. **View Upcoming Events**: See registered events with personal schedule
-2. **Manage Content Library**: Access saved presentations and downloads
-3. **Continue Learning**: Progress through learning paths with recommendations
-4. **Explore Recommendations**: Discover new content based on interests
-5. **Track Progress**: View stats, achievements, and community rank
-6. **Quick Actions**: Calendar sync, directions, tickets, social features
+1. **View Upcoming Events**: See registered events
+2. **View Recommendations**: Browse personalized content recommendations
+3. **Track Progress**: View stats, achievements, and community rank
+4. **Quick Actions**: Calendar sync, directions, social features
 
 ## Technical Notes
 
@@ -156,17 +134,6 @@ APIs needed to load and display data for this screen:
    - Response includes: path details, completion percentage, next content, achievements
    - Used for: "Your Learning Path" section
 
-7. **GET /api/v1/attendees/{attendeeId}/stats**
-   - Retrieve community statistics and gamification data
-   - Response includes: events attended, presentations viewed, points, rank, badges
-   - Used for: "Community Activity" section
-
-8. **GET /api/v1/community/trending**
-   - Retrieve trending topics and community pulse
-   - Query params: `period=month`
-   - Response includes: trending topics with growth percentages
-   - Used for: "Community Pulse" in community activity
-
 ---
 
 ## Action APIs
@@ -185,11 +152,6 @@ APIs called by user interactions and actions:
    - Query params: `format=ical|google|outlook`, `attendeeId`
    - Response: iCal file or calendar service redirect
    - Downloads: .ics file with personal schedule
-
-3. **POST /api/v1/attendees/{attendeeId}/events/{eventId}/ticket-email**
-   - Triggered by: [📧 Email Ticket] button
-   - Response: Ticket email sent confirmation
-   - Side effect: Sends ticket to attendee's email
 
 4. **GET /api/v1/events/{eventId}/venue/directions**
    - Triggered by: [📍 Get Directions] button
@@ -214,14 +176,7 @@ APIs called by user interactions and actions:
    - Response: Full content details, viewer URL
    - Opens: Content viewer page
 
-8. **POST /api/v1/attendees/{attendeeId}/library/save**
-   - Triggered by: [Save] button on recommendation
-   - Payload: `{ contentId }`
-   - Response: Content saved to library
-   - Feedback: "Saved to library" toast
-   - Updates: Library count increments
-
-9. **GET /api/v1/attendees/{attendeeId}/recommendations/more**
+8. **GET /api/v1/attendees/{attendeeId}/recommendations/more**
    - Triggered by: [More Recommendations →] link
    - Query params: `offset=5`, `limit=20`
    - Response: Additional personalized recommendations
@@ -229,78 +184,55 @@ APIs called by user interactions and actions:
 
 ### Content Library Management
 
-10. **GET /api/v1/attendees/{attendeeId}/library/all**
+9. **GET /api/v1/attendees/{attendeeId}/library/all**
     - Triggered by: [View All] button in library section
     - Response: Complete content library with filters
     - Opens: Full library management page
 
-11. **GET /api/v1/content/{contentId}/download**
+10. **GET /api/v1/content/{contentId}/download**
     - Triggered by: Clicking downloaded content item
     - Response: Presigned S3 URL or file stream
     - Downloads: PDF file
 
-12. **DELETE /api/v1/attendees/{attendeeId}/library/{contentId}**
+11. **DELETE /api/v1/attendees/{attendeeId}/library/{contentId}**
     - Triggered by: Remove from library action
     - Response: Content removed from library
     - Feedback: "Removed from library" toast
     - Updates: Library list refreshes
 
-13. **GET /api/v1/attendees/{attendeeId}/downloads**
+12. **GET /api/v1/attendees/{attendeeId}/downloads**
     - Triggered by: [Manage Downloads] button
     - Response: List of all downloaded files with metadata
     - Opens: Download management modal
 
-### Learning Paths
-
-14. **GET /api/v1/learning-paths/{pathId}/next**
-    - Triggered by: [Continue Learning] button
-    - Response: Next content in learning path
-    - Opens: Content viewer with learning path context
-
-15. **POST /api/v1/attendees/{attendeeId}/learning-paths/{pathId}/progress**
-    - Triggered by: Completing content in learning path
-    - Payload: `{ contentId, completed: true, timeSpent }`
-    - Response: Progress updated, achievements unlocked
-    - Updates: Progress bar, completion percentage
-
-16. **GET /api/v1/learning-paths/available**
-    - Triggered by: [Change Path] button
-    - Response: Available learning paths with recommendations
-    - Opens: Learning path selection modal
-
-17. **GET /api/v1/attendees/{attendeeId}/achievements**
-    - Triggered by: [View Achievements] button
-    - Response: Earned badges, certificates, milestones
-    - Opens: Achievements gallery modal
-
 ### Community & Social
 
-18. **GET /api/v1/attendees/{attendeeId}/profile**
+13. **GET /api/v1/attendees/{attendeeId}/profile**
     - Triggered by: [View Profile] button
     - Response: Full attendee profile with activity history
     - Opens: Attendee profile page
 
-19. **GET /api/v1/community/leaderboard**
+14. **GET /api/v1/community/leaderboard**
     - Triggered by: [Leaderboard] button
     - Query params: `period=month|all-time`, `limit=100`
-    - Response: Community leaderboard with ranks and points
+    - Response: Community leaderboard with ranks
     - Opens: Leaderboard page
 
-20. **GET /api/v1/community/discussions**
+15. **GET /api/v1/community/discussions**
     - Triggered by: [Join Discussion →] link
     - Query params: `topic=trending`
     - Response: Community discussions list
     - Opens: Community forum or discussion page
 
-21. **POST /api/v1/community/activity**
+16. **POST /api/v1/community/activity**
     - Triggered by: Various user actions (auto-tracked)
-    - Payload: `{ action: "view|download|attend|complete", points }`
-    - Response: Activity logged, points awarded
+    - Payload: `{ action: "view|download|attend|complete" }`
+    - Response: Activity logged
     - Background: Async, doesn't block UI
 
 ### Profile & Settings
 
-22. **GET /api/v1/attendees/{attendeeId}/settings**
+17. **GET /api/v1/attendees/{attendeeId}/settings**
     - Triggered by: User dropdown menu → Settings
     - Response: User preferences and settings
     - Opens: Settings page
@@ -351,11 +283,6 @@ Screen transitions triggered by actions and events:
    - **Options**: iCal, Google Calendar, Outlook
    - **Feedback**: "Added to calendar" toast
 
-6. **[📧 Email Ticket]**
-   - **Action**: Sends ticket email
-   - **No Navigation**: Remains on dashboard
-   - **Feedback**: "Ticket sent to john@example.com" toast
-
 7. **[📍 Get Directions]**
    - **Target**: Google Maps or directions modal
    - **Type**: External link (new tab) or modal
@@ -379,111 +306,47 @@ Screen transitions triggered by actions and events:
     - **Type**: Full page navigation
     - **Content**: PDF viewer, video player, or article reader
 
-11. **Recommendation Card [Save]**
-    - **Action**: Saves to library
-    - **No Navigation**: Remains on dashboard
-    - **Feedback**: "Saved to library" toast
-    - **Updates**: Library count increments
-
-12. **[More Recommendations →]**
+11. **[More Recommendations →]**
     - **Target**: Full recommendations page
     - **Type**: Full page navigation
     - **Content**: Extended personalized recommendations with filtering
 
 ### Content Library Navigation
 
-13. **Library Item Click**
+12. **Library Item Click**
     - **Target**: Content viewer
     - **Type**: Full page or modal
     - **Content**: Saved presentation with annotations
 
-14. **[View All]** (library)
-    - **Target**: Full library management page
-    - **Type**: Full page navigation
-    - **Content**: Complete library with search, filters, collections
-
-15. **[Manage Downloads]**
-    - **Target**: Download management modal
-    - **Type**: Modal overlay
-    - **Content**: All downloaded files with delete options
-    - **Actions**: [Delete], [Re-download], [View]
-
-### Learning Path Navigation
-
-16. **[Continue Learning]**
-    - **Target**: Next content in learning path
-    - **Type**: Full page navigation
-    - **Content**: Content viewer with learning path controls
-    - **Context**: Progress tracking enabled
-
-17. **Learning Path Progress Bar Click**
-    - **Target**: Learning path details modal
-    - **Type**: Modal overlay
-    - **Content**: Full path outline, progress visualization
-    - **Actions**: [Resume], [View Certificate], [Share Progress]
-
-18. **[Change Path]**
-    - **Target**: Learning path selection modal
-    - **Type**: Modal overlay
-    - **Content**: Available paths with recommendations
-    - **Submit**: Switches active learning path
-
-19. **[View Achievements]**
-    - **Target**: Achievements gallery modal
-    - **Type**: Modal overlay
-    - **Content**: Earned badges, certificates, milestones
-    - **Social**: Share achievements on LinkedIn, Twitter
-
 ### Community Navigation
 
-20. **[View Profile]**
+15. **[View Profile]**
     - **Target**: Attendee profile page
     - **Type**: Full page navigation
     - **Content**: Public profile with activity, badges, stats
 
-21. **[Leaderboard]**
-    - **Target**: Community leaderboard page
-    - **Type**: Full page navigation
-    - **Content**: Rankings, top contributors, filtering by period
-
-22. **[Join Discussion →]**
-    - **Target**: Community forum/discussion page
-    - **Type**: Full page navigation
-    - **Content**: Trending discussions, Q&A, forums
-
-23. **Trending Topic Click** (e.g., "AI/ML on Kubernetes")
-    - **Target**: Content discovery page with topic filter
-    - **Type**: Full page navigation
-    - **Content**: Search results filtered to trending topic
-
 ### Event-Driven Navigation
 
-24. **On New Recommendation Available**
+17. **On New Recommendation Available**
     - **Notification**: Dashboard notification or email
     - **No Navigation**: Stays on dashboard
     - **Updates**: Recommendations section refreshes
     - **Badge**: "NEW" badge on recommendation card
 
-25. **On Learning Path Milestone Reached**
-    - **Notification**: Achievement unlock modal
-    - **Type**: Celebration modal overlay
-    - **Content**: Badge earned, progress visualization
-    - **Actions**: [Share], [Continue], [View Certificate]
-
-26. **On Event Approaching** (< 7 days)
+18. **On Event Approaching** (< 7 days)
     - **Highlight**: Event card highlighted with countdown
     - **Notification**: Email or push notification
     - **Action**: [Prepare] button for checklist
 
-27. **On Content Added to Library**
+19. **On Content Added to Library**
     - **No Navigation**: Stays on dashboard
     - **Updates**: Library section refreshes
     - **Feedback**: "Added to library" toast with undo option
 
-28. **On Points/Rank Update**
+20. **On Rank Update**
     - **No Navigation**: Stays on dashboard
     - **Updates**: Stats section refreshes
-    - **Feedback**: Subtle animation on points/rank change
+    - **Feedback**: Subtle animation on rank change
 
 ### Quick Actions
 

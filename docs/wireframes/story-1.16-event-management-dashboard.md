@@ -27,35 +27,33 @@
 │  │                                                          │ [📅 Venues]          │ │
 │  │  Summer Workshop 2025          ██░░░░░░░░░░░░░ 15%     │ [📧 Newsletter]      │ │
 │  │  ├─ Step 2/16: Speaker Research                         │                       │ │
-│  │  ├─ On track ✓                                          │ ─────────────────     │ │
+│  │  ├─ On track ✓                                          │                       │ │
 │  │  └─ Publishing: May 30                                  │                       │ │
-│  │                                                          │ AI SUGGESTIONS 🤖    │ │
+│  │                                                          │                       │ │
 │  │  Autumn Conference 2025        ░░░░░░░░░░░░░░░ Planning │                       │ │
-│  │  ├─ Step 1/16: Topic Selection                          │ "Contact speaker     │ │
-│  │  └─ Starts: April 1                                     │  John D. - overdue   │ │
-│  └──────────────────────────────────────────────────────────┤  3 days"            │ │
-│                                                              │                       │ │
-│  ┌──────────── CRITICAL TASKS (3) ─────────────────────────┤ "Reserve venue for   │ │
-│  │                                                          │  Q3 partner meeting" │ │
-│  │  ⚠️ Speaker materials overdue: Dr. Smith (3 days)       │                       │ │
-│  │     [Contact] [Extend Deadline] [Find Replacement]      │ "Review 5 pending    │ │
-│  │                                                          │  abstracts"          │ │
-│  │  🔴 Venue confirmation needed: Kursaal Bern             │                       │ │
-│  │     [Confirm] [View Details] [Alternative Venues]       └───────────────────────┤ │
-│  │                                                                                  │ │
-│  │  📋 Moderate 5 pending abstracts                                                │ │
-│  │     [Start Review] [Assign to Team] [Bulk Approve]                             │ │
-│  └──────────────────────────────────────────────────────────────────────────────┘  │ │
+│  │  ├─ Step 1/16: Topic Selection                          │                       │ │
+│  │  └─ Starts: April 1                                     │                       │ │
+│  └──────────────────────────────────────────────────────────┴───────────────────────┤ │
 │                                                                                       │
-│  ┌─── TEAM ACTIVITY FEED ───────────┬─── PERFORMANCE METRICS ────────────────────┐  │
-│  │                                   │                                             │  │
-│  │ 10:45 Mark assigned to Spring    │  Avg. Planning Time    ⬇ 45% improved      │  │
-│  │       speaker outreach            │  Speaker Accept Rate   ⬆ 78% (target: 80%) │  │
-│  │ 10:12 Anna completed venue        │  Content Quality       ⬆ 92% compliance    │  │
-│  │       booking for Summer          │  Publishing On-Time    ✓ 100% this quarter │  │
-│  │ 09:30 System auto-sent reminder   │                                             │  │
-│  │       to 3 pending speakers       │  [View Detailed Analytics →]                │  │
-│  └───────────────────────────────────┴─────────────────────────────────────────────┘ │
+│  ┌──────────── CRITICAL TASKS (3) ──────────────────────────────────────────────┐  │
+│  │                                                                               │  │
+│  │  ⚠️ Speaker materials overdue: Dr. Smith (3 days)                            │  │
+│  │     [Contact] [Extend Deadline] [Find Replacement]                           │  │
+│  │                                                                               │  │
+│  │  🔴 Venue confirmation needed: Kursaal Bern                                  │  │
+│  │     [Confirm] [View Details] [Alternative Venues]                            │  │
+│  │                                                                               │  │
+│  │  📋 Moderate 5 pending abstracts                                             │  │
+│  │     [Start Review] [Assign to Team] [Bulk Approve]                           │  │
+│  └───────────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                       │
+│  ┌─── TEAM ACTIVITY FEED ───────────────────────────────────────────────────────┐  │
+│  │                                                                               │  │
+│  │ 10:45 Mark assigned to Spring speaker outreach                               │  │
+│  │ 10:12 Anna completed venue booking for Summer                                │  │
+│  │ 09:30 System auto-sent reminder to 3 pending speakers                        │  │
+│  │                                                                               │  │
+│  └───────────────────────────────────────────────────────────────────────────────┘ │
 │                                                                                       │
 └─────────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -65,9 +63,7 @@
 - **Progress bars**: Click to drill down into specific workflow steps
 - **Warning indicators**: Hover for details, click for action options
 - **Quick Actions**: One-click access to frequent tasks
-- **AI Suggestions**: Context-aware recommendations updated in real-time
 - **Team Feed**: Live updates with @mentions and notifications
-- **Metrics**: Click any metric for detailed breakdown
 
 ## Functional Requirements Met
 
@@ -76,22 +72,18 @@
 - **Event Pipeline**: Visual representation of all active events
 - **Task Management**: Prioritized critical tasks with action buttons
 - **Team Collaboration**: Real-time activity feed
-- **Performance Tracking**: Key metrics dashboard
 
 ## User Interactions
 
 1. **Event Card Click**: Navigate to detailed workflow view
 2. **Quick Action Buttons**: Fast navigation to key areas
-3. **AI Suggestion Click**: Execute suggested action
-4. **Critical Task Actions**: Inline resolution of urgent items
-5. **Activity Feed**: Filter and search team activities
-6. **Metrics Click**: Drill down into detailed analytics
+3. **Critical Task Actions**: Inline resolution of urgent items
+4. **Activity Feed**: Filter and search team activities
 
 ## Technical Notes
 
 - Real-time WebSocket updates for activity feed
 - Progress bars calculated from workflow step completion
-- AI suggestions generated from workflow analysis
 - Responsive layout adapts to screen size
 - Role-based access control for different organizer permissions
 
@@ -126,22 +118,12 @@ When the Event Management Dashboard screen loads, the following APIs are called 
    - Returns: Team activity entries with user, action, timestamp, event context, mentions
    - Used for: Populate team activity feed
 
-6. **GET /api/v1/organizers/{organizerId}/metrics/dashboard**
-   - Query params: period (current-quarter)
-   - Returns: Performance metrics (avg planning time, speaker accept rate, content quality, on-time publishing), trends
-   - Used for: Display performance metrics section
-
-7. **GET /api/v1/organizers/{organizerId}/ai/suggestions**
-   - Query params: limit (3), context (dashboard)
-   - Returns: AI-generated action suggestions with priority, reasoning, estimated effort, success probability
-   - Used for: Populate AI suggestions panel
-
-8. **GET /api/v1/organizers/{organizerId}/notifications/unread**
+6. **GET /api/v1/organizers/{organizerId}/notifications/unread**
    - Returns: Unread notification count, notification preview list
    - Used for: Display notification badge count
 
-9. **WebSocket /ws/organizers/{organizerId}/dashboard**
-   - Real-time updates: Team activity feed, task status changes, metric updates, new notifications
+7. **WebSocket /ws/organizers/{organizerId}/dashboard**
+   - Real-time updates: Team activity feed, task status changes, new notifications
    - Used for: Live updates for activity feed and task changes
 
 ---
@@ -201,62 +183,34 @@ When the Event Management Dashboard screen loads, the following APIs are called 
     - Response: Snooze confirmation, new reminder time
     - Used for: Snooze/postpone critical task
 
-### AI Suggestions
-
-11. **POST /api/v1/organizers/{organizerId}/ai/suggestions/{suggestionId}/execute**
-    - Response: Execution result, actions taken, updated state
-    - Used for: Execute AI suggestion action
-
-12. **DELETE /api/v1/organizers/{organizerId}/ai/suggestions/{suggestionId}**
-    - Payload: `{ dismissalReason (optional) }`
-    - Response: Dismissal confirmation, feedback recorded
-    - Used for: Dismiss AI suggestion
-
-13. **POST /api/v1/organizers/{organizerId}/ai/suggestions/{suggestionId}/feedback**
-    - Payload: `{ helpful: boolean, executed: boolean, comments }`
-    - Response: Feedback recorded confirmation
-    - Used for: Provide feedback on AI suggestion quality
-
 ### Activity Feed & Team
 
-14. **GET /api/v1/organizers/{organizerId}/activity-feed/filter**
+11. **GET /api/v1/organizers/{organizerId}/activity-feed/filter**
     - Query params: eventId, userId, actionType, dateRange, limit (50)
     - Returns: Filtered activity entries
     - Used for: Filter activity feed by criteria
 
-15. **POST /api/v1/organizers/{organizerId}/activity-feed/mention**
+12. **POST /api/v1/organizers/{organizerId}/activity-feed/mention**
     - Payload: `{ mentionedUserId, context, message }`
     - Response: Mention created, notification sent
     - Used for: Create @mention in activity feed
 
-16. **GET /api/v1/organizers/{organizerId}/team/members**
+13. **GET /api/v1/organizers/{organizerId}/team/members**
     - Returns: Team members with roles, availability status, current assignments
     - Used for: View team member list for assignments
 
-### Metrics & Analytics
-
-17. **GET /api/v1/organizers/{organizerId}/metrics/detailed**
-    - Query params: metric (planning-time|speaker-rate|content-quality|publishing), period, breakdown (by-event|by-quarter)
-    - Returns: Detailed metric data, historical trends, comparisons, insights
-    - Used for: View detailed analytics breakdown from [View Detailed Analytics]
-
-18. **GET /api/v1/organizers/{organizerId}/metrics/export**
-    - Query params: format (csv|pdf|xlsx), metrics: [], period
-    - Returns: Download URL, expiration timestamp
-    - Used for: Export metrics data
-
 ### Notifications
 
-19. **GET /api/v1/organizers/{organizerId}/notifications**
+14. **GET /api/v1/organizers/{organizerId}/notifications**
     - Query params: limit (20), unreadOnly (false), category
     - Returns: Notifications with content, timestamp, read status, priority, action links
     - Used for: Load full notification list
 
-20. **PUT /api/v1/organizers/{organizerId}/notifications/{notificationId}/read**
+15. **PUT /api/v1/organizers/{organizerId}/notifications/{notificationId}/read**
     - Response: Read status updated
     - Used for: Mark notification as read
 
-21. **PUT /api/v1/organizers/{organizerId}/notifications/read-all**
+16. **PUT /api/v1/organizers/{organizerId}/notifications/read-all**
     - Response: All notifications marked read, updated count
     - Used for: Mark all notifications as read
 
@@ -415,107 +369,60 @@ When the Event Management Dashboard screen loads, the following APIs are called 
     - Updates task count
     - No screen navigation
 
-### AI Suggestions Interactions
-
-25. **AI suggestion click** → Executes suggested action
-    - Shows confirmation dialog
-    - Executes action via API
-    - Shows result notification
-    - Updates dashboard state
-    - No automatic navigation
-
-26. **AI suggestion dismiss (X)** → Removes suggestion
-    - Optional dismissal reason
-    - Removes from panel
-    - Updates AI learning
-    - No screen navigation
-
 ### Activity Feed Interactions
 
-27. **Activity item click** → Navigate to context-specific screen
+25. **Activity item click** → Navigate to context-specific screen
     - Depends on activity type
     - Event-related → Event details
     - Speaker-related → Speaker profile
     - Venue-related → Venue details
 
-28. **@mention click** → Navigate to `User Profile Screen`
+26. **@mention click** → Navigate to `User Profile Screen`
     - User details
     - Activity history
     - Contact options
     - Team role information
 
-29. **Activity feed filter** → Filters feed
+27. **Activity feed filter** → Filters feed
     - By user
     - By event
     - By action type
     - By date range
     - No screen navigation
 
-### Metrics Interactions
-
-30. **Metric click (Avg. Planning Time)** → Navigate to `Metric Drill-down Screen`
-    - Detailed metric breakdown
-    - Historical trends
-    - Event comparisons
-    - Improvement suggestions
-
-31. **[View Detailed Analytics →] button** → Navigate to `Full Analytics Dashboard`
-    - Comprehensive analytics
-    - Multiple metrics
-    - Custom date ranges
-    - Export options
-
-32. **Trend indicator (⬇ 45%)** → Shows trend tooltip
-    - Hover for trend details
-    - Historical comparison
-    - Contributing factors
-    - No screen navigation
-
 ### Event-Driven Navigation
 
-33. **New critical task created** → Updates critical tasks section
+28. **New critical task created** → Updates critical tasks section
     - Adds task to list
     - Shows notification badge
     - Highlights new task
     - No automatic navigation
 
-34. **Team activity posted (WebSocket)** → Updates activity feed
+29. **Team activity posted (WebSocket)** → Updates activity feed
     - Adds activity to feed
     - Shows real-time indicator
     - May show notification for @mentions
     - No automatic navigation
 
-35. **Workflow step completed** → Updates event progress
+30. **Workflow step completed** → Updates event progress
     - Updates progress bar
     - Changes step indicator
     - May remove from critical tasks
     - No automatic navigation
 
-36. **Deadline approaching** → Shows warning indicator
+31. **Deadline approaching** → Shows warning indicator
     - Adds ⚠️ to event card
     - May create critical task
     - Shows notification
     - No automatic navigation
 
-37. **Metric threshold crossed** → Updates metrics display
-    - Highlights changed metric
-    - Shows trend indicator
-    - May trigger AI suggestion
-    - No automatic navigation
-
-38. **New AI suggestion generated** → Adds to suggestions panel
-    - Appears in AI Suggestions section
-    - Shows priority indicator
-    - May show notification
-    - No automatic navigation
-
-39. **Notification received (WebSocket)** → Updates notification badge
+32. **Notification received (WebSocket)** → Updates notification badge
     - Increments badge count
     - May show toast notification
     - Highlights notification icon
     - No automatic navigation
 
-40. **Speaker material submitted** → Updates task status
+33. **Speaker material submitted** → Updates task status
     - Removes overdue task
     - Updates event card status
     - Adds to activity feed

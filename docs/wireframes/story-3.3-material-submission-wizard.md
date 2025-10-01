@@ -29,33 +29,19 @@
 │  │  │ Kubernetes Best Practices for Production Environments           │ 58/100    │  │
 │  │  └─────────────────────────────────────────────────────────────────┘          │  │
 │  │                                                                                 │  │
-│  │  Subtitle (optional, max 150 characters)                                       │  │
-│  │  ┌─────────────────────────────────────────────────────────────────┐          │  │
-│  │  │ Scaling, Security, and Monitoring in Enterprise K8s             │ 52/150    │  │
-│  │  └─────────────────────────────────────────────────────────────────┘          │  │
-│  │                                                                                 │  │
-│  │  Target Audience Level *                                                       │  │
-│  │  ○ Beginner (New to the topic)                                               │  │
-│  │  ● Intermediate (Some experience)                                             │  │
-│  │  ○ Advanced (Expert practitioners)                                            │  │
-│  │  ○ Mixed (All levels welcome)                                                 │  │
-│  │                                                                                 │  │
-│  │  Primary Technology Focus * (select up to 3)                                   │  │
-│  │  ☑ Kubernetes  ☑ DevOps  ☑ Cloud Native  ☐ Security  ☐ Monitoring            │  │
-│  │                                                                                 │  │
 │  │  Presentation Language *                                                       │  │
-│  │  ● English    ○ German    ○ English with German slides                        │  │
+│  │  ● English    ○ German    ○ German with English slides                        │  │
 │  │                                                                                 │  │
 │  │  Session Format Preference                                                     │  │
 │  │  ● Presentation only (45 min)                                                 │  │
 │  │  ○ Presentation (30 min) + Demo (15 min)                                      │  │
 │  │  ○ Workshop style (interactive)                                                │  │
 │  │                                                                                 │  │
-│  │  Special Requirements                                                          │  │
-│  │  ☐ Live internet connection required                                          │  │
-│  │  ☐ Multiple screens/projectors                                                │  │
-│  │  ☐ Audience laptops needed                                                    │  │
-│  │  ☑ Will conduct live demo (need backup plan)                                 │  │
+│  │  Special Requirements (optional)                                               │  │
+│  │  ┌─────────────────────────────────────────────────────────────────┐          │  │
+│  │  │ Live demo planned - will need internet connection and backup    │          │  │
+│  │  │ plan. May require audience participation.                        │          │  │
+│  │  └─────────────────────────────────────────────────────────────────┘          │  │
 │  │                                                                                 │  │
 │  │                     [← Previous]  [Save Draft]  [Next Step →]                 │  │
 │  └─────────────────────────────────────────────────────────────────────────────────┘ │
@@ -63,7 +49,7 @@
 │  ┌──── PROGRESS & TIPS ────────────────────────────────────────────────────────────┐ │
 │  │  ✓ Auto-saved 30 seconds ago                                                   │  │
 │  │  💡 Tip: Clear titles help attendees choose the right sessions                 │  │
-│  │  📊 20% complete - Estimated time remaining: 8 minutes                         │  │
+│  │  📊 20% complete                                                                │  │
 │  └─────────────────────────────────────────────────────────────────────────────────┘ │
 │                                                                                       │
 └─────────────────────────────────────────────────────────────────────────────────────┘
@@ -98,17 +84,6 @@
 │  │  ✓ Lessons learned included                                                    │  │
 │  │  ⚠️ Consider adding specific technologies/tools                               │  │
 │  │                                                                                 │  │
-│  │  Key Learning Objectives * (3-5 bullet points)                                 │  │
-│  │  1. ┌──────────────────────────────────────────────────────────┐              │  │
-│  │     │ Design scalable cluster architectures for 1000+ nodes    │              │  │
-│  │     └──────────────────────────────────────────────────────────┘              │  │
-│  │  2. ┌──────────────────────────────────────────────────────────┐              │  │
-│  │     │ Implement security scanning in CI/CD pipelines           │              │  │
-│  │     └──────────────────────────────────────────────────────────┘              │  │
-│  │  3. ┌──────────────────────────────────────────────────────────┐              │  │
-│  │     │ Build observable systems with Prometheus & Grafana       │              │  │
-│  │     └──────────────────────────────────────────────────────────┘              │  │
-│  │  [+ Add Learning Objective]                                                    │  │
 │  │                                                                                 │  │
 │  └─────────────────────────────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────────────────────────┘
@@ -204,8 +179,8 @@
 
 ## User Interactions
 
-1. **Step 1 - Basic Info**: Enter presentation title, audience level, technology focus, language, format preferences
-2. **Step 2 - Abstract**: Provide detailed abstract with learning objectives and lessons learned
+1. **Step 1 - Basic Info**: Enter presentation title, language, format preferences, special requirements
+2. **Step 2 - Abstract**: Provide detailed abstract with lessons learned
 3. **Step 3 - Biography**: Professional bio, company info, social links, speaking experience
 4. **Step 4 - Photo**: Upload professional headshot with requirements guidance
 5. **Step 5 - Presentation**: Upload presentation slides and supplementary materials
@@ -249,12 +224,7 @@ APIs needed to load and display data for this screen:
 
 ### Reference Data
 
-4. **GET /api/v1/reference/technologies**
-   - Retrieve list of available technology tags
-   - Response: Array of technology names and categories
-   - Used for: Technology focus multi-select (Step 1)
-
-5. **GET /api/v1/reference/languages**
+4. **GET /api/v1/reference/languages**
    - Retrieve supported presentation languages
    - Response: Array of language options
    - Used for: Language selection (Step 1)
@@ -340,20 +310,11 @@ APIs called by user interactions and actions:
    - Response: Profile updated confirmation
    - Optimization: Allow speakers to update profile while submitting materials
 
-### AI Assistance (Optional)
-
-10. **POST /api/v1/speakers/{speakerId}/materials/enhance-abstract**
-    - Triggered by: Optional "AI Enhance" button on abstract (Step 2)
-    - Payload: `{ currentAbstract, learningObjectives, eventTopic }`
-    - Response: AI-enhanced abstract suggestions
-    - Used for: Helping speakers improve abstract quality
-    - ML model: GPT-based enhancement
-
 ### Validation & Feedback
 
 11. **POST /api/v1/materials/check-quality**
     - Triggered by: Real-time as user types in abstract field
-    - Payload: `{ abstract, learningObjectives }`
+    - Payload: `{ abstract }`
     - Response: Quality score, suggestions, requirement check
     - Used for: Real-time feedback on abstract quality
     - Returns: `{ score: number, suggestions: [], requirementsMet: {} }`
