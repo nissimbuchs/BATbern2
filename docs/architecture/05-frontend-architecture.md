@@ -64,8 +64,8 @@ interface AppState {
   };
 
   partners: {
-    analytics: PartnerAnalytics | null;
     topicVotes: TopicVote[];
+    meetings: PartnerMeeting[];
   };
 
   attendees: {
@@ -751,60 +751,6 @@ const MaterialSubmissionForm: React.FC<MaterialSubmissionProps> = ({
 **Partner Components:**
 
 ```typescript
-// Partner Analytics Dashboard
-interface PartnerAnalyticsDashboardProps {
-  partner: Partner;
-  analytics: PartnerAnalytics;
-  timeRange: TimeRange;
-  onTimeRangeChange: (range: TimeRange) => void;
-}
-
-const PartnerAnalyticsDashboard: React.FC<PartnerAnalyticsDashboardProps> = ({
-  partner,
-  analytics,
-  timeRange,
-  onTimeRangeChange
-}) => {
-  return (
-    <Container maxWidth="xl">
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h4">
-          {partner.company.name} Analytics
-        </Typography>
-        <TimeRangeSelector
-          value={timeRange}
-          onChange={onTimeRangeChange}
-        />
-      </Box>
-
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={3}>
-          <MetricCard
-            title="Employee Attendance"
-            value={analytics.employeeAttendance.total}
-            trend={analytics.employeeAttendance.trend}
-            format="number"
-          />
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <MetricCard
-            title="Brand Exposure Score"
-            value={analytics.brandExposure.score}
-            trend={analytics.brandExposure.trend}
-            format="percentage"
-          />
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <ROIChart data={analytics.roiData} />
-        </Grid>
-        <Grid item xs={12}>
-          <EngagementTable data={analytics.engagementMetrics} />
-        </Grid>
-      </Grid>
-    </Container>
-  );
-};
-
 // Topic Voting Interface
 interface TopicVotingProps {
   availableTopics: Topic[];
@@ -1041,8 +987,7 @@ class ComponentErrorBoundary extends React.Component<
 /speaker/profile              # Speaker profile management
 
 # Partner routes
-/partner/dashboard            # Partner main dashboard
-/partner/analytics            # ROI analytics dashboard
+/partner/dashboard            # Partner main dashboard (voting, meetings, profile)
 /partner/voting               # Topic voting interface
 
 # Attendee routes

@@ -8,7 +8,7 @@ BATbern-Platform/
 ├── services/                          # Domain services
 │   ├── event-management/              # Event Management Service
 │   ├── speaker-coordination/          # Speaker Coordination Service
-│   ├── partner-analytics/             # Partner Analytics Service
+│   ├── partner-coordination/          # Partner Coordination Service
 │   ├── attendee-experience/           # Attendee Experience Service
 │   └── company-management/            # Company Management Service
 ├── api-gateway/                       # Unified API Gateway

@@ -145,12 +145,14 @@ Speaker Coordination Service:
       throughput: "> 50 req/min"
       email_delivery_sla: "< 5 minutes"
 
-Partner Analytics Service:
+Partner Coordination Service:
   endpoints:
-    "GET /analytics/dashboard":
-      p95_response_time: "< 500ms"
-      throughput: "> 100 req/min"
-      data_freshness: "< 5 minutes"
+    "GET /partners/{id}/topic-votes":
+      p95_response_time: "< 200ms"
+      throughput: "> 50 req/min"
+    "POST /topics/voting":
+      p95_response_time: "< 300ms"
+      throughput: "> 30 req/min"
 
 Attendee Experience Service:
   endpoints:
