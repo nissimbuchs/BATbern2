@@ -711,6 +711,135 @@ const SpeakerWorkflow: React.FC<SpeakerWorkflowProps> = ({
     </Card>
   );
 };
+
+// Role Management Components
+interface RoleManagementPanelProps {
+  eventId?: string; // Optional: scope to specific event
+}
+
+const RoleManagementPanel: React.FC<RoleManagementPanelProps> = ({ eventId }) => {
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const { data: pendingRequests } = usePendingApprovals();
+
+  const { mutate: promoteUser } = usePromoteUser();
+  const { mutate: demoteUser } = useDemoteUser();
+  const { mutate: approveChange } = useApproveRoleChange();
+
+  return (
+    <Stack spacing={3}>
+      <Typography variant="h5">Role Management</Typography>
+
+      <UserSearchBar
+        onUserSelected={setSelectedUser}
+        placeholder="Search users by name or email..."
+      />
+
+      {selectedUser && (
+        <RoleActionPanel
+          user={selectedUser}
+          onPromote={(role, reason) => promoteUser({
+            userId: selectedUser.id,
+            role,
+            reason
+          })}
+          onDemote={(role, reason) => demoteUser({
+            userId: selectedUser.id,
+            role,
+            reason
+          })}
+        />
+      )}
+
+      <PendingApprovalsQueue
+        requests={pendingRequests || []}
+        onApprove={(requestId, approved, comments) =>
+          approveChange({
+            userId: selectedUser?.id,
+            changeId: requestId,
+            approved,
+            comments
+          })
+        }
+      />
+    </Stack>
+  );
+};
+
+// API Hooks for Role Management
+export const usePromoteUser = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ userId, role, reason }: PromoteUserRequest) => {
+      return apiClient.post(`/api/v1/users/${userId}/roles`, { role, reason });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['users']);
+      showNotification('User role promoted successfully', 'success');
+    },
+    onError: (error: ApiError) => {
+      showNotification(error.message || 'Failed to promote user', 'error');
+    },
+  });
+};
+
+export const useDemoteUser = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ userId, role, reason }: DemoteUserRequest) => {
+      return apiClient.delete(`/api/v1/users/${userId}/roles/${role}`, {
+        data: { reason }
+      });
+    },
+    onSuccess: (data) => {
+      if (data.status === 202) {
+        showNotification('Demotion request created - awaiting approval', 'info');
+      } else {
+        showNotification('User role demoted successfully', 'success');
+      }
+      queryClient.invalidateQueries(['users']);
+    },
+    onError: (error: ApiError) => {
+      showNotification(error.message || 'Failed to demote user', 'error');
+    },
+  });
+};
+
+export const useApproveRoleChange = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ userId, changeId, approved, comments }: ApprovalRequest) => {
+      return apiClient.post(
+        `/api/v1/users/${userId}/role-changes/${changeId}/approve`,
+        { approved, comments }
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['role-change-requests']);
+      showNotification('Approval processed successfully', 'success');
+    },
+    onError: (error: ApiError) => {
+      showNotification(error.message || 'Failed to process approval', 'error');
+    },
+  });
+};
+
+export const usePendingApprovals = () => {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['role-change-requests', 'pending', user?.id],
+    queryFn: async () => {
+      const response = await apiClient.get(
+        `/api/v1/users/${user.id}/role-changes?status=PENDING`
+      );
+      return response.data;
+    },
+    enabled: !!user?.id,
+  });
+};
 ```
 
 **Speaker Components:**

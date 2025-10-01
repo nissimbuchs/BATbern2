@@ -639,6 +639,171 @@ paths:
               schema:
                 $ref: '#/components/schemas/Company'
 
+  # User Role Management
+  /api/v1/users/{userId}/roles:
+    get:
+      tags: [Role Management]
+      summary: Get user role history
+      security:
+        - BearerAuth: [organizer]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User role history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: string
+                    format: uuid
+                  currentRoles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UserRole'
+                  roleHistory:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RoleChange'
+
+    post:
+      tags: [Role Management]
+      summary: Promote user to role
+      security:
+        - BearerAuth: [organizer]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role:
+                  $ref: '#/components/schemas/UserRole'
+                reason:
+                  type: string
+                  maxLength: 500
+              required:
+                - role
+      responses:
+        '201':
+          description: Role promoted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleChange'
+        '400':
+          description: Invalid role or user ineligible
+        '403':
+          description: Insufficient permissions
+
+  /api/v1/users/{userId}/roles/{role}:
+    delete:
+      tags: [Role Management]
+      summary: Demote user from role
+      security:
+        - BearerAuth: [organizer]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: role
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserRole'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  maxLength: 500
+              required:
+                - reason
+      responses:
+        '200':
+          description: Role demoted (immediate for Speaker)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleChange'
+        '202':
+          description: Demotion request created (requires approval for Organizer)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleChangeRequest'
+        '400':
+          description: Cannot demote (minimum organizer rule violation)
+        '403':
+          description: Insufficient permissions
+
+  /api/v1/users/{userId}/role-changes/{changeId}/approve:
+    post:
+      tags: [Role Management]
+      summary: Approve organizer demotion request
+      security:
+        - BearerAuth: [organizer]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: changeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                approved:
+                  type: boolean
+                comments:
+                  type: string
+                  maxLength: 1000
+              required:
+                - approved
+      responses:
+        '200':
+          description: Approval processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleChange'
+        '403':
+          description: Not authorized to approve this request
+        '404':
+          description: Role change request not found
+
   # Content Search
   /api/v1/content/search:
     get:
@@ -967,6 +1132,74 @@ sequenceDiagram
         SC->>O: Notify Organizer (Declined)
         SC->>O: Suggest Alternative Speakers
     end
+```
+
+## API Schemas
+
+### Role Management Schemas
+
+```yaml
+UserRole:
+  type: string
+  enum:
+    - ORGANIZER
+    - SPEAKER
+    - PARTNER
+    - ATTENDEE
+
+RoleChange:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    userId:
+      type: string
+      format: uuid
+    fromRole:
+      $ref: '#/components/schemas/UserRole'
+    toRole:
+      $ref: '#/components/schemas/UserRole'
+    changedBy:
+      type: string
+      format: uuid
+    reason:
+      type: string
+    timestamp:
+      type: string
+      format: date-time
+    status:
+      type: string
+      enum: [COMPLETED, PENDING_APPROVAL, REJECTED]
+
+RoleChangeRequest:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    userId:
+      type: string
+      format: uuid
+    requestedRole:
+      $ref: '#/components/schemas/UserRole'
+    currentRole:
+      $ref: '#/components/schemas/UserRole'
+    requestedBy:
+      type: string
+      format: uuid
+    reason:
+      type: string
+    status:
+      type: string
+      enum: [PENDING, APPROVED, REJECTED]
+    createdAt:
+      type: string
+      format: date-time
+    requiresApprovalFrom:
+      type: string
+      format: uuid
+      description: User ID who must approve (for organizer demotions)
 ```
 
 ## API Design Principles

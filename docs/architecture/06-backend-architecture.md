@@ -1123,4 +1123,208 @@ public class WorkflowNotificationService {
 }
 ```
 
-This enhanced backend architecture provides comprehensive workflow state management, intelligent slot assignment algorithms, quality review automation, overflow voting systems, and real-time notification with escalation capabilities. The implementation follows domain-driven design principles with clear separation of concerns and robust error handling for the complex 16-step BATbern event workflow.
+## Role Management Service
+
+Handles user role promotion, demotion, and approval workflows while enforcing business rules.
+
+### Role Management Service Implementation
+
+```java
+@Service
+@RequiredArgsConstructor
+public class RoleManagementService {
+
+    private final UserRoleRepository userRoleRepository;
+    private final RoleChangeRequestRepository roleChangeRequestRepository;
+    private final RoleChangeApprovalRepository roleChangeApprovalRepository;
+    private final CognitoIdentityProviderClient cognitoClient;
+    private final ApplicationEventPublisher eventPublisher;
+
+    @Value("${aws.cognito.user-pool-id}")
+    private String cognitoUserPoolId;
+
+    /**
+     * Promote user to a higher role
+     */
+    @Transactional
+    public RoleChange promoteUser(UUID userId, UserRole targetRole, UUID promotedBy, String reason) {
+        // Validate promotion eligibility
+        validatePromotion(userId, targetRole);
+
+        // Create role record
+        UserRoleEntity roleEntity = UserRoleEntity.builder()
+            .userId(userId)
+            .role(targetRole)
+            .grantedBy(promotedBy)
+            .reason(reason)
+            .isActive(true)
+            .build();
+
+        userRoleRepository.save(roleEntity);
+
+        // Sync to Cognito
+        syncRoleToCognito(userId, targetRole);
+
+        // Publish domain event
+        RoleChange roleChange = mapToRoleChange(roleEntity);
+        eventPublisher.publishEvent(new UserRolePromotedEvent(roleChange));
+
+        return roleChange;
+    }
+
+    /**
+     * Demote user from role - immediate for Speaker, requires approval for Organizer
+     */
+    @Transactional
+    public RoleChangeResult demoteUser(UUID userId, UserRole currentRole, UUID demotedBy, String reason) {
+        if (currentRole == UserRole.ORGANIZER) {
+            // Check minimum organizers rule
+            if (!canDemoteOrganizer(userId, null)) {
+                throw new BusinessRuleException("Cannot demote: minimum 2 organizers required");
+            }
+
+            // Create approval request
+            RoleChangeRequest request = RoleChangeRequest.builder()
+                .userId(userId)
+                .currentRole(currentRole)
+                .requestedRole(UserRole.ATTENDEE) // or determine from business logic
+                .requestedBy(demotedBy)
+                .requiresApprovalFrom(userId) // Self-approval required
+                .reason(reason)
+                .status(RequestStatus.PENDING)
+                .build();
+
+            roleChangeRequestRepository.save(request);
+
+            return RoleChangeResult.pendingApproval(request);
+        } else {
+            // Immediate demotion for non-organizers
+            UserRoleEntity roleEntity = userRoleRepository
+                .findActiveRole(userId, currentRole)
+                .orElseThrow(() -> new NotFoundException("Active role not found"));
+
+            roleEntity.setIsActive(false);
+            roleEntity.setRevokedBy(demotedBy);
+            roleEntity.setRevokedAt(Instant.now());
+
+            userRoleRepository.save(roleEntity);
+
+            // Sync to Cognito
+            syncRoleToCognito(userId, determineNewRole(userId));
+
+            RoleChange roleChange = mapToRoleChange(roleEntity);
+            eventPublisher.publishEvent(new UserRoleDemotedEvent(roleChange));
+
+            return RoleChangeResult.completed(roleChange);
+        }
+    }
+
+    /**
+     * Approve organizer demotion request
+     */
+    @Transactional
+    public RoleChange approveRoleChange(UUID requestId, UUID approverId, boolean approved, String comments) {
+        RoleChangeRequest request = roleChangeRequestRepository.findById(requestId)
+            .orElseThrow(() -> new NotFoundException("Role change request not found"));
+
+        // Verify approver is authorized
+        if (!request.getRequiresApprovalFrom().equals(approverId)) {
+            throw new UnauthorizedException("Not authorized to approve this request");
+        }
+
+        // Record approval
+        RoleChangeApproval approval = RoleChangeApproval.builder()
+            .roleChangeRequestId(requestId)
+            .approvedBy(approverId)
+            .approved(approved)
+            .comments(comments)
+            .build();
+
+        roleChangeApprovalRepository.save(approval);
+
+        if (approved) {
+            // Execute the demotion
+            UserRoleEntity roleEntity = userRoleRepository
+                .findActiveRole(request.getUserId(), request.getCurrentRole())
+                .orElseThrow(() -> new NotFoundException("Active role not found"));
+
+            roleEntity.setIsActive(false);
+            roleEntity.setRevokedBy(request.getRequestedBy());
+            roleEntity.setRevokedAt(Instant.now());
+
+            userRoleRepository.save(roleEntity);
+
+            // Update request status
+            request.setStatus(RequestStatus.APPROVED);
+            roleChangeRequestRepository.save(request);
+
+            // Sync to Cognito
+            syncRoleToCognito(request.getUserId(), request.getRequestedRole());
+
+            RoleChange roleChange = mapToRoleChange(roleEntity);
+            eventPublisher.publishEvent(new UserRoleDemotedEvent(roleChange));
+
+            return roleChange;
+        } else {
+            request.setStatus(RequestStatus.REJECTED);
+            roleChangeRequestRepository.save(request);
+            throw new BusinessRuleException("Role change request rejected");
+        }
+    }
+
+    /**
+     * Check if organizer can be demoted (minimum 2 organizers rule)
+     */
+    public boolean canDemoteOrganizer(UUID userId, UUID eventId) {
+        long activeOrganizerCount = userRoleRepository.countActiveOrganizers(eventId);
+        return activeOrganizerCount > 2;
+    }
+
+    /**
+     * Sync role to Cognito custom attributes
+     */
+    private void syncRoleToCognito(UUID userId, UserRole newRole) {
+        AdminUpdateUserAttributesRequest request = AdminUpdateUserAttributesRequest.builder()
+            .userPoolId(cognitoUserPoolId)
+            .username(userId.toString())
+            .userAttributes(
+                AttributeType.builder()
+                    .name("custom:batbern_role")
+                    .value(newRole.name())
+                    .build()
+            )
+            .build();
+
+        cognitoClient.adminUpdateUserAttributes(request);
+    }
+
+    private UserRole determineNewRole(UUID userId) {
+        return userRoleRepository.findActiveRoles(userId)
+            .stream()
+            .findFirst()
+            .map(UserRoleEntity::getRole)
+            .orElse(UserRole.ATTENDEE);
+    }
+
+    private void validatePromotion(UUID userId, UserRole targetRole) {
+        // Add validation logic
+        if (userRoleRepository.hasActiveRole(userId, targetRole)) {
+            throw new BusinessRuleException("User already has this role");
+        }
+    }
+
+    private RoleChange mapToRoleChange(UserRoleEntity entity) {
+        return RoleChange.builder()
+            .id(entity.getId())
+            .userId(entity.getUserId())
+            .toRole(entity.getRole())
+            .changedBy(entity.getGrantedBy())
+            .reason(entity.getReason())
+            .timestamp(entity.getGrantedAt())
+            .status(entity.getIsActive() ? ChangeStatus.COMPLETED : ChangeStatus.REJECTED)
+            .build();
+    }
+}
+```
+
+This enhanced backend architecture provides comprehensive workflow state management, intelligent slot assignment algorithms, quality review automation, overflow voting systems, real-time notification with escalation capabilities, and user role management with approval workflows. The implementation follows domain-driven design principles with clear separation of concerns and robust error handling for the complex 16-step BATbern event workflow.

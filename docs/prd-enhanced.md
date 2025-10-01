@@ -84,6 +84,8 @@ Complete rewrite of BATbern as a comprehensive event management platform using R
 
 **FR21**: The system shall support long-term planning capabilities including multi-year venue booking workflows, seasonal partner meeting coordination, and strategic budget planning with automated scheduling and reminder systems
 
+**FR22**: Event organizers shall manage user roles with capabilities to promote users to speaker or organizer roles, demote users with approval workflows for organizer demotions, and enforce business rules requiring minimum 2 organizers per event, maintaining complete audit trails of all role changes
+
 ### Non-Functional Requirements
 
 **NFR1**: Platform shall provide responsive design optimized for mobile, tablet, and desktop access

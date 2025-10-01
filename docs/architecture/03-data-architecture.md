@@ -905,6 +905,99 @@ CREATE INDEX idx_event_registrations_attendee_id ON event_registrations(attendee
 CREATE INDEX idx_content_engagement_attendee_id ON content_engagement(attendee_id);
 ```
 
+## User Role Management Tables
+
+```sql
+-- User Roles with History
+CREATE TABLE user_roles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
+    role VARCHAR(50) NOT NULL CHECK (role IN ('ORGANIZER', 'SPEAKER', 'PARTNER', 'ATTENDEE')),
+    event_id UUID REFERENCES events(id), -- Optional: role scoped to specific event
+    granted_by UUID NOT NULL, -- References users
+    granted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    revoked_at TIMESTAMP,
+    revoked_by UUID, -- References users
+    reason TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT unique_active_user_role UNIQUE (user_id, role, event_id) WHERE is_active = true,
+    CONSTRAINT fk_granted_by FOREIGN KEY (granted_by) REFERENCES users(id),
+    CONSTRAINT fk_revoked_by FOREIGN KEY (revoked_by) REFERENCES users(id)
+);
+
+CREATE INDEX idx_user_roles_user_id ON user_roles(user_id);
+CREATE INDEX idx_user_roles_active ON user_roles(is_active, user_id);
+CREATE INDEX idx_user_roles_event ON user_roles(event_id) WHERE event_id IS NOT NULL;
+
+-- Role Change Requests (for approval workflows)
+CREATE TABLE role_change_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
+    current_role VARCHAR(50) NOT NULL,
+    requested_role VARCHAR(50) NOT NULL,
+    requested_by UUID NOT NULL, -- Organizer initiating change
+    requires_approval_from UUID, -- User who must approve (for organizer demotions)
+    reason TEXT NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED', 'EXPIRED')),
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP + INTERVAL '7 days'),
+
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id),
+    CONSTRAINT fk_requested_by FOREIGN KEY (requested_by) REFERENCES users(id),
+    CONSTRAINT fk_approval_from FOREIGN KEY (requires_approval_from) REFERENCES users(id)
+);
+
+CREATE INDEX idx_role_requests_user ON role_change_requests(user_id);
+CREATE INDEX idx_role_requests_status ON role_change_requests(status, expires_at);
+CREATE INDEX idx_role_requests_approver ON role_change_requests(requires_approval_from) WHERE requires_approval_from IS NOT NULL;
+
+-- Role Change Approvals
+CREATE TABLE role_change_approvals (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    role_change_request_id UUID NOT NULL,
+    approved_by UUID NOT NULL, -- User providing approval
+    approved BOOLEAN NOT NULL,
+    comments TEXT,
+    approved_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_role_change_request FOREIGN KEY (role_change_request_id) REFERENCES role_change_requests(id),
+    CONSTRAINT fk_approved_by FOREIGN KEY (approved_by) REFERENCES users(id),
+    CONSTRAINT unique_approval_per_request UNIQUE (role_change_request_id, approved_by)
+);
+
+CREATE INDEX idx_approvals_request ON role_change_approvals(role_change_request_id);
+```
+
+### Business Rule Enforcement
+
+```sql
+-- Function to enforce minimum 2 organizers rule
+CREATE OR REPLACE FUNCTION enforce_minimum_organizers()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.role = 'ORGANIZER' AND NEW.is_active = false THEN
+        IF (SELECT COUNT(*) FROM user_roles
+            WHERE role = 'ORGANIZER'
+            AND is_active = true
+            AND (event_id = NEW.event_id OR (event_id IS NULL AND NEW.event_id IS NULL))
+            AND id != NEW.id) < 2 THEN
+            RAISE EXCEPTION 'Cannot demote organizer: minimum 2 organizers required';
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER check_minimum_organizers
+    BEFORE UPDATE ON user_roles
+    FOR EACH ROW
+    WHEN (OLD.is_active = true AND NEW.is_active = false)
+    EXECUTE FUNCTION enforce_minimum_organizers();
+```
+
 ## Data Consistency and Cross-Service Communication
 
 ### Domain Events
