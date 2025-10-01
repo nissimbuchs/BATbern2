@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "Infrastructure as Code for BATbern Platform",
   "bin": {
-    "infrastructure": "bin/infrastructure.js"
+    "infrastructure": "bin/infrastructure.js",
+    "batbern-infrastructure": "bin/batbern-infrastructure.js"
   },
   "scripts": {
     "build": "tsc",
@@ -12,8 +13,17 @@
     "test:watch": "jest --watch",
     "cdk": "cdk",
     "synth": "cdk synth",
+    "synth:dev": "cdk synth --context environment=development",
+    "synth:staging": "cdk synth --context environment=staging",
+    "synth:prod": "cdk synth --context environment=production",
     "deploy": "cdk deploy",
-    "diff": "cdk diff"
+    "deploy:dev": "cdk deploy --all --context environment=development",
+    "deploy:staging": "cdk deploy --all --context environment=staging",
+    "deploy:prod": "cdk deploy --all --context environment=production --require-approval broadening",
+    "diff": "cdk diff",
+    "diff:dev": "cdk diff --all --context environment=development",
+    "diff:staging": "cdk diff --all --context environment=staging",
+    "diff:prod": "cdk diff --all --context environment=production"
   },
   "devDependencies": {
     "@types/jest": "^29.5.11",
