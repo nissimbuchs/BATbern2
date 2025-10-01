@@ -107,7 +107,7 @@
 
 ## Technical Notes
 
-- Real-time progress updates via WebSocket
+- Progress updates via manual page reload
 - Workflow state machine enforces dependencies
 - Audit trail tracks all state changes
 - Configurable workflow templates per event type
@@ -151,9 +151,6 @@ When the 16-Step Workflow Visualization screen loads, the following APIs are cal
    - Returns: Audit trail of workflow changes with timestamps, users, actions taken
    - Used for: Track workflow progress history
 
-8. **WebSocket /ws/events/{eventId}/workflow**
-   - Real-time updates: Step completion, task updates, blocker changes, team assignments, automation triggers
-   - Used for: Live workflow progress updates
 
 ---
 
@@ -440,27 +437,20 @@ When the 16-Step Workflow Visualization screen loads, the following APIs are cal
 
 ### Event-Driven Navigation
 
-23. **Step completed (WebSocket)** → Updates workflow visualization
-    - Moves progress indicator
-    - Updates step status icon
-    - Activates next step
-    - Updates progress percentage
-    - May show celebration animation
-    - No automatic navigation
+23. **Step completed** → Requires manual page reload
+    - User must refresh page to see updated workflow visualization
+    - Progress indicator updates after reload
+    - Step status icon changes after reload
 
-24. **Blocker added (WebSocket)** → Updates step status
-    - Changes step icon to ⚠️
-    - Shows blocker notification
-    - Updates dependencies panel
-    - Highlights affected steps
-    - No automatic navigation
+24. **Blocker added** → Requires manual page reload
+    - User must refresh page to see blocker status
+    - Step icon updates after reload
+    - Dependencies panel updates after reload
 
-25. **Task completed by team member (WebSocket)** → Updates task list
-    - Checks task checkbox
-    - Updates step progress
-    - Shows notification
-    - Updates percentage
-    - No automatic navigation
+25. **Task completed by team member** → Requires manual page reload
+    - User must refresh page to see task completion
+    - Task checkbox state updates after reload
+    - Progress percentage updates after reload
 
 26. **Deadline approaching** → Shows warning indicator
     - Changes step color

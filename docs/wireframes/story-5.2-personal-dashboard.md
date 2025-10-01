@@ -82,7 +82,7 @@
 
 ## Technical Notes
 
-- Real-time dashboard updates via WebSocket
+- Dashboard updates via manual page reload
 - ML-based personalized recommendations
 - Progress tracking with gamification logic
 - Calendar integration (iCal, Google Calendar)
@@ -328,10 +328,9 @@ Screen transitions triggered by actions and events:
 ### Event-Driven Navigation
 
 17. **On New Recommendation Available**
-    - **Notification**: Dashboard notification or email
-    - **No Navigation**: Stays on dashboard
-    - **Updates**: Recommendations section refreshes
-    - **Badge**: "NEW" badge on recommendation card
+    - **Notification**: Email only
+    - **No Navigation**: Requires manual page reload to see new recommendations
+    - **Badge**: "NEW" badge appears after page reload
 
 18. **On Event Approaching** (< 7 days)
     - **Highlight**: Event card highlighted with countdown

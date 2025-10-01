@@ -11,7 +11,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────┐
-│ BATbern Event Platform                            Sally O. ▼  [🔔 3] [?] [Settings] │
+│ BATbern Event Platform                            Sally O. ▼  [🔔 3] [User Settings] │
 ├─────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                       │
 │  ┌─────────────────────────────────────────────────────────────────────────────┐    │
@@ -82,7 +82,7 @@
 
 ## Technical Notes
 
-- Real-time WebSocket updates for activity feed
+- Activity feed updates via manual page reload
 - Progress bars calculated from workflow step completion
 - Responsive layout adapts to screen size
 - Role-based access control for different organizer permissions
@@ -122,9 +122,6 @@ When the Event Management Dashboard screen loads, the following APIs are called 
    - Returns: Unread notification count, notification preview list
    - Used for: Display notification badge count
 
-7. **WebSocket /ws/organizers/{organizerId}/dashboard**
-   - Real-time updates: Team activity feed, task status changes, new notifications
-   - Used for: Live updates for activity feed and task changes
 
 ---
 
@@ -235,13 +232,7 @@ When the Event Management Dashboard screen loads, the following APIs are called 
    - Unread notifications highlighted
    - Action items available
 
-4. **[?] help icon** → Opens help documentation
-   - Context-sensitive help
-   - User guide access
-   - Support contact
-   - Opens in modal or sidebar
-
-5. **[Settings] button** → Navigate to `System Settings Screen`
+4. **[User Settings] button** → Navigate to `User Settings Screen`
    - Organization settings
    - User preferences
    - Team management
@@ -398,29 +389,21 @@ When the Event Management Dashboard screen loads, the following APIs are called 
     - Highlights new task
     - No automatic navigation
 
-29. **Team activity posted (WebSocket)** → Updates activity feed
-    - Adds activity to feed
-    - Shows real-time indicator
-    - May show notification for @mentions
-    - No automatic navigation
+29. **Team activity posted** → Requires manual page reload
+    - User must refresh page to see new activity
+    - Activity feed updates after reload
 
-30. **Workflow step completed** → Updates event progress
-    - Updates progress bar
-    - Changes step indicator
-    - May remove from critical tasks
-    - No automatic navigation
+30. **Workflow step completed** → Requires manual page reload
+    - User must refresh page to see updated progress
+    - Progress bar updates after reload
 
-31. **Deadline approaching** → Shows warning indicator
-    - Adds ⚠️ to event card
-    - May create critical task
-    - Shows notification
-    - No automatic navigation
+31. **Deadline approaching** → Requires manual page reload
+    - User must refresh page to see warning indicators
+    - Warning icons appear after reload
 
-32. **Notification received (WebSocket)** → Updates notification badge
-    - Increments badge count
-    - May show toast notification
-    - Highlights notification icon
-    - No automatic navigation
+32. **Notification received** → Requires manual page reload
+    - User must refresh page to see new notifications
+    - Notification badge count updates after reload
 
 33. **Speaker material submitted** → Updates task status
     - Removes overdue task

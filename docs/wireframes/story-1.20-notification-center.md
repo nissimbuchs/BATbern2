@@ -11,7 +11,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────┐
-│ ← Back                     Notification Center                         [Settings]    │
+│ ← Back                     Notification Center                   [User Settings]    │
 ├─────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                       │
 │  Unread: 3     Total: 47                                                             │
@@ -197,7 +197,7 @@ When the Notification Center screen loads, the following APIs are called to prov
    - Returns to dashboard
    - Preserves notification state
 
-2. **[Settings] button** → Scrolls to preferences section
+2. **[User Settings] button** → Scrolls to preferences section
    - Shows notification preferences
    - In-page navigation
    - No screen change

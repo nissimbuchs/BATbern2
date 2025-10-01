@@ -11,7 +11,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────┐
-│ BATbern Partner Portal                      UBS - Thomas Mueller ▼  [🔔] [Settings] │
+│ BATbern Partner Portal                      UBS - Thomas Mueller ▼  [🔔] [User Settings] │
 ├─────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                       │
 │  Welcome back, Thomas! Here's your sponsorship ROI overview.                         │
@@ -221,7 +221,7 @@ When the Partner Analytics Dashboard screen loads, the following APIs are called
    - Links to relevant screens
    - Mark as read functionality
 
-3. **[Settings] button** → Navigate to `Partner Settings Screen`
+3. **[User Settings] button** → Navigate to `Partner Settings Screen`
    - Notification preferences
    - Reporting configuration
    - User management
@@ -342,10 +342,9 @@ When the Partner Analytics Dashboard screen loads, the following APIs are called
 
 ### Event-Driven Navigation
 
-24. **Real-time metric update (WebSocket)** → Updates metrics in-place
-    - Smooth counter animations
-    - Highlight changed values
-    - No screen navigation
+24. **Metric updates** → Requires manual page reload
+    - User must refresh page to see updated metrics
+    - No automatic updates
 
 25. **New employee registration notification** → Shows toast notification
     - Links to event details

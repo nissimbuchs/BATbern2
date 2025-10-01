@@ -11,7 +11,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────┐
-│ ← Back to Dashboard    Event Details                      [Save Changes] [Settings] │
+│ ← Back to Dashboard    Event Details                      [Save Changes] [Event Settings] │
 ├─────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                       │
 │  ┌─── EVENT INFORMATION ─────────────────────────────────────────────────────────┐  │
@@ -208,7 +208,7 @@
 - Role-based field visibility (some fields only for lead organizer)
 - Audit trail for all changes (who changed what and when)
 - Integration with workflow state machine for status transitions
-- WebSocket updates for concurrent editing by multiple organizers
+- Optimistic concurrency control for concurrent editing detection
 - Data persistence uses Event aggregate root pattern (DDD)
 
 ---
@@ -471,7 +471,7 @@ When the Event Detail/Edit Screen loads, the following APIs are called to provid
    - Unsaved changes prompt if modifications exist
    - Context: Navigates back to event list view
 
-2. **[Settings] button** → Navigate to `Event Settings Screen` (Missing Wireframe - HIGH PRIORITY)
+2. **[Event Settings] button** → Navigate to `Event Settings Screen` (Missing Wireframe - HIGH PRIORITY)
    - Advanced event configuration
    - Integration settings
    - Notification preferences
@@ -736,14 +736,13 @@ When the Event Detail/Edit Screen loads, the following APIs are called to provid
 - Automatic refetch on window focus
 - Optimistic updates for immediate UI feedback
 
-### Real-Time Updates
+### Concurrent Editing
 
-- WebSocket connection for concurrent editing detection
-- Receive events: `event.updated`, `session.assigned`, `workflow.advanced`
-- Send events: `editing.started`, `editing.stopped` (for presence indication)
-- Conflict detection via version numbers (optimistic concurrency control)
-- Auto-merge non-conflicting changes
-- Show conflict resolution dialog for conflicting edits
+- Version-based conflict detection (optimistic concurrency control)
+- Save conflicts detected via version number mismatch
+- Show conflict resolution dialog when save fails due to concurrent edit
+- User must manually reload to see other users' changes
+- No real-time presence indicators
 
 ## Form Validation Rules
 
