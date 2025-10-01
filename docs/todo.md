@@ -17,3 +17,13 @@
 
 ## Infrastructure
 - [x] Create an aws account for BATbern. create a user for claude
+
+## More detailed Stories, with wireframes and api's
+- [x] Wireframes fertig ergänzen
+- [x] Sitemap pro Rolle zeichnen
+- [ ] Wireframes durch pm reviewen und nicht benötigtes löschen 
+- [ ] Fehlende Wireframes designen
+- [ ] API Architektur aktualisieren
+- [ ] Datenmodelle aktualisieren 
+- [ ] Stories mit wireframes verknüpfen 
+- [ ] Stories in substories aufteilen. Wie noch unklar. Pro task, pro Screen oder pro screencomponent, …

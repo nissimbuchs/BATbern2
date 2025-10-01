@@ -32,7 +32,9 @@ module.exports = {
       description: 'Detailed product requirements and specifications',
       icon: '📋',
       order: 1,
-      files: ['prd-enhanced.md']
+      files: [
+        'prd-enhanced.md',
+        'todo.md']
     },
     'architecture': {
       title: 'Architecture',
@@ -69,24 +71,9 @@ module.exports = {
       icon: '📚',
       order: 6,
       files: [
-        'prd.md',
         'front-end-spec.md',
-        'todo.md',
         'test-enhanced-markdown.md',
-        'brainstorming-session-results.md',
-        'brownfield-architecture.md'
-      ]
-    },
-    'aws-setup': {
-      title: 'AWS & Infrastructure',
-      description: 'AWS setup guides and infrastructure documentation',
-      icon: '☁️',
-      order: 7,
-      files: [
-        'aws-setup-guide.md',
-        'aws-README.md',
-        'claude-aws-setup.md',
-        'hostpoint-dns-poc.md'
+        'brainstorming-session-results.md'
       ]
     }
   },
