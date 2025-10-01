@@ -29,7 +29,7 @@ public class DomainRouter {
         } else if (cleanPath.startsWith("/api/speakers")) {
             return "speaker-coordination-service";
         } else if (cleanPath.startsWith("/api/partners")) {
-            return "partner-analytics-service";
+            return "partner-coordination-service";
         } else if (cleanPath.startsWith("/api/content")) {
             return "attendee-experience-service";
         } else {
@@ -51,7 +51,7 @@ public class DomainRouter {
                 String responseBody = switch (targetService) {
                     case "event-management-service" -> "{\"service\":\"event-management\",\"status\":\"available\"}";
                     case "speaker-coordination-service" -> "{\"service\":\"speaker-coordination\",\"status\":\"available\"}";
-                    case "partner-analytics-service" -> "{\"service\":\"partner-analytics\",\"status\":\"available\"}";
+                    case "partner-coordination-service" -> "{\"service\":\"partner-coordination\",\"status\":\"available\"}";
                     case "attendee-experience-service" -> "{\"service\":\"attendee-experience\",\"status\":\"available\"}";
                     default -> throw new RoutingException("Unknown target service: " + targetService);
                 };

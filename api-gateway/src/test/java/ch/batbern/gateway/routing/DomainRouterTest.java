@@ -56,13 +56,13 @@ class DomainRouterTest {
     @DisplayName("should_routeToPartnerService_when_partnersEndpointCalled")
     void should_routeToPartnerService_when_partnersEndpointCalled() {
         // Given
-        String requestPath = "/api/partners/analytics";
+        String requestPath = "/api/partners/coordination";
 
         // When
         String targetService = domainRouter.determineTargetService(requestPath);
 
         // Then
-        assertThat(targetService).isEqualTo("partner-analytics-service");
+        assertThat(targetService).isEqualTo("partner-coordination-service");
     }
 
     // Test 5.4: should_routeToAttendeeService_when_contentEndpointCalled
