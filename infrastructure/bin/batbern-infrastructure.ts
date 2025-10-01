@@ -6,6 +6,7 @@ import { DatabaseStack } from '../lib/stacks/database-stack';
 import { StorageStack } from '../lib/stacks/storage-stack';
 import { SecretsStack } from '../lib/stacks/secrets-stack';
 import { MonitoringStack } from '../lib/stacks/monitoring-stack';
+import { CICDStack } from '../lib/stacks/cicd-stack';
 import { devConfig } from '../lib/config/dev-config';
 import { stagingConfig } from '../lib/config/staging-config';
 import { prodConfig } from '../lib/config/prod-config';
@@ -82,6 +83,16 @@ const monitoringStack = new MonitoringStack(app, `${stackPrefix}-Monitoring`, {
   config,
   env,
   description: `BATbern Monitoring & Observability - ${config.envName}`,
+  tags: config.tags,
+});
+
+// 6. CI/CD Stack (ECR, IAM roles for GitHub Actions)
+const githubRepository = app.node.tryGetContext('githubRepository') || process.env.GITHUB_REPOSITORY || 'YOUR_ORG/BATbern';
+const cicdStack = new CICDStack(app, `${stackPrefix}-CICD`, {
+  config,
+  githubRepository,
+  env,
+  description: `BATbern CI/CD Infrastructure - ${config.envName}`,
   tags: config.tags,
 });
 

@@ -15,9 +15,10 @@ export interface SecretsStackProps extends cdk.StackProps {
  * Implements:
  * - AC17: Secrets Manager with secure credential storage and rotation
  * - AC4: Security Boundaries with KMS encryption
+ *
+ * Note: Database credentials are managed by RDS stack automatically
  */
 export class SecretsStack extends cdk.Stack {
-  public readonly dbSecret: secretsmanager.Secret;
   public readonly redisSecret: secretsmanager.Secret;
   public readonly jwtSecret: secretsmanager.Secret;
   public readonly secretsKey: kms.Key;
@@ -34,28 +35,7 @@ export class SecretsStack extends cdk.Stack {
       removalPolicy: isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
     });
 
-    // Database credentials secret
-    this.dbSecret = new secretsmanager.Secret(this, 'DatabaseSecret', {
-      secretName: `batbern/${props.config.envName}/database/credentials`,
-      description: 'RDS PostgreSQL master credentials',
-      encryptionKey: this.secretsKey,
-      generateSecretString: {
-        secretStringTemplate: JSON.stringify({ username: 'batbern_admin' }),
-        generateStringKey: 'password',
-        excludeCharacters: ' %+~`#$&*()|[]{}:;<>?!\'/@"\\',
-        passwordLength: 32,
-        requireEachIncludedType: true,
-      },
-    });
-
-    // Add rotation schedule for database secret in production
-    // Note: Rotation requires RDS integration which will be configured separately
-    if (isProd) {
-      this.dbSecret.addRotationSchedule('DatabaseSecretRotation', {
-        automaticallyAfter: cdk.Duration.days(30),
-        hostedRotation: secretsmanager.HostedRotation.postgreSqlSingleUser(),
-      });
-    }
+    // Note: Database credentials are automatically created and managed by RDS stack
 
     // Redis authentication token secret
     this.redisSecret = new secretsmanager.Secret(this, 'RedisSecret', {
@@ -100,11 +80,7 @@ export class SecretsStack extends cdk.Stack {
     cdk.Tags.of(this).add('Project', 'BATbern');
 
     // Outputs
-    new cdk.CfnOutput(this, 'DatabaseSecretArn', {
-      value: this.dbSecret.secretArn,
-      description: 'ARN of database credentials secret',
-      exportName: `${props.config.envName}-DatabaseSecretArn`,
-    });
+    // Note: Database secret ARN is exported by Database stack
 
     new cdk.CfnOutput(this, 'RedisSecretArn', {
       value: this.redisSecret.secretArn,

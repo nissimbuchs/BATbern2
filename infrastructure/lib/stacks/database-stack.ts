@@ -59,7 +59,7 @@ export class DatabaseStack extends cdk.Stack {
       this.cacheCluster = new elasticache.CfnReplicationGroup(this, 'RedisCluster', {
         replicationGroupDescription: 'BATbern Redis Cache Cluster',
         engine: 'redis',
-        engineVersion: '7.2',
+        engineVersion: '7.0', // Changed from 7.2 to 7.0 (7.2 not available in eu-central-1)
         cacheNodeType: props.config.elasticache.nodeType,
         numNodeGroups: 1,
         replicasPerNodeGroup: props.config.elasticache.numNodes - 1,
@@ -96,6 +96,30 @@ export class DatabaseStack extends cdk.Stack {
       value: this.database.dbInstanceEndpointPort,
       description: 'RDS PostgreSQL port',
       exportName: `${props.config.envName}-DatabasePort`,
+    });
+
+    new cdk.CfnOutput(this, 'DatabaseName', {
+      value: 'batbern',
+      description: 'RDS PostgreSQL database name',
+      exportName: `${props.config.envName}-DatabaseName`,
+    });
+
+    // Database credentials secret (automatically created by CDK)
+    new cdk.CfnOutput(this, 'DatabaseSecretArn', {
+      value: this.database.secret?.secretArn || 'N/A',
+      description: 'ARN of the Secrets Manager secret containing database credentials',
+      exportName: `${props.config.envName}-DatabaseSecretArn`,
+    });
+
+    new cdk.CfnOutput(this, 'DatabaseSecretName', {
+      value: this.database.secret?.secretName || 'N/A',
+      description: 'Name of the Secrets Manager secret containing database credentials',
+    });
+
+    // Full JDBC URL for convenience
+    new cdk.CfnOutput(this, 'DatabaseJdbcUrl', {
+      value: `jdbc:postgresql://${this.database.dbInstanceEndpointAddress}:${this.database.dbInstanceEndpointPort}/batbern`,
+      description: 'JDBC connection string for the database',
     });
 
     if (this.cacheCluster) {

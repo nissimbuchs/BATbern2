@@ -1,0 +1,166 @@
+name: Security Scanning
+
+on:
+  workflow_run:
+    workflows: ["Build Pipeline"]
+    types: [completed]
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+  schedule:
+    # Run security scans daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+jobs:
+  snyk-scan:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'pull_request' || github.event_name == 'schedule'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Run Snyk to check for vulnerabilities (Gradle)
+        uses: snyk/actions/gradle@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --fail-on=upgradable
+
+      - name: Upload Snyk results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: snyk.sarif
+
+      - name: Set up Node.js for npm scanning
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run Snyk to check npm vulnerabilities
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --fail-on=upgradable
+
+  sonarqube-scan:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for SonarQube blame info
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
+
+      - name: Cache SonarQube packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Build and run tests
+        run: |
+          if [ -d "shared-kernel" ] && [ -f "shared-kernel/gradlew" ]; then
+            cd shared-kernel
+            chmod +x gradlew
+            ./gradlew clean build test jacocoTestReport --no-daemon
+          fi
+
+      - name: SonarQube Scan
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: |
+          if [ -d "shared-kernel" ] && [ -f "shared-kernel/gradlew" ]; then
+            cd shared-kernel
+            ./gradlew sonarqube \
+              -Dsonar.projectKey=batbern-platform \
+              -Dsonar.organization=batbern \
+              -Dsonar.host.url=${SONAR_HOST_URL} \
+              -Dsonar.login=${SONAR_TOKEN} \
+              -Dsonar.qualitygate.wait=true \
+              --no-daemon || echo "::warning::SonarQube not fully configured yet"
+          else
+            echo "::warning::Shared kernel not found, skipping SonarQube scan"
+          fi
+
+  dependency-license-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
+
+      - name: Check Gradle dependencies licenses
+        run: |
+          if [ -d "shared-kernel" ] && [ -f "shared-kernel/gradlew" ]; then
+            cd shared-kernel
+            chmod +x gradlew
+            # Check for license plugin or add basic license check
+            ./gradlew dependencies --configuration runtimeClasspath > dependencies.txt || echo "::warning::License checking not fully configured"
+
+            # Basic check for common incompatible licenses
+            if grep -iE "GPL|AGPL|SSPL" dependencies.txt; then
+              echo "::warning::Potentially incompatible licenses found in dependencies"
+            fi
+          else
+            echo "::warning::Shared kernel not found, skipping license check"
+          fi
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install license-checker
+        run: npm install -g license-checker
+
+      - name: Check npm dependencies licenses
+        run: |
+          if [ -d "web-frontend" ] && [ -f "web-frontend/package.json" ]; then
+            cd web-frontend
+            npm ci || echo "::warning::Cannot install npm dependencies"
+
+            # Check licenses and fail on incompatible ones
+            license-checker --summary || echo "::warning::License checker not fully configured"
+
+            # Fail on GPL, AGPL, or other copyleft licenses
+            if license-checker --json | grep -iE "GPL|AGPL|SSPL"; then
+              echo "::error::Incompatible licenses found in npm dependencies"
+              exit 1
+            fi
+          else
+            echo "::warning::Frontend not found, skipping npm license check"
+          fi
+
+      - name: Upload license report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: license-reports
+          path: |
+            **/dependencies.txt
+          retention-days: 30

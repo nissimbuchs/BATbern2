@@ -77,6 +77,9 @@ dependencyManagement {
     }
 }
 
+// Configure JaCoCo for code coverage
+apply plugin: 'jacoco'
+
 test {
     useJUnitPlatform()
     testLogging {
@@ -84,6 +87,33 @@ test {
         exceptionFormat = 'full'
     }
 }
+
+jacoco {
+    toolVersion = "0.8.10"
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        html.required = true
+        csv.required = false
+    }
+}
+
+test.finalizedBy jacocoTestReport
+
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.90
+            }
+        }
+    }
+}
+
+check.dependsOn jacocoTestCoverageVerification
 
 tasks.named('bootRun') {
     systemProperty 'spring.profiles.active', 'local'

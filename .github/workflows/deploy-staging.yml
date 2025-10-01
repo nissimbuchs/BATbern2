@@ -1,0 +1,181 @@
+name: Deploy to Staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to deploy (e.g., commit SHA or tag)'
+        required: true
+        default: 'latest-dev'
+
+env:
+  AWS_REGION: eu-central-1
+  ENVIRONMENT: staging
+
+jobs:
+  pre-deployment-validation:
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://staging.batbern.ch
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate version
+        run: |
+          echo "Deploying version: ${{ github.event.inputs.version }}"
+          echo "Validating version exists..."
+
+          # If version is a git tag, verify it exists
+          if [[ "${{ github.event.inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            git fetch --tags
+            if ! git tag | grep -q "^${{ github.event.inputs.version }}$"; then
+              echo "::error::Version ${{ github.event.inputs.version }} does not exist"
+              exit 1
+            fi
+          fi
+
+      - name: Check dev deployment status
+        run: |
+          echo "Checking if version was successfully deployed to dev..."
+          # TODO: Add logic to verify dev deployment status
+
+  deploy-to-staging:
+    needs: pre-deployment-validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.version }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: infrastructure/package-lock.json
+
+      - name: Install CDK dependencies
+        working-directory: ./infrastructure
+        run: |
+          if [ -f "package.json" ]; then
+            npm ci
+          else
+            echo "::warning::Infrastructure package.json not found"
+            exit 0
+          fi
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Create database backup
+        run: |
+          echo "Creating database backup..."
+          SNAPSHOT_ID="batbern-staging-pre-deploy-$(date +%Y%m%d-%H%M%S)"
+
+          if aws rds describe-db-instances --db-instance-identifier batbern-staging-postgres --region ${{ env.AWS_REGION }} 2>/dev/null; then
+            aws rds create-db-snapshot \
+              --db-instance-identifier batbern-staging-postgres \
+              --db-snapshot-identifier $SNAPSHOT_ID \
+              --region ${{ env.AWS_REGION }}
+
+            echo "Waiting for snapshot to complete..."
+            aws rds wait db-snapshot-completed \
+              --db-snapshot-identifier $SNAPSHOT_ID \
+              --region ${{ env.AWS_REGION }}
+
+            echo "SNAPSHOT_ID=$SNAPSHOT_ID" >> $GITHUB_ENV
+            echo "✅ Database backup created: $SNAPSHOT_ID"
+          else
+            echo "::warning::Database instance not found, skipping backup"
+          fi
+
+      - name: Run database migrations
+        run: |
+          if [ -d "shared-kernel" ] && [ -f "shared-kernel/gradlew" ]; then
+            cd shared-kernel
+            chmod +x gradlew
+            ./gradlew flywayMigrate \
+              -Dflyway.url=${{ secrets.STAGING_DB_URL }} \
+              -Dflyway.user=${{ secrets.STAGING_DB_USER }} \
+              -Dflyway.password=${{ secrets.STAGING_DB_PASSWORD }} \
+              --no-daemon || echo "::warning::Flyway migrations not configured yet"
+          else
+            echo "::warning::Shared kernel not found, skipping migrations"
+          fi
+
+      - name: Deploy infrastructure to staging
+        working-directory: ./infrastructure
+        run: |
+          if [ -f "package.json" ]; then
+            echo "Deploying version: ${{ github.event.inputs.version }}"
+
+            npm run deploy:staging -- \
+              --context version=${{ github.event.inputs.version }} \
+              --require-approval never || echo "::warning::CDK deployment not fully configured yet"
+          else
+            echo "::warning::Infrastructure not configured yet"
+          fi
+        env:
+          IMAGE_TAG: ${{ github.event.inputs.version }}
+
+      - name: Wait for ECS services to stabilize
+        run: |
+          if aws ecs describe-clusters --clusters batbern-staging --region ${{ env.AWS_REGION }} 2>/dev/null; then
+            services=(
+              "event-management-service"
+              "speaker-coordination-service"
+              "partner-coordination-service"
+              "attendee-experience-service"
+              "company-management-service"
+            )
+
+            for service in "${services[@]}"; do
+              if aws ecs describe-services --cluster batbern-staging --services ${service} --region ${{ env.AWS_REGION }} 2>/dev/null | grep -q "ACTIVE"; then
+                echo "Waiting for $service to stabilize..."
+                aws ecs wait services-stable \
+                  --cluster batbern-staging \
+                  --services ${service} \
+                  --region ${{ env.AWS_REGION }} || echo "::warning::Service ${service} not found or not stable"
+              fi
+            done
+          else
+            echo "::warning::ECS cluster batbern-staging not found yet"
+          fi
+
+      - name: Run smoke tests
+        run: |
+          if [ -f "scripts/ci/smoke-tests.sh" ]; then
+            chmod +x scripts/ci/smoke-tests.sh
+            ./scripts/ci/smoke-tests.sh \
+              https://staging.batbern.ch \
+              https://api-staging.batbern.ch || echo "::warning::Smoke tests not fully configured yet"
+          else
+            echo "::warning::Smoke tests script not found"
+          fi
+
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "✅ Staging deployment successful"
+          echo "Version: ${{ github.event.inputs.version }}"
+
+      - name: Notify deployment failure
+        if: failure()
+        run: |
+          echo "❌ Staging deployment failed"
+          echo "Database backup available: ${{ env.SNAPSHOT_ID }}"

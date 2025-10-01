@@ -54,7 +54,7 @@ export class RdsCluster extends Construct {
         'log_duration': 'on',
         'log_min_duration_statement': '1000', // Log queries > 1 second
         'max_connections': isProd ? '200' : '100',
-        'work_mem': isProd ? '32MB' : '16MB',
+        'work_mem': isProd ? '32768' : '16384', // In KB: 32MB = 32768 KB, 16MB = 16384 KB
       },
       description: `PostgreSQL parameter group for ${props.envName}`,
     });
