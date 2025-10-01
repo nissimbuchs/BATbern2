@@ -14,6 +14,7 @@
 - [x] Try to separate the project into scs (self-contained-services), or really separate projects, in order to be able to work with a smaller context
 - [x] Shard the prd and include references to the architecture and uc wireframes
 - [x] Ask sm to use a test-driven approach
+- [ ] Define human readable business IDs for important entities like events, sessions, users (all roles), companies and others
 
 ## Infrastructure
 - [x] Create an aws account for BATbern. create a user for claude
@@ -33,9 +34,9 @@
 - [x] FR09: remove this requirement
 - [x] FR13: remove this requirement ✅ Completed 2025-10-01 (Sprint Change Proposal)
 - [x] FR16: remove this requirement ✅ Completed 2025-10-01 (Sprint Change Proposal)
-- [ ] FR18: Update PRD to explicitly require: Visual heat map representation, ML similarity scoring with duplicate avoidance staleness detection with recommended wait periods
-- [ ] New requirement: Organizers are like administrators, and can promote other users to speakers or organizers
-- [ ] EXPAND PRD Add new section: “4.1 Authentication & Authorization Architecture”:
+- [x] FR18: Update PRD to explicitly require: Visual heat map representation, ML similarity scoring with duplicate avoidance staleness detection with recommended wait periods
+- [x] New requirement: Organizers are like administrators, and can promote other users to speakers or organizers
+- [x] EXPAND PRD Add new section: “4.1 Authentication & Authorization Architecture”:
         Detailed AWS Cognito integration requirements
         Role-permission matrix for all features
         User lifecycle management workflows
@@ -51,9 +52,9 @@
         Storage quota policies per role
         Backup and disaster recovery for content
 - [ ] ENHANCE PRD Add requirement: Organizers can schedule partner meetings. invites are automatically sent to partners as calendar invites.
-- [ ] FR17: remove state waitlist. this is a separate list of ready, but declined speakers
-- [ ] FR17: remove state informed. this is not a state
-- [ ] FR19: remove lessons learned
+- [x] FR17: remove state waitlist. this is a separate list of ready, but declined speakers
+- [x] FR17: remove state informed. this is not a state
+- [x] FR19: remove lessons learned
 - [ ] 
 - [ ] 
 - [ ] 

@@ -37,14 +37,14 @@ Complete rewrite of BATbern as a comprehensive event management platform using R
 2. **Speaker Brainstorming & Research** - Identify potential speakers for topic
 3. **Speaker Assignment & Contact Strategy** - Define organizer-to-speaker contact distribution
 4. **Speaker Outreach & Initial Contact** - Send invitations with context, deadlines, requirements
-5. **Speaker Status Tracking** - Track: open → contacted → ready → declined/accepted → slot-assigned → final agenda → informed
-6. **Speaker Content Collection** - Collect title, abstract (max 1000 chars with lessons learned), CV, photo (1 month before)
+5. **Speaker Status Tracking** - Track: open → contacted → ready → declined/accepted → slot-assigned → final agenda
+6. **Speaker Content Collection** - Collect title, abstract (max 1000 chars), CV, photo (1 month before)
 7. **Content Quality Review** - Moderator reviews abstracts/materials for standards compliance
 8. **Minimum Threshold Check** - Wait until minimum slots filled before assignment
 9. **Speaker Selection & Overflow Management** - Organizer voting on topic fit when more speakers than slots
-10. **Speaker-to-Slot Assignment** - Assign speakers considering preferences, technical needs, topic flow (theoretical AM, lessons learned PM)
+10. **Speaker-to-Slot Assignment** - Assign speakers considering preferences, technical needs, topic flow optimization
 11. **Progressive Publishing Engine** - Topic immediate, speakers 1 month before with continuous updates
-12. **Agenda Finalization** - 2 weeks before: finalize agenda, handle dropouts via waitlist
+12. **Agenda Finalization** - 2 weeks before: finalize agenda, handle dropouts via overflow speaker list
 13. **Newsletter Distribution** - Send progressive then final agenda to mailing list
 14. **Moderation Assignment** - Assign event moderator to the event
 15. **Catering Coordination** - Adds a task to contact Caterer for a menue 1 month before
@@ -74,11 +74,11 @@ Complete rewrite of BATbern as a comprehensive event management platform using R
 
 **FR16**: [REMOVED - Strategic refocus per Sprint Change Proposal 2025-10-01]
 
-**FR17**: The system shall provide intelligent speaker matching and assignment tracking with automated workflow states (open → contacted → ready → declined/accepted → slot-assigned → final agenda → informed → waitlist) and real-time organizer collaboration including slot preference collection, technical requirement tracking, and overflow management with organizer voting mechanisms
+**FR17**: The system shall provide intelligent speaker matching and assignment tracking with automated workflow states (open → contacted → ready → declined/accepted → slot-assigned → final agenda) and real-time organizer collaboration including slot preference collection, technical requirement tracking, and overflow management with organizer voting mechanisms and separate overflow speaker tracking
 
 **FR18**: Event organizers shall access smart topic backlog management with visual heat map representation showing topic usage frequency over time, ML-powered similarity scoring to identify duplicate or similar topics with automated avoidance warnings, staleness detection algorithms that calculate recommended wait periods before topic reuse based on historical patterns and partner influence metrics, and intelligent duplicate avoidance that prevents organizers from selecting recently used or semantically similar topics
 
-**FR19**: The platform shall implement progressive publishing engine that automatically validates content readiness (moderator quality review, abstract length limits, lesson learned requirements) and publishes event information in phases (topic immediate → speakers 1 month prior → progressive agenda updates → final agenda → post-event materials) with quality control checkpoints and automated content standards enforcement
+**FR19**: The platform shall implement progressive publishing engine that automatically validates content readiness (moderator quality review, abstract length limits) and publishes event information in phases (topic immediate → speakers 1 month prior → progressive agenda updates → final agenda → post-event materials) with quality control checkpoints and automated content standards enforcement
 
 **FR20**: Event organizers shall receive intelligent notification system with role-based alerts, cross-stakeholder visibility, and automated escalation workflows for deadline management and task coordination
 

@@ -488,10 +488,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/SpeakerSelectionVote'
 
-  /api/v1/events/{eventId}/waitlist:
-    get:
-      tags: [Waitlist Management]
-      summary: Get event waitlist
+  /api/v1/events/{eventId}/overflow/{speakerId}/promote:
+    post:
+      tags: [Overflow Management]
+      summary: Promote overflow speaker to active (on dropout)
       security:
         - BearerAuth: [organizer]
       parameters:
@@ -501,22 +501,7 @@ paths:
           schema:
             type: string
             format: uuid
-      responses:
-        '200':
-          description: Waitlisted speakers
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/WaitlistSpeaker'
-    post:
-      tags: [Waitlist Management]
-      summary: Add speaker to waitlist
-      security:
-        - BearerAuth: [organizer]
-      parameters:
-        - name: eventId
+        - name: speakerId
           in: path
           required: true
           schema:
@@ -527,62 +512,24 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AddToWaitlistRequest'
-      responses:
-        '201':
-          description: Speaker added to waitlist
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/WaitlistSpeaker'
-    delete:
-      tags: [Waitlist Management]
-      summary: Remove speaker from waitlist
-      security:
-        - BearerAuth: [organizer]
-      parameters:
-        - name: eventId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: speakerId
-          in: query
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '204':
-          description: Speaker removed from waitlist
-
-  /api/v1/events/{eventId}/waitlist/{speakerId}/activate:
-    post:
-      tags: [Waitlist Management]
-      summary: Activate waitlisted speaker
-      security:
-        - BearerAuth: [organizer]
-      parameters:
-        - name: eventId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: speakerId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+              type: object
+              properties:
+                slotId:
+                  type: string
+                  format: uuid
+                  description: Slot to assign the promoted speaker
+                reason:
+                  type: string
+                  description: Reason for promotion (e.g., "Speaker dropout")
+              required:
+                - slotId
       responses:
         '200':
-          description: Speaker activated from waitlist
+          description: Overflow speaker promoted successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WaitlistSpeaker'
+                $ref: '#/components/schemas/OverflowSpeaker'
 
   # Company Management
   /api/v1/companies:

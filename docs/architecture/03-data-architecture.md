@@ -159,9 +159,7 @@ enum SpeakerWorkflowState {
   ACCEPTED = 'accepted',
   SLOT_ASSIGNED = 'slot_assigned',
   QUALITY_REVIEWED = 'quality_reviewed',
-  FINAL_AGENDA = 'final_agenda',
-  INFORMED = 'informed',
-  WAITLIST = 'waitlist'
+  FINAL_AGENDA = 'final_agenda'
 }
 
 enum SpeakerAvailability {
@@ -221,8 +219,6 @@ interface SessionSpeaker {
   declineReason?: string;
   slotAssignment?: SlotAssignment;
   qualityReview?: ContentQualityReview;
-  isWaitlisted: boolean;
-  waitlistedAt?: Date;
 }
 
 enum SessionType {
@@ -318,7 +314,6 @@ interface EventSlotConfiguration {
   maxSlots: number;
   slotDuration: number; // minutes
   theoreticalSlotsAM: boolean; // theoretical presentations in morning
-  lessonsLearnedSlotsPM: boolean; // lessons learned in afternoon
   breakSlots: number;
   lunchSlots: number;
 }
@@ -338,7 +333,7 @@ interface EventSlot {
 
 enum SlotType {
   THEORETICAL = 'theoretical',
-  LESSONS_LEARNED = 'lessons_learned',
+  PRACTICAL = 'practical',
   KEYNOTE = 'keynote',
   WORKSHOP = 'workshop',
   BREAK = 'break',
@@ -349,7 +344,6 @@ enum SlotType {
 interface OverflowManagement {
   eventId: string;
   overflowSpeakers: OverflowSpeaker[];
-  waitlistSpeakers: WaitlistSpeaker[];
   selectionVotes: SpeakerSelectionVote[];
   isVotingComplete: boolean;
   votingDeadline?: Date;
@@ -363,15 +357,6 @@ interface OverflowSpeaker {
   isSelected: boolean;
   declinedAt?: Date;
   declineReason?: string;
-}
-
-interface WaitlistSpeaker {
-  speakerId: string;
-  sessionId: string;
-  waitlistedAt: Date;
-  priority: number;
-  isActive: boolean;
-  activatedAt?: Date;
 }
 
 interface SpeakerSelectionVote {

@@ -771,10 +771,6 @@ public class SpeakerWorkflowService {
             case SLOT_ASSIGNED:
                 validateSlotAssignment(speaker);
                 break;
-            case WAITLIST:
-                speaker.setWaitlistedAt(Instant.now());
-                addToWaitlist(session.getEventId(), speaker);
-                break;
         }
 
         speaker.setWorkflowState(newState);
@@ -1047,15 +1043,14 @@ public class OverflowManagementService {
             );
         });
 
-        // Move unselected speakers to waitlist
+        // Mark unselected speakers as overflow (remain in READY state)
         overflow.getOverflowSpeakers().stream()
             .filter(speaker -> !speaker.isSelected())
             .forEach(speaker -> {
-                speakerWorkflowService.updateSpeakerWorkflowState(
-                    speaker.getSessionId(),
+                overflowManagementService.addToOverflow(
+                    overflow.getEventId(),
                     speaker.getSpeakerId(),
-                    SpeakerWorkflowState.WAITLIST,
-                    "SYSTEM"
+                    votingResults.get(speaker.getSpeakerId())
                 );
             });
 

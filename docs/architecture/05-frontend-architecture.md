@@ -691,8 +691,7 @@ const SpeakerWorkflow: React.FC<SpeakerWorkflowProps> = ({
     'CONTACTED',
     'READY',
     'DECLINED_ACCEPTED',
-    'FINAL_AGENDA',
-    'INFORMED'
+    'FINAL_AGENDA'
   ];
 
   return (

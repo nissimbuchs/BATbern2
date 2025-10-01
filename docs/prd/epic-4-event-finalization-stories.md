@@ -33,16 +33,14 @@ As a **moderator**, I want to review speaker content for quality and ensure mini
 1. **Content Review**: Review abstracts for quality and relevance
 2. **Requirements Check**: Verify:
    - Abstract length (max 1000 chars)
-   - Lessons learned section present
    - Technical requirements specified
 3. **Feedback System**: Provide structured feedback to speakers
 4. **Revision Workflow**: Support revision cycles with speakers
 
 **Threshold Management:**
 5. **Minimum Slots**: Ensure minimum speakers before proceeding
-6. **Waitlist**: Hold assignments until threshold met
-7. **Risk Alerts**: Notify if threshold at risk
-8. **Contingency**: Suggest alternatives if below minimum
+6. **Risk Alerts**: Notify if threshold at risk
+7. **Contingency**: Suggest alternatives if below minimum
 
 **Definition of Done:**
 - [ ] Moderation queue processes all submissions
@@ -71,7 +69,7 @@ As an **organizer**, I want to manage speaker selection with voting for overflow
 1. **Overflow Detection**: Identify when speakers > slots
 2. **Voting Interface**: Multi-organizer voting system
 3. **Ranking Algorithm**: Score speakers on multiple criteria
-4. **Waitlist Management**: Maintain ranked waitlist
+4. **Overflow List Management**: Maintain ranked overflow speaker list (separate from workflow states)
 
 **Slot Assignment:**
 5. **Preference Collection**: Gather speaker time preferences
@@ -85,7 +83,7 @@ As an **organizer**, I want to manage speaker selection with voting for overflow
 - [ ] Technical requirements 100% accommodated
 - [ ] Topic flow logically organized
 - [ ] Changes handled within 5 minutes
-- [ ] Waitlist promotions automated
+- [ ] Overflow speaker promotions automated
 
 ---
 
@@ -117,7 +115,7 @@ As an **organizer**, I want content to publish progressively with automated agen
 
 **Agenda Management:**
 10. **Two-Week Lock**: Enforce agenda freeze
-11. **Dropout Handling**: Automatic waitlist promotion
+11. **Dropout Handling**: Automatic overflow speaker promotion
 12. **Emergency Override**: Support critical changes
 13. **Version Control**: Track all changes
 

@@ -102,7 +102,7 @@ As a **speaker**, I want to submit my presentation materials through a simple po
 
 **Submission Requirements:**
 1. **Required Materials**:
-   - Title and abstract (max 1000 chars with lessons learned)
+   - Title and abstract (max 1000 chars)
    - CV/biography
    - Professional photo
    - Presentation file (PDF/PPTX)
@@ -119,7 +119,6 @@ As a **speaker**, I want to submit my presentation materials through a simple po
 **Definition of Done:**
 - [ ] All required materials can be uploaded
 - [ ] Abstract validation enforces 1000 char limit
-- [ ] Lessons learned section mandatory
 - [ ] Large file uploads work reliably
 - [ ] Draft auto-save prevents data loss
 - [ ] S3 integration secure with presigned URLs
@@ -176,8 +175,8 @@ As an **organizer**, I want to track speaker outreach with automated reminders a
 
 **Status Management:**
 1. **Speaker States**:
-   - Open → Contacted → Responded → Accepted/Declined
-   - Accepted → Materials Pending → Materials Submitted → Confirmed
+   - Open → Contacted → Ready → Accepted/Declined
+   - Accepted → Slot Assigned → Final Agenda
 2. **State Transitions**: Validated transitions with business rules
 3. **Real-time Updates**: WebSocket updates for team visibility
 4. **Audit Trail**: Complete history of all status changes

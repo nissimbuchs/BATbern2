@@ -367,7 +367,7 @@ graph TD
 
 - **Intelligent Speaker Matching (FR17)**:
   - Speaker database with expertise matching
-  - Automated workflow state tracker (open → contacted → ready → declined/accepted → slot-assigned → final agenda → informed → waitlist)
+  - Automated workflow state tracker (open → contacted → ready → declined/accepted → slot-assigned → final agenda)
   - Slot preference collection interface
   - Technical requirements matrix
   - Overflow management with voting mechanism
@@ -375,7 +375,7 @@ graph TD
 
 - **Progressive Publishing Engine (FR19)**:
   - Content readiness dashboard with validation checkpoints
-  - Quality control indicators (moderator review status, abstract length, lessons learned)
+  - Quality control indicators (moderator review status, abstract length)
   - Phased publishing timeline visualization
   - Automatic content standards enforcement
   - Publishing preview with rollback capabilities
@@ -479,7 +479,6 @@ graph TD
 - **Content Validation Workspace**:
   - Side-by-side view: submitted content vs. requirements checklist
   - Abstract length validator (1000 character limit with counter)
-  - Lessons learned requirement checker
   - Technical accuracy assessment tools
   - Plagiarism detection integration
 
@@ -705,7 +704,7 @@ Aligned with the 7-epic development strategy from the PRD, UI components will be
 **UI Components to Deliver**:
 - Moderator review interface for content quality control
 - Agenda finalization tools
-- Waitlist management interface
+- Overflow speaker management interface
 - Automated notification center
 - Quality checkpoint dashboards
 
