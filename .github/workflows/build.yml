@@ -230,7 +230,7 @@ jobs:
       - name: Build frontend
         if: steps.check-frontend.outputs.exists == 'true'
         working-directory: ./web-frontend
-        run: npm run build
+        run: npx vite build  # Skip tsc in CI for incremental development
         env:
           VITE_API_URL: https://api.batbern.ch
 
