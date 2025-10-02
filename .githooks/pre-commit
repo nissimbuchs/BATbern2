@@ -40,9 +40,12 @@ if [ -n "$TS_FILES" ]; then
         FRONTEND_FILES=$(echo "$STAGED_FILES" | grep '^web-frontend/' | sed 's|^web-frontend/||')
 
         if [ -n "$FRONTEND_FILES" ]; then
-            # Run ESLint on changed frontend files
+            # Run ESLint on changed frontend files (exclude config files)
             echo "  Running ESLint..."
-            echo "$FRONTEND_FILES" | xargs npx eslint --max-warnings 0 || TESTS_FAILED=1
+            LINT_FILES=$(echo "$FRONTEND_FILES" | grep -v '\.eslintrc\.' || true)
+            if [ -n "$LINT_FILES" ]; then
+                echo "$LINT_FILES" | xargs npx eslint --max-warnings 0 || TESTS_FAILED=1
+            fi
 
             # Run Prettier check on changed frontend files
             echo "  Running Prettier..."

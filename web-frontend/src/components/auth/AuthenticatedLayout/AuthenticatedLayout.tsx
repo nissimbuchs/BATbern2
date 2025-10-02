@@ -3,7 +3,7 @@
  * Story 1.2: Role-adaptive navigation and layout
  */
 
-import React from 'react'
+import React from 'react';
 import {
   Box,
   AppBar,
@@ -13,37 +13,35 @@ import {
   Menu,
   MenuItem,
   Avatar,
-  Button,
   Drawer,
   List,
   ListItem,
   ListItemIcon,
   ListItemText,
-  Divider
-} from '@mui/material'
+  Divider,
+} from '@mui/material';
 import {
   Menu as MenuIcon,
-  AccountCircle,
   Dashboard,
   Event,
   People,
   Analytics,
   Search,
   Settings,
-  Logout
-} from '@mui/icons-material'
-import { useAuth } from '@hooks/useAuth'
-import { UserRole } from '@types/auth'
+  Logout,
+} from '@mui/icons-material';
+import { useAuth } from '@hooks/useAuth';
+import { UserRole } from '@/types/auth';
 
 interface AuthenticatedLayoutProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 interface NavigationItem {
-  label: string
-  path: string
-  icon: React.ReactNode
-  roles: UserRole[]
+  label: string;
+  path: string;
+  icon: React.ReactNode;
+  roles: UserRole[];
 }
 
 const navigationItems: NavigationItem[] = [
@@ -51,79 +49,77 @@ const navigationItems: NavigationItem[] = [
     label: 'Dashboard',
     path: '/dashboard',
     icon: <Dashboard />,
-    roles: ['organizer', 'speaker', 'partner', 'attendee']
+    roles: ['organizer', 'speaker', 'partner', 'attendee'],
   },
   {
     label: 'Events',
     path: '/events',
     icon: <Event />,
-    roles: ['organizer', 'speaker', 'partner', 'attendee']
+    roles: ['organizer', 'speaker', 'partner', 'attendee'],
   },
   {
     label: 'Speakers',
     path: '/speakers',
     icon: <People />,
-    roles: ['organizer', 'speaker']
+    roles: ['organizer', 'speaker'],
   },
   {
     label: 'Partners',
     path: '/partners',
     icon: <People />,
-    roles: ['organizer', 'partner']
+    roles: ['organizer', 'partner'],
   },
   {
     label: 'Analytics',
     path: '/analytics',
     icon: <Analytics />,
-    roles: ['organizer', 'partner']
+    roles: ['organizer', 'partner'],
   },
   {
     label: 'Content Search',
     path: '/content',
     icon: <Search />,
-    roles: ['attendee', 'organizer']
-  }
-]
+    roles: ['attendee', 'organizer'],
+  },
+];
 
 export const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) => {
-  const { user, signOut, hasRole } = useAuth()
-  const [mobileOpen, setMobileOpen] = React.useState(false)
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null)
+  const { user, signOut } = useAuth();
+  const [mobileOpen, setMobileOpen] = React.useState(false);
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
   const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen)
-  }
+    setMobileOpen(!mobileOpen);
+  };
 
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget)
-  }
+    setAnchorEl(event.currentTarget);
+  };
 
   const handleMenuClose = () => {
-    setAnchorEl(null)
-  }
+    setAnchorEl(null);
+  };
 
   const handleSignOut = async () => {
-    handleMenuClose()
-    await signOut()
-  }
+    handleMenuClose();
+    await signOut();
+  };
 
   const getVisibleNavigationItems = () => {
-    if (!user) return []
+    if (!user) return [];
 
-    return navigationItems.filter(item =>
-      item.roles.includes(user.role)
-    )
-  }
+    return navigationItems.filter((item) => item.roles.includes(user.role));
+  };
 
   const getRoleDisplayName = (role: UserRole): string => {
     const roleNames = {
       organizer: 'Event Organizer',
       speaker: 'Speaker',
       partner: 'Partner',
-      attendee: 'Attendee'
-    }
-    return roleNames[role] || role
-  }
+      attendee: 'Attendee',
+    };
+    return roleNames[role] || role;
+  };
 
   const drawerContent = (
     <Box>
@@ -143,21 +139,19 @@ export const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ childr
               color: 'inherit',
               textDecoration: 'none',
               '&:hover': {
-                backgroundColor: 'action.hover'
-              }
+                backgroundColor: 'action.hover',
+              },
             }}
           >
-            <ListItemIcon>
-              {item.icon}
-            </ListItemIcon>
+            <ListItemIcon>{item.icon}</ListItemIcon>
             <ListItemText primary={item.label} />
           </ListItem>
         ))}
       </List>
     </Box>
-  )
+  );
 
-  const drawerWidth = 240
+  const drawerWidth = 240;
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -195,7 +189,7 @@ export const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ childr
                   backgroundColor: 'rgba(255,255,255,0.1)',
                   px: 1,
                   py: 0.5,
-                  borderRadius: 1
+                  borderRadius: 1,
                 }}
               >
                 {getRoleDisplayName(user.role)}
@@ -208,19 +202,14 @@ export const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ childr
                 onClick={handleProfileMenuOpen}
                 color="inherit"
               >
-                <Avatar sx={{ width: 32, height: 32 }}>
-                  {user.email.charAt(0).toUpperCase()}
-                </Avatar>
+                <Avatar sx={{ width: 32, height: 32 }}>{user.email.charAt(0).toUpperCase()}</Avatar>
               </IconButton>
             </Box>
           )}
         </Toolbar>
       </AppBar>
 
-      <Box
-        component="nav"
-        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-      >
+      <Box component="nav" sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}>
         <Drawer
           variant="temporary"
           open={mobileOpen}
@@ -288,5 +277,5 @@ export const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ childr
         </MenuItem>
       </Menu>
     </Box>
-  )
-}
+  );
+};

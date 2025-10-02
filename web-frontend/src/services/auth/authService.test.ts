@@ -3,32 +3,31 @@
  * Story 1.2: Frontend Authentication Integration
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { authService } from './authService'
-import { LoginCredentials, SignUpData, UserContext } from '@types/auth'
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { authService } from './authService';
+import { LoginCredentials, SignUpData } from '@/types/auth';
 
-// Mock AWS Amplify
-vi.mock('aws-amplify', () => ({
-  Auth: {
-    signIn: vi.fn(),
-    signOut: vi.fn(),
-    signUp: vi.fn(),
-    confirmSignUp: vi.fn(),
-    getCurrentUser: vi.fn(),
-    currentAuthenticatedUser: vi.fn(),
-    currentSession: vi.fn(),
-    forgotPassword: vi.fn(),
-    forgotPasswordSubmit: vi.fn(),
-  }
-}))
+// Mock AWS Amplify v6
+vi.mock('aws-amplify/auth', () => ({
+  signIn: vi.fn(),
+  signOut: vi.fn(),
+  signUp: vi.fn(),
+  confirmSignUp: vi.fn(),
+  getCurrentUser: vi.fn(),
+  fetchAuthSession: vi.fn(),
+  resetPassword: vi.fn(),
+  confirmResetPassword: vi.fn(),
+}));
 
 // Import the mocked module
-import { Auth as mockAuth } from 'aws-amplify'
+import * as amplifyAuth from 'aws-amplify/auth';
+
+const mockAuth = vi.mocked(amplifyAuth);
 
 describe('AuthService', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-  })
+    vi.clearAllMocks();
+  });
 
   describe('signIn', () => {
     it('should_authenticateUser_when_validCredentialsProvided', async () => {
@@ -36,17 +35,17 @@ describe('AuthService', () => {
       const credentials: LoginCredentials = {
         email: 'organizer@batbern.ch',
         password: 'ValidPassword123!',
-        rememberMe: true
-      }
+        rememberMe: true,
+      };
 
       // Mock successful Cognito response
       const mockCognitoUser = {
         username: 'organizer@batbern.ch',
         attributes: {
           email: 'organizer@batbern.ch',
-          'custom:role': 'organizer'
-        }
-      }
+          'custom:role': 'organizer',
+        },
+      };
 
       const mockSession = {
         getIdToken: () => ({
@@ -60,67 +59,67 @@ describe('AuthService', () => {
               language: 'en',
               theme: 'light',
               notifications: { email: true, sms: false, push: true },
-              privacy: { showProfile: true, allowMessages: true }
+              privacy: { showProfile: true, allowMessages: true },
             }),
             iat: Math.floor(Date.now() / 1000),
-            exp: Math.floor(Date.now() / 1000) + 3600
-          }
+            exp: Math.floor(Date.now() / 1000) + 3600,
+          },
         }),
         getAccessToken: () => ({
-          getJwtToken: () => 'mock-access-token'
+          getJwtToken: () => 'mock-access-token',
         }),
         getRefreshToken: () => ({
-          getToken: () => 'mock-refresh-token'
-        })
-      }
+          getToken: () => 'mock-refresh-token',
+        }),
+      };
 
-      mockAuth.signIn.mockResolvedValue(mockCognitoUser)
-      mockAuth.currentSession.mockResolvedValue(mockSession)
+      mockAuth.signIn.mockResolvedValue(mockCognitoUser);
+      mockAuth.currentSession.mockResolvedValue(mockSession);
 
-      const result = await authService.signIn(credentials)
+      const result = await authService.signIn(credentials);
 
-      expect(result.success).toBe(true)
-      expect(result.user).toBeDefined()
-      expect(result.user?.email).toBe(credentials.email)
-      expect(result.user?.role).toBe('organizer')
-      expect(mockAuth.signIn).toHaveBeenCalledWith(credentials.email, credentials.password)
-    })
+      expect(result.success).toBe(true);
+      expect(result.user).toBeDefined();
+      expect(result.user?.email).toBe(credentials.email);
+      expect(result.user?.role).toBe('organizer');
+      expect(mockAuth.signIn).toHaveBeenCalledWith(credentials.email, credentials.password);
+    });
 
     it('should_returnError_when_invalidCredentialsProvided', async () => {
       // Test 9.2: should_returnError_when_invalidCredentialsProvided
       const credentials: LoginCredentials = {
         email: 'invalid@example.com',
-        password: 'wrongpassword'
-      }
+        password: 'wrongpassword',
+      };
 
       // Mock Cognito error
-      const cognitoError = new Error('NotAuthorizedException')
-      cognitoError.name = 'NotAuthorizedException'
-      mockAuth.signIn.mockRejectedValue(cognitoError)
+      const cognitoError = new Error('NotAuthorizedException');
+      cognitoError.name = 'NotAuthorizedException';
+      mockAuth.signIn.mockRejectedValue(cognitoError);
 
-      const result = await authService.signIn(credentials)
+      const result = await authService.signIn(credentials);
 
-      expect(result.success).toBe(false)
-      expect(result.error).toBeDefined()
-      expect(result.error?.code).toBe('INVALID_CREDENTIALS')
-      expect(mockAuth.signIn).toHaveBeenCalledWith(credentials.email, credentials.password)
-    })
+      expect(result.success).toBe(false);
+      expect(result.error).toBeDefined();
+      expect(result.error?.code).toBe('INVALID_CREDENTIALS');
+      expect(mockAuth.signIn).toHaveBeenCalledWith(credentials.email, credentials.password);
+    });
 
     it('should_extractUserContext_when_cognitoTokenReceived', async () => {
       // Test 9.3: should_extractUserContext_when_cognitoTokenReceived
       const credentials: LoginCredentials = {
         email: 'speaker@company.com',
-        password: 'ValidPassword123!'
-      }
+        password: 'ValidPassword123!',
+      };
 
       // Mock successful Cognito response
       const mockCognitoUser = {
         username: 'speaker@company.com',
         attributes: {
           email: 'speaker@company.com',
-          'custom:role': 'speaker'
-        }
-      }
+          'custom:role': 'speaker',
+        },
+      };
 
       const mockSession = {
         getIdToken: () => ({
@@ -134,46 +133,46 @@ describe('AuthService', () => {
               language: 'en',
               theme: 'light',
               notifications: { email: true, sms: false, push: true },
-              privacy: { showProfile: true, allowMessages: true }
+              privacy: { showProfile: true, allowMessages: true },
             }),
             iat: Math.floor(Date.now() / 1000),
-            exp: Math.floor(Date.now() / 1000) + 3600
-          }
+            exp: Math.floor(Date.now() / 1000) + 3600,
+          },
         }),
         getAccessToken: () => ({
-          getJwtToken: () => 'mock-speaker-access-token'
+          getJwtToken: () => 'mock-speaker-access-token',
         }),
         getRefreshToken: () => ({
-          getToken: () => 'mock-speaker-refresh-token'
-        })
-      }
+          getToken: () => 'mock-speaker-refresh-token',
+        }),
+      };
 
-      mockAuth.signIn.mockResolvedValue(mockCognitoUser)
-      mockAuth.currentSession.mockResolvedValue(mockSession)
+      mockAuth.signIn.mockResolvedValue(mockCognitoUser);
+      mockAuth.currentSession.mockResolvedValue(mockSession);
 
-      const result = await authService.signIn(credentials)
+      const result = await authService.signIn(credentials);
 
-      expect(result.user?.userId).toBeDefined()
-      expect(result.user?.companyId).toBeDefined()
-      expect(result.user?.preferences).toBeDefined()
-      expect(result.accessToken).toBeDefined()
-    })
+      expect(result.user?.userId).toBeDefined();
+      expect(result.user?.companyId).toBeDefined();
+      expect(result.user?.preferences).toBeDefined();
+      expect(result.accessToken).toBeDefined();
+    });
 
     it('should_handleMfaChallenge_when_mfaRequired', async () => {
       // Test 9.4: should_handleMfaChallenge_when_mfaRequired
       const credentials: LoginCredentials = {
         email: 'partner@company.com',
-        password: 'ValidPassword123!'
-      }
+        password: 'ValidPassword123!',
+      };
 
-      const result = await authService.signIn(credentials)
+      const result = await authService.signIn(credentials);
 
       if (result.mfaChallenge) {
-        expect(result.mfaChallenge.challengeName).toBeDefined()
-        expect(result.mfaChallenge.session).toBeDefined()
+        expect(result.mfaChallenge.challengeName).toBeDefined();
+        expect(result.mfaChallenge.session).toBeDefined();
       }
-    })
-  })
+    });
+  });
 
   describe('signUp', () => {
     it('should_createUser_when_validSignUpDataProvided', async () => {
@@ -185,21 +184,21 @@ describe('AuthService', () => {
         role: 'attendee',
         firstName: 'John',
         lastName: 'Doe',
-        acceptTerms: true
-      }
+        acceptTerms: true,
+      };
 
       // Mock successful sign up
       mockAuth.signUp.mockResolvedValue({
         user: {
-          username: 'newuser@company.com'
+          username: 'newuser@company.com',
         },
-        userConfirmed: false // Requires email confirmation
-      })
+        userConfirmed: false, // Requires email confirmation
+      });
 
-      const result = await authService.signUp(signUpData)
+      const result = await authService.signUp(signUpData);
 
-      expect(result.success).toBe(true)
-      expect(result.requiresConfirmation).toBe(true)
+      expect(result.success).toBe(true);
+      expect(result.requiresConfirmation).toBe(true);
       expect(mockAuth.signUp).toHaveBeenCalledWith({
         username: signUpData.email,
         password: signUpData.password,
@@ -213,16 +212,16 @@ describe('AuthService', () => {
             notifications: {
               email: true,
               sms: false,
-              push: true
+              push: true,
             },
             privacy: {
               showProfile: true,
-              allowMessages: true
-            }
-          })
-        }
-      })
-    })
+              allowMessages: true,
+            },
+          }),
+        },
+      });
+    });
 
     it('should_validatePasswordMatch_when_signingUp', async () => {
       // Test 9.6: should_validatePasswordMatch_when_signingUp
@@ -233,22 +232,22 @@ describe('AuthService', () => {
         role: 'attendee',
         firstName: 'John',
         lastName: 'Doe',
-        acceptTerms: true
-      }
+        acceptTerms: true,
+      };
 
-      const result = await authService.signUp(signUpData)
+      const result = await authService.signUp(signUpData);
 
-      expect(result.success).toBe(false)
-      expect(result.error?.code).toBe('PASSWORD_MISMATCH')
-    })
-  })
+      expect(result.success).toBe(false);
+      expect(result.error?.code).toBe('PASSWORD_MISMATCH');
+    });
+  });
 
   describe('getCurrentUser', () => {
     it('should_returnUserContext_when_userAuthenticated', async () => {
       // Test 9.7: should_returnUserContext_when_userAuthenticated
       const mockCognitoUser = {
-        username: 'test@batbern.ch'
-      }
+        username: 'test@batbern.ch',
+      };
 
       const mockSession = {
         getIdToken: () => ({
@@ -262,44 +261,44 @@ describe('AuthService', () => {
               language: 'en',
               theme: 'light',
               notifications: { email: true, sms: false, push: true },
-              privacy: { showProfile: true, allowMessages: true }
+              privacy: { showProfile: true, allowMessages: true },
             }),
             iat: Math.floor(Date.now() / 1000),
-            exp: Math.floor(Date.now() / 1000) + 3600
-          }
-        })
-      }
+            exp: Math.floor(Date.now() / 1000) + 3600,
+          },
+        }),
+      };
 
-      mockAuth.currentAuthenticatedUser.mockResolvedValue(mockCognitoUser)
-      mockAuth.currentSession.mockResolvedValue(mockSession)
+      mockAuth.currentAuthenticatedUser.mockResolvedValue(mockCognitoUser);
+      mockAuth.currentSession.mockResolvedValue(mockSession);
 
-      const user = await authService.getCurrentUser()
+      const user = await authService.getCurrentUser();
 
-      expect(user).toBeDefined()
-      expect(user?.userId).toBeDefined()
-      expect(user?.email).toBeDefined()
-      expect(user?.role).toMatch(/^(organizer|speaker|partner|attendee)$/)
-    })
+      expect(user).toBeDefined();
+      expect(user?.userId).toBeDefined();
+      expect(user?.email).toBeDefined();
+      expect(user?.role).toMatch(/^(organizer|speaker|partner|attendee)$/);
+    });
 
     it('should_returnNull_when_userNotAuthenticated', async () => {
       // Test 9.8: should_returnNull_when_userNotAuthenticated
-      mockAuth.currentAuthenticatedUser.mockRejectedValue(new Error('No current user'))
+      mockAuth.currentAuthenticatedUser.mockRejectedValue(new Error('No current user'));
 
-      const user = await authService.getCurrentUser()
+      const user = await authService.getCurrentUser();
 
-      expect(user).toBeNull()
-    })
-  })
+      expect(user).toBeNull();
+    });
+  });
 
   describe('signOut', () => {
     it('should_clearUserSession_when_signingOut', async () => {
       // Test 9.9: should_clearUserSession_when_signingOut
-      await authService.signOut()
+      await authService.signOut();
 
-      const user = await authService.getCurrentUser()
-      expect(user).toBeNull()
-    })
-  })
+      const user = await authService.getCurrentUser();
+      expect(user).toBeNull();
+    });
+  });
 
   describe('refreshToken', () => {
     it('should_refreshAccessToken_when_tokenNearExpiration', async () => {
@@ -308,41 +307,42 @@ describe('AuthService', () => {
         isValid: () => true,
         getAccessToken: () => ({
           getJwtToken: () => 'new-access-token',
-          getExpiration: () => Math.floor(Date.now() / 1000) + 3600
+          getExpiration: () => Math.floor(Date.now() / 1000) + 3600,
         }),
         getRefreshToken: () => ({
-          getToken: () => 'new-refresh-token'
-        })
-      }
+          getToken: () => 'new-refresh-token',
+        }),
+      };
 
-      mockAuth.currentSession.mockResolvedValue(mockSession)
+      mockAuth.currentSession.mockResolvedValue(mockSession);
 
-      const result = await authService.refreshToken()
+      const result = await authService.refreshToken();
 
-      expect(result.success).toBe(true)
-      expect(result.accessToken).toBeDefined()
-      expect(result.expiresIn).toBeGreaterThan(0)
-    })
-  })
+      expect(result.success).toBe(true);
+      expect(result.accessToken).toBeDefined();
+      expect(result.expiresIn).toBeGreaterThan(0);
+    });
+  });
 
   describe('isTokenExpired', () => {
     it('should_returnTrue_when_tokenExpired', () => {
       // Test 9.11: should_returnTrue_when_tokenExpired
-      const expiredToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE1MTYyMzkwMjJ9.invalid'
+      const expiredToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE1MTYyMzkwMjJ9.invalid';
 
-      const isExpired = authService.isTokenExpired(expiredToken)
+      const isExpired = authService.isTokenExpired(expiredToken);
 
-      expect(isExpired).toBe(true)
-    })
+      expect(isExpired).toBe(true);
+    });
 
     it('should_returnFalse_when_tokenValid', () => {
       // Test 9.12: should_returnFalse_when_tokenValid
-      const futureTimestamp = Math.floor(Date.now() / 1000) + 3600 // 1 hour from now
-      const validToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify({ exp: futureTimestamp }))}.signature`
+      const futureTimestamp = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now
+      const validToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify({ exp: futureTimestamp }))}.signature`;
 
-      const isExpired = authService.isTokenExpired(validToken)
+      const isExpired = authService.isTokenExpired(validToken);
 
-      expect(isExpired).toBe(false)
-    })
-  })
-})
+      expect(isExpired).toBe(false);
+    });
+  });
+});

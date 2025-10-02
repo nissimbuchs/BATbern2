@@ -86,9 +86,11 @@ export interface MfaResponse {
 }
 
 export interface TokenRefreshResponse {
+  success?: boolean;
   accessToken: string;
   refreshToken?: string;
   expiresIn: number;
+  error?: AuthError;
 }
 
 // Route permission configuration

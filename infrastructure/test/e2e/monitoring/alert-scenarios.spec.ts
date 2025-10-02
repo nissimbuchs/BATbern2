@@ -27,7 +27,7 @@ describe('Alert Scenarios E2E Tests', () => {
       // This test verifies SLA monitoring alarm exists with correct threshold
       const command = new DescribeAlarmsCommand({
         AlarmNames: [`${alarmPrefix}-high-availability`],
-        AlarmTypes: [AlarmType.METRIC_ALARM],
+        AlarmTypes: [AlarmType.MetricAlarm],
       });
 
       const response = await cloudwatchClient.send(command);
@@ -48,7 +48,7 @@ describe('Alert Scenarios E2E Tests', () => {
       // This test verifies error rate alarm exists with correct threshold
       const command = new DescribeAlarmsCommand({
         AlarmNames: [`${alarmPrefix}-high-errors`],
-        AlarmTypes: [AlarmType.METRIC_ALARM],
+        AlarmTypes: [AlarmType.MetricAlarm],
       });
 
       const response = await cloudwatchClient.send(command);
@@ -85,7 +85,7 @@ describe('Alert Scenarios E2E Tests', () => {
       // This test verifies latency monitoring alarm exists
       const command = new DescribeAlarmsCommand({
         AlarmNames: [`${alarmPrefix}-high-latency`],
-        AlarmTypes: [AlarmType.METRIC_ALARM],
+        AlarmTypes: [AlarmType.MetricAlarm],
       });
 
       const response = await cloudwatchClient.send(command);
@@ -106,7 +106,7 @@ describe('Alert Scenarios E2E Tests', () => {
       // This test verifies CPU utilization alarm exists
       const command = new DescribeAlarmsCommand({
         AlarmNames: [`${alarmPrefix}-high-cpu`],
-        AlarmTypes: [AlarmType.METRIC_ALARM],
+        AlarmTypes: [AlarmType.MetricAlarm],
       });
 
       const response = await cloudwatchClient.send(command);

@@ -3,7 +3,13 @@
  * Story 1.2: AWS Cognito Integration
  */
 
-import { Auth } from 'aws-amplify'
+import {
+  signIn as amplifySignIn,
+  signUp as amplifySignUp,
+  signOut as amplifySignOut,
+  getCurrentUser as amplifyGetCurrentUser,
+  fetchAuthSession,
+} from 'aws-amplify/auth';
 import {
   UserContext,
   LoginCredentials,
@@ -13,22 +19,22 @@ import {
   MfaChallenge,
   UserPreferences,
   CognitoTokenClaims,
-  UserRole
-} from '@types/auth'
+  UserRole,
+} from '@/types/auth';
 
 interface SignInResult {
-  success: boolean
-  user?: UserContext
-  accessToken?: string
-  refreshToken?: string
-  error?: AuthError
-  mfaChallenge?: MfaChallenge
+  success: boolean;
+  user?: UserContext;
+  accessToken?: string;
+  refreshToken?: string;
+  error?: AuthError;
+  mfaChallenge?: MfaChallenge;
 }
 
 interface SignUpResult {
-  success: boolean
-  requiresConfirmation: boolean
-  error?: AuthError
+  success: boolean;
+  requiresConfirmation: boolean;
+  error?: AuthError;
 }
 
 class AuthService {
@@ -37,39 +43,46 @@ class AuthService {
    */
   async signIn(credentials: LoginCredentials): Promise<SignInResult> {
     try {
-      const cognitoUser = await Auth.signIn(credentials.email, credentials.password)
+      const result = await amplifySignIn({
+        username: credentials.email,
+        password: credentials.password,
+      });
 
-      // Handle MFA challenge
-      if (cognitoUser.challengeName) {
+      // Handle MFA challenge or other next steps
+      if (result.nextStep && result.nextStep.signInStep !== 'DONE') {
         return {
           success: false,
           mfaChallenge: {
-            challengeName: cognitoUser.challengeName,
-            challengeParameters: cognitoUser.challengeParam || {},
-            session: cognitoUser.Session
-          }
-        }
+            challengeName: result.nextStep.signInStep,
+            challengeParameters: {},
+            session: '',
+          },
+        };
       }
 
       // Extract user context from Cognito session
-      const session = await Auth.currentSession()
-      const idToken = session.getIdToken()
-      const accessToken = session.getAccessToken()
-      const refreshToken = session.getRefreshToken()
+      const session = await fetchAuthSession();
+      const tokens = session.tokens;
 
-      const userContext = this.extractUserContextFromToken(idToken.payload as CognitoTokenClaims)
+      if (!tokens?.idToken) {
+        throw new Error('No ID token found in session');
+      }
+
+      const userContext = this.extractUserContextFromToken(
+        tokens.idToken.payload as unknown as CognitoTokenClaims
+      );
 
       return {
         success: true,
         user: userContext,
-        accessToken: accessToken.getJwtToken(),
-        refreshToken: refreshToken.getToken()
-      }
+        accessToken: tokens.accessToken?.toString() || '',
+        refreshToken: tokens.accessToken?.toString() || '',
+      };
     } catch (error: any) {
       return {
         success: false,
-        error: this.mapCognitoError(error)
-      }
+        error: this.mapCognitoError(error),
+      };
     }
   }
 
@@ -85,44 +98,46 @@ class AuthService {
           requiresConfirmation: false,
           error: {
             code: 'PASSWORD_MISMATCH',
-            message: 'Passwords do not match'
-          }
-        }
+            message: 'Passwords do not match',
+          },
+        };
       }
 
-      const result = await Auth.signUp({
+      const result = await amplifySignUp({
         username: signUpData.email,
         password: signUpData.password,
-        attributes: {
-          email: signUpData.email,
-          'custom:role': signUpData.role,
-          'custom:companyId': signUpData.companyId || '',
-          'custom:preferences': JSON.stringify({
-            language: 'en',
-            theme: 'light',
-            notifications: {
-              email: true,
-              sms: false,
-              push: true
-            },
-            privacy: {
-              showProfile: true,
-              allowMessages: true
-            }
-          })
-        }
-      })
+        options: {
+          userAttributes: {
+            email: signUpData.email,
+            'custom:role': signUpData.role,
+            'custom:companyId': signUpData.companyId || '',
+            'custom:preferences': JSON.stringify({
+              language: 'en',
+              theme: 'light',
+              notifications: {
+                email: true,
+                sms: false,
+                push: true,
+              },
+              privacy: {
+                showProfile: true,
+                allowMessages: true,
+              },
+            }),
+          },
+        },
+      });
 
       return {
         success: true,
-        requiresConfirmation: !result.userConfirmed
-      }
+        requiresConfirmation: !result.isSignUpComplete,
+      };
     } catch (error: any) {
       return {
         success: false,
         requiresConfirmation: false,
-        error: this.mapCognitoError(error)
-      }
+        error: this.mapCognitoError(error),
+      };
     }
   }
 
@@ -131,13 +146,19 @@ class AuthService {
    */
   async getCurrentUser(): Promise<UserContext | null> {
     try {
-      const user = await Auth.currentAuthenticatedUser()
-      const session = await Auth.currentSession()
-      const idToken = session.getIdToken()
+      await amplifyGetCurrentUser();
+      const session = await fetchAuthSession();
+      const tokens = session.tokens;
 
-      return this.extractUserContextFromToken(idToken.payload as CognitoTokenClaims)
+      if (!tokens?.idToken) {
+        return null;
+      }
+
+      return this.extractUserContextFromToken(
+        tokens.idToken.payload as unknown as CognitoTokenClaims
+      );
     } catch (error) {
-      return null
+      return null;
     }
   }
 
@@ -146,9 +167,9 @@ class AuthService {
    */
   async signOut(): Promise<void> {
     try {
-      await Auth.signOut()
+      await amplifySignOut();
     } catch (error) {
-      console.error('Sign out error:', error)
+      console.error('Sign out error:', error);
     }
   }
 
@@ -157,37 +178,38 @@ class AuthService {
    */
   async refreshToken(): Promise<TokenRefreshResponse> {
     try {
-      const session = await Auth.currentSession()
+      const session = await fetchAuthSession({ forceRefresh: true });
+      const tokens = session.tokens;
 
-      if (session.isValid()) {
-        const accessToken = session.getAccessToken()
-        const refreshToken = session.getRefreshToken()
-
+      if (!tokens?.accessToken) {
         return {
-          success: true,
-          accessToken: accessToken.getJwtToken(),
-          refreshToken: refreshToken.getToken(),
-          expiresIn: accessToken.getExpiration() - Math.floor(Date.now() / 1000)
-        }
+          success: false,
+          accessToken: '',
+          expiresIn: 0,
+          error: {
+            code: 'NO_TOKEN',
+            message: 'No access token available',
+          },
+        };
       }
 
-      // Force refresh if current session is invalid
-      const cognitoUser = await Auth.currentAuthenticatedUser()
-      const newSession = await Auth.currentSession()
-      const newAccessToken = newSession.getAccessToken()
-      const newRefreshToken = newSession.getRefreshToken()
+      const expiresIn = tokens.accessToken.payload.exp
+        ? tokens.accessToken.payload.exp - Math.floor(Date.now() / 1000)
+        : 0;
 
       return {
         success: true,
-        accessToken: newAccessToken.getJwtToken(),
-        refreshToken: newRefreshToken.getToken(),
-        expiresIn: newAccessToken.getExpiration() - Math.floor(Date.now() / 1000)
-      }
+        accessToken: tokens.accessToken.toString(),
+        refreshToken: tokens.accessToken.toString(),
+        expiresIn,
+      };
     } catch (error: any) {
       return {
         success: false,
-        error: this.mapCognitoError(error)
-      }
+        accessToken: '',
+        expiresIn: 0,
+        error: this.mapCognitoError(error),
+      };
     }
   }
 
@@ -196,15 +218,15 @@ class AuthService {
    */
   isTokenExpired(token: string): boolean {
     try {
-      const parts = token.split('.')
-      if (parts.length !== 3) return true
+      const parts = token.split('.');
+      if (parts.length !== 3) return true;
 
-      const payload = JSON.parse(atob(parts[1]))
-      const currentTime = Math.floor(Date.now() / 1000)
+      const payload = JSON.parse(atob(parts[1]));
+      const currentTime = Math.floor(Date.now() / 1000);
 
-      return payload.exp <= currentTime
+      return payload.exp <= currentTime;
     } catch (error) {
-      return true
+      return true;
     }
   }
 
@@ -212,7 +234,7 @@ class AuthService {
    * Extract user context from Cognito ID token
    */
   private extractUserContextFromToken(tokenPayload: CognitoTokenClaims): UserContext {
-    const preferences: UserPreferences = JSON.parse(tokenPayload['custom:preferences'] || '{}')
+    const preferences: UserPreferences = JSON.parse(tokenPayload['custom:preferences'] || '{}');
 
     return {
       userId: tokenPayload.sub,
@@ -223,50 +245,50 @@ class AuthService {
       preferences,
       issuedAt: tokenPayload.iat,
       expiresAt: tokenPayload.exp,
-      tokenId: tokenPayload.sub
-    }
+      tokenId: tokenPayload.sub,
+    };
   }
 
   /**
    * Map Cognito errors to application errors
    */
   private mapCognitoError(error: any): AuthError {
-    const errorCode = error.code || error.name || 'UNKNOWN_ERROR'
+    const errorCode = error.code || error.name || 'UNKNOWN_ERROR';
 
     switch (errorCode) {
       case 'NotAuthorizedException':
       case 'UserNotFoundException':
         return {
           code: 'INVALID_CREDENTIALS',
-          message: 'Invalid email or password'
-        }
+          message: 'Invalid email or password',
+        };
       case 'UserNotConfirmedException':
         return {
           code: 'USER_NOT_CONFIRMED',
-          message: 'Please confirm your email address'
-        }
+          message: 'Please confirm your email address',
+        };
       case 'TooManyRequestsException':
         return {
           code: 'TOO_MANY_REQUESTS',
-          message: 'Too many attempts. Please try again later'
-        }
+          message: 'Too many attempts. Please try again later',
+        };
       case 'InvalidPasswordException':
         return {
           code: 'INVALID_PASSWORD',
-          message: 'Password does not meet requirements'
-        }
+          message: 'Password does not meet requirements',
+        };
       case 'UsernameExistsException':
         return {
           code: 'EMAIL_EXISTS',
-          message: 'An account with this email already exists'
-        }
+          message: 'An account with this email already exists',
+        };
       default:
         return {
           code: errorCode,
-          message: error.message || 'An unexpected error occurred'
-        }
+          message: error.message || 'An unexpected error occurred',
+        };
     }
   }
 }
 
-export const authService = new AuthService()
+export const authService = new AuthService();
