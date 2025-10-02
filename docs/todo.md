@@ -61,10 +61,8 @@
 - [ ] 
 
 
-## Accepted actions from Wireframe Analysis
+## Missing wireframes
 in the docs/wireframe folder, update the wireframes as follows:\
-- [ ] add speaker profile edit screen
-- [ ] add speaker profile detail view
 - [ ] add Public Profile Preview Screen
 - [ ] add Invitation Management Screen
 - [ ] add content library/repository screen
@@ -73,7 +71,7 @@ in the docs/wireframe folder, update the wireframes as follows:\
 - [ ] add Partner Detail Screen
 - [ ] add Partner Settings Screen
 - [ ] add User Profile Screen
-- [ ] add User Settings Screen
+- [x] add User Settings Screen
 - [ ] add Company Management Screen
 - [ ] add Moderator Review Queue Screen
 - [ ] add System Settings/Configuration Screen
@@ -81,7 +79,6 @@ in the docs/wireframe folder, update the wireframes as follows:\
 - [ ] add Announcement Details Screen
 - [ ] add Event Details Page (Attendee View)
 - [ ] add Content Viewer Page
-- [ ] add Registration Confirmation Page
 - [ ] add Session Details Modal
 - [ ] add Attendee List Modal
 - [ ] 

@@ -20,10 +20,10 @@ To identify the next logical wireframe based on PRD requirements and front-end s
 #### 1.1 Review Existing Wireframes and Identify Gaps
 
 - Locate existing wireframe files in `docs/wireframes/`
-- If wireframe coverage analysis exists (`docs/wireframes/wireframes-coverage-report.md`), load it
+- If navigation gaps analysis exists (`docs/wireframes/navigation-gaps-analysis.md`), load it
 - Load the highest numbered `story-{epic}.{story}-*.md` wireframe file
 - **If wireframes exist:**
-  - Identify gaps based on coverage report or navigation analysis
+  - Identify gaps based on navigation gaps analysis
   - Check PRD and front-end spec for unimplemented screens
   - Prompt user: "Found {count} existing wireframes. Missing screens identified: {list}. Which wireframe would you like to create next? 1) {screen_name} 2) {screen_name} 3) Custom screen"
 - **If no wireframes exist:** Start with the most critical screen from PRD (typically Dashboard or Landing Page)
@@ -126,7 +126,6 @@ Before completing the wireframe:
 ### 9. Wireframe Completion and Review
 
 - Save wireframe file with proper naming: `story-{epic}.{story}-{screen-name}.md`
-- Add entry to wireframe index or coverage report
 - Update navigation gaps analysis if it exists
 - Generate summary for user
 
