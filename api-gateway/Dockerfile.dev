@@ -1,0 +1,22 @@
+FROM gradle:8.5-jdk21 AS development
+
+# Set working directory
+WORKDIR /app
+
+# Copy gradle configuration first for better caching
+COPY build.gradle settings.gradle ./
+COPY gradle ./gradle
+
+# Download dependencies (cached layer)
+RUN gradle dependencies --no-daemon || true
+
+# Copy source code
+COPY src ./src
+
+# Expose application port
+EXPOSE 8080
+
+# Enable Gradle continuous build for hot reload
+# --continuous flag watches for file changes and rebuilds automatically
+# --no-daemon ensures no background process conflicts
+ENTRYPOINT ["gradle", "bootRun", "--continuous", "--no-daemon", "--info"]
