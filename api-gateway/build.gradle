@@ -52,8 +52,12 @@ dependencies {
     implementation 'io.micrometer:micrometer-registry-prometheus'
     implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
 
-    // Shared Kernel Dependency (commented out until shared-kernel is properly configured)
-    // implementation project(':shared-kernel')
+    // CloudWatch Logging
+    implementation 'software.amazon.awssdk:cloudwatchlogs'
+    implementation 'ca.pjer:logback-awslogs-appender:1.6.0'
+
+    // Shared Kernel Dependency
+    implementation project(':shared-kernel')
 
     // Lombok
     compileOnly 'org.projectlombok:lombok'

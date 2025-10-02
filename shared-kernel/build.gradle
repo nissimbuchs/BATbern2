@@ -27,6 +27,7 @@ dependencies {
     // Spring Boot dependencies
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
 
     // AWS SDK for EventBridge
     implementation platform('software.amazon.awssdk:bom:2.25.0')
@@ -94,6 +95,15 @@ jacocoTestCoverageVerification {
 }
 
 check.dependsOn jacocoTestCoverageVerification
+
+// Disable Spring Boot executable jar creation for library module
+bootJar {
+    enabled = false
+}
+
+jar {
+    enabled = true
+}
 
 // Maven publishing configuration
 publishing {
