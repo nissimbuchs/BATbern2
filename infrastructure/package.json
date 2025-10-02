@@ -26,6 +26,9 @@
     "diff:prod": "cdk diff --all --context environment=production"
   },
   "devDependencies": {
+    "@aws-sdk/client-cloudwatch": "^3.901.0",
+    "@aws-sdk/client-lambda": "^3.901.0",
+    "@aws-sdk/client-sns": "^3.901.0",
     "@types/jest": "^29.5.11",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.10.5",
@@ -47,10 +50,12 @@
       "<rootDir>/test"
     ],
     "testMatch": [
-      "**/*.test.ts"
+      "**/*.test.ts",
+      "**/*.spec.ts"
     ],
     "transform": {
       "^.+\\.tsx?$": "ts-jest"
-    }
+    },
+    "testTimeout": 30000
   }
 }

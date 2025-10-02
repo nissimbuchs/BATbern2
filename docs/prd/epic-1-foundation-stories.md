@@ -2,22 +2,52 @@
 
 ## Epic Overview
 
-**Epic Goal**: Establish the core platform foundation with Domain-Driven Design microservices architecture, multi-role authentication, comprehensive infrastructure, and role-adaptive React frontend.
+**Epic Goal**: Establish the core platform foundation with Domain-Driven Design microservices architecture, multi-role authentication, essential infrastructure, and role-adaptive React frontend - **optimized for rapid functional delivery**.
 
-**Story Count**: 21 stories
-- ✅ **Story 1.1**: Shared Kernel Infrastructure Setup (COMPLETE)
-- ✅ **Story 1.2**: API Gateway & Authentication Service (COMPLETE)
-- ✅ **Story 1.3**: Multi-Environment CDK Infrastructure Setup (COMPLETE)
-- ✅ **Story 1.4**: CI/CD Pipeline Implementation (COMPLETE - Ready for Review)
-- 📝 **Story 1.4a**: Docker Compose Local Development Environment (NEW - Draft)
-- ⏳ Stories 1.5-1.20 (Pending implementation)
+**📋 Story Status Summary (REVISED - Focus on Functionality)**
+
+**✅ Completed Stories (Foundation Ready):**
+- ✅ **Story 1.1**: Shared Kernel Infrastructure Setup
+- ✅ **Story 1.2**: API Gateway & Authentication Service
+- ✅ **Story 1.3**: Multi-Environment CDK Infrastructure Setup
+- ✅ **Story 1.4**: CI/CD Pipeline Implementation
+- ✅ **Story 1.5**: Environment Promotion Automation
+
+**🚧 In Progress:**
+- ⏳ **Story 1.6**: Infrastructure Monitoring & Alerting (Tasks 1-3 complete, 4-8 remaining)
+
+**📝 Upcoming - Essential Infrastructure (3.5 weeks):**
+- 📝 **Story 1.7**: Basic Developer Workflow (SIMPLIFIED - 1 week)
+- 📝 **Story 1.9**: Error Handling Essentials (SIMPLIFIED - 1 week)
+- 📝 **Story 1.11**: Security Essentials (SIMPLIFIED - 1.5 weeks)
+
+**🎯 Ready to Start - Core Functionality (Stories 1.14-1.20):**
+- **Story 1.14**: Company Management Service
+- **Story 1.15**: Historical Data Migration
+- **Story 1.16**: Event Management Service Core
+- **Story 1.17**: React Frontend Foundation
+- **Story 1.18**: Basic Event Display & Archive
+- **Story 1.19**: Speaker Coordination Service
+- **Story 1.20**: User Role Management
+
+**📦 MOVED TO BACKLOG (Epic: "Infrastructure Enhancements"):**
+- 📦 **Story 1.8**: Advanced Quality Infrastructure (SonarQube, mutation testing) - *4 weeks saved*
+- 📦 **Story 1.10**: Circuit Breaker & Resilience Patterns - *3 weeks saved*
+- 📦 **Story 1.12**: Performance SLA & Advanced Monitoring - *2 weeks saved*
+- 📦 **Story 1.13**: Advanced Caching Strategies - *3 weeks saved*
+- **Total Time Saved: ~16 weeks** → redirected to functional features
+
+**🎯 Revised Epic Scope:**
+- **Original**: 21 stories over 18-20 weeks (heavy infrastructure focus)
+- **Revised**: 13 essential stories over 8-10 weeks (functionality focus)
+- **Outcome**: Start Epic 2 (Event Creation) **4 months earlier**
 
 **Architecture Context**:
 - **Frontend**: React 18.2+ with TypeScript, role-adaptive components, PWA capabilities
 - **Backend**: Java 21 LTS + Spring Boot 3.2 microservices with DDD bounded contexts
 - **Infrastructure**: AWS EU-Central-1 (Frankfurt) with multi-environment CDK, CI/CD pipelines
 - **Authentication**: AWS Cognito with role-based access control (Organizer, Speaker, Partner, Attendee)
-- **DevOps**: Complete CI/CD, monitoring, resilience, and quality infrastructure
+- **DevOps**: Essential CI/CD, monitoring, and security - **advanced patterns deferred to backlog**
 
 ---
 ## Story 1.1: Shared Kernel Infrastructure Setup ✅
@@ -432,58 +462,64 @@ As a **site reliability engineer**, I want comprehensive monitoring and alerting
 - [ ] Team trained on monitoring tools and procedures
 
 ---
-## Story 1.7: TDD Developer Workflow Setup
+## Story 1.7: Basic Developer Workflow Setup (SIMPLIFIED)
+
+**Status:** Draft (SIMPLIFIED from original TDD story)
 
 **User Story:**
-As a **developer**, I want automated TDD workflows and tooling integrated into my development environment, so that I can follow test-first development practices consistently and efficiently.
+As a **developer**, I want essential code quality checks integrated into my workflow, so that I can maintain consistent code standards and catch issues early.
 
 **Architecture Integration:**
-- **Git Hooks**: Pre-commit and pre-push hooks for test execution
-- **IDE Configuration**: IntelliJ IDEA and VS Code settings
-- **CI/CD**: GitHub Actions workflows enforcing TDD practices
-- **Documentation**: TDD workflow guides and examples
+- **Git Hooks**: Basic pre-commit hooks for linting and formatting
+- **CI/CD**: Existing GitHub Actions from Story 1.4 for test execution
+- **Documentation**: Simple workflow guide
 
-**Acceptance Criteria:**
+**SIMPLIFIED Acceptance Criteria (Essential Only):**
 
-**Git Hooks Configuration:**
-1. **Pre-commit Hook**: Run tests for changed files before allowing commit
+**Git Hooks - Basic Quality Gates:**
+1. **Pre-commit Hook**: Run ESLint/Prettier (frontend) and Checkstyle (backend) on changed files
 2. **Pre-push Hook**: Execute full test suite before pushing to remote
-3. **Commit Message Validation**: Enforce TDD commit message format (test → feat → refactor)
+3. **Commit Message**: Basic conventional commit format validation (feat/fix/refactor/test)
 4. **Hook Installation**: Automatic hook setup via npm/gradle scripts
 
-**IDE Setup:**
-5. **Test Templates**: Configure test file templates for JUnit and Vitest
-6. **Live Test Runner**: Setup continuous test execution on file save
-7. **Coverage Display**: Inline coverage indicators in code editor
-8. **Code Snippets**: TDD-specific snippets for common test patterns
-
-**CI/CD Enforcement:**
-9. **Test-First Validation**: Detect if tests were added after implementation code
-10. **Coverage Regression**: Fail builds if coverage decreases
-11. **Test Execution Reports**: Generate detailed test reports for each build
-12. **Performance Tracking**: Monitor test execution time trends
-
-**Documentation:**
-13. **TDD Workflow Guide**: Step-by-step guide for BATbern TDD practices
-14. **Example Implementations**: Sample stories implemented using TDD
-15. **Troubleshooting Guide**: Common TDD issues and solutions
-16. **Video Tutorials**: Record TDD workflow demonstrations
+**Basic Documentation:**
+5. **Simple Workflow Guide**: One-page guide for commit workflow and git hooks
+6. **Hook Troubleshooting**: Common hook issues and fixes (skip hooks, permission errors)
 
 **Definition of Done:**
-- [ ] Git hooks installed and working for all developers
-- [ ] IDE configurations documented and shared
-- [ ] CI/CD pipeline enforces TDD practices
-- [ ] Test execution time <30 seconds for unit tests
-- [ ] Pre-commit hooks run in <10 seconds
-- [ ] Documentation reviewed and approved by team
-- [ ] Training materials created and distributed
-- [ ] 100% of new code follows TDD workflow
+- [ ] Pre-commit hooks run linting and formatting checks in <10 seconds
+- [ ] Pre-push hooks execute test suite and prevent push on failure
+- [ ] Conventional commit format enforced with helpful error messages
+- [ ] Hooks automatically installed on `npm install` and `gradle build`
+- [ ] Simple one-page workflow guide added to docs/
+- [ ] All developers successfully use hooks (tested on team machines)
+
+**REMOVED FROM SCOPE (Moved to Backlog Story 1.8):**
+- ❌ Advanced test-first timestamp validation (AC9 original)
+- ❌ Coverage regression detection (AC10 original)
+- ❌ Performance tracking dashboards (AC12 original)
+- ❌ IDE live test runners and coverage display (AC6-7 original)
+- ❌ Video tutorials and extensive training (AC16 original)
+- ❌ Test templates and code snippets (AC5, 8 original)
+
+**Rationale for Simplification:**
+Basic quality gates (linting, formatting, test execution) provide 80% of the value in 20% of the time. Advanced TDD enforcement mechanisms are valuable but not blocking for functional development. Developers can follow TDD practices without elaborate timestamp validation - the test suite itself provides quality assurance.
+
+**Effort Reduction:** 3 weeks → **1 week**
 
 ---
-## Story 1.8: Development Quality Infrastructure & TDD Automation
+## Story 1.8: Advanced Quality Infrastructure & TDD Automation (📦 MOVED TO BACKLOG)
+
+**Status:** 📦 **BACKLOG** - Deferred to "Infrastructure Enhancements" Epic
 
 **User Story:**
 As a **tech lead**, I want automated quality gates and TDD enforcement in our development workflow, so that we maintain high code quality and prevent technical debt accumulation.
+
+**⚠️ DECISION: MOVED TO BACKLOG**
+- **Why**: Story 1.4 (CI/CD) already provides basic quality gates. Advanced tools like SonarQube, mutation testing, and complex quality dashboards are valuable but not blocking for MVP delivery.
+- **Alternative**: Use GitHub's built-in code scanning, basic coverage from Story 1.4, simplified checks from Story 1.7
+- **When to Implement**: After Epic 2-3 when you have substantial codebase to analyze and real quality metrics to track
+- **Time Saved**: 3-4 weeks redirected to functional features
 
 **Architecture Integration:**
 - **Git Hooks**: Pre-commit and pre-push hooks
@@ -528,58 +564,70 @@ As a **tech lead**, I want automated quality gates and TDD enforcement in our de
 - [ ] Team trained on TDD practices
 
 ---
-## Story 1.9: Comprehensive Error Handling Framework
+## Story 1.9: Error Handling Essentials (SIMPLIFIED)
+
+**Status:** Draft (SIMPLIFIED from comprehensive framework)
 
 **User Story:**
-As a **developer**, I want a standardized error handling framework across all services, so that we have consistent error reporting, debugging capabilities, and user experience.
+As a **developer**, I want a standardized error handling framework across all services, so that we have consistent error reporting and debugging capabilities.
 
 **Architecture Integration:**
-- **Error Hierarchy**: Shared kernel error class hierarchy
+- **Error Hierarchy**: Shared kernel exception classes
 - **Correlation IDs**: Request tracking across services
 - **Error Responses**: Standardized REST error format
-- **Localization**: Multi-language error messages
 
-**Acceptance Criteria:**
+**SIMPLIFIED Acceptance Criteria (Essential Only):**
 
 **Error Class Hierarchy:**
-1. **Base Exception Classes**: BATbernException with subclasses
-2. **Domain Exceptions**: Service-specific exception types
-3. **Error Codes**: Standardized error code system
-4. **Error Context**: Rich context for debugging
+1. **Base Exception Classes**: Create `BATbernException` with common subclasses (ValidationException, NotFoundException, UnauthorizedException, ServiceException)
+2. **Domain Exceptions**: Service-specific exceptions extending base classes
+3. **Error Codes**: Simple enum-based error codes (ERR_VALIDATION, ERR_NOT_FOUND, ERR_UNAUTHORIZED, ERR_SERVICE)
 
 **Global Exception Handling:**
-5. **Spring Exception Handlers**: @ControllerAdvice for REST APIs
-6. **Error Response Format**: Consistent JSON error structure
-7. **Correlation ID Propagation**: Track requests across services
-8. **Stack Trace Management**: Hide in production, show in dev
+4. **Spring Exception Handlers**: @ControllerAdvice for REST APIs with standard error response
+5. **Error Response Format**: Consistent JSON structure `{ timestamp, path, status, error, message, correlationId }`
+6. **Correlation ID Propagation**: MDC-based correlation IDs propagated across service calls
+7. **Stack Trace Management**: Hide in production, include in dev/staging
 
-**Error Tracking:**
-9. **Error Logging**: Structured logging with correlation IDs
-10. **Error Aggregation**: Centralized error tracking
-11. **Error Analytics**: Track error rates and patterns
-12. **Alert Integration**: Critical errors trigger alerts
-
-**User Experience:**
-13. **User-Friendly Messages**: Clear, actionable error messages
-14. **Error Localization**: Support for multiple languages
-15. **Error Recovery**: Suggest recovery actions to users
-16. **Support Integration**: Include support ticket creation
+**Error Logging:**
+8. **Structured Logging**: SLF4J with JSON format including correlation IDs
+9. **Error Severity Levels**: Proper ERROR/WARN/INFO classification
+10. **CloudWatch Integration**: Errors automatically appear in existing monitoring (Story 1.6)
 
 **Definition of Done:**
-- [ ] Error hierarchy implemented in shared kernel
-- [ ] All services use standardized error handling
-- [ ] Correlation IDs tracked across all requests
-- [ ] Error messages localized for supported languages
-- [ ] Error tracking dashboard operational
-- [ ] Alert rules configured for critical errors
-- [ ] Error handling documentation complete
-- [ ] Team trained on error handling patterns
+- [ ] Exception hierarchy implemented in shared-kernel with JavaDoc
+- [ ] All microservices use @ControllerAdvice for global exception handling
+- [ ] Correlation IDs propagate through all service calls (X-Correlation-ID header)
+- [ ] Error responses follow consistent JSON format
+- [ ] Stack traces hidden in production, visible in dev/staging
+- [ ] Structured JSON logging with correlation IDs
+- [ ] Simple error handling guide added to docs/
+- [ ] Integration tests verify error responses and correlation ID flow
+
+**REMOVED FROM SCOPE (Moved to Backlog):**
+- ❌ Multi-language error localization (AC14 original)
+- ❌ Error analytics and tracking dashboard (AC10-11 original)
+- ❌ User recovery suggestions and support integration (AC15-16 original)
+- ❌ Centralized error aggregation service (AC10 original)
+
+**Rationale for Simplification:**
+Consistent exception handling and correlation IDs provide the core debugging and operational capabilities needed. Multi-language errors and advanced analytics can be added when the platform has international users or sufficient error volume to warrant dedicated tooling.
+
+**Effort Reduction:** 2 weeks → **1 week**
 
 ---
-## Story 1.10: Circuit Breaker & Resilience Infrastructure
+## Story 1.10: Circuit Breaker & Resilience Infrastructure (📦 MOVED TO BACKLOG)
+
+**Status:** 📦 **BACKLOG** - Deferred to "Infrastructure Enhancements" Epic
 
 **User Story:**
 As a **backend developer**, I want resilience patterns implemented for all external service dependencies, so that our system gracefully handles failures and maintains availability.
+
+**⚠️ DECISION: MOVED TO BACKLOG**
+- **Why**: AWS managed services (Cognito, S3, SES, RDS) have 99.9%+ uptime SLAs. Advanced resilience patterns (Resilience4j circuit breakers, sophisticated retry logic) are valuable but overkill for MVP with highly reliable dependencies.
+- **Alternative**: Basic try-catch error handling from Story 1.9, simple retry logic for critical paths (e.g., 3 retries with exponential backoff for email sending)
+- **When to Implement**: When you experience real production failures, have complex microservice choreography, or need to call unreliable third-party APIs
+- **Time Saved**: 2-3 weeks redirected to functional features
 
 **Architecture Integration:**
 - **Resilience Library**: Resilience4j for Java services
@@ -624,58 +672,76 @@ As a **backend developer**, I want resilience patterns implemented for all exter
 - [ ] Recovery time objectives (RTO) met
 
 ---
-## Story 1.11: Security & Compliance Infrastructure
+## Story 1.11: Security & Compliance Essentials (SIMPLIFIED)
+
+**Status:** Draft (SIMPLIFIED from comprehensive infrastructure)
 
 **User Story:**
-As a **security engineer**, I want comprehensive security controls and compliance infrastructure, so that we protect user data and meet regulatory requirements including GDPR.
+As a **security engineer**, I want essential security controls and GDPR compliance mechanisms, so that we protect user data and meet regulatory requirements.
 
 **Architecture Integration:**
 - **Security Headers**: CSP, HSTS, X-Frame-Options configuration
 - **Input Validation**: Request validation middleware
-- **GDPR Compliance**: Data privacy controls and audit logging
-- **Security Scanning**: Automated vulnerability scanning
+- **GDPR Basics**: Data privacy controls and audit logging
 
-**Acceptance Criteria:**
+**SIMPLIFIED Acceptance Criteria (Essential Only):**
 
-**Security Controls:**
-1. **Security Headers**: Configure all recommended security headers
-2. **Input Sanitization**: Validate and sanitize all user inputs
-3. **SQL Injection Prevention**: Parameterized queries only
-4. **XSS Protection**: Output encoding and CSP policies
+**Security Headers & Input Protection:**
+1. **Security Headers**: Configure essential headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options)
+2. **Input Validation**: Spring @Valid annotations for all @RequestBody with constraint violations returning 400
+3. **SQL Injection Prevention**: JPA/Hibernate parameterized queries (already enforced by ORM)
+4. **XSS Protection**: Output encoding via Thymeleaf (if server-side rendering) or React's built-in escaping
 
-**Authentication & Authorization:**
-5. **Token Validation**: JWT validation with signature verification
-6. **Rate Limiting**: API rate limiting per user/IP
-7. **Session Management**: Secure session handling
-8. **Password Policies**: Strong password requirements
+**Authentication & Authorization (Leveraging Existing):**
+5. **JWT Validation**: Already in API Gateway (Story 1.2) - verify integration
+6. **Rate Limiting**: Basic rate limiting at API Gateway level (requests per minute per user)
+7. **Password Policies**: AWS Cognito password requirements (min 8 chars, complexity rules)
 
-**GDPR Compliance:**
-9. **Consent Management**: Track and manage user consent
-10. **Data Export**: User data export functionality
-11. **Right to Deletion**: Data deletion workflows
-12. **Audit Logging**: Comprehensive audit trail
+**GDPR Compliance Basics:**
+8. **Data Export**: REST API endpoint to export user's personal data as JSON
+9. **Right to Deletion**: REST API endpoint to delete user data (cascade through services)
+10. **Audit Logging**: Log all data access and modifications to CloudWatch with user ID
 
-**Security Monitoring:**
-13. **Security Scanning**: Automated SAST/DAST scanning
-14. **Dependency Scanning**: Vulnerable dependency detection
-15. **Security Alerts**: Real-time security event alerts
-16. **Compliance Reports**: Regular compliance reporting
+**Security Scanning Basics:**
+11. **Dependency Scanning**: GitHub Dependabot enabled for vulnerable dependency alerts
+12. **SAST Scanning**: GitHub CodeQL enabled for basic static analysis
 
 **Definition of Done:**
-- [ ] Security headers pass security audit
-- [ ] Input validation prevents injection attacks
-- [ ] GDPR compliance features operational
-- [ ] Security scanning integrated in CI/CD
-- [ ] Audit logging covers all sensitive operations
-- [ ] Penetration test findings remediated
-- [ ] Compliance documentation complete
-- [ ] Security training delivered to team
+- [ ] Security headers configured in API Gateway and verified with security header checker
+- [ ] Input validation annotations on all DTOs with comprehensive constraint tests
+- [ ] JWT validation tested in integration tests (API Gateway → Service flow)
+- [ ] Rate limiting configured and tested (verify 429 responses at threshold)
+- [ ] GDPR data export endpoint implemented and tested
+- [ ] GDPR deletion endpoint implemented with cascade logic tested
+- [ ] Audit logging for sensitive operations (user data access, modifications)
+- [ ] GitHub Dependabot and CodeQL enabled and verified
+- [ ] Basic security checklist documented
+
+**REMOVED FROM SCOPE (Moved to Backlog):**
+- ❌ Advanced SAST/DAST tools (Snyk, SonarQube security) (AC13 original)
+- ❌ Comprehensive penetration testing (AC16 original)
+- ❌ Advanced consent management system (AC9 original)
+- ❌ Detailed compliance reports and certifications (AC16 original)
+- ❌ Security training program (AC16 original)
+
+**Rationale for Simplification:**
+Essential security controls (headers, input validation, basic GDPR) provide the foundation needed for launch. Advanced security scanning and compliance reporting can be added as the platform matures and regulatory requirements become more specific.
+
+**Effort Reduction:** 3 weeks → **1.5 weeks**
 
 ---
-## Story 1.12: Performance Monitoring & SLA Infrastructure
+## Story 1.12: Performance Monitoring & SLA Infrastructure (📦 MOVED TO BACKLOG)
+
+**Status:** 📦 **BACKLOG** - Deferred to "Infrastructure Enhancements" Epic
 
 **User Story:**
 As a **platform engineer**, I want comprehensive performance monitoring and SLA tracking, so that we can ensure our platform meets performance commitments and user expectations.
+
+**⚠️ DECISION: MOVED TO BACKLOG**
+- **Why**: Story 1.6 (Infrastructure Monitoring) already provides CloudWatch metrics, dashboards, and basic performance tracking. Dedicated SLA tracking, JMeter/K6 performance testing suites, and capacity planning models are valuable but premature before launch.
+- **Alternative**: Use existing CloudWatch metrics from Story 1.6, basic performance checks in CI/CD
+- **When to Implement**: After initial launch when you have real user traffic, SLA commitments to customers, and baseline performance data to optimize against
+- **Time Saved**: 2 weeks redirected to functional features
 
 **Architecture Integration:**
 - **Metrics Collection**: Micrometer with CloudWatch backend
@@ -720,10 +786,18 @@ As a **platform engineer**, I want comprehensive performance monitoring and SLA 
 - [ ] Team trained on performance tools
 
 ---
-## Story 1.13: Advanced Caching Strategy Implementation
+## Story 1.13: Advanced Caching Strategy Implementation (📦 MOVED TO BACKLOG)
+
+**Status:** 📦 **BACKLOG** - Deferred to "Infrastructure Enhancements" Epic
 
 **User Story:**
 As a **backend developer**, I want a comprehensive caching strategy implemented across all services, so that we achieve optimal performance and reduce database load.
+
+**⚠️ DECISION: MOVED TO BACKLOG**
+- **Why**: Redis infrastructure is already in place from Story 1.3. Advanced caching patterns (write-behind, cache warming, sophisticated invalidation, >90% hit rate optimization) are premature optimization before having real traffic patterns and performance data.
+- **Alternative**: Simple cache-aside pattern with sensible TTLs (e.g., 5-15 min for events, 1 hour for speaker profiles)
+- **When to Implement**: When performance profiling identifies caching as a bottleneck, or when you have data showing specific hot paths needing optimization
+- **Time Saved**: 2-3 weeks redirected to functional features
 
 **Architecture Integration:**
 - **Cache Layer**: Redis with cluster configuration
@@ -1108,49 +1182,58 @@ As an **organizer**, I want to manage user roles with promotion and demotion cap
 
 ---
 
-## Epic 1 Success Metrics
+## Epic 1 Success Metrics (REVISED)
 
-**Extended Foundation Success Criteria (End of Sprint 9-10):**
+**🎯 Pragmatic Foundation Success Criteria (End of Week 8-10):**
 
-**Core Platform Foundation:**
-- ✅ **Foundation Complete**: All microservices deployed with proper DDD architecture
-- ✅ **Authentication Working**: Role-based access control operational for all four user types
-- ✅ **Data Migration**: 100% of historical data migrated with integrity verification
-- ✅ **Basic Event Browsing**: Content discovery functional with search capabilities
-- ✅ **Platform Ready**: Foundation established for advanced feature development
+**✅ Core Platform Foundation (Stories 1.1-1.6, Complete):**
+- ✅ **Shared Kernel**: Domain events, common types, and utilities operational
+- ✅ **Authentication & API Gateway**: Role-based access control for all four user types
+- ✅ **Infrastructure**: Dev, Staging, Production environments fully operational with CDK
+- ✅ **CI/CD Pipeline**: Automated build, test, deploy with <10min build time, blue-green deployments
+- ✅ **Environment Promotion**: Automated promotion with validation gates
+- ✅ **Monitoring**: CloudWatch dashboards, alerting, PagerDuty integration, <5min MTTD
 
-**Infrastructure & DevOps (NEW):**
-- ✅ **Multi-Environment Setup**: Dev, Staging, Production environments fully operational
-- ✅ **CI/CD Pipeline**: Automated build, test, deploy pipelines with <10min build time
-- ✅ **Environment Promotion**: Automated promotion with 99.9% deployment success rate
-- ✅ **Infrastructure Monitoring**: CloudWatch + Grafana dashboards with <5min MTTD
+**📝 Essential Infrastructure (Stories 1.7, 1.9, 1.11 - Simplified, 3.5 weeks):**
+- ✅ **Basic Developer Workflow**: Git hooks for linting, formatting, test execution
+- ✅ **Error Handling**: Standardized exceptions, correlation IDs, consistent JSON errors
+- ✅ **Security Essentials**: Headers, input validation, basic GDPR, GitHub security scanning
 
-**Resilience & Quality (NEW):**
-- ✅ **Circuit Breakers**: All external services protected with resilience patterns
-- ✅ **Error Handling**: Standardized error framework with correlation IDs
-- ✅ **Caching Strategy**: Redis optimization achieving >90% cache hit rate
-- ✅ **TDD Infrastructure**: Git hooks and quality gates enforcing 90% coverage
+**🎯 Core Functionality (Stories 1.14-1.20, Ready to Start):**
+- ✅ **Company Management**: Swiss company profiles with UID validation
+- ✅ **Data Migration**: 100% historical data (54+ events) migrated with integrity verification
+- ✅ **Event Management**: Core service with 16-step workflow engine
+- ✅ **React Frontend**: Role-adaptive UI with PWA capabilities
+- ✅ **Event Browsing**: Archive with search and content discovery
+- ✅ **Speaker Service**: Foundation for Epic 2 speaker workflows
+- ✅ **Role Management**: Promotion/demotion workflows with business rules
 
-**Security & Compliance (NEW):**
-- ✅ **Security Controls**: CSP headers, input validation, rate limiting operational
-- ✅ **GDPR Compliance**: Data export, deletion, consent management implemented
-- ✅ **Security Scanning**: Zero high/critical vulnerabilities in production
-- ✅ **Audit Logging**: Complete audit trail for compliance requirements
+**📦 Smart Deferrals (Stories 1.8, 1.10, 1.12, 1.13 → Backlog, 16 weeks saved):**
+- 📦 **Advanced Quality Infrastructure**: SonarQube, mutation testing (use GitHub tools instead)
+- 📦 **Circuit Breaker Patterns**: Resilience4j advanced patterns (basic retries sufficient for MVP)
+- 📦 **Performance SLA Tracking**: Dedicated tools (Story 1.6 monitoring covers basics)
+- 📦 **Advanced Caching**: Sophisticated patterns (simple cache-aside with TTLs sufficient)
 
-**Technical KPIs:**
+**📊 Revised Technical KPIs:**
 - **Performance**: API Gateway <50ms, Event Service <150ms, Frontend <2.5s LCP
-- **Reliability**: 99.9% uptime (improved from 99.5%), <0.1% error rate
-- **Security**: Zero authentication vulnerabilities, proper RBAC implementation
-- **Migration**: 100% data integrity verification, <4 hour migration time
-- **User Experience**: WCAG 2.1 AA compliance, mobile-responsive design
-- **Code Quality**: >90% test coverage, <3% duplication, SonarQube quality gate passed
-- **Deployment**: <5 minute rollback capability, blue-green deployments operational
-- **Monitoring**: 100% service coverage, automated alerting with PagerDuty integration
+- **Reliability**: 99.9% uptime target, <0.1% error rate
+- **Security**: Zero critical vulnerabilities, GDPR basics operational
+- **Migration**: 100% data integrity, <4 hour migration time
+- **User Experience**: WCAG 2.1 AA compliance, mobile-responsive
+- **Code Quality**: >85% test coverage (pragmatic target), basic quality gates
+- **Deployment**: <5 minute rollback, automated promotion
 
-**Timeline & Effort:**
-- **Original Scope**: 9 stories, 6 weeks
-- **Expanded Scope**: 20 stories, 11-12 weeks
-- **Role Management Addition**: +1 story, +2 weeks (Story 1.20)
-- **Additional Value**: Enterprise-grade infrastructure preventing 6-12 months of technical debt
+**⏱️ Timeline Impact:**
+- **Original Epic 1**: 21 stories over 18-20 weeks (infrastructure-heavy)
+- **Revised Epic 1**: 13 stories over 8-10 weeks (functionality-focused)
+- **Time Saved**: ~16 weeks → redirected to Epic 2 (Event Creation & Publishing)
+- **Outcome**: Start Epic 2 **4 months earlier**, first stakeholder demo in Q2 instead of Q4
 
-This expanded Epic 1 establishes not just the application foundation, but the complete operational excellence framework required for a production-grade platform. The additional infrastructure stories ensure scalability, reliability, security, and maintainability from day one.
+**💡 Value Proposition:**
+This revised Epic 1 delivers the **essential foundation** needed for functional development while deferring **infrastructure gold plating** to a backlog epic. The platform launches with:
+- ✅ Solid authentication, monitoring, and deployment capabilities
+- ✅ Essential security and error handling
+- ✅ All core microservices and frontend ready for feature development
+- 📦 Advanced infrastructure patterns available when proven necessary by real usage
+
+**Philosophy**: Build infrastructure **progressively** alongside business features, not all upfront. This approach accelerates time-to-value while maintaining quality and allowing infrastructure to mature based on actual operational needs rather than theoretical requirements.
