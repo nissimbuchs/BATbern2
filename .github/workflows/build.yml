@@ -27,7 +27,8 @@ on:
 
 env:
   AWS_REGION: eu-central-1
-  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-central-1.amazonaws.com
+  AWS_ACCOUNT_ID: '510187933511'
+  ECR_REGISTRY: 510187933511.dkr.ecr.eu-central-1.amazonaws.com
 
 jobs:
   # ═══════════════════════════════════════════════════════════
@@ -72,6 +73,9 @@ jobs:
   build-services:
     needs: build-shared-kernel
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # Required for OIDC authentication
+      contents: read   # Required for checkout
     strategy:
       matrix:
         service:
@@ -140,8 +144,7 @@ jobs:
         if: steps.check-service.outputs.exists == 'true' && github.event_name == 'push'
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: arn:aws:iam::510187933511:role/batbern-development-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR

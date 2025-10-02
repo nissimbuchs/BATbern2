@@ -43,6 +43,9 @@ jobs:
           # TODO: Add logic to verify dev deployment status
 
   deploy-to-staging:
+    permissions:
+      id-token: write
+      contents: read
     needs: pre-deployment-validation
     runs-on: ubuntu-latest
 
@@ -55,8 +58,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: arn:aws:iam::510187933511:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Set up Node.js 20
