@@ -25,7 +25,7 @@ import { environment } from 'src/environments/environment';
 })
 export class HeaderComponent implements OnInit {
 
-  title: string = "BATbern2";
+  title: string = "BATbern";
 
   constructor() {
     if(environment.production) {

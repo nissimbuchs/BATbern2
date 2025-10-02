@@ -1428,7 +1428,7 @@
           "bio": "Ein bunter und sehr spannender Strauss von Architektur-bezogenen Tätigkeiten im Rucksack kam Andreas Spichiger 2008 an die Berner Fachhochschule. Hier hat er mitgewirkt, die Vertiefung Enterprise Architecture im Bachelor Wirtschaftsinformatik zu verankern und auch das CAS Enterprise Architecture Management aufzubauen. Per 1. Juli 2019 ist nun Zeit für einen Seitenwechsel: er wechselt als Leiter Architektur zum Informatiksteuerungsorgan des Bundes ISB.",
           "portrait": "Andreas_Spichiger.png"
         }
-      ]	  
+      ]
     },
     {
       "bat": 43,
@@ -1858,6 +1858,7 @@
   },
   {
     "bat": 48,
+    "pdf": "https://www.slideshare.net/batbern/batbern48zero-trust-architektur-des-iscejpdpdf",
     "title": "Zero Trust Architektur des ISC-EJPD",
     "abstract": "Das Zero-Trust-Modell ist ein Sicherheitskonzept, das auf dem Grundsatz basiert, keinem Gerät, Nutzer oder Dienst innerhalb oder ausserhalb des eigenen Netzwerks zu vertrauen. Dieses Konzept wird im EJPD schon seit 2003 – Einführung des SSO-Portals – aktiv umgesetzt.",
     "referenten": [
@@ -1866,11 +1867,17 @@
         "bio": "Peter Andres ein Software-Architekt, welcher versucht Management, Politik und Technologie zusammenzubringen, so dass innovative, sichere und nachhaltige Lösungen gebaut werden können.",
         "portrait": "peter_andres.jpg",
         "company": "isc-ejpd.png"
-      }
-    ]
+      },
+      {
+        "name": "Matthias Germann, ISC-EJPD",
+        "bio": "Matthias Germann ist der Leiter der Architektur und Architekt aus Leidenschaft. In der Architektur sind Konzepte wie Security by design und by default, sowie eine Zero Trust Architektur zentrale Pfeiler der Gesamtarchitektur.",
+        "portrait": "matthias_germann.jpeg",
+        "company": "isc-ejpd.png"
+      }	    ]
   },
   {
     "bat": 48,
+    "pdf": "https://www.slideshare.net/batbern/batbern48how-zero-trust-can-help-your-organisation-keep-safepdf",
     "title": "How Zero Trust can help your organisation keep safe",
     "abstract": "This presentation will bring insights into how the Zero Trust framework can help organizations improve their cybersecurity posture and resilience and what the organizational challenges are.",
     "referenten": [
@@ -1884,6 +1891,7 @@
   },
   {
     "bat": 48,
+    "pdf": "https://www.slideshare.net/batbern/batbern48zerotrustkonzept-und-realittpdf",
     "title": "Zero Trust - Konzept und Realität",
     "abstract": "Bei Zero Trust wird keinem Akteur, der Zugang zu Ressorucen oder Diensten im Netzwerk will, von vornherein vertraut. Gemäss dem Motto «never trust, always verify» erfordert jede Abfrage im System eine neue Verifizierung. Es wird aufgezeigt, wie dies in einer Umgebung mit vielen verschiedenen Akteuren durchgängig umgesetzt werden kann. Dabei nehmen OAuth-Token und die Funktionalität Token-Exchange eine zentrale Rolle ein.",
     "referenten": [
@@ -1900,5 +1908,683 @@
     "pdf": "https://www.slideshare.net/batbern/",
     "authoren": "Baltisar Oswald",
     "title": "Moderation"
+  },
+  {
+    "bat": 49,
+    "pdf": "https://www.slideshare.net/batbern/klassifizierung-von-versicherungsschden-ai-und-mlops-bei-der-mobiliar",
+    "title": "Klassifizierung von Versicherungsschäden – AI und MLOps bei der Mobiliar",
+    "abstract": "MLOps-Prozesse und -Infrastruktur stellen die Grundlage dar für effizientes Entwickeln und nachhaltigen Betrieb von Machine Learning Modellen. Unser NLP Modell zur Klassifizierung von Versicherungsschäden veranschaulicht, wie die Mobiliar MLOps verwendet, um Mitarbeiter sowie Kunden zu befähigen und zu entlasten. Neben der Entwicklungsarbeit im interdisziplinären Team zeigen wir, wie das Modell in Geschäftsprozessen (B2E und B2C) eingebunden wird. Wir beleuchten anhand konkreter Beispiele, weshalb die MLOps-Prozesse und -Infrastruktur der Mobiliar zentral sind für die Entwicklung und den Betrieb von Machine Learning Modellen. Dabei sollen angetroffene Stolpersteine nicht ausgespart werden, zum Beispiel im Monitoring des Modells im Geschäftsprozess.",
+    "referenten": [
+      {
+        "name": "Tobias Egli, die Mobiliar",
+        "bio": "Tobias Egli arbeitet als Data Scientist und Product Owner für MLOps bei der Mobiliar. Davor war er als Analytics Consultant und wissenschaftlicher Forscher (PhD in molekularen Neurowissenschaften) tätig.",
+        "portrait": "TobiasEgli.jpg",
+        "company": "mobiliar.jpg"
+      },
+      {
+        "name": "Thomas Baumann, die Mobiliar",
+        "bio": "Thomas Baumann ist Teamleiter im Prozess Schaden der Mobiliar und Product Owner eines interdisziplinären agilen Teams welches datengetriebene Lösungen entwickelt. Früher arbeitete er als IT Projektleiter in der Bundesverwaltung.",
+        "portrait": "ThomasBaumann.jpg",
+        "company": "mobiliar.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 49,
+    "pdf": "https://www.slideshare.net/batbern/the-future-of-coaching-in-sport-with-aiml",
+    "title": "The Future of Coaching in Sport with AI/ML",
+    "abstract": "Data is a critical component of today management governance in all companies and industries, and so it is in sports as well. Data can be generated by a lot of different sources like human annotations, sensors, optical tracking and should be produced to help decision makers to take better decisions. The aim of this presentation is first to share Dartfish experience on today Data generation using AI and Machine Learning, but as well to explore the future usage of AI/ML in Data mining to produced better decision indicators.",
+    "referenten": [
+      {
+        "name": "Jean Sebastien Merieux, Dartfish",
+        "bio": "Jean Sebastien joined Dartfish in 2015 and was appointed CEO in June 2017 after 2 years as Head of Product & CTO. In addition to this mission, he leads Dartfish's efforts in the development of products and offerings based on Computer Vision technology and dedicated to sports performance and fan engagement. Prior to joining Dartfish, Jean Sebastien had a 15-year career in Telecom and IT industry in different positions.  Jean Sebastien has a Master in Mechanical Engineering from INSA Lyon and a Master in Marketing from HEC Paris.",
+        "portrait": "jean-sebastien_merieux.jpg",
+        "company": "dartfish.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 49,
+    "pdf": "https://www.slideshare.net/batbern/from-ideation-to-production-in-7-days-the-scoring-factory-at-raiffeisen",
+    "title": "From Ideation to Production in 7 days: The Scoring Factory at Raiffeisen",
+    "abstract": "Imagine a world where you transform a business problem into data specification, collect a data set, learn a ML model and put it into stable, scheduled production within 7 days – rather than spending weeks on data preparation and implementing a production pipeline. At Raiffeisen Data Science this became reality with our Scoring Factory, a ML OPs framework where all customer data is condensed and prepared in a 'feature data layer' - ready to be used for ML algorithms, and a “Scoring Template” with which ML models are created in hours and which delivers production ready code. This overcomes our biggest obstacles in implementing new ML use cases: Data preparation and deployment used to demand so much time, that we were very limited in taking on new ML use cases. In particular, we can now try new ideas fast and without the risk of too much initial time investment. The Scoring Factory is the so-far final piece in a 3 year long effort to build a versatile, automated, robust data platform which allows to unleash the full potential of customer analytics and which started with local models executed on desktop PCs. The foundation is the Customer Analytics Platform. A Hadoop-Cluster where data from various sources gets collected, cleaned, interconnected and aggregated, resulting in thousands of attributes describing the customer in any angle which the business needs to solve their questions. In this talk, we give details about the Architecture of the Customer Analytics Platform and the key ingredients of the Scoring Factory.",
+    "referenten": [
+      {
+        "name": "Philipp Thomann, D One",
+        "bio": "Philipp received his Ph.D. in Mathematics from the University of Zurich in 2013. Afterwards he served as a postdoctoral researcher at the University of Stuttgart, Germany. His areas of expertise are machine learning, natural language processing, search, distributed computation, and ML Ops. Philipp is Managing Consultant at D ONE and in the team since 2017.",
+        "portrait": "PhilippThomann.jpg",
+        "company": "done.jpg"
+      },
+      {
+        "name": "Philipp Thomas, Raiffeisen",
+        "bio": "Philipp joined the customer analytics team of Raiffeisen Schweiz in 2018. In his role as Data Scientist, he focuses on gaining business insights via statistical methods. He received his PhD in Psychology from the University of Bern in 2017.",
+        "portrait": "PhilippThomas.jpg",
+        "company": "raiffeisen.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 49,
+    "pdf": "https://www.slideshare.net/batbern/mlops-journey-at-swisscom-ai-use-cases-architecture-and-future-vision",
+    "title": "MLOps journey at Swisscom: AI Use Cases, Architecture and Future Vision",
+    "abstract": "What powers the AI/ML services of Switzerland's leading telecommunication company? In this talk, we will provide an overview of the different AI/ML projects at Swisscom, from Conversational AI and Recommender Systems to Anomaly Detection. Moreover, we will show how we automate, scale, and operationalise these ML pipelines in production, highlighting the MLOps techniques and open source tools that are used. Finally, we will present Swisscom's roadmap towards the cloud with AWS and discuss how we envision a common MLOps solution for the organisation.",
+    "referenten": [
+      {
+        "name": "Joana Soares Machado, Swisscom",
+        "bio": "Joana is a Senior Data Scientist at Swisscom. As part of the Data, Analytics and AI department, she develops ML solutions to automate the real-time monitoring of Swisscom’s business processes and IT services. Joana holds a Master’s degree in Communication Systems from EPFL, where she previously worked as a research scientist in the domain of applied machine learning in privacy and security.",
+        "portrait": "JoanaSoaresMachado.jpg",
+        "company": "swisscom.jpg"
+      },
+      {
+        "name": "Maxime Darçot, Swisscom",
+        "bio": "Maxime has been a Data Scientist for 7 years at Swisscom where he worked on diverse projects mostly related to improving customer service. He is also helping coordinate several aspects related to how we deal with Machine Learning at Swisscom. Previously, he graduated from Ecole Centrale Paris (former CentraleSupelec) and UMPC in France and cofounded a startup at EPFL after his studies.",
+        "portrait": "MaximeDarcot.jpg",
+        "company": "swisscom.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 50,
+    "pdf": "https://de.slideshare.net/batbern/ein-rckblick-anlsslich-des-50-bat-aus-sicht-eines-treuen-partners",
+    "title": "Hommage ans BAT",
+    "abstract": "Ein Rückblick anlässlich des 50. BAT aus Sicht eines treuen Partners",
+    "referenten": [
+      {
+        "name": "Peter Kummer, Leiter Infrastruktur SBB",
+        "bio": "Peter Kummer leitet seit 2020 die Division Infrastruktur und ist Mitglied der Konzernleitung der SBB. Die Division Infrastruktur gewährleistet eine optimale Auslastung und Steuerung des Personen- und Güterverkehrs und ist für den Unterhalt, die Entwicklung und den Ausbau des Telekom-  Strom- und Schienennetzes der SBB zuständig. Peter Kummer stiess 2007 als Chief IT Architect zu den Schweizerischen Bundesbahnen SBB. 2009 wurde er zum CIO und Mitglied der Konzernleitung der SBB ernannt. Vor dem Eintritt bei der SBB war Peter Kummer “Head of Enterprise Architecture & IT Strategy” bei der  Versicherungsgesellschaft Die Mobiliar.",
+        "portrait": "peter.kummer.jpg",
+        "company": "sbb.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 50,
+    "pdf": "",
+    "title": "Navigating the next phase of digital innovation",
+    "abstract": "Warum wir ein neues Fundament für Fortschritt benötigen. Beyond FOMO: Umgang mit Unsicherheit und der hohen Dynamik der Veränderung. Understanding Society: Ausblick auf die künftigen Rahmenbediungen von Wirtschaft und Gesellschaft. Reverse the paradigm: Künftige Innovationsfelder für Technologie- und Informationsarchitektur. Creating trust: Gestaltungsfelder für die nächste Phase der digitalen Transformation",
+    "referenten": [
+      {
+        "name": "Stephan Sigrist, W.I.R.E",
+        "bio": "Stephan Sigrist ist Gründer und Leiter des Zürcher Thinktanks W.I.R.E. Er ist zudem Herausgeber der Buchreihe ABSTRAKT. Sigrist studierte an der ETH Zürich Biochemie und promovierte am Collegium Helveticum. Anschliessend arbeitete er als Beratur für Roland Berger sowie am Gottlieb Duttweiler Institut.",
+        "portrait": "stephan_sigrist.jpg",
+        "company": "wire_minilogo.png"
+      }
+    ]
+  },
+  {
+    "bat": 50,
+    "pdf": "",
+    "title": "Aufbruch in ein neues IT-Zeitalter: Quantum Computing",
+    "abstract": "Das Wachstum der digitalen Wirtschaft war schon immer eng mit dem Fortschritt der Halbleiterindustrie und in jüngerer Zeit mit der Erweiterung von KI-Fähigkeiten verbunden. Dies hat letztlich die Grenzen von Technologie verschoben, um so immer komplexere Probleme anzugehen. Einige unserer grössten Probleme von Heute, wie die Bekämpfung des Klimawandels, neu auftretender Krankheiten oder volatiler Märkte, erfordern weitere tiefgreifende Fortschritte und Innovationen in Computertechnologien. In dieser Präsentation erfahren Sie mehr über Quantencomputer, eine grundlegend neue Form der Informationsverarbeitung, die sich die Kraft quantenmechanischer Eigenschaften der Natur zunutze macht, sowie das Zusammenspiel mit Hochleistungsrechnern und KI. Neben einer Einführung in dieses neue Computerparadigma erfahren Sie mehr über IBMs Quantenhardware, Software und den Aufbau eines globalen Ökosystems. Darüber hinaus wird ein Einblick in die Landschaft quantengestützter Anwendungsfälle in der Industrie präsentiert.",
+    "referenten": [
+      {
+        "name": "Manuel Proissl, IBM",
+        "bio": "Dr. Manuel Proissl ist IBM Quantum Industry Applications Lead for Financial Services in EMEA mit Sitz in der Schweiz, wo er Institutionen aktiv dabei unterstützt, Quantenanwendungsfälle zu untersuchen und sie quantentauglich zu machen. Zuvor war er für Tier-1-Banken in verschiedenen leitenden, beratenden und hands-on Funktionen tätig, um digitale Innovationen und die Monetarisierung von Daten, KI und neuen Technologien voranzutreiben, wobei er hauptsächlich dem COO, CRO oder CIO unterstellt war. Darunter war Manuel tätig als Quantum Strategy and R&D Lead, als Head of AI in Banking and Quantum Computing, als Lead Data Scientist für quantitatives Risikomanagement und Compliance-Transformation für Banken weltweit und als Senior Advisor für Finanzaufsichtsbehörden (FED, EZB, FINMA, MAS), Regierungen (US DOE, Europäische Kommission) und verschiedene Konsortien der europäischen KI- und Quantenindustrie. Davor war er als Quantenphysiker in der Forschung, wobei er zu mehreren wissenschaftlichen Durchbrüchen beitragen konnte, darunter einer, der mit dem Nobelpreis ausgezeichnet wurde.",
+        "portrait": "manuel_proissl.jpg",
+        "company": "ibm.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 50,
+    "pdf": "",
+    "title": "Quantencomputer und die Bedrohung für die digitale Sicherheit",
+    "abstract": "Quantencomputer – wenn sie ausreichend groß sind – werden es ermöglichen, einige der mathematischen Probleme hinter der aktuellen Kryptographie effizient zu lösen, und damit praktisch die gesamte digitale Kommunikation unsicher machen. Die jüngsten Fortschritte beim Quantencomputing haben bei Regierungen und Standardisierungsgremien ein erhöhtes Gefühl der Dringlichkeit ausgelöst. Diese Präsentation bietet einen Überblick über die mit Quantencomputing verbundene Bedrohung der aktuellen Kryptographie und stellt einige der neuen quantensicheren Algorithmen vor, die unter Leitung des US National Institute for Standards and Technology (NIST) standardisiert werden. Darüber hinaus werden die Auswirkungen auf die Sicherheit der heutigen digitalen Kommunikation und Datenverarbeitung diskutiert und eine Reihe damit zusammenhängender Minderungsmaßnahmen skizziert, wie von verschiedenen Standardisierungsgremien und Regierungsinstitutionen in Europa und den USA empfohlen.",
+    "referenten": [
+      {
+        "name": "Marco Brenner, IBM",
+        "bio": "Marco Brenner arbeitet als Program Executive bei IBM Quantum in der Schweiz, mit besonderem Fokus auf Kryptographie und modernste Datenschutzlösungen zur Unterstützung von Vertraulichkeit und Compliance. Er arbeitet eng mit IBM Research an innovativen Lösungen und ist für deren Umsetzung bei Kunden in ganz Europa verantwortlich. Marco hat einen Master-Abschluss der ETH Zürich in Informatik mit Spezialisierung auf Kryptographie und Informationssicherheit und einen MBA des Henley Management College/University of Reading.",
+        "portrait": "marco_brenner.jpg",
+        "company": "ibm.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 50,
+    "pdf": "https://www.oscar.nierstrasz.org/posts/2023-06-12-MindTheGap",
+    "title": "Mind the gap — 50 years of shortening feedback loops",
+    "abstract": "There have been many advances in Software Engineering over the past 50 years. Each has addressed a gap between expectations or needs and reality. Advances were made by automating or commoditizing some aspect of the software development process. Often the real benefits are not seen in advance simply because opportunities are created that were not possible before. For example DevOps enables real-time experimentation with new features. In this talk, we review several of these advances, and explore some of opportunities they open up.",
+    "referenten": [
+      {
+        "name": "Oscar Nierstrasz, Prof. em. UniBe and feenk",
+        "bio": "Oscar Nierstrasz is Professor emeritus of Computer Science at the University of Bern, where he founded the Software Composition Group in 1994. He retired from the University at the end of 2021, and is currently working at feenk.com to support onboarding and teaching of moldable development. He is co-author of over 400 publications, including the open-source books Object-Oriented Reengineering Patterns and Pharo by Example.",
+        "portrait": "oscar_nierstrasz.jpg",
+        "company": "feenk.png"
+      }
+    ]
+  },
+  {
+    "bat": 50,
+    "pdf": "",
+    "title": "Podiumsdiskussion",
+    "abstract": "Die Referenten diskutieren mit den Moderatoren über aktuelle Fragen und Herausforderungen",
+    "referenten": [
+      {
+        "name": "Peter Kummer, Stephan Sigrist, Marco Brenner, Oscar Nierstrasz - Moderation: Nissim Buchs, Andreas Grütter",
+        "bio": "",
+        "portrait": "panel.jpg",
+        "company": ""
+      }
+    ]
+  },
+  {
+    "bat": 51,
+    "pdf": "",
+    "title": "Keynote - Serverless Architectures - Video Call",
+    "abstract": "Serverless is much more than an abstraction over compute run-time. Serverless applications are inherently distributed, easily respond to incoming events, and change the role of cloud automation. This session reflects on how serverless influences our application delivery and takes a peek at recent trends like Event-driven Architectures and Infrastructure from Code.",
+    "referenten": [
+      {
+        "name": "Gregor Hohpe, AWS",
+        "bio": "Gregor helps enterprises with their architecture strategy and cloud transformation journey by connecting the penthouse with the engine room. Ex-Google, Allianz, ThoughtWorks, Deloitte.",
+        "portrait": "gregor.jpg",
+        "company": "aws.png"
+      }
+    ]
+  },
+  {
+    "bat": 51,
+    "pdf": "https://de.slideshare.net/batbern/02gariboldibatbern51pptx",
+    "title": "Serverless at Lifestage",
+    "abstract": "What is serverless and how we use it at Lifestage. The good parts and the challenges we faced over the past years.",
+    "referenten": [
+      {
+        "name": "Andrea Gariboldi, Lifestage",
+        "bio": "Andrea has been CTO at Lifestage Solutions AG since 2016, between 2000 and 2009 he built systems and consulted for various enterprises based on Oracle databases and application servers. Since then he has been helping several startups to scale their systems on the AWS cloud in the US, Asia, and Europe.",
+        "portrait": "andrea.png",
+        "company": "lifestage.png"
+      }
+    ]
+  },
+  {
+    "bat": 51,
+    "pdf": "https://de.slideshare.net/batbern/03raiffeisenamanoxserverlessdevopsfinalpptx",
+    "title": "Serverless Dev(Ops) in der Praxis",
+    "abstract": "Die Schweiz, das Land der vielen Sprachen. Das Translation Portal der Raiffeisen Schweiz bietet verschiedenste Möglichkeite Übersetzungsprozesse zu standardisieren und automatisieren. Bei der Entwicklung des Portals wurden ausschliesslich cloud native Dienste und Methoden eingesetzt. Wir zeigen auf, wie Serverless Code durch vollautomatisierte Pipelines integriert, getestet und ausgerollt wird. Dabei erfahren Sie unter anderem was Serverless aus Sicht DevOps für die Raiffeisen Schweiz und im Allgemeinen bedeutet.",
+    "referenten": [
+      {
+        "name": "Michael Brülisauer, Raiffeisen",
+        "bio": "Michael Brülisauer ist Produkt Verantwortlicher und hat den technischen Lead bei der Integration des Raiffeisen Translation Portals.",
+        "portrait": "michael.png",
+        "company": "raiffeisen.png"
+      },
+      {
+        "name": "Matthias Imsand, Amanox",
+        "bio": "Matthias Imsand ist CTO und Gründer der Firma Axians Amanox. In seiner Rolle leitet er die technische und strategische Ausrichtung der cloud native DevOps Organisation, die individualisierte Cloud Software Projekte plant, entwickelt und betreibt.",
+        "portrait": "matthias.png",
+        "company": "amanox.png"
+      }
+    ]
+  },
+  {
+    "bat": 51,
+    "pdf": "https://de.slideshare.net/batbern/serverless-und-eventdriven-architecture",
+    "title": "Serverless und Event-Driven Architecture",
+    "abstract": "Stirbt Serverless den Kubernetes-Tod bevor es richtig geboren wurde? Es gibt zumindest eine Domäne, in der Serverless definitiv lebendig und munter ist - das Internet der Dinge (IoT). In den letzten sieben Jahren wurden IoT-Systeme vermehrt unter Verwendung von Platform as a Service (PaaS) und Serverless-Diensten der Public Cloud Provider entwickelt. Dabei kommt die Event-Driven Architecture zum Einsatz, ein Muster, das sich sowohl für Serverless als auch für die asynchrone Natur von IoT-Systemen bestens eignet. Aber wie sehen solche Architekturen konkret aus? Warum sind gerade IoT-Anwendungen prädestiniert für Serverless? Und welche wertvollen Erkenntnisse können wir aus diesem Bereich für andere Anwendungsdomänen gewinnen? In dieser Session werden wir diese Fragen anhand von Beispielen aus der Azure-Welt genauer unter die Lupe nehmen.",
+    "referenten": [
+      {
+        "name": "Roland Krummenacher, Swisscom",
+        "bio": "Roland Krummenacher begleitet als Cloud Advisor bei Swisscom B2B Kunden auf ihrem Weg in die Cloud. Er ist seit 13 Jahren in den verschiedensten Rollen auf der Azure Cloud unterwegs, zuletzt mit einem Fokus auf Cost Optimization und FinOps.",
+        "portrait": "roland.jpg",
+        "company": "swisscom.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 51,
+    "pdf": "https://de.slideshare.net/batbern/embracing-serverless-reengineering-a-realestate-digital-marketplace",
+    "title": "Embracing Serverless: reengineering a real-estate digital marketplace",
+    "abstract": "This presentation delves into the journey of transitioning an on-premises monolithic real estate application to a fully serverless, event-driven microservices stack on AWS. Explore the compelling business drivers that necessitated this shift, from traffic demands and team scalability to architectural flexibility. We'll unpack the challenges, from navigating many service choices to the cost implications. At the same time, we'll celebrate the undeniable advantages: improved security through AWS's shared responsibility model, the economic flexibility of a pay-as-you-go approach, and remarkable reliability and scalability.",
+    "referenten": [
+      {
+        "name": "Guido Trüeb, SMG - Swiss Marketplace Group",
+        "bio": "Building and breaking software since 2005, I've embraced serverless architectures at homegate.ch since 2019. A firm believer in simplicity and compassionate teamwork, I relish optimizing software and collaboration - particularly fondly of removing code.",
+        "portrait": "guido.png",
+        "company": "smg.png"
+      }
+    ]
+  },
+  {
+    "bat": 52,
+    "pdf": "https://de.slideshare.net/slideshow/batbern52-innoq-on-data-mesh-2019-2023-2024/266729706",
+    "title": "Data Mesh: 2019, 2023 und 2024++",
+    "abstract": "Data Mesh ist ein soziotechnischer Ansatz für die Erstellung einer dezentralen Datenarchitektur. Zhamak Dehghani hat den Begriff Data Mesh und die Theorie dahinter mit ihren Blog-Beiträgen in 2019 bereits geprägt und dann mit ihrem Buch noch etwas ausführlicher beschrieben. Diese Theorie möchte ich kurz vorstellen, um für den Abend ein Begriffsfundament zu giessen. Seit 2019 ist jedoch viel passiert. Viele haben das Konzept gelesen und einige haben ihre Data Mesh Reise bereits begonnen. Ich möchte auf 2023 zurückblicken und den aktuellen Stand der Praxis beschreiben. Enden möchte ich mit einem Ausblick über die Top 5 Entwicklungen in Data Mesh, die dich total überraschen werden.",
+    "referenten": [
+      {
+        "name": "Simon Harrer, INNOQ",
+        "bio": "Dr. Simon Harrer ist Berater bei INNOQ. Er ist Softwareentwickler im Herzen, der sich mittlerweile zur dunklen Seite, nämlich der Welt der Daten, zugewandt hat. Er hat datamesh-architecture.com mit ins Leben gerufen und das Data Mesh Buch von Zhamak Dehghani ins Deutsche übersetzt. Neben der tagtäglichen Data Mesh Beratung arbeitet er an dem Data Mesh Manager - ein SaaS Produkt, das Data Mesh Initiativen auf die Überholspur setzt.",
+        "portrait": "simon_harrer.jpg",
+        "company": "innoq.png"
+      }
+    ]
+  },
+  {
+    "bat": 52,
+    "pdf": "https://de.slideshare.net/slideshow/batbern52-mobiliar-zu-skalierte-datenprodukte-mit-data-meshpdf/266729770",
+    "title": "Skalierte Datenwertschöpfung mit Data Mesh",
+    "abstract": "Die Gruppe Mobiliar hat sich das Ziel gesetzt, 'unter jedem Dach daheim' zu sein und dabei ein optimales Kundenerlebnis zu bieten. Um dieses Ziel zu erreichen, setzt sie unter anderem auf eine skalierte Datenwertschöpfung als strategische Unternehmensfähigkeit. Bruno Russiniello und Lukas Feuz geben in dieser Präsentation Einblicke in die genaue Bedeutung dieses Ansatzes. Erfahren Sie, wie die Mobiliar durch die Nutzung von Datenprodukten die Digitalisierung aktiv vorantreibt.​",
+    "referenten": [
+      {
+        "name": "Bruno Russiniello, die Mobiliar",
+        "bio": "Bruno Russiniello verfügt über eine langjährige Erfahrung als Software-Entwickler und Architekt in verschiedenen Branchen, zuletzt als Lead Entwickler für Basel II-Projekte bei der Credit Suisse. Seit 2009 prägt er als IT-Architekt die Entwicklung der Mobiliar in verschiedenen Bereichen. Seit 2018 liegt sein Fokus auf der Datenarchitektur, wo er innovative Ansätze nach Data Mesh-Prinzipien verfolgt. Dabei setzt er sich besonders für die Transparenz von Daten und die Reduktion der Gesamtkomplexität durch semantische Modelle und moderne Technologien ein.",
+        "portrait": "bruno_russiniello.jpg",
+        "company": "mobiliar.jpg"
+      },
+      {
+        "name": "Lukas Feuz, die Mobiliar",
+        "bio": "Lukas Feuz ist seit 2009 in verschiedenen Branchen und Firmen als Software-Entwickler und Architekt tätig, zuletzt bei der Post CH AG als Enterprise Cloud Architekt. Seit 2019 ist er als System Architekt bei der Mobiliar im Bereich BI & Analytics, verantwortet als Domänenarchitekt die Domäne Underwriting & Versicherungsrisiko und führt die Applikationsplattformarchitektur mit dem Ziel, die Feature Teams effizienter zu machen.​",
+        "portrait": "Lukas_Feuz.jpg",
+        "company": "mobiliar.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 52,
+    "pdf": "https://de.slideshare.net/slideshow/batbern52-sbb-zu-data-products-und-knacknsse/266729790",
+    "title": "Schöne neue Data Products und deren nicht nur technischen Knacknüsse",
+    "abstract": "Mit den Data Products und dem Data Mesh weht ein neuer Wind durch die Data Analytics-Stuben. Konzepte, die im Bereich des Software Engineerings bereits etabliert sind, werden für neue Analytics-Vorhaben entsprechend adaptiert.  Dies Nähe zur Software Entwicklung ist nicht erstaunlich, stammen doch die Prinzipien des Data Mesh aus dem Umfeld von Martin Fowler. Die Grundgedanken sind bestechend einfach: das Data Product als eine klar abgegrenzte Einheit mit klaren Regeln und Daten, die einen Mehrwert für den Datennutzer bieten. Diese Data Products können in einer Mesh-Architektur miteinander verknüpft und zu einem funktionierenden Ganzen zusammengefügt werden. Damit soll der «Ad-Hoc»-Charakter, der vielen Analytics-Lösungen innewohnt, überwunden werden. Bei der Adaption von Data Products in eine bestehende Analytics-Landschaft müssen technische und organisatorische Hürden genommen und viel Überzeugungsarbeit in der Analytics-Gemeinde geleistet werden. Wir nehmen Euch mit auf diese Reise, die noch nicht zu Ende ist.",
+    "referenten": [
+      {
+        "name": "André Rogger, SBB",
+        "bio": "André Rogger hat an der EPFL in Operations Research promoviert und bei unterschiedlichen Transport- und High-Tech-Unternehmen Algorithmen für die Revenue- und Prozessoptimierung entwickelt. Er war über 10 Jahre an der FHNW und der Hochschule Luzern als Professor für Wirtschaftsinformatik tätig und hat sich hier auf IT-Architekturen und das Daten- und Analytics-Management spezialisiert. Anschliessend führte ihn sein Weg weg vom Lehr- und Forschungsbetrieb zur SBB, wo er in unterschiedlichen Tätigkeitsfeldern als Enterprise Architect tätig ist. Sein aktueller Fokus liegt in der Governance und Anwendung von Analytics und AI.",
+        "portrait": "andre_rogger.png",
+        "company": "sbb.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 52,
+    "pdf": "https://de.slideshare.net/slideshow/batbern52-swisscoms-journey-into-data-mesh/266729812",
+    "title": "Swisscom's Journey into Data Mesh",
+    "abstract": "Swisscom is taking one bold step after another to become a data-driven company. The approach is always business-first: how to find data&AI-driven solutions to enable the business to make the best decisions to offer a great experience to our customers. Our journey with Data Mesh is no different. Together with the business, we looked at the current challenges of quickly transforming data into information and insights while having a crucial regard for data management and governance. I invite you to this session to go through our transformation from data to data products, how to foster co-creation between data producers and data consumers, and what it takes to create the right balance between central governance and decentralizing the accountability for its implementation.",
+    "referenten": [
+      {
+        "name": "Mirela Navodaru, Swisscom",
+        "bio": "Mirela joined Swisscom at the end of 2021, where she is leading the enterprise architecture domain for data, analytics, and AI. With almost 20 years of experience transforming data into information and insights, she worked in industries like telco (Sirti SpA - Italy) and manufacturing (ABB Group and Hitachi Energy). Mirela is passionate about using technology and data, embracing innovation, and having a sustainable and future-proof mindset to ensure data-driven business success. Always with people and for the people!",
+        "portrait": "mirela_navodaru.jpg",
+        "company": "swisscom.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 53,
+    "pdf": "https://www.slideshare.net/slideshow/batbern53-epfl-blue-brain-and-related-technical-challenges/270214289",
+    "title": "Blue Brain and related technical challenges",
+    "abstract": "Scientific exploration has increasingly shifted from traditional storage-centric approaches to compute-centric methods, leveraging advanced software for data integration, analysis, and interactive visualization of vast scientific datasets. To address this need, Blue Brain developed and open-sourced Blue Brain Brayns, a technical platform for the visualization of in-silico datasets, which later gave birth to the Blue Brain BioExplorer. Initially created to tackle key scientific questions related to the Coronavirus and to deliver a powerful visualization tool, the BioExplorer now excels in reconstructing, visualizing, exploring, and detailing the structure and function of biological systems, from molecular systems up to the full brain. In this highly visual presentation, I will demonstrate how I architected and built the application that EPFL's Blue Brain Project utilizes to generate high-quality, high-fidelity images and movies, along with interactive and immersive experiences of the digital reconstruction of the rodent brain. By prioritizing computational efficiency over traditional storage, we enable real-time manipulation and exploration of large datasets. Additionally, I will present a few examples of how AI is a game changer, solving problems that were almost impossible to solve with classic techniques. These examples will highlight the transformative impact of AI in enhancing image quality, speeding up data processing, and uncovering new scientific insights that were previously beyond our reach",
+    "referenten": [
+      {
+        "name": "Cyrille Favreau, EPFL",
+        "bio": "Cyrille Favreau is a high-performance architect with a specialization in visualization and a science communicator at EPFL's Blue Brain Project since 2014. He creates and develops software tools, combining technical expertise with artistic skills to produce high-quality videos and images of the in-silico rodent brain. Cyrille specializes in real-time rendering of large-scale datasets using ray-tracing techniques and high-performance technologies. He is the creator of Blue Brain Brayns, an interactive rendering platform dedicated to high-quality and high-fidelity rendering of large datasets. In 2020, he developed Blue Brain BioExplorer within the Simulation Neuroscience Division, merging visualization with scientific exploration and contributing to significant publications and educational media. Previously, Cyrille led a team in the technical architecture department at Lombard Odier Darier Hentsch & Cie, focusing on low-level library design and technical solution implementation. He holds a Bachelor of Science in Computer Studies from Glyndŵr University, Wrexham. Outside of work, he enjoys playing music, acting, and marathon swimming.",
+        "portrait": "Cyrille_Favreau.jpg",
+        "company": "epfl-logo.jpg"
+      }
+    ]
+  },
+    {
+    "bat": 53,
+    "pdf": "https://www.slideshare.net/slideshow/batbern53-ethz-rethinking-cluster-state-management-for-lightweight-function-as-a-service-orchestration/270214335",
+    "title": "Rethinking Cluster State Management for Lightweight Function as a Service Orchestration",
+    "abstract": "Serverless computing raises the level abstraction to the cloud, making the cloud easier to use and enabling the cloud platform to optimize for performance and energy efficiency under the hood. Although the serverless paradigm holds great promise, the system software that serverless platforms are built on today is still rooted in the very different, more traditional execution model of long-running containers or virtual machines. Today’s Functions as a Service (FaaS) platforms orchestrate function sanboxes with systems based on conventional cluster managers like Kubnernetes. We find that Kubernetes-based cluster managers add significant overhead in FaaS environments because the way that they manage, persist, and update cluster state is not designed for high churn or short-lived sandboxes. Rather than retrofitting existing cluster managers, we propose Dirigent, a clean-slate system tailored for FaaS that supports orders of magnitude higher scheduling throughput than Kubernetes-based systems. Dirigent simplifies cluster manger abstractions to optimize state management, eliminates persistent updates on the critical path of function invocations by recognizing that serverless allows for relaxing state reconstruction guarantees, and runs monolithic control and data planes to minimize internal communication between cluster manager components to maximize throughput.",
+    "referenten": [
+      {
+        "name": "Ana Klimovic, ETH Zürich",
+        "bio": "Ana Klimovic is an Assistant Professor in the Systems Group of the Computer Science Department at ETH Zurich. Her research interests span operating systems, computer architecture, and their intersection with machine learning. Ana's work focuses on computer system design for large-scale applications such as cloud computing services, data analytics, and machine learning. Before joining ETH in August 2020, Ana was a Research Scientist at Google Brain and completed her Ph.D. in Electrical Engineering at Stanford University.",
+        "portrait": "Ana_Klimovic.jpg",
+        "company": "ethz.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 53,
+    "pdf": "https://www.slideshare.net/slideshow/batber53-aws-modernize-your-applications-with-purpose-built-aws-databases/270214245",
+    "title": "Modernize your applications with purpose-built AWS databases",
+    "abstract": "What are the key attributes of a modern database application? A modern database application should be designed for innovation and agility, it should perform without any limits on performance and scalability, and it should be highly available, easily managed, and cost effective. A modern database should then support all data types and access patterns. It should implement ACID transactions and strong consistency, it should provide limitless scalability and tolerate load variability with high performance regardless of the query complexity. It should run without downtime at a predictable and cost-effective price. And, obviously it should be simple and easy to use, tune and maintain. The problem is that we know, since the CAP theorem, that such a database does not exist. That's why a modern application strategy has to rely on specific purpose-built database engines for the persistence layer. This session will cover the databases AWS offers to meet application needs for in-memory workloads, key-value stores, document collections as well as time-series, graph and ledger databases. We will illustrate the presentation with several customer architecture use-cases.",
+    "referenten": [
+	  {
+        "name": "Yann Allandit, AWS",
+        "bio": "Yann is a senor database solution architect in AWS based out of Geneva. He has 25+ years of experience in IT. This time was mostly spent in database and infrastructure architecture activities. Yann was involved in many database transformation projects addressing concerns related to the availability, security, business continuity and performance of the data stack.",
+        "portrait": "Yann_Allandit.png",
+        "company": "aws.png"
+      }
+    ]
+  },
+  {
+    "bat": 53,
+    "pdf": "https://www.slideshare.net/slideshow/batbern53-die-mobiliar-bring-die-algorithmen-zu-den-daten-nicht-umgekehrt/270214279",
+    "title": "Bring die Algorithmen zu den Daten – nicht umgekehrt",
+    "abstract": "SQL-Embedded Machine Learning symbolisiert den nächsten Schritt in der Analyse von Transaktionsdaten und folgt dem Paradigma 'Bring die Algorithmen zu den Daten - nicht umgekehrt'. Die Präsentation beginnt mit einem Beispiel aus der Welt des Fußballs, gefolgt von einer kurzen Einführung in SQL-Embedded Machine Learning und einer Diskussion der Ziele und Ergebnisse einer ersten produktiven Anwendung. Wir werden auch kurz darauf eingehen, wie die Predictions auf einfache und verständliche Weise transparent gemacht werden können (Explainable AI).",
+    "referenten": [
+      {
+        "name": "Thomas Baumann, die Mobiliar",
+        "bio": "Computer scientist by training, data scientist by practice, query tuner by spirit: Thomas arbeitet aktuell als IT Architekt bei der Mobiliar. Wenn er nicht gerade in seinem Büro sitzt und die letzten Reserven aus den Datenbanken kitzelt, ist er womöglich als Referent an einer Konferenz unterwegs – wie heute am BAT. Thomas schloss sein Studium 1992 als Informatikingenieur an der ETH Zürich mit dem Nebenfach Wahrscheinlichkeitstheorie und Statistik ab – heute würde man das einfach Big Data nennen.",
+        "portrait": "Thomas_Baumann.jpg",
+        "company": "mobiliar.jpg"
+      }
+    ]
+  },
+ {
+    "bat": 53,
+    "pdf": "",
+    "title": "The Future of Tape",
+    "abstract": "Magnetic tape is currently the lowest cost technology for storing large volumes of data. Historically, areal density scaling has been the main driver of the exponential decrease in the $/TB cost of both tape and hard disk drives. Recently however, HDD scaling has stagnated while tape continues to scale, resulting in a resurgence of interest in magentic tape. The challenges of scaling magnetic recording systems and how they impact the future scaling of HDD and tape will be discussed. The INSIC Tape Technology Roadmap projects that tape areal density and capacity will continue to scale at historical rates for at least the next decade leading to an even greater cost advantage of tape over HDD. The feasibility of these projections have been validated by a recent research tape areal density demonstration of 317 Gb/in2 on SrFe tape. This demo and the latest INSIC tape technology roadmap will be discussed along with future projections of the capacity scaling of HDD and tape.",
+    "referenten": [
+      {
+        "name": "Mark Lantz, IBM Research",
+        "bio": "Dr. Mark Lantz is a distinguished research scientist in the IBM Research – Zurich laboratory, an IEEE Fellow and the manager of the IBM –Zurich Tape Research Group. Dr. Lantz has more than twenty years of experience in storage technology research. He became an IBM Master Inventor in 2011, is co-inventor on over 200 patents and is a co-author of over 130 publications. His current research interests include storage technology, nanotechnology, and storage system reliability and performance modeling.",
+        "portrait": "Mark_Lantz.jpg",
+        "company": "IBM-8bar-logo.jpg"
+      }
+    ]
+  },
+ {
+    "bat": 53,
+    "pdf": "https://de.slideshare.net/slideshow/batbern53-elca-analyticsdatenhaltung-in-der-cloud/270214265",
+    "title": "Analyticsdatenhaltung in der Cloud ",
+    "abstract": "Die Evolution von DWHs und Data Lakes zu Cloud Analytics Plattformen und neuen Technologien hat das Datenmanagement und die Datenhaltung grundlegend verändert. Dateiformate wie Avro und Parquet auf Blob-Storage in der Cloud sind schon länger zu Standards über Analytics hinaus geworden, haben aber auch ihre Einschränkungen. Datenhaltung mit Open Table Formats wie Iceberg, Delta Lake und Hudi bieten wichtige Erweiterungen wie Metadaten Management, Transaktionen, Versionierung und Change Data Capture. Nach einem Blick auf die Geschichte schauen wir uns Open Table Formats genauer an und diskutieren Erfahrungen anhand von zwei Projekt Beispielen.",
+    "referenten": [
+      {
+        "name": "Kuno Baeriswyl, ELCA",
+        "bio": "Kuno Baeriswyl ist seit 2001 in verschiedenen Branchen und Firmen als Software-Entwickler und Architekt tätig, zuletzt bei der ELCA Schweiz als Data Engineer / Architect. Seit 2017 liegt sein Fokus in der datengetriebenen Software-Entwicklung im Apache Spark Ecosystem, wo er sich zuletzt der Verifizierung von Diagnosedaten für die Instandhaltung des Schweizer Schienennetzes widmete und aktuell ein Data Lakehouse mit Apache Spark sowie Iceberg Tables aufbaut.",
+        "portrait": "Kuno.png",
+        "company": "elca.jpg"
+      },
+	  {
+        "name": "Zacharias Kull, ELCA",
+        "bio": "Zacharias Kull ist Datenarchitekt und Teamlead Data Engineering bei ELCA. Er hat viel Projekterfahrung im Aufbau von Cloud-Datenplatformen und den Möglichkeiten moderner Technologien wie Spark, Databricks und AWS. Mit SmartDataLakeBuilder engagiert er sich in ein open-source Projekt um entsprechende Vorhaben einfacher zu automatisieren und zu betreiben.",
+        "portrait": "Zach.jpg",
+        "company": "elca.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 53,
+    "pdf": "https://www.slideshare.net/slideshow/batbern53-post-data-persistence-in-the-business-critical-and-event-driven-environment-of-parcel-sorting/270214376",
+    "title": "Data persistence in the business-critical and event driven environment of parcel sorting",
+    "abstract": "We are (re)-developing the mailpiece-sorting software for all sorting centres in Switzerland. Sorting is a demanding process, that depends on a lot of data from a variety of systems, in different formats and availability. With the large number of parcels sorted every day and the high-quality standard to fulfil, we depend on a reliable and flexible persistence technology.",
+    "referenten": [
+      {
+        "name": "Meinrad Jean-Richard, Post",
+        "bio": "Meinrad Jean-Richard works as a Solution Architect at Swiss Post, where his primary focus lies in envisioning the software ecosystem for parcel and mail sorting over the next fifteen years. With two decades of experience as a developer and software architect, he is adept at crafting technically robust and forward-thinking solutions to complex challenges. His approach, characterized by a balance between quality assurance and pragmatism, is fortified by a profound understanding of software engineering principles and the intricacies of human dynamics within the development process.",
+        "portrait": "Jean-Richard Meinrad.png",
+        "company": "post.jpg"
+      },
+      {
+        "name": "David Riedo, Post",
+        "bio": "David Riedo, DevOps Engineer at Swiss Post in charge of designing, building, and maintaining software solutions. Working in the mailing and parcel sorting ecosystem he uses his 10+ years of experience as a .NET developer to meet the hight demands for quality and stability.As a DevOps enthusiast he stands for implementing something correct the first time and knows that speed and quality in software delivery are no trade-offs.",
+        "portrait": "David_Riedo.jpg",
+        "company": "post.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 53,
+    "pdf": "https://de.slideshare.net/slideshow/batbern53-bkw-easy-migration-through-clean-architecture/270214353",
+    "title": "Easy Migration through Clean Architecture",
+    "abstract": "Wie kann sichergestellt werden, dass bei der Migration einer Persistenz Schicht von einer On-Premise Umgebung in die Cloud alle Anforderungen erfüllt werden und dabei keine „unvorhergesehenen Überraschungen“ auftreten ? Dieser Frage werde ich nachgehen und dabei im Deep Dive die von uns verwendete Softwarearchitektur durchleuchten. Zusätzlich werde ich deren Einfluss auf das Ergebnis des durchgeführten PoC in Bezug auf die Migration aufzeigen. Dabei werde ich auch auf solch spannende neue Begriffe wie Code Bricks Architecture oder auch Single Point of Configuration eingehen. Kommen Sie mit mir auf eine architektonische Reise durch die moderne Softwareentwicklung.",
+    "referenten": [
+      {
+        "name": "Hozelito Vajcek, BKW",
+        "bio": "Hozelito Vajcek ist seit über 20 Jahren als Spezialist für Microsoft Systeme basierend auf der .NET Plattform tätig. Bereits mit 11 Jahren hat er mit dem Programmieren begonnen und auch heute, wenn er nicht gerade in Meetings festhängt, schreibt er die eine oder andere Codezeile. Er ist sowohl TOGAF® 9.2 als auch iSAQB® CPSA Advanced Level zertifiziert. Bei der BKW ist er zuständig für den gesamten Integrations-Layer aller internen und externen Handelssysteme. Er hat bei der BKW erfolgreich eine Software Architektur eingeführt, welche es erlaubt in kürzester Zeit sowohl neue Services zu entwickeln als auch bestehende Services mit neuen Funktionalitäten zu erweitern.",
+        "portrait": "Hozelito.jpg",
+        "company": "bkw.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 53,
+    "pdf": "https://de.slideshare.net/slideshow/batbern53-sbb-wieso-in-jeder-zugfahrt-der-sbb-ein-stuck-mongodb-drinsteckt/270214316",
+    "title": "Wieso in jeder Zugfahrt der SBB ein Stück MongoDB drinsteckt",
+    "abstract": "Wie vereinfacht MongoDB als Document Store Technologie und Atlas als PaaS-Lösung das Leben von Softwareentwickler:innen bei der SBB? Wir zeigen zwei konkrete Anwendungsbeispiele und ihren Mehrwert. Und schlussendlich, wie die SBB die Document Store Technologie im Enterprise Umfeld integriert.",
+    "referenten": [
+      {
+        "name": "Thomas Bomatter, SBB",
+        "bio": "Thomas ist ein Mobile Software Engineer bei der SBB mit mehr als einem Jahrzehnt Erfahrung auf dem Gebiet. Seine Reise in die Welt der App-Entwicklung begann mit der Mobility Carsharing-App im Jahr 2011. Im Laufe der Jahre hat er Apps mit native Technologien von Android und iOS sowie plattformübergreifenden Framework wie Flutter entwickelt.",
+        "portrait": "Thomas_Bomatter.png",
+        "company": "sbb.jpg"
+      },
+      {
+        "name": "Jonas Rüttimann, SBB",
+        "bio": "Jonas rutschte während der Dotcom-Blase als Filme- und Webseitenmacher in die IT. In der angewandten Forschung und und Entwicklung lernte er die Agilen Prinzipien erfolgreich einzusetzen. Er liebt es, mit dem Zug zu reisen und für eines der ehrgeizigsten Bahnunternehmen der Welt resiliente Software-Architekturen zu entwickeln.",
+        "portrait": "Jonas_Ruettimann.jpeg",
+        "company": "sbb.jpg"
+      },
+      {
+        "name": "Patrick Bönzli, SBB",
+        "bio": "Patrick Bönzli war in den letzten zehn Jahren in Startups tätig und arbeitet heute bei der SBB, wo er für Databases as a Service verantwortlich ist. Vor seiner Zeit in Startups arbeitete er als Software Engineer.",
+        "portrait": "Patrick_Boenzli.png",
+        "company": "sbb.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 54,
+    "pdf": "https://de.slideshare.net/slideshow/batbern54-plattform-engineering-fur-digitale-versicherungsprodukte-erfahrungen-aus-entwicklungs-plattformen-fur-die-entwicklung-von-versicherungsprodukten/273562209",
+    "title": "Plattform-Engineering für digitale Versicherungsprodukte: Erfahrungen aus Entwicklungs-Plattformen für die Entwicklung von Versicherungsprodukten",
+    "abstract": "Ein Plattformansatz kann erfolgreich auf die Entwicklung digitaler Produkte, insbesondere im Bereich der Versicherungen im Retail-Geschäft, angewendet werden. Muster aus der Software-Entwicklung ermöglichen eine organisatorische Skalierung und Parallelisierung der Entwicklung sowie der Weiterentwicklung von Versicherungsprodukten, wodurch Unternehmen schneller auf Marktveränderungen reagieren können.",
+    "referenten": [
+      {
+        "name": "Pascal Auderset, die Mobiliar",
+        "bio": "Pascal Auderset ist seit 2012 bei der Mobiliar und hat im Laufe der Jahre in verschiedenen Funktionen wertvolle Erfahrungen gesammelt. Derzeit bekleidet er die Position des Enterprise Architect, wo er maßgeblich an der Modernisierung der Nicht-Leben-Versicherungsplattform beteiligt ist. In dieser Rolle bringt er seine Expertise ein, um innovative Lösungen zu entwickeln und die Effizienz der Plattform zu steigern. Seit vielen Jahren beschäftigt sich Pascal intensiv mit Themen wie agilen Methodiken, DevSecOps und softwarebasierten Plattformen. Sein umfassendes Wissen in diesen Bereichen ermöglicht es ihm, moderne Ansätze in der Softwareentwicklung zu fördern und die Zusammenarbeit zwischen den Teams zu optimieren. Durch seine engagierte Arbeit trägt er dazu bei, die digitale Transformation der Mobiliar voranzutreiben und zukunftsorientierte Lösungen für die Versicherungsbranche zu entwickeln.",
+        "portrait": "PascalAuderset.jpg",
+        "company": "mobiliar.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 54,
+    "pdf": "https://de.slideshare.net/slideshow/batbern54-plattform-engineering-fur-digitale-versicherungsprodukte-joint-application-plattform-jap/273562251",
+    "title": "Plattform-Engineering für digitale Versicherungsprodukte: «Joint Application Plattform (JAP)»",
+    "abstract": "Die «Joint Application Plattform (JAP)» ist die erfolgreiche Umsetzung des Plattform Ansatzes, um eine Internal Developer Plattform zur Verfügung zu stellen. Es wird gezeigt wie ganz unterschiedliche Programmiersprachen und Produkte verwendet werden um eine gemeinsame Plattform zu erstellen, welche die übergreifende Interoperabilität ermöglicht.",
+    "referenten": [
+      {
+        "name": "Mathias Schnydrig, die Mobiliar",
+        "bio": "Mathias Schnydrig ist seit 2012 in verschiedenen Branchen und Bereichen tätig. Anfangs beschäftigte er sich mit modernen Data Center Technologien (Software Defined Networking, Software Defined Storage, verschiedenen Virtualisierungstechnologien, …) Danach orientierte er sich in Richtung Public Cloud und war als AWS Instructor tätig. Seit 2019 ist er bei der Mobiliar als Cloud Architekt tätig und verantwortet die interne Developer Plattform.",
+        "portrait": "MathiasSchnydrig.jpg",
+        "company": "mobiliar.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 54,
+    "pdf": "https://www.slideshare.net/slideshow/batbern54-build-run-on-the-same-platform-embracing-platform-engineering-devops-to-build-saas/273562294",
+    "title": "Build & Run on the same platform, embracing Platform Engineering & DevOps to build SaaS",
+    "abstract": "Embracing DevOps requires a fundamental shift in team mindset, breaking down silos within the organization. Our Platform Engineering team goes beyond simply providing a platform; we actively support development teams in adopting DevOps principles, encouraging accountability for both the Build and Run phases of their projects. In an organization primarily composed of development teams, leveraging Cloud Provider services has been key factor: New projects can be quickly bootstrapped. Costs are directly allocated to the projects, and charged back accordingly. The underlying infrastructure is robust, removing the need to grasp complex, low-level concepts. There is a wealth of mature technologies available to automate and scale as needed. In this session, we will showcase how we’ve built our platform to offer a self-service portal that enables teams to be operational in less than a day. We will also demonstrate how our Platform Engineering team collaborates with development teams to empower them by fully embracing DevOps practices.",
+    "referenten": [
+      {
+        "name": "Fabian Nicollier, ELCA",
+        "bio": "Fabian Nicollier is a Senior Solutions Architect at ELCA Group with over 20 years of experience designing and building software solutions. Since joining ELCA in 2018, he has focused on delivering solutions on the Azure public cloud for customers in diverse industries. He also coaches customers and colleagues on cloud practices while promoting cloud adoption.",
+        "portrait": "FabianNicollier.jpg",
+        "company": "elca.jpg"
+      },
+      {
+        "name": "Michele Monforte, ELCA",
+        "bio": " Michele Monforte is a Senior DevOps Expert at ELCA group. Passionate about technology, he loves building software. His experience spans the whole Software Development Lifecycle and allows him to tackle issues from different perspectives. His current focus is on platform engineering as he actively coaches and supports teams while promoting DevOps and Agile.",
+        "portrait": "michele_monforte.jpg",
+        "company": "elca.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 55,
+    "pdf": "https://www.slideshare.net/slideshow/bridging-the-gap-from-telco-to-techco-with-agile-architecture/276517441",
+    "title": "Bridging the Gap from Telco to Techco with Agile Architecture",
+    "abstract": "The Telco industry is undergoing a major IT transformation, shifting from Telco to Techco. This shift is driven by a breakneck pace of technological change that traditional architectures simply cannot keep up with. In my presentation, I will explore the profound impact of digitization on Telco architecture. Using examples from Swisscom's Network Division, I will show why Agile Architecture is crucial for cutting complexity, accelerating time-to-market, and sparking innovation within the organization. This approach isn't just strategic; it's vital for the future success of our industry. Join me to uncover how Swisscom is navigating this transformation and what lessons can be applied to your organization.",
+    "referenten": [
+      {
+        "name": "Rudolf Strijkers, Swisscom",
+        "bio": "Dr. Rudolf Strijkers is Enterprise Architect at Swisscom where he leads the re-architecting of Swisscom’s IT. As the initiator and lead architect of Swisscom Digital Architecture, he has been instrumental in the design of the IT Framework that coordinates digital transformation across the company. In previous roles at Swisscom, he led network operations, the transition from traditional Network Development and Operations to Agile as Solution Train Engineer, and he was in charge of technical strategy of Networks and Infrastructure IT. Before Swisscom, Rudolf worked as research scientist for TNO in the Netherlands. He led several research projects around Software Defined Networks. He holds several patents in Mobile Networks and Cloud Computing, an MSc and PhD in Computer Science from the University of Amsterdam, and he is a candidate International Executive MBA at the University of St. Gallen.",
+        "portrait": "RudolfStrijkers.jpg",
+        "company": "swisscom.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 55,
+    "pdf": "https://www.slideshare.net/slideshow/how-can-twint-be-agile-in-an-inert-ecosystem/276517429",
+    "title": "How can TWINT be agile in an inert ecosystem?",
+    "abstract": "The Swiss banking Ecosystem works as a trustworthy and reliable basis for personal and business-related financial transactions. A fintech in this field is dealing with large and globally active players who can’t (and likely shouldn’t) adapt as fast and as agile as the fintech can, and must, to secure its position in the market. In this presentation I will elaborate in which ways TWINT strives for agility and innovation in an otherwise slow-moving and slowly innovating ecosystem.",
+    "referenten": [
+      {
+        "name": "Sandro Montanari, TWINT",
+        "bio": "Sandro Montanari obtained a master’s degree in Robotics and Automation at EPFL in 2012. Starting his professional career as a software developer at Swisscom, he transitioned into the field of BigData and finally Product Owner at Swisscom. As the 5th member in an IT (cryptographic) startup working in Switzerland and the US he honed his skills in… well everything… startup life. With the start of Covid, he moved back to Switzerland and joined TWINT as lead enterprise architect, before taking over as head of technology and architecture.",
+        "portrait": "SandroMontanari.jpg",
+        "company": "twint-logo.png"
+      }
+    ]
+  },
+  {
+    "bat": 55,
+    "pdf": "https://de.slideshare.net/slideshow/agile-architektur-und-transformation-postfinance/276517426",
+    "title": "Agile Architektur @PF",
+    "abstract": "Die Architektur spielt eine zentrale Rolle in der agilen Transformation und strategischen Ausrichtung in der PostFinance. Mit diesem Vortrag, soll aufgezeigt werden, wie Architektur-Management-Prozesse gestaltet werden müssen, um flexibel auf Veränderungen zu reagieren, während strategische Leitplanken erhalten bleiben. Zudem werden der Aufbau und die Entwicklung einer agilen Architektur sowie deren Nutzen und Herausforderungen dargestellt. Ein Praxisbeispiel veranschaulicht Herausforderungen und Nutzen agiler Architektur. Abschliessend werden Lessons Learned reflektiert, um Strategien für eine zukunftsfähige Architektur abzuleiten.",
+    "referenten": [
+      {
+        "name": "Dominik Wüst, PostFinance",
+        "bio": "Dominik Wüst leitet seit mehreren Jahren die Enterprise Architektur von PostFinance. Davor war er in den letzten 15 Jahren in verschiedenen Rollen bei PostFinance unterwegs. Dominik sein Fokus liegt auf der Schnittstelle zwischen Fach und IT. Dabei beschäftigt er sich intensiv mit der Disziplin Enterprise Design und des Einflusses von agilen Veränderungen auf die Architekturprozesse und Entscheide.",
+        "portrait": "DominikWuest.jpg",
+        "company": "logo-pf.jpg"
+      },
+      {
+        "name": "Mustapha Bouaaoud, PostFinance",
+        "bio": "Mustapha Bouaaoud leitet die IT-Architektur bei PostFinance und verantwortet zentrale Architekturthemen in den Bereichen Technologie, IT-Betrieb, Security, Integration, Cloud, Softwareentwicklung und KI. In seiner früheren Rolle als Lead Architekt leitete er die Modernisierung grosser Applikationen und den Übergang von monolithischen zu Microservice-Architekturen. Sein Fokus liegt auf nachhaltiger Modernisierung, technologischem und strategischem Wandel sowie der Einführung neuer Technologie-Stacks in komplexen IT-Landschaften.",
+        "portrait": "MustaphaBouaaoud.jpg",
+        "company": "logo-pf.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 56,
+    "pdf": "",
+    "title": "Die Architektur der intelligenten Zukunft: Vom Code zum kooperativen Agenten",
+    "abstract": "Die GenAI-Experimente sind vorbei. Wir alle haben gesehen, was möglich ist. Die Frage ist nicht mehr \"ob\", sondern \"wie\". Wie schaffen wir echten, skalierbaren Business-Wert? Wie bauen wir Architekturen, die nicht in einem Jahr veraltet sind? Jede intelligente Anwendung beginnt mit Wissen. Aber Wissen ist mehr als nur Text. Unsere Welt ist multimodal – Bilder, Videos, Sensordaten. Die nächste Stufe der KI-Architektur muss diese Vielfalt verarbeiten können, um wirklich transformative Lösungen zu schaffen. Die Rolle des IT-Architekten wandelt sich vom \"Klempner des Datenflusses\" zum \"Komponisten eines intelligenten Orchesters\". Die Aufgabe ist, die richtigen Agenten zu entwerfen, ihnen die richtigen Ziele zu geben und die Leitplanken für ihre Zusammenarbeit zu definieren.",
+    "referenten": [
+      {
+        "name": "Marcel Trümpy, Google Cloud",
+        "bio": "Marcel ist ein erfahrener IT Experte, der seit 2019 als Customer Engineer für Google Cloud tätig ist. Mit einem Fokus auf die Handels- und Konsumgüterbranche hilft er Unternehmen, ihre digitale Transformation durch die Modernisierung ihrer Anwendungs- und SAP-Landschaften in der Cloud zu beschleunigen. Seine über 35-jährige Karriere begann als Wirtschaftsinformatiker in der Softwareentwicklung für Banken und führte ihn über strategische Positionen bei Technologieführern wie Sun Microsystems, Microsoft und SAP zu seiner heutigen Rolle bei Google.",
+        "portrait": "MarcelTruempy.jpeg",
+        "company": "googleCloud.png"
+      },
+      {
+        "name": "Sam Kruklis, Google Cloud",
+        "bio": "Sam hat einen Background in Computer Engineering sowie einen Master-Abschluss in Wirtschaftsinformatik. Nach einigen Jahren in der Industrie, wechselte er in den Bereich Datentechnik und künstliche Intelligenz. Bei Roche leitete er zum Beispiel Data Analytics Projekte, wo KI Modelle im Rahmen der Produktentwicklung zum Einsatz kamen. 2019 wechselte er zu Google und ist seitdem Teil des Enterprise Cloud Engineering Teams und trägt signifikant zur Data Analytics AI & ML Practice von Google Cloud bei.",
+        "portrait": "SamKruklis.jpeg",
+        "company": "googleCloud.png"
+      }
+    ]
+  },
+  {
+    "bat": 56,
+    "pdf": "",
+    "title": "RAG in Produktion",
+    "abstract": "Allgemeine Versicherungsbedingungen (AVBs) sind dutzende Seiten umfassende PDFs und dementsprechend nicht Kunden- und Prozessfreundlich. Wie kann eine effizientere Informationsbeschaffung und Prozessverbesserung ermöglicht werden? Im Fokus stehen die Nutzung von XML-Daten, KI-gestützten Q&A-Systemen und der Ansatz der Retrieval-Augmented Generation (RAG), um strukturelle Informationen zu bewahren und relevante Inhalte schnell zugänglich zu machen. Es wird aufgezeigt, wie diese Ansätze die bisherigen Einschränkungen von PDF-Viewern überwinden und eine skalierbare Grundlage für zukünftige Anwendungen schaffen. Lessons Learned und ein Ausblick auf weitere Use Cases runden den Vortrag ab.",
+    "referenten": [
+      {
+        "name": "Alex Meier, die Mobiliar",
+        "bio": "Alexander Meier ist ein erfahrener Cloud ML DevOps Engineer bei der Mobiliar und Experte im Bereich Generative KI. Seine Laufbahn umfasst Stationen im Big Data Engineering sowie eine Spezialisierung auf Generative KI, in der er seine Expertise in führenden Technologieunternehmen unter Beweis gestellt hat. Er ist spezialisiert auf Data Engineering, Data Analysis, Apache Kafka und Big Data Technologien. Als gefragter Speaker zu Themen wie GenAI und KI-Technologien bietet Alexander wertvolle Impulse zur Nutzung innovativer Cloud- und KI-Lösungen in der Geschäftswelt. Zusätzlich engagiert sich Alexander als Snowboardcross-Trainer und Renn-Organisator im Leistungssport bei der Boarding Association Berne - BABE.",
+        "portrait": "AlexanderMeier.jpg",
+        "company": "mobiliar.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 56,
+    "pdf": "",
+    "title": "GenAI beim Bund: Wie das BAFU komplexe Anfragen meistert!",
+    "abstract": "Das Bundesamt für Umwelt (BAFU) modernisiert seine Arbeitsweise mit einem innovativen, auf Generativer KI basierenden digitalen Assistenten. Mithilfe RAG-Technologie (Retrieval-Augmented Generation) und Agenten verknüpft das System interne und externe Datenquellen und unterstützt Mitarbeitende bei der effizienten Bearbeitung komplexer Anfragen, der Bildanalyse und der Dokumentenauswertung. In dieser Präsentation erhalten Sie Einblicke in die technische Umsetzung des Projekts, das das BAFU gemeinsam mit ipt auf AWS und Amazon Bedrock realisiert hat. Dabei beleuchten wir nicht nur die technologischen Aspekte, sondern widmen uns auch den kritischen Themen Datenschutz und IT-Sicherheit in der Bundesverwaltung.",
+    "referenten": [
+      {
+        "name": "Patrick Koller, Bundesamt für Umwelt BAFU",
+        "bio": "Patrick Koller hat einen M.Sc. in Umwelt- und Atmosphärenwissenschaften mit dem Schwerpunkt Meteorologie/Hydrogeologie/Fernerkundung abgeschlossen – ein Anwendungsgebiet, in dem DataSciene eine zentrale Rolle spielt. Im Verlauf seiner beruflichen Entwicklung wirkte er verschiedenen DataScience und DevOps Projekten mit. Er interessiert sich für Cloud- und Kubernetes-Technologien, sowie Anwendungen in Analytics, Machine Learning, Künstlicher Intelligenz und das Monitoring und die Modellierung von komplexen Prozessen in der Umwelt. Aktuell ist er als Senior Data Scientist beim Bundesamt für Umwelt (BAFU) tätig. Zuvor war er in Funktionen beim Bundesamt für Informatik und Telekommunikation (BIT), bei MeteoSwiss, der ETH Zürich und bei Swiss Re in technologieorientierten Bereichen tätig.",
+        "portrait": "PatrickKoller.jpg",
+        "company": "bafu_logo.png"
+      },
+      {
+        "name": "Philipp Knecht, Amazon Web Services (AWS) Schweiz",
+        "bio": "Philipp Knecht ist ein Manager Solutions Architecture bei Amazon Web Services (AWS) Schweiz. Er leitet ein Team von Solution Architects (SAs) mit einem Fokus auf Public Sector Kunden. Die SAs im Team unterstützen die Kunden auf ihrem Weg in die Cloud, beraten bezüglich AWS Services oder Partner Lösungen, und stellen sicher, dass die Kunden mit den Services von AWS langfristig zufrieden sind. Philipp hat einen Abschluss in Informatik, Computer-, und Nachrichtentechnik am Tech Rapperswil (heute Ostschweizer Fachhochschule) und ein Nachdiplomstudium in Wirtschaft. Vor seiner Zeit bei AWS war Philipp viele Jahre als Consultant, Architekt, und Manager in diversen Rollen bei Kunden unterwegs.",
+        "portrait": "PhilippKnecht.jpg",
+        "company": "aws-logo.png"
+      }
+    ]
+  },
+  {
+    "bat": 56,
+    "pdf": "",
+    "title": "Rechtskonformer Einsatz von GenAI",
+    "abstract": "Der rechtskonforme Einsatz generativer KI (GenAI) erfordert eine sorgfältige Beurteilung diverser Vorgaben nach Schweizer und EU-Recht. Der Vortrag analysiert zentrale Regelungswerke und beleuchtet deren Bedeutung für Entwicklung und Nutzung von GenAI-Systemen.",
+    "referenten": [
+      {
+        "name": "Martina Arioli, Arioli Law",
+        "bio": "Martina Arioli ist bernische Fürsprecherin und Partnerin bei Arioli Law, Zurich. Arioli Law bietet Unternehmen und dem öffentlichen Sektor Rechtsberatung im Technologiesektor und in der Datenwirtschaft. Martina Arioli unterstützt Projekte in den Bereichen IT-Sourcing, Outsourcing, Cloud, Datenschutz und Datenrecht, sowie Beschaffung künstlicher Intelligenz. Sie doziert an der Universität Zürich sowie der ZHAW und ist Beirätin des CAS Datenschutz des Europa Instituts.",
+        "portrait": "MartinaArioli.jpg",
+        "company": "ariolilaw.png"
+      }
+    ]
+  },
+  {
+    "bat": 56,
+    "pdf": "",
+    "title": "Vom Experiment zur Wirkung – Die KI-Initiative im ISC-EJPD",
+    "abstract": "Wie bringt man Künstliche Intelligenz in einem sicherheitsrelevanten Umfeld wie dem EJPD zum Fliegen? Im Jahr 2024 hat das ISC-EJPD die Initiative „KI in der Praxis erleben“ gestartet – mit dem Ziel, KI-Technologien nicht nur theoretisch zu verstehen, sondern in der eigenen Systemlandschaft zu praxisnah zu erproben. Nach einer breiten Schulung wurden mehrere konkrete «Experimente» von verschiedenen Teams umgesetzt.  Auch wenn die Initiative nicht auf eine Produktivsetzung abzielte, sind heute mehrere Lösungen in der aktiven Nutzung – und der Lerneffekt war enorm. Der Vortrag zeigt, wie man eine KI-Initiative im öffentlichen, sensitiven Sektor pragmatisch, sicher und nachhaltig aufgleisen kann – und was dabei wirklich zählt.",
+    "referenten": [
+      {
+        "name": "Peter Andres, ISC-EJPD",
+        "bio": "Peter Andres ist CTO des Informatik Service Centers im EJPD (ISC-EJPD) und gestaltet seit über 20 Jahren die IT-Infrastruktur der inneren Sicherheit der Schweiz mit. Als Initiator der KI-Initiative „KI in der Praxis erleben“ verbindet er technologische Innovationskraft mit pragmatischer Umsetzung – stets mit Blick auf Sicherheit, Nachhaltigkeit und Mehrwert für die öffentliche Verwaltung. Neben seiner Rolle im ISC ist er als Dozent an der BFH aktiv und bringt komplexe Themen wie Zero-Trust, Mobile-ID und KI verständlich und praxisnah auf den Punkt. Fazit – ich bin ein Techniker, welcher versucht Management, Politik und Technologie zusammenzubringen, so dass innovative, sichere und nachhaltige Lösungen gebaut werden können.",
+        "portrait": "PeterAndres.jpg",
+        "company": "isc-ejpd.png"
+      }
+    ]
+  },
+  {
+    "bat": 56,
+    "pdf": "",
+    "title": "Virtueller Assistent RoBIT: Vom Servicedesk zur Supervisor-Agent-Architektur – GenAI im Support neu gedacht",
+    "abstract": "RoBIT ist der virtuelle Assistent des Bundesamts für Informatik und Telekommunikation (BIT). Über 40’000 Mitarbeitende der Bundesverwaltung können über den AI-basierten Support Chatbot Hilfe zu IT Problemen einholen. Wie lassen sich Komplexität, Skalierbarkeit und Nutzerzentrierung im IT-Support neu denken – jenseits klassischer Chatbots und Ticket-Tools?  In diesem Beitrag zeigen wir auf, wie wir im BIT ein Multi-Agenten-System mit einem Supervisor-Agent entwickelt haben, das die Rolle eines virtuellen Servicedesks übernimmt. Anhand eines interaktiven Rollenspiels demonstrieren wir die Herausforderungen im Support-Alltag und wie unsere GenAI-gestützte Architektur – inspiriert u.a. von LangGraph – diese adressiert. Der Fokus liegt auf dem praktischen Nutzen für Endnutzer und Supporter, dem zugrunde liegenden RAG-Design sowie den Lessons Learned aus dem Aufbau eines produktionsnahen GenAI-Ökosystems innerhalb der Bundesverwaltung.",
+    "referenten": [
+      {
+        "name": "Ralph Schroll, Bundesamt für Informatik und Telekommunikation (BIT)",
+        "bio": "Ralph Schroll ist Product Owner und Projektleiter beim Bundesamt für Informatik und Telekommunikation (BIT) mit über 20 Jahren IT-Erfahrung. Sein aktueller Schwerpunkt liegt auf der Entwicklung smarter Supportlösungen mit Generativer KI – etwa im Projekt RoBIT, wo digitale Assistenten auf Basis von Multi-Agent-Architekturen das Incident- und Knowledge-Management modernisieren. Ralph vereint technische Tiefe mit einem Gespür für Nutzerbedürfnisse, Kulturwandel und Prozessoptimierung. Mit seinem Hintergrund als Systemintegrator und seiner Leidenschaft für kreative, menschenzentrierte Lösungen bringt er innovative Ideen pragmatisch in die Umsetzung – stets mit dem Ziel: Give time back.",
+        "portrait": "RalphSchroll.jpg",
+        "company": "bit_logo.png"
+      },
+      {
+        "name": "Andreas Schneider, Innovation Process Technology AG (ipt)",
+        "bio": "Andreas Schneider ist promovierter Informatiker mit Fokus auf die Operationalisierung von KI-Systemen. Er entwickelt produktionsreife ML- und GenAI-Lösungen – von der Datenverarbeitung über Modelltraining bis zur Integration in skalierbare Cloud-Infrastrukturen. Als erfahrener ML-Architekt und Entwickler bringt er KI-Technologien zuverlässig in den produktiven Einsatz und sorgt mit durchdachten MLOps-Praktiken dafür, dass sie im Unternehmenskontext echten Mehrwert liefern.",
+        "portrait": "AndreasSchneider.jpg",
+        "company": "ipt.png"
+      }
+    ]
+  },
+  {
+    "bat": 56,
+    "pdf": "",
+    "title": "TrainVision – ein ehrlicher Erfahrungsbericht vom Prototyp bis zur produktiven Lösung",
+    "abstract": "Train Vision, die Erfassung von Zugformationsinformationen mittels Computer Vision, begann als CAS-Arbeit mit dem Ziel, erste praktische Erfahrungen im Bereich Machine Learning und Deep Neural Networks zu sammeln. Doch es blieb nicht bei einem Experiment: Nach Abschluss der Arbeit entschieden wir uns, unser Know-how konsequent auszubauen – und wie lernt man besser, als Dinge selbst umzusetzen? Unser Ziel war es, die CAS-Arbeit in ein stabiles, produktionstaugliches System zu überführen. Der Weg dahin war jedoch alles andere als trivial: Von der Datenbeschaffung über tagelanges Training und den hartnäckigen Kampf gegen False Positives bis hin zur Reproduzierbarkeit von Ergebnissen brachte jede Phase eigene Herausforderungen mit sich. Besonders zentral war die Frage: Wie erreichen wir die für den Einsatz in einem produktiven Umfeld notwendige Genauigkeit? Dabei zeigte sich: Technische Exzellenz allein reicht nicht aus. Erst die Kombination mit durchdachter Business-Logik machte das System robust und alltagstauglich. Der Vortrag ist ein ehrlicher Erfahrungsbericht darüber, was es wirklich bedeutet, aus einem schnellen YouTube-Prototyp ein verlässliches Produktivsystem zu machen.",
+    "referenten": [
+      {
+        "name": "Marco Sommerfeld, mtrail",
+        "bio": "Marco Sommerfeld hat Mathematik in Berlin studiert und über 15 Jahre hinweg seine Expertise in der Travel- und Transportbranche aufgebaut. Bei mtrail hat er das Machine-Learning-Team aufgebaut und leitet es heute. Vor vier Jahren entdeckte er im Rahmen eines CAS im Bereich Machine Learning seine Leidenschaft für Computer Vision – ein Thema, das ihn seither nicht mehr loslässt.",
+        "portrait": "MarcoSommerfeld.jpg",
+        "company": "mtrail.jpg"
+      },
+      {
+        "name": "Aeneas Grüter, mtrail",
+        "bio": "Aeneas Grüter ist Softwareentwickler mit Masterabschluss in Computer Science und fundierter Erfahrung in der Entwicklung komplexer Webapplikationen. Seine technische Bandbreite reicht von Java über TypeScript bis hin zu Kubernetes, wobei er stets den Fokus auf saubere Architektur, Skalierbarkeit und agile Arbeitsweisen legt. Vor seiner IT-Laufbahn hat er Geografie in Bern studiert.",
+        "portrait": "AeneasGrueter.jpg",
+        "company": "mtrail.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 56,
+    "pdf": "",
+    "title": "Swiss AI Platform: Erkenntnisse aus dem Aufbau einer souveränen AI Infrastruktur für die Schweiz",
+    "abstract": "In diesem Erfahrungsbericht, möchte ich ein paar Einblicke geben, wie wir von der Swisscom zusammen mit Nvidia in nur 9 Monaten eine souveräne und spezifisch für die Schweiz entwickelte AI Platform geschaffen haben. Beginnend mit einer simplen Architektur-Vision, mussten bis hin zu einer skalierbaren, sicheren und mehrmandantenfähigen Platform zahlreiche Herausforderungen gemeistert werden.",
+    "referenten": [
+      {
+        "name": "Simon Sax, Swisscom",
+        "bio": "Tagsüber leitet Simon Sax ein Team von Solution Architekten in der Cloud Advisory Division von Swisscom und berät Geschäftskunden bei Cloud- und Migrationsprojekten. Nachts widmet er sich leidenschaftlich seinen App- und Raspberry Pi-Projekten. Im vergangenen Jahr übernahm Simon die Verantwortung für die Gesamtarchitektur und den Aufbau der Datacenter-Infrastruktur der Swiss AI Platform. In früheren Positionen unterstützte er als Product Owner die Einführung des 5G-Mobilfunkstandards und war als technischer Stratege im CTO Office von Swisscom B2B tätig. Davor engagierte sich Simon in einem eigenen Startup und arbeitete in verschiedenen technischen Positionen bei Postfinance.",
+        "portrait": "SimonSax.jpg",
+        "company": "swisscom.jpg"
+      }
+    ]
   }
 ]
