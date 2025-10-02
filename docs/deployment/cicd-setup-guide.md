@@ -236,7 +236,7 @@ cat > github-actions-trust-policy.json <<EOF
     {
       "Effect": "Allow",
       "Principal": {
-        "Federated": "arn:aws:iam::YOUR_ACCOUNT_ID:oidc-provider/token.actions.githubusercontent.com"
+        "Federated": "arn:aws:iam::510187933511:oidc-provider/token.actions.githubusercontent.com"
       },
       "Action": "sts:AssumeRoleWithWebIdentity",
       "Condition": {
@@ -244,7 +244,7 @@ cat > github-actions-trust-policy.json <<EOF
           "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
         },
         "StringLike": {
-          "token.actions.githubusercontent.com:sub": "repo:YOUR_ORG/BATbern:*"
+          "token.actions.githubusercontent.com:sub": "repo:nissimbuchs/BATbern2:*"
         }
       }
     }
@@ -273,7 +273,7 @@ Replace `aws-actions/configure-aws-credentials@v4` step:
 - name: Configure AWS credentials
   uses: aws-actions/configure-aws-credentials@v4
   with:
-    role-to-assume: arn:aws:iam::YOUR_ACCOUNT_ID:role/GitHubActionsDeploymentRole
+    role-to-assume: arn:aws:iam::510187933511:role/GitHubActionsDeploymentRole
     aws-region: eu-central-1
 ```
 
@@ -479,7 +479,7 @@ cd shared-kernel
 # Login to ECR
 aws ecr get-login-password --region eu-central-1 | \
   docker login --username AWS --password-stdin \
-  YOUR_ACCOUNT_ID.dkr.ecr.eu-central-1.amazonaws.com
+  510187933511.dkr.ecr.eu-central-1.amazonaws.com
 ```
 
 ### 4. Test Secrets

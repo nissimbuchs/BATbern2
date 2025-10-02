@@ -13,7 +13,7 @@ cd infrastructure
 npm run deploy:dev
 
 # 2. Deploy CI/CD infrastructure (ECR + IAM)
-npm run deploy:dev -- BATbern-development-CICD --context githubRepository=YOUR_ORG/BATbern
+npm run deploy:dev -- BATbern-development-CICD --context githubRepository=nissimbuchs/BATbern2
 
 # 3. Configure GitHub (secrets + environments)
 cd ..
@@ -113,7 +113,7 @@ cd infrastructure
 npm install
 
 # Set your GitHub repo (REQUIRED)
-export GITHUB_REPO="YOUR_ORG/BATbern"
+export GITHUB_REPO="nissimbuchs/BATbern2"
 
 # Deploy to development
 npm run deploy:dev -- --context githubRepository=$GITHUB_REPO
@@ -212,7 +212,7 @@ The script will prompt you for:
 
 ```bash
 # Script will open browser automatically, or visit:
-# https://github.com/YOUR_ORG/BATbern/settings/environments
+# https://github.com/nissimbuchs/BATbern/settings/environments
 ```
 
 ### Staging Environment
