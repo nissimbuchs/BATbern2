@@ -4,5 +4,5 @@ export {
   OrganizerRoute,
   SpeakerRoute,
   PartnerRoute,
-  AttendeeRoute
-} from './ProtectedRoute'
+  AttendeeRoute,
+} from './ProtectedRoute';

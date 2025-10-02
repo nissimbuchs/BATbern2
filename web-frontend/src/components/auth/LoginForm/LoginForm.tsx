@@ -3,7 +3,7 @@
  * Story 1.2: AWS Cognito Authentication UI
  */
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   TextField,
@@ -15,99 +15,90 @@ import {
   CircularProgress,
   Link,
   Paper,
-  Container
-} from '@mui/material'
-import { useForm, Controller } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { useAuth } from '@hooks/useAuth'
-import { LoginCredentials } from '@types/auth'
+  Container,
+} from '@mui/material';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { useAuth } from '@hooks/useAuth';
+import { LoginCredentials } from '@/types/auth';
 
 // Validation schema
 const loginSchema = z.object({
-  email: z
-    .string()
-    .min(1, 'Email is required')
-    .email('Please enter a valid email'),
-  password: z
-    .string()
-    .min(1, 'Password is required'),
-  rememberMe: z.boolean().default(false)
-})
+  email: z.string().min(1, 'Email is required').email('Please enter a valid email'),
+  password: z.string().min(1, 'Password is required'),
+  rememberMe: z.boolean().default(false),
+});
 
-type LoginFormData = z.infer<typeof loginSchema>
+type LoginFormData = z.infer<typeof loginSchema>;
 
 interface LoginFormProps {
-  onSuccess?: () => void
-  onForgotPassword?: () => void
-  onSignUp?: () => void
+  onSuccess?: () => void;
+  onForgotPassword?: () => void;
+  onSignUp?: () => void;
 }
 
-export const LoginForm: React.FC<LoginFormProps> = ({
-  onSuccess,
-  onForgotPassword,
-  onSignUp
-}) => {
-  const { signIn, isLoading, error, clearError } = useAuth()
-  const [submitError, setSubmitError] = useState<string | null>(null)
+export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword, onSignUp }) => {
+  const { signIn, isLoading, error, clearError } = useAuth();
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const {
     control,
     handleSubmit,
     formState: { errors, isValid },
     watch,
-    reset
+    reset,
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: '',
       password: '',
-      rememberMe: false
+      rememberMe: false,
     },
-    mode: 'onBlur'
-  })
+    mode: 'onBlur',
+  });
 
   // Clear errors when user starts typing
-  const watchedEmail = watch('email')
-  const watchedPassword = watch('password')
+  const watchedEmail = watch('email');
+  const watchedPassword = watch('password');
 
   useEffect(() => {
     if (error || submitError) {
-      clearError()
-      setSubmitError(null)
+      clearError();
+      setSubmitError(null);
     }
-  }, [watchedEmail, watchedPassword, error, submitError, clearError])
+  }, [watchedEmail, watchedPassword, error, submitError, clearError]);
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      setSubmitError(null)
+      setSubmitError(null);
 
       const credentials: LoginCredentials = {
         email: data.email,
         password: data.password,
-        rememberMe: data.rememberMe
-      }
+        rememberMe: data.rememberMe,
+      };
 
-      const success = await signIn(credentials)
+      const success = await signIn(credentials);
 
       if (success) {
-        reset()
-        onSuccess?.()
+        reset();
+        onSuccess?.();
       }
     } catch (err: any) {
-      setSubmitError(err.message || 'An unexpected error occurred')
+      setSubmitError(err.message || 'An unexpected error occurred');
     }
-  }
+  };
 
   const handleForgotPassword = () => {
-    onForgotPassword?.()
-  }
+    onForgotPassword?.();
+  };
 
   const handleSignUp = () => {
-    onSignUp?.()
-  }
+    onSignUp?.();
+  };
 
-  const displayError = error?.message || submitError
+  const displayError = error?.message || submitError;
 
   return (
     <Container maxWidth="sm">
@@ -127,11 +118,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             </Alert>
           )}
 
-          <Box
-            component="form"
-            onSubmit={handleSubmit(onSubmit)}
-            sx={{ width: '100%' }}
-          >
+          <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ width: '100%' }}>
             <Controller
               name="email"
               control={control}
@@ -226,5 +213,5 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         </Box>
       </Paper>
     </Container>
-  )
-}
+  );
+};

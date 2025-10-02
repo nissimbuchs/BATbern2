@@ -1,6 +1,6 @@
 # BATbern Platform Infrastructure
 
-AWS CDK infrastructure as code for the BATbern conference platform with multi-environment support.
+AWS CDK infrastructure as code for the Berner Architekten Treffen (BATbern) conference platform with multi-environment support.
 
 ## Architecture Overview
 

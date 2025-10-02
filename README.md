@@ -252,10 +252,10 @@ test(integration): add contract tests
 
 ## License
 
-Copyright © 2025 Business Analytics Today (BAT). All rights reserved.
+Copyright © 2025 Berner Architekten Treffen (BATbern). All rights reserved.
 
 ## Support
 
 - **Technical Issues:** GitHub Issues
-- **Security Issues:** security@batbern.ch
-- **General Inquiries:** info@batbern.ch
+- **Security Issues:** security@berner-architekten-treffen.ch
+- **General Inquiries:** info@berner-architekten-treffen.ch

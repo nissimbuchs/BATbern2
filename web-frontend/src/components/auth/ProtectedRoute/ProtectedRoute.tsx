@@ -3,18 +3,18 @@
  * Story 1.2: Route guards based on user roles and permissions
  */
 
-import React from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
-import { Box, CircularProgress, Typography, Alert } from '@mui/material'
-import { useAuth } from '@hooks/useAuth'
-import { UserRole } from '@types/auth'
+import React from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
+import { Box, CircularProgress, Typography, Alert } from '@mui/material';
+import { useAuth } from '@hooks/useAuth';
+import { UserRole } from '@/types/auth';
 
 interface ProtectedRouteProps {
-  children: React.ReactNode
-  allowedRoles?: UserRole[]
-  requiresAuth?: boolean
-  requiresVerification?: boolean
-  fallbackPath?: string
+  children: React.ReactNode;
+  allowedRoles?: UserRole[];
+  requiresAuth?: boolean;
+  requiresVerification?: boolean;
+  fallbackPath?: string;
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
@@ -22,10 +22,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   allowedRoles = ['organizer', 'speaker', 'partner', 'attendee'],
   requiresAuth = true,
   requiresVerification = false,
-  fallbackPath = '/login'
+  fallbackPath = '/login',
 }) => {
-  const { isAuthenticated, isLoading, user, canAccess } = useAuth()
-  const location = useLocation()
+  const { isAuthenticated, isLoading, user, canAccess } = useAuth();
+  const location = useLocation();
 
   // Show loading spinner while checking authentication
   if (isLoading) {
@@ -37,7 +37,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           alignItems: 'center',
           justifyContent: 'center',
           minHeight: '60vh',
-          gap: 2
+          gap: 2,
         }}
       >
         <CircularProgress size={40} />
@@ -45,18 +45,12 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           Checking authentication...
         </Typography>
       </Box>
-    )
+    );
   }
 
   // Redirect to login if authentication is required but user is not authenticated
   if (requiresAuth && !isAuthenticated) {
-    return (
-      <Navigate
-        to={fallbackPath}
-        state={{ from: location }}
-        replace
-      />
-    )
+    return <Navigate to={fallbackPath} state={{ from: location }} replace />;
   }
 
   // Check if user exists and has required role
@@ -68,11 +62,12 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           <Alert severity="error">
             <Typography variant="h6">Access Denied</Typography>
             <Typography variant="body2">
-              You don't have permission to access this page. Your role ({user.role}) is not authorized for this content.
+              You don't have permission to access this page. Your role ({user.role}) is not
+              authorized for this content.
             </Typography>
           </Alert>
         </Box>
-      )
+      );
     }
 
     // Check email verification if required
@@ -86,7 +81,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
             </Typography>
           </Alert>
         </Box>
-      )
+      );
     }
 
     // Check path-based access control
@@ -95,18 +90,16 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         <Box sx={{ p: 3 }}>
           <Alert severity="error">
             <Typography variant="h6">Access Denied</Typography>
-            <Typography variant="body2">
-              You don't have permission to access this path.
-            </Typography>
+            <Typography variant="body2">You don't have permission to access this path.</Typography>
           </Alert>
         </Box>
-      )
+      );
     }
   }
 
   // Render protected content
-  return <>{children}</>
-}
+  return <>{children}</>;
+};
 
 /**
  * Higher-order component for protecting routes
@@ -119,32 +112,24 @@ export const withProtectedRoute = (
     <ProtectedRoute {...options}>
       <Component {...props} />
     </ProtectedRoute>
-  )
-}
+  );
+};
 
 /**
  * Role-specific route protection components
  */
 export const OrganizerRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <ProtectedRoute allowedRoles={['organizer']}>
-    {children}
-  </ProtectedRoute>
-)
+  <ProtectedRoute allowedRoles={['organizer']}>{children}</ProtectedRoute>
+);
 
 export const SpeakerRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <ProtectedRoute allowedRoles={['organizer', 'speaker']}>
-    {children}
-  </ProtectedRoute>
-)
+  <ProtectedRoute allowedRoles={['organizer', 'speaker']}>{children}</ProtectedRoute>
+);
 
 export const PartnerRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <ProtectedRoute allowedRoles={['organizer', 'partner']}>
-    {children}
-  </ProtectedRoute>
-)
+  <ProtectedRoute allowedRoles={['organizer', 'partner']}>{children}</ProtectedRoute>
+);
 
 export const AttendeeRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <ProtectedRoute allowedRoles={['attendee', 'organizer']}>
-    {children}
-  </ProtectedRoute>
-)
+  <ProtectedRoute allowedRoles={['attendee', 'organizer']}>{children}</ProtectedRoute>
+);
