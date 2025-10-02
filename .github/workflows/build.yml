@@ -29,6 +29,7 @@ env:
   AWS_REGION: eu-central-1
   AWS_ACCOUNT_ID: '510187933511'
   ECR_REGISTRY: 510187933511.dkr.ecr.eu-central-1.amazonaws.com
+  ENVIRONMENT: development
 
 jobs:
   # ═══════════════════════════════════════════════════════════
@@ -136,9 +137,11 @@ jobs:
             VERSION="${VERSION}-dev.${GITHUB_RUN_NUMBER}"
           fi
 
-          echo "Building image: ${{ env.ECR_REGISTRY }}/${{ matrix.service }}:${VERSION}"
+          # ECR repository path format: batbern/development/service-name
+          ECR_REPO="${{ env.ECR_REGISTRY }}/batbern/${{ env.ENVIRONMENT }}/${{ matrix.service }}"
+          echo "Building image: ${ECR_REPO}:${VERSION}"
           ./gradlew bootBuildImage \
-            --imageName=${{ env.ECR_REGISTRY }}/${{ matrix.service }}:${VERSION}
+            --imageName=${ECR_REPO}:${VERSION}
 
       - name: Configure AWS credentials
         if: steps.check-service.outputs.exists == 'true' && github.event_name == 'push'
@@ -160,18 +163,18 @@ jobs:
             VERSION="${VERSION}-dev.${GITHUB_RUN_NUMBER}"
           fi
 
-          echo "Pushing image: ${{ env.ECR_REGISTRY }}/${{ matrix.service }}:${VERSION}"
-          docker push ${{ env.ECR_REGISTRY }}/${{ matrix.service }}:${VERSION}
+          # ECR repository path format: batbern/development/service-name
+          ECR_REPO="${{ env.ECR_REGISTRY }}/batbern/${{ env.ENVIRONMENT }}/${{ matrix.service }}"
+          echo "Pushing image: ${ECR_REPO}:${VERSION}"
+          docker push ${ECR_REPO}:${VERSION}
 
           # Tag and push as latest for the branch
           if [ "$GITHUB_REF" = "refs/heads/develop" ]; then
-            docker tag ${{ env.ECR_REGISTRY }}/${{ matrix.service }}:${VERSION} \
-                       ${{ env.ECR_REGISTRY }}/${{ matrix.service }}:latest-dev
-            docker push ${{ env.ECR_REGISTRY }}/${{ matrix.service }}:latest-dev
+            docker tag ${ECR_REPO}:${VERSION} ${ECR_REPO}:latest-dev
+            docker push ${ECR_REPO}:latest-dev
           elif [ "$GITHUB_REF" = "refs/heads/main" ]; then
-            docker tag ${{ env.ECR_REGISTRY }}/${{ matrix.service }}:${VERSION} \
-                       ${{ env.ECR_REGISTRY }}/${{ matrix.service }}:latest
-            docker push ${{ env.ECR_REGISTRY }}/${{ matrix.service }}:latest
+            docker tag ${ECR_REPO}:${VERSION} ${ECR_REPO}:latest
+            docker push ${ECR_REPO}:latest
           fi
 
   # ═══════════════════════════════════════════════════════════
