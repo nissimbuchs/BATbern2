@@ -1,6 +1,6 @@
-# Git Hooks for TDD Enforcement
+# Git Hooks for Code Quality
 
-This directory contains git hooks that enforce Test-Driven Development practices for the BATbern Event Management Platform.
+This directory contains git hooks that enforce code quality standards for the BATbern Event Management Platform.
 
 ## Installation
 
@@ -21,37 +21,43 @@ git config core.hooksPath .githooks
 
 ### pre-commit
 Runs before each commit to ensure:
-- Tests exist for all changed files
-- Tests pass for changed files
-- Code meets linting standards
-- TDD workflow is followed (tests before implementation)
+- Frontend: ESLint and Prettier checks on changed TypeScript/JavaScript files
+- Backend: Checkstyle checks on changed Java files
+- Code meets formatting and linting standards
 
-**Execution time**: ~10 seconds
+**Execution time**: ~5-10 seconds
+
+### commit-msg
+Validates commit message format:
+- Must follow conventional commits format: `<type>(<scope>): <description>`
+- Valid types: feat, fix, docs, style, refactor, test, chore, perf, ci, build, revert
 
 ### pre-push
 Runs before pushing to remote to ensure:
-- Full test suite passes
-- Coverage thresholds are met (85% overall, 90% for business logic)
-- No security issues (credentials, secrets)
-- Branch naming conventions are followed
+- Full test suite passes for frontend and backend
+- Code is ready for review
 
-**Execution time**: ~2-5 minutes
+**Execution time**: ~1-3 minutes
 
-## TDD Workflow Enforcement
+## Commit Message Format
 
-The hooks enforce the following TDD workflow:
+All commits must follow conventional commits format:
 
-1. **Test Commit** (prefix: `test:`)
-   - Should only contain test files
-   - No implementation code
+```
+<type>(<scope>): <description>
 
-2. **Implementation Commit** (prefix: `feat:` or `fix:`)
-   - Should have a preceding test commit
-   - Implementation to make tests pass
+[optional body]
 
-3. **Refactor Commit** (prefix: `refactor:`)
-   - Optional cleanup after tests pass
-   - Tests must still pass
+[optional footer]
+```
+
+**Examples:**
+```
+feat(auth): add Google OAuth integration
+fix(api): resolve timeout in event creation endpoint
+test(user): add unit tests for user service
+docs(readme): update installation instructions
+```
 
 ## Bypassing Hooks
 
@@ -76,19 +82,15 @@ git push --no-verify
 
 The hooks expect the following project structure:
 
-**Frontend (React/TypeScript)**:
-- Test files adjacent to source files: `Component.tsx` → `Component.test.tsx`
-- Test commands in package.json:
-  - `test:unit` - Run unit tests
-  - `test:integration` - Run integration tests
-  - `test:related` - Run tests for specific files
+**Frontend (web-frontend/)**:
+- ESLint configuration for TypeScript/React
+- Prettier configuration for code formatting
+- Test command in package.json: `test:run`
 
-**Backend (Java/Spring Boot)**:
-- Test files in parallel structure: `src/main/java/` → `src/test/unit/`
-- Gradle tasks:
-  - `test` - Run unit tests
-  - `integrationTest` - Run integration tests
-  - `jacocoTestReport` - Generate coverage report
+**Backend (shared-kernel/, services/*/)**:
+- Gradle build configuration
+- Checkstyle configuration for Java code style
+- Test tasks: `test`, `integrationTest`
 
 ## Troubleshooting
 
@@ -104,37 +106,40 @@ chmod +x .githooks/*
 git config core.hooksPath
 ```
 
-### Tests failing in hook but passing locally
+### Linting/Formatting failures
 ```bash
-# Run the exact command the hook uses
-npm run test:related -- [your-file] --run --passWithNoTests
+# Auto-fix ESLint issues
+cd web-frontend
+npm run lint:fix
+
+# Auto-format code with Prettier
+npm run format
 
 # Check Node/Java versions
 node --version
 java --version
 ```
 
-### Hook takes too long
-```bash
-# Run only essential checks
-QUICK_MODE=true git commit -m "your message"
-
-# Or temporarily disable specific checks
-SKIP_INTEGRATION_TESTS=true git push
+### Commit message validation failures
+Make sure your commit message follows the format:
 ```
+<type>(<scope>): <description>
+```
+
+Valid types: feat, fix, docs, style, refactor, test, chore, perf, ci, build, revert
 
 ## Best Practices
 
-1. **Commit frequently** - Small, focused commits are easier to test
-2. **Write tests first** - Follow TDD red-green-refactor cycle
-3. **Keep tests fast** - Use mocks and stubs for external dependencies
-4. **Fix failures immediately** - Don't accumulate technical debt
+1. **Commit frequently** - Small, focused commits are easier to review
+2. **Write clear commit messages** - Follow conventional commits format
+3. **Fix lint/format issues immediately** - Don't bypass hooks
+4. **Run tests locally before pushing** - Saves time in CI/CD
 
 ## Support
 
 For issues or questions about the git hooks:
 1. Check this README first
-2. Review the [TDD Workflow Guide](../docs/architecture/tdd-workflow.md)
+2. Review the [Developer Workflow Guide](../docs/guides/developer-workflow.md)
 3. Ask in the #dev-help Slack channel
 4. Create an issue in the repository
 

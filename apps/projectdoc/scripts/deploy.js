@@ -311,14 +311,30 @@ class DocumentationDeployer {
         if (!certificateArn) {
           console.log('   🔨 Requesting new SSL certificate...');
           certificateArn = await this.requestCertificate();
-        } else {
-          console.log('   ✅ Using existing SSL certificate');
         }
+        // Note: findExistingCertificate already logs when it finds a certificate
       } else {
         console.log('   ✅ Using configured SSL certificate');
       }
 
       this.deploymentInfo.certificateArn = certificateArn;
+
+      // Check certificate status
+      try {
+        const describeCommand = new DescribeCertificateCommand({
+          CertificateArn: certificateArn
+        });
+        const certDetails = await this.acmClient.send(describeCommand);
+
+        if (certDetails.Certificate.Status === 'PENDING_VALIDATION') {
+          console.log('   ⚠️  Certificate is pending validation - DNS validation may be required');
+          console.log('   📝 CloudFront distribution will be configured but will not work until certificate is validated');
+        }
+      } catch (error) {
+        // Don't fail if we can't check status
+        console.warn('   ⚠️  Could not verify certificate status:', error.message);
+      }
+
       console.log(`   📜 Certificate ARN: ${certificateArn}`);
       console.log('✅ SSL certificate setup completed\n');
 
@@ -330,8 +346,9 @@ class DocumentationDeployer {
 
   async findExistingCertificate() {
     try {
+      // Check for certificates in any status (ISSUED, PENDING_VALIDATION, etc.)
       const listCommand = new ListCertificatesCommand({
-        CertificateStatuses: ['ISSUED']
+        CertificateStatuses: ['ISSUED', 'PENDING_VALIDATION']
       });
 
       const response = await this.acmClient.send(listCommand);
@@ -341,13 +358,17 @@ class DocumentationDeployer {
         for (const cert of response.CertificateSummaryList) {
           if (cert.DomainName === this.awsConfig.ssl.certificateDomain ||
               cert.DomainName === '*.batbern.ch') {
-            // Verify certificate is valid
+            // Verify certificate status
             const describeCommand = new DescribeCertificateCommand({
               CertificateArn: cert.CertificateArn
             });
             const certDetails = await this.acmClient.send(describeCommand);
 
             if (certDetails.Certificate.Status === 'ISSUED') {
+              console.log(`   ✅ Found issued certificate for ${cert.DomainName}`);
+              return cert.CertificateArn;
+            } else if (certDetails.Certificate.Status === 'PENDING_VALIDATION') {
+              console.log(`   ⏳ Found pending certificate for ${cert.DomainName} (awaiting validation)`);
               return cert.CertificateArn;
             }
           }
@@ -373,8 +394,28 @@ class DocumentationDeployer {
       }]
     };
 
-    const response = await this.acmClient.send(new RequestCertificateCommand(requestParams));
-    const certificateArn = response.CertificateArn;
+    let certificateArn;
+    try {
+      const response = await this.acmClient.send(new RequestCertificateCommand(requestParams));
+      certificateArn = response.CertificateArn;
+    } catch (error) {
+      // If certificate request fails, try to find existing certificate again
+      if (error.name === 'LimitExceededException' || error.message.includes('already exists')) {
+        console.warn('   ⚠️  Certificate request failed (may already exist):', error.message);
+        console.log('   🔍 Searching for existing certificate...');
+
+        // Try to find any existing certificate (including pending ones)
+        certificateArn = await this.findExistingCertificate();
+
+        if (!certificateArn) {
+          throw new Error(`Unable to request or find existing certificate: ${error.message}`);
+        }
+
+        console.log('   ✅ Found existing certificate to use');
+      } else {
+        throw error;
+      }
+    }
 
     console.log('   ⏳ Waiting for certificate validation...');
     console.log('   📝 Certificate must be validated through DNS');

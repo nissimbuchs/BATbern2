@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <springProperty scope="context" name="applicationName" source="spring.application.name"/>
+    <springProperty scope="context" name="environment" source="spring.profiles.active"/>
+
+    <!-- Console appender with JSON format -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeMdc>true</includeMdc>
+            <includeContext>true</includeContext>
+            <customFields>{"application":"${applicationName}","environment":"${environment}"}</customFields>
+        </encoder>
+    </appender>
+
+    <!-- CloudWatch appender for centralized logging -->
+    <appender name="CLOUDWATCH" class="ca.pjer.logback.AwsLogsAppender">
+        <logGroupName>/aws/batbern/${environment}/${applicationName}</logGroupName>
+        <logStreamName>${HOSTNAME:-localhost}</logStreamName>
+        <logRegion>eu-central-1</logRegion>
+        <maxBatchLogEvents>50</maxBatchLogEvents>
+        <maxFlushTimeMillis>30000</maxFlushTimeMillis>
+        <maxBlockTimeMillis>5000</maxBlockTimeMillis>
+        <retentionTimeDays>0</retentionTimeDays>
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{correlationId}] %-5level %logger{36} - %msg%n</pattern>
+        </layout>
+    </appender>
+
+    <!-- Async wrapper for CloudWatch to improve performance -->
+    <appender name="ASYNC_CLOUDWATCH" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="CLOUDWATCH"/>
+        <queueSize>500</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <includeCallerData>false</includeCallerData>
+    </appender>
+
+    <!-- Root logger -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <!-- CloudWatch appender enabled only in non-local environments -->
+        <springProfile name="!local">
+            <appender-ref ref="ASYNC_CLOUDWATCH"/>
+        </springProfile>
+    </root>
+
+    <!-- Application logger -->
+    <logger name="ch.batbern" level="DEBUG"/>
+
+    <!-- Spring Framework -->
+    <logger name="org.springframework" level="INFO"/>
+
+    <!-- Reduce noise from other frameworks -->
+    <logger name="org.hibernate" level="WARN"/>
+    <logger name="org.apache" level="WARN"/>
+</configuration>

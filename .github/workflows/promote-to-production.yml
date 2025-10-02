@@ -1,0 +1,408 @@
+name: Promote to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to promote (Git SHA)'
+        required: true
+      jira_ticket:
+        description: 'JIRA change ticket (e.g., CHANGE-123)'
+        required: true
+      deployment_time:
+        description: 'Scheduled deployment time (YYYY-MM-DD HH:MM UTC)'
+        required: false
+      enable_canary:
+        description: 'Enable canary deployment'
+        type: boolean
+        default: false
+
+env:
+  AWS_REGION: eu-central-1
+  SOURCE_ENV: staging
+  TARGET_ENV: production
+
+jobs:
+  pre-deployment-validations:
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://www.batbern.ch
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.version }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_STAGING }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify version exists in staging
+        run: |
+          # Verify the version is deployed and validated in staging
+          echo "Checking staging deployment status..."
+
+          STAGING_VERSION=$(aws ecs describe-services \
+            --cluster batbern-staging \
+            --services event-management-service \
+            --query 'services[0].taskDefinition' \
+            --output text | grep -oP '(?<=:)[^:]+$')
+
+          if [[ "$STAGING_VERSION" != "${{ github.event.inputs.version }}" ]]; then
+            echo "Version mismatch: Staging has $STAGING_VERSION, requested ${{ github.event.inputs.version }}"
+            exit 1
+          fi
+
+      - name: Check deployment window
+        if: github.event.inputs.deployment_time != ''
+        run: |
+          SCHEDULED_TIME="${{ github.event.inputs.deployment_time }}"
+          SCHEDULED_EPOCH=$(date -d "$SCHEDULED_TIME" +%s)
+          NOW_EPOCH=$(date +%s)
+
+          # Allow deployment within 15 minutes of scheduled time
+          DIFF=$(( $SCHEDULED_EPOCH - $NOW_EPOCH ))
+          if [ $DIFF -gt 900 ] || [ $DIFF -lt -900 ]; then
+            echo "Current time is outside deployment window"
+            exit 1
+          fi
+
+      - name: Verify JIRA change ticket
+        env:
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+        run: |
+          TICKET="${{ github.event.inputs.jira_ticket }}"
+
+          # Verify ticket exists and is approved
+          RESPONSE=$(curl -s -u ${{ secrets.JIRA_USER }}:$JIRA_API_TOKEN \
+            "https://batbern.atlassian.net/rest/api/3/issue/$TICKET")
+
+          STATUS=$(echo "$RESPONSE" | jq -r '.fields.status.name')
+          if [[ "$STATUS" != "Approved" ]]; then
+            echo "JIRA ticket $TICKET is not approved. Current status: $STATUS"
+            exit 1
+          fi
+
+      - name: Run final staging validation
+        run: |
+          chmod +x scripts/ci/validate-environment.sh
+          scripts/ci/validate-environment.sh ${{ env.SOURCE_ENV }}
+
+  backup-production-database:
+    needs: pre-deployment-validations
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Create RDS snapshot
+        run: |
+          SNAPSHOT_ID="batbern-prod-pre-promote-$(date +%Y%m%d-%H%M%S)"
+          aws rds create-db-snapshot \
+            --db-instance-identifier batbern-prod-postgres \
+            --db-snapshot-identifier $SNAPSHOT_ID
+
+          echo "Waiting for snapshot to complete..."
+          aws rds wait db-snapshot-completed \
+            --db-snapshot-identifier $SNAPSHOT_ID
+
+          echo "SNAPSHOT_ID=$SNAPSHOT_ID" >> $GITHUB_ENV
+          echo "Database snapshot created: $SNAPSHOT_ID"
+
+  promote-configuration:
+    needs: backup-production-database
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.version }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Promote SSM parameters
+        run: |
+          chmod +x scripts/ci/promote-config.sh
+          scripts/ci/promote-config.sh ${{ env.SOURCE_ENV }} ${{ env.TARGET_ENV }}
+
+      - name: Sync feature flags
+        env:
+          LAUNCHDARKLY_API_TOKEN: ${{ secrets.LAUNCHDARKLY_API_TOKEN }}
+        run: |
+          chmod +x scripts/ci/sync-feature-flags.sh
+          scripts/ci/sync-feature-flags.sh ${{ env.SOURCE_ENV }} ${{ env.TARGET_ENV }}
+
+  deploy-to-production:
+    needs: promote-configuration
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.version }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: infrastructure/package-lock.json
+
+      - name: Install CDK dependencies
+        working-directory: ./infrastructure
+        run: npm ci
+
+      - name: Deploy to production (Blue/Green)
+        if: github.event.inputs.enable_canary == 'false'
+        working-directory: ./infrastructure
+        run: |
+          npm run deploy:prod -- \
+            --context version=${{ github.event.inputs.version }} \
+            --require-approval never
+        env:
+          IMAGE_TAG: ${{ github.event.inputs.version }}
+
+      - name: Deploy to production (Canary)
+        if: github.event.inputs.enable_canary == 'true'
+        working-directory: ./infrastructure
+        run: |
+          # Deploy with 10% traffic to new version
+          npm run deploy:prod:canary -- \
+            --context version=${{ github.event.inputs.version }} \
+            --context canaryPercentage=10 \
+            --require-approval never
+        env:
+          IMAGE_TAG: ${{ github.event.inputs.version }}
+
+      - name: Wait for production services to stabilize
+        run: |
+          for service in event-management speaker-coordination partner-coordination attendee-experience company-management; do
+            echo "Waiting for $service to stabilize..."
+            aws ecs wait services-stable \
+              --cluster batbern-prod \
+              --services ${service}-service
+          done
+
+  smoke-test-production:
+    needs: deploy-to-production
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run production smoke tests
+        run: |
+          chmod +x scripts/ci/smoke-tests.sh
+          scripts/ci/smoke-tests.sh https://www.batbern.ch https://api.batbern.ch
+
+      - name: Monitor canary metrics (if canary enabled)
+        if: github.event.inputs.enable_canary == 'true'
+        run: |
+          chmod +x scripts/ci/monitor-canary.sh
+          scripts/ci/monitor-canary.sh 10
+
+  scale-canary-deployment:
+    needs: smoke-test-production
+    if: github.event.inputs.enable_canary == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.version }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: infrastructure/package-lock.json
+
+      - name: Install CDK dependencies
+        working-directory: ./infrastructure
+        run: npm ci
+
+      - name: Scale to 50% traffic
+        working-directory: ./infrastructure
+        run: |
+          # Update canary to 50% traffic
+          npm run deploy:prod:canary -- \
+            --context version=${{ github.event.inputs.version }} \
+            --context canaryPercentage=50 \
+            --require-approval never
+          sleep 300  # Monitor for 5 minutes
+
+      - name: Monitor 50% canary
+        run: |
+          chmod +x scripts/ci/monitor-canary.sh
+          scripts/ci/monitor-canary.sh 50
+
+      - name: Scale to 100% traffic
+        working-directory: ./infrastructure
+        run: |
+          # Complete canary rollout
+          npm run deploy:prod:canary -- \
+            --context version=${{ github.event.inputs.version }} \
+            --context canaryPercentage=100 \
+            --require-approval never
+
+  update-jira-ticket:
+    needs: [smoke-test-production, scale-canary-deployment]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update JIRA ticket
+        env:
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+        run: |
+          TICKET="${{ github.event.inputs.jira_ticket }}"
+          STATUS="Deployed"
+
+          if [[ "${{ job.status }}" != "success" ]]; then
+            STATUS="Failed"
+          fi
+
+          curl -X POST -u ${{ secrets.JIRA_USER }}:$JIRA_API_TOKEN \
+            -H "Content-Type: application/json" \
+            "https://batbern.atlassian.net/rest/api/3/issue/$TICKET/comment" \
+            -d "{
+              \"body\": {
+                \"type\": \"doc\",
+                \"version\": 1,
+                \"content\": [{
+                  \"type\": \"paragraph\",
+                  \"content\": [{
+                    \"type\": \"text\",
+                    \"text\": \"Production deployment $STATUS. Version: ${{ github.event.inputs.version }}. Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"
+                  }]
+                }]
+              }
+            }"
+
+  notify-deployment-result:
+    needs: [smoke-test-production, scale-canary-deployment]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify success
+        if: success()
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "✅ Production promotion successful",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Production Promotion Complete*\n\nVersion: ${{ github.event.inputs.version }}\nJIRA: ${{ github.event.inputs.jira_ticket }}\nCanary: ${{ github.event.inputs.enable_canary }}\nStatus: Success\nWorkflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "🚨 Production promotion failed - initiating rollback",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Production Promotion Failed*\n\nVersion: ${{ github.event.inputs.version }}\nJIRA: ${{ github.event.inputs.jira_ticket }}\nStatus: Failed - Rollback Required\nWorkflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  audit-deployment:
+    needs: [notify-deployment-result]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Record deployment audit entry
+        run: |
+          echo "=========================================="
+          echo "Recording Deployment Audit Entry"
+          echo "=========================================="
+          echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "Environment: production"
+          echo "Version: ${{ github.event.inputs.version }}"
+          echo "JIRA Ticket: ${{ github.event.inputs.jira_ticket }}"
+          echo "Canary Enabled: ${{ github.event.inputs.enable_canary }}"
+          echo "Initiated By: ${{ github.actor }}"
+          echo "Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          echo "Commit SHA: ${{ github.sha }}"
+          echo "=========================================="
+
+          # Create audit log entry
+          AUDIT_ENTRY=$(cat <<EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "environment": "production",
+            "version": "${{ github.event.inputs.version }}",
+            "jira_ticket": "${{ github.event.inputs.jira_ticket }}",
+            "canary_enabled": "${{ github.event.inputs.enable_canary }}",
+            "initiated_by": "${{ github.actor }}",
+            "workflow_run_id": "${{ github.run_id }}",
+            "workflow_run_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+            "commit_sha": "${{ github.sha }}",
+            "status": "${{ job.status }}"
+          }
+          EOF
+          )
+
+          echo "$AUDIT_ENTRY"
+          echo "✅ Audit entry recorded"
+
+          # In production, this would write to CloudWatch Logs, S3, or a dedicated audit system
+          # For now, the audit trail is maintained through GitHub Actions workflow history

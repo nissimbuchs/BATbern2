@@ -5,6 +5,8 @@ import * as sns from 'aws-cdk-lib/aws-sns';
 import * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
+import { MonitoringWidgetsConstruct } from '../constructs/monitoring-widgets-construct';
+import { AlarmConstruct } from '../constructs/alarm-construct';
 
 export interface MonitoringStackProps extends cdk.StackProps {
   config: EnvironmentConfig;
@@ -58,7 +60,7 @@ export class MonitoringStack extends cdk.Stack {
       dashboardName: `BATbern-${props.config.envName}`,
     });
 
-    // Add dashboard widgets
+    // Add dashboard header widget
     this.dashboard.addWidgets(
       new cloudwatch.TextWidget({
         markdown: `# BATbern Platform - ${props.config.envName} Environment\n\nReal-time monitoring dashboard for infrastructure and application metrics.`,
@@ -67,68 +69,20 @@ export class MonitoringStack extends cdk.Stack {
       })
     );
 
-    // Create CloudWatch Alarms
-
-    // High CPU Alarm (placeholder - will be connected to actual resources)
-    const highCpuAlarm = new cloudwatch.Alarm(this, 'HighCpuAlarm', {
-      alarmName: `batbern-${props.config.envName}-high-cpu`,
-      alarmDescription: 'Alert when CPU utilization is high',
-      metric: new cloudwatch.Metric({
-        namespace: 'AWS/ECS',
-        metricName: 'CPUUtilization',
-        dimensionsMap: {
-          ServiceName: `batbern-${props.config.envName}`,
-        },
-        statistic: 'Average',
-        period: cdk.Duration.minutes(5),
-      }),
-      threshold: 80,
-      evaluationPeriods: 2,
-      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+    // Use reusable construct for monitoring widgets
+    const monitoringWidgets = new MonitoringWidgetsConstruct(this, 'MonitoringWidgets', {
+      environment: props.config.envName,
+      dashboardName: this.dashboard.dashboardName,
     });
 
-    // High Error Rate Alarm (placeholder)
-    const highErrorAlarm = new cloudwatch.Alarm(this, 'HighErrorAlarm', {
-      alarmName: `batbern-${props.config.envName}-high-errors`,
-      alarmDescription: 'Alert when error rate is high',
-      metric: new cloudwatch.Metric({
-        namespace: 'AWS/ApiGateway',
-        metricName: '5XXError',
-        dimensionsMap: {
-          ApiName: `batbern-${props.config.envName}`,
-        },
-        statistic: 'Sum',
-        period: cdk.Duration.minutes(5),
-      }),
-      threshold: 10,
-      evaluationPeriods: 2,
-      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-    });
+    // Add all widgets from the construct to the dashboard
+    this.dashboard.addWidgets(...monitoringWidgets.widgets);
 
-    // High Latency Alarm (placeholder)
-    const highLatencyAlarm = new cloudwatch.Alarm(this, 'HighLatencyAlarm', {
-      alarmName: `batbern-${props.config.envName}-high-latency`,
-      alarmDescription: 'Alert when API latency is high',
-      metric: new cloudwatch.Metric({
-        namespace: 'AWS/ApiGateway',
-        metricName: 'Latency',
-        dimensionsMap: {
-          ApiName: `batbern-${props.config.envName}`,
-        },
-        statistic: 'Average',
-        period: cdk.Duration.minutes(5),
-      }),
-      threshold: 1000, // 1 second
-      evaluationPeriods: 3,
-      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+    // Create CloudWatch Alarms using reusable construct
+    const alarms = new AlarmConstruct(this, 'Alarms', {
+      environment: props.config.envName,
+      alarmTopic: this.alarmTopic,
     });
-
-    // Add alarm actions for production
-    if (this.alarmTopic) {
-      highCpuAlarm.addAlarmAction(new cdk.aws_cloudwatch_actions.SnsAction(this.alarmTopic));
-      highErrorAlarm.addAlarmAction(new cdk.aws_cloudwatch_actions.SnsAction(this.alarmTopic));
-      highLatencyAlarm.addAlarmAction(new cdk.aws_cloudwatch_actions.SnsAction(this.alarmTopic));
-    }
 
     // Apply tags
     cdk.Tags.of(this).add('Environment', props.config.envName);

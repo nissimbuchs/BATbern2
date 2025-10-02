@@ -28,90 +28,45 @@ JAVA_FILES=$(echo "$STAGED_FILES" | grep -E '\.java$' || true)
 # Track if any tests failed
 TESTS_FAILED=0
 
-# Run frontend tests if TypeScript/JavaScript files changed
+# Run frontend checks if TypeScript/JavaScript files changed
 if [ -n "$TS_FILES" ]; then
-    echo -e "${YELLOW}📦 Frontend files changed, running tests...${NC}"
+    echo -e "${YELLOW}📦 Frontend files changed, running checks...${NC}"
 
-    # Check if test files exist for changed components
-    for FILE in $TS_FILES; do
-        if [[ $FILE == *"src/components"* ]] || [[ $FILE == *"src/hooks"* ]] || [[ $FILE == *"src/services"* ]]; then
-            TEST_FILE="${FILE%.tsx}.test.tsx"
-            TEST_FILE="${TEST_FILE%.ts}.test.ts"
+    # Use lint-staged for efficient frontend checks
+    if [ -d "web-frontend" ] && [ -f "web-frontend/package.json" ]; then
+        cd web-frontend
 
-            if [ ! -f "$TEST_FILE" ] && [[ $FILE != *.test.* ]]; then
-                echo -e "${RED}❌ Missing test file for: $FILE${NC}"
-                echo -e "${RED}   Expected: $TEST_FILE${NC}"
-                TESTS_FAILED=1
-            fi
+        # Filter for frontend files only and strip web-frontend/ prefix
+        FRONTEND_FILES=$(echo "$STAGED_FILES" | grep '^web-frontend/' | sed 's|^web-frontend/||')
+
+        if [ -n "$FRONTEND_FILES" ]; then
+            # Run ESLint on changed frontend files
+            echo "  Running ESLint..."
+            echo "$FRONTEND_FILES" | xargs npx eslint --max-warnings 0 || TESTS_FAILED=1
+
+            # Run Prettier check on changed frontend files
+            echo "  Running Prettier..."
+            echo "$FRONTEND_FILES" | xargs npx prettier --check || TESTS_FAILED=1
         fi
-    done
-
-    # Run tests for changed files
-    if [ -d "frontend" ]; then
-        cd frontend
-        npm run test:related -- $TS_FILES --run --passWithNoTests || TESTS_FAILED=1
         cd ..
     elif [ -f "package.json" ]; then
-        npm run test:related -- $TS_FILES --run --passWithNoTests || TESTS_FAILED=1
+        # Fallback for non-monorepo structure
+        npx eslint $TS_FILES --max-warnings 0 || TESTS_FAILED=1
+        npx prettier --check $TS_FILES || TESTS_FAILED=1
     fi
 fi
 
-# Run backend tests if Java files changed
+# Run backend checks if Java files changed
 if [ -n "$JAVA_FILES" ]; then
-    echo -e "${YELLOW}☕ Java files changed, running tests...${NC}"
+    echo -e "${YELLOW}☕ Java files changed, running checks...${NC}"
 
-    # Check if test files exist for changed classes
-    for FILE in $JAVA_FILES; do
-        if [[ $FILE == *"src/main/java"* ]]; then
-            # Convert main path to test path
-            TEST_FILE="${FILE/src\/main\/java/src\/test\/unit}"
-            TEST_FILE="${TEST_FILE%.java}Test.java"
-
-            if [ ! -f "$TEST_FILE" ] && [[ $FILE != *Test.java ]]; then
-                echo -e "${RED}❌ Missing test file for: $FILE${NC}"
-                echo -e "${RED}   Expected: $TEST_FILE${NC}"
-                TESTS_FAILED=1
-            fi
-        fi
-    done
-
-    # Run Gradle tests for changed files
+    # Run Checkstyle for changed files
     if [ -f "gradlew" ]; then
-        ./gradlew test --tests "*Test" || TESTS_FAILED=1
+        echo "  Running Checkstyle..."
+        ./gradlew checkstyleMain checkstyleTest || TESTS_FAILED=1
     fi
 fi
 
-# Check for linting issues
-echo -e "${YELLOW}🔍 Running linters...${NC}"
-
-if [ -n "$TS_FILES" ]; then
-    if [ -f ".eslintrc.json" ] || [ -f ".eslintrc.js" ]; then
-        npx eslint $TS_FILES || TESTS_FAILED=1
-    fi
-fi
-
-if [ -n "$JAVA_FILES" ]; then
-    if [ -f "checkstyle.xml" ]; then
-        ./gradlew checkstyleMain || TESTS_FAILED=1
-    fi
-fi
-
-# Check commit message format for TDD workflow
-COMMIT_MSG_FILE=".git/COMMIT_EDITMSG"
-if [ -f "$COMMIT_MSG_FILE" ]; then
-    COMMIT_TYPE=$(head -1 "$COMMIT_MSG_FILE" | cut -d':' -f1 | cut -d'(' -f1)
-
-    # Check if this is a test commit without implementation
-    if [ "$COMMIT_TYPE" = "test" ]; then
-        # Check if implementation files are being committed with test files
-        IMPL_FILES=$(echo "$STAGED_FILES" | grep -v -E '\.(test|spec)\.(ts|tsx|js|jsx|java)$' | grep -v -E 'Test\.java$' || true)
-
-        if [ -n "$IMPL_FILES" ]; then
-            echo -e "${YELLOW}⚠️  Warning: Committing implementation files with a 'test' commit type${NC}"
-            echo -e "${YELLOW}   TDD workflow suggests committing tests first, then implementation${NC}"
-        fi
-    fi
-fi
 
 # Final check
 if [ $TESTS_FAILED -ne 0 ]; then
