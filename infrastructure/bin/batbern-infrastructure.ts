@@ -87,7 +87,7 @@ const monitoringStack = new MonitoringStack(app, `${stackPrefix}-Monitoring`, {
 });
 
 // 6. CI/CD Stack (ECR, IAM roles for GitHub Actions)
-const githubRepository = app.node.tryGetContext('githubRepository') || process.env.GITHUB_REPOSITORY || 'YOUR_ORG/BATbern';
+const githubRepository = app.node.tryGetContext('githubRepository') || process.env.GITHUB_REPOSITORY || 'nissimbuchs/BATbern2';
 const cicdStack = new CICDStack(app, `${stackPrefix}-CICD`, {
   config,
   githubRepository,

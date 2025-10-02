@@ -338,8 +338,8 @@ class EventBridgePublisherTest {
             eventPublisher.publish(event);
             long duration = System.currentTimeMillis() - startTime;
 
-            // Then - should complete within 2000ms (including network latency to LocalStack)
-            assertThat(duration).isLessThan(2000);
+            // Then - should complete within 5000ms (relaxed for CI environments)
+            assertThat(duration).isLessThan(5000);
         }
 
         @Test

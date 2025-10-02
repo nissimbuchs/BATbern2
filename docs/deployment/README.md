@@ -61,7 +61,7 @@ gh auth login
 ```bash
 # 1. Deploy AWS infrastructure
 cd infrastructure
-npm run deploy:dev -- --context githubRepository=YOUR_ORG/BATbern
+npm run deploy:dev -- --context githubRepository=nissimbuchs/BATbern2
 
 # 2. Configure GitHub
 cd ..
