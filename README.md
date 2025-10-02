@@ -1,27 +1,173 @@
-# BATbern
+# BATbern Platform
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 6.2.5.
+Enterprise event management platform for Business Analytics Today (BAT) conferences in Bern, Switzerland.
 
-## Development server
+## Quick Start
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
+### Prerequisites
+- Java 21 LTS
+- Node.js 20+
+- Docker Desktop
+- AWS CLI v2
+- AWS CDK v2.110+
 
-## Code scaffolding
+### Local Development
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+```bash
+# Clone repository
+git clone https://github.com/batbern/platform.git
+cd platform
 
-## Build
+# Start local services
+docker-compose up -d
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory. Use the `--prod` flag for a production build.
+# Build shared kernel
+cd shared-kernel
+./gradlew build
 
-## Running unit tests
+# Build services (example)
+cd services/event-management-service
+./gradlew bootRun
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+# Start frontend
+cd web-frontend
+npm install
+npm run dev
+```
 
-## Running end-to-end tests
+## CI/CD Pipeline
 
-Run `ng e2e` to execute the end-to-end tests via [Protractor](http://www.protractortest.org/).
+The platform uses GitHub Actions for automated building, testing, and deployment.
 
-## Further help
+### Automated Workflows
 
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI README](https://github.com/angular/angular-cli/blob/master/README.md).
+- **Build Pipeline** - Runs on every push to `develop` or `main`
+- **Security Scanning** - Runs after successful builds
+- **Dev Deployment** - Automatic on merge to `develop`
+- **Staging Deployment** - Manual with approval
+- **Production Deployment** - Manual with two approvals
+
+### Deployment Environments
+
+- **Development:** https://dev.batbern.ch (auto-deploy)
+- **Staging:** https://staging.batbern.ch (manual)
+- **Production:** https://www.batbern.ch (manual)
+
+### Quick Deploy
+
+**To Development:**
+```bash
+git checkout develop
+git merge feature/my-feature
+git push origin develop
+# Deployment happens automatically
+```
+
+**To Staging:**
+```bash
+# Via GitHub Actions UI
+Actions → Deploy to Staging → Run workflow
+Version: <commit-sha-or-tag>
+```
+
+**To Production:**
+```bash
+# Create version tag
+git tag v1.2.3
+git push origin v1.2.3
+
+# Via GitHub Actions UI
+Actions → Deploy to Production → Run workflow
+Version: v1.2.3
+```
+
+## Architecture
+
+### Microservices
+- **Event Management Service** - Event lifecycle and coordination
+- **Speaker Coordination Service** - Speaker management and materials
+- **Partner Coordination Service** - Partner collaboration
+- **Attendee Experience Service** - Registration and attendee features
+- **Company Management Service** - Company profiles and sharing
+- **API Gateway** - Unified API entry point
+
+### Technology Stack
+- **Backend:** Java 21, Spring Boot 3.5+
+- **Frontend:** React 18, TypeScript 5.3+, Material-UI
+- **Database:** PostgreSQL 15+
+- **Cache:** Redis 7.2+
+- **Infrastructure:** AWS ECS, RDS, ElastiCache, S3, CloudFront
+- **IaC:** AWS CDK 2.110+
+
+## Testing
+
+### Run All Tests
+```bash
+# Backend tests
+./gradlew test
+
+# Frontend tests
+cd web-frontend
+npm test
+
+# Integration tests
+./gradlew integrationTest
+
+# E2E tests
+cd e2e-tests
+npm run test
+```
+
+### Coverage Requirements
+- Unit Tests: 90%
+- Integration Tests: 80%
+- Overall: 85%
+
+## Security
+
+### Vulnerability Scanning
+- **Snyk** - Dependency scanning (daily)
+- **SonarQube** - Code quality and security
+- **License Checker** - License compliance
+
+### Secrets Management
+All secrets stored in GitHub Secrets and AWS Secrets Manager.
+
+## Documentation
+
+- [Architecture Documentation](docs/architecture/)
+- [API Documentation](docs/api/)
+- [Deployment Guide](docs/deployment/)
+- [CI/CD Pipeline Guide](docs/deployment/cicd-pipeline-guide.md)
+- [Development Standards](docs/architecture/coding-standards.md)
+
+## Contributing
+
+1. Create feature branch from `develop`
+2. Follow TDD practices (Red-Green-Refactor)
+3. Ensure all tests pass
+4. Meet coverage requirements (90%)
+5. Pass security scans
+6. Create PR with description
+7. Get code review approval
+8. Merge to `develop`
+
+### Commit Convention
+```
+type(scope): description
+
+feat(event): add automated speaker invitations
+fix(frontend): resolve pagination bug
+docs(api): update OpenAPI spec
+test(integration): add contract tests
+```
+
+## License
+
+Copyright © 2025 Business Analytics Today (BAT). All rights reserved.
+
+## Support
+
+- **Technical Issues:** GitHub Issues
+- **Security Issues:** security@batbern.ch
+- **General Inquiries:** info@batbern.ch

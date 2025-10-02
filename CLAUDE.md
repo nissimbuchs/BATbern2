@@ -1,0 +1,1 @@
+- never take shortcuts when implementing or trying to get tests to work. always take all the time to do the work at highest quality
