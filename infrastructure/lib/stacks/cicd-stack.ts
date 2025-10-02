@@ -124,6 +124,24 @@ export class CICDStack extends cdk.Stack {
       repository.grantPullPush(githubActionsRole);
     });
 
+    // Additional ECR permissions for Docker operations
+    githubActionsRole.addToPolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        'ecr:GetAuthorizationToken',
+        'ecr:BatchCheckLayerAvailability',
+        'ecr:GetDownloadUrlForLayer',
+        'ecr:BatchGetImage',
+        'ecr:PutImage',
+        'ecr:InitiateLayerUpload',
+        'ecr:UploadLayerPart',
+        'ecr:CompleteLayerUpload',
+        'ecr:DescribeRepositories',
+        'ecr:ListImages',
+      ],
+      resources: ['*'], // GetAuthorizationToken requires '*'
+    }));
+
     // ECS Permissions - Deploy services
     githubActionsRole.addToPolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,

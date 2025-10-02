@@ -1,4 +1,4 @@
-import { CloudWatchClient, DescribeAlarmsCommand, SetAlarmStateCommand } from '@aws-sdk/client-cloudwatch';
+import { CloudWatchClient, DescribeAlarmsCommand, SetAlarmStateCommand, MetricAlarm } from '@aws-sdk/client-cloudwatch';
 import { SNSClient, PublishCommand, GetTopicAttributesCommand } from '@aws-sdk/client-sns';
 import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda';
 
@@ -85,7 +85,7 @@ describe('Incident Response E2E Tests', () => {
       const response = await cloudwatchClient.send(command);
 
       if (response.MetricAlarms && response.MetricAlarms.length > 0) {
-        response.MetricAlarms.forEach(alarm => {
+        response.MetricAlarms.forEach((alarm: MetricAlarm) => {
           // Verify alarm has PagerDuty integration configured
           expect(alarm.AlarmActions).toBeDefined();
           expect(alarm.AlarmActions!.length).toBeGreaterThan(0);
@@ -245,7 +245,7 @@ describe('Incident Response E2E Tests', () => {
       const response = await cloudwatchClient.send(command);
 
       if (response.MetricAlarms && response.MetricAlarms.length > 0) {
-        response.MetricAlarms.forEach(alarm => {
+        response.MetricAlarms.forEach((alarm: MetricAlarm) => {
           // Verify critical alarms have notification actions
           expect(alarm.AlarmActions).toBeDefined();
           expect(alarm.AlarmActions!.length).toBeGreaterThan(0);

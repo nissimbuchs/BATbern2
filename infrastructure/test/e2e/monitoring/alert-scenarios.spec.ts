@@ -1,4 +1,4 @@
-import { CloudWatchClient, DescribeAlarmsCommand, SetAlarmStateCommand, AlarmType } from '@aws-sdk/client-cloudwatch';
+import { CloudWatchClient, DescribeAlarmsCommand, SetAlarmStateCommand, AlarmType, MetricAlarm } from '@aws-sdk/client-cloudwatch';
 import { SNSClient, GetTopicAttributesCommand, ListSubscriptionsByTopicCommand } from '@aws-sdk/client-sns';
 
 /**
@@ -73,7 +73,7 @@ describe('Alert Scenarios E2E Tests', () => {
       expect(response.MetricAlarms).toBeDefined();
 
       // Verify each service has error rate monitoring
-      const serviceAlarms = response.MetricAlarms!.filter(alarm =>
+      const serviceAlarms = response.MetricAlarms!.filter((alarm: MetricAlarm) =>
         alarm.AlarmName?.includes('error-rate')
       );
       expect(serviceAlarms.length).toBeGreaterThan(0);
@@ -130,7 +130,7 @@ describe('Alert Scenarios E2E Tests', () => {
 
       expect(response.MetricAlarms).toBeDefined();
 
-      const memoryAlarms = response.MetricAlarms!.filter(alarm =>
+      const memoryAlarms = response.MetricAlarms!.filter((alarm: MetricAlarm) =>
         alarm.MetricName === 'MemoryUtilization'
       );
       expect(memoryAlarms.length).toBeGreaterThan(0);
@@ -146,7 +146,7 @@ describe('Alert Scenarios E2E Tests', () => {
 
       expect(response.MetricAlarms).toBeDefined();
 
-      const diskAlarms = response.MetricAlarms!.filter(alarm =>
+      const diskAlarms = response.MetricAlarms!.filter((alarm: MetricAlarm) =>
         alarm.MetricName?.includes('Disk') || alarm.MetricName?.includes('Storage')
       );
       expect(diskAlarms.length).toBeGreaterThan(0);
