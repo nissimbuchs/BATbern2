@@ -38,43 +38,40 @@ describe('AuthService', () => {
         rememberMe: true,
       };
 
-      // Mock successful Cognito response
-      const mockCognitoUser = {
-        username: 'organizer@batbern.ch',
-        attributes: {
-          email: 'organizer@batbern.ch',
-          'custom:role': 'organizer',
+      const mockSession = {
+        tokens: {
+          idToken: {
+            payload: {
+              sub: 'user-123',
+              email: 'organizer@batbern.ch',
+              email_verified: true,
+              'custom:role': 'organizer',
+              'custom:companyId': 'company-123',
+              'custom:preferences': JSON.stringify({
+                language: 'en',
+                theme: 'light',
+                notifications: { email: true, sms: false, push: true },
+                privacy: { showProfile: true, allowMessages: true },
+              }),
+              iat: Math.floor(Date.now() / 1000),
+              exp: Math.floor(Date.now() / 1000) + 3600,
+            },
+            toString: () => 'mock-id-token',
+          },
+          accessToken: {
+            payload: {
+              exp: Math.floor(Date.now() / 1000) + 3600,
+            },
+            toString: () => 'mock-access-token',
+          },
         },
       };
 
-      const mockSession = {
-        getIdToken: () => ({
-          payload: {
-            sub: 'user-123',
-            email: 'organizer@batbern.ch',
-            email_verified: true,
-            'custom:role': 'organizer',
-            'custom:companyId': 'company-123',
-            'custom:preferences': JSON.stringify({
-              language: 'en',
-              theme: 'light',
-              notifications: { email: true, sms: false, push: true },
-              privacy: { showProfile: true, allowMessages: true },
-            }),
-            iat: Math.floor(Date.now() / 1000),
-            exp: Math.floor(Date.now() / 1000) + 3600,
-          },
-        }),
-        getAccessToken: () => ({
-          getJwtToken: () => 'mock-access-token',
-        }),
-        getRefreshToken: () => ({
-          getToken: () => 'mock-refresh-token',
-        }),
-      };
-
-      mockAuth.signIn.mockResolvedValue(mockCognitoUser);
-      mockAuth.currentSession.mockResolvedValue(mockSession);
+      mockAuth.signIn.mockResolvedValue({
+        isSignedIn: true,
+        nextStep: { signInStep: 'DONE' },
+      });
+      mockAuth.fetchAuthSession.mockResolvedValue(mockSession);
 
       const result = await authService.signIn(credentials);
 
@@ -82,7 +79,10 @@ describe('AuthService', () => {
       expect(result.user).toBeDefined();
       expect(result.user?.email).toBe(credentials.email);
       expect(result.user?.role).toBe('organizer');
-      expect(mockAuth.signIn).toHaveBeenCalledWith(credentials.email, credentials.password);
+      expect(mockAuth.signIn).toHaveBeenCalledWith({
+        username: credentials.email,
+        password: credentials.password,
+      });
     });
 
     it('should_returnError_when_invalidCredentialsProvided', async () => {
@@ -102,7 +102,10 @@ describe('AuthService', () => {
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
       expect(result.error?.code).toBe('INVALID_CREDENTIALS');
-      expect(mockAuth.signIn).toHaveBeenCalledWith(credentials.email, credentials.password);
+      expect(mockAuth.signIn).toHaveBeenCalledWith({
+        username: credentials.email,
+        password: credentials.password,
+      });
     });
 
     it('should_extractUserContext_when_cognitoTokenReceived', async () => {
@@ -112,43 +115,40 @@ describe('AuthService', () => {
         password: 'ValidPassword123!',
       };
 
-      // Mock successful Cognito response
-      const mockCognitoUser = {
-        username: 'speaker@company.com',
-        attributes: {
-          email: 'speaker@company.com',
-          'custom:role': 'speaker',
+      const mockSession = {
+        tokens: {
+          idToken: {
+            payload: {
+              sub: 'speaker-user-123',
+              email: 'speaker@company.com',
+              email_verified: true,
+              'custom:role': 'speaker',
+              'custom:companyId': 'speaker-company-123',
+              'custom:preferences': JSON.stringify({
+                language: 'en',
+                theme: 'light',
+                notifications: { email: true, sms: false, push: true },
+                privacy: { showProfile: true, allowMessages: true },
+              }),
+              iat: Math.floor(Date.now() / 1000),
+              exp: Math.floor(Date.now() / 1000) + 3600,
+            },
+            toString: () => 'mock-speaker-id-token',
+          },
+          accessToken: {
+            payload: {
+              exp: Math.floor(Date.now() / 1000) + 3600,
+            },
+            toString: () => 'mock-speaker-access-token',
+          },
         },
       };
 
-      const mockSession = {
-        getIdToken: () => ({
-          payload: {
-            sub: 'speaker-user-123',
-            email: 'speaker@company.com',
-            email_verified: true,
-            'custom:role': 'speaker',
-            'custom:companyId': 'speaker-company-123',
-            'custom:preferences': JSON.stringify({
-              language: 'en',
-              theme: 'light',
-              notifications: { email: true, sms: false, push: true },
-              privacy: { showProfile: true, allowMessages: true },
-            }),
-            iat: Math.floor(Date.now() / 1000),
-            exp: Math.floor(Date.now() / 1000) + 3600,
-          },
-        }),
-        getAccessToken: () => ({
-          getJwtToken: () => 'mock-speaker-access-token',
-        }),
-        getRefreshToken: () => ({
-          getToken: () => 'mock-speaker-refresh-token',
-        }),
-      };
-
-      mockAuth.signIn.mockResolvedValue(mockCognitoUser);
-      mockAuth.currentSession.mockResolvedValue(mockSession);
+      mockAuth.signIn.mockResolvedValue({
+        isSignedIn: true,
+        nextStep: { signInStep: 'DONE' },
+      });
+      mockAuth.fetchAuthSession.mockResolvedValue(mockSession);
 
       const result = await authService.signIn(credentials);
 
@@ -189,10 +189,15 @@ describe('AuthService', () => {
 
       // Mock successful sign up
       mockAuth.signUp.mockResolvedValue({
-        user: {
-          username: 'newuser@company.com',
+        isSignUpComplete: false, // Requires email confirmation
+        userId: 'newuser-id',
+        nextStep: {
+          signUpStep: 'CONFIRM_SIGN_UP',
+          codeDeliveryDetails: {
+            deliveryMedium: 'EMAIL',
+            destination: 'n***@c***.com',
+          },
         },
-        userConfirmed: false, // Requires email confirmation
       });
 
       const result = await authService.signUp(signUpData);
@@ -202,23 +207,25 @@ describe('AuthService', () => {
       expect(mockAuth.signUp).toHaveBeenCalledWith({
         username: signUpData.email,
         password: signUpData.password,
-        attributes: {
-          email: signUpData.email,
-          'custom:role': signUpData.role,
-          'custom:companyId': '',
-          'custom:preferences': JSON.stringify({
-            language: 'en',
-            theme: 'light',
-            notifications: {
-              email: true,
-              sms: false,
-              push: true,
-            },
-            privacy: {
-              showProfile: true,
-              allowMessages: true,
-            },
-          }),
+        options: {
+          userAttributes: {
+            email: signUpData.email,
+            'custom:role': signUpData.role,
+            'custom:companyId': '',
+            'custom:preferences': JSON.stringify({
+              language: 'en',
+              theme: 'light',
+              notifications: {
+                email: true,
+                sms: false,
+                push: true,
+              },
+              privacy: {
+                showProfile: true,
+                allowMessages: true,
+              },
+            }),
+          },
         },
       });
     });
@@ -245,32 +252,40 @@ describe('AuthService', () => {
   describe('getCurrentUser', () => {
     it('should_returnUserContext_when_userAuthenticated', async () => {
       // Test 9.7: should_returnUserContext_when_userAuthenticated
-      const mockCognitoUser = {
-        username: 'test@batbern.ch',
-      };
-
       const mockSession = {
-        getIdToken: () => ({
-          payload: {
-            sub: 'user-123',
-            email: 'test@batbern.ch',
-            email_verified: true,
-            'custom:role': 'organizer',
-            'custom:companyId': 'company-123',
-            'custom:preferences': JSON.stringify({
-              language: 'en',
-              theme: 'light',
-              notifications: { email: true, sms: false, push: true },
-              privacy: { showProfile: true, allowMessages: true },
-            }),
-            iat: Math.floor(Date.now() / 1000),
-            exp: Math.floor(Date.now() / 1000) + 3600,
+        tokens: {
+          idToken: {
+            payload: {
+              sub: 'user-123',
+              email: 'test@batbern.ch',
+              email_verified: true,
+              'custom:role': 'organizer',
+              'custom:companyId': 'company-123',
+              'custom:preferences': JSON.stringify({
+                language: 'en',
+                theme: 'light',
+                notifications: { email: true, sms: false, push: true },
+                privacy: { showProfile: true, allowMessages: true },
+              }),
+              iat: Math.floor(Date.now() / 1000),
+              exp: Math.floor(Date.now() / 1000) + 3600,
+            },
+            toString: () => 'mock-id-token',
           },
-        }),
+          accessToken: {
+            payload: {
+              exp: Math.floor(Date.now() / 1000) + 3600,
+            },
+            toString: () => 'mock-access-token',
+          },
+        },
       };
 
-      mockAuth.currentAuthenticatedUser.mockResolvedValue(mockCognitoUser);
-      mockAuth.currentSession.mockResolvedValue(mockSession);
+      mockAuth.getCurrentUser.mockResolvedValue({
+        username: 'test@batbern.ch',
+        userId: 'user-123',
+      });
+      mockAuth.fetchAuthSession.mockResolvedValue(mockSession);
 
       const user = await authService.getCurrentUser();
 
@@ -282,7 +297,7 @@ describe('AuthService', () => {
 
     it('should_returnNull_when_userNotAuthenticated', async () => {
       // Test 9.8: should_returnNull_when_userNotAuthenticated
-      mockAuth.currentAuthenticatedUser.mockRejectedValue(new Error('No current user'));
+      mockAuth.getCurrentUser.mockRejectedValue(new Error('No current user'));
 
       const user = await authService.getCurrentUser();
 
@@ -304,17 +319,17 @@ describe('AuthService', () => {
     it('should_refreshAccessToken_when_tokenNearExpiration', async () => {
       // Test 9.10: should_refreshAccessToken_when_tokenNearExpiration
       const mockSession = {
-        isValid: () => true,
-        getAccessToken: () => ({
-          getJwtToken: () => 'new-access-token',
-          getExpiration: () => Math.floor(Date.now() / 1000) + 3600,
-        }),
-        getRefreshToken: () => ({
-          getToken: () => 'new-refresh-token',
-        }),
+        tokens: {
+          accessToken: {
+            payload: {
+              exp: Math.floor(Date.now() / 1000) + 3600,
+            },
+            toString: () => 'new-access-token',
+          },
+        },
       };
 
-      mockAuth.currentSession.mockResolvedValue(mockSession);
+      mockAuth.fetchAuthSession.mockResolvedValue(mockSession);
 
       const result = await authService.refreshToken();
 
