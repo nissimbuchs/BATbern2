@@ -1,13 +1,29 @@
 package ch.batbern.shared.exceptions;
 
-public class ValidationException extends RuntimeException {
+import ch.batbern.shared.exception.BATbernException;
+import ch.batbern.shared.exception.ErrorCode;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import java.util.Map;
 
+@ResponseStatus(HttpStatus.BAD_REQUEST)
+public class ValidationException extends BATbernException {
     public ValidationException(String message) {
-        super(message);
+        super(ErrorCode.ERR_VALIDATION, message, Severity.MEDIUM);
     }
 
     public ValidationException(String message, Throwable cause) {
-        super(message, cause);
+        super(ErrorCode.ERR_VALIDATION, message, Severity.MEDIUM);
+        initCause(cause);
+    }
+
+    public ValidationException(String field, String message, Map<String, Object> details) {
+        super(
+            ErrorCode.ERR_VALIDATION,
+            String.format("Validation failed for field '%s': %s", field, message),
+            details,
+            Severity.MEDIUM
+        );
     }
 
     public static ValidationException nullValue(String fieldName) {

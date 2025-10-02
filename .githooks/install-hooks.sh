@@ -59,6 +59,7 @@ install_hook() {
 # Install hooks
 echo "Installing git hooks..."
 install_hook "pre-commit"
+install_hook "commit-msg"
 install_hook "pre-push"
 
 # Configure git to use our hooks directory (alternative method)
@@ -92,6 +93,9 @@ echo "Hooks installed:"
 echo "  • pre-commit: Runs linting and formatting checks on changed files"
 echo "  • commit-msg: Validates commit message format (conventional commits)"
 echo "  • pre-push: Runs full test suite before push"
+echo ""
+echo "Installed hooks:"
+ls -la .githooks/ | grep -E '(pre-commit|commit-msg|pre-push)' | awk '{print "  ✓", $9}'
 echo ""
 echo "Commit Message Format:"
 echo "  <type>(<scope>): <description>"

@@ -32,17 +32,25 @@ TESTS_FAILED=0
 if [ -n "$TS_FILES" ]; then
     echo -e "${YELLOW}📦 Frontend files changed, running checks...${NC}"
 
-    # Run lint and format checks for changed files
-    if [ -d "web-frontend" ]; then
+    # Use lint-staged for efficient frontend checks
+    if [ -d "web-frontend" ] && [ -f "web-frontend/package.json" ]; then
         cd web-frontend
-        # Run ESLint
-        echo "  Running ESLint..."
-        npx eslint $TS_FILES --max-warnings 0 || TESTS_FAILED=1
-        # Run Prettier check
-        echo "  Running Prettier..."
-        npx prettier --check $TS_FILES || TESTS_FAILED=1
+
+        # Filter for frontend files only and strip web-frontend/ prefix
+        FRONTEND_FILES=$(echo "$STAGED_FILES" | grep '^web-frontend/' | sed 's|^web-frontend/||')
+
+        if [ -n "$FRONTEND_FILES" ]; then
+            # Run ESLint on changed frontend files
+            echo "  Running ESLint..."
+            echo "$FRONTEND_FILES" | xargs npx eslint --max-warnings 0 || TESTS_FAILED=1
+
+            # Run Prettier check on changed frontend files
+            echo "  Running Prettier..."
+            echo "$FRONTEND_FILES" | xargs npx prettier --check || TESTS_FAILED=1
+        fi
         cd ..
     elif [ -f "package.json" ]; then
+        # Fallback for non-monorepo structure
         npx eslint $TS_FILES --max-warnings 0 || TESTS_FAILED=1
         npx prettier --check $TS_FILES || TESTS_FAILED=1
     fi
