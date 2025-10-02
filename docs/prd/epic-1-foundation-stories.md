@@ -4,12 +4,13 @@
 
 **Epic Goal**: Establish the core platform foundation with Domain-Driven Design microservices architecture, multi-role authentication, comprehensive infrastructure, and role-adaptive React frontend.
 
-**Story Count**: 20 stories
+**Story Count**: 21 stories
 - ✅ **Story 1.1**: Shared Kernel Infrastructure Setup (COMPLETE)
 - ✅ **Story 1.2**: API Gateway & Authentication Service (COMPLETE)
 - ✅ **Story 1.3**: Multi-Environment CDK Infrastructure Setup (COMPLETE)
 - ✅ **Story 1.4**: CI/CD Pipeline Implementation (COMPLETE - Ready for Review)
-- ⏳ Stories 1.5-1.19 (Pending implementation)
+- 📝 **Story 1.4a**: Docker Compose Local Development Environment (NEW - Draft)
+- ⏳ Stories 1.5-1.20 (Pending implementation)
 
 **Architecture Context**:
 - **Frontend**: React 18.2+ with TypeScript, role-adaptive components, PWA capabilities
@@ -269,6 +270,70 @@ As a **developer**, I want automated CI/CD pipelines that build, test, and deplo
 - **Files Created:** 5 GitHub Actions workflows, 10 CI/CD scripts, comprehensive documentation
 - **Quality Validation:** All tests passing, DoD checklist: 30/38 complete (79%, infrastructure items pending manual setup)
 - **Next Steps:** Configure GitHub Secrets, create AWS resources, activate pipelines in live environment
+
+---
+## Story 1.4a: Docker Compose Local Development Environment 📝
+
+**Status:** Draft
+
+**User Story:**
+As a **developer**, I want a single-command local development environment with Docker Compose, so that I can quickly start working without manual infrastructure setup and have consistent environments across the team.
+
+**Architecture Integration:**
+- **Container Orchestration**: Docker Compose for local service orchestration
+- **Technology**: Docker Compose v3.8, PostgreSQL 15, Redis 7.2, LocalStack
+- **Pattern**: Service discovery via Docker DNS, progressive service addition
+- **Dependencies**: All existing services (shared-kernel, api-gateway) + future domain services
+
+**Acceptance Criteria:**
+
+**Base Infrastructure:**
+1. **PostgreSQL 15**: Database with automatic schema initialization and persistent volumes
+2. **Redis 7.2**: Caching layer with data persistence
+3. **LocalStack**: AWS service simulation (EventBridge, S3, Cognito) for testing
+4. **API Gateway Integration**: API Gateway runs via docker-compose with proper environment configuration
+
+**Developer Experience:**
+5. **Single Command Startup**: `docker-compose up` starts all infrastructure and services successfully
+6. **Service Discovery**: All services communicate using Docker DNS (service names as hostnames)
+7. **Startup Orchestration**: Services start in correct order with health checks and dependencies
+8. **Hot Reload Support**: Code changes trigger automatic rebuilds in development mode
+9. **Volume Persistence**: PostgreSQL and Redis data persists across container restarts
+
+**Configuration & Documentation:**
+10. **Environment Configuration**: `.env` file for local configuration with secure defaults
+11. **Documentation**: README.md updated with docker-compose instructions and troubleshooting guide
+12. **Service Addition Template**: Clear documentation for adding new services to docker-compose.yml
+13. **Developer Onboarding**: New developer can run `docker-compose up` and start coding in <5 minutes
+
+**Progressive Enhancement Strategy:**
+14. **Extensibility**: Template for adding domain services as they are implemented in Stories 1.14-1.19
+15. **Service Templates**: Each domain service story includes docker-compose service definition
+16. **Automated Updates**: Scripts to add new services to docker-compose.yml
+
+**Definition of Done:**
+- [ ] docker-compose.yml created with postgres, redis, localstack, api-gateway
+- [ ] All services start successfully with health checks
+- [ ] Service discovery working (DNS resolution between services)
+- [ ] PostgreSQL initialized with schema and persists data
+- [ ] LocalStack AWS services operational (EventBridge, S3, Cognito)
+- [ ] API Gateway accessible at http://localhost:8080
+- [ ] Hot reload verified for development mode
+- [ ] Documentation complete with quick start and troubleshooting
+- [ ] Service addition template documented
+- [ ] Tested on macOS, Linux, and Windows environments
+
+**Progressive Enhancement Notes:**
+- Story 1.14 (Company Management): Add `company-management` service to docker-compose.yml
+- Story 1.16 (Event Management): Add `event-management` service to docker-compose.yml
+- Story 1.17 (React Frontend): Add `web-frontend` service to docker-compose.yml
+- Story 1.19 (Speaker Coordination): Add `speaker-coordination` service to docker-compose.yml
+
+Each subsequent story that implements a domain service should include:
+1. Dockerfile.dev for hot reload support
+2. docker-compose service definition in story's DoD
+3. Update to docker-compose.yml in the project root
+4. Environment variables documentation in .env.example
 
 ---
 ## Story 1.5: Environment Promotion Automation
@@ -743,6 +808,9 @@ As a **partner or attendee**, I want my company affiliation to be properly manag
 - [ ] S3 logo storage with proper access controls
 - [ ] Domain events properly published to EventBridge
 - [ ] Integration tests verify all company management workflows
+- [ ] **Docker Compose**: Service added to docker-compose.yml with proper configuration
+- [ ] **Dockerfile.dev**: Hot reload development container created
+- [ ] **Environment Variables**: Service configuration documented in .env.example
 
 ---
 ## Story 1.15: Historical Data Migration Service
@@ -840,6 +908,9 @@ As an **organizer**, I want to access and manage events through a robust service
 - [ ] Domain events properly published and consumable by other services
 - [ ] Integration tests verify all event management workflows
 - [ ] Performance tests meet <150ms P95 response time requirement
+- [ ] **Docker Compose**: Service added to docker-compose.yml with proper configuration
+- [ ] **Dockerfile.dev**: Hot reload development container created
+- [ ] **Environment Variables**: Service configuration documented in .env.example
 
 ---
 ## Story 1.17: React Frontend Foundation with Role-Adaptive Architecture
@@ -888,6 +959,9 @@ As a **user of any role**, I want to access a modern, responsive web application
 - [ ] Performance benchmarks meet Core Web Vitals requirements
 - [ ] PWA functionality working with offline page caching
 - [ ] Comprehensive test suite with >80% component coverage
+- [ ] **Docker Compose**: Frontend added to docker-compose.yml with hot reload
+- [ ] **Dockerfile.dev**: Development container with Vite HMR configured
+- [ ] **Environment Variables**: Frontend configuration documented in .env.example
 
 ---
 ## Story 1.18: Basic Event Display & Archive Browsing
@@ -978,6 +1052,9 @@ As an **organizer**, I want the foundational Speaker Coordination Service deploy
 - [ ] Domain events publishing successfully
 - [ ] Service registered in API Gateway
 - [ ] Health check endpoint operational
+- [ ] **Docker Compose**: Service added to docker-compose.yml with proper configuration
+- [ ] **Dockerfile.dev**: Hot reload development container created
+- [ ] **Environment Variables**: Service configuration documented in .env.example
 
 ---
 ## Story 1.20: User Role Management & Promotion
