@@ -18,6 +18,9 @@ env:
 jobs:
   pre-deployment-checks:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # Required for OIDC authentication
+      contents: read   # Required for checkout
     environment:
       name: production
       url: https://www.batbern.ch
@@ -38,8 +41,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: arn:aws:iam::510187933511:role/batbern-production-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Check staging deployment
@@ -75,13 +77,15 @@ jobs:
   backup-database:
     needs: pre-deployment-checks
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # Required for OIDC authentication
+      contents: read   # Required for checkout
 
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: arn:aws:iam::510187933511:role/batbern-production-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Create RDS snapshot
@@ -115,6 +119,9 @@ jobs:
     needs: backup-database
     if: github.event.inputs.migrate_database == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # Required for OIDC authentication
+      contents: read   # Required for checkout
 
     steps:
       - name: Checkout code
@@ -125,8 +132,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: arn:aws:iam::510187933511:role/batbern-production-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Retrieve database credentials from Secrets Manager
@@ -199,6 +205,9 @@ jobs:
     needs: [backup-database, database-migration]
     if: always() && (needs.database-migration.result == 'success' || needs.database-migration.result == 'skipped')
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # Required for OIDC authentication
+      contents: read   # Required for checkout
 
     steps:
       - name: Checkout code
@@ -209,8 +218,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: arn:aws:iam::510187933511:role/batbern-production-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Set up Node.js 20
@@ -279,6 +287,9 @@ jobs:
   smoke-tests:
     needs: blue-green-deployment
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # Required for OIDC authentication
+      contents: read   # Required for checkout
 
     steps:
       - name: Checkout code
@@ -318,6 +329,9 @@ jobs:
     needs: [blue-green-deployment, smoke-tests]
     if: failure()
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # Required for OIDC authentication
+      contents: read   # Required for checkout
 
     steps:
       - name: Checkout code
@@ -326,8 +340,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: arn:aws:iam::510187933511:role/batbern-production-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Rollback deployment

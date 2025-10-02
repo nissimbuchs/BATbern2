@@ -46,7 +46,7 @@ export class RdsCluster extends Construct {
     // Create optimized parameter group
     const parameterGroup = new rds.ParameterGroup(this, 'ParameterGroup', {
       engine: rds.DatabaseInstanceEngine.postgres({
-        version: rds.PostgresEngineVersion.VER_15_4,
+        version: rds.PostgresEngineVersion.VER_15, // Use latest 15.x version available
       }),
       parameters: {
         'shared_preload_libraries': 'pg_stat_statements',
@@ -62,7 +62,7 @@ export class RdsCluster extends Construct {
     // Create RDS instance
     this.database = new rds.DatabaseInstance(this, 'Instance', {
       engine: rds.DatabaseInstanceEngine.postgres({
-        version: rds.PostgresEngineVersion.VER_15_4,
+        version: rds.PostgresEngineVersion.VER_15, // Use latest 15.x version available
       }),
       instanceType: ec2.InstanceType.of(
         props.instanceClass,

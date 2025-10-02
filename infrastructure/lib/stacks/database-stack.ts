@@ -46,7 +46,9 @@ export class DatabaseStack extends cdk.Stack {
     this.database = rdsCluster.database;
 
     // Create ElastiCache Redis cluster if cache security group provided
-    if (props.cacheSecurityGroup) {
+    // Note: Temporarily disabled for development to unblock initial deployment
+    const isProd = props.config.envName === 'production';
+    if (props.cacheSecurityGroup && isProd) {
       // Create cache subnet group
       const cacheSubnetGroup = new elasticache.CfnSubnetGroup(this, 'CacheSubnetGroup', {
         description: 'Subnet group for ElastiCache Redis',

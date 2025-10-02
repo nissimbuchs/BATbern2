@@ -14,6 +14,9 @@ jobs:
   deploy-to-dev:
     runs-on: ubuntu-latest
     if: github.event.workflow_run.conclusion == 'success'
+    permissions:
+      id-token: write  # Required for OIDC authentication
+      contents: read   # Required for checkout
 
     steps:
       - name: Checkout code
@@ -22,8 +25,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: arn:aws:iam::510187933511:role/batbern-development-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Set up Node.js 20
@@ -49,6 +51,30 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
+      - name: Retrieve database credentials from Secrets Manager
+        id: db-creds
+        run: |
+          SECRET_ARN=$(aws cloudformation describe-stacks \
+            --stack-name BATbern-development-Database \
+            --query 'Stacks[0].Outputs[?OutputKey==`DatabaseSecretArn`].OutputValue' \
+            --output text --region ${{ env.AWS_REGION }})
+
+          SECRET_JSON=$(aws secretsmanager get-secret-value \
+            --secret-id "$SECRET_ARN" \
+            --query SecretString \
+            --output text --region ${{ env.AWS_REGION }})
+
+          DB_HOST=$(echo "$SECRET_JSON" | jq -r '.host')
+          DB_PORT=$(echo "$SECRET_JSON" | jq -r '.port')
+          DB_NAME=$(echo "$SECRET_JSON" | jq -r '.dbname')
+          DB_USER=$(echo "$SECRET_JSON" | jq -r '.username')
+          DB_PASSWORD=$(echo "$SECRET_JSON" | jq -r '.password')
+
+          echo "DB_URL=jdbc:postgresql://$DB_HOST:$DB_PORT/$DB_NAME" >> $GITHUB_OUTPUT
+          echo "DB_USER=$DB_USER" >> $GITHUB_OUTPUT
+          echo "::add-mask::$DB_PASSWORD"
+          echo "DB_PASSWORD=$DB_PASSWORD" >> $GITHUB_OUTPUT
+
       - name: Run database migrations
         run: |
           if [ -d "shared-kernel" ] && [ -f "shared-kernel/gradlew" ]; then
@@ -56,9 +82,9 @@ jobs:
             chmod +x gradlew
             # Run Flyway migrations for dev environment
             ./gradlew flywayMigrate \
-              -Dflyway.url=${{ secrets.DEV_DB_URL }} \
-              -Dflyway.user=${{ secrets.DEV_DB_USER }} \
-              -Dflyway.password=${{ secrets.DEV_DB_PASSWORD }} \
+              -Dflyway.url=${{ steps.db-creds.outputs.DB_URL }} \
+              -Dflyway.user=${{ steps.db-creds.outputs.DB_USER }} \
+              -Dflyway.password=${{ steps.db-creds.outputs.DB_PASSWORD }} \
               --no-daemon || echo "::warning::Flyway migrations not configured yet"
           else
             echo "::warning::Shared kernel not found, skipping migrations"
