@@ -65,34 +65,40 @@ install_hook "pre-push"
 git config core.hooksPath "$CUSTOM_HOOKS_DIR"
 echo -e "${GREEN}✓ Configured git to use $CUSTOM_HOOKS_DIR${NC}"
 
-# Install npm packages needed for hooks (if package.json exists)
-if [ -f "package.json" ]; then
+# Install npm packages needed for frontend hooks (if web-frontend exists)
+if [ -d "web-frontend" ] && [ -f "web-frontend/package.json" ]; then
     echo ""
-    echo -e "${BLUE}📦 Installing npm dependencies for hooks...${NC}"
-    npm install --save-dev eslint prettier husky lint-staged
+    echo -e "${BLUE}📦 Installing npm dependencies for frontend hooks...${NC}"
+    cd web-frontend
+    npm install --save-dev prettier eslint @commitlint/cli @commitlint/config-conventional
+    cd ..
 fi
 
-# Install gradle wrapper if needed
-if [ -f "build.gradle" ] && [ ! -f "gradlew" ]; then
+# Ensure shared-kernel has gradle wrapper
+if [ -d "shared-kernel" ] && [ ! -f "shared-kernel/gradlew" ]; then
     echo ""
-    echo -e "${BLUE}🔨 Installing Gradle wrapper...${NC}"
-    gradle wrapper
+    echo -e "${BLUE}🔨 Ensuring Gradle wrapper exists...${NC}"
+    cd shared-kernel
+    if [ -f "build.gradle" ]; then
+        gradle wrapper || echo "Gradle wrapper already exists"
+    fi
+    cd ..
 fi
 
 echo ""
 echo -e "${GREEN}✅ Git hooks installation complete!${NC}"
 echo ""
 echo "Hooks installed:"
-echo "  • pre-commit: Runs tests for changed files"
+echo "  • pre-commit: Runs linting and formatting checks on changed files"
+echo "  • commit-msg: Validates commit message format (conventional commits)"
 echo "  • pre-push: Runs full test suite before push"
 echo ""
-echo "TDD Workflow:"
-echo "  1. Write failing tests (commit with 'test:' prefix)"
-echo "  2. Write code to pass tests (commit with 'feat:' or 'fix:' prefix)"
-echo "  3. Refactor if needed (commit with 'refactor:' prefix)"
+echo "Commit Message Format:"
+echo "  <type>(<scope>): <description>"
+echo "  Types: feat, fix, docs, style, refactor, test, chore, perf, ci, build, revert"
 echo ""
 echo "To temporarily bypass hooks (not recommended):"
 echo "  git commit --no-verify"
 echo "  git push --no-verify"
 echo ""
-echo -e "${YELLOW}⚠️  Remember: No code without tests!${NC}"
+echo -e "${YELLOW}⚠️  Hooks help maintain code quality - embrace them!${NC}"

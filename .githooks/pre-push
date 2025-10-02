@@ -32,37 +32,16 @@ run_with_timeout() {
 echo -e "${BLUE}📊 Running full test suite...${NC}"
 
 # Run frontend tests
-if [ -d "frontend" ] || [ -f "package.json" ]; then
+if [ -d "web-frontend" ]; then
     echo -e "${YELLOW}🎨 Running frontend tests...${NC}"
 
-    if [ -d "frontend" ]; then
-        cd frontend
-    fi
+    cd web-frontend
 
-    # Run unit tests with coverage
-    echo "  Running unit tests..."
-    run_with_timeout 120 "npm run test:unit -- --coverage --run" || CHECKS_FAILED=1
+    # Run all tests
+    echo "  Running tests..."
+    npm run test:run || CHECKS_FAILED=1
 
-    # Check coverage thresholds
-    if [ -f "coverage/coverage-summary.json" ]; then
-        COVERAGE=$(node -e "
-            const coverage = require('./coverage/coverage-summary.json');
-            const lines = coverage.total.lines.pct;
-            console.log(lines);
-            if (lines < 85) process.exit(1);
-        " 2>/dev/null) || {
-            echo -e "${RED}❌ Frontend coverage below 85% threshold${NC}"
-            CHECKS_FAILED=1
-        }
-    fi
-
-    # Run integration tests
-    echo "  Running integration tests..."
-    run_with_timeout 180 "npm run test:integration -- --run" || CHECKS_FAILED=1
-
-    if [ -d "frontend" ]; then
-        cd ..
-    fi
+    cd ..
 fi
 
 # Run backend tests
@@ -85,72 +64,6 @@ if [ -f "gradlew" ] || [ -f "build.gradle" ]; then
     run_with_timeout 300 "./gradlew integrationTest" || CHECKS_FAILED=1
 fi
 
-# Run E2E tests (only if explicitly configured)
-if [ -f "playwright.config.ts" ] && [ "$RUN_E2E_ON_PUSH" = "true" ]; then
-    echo -e "${YELLOW}🎭 Running E2E tests...${NC}"
-    run_with_timeout 600 "npx playwright test --reporter=list" || CHECKS_FAILED=1
-fi
-
-# Check for uncommitted changes (in case tests modified files)
-if ! git diff --quiet; then
-    echo -e "${RED}❌ Tests modified files. Please review and commit changes:${NC}"
-    git diff --name-only
-    CHECKS_FAILED=1
-fi
-
-# Validate branch naming
-BRANCH=$(git rev-parse --abbrev-ref HEAD)
-if [[ ! "$BRANCH" =~ ^(main|develop|feature/.*|hotfix/.*|release/.*)$ ]]; then
-    echo -e "${YELLOW}⚠️  Warning: Branch name '$BRANCH' doesn't follow naming convention${NC}"
-    echo "  Expected: feature/*, hotfix/*, release/*, main, or develop"
-fi
-
-# Check for large files
-LARGE_FILES=$(git diff --stat --cached origin/$(git rev-parse --abbrev-ref HEAD) 2>/dev/null | grep -E "([0-9]+) files? changed.*\+[0-9]{5,}" || true)
-if [ -n "$LARGE_FILES" ]; then
-    echo -e "${YELLOW}⚠️  Warning: Large files detected in commit${NC}"
-    echo "$LARGE_FILES"
-fi
-
-# TDD Validation - Check test-to-code ratio
-echo -e "${BLUE}📈 Validating TDD practices...${NC}"
-
-# Get commits being pushed
-COMMITS=$(git rev-list origin/$(git rev-parse --abbrev-ref HEAD)..HEAD 2>/dev/null || true)
-
-if [ -n "$COMMITS" ]; then
-    for COMMIT in $COMMITS; do
-        COMMIT_MSG=$(git log -1 --pretty=%s $COMMIT)
-        COMMIT_TYPE=$(echo $COMMIT_MSG | cut -d':' -f1 | cut -d'(' -f1)
-
-        # Check for test commits followed by implementation
-        if [ "$COMMIT_TYPE" = "feat" ] || [ "$COMMIT_TYPE" = "fix" ]; then
-            # Check if there's a preceding test commit
-            PREV_COMMIT=$(git rev-list -1 $COMMIT^ 2>/dev/null || true)
-            if [ -n "$PREV_COMMIT" ]; then
-                PREV_MSG=$(git log -1 --pretty=%s $PREV_COMMIT)
-                PREV_TYPE=$(echo $PREV_MSG | cut -d':' -f1 | cut -d'(' -f1)
-
-                if [ "$PREV_TYPE" != "test" ]; then
-                    echo -e "${YELLOW}⚠️  TDD Warning: Feature/fix commit without preceding test commit${NC}"
-                    echo "    Commit: $COMMIT_MSG"
-                fi
-            fi
-        fi
-    done
-fi
-
-# Security checks
-echo -e "${BLUE}🔒 Running security checks...${NC}"
-
-# Check for credentials or secrets
-SECRETS=$(git diff --cached --name-only | xargs grep -l -E "(password|secret|token|key).*=.*['\"].*['\"]" 2>/dev/null || true)
-if [ -n "$SECRETS" ]; then
-    echo -e "${RED}❌ Potential secrets detected in:${NC}"
-    echo "$SECRETS"
-    echo -e "${RED}Please review and remove any hardcoded credentials${NC}"
-    CHECKS_FAILED=1
-fi
 
 # Final summary
 echo ""

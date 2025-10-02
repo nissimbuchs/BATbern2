@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# BATbern Platform - Commit Message Hook
+# Validates commit message format
+
+COMMIT_MSG_FILE=$1
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Skip validation for merge commits
+if echo "$COMMIT_MSG" | grep -qE "^Merge"; then
+    exit 0
+fi
+
+# Check conventional commit format: type(scope): description
+if ! echo "$COMMIT_MSG" | grep -qE "^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?: .+"; then
+    echo -e "${RED}❌ Invalid commit message format!${NC}"
+    echo ""
+    echo "Commit message must follow conventional commits format:"
+    echo "  <type>(<scope>): <description>"
+    echo ""
+    echo "Valid types: feat, fix, docs, style, refactor, test, chore, perf, ci, build, revert"
+    echo ""
+    echo "Examples:"
+    echo "  feat(auth): add login with Google"
+    echo "  fix(api): resolve timeout issue in event creation"
+    echo "  test(user): add unit tests for user service"
+    echo ""
+    echo "Your commit message:"
+    echo "  $COMMIT_MSG"
+    exit 1
+fi
+
+echo -e "${GREEN}✅ Commit message format valid${NC}"
+exit 0
