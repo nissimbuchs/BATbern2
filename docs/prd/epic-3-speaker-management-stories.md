@@ -13,7 +13,7 @@
 - **Communication**: AWS SES for invitation and reminder emails
 - **Frontend**: React components for organizer dashboard and basic speaker portal
 
-**Duration**: 10 weeks (Weeks 21-30)
+**Duration**: 12 weeks (Weeks 21-32) - includes 2 weeks for Story 3.6 Notification Infrastructure
 
 ---
 
@@ -194,6 +194,68 @@ As an **organizer**, I want to track speaker outreach with automated reminders a
 - [ ] Automated reminders reduce manual follow-up
 - [ ] Risk detection identifies issues early
 - [ ] Complete audit trail for compliance
+
+---
+
+## Story 3.6: Speaker Notification Infrastructure
+
+**User Story:**
+As an **organizer**, I want automated notifications for speaker invitations and deadline tracking with escalation rules, so that speaker coordination is efficient and deadlines are never missed.
+
+**Architecture Integration:**
+- **Service**: Notification Service (new microservice)
+- **Email**: AWS SES for email delivery
+- **Database**: PostgreSQL notification_log, email_templates, escalation_rules
+- **Scheduler**: Spring @Scheduled tasks for deadline monitoring
+- **Frontend**: React notification preference UI
+
+**Acceptance Criteria:**
+
+**Email Template Management:**
+1. **Template CRUD**: Create, read, update, delete email templates
+2. **Template Types**: Support for speaker_invitation, deadline_reminder_48h, deadline_reminder_24h, deadline_critical, material_received_confirmation
+3. **Variable Substitution**: Support template variables ({{speakerName}}, {{eventTitle}}, {{deadline}}, etc.)
+4. **Multilingual**: Templates in German and English
+5. **Version Control**: Track template versions with rollback capability
+
+**Deadline Monitoring & Escalation:**
+6. **Deadline Tracking**: Monitor all speaker deadlines (invitation response, material submission)
+7. **Escalation Tiers**: Tier 1 (48h before), Tier 2 (24h before), Tier 3 (deadline passed + escalate to backup organizer)
+8. **Automatic Escalation**: If no response within threshold, escalate to backup organizer
+9. **Escalation Dashboard**: Organizers see all active escalations with status
+
+**Notification Delivery:**
+10. **AWS SES Integration**: Send via SES with bounce/complaint handling
+11. **Delivery Tracking**: Log all notifications with delivery status
+12. **Retry Logic**: Retry failed deliveries with exponential backoff
+13. **Rate Limiting**: Respect SES sending limits
+
+**User Preferences:**
+14. **Preference Management**: Users control notification frequency and channels
+15. **Quiet Hours**: Respect user-configured quiet hours
+16. **Opt-out**: GDPR-compliant opt-out with audit trail
+
+**Definition of Done:**
+- [ ] Email template CRUD operations functional
+- [ ] AWS SES integration sending emails successfully
+- [ ] Deadline monitoring detecting and triggering escalations
+- [ ] All three escalation tiers functioning correctly
+- [ ] Notification preferences respected for all users
+- [ ] Delivery tracking and logging operational
+- [ ] Template variables substituting correctly
+- [ ] Multilingual templates working (German/English)
+- [ ] Bounce and complaint handling implemented
+- [ ] Escalation dashboard displaying real-time status
+- [ ] >98% email delivery rate achieved
+- [ ] Unit tests cover all notification scenarios
+- [ ] Integration tests verify end-to-end notification flow
+
+**Estimated Effort:** 2 weeks
+
+**Dependencies:**
+- AWS SES account configured and verified
+- Database migrations for notification tables
+- Email templates designed and approved
 
 ---
 

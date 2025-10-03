@@ -108,10 +108,16 @@ As an **organizer**, I want content to publish progressively with automated agen
 5. **Post-Event**: Materials and recordings
 
 **Newsletter System:**
-6. **Segmented Lists**: Different stakeholder groups
-7. **Progressive Updates**: Match publishing phases
-8. **Final Announcement**: Complete agenda email
-9. **Analytics**: Track open rates and clicks
+6. **Segmented Lists**: Different stakeholder groups (speakers, attendees, partners, organizers)
+7. **Progressive Updates**: Match publishing phases (topic → speakers → final agenda)
+8. **Final Announcement**: Complete agenda email with registration link
+9. **Analytics**: Track open rates and clicks via SES click tracking
+10. **Template Management**: Use email_templates table with newsletter templates
+11. **Personalization**: Variable substitution for personalized content ({{firstName}}, {{eventDate}}, etc.)
+12. **A/B Testing**: Support for A/B testing subject lines and content variations
+13. **Unsubscribe Handling**: One-click unsubscribe with preference management
+14. **Bounce Processing**: Automatic handling of bounces and complaints via SNS
+15. **Delivery Optimization**: Schedule sends during optimal engagement windows
 
 **Agenda Management:**
 10. **Two-Week Lock**: Enforce agenda freeze
@@ -126,6 +132,13 @@ As an **organizer**, I want content to publish progressively with automated agen
 - [ ] Agenda lock enforced with overrides
 - [ ] Dropout handling within 24 hours
 - [ ] Version history maintained
+- [ ] Newsletter templates created for all publishing phases
+- [ ] Segmented mailing lists operational for all stakeholder groups
+- [ ] SES configuration set tracking opens and clicks
+- [ ] Bounce/complaint handling reducing bad addresses
+- [ ] Unsubscribe links compliant with GDPR
+- [ ] A/B testing framework functional for subject lines
+- [ ] Delivery timing optimized based on engagement data
 
 ---
 

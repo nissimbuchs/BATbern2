@@ -62,7 +62,15 @@ As an **attendee**, I want to manage my preferences, bookmarks, and subscription
 3. **Content Bookmarking**: Save interesting presentations
 4. **Download History**: Track downloaded content
 5. **Interest Topics**: Select areas of interest
-6. **Notification Settings**: Manage email preferences
+
+**Notification Preferences (Enhanced):**
+6. **Channel Control**: Opt in/out for email, in-app, push notifications
+7. **Notification Type Granularity**: Control preferences for event announcements, speaker updates, newsletter subscriptions, partner communications, system alerts
+8. **Frequency Management**: Choose immediate, daily digest, or weekly digest
+9. **Quiet Hours**: Configure quiet hours (no notifications sent during this time)
+10. **Notification History**: View history of all received notifications
+11. **Email Preview**: Preview how notifications will appear
+12. **Bulk Actions**: Enable/disable all notifications with one click
 
 **Definition of Done:**
 - [ ] Profile creation simple and quick
@@ -71,6 +79,14 @@ As an **attendee**, I want to manage my preferences, bookmarks, and subscription
 - [ ] Newsletter preferences respected
 - [ ] GDPR compliance implemented
 - [ ] Data export available
+- [ ] Granular notification preference controls functional
+- [ ] All notification channels (email, in-app, push) respected
+- [ ] Frequency settings (immediate, daily, weekly) working
+- [ ] Quiet hours preventing notifications during configured times
+- [ ] Notification history displaying last 90 days
+- [ ] Email preview showing actual rendered template
+- [ ] Bulk enable/disable affecting all preferences correctly
+- [ ] GDPR data export including notification history
 
 ---
 

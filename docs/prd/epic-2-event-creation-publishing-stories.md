@@ -152,6 +152,11 @@ As an **organizer**, I want created events with topics to be immediately visible
 3. **Draft vs Published**: Clear distinction between draft and published states
 4. **Publishing Validation**: Only events with required fields can be published
 
+**Notification Integration:**
+5. **Publish Notification**: Trigger notification to subscribed organizers/partners on event publish
+6. **Email Template**: Use "event_published" template for notification email
+7. **Notification Logging**: Log all sent notifications with delivery tracking
+
 **Content Management:**
 5. **Event Preview**: Preview how event will appear before publishing
 6. **Publishing Status**: Track publication status (draft/published/archived)
@@ -171,6 +176,8 @@ As an **organizer**, I want created events with topics to be immediately visible
 - [ ] CDN cache properly invalidated on changes
 - [ ] Preview functionality works correctly
 - [ ] Rollback capability tested and functional
+- [ ] Event publication triggers notification to stakeholders
+- [ ] Notification delivery tracked and logged
 
 ---
 
