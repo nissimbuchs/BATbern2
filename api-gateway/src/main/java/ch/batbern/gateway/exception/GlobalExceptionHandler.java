@@ -76,6 +76,8 @@ public class GlobalExceptionHandler {
                 .details(Map.of("fieldErrors", validationErrors))
                 .build();
 
+        // Note: Ensure Jackson JavaTimeModule is registered for Instant serialization
+
         return ResponseEntity.badRequest().body(error);
     }
 

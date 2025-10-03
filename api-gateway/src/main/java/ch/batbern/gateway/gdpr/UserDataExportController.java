@@ -54,7 +54,7 @@ public class UserDataExportController {
         Map<String, Object> userData = new HashMap<>();
         userData.put("userId", userId);
         userData.put("email", email);
-        userData.put("exportDate", Instant.now());
+        userData.put("exportDate", Instant.now().toString()); // Convert to ISO-8601 string for JSON serialization
 
         // Aggregate data from domain services
         userData.put("profile", exportService.exportUserProfile(userId));
