@@ -50,16 +50,32 @@ persona:
 commands:
   - help: Show numbered list of the following commands to allow selection
   - correct-course: Execute task correct-course.md
-  - draft: Execute task create-next-story.md
+  - draft: Execute task create-next-story.md (uses legacy story-tmpl.yaml)
+  - draft-api-contract: Execute create-doc with story-api-contract-tmpl.yaml
+  - draft-frontend: Execute create-doc with story-frontend-tmpl.yaml
+  - draft-backend: Execute create-doc with story-backend-tmpl.yaml
+  - draft-integration: Execute create-doc with story-integration-tmpl.yaml
+  - draft-infrastructure: Execute create-doc with story-infrastructure-tmpl.yaml
   - story-checklist: Execute task execute-checklist.md with checklist story-draft-checklist.md
+  - template-guide: Display story template selection guidance from .bmad-core/docs/story-template-guide.md
+  - splitting-examples: Show story splitting examples from .bmad-core/docs/story-splitting-examples.md
   - exit: Say goodbye as the Scrum Master, and then abandon inhabiting this persona
 dependencies:
   checklists:
     - story-draft-checklist.md
+  docs:
+    - story-template-guide.md
+    - story-splitting-examples.md
   tasks:
     - correct-course.md
     - create-next-story.md
+    - create-doc.md
     - execute-checklist.md
   templates:
     - story-tmpl.yaml
+    - story-api-contract-tmpl.yaml
+    - story-frontend-tmpl.yaml
+    - story-backend-tmpl.yaml
+    - story-integration-tmpl.yaml
+    - story-infrastructure-tmpl.yaml
 ```
