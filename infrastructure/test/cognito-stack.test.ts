@@ -34,6 +34,7 @@ describe('CognitoStack Tests', () => {
           RequireUppercase: true,
           RequireNumbers: true,
           RequireSymbols: true,
+          TemporaryPasswordValidityDays: 7,
         },
       },
     });
