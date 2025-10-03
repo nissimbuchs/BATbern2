@@ -1,8 +1,9 @@
 # BATbern Event Management Platform - Comprehensive Site Map
 
-**Generated:** 2025-10-01
-**Version:** 1.0
+**Generated:** 2025-10-03
+**Version:** 1.1
 **Purpose:** Complete hierarchical overview of all platform screens and navigation relationships
+**Update:** Aligned with PRD v4 - FR13 and FR16 removed from MVP scope
 
 ---
 
@@ -12,6 +13,7 @@
 - ✅ **[EXISTS]** - Wireframe documented
 - ❌ **[MISSING]** - Referenced but not documented
 - 🔄 **[PARTIAL]** - Mentioned in role wireframes but needs dedicated file
+- 📦 **[BACKLOG]** - Removed from MVP scope (FR13/FR16), may return post-MVP
 
 ### Role Indicators
 - 🎯 **Organizer** - Event organizers and administrators
@@ -54,6 +56,8 @@ BATbern Platform
 ### 1.1 Public Access Screens
 ```
 🌐 Public Homepage [MISSING] 🟡
+│   Story: ⚠️ MISSING STORY - Public Website & Marketing
+│   Note: Public homepage with event promotion (not in current epic scope)
 ├── → Authentication/Login
 ├── → Event Catalog (Public Events)
 └── → About/Information Pages
@@ -62,19 +66,19 @@ BATbern Platform
 │   Story: 2.4-current-event-landing
 │   File: story-2.4-current-event-landing.md
 ├── → Event Registration Flow
-├── → Session Details Modal [MISSING] 🔴
-├── → Speaker Profile Detail View [MISSING] 🔴
+├── → Session Details Modal ✅ [EXISTS] (story-2.4-session-details-modal.md)
+├── → Speaker Profile Detail View ✅ [EXISTS] (story-7.1-speaker-profile-detail-view.md)
 ├── → Venue Details Screen [MISSING] 🔴
 └── → Filter Modal [MISSING] 🟡
 
-🌐 Event Registration Flow (Multi-Step) [PARTIAL]
+🌐 Event Registration Flow (Multi-Step) ✅ [EXISTS]
 │   Story: 2.4-event-registration
 │   File: story-2.4-event-registration.md
 ├── Step 1/3: Personal Information ✅
-├── Step 2/3: Session Selection [MISSING] 🔴
-├── Step 3/3: Review & Confirm [MISSING] 🔴
-├── → Registration Confirmation Page [MISSING] 🔴
-└── → Ticket/QR Code Page [MISSING] 🔴
+├── Step 2/3: Session Selection ✅
+├── Step 3/3: Review & Confirm ✅
+├── → Registration Confirmation Page ✅ [EXISTS] (story-2.4-registration-confirmation.md)
+└── → Ticket/QR Code Page (see confirmation page)
 ```
 
 ---
@@ -84,18 +88,23 @@ BATbern Platform
 ### 2.1 Authentication Screens
 ```
 Login Screen [MISSING] 🔴
+│   Story: 1.2 - API Gateway & Authentication Service
+│   Note: Authentication wireframe not yet created
 ├── → Forgot Password
 ├── → Create Account
 └── → Role-Based Dashboard (post-login)
 
 Forgot Password Flow [MISSING] 🟡
+│   Story: 1.2 - API Gateway & Authentication Service
 └── ⤴ Login Screen
 
 Account Creation [MISSING] 🟡
+│   Story: 1.2 - API Gateway & Authentication Service
 ├── Role Selection
 └── → Email Verification
 
 Email Verification [MISSING] 🟡
+│   Story: 1.2 - API Gateway & Authentication Service
 └── → Role-Based Dashboard
 ```
 
@@ -106,6 +115,8 @@ Email Verification [MISSING] 🟡
 ### 3.1 Core Navigation
 ```
 Main Navigation Bar/Menu [MISSING] 🔴
+│   Story: 1.17 - React Frontend Foundation
+│   Note: Global navigation component
 ├── → Role-Specific Dashboard
 ├── → User Profile Screen
 ├── → Notification Center
@@ -113,8 +124,9 @@ Main Navigation Bar/Menu [MISSING] 🔴
 └── → Logout
 
 🌐 User Profile Screen [MISSING] 🟡
+│   Story: 1.20 - User Role Management
 │   Roles: All
-│   Referenced From: story-5.2, story-7.3, story-7.4
+│   Referenced From: story-5.2, story-7.3
 ├── Personal Information (view/edit)
 ├── Contact Details
 ├── Role-Specific Information
@@ -122,9 +134,10 @@ Main Navigation Bar/Menu [MISSING] 🔴
 ├── → User Settings Screen
 └── ⤴ Previous Screen
 
-🌐 User Settings Screen [MISSING] 🟡
-│   Roles: All
-│   Referenced From: story-5.2, story-1.20
+🌐 User Settings Screen ✅ [EXISTS] (Attendee version)
+│   Story: 1.20 - User Role Management / 5.2 - Personal Dashboard
+│   File: story-5.2-user-settings.md
+│   Note: General user settings wireframe needed for all roles
 ├── Account Settings
 ├── Password Change
 ├── Email Preferences
@@ -147,8 +160,10 @@ Main Navigation Bar/Menu [MISSING] 🔴
 ### 3.2 Help & Support
 ```
 🌐 Help Center Screen [MISSING] 🟡
+│   Story: ⚠️ MISSING STORY - Help & Support System
 │   Roles: All
 │   Referenced From: story-5.2, multiple screens
+│   Note: Help center not in current MVP scope
 ├── FAQ Sections
 ├── How-to Guides
 ├── Video Tutorials
@@ -194,9 +209,9 @@ Main Navigation Bar/Menu [MISSING] 🔴
 
 ### 4.2 Event Management
 ```
-🎯 Event Detail/Edit Screen [MISSING] 🔴
-│   Referenced From: story-1.16, story-2.2
-│   Priority: HIGH - Core functionality
+🎯 Event Detail/Edit Screen ✅ [EXISTS]
+│   Story: 1.16-event-detail-edit
+│   File: story-1.16-event-detail-edit.md
 ├── Event Information (editable)
 ├── Status & Workflow Position
 ├── → Assigned Topics (link to Topic Backlog)
@@ -207,7 +222,9 @@ Main Navigation Bar/Menu [MISSING] 🔴
 └── ⤴ Event Management Dashboard
 
 🎯 Event Settings Screen [MISSING] 🟡
+│   Story: 1.16 - Event Management Service Core / 4.3 - Full Progressive Publishing
 │   Referenced From: story-1.16, story-4.3
+│   Note: Event configuration, publishing, notifications
 ├── Registration Settings
 ├── Publishing Configuration
 ├── Email Templates
@@ -243,9 +260,9 @@ Main Navigation Bar/Menu [MISSING] 🔴
 ├── Publishing Templates
 └── ⤴ Event Management Dashboard
 
-🎯 Progressive Publishing ✅ [EXISTS]
+🎯 Progressive Publishing 🔄 [PARTIAL]
 │   Story: 4.3-progressive-publishing
-│   File: story-4.3-progressive-publishing.md
+│   Note: Referenced in wireframes-organizer.md, dedicated file not yet created
 ├── → Event Settings (publishing config)
 ├── Phase Configuration
 ├── Content Scheduling
@@ -261,7 +278,9 @@ Main Navigation Bar/Menu [MISSING] 🔴
 └── Usage Statistics
 
 🎯 Content Detail/Edit Screen [MISSING] 🟡
-│   Referenced From: story-1.18, story-5.1, story-3.3
+│   Story: 1.18 - Basic Event Display & Archive
+│   Referenced From: story-1.18-historical-archive, story-5.1, story-3.3
+│   Note: Content viewing + metadata management
 ├── Content Metadata (editable)
 ├── File Information
 ├── → Associated Event/Session
@@ -270,7 +289,9 @@ Main Navigation Bar/Menu [MISSING] 🔴
 └── ⤴ Parent Screen
 
 🎯 Moderator Review Queue [MISSING] 🟡
+│   Story: 4.1 - Content Quality Review
 │   Referenced From: story-1.16, story-3.3
+│   Note: Moderator quality review workflow (Step 7)
 ├── Pending Reviews List
 ├── → Content Preview
 ├── Review Form
@@ -306,7 +327,9 @@ Main Navigation Bar/Menu [MISSING] 🔴
 └── ⤴ Speaker Matching Interface
 
 🎯 Invitation Management Screen [MISSING] 🟡
-│   Referenced From: story-3.1, story-3.2
+│   Story: 3.1 - Speaker Invitation System / 3.2 - Invitation Response Workflow
+│   Referenced From: story-3.1-speaker-matching-interface, story-3.2
+│   Note: Invitation tracking and bulk operations
 ├── All Invitations (by event)
 ├── Status Tracking
 ├── → Invitation Response (view)
@@ -325,7 +348,9 @@ Main Navigation Bar/Menu [MISSING] 🔴
 └── ⤴ Parent Screen (role-dependent)
 
 🎯 Company Management Screen [MISSING] 🟡
+│   Story: 1.14 - Company Management Service
 │   Referenced From: story-3.1, story-6.1
+│   Note: Core company CRUD + logo management
 ├── Company Information Form
 ├── Logo Upload
 ├── Industry/Sector
@@ -346,7 +371,8 @@ Main Navigation Bar/Menu [MISSING] 🔴
 └── ⤴ Event Management Dashboard
 
 🎯 Venue Details Screen [MISSING] 🔴
-│   Referenced From: story-4.4, story-2.4
+│   Story: 4.4 - Event Logistics Coordination
+│   Referenced From: story-4.4-logistics-coordination, story-2.4
 │   Priority: HIGH - Required for logistics
 ├── Venue Information
 ├── Capacity Details
@@ -360,8 +386,9 @@ Main Navigation Bar/Menu [MISSING] 🔴
 └── ⤴ Logistics Coordination
 
 🎯 Venue Booking Screen [MISSING] 🔴
-│   Referenced From: story-4.4
-│   Priority: HIGH - Required for multi-year planning
+│   Story: 4.4 - Event Logistics Coordination
+│   Referenced From: story-4.4-logistics-coordination
+│   Priority: HIGH - Required for multi-year planning (FR21)
 ├── Booking Form
 ├── Availability Calendar
 ├── Pricing Information
@@ -371,7 +398,8 @@ Main Navigation Bar/Menu [MISSING] 🔴
 └── ⤴ Venue Details Screen
 
 🎯 Catering Management Screen [MISSING] 🟡
-│   Referenced From: story-4.4
+│   Story: 4.4 - Event Logistics Coordination
+│   Referenced From: story-4.4-logistics-coordination
 ├── Catering Options
 ├── Menu Selection
 ├── Attendee Count
@@ -384,7 +412,9 @@ Main Navigation Bar/Menu [MISSING] 🔴
 ### 4.6 Administrative Screens
 ```
 🎯 System Settings/Configuration Screen [MISSING] 🟢
+│   Story: ⚠️ MISSING STORY - System Administration
 │   Referenced From: story-1.16, story-2.3
+│   Note: Admin-level system configuration (not in MVP scope)
 ├── Platform Configuration
 ├── Email Template Management
 ├── Workflow Configuration
@@ -397,11 +427,29 @@ Main Navigation Bar/Menu [MISSING] 🔴
 
 ## 5. Partner Portal (💼 Role)
 
-### 5.1 Main Dashboard & Analytics
+**⚠️ MAJOR SCOPE CHANGE:** FR4 (Partner Analytics) and FR9 (Automated Reports) removed from MVP.
+
+**MVP Scope (Epic 6):**
+- ✅ Topic Voting (6.1) - Partners vote on topics
+- ✅ Meeting Coordination (6.2) - Seasonal partner meetings
+
+**Moved to Backlog (Post-MVP):**
+- 📦 Partner Analytics Dashboard (FR4)
+- 📦 Employee Analytics (FR4)
+- 📦 Brand Exposure Metrics (FR4)
+- 📦 Budget Management (FR4)
+- 📦 Custom Report Builder (FR9)
+- 📦 Advanced Strategic Planning (FR4)
+
+Wireframes exist for analytics features but implementation deferred based on partner feedback post-MVP.
+
+### 5.1 Main Dashboard & Analytics (📦 BACKLOG - FR4 Removed)
 ```
-💼 Partner Analytics Dashboard ✅ [EXISTS]
-│   Story: 6.1-partner-analytics-dashboard
+📦 Partner Analytics Dashboard [BACKLOG] (FR4 removed from MVP)
+│   Story: 6.1-partner-analytics-dashboard (wireframe exists)
 │   File: story-6.1-partner-analytics-dashboard.md
+│   Status: FR4 (Partner Analytics) removed from MVP scope
+│   Note: May return post-MVP based on partner feedback and operational data
 ├── → Switch Partner Account Screen [MISSING] 🟡
 ├── → Metric Detail Screens [MISSING] 🔴
 ├── → Employee Analytics
@@ -430,9 +478,10 @@ Main Navigation Bar/Menu [MISSING] 🔴
 ├── Comparison Tools
 └── ⤴ Parent Dashboard/Report
 
-💼 Employee Analytics ✅ [EXISTS]
-│   Story: 6.1-employee-analytics
+📦 Employee Analytics [BACKLOG] (FR4 removed from MVP)
+│   Story: 6.1-employee-analytics (wireframe exists)
 │   File: story-6.1-employee-analytics.md
+│   Status: FR4 removed - moved to backlog
 ├── → Metric Detail Screen (Department) [MISSING] 🔴
 ├── → Metric Detail Screen (Level) [MISSING] 🔴
 ├── → Metric Detail Screen (Team) [MISSING] 🔴
@@ -450,11 +499,11 @@ Main Navigation Bar/Menu [MISSING] 🔴
 └── ⤴ Employee Analytics
 ```
 
-### 5.2 Brand & Exposure Management
+### 5.2 Brand & Exposure Management (📦 BACKLOG - FR4 Removed)
 ```
-💼 Brand Exposure ✅ [EXISTS]
-│   Story: 6.2-brand-exposure
-│   File: story-6.2-brand-exposure.md
+📦 Brand Exposure [BACKLOG] (FR4 removed from MVP)
+│   Story: 6.2-brand-exposure (referenced in wireframes-partner.md)
+│   Status: FR4 removed - brand analytics moved to backlog
 ├── → Exposure Type Details Screen [MISSING] 🟡
 ├── → Website Analytics Detail [MISSING] 🟡
 ├── → Social Media Report [MISSING] 🟡
@@ -477,11 +526,11 @@ Main Navigation Bar/Menu [MISSING] 🔴
 └── Request/Purchase Workflow
 ```
 
-### 5.3 Budget & Financial Management
+### 5.3 Budget & Financial Management (📦 BACKLOG - FR4/FR9 Removed)
 ```
-💼 Budget Management ✅ [EXISTS]
-│   Story: 6.3-budget-management
-│   File: story-6.3-budget-management.md
+📦 Budget Management [BACKLOG] (FR4 removed from MVP)
+│   Story: 6.3-budget-management (referenced in wireframes-partner.md)
+│   Status: FR4 removed - budget analytics moved to backlog
 ├── → Budget Forecasting Tool Screen [MISSING] 🟡
 ├── → Year-over-Year Comparison Screen [MISSING] 🟡
 ├── → ROI Trend Analysis [MISSING] 🟡
@@ -497,9 +546,9 @@ Main Navigation Bar/Menu [MISSING] 🔴
 ├── Scenario Planning Tools
 └── Export Capabilities
 
-💼 Custom Report Builder ✅ [EXISTS]
-│   Story: 6.3-custom-report-builder
-│   File: story-6.3-custom-report-builder.md
+📦 Custom Report Builder [BACKLOG] (FR9 removed from MVP)
+│   Story: 6.3-custom-report-builder (referenced in wireframes-partner.md)
+│   Status: FR9 (Automated Reports) removed - moved to backlog
 ├── → Report Preview Screen [MISSING] 🟡
 ├── → Report Scheduling Screen [MISSING] 🟡
 ├── Report Design Interface
@@ -516,11 +565,11 @@ Main Navigation Bar/Menu [MISSING] 🔴
 └── ⤴ Custom Report Builder
 ```
 
-### 5.4 Strategic Planning & Goals
+### 5.4 Strategic Planning & Goals (✅ MVP: Topic Voting Only)
 ```
-💼 Strategic Planning ✅ [EXISTS]
-│   Story: 6.4-strategic-planning
-│   File: story-6.4-strategic-planning.md
+📦 Strategic Planning [MOSTLY BACKLOG] (FR4 removed - except voting)
+│   Story: 6.4-strategic-planning (referenced in wireframes-partner.md)
+│   Status: Only Topic Voting in MVP; advanced features moved to backlog (FR4)
 ├── → Goals Management Screen [MISSING] 🔴
 ├── → Goal Details Screen [MISSING] 🟡
 ├── → New Goal Creation Screen [MISSING] 🟡
@@ -534,41 +583,33 @@ Main Navigation Bar/Menu [MISSING] 🔴
 ├── → Custom Proposal Request Screen [MISSING] 🟡
 └── ⤴ Partner Analytics Dashboard
 
-💼 Goals Management Screen [MISSING] 🔴
-│   Referenced From: story-6.4
-│   Priority: HIGH - Core partner functionality
-├── Goals List (active/completed)
-├── Progress Tracking
-├── → Goal Details Screen
-├── → New Goal Creation Screen
-├── Goal Metrics Assignment
-├── Timeline Visualization
-└── ⤴ Strategic Planning
+📦 Goals Management Screen [BACKLOG] (FR4 removed)
+│   Referenced From: story-6.4-strategic-planning (removed from MVP)
+│   Status: Advanced goal tracking moved to backlog
+└── Features: Goals List, Progress Tracking, Metrics Assignment (all backlog)
 
-💼 Topic Voting Screen ✅ [EXISTS]
-│   Story: 6.4-topic-voting
+💼 Topic Voting Screen ✅ [EXISTS] ✨ MVP INCLUDED
+│   Story: 6.4-topic-voting (Actually Story 6.1 in Epic 6)
 │   File: story-6.4-topic-voting.md
+│   Note: Core MVP feature - partner topic voting
 ├── → All Topics Browser Screen [MISSING] 🟡
 ├── → Topic Details Screen [MISSING] 🟡
 ├── Vote Submission
 ├── Voting History
 └── ⤴ Strategic Planning
 
-💼 Certification Paths Browser Screen [MISSING] 🟡
-│   Referenced From: story-6.4
-├── Available Certification Programs
-├── Prerequisites & Requirements
-├── Completion Rates
-├── → Employee Certification List [MISSING] 🟡
-├── Recommendation Engine
-└── ⤴ Strategic Planning
+📦 Certification Paths Browser Screen [BACKLOG] (FR4 removed)
+│   Referenced From: story-6.4-strategic-planning (removed)
+│   Status: Employee development tracking moved to backlog
+└── Features: Certification programs, prerequisites, completion tracking (all backlog)
 ```
 
-### 5.5 Partner Meetings & Collaboration
+### 5.5 Partner Meetings & Collaboration ✨ MVP INCLUDED
 ```
-💼 Partner Meetings ✅ [EXISTS]
-│   Story: 6.5-partner-meetings
+💼 Partner Meetings ✅ [EXISTS] ✨ MVP INCLUDED
+│   Story: 6.5-partner-meetings (Actually Story 6.2 in Epic 6)
 │   File: story-6.5-partner-meetings.md
+│   Note: Core MVP feature - meeting coordination
 ├── → Meeting Calendar View Screen [MISSING] 🔴
 ├── → Meeting Details Screen [MISSING] 🟡
 ├── → Meeting Materials Library [MISSING] 🟡
@@ -635,10 +676,9 @@ Main Navigation Bar/Menu [MISSING] 🔴
 
 ### 6.1 Main Dashboard
 ```
-🎤 Speaker Dashboard ✅ [EXISTS]
+🎤 Speaker Dashboard 🔄 [PARTIAL]
 │   Story: 3.3-speaker-dashboard
-│   File: story-3.3-speaker-dashboard.md
-│   Also: wireframes-speaker.md
+│   Note: Referenced in wireframes-speaker.md, dedicated file not yet created
 ├── → Material Submission Wizard
 ├── → Presentation Upload
 ├── → Event Timeline
@@ -710,66 +750,45 @@ Main Navigation Bar/Menu [MISSING] 🔴
 ├── → Edit (back to management)
 └── Share Profile Options
 
-🎤 Speaker Community ✅ [EXISTS]
+🎤 Speaker Community ✅ [EXISTS] (Basic networking only - FR16 removed)
 │   Story: 7.1-speaker-community
 │   File: story-7.1-speaker-community.md
-├── → Full Speaker Network Screen [MISSING] 🔴
-├── → Discussion Thread Screen [MISSING] 🔴
-├── → New Discussion Screen [MISSING] 🟡
-├── → Mentor Profile Screen [MISSING] 🟡
-├── → Mentor Application Screen [MISSING] 🟡
-├── → Resource Viewer Screen [MISSING] 🟡
-├── → Course Enrollment Screen [MISSING] 🟡
-├── → Resource Details Screen [MISSING] 🟡
+│   Note: Advanced features (mentoring, forums, resources) moved to backlog
 ├── Featured Speakers
+├── Basic Speaker Directory
 ├── Connection Requests
 └── ⤴ Speaker Dashboard
 
-🎤 Full Speaker Network Screen [MISSING] 🔴
+🎤 Full Speaker Network Screen [MISSING] 🟡 (Simplified)
 │   Referenced From: story-7.1
-│   Priority: HIGH - Core community feature
+│   Note: Basic directory only, no advanced networking
 ├── Searchable Speaker Directory
-├── Filter by Expertise/Location/Availability
+├── Filter by Expertise
 ├── Speaker Cards
 ├── → Speaker Profile Detail View
-├── Connection Request
-└── Network Visualization
+└── ⤴ Speaker Community
 
-🎤 Discussion Thread Screen [MISSING] 🔴
-│   Referenced From: story-7.1, story-7.4
-│   Priority: HIGH - Core community feature
-├── Thread Title & Metadata
-├── Chronological Posts
-├── Reply Functionality
-├── Reactions & Voting
-├── Moderation Controls
-├── Subscription Options
-└── ⤴ Parent Screen
+📦 Discussion Thread Screen [BACKLOG] 🟢 (FR16)
+│   Referenced From: story-7.4 (removed)
+│   Status: Moved to backlog - advanced community features
+└── May return post-MVP
 
-🎤 Mentor Profile Screen [MISSING] 🟡
-│   Referenced From: story-7.1
-├── Mentor Bio & Expertise
-├── Mentoring Areas
-├── Availability
-├── Past Mentees (if shareable)
-├── Request Mentorship Button
-└── Reviews/Ratings
+📦 Mentor Profile Screen [BACKLOG] 🟢 (FR16)
+│   Referenced From: story-7.1 (removed)
+│   Status: Moved to backlog - mentoring features
+└── May return post-MVP
 
-🎤 Resource Viewer Screen [MISSING] 🟡
-│   Referenced From: story-7.1
-├── Resource Content Display
-├── Metadata
-├── Download Options
-├── Related Resources
-├── Comments/Ratings
-└── Share Functionality
+📦 Resource Viewer Screen [BACKLOG] 🟢 (FR16)
+│   Referenced From: story-7.1 (removed)
+│   Status: Moved to backlog - resource library
+└── May return post-MVP
 ```
 
 ### 6.4 Communication
 ```
-🎤 Communication Hub ✅ [EXISTS]
+🎤 Communication Hub 🔄 [PARTIAL]
 │   Story: 7.3-communication-hub
-│   File: story-7.3-communication-hub.md
+│   Note: Referenced in wireframes-speaker.md, dedicated file not yet created
 ├── → Announcement Details Screen [MISSING] 🟡
 ├── Messages Inbox
 ├── Event Updates
@@ -786,37 +805,22 @@ Main Navigation Bar/Menu [MISSING] 🔴
 └── ⤴ Communication Hub
 ```
 
-### 6.5 Community Features
+### 6.5 Community Features (FR16 - REMOVED FROM MVP)
 ```
-🎤 Community Features ✅ [EXISTS]
-│   Story: 7.4-community-features
-│   File: story-7.4-community-features.md
-├── → Discussion Topics Browser [MISSING] 🟡
-├── → My Discussions Screen [MISSING] 🟡
-├── → Trending Discussions [MISSING] 🟡
-├── → Study Group Details Screen [MISSING] 🟢
-├── → User Profile Screen
-├── Forums & Discussions
-├── Study Groups
-└── ⤴ Speaker Dashboard
+📦 Community Features [BACKLOG] (FR16)
+│   Story: 7.4-community-features (REMOVED)
+│   Status: Entire section moved to backlog
+│   Note: Advanced community features deferred post-MVP
+│
+└── Features Removed:
+    ├── Discussion Forums & Topics
+    ├── Study Groups
+    ├── Advanced Networking
+    ├── Mentoring Programs
+    └── Resource Libraries
 
-🎤 Discussion Topics Browser [MISSING] 🟡
-│   Referenced From: story-7.4
-├── Topic Categories
-├── Active Discussions Count
-├── Popular Topics
-├── Search Functionality
-├── → Create New Topic
-└── Subscribe to Topics
-
-🎤 My Discussions Screen [MISSING] 🟡
-│   Referenced From: story-7.4
-├── Discussions Started
-├── Discussions Participated In
-├── Subscribed Discussions
-├── Saved Discussions
-├── Filter/Sort Options
-└── Activity Notifications
+Note: Story 7.4 replaced with simpler "Community Feedback System" in Epic 7
+      focusing on post-event surveys and feedback collection only.
 ```
 
 ### 6.6 Speaker Analytics
@@ -856,8 +860,10 @@ Main Navigation Bar/Menu [MISSING] 🔴
 └── Notifications
 
 👤 Event Details Page (Attendee View) [MISSING] 🔴
-│   Referenced From: story-5.2, story-2.4
+│   Story: 2.4 - Current Event Landing Page / 1.18 - Basic Event Display
+│   Referenced From: story-5.2, story-2.4-current-event-landing
 │   Priority: HIGH - Core attendee functionality
+│   Note: Attendee-specific event detail view
 ├── Event Information (read-only)
 ├── → Session Schedule
 ├── → Speaker Lineup
@@ -867,22 +873,25 @@ Main Navigation Bar/Menu [MISSING] 🔴
 ├── Related Content
 └── ⤴ Personal Dashboard
 
-👤 Content Discovery ✅ [EXISTS]
+👤 Content Discovery ✅ [EXISTS] (AI features removed per FR13)
 │   Story: 5.1-content-discovery
 │   File: story-5.1-content-discovery.md
+│   Note: AI-powered recommendations moved to backlog
 ├── → Content Viewer Page [MISSING] 🔴
 ├── → Filter Modal [MISSING] 🟡
 ├── → All Reviews Screen [MISSING] 🟢
 ├── → Top Rated Content Screen [MISSING] 🟢
 ├── Search & Browse
-├── Recommendations
+├── Basic Recommendations (non-AI)
 ├── Save Content
 ├── Rate & Review
 └── ↔ Personal Dashboard
 
 👤 Content Viewer Page [MISSING] 🔴
+│   Story: 5.1 - Content Discovery / 1.18 - Basic Event Display & Archive
 │   Referenced From: story-5.1, story-5.2, story-5.3
 │   Priority: HIGH - Core content consumption
+│   Note: Universal content viewer for presentations/documents
 ├── Content Display (PDF/Video/Slides)
 ├── Navigation Controls
 ├── Download Option
@@ -904,9 +913,9 @@ Main Navigation Bar/Menu [MISSING] 🔴
 
 ### 7.2 Mobile & Offline Experience
 ```
-👤 Mobile PWA Experience ✅ [EXISTS]
+👤 Mobile PWA Experience 🔄 [PARTIAL]
 │   Story: 5.3-mobile-pwa
-│   File: story-5.3-mobile-pwa.md
+│   Note: Referenced in wireframes-attendee.md, dedicated file not yet created
 ├── → Offline Content & Download Manager
 ├── → Storage Management Screen [MISSING] 🟡
 ├── → User Settings (PWA-specific) [MISSING] 🔴
@@ -915,9 +924,9 @@ Main Navigation Bar/Menu [MISSING] 🔴
 ├── Offline Capabilities
 └── Install Prompt
 
-👤 Offline Content & Download Manager ✅ [EXISTS]
+👤 Offline Content & Download Manager 🔄 [PARTIAL]
 │   Story: 5.3-offline-content
-│   File: story-5.3-offline-content.md
+│   Note: Referenced in wireframes-attendee.md, dedicated file not yet created
 ├── → Storage Management Screen [MISSING] 🟡
 ├── → Offline Settings Configuration Screen [MISSING] 🟡
 ├── → Bundle Content List Screen [MISSING] 🟡
@@ -1062,40 +1071,33 @@ Main Navigation Bar/Menu [MISSING] 🔴
 └── Connection Requests
 ```
 
-### 7.5 Community & Social
+### 7.5 Community & Social (FR16 - MOSTLY REMOVED)
 ```
-👤 Community Forum/Discussion Page [MISSING] 🟡
-│   Referenced From: wireframes-attendee.md
-├── → Discussion Thread Screen
-├── → Discussion Topics Browser
-├── Browse Discussions
-├── Create New Discussion
-└── My Discussions
+📦 Community Forum/Discussion Page [BACKLOG] (FR16)
+│   Referenced From: wireframes-attendee.md (removed)
+│   Status: Advanced forums moved to backlog
+└── May return post-MVP
 
-👤 All Reviews Screen [MISSING] 🟢
+👤 All Reviews Screen [MISSING] 🟢 (Basic version retained)
 │   Referenced From: story-5.1
+│   Note: Simple reviews only, no advanced social features
 ├── Review List
 ├── Filter by Rating/Date
 ├── Sort Options
 ├── Review Details
-├── Helpful Voting
 └── Report Inappropriate
 
-👤 Study Group Details Screen [MISSING] 🟢
-│   Referenced From: story-7.4
-├── Group Information
-├── Member List
-├── Shared Resources
-├── → Discussion Board
-├── Events/Meetings
-└── Join/Leave Group
+📦 Study Group Details Screen [BACKLOG] (FR16)
+│   Referenced From: story-7.4 (removed)
+│   Status: Study groups moved to backlog
+└── May return post-MVP
 ```
 
 ### 7.6 Attendee Settings & Help
 ```
-👤 User Settings Screen (Attendee-specific) [MISSING] 🔴
-│   Referenced From: story-5.2, story-5.3
-│   Priority: HIGH - User control
+👤 User Settings Screen (Attendee-specific) ✅ [EXISTS]
+│   Story: 5.2-user-settings
+│   File: story-5.2-user-settings.md
 ├── Profile Settings
 ├── Notification Preferences
 ├── Privacy Controls
@@ -1226,12 +1228,22 @@ Current Event Landing Page
 
 ### 10.1 Implementation Status Overview
 
-**Total Screens Identified:** 157+
+**Total Screens Identified (MVP Scope):** ~110 screens
+**Removed from MVP:**
+- FR13 (AI Content Discovery): ~5 screens
+- FR16 (Advanced Community): ~12 screens
+- FR4 (Partner Analytics): ~25 screens
+- FR9 (Automated Reports): ~5 screens
+**Total Backlog:** ~47 screens moved to backlog
 
 #### By Status
-- ✅ **Documented (EXISTS):** 32 story wireframes + role wireframes = ~35-40 screens
-- ❌ **Missing:** 96 screens
-- 🔄 **Partial:** ~20 screens (mentioned in role docs but need dedicated files)
+- ✅ **Documented (EXISTS):** 26 story wireframes + 4 role overview files = 30 files total
+  - Individual story wireframes: 26 dedicated screen files
+  - Role overview documents: 4 files (organizer, speaker, partner, attendee)
+- 🔄 **Partial:** ~4 screens (referenced in role docs but need dedicated files)
+  - Examples: Progressive Publishing, Speaker Dashboard, Mobile PWA, Offline Content
+- ❌ **Missing:** ~50 screens (MVP scope, not yet documented)
+- 📦 **Backlog:** ~47 screens (FR4/FR9/FR13/FR16 - analytics, reports, AI, community)
 
 #### By Priority (Missing Screens Only)
 - 🔴 **HIGH Priority:** 28 screens
@@ -1241,24 +1253,42 @@ Current Event Landing Page
 ### 10.2 Coverage by Role
 
 #### Organizer Portal
-- **Existing:** 10 story wireframes
-- **Missing:** 18 screens
-- **Coverage:** ~35% complete
+- **Existing Wireframes:** 7 dedicated files + 1 role overview
+  - Event Management Dashboard, Workflow Visualization, Event Detail/Edit
+  - Topic Backlog, Basic Publishing, Logistics Coordination
+  - Notification Center
+- **Partial:** 1 screen (Progressive Publishing - in role doc)
+- **Missing:** ~16 screens
+- **Coverage:** ~30% complete
 
 #### Partner Portal
-- **Existing:** 8 story wireframes
-- **Missing:** 29 screens
-- **Coverage:** ~22% complete
+- **MVP Scope:** 2 features only (FR4/FR9 removed)
+  - ✅ Topic Voting (wireframe exists)
+  - ✅ Partner Meetings (wireframe exists)
+- **Backlog (FR4/FR9):** ~25 screens moved to backlog
+  - Partner Analytics Dashboard, Employee Analytics
+  - Brand Exposure, Budget Management
+  - Custom Report Builder, Strategic Planning
+- **Missing (MVP):** ~5 screens for voting & meetings
+- **Coverage:** 40% of MVP scope (2 of 2 core features have wireframes)
 
 #### Speaker Portal
-- **Existing:** 7 story wireframes
-- **Missing:** 17 screens
-- **Coverage:** ~29% complete
+- **Existing Wireframes:** 6 dedicated files + 1 role overview
+  - Speaker Matching Interface, Invitation Response
+  - Material Submission Wizard, Presentation Upload
+  - Event Timeline, Speaker Profile Management, Speaker Profile Detail View
+- **Partial:** 2 screens (Speaker Dashboard, Communication Hub - in role doc)
+- **Missing:** ~12 screens
+- **Coverage:** ~33% complete
 
 #### Attendee Portal
-- **Existing:** 5 story wireframes
-- **Missing:** 27 screens
-- **Coverage:** ~16% complete
+- **Existing Wireframes:** 7 dedicated files + 1 role overview
+  - Current Event Landing, Event Registration, Registration Confirmation
+  - Session Details Modal, Content Discovery, Personal Dashboard
+  - Historical Archive, User Settings
+- **Partial:** 2 screens (Mobile PWA, Offline Content - in role doc)
+- **Missing:** ~20 screens
+- **Coverage:** ~30% complete
 
 #### Global/Shared
 - **Existing:** 1 wireframe (Notification Center)
@@ -1272,16 +1302,19 @@ Current Event Landing Page
 - **Gaps:** Detail/edit screens, settings
 
 #### Analytics & Reporting
-- **Coverage:** 40% (dashboards exist, drill-downs missing)
-- **Gaps:** Detail screens, metric viewers
+- **Status:** FR4 and FR9 removed from MVP
+- **Coverage:** 0% for MVP (all analytics features moved to backlog)
+- **Backlog:** Partner analytics dashboards, employee metrics, brand exposure, budget management, custom reports
 
 #### Content Management
 - **Coverage:** 45% (upload/submission exists)
 - **Gaps:** Viewers, library management, moderation
+- **Note:** AI-powered discovery removed (FR13)
 
 #### Community & Social
-- **Coverage:** 30% (basic features documented)
-- **Gaps:** Discussion threads, networking, profiles
+- **Coverage:** 15% (basic features only)
+- **Status:** Advanced features removed (FR16)
+- **Backlog:** Discussion forums, mentoring, study groups, resource libraries
 
 #### Logistics & Operations
 - **Coverage:** 35% (coordination documented)
@@ -1341,26 +1374,130 @@ Current Event Landing Page
 
 ---
 
+## 12. Missing Stories Analysis
+
+### Screens Without Assigned Stories
+
+Several screens identified in the sitemap do not have corresponding stories in the current epic structure. These represent potential gaps in the PRD that should be addressed:
+
+#### ⚠️ Public & Marketing Screens (Not in MVP Scope)
+- **Public Homepage** - Public website with event promotion
+  - Status: Not planned for MVP
+  - Rationale: Focus on authenticated user experiences first
+  - Future: Post-MVP public marketing site
+
+#### ⚠️ Help & Support (Not in MVP Scope)
+- **Help Center Screen** - Comprehensive help system
+- **Support Ticket Screen** - Customer support ticketing
+  - Status: Not in current MVP scope
+  - Rationale: Start with basic documentation; add support system based on user feedback
+  - Future: Consider post-MVP or integrate with external support tool
+
+#### ⚠️ System Administration (Not in MVP Scope)
+- **System Settings/Configuration Screen** - Admin-level platform configuration
+  - Status: Not in MVP scope
+  - Rationale: Configuration will be code-based or environment variables for MVP
+  - Future: Add admin UI post-MVP as platform matures
+
+#### ✅ Screens with Story Assignments
+
+Most major screens have been mapped to existing stories:
+
+**Epic 1 - Foundation:**
+- Story 1.2: Authentication screens (Login, Password Reset, Account Creation)
+- Story 1.14: Company Management screens
+- Story 1.17: Main Navigation, Frontend Foundation
+- Story 1.18: Content Detail/Edit, Event Display & Archive
+- Story 1.20: User Profile, User Settings, Role Management
+
+**Epic 2 - Event Creation:**
+- Story 2.2: Topic Backlog Management, Topic Details
+- Story 2.4: Current Event Landing, Event Registration, Session Details
+
+**Epic 3 - Speaker Management:**
+- Story 3.1: Speaker Matching, Invitation Management
+- Story 3.2: Invitation Response
+- Story 3.3: Material Submission, Presentation Upload
+
+**Epic 4 - Event Finalization:**
+- Story 4.1: Moderator Review Queue, Content Quality Review
+- Story 4.3: Event Settings (publishing configuration)
+- Story 4.4: Venue Details, Venue Booking, Catering Management
+
+**Epic 5 - Attendee Experience:**
+- Story 5.1: Content Discovery, Content Viewer
+- Story 5.2: Personal Dashboard, User Settings
+
+**Epic 6 - Partner Coordination:**
+- Story 6.1: Topic Voting
+- Story 6.2: Partner Meetings
+
+### Recommendation
+
+**For MVP:**
+- Proceed with assigned stories
+- Defer public homepage, help center, and system admin screens to post-MVP
+- Focus on core authenticated user experiences
+
+**Post-MVP Prioritization:**
+- Phase 1: Help Center (user demand)
+- Phase 2: Public Marketing Site (growth)
+- Phase 3: System Administration (operational efficiency)
+
+---
+
 ## Notes
 
-1. **Modal vs. Page Decisions Needed:** Many detail/edit screens could be modals instead of full pages. Recommend UX review for each.
+1. **MVP Scope Changes (2025-10-03):**
+   - **Removed from MVP:**
+     - **FR4**: Partner Analytics (~25 screens) - Detailed analytics dashboards, employee metrics, brand exposure, budget management, strategic planning
+     - **FR9**: Automated Reports (~5 screens) - Custom report builder, scheduled reports, advanced analytics
+     - **FR13**: AI-powered Content Discovery (~5 screens) - AI recommendations, smart content suggestions
+     - **FR16**: Advanced Community Features (~12 screens) - Forums, mentoring, study groups, resource libraries
+   - **Total Removed:** ~47 screens moved to backlog
+   - **Partner MVP Scope:**
+     - ✅ Topic Voting (6.1) - Core MVP feature
+     - ✅ Meeting Coordination (6.2) - Core MVP feature
+     - 📦 All analytics features → Backlog (FR4/FR9)
+   - **Rationale:** Focus on core event management, speaker coordination, and essential partner collaboration (voting & meetings) for MVP. Advanced analytics, reports, AI, and community features to be added post-MVP based on operational data and partner feedback.
 
-2. **URL Routing Strategy:** Site map provides foundation for URL structure planning. Consider role-based prefixes (e.g., /organizer/*, /partner/*, /speaker/*, /attendee/*).
+2. **Modal vs. Page Decisions Needed:** Many detail/edit screens could be modals instead of full pages. Recommend UX review for each.
 
-3. **Responsive Design:** Many screens will need mobile variants, especially for Attendee role. Mobile PWA (story-5.3) provides patterns.
+3. **URL Routing Strategy:** Site map provides foundation for URL structure planning. Consider role-based prefixes (e.g., /organizer/*, /partner/*, /speaker/*, /attendee/*).
 
-4. **Accessibility:** All screens should follow WCAG 2.1 AA standards. Document accessibility requirements per screen type.
+4. **Responsive Design:** Many screens will need mobile variants, especially for Attendee role. Mobile PWA (story-5.3) provides patterns.
 
-5. **State Management:** Complex navigation flows suggest need for robust state management (Redux/Zustand). Track user context across role switches.
+5. **Accessibility:** All screens should follow WCAG 2.1 AA standards. Document accessibility requirements per screen type.
 
-6. **Performance:** Consider lazy loading for role-specific portals. Pre-load critical paths only.
+6. **State Management:** Complex navigation flows suggest need for robust state management (Redux/Zustand). Track user context across role switches.
 
-7. **Security:** Role-based access control (RBAC) must be enforced at navigation level. Document permissions per screen.
+7. **Performance:** Consider lazy loading for role-specific portals. Pre-load critical paths only.
 
-8. **Deep Linking:** All screens should support deep linking for bookmarking and sharing (where privacy allows).
+8. **Security:** Role-based access control (RBAC) must be enforced at navigation level. Document permissions per screen.
+
+9. **Deep Linking:** All screens should support deep linking for bookmarking and sharing (where privacy allows).
+
+10. **Backlog Features:** Community forums, mentoring programs, study groups, AI-powered recommendations, and advanced networking features deferred to post-MVP. Focus remains on core event management, speaker coordination, partner analytics, and basic attendee experience.
 
 ---
 
 **End of Site Map**
 
-*This document represents the complete navigational architecture of the BATbern Event Management Platform as of 2025-10-01. It should be used in conjunction with individual wireframe files and the navigation-gaps-analysis.md document for comprehensive understanding of the platform structure.*
+*This document represents the complete navigational architecture of the BATbern Event Management Platform as of 2025-10-03 (v1.1).*
+
+**Updates in v1.1:**
+- Aligned with PRD v4 scope changes:
+  - FR4 (Partner Analytics) removed - ~25 screens to backlog
+  - FR9 (Automated Reports) removed - ~5 screens to backlog
+  - FR13 (AI Discovery) removed - ~5 screens to backlog
+  - FR16 (Community Features) removed - ~12 screens to backlog
+- Updated status markers to reflect actual wireframe implementation status
+- 26 dedicated story wireframes documented (✅ EXISTS)
+- 4 screens referenced in role docs but not yet in dedicated files (🔄 PARTIAL)
+- 50+ screens identified but not yet documented for MVP (❌ MISSING)
+- 47 advanced features moved to backlog (📦 BACKLOG)
+- **Story Mapping:** All missing screens mapped to existing stories or identified as missing stories
+  - Most screens mapped to Stories 1.2, 1.14, 1.17, 1.18, 1.20, 2.2, 2.4, 3.1, 3.2, 3.3, 4.1, 4.3, 4.4, 5.1, 5.2, 6.1, 6.2
+  - 3 screen categories identified as missing stories (Public Homepage, Help Center, System Admin) - deferred to post-MVP
+
+*Use this sitemap in conjunction with individual wireframe files in docs/wireframes/ and the navigation-gaps-analysis.md document for comprehensive understanding of the platform structure.*
