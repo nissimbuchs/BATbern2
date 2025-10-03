@@ -60,6 +60,69 @@ The BATbern project uses **layered story templates** to enable focused, parallel
 - **Owner:** DevOps, platform engineers, or senior developers
 - **Output:** Deployed infrastructure
 
+### 6. **Frontend-First Template (2-Story Approach)** (`story-frontend-first-tmpl.yaml`)
+**When to use:** Simpler features with small teams
+- Defines API contract inline (not separate story)
+- Implements complete UI with MSW mocks
+- Combines API Contract + Frontend work
+- **Duration:** 3-4 days
+- **Owner:** Frontend developer or full-stack developer
+- **Output:** API contract + Complete UI with mocks
+- **Next Step:** Story X.X-2 (Backend-Integration)
+
+### 7. **Backend-Integration Template (2-Story Approach)** (`story-backend-integration-tmpl.yaml`)
+**When to use:** Backend for Frontend-First story
+- Implements backend against inline contract
+- Replaces MSW mocks with real APIs
+- Combines Backend + Integration work
+- **Duration:** 2-3 days
+- **Owner:** Backend developer or full-stack developer
+- **Output:** Complete feature with real backend
+- **Dependency:** Requires Story X.X-1 (Frontend-First) completed
+
+---
+
+## Two Approaches: 4-Story vs 2-Story
+
+### 4-Story Approach (Recommended for Complex Features)
+**Use when:** Complex features, large team, high parallelization needed
+
+```
+Story X.Xa: API Contract (1 day)
+  ├─> Story X.Xb: Frontend (3 days, parallel)
+  └─> Story X.Xc: Backend (3 days, parallel)
+        └─> Story X.Xd: Integration (1 day)
+
+Total: 8 days dev, 5 days calendar
+```
+
+**Benefits:**
+- Maximum parallelization
+- Separate API contract story
+- Clear layer separation
+- Best for teams >3 developers
+
+### 2-Story Approach (Recommended for Simple Features)
+**Use when:** Simple CRUD, small team (1-2 developers), tight deadline
+
+```
+Story X.X-1: Frontend-First (3 days)
+  - Define API contract inline
+  - Implement complete UI with MSW mocks
+
+Story X.X-2: Backend-Integration (2 days)
+  - Implement backend against inline contract
+  - Replace mocks with real APIs
+
+Total: 5 days dev, 5 days calendar (or 3 days if sequential)
+```
+
+**Benefits:**
+- Simpler than 4-story split
+- Frontend-first approach
+- Less coordination overhead
+- Good for small teams
+
 ---
 
 ## Decision Matrix
@@ -511,13 +574,16 @@ For work spanning multiple domains:
 
 ## Summary Quick Reference
 
-| Story Type | Template(s) | Duration | Dependencies |
-|------------|-------------|----------|--------------|
-| Full Feature (Complex) | a + b + c + d | 8 days (5 calendar) | a → b,c → d |
-| Full Feature (Simple) | Frontend-first + Backend | 6 days (parallel) | API inline → b,c parallel |
-| Frontend Only | Frontend | 2-4 days | Existing APIs |
-| Backend Only | Backend | 3-5 days | None or existing APIs |
-| API Changes | API Contract + others | Varies | a → others |
-| Infrastructure | Infrastructure | 2-5 days | Varies |
+| Story Type | Template(s) | Duration | Dependencies | Use When |
+|------------|-------------|----------|--------------|----------|
+| **4-Story Approach (Complex)** | a + b + c + d | 8 days (5 cal) | a → b,c → d | Large team, complex feature |
+| **2-Story Approach (Simple)** | -1 + -2 | 5 days (3-5 cal) | -1 → -2 | Small team, simple CRUD |
+| Frontend Only | Frontend | 2-4 days | Existing APIs | UI changes only |
+| Backend Only | Backend | 3-5 days | None or existing | No UI needed |
+| Infrastructure | Infrastructure | 2-5 days | Varies | AWS/cross-cutting |
+
+**Template Details:**
+- **4-Story:** a=API Contract, b=Frontend, c=Backend, d=Integration
+- **2-Story:** -1=Frontend-First (inline API), -2=Backend-Integration
 
 **Remember:** When in doubt, split it out! Smaller stories are easier to manage, review, and deliver.

@@ -51,11 +51,13 @@ commands:
   - help: Show numbered list of the following commands to allow selection
   - correct-course: Execute task correct-course.md
   - draft: Execute task create-next-story.md (uses legacy story-tmpl.yaml)
-  - draft-api-contract: Execute create-doc with story-api-contract-tmpl.yaml
-  - draft-frontend: Execute create-doc with story-frontend-tmpl.yaml
-  - draft-backend: Execute create-doc with story-backend-tmpl.yaml
-  - draft-integration: Execute create-doc with story-integration-tmpl.yaml
-  - draft-infrastructure: Execute create-doc with story-infrastructure-tmpl.yaml
+  - draft-api-contract: Execute create-doc with story-api-contract-tmpl.yaml (4-story approach - step 1)
+  - draft-frontend: Execute create-doc with story-frontend-tmpl.yaml (4-story approach - step 2)
+  - draft-backend: Execute create-doc with story-backend-tmpl.yaml (4-story approach - step 3)
+  - draft-integration: Execute create-doc with story-integration-tmpl.yaml (4-story approach - step 4)
+  - draft-infrastructure: Execute create-doc with story-infrastructure-tmpl.yaml (cross-cutting)
+  - draft-frontend-first: Execute create-doc with story-frontend-first-tmpl.yaml (2-story approach - step 1)
+  - draft-backend-integration: Execute create-doc with story-backend-integration-tmpl.yaml (2-story approach - step 2)
   - story-checklist: Execute task execute-checklist.md with checklist story-draft-checklist.md
   - template-guide: Display story template selection guidance from .bmad-core/docs/story-template-guide.md
   - splitting-examples: Show story splitting examples from .bmad-core/docs/story-splitting-examples.md
@@ -78,4 +80,6 @@ dependencies:
     - story-backend-tmpl.yaml
     - story-integration-tmpl.yaml
     - story-infrastructure-tmpl.yaml
+    - story-frontend-first-tmpl.yaml
+    - story-backend-integration-tmpl.yaml
 ```
