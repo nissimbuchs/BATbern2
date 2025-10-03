@@ -264,6 +264,105 @@ paths:
         '204':
           description: Speaker unassigned from slot
 
+  # Notification Management
+  /api/v1/notifications/templates:
+    get:
+      tags: [Notifications]
+      summary: List email templates
+      security:
+        - BearerAuth: [organizer]
+      parameters:
+        - name: templateType
+          in: query
+          schema:
+            $ref: '#/components/schemas/TemplateType'
+        - name: language
+          in: query
+          schema:
+            type: string
+            enum: [en, de]
+      responses:
+        '200':
+          description: List of email templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EmailTemplate'
+    post:
+      tags: [Notifications]
+      summary: Create new email template
+      security:
+        - BearerAuth: [organizer]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTemplateRequest'
+      responses:
+        '201':
+          description: Template created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailTemplate'
+
+  /api/v1/notifications/preferences:
+    get:
+      tags: [Notifications]
+      summary: Get user notification preferences
+      responses:
+        '200':
+          description: User preferences
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPreferences'
+    put:
+      tags: [Notifications]
+      summary: Update notification preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePreferencesRequest'
+      responses:
+        '200':
+          description: Preferences updated
+
+  /api/v1/notifications/escalation-rules:
+    get:
+      tags: [Notifications]
+      summary: List escalation rules
+      security:
+        - BearerAuth: [organizer]
+      responses:
+        '200':
+          description: List of escalation rules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EscalationRule'
+    post:
+      tags: [Notifications]
+      summary: Create escalation rule
+      security:
+        - BearerAuth: [organizer]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEscalationRuleRequest'
+      responses:
+        '201':
+          description: Escalation rule created
+
   # Speaker Preferences & Requirements
   /api/v1/speakers/{speakerId}/preferences:
     get:
@@ -790,6 +889,388 @@ paths:
                       $ref: '#/components/schemas/ContentSearchResult'
                   facets:
                     $ref: '#/components/schemas/SearchFacets'
+
+  # File Storage & Content Management
+  /api/v1/files/presigned-upload-url:
+    post:
+      tags: [Files]
+      summary: Generate presigned URL for file upload
+      description: Generate a time-limited presigned URL for direct browser-to-S3 upload
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - filename
+                - contentType
+                - fileSizeBytes
+                - mimeType
+              properties:
+                filename:
+                  type: string
+                  example: "presentation.pdf"
+                  maxLength: 255
+                contentType:
+                  type: string
+                  enum: [presentation, logo, speaker_photo, speaker_cv, event_photo, archive_material]
+                  example: "presentation"
+                fileSizeBytes:
+                  type: integer
+                  format: int64
+                  minimum: 1
+                  maximum: 104857600  # 100 MB
+                  example: 15728640
+                mimeType:
+                  type: string
+                  example: "application/pdf"
+      responses:
+        '200':
+          description: Presigned upload URL generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uploadUrl:
+                    type: string
+                    format: uri
+                    description: Presigned S3 upload URL (valid for 15 minutes)
+                    example: "https://batbern-prod-presentations.s3.eu-central-1.amazonaws.com/..."
+                  fileId:
+                    type: string
+                    format: uuid
+                    description: Unique file identifier for tracking
+                    example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+                  expiresIn:
+                    type: integer
+                    description: URL expiration time in seconds
+                    example: 900
+                  requiredHeaders:
+                    type: object
+                    additionalProperties:
+                      type: string
+                    description: HTTP headers required for upload
+                    example:
+                      Content-Type: "application/pdf"
+        '400':
+          description: Invalid request (file too large, invalid content type, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Storage quota exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+
+  /api/v1/files/{fileId}/confirm:
+    post:
+      tags: [Files]
+      summary: Confirm file upload completion
+      description: Verify upload success and activate file in system
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - checksum
+              properties:
+                checksum:
+                  type: string
+                  description: SHA-256 checksum or S3 ETag for verification
+                  example: "5d41402abc4b2a76b9719d911017c592"
+      responses:
+        '200':
+          description: Upload confirmed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fileId:
+                    type: string
+                    format: uuid
+                    example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+                  status:
+                    type: string
+                    enum: [completed]
+                    example: "completed"
+                  cdnUrl:
+                    type: string
+                    format: uri
+                    description: CloudFront CDN URL for file access
+                    example: "https://cdn.batbern.ch/presentations/2024/evt-123/presentation-a7b3.pdf"
+                  fileSizeBytes:
+                    type: integer
+                    format: int64
+                    example: 15728640
+                  uploadedAt:
+                    type: string
+                    format: date-time
+                    example: "2024-03-15T10:30:00Z"
+        '400':
+          description: Checksum mismatch or invalid file ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+
+  /api/v1/files/{fileId}/download-url:
+    get:
+      tags: [Files]
+      summary: Generate presigned download URL
+      description: Generate time-limited presigned URL for secure file download
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Download URL generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  downloadUrl:
+                    type: string
+                    format: uri
+                    description: Presigned download URL (valid for 15 minutes)
+                    example: "https://batbern-prod-presentations.s3.amazonaws.com/..."
+                  filename:
+                    type: string
+                    description: Original filename
+                    example: "presentation.pdf"
+                  fileSizeBytes:
+                    type: integer
+                    format: int64
+                    example: 15728640
+                  mimeType:
+                    type: string
+                    example: "application/pdf"
+                  expiresIn:
+                    type: integer
+                    description: URL expiration time in seconds
+                    example: 900
+        '404':
+          description: File not found or not yet completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+
+  /api/v1/files/{fileId}:
+    delete:
+      tags: [Files]
+      summary: Delete uploaded file
+      description: Soft delete file and update storage quota
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: File deleted successfully
+        '403':
+          description: Not authorized to delete this file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+
+  /api/v1/files/{fileId}/metadata:
+    get:
+      tags: [Files]
+      summary: Get file metadata
+      description: Retrieve file metadata including upload status and CDN URL
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: File metadata retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentMetadata'
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+
+  /api/v1/users/{userId}/storage-quota:
+    get:
+      tags: [Files, Users]
+      summary: Get storage quota information
+      description: Retrieve current storage usage and quota limits for user
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Storage quota information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  quotaLimitBytes:
+                    type: integer
+                    format: int64
+                    description: Total quota limit (-1 for unlimited)
+                    example: 209715200  # 200 MB
+                  currentUsageBytes:
+                    type: integer
+                    format: int64
+                    description: Current storage usage
+                    example: 157286400  # 150 MB
+                  fileCount:
+                    type: integer
+                    description: Number of files uploaded
+                    example: 12
+                  percentageUsed:
+                    type: number
+                    format: double
+                    description: Percentage of quota used
+                    example: 75.0
+                  warningThresholdPercentage:
+                    type: number
+                    format: double
+                    description: Warning threshold percentage
+                    example: 80.0
+                  availableBytes:
+                    type: integer
+                    format: int64
+                    description: Available storage space
+                    example: 52428800  # 50 MB
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+
+  /api/v1/users/{userId}/files:
+    get:
+      tags: [Files, Users]
+      summary: List user's uploaded files
+      description: Retrieve paginated list of files uploaded by user
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: contentType
+          in: query
+          schema:
+            type: string
+            enum: [presentation, logo, speaker_photo, speaker_cv, event_photo, archive_material]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, uploading, completed, failed, deleted]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of user's files
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  files:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ContentMetadata'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+                  totalSizeBytes:
+                    type: integer
+                    format: int64
+                    description: Total size of all files
+                    example: 157286400
+        '401':
+          description: Unauthorized
 
 components:
   securitySchemes:

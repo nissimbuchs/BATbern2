@@ -56,7 +56,7 @@ Complete rewrite of BATbern as a comprehensive event management platform using R
 
 **FR6**: Attendees shall access a prominent current event landing page featuring the upcoming BATbern event with complete logistics (date, location, free attendance), speaker lineup, agenda details, and registration functionality
 
-**FR7**: The system shall integrate email notification workflows for event updates, speaker deadlines, and newsletter distribution
+**FR7**: The system shall integrate email notification workflows for event updates, speaker deadlines, and newsletter distribution, supported by a comprehensive email template management system that allows organizers to create, customize, and version email templates with variable substitution, multilingual support, and A/B testing capabilities for different stakeholder groups (speakers, attendees, partners, organizers)
 
 **FR8**: Partner users shall vote on topic priorities and submit strategic topic suggestions outside formal partner meetings
 
@@ -68,7 +68,7 @@ Complete rewrite of BATbern as a comprehensive event management platform using R
 
 **FR13**: [REMOVED - Strategic refocus per Sprint Change Proposal 2025-10-01]
 
-**FR14**: Attendees shall manage personal engagement through newsletter subscriptions, content bookmarking, and presentation downloads with personalized preferences
+**FR14**: Attendees shall manage personal engagement through newsletter subscriptions, content bookmarking, and presentation downloads with personalized preferences, including granular notification preference controls allowing users to opt in/out of specific notification types (event updates, speaker announcements, partner communications, system alerts) across multiple channels (email, in-app, push notifications) with frequency management and quiet hours settings
 
 **FR15**: The platform shall provide mobile-optimized attendee experience with offline content access, event check-in capabilities, and progressive web app functionality
 
@@ -80,7 +80,7 @@ Complete rewrite of BATbern as a comprehensive event management platform using R
 
 **FR19**: The platform shall implement progressive publishing engine that automatically validates content readiness (moderator quality review, abstract length limits) and publishes event information in phases (topic immediate → speakers 1 month prior → progressive agenda updates → final agenda → post-event materials) with quality control checkpoints and automated content standards enforcement
 
-**FR20**: Event organizers shall receive intelligent notification system with role-based alerts, cross-stakeholder visibility, and automated escalation workflows for deadline management and task coordination
+**FR20**: Event organizers shall receive intelligent notification system with role-based alerts, cross-stakeholder visibility, and automated escalation workflows for deadline management and task coordination, implementing multi-tier escalation rules (reminder → warning → critical → escalation to backup organizer) with configurable timing thresholds, automatic fallback notification paths, priority-based delivery guarantees, and real-time escalation status dashboards with audit trails
 
 **FR21**: The system shall support long-term planning capabilities including multi-year venue booking workflows, seasonal partner meeting coordination, and strategic budget planning with automated scheduling and reminder systems
 
@@ -95,6 +95,20 @@ Complete rewrite of BATbern as a comprehensive event management platform using R
 **NFR3**: System shall integrate with external services (email, payment processing, file storage) through configurable APIs
 
 **NFR4**: Platform shall support multi-language content (German, English) with internationalization framework
+
+### Email & Notification Infrastructure Requirements
+
+**EIR1**: The system shall integrate AWS Simple Email Service (SES) for transactional and marketing email delivery with the following specifications:
+- **Configuration**: Production account with verified domain (batbern.ch) and DKIM/SPF/DMARC setup
+- **Throughput**: Support for 50,000 emails/day with burst capacity to 200,000/day
+- **Deliverability**: Maintain >98% delivery rate with bounce and complaint handling
+- **Templates**: Support for SES template versioning and variable substitution
+- **Monitoring**: CloudWatch metrics for delivery, bounces, complaints, and reputation
+- **Compliance**: GDPR-compliant unsubscribe handling and data retention policies
+
+**EIR2**: The notification system shall provide multi-channel delivery infrastructure supporting email (via AWS SES), in-app notifications (via WebSocket), and future extensibility for SMS (via AWS SNS) and push notifications (via Firebase Cloud Messaging)
+
+**EIR3**: Email template management system shall support HTML/text dual-format emails, inline CSS processing, responsive design testing tools, preview functionality across email clients, and version control with rollback capabilities
 
 ### Compatibility Requirements
 
@@ -164,6 +178,116 @@ For comprehensive technical implementation details, refer to the following archi
 - **Epic 5**: Weeks 39-46 (Attendee Experience)
 - **Epic 6**: Weeks 47-50 (Partner Coordination)
 - **Epic 7**: Weeks 57-62 (Enhanced Features)
+
+### 4.2 Content Management & Storage Architecture
+
+The BATbern platform manages diverse content types including company logos, speaker photos and CVs, event presentations, and historical archives. This section defines the storage architecture, CDN strategy, and content policies.
+
+#### AWS S3 Storage Strategy
+
+**Bucket Architecture:**
+- **Environment Separation**: Separate S3 buckets per environment (development, staging, production)
+- **Bucket Naming**: `batbern-{environment}-{content-type}` (e.g., `batbern-prod-presentations`, `batbern-prod-logos`)
+- **Content Types**:
+  - `presentations`: Speaker presentation files (PDF, PPTX)
+  - `logos`: Company and partner logos (PNG, JPG, SVG)
+  - `profiles`: Speaker photos and CVs (JPG, PNG, PDF)
+  - `archives`: Historical event materials and photo galleries
+
+**S3 Key Structure:**
+```
+/{content-type}/{year}/{entity-id}/{filename-with-uuid}
+Examples:
+  /presentations/2024/evt-123/speaker-456-presentation-a7b3c9d2.pdf
+  /logos/2024/company-789/logo-f3e8d1a4.png
+  /profiles/2024/speaker-456/photo-b2c9e3f1.jpg
+```
+
+**Lifecycle Policies:**
+- **Active Content**: S3 Standard storage class for content < 1 year old
+- **Historical Content**: Transition to S3 Standard-IA after 1 year
+- **Archive Content**: Transition to S3 Glacier after 3 years
+- **Retention**: Indefinite retention for all event-related content
+
+**Security & Access Control:**
+- **Private Buckets**: All buckets private by default, no public access
+- **Presigned URLs**: Time-limited presigned URLs for downloads (15-minute expiration)
+- **Upload Authentication**: All uploads require valid JWT with appropriate role
+- **Server-Side Encryption**: AES-256 encryption at rest (S3-SSE)
+- **Versioning**: Enabled for accidental deletion protection
+
+#### CloudFront CDN Configuration
+
+**Distribution Strategy:**
+- **Global CDN**: CloudFront distribution per environment for fast worldwide delivery
+- **Origin**: S3 buckets as CloudFront origins with Origin Access Identity (OAI)
+- **Caching**: Aggressive caching for static content (TTL: 7 days)
+- **Custom Domain**: `cdn.batbern.ch`, `cdn-staging.batbern.ch`, `cdn-dev.batbern.ch`
+
+**Performance Optimization:**
+- **Edge Locations**: AWS global edge network for low-latency delivery
+- **Compression**: Automatic gzip/brotli compression for text-based files
+- **HTTP/2**: Enabled for multiplexing and reduced latency
+- **Image Optimization**: Lambda@Edge for automatic image resizing and format conversion
+
+**Security Headers:**
+- **HTTPS Only**: Redirect HTTP to HTTPS
+- **Security Headers**: CORS, CSP, X-Frame-Options, X-Content-Type-Options
+- **Signed URLs**: Optional signed URLs for sensitive content
+
+#### File Size and Format Constraints
+
+**Per Content Type:**
+
+| Content Type | Max Size | Allowed Formats | Validation |
+|--------------|----------|-----------------|------------|
+| Company Logo | 5 MB | PNG, JPG, SVG | Dimensions: 500x500 to 2000x2000 |
+| Speaker Photo | 10 MB | JPG, PNG | Dimensions: min 800x800, aspect ratio 1:1 or 4:3 |
+| Speaker CV | 5 MB | PDF | Max 10 pages |
+| Presentation | 100 MB | PDF, PPTX | Virus scan required |
+| Event Photo | 20 MB | JPG, PNG | Max 4000x4000 |
+
+**Upload Requirements:**
+- **Multipart Upload**: Files > 10 MB use multipart upload for reliability
+- **Progress Tracking**: Real-time upload progress for files > 1 MB
+- **Virus Scanning**: ClamAV integration for all uploaded files
+- **Checksum Verification**: SHA-256 checksum validation on upload completion
+
+#### Storage Quota Policies Per Role
+
+**Role-Based Quotas:**
+
+| Role | Total Storage Quota | Max Files | Max File Size | Notes |
+|------|---------------------|-----------|---------------|-------|
+| Organizer | Unlimited | Unlimited | 100 MB | Full platform administration |
+| Speaker | 200 MB | 20 files | 100 MB | Presentation + supporting materials |
+| Partner | 50 MB | 5 files | 5 MB | Company logo + marketing materials |
+| Attendee | 10 MB | 5 files | 5 MB | Profile photo + bookmarked content |
+
+**Quota Enforcement:**
+- **Pre-Upload Check**: Validate available quota before upload
+- **Soft Limits**: Warning at 80% quota usage
+- **Hard Limits**: Upload rejection at 100% quota
+- **Quota Increase**: Manual approval process for speakers exceeding limits
+
+#### Backup and Disaster Recovery
+
+**Backup Strategy:**
+- **Cross-Region Replication**: Replicate production bucket to secondary region (eu-west-1 → eu-central-1)
+- **Versioning**: S3 versioning enabled for 30-day rollback capability
+- **Daily Snapshots**: S3 bucket inventory reports for disaster recovery planning
+- **Backup Testing**: Quarterly restore drills to validate backup integrity
+
+**Disaster Recovery:**
+- **RTO (Recovery Time Objective)**: 4 hours for full content restoration
+- **RPO (Recovery Point Objective)**: 1 hour maximum data loss
+- **Failover**: Automatic CloudFront failover to secondary region on origin failure
+- **Restoration Process**: Documented restoration procedures with runbooks
+
+**Data Integrity:**
+- **Checksum Validation**: SHA-256 checksums stored in database for integrity verification
+- **Periodic Audits**: Monthly automated integrity checks comparing S3 and database records
+- **Orphan Detection**: Identify and cleanup orphaned S3 objects without database references
 
 ### Detailed Epic Implementation
 

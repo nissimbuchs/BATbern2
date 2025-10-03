@@ -40,12 +40,12 @@
         Detailed AWS Cognito integration requirements
         Role-permission matrix for all features
         User lifecycle management workflows
-- [ ] ENHANCE PRD Add requirements:
+- [x] ENHANCE PRD Add requirements:
         Email template management system (FR20)
         User notification preference system (FR14)
         Notification escalation rules (FR20)
         AWS SES integration specifications
-- [ ] EXPAND PRD Add new section: “4.2 Content Management & Storage Architecture”
+- [x] EXPAND PRD Add new section: "4.2 Content Management & Storage Architecture"
         AWS S3 storage strategy
         CloudFront CDN configuration
         File size and format constraints
