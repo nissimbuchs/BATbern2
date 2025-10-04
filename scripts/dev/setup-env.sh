@@ -11,7 +11,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Configuration
-AWS_PROFILE="${AWS_PROFILE:-batbern-mgmt}"
+AWS_PROFILE="${AWS_PROFILE:-batbern-dev}"
 AWS_REGION="${AWS_REGION:-eu-central-1}"
 ENVIRONMENT="development"
 ENV_FILE=".env"
@@ -106,12 +106,12 @@ echo ""
 
 # Fetch Cognito Stack outputs
 echo "Fetching Cognito configuration from AWS..."
-COGNITO_STACK="BATbernCognitoStack"
+COGNITO_STACK="BATbern-${ENVIRONMENT}-Cognito"
 
 COGNITO_USER_POOL_ID=$(get_stack_output "${COGNITO_STACK}" "UserPoolId")
 if [ $? -ne 0 ]; then
     echo -e "${YELLOW}Warning: Could not fetch Cognito User Pool ID from stack ${COGNITO_STACK}${NC}"
-    echo "Deploy the Cognito stack: cd infrastructure && npx cdk deploy ${COGNITO_STACK} --app 'npx ts-node bin/infrastructure.ts'"
+    echo "Deploy the Cognito stack: cd infrastructure && npm run deploy:dev"
     COGNITO_USER_POOL_ID="NOT_DEPLOYED"
     COGNITO_CLIENT_ID="NOT_DEPLOYED"
     COGNITO_DOMAIN_URL="NOT_DEPLOYED"

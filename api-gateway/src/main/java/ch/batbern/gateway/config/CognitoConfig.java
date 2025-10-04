@@ -14,17 +14,22 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class CognitoConfig {
 
-    @Value("${cognito.userPoolId}")
+    @Value("${aws.cognito.userPoolId:#{null}}")
     private String userPoolId;
 
-    @Value("${cognito.region}")
+    @Value("${aws.cognito.region:${AWS_REGION:eu-central-1}}")
     private String region;
 
-    @Value("${cognito.appClientId}")
+    @Value("${aws.cognito.appClientId:#{null}}")
     private String appClientId;
 
     @Bean
     public CognitoJWTValidator cognitoJWTValidator(CognitoJWKSProvider jwksProvider) {
+        if (userPoolId == null || appClientId == null) {
+            throw new IllegalStateException(
+                "Cognito configuration is missing. Please set aws.cognito.userPoolId and aws.cognito.appClientId"
+            );
+        }
         return new CognitoJWTValidator(jwksProvider, userPoolId, region, appClientId);
     }
 }

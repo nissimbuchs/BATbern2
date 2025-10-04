@@ -8,7 +8,7 @@ import { EnvironmentConfig } from './environment-config';
 export const prodConfig: EnvironmentConfig = {
   envName: 'production',
   region: 'eu-central-1',
-  account: process.env.CDK_DEFAULT_ACCOUNT || '',
+  account: '422940799530', // BATbern Production account
   vpc: {
     cidr: '10.2.0.0/16',
     maxAzs: 3, // High availability across 3 AZs
@@ -37,6 +37,13 @@ export const prodConfig: EnvironmentConfig = {
       maxCapacity: 10,
       targetCpuUtilization: 50,
     },
+  },
+  domain: {
+    frontendDomain: 'www.batbern.ch',
+    apiDomain: 'api.batbern.ch',
+    // Centralized DNS in management account (510187933511)
+    hostedZoneId: 'Z04921951F6B818JF0POD',
+    certificateArn: 'arn:aws:acm:us-east-1:510187933511:certificate/3644eb35-b649-45e7-a198-05b01611ff09',
   },
   tags: {
     Environment: 'production',

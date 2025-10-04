@@ -8,7 +8,7 @@ import { EnvironmentConfig } from './environment-config';
 export const stagingConfig: EnvironmentConfig = {
   envName: 'staging',
   region: 'eu-central-1',
-  account: process.env.CDK_DEFAULT_ACCOUNT || '',
+  account: '188701360969', // BATbern Staging account
   vpc: {
     cidr: '10.1.0.0/16',
     maxAzs: 2,
@@ -37,6 +37,13 @@ export const stagingConfig: EnvironmentConfig = {
       maxCapacity: 4,
       targetCpuUtilization: 60,
     },
+  },
+  domain: {
+    frontendDomain: 'staging.batbern.ch',
+    apiDomain: 'api-staging.batbern.ch',
+    // Centralized DNS in management account (510187933511)
+    hostedZoneId: 'Z04921951F6B818JF0POD',
+    certificateArn: 'arn:aws:acm:us-east-1:510187933511:certificate/1862d58a-8d73-48e4-946e-1b34e4c44302',
   },
   tags: {
     Environment: 'staging',

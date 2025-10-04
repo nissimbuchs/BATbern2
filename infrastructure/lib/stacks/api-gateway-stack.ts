@@ -7,8 +7,10 @@ import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as route53targets from 'aws-cdk-lib/aws-route53-targets';
 import * as certificatemanager from 'aws-cdk-lib/aws-certificatemanager';
 import { Construct } from 'constructs';
+import { EnvironmentConfig } from '../config/environment-config';
 
 export interface ApiGatewayStackProps extends cdk.StackProps {
+  config: EnvironmentConfig;
   userPool: cognito.UserPool;
   userPoolClient: cognito.UserPoolClient;
   domainName?: string;
@@ -16,12 +18,21 @@ export interface ApiGatewayStackProps extends cdk.StackProps {
   certificateArn?: string;
 }
 
+/**
+ * API Gateway Stack - Provides unified API gateway with routing to microservices
+ *
+ * Implements:
+ * - AC16: API Gateway with Cognito authorization
+ * - AC4: Security Boundaries with request validation and routing
+ */
 export class ApiGatewayStack extends cdk.Stack {
   public readonly api: apigateway.RestApi;
   public readonly authorizer: apigateway.CognitoUserPoolsAuthorizer;
 
   constructor(scope: Construct, id: string, props: ApiGatewayStackProps) {
     super(scope, id, props);
+
+    const envName = props.config.envName;
 
     // Create Lambda authorizer for custom authorization logic
     const authorizerLambda = new lambda.Function(this, 'AuthorizerLambda', {
@@ -163,19 +174,22 @@ export class ApiGatewayStack extends cdk.Stack {
     this.authorizer = new apigateway.CognitoUserPoolsAuthorizer(this, 'CognitoAuthorizer', {
       cognitoUserPools: [props.userPool],
       identitySource: 'method.request.header.Authorization',
-      authorizerName: 'CognitoAuthorizer',
+      authorizerName: `${envName}-CognitoAuthorizer`,
     });
+
+    // Determine allowed origins based on environment
+    const allowOrigins = envName === 'production'
+      ? ['https://www.batbern.ch']
+      : envName === 'staging'
+      ? ['https://staging.batbern.ch']
+      : ['http://localhost:3000'];
 
     // Create API Gateway
     this.api = new apigateway.RestApi(this, 'BATbernAPI', {
-      restApiName: 'BATbern Platform API',
-      description: 'API Gateway for BATbern Platform',
+      restApiName: `BATbern Platform API - ${envName}`,
+      description: `API Gateway for BATbern Platform - ${envName}`,
       defaultCorsPreflightOptions: {
-        allowOrigins: [
-          'https://www.batbern.ch',
-          'https://staging.batbern.ch',
-          'http://localhost:3000',
-        ],
+        allowOrigins,
         allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         allowHeaders: [
           'Content-Type',
@@ -411,9 +425,15 @@ export class ApiGatewayStack extends cdk.Stack {
       });
 
       // Create Route 53 record (if hosted zone provided)
-      if (props.hostedZoneId) {
-        const hostedZone = route53.HostedZone.fromHostedZoneId(
-          this, 'HostedZone', props.hostedZoneId
+      if (props.hostedZoneId && props.domainName) {
+        // Extract zone name from domain (e.g., api-staging.batbern.ch -> batbern.ch)
+        const zoneName = props.domainName.split('.').slice(-2).join('.');
+
+        const hostedZone = route53.HostedZone.fromHostedZoneAttributes(
+          this, 'HostedZone', {
+            hostedZoneId: props.hostedZoneId,
+            zoneName,
+          }
         );
 
         new route53.ARecord(this, 'ApiARecord', {
@@ -429,27 +449,32 @@ export class ApiGatewayStack extends cdk.Stack {
       new cdk.CfnOutput(this, 'ApiCustomDomainUrl', {
         value: `https://${props.domainName}`,
         description: 'API Gateway Custom Domain URL',
-        exportName: `${id}-ApiCustomDomainUrl`,
+        exportName: `${envName}-ApiCustomDomainUrl`,
       });
     }
+
+    // Apply tags
+    cdk.Tags.of(this).add('Environment', envName);
+    cdk.Tags.of(this).add('Component', 'API-Gateway');
+    cdk.Tags.of(this).add('Project', 'BATbern');
 
     // Outputs
     new cdk.CfnOutput(this, 'ApiGatewayUrl', {
       value: this.api.url,
       description: 'API Gateway URL',
-      exportName: `${id}-ApiGatewayUrl`,
+      exportName: `${envName}-ApiGatewayUrl`,
     });
 
     new cdk.CfnOutput(this, 'ApiGatewayId', {
       value: this.api.restApiId,
       description: 'API Gateway ID',
-      exportName: `${id}-ApiGatewayId`,
+      exportName: `${envName}-ApiGatewayId`,
     });
 
     new cdk.CfnOutput(this, 'AuthorizerArn', {
       value: authorizerLambda.functionArn,
       description: 'Lambda Authorizer ARN',
-      exportName: `${id}-AuthorizerArn`,
+      exportName: `${envName}-AuthorizerArn`,
     });
   }
 }

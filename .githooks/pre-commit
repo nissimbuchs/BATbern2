@@ -40,16 +40,19 @@ if [ -n "$TS_FILES" ]; then
         FRONTEND_FILES=$(echo "$STAGED_FILES" | grep '^web-frontend/' | sed 's|^web-frontend/||')
 
         if [ -n "$FRONTEND_FILES" ]; then
-            # Run ESLint on changed frontend files (exclude config files)
+            # Run ESLint on changed frontend files (exclude config and env files)
             echo "  Running ESLint..."
-            LINT_FILES=$(echo "$FRONTEND_FILES" | grep -v '\.eslintrc\.' || true)
+            LINT_FILES=$(echo "$FRONTEND_FILES" | grep -v -E '\.(eslintrc|prettierignore)' | grep -v '\.env' || true)
             if [ -n "$LINT_FILES" ]; then
                 echo "$LINT_FILES" | xargs npx eslint --max-warnings 0 || TESTS_FAILED=1
             fi
 
-            # Run Prettier check on changed frontend files
+            # Run Prettier check on changed frontend files (exclude config and env files)
             echo "  Running Prettier..."
-            echo "$FRONTEND_FILES" | xargs npx prettier --check || TESTS_FAILED=1
+            PRETTIER_FILES=$(echo "$FRONTEND_FILES" | grep -v -E '\.(eslintrc|prettierignore|eslintignore)' | grep -v '\.env' || true)
+            if [ -n "$PRETTIER_FILES" ]; then
+                echo "$PRETTIER_FILES" | xargs npx prettier --check || TESTS_FAILED=1
+            fi
         fi
         cd ..
     elif [ -f "package.json" ]; then

@@ -7,10 +7,14 @@ import { StorageStack } from '../lib/stacks/storage-stack';
 import { SecretsStack } from '../lib/stacks/secrets-stack';
 import { MonitoringStack } from '../lib/stacks/monitoring-stack';
 import { CICDStack } from '../lib/stacks/cicd-stack';
+import { CognitoStack } from '../lib/stacks/cognito-stack';
+import { ApiGatewayStack } from '../lib/stacks/api-gateway-stack';
+import { FrontendStack } from '../lib/stacks/frontend-stack';
+import { DnsStack } from '../lib/stacks/dns-stack';
 import { devConfig } from '../lib/config/dev-config';
 import { stagingConfig } from '../lib/config/staging-config';
 import { prodConfig } from '../lib/config/prod-config';
-import { EnvironmentConfig } from '../lib/config/environment-config';
+import { EnvironmentConfig, EnvironmentHelper } from '../lib/config/environment-config';
 
 const app = new cdk.App();
 
@@ -41,7 +45,30 @@ console.log(`AWS Account: ${env.account}, Region: ${env.region}`);
 // Create stacks for the selected environment
 const stackPrefix = `BATbern-${config.envName}`;
 
-// 1. Network Stack (VPC, Security Groups)
+// 1. DNS Stack (Route53, ACM Certificates) - CENTRALIZED IN MANAGEMENT ACCOUNT
+// DNS is managed centrally in the management account (510187933511)
+// - Hosted Zone: Z04921951F6B818JF0POD (batbern.ch)
+// - Certificates created manually in us-east-1 for CloudFront
+// - Each environment references the centralized hosted zone via hostedZoneId in config
+let dnsStack: DnsStack | undefined;
+// DNS stack creation disabled - using centralized DNS in management account
+// if (config.domain && EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
+//   const dnsEnv = {
+//     account: env.account,
+//     region: 'us-east-1', // CloudFront requires certificates in us-east-1
+//   };
+//
+//   dnsStack = new DnsStack(app, `${stackPrefix}-DNS`, {
+//     config,
+//     domainName: config.domain.frontendDomain.split('.').slice(-2).join('.'), // Extract root domain (batbern.ch)
+//     env: dnsEnv,
+//     description: `BATbern DNS Infrastructure - ${config.envName}`,
+//     tags: config.tags,
+//     crossRegionReferences: true, // Allow exporting certificate to other regions
+//   });
+// }
+
+// 2. Network Stack (VPC, Security Groups)
 const networkStack = new NetworkStack(app, `${stackPrefix}-Network`, {
   config,
   env,
@@ -49,7 +76,7 @@ const networkStack = new NetworkStack(app, `${stackPrefix}-Network`, {
   tags: config.tags,
 });
 
-// 2. Secrets Stack (Secrets Manager, KMS)
+// 3. Secrets Stack (Secrets Manager, KMS)
 const secretsStack = new SecretsStack(app, `${stackPrefix}-Secrets`, {
   config,
   env,
@@ -57,7 +84,7 @@ const secretsStack = new SecretsStack(app, `${stackPrefix}-Secrets`, {
   tags: config.tags,
 });
 
-// 3. Database Stack (RDS, ElastiCache)
+// 4. Database Stack (RDS, ElastiCache)
 const databaseStack = new DatabaseStack(app, `${stackPrefix}-Database`, {
   config,
   vpc: networkStack.vpc,
@@ -70,7 +97,7 @@ const databaseStack = new DatabaseStack(app, `${stackPrefix}-Database`, {
 databaseStack.addDependency(networkStack);
 databaseStack.addDependency(secretsStack);
 
-// 4. Storage Stack (S3, CloudFront)
+// 5. Storage Stack (S3, CloudFront)
 const storageStack = new StorageStack(app, `${stackPrefix}-Storage`, {
   config,
   env,
@@ -78,7 +105,7 @@ const storageStack = new StorageStack(app, `${stackPrefix}-Storage`, {
   tags: config.tags,
 });
 
-// 5. Monitoring Stack (CloudWatch, Alarms, Logs)
+// 6. Monitoring Stack (CloudWatch, Alarms, Logs)
 const monitoringStack = new MonitoringStack(app, `${stackPrefix}-Monitoring`, {
   config,
   env,
@@ -86,7 +113,7 @@ const monitoringStack = new MonitoringStack(app, `${stackPrefix}-Monitoring`, {
   tags: config.tags,
 });
 
-// 6. CI/CD Stack (ECR, IAM roles for GitHub Actions)
+// 7. CI/CD Stack (ECR, IAM roles for GitHub Actions)
 const githubRepository = app.node.tryGetContext('githubRepository') || process.env.GITHUB_REPOSITORY || 'nissimbuchs/BATbern2';
 const cicdStack = new CICDStack(app, `${stackPrefix}-CICD`, {
   config,
@@ -95,6 +122,54 @@ const cicdStack = new CICDStack(app, `${stackPrefix}-CICD`, {
   description: `BATbern CI/CD Infrastructure - ${config.envName}`,
   tags: config.tags,
 });
+
+// 8. Cognito Stack (User authentication)
+const cognitoStack = new CognitoStack(app, `${stackPrefix}-Cognito`, {
+  config,
+  env,
+  description: `BATbern User Authentication - ${config.envName}`,
+  tags: config.tags,
+});
+
+// 9. API Gateway Stack (Unified API with routing)
+// NOTE: Only deploy for cloud environments (staging/production)
+// Development runs API Gateway locally in Docker
+if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
+  const apiGatewayStack = new ApiGatewayStack(app, `${stackPrefix}-ApiGateway`, {
+    config,
+    userPool: cognitoStack.userPool,
+    userPoolClient: cognitoStack.userPoolClient,
+    domainName: config.domain?.apiDomain,
+    hostedZoneId: dnsStack?.hostedZone.hostedZoneId || config.domain?.hostedZoneId,
+    certificateArn: networkStack.apiCertificate?.certificateArn || config.domain?.certificateArn,
+    env,
+    description: `BATbern API Gateway - ${config.envName}`,
+    tags: config.tags,
+  });
+  apiGatewayStack.addDependency(cognitoStack);
+  apiGatewayStack.addDependency(networkStack); // Depends on Network for certificate
+}
+
+// 10. Frontend Stack (React web application)
+// NOTE: Only deploy for cloud environments (staging/production)
+// Development runs Frontend locally in Docker
+if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
+  const frontendStack = new FrontendStack(app, `${stackPrefix}-Frontend`, {
+    config,
+    logsBucket: storageStack.logsBucket,
+    domainName: config.domain?.frontendDomain,
+    hostedZoneId: dnsStack?.hostedZone.hostedZoneId || config.domain?.hostedZoneId,
+    certificateArn: dnsStack?.certificate.certificateArn || config.domain?.certificateArn,
+    env,
+    description: `BATbern Frontend Application - ${config.envName}`,
+    tags: config.tags,
+    crossRegionReferences: true, // Required to reference us-east-1 certificate from eu-central-1 stack
+  });
+  frontendStack.addDependency(storageStack);
+  if (dnsStack) {
+    frontendStack.addDependency(dnsStack);
+  }
+}
 
 // Add stack tags
 cdk.Tags.of(app).add('Project', 'BATbern');

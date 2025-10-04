@@ -1,6 +1,7 @@
 import { App } from 'aws-cdk-lib';
 import { Template, Match } from 'aws-cdk-lib/assertions';
-import { CognitoStack } from '../lib/cognito-stack';
+import { CognitoStack } from '../lib/stacks/cognito-stack';
+import { devConfig } from '../lib/config/dev-config';
 
 describe('CognitoStack Tests', () => {
   let app: App;
@@ -10,7 +11,8 @@ describe('CognitoStack Tests', () => {
   beforeEach(() => {
     app = new App();
     stack = new CognitoStack(app, 'TestCognitoStack', {
-      env: { region: 'eu-central-1' },
+      config: devConfig,
+      env: { region: 'eu-central-1', account: '123456789012' },
     });
     template = Template.fromStack(stack);
   });
@@ -18,7 +20,7 @@ describe('CognitoStack Tests', () => {
   // Test 1.1: should_createUserPool_when_cognitoStackDeployed
   test('should_createUserPool_when_cognitoStackDeployed', () => {
     template.hasResourceProperties('AWS::Cognito::UserPool', {
-      UserPoolName: 'batbern-user-pool',
+      UserPoolName: 'batbern-development-user-pool',
       AccountRecoverySetting: {
         RecoveryMechanisms: [
           { Name: 'verified_email', Priority: 1 },
@@ -66,7 +68,7 @@ describe('CognitoStack Tests', () => {
   // Test 1.3: should_enableRoleBasedSignup_when_userRegisters
   test('should_enableRoleBasedSignup_when_userRegisters', () => {
     template.hasResourceProperties('AWS::Cognito::UserPoolClient', {
-      ClientName: 'batbern-web-client',
+      ClientName: 'batbern-development-web-client',
       ExplicitAuthFlows: Match.arrayWith([
         'ALLOW_USER_PASSWORD_AUTH',
         'ALLOW_CUSTOM_AUTH',
@@ -106,16 +108,8 @@ describe('CognitoStack Tests', () => {
       AllowedOAuthFlows: ['code'],
       AllowedOAuthFlowsUserPoolClient: true,
       AllowedOAuthScopes: ['email', 'openid', 'profile'],
-      CallbackURLs: Match.arrayWith([
-        'https://www.batbern.ch/auth/callback',
-        'https://staging.batbern.ch/auth/callback',
-        'http://localhost:3000/auth/callback',
-      ]),
-      LogoutURLs: Match.arrayWith([
-        'https://www.batbern.ch/logout',
-        'https://staging.batbern.ch/logout',
-        'http://localhost:3000/logout',
-      ]),
+      CallbackURLs: ['http://localhost:3000/auth/callback'],
+      LogoutURLs: ['http://localhost:3000/logout'],
       SupportedIdentityProviders: ['COGNITO'],
     });
   });
@@ -123,7 +117,7 @@ describe('CognitoStack Tests', () => {
   // Test for User Pool Domain
   test('should_createUserPoolDomain_when_stackDeployed', () => {
     template.hasResourceProperties('AWS::Cognito::UserPoolDomain', {
-      Domain: 'batbern-auth',
+      Domain: 'batbern-development-auth',
     });
   });
 

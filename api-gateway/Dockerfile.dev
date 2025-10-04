@@ -1,22 +1,14 @@
 FROM gradle:8.5-jdk21 AS development
 
-# Set working directory
-WORKDIR /app
-
-# Copy gradle configuration first for better caching
-COPY build.gradle settings.gradle ./
-COPY gradle ./gradle
-
-# Download dependencies (cached layer)
-RUN gradle dependencies --no-daemon || true
-
-# Copy source code
-COPY src ./src
+# Set working directory to workspace root (where settings.gradle is)
+WORKDIR /workspace
 
 # Expose application port
 EXPOSE 8080
 
-# Enable Gradle continuous build for hot reload
-# --continuous flag watches for file changes and rebuilds automatically
-# --no-daemon ensures no background process conflicts
-ENTRYPOINT ["gradle", "bootRun", "--continuous", "--no-daemon", "--info"]
+# Note: In docker-compose, the entire project directory is mounted as a volume
+# This allows hot reloading and gives access to shared-kernel dependency
+# Gradle runs from root to access settings.gradle and all subprojects
+
+# Run api-gateway subproject with continuous build for hot reload
+ENTRYPOINT ["gradle", ":api-gateway:bootRun", "--continuous", "--no-daemon", "--info"]
