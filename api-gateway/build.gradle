@@ -41,10 +41,6 @@ dependencies {
     // Jackson for JSON processing
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.3'
 
-    // Spring Cloud Gateway (for routing)
-    implementation 'org.springframework.cloud:spring-cloud-starter-gateway'
-    implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-reactor-resilience4j'
-
     // OpenAPI Support
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
 
