@@ -114,37 +114,49 @@
 
 ## API Requirements
 
+### Consolidated APIs (Story 1.21)
+
+**Note**: This wireframe now uses the consolidated Topics APIs from Story 1.21, which reduced 52 endpoints to 12 endpoints (77% reduction). The consolidation provides better performance through reduced HTTP requests and unified query patterns.
+
 ### Initial Page Load APIs
 
 When the Topic Backlog Manager screen loads, the following APIs are called to provide the necessary data:
 
-1. **GET /api/v1/organizers/{organizerId}/topics/backlog**
-   - Query params: includeHistory (true), includeMetrics (true), limit (50)
+1. **GET /api/v1/topics?filter={}&sort={}&page={}&include=history,metrics**
+   - Query params: filter (status, category, etc.), sort (-lastUsed), limit (50), include=history,metrics
    - Returns: All topics with usage history, performance metrics, status, last used date, category
    - Used for: Populate heat map and topic list
+   - **Consolidation**: Replaces /organizers/{organizerId}/topics/backlog with unified filtering
 
-2. **GET /api/v1/organizers/{organizerId}/topics/usage-history**
-   - Query params: startYear (2020), endYear (2025), groupBy (quarter)
+2. **GET /api/v1/topics/{id}/history**
+   - Query params: startYear (2020), endYear (2025), groupBy (quarter), page, limit
    - Returns: Topic usage data by quarter/year for heat map visualization, frequency, recency, gaps
    - Used for: Render heat map visualization
+   - **Consolidation**: Standard pagination on history endpoint
 
-3. **GET /api/v1/organizers/{organizerId}/topics/categories**
+3. **GET /api/v1/topics?filter={}&include=statistics**
+   - Query params: filter (groupBy=category), include=statistics
    - Returns: Topic categories with topic counts, most used, trending indicators
    - Used for: Populate category filter dropdown
+   - **Consolidation**: Uses main list endpoint with groupBy filter
 
-4. **GET /api/v1/organizers/{organizerId}/topics/ai-suggestions**
-   - Query params: limit (3), includeReasons (true)
+4. **GET /api/v1/topics/ai-suggestions?context={}**
+   - Query params: limit (3), context (organizer preferences, event planning)
    - Returns: AI-generated topic suggestions with reasoning, industry trends, partner interest alignment, search volume
    - Used for: Populate AI suggestions panel
+   - **Consolidation**: Context parameter replaces multiple specialized endpoints
 
-5. **GET /api/v1/partners/topic-preferences/summary**
-   - Query params: organizerId
+5. **GET /api/v1/topics?filter={}&include=votes**
+   - Query params: filter (hasVotes=true), include=votes, sort=-votes
    - Returns: Aggregated partner interest data with vote counts, priority ratings, sponsor names, comments
    - Used for: Display partner interest metrics for topics
+   - **Consolidation**: Uses ?include=votes parameter
 
-6. **GET /api/v1/organizers/{organizerId}/topics/filters/metadata**
+6. **GET /api/v1/topics/statistics?groupBy=category**
+   - Query params: groupBy (category, status), metrics (counts, trends)
    - Returns: Filter options (categories, statuses, date ranges, interest levels) with counts
    - Used for: Populate filter dropdowns
+   - **Consolidation**: New statistics endpoint with flexible grouping
 
 ---
 
@@ -152,107 +164,129 @@ When the Topic Backlog Manager screen loads, the following APIs are called to pr
 
 ### Topic Selection & Management
 
-1. **GET /api/v1/organizers/{organizerId}/topics/{topicId}/details**
+1. **GET /api/v1/topics/{id}?include=history,votes,metrics,insights**
+   - Query params: include (history, votes, metrics, insights)
    - Returns: Detailed topic information with performance metrics (attendance, ratings, downloads, engagement), partner interest (votes, priority, sponsors, comments), last used date, suggested wait period
    - Used for: Display selected topic details panel
+   - **Consolidation**: Single endpoint with ?include parameter replaces multiple specialized endpoints
 
-2. **GET /api/v1/organizers/{organizerId}/topics/{topicId}/similar**
+2. **GET /api/v1/topics/{id}/similarity?threshold=0.15**
    - Query params: threshold (0.15), limit (10)
    - Returns: Similar topics with ML similarity scores, overlap analysis, topic names, IDs
    - Used for: Show similar topics from [Similar Topics] button
+   - **Consolidation**: Dedicated similarity endpoint with configurable threshold
 
-3. **GET /api/v1/organizers/{organizerId}/topics/{topicId}/history**
+3. **GET /api/v1/topics/{id}/history?page={}&limit={}**
+   - Query params: page, limit, startDate, endDate
    - Returns: Complete usage history with events, dates, speakers, attendance, ratings, feedback
    - Used for: View topic history from [View History] button
+   - **Consolidation**: Standard pagination on history sub-resource
 
 4. **POST /api/v1/events/{eventId}/topics**
    - Payload: `{ topicId, primaryTopic: boolean, notes }`
    - Response: Topic assigned to event, validation warnings (if recently used), assignment confirmation
    - Used for: Select topic for event from [Select for Event] button
+   - **Note**: Event management API (not part of Topics API consolidation)
 
-5. **POST /api/v1/organizers/{organizerId}/topics**
+5. **POST /api/v1/topics**
    - Payload: `{ title, category, description, suggestedBy, source: "partner-request|trend-analysis|manual", keywords: [], relatedTopics: [] }`
    - Response: Topic created, topic ID, backlog confirmation
    - Used for: Add new topic from [+ Add] button
+   - **Consolidation**: Standard RESTful POST on /topics
 
-6. **PUT /api/v1/organizers/{organizerId}/topics/{topicId}**
+6. **PUT /api/v1/topics/{id}**
    - Payload: `{ title, category, description, status, keywords, relatedTopics }`
    - Response: Topic updated, revalidated, similarity scores recalculated
    - Used for: Edit topic details
+   - **Consolidation**: Standard RESTful PUT on /topics/{id}
 
-7. **DELETE /api/v1/organizers/{organizerId}/topics/{topicId}**
-   - Payload: `{ archiveReason, alternative TopicId (optional) }`
-   - Response: Topic archived/deleted, usage history preserved
+7. **POST /api/v1/topics/{id}/archive**
+   - Payload: `{ archiveReason, alternativeTopicId (optional) }`
+   - Response: Topic archived, usage history preserved
    - Used for: Remove topic from backlog
+   - **Consolidation**: Dedicated archive action endpoint
 
 ### Filtering & Search
 
-8. **GET /api/v1/organizers/{organizerId}/topics/backlog/filter**
-   - Query params: category, status, lastUsed (date range), partnerInterest (level), sortBy, groupBy
-   - Returns: Filtered topic list with matching criteria, count
+8. **GET /api/v1/topics?filter={}&sort={}&page={}**
+   - Query params: filter (category, status, lastUsed date range, partnerInterest level), sort, groupBy, page, limit
+   - Returns: Filtered topic list with matching criteria, count, pagination
    - Used for: Apply filters from filter panel
+   - **Consolidation**: Unified filtering via JSON filter parameter - no new endpoints needed for different filter combinations
 
-9. **GET /api/v1/organizers/{organizerId}/topics/search**
-   - Query params: query, category, minRating, maxStaleness
+9. **GET /api/v1/topics?filter={"title":{"$contains":"keyword"}}**
+   - Query params: filter (text search in title/description), category, minRating, maxStaleness
    - Returns: Search results with matching topics, relevance scores, highlights
    - Used for: Search topics by keyword
+   - **Consolidation**: Search integrated into main list endpoint with $contains operator
 
-10. **GET /api/v1/organizers/{organizerId}/topics/trending**
-    - Query params: period (month|quarter), source (industry|partners|internal)
+10. **GET /api/v1/topics/trending?timeframe=month&type=industry**
+    - Query params: timeframe (week|month|quarter|year), type (community|industry|combined)
     - Returns: Trending topics with trend scores, growth rates, sources
     - Used for: Discover trending topics
+    - **Consolidation**: Single trending endpoint with type parameter consolidates community-trends and industry-trends
 
 ### AI & Analytics
 
-11. **GET /api/v1/organizers/{organizerId}/topics/ai-suggestions/detailed**
-    - Query params: limit (20), eventContext (optional)
+11. **GET /api/v1/topics/ai-suggestions?context={}&limit=20**
+    - Query params: limit (20), context (eventContext with date, audience, goals)
     - Returns: Comprehensive AI suggestions with detailed reasoning, data sources, confidence scores, implementation tips
     - Used for: View all AI suggestions from [See All →]
+    - **Consolidation**: Context parameter provides event-specific suggestions without separate endpoints
 
-12. **POST /api/v1/organizers/{organizerId}/topics/ai-analyze**
-    - Payload: `{ topicIds: [], eventContext: { date, audience, goals } }`
+12. **GET /api/v1/topics?filter={"ids":{"$in":[...]}}&include=insights**
+    - Query params: filter (topicIds array), include=insights, context (eventContext)
     - Response: AI analysis of topic fit, compatibility, recommendations, optimal timing
     - Used for: Get AI analysis on multiple topic candidates
+    - **Consolidation**: Use ?include=insights parameter on main list endpoint with ID filtering
 
-13. **GET /api/v1/organizers/{organizerId}/topics/staleness-analysis**
+13. **GET /api/v1/topics/statistics?groupBy=staleness**
+    - Query params: groupBy=staleness, metrics (stalenessScores, lastUsed, recommendations)
     - Returns: Topics with staleness scores, last used dates, recommended refresh timing, overused/underused topics
     - Used for: Identify stale or overused topics
+    - **Consolidation**: Statistics endpoint with staleness grouping replaces dedicated staleness-analysis endpoint
 
 ### Partner Feedback
 
-14. **GET /api/v1/organizers/{organizerId}/topics/{topicId}/partner-feedback**
-    - Query params: includeComments (true)
+14. **GET /api/v1/topics/{id}/votes?includeComments=true**
+    - Query params: includeComments (true), page, limit
     - Returns: Partner votes, priority ratings, comments, sponsor names, voting history
     - Used for: View partner feedback from [Partner Feedback] button
+    - **Consolidation**: Dedicated votes sub-resource with pagination
 
-15. **GET /api/v1/organizers/{organizerId}/partners/topic-requests**
-    - Query params: status (pending|approved|declined), priority
+15. **GET /api/v1/topics?filter={"suggestedBy":"partner"}&sort=-createdAt**
+    - Query params: filter (suggestedBy=partner, status), sort, priority
     - Returns: Partner-requested topics with justifications, requestor info, urgency
     - Used for: Review partner topic requests
+    - **Consolidation**: Filter on main list endpoint for partner-requested topics
 
 ### Export & Reporting
 
-16. **GET /api/v1/organizers/{organizerId}/topics/export**
-    - Query params: format (csv|pdf|xlsx), includeHistory (true), includeMetrics (true)
+16. **GET /api/v1/topics?filter={}&format=csv&include=history,metrics**
+    - Query params: format (csv|pdf|xlsx), filter (criteria), include (history, metrics)
     - Returns: Download URL for topic backlog export
     - Used for: Export topic data
+    - **Consolidation**: Export as format parameter on main list endpoint
 
-17. **GET /api/v1/organizers/{organizerId}/topics/analytics**
-    - Query params: period (year|all-time), metrics (usage|performance|interest)
+17. **GET /api/v1/topics/statistics?groupBy=period&metrics=usage,performance,interest**
+    - Query params: groupBy (period), metrics (usage, performance, interest), timeframe (year, all-time)
     - Returns: Topic analytics with usage patterns, performance trends, interest evolution, gaps
     - Used for: View topic analytics dashboard
+    - **Consolidation**: Statistics endpoint with flexible metrics selection
 
 ### View Configuration
 
-18. **PUT /api/v1/organizers/{organizerId}/topics/view-preferences**
+18. **PUT /api/v1/topics/view-preferences** (User preferences - not part of Topics API)
     - Payload: `{ viewType: "heatmap|list|board", sortBy, groupBy, defaultFilters }`
     - Response: Preferences saved
     - Used for: Save view configuration
+    - **Note**: User preferences API (separate from Topics domain)
 
-19. **GET /api/v1/organizers/{organizerId}/topics/heatmap/data**
-    - Query params: startYear, endYear, granularity (quarter|month)
+19. **GET /api/v1/topics/{id}/history?startYear=2020&endYear=2025&granularity=quarter**
+    - Query params: startYear, endYear, granularity (quarter|month), format=heatmap
     - Returns: Heat map data optimized for visualization, usage intensity, color coding data
     - Used for: Refresh heat map visualization
+    - **Consolidation**: History endpoint with heatmap format option
 
 ---
 

@@ -86,22 +86,21 @@
 
 When the Speaker Profile Management screen loads, the following APIs are called to provide the necessary data:
 
-1. **GET /api/v1/speakers/{speakerId}/profile**
-   - Returns: Complete speaker profile (photo URL, bio, company, location, member since, talk count, rating, social links)
-   - Used for: Populate public profile section with current speaker information
+1. **GET /api/v1/speakers/{speakerId}?include=profile,events,feedback**
+   - **Consolidated API**: Replaces `/profile`, `/topics`, and `/statistics` endpoints
+   - Returns: Complete speaker profile with:
+     - Profile data (photo URL, bio, company, location, member since, social links)
+     - Speaking topics embedded in profile
+     - Event history with talk count
+     - Feedback summary with average rating
+     - Statistics (total talks, attendance metrics, engagement scores)
+   - Used for: Populate all profile sections in a single call
+   - **Consolidation benefit**: 3 endpoints → 1 endpoint (67% reduction), atomic data load
 
-2. **GET /api/v1/speakers/{speakerId}/topics**
-   - Returns: Speaking topics list
-   - Used for: Populate topics section
-
-3. **GET /api/v1/topics/popular**
+2. **GET /api/v1/topics/popular**
    - Query params: limit (20)
    - Returns: List of popular speaking topics for suggestions
    - Used for: Suggest topics when adding new speaking topics
-
-4. **GET /api/v1/speakers/{speakerId}/statistics**
-   - Returns: Total talks delivered, average rating, attendance metrics, engagement scores
-   - Used for: Display speaker statistics in profile header
 
 ---
 
@@ -109,10 +108,12 @@ When the Speaker Profile Management screen loads, the following APIs are called 
 
 ### Profile Management
 
-1. **PUT /api/v1/speakers/{speakerId}/profile**
-   - Payload: `{ name, title, company, location, bio, socialLinks: { linkedin, twitter, github, website } }`
-   - Response: Updated profile, validation errors if any
-   - Used for: Update public profile information
+1. **PUT /api/v1/speakers/{speakerId}**
+   - **Consolidated API**: Replaces `/profile` PUT endpoint
+   - Payload: `{ name, title, company, location, bio, socialLinks: { linkedin, twitter, github, website }, topics: [] }`
+   - Response: Updated complete speaker profile, validation errors if any
+   - Used for: Update public profile information including topics
+   - **Consolidation benefit**: Single update endpoint for all profile data including topics
 
 2. **POST /api/v1/speakers/{speakerId}/profile/photo**
    - Payload: Image file upload (multipart/form-data)
@@ -123,40 +124,38 @@ When the Speaker Profile Management screen loads, the following APIs are called 
    - Response: Deletion confirmation, reverts to default avatar
    - Used for: Remove profile photo
 
-4. **POST /api/v1/speakers/{speakerId}/profile/auto-save**
-   - Payload: Partial profile updates
+4. **PATCH /api/v1/speakers/{speakerId}**
+   - **Consolidated API**: Uses PATCH for partial updates (auto-save)
+   - Payload: Partial profile updates (only changed fields)
    - Response: Auto-save confirmation, timestamp
    - Used for: Auto-save profile changes as user types (debounced)
+   - **Consolidation benefit**: Standard PATCH pattern for partial updates
 
 ### Topics Management
 
-5. **POST /api/v1/speakers/{speakerId}/topics**
-   - Payload: `{ topicName, customTopic: boolean }`
-   - Response: Topic ID, added confirmation
-   - Used for: Add speaking topic to profile
-
-6. **DELETE /api/v1/speakers/{speakerId}/topics/{topicId}**
-   - Response: Deletion confirmation
-   - Used for: Remove speaking topic from profile
-
-7. **GET /api/v1/topics/search**
+5. **GET /api/v1/topics/search**
    - Query params: query, limit (10)
    - Returns: Matching topics for autocomplete
    - Used for: Search and suggest topics while typing
 
 ### Profile Preview & Publishing
 
-8. **GET /api/v1/speakers/{speakerId}/profile/preview**
+6. **GET /api/v1/speakers/{speakerId}?include=profile,events,feedback**
+   - **Consolidated API**: Uses standard GET with includes for preview
    - Returns: Public-facing profile as attendees/organizers will see it
    - Used for: Generate preview of public profile
+   - **Consolidation benefit**: Same endpoint as profile view, consistent data representation
 
-9. **POST /api/v1/speakers/{speakerId}/profile/publish**
+7. **POST /api/v1/speakers/{speakerId}/profile/publish**
     - Response: Publication confirmation, profile URL
     - Used for: Publish profile changes (if draft mode is enabled)
 
-10. **GET /api/v1/speakers/{speakerId}/profile/completeness**
-    - Returns: Profile completion percentage, missing fields, recommendations
+8. **GET /api/v1/speakers/{speakerId}?include=profile**
+    - **Consolidated API**: Uses standard GET for completeness check
+    - Returns: Profile data analyzed for completeness
+    - Client calculates: Profile completion percentage, missing fields, recommendations
     - Used for: Show profile completion status and suggestions
+    - **Consolidation benefit**: No separate endpoint needed, client-side calculation from standard profile data
 
 ---
 

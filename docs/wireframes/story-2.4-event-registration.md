@@ -94,23 +94,30 @@
 
 When the Event Registration screen loads, the following APIs are called to provide the necessary data:
 
-1. **GET /api/v1/events/{eventId}**
-   - Returns: Event details (title, eventDate, venue name, startTime, endTime, admissionFee, maxAttendees, currentAttendees)
+1. **GET /api/v1/events/{eventId}?include=venue,sessions,speakers**
+   - Query params: `include=venue,sessions,speakers` (optional fields to include)
+   - Returns: Event details with embedded venue data (title, eventDate, startTime, endTime, admissionFee, maxAttendees, currentAttendees, venue.name, venue.address)
    - Used for: Display event name, date, location, time range, price in confirmation view, track capacity for "Limited capacity" messaging, calculate remaining seats
+   - Consolidation: Single endpoint replaces separate event + venue calls (Story 1.17)
 
-2. **GET /api/v1/attendee/profile** (if authenticated)
-   - Returns: Attendee profile (firstName, lastName, email, company, jobTitle, industrySector, yearsOfExperience)
+2. **GET /api/v1/attendees/me?include=registrations,preferences**
+   - Query params: `include=registrations,preferences` (if authenticated)
+   - Returns: Attendee profile with registrations and preferences (firstName, lastName, email, company, jobTitle, industrySector, yearsOfExperience, communicationPreferences)
    - Used for: Pre-populate all form fields for returning users
+   - Consolidation: Uses consolidated Attendees API (Story 1.25)
 
-3. **GET /api/v1/companies/autocomplete**
-   - Query params: query (search string)
-   - Returns: List of existing company names matching the query
+3. **GET /api/v1/companies/search?query={query}&limit=20**
+   - Query params: `query` (search string), `limit` (max results, default 20)
+   - Returns: List of existing companies matching the query (id, name, industry)
    - Used for: Provide smart suggestions for company field autocomplete
+   - Caching: Redis-backed with 5-minute TTL for common queries
+   - Consolidation: Uses consolidated Companies API with search endpoint (Story 1.22)
 
-4. **GET /api/v1/events/{eventId}/registration/status?email={email}**
-   - Query params: email (from form input)
-   - Returns: Registration status (isRegistered, registrationId, registrationDate)
+4. **GET /api/v1/events/{eventId}/registrations?filter[email]={email}**
+   - Query params: `filter[email]` (email from form input)
+   - Returns: Registration list filtered by email (empty if not registered, or registration details if exists)
    - Used for: Check for duplicate registration, show "already registered" warning
+   - Consolidation: Uses nested registrations endpoint under Events API (Story 1.17)
 
 ### User Action APIs
 
@@ -119,30 +126,28 @@ When the Event Registration screen loads, the following APIs are called to provi
    - Payload: Complete registration data (attendeeDetails, communicationPreferences, termsAccepted, photoVideoConsent)
    - Returns: Registration confirmation (registrationId, confirmationCode, ticketUrl)
    - Used for: Creates registration record, sends confirmation email, redirects to success page
+   - Consolidation: Nested under Events API (Story 1.17)
 
-6. **PUT /api/v1/events/{eventId}/registrations/draft**
+6. **PATCH /api/v1/events/{eventId}/registrations/draft**
    - Triggered by: User navigates between steps (auto-save)
-   - Payload: Current form state for completed step
+   - Payload: Current form state for completed step (partial registration data)
    - Returns: Draft saved confirmation
    - Used for: Stores partial registration data, allows user to return later
+   - Consolidation: Uses PATCH for partial updates (Story 1.17)
 
-7. **POST /api/v1/attendee/profile**
-   - Triggered by: User completes registration (first-time attendee)
-   - Payload: Attendee profile data from form
-   - Returns: Created attendee profile
-   - Used for: Creates reusable attendee profile for future registrations
+7. **PUT /api/v1/attendees/me**
+    - Triggered by: User completes registration (creates or updates attendee profile)
+    - Payload: Attendee profile data from form (firstName, lastName, email, company, jobTitle, etc.)
+    - Returns: Created or updated attendee profile
+    - Used for: Creates/updates reusable attendee profile for future registrations
+    - Consolidation: Single endpoint for both create and update operations (Story 1.25)
 
-8. **PUT /api/v1/attendee/profile**
-    - Triggered by: User completes registration (returning attendee with changes)
-    - Payload: Updated attendee profile data
-    - Returns: Updated profile confirmation
-    - Used for: Updates existing attendee profile with new information
-
-9. **POST /api/v1/newsletter/subscribe**
+8. **POST /api/v1/notifications/subscriptions**
     - Triggered by: User checks "Subscribe to BATbern newsletter" checkbox (on registration completion)
-    - Payload: `{ email: string, source: "event_registration", eventId: uuid }`
+    - Payload: `{ type: "newsletter", email: string, source: "event_registration", eventId: uuid, preferences: { frequency: "monthly" } }`
     - Returns: Subscription confirmation
     - Used for: Adds email to newsletter distribution list
+    - Consolidation: Uses consolidated Notifications API (Story 1.26)
 
 ---
 

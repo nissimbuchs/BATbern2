@@ -28,8 +28,6 @@ updates:
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
-    # Security updates are always created immediately
-    versioning-strategy: increase
 
   # Gradle dependencies for Shared Kernel
   - package-ecosystem: "gradle"
@@ -48,7 +46,6 @@ updates:
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
-    versioning-strategy: increase
 
   # npm dependencies for Infrastructure (CDK)
   - package-ecosystem: "npm"

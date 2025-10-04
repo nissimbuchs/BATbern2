@@ -128,18 +128,21 @@ APIs needed to load and display data for this screen:
    - Response includes: sessions attendee is registered for, times, locations
    - Used for: Personal schedule within event card
 
-4. **GET /api/v1/attendees/{attendeeId}/recommendations**
+4. **GET /api/v1/content/recommendations?userId={attendeeId}**
    - Retrieve personalized content recommendations
-   - Query params: `limit=5`, `includeMatchScore=true`
+   - Query params: `userId={attendeeId}`, `limit=5`
    - Response includes: recommended content with match scores, reasons
    - Used for: "Recommended for You" section
-   - ML: Collaborative filtering + interest matching
+   - **Consolidated**: Uses Story 1.20 Content API (was /api/v1/attendees/{id}/recommendations)
+   - **Benefit**: Single recommendation endpoint across all user types
 
-5. **GET /api/v1/attendees/{attendeeId}/library**
+5. **GET /api/v1/content?filter={"savedBy":"{attendeeId}"}&sort=-savedAt&limit=10**
    - Retrieve saved content library
-   - Query params: `limit=10`, `sortBy=recent`
+   - Query params: Filter by user's saved content, sort by recent
    - Response includes: saved presentations, download status, metadata
    - Used for: "Your Content Library" section
+   - **Consolidated**: Uses Story 1.20 unified search with filter (was /api/v1/attendees/{id}/library)
+   - **Benefit**: Consistent filtering across all content queries
 
 6. **GET /api/v1/attendees/{attendeeId}/learning-paths/active**
    - Retrieve active learning paths with progress
@@ -183,39 +186,50 @@ APIs called by user interactions and actions:
 
 ### Recommendations & Discovery
 
-7. **GET /api/v1/content/{contentId}**
+7. **GET /api/v1/content/{contentId}?include=analytics,reviews,versions**
    - Triggered by: [View] button on recommendation
-   - Response: Full content details, viewer URL
+   - Response: Full content details, viewer URL, optional analytics/reviews/versions
    - Opens: Content viewer page
+   - **Consolidated**: Uses Story 1.20 Content API with flexible includes
+   - **Benefit**: Single endpoint retrieves all needed data
 
-8. **GET /api/v1/attendees/{attendeeId}/recommendations/more**
+8. **GET /api/v1/content/recommendations?userId={attendeeId}&offset=5&limit=20**
    - Triggered by: [More Recommendations →] link
-   - Query params: `offset=5`, `limit=20`
+   - Query params: `userId`, `offset=5`, `limit=20`
    - Response: Additional personalized recommendations
    - Opens: Full recommendations page
+   - **Consolidated**: Same recommendations endpoint with pagination (was /api/v1/attendees/{id}/recommendations/more)
 
 ### Content Library Management
 
-9. **GET /api/v1/attendees/{attendeeId}/library/all**
+9. **GET /api/v1/content?filter={"savedBy":"{attendeeId}"}&page=1&limit=50**
     - Triggered by: [View All] button in library section
-    - Response: Complete content library with filters
+    - Response: Complete content library with filters and pagination
     - Opens: Full library management page
+    - **Consolidated**: Uses Story 1.20 unified search (was /api/v1/attendees/{id}/library/all)
+    - **Benefit**: Same filtering/sorting capabilities as discovery
 
 10. **GET /api/v1/content/{contentId}/download**
     - Triggered by: Clicking downloaded content item
     - Response: Presigned S3 URL or file stream
     - Downloads: PDF file
+    - **Consolidated**: Story 1.20 standard download endpoint
 
-11. **DELETE /api/v1/attendees/{attendeeId}/library/{contentId}**
+11. **PATCH /api/v1/content/{contentId}** (with unsave action)
     - Triggered by: Remove from library action
+    - Payload: `{"savedBy": null}` or use DELETE on bookmark resource
     - Response: Content removed from library
     - Feedback: "Removed from library" toast
     - Updates: Library list refreshes
+    - **Consolidated**: Uses standard PATCH endpoint (was DELETE /api/v1/attendees/{id}/library/{contentId})
+    - **Benefit**: Consistent update pattern across all content operations
 
-12. **GET /api/v1/attendees/{attendeeId}/downloads**
+12. **GET /api/v1/content?filter={"downloadedBy":"{attendeeId}"}&include=analytics**
     - Triggered by: [Manage Downloads] button
-    - Response: List of all downloaded files with metadata
+    - Response: List of all downloaded files with metadata and analytics
     - Opens: Download management modal
+    - **Consolidated**: Uses Story 1.20 unified search with filter (was /api/v1/attendees/{id}/downloads)
+    - **Benefit**: Reuses same query infrastructure
 
 ### Community & Social
 

@@ -406,11 +406,15 @@
 
 ## API Requirements
 
+> **API Consolidation Note (Story 1.18 & 1.27)**: This wireframe has been updated to use consolidated APIs from Stories 1.18 (Partners API) and 1.27 (Remaining Resources - Files). The Partners API consolidation reduces endpoints by 82% (109→20) with flexible analytics and meeting coordination. The Files API uses presigned URL patterns for direct S3 uploads.
+
 ### Initial Page Load APIs
 
-1. **GET /api/v1/partners/{partnerId}/meetings/{meetingId}/details**
+1. **GET /api/v1/partners/{partnerId}/meetings/{meetingId}?include=agenda,participants** *(Story 1.18)*
+   - **Consolidation**: Uses `?include=` pattern to fetch meeting details with agenda and participants in single request
    - **Authorization**: Requires `PARTNER` role
-   - **Query Params**: None
+   - **Query Params**:
+     - `include=agenda,participants` (expanded data)
    - **Returns**: Meeting context for proposal form
      ```json
      {
@@ -424,15 +428,24 @@
        "allocatedDuration": 135,
        "availableDuration": 45,
        "organizerName": "Event Organizer Team",
-       "organizerEmail": "organizers@batbern.ch"
+       "organizerEmail": "organizers@batbern.ch",
+       "agenda": {
+         "items": [...],
+         "totalProposals": 12
+       },
+       "participants": [...]
      }
      ```
-   - **Used for**: Populate meeting context header, validate submission deadline, show available time
+   - **Used for**: Populate meeting context header, validate submission deadline, show available time, display existing agenda items
+   - **Performance**: <400ms (P95) for meeting with all included data
+   - **Consolidation Benefit**: Single request replaces 3 separate calls (meeting details, agenda, participants)
 
-2. **GET /api/v1/partners/{partnerId}/strategic-goals**
+2. **GET /api/v1/partners/{partnerId}?include=settings** *(Story 1.18)*
+   - **Consolidation**: Uses consolidated Partners API to fetch strategic goals from settings
    - **Authorization**: Requires `PARTNER` role
-   - **Query Params**: None
-   - **Returns**: Company's strategic goals for checklist
+   - **Query Params**:
+     - `include=settings` (includes strategic goals configuration)
+   - **Returns**: Partner company information with strategic goals
      ```json
      {
        "companyId": "comp-456",
@@ -653,7 +666,8 @@
      ```
    - **Used for**: Request merging similar proposals into combined agenda item
 
-6. **POST /api/v1/files/presigned-upload-url**
+6. **POST /api/v1/files/upload** *(Story 1.27)*
+   - **Consolidation**: Simplified file upload with presigned URL pattern
    - **Triggered by**: File selection in upload zone
    - **Authorization**: Requires authenticated user
    - **Payload**:
@@ -676,34 +690,16 @@
          "policy": "...",
          "x-amz-signature": "..."
        },
-       "expiresAt": "2025-04-01T15:30:00Z"
-     }
+       "expiresAt": "2025-04-01T15:30:00Z",
+       "cdnUrl": "https://d3tsrt2aaweqwh.cloudfront.net/proposals/meeting-123/file-123.pdf"
+       }
      ```
    - **Used for**: Generate presigned S3 upload URL for direct client-to-S3 upload
+   - **Performance**: <200ms (P95)
+   - **Consolidation Benefit**: Single endpoint handles presigned URL generation and file metadata
 
-7. **POST /api/v1/files/{fileId}/confirm**
-   - **Triggered by**: Successful S3 upload completion
-   - **Authorization**: Requires authenticated user, file owner
-   - **Payload**:
-     ```json
-     {
-       "uploadComplete": true,
-       "finalFileSize": 2400000,
-       "checksum": "sha256:abc123..."
-     }
-     ```
-   - **Response**:
-     ```json
-     {
-       "fileId": "file-123",
-       "cdnUrl": "https://d3tsrt2aaweqwh.cloudfront.net/proposals/meeting-123/file-123.pdf",
-       "status": "CONFIRMED",
-       "availableForDownload": true
-     }
-     ```
-   - **Used for**: Confirm file upload completion, activate CDN distribution
-
-8. **DELETE /api/v1/files/{fileId}**
+7. **DELETE /api/v1/files/{fileId}** *(Story 1.27)*
+   - **Consolidation**: Standard file deletion endpoint
    - **Triggered by**: [Remove] button on uploaded file
    - **Authorization**: Requires authenticated user, file owner
    - **Payload**: None
@@ -716,6 +712,7 @@
      }
      ```
    - **Used for**: Remove uploaded file before proposal submission
+   - **Consolidation Benefit**: Simplified file management (upload confirmation integrated into initial upload endpoint)
 
 ---
 

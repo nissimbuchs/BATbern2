@@ -698,12 +698,32 @@ None required for verification screen.
   - Show error: "No pending verification found. Please register an account first."
   - Provide link to Account Creation screen
 
+## API Consolidation Notes
+
+**AWS Cognito Managed Endpoints**: The following endpoints are part of AWS Cognito's managed authentication service and are intentionally not consolidated:
+- `POST /cognito/confirmSignUp` (SDK method) - AWS Cognito API for confirming user registration with verification code
+- `POST /cognito/resendConfirmationCode` (SDK method) - AWS Cognito API for resending email verification codes
+
+These endpoints are part of AWS Cognito's specialized email verification flow and follow AWS SDK patterns. They are managed by AWS and provide infrastructure-level authentication capabilities.
+
+**Consolidated Custom Endpoints**: Custom wrapper endpoints follow the consolidated API patterns from Story 1.16 (API Consolidation Foundation):
+- `POST /api/v1/auth/verify-email` (Story 1.16) - Wrapper endpoint that follows consolidated patterns and handles Cognito integration
+- `POST /api/v1/auth/resend-verification` (Story 1.16) - Wrapper endpoint for resending verification emails
+- `GET /api/v1/auth/verification-status` (Story 1.16) - Optional endpoint for checking verification status and cooldown timers
+
+**Rationale**:
+- **AWS Cognito endpoints** are specialized managed services that handle email verification flows, verification code generation, email delivery coordination, and security features (24-hour expiration, single-use codes, rate limiting). These are infrastructure-level authentication services, not application domain APIs, and therefore exist outside the scope of API consolidation (Stories 1.16-1.27).
+- **Wrapper endpoints** provide a simplified interface that abstracts AWS Cognito complexity while following the consolidated API patterns established in Story 1.16 (consistent error handling, request/response formats, logging, monitoring).
+- **Separation of concerns**: Email verification flows are specialized authentication operations handled by Cognito's managed service. The consolidation effort (Stories 1.16-1.27) focuses on application domain APIs (events, partners, speakers, users, etc.), not managed authentication infrastructure.
+- **User management distinction**: While user profile data is consolidated in Story 1.23 (Users API), the authentication flows (verification, password reset) remain with AWS Cognito's managed service. Once verified, user profile data is accessed through `GET /api/v1/users/me` (Story 1.23).
+
 ## Change Log
 
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
 | 2025-10-04 | 1.0 | Initial wireframe creation | Sally (UX Expert) |
 | 2025-10-04 | 1.1 | Added language selector (EN/DE per NFR4); Added bilingual email templates (German/English); Added i18n implementation details | Sally (UX Expert) |
+| 2025-10-04 | 1.2 | Added API Consolidation Notes section explaining AWS Cognito verification endpoints and their relationship to consolidated APIs | Claude (AI Assistant) |
 
 ## Review Notes
 

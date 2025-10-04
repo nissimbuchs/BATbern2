@@ -414,11 +414,13 @@
 
 ### Initial Page Load APIs
 
-1. **GET /api/v1/content/{contentId}**
+1. **GET /api/v1/content/{contentId}?include=analytics,reviews,versions,related**
    - **Authorization**: Optional (public content accessible without auth, private requires auth)
    - **Path Params**: `contentId` (UUID)
-   - **Query Params**: `includeRelated=true` (optional, default: false)
-   - **Returns**: Complete content metadata
+   - **Query Params**: `include=analytics,reviews,versions,related` (optional, default: none)
+   - **Returns**: Complete content metadata with optional sub-resources
+   - **Consolidated**: Story 1.20 standard content endpoint with flexible includes
+   - **Benefit**: Single call retrieves all needed data
      ```json
      {
        "id": "content-123",
@@ -530,13 +532,16 @@
      ```
    - **Used for**: Populate "Additional Materials" section
 
-4. **GET /api/v1/content/{contentId}/related**
+4. **GET /api/v1/content/recommendations?contentId={contentId}&limit=8**
    - **Authorization**: Optional
-   - **Path Params**: `contentId` (UUID)
+   - **Path Params**: None (uses query params)
    - **Query Params**:
+     - `contentId`: Content to find related items for
      - `limit` (optional): Max results (default: 8, max: 20)
      - `algorithm` (optional): "tags" | "speaker" | "event" | "topic" (default: "tags")
    - **Returns**: Related content recommendations
+   - **Consolidated**: Uses Story 1.20 recommendations endpoint (was /api/v1/content/{id}/related)
+   - **Benefit**: Same endpoint for user and content-based recommendations
      ```json
      {
        "relatedContent": [
@@ -561,14 +566,16 @@
      ```
    - **Used for**: Populate "Related Content" carousel
 
-5. **GET /api/v1/content/{contentId}/reviews**
+5. **GET /api/v1/content/{contentId}/reviews?page=1&limit=10&sort=-createdAt**
    - **Authorization**: Optional (public reviews visible to all)
    - **Path Params**: `contentId` (UUID)
    - **Query Params**:
+     - `page` (optional): Page number (default: 1)
      - `limit` (optional): Reviews per page (default: 10, max: 50)
-     - `offset` (optional): Pagination offset (default: 0)
-     - `sort` (optional): "recent" | "helpful" | "rating" (default: "recent")
-   - **Returns**: Comments and reviews
+     - `sort` (optional): "-createdAt" | "-helpfulCount" | "-rating" (default: "-createdAt")
+   - **Returns**: Comments and reviews with pagination
+   - **Consolidated**: Story 1.20 standard reviews endpoint with pagination
+   - **Benefit**: Consistent pagination pattern across all endpoints
      ```json
      {
        "reviews": [
@@ -713,7 +720,7 @@
      ```
    - **Used for**: Remove bookmark from library
 
-5. **POST /api/v1/content/{contentId}/ratings**
+5. **POST /api/v1/content/{contentId}/reviews**
    - **Triggered by**: User clicks star rating (1-5 stars)
    - **Authorization**: Requires authenticated user
    - **Path Params**: `contentId` (UUID)
@@ -721,13 +728,14 @@
      ```json
      {
        "rating": 4,
+       "comment": null,
        "userId": "user-123"
      }
      ```
    - **Response**:
      ```json
      {
-       "ratingId": "rating-654",
+       "reviewId": "review-654",
        "contentId": "content-123",
        "userId": "user-123",
        "rating": 4,
@@ -737,11 +745,13 @@
      }
      ```
    - **Used for**: Submit user rating, update average rating in real-time
+   - **Consolidated**: Reviews endpoint handles ratings (was POST /api/v1/content/{id}/ratings)
+   - **Benefit**: Single endpoint for ratings and comments
 
-6. **PUT /api/v1/content/{contentId}/ratings/{ratingId}**
+6. **PUT /api/v1/content/{contentId}/reviews/{reviewId}**
    - **Triggered by**: User changes existing rating (clicks different star count)
-   - **Authorization**: Requires authenticated user, rating owner
-   - **Path Params**: `contentId` (UUID), `ratingId` (UUID)
+   - **Authorization**: Requires authenticated user, review owner
+   - **Path Params**: `contentId` (UUID), `reviewId` (UUID)
    - **Payload**:
      ```json
      {
@@ -751,7 +761,7 @@
    - **Response**:
      ```json
      {
-       "ratingId": "rating-654",
+       "reviewId": "review-654",
        "previousRating": 4,
        "newRating": 5,
        "updatedAt": "2024-04-01T14:42:00Z",
@@ -759,6 +769,7 @@
      }
      ```
    - **Used for**: Update existing rating
+   - **Consolidated**: Standard PUT on review resource (was PUT /api/v1/content/{id}/ratings/{ratingId})
 
 7. **POST /api/v1/content/{contentId}/reviews**
    - **Triggered by**: **[Post Review]** button in comment editor

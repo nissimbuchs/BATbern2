@@ -333,11 +333,15 @@
 
 ### Initial Page Load APIs
 
+**Updated with Story 1.23 Consolidated User APIs**
+
 When the Settings screen loads, the following APIs are called:
 
-1. **GET /api/v1/users/{userId}/settings**
-   - Query params: None
-   - Returns: Complete user settings object
+1. **GET /api/v1/users/me?include=profile,preferences,settings**
+   - Query params: `include` parameter for related data
+   - Returns: Complete user object with settings, profile, and preferences
+   - **Consolidated**: Single endpoint replaces /users/{id}/settings, /users/{id}/profile, /users/{id}/preferences (3 → 1)
+   - **Performance**: <150ms (P95)
      ```json
      {
        "userId": "uuid",
@@ -404,54 +408,24 @@ When the Settings screen loads, the following APIs are called:
      ```
    - Used for: Populate all settings fields across all tabs with current user preferences
 
-2. **GET /api/v1/reference/companies**
-   - Query params: `search` (optional, for autocomplete)
-   - Returns: List of companies
-     ```json
-     [
-       {
-         "companyId": "uuid",
-         "name": "string",
-         "industry": "string",
-         "partnerStatus": "boolean"
-       }
-     ]
-     ```
-   - Used for: Company autocomplete search in Account tab
-   - Note: Called on-demand when user types in company field
-
-3. **POST /api/v1/users/{userId}/profile-picture**
-   - Triggered by: [Upload New Photo] button in Account tab
-   - Payload: Multipart form data with image file
-   - Response:
+2. **GET /api/v1/companies/search?query={}&limit=20**
+   - Query params: `query` (user input), `limit` (default 20)
+   - Returns: Company autocomplete suggestions (Redis cached)
      ```json
      {
-       "profilePictureUrl": "string",
-       "uploadedAt": "ISO-8601 datetime"
+       "suggestions": [
+         {
+           "id": "uuid",
+           "name": "string",
+           "industry": "string",
+           "partnerStatus": "boolean"
+         }
+       ]
      }
      ```
-   - Used for: Upload and update user profile picture
-   - Validation: JPEG/PNG only, max 5MB, minimum 200x200px
-
-4. **DELETE /api/v1/users/{userId}/profile-picture**
-   - Triggered by: [Remove] button next to profile picture
-   - Response: Confirmation of removal
-   - Used for: Remove user profile picture
-
-5. **GET /api/v1/reference/interests**
-   - Query params: None
-   - Returns: Available interest tags
-     ```json
-     [
-       {
-         "interestId": "uuid",
-         "name": "string",
-         "category": "string",
-         "popularity": "number"
-       }
-     ]
-     ```
-   - Used for: Display available interest tags in Content Preferences tab
+   - Used for: Company autocomplete search in Account tab
+   - **Consolidated**: Uses Story 1.22 company search endpoint with Redis caching (<100ms P95)
+   - Note: Called on-demand when user types in company field
 
 ---
 
@@ -459,34 +433,36 @@ When the Settings screen loads, the following APIs are called:
 
 APIs called by user interactions and actions:
 
-### Save Settings
+### Save Settings (Consolidated)
 
-1. **PUT /api/v1/users/{userId}/settings**
+1. **PATCH /api/v1/users/me**
    - Triggered by: [Save Changes] button or auto-save after field changes
-   - Payload: Complete or partial settings object (same structure as GET response)
-   - Response: Updated settings with confirmation
+   - Payload: Partial user object with only changed fields
+     ```json
+     {
+       "preferences": { /* only changed preferences */ },
+       "settings": { /* only changed settings */ }
+     }
+     ```
+   - Response: Updated user object
      ```json
      {
        "success": "boolean",
        "updatedAt": "ISO-8601 datetime",
-       "settings": { /* updated settings object */ }
+       "user": { /* updated user object */ }
      }
      ```
    - Used for: Persist settings changes to server
+   - **Consolidated**: Single PATCH endpoint replaces PUT /users/{id}/settings and PUT /users/{id}/settings/section (2 → 1)
+   - **Benefits**: Supports partial updates, reduces payload size
    - Debounced: Auto-save triggered 3 seconds after last change, manual save immediate
 
-2. **PUT /api/v1/users/{userId}/settings/section**
-   - Triggered by: Section-specific changes (e.g., only notifications)
-   - Payload: Section-specific settings
-     ```json
-     {
-       "section": "notifications | privacy | contentPreferences | language | accessibility | pwa",
-       "data": { /* section-specific settings */ }
-     }
-     ```
-   - Response: Updated section with confirmation
-   - Used for: Optimize API calls by updating only changed sections
-   - Alternative: Can be used instead of full PUT for granular updates
+2. **PUT /api/v1/users/me/preferences** or **PUT /api/v1/users/me/settings**
+   - Triggered by: Section-specific bulk updates (optional, for backwards compatibility)
+   - Payload: Complete preferences or settings object
+   - Response: Updated section
+   - Used for: Full section replacement if needed
+   - **Note**: PATCH /users/me is preferred for most use cases
 
 ### Account Actions
 
@@ -595,6 +571,7 @@ APIs called by user interactions and actions:
       - All upcoming event registrations cancelled automatically
       - Account and data preserved for 60 days, then permanently deleted
       - Past event attendance history preserved
+    - **Note**: Deactivation API remains separate for security and audit trail
 
 10. **POST /api/v1/users/{userId}/reactivate**
     - Triggered by: Login attempt with deactivated account
@@ -607,7 +584,7 @@ APIs called by user interactions and actions:
     - Response: Reactivation confirmation
     - Used for: Restore previously deactivated account
 
-11. **DELETE /api/v1/users/{userId}**
+11. **DELETE /api/v1/users/{id}**
     - Triggered by: [Delete My Account] button with double confirmation
     - Payload: Confirmation input (e.g., type "DELETE" to confirm)
       ```json
@@ -624,8 +601,9 @@ APIs called by user interactions and actions:
       }
       ```
     - Used for: Permanently delete user account and all associated data
+    - **Consolidated**: Part of Story 1.23 with GDPR-compliant cascade deletion
     - Security: Requires password confirmation and explicit consent
-    - Side effect: User logged out, all data marked for deletion (GDPR compliant)
+    - Side effects: User logged out, all data marked for deletion, cleanup jobs triggered
 
 ---
 
