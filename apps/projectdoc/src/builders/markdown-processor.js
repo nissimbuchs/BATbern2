@@ -220,6 +220,28 @@ class MarkdownProcessor {
       title = headingMatch[1];
     }
 
+    // Check if this is a wireframe file and extract story number from filename
+    const isWireframe = relativePath.includes('wireframes/');
+    if (isWireframe) {
+      const wireframeStoryMatch = path.basename(relativePath).match(/^story-(\d+)\.(\d+(?:\.\d+)?)/);
+      if (wireframeStoryMatch) {
+        const epicNum = wireframeStoryMatch[1];
+        const storyNum = wireframeStoryMatch[2];
+        const storyRef = `Story ${epicNum}.${storyNum}`;
+
+        // Check if title already contains a story reference
+        const hasStoryRef = title.match(/^Story\s+\d+\.?\d*/i) || title.match(/Story\s*:/i);
+
+        if (!hasStoryRef) {
+          // Prepend story reference to title
+          title = `${storyRef}: ${title}`;
+        } else if (title.match(/^Story\s*:/i) && !title.match(/^Story\s+\d+/)) {
+          // Replace generic "Story:" with specific story number
+          title = title.replace(/^Story\s*:/i, `${storyRef}:`);
+        }
+      }
+    }
+
     // Extract description from content
     let description = '';
     const descriptionMatch = content.match(/^##?\s+[^#\n]*\n\n([^#\n]+)/);
