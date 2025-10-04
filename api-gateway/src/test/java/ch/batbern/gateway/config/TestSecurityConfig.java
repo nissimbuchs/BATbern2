@@ -7,6 +7,12 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtException;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
+import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -15,7 +21,7 @@ import java.util.Map;
 /**
  * Test Security Configuration
  *
- * Provides mock JWT decoder for integration tests
+ * Provides mock JWT decoder and AWS SDK clients for integration tests
  */
 @TestConfiguration
 @Profile("test")
@@ -57,5 +63,43 @@ public class TestSecurityConfig {
                         .build();
             }
         };
+    }
+
+    /**
+     * Mock AWS Credentials Provider for tests
+     * Prevents AWS SDK from trying to load credentials from environment
+     */
+    @Bean
+    @Primary
+    public AwsCredentialsProvider testAwsCredentialsProvider() {
+        return StaticCredentialsProvider.create(
+                AwsBasicCredentials.create("test-access-key", "test-secret-key")
+        );
+    }
+
+    /**
+     * Mock Cognito Identity Provider Client for tests
+     * Prevents AWS SDK from trying to connect to real Cognito
+     */
+    @Bean
+    @Primary
+    public CognitoIdentityProviderClient testCognitoClient(AwsCredentialsProvider credentialsProvider) {
+        return CognitoIdentityProviderClient.builder()
+                .credentialsProvider(credentialsProvider)
+                .region(Region.EU_CENTRAL_1)
+                .build();
+    }
+
+    /**
+     * Mock CloudWatch Logs Client for tests
+     * Prevents AWS SDK from trying to connect to real CloudWatch
+     */
+    @Bean
+    @Primary
+    public CloudWatchLogsClient testCloudWatchLogsClient(AwsCredentialsProvider credentialsProvider) {
+        return CloudWatchLogsClient.builder()
+                .credentialsProvider(credentialsProvider)
+                .region(Region.EU_CENTRAL_1)
+                .build();
     }
 }

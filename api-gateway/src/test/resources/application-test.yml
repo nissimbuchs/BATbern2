@@ -16,6 +16,23 @@ spring:
           cognito:
             issuer-uri: https://cognito-idp.eu-central-1.amazonaws.com/eu-central-1_TestPool
             user-name-attribute: sub
+  cloud:
+    aws:
+      credentials:
+        access-key: test-access-key
+        secret-key: test-secret-key
+      region:
+        static: eu-central-1
+
+# AWS SDK Configuration for Tests
+aws:
+  accessKeyId: test-access-key
+  secretAccessKey: test-secret-key
+  region: eu-central-1
+  cognito:
+    userPoolId: eu-central-1_TestPool
+    region: eu-central-1
+    appClientId: test-client-id
 
 # Cognito Configuration
 cognito:
