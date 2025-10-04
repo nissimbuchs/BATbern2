@@ -59,27 +59,20 @@
 
 ### Initial Page Load APIs
 
+**Note**: This wireframe has been updated to use the consolidated Partners API from Story 1.18 (109 → 20 endpoints, 82% reduction).
+
 When the Detailed Employee Analytics screen loads, the following APIs are called to provide the necessary data:
 
-1. **GET /api/v1/partners/{partnerId}/employees/analytics/overview**
-   - Query params: dateRange (last12months), comparePeriod (previousPeriod)
-   - Returns: Total unique employees, events attended, average per event, repeat attendance rate, period comparisons
-   - Used for: Populate attendance overview panel with key metrics
-
-2. **GET /api/v1/partners/{partnerId}/employees/analytics/events**
-   - Query params: dateRange, sortBy (date), limit, offset
-   - Returns: List of events with attendance data, new vs returning attendees, ratings
-   - Used for: Display event attendance table with detailed breakdown
-
-3. **GET /api/v1/partners/{partnerId}/employees/analytics/funnel**
-   - Query params: dateRange
-   - Returns: Engagement funnel data (invited, registered, attended, engaged, advocates), conversion rates, industry benchmarks
-   - Used for: Populate engagement funnel visualization
-
-4. **GET /api/v1/partners/{partnerId}/employees/analytics/content-engagement**
-   - Query params: dateRange
-   - Returns: Content views, downloads, shares, questions asked, feedback provided
-   - Used for: Display content engagement metrics in employee journey map
+1. **GET /api/v1/partners/{partnerId}/analytics?metrics=employees,attendance,engagement&timeframe=year&breakdown=events**
+   - Consolidates: Former separate calls for overview, events, funnel, and content engagement
+   - Query params: metrics (comma-separated: employees, attendance, engagement), timeframe (year), breakdown (events for event-level details), comparePeriod (previous)
+   - Returns: Comprehensive employee analytics object with:
+     - Overview: Total unique employees, events attended, average per event, repeat attendance rate, period comparisons
+     - Events: List of events with attendance data, new vs returning attendees, ratings
+     - Funnel: Engagement funnel data (invited, registered, attended, engaged, advocates), conversion rates, benchmarks
+     - Content: Content views, downloads, shares, questions, feedback
+   - Used for: Populate all analytics panels with single request
+   - **Consolidation Benefit**: Single analytics call with flexible metrics parameter replaces 4 separate API calls (75% reduction)
 
 
 ---
@@ -88,40 +81,51 @@ When the Detailed Employee Analytics screen loads, the following APIs are called
 
 ### Filtering & Date Range Selection
 
-1. **GET /api/v1/partners/{partnerId}/employees/analytics/overview**
-   - Query params: dateRange (custom|last3months|last6months|last12months), comparePeriod, filters
-   - Returns: Updated metrics for selected date range
-   - Used for: Update all panels when date range changes
-
-2. **GET /api/v1/partners/{partnerId}/employees/analytics/filters**
-   - Returns: Available filter options (departments, event types, engagement levels)
-   - Used for: Populate filter dropdown options
+1. **GET /api/v1/partners/{partnerId}/analytics?metrics=employees,attendance,engagement&timeframe=custom&startDate=2025-01-01&endDate=2025-03-31**
+   - Consolidates: Date range changes use same analytics endpoint with different timeframe
+   - Query params: metrics (same as initial), timeframe (custom|last3months|last6months|year), startDate, endDate, comparePeriod, filter (JSON)
+   - Returns: Updated analytics for selected date range and filters
+   - Used for: Update all panels when date range or filters change
+   - **Consolidation Benefit**: Same endpoint handles all date range and filter variations
 
 ### Export & Reporting
 
-3. **POST /api/v1/partners/{partnerId}/employees/analytics/export**
-   - Payload: `{ format: "excel|csv|pdf", dateRange, sections: ["overview", "events", "funnel", "departments"], includeCharts: boolean }`
+2. **POST /api/v1/partners/{partnerId}/export**
+   - Consolidates: Analytics export using unified export endpoint
+   - Payload: `{ exportType: "analytics", format: "excel|csv|pdf", dateRange, sections: ["overview", "events", "funnel", "employees"], includeCharts: boolean }`
    - Response: Export task ID, estimated completion time
-   - Used for: Generate comprehensive analytics export
+   - Used for: Generate comprehensive employee analytics export
+   - **Consolidation Benefit**: Same export endpoint used for all partner data types
 
-4. **GET /api/v1/partners/{partnerId}/employees/analytics/export/{taskId}/download**
-   - Returns: Download URL, expiration timestamp
+3. **GET /api/v1/partners/{partnerId}/reports?type=export&taskId={taskId}**
+   - Consolidates: Export download via reports endpoint
+   - Query params: type=export, taskId (task identifier)
+   - Returns: Download URL, expiration timestamp, generation status
    - Used for: Download generated export file
+   - **Consolidation Benefit**: Unified reports endpoint for all downloadable content
 
 ### Chart & Table Interactions
 
-5. **GET /api/v1/partners/{partnerId}/employees/analytics/events/{eventId}/details**
-    - Returns: Detailed event analytics, attendee list (anonymized), feedback, engagement metrics
+4. **GET /api/v1/partners/{partnerId}/meetings/{eventId}?include=analytics,attendees,feedback**
+    - Consolidates: Event details with analytics via include parameter
+    - Query params: include (analytics, attendees, feedback)
+    - Returns: Event details with analytics, anonymized attendee list, feedback, engagement metrics
     - Used for: Navigate to event detail view when clicking on event row
+    - **Consolidation Benefit**: Meeting/event resource with analytics included
 
-6. **GET /api/v1/partners/{partnerId}/employees/analytics/funnel/drilldown**
-    - Query params: stage (invited|registered|attended|engaged|advocates), dateRange
-    - Returns: Detailed data for specific funnel stage, employee lists, drop-off analysis
+5. **GET /api/v1/partners/{partnerId}/analytics?metrics=employees&breakdown=funnel&stage=attended**
+    - Consolidates: Funnel drilldown using analytics endpoint with stage parameter
+    - Query params: metrics=employees, breakdown=funnel, stage (invited|registered|attended|engaged|advocates), timeframe
+    - Returns: Detailed funnel stage data, employee lists, drop-off analysis
     - Used for: Drill down into specific funnel stage
+    - **Consolidation Benefit**: Funnel details available via same analytics endpoint with breakdown parameter
 
-7. **GET /api/v1/partners/{partnerId}/employees/analytics/content/{contentId}/engagement**
-    - Returns: Detailed engagement metrics for specific content piece, employee interactions
+6. **GET /api/v1/partners/{partnerId}/analytics?metrics=engagement&breakdown=content&contentId={id}**
+    - Consolidates: Content engagement via analytics endpoint with content breakdown
+    - Query params: metrics=engagement, breakdown=content, contentId (specific content piece)
+    - Returns: Detailed content engagement metrics, employee interactions
     - Used for: View engagement details for specific content
+    - **Consolidation Benefit**: Content analytics accessible via same flexible analytics endpoint
 
 ---
 

@@ -98,50 +98,71 @@
 
 ### Initial Page Load APIs
 
+**Updated with Story 1.26 Consolidated Notification APIs**
+
 When the Notification Center screen loads, the following APIs are called to provide the necessary data:
 
-1. **GET /api/v1/organizers/{organizerId}/notifications**
-   - Query params: filter (all|unread|critical|team), limit (20), offset
-   - Returns: Notifications with severity, timestamp, title, description, action links, read status, related entity
+1. **GET /api/v1/notifications?filter={}&status={}&page={}**
+   - Query params: `filter={"type":"organizer"}`, `status=unread|read|all`, `page=1`, `limit=20`
+   - Returns: Paginated notifications with severity, timestamp, title, description, action links, read status, related entity
    - Used for: Populate notification inbox
+   - **Consolidated**: Single endpoint replaces /organizers/{id}/notifications, /organizers/{id}/notifications/summary (2 → 1)
+   - **Performance**: <200ms (P95)
 
-2. **GET /api/v1/organizers/{organizerId}/notifications/summary**
-   - Returns: Notification counts (unread, total, critical)
+2. **GET /api/v1/notifications/count?status=unread**
+   - Returns: Notification count
+     ```json
+     {
+       "total": 47,
+       "unread": 3,
+       "critical": 1
+     }
+     ```
    - Used for: Display summary statistics at top of page
+   - **Consolidated**: Part of Story 1.26 notification management
 
-3. **GET /api/v1/organizers/{organizerId}/notifications/escalations**
+3. **GET /api/v1/organizers/{organizerId}/notifications/escalations** (Unchanged)
    - Query params: status (active|completed|all)
    - Returns: Active escalation workflows with current step, affected entities, timeline, next action
    - Used for: Display escalation workflows section
+   - **Note**: Escalation workflows remain separate from general notifications
 
 ---
 
 ## Action APIs
 
-### Notification Management
+### Notification Management (Consolidated)
 
-1. **PUT /api/v1/organizers/{organizerId}/notifications/{notificationId}/read**
-   - Response: Read status updated, unread count decremented
-   - Used for: Mark notification as read
+1. **PUT /api/v1/notifications/read**
+   - Payload: `{ notificationIds: ["id1", "id2"] }` (single or bulk)
+   - Response: Read status updated, new counts
+     ```json
+     {
+       "updated": 2,
+       "unreadCount": 1
+     }
+     ```
+   - Used for: Mark notification(s) as read
+   - **Consolidated**: Single endpoint handles both individual and bulk operations (replaces 2 endpoints)
+   - **Performance**: <100ms (P95)
 
-2. **PUT /api/v1/organizers/{organizerId}/notifications/read-all**
-   - Payload: `{ filter: "all|critical|team" (optional) }`
-   - Response: Bulk read confirmation, new unread count
-   - Used for: Mark multiple notifications as read
+2. **DELETE /api/v1/notifications/{id}** or **DELETE /api/v1/notifications** (bulk)
+   - Payload (bulk): `{ notificationIds: ["id1", "id2"] }`
+   - Response: Deletion confirmation, updated counts
+   - Used for: Dismiss/delete notification(s)
+   - **Consolidated**: Supports both single and batch delete
 
-3. **DELETE /api/v1/organizers/{organizerId}/notifications/{notificationId}**
-   - Response: Notification deleted, updated counts
-   - Used for: Dismiss/delete notification
-
-4. **POST /api/v1/organizers/{organizerId}/notifications/{notificationId}/snooze**
+3. **POST /api/v1/organizers/{organizerId}/notifications/{notificationId}/snooze** (Unchanged)
    - Payload: `{ snoozeUntil: timestamp, reason }`
    - Response: Snooze confirmation, reminder scheduled
    - Used for: Snooze notification for later
+   - **Note**: Snooze functionality remains separate for workflow management
 
-5. **POST /api/v1/organizers/{organizerId}/notifications/{notificationId}/action**
+4. **POST /api/v1/organizers/{organizerId}/notifications/{notificationId}/action** (Unchanged)
    - Payload: `{ actionType, actionData }`
    - Response: Action executed, notification updated
    - Used for: Execute inline action from notification (e.g., Find Replacement, Review)
+   - **Note**: Action execution remains context-specific
 
 ### Escalation Workflows
 
@@ -170,19 +191,35 @@ When the Notification Center screen loads, the following APIs are called to prov
     - Returns: Historical escalations with resolution details, duration, outcome
     - Used for: View escalation history from [View History]
 
-### Notification History & Analytics
+### Notification Preferences & History (Consolidated)
 
-11. **GET /api/v1/organizers/{organizerId}/notifications/history**
-    - Query params: startDate, endDate, severity, readStatus, limit (100)
-    - Returns: Historical notifications with metadata, actions taken, resolution time
-    - Used for: View notification history
+5. **GET /api/v1/notifications/preferences** and **PUT /api/v1/notifications/preferences**
+   - GET Returns: User notification preferences
+     ```json
+     {
+       "emailNotifications": true,
+       "pushNotifications": false,
+       "channels": ["email", "in-app"],
+       "frequency": "immediate|digest",
+       "categories": {
+         "critical": true,
+         "updates": true,
+         "social": false
+       }
+     }
+     ```
+   - PUT Payload: Updated preferences
+   - Used for: Manage notification preferences
+   - **Consolidated**: Part of Story 1.26 preference management
+   - **Performance**: <150ms (P95)
 
-12. **GET /api/v1/organizers/{organizerId}/notifications/analytics**
-    - Query params: period (week|month|quarter)
-    - Returns: Notification statistics (count by type, average resolution time, escalation rates)
-    - Used for: View notification analytics
+6. **GET /api/v1/notifications/history?timeframe={}&channel={}**
+    - Query params: `timeframe=30d`, `channel=email|sms|push|in-app`, `page`, `limit`
+    - Returns: Historical notifications with delivery status, timestamps, metadata
+    - Used for: View notification history with delivery tracking
+    - **Consolidated**: Replaces separate history and analytics endpoints (includes delivery metrics)
 
-13. **GET /api/v1/organizers/{organizerId}/notifications/export**
+7. **GET /api/v1/organizers/{organizerId}/notifications/export** (Unchanged)
     - Query params: format (csv|pdf|json), dateRange, filter
     - Returns: Download URL for notification history export
     - Used for: Export notification data

@@ -186,10 +186,12 @@
 
 ### Initial Page Load APIs
 
-1. **GET /api/v1/users/{userId}/profile**
+**Updated with Story 1.23 Consolidated User APIs**
+
+1. **GET /api/v1/users/me?include=profile,roles,activity,companies**
    - Auth: Required (JWT token)
-   - Path params: `userId` (current user ID from JWT)
-   - Returns:
+   - Query params: `include` parameter for related data
+   - Returns: Complete user object with all related data
      ```json
      {
        "userId": "uuid",
@@ -210,17 +212,7 @@
          "twitter": "url",
          "website": "url"
        },
-       "memberSince": "ISO8601-date"
-     }
-     ```
-   - Used for: Populating profile header and personal information sections
-
-2. **GET /api/v1/users/{userId}/roles**
-   - Auth: Required (JWT token)
-   - Path params: `userId`
-   - Returns:
-     ```json
-     {
+       "memberSince": "ISO8601-date",
        "roles": ["ORGANIZER", "SPEAKER", "ATTENDEE", "PARTNER"],
        "primaryRole": "SPEAKER",
        "roleDetails": {
@@ -231,55 +223,44 @@
            "totalReviews": 156,
            "lastPresentation": { "title": "...", "date": "..." }
          }
-       }
+       },
+       "recentActivity": [ /* last 5 activities */ ]
      }
      ```
-   - Used for: Displaying role badges and populating role-specific tabs
+   - Used for: Populating all profile sections (profile, roles, activity)
+   - **Consolidated**: Single endpoint replaces /users/{id}/profile, /users/{id}/roles, /users/{id}/activity (3 → 1)
+   - **Performance**: <150ms (P95) with caching
 
-3. **GET /api/v1/users/{userId}/activity?limit=5&offset=0**
+2. **GET /api/v1/users/{userId}/activity?timeframe={}&limit=50** (Optional for full history)
    - Auth: Required (JWT token)
-   - Query params: `limit` (default 5), `offset` (default 0), `type` (optional filter)
-   - Returns:
-     ```json
-     {
-       "activities": [
-         {
-           "id": "uuid",
-           "type": "PRESENTATION_SUBMITTED|REGISTRATION|RATING_RECEIVED|...",
-           "description": "string",
-           "timestamp": "ISO8601-datetime",
-           "relatedEntity": { "type": "EVENT|PRESENTATION|...", "id": "uuid" }
-         }
-       ],
-       "total": 45,
-       "hasMore": true
-     }
-     ```
-   - Used for: Populating activity history timeline
+   - Query params: `timeframe` (7d, 30d, 90d, all), `limit`, `page`
+   - Returns: Paginated activity history
+   - Used for: Full activity timeline when clicking "View All"
+   - **Consolidated**: Part of Story 1.23 user activity tracking
 
 ### User Action APIs
 
-1. **PUT /api/v1/users/{userId}/profile**
+**Updated with Story 1.23 Consolidated APIs**
+
+1. **PATCH /api/v1/users/me**
    - Triggered by: [Save Changes] button after editing profile
    - Auth: Required (JWT token)
-   - Payload:
+   - Payload: Partial update with only changed fields
      ```json
      {
        "firstName": "string",
        "lastName": "string",
        "jobTitle": "string",
-       "department": "string",
-       "phoneNumber": "string",
        "bio": "string",
-       "preferredLanguage": "de|en",
-       "timeZone": "string",
-       "socialLinks": { "linkedin": "url", "twitter": "url", "website": "url" }
+       "socialLinks": { "linkedin": "url" }
      }
      ```
-   - Response: Updated profile object (same as GET /profile)
+   - Response: Updated user object with modified fields
    - Used for: Saving profile changes and refreshing display
+   - **Consolidated**: Single PATCH endpoint replaces PUT /users/{id}/profile (supports partial updates)
+   - **Performance**: <150ms (P95)
 
-2. **POST /api/v1/users/{userId}/profile-photo**
+2. **POST /api/v1/users/{userId}/profile-photo** (Unchanged)
    - Triggered by: [Upload] button after selecting/cropping photo
    - Auth: Required (JWT token)
    - Content-Type: multipart/form-data
@@ -292,8 +273,9 @@
      }
      ```
    - Used for: Uploading profile photo and updating display
+   - **Note**: Photo upload remains separate endpoint for file handling
 
-3. **DELETE /api/v1/users/{userId}/profile-photo**
+3. **DELETE /api/v1/users/{userId}/profile-photo** (Unchanged)
    - Triggered by: [Remove Photo] button
    - Auth: Required (JWT token)
    - Response: 204 No Content

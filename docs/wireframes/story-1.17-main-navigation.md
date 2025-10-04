@@ -203,11 +203,15 @@ Per frontend architecture requirements (docs/architecture/05-frontend-architectu
 
 ## API Requirements
 
+> **API Consolidation Note (Story 1.23 & 1.26)**: This wireframe has been updated to use consolidated APIs from Stories 1.23 (Users API) and 1.26 (Notifications API). These consolidations reduce API endpoints by 74% and 45% respectively while maintaining all functionality through optimized query patterns.
+
 ### Initial Page Load APIs
 
-1. **GET /api/v1/users/me**
+1. **GET /api/v1/users/me?include=roles,preferences** *(Story 1.23)*
+   - **Consolidation**: Uses `?include=` pattern to fetch user profile, roles, and preferences in a single request
    - Triggered on: App initialization after authentication
-   - Query params: None (user ID from JWT token)
+   - Query params:
+     - `include=roles,preferences` (expanded data in single request)
    - Returns:
      ```json
      {
@@ -218,19 +222,25 @@ Per frontend architecture requirements (docs/architecture/05-frontend-architectu
        "currentRole": "ORGANIZER",
        "availableRoles": ["ORGANIZER", "SPEAKER"],
        "companyId": "uuid",
-       "preferredLanguage": "de",
        "profilePhotoUrl": "https://cdn.example.com/...",
-       "notificationPreferences": { ... }
+       "preferences": {
+         "language": "de",
+         "notifications": { ... },
+         "theme": "light"
+       }
      }
      ```
-   - Used for: Populating user profile in navigation bar, determining role-based menu items
+   - Used for: Populating user profile in navigation bar, determining role-based menu items, language settings
    - Cache: React Query cache for 5 minutes, invalidate on user profile update
+   - **Performance**: <100ms (P95) with caching
+   - **Consolidation Benefit**: Replaces 3 separate calls (user profile, roles, preferences)
 
-2. **GET /api/v1/notifications?limit=10&offset=0**
+2. **GET /api/v1/notifications?status=unread&limit=10** *(Story 1.26)*
+   - **Consolidation**: Simplified query with `?status=` filter instead of separate endpoint
    - Triggered on: App initialization, manual reload in notification dropdown
    - Query params:
+     - `status=unread` (filter for unread notifications)
      - `limit=10` (show 10 notifications per page in dropdown)
-     - `offset=0` (pagination offset, increments by 10 for "Load More")
    - Returns:
      ```json
      {
@@ -253,6 +263,8 @@ Per frontend architecture requirements (docs/architecture/05-frontend-architectu
      ```
    - Used for: Notification bell badge count, notification dropdown list
    - Cache: React Query with 5-minute stale time, manual refresh only
+   - **Performance**: <200ms (P95)
+   - **Consolidation Benefit**: Single endpoint replaces 11 notification-related endpoints
 
 3. **Navigation Menu Items**
    - **Static configuration in frontend** (no API call)
@@ -273,29 +285,32 @@ Per frontend architecture requirements (docs/architecture/05-frontend-architectu
 
 ### User Action APIs
 
-1. **POST /api/v1/notifications/{id}/mark-read**
-   - Triggered by: User clicks notification item or "Mark as read" button
-   - Payload: None (notification ID in URL)
+1. **PUT /api/v1/notifications/read** *(Story 1.26)*
+   - **Consolidation**: Unified endpoint supports both single and bulk read operations
+   - Triggered by: User clicks notification item or "Mark as read" button or "Mark all as read"
+   - Payload (single):
+     ```json
+     { "notificationIds": ["uuid"] }
+     ```
+   - Payload (bulk - mark all as read):
+     ```json
+     { "markAll": true }
+     ```
    - Response:
      ```json
-     { "success": true, "updatedAt": "2024-03-15T14:35:00Z" }
+     {
+       "success": true,
+       "markedCount": 3,
+       "updatedAt": "2024-03-15T14:35:00Z"
+     }
      ```
-   - Used for: Updating notification read status, decrementing badge count
+   - Used for: Updating notification read status (single or bulk), decrementing badge count
    - Optimistic update: Immediately update UI, rollback on error
    - Cache invalidation: Invalidate notifications query cache
+   - **Performance**: <100ms (P95)
+   - **Consolidation Benefit**: Single endpoint replaces separate mark-read and mark-all-read endpoints
 
-2. **POST /api/v1/notifications/mark-all-read**
-   - Triggered by: User clicks "Mark all as read" button in notification dropdown
-   - Payload: None
-   - Response:
-     ```json
-     { "success": true, "markedCount": 3 }
-     ```
-   - Used for: Bulk marking notifications as read, clearing badge count
-   - Optimistic update: Set all notifications to read, badge to 0
-   - Cache invalidation: Invalidate notifications query cache
-
-3. **DELETE /api/v1/notifications/{id}**
+2. **DELETE /api/v1/notifications/{id}** *(Story 1.26)*
    - Triggered by: User clicks [×] button on notification item
    - Payload: None (notification ID in URL)
    - Response:
@@ -305,6 +320,19 @@ Per frontend architecture requirements (docs/architecture/05-frontend-architectu
    - Used for: Removing notification from list
    - Optimistic update: Remove from UI immediately
    - Cache invalidation: Invalidate notifications query cache
+
+3. **DELETE /api/v1/notifications** *(Story 1.26)*
+   - **Consolidation**: Batch delete for multiple notifications
+   - Triggered by: Bulk delete action (future enhancement)
+   - Payload:
+     ```json
+     { "notificationIds": ["uuid1", "uuid2", "uuid3"] }
+     ```
+   - Response:
+     ```json
+     { "success": true, "deletedCount": 3 }
+     ```
+   - **Consolidation Benefit**: Supports batch operations efficiently
 
 4. **POST /api/v1/auth/logout**
    - Triggered by: User clicks "Logout" in user dropdown menu
@@ -323,26 +351,36 @@ Per frontend architecture requirements (docs/architecture/05-frontend-architectu
      - Revoke Cognito tokens
      - Redirect to `/auth/login`
 
-5. **PUT /api/v1/users/me/language**
+5. **PUT /api/v1/users/me/preferences** *(Story 1.23)*
+   - **Consolidation**: Uses unified preferences endpoint instead of separate language endpoint
    - Triggered by: User selects language from dropdown in user menu
-   - Payload:
+   - Payload (partial update supported):
      ```json
      { "language": "de" }
      ```
    - Response:
      ```json
-     { "success": true, "language": "de" }
+     {
+       "success": true,
+       "preferences": {
+         "language": "de",
+         "notifications": { ... },
+         "theme": "light"
+       }
+     }
      ```
-   - Used for: Updating user's preferred language setting
+   - Used for: Updating user's preferred language setting and other preferences
    - Side effects:
      - Update i18n language in browser (i18next.changeLanguage)
      - Update document.documentElement.lang attribute
      - Persist to localStorage
      - Invalidate user profile cache
+   - **Performance**: <150ms (P95)
+   - **Consolidation Benefit**: Single preferences endpoint handles all user settings
 
-6. **GET /api/v1/notifications (Manual Reload)**
+6. **GET /api/v1/notifications?status=unread&limit=10 (Manual Reload)** *(Story 1.26)*
    - Triggered by: User clicks reload button (↻) in notification dropdown
-   - Query params: Same as initial load (`limit=10`, `offset=0`)
+   - Query params: Same as initial load
    - Returns: Same notification structure as initial load API
    - Used for: Manually refreshing notification list and badge count
    - Cache: Invalidates existing React Query cache, fetches fresh data

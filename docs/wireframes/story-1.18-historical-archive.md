@@ -87,16 +87,33 @@ When the Historical Archive Browser screen loads, the following APIs are called 
    - Returns: List of years with event counts, earliest year, most recent year
    - Used for: Populate year selector with available years
 
-2. **GET /api/v1/archive/events**
-   - Query params: year (2025 default), status (archived, upcoming), limit (20)
-   - Returns: Events for selected year with title, date, topic, speaker count, attendee count, top presentations, ratings, download counts
-   - Used for: Populate events list for selected year
+2. **GET /api/v1/events?filter={"year":2025,"status":["archived","upcoming"]}&include=speakers,sessions,analytics&sort=-eventDate&limit=20**
+   - Returns: Events for selected year with all event card data in a single consolidated call
+   - Response includes per event:
+     - Event core data: title, date, topic, status
+     - speakers: Speaker count and list
+     - sessions: Session data with ratings
+     - analytics: Attendee count, download counts, rating statistics, photos count
+   - Used for: Populate events list for selected year with complete card details
+   - **Performance**: Reduced from 21 API calls to 1 (95% reduction for 20 events - was 1 archive call + 20 summary calls)
 
-3. **GET /api/v1/events/{eventId}/summary**
-   - Returns: Event summary with featured presentations, ratings, statistics, photos, attendee list
-   - Used for: Display event card details
+---
 
-4. **GET /api/v1/archive/topics/statistics**
+**MIGRATION NOTE (Story 1.17 - Events Portion):**
+The original implementation used:
+- 1 call to GET /api/v1/archive/events (list of events)
+- 1 call per event to GET /api/v1/events/{eventId}/summary (20 additional calls for 20 events)
+- Total: 21 API calls for initial page load
+
+The new consolidated API uses `?include=speakers,sessions,analytics` to fetch all event card data in one call. This provides:
+- Page load time: ~90% faster (from ~5s to <500ms for 20 events)
+- Single loading state for entire year's events
+- Instant event card rendering with all details
+- Reduced database load (1 optimized query vs 21 separate queries)
+- Better caching efficiency (single cache entry vs 21 entries)
+- Atomic data consistency (all events at same point in time)
+
+3. **GET /api/v1/archive/topics/statistics**
    - Query params: minPresentations (5), sortBy (count)
    - Returns: Topic statistics with presentation counts, year ranges, growth trends, popularity over time
    - Used for: Populate "Explore by Topic" section with topic bars
@@ -106,10 +123,12 @@ When the Historical Archive Browser screen loads, the following APIs are called 
    - Returns: Top speakers in each category with counts, ratings, download stats, profile links
    - Used for: Populate "Speakers Hall of Fame" section
 
-6. **GET /api/v1/archive/featured-presentations**
-   - Query params: eventId, limit (3)
+6. **GET /api/v1/content?filter={"eventId":"{eventId}","featured":true}&sort=-rating&limit=3**
+   - Query params: Filter by eventId and featured flag, sort by rating, limit to 3
    - Returns: Featured presentations with title, speaker, rating, download count
    - Used for: Display top presentations for each event card
+   - **Consolidated**: Uses Story 1.20 unified search (was /api/v1/archive/featured-presentations)
+   - **Benefit**: Reuses content search infrastructure with filtering
 
 ---
 
@@ -121,10 +140,12 @@ When the Historical Archive Browser screen loads, the following APIs are called 
    - Returns: Full event details with agenda, all presentations, speakers, venue, statistics, photos, documents
    - Used for: Load event detail view when clicking [View Event]
 
-2. **GET /api/v1/events/{eventId}/presentations**
-   - Query params: sortBy (rating|downloads|date), limit (50)
+2. **GET /api/v1/content?filter={"eventId":"{eventId}"}&sort={sortBy}&limit=50**
+   - Query params: Filter by eventId, sort by rating/downloads/date, limit to 50
    - Returns: All presentations for event with metadata, files, ratings
    - Used for: Navigate to presentations list from [Browse Presentations]
+   - **Consolidated**: Uses Story 1.20 unified search (was /api/v1/events/{eventId}/presentations)
+   - **Benefit**: Consistent search/filter/sort across all content queries
 
 3. **GET /api/v1/events/{eventId}/photos**
    - Query params: limit (100), quality (thumbnail|full)
@@ -194,30 +215,40 @@ When the Historical Archive Browser screen loads, the following APIs are called 
 
 ### Downloads & Bookmarks
 
-15. **GET /api/v1/presentations/{presentationId}/download**
+15. **GET /api/v1/content/{contentId}/download**
     - Returns: Download URL, file metadata, expiration timestamp
     - Used for: Download presentation files
+    - **Consolidated**: Story 1.20 standard download endpoint (was /api/v1/presentations/{presentationId}/download)
+    - **Benefit**: Consistent download pattern across all content types
 
-16. **POST /api/v1/attendees/{userId}/bookmarks**
-    - Payload: `{ eventId (optional), presentationId (optional), type: "event|presentation" }`
+16. **POST /api/v1/content/{contentId}/reviews** (with bookmark metadata)
+    - Payload: `{ type: "bookmark", userId, metadata: { eventId, notes } }`
     - Response: Bookmark created, confirmation
     - Used for: Bookmark event or presentation for later
+    - **Consolidated**: Reviews endpoint can handle bookmarks (was POST /api/v1/attendees/{userId}/bookmarks)
+    - **Benefit**: Unified engagement tracking
 
-17. **DELETE /api/v1/attendees/{userId}/bookmarks/{bookmarkId}**
+17. **DELETE /api/v1/content/{contentId}/reviews/{reviewId}**
     - Response: Bookmark removed
     - Used for: Remove bookmark
+    - **Consolidated**: Standard review deletion (was DELETE /api/v1/attendees/{userId}/bookmarks/{bookmarkId})
+    - **Benefit**: Consistent deletion pattern
 
 ### Search & Filter
 
-18. **GET /api/v1/archive/search**
-    - Query params: query, year, topic, speaker, minRating, sortBy
-    - Returns: Search results with events, presentations, speakers matching criteria
+18. **GET /api/v1/content?filter={}&facets=year,speaker,topic&include=event**
+    - Query params: `filter={"$or":[{"title":{"$contains":"query"}},{"tags":{"$in":["topic"]}}]}`, year, speaker, minRating, sortBy, facets
+    - Returns: Search results with events, presentations, speakers matching criteria, facet aggregations
     - Used for: Search archive content
+    - **Consolidated**: Story 1.20 unified search (was /api/v1/archive/search)
+    - **Benefit**: Single search API for archive, discovery, and all content
 
-19. **GET /api/v1/archive/events/filter**
-    - Query params: year, topic, speakerCount, attendeeCount, minRating
+19. **GET /api/v1/events?filter={"year":{year},"topic":{topic}}&page=1&limit=50**
+    - Query params: Filter by year, topic, speaker count, attendee count, min rating
     - Returns: Filtered event list
     - Used for: Filter events by criteria
+    - **Consolidated**: Standard events API with filtering (was /api/v1/archive/events/filter)
+    - **Benefit**: Reuses events infrastructure with rich filters
 
 ---
 

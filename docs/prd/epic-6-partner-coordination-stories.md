@@ -15,7 +15,77 @@
 
 ---
 
-## Story 6.1: Topic Voting Integration
+## Story 6.1  : Partner Analytics Dashboard
+
+**User Story:**
+As a **partner**, I want to view comprehensive analytics about employee attendance and engagement, so that I can demonstrate sponsorship ROI internally.
+
+**Architecture Integration**:
+- Service: Partner Analytics Service
+- Analytics: AWS QuickSight embedded dashboards
+- Database: PostgreSQL materialized views
+- Frontend: React dashboard components
+
+**Acceptance Criteria**:
+1. **Attendance Metrics**: Employee attendance by event
+2. **Trend Analysis**: Historical attendance patterns
+3. **Department Breakdown**: Attendance by department
+4. **Engagement Score**: Content interaction metrics
+5. **Comparative Analysis**: Benchmark vs other partners
+6. **Export Capability**: Download reports as PDF/Excel
+
+**Definition of Done**:
+- [ ] Dashboard loads in <3 seconds
+- [ ] Real-time data updates daily
+- [ ] All metrics accurately calculated
+- [ ] Export functionality working
+- [ ] Mobile-responsive dashboard
+- [ ] Role-based data access enforced
+
+---
+
+## Story 6.2: Partner Meeting Coordination
+
+**User Story:**
+As an **organizer**, I want to coordinate seasonal partner meetings so that strategic partnerships are maintained efficiently.
+
+**Architecture Integration:**
+- **Service**: Event Management Service partnership module
+- **Calendar**: Integration with calendar systems
+- **Database**: PostgreSQL meeting tracking
+- **Frontend**: React meeting dashboard
+
+**Wireframe Context:**
+
+### Wireframe References
+**From docs/wireframes/sitemap.md:**
+- **Main Screen:** `docs/wireframes/story-6.2-partner-meetings.md` ✅ ✨ **MVP INCLUDED**
+  - Partner Meetings coordination interface (core MVP feature)
+  - Meeting scheduling and calendar view
+ 
+### UI Components
+**Key interface elements:**
+- **Meeting Coordination Dashboard**:
+  - Upcoming meetings list (spring/autumn seasonal meetings)
+  - Meeting status badges (scheduled/pending/completed)
+  - Calendar integration status
+- **RSVP Management**:
+  - Reminder emails configuration
+ 
+### Wireframe Status
+- ✅ **EXISTS**: Partner Meetings wireframe fully documented ✨ **MVP Feature**
+ 
+### Navigation
+**Key navigation paths from this screen:**
+- ⤴ Partner Dashboard (if analytics features added post-MVP)
+
+**Acceptance Criteria:**
+1. **Meeting Scheduling**: Spring/autumn meeting automation
+
+**Definition of Done:**
+- [ ] Meetings scheduled 2+ months ahead
+
+## Story 6.4: Topic Voting Integration
 
 **User Story:**
 As a **partner**, I want to vote on future event topics and submit suggestions, so that events align with our strategic interests.
@@ -100,49 +170,6 @@ As a **partner**, I want to vote on future event topics and submit suggestions, 
 - [ ] Analytics provide insights
 - [ ] Integration with event planning
 - [ ] Results influence topic selection
-
----
-
-## Story 6.2: Partner Meeting Coordination
-
-**User Story:**
-As an **organizer**, I want to coordinate seasonal partner meetings so that strategic partnerships are maintained efficiently.
-
-**Architecture Integration:**
-- **Service**: Event Management Service partnership module
-- **Calendar**: Integration with calendar systems
-- **Database**: PostgreSQL meeting tracking
-- **Frontend**: React meeting dashboard
-
-**Wireframe Context:**
-
-### Wireframe References
-**From docs/wireframes/sitemap.md:**
-- **Main Screen:** `docs/wireframes/story-6.2-partner-meetings.md` ✅ ✨ **MVP INCLUDED**
-  - Partner Meetings coordination interface (core MVP feature)
-  - Meeting scheduling and calendar view
- 
-### UI Components
-**Key interface elements:**
-- **Meeting Coordination Dashboard**:
-  - Upcoming meetings list (spring/autumn seasonal meetings)
-  - Meeting status badges (scheduled/pending/completed)
-  - Calendar integration status
-- **RSVP Management**:
-  - Reminder emails configuration
- 
-### Wireframe Status
-- ✅ **EXISTS**: Partner Meetings wireframe fully documented ✨ **MVP Feature**
- 
-### Navigation
-**Key navigation paths from this screen:**
-- ⤴ Partner Dashboard (if analytics features added post-MVP)
-
-**Acceptance Criteria:**
-1. **Meeting Scheduling**: Spring/autumn meeting automation
-
-**Definition of Done:**
-- [ ] Meetings scheduled 2+ months ahead
 
 ---
 

@@ -99,10 +99,12 @@ APIs needed to load and display data for this screen:
    - Query params: None (get all slots)
    - Used for: Slot assignment panel showing morning/afternoon agenda
 
-3. **GET /api/v1/events/{eventId}/speakers/accepted**
-   - Retrieve all speakers in accepted state for this event
-   - Response includes: speaker details, expertise, company
+3. **GET /api/v1/speakers?filter={"eventId":"{eventId}","status":"accepted"}&include=profile**
+   - **Consolidated API**: Replaces `/api/v1/events/{eventId}/speakers/accepted`
+   - Retrieve all speakers in accepted state for this event with profile data included
+   - Response includes: speaker details, expertise, company, bio
    - Used for: Accepted speakers list display
+   - **Consolidation benefit**: Single endpoint with field inclusion eliminates need for separate profile calls
 
 ---
 
@@ -112,10 +114,12 @@ APIs called by user interactions and actions:
 
 ### Speaker Management
 
-1. **GET /api/v1/speakers/{speakerId}/profile**
+1. **GET /api/v1/speakers/{speakerId}?include=profile,events,availability**
+   - **Consolidated API**: Replaces `/api/v1/speakers/{speakerId}/profile`
    - Triggered by: [View Profile] button in accepted speakers list
-   - Response: Full speaker profile with history, expertise, availability
+   - Response: Full speaker profile with history, expertise, availability, and events
    - Opens: Speaker profile modal/page
+   - **Consolidation benefit**: Single call retrieves all profile data including availability and event history
 
 2. **POST /api/v1/organizers/{organizerId}/messages/send**
    - Triggered by: [Contact] button for speaker

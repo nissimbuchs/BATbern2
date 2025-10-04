@@ -104,24 +104,19 @@ APIs needed to load and display data for this screen:
 
 ### Initial Page Load
 
-1. **GET /api/v1/speakers/{speakerId}/events/{eventId}/timeline**
-   - Retrieve complete event timeline data
-   - Response includes: all milestones, deadlines, completion status
-   - Used for: Populating timeline visualization and milestone cards
-   - Aggregated: Single call for complete timeline
+1. **GET /api/v1/speakers/{speakerId}/events/{eventId}?include=timeline,materials,checklist**
+   - **Consolidated API**: Replaces `/timeline`, `/milestones`, and `/checklist` endpoints
+   - Retrieve complete event data with timeline, materials, and checklist included
+   - Response includes:
+     - Complete timeline with all milestones, deadlines, completion status
+     - Event milestones with status (pending/overdue/completed)
+     - Preparation checklist items with categories
+     - Material submission status
+   - Used for: Populating timeline visualization, milestone cards, and checklist in a single call
+   - **Consolidation benefit**: 3 endpoints → 1 endpoint (67% reduction), atomic data consistency
+   - Query filter for milestones: Can use `?filter={"milestoneStatus":"pending|overdue"}` within include
 
-2. **GET /api/v1/speakers/{speakerId}/events/{eventId}/milestones**
-   - Retrieve all event milestones with status
-   - Response includes: milestone type, due date, status, actions, dependencies
-   - Used for: "Upcoming Milestones" section
-   - Filter: `status=pending|overdue`, `limit=5`
-
-3. **GET /api/v1/speakers/{speakerId}/events/{eventId}/checklist**
-   - Retrieve preparation checklist items
-   - Response includes: checklist items, completion status, categories (pre-event, event-day)
-   - Used for: "Preparation Checklist" section
-
-4. **GET /api/v1/events/{eventId}/details**
+2. **GET /api/v1/events/{eventId}**
    - Retrieve event details
    - Response includes: event name, date, location, topic, speaker slot time
    - Used for: Header information display
@@ -134,15 +129,19 @@ APIs called by user interactions and actions:
 
 ### Milestone Actions
 
-1. **GET /api/v1/speakers/{speakerId}/events/{eventId}/milestones/{milestoneId}/feedback**
+1. **GET /api/v1/speakers/{speakerId}/feedback?filter={"eventId":"{eventId}","milestoneId":"{milestoneId}"}&include=details**
+   - **Consolidated API**: Uses standard feedback endpoint with filtering
    - Triggered by: [View Feedback] button
    - Response: Organizer feedback details, revision requests
    - Opens: Feedback modal or navigates to relevant submission screen
+   - **Consolidation benefit**: Reuses existing feedback endpoint, consistent feedback access pattern
 
-2. **POST /api/v1/speakers/{speakerId}/events/{eventId}/milestones/{milestoneId}/submit**
+2. **POST /api/v1/speakers/{speakerId}/events/{eventId}/materials**
+   - **Consolidated API**: Uses unified materials endpoint
    - Triggered by: [Submit Revision], [Upload Slides] buttons
    - Action: Redirects to appropriate submission interface
    - Navigation: Opens material submission wizard or upload screen
+   - **Consolidation benefit**: All material submissions through single endpoint
 
 3. **PUT /api/v1/speakers/{speakerId}/events/{eventId}/milestones/{milestoneId}/status**
    - Triggered by: Completing milestone action
@@ -191,19 +190,23 @@ APIs called by user interactions and actions:
 
 ### Calendar Integration
 
-10. **GET /api/v1/speakers/{speakerId}/events/{eventId}/calendar/export**
+10. **POST /api/v1/speakers/{speakerId}/export**
+    - **Consolidated API**: Uses speaker export endpoint with event context
     - Triggered by: [Export] or [Add to Calendar] buttons
-    - Query params: `format=ical|google|outlook`, `includeDeadlines=true`
+    - Payload: `{ eventId, format: "ical|google|outlook", includeDeadlines: true }`
     - Response: iCal file or calendar service redirect
     - Downloads: .ics file with all milestones
+    - **Consolidation benefit**: Unified export endpoint for all speaker data exports
 
 ### Checklist Management
 
-11. **PUT /api/v1/speakers/{speakerId}/events/{eventId}/checklist/{itemId}**
+11. **PATCH /api/v1/speakers/{speakerId}/events/{eventId}**
+    - **Consolidated API**: Uses PATCH on event endpoint for checklist updates
     - Triggered by: Checking/unchecking checklist item
-    - Payload: `{ completed: true }`
-    - Response: Updated checklist item status
+    - Payload: `{ checklist: { itemId: { completed: true } } }`
+    - Response: Updated event data with checklist status
     - Updates: Checklist progress, completion percentage
+    - **Consolidation benefit**: Checklist is part of event resource, no separate endpoint needed
 
 12. **POST /api/v1/speakers/{speakerId}/events/{eventId}/checklist/reset**
     - Triggered by: Optional "Reset Checklist" action

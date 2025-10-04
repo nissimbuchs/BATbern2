@@ -214,16 +214,29 @@ Public (unauthenticated), All Roles (for re-authentication)
 
 ### Initial Page Load APIs
 
-1. **GET /api/v1/auth/session-check**
+1. **GET /api/v1/users/me** (Story 1.23 - Users API Consolidation)
    - Query params: None (reads from cookie or Authorization header)
-   - Returns: `{ isAuthenticated: boolean, user: User | null, role: UserRole | null }`
-   - Used for: Checking if user already has valid session on page load. If authenticated, redirect to dashboard.
-   - Response Example:
+   - Returns: User profile data including authentication state
+   - Used for: Checking if user already has valid session on page load and retrieving user profile. If authenticated, redirect to dashboard.
+   - Response Example (unauthenticated):
      ```json
      {
-       "isAuthenticated": false,
-       "user": null,
-       "role": null
+       "error": "Unauthorized"
+     }
+     ```
+   - Response Example (authenticated):
+     ```json
+     {
+       "id": "user-uuid",
+       "email": "user@example.com",
+       "name": "John Doe",
+       "role": "ORGANIZER",
+       "companyId": "company-uuid",
+       "emailVerified": true,
+       "preferences": {
+         "language": "de",
+         "notifications": true
+       }
      }
      ```
 
@@ -465,8 +478,8 @@ None - this is a simple form screen with no data-driven navigation elements.
 ### Server State (React Query)
 
 - **Authentication Query**:
-  - Query Key: `['auth', 'session']`
-  - Fetcher: `GET /api/v1/auth/session-check`
+  - Query Key: `['users', 'me']`
+  - Fetcher: `GET /api/v1/users/me` (Story 1.23)
   - Stale Time: 5 minutes
   - Cache Time: 10 minutes
   - Retry: false (don't retry on 401)
@@ -553,12 +566,30 @@ None required for login screen. Real-time updates apply post-authentication in d
   - After 3 failed attempts, show reCAPTCHA to prevent brute force attacks
   - Currently handled by AWS Cognito rate limiting
 
+## API Consolidation Notes
+
+**AWS Cognito Managed Endpoints**: The following endpoints are part of AWS Cognito's managed authentication service and are intentionally not consolidated:
+- `POST /oauth2/token` - OAuth2 token endpoint for authentication
+- `GET /oauth2/userInfo` - OAuth2 user info endpoint for retrieving authenticated user details
+
+These endpoints follow OAuth2/OIDC standards and are managed by AWS. They provide specialized authentication capabilities that are external to the application's domain logic.
+
+**Consolidated Custom Endpoints**: Custom wrapper endpoints follow the consolidated API patterns from Story 1.16 (API Consolidation Foundation):
+- `GET /api/v1/users/me` (Story 1.23 - Users API Consolidation) - Replaces `/api/v1/auth/session-check` to consolidate session state retrieval with user profile data
+- `POST /api/v1/auth/login` (Story 1.16) - Optional wrapper that follows consolidated patterns for simplified authentication flow
+
+**Rationale**:
+- **AWS Cognito endpoints** are specialized managed services that handle OAuth2/OIDC authentication flows. These are infrastructure-level services, not application domain APIs, and therefore exist outside the scope of API consolidation (Stories 1.16-1.27).
+- **Session state consolidation**: Previously, session checking was separate from user profile retrieval. Now, `GET /api/v1/users/me` (Story 1.23) serves both purposes - it returns user profile data for authenticated users and returns an error for unauthenticated users, eliminating the need for a separate session-check endpoint.
+- **Separation of concerns**: Authentication flows (Cognito) handle identity verification, while consolidated APIs (Stories 1.16-1.27) handle application domain logic such as user profiles, events, partners, etc.
+
 ## Change Log
 
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
 | 2025-10-04 | 1.0 | Initial wireframe creation | Sally (UX Expert) |
 | 2025-10-04 | 1.1 | Added language selector (EN/DE per NFR4); Removed role information box (align with FR1/FR22 - role-agnostic login); Added i18n implementation details | Sally (UX Expert) |
+| 2025-10-04 | 1.2 | API consolidation updates: Replaced GET /api/v1/auth/session-check with GET /api/v1/users/me (Story 1.23); Added API Consolidation Notes section | Claude (AI Assistant) |
 
 ## Review Notes
 

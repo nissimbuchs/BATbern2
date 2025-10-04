@@ -304,31 +304,42 @@
 
 ### Initial Page Load APIs
 
-1. **GET /api/v1/events/{eventId}/registrations/{registrationId}/ticket**
+1. **GET /api/v1/events/{eventId}/registrations/{registrationId}?include=ticket,event.venue**
    - Authorization: Required (authenticated user, must own registration)
    - Path params: `eventId`, `registrationId`
-   - Returns: Complete ticket data
+   - Query params: `include=ticket,event.venue` (to embed ticket and venue data)
+   - Returns: Complete registration with embedded ticket and event data
      ```json
      {
        "registrationId": "reg-uuid",
        "eventId": "event-uuid",
        "attendeeId": "user-uuid",
-       "ticketId": "BAT-2025-1234",
-       "qrCodeData": {
-         "registrationId": "reg-uuid",
-         "eventId": "event-uuid",
-         "attendeeId": "user-uuid",
-         "timestamp": "2025-05-15T08:30:00Z",
-         "checksum": "sha256-hmac"
+       "status": "CONFIRMED",
+       "ticket": {
+         "ticketId": "BAT-2025-1234",
+         "qrCodeData": {
+           "registrationId": "reg-uuid",
+           "eventId": "event-uuid",
+           "attendeeId": "user-uuid",
+           "timestamp": "2025-05-15T08:30:00Z",
+           "checksum": "sha256-hmac"
+         },
+         "qrCodeImageUrl": "https://cdn.batbern.ch/qr/...",
+         "issuedAt": "2025-03-01T14:30:00Z",
+         "canTransfer": true,
+         "canCancel": true,
+         "walletPassUrls": {
+           "appleWallet": "https://api.batbern.ch/wallet/apple/...",
+           "googleWallet": "https://api.batbern.ch/wallet/google/..."
+         }
        },
-       "qrCodeImageUrl": "https://cdn.batbern.ch/qr/...",
-       "attendeeInfo": {
+       "attendee": {
          "firstName": "John",
          "lastName": "Smith",
          "email": "john.smith@company.ch",
          "company": "TechCorp AG"
        },
-       "eventInfo": {
+       "event": {
          "title": "Spring Conference 2025: Cloud Native Architecture",
          "eventDate": "2025-05-15T08:30:00Z",
          "endTime": "2025-05-15T18:00:00Z",
@@ -337,38 +348,36 @@
            "address": "Kornhausstrasse 3, 3013 Bern",
            "coordinates": {"lat": 46.9479, "lng": 7.4474}
          }
-       },
-       "issuedAt": "2025-03-01T14:30:00Z",
-       "status": "CONFIRMED",
-       "canTransfer": true,
-       "canCancel": true,
-       "walletPassUrls": {
-         "appleWallet": "https://api.batbern.ch/wallet/apple/...",
-         "googleWallet": "https://api.batbern.ch/wallet/google/..."
        }
      }
      ```
    - Used for: Display all ticket information, generate QR code, enable wallet integration
+   - Consolidation: Single endpoint with includes replaces multiple calls (Story 1.17)
 
 ### User Action APIs
 
 2. **GET /api/v1/events/{eventId}/registrations/{registrationId}/ticket.pdf**
    - Triggered by: [Download PDF] button
    - Authorization: Required (authenticated user, must own registration)
-   - Returns: PDF file download
+   - Returns: PDF file download with ticket, QR code, and embedded event/venue details
    - Used for: Downloads printable ticket PDF with QR code
+   - Consolidation: Nested under Events/Registrations API (Story 1.17)
 
-3. **GET /api/v1/events/{eventId}/registrations/{registrationId}/wallet/apple**
+3. **GET /api/v1/integrations/wallet/apple?registrationId={registrationId}**
    - Triggered by: [Add to Apple Wallet] button
    - Authorization: Required (authenticated user, must own registration)
+   - Query params: `registrationId`
    - Returns: Apple Wallet pass file (.pkpass)
    - Used for: Downloads Apple Wallet pass with QR code
+   - Consolidation: Uses consolidated Integrations API (Story 1.27)
 
-4. **GET /api/v1/events/{eventId}/registrations/{registrationId}/wallet/google**
+4. **GET /api/v1/integrations/wallet/google?registrationId={registrationId}**
    - Triggered by: [Add to Google Wallet] button
    - Authorization: Required (authenticated user, must own registration)
+   - Query params: `registrationId`
    - Returns: Google Wallet save URL (redirect)
    - Used for: Redirects to Google Wallet save flow
+   - Consolidation: Uses consolidated Integrations API (Story 1.27)
 
 5. **POST /api/v1/events/{eventId}/registrations/{registrationId}/transfer**
    - Triggered by: [Transfer Ticket] → Confirm transfer in modal
@@ -397,14 +406,17 @@
      }
      ```
    - Used for: Transfer ticket ownership to another person, invalidate current ticket
+   - Consolidation: Nested under Events/Registrations API (Story 1.17)
 
-6. **POST /api/v1/events/{eventId}/registrations/{registrationId}/share**
+6. **POST /api/v1/content/share**
    - Triggered by: [Share Ticket] → Email or Copy Link
    - Authorization: Required (authenticated user, must own registration)
    - Payload:
      ```json
      {
+       "contentType": "ticket",
        "method": "email" | "link",
+       "registrationId": "reg-uuid",
        "recipientEmail": "friend@example.com",
        "message": "Check out my ticket!"
      }
@@ -417,12 +429,14 @@
      }
      ```
    - Used for: Generate shareable ticket link (read-only, expires after event)
+   - Consolidation: Uses consolidated Content API for sharing features (Story 1.20)
 
-7. **PUT /api/v1/events/{eventId}/registrations/{registrationId}**
+7. **PATCH /api/v1/events/{eventId}/registrations/{registrationId}**
    - Triggered by: [Update Registration] button
    - Authorization: Required (authenticated user, must own registration)
-   - Navigates to: Registration edit form (not API call on this screen)
-   - Used for: Edit registration details (dietary requirements, company, etc.)
+   - Payload: Partial registration updates (e.g., dietary requirements, company, etc.)
+   - Used for: Edit registration details
+   - Consolidation: Uses PATCH for partial updates (Story 1.17)
 
 8. **DELETE /api/v1/events/{eventId}/registrations/{registrationId}**
    - Triggered by: [Cancel Registration] → Confirm cancellation in modal
@@ -438,12 +452,14 @@
      }
      ```
    - Used for: Cancel registration, invalidate ticket, send cancellation email
+   - Consolidation: Nested under Events API (Story 1.17)
 
-9. **POST /api/v1/events/{eventId}/registrations/{registrationId}/refresh-qr**
+9. **POST /api/v1/events/{eventId}/registrations/{registrationId}/refresh-ticket**
    - Triggered by: Page load, or manual refresh (every 5 minutes in background)
    - Authorization: Required (authenticated user, must own registration)
    - Returns: New QR code data with updated timestamp and signature
    - Used for: Refresh QR code to prevent screenshot reuse, update timestamp
+   - Consolidation: Nested under Events/Registrations API (Story 1.17)
 
 ---
 

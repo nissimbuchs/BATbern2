@@ -78,39 +78,39 @@
 
 ### Initial Page Load APIs
 
+**Note**: This wireframe has been updated to use the consolidated Partners API from Story 1.18 (109 → 20 endpoints, 82% reduction).
+
 When the Partner Analytics Dashboard screen loads, the following APIs are called to provide the necessary data:
 
-1. **GET /api/v1/partners/{partnerId}/analytics/summary**
-   - Query params: year (2025)
-   - Returns: Investment amount, employee attendance, speaker count, downloads, engagement rate, ROI ratio, year-over-year changes, key insights
-   - Used for: Populate executive summary panel with all key metrics
+1. **GET /api/v1/partners/{partnerId}?include=analytics,meetings,settings,employees**
+   - Consolidates: Former separate calls for profile, settings, and related data
+   - Returns: Complete partner entity including company name, contact person, logo, tier, contract details, embedded analytics summary, upcoming meetings, employee summary
+   - Used for: Populate partner header, quick stats, and initial data for all dashboard panels
+   - **Consolidation Benefit**: Single request replaces 5+ separate API calls, reducing initial page load time
 
-2. **GET /api/v1/partners/{partnerId}/analytics/attendance-trends**
-   - Query params: period (12months), groupBy (month)
-   - Returns: Time-series data of employee attendance by month, trend lines, growth indicators
-   - Used for: Display attendance over time chart
+2. **GET /api/v1/partners/{partnerId}/analytics?metrics=attendance,employees,engagement&timeframe=year**
+   - Consolidates: Former `/analytics/summary`, `/analytics/attendance-trends`, `/analytics/employee-breakdown` endpoints
+   - Query params: metrics (comma-separated: attendance, employees, engagement, downloads, roi), timeframe (month|quarter|year), groupBy (month for trends)
+   - Returns: Comprehensive analytics object with:
+     - Summary: Investment amount, speaker count, engagement rate, ROI ratio, year-over-year changes, key insights
+     - Attendance trends: Time-series data by month, trend lines, growth indicators
+     - Employee breakdown: Seniority level distribution, topic interests with percentages
+   - Used for: Populate executive summary panel, attendance chart, employee distribution, and topics of interest
+   - **Consolidation Benefit**: Flexible metrics selection eliminates need for multiple specialized analytics endpoints
 
-3. **GET /api/v1/partners/{partnerId}/analytics/employee-breakdown**
-   - Query params: dimensions (level, topics)
-   - Returns: Seniority level breakdown, topic interests with percentages
-   - Used for: Populate level distribution and topics of interest panels
-
-4. **GET /api/v1/partners/{partnerId}/events/upcoming**
-   - Query params: limit (5), includeRegistrations (true)
-   - Returns: Upcoming events with dates, employee registration counts, promotion status
+3. **GET /api/v1/partners/{partnerId}/meetings?filter={"upcoming":true}&page=1&limit=5**
+   - Consolidates: Former `/events/upcoming` endpoint with partner context
+   - Query params: filter (JSON filter for upcoming meetings), limit (5)
+   - Returns: Upcoming meetings/events with dates, employee registration counts, promotion status, RSVP status
    - Used for: Display upcoming events panel with registration information
+   - **Consolidation Benefit**: Standard filtering pattern consistent across all resource endpoints
 
-5. **GET /api/v1/partners/{partnerId}/profile**
-   - Returns: Partner company name, contact person name, logo, tier, contract details
-   - Used for: Display partner information in header
-
-6. **GET /api/v1/partners/{partnerId}/notifications/unread-count**
-   - Returns: Count of unread notifications
-   - Used for: Display notification badge
-
-7. **GET /api/v1/partners/{partnerId}/quick-actions/available**
-   - Returns: List of available quick actions with permissions and statuses
-   - Used for: Populate quick actions panel
+4. **GET /api/v1/partners/{partnerId}/notifications?filter={"read":false}**
+   - Consolidates: Former `/notifications/unread-count` into flexible notifications endpoint
+   - Query params: filter (JSON filter for unread notifications)
+   - Returns: List of unread notifications with count, types, timestamps, action links
+   - Used for: Display notification badge count and notification panel
+   - **Consolidation Benefit**: Returns both count and notification details in single call
 
 ---
 
@@ -118,92 +118,127 @@ When the Partner Analytics Dashboard screen loads, the following APIs are called
 
 ### Analytics & Reporting
 
-1. **GET /api/v1/partners/{partnerId}/analytics/detailed**
-   - Query params: metrics (attendance, engagement, downloads), dateRange, format (json)
-   - Returns: Comprehensive analytics data with drill-down capabilities
+1. **GET /api/v1/partners/{partnerId}/analytics?metrics=attendance,engagement,downloads,roi&timeframe=year**
+   - Consolidates: Former `/analytics/detailed` endpoint
+   - Query params: metrics (flexible selection), timeframe (month|quarter|year), breakdown (role, department), format (json)
+   - Returns: Comprehensive analytics data with drill-down capabilities for selected metrics
    - Used for: Navigate to detailed analytics view with all metrics
+   - **Consolidation Benefit**: Same endpoint as initial load, just with different metrics parameter
 
-2. **POST /api/v1/partners/{partnerId}/reports/generate**
-   - Payload: `{ reportType: "quarterly|annual|custom", dateRange, metrics: [], format: "pdf|excel|pptx" }`
-   - Response: Report generation task ID, estimated completion time
+2. **POST /api/v1/partners/{partnerId}/reports**
+   - Consolidates: Former `/reports/generate` endpoint
+   - Payload: `{ type: "roi|engagement|quarterly|annual|custom", dateRange, metrics: [], format: "pdf|excel|pptx" }`
+   - Response: Report ID, generation task ID, estimated completion time
    - Used for: Generate comprehensive analytics report
+   - **Consolidation Benefit**: Unified reports endpoint with type parameter
 
-3. **GET /api/v1/partners/{partnerId}/reports/{reportId}/download**
-   - Returns: Downloadable report file URL, expiration timestamp
-   - Used for: Download generated report
+3. **GET /api/v1/partners/{partnerId}/reports?type=roi**
+   - Consolidates: Former `/reports/{reportId}/download` into list/detail pattern
+   - Query params: type (filter by report type), limit, page
+   - Returns: List of generated reports with download URLs, expiration timestamps, generation status
+   - Used for: View available reports and download links
+   - **Consolidation Benefit**: RESTful pattern, single endpoint for report listing and access
 
 4. **POST /api/v1/partners/{partnerId}/analytics/export**
-   - Payload: `{ dataType: "attendance|engagement|downloads", format: "csv|excel", dateRange }`
+   - Maintains existing endpoint (already consolidated in Story 1.18)
+   - Payload: `{ metrics: ["attendance","engagement","downloads"], format: "csv|excel", dateRange }`
    - Response: Export task ID, download URL (when ready)
    - Used for: Export raw analytics data for external analysis
+   - **Consolidation Benefit**: Accepts flexible metrics array instead of single dataType
 
-5. **POST /api/v1/partners/{partnerId}/analytics/share**
-   - Payload: `{ recipients: ["email@company.com"], message, dashboardUrl, accessLevel: "view|edit" }`
-   - Response: Share confirmation, access tokens
-   - Used for: Share analytics dashboard with team members
+5. **POST /api/v1/partners/{partnerId}/export**
+   - Consolidates: Analytics sharing and general partner data export
+   - Payload: `{ exportType: "analytics|contacts|meetings|all", format: "json|csv|excel", includeCharts: boolean, recipients: ["email@company.com"], message, accessLevel: "view|edit" }`
+   - Response: Export confirmation, share tokens if recipients specified, download URL
+   - Used for: Export/share partner data and analytics with team members
+   - **Consolidation Benefit**: Unified export endpoint for all partner data types
 
 ### Topic & Content Management
 
-6. **POST /api/v1/partners/{partnerId}/topics/vote**
-   - Payload: `{ topicId, votes: number, priority: "high|medium|low" }`
-   - Response: Updated vote count, topic ranking
-   - Used for: Cast votes on proposed topics
+6. **PUT /api/v1/partners/{partnerId}/topics/votes**
+   - Consolidates: Former individual `/topics/vote` endpoint into batch operation
+   - Payload: `{ sessionId, votes: [{ topicId, votes: number, priority: "high|medium|low" }] }`
+   - Response: Updated vote counts for all topics, partner's updated rankings, influence score
+   - Used for: Cast or update votes on multiple topics in single request
+   - **Consolidation Benefit**: Batch voting eliminates need for N individual API calls when voting on multiple topics
 
 7. **POST /api/v1/partners/{partnerId}/topics/suggest**
+   - Maintains existing endpoint (already RESTful in Story 1.18)
    - Payload: `{ title, description, relevance, targetAudience, estimatedInterest }`
    - Response: Topic suggestion ID, review status
    - Used for: Suggest new topic for upcoming events
 
-8. **GET /api/v1/partners/{partnerId}/topics/voting-status**
-   - Returns: Active voting sessions, partner's votes, remaining votes, deadlines
-   - Used for: Navigate to topic voting interface
+8. **GET /api/v1/partners/{partnerId}/topics/votes?sessionId={current}**
+   - Consolidates: Former `/topics/voting-status` endpoint
+   - Query params: sessionId (filter to active session)
+   - Returns: Voting session details, partner's current votes, remaining vote allocation, deadlines, topic rankings
+   - Used for: Navigate to topic voting interface with current voting state
+   - **Consolidation Benefit**: Standard list/detail pattern replaces specialized status endpoint
 
 ### Event & Meeting Management
 
-9. **GET /api/v1/partners/{partnerId}/events/{eventId}/details**
-    - Returns: Full event details, registrations, promotion materials, internal communication tools
-    - Used for: Navigate to event detail view
+9. **GET /api/v1/partners/{partnerId}/meetings/{meetingId}?include=agenda,attendees,materials**
+    - Consolidates: Former `/events/{eventId}/details` with expanded include parameter
+    - Query params: include (comma-separated: agenda, attendees, materials, promotion)
+    - Returns: Full meeting/event details, registrations, promotion materials, internal communication tools in single response
+    - Used for: Navigate to event detail view with all related data
+    - **Consolidation Benefit**: Include parameter eliminates need for separate detail API calls
 
-10. **POST /api/v1/partners/{partnerId}/events/{eventId}/promote**
+10. **POST /api/v1/partners/{partnerId}/meetings/{meetingId}/promote**
+    - Maintains existing endpoint (already RESTful in Story 1.18)
     - Payload: `{ channels: ["email", "intranet"], customMessage, targetDepartments: [] }`
     - Response: Promotion campaign ID, reach estimate
     - Used for: Launch internal promotion campaign for event
 
-11. **POST /api/v1/partners/{partnerId}/meetings/schedule**
+11. **POST /api/v1/partners/{partnerId}/meetings**
+    - Consolidates: Former `/meetings/schedule` endpoint using standard POST for creation
     - Payload: `{ type: "quarterly|planning|review", proposedDates: [], attendees: [], agenda }`
-    - Response: Meeting request ID, availability conflicts
+    - Response: Created meeting ID, availability conflicts, meeting request status
     - Used for: Schedule partner planning meeting
+    - **Consolidation Benefit**: Standard RESTful POST pattern for creating meetings
 
-12. **PUT /api/v1/partners/{partnerId}/meetings/{meetingId}/rsvp**
-    - Payload: `{ response: "accept|decline|tentative", attendees: [] }`
-    - Response: Updated meeting status, calendar invite
-    - Used for: RSVP to partner meeting
+12. **PUT /api/v1/partners/{partnerId}/meetings/{meetingId}**
+    - Consolidates: Former `/meetings/{meetingId}/rsvp` into standard update endpoint
+    - Payload: `{ rsvpResponse: "accept|decline|tentative", attendees: [], notes }`
+    - Response: Updated meeting with RSVP status, calendar invite
+    - Used for: Update meeting RSVP status and attendee list
+    - **Consolidation Benefit**: Uses standard PUT for updates instead of specialized RSVP endpoint
 
-13. **POST /api/v1/partners/{partnerId}/meetings/{meetingId}/calendar**
-    - Response: iCal file URL for calendar integration
-    - Used for: Add meeting to calendar
+13. **GET /api/v1/partners/{partnerId}/meetings/{meetingId}/calendar.ics**
+    - Consolidates: Calendar export using standard resource extension pattern
+    - Returns: iCal file content for calendar integration
+    - Used for: Download meeting as calendar file
+    - **Consolidation Benefit**: RESTful resource representation with .ics extension
 
 ### Employee Management
 
-14. **GET /api/v1/partners/{partnerId}/employees/list**
-    - Query params: filters (department, level), sortBy (attendance), limit, offset
-    - Returns: List of employees with attendance data, engagement metrics, interests
-    - Used for: Navigate to employee list view
+14. **GET /api/v1/partners/{partnerId}/employees?filter={"department":"IT"}&page=1&limit=50**
+    - Consolidates: Former `/employees/list` endpoint using standard filtering
+    - Query params: filter (JSON filter object), sort (attendance|-attendance), page, limit
+    - Returns: Paginated list of employees with attendance data, engagement metrics, interests
+    - Used for: Navigate to employee list view with filtering
+    - **Consolidation Benefit**: Consistent JSON filter pattern across all endpoints
 
 ### Notifications & Settings
 
-15. **GET /api/v1/partners/{partnerId}/notifications**
-    - Query params: limit (20), includeRead (false)
-    - Returns: List of notifications with types, timestamps, action links
+15. **GET /api/v1/partners/{partnerId}/notifications?filter={"read":false}&limit=20**
+    - Already updated in Initial Page Load section (consolidated endpoint)
+    - Query params: filter (JSON filter), limit, page
+    - Returns: List of notifications with types, timestamps, action links, read status
     - Used for: Display notifications panel
 
-16. **PUT /api/v1/partners/{partnerId}/notifications/{notificationId}/read**
-    - Response: Updated notification status
-    - Used for: Mark notification as read
+16. **PUT /api/v1/partners/{partnerId}/notifications/read**
+    - Consolidates: Batch mark-as-read instead of individual notification updates
+    - Payload: `{ notificationIds: ["id1", "id2"] }` or `{ markAllRead: true }`
+    - Response: Count of notifications marked as read
+    - Used for: Mark single or multiple notifications as read
+    - **Consolidation Benefit**: Batch operation eliminates N API calls for marking multiple notifications
 
-17. **GET /api/v1/partners/{partnerId}/settings**
-    - Returns: Partner portal settings, notification preferences, reporting preferences
-    - Used for: Navigate to settings screen
+17. **GET /api/v1/partners/{partnerId}?include=settings**
+    - Consolidates: Settings embedded in main partner resource with include parameter
+    - Returns: Partner entity with settings object (notification preferences, reporting preferences, portal configuration)
+    - Used for: Navigate to settings screen with current preferences
+    - **Consolidation Benefit**: Settings available via include parameter on main resource
 
 ---
 

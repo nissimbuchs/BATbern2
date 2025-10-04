@@ -357,140 +357,161 @@
 
 ### Initial Page Load APIs
 
-1. **GET /api/v1/companies/{companyId}**
-   - Returns: Company entity (id, name, displayName, logo, website, industry, isPartner, partnerTier, partnerSince, swissUid, createdAt, updatedAt)
-   - Used for: Display partner header, company information, partnership tier badge
+**Note**: This wireframe has been updated to use the consolidated Partners API from Story 1.18 (109 → 20 endpoints, 82% reduction).
 
-2. **GET /api/v1/partners/{partnerId}/engagement-metrics**
-   - Returns: Engagement metrics (partnerId, engagementScore, engagementLevel, scoreBreakdown: {eventAttendance, topicVoting, meetingParticipation, contentInteraction}, trend, lastCalculated)
-   - Used for: Display engagement score, breakdown chart, trend indicator, engagement alerts
+1. **GET /api/v1/partners/{partnerId}?include=analytics,contacts,meetings,employees,votes,settings**
+   - Consolidates: Former 10 separate API calls into single request with include parameter
+   - Query params: include (comma-separated list of embedded resources)
+   - Returns: Complete partner entity with embedded data:
+     - Company: id, name, logo, website, industry, tier, partnerSince, swissUid
+     - Analytics: engagement score, breakdown, trend, alerts
+     - Contacts: primary and secondary contacts, communication preferences
+     - Meetings: upcoming and recent meeting summaries
+     - Employees: statistics, top attendees
+     - Votes: active topic votes
+     - Settings: partnership configuration (organizer only)
+   - Used for: Populate all tabs with single initial request
+   - **Consolidation Benefit**: Include parameter replaces 10+ separate API calls, reducing initial page load from 10 requests to 1 (90% reduction)
 
-3. **GET /api/v1/partners/{partnerId}/contact-info**
-   - Returns: Contact details (primaryContact: {name, title, email, phone, linkedIn, preferredLanguage, preferredContactMethod}, secondaryContacts[], communicationPreferences: {emailNotifications, newsletter, eventAnnouncements, meetingReminders})
-   - Used for: Display contacts tab, communication preferences
+2. **GET /api/v1/partners/{partnerId}/meetings?filter={"upcoming":true}&page=1&limit=10**
+   - Consolidates: Meetings filtering via JSON filter parameter
+   - Query params: filter (JSON filter for upcoming/past), page, limit, sort
+   - Returns: Paginated meetings list with full details
+   - Used for: Load additional meetings when Meetings tab activated
+   - **Consolidation Benefit**: Single endpoint for all meeting queries via flexible filtering
 
-4. **GET /api/v1/partners/{partnerId}/meetings?limit=10&upcoming=true**
-   - Query params: limit=10, upcoming=true
-   - Returns: Upcoming meetings (meetingId, title, meetingType, scheduledDate, duration, location, attendees[], rsvpStatus, agendaAvailable, materialsAvailable)
-   - Used for: Display upcoming meetings in Meetings tab
+3. **GET /api/v1/partners/{partnerId}/activity?page=1&limit=20&sort=-timestamp**
+   - Consolidates: Activity timeline with standard pagination
+   - Query params: page, limit, sort, filter (optional activity type filter)
+   - Returns: Paginated activity timeline
+   - Used for: Load activity when Activity tab activated
+   - **Consolidation Benefit**: Standard list endpoint with pagination
 
-5. **GET /api/v1/partners/{partnerId}/meetings?limit=10&upcoming=false**
-   - Query params: limit=10, upcoming=false, sortBy=date, order=desc
-   - Returns: Past meetings with completion status and outcomes
-   - Used for: Display meeting history in Meetings tab
-
-6. **GET /api/v1/partners/{partnerId}/activity?limit=20**
-   - Query params: limit=20, sortBy=date, order=desc
-   - Returns: Activity timeline (activityId, activityType, timestamp, details, relatedEntity: {type, id, name}, performedBy: {userId, name})
-   - Used for: Display activity timeline in Activity tab
-
-7. **GET /api/v1/partners/{partnerId}/notes?limit=10**
-   - Query params: limit=10, sortBy=date, order=desc
-   - Returns: Organizer notes (noteId, content, createdBy: {userId, name}, createdAt, updatedAt, isPrivate)
-   - Used for: Display notes in Notes tab
-
-8. **GET /api/v1/partners/{partnerId}/statistics**
-   - Returns: Partnership statistics (partnerSince, totalEventsAttended, lastEventDate, totalEmployees, activeEmployees, topAttendees[], totalTopicVotes, activeVotes, totalMeetings, completedMeetings)
-   - Used for: Display quick stats section, employee summary
-
-9. **GET /api/v1/partners/{partnerId}/topic-votes?status=active**
-   - Query params: status=active
-   - Returns: Active topic votes (voteId, topicId, topicTitle, priority, votedAt, votingCycle)
-   - Used for: Display active topic votes in Overview tab recent activity
-
-10. **GET /api/v1/partners/{partnerId}/settings**
-    - Security: Organizer only
-    - Returns: Partnership settings (partnershipStatus, tierDetails, renewalDate, autoRenewal, accessPermissions: {analytics, topicVoting, meetingScheduling, contentLibrary}, dataProcessingAgreement: {signed, signedDate, expiryDate})
-    - Used for: Display Settings tab (organizer only)
+4. **GET /api/v1/partners/{partnerId}/notes?page=1&limit=10&sort=-createdAt**
+   - Consolidates: Notes with standard pagination
+   - Query params: page, limit, sort
+   - Returns: Paginated organizer notes
+   - Used for: Load notes when Notes tab activated
+   - **Consolidation Benefit**: Standard list endpoint pattern
 
 ### User Action APIs
 
-11. **PUT /api/v1/companies/{companyId}**
+5. **PATCH /api/v1/partners/{partnerId}**
+    - Consolidates: Partner updates via PATCH (partial update)
     - Triggered by: User clicks [Edit Partner] and saves changes
     - Payload: `{ name?: "string", website?: "string", industry?: "string" }`
-    - Returns: Updated company entity
+    - Returns: Updated partner entity with changed fields
     - Used for: Update partner company information
+    - **Consolidation Benefit**: Standard PATCH pattern for all partner updates
 
-12. **POST /api/v1/partners/{partnerId}/tier-change**
+6. **PATCH /api/v1/partners/{partnerId}**
+    - Consolidates: Tier changes via PATCH with tier-specific fields
     - Triggered by: User clicks [Change Tier] and confirms
-    - Payload: `{ newTier: "premium" | "gold" | "silver" | "bronze", reason: "string", effectiveDate: "2025-05-01" }`
-    - Returns: Updated partner with new tier
+    - Payload: `{ tier: "premium|gold|silver|bronze", tierChangeReason: "string", tierEffectiveDate: "2025-05-01" }`
+    - Returns: Updated partner with new tier and audit trail
     - Used for: Change partner tier level with audit trail
+    - **Consolidation Benefit**: Same PATCH endpoint handles tier changes
 
-13. **POST /api/v1/partners/{partnerId}/contacts**
+7. **POST /api/v1/partners/{partnerId}/contacts**
+    - Maintains: Standard POST for creating contacts
     - Triggered by: User clicks [+ Add Contact] in Contacts tab
     - Payload: `{ name: "string", title: "string", email: "string", phone?: "string", role: "string", isPrimary: false }`
     - Returns: Created contact entity
     - Used for: Add new contact person for partner
 
-14. **PUT /api/v1/partners/{partnerId}/contacts/{contactId}**
+8. **PATCH /api/v1/partners/{partnerId}/contacts/{contactId}**
+    - Consolidates: Contact updates via PATCH instead of PUT
     - Triggered by: User clicks [Edit Contact] and saves
     - Payload: `{ name?: "string", title?: "string", email?: "string", phone?: "string", role?: "string" }`
     - Returns: Updated contact entity
     - Used for: Update contact information
+    - **Consolidation Benefit**: Standard PATCH for partial contact updates
 
-15. **POST /api/v1/partners/{partnerId}/notes**
+9. **POST /api/v1/partners/{partnerId}/notes**
+    - Maintains: Standard POST for creating notes
     - Triggered by: User clicks [+ Add New Note] in Notes tab
     - Payload: `{ content: "string", isPrivate: boolean }`
     - Returns: Created note entity
     - Used for: Add organizer note about partner
 
-16. **PUT /api/v1/partners/{partnerId}/notes/{noteId}**
+10. **PATCH /api/v1/partners/{partnerId}/notes/{noteId}**
+    - Consolidates: Note updates via PATCH instead of PUT
     - Triggered by: User clicks [Edit] on note and saves
     - Payload: `{ content: "string", isPrivate: boolean }`
     - Returns: Updated note entity
     - Used for: Edit existing note
+    - **Consolidation Benefit**: Standard PATCH pattern for partial updates
 
-17. **DELETE /api/v1/partners/{partnerId}/notes/{noteId}**
+11. **DELETE /api/v1/partners/{partnerId}/notes/{noteId}**
+    - Maintains: Standard DELETE pattern
     - Triggered by: User clicks [Delete] on note and confirms
     - Returns: 204 No Content
     - Used for: Delete note
 
-18. **POST /api/v1/meetings/schedule**
+12. **POST /api/v1/partners/{partnerId}/meetings**
+    - Consolidates: Meeting creation nested under partner resource
     - Triggered by: User clicks [📅 Schedule Meeting] in header or [+ Schedule New Meeting] in Meetings tab
-    - Payload: `{ partnerId: "uuid", meetingType: "strategic_planning" | "quarterly_review", proposedDates: ["2025-05-20T14:00:00Z"], duration: 120, location: "string", agenda: "string" }`
-    - Returns: Meeting scheduling request with availability check and calendar invite
+    - Payload: `{ type: "strategic_planning|quarterly_review", proposedDates: [], duration: 120, location: "string", agenda: "string" }`
+    - Returns: Created meeting ID, availability conflicts, calendar invite
     - Used for: Schedule new partner meeting
+    - **Consolidation Benefit**: Partner-specific meetings use standard sub-resource POST
 
-19. **POST /api/v1/partners/bulk-email**
+13. **POST /api/v1/partners/export**
+    - Consolidates: Bulk email as export action with email type
     - Triggered by: User clicks [📧 Send Email] in header
-    - Payload: `{ partnerIds: ["uuid"], subject: "string", messageBody: "string", templateId?: "uuid" }`
-    - Returns: Email sending status
+    - Payload: `{ action: "email", partnerIds: ["uuid"], subject: "string", messageBody: "string", templateId?: "uuid" }`
+    - Returns: Email task ID, sending status
     - Used for: Send email to partner contacts
+    - **Consolidation Benefit**: Unified export endpoint handles both email and file exports
 
-20. **PUT /api/v1/partners/{partnerId}/settings**
+14. **PATCH /api/v1/partners/{partnerId}**
+    - Consolidates: Settings updates via PATCH on settings section
     - Triggered by: User updates settings in Settings tab (organizer only)
-    - Payload: `{ partnershipStatus?: "active" | "inactive", autoRenewal?: boolean, renewalDate?: "2026-01-01", accessPermissions?: { analytics: boolean, topicVoting: boolean, meetingScheduling: boolean, contentLibrary: boolean } }`
-    - Returns: Updated partner settings
+    - Payload: `{ settings: { partnershipStatus?: "active|inactive", autoRenewal?: boolean, renewalDate?: "2026-01-01", accessPermissions?: {...} } }`
+    - Returns: Updated partner with new settings
     - Used for: Update partnership configuration
+    - **Consolidation Benefit**: Settings managed via same PATCH endpoint as other partner updates
 
-21. **GET /api/v1/partners/{partnerId}/export**
+15. **POST /api/v1/partners/{partnerId}/export**
+    - Consolidates: Data export using unified export endpoint
     - Triggered by: User clicks [Export Partner Data] in Settings tab
-    - Query params: format=json|csv, includeActivity=true, includeNotes=true
-    - Returns: Downloadable file with all partner data (GDPR compliance)
-    - Used for: Export partner data for compliance or reporting
+    - Payload: `{ exportType: "all", format: "json|csv", includeActivity: true, includeNotes: true }`
+    - Returns: Export task ID, download URL when ready
+    - Used for: Export partner data for GDPR compliance or reporting
+    - **Consolidation Benefit**: Same export endpoint used across all partner screens
 
-22. **DELETE /api/v1/partners/{partnerId}/data**
+16. **DELETE /api/v1/partners/{partnerId}**
+    - Consolidates: Data deletion using standard DELETE with options
     - Triggered by: User clicks [Delete Partner Data] in Settings tab and confirms
+    - Payload: `{ deleteScope: "data-only|complete", gdprJustification: "string", confirmPassword: "string" }`
     - Security: Requires admin permission and GDPR justification
-    - Returns: 204 No Content with data deletion confirmation
-    - Used for: Delete all partner data (GDPR right to erasure)
+    - Returns: 204 No Content with deletion confirmation
+    - Used for: Delete partner data (GDPR right to erasure)
+    - **Consolidation Benefit**: Standard RESTful DELETE with scope parameter
 
-23. **GET /api/v1/partners/{partnerId}/analytics**
+17. **GET /api/v1/partners/{partnerId}/analytics?metrics=attendance,roi,engagement**
+    - Consolidates: Analytics via flexible metrics parameter
     - Triggered by: User clicks [📊 View Analytics] or [View Full Analytics →]
-    - Returns: Comprehensive partner analytics (if FR4 restored post-MVP)
-    - Used for: Navigate to partner analytics dashboard
+    - Query params: metrics (flexible selection)
+    - Returns: Selected analytics metrics (if FR4 restored post-MVP)
+    - Used for: Navigate to or fetch partner analytics dashboard
+    - **Consolidation Benefit**: Same analytics endpoint used across all partner screens
 
-24. **GET /api/v1/partners/{partnerId}/activity?activityType={type}&startDate={date}&endDate={date}**
+18. **GET /api/v1/partners/{partnerId}/activity?filter={"type":"meeting","date":{"$gte":"2025-01-01"}}&page=1**
+    - Consolidates: Activity filtering via JSON filter parameter
     - Triggered by: User applies filters in Activity tab
-    - Query params: activityType, startDate, endDate, limit, offset
-    - Returns: Filtered activity timeline
+    - Query params: filter (JSON with type, date range), page, limit
+    - Returns: Filtered and paginated activity timeline
     - Used for: Filter activity by type and date range
+    - **Consolidation Benefit**: Flexible JSON filtering eliminates need for multiple query parameters
 
-25. **GET /api/v1/companies/{companyId}/employees**
+19. **GET /api/v1/partners/{partnerId}/employees?page=1&limit=50**
+    - Consolidates: Employees list with standard pagination
     - Triggered by: User clicks [View All Employees →] in Overview tab
-    - Returns: List of employees (userId, name, email, role, eventsAttended, lastEventDate, registrationStatus)
+    - Query params: page, limit, sort
+    - Returns: Paginated employee list (userId, name, email, role, eventsAttended, lastEventDate)
     - Used for: Navigate to employee list screen
+    - **Consolidation Benefit**: Standard list endpoint pattern
 
 ---
 

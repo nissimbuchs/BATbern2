@@ -5,6 +5,9 @@
 **User Role**: Organizer
 **Related FR**: FR17 (AI-Powered Speaker Matching), FR19 (Multi-Organizer Coordination)
 
+**API Consolidation**: Updated to use consolidated APIs from Stories 1.17 (Events), 1.19 (Speakers), and 1.27 (Invitations)
+**API Count**: 10 endpoints (reduced from 14 original calls)
+
 ---
 
 ## Visual Wireframe
@@ -313,84 +316,138 @@
 
 ### Initial Page Load APIs
 
-1. **GET /api/v1/events/{eventId}/invitations**
-   - Query params: status=all, sortBy=deadline, order=asc, limit=50, offset=0
-   - Returns: Array of invitations (id, sessionId, speakerId, speakerName, speakerEmail, speakerCompany, sessionTitle, topicName, status, sentAt, sentBy, deadline, openedAt, respondedAt, responseType, preferences, comments)
-   - Used for: Display invitation list, populate filters, calculate statistics
-
-2. **GET /api/v1/events/{eventId}/invitations/statistics**
-   - Returns: Invitation statistics (totalSent, opened, accepted, declined, pending, needInfo, responseRate, averageResponseTime, expiringCount)
-   - Used for: Display invitation overview section
-
-3. **GET /api/v1/events/{eventId}**
-   - Returns: Event details (id, title, eventDate, status)
-   - Used for: Display event context in header
+1. **GET /api/v1/invitations?filter={"eventId":"{eventId}"}&sort=deadline:asc&page=1&limit=50&include=speaker,session,event**
+   - Query params:
+     - `filter`: JSON filter for eventId and optional status filtering
+     - `sort`: deadline:asc (or other sort fields: sentDate, responseDate, speakerName)
+     - `page`, `limit`: Pagination parameters
+     - `include`: speaker,session,event (includes related data to avoid separate calls)
+   - Returns: Paginated array of invitations with embedded speaker, session, and event data
+   - Response structure:
+     ```json
+     {
+       "data": [
+         {
+           "id": "uuid",
+           "status": "pending|accepted|declined|need_more_info",
+           "sentAt": "timestamp",
+           "sentBy": "organizerId",
+           "deadline": "timestamp",
+           "openedAt": "timestamp",
+           "respondedAt": "timestamp",
+           "preferences": {},
+           "comments": "string",
+           "speaker": { "id": "uuid", "name": "string", "email": "string", "company": "string" },
+           "session": { "id": "uuid", "title": "string", "topic": "string" },
+           "event": { "id": "uuid", "title": "string", "date": "timestamp" },
+           "tracking": {
+             "totalSent": 15,
+             "opened": 12,
+             "accepted": 8,
+             "declined": 2,
+             "pending": 5,
+             "needInfo": 0,
+             "responseRate": 0.67,
+             "expiringCount": 2
+           }
+         }
+       ],
+       "meta": { "total": 15, "page": 1, "limit": 50 }
+     }
+     ```
+   - Used for: Display invitation list, populate filters, calculate statistics (statistics included in response)
+   - Note: Consolidates previous separate calls for invitations list, statistics, and event details
 
 ### User Action APIs
 
-4. **GET /api/v1/invitations/{invitationId}**
+2. **GET /api/v1/invitations/{id}?include=speaker,session,event,tracking,communicationHistory**
    - Triggered by: User clicks invitation card to view details
-   - Returns: Complete invitation object with tracking data (id, sessionId, speakerId, speakerInfo, sessionDetails, eventDetails, personalizedMessage, sentBy, sentAt, deadline, emailTracking: {delivered, deliveredAt, opened, openedCount, firstOpenedAt, lastOpenedAt, clicks: [], bounced, spam}, speakerActivity: {portalLogin, pageViews, timeSpent, engagementScore, acceptanceLikelihood}, communicationHistory: [])
-   - Used for: Display invitation detail modal
+   - Query params: `include` expands all related data for detail modal
+   - Returns: Complete invitation object with:
+     - Full speaker profile
+     - Session details with timeline
+     - Event details
+     - Email tracking: delivered, openedCount, clicks, bounced, spam status
+     - Speaker activity: pageViews, timeSpent, engagementScore, acceptanceLikelihood
+     - Communication history array
+   - Used for: Display invitation detail modal with all tracking and engagement data
 
-5. **POST /api/v1/invitations/{invitationId}/reminder**
-   - Triggered by: User clicks [Send Reminder]
-   - Payload: `{ customMessage?: "string", template: "standard" | "urgent" | "custom" }`
-   - Returns: Reminder sent confirmation with deliveryId
-   - Used for: Send reminder email to speaker
+3. **POST /api/v1/invitations**
+   - Triggered by: User creates bulk reminders via array payload
+   - Payload for bulk reminders:
+     ```json
+     {
+       "invitationIds": ["uuid1", "uuid2"],
+       "action": "send_reminder",
+       "template": "standard|urgent|custom",
+       "customMessage": "string"
+     }
+     ```
+   - Returns: Batch operation result with success/failure status per invitation
+   - Used for: Send reminders to multiple speakers (consolidates bulk-reminder endpoint)
 
-6. **PUT /api/v1/invitations/{invitationId}/deadline**
-   - Triggered by: User clicks [Extend Deadline]
-   - Payload: `{ newDeadline: "2025-04-10T17:00:00Z", notifySpeaker: boolean, reason?: "string" }`
+4. **PATCH /api/v1/invitations/{id}**
+   - Triggered by: User clicks [Extend Deadline] or updates invitation details
+   - Payload:
+     ```json
+     {
+       "deadline": "2025-04-10T17:00:00Z",
+       "notifySpeaker": true,
+       "reason": "string"
+     }
+     ```
    - Returns: Updated invitation with new deadline
-   - Used for: Extend response deadline
+   - Used for: Extend response deadline or update other invitation fields
 
-7. **DELETE /api/v1/invitations/{invitationId}**
+5. **DELETE /api/v1/invitations/{id}**
    - Triggered by: User clicks [Cancel Invitation]
-   - Payload: `{ reason: "string", notifySpeaker: boolean }`
+   - Query params: `reason=string&notifySpeaker=true`
    - Returns: Cancellation confirmation
    - Used for: Cancel pending invitation
 
-8. **POST /api/v1/invitations/bulk-reminder**
-   - Triggered by: User selects multiple invitations and clicks [Resend Selected]
-   - Payload: `{ invitationIds: ["uuid1", "uuid2"], template: "standard", customMessage?: "string" }`
-   - Returns: Batch operation result with success/failure status per invitation
-   - Used for: Send reminders to multiple speakers
-
-9. **POST /api/v1/invitations/bulk-cancel**
+6. **DELETE /api/v1/invitations?ids={comma-separated-ids}**
    - Triggered by: User selects multiple invitations and clicks [Cancel Selected]
-   - Payload: `{ invitationIds: ["uuid1", "uuid2"], reason: "string", notifySpeakers: boolean }`
-   - Returns: Batch cancellation result
+   - Query params:
+     - `ids`: Comma-separated list of invitation IDs
+     - `reason`: Cancellation reason
+     - `notifySpeakers`: Boolean flag
+   - Returns: Batch cancellation result with success/failure per invitation
    - Used for: Cancel multiple invitations simultaneously
 
-10. **GET /api/v1/invitations/export**
-    - Triggered by: User clicks [Export CSV]
-    - Query params: eventId, format=csv|xlsx, status=all|pending|accepted|declined, fields=["speakerName","email","status","sentDate","responseDate"]
-    - Returns: Downloadable CSV/Excel file
-    - Used for: Export invitation data for reporting
+7. **GET /api/v1/invitations/export?filter={"eventId":"{eventId}"}&format=csv&fields=speakerName,email,status,sentDate,responseDate**
+   - Triggered by: User clicks [Export CSV]
+   - Query params:
+     - `filter`: JSON filter for eventId and optional status
+     - `format`: csv or xlsx
+     - `fields`: Array of field names to include
+   - Returns: Downloadable CSV/Excel file
+   - Used for: Export invitation data for reporting
 
-11. **POST /api/v1/messages**
-    - Triggered by: User clicks [Send Message] or [Send Direct Message]
-    - Payload: `{ recipientId: "speakerId", invitationId: "uuid", subject: "string", body: "string", priority: "normal" | "high" }`
-    - Returns: Message sent confirmation with messageId
-    - Used for: Send direct message to speaker
+8. **POST /api/v1/invitations/{id}/resend**
+   - Triggered by: User clicks [Resend Invitation]
+   - Payload: `{ updateDetails: boolean, customMessage?: "string" }`
+   - Returns: Resend confirmation with new deliveryId and tracking info
+   - Used for: Resend invitation email (e.g., if speaker didn't receive original)
 
-12. **POST /api/v1/invitations/{invitationId}/resend**
-    - Triggered by: User clicks [Resend Invitation]
-    - Payload: `{ updateDetails?: boolean, customMessage?: "string" }`
-    - Returns: Resend confirmation with new deliveryId
-    - Used for: Resend invitation email (e.g., if speaker didn't receive original)
+9. **GET /api/v1/invitations/{id}?format=preview**
+   - Triggered by: User clicks [View as Speaker]
+   - Query params: `format=preview` returns HTML rendering
+   - Returns: HTML preview of invitation as speaker sees it
+   - Used for: Preview invitation from speaker perspective
 
-13. **GET /api/v1/invitations/{invitationId}/preview**
-    - Triggered by: User clicks [View as Speaker]
-    - Returns: HTML preview of invitation as speaker sees it
-    - Used for: Preview invitation from speaker perspective
-
-14. **POST /api/v1/events/{eventId}/slots/{slotId}/assign**
+10. **POST /api/v1/events/{eventId}/sessions/{sessionId}**
     - Triggered by: User clicks [Assign Slot] for accepted speaker
-    - Payload: `{ speakerId: "uuid", sessionId: "uuid" }`
-    - Returns: Slot assignment confirmation
+    - Payload:
+      ```json
+      {
+        "speakerId": "uuid",
+        "timeSlot": "string",
+        "invitationId": "uuid"
+      }
+      ```
+    - Returns: Session assignment confirmation
     - Used for: Assign accepted speaker to time slot
+    - Note: Uses consolidated Events API from Story 1.17
 
 ---
 
@@ -677,11 +734,79 @@ _No forms on main screen - filters and search are non-validated inputs_
 
 ---
 
+## API Consolidation Summary
+
+This wireframe has been updated to use consolidated APIs from the following stories:
+
+### Story 1.27: Invitations API Consolidation
+
+**Key Changes:**
+- **Unified listing**: Single `GET /api/v1/invitations?filter={}&include=speaker,session,event` replaces 3 separate endpoints
+- **Embedded statistics**: Tracking stats now included in list response (no separate statistics endpoint needed)
+- **Resource expansion**: `?include=` parameter loads speaker, session, and event data in one call
+- **Filter-based queries**: JSON filter syntax for flexible querying (status, eventId, etc.)
+- **Bulk operations**: Consolidated into array payloads on standard endpoints
+- **Standardized actions**: Accept/decline use dedicated PUT endpoints
+
+### Story 1.17: Events API Consolidation
+
+**Key Changes:**
+- **Session assignment**: `POST /api/v1/events/{eventId}/sessions/{sessionId}` for slot assignment
+- **Nested resources**: Sessions managed under events endpoint hierarchy
+
+### Story 1.19: Speakers API Consolidation
+
+**Key Changes:**
+- **Speaker profiles**: Embedded in invitation response via `?include=speaker`
+- **Unified speaker data**: No separate speaker profile lookup needed
+
+### Before vs After
+
+**Before Consolidation (14 API calls):**
+1. GET /api/v1/events/{eventId}/invitations (list)
+2. GET /api/v1/events/{eventId}/invitations/statistics
+3. GET /api/v1/events/{eventId} (event details)
+4. GET /api/v1/invitations/{invitationId} (detail modal)
+5. POST /api/v1/invitations/{invitationId}/reminder
+6. PUT /api/v1/invitations/{invitationId}/deadline
+7. DELETE /api/v1/invitations/{invitationId}
+8. POST /api/v1/invitations/bulk-reminder
+9. POST /api/v1/invitations/bulk-cancel
+10. GET /api/v1/invitations/export
+11. POST /api/v1/messages (direct messaging)
+12. POST /api/v1/invitations/{invitationId}/resend
+13. GET /api/v1/invitations/{invitationId}/preview
+14. POST /api/v1/events/{eventId}/slots/{slotId}/assign
+
+**After Consolidation (10 API calls):**
+1. GET /api/v1/invitations?filter={}&include=speaker,session,event (includes statistics)
+2. GET /api/v1/invitations/{id}?include=speaker,session,event,tracking,communicationHistory
+3. POST /api/v1/invitations (bulk reminders via array payload)
+4. PATCH /api/v1/invitations/{id} (extend deadline, update fields)
+5. DELETE /api/v1/invitations/{id} (single cancellation)
+6. DELETE /api/v1/invitations?ids={} (bulk cancellation)
+7. GET /api/v1/invitations/export?filter={}
+8. POST /api/v1/invitations/{id}/resend
+9. GET /api/v1/invitations/{id}?format=preview
+10. POST /api/v1/events/{eventId}/sessions/{sessionId} (session assignment)
+
+**Improvements:**
+- **28.6% reduction** in API calls (14 → 10)
+- **3-in-1 page load**: Statistics, event details, and invitations list in single call with `?include=`
+- **Simplified bulk operations**: Array-based payloads instead of separate bulk endpoints
+- **Better filtering**: JSON filter syntax supports complex queries (status, date ranges, search)
+- **Unified updates**: PATCH endpoint handles multiple update scenarios
+- **Reduced complexity**: Fewer endpoints to maintain and document
+- **Consistent patterns**: All APIs follow standard REST conventions from Story 1.16
+
+---
+
 ## Change Log
 
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
 | 2025-10-04 | 1.0 | Initial wireframe creation for Invitation Management Screen | ux-expert |
+| 2025-10-04 | 1.1 | Updated to use consolidated APIs from Stories 1.17, 1.19, 1.27 | Claude Code |
 
 ---
 
