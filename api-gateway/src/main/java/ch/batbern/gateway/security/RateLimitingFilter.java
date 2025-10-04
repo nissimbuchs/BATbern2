@@ -2,6 +2,7 @@ package ch.batbern.gateway.security;
 
 import ch.batbern.gateway.auth.model.UserContext;
 import ch.batbern.gateway.security.exception.RateLimitExceededException;
+import ch.batbern.gateway.util.LogSanitizer;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -63,7 +64,8 @@ public class RateLimitingFilter implements Filter {
 
             if (!isAllowed) {
                 log.warn("Rate limit exceeded for user: {} role: {} endpoint: {} (count: {}, limit: {})",
-                    userId, role, endpoint, currentCount, rateLimit);
+                    LogSanitizer.sanitize(userId), LogSanitizer.sanitize(role),
+                    LogSanitizer.sanitize(endpoint), currentCount, rateLimit);
 
                 httpResponse.setStatus(429); // HTTP 429 Too Many Requests
                 httpResponse.setContentType("application/json");
@@ -75,7 +77,8 @@ public class RateLimitingFilter implements Filter {
             }
 
             log.debug("Rate limit check passed for user: {} role: {} endpoint: {} (count: {}, limit: {})",
-                userId, role, endpoint, currentCount, rateLimit);
+                LogSanitizer.sanitize(userId), LogSanitizer.sanitize(role),
+                LogSanitizer.sanitize(endpoint), currentCount, rateLimit);
 
             // Continue filter chain
             chain.doFilter(request, response);
@@ -116,6 +119,7 @@ public class RateLimitingFilter implements Filter {
     private UserContext getUserContext(HttpServletRequest request) {
         // TODO: Integrate with Spring Security OAuth2 to extract authenticated user
         // For now, return null to treat all requests as anonymous (10 req/min limit)
+        // The request parameter will be used when implementing OAuth2 integration
         return null;
     }
 

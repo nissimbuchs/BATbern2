@@ -1,5 +1,6 @@
 package ch.batbern.gateway.security;
 
+import ch.batbern.gateway.util.LogSanitizer;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -37,7 +38,7 @@ public class SecurityHeadersFilter implements Filter {
         HttpServletResponse httpResponse = (HttpServletResponse) response;
 
         // Content Security Policy - prevent XSS attacks
-        String csp = buildContentSecurityPolicy(httpRequest);
+        String csp = buildContentSecurityPolicy();
         httpResponse.setHeader("Content-Security-Policy", csp);
 
         // HTTP Strict Transport Security - force HTTPS
@@ -60,7 +61,7 @@ public class SecurityHeadersFilter implements Filter {
         String permissionsPolicy = buildPermissionsPolicy();
         httpResponse.setHeader("Permissions-Policy", permissionsPolicy);
 
-        log.debug("Security headers applied to request: {}", httpRequest.getRequestURI());
+        log.debug("Security headers applied to request: {}", LogSanitizer.sanitize(httpRequest.getRequestURI()));
 
         // Continue filter chain
         chain.doFilter(request, response);
@@ -69,7 +70,7 @@ public class SecurityHeadersFilter implements Filter {
     /**
      * Builds Content Security Policy header value
      */
-    private String buildContentSecurityPolicy(HttpServletRequest request) {
+    private String buildContentSecurityPolicy() {
         StringBuilder csp = new StringBuilder();
 
         // Default source - only from same origin

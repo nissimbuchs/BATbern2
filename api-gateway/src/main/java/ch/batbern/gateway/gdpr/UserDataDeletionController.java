@@ -55,6 +55,7 @@ public class UserDataDeletionController {
             return ResponseEntity.ok(Map.of(
                 "message", "Deletion initiated. Check your email for confirmation.",
                 "confirmationRequired", true,
+                "testToken", token, // For testing only - in production, send via email
                 "note", "For testing: Use confirmation token in request parameter"
             ));
         }

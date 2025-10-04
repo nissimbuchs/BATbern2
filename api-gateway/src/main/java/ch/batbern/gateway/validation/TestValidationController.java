@@ -1,5 +1,6 @@
 package ch.batbern.gateway.validation;
 
+import ch.batbern.gateway.util.LogSanitizer;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
@@ -23,7 +24,7 @@ public class TestValidationController {
     public ResponseEntity<Map<String, Object>> testValidation(
             @Valid @RequestBody TestValidationRequest request) {
 
-        log.info("Validation test request received: {}", request);
+        log.info("Validation test request received: {}", LogSanitizer.sanitize(request));
 
         return ResponseEntity.ok(Map.of(
                 "message", "Validation passed",
