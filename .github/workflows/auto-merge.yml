@@ -1,10 +1,7 @@
 name: Auto-Merge PR
 
-# Automatically merge PRs when all checks pass
-# Handles:
-# - Dependabot PRs (security updates)
-# - PRs with 'automerge' label
-# - PRs with 'dependencies' label
+# Automatically merge ALL PRs to develop/main when all checks pass
+# This enables fast-paced development with confidence in automated testing
 
 on:
   pull_request:
@@ -34,38 +31,12 @@ jobs:
       github.event.pull_request.base.ref == 'main'
 
     steps:
-      - name: Check if PR should auto-merge
+      - name: Auto-merge all feature branches
         id: should-automerge
         run: |
-          PR_AUTHOR="${{ github.event.pull_request.user.login }}"
-          PR_LABELS="${{ toJSON(github.event.pull_request.labels.*.name) }}"
-
-          echo "PR Author: $PR_AUTHOR"
-          echo "PR Labels: $PR_LABELS"
-
-          # Auto-merge Dependabot PRs
-          if [[ "$PR_AUTHOR" == "dependabot[bot]" ]]; then
-            echo "should_merge=true" >> $GITHUB_OUTPUT
-            echo "reason=Dependabot PR" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          # Auto-merge PRs with 'automerge' label
-          if echo "$PR_LABELS" | grep -q "automerge"; then
-            echo "should_merge=true" >> $GITHUB_OUTPUT
-            echo "reason=Has automerge label" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          # Auto-merge PRs with 'dependencies' label (for non-Dependabot dependency updates)
-          if echo "$PR_LABELS" | grep -q "dependencies"; then
-            echo "should_merge=true" >> $GITHUB_OUTPUT
-            echo "reason=Has dependencies label" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          echo "should_merge=false" >> $GITHUB_OUTPUT
-          echo "reason=No auto-merge criteria met" >> $GITHUB_OUTPUT
+          echo "should_merge=true" >> $GITHUB_OUTPUT
+          echo "reason=All feature branches auto-merge when tests pass" >> $GITHUB_OUTPUT
+          echo "PR #${{ github.event.pull_request.number }} will auto-merge when all checks pass"
 
       - name: Wait for required checks
         if: steps.should-automerge.outputs.should_merge == 'true'
@@ -103,11 +74,5 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `🤖 Auto-merge enabled\n\n**Reason:** ${{ steps.should-automerge.outputs.reason }}\n\nThis PR will be automatically merged when all required checks pass.`
+              body: `🤖 **Auto-merge enabled**\n\nThis PR will be automatically merged when all required checks pass.\n\n✅ All tests must pass\n✅ All required workflows must complete successfully\n✅ Branch will be deleted after merge`
             })
-
-      - name: Log skip reason
-        if: steps.should-automerge.outputs.should_merge == 'false'
-        run: |
-          echo "⏭️ Skipping auto-merge"
-          echo "Reason: ${{ steps.should-automerge.outputs.reason }}"
