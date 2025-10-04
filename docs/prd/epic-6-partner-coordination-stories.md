@@ -26,6 +26,65 @@ As a **partner**, I want to vote on future event topics and submit suggestions, 
 - **Frontend**: React voting interface
 - **Integration**: EventBridge for topic events
 
+**Wireframe Context:**
+
+### Wireframe References
+**From docs/wireframes/sitemap.md:**
+- **Main Screen:** `docs/wireframes/story-6.4-topic-voting.md` ✅ ✨ **MVP INCLUDED**
+  - Topic Voting Screen (core MVP feature for partners)
+  - Vote submission interface
+  - Voting history and results
+  - Topic suggestion submission
+  - Note: Part of Strategic Planning screens, only voting retained in MVP
+
+### UI Components
+**Key interface elements:**
+- **Topic Voting Interface**:
+  - Available topics list with descriptions
+  - Vote allocation controls (weighted by partnership tier)
+  - Priority ranking (drag-and-drop to prioritize)
+  - [Cast Vote] button
+  - Voting deadline countdown
+  - Vote confirmation modal
+- **Voting Results Dashboard**:
+  - Current voting standings (live results)
+  - Partner consensus indicators (% agreement)
+  - Tier-weighted vote breakdown
+  - Historical voting trends
+  - Topic adoption status (selected/pending/declined)
+- **Topic Suggestion Form**:
+  - Topic title and description fields
+  - Business case/justification textarea
+  - Strategic alignment tags
+  - Expected audience size estimate
+  - [Submit Suggestion] button
+  - Suggestion status tracking (submitted/under review/approved/declined)
+- **Voting History**:
+  - Past voting cycles with outcomes
+  - Your votes vs. consensus comparison
+  - Adopted topics from your suggestions
+  - Impact metrics (attendance, engagement for voted topics)
+
+### Wireframe Status
+- ✅ **EXISTS**: Topic Voting wireframe fully documented ✨ **MVP Feature**
+  - Complete voting interface with weighted votes
+  - Topic suggestion submission
+  - Results visualization
+  - Voting history tracking
+  - Priority: 🔴 HIGH - Core MVP feature for partner engagement
+- 📦 **BACKLOG**: Advanced strategic planning features (FR4 removed)
+  - Goals Management Screen → Backlog
+  - Skill Development Paths → Backlog
+  - Certification Tracking → Backlog
+
+### Navigation
+**Key navigation paths from this screen:**
+- → All Topics Browser Screen (view complete topic backlog - screen MISSING)
+- → Topic Details Screen (detailed topic information - screen MISSING)
+- → Voting History (past voting cycles)
+- → Strategic Planning (if backlog features return post-MVP)
+- ⤴ Partner Dashboard (if analytics features added post-MVP)
+
 **Acceptance Criteria:**
 1. **Topic Voting**: Vote on proposed topics
 2. **Weighted Voting**: Votes weighted by partnership tier
@@ -47,7 +106,7 @@ As a **partner**, I want to vote on future event topics and submit suggestions, 
 ## Story 6.2: Partner Meeting Coordination
 
 **User Story:**
-As an **organizer**, I want to coordinate seasonal partner meetings with automated scheduling and materials, so that strategic partnerships are maintained efficiently.
+As an **organizer**, I want to coordinate seasonal partner meetings so that strategic partnerships are maintained efficiently.
 
 **Architecture Integration:**
 - **Service**: Event Management Service partnership module
@@ -55,21 +114,35 @@ As an **organizer**, I want to coordinate seasonal partner meetings with automat
 - **Database**: PostgreSQL meeting tracking
 - **Frontend**: React meeting dashboard
 
+**Wireframe Context:**
+
+### Wireframe References
+**From docs/wireframes/sitemap.md:**
+- **Main Screen:** `docs/wireframes/story-6.2-partner-meetings.md` ✅ ✨ **MVP INCLUDED**
+  - Partner Meetings coordination interface (core MVP feature)
+  - Meeting scheduling and calendar view
+ 
+### UI Components
+**Key interface elements:**
+- **Meeting Coordination Dashboard**:
+  - Upcoming meetings list (spring/autumn seasonal meetings)
+  - Meeting status badges (scheduled/pending/completed)
+  - Calendar integration status
+- **RSVP Management**:
+  - Reminder emails configuration
+ 
+### Wireframe Status
+- ✅ **EXISTS**: Partner Meetings wireframe fully documented ✨ **MVP Feature**
+ 
+### Navigation
+**Key navigation paths from this screen:**
+- ⤴ Partner Dashboard (if analytics features added post-MVP)
+
 **Acceptance Criteria:**
 1. **Meeting Scheduling**: Spring/autumn meeting automation
-2. **Agenda Generation**: Auto-create meeting agendas
-3. **Material Preparation**: Statistics and budget reports
-4. **RSVP Management**: Track partner attendance
-5. **Action Tracking**: Follow-up action items
-6. **Meeting Minutes**: Document decisions
 
 **Definition of Done:**
 - [ ] Meetings scheduled 2+ months ahead
-- [ ] Agendas generated automatically
-- [ ] Materials accurate and current
-- [ ] RSVP tracking functional
-- [ ] Action items tracked to completion
-- [ ] Minutes distributed within 48 hours
 
 ---
 

@@ -19,6 +19,8 @@
 │                                                                             │
 │                 You're all set for the Spring Conference 2025              │
 │                                                                             │
+│              ⏱️ Event starts in 45 days, 3 hours, 12 minutes               │
+│                                                                             │
 │  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
 │                                                                             │
 │  ┌─── YOUR REGISTRATION DETAILS ────────────────────────────────────────┐  │
@@ -82,6 +84,13 @@
 │  │                                                                        │  │
 │  └────────────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
+│  ┌─── SHARE WITH COLLEAGUES ─────────────────────────────────────────────┐  │
+│  │                                                                        │  │
+│  │  [🔗 LinkedIn]  [🐦 Twitter/X]  [📧 Email]                           │  │
+│  │  Share: "I'm attending Spring Conference 2025 on May 15 - Join me!"  │  │
+│  │                                                                        │  │
+│  └────────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
 │  ┌─── NEED TO MAKE CHANGES? ────────────────────────────────────────────┐  │
 │  │                                                                        │  │
 │  │  Need to update your registration or cancel?                          │  │
@@ -100,11 +109,23 @@
 
 ## Key Interactive Elements
 
-- **📅 Add to Calendar buttons**: Two options for calendar integration
+- **⏱️ Countdown Timer**: Live countdown to event start time
+  - Updates every minute showing days, hours, minutes remaining
+  - Changes to "Event in progress" when started
+  - Changes to "Event has ended" after event completion
+
+- **📅 Add to Calendar buttons**: Two options for calendar integration (works for unauthenticated users)
   - "Add to Google Calendar" - Direct Google Calendar integration
   - "Download .ics file" - Universal calendar file for Outlook, Apple Calendar, etc.
+  - No authentication required - available to all users
 
 - **📄 Download PDF Ticket button**: Generates and downloads personalized ticket with QR code
+
+- **🔗 Social Sharing Buttons**: Share registration with colleagues
+  - **LinkedIn**: Opens LinkedIn share dialog with pre-filled message
+  - **Twitter/X**: Opens Twitter/X share dialog with event details
+  - **Email**: Opens email client with shareable event information
+  - Share message: "I'm attending {Event Name} on {Date} - Join me!"
 
 - **[Get Directions] link**: Opens map service (Google Maps/Apple Maps) with venue location
 
@@ -120,7 +141,7 @@
 
 - **[Edit Registration] button**: Navigates back to registration form with pre-filled data for modifications
 
-- **[Cancel Registration] button**: Opens confirmation modal before canceling registration
+- **[Cancel Registration] button**: Opens confirmation modal before canceling registration (free events only - no refunds)
 
 - **Email link (events@batbern.ch)**: Opens default email client with support address
 
@@ -149,13 +170,16 @@
 
 - **Confirmation page must be accessible only via successful registration** - Direct URL access should validate confirmation code
 - **QR Code generation** required for PDF ticket (includes registration ID)
-- **Calendar file (.ics) generation** with event details, location, and reminders
-- **Google Calendar API integration** for direct calendar add
+- **Calendar file (.ics) generation** with event details, location, and reminders (no authentication required)
+- **Google Calendar API integration** for direct calendar add (no authentication required)
+- **Countdown Timer** - JavaScript-based live countdown updated every minute, shows days/hours/minutes until event
+- **Social Sharing** - Pre-filled share messages for LinkedIn, Twitter/X, and Email with event details and registration context
 - **PDF generation service** for ticket with QR code and event branding
 - **Email verification** that confirmation email was sent (background job status check)
 - **Analytics tracking** for conversion funnel completion
 - **Session storage** to prevent duplicate registrations via back button
 - **Deep linking** support for mobile calendar apps
+- **Free events only** - No payment processing, no refund logic, cancellation is simple unregistration
 
 ---
 
@@ -215,8 +239,10 @@ When the Registration Confirmation Page loads, the following APIs are called:
 
 10. **DELETE /api/v1/events/{eventId}/registrations/{registrationId}**
     - Triggered by: User confirms cancellation via [Cancel Registration]
-    - Returns: Cancellation confirmation (canceledAt, refundInfo if applicable)
-    - Used for: Cancels registration, sends cancellation email, shows cancellation confirmation
+    - Returns: Cancellation confirmation (canceledAt, cancellationMessage)
+    - Response example: `{ "success": true, "canceledAt": "2025-03-15T10:30:00Z", "message": "Sorry to see you go! We've sent you an email confirmation." }`
+    - Used for: Cancels registration (simple unregistration), sends cancellation email with "sorry" message and event details, shows cancellation confirmation
+    - Note: Free events only - no refunds, no payment processing
 
 11. **GET /api/v1/events/{eventId}/agenda.pdf**
     - Triggered by: User clicks [View Full Agenda]
@@ -228,6 +254,15 @@ When the Registration Confirmation Page loads, the following APIs are called:
     - Payload: `{ email: string, notificationPreferences: object, newsletterFrequency: string }`
     - Returns: Updated preference confirmation
     - Used for: Opens modal or navigates to preferences page for managing communication settings
+
+13. **POST /api/v1/social/share**
+    - Triggered by: User clicks social sharing button (LinkedIn, Twitter/X, or Email)
+    - Payload: `{ platform: "linkedin" | "twitter" | "email", eventId: uuid, registrationId: uuid, shareMessage: string }`
+    - Returns: Share URL or success confirmation
+    - Used for: Generates shareable link and pre-filled message for social platforms
+    - LinkedIn: Opens LinkedIn share dialog with event URL and message
+    - Twitter/X: Opens Twitter/X share dialog with event hashtag and message
+    - Email: Opens mailto: link with pre-filled subject and body
 
 ---
 
@@ -301,34 +336,41 @@ When the Registration Confirmation Page loads, the following APIs are called:
     - Behavior: Modal overlay on same screen
     - Save action: Updates registration, closes modal, shows success message
 
-13. **[Cancel Registration] button** → Opens `Cancel Confirmation Modal`
-    - Modal with cancellation warning and confirmation
-    - Context: Registration details, cancellation policy
+13. **[Social Sharing buttons] (LinkedIn, Twitter/X, Email)** → Opens social sharing dialog
+    - LinkedIn: Opens LinkedIn share dialog with pre-filled message and event link
+    - Twitter/X: Opens Twitter/X share dialog with pre-filled message and event hashtag
+    - Email: Opens mailto: link with event details and registration info
+    - Context: Event details, share message
+    - Behavior: Opens external platform dialog or email client
+
+14. **[Cancel Registration] button** → Opens `Cancel Confirmation Modal`
+    - Modal with cancellation warning and "Sorry to see you go" message
+    - Context: Registration details, free event notice (no refunds)
     - Behavior: Modal overlay on same screen
-    - Confirm action: Cancels registration, navigates to cancellation confirmation page
+    - Confirm action: Cancels registration (unregisters), sends cancellation email, shows "Sorry to see you go" confirmation
     - Cancel action: Closes modal, stays on confirmation page
 
 ### Event-Driven Navigation
 
-14. **Email not sent (failed)** → Shows `Email Retry Banner`
+15. **Email not sent (failed)** → Shows `Email Retry Banner`
     - Inline banner at top of page with [Resend Email] button
     - Context: registrationId, email address
     - Behavior: Banner shown only if email delivery failed
     - Action: Triggers email resend API
 
-15. **Registration already canceled** → Redirect to `Cancellation Page`
+16. **Registration already canceled** → Redirect to `Cancellation Page`
     - If user tries to access confirmation page for canceled registration
     - Target: Cancellation confirmation page
     - Behavior: Automatic redirect with cancellation details
 
 ### Error States & Redirects
 
-16. **Invalid confirmation code** → Navigate to `404 or Error Page`
+17. **Invalid confirmation code** → Navigate to `404 or Error Page`
     - If confirmation code doesn't exist or is invalid
     - Target: Error page with message and link back to events
     - Behavior: HTTP 404 response
 
-17. **Registration expired** → Shows `Expired Registration Page`
+18. **Registration expired** → Shows `Expired Registration Page`
     - If registration is too old or event has passed
     - Target: Expired registration page with archive link
     - Behavior: Shows event details in archived state
@@ -381,6 +423,8 @@ When the Registration Confirmation Page loads, the following APIs are called:
 - `showDietaryModal: boolean` - Modal visibility for dietary preferences
 - `showCancelModal: boolean` - Modal visibility for cancellation confirmation
 - `emailResendSuccess: boolean` - Success state for email resend action
+- `countdownText: string` - Live countdown timer display (e.g., "45 days, 3 hours, 12 minutes")
+- `shareInProgress: boolean` - Loading state for social sharing action
 
 ### Global State (Zustand Store)
 - `auth.user` - Current user information (if authenticated)
@@ -394,9 +438,10 @@ When the Registration Confirmation Page loads, the following APIs are called:
 - **newsletterStatus** - Cached subscription status, manual invalidation
 
 ### Real-Time Updates
+- **Countdown Timer** - JavaScript interval updates every 60 seconds to refresh countdown display
 - **Email delivery status** - Polling every 5 seconds for 30 seconds to check email delivery
-- **Registration status** - WebSocket connection to detect cancellation or edits from other devices
-- **Event updates** - Subscribe to event changes (cancellation, date change) via WebSocket
+- **Registration status** - WebSocket connection to detect cancellation or edits from other devices (optional in MVP)
+- **Event updates** - Subscribe to event changes (cancellation, date change) via WebSocket (optional in MVP)
 
 ---
 
@@ -430,9 +475,9 @@ When the Registration Confirmation Page loads, the following APIs are called:
 
 - **Already Canceled**: Redirect to cancellation page with message: "This registration has been canceled on {date}."
 
-- **Event Canceled**: Show warning banner: "⚠️ This event has been canceled. You will receive a full refund (if applicable)."
+- **Event Canceled**: Show warning banner: "⚠️ This event has been canceled. You will receive a notification email with details."
 
-- **Registration Full (Waitlist)**: If registration was on waitlist, show: "You are on the waitlist. Position: #12. You'll be notified if a spot opens."
+- **Countdown Timer Complete**: When event starts, countdown changes to: "🎉 Event in progress!" and after event ends: "Event has ended. Thank you for attending!"
 
 - **Multiple Registrations Detected**: If user tries to register again with different email, show warning: "You're already registered with {email}."
 
@@ -453,15 +498,46 @@ When the Registration Confirmation Page loads, the following APIs are called:
 ## Review Notes
 
 ### Stakeholder Feedback
-- Awaiting product owner review for dietary preferences workflow
-- Need confirmation on cancellation policy wording
+- ✅ Dietary preferences workflow approved
+- ✅ Cancellation policy confirmed: Free events only, simple unregistration with "Sorry to see you go" message
+- ✅ Social sharing buttons approved: LinkedIn, Twitter/X, Email
+- ✅ Countdown timer approved: Live countdown until event starts
 
 ### Design Iterations
 - Version 1.0: Initial creation based on registration flow (story-2.4-event-registration.md)
 
 ### Open Questions
-1. Should calendar integration require authentication or work for unauthenticated users?
-2. What is the cancellation policy and refund process (if free event, what to communicate)?
-3. Should we add social sharing buttons for the event?
-4. Do we need to display waitlist position if applicable?
-5. Should there be a countdown timer until the event date?
+
+All open questions have been resolved:
+
+1. ✅ **Calendar Integration Authentication**: Should calendar integration require authentication or work for unauthenticated users?
+   - **DECISION: Work for unauthenticated users**
+   - Add to Calendar (.ics download) available to all users
+   - No login required to download calendar file
+   - Confirmation email includes calendar attachment regardless of auth status
+
+2. ✅ **Cancellation Policy**: What is the cancellation policy and refund process (if free event, what to communicate)?
+   - **DECISION: Free events only - simple unregistration**
+   - All BATbern events are free (no payment, no refunds)
+   - Cancellation simply unregisters user from event
+   - Show "Sorry to see you go" message on cancellation
+   - Send cancellation confirmation email with event details (in case they change their mind)
+   - No waitlist promotion on cancellation (deferred to future enhancement)
+
+3. ✅ **Social Sharing Buttons**: Should we add social sharing buttons for the event?
+   - **DECISION: Yes** - Add social sharing buttons
+   - Share on: LinkedIn, Twitter/X, Email
+   - Share message: "I'm attending {Event Name} on {Date} - Join me!"
+   - Link to public event page (if published)
+
+4. ✅ **Waitlist Position Display**: Do we need to display waitlist position if applicable?
+   - **DECISION: No** - Not in MVP scope
+   - Waitlist functionality deferred to future enhancement
+   - All registrations are confirmed (no capacity limits in MVP)
+
+5. ✅ **Event Countdown Timer**: Should there be a countdown timer until the event date?
+   - **DECISION: Yes** - Add countdown timer
+   - Display: "Event starts in X days, Y hours, Z minutes"
+   - Update dynamically (live countdown)
+   - Show until event start time
+   - After event starts: Show "Event in progress" or "Event has ended"

@@ -52,6 +52,8 @@ Complete rewrite of BATbern as a comprehensive event management platform using R
 
 **FR3**: The system shall provide automated speaker invitation, submission, and material collection workflows with real-time status updates
 
+**FR4**: Partners shall access analytics dashboards showing employee attendance of their company for the past events
+
 **FR5**: The platform shall support progressive event publishing with automatic content updates from topic definition through final agenda publication
 
 **FR6**: Attendees shall access a prominent current event landing page featuring the upcoming BATbern event with complete logistics (date, location, free attendance), speaker lineup, agenda details, and registration functionality

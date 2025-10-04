@@ -1186,3 +1186,623 @@ class ComponentErrorBoundary extends React.Component<
 /companies                    # Company management
 /profile                      # User profile (adapts to role)
 ```
+
+## Internationalization (i18n) Architecture
+
+### Supported Languages & Locales
+
+**Primary Language**: German (de-CH) - Swiss German locale
+**Secondary Language**: English (en-US)
+**Default/Fallback**: German (de-CH)
+
+**Rationale**: BATbern serves a primarily Swiss German-speaking audience. German is the default language with English as an optional alternative for international attendees and speakers.
+
+### Library Stack
+
+| Library | Version | Purpose |
+|---------|---------|---------|
+| **i18next** | ^23.7.0 | Core i18n framework with namespace support, pluralization, interpolation |
+| **react-i18next** | ^14.0.0 | React bindings with hooks (`useTranslation`) and Suspense support |
+| **i18next-browser-languagedetector** | ^7.2.0 | Automatic language detection from browser, localStorage, user profile |
+| **date-fns** | ^3.0.0 | Date/time formatting with locale support (de, enUS) |
+
+**Bundle Impact**: ~14KB gzipped (i18next ecosystem)
+
+**Rationale**: react-i18next provides the most flexible and feature-rich solution with excellent TypeScript support, namespace-based code splitting, and seamless integration with React 18.2+ and our existing tech stack.
+
+### Translation File Structure
+
+```
+web-frontend/
+├── public/
+│   └── locales/
+│       ├── de/
+│       │   ├── common.json          # Shared UI (navigation, buttons, labels)
+│       │   ├── auth.json            # Authentication & account flows
+│       │   ├── validation.json      # Form validation messages
+│       │   ├── organizer.json       # Organizer-specific UI
+│       │   ├── speaker.json         # Speaker-specific UI
+│       │   ├── partner.json         # Partner-specific UI
+│       │   └── attendee.json        # Attendee-specific UI
+│       └── en/
+│           └── [same structure]
+├── src/
+│   └── i18n/
+│       ├── config.ts                # i18next initialization & configuration
+│       ├── types.ts                 # Auto-generated TypeScript types
+│       └── utils.ts                 # Formatting helpers (dates, currency)
+```
+
+**Namespace Strategy**:
+- **common**: Loaded immediately on app start (navigation, shared UI chrome)
+- **auth**: Loaded on authentication routes
+- **validation**: Loaded with forms (shared error messages)
+- **Role-specific namespaces**: Lazy-loaded when user switches to that role context
+
+### Translation Key Patterns
+
+**Nested JSON Structure** (type-safe with TypeScript):
+
+```json
+{
+  "auth": {
+    "login": {
+      "title": "Anmelden",
+      "emailLabel": "E-Mail-Adresse",
+      "passwordLabel": "Passwort",
+      "submitButton": "Anmelden",
+      "forgotPassword": "Passwort vergessen?"
+    },
+    "validation": {
+      "emailRequired": "E-Mail ist erforderlich",
+      "invalidEmail": "Ungültige E-Mail-Adresse"
+    }
+  },
+  "common": {
+    "navigation": {
+      "dashboard": "Übersicht",
+      "events": "Veranstaltungen",
+      "profile": "Profil"
+    }
+  }
+}
+```
+
+**Usage in Components**:
+```typescript
+import { useTranslation } from 'react-i18next';
+
+const LoginForm: React.FC = () => {
+  const { t } = useTranslation('auth');
+
+  return (
+    <form>
+      <h1>{t('login.title')}</h1>
+      <TextField label={t('login.emailLabel')} />
+      <TextField label={t('login.passwordLabel')} type="password" />
+      <Button>{t('login.submitButton')}</Button>
+    </form>
+  );
+};
+```
+
+### TypeScript Type Safety
+
+**Compile-time Type Checking for Translation Keys**:
+
+```typescript
+// src/i18n/types.ts (auto-generated from de/common.json)
+import 'react-i18next';
+import type common from '../../public/locales/de/common.json';
+import type auth from '../../public/locales/de/auth.json';
+import type validation from '../../public/locales/de/validation.json';
+import type organizer from '../../public/locales/de/organizer.json';
+import type speaker from '../../public/locales/de/speaker.json';
+import type partner from '../../public/locales/de/partner.json';
+import type attendee from '../../public/locales/de/attendee.json';
+
+declare module 'react-i18next' {
+  interface CustomTypeOptions {
+    defaultNS: 'common';
+    resources: {
+      common: typeof common;
+      auth: typeof auth;
+      validation: typeof validation;
+      organizer: typeof organizer;
+      speaker: typeof speaker;
+      partner: typeof partner;
+      attendee: typeof attendee;
+    };
+  }
+}
+```
+
+**Result**:
+- IDE autocomplete for all translation keys
+- **Compile-time errors** for missing or mistyped keys
+- Type inference for interpolation variables
+
+### i18next Configuration
+
+```typescript
+// src/i18n/config.ts
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import LanguageDetector from 'i18next-browser-languagedetector';
+
+// Import all translation files (bundled at build time)
+import commonDe from '../../public/locales/de/common.json';
+import authDe from '../../public/locales/de/auth.json';
+import validationDe from '../../public/locales/de/validation.json';
+import organizerDe from '../../public/locales/de/organizer.json';
+import speakerDe from '../../public/locales/de/speaker.json';
+import partnerDe from '../../public/locales/de/partner.json';
+import attendeeDe from '../../public/locales/de/attendee.json';
+
+import commonEn from '../../public/locales/en/common.json';
+import authEn from '../../public/locales/en/auth.json';
+import validationEn from '../../public/locales/en/validation.json';
+import organizerEn from '../../public/locales/en/organizer.json';
+import speakerEn from '../../public/locales/en/speaker.json';
+import partnerEn from '../../public/locales/en/partner.json';
+import attendeeEn from '../../public/locales/en/attendee.json';
+
+i18n
+  .use(LanguageDetector)
+  .use(initReactI18next)
+  .init({
+    resources: {
+      de: {
+        common: commonDe,
+        auth: authDe,
+        validation: validationDe,
+        organizer: organizerDe,
+        speaker: speakerDe,
+        partner: partnerDe,
+        attendee: attendeeDe,
+      },
+      en: {
+        common: commonEn,
+        auth: authEn,
+        validation: validationEn,
+        organizer: organizerEn,
+        speaker: speakerEn,
+        partner: partnerEn,
+        attendee: attendeeEn,
+      },
+    },
+
+    fallbackLng: 'de',
+    defaultNS: 'common',
+    ns: ['common', 'auth', 'validation', 'organizer', 'speaker', 'partner', 'attendee'],
+
+    detection: {
+      order: ['localStorage', 'navigator', 'htmlTag'],
+      caches: ['localStorage'],
+      lookupLocalStorage: 'batbern-language',
+    },
+
+    interpolation: {
+      escapeValue: false, // React already escapes by default
+    },
+
+    react: {
+      useSuspense: true, // Use React Suspense for async loading
+    },
+  });
+
+export default i18n;
+```
+
+### Language Detection & Selection
+
+**Detection Priority Order**:
+1. **User Profile** (authenticated users with saved language preference in database)
+2. **LocalStorage** (`batbern-language` key for returning users)
+3. **Browser Language** (`navigator.language`)
+4. **Default Fallback**: German (`de`)
+
+**Language Switcher Component**:
+```typescript
+// src/components/shared/LanguageSwitcher.tsx
+import { useTranslation } from 'react-i18next';
+import { MenuItem, Select } from '@mui/material';
+import { useAuthStore } from '@/stores/authStore';
+
+const LanguageSwitcher: React.FC = () => {
+  const { i18n } = useTranslation();
+  const { user, updateUserLanguage } = useAuthStore();
+
+  const handleLanguageChange = async (newLang: 'de' | 'en') => {
+    await i18n.changeLanguage(newLang);
+    document.documentElement.lang = newLang;
+
+    // Update user profile if authenticated
+    if (user) {
+      await updateUserLanguage(newLang);
+    }
+  };
+
+  return (
+    <Select
+      value={i18n.language}
+      onChange={(e) => handleLanguageChange(e.target.value as 'de' | 'en')}
+      size="small"
+    >
+      <MenuItem value="de">🇨🇭 Deutsch</MenuItem>
+      <MenuItem value="en">🇬🇧 English</MenuItem>
+    </Select>
+  );
+};
+```
+
+**Placement**: Header navigation (top-right, next to user profile menu)
+
+### State Management Integration
+
+```typescript
+// src/stores/uiStore.ts (Zustand)
+interface UIState {
+  locale: 'de' | 'en';
+  setLocale: (locale: 'de' | 'en') => void;
+  // ... other UI state
+}
+
+export const useUIStore = create<UIState>((set) => ({
+  locale: 'de',
+  setLocale: (locale) => {
+    set({ locale });
+    i18n.changeLanguage(locale); // Sync with i18next
+    document.documentElement.lang = locale; // Update HTML lang attribute
+  },
+}));
+```
+
+**Persistence**:
+- LocalStorage: `batbern-language` key (automatic via i18next-browser-languagedetector)
+- Database: User profile `preferredLanguage` field (synchronized on language change for authenticated users)
+
+### Date & Time Formatting
+
+**Using date-fns with Locale Support**:
+
+```typescript
+// src/i18n/utils.ts
+import { format, parseISO } from 'date-fns';
+import { de, enUS } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
+
+const localeMap = {
+  de: de,
+  en: enUS,
+};
+
+export const useFormatDate = () => {
+  const { i18n } = useTranslation();
+
+  return {
+    formatDate: (date: Date | string, formatStr: string = 'PPP') => {
+      const dateObj = typeof date === 'string' ? parseISO(date) : date;
+      return format(dateObj, formatStr, { locale: localeMap[i18n.language] });
+    },
+
+    formatDateTime: (date: Date | string) => {
+      const dateObj = typeof date === 'string' ? parseISO(date) : date;
+      return format(dateObj, 'PPP p', { locale: localeMap[i18n.language] });
+    },
+  };
+};
+
+// Usage in components:
+const EventCard: React.FC<{ event: Event }> = ({ event }) => {
+  const { formatDateTime } = useFormatDate();
+
+  return <div>{formatDateTime(event.startTime)}</div>;
+  // German: "15. März 2024, 14:30"
+  // English: "March 15, 2024, 2:30 PM"
+};
+```
+
+### Number & Currency Formatting
+
+**Using Native Intl API** (no additional library needed):
+
+```typescript
+// src/i18n/utils.ts
+export const useFormatNumber = () => {
+  const { i18n } = useTranslation();
+
+  const localeMap = {
+    de: 'de-CH',
+    en: 'en-US',
+  };
+
+  return {
+    formatCurrency: (amount: number) => {
+      return new Intl.NumberFormat(localeMap[i18n.language], {
+        style: 'currency',
+        currency: 'CHF',
+      }).format(amount);
+    },
+
+    formatNumber: (value: number, decimals: number = 2) => {
+      return new Intl.NumberFormat(localeMap[i18n.language], {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+      }).format(value);
+    },
+  };
+};
+
+// Usage:
+const { formatCurrency } = useFormatNumber();
+formatCurrency(1500.5);
+// German (de-CH): "CHF 1'500.50"
+// English (en-US): "CHF 1,500.50"
+```
+
+### Pluralization
+
+**Built-in i18next Pluralization**:
+
+```json
+{
+  "speakers": {
+    "count_zero": "Keine Referenten",
+    "count_one": "{{count}} Referent",
+    "count_other": "{{count}} Referenten"
+  },
+  "events": {
+    "registered_one": "Sie sind für {{count}} Veranstaltung registriert",
+    "registered_other": "Sie sind für {{count}} Veranstaltungen registriert"
+  }
+}
+```
+
+```typescript
+const { t } = useTranslation('common');
+
+t('speakers.count', { count: 0 });  // "Keine Referenten"
+t('speakers.count', { count: 1 });  // "1 Referent"
+t('speakers.count', { count: 5 });  // "5 Referenten"
+```
+
+### Content Translation Strategy
+
+**What Gets Translated**:
+
+| Content Type | Translation Approach |
+|--------------|---------------------|
+| **UI Chrome** (navigation, buttons, labels, help text) | ✅ Fully translated (de/en) |
+| **Form Validation Messages** | ✅ Fully translated (de/en) |
+| **System Notifications** | ✅ Fully translated based on user's UI language |
+| **Email Templates** | ✅ Fully translated (separate AWS SES templates for de/en) |
+| **Event Titles & Descriptions** | ❌ Single language (organizer's choice, typically German) |
+| **Speaker Abstracts** | ❌ Original language preserved with language metadata field |
+| **Company Names** | ❌ Never translated |
+| **User-Generated Content** | ❌ Preserved in original language |
+
+**Rationale**:
+- Swiss audience is primarily German-speaking
+- Event content is typically German with occasional English speakers
+- Preserving original language maintains authenticity and avoids poor machine translation
+- Language metadata allows future filtering/search by content language
+
+**User-Generated Content Handling**:
+- Database schema includes optional `language` field (ISO 639-1: 'de', 'en')
+- UI displays language badge for multilingual events
+- No automatic translation - content shown in original language
+
+### URL Structure & SEO
+
+**Query Parameter Approach**:
+```
+https://batbern.ch/current-event?lang=de
+https://batbern.ch/current-event?lang=en
+```
+
+**HTML Lang Attribute**: Dynamically updated
+```html
+<html lang="de"> <!-- or lang="en" -->
+```
+
+**Meta Tags** (for public pages):
+```typescript
+// Update on language change
+<meta name="description" content={t('meta.description')} />
+<link rel="alternate" hreflang="de" href="?lang=de" />
+<link rel="alternate" hreflang="en" href="?lang=en" />
+```
+
+### CI/CD Translation Validation
+
+**Pre-commit Hook: Translation Key Parity Check**
+
+```bash
+#!/bin/bash
+# .husky/pre-commit
+
+# Validate that all translation keys exist in both de and en
+node scripts/validate-translations.js
+
+if [ $? -ne 0 ]; then
+  echo "❌ Translation validation failed. Ensure all keys exist in both de and en."
+  exit 1
+fi
+```
+
+**Validation Script**:
+```javascript
+// scripts/validate-translations.js
+const fs = require('fs');
+const path = require('path');
+
+const namespaces = ['common', 'auth', 'validation', 'organizer', 'speaker', 'partner', 'attendee'];
+const languages = ['de', 'en'];
+
+function flattenKeys(obj, prefix = '') {
+  return Object.keys(obj).reduce((acc, key) => {
+    const fullKey = prefix ? `${prefix}.${key}` : key;
+    if (typeof obj[key] === 'object' && obj[key] !== null) {
+      return acc.concat(flattenKeys(obj[key], fullKey));
+    }
+    return acc.concat(fullKey);
+  }, []);
+}
+
+let hasErrors = false;
+
+namespaces.forEach(ns => {
+  const deFile = path.join(__dirname, `../public/locales/de/${ns}.json`);
+  const enFile = path.join(__dirname, `../public/locales/en/${ns}.json`);
+
+  const deKeys = flattenKeys(JSON.parse(fs.readFileSync(deFile, 'utf-8')));
+  const enKeys = flattenKeys(JSON.parse(fs.readFileSync(enFile, 'utf-8')));
+
+  const missingInEn = deKeys.filter(k => !enKeys.includes(k));
+  const missingInDe = enKeys.filter(k => !deKeys.includes(k));
+
+  if (missingInEn.length > 0) {
+    console.error(`❌ [${ns}] Missing in English:`, missingInEn);
+    hasErrors = true;
+  }
+
+  if (missingInDe.length > 0) {
+    console.error(`❌ [${ns}] Missing in German:`, missingInDe);
+    hasErrors = true;
+  }
+});
+
+if (hasErrors) {
+  process.exit(1);
+} else {
+  console.log('✅ All translation keys are in sync between de and en.');
+  process.exit(0);
+}
+```
+
+**GitHub Actions CI Check**:
+```yaml
+# .github/workflows/ci.yml
+- name: Validate Translations
+  run: npm run validate:translations
+```
+
+### Testing Strategy
+
+**Translation Key Tests**:
+```typescript
+// __tests__/i18n/translations.test.ts
+import { describe, it, expect } from 'vitest';
+import commonDe from '@/locales/de/common.json';
+import commonEn from '@/locales/en/common.json';
+
+describe('Translation Completeness', () => {
+  it('should have matching keys in de and en', () => {
+    const deKeys = flattenKeys(commonDe);
+    const enKeys = flattenKeys(commonEn);
+
+    expect(deKeys).toEqual(enKeys);
+  });
+});
+```
+
+**Component Translation Tests**:
+```typescript
+// __tests__/components/LoginForm.test.tsx
+import { render, screen } from '@testing-library/react';
+import { I18nextProvider } from 'react-i18next';
+import i18n from '@/i18n/config';
+import LoginForm from '@/components/auth/LoginForm';
+
+describe('LoginForm i18n', () => {
+  it('renders in German by default', async () => {
+    await i18n.changeLanguage('de');
+    render(
+      <I18nextProvider i18n={i18n}>
+        <LoginForm />
+      </I18nextProvider>
+    );
+
+    expect(screen.getByText('Anmelden')).toBeInTheDocument();
+  });
+
+  it('renders in English when language is changed', async () => {
+    await i18n.changeLanguage('en');
+    render(
+      <I18nextProvider i18n={i18n}>
+        <LoginForm />
+      </I18nextProvider>
+    );
+
+    expect(screen.getByText('Sign In')).toBeInTheDocument();
+  });
+});
+```
+
+**E2E Language Switching Tests** (Playwright):
+```typescript
+// e2e/i18n.spec.ts
+import { test, expect } from '@playwright/test';
+
+test('should switch language from German to English', async ({ page }) => {
+  await page.goto('/');
+
+  // Verify default German
+  await expect(page.locator('h1')).toHaveText('Willkommen bei BATbern');
+
+  // Switch to English
+  await page.selectOption('[data-testid="language-switcher"]', 'en');
+
+  // Verify English
+  await expect(page.locator('h1')).toHaveText('Welcome to BATbern');
+
+  // Verify persistence (reload page)
+  await page.reload();
+  await expect(page.locator('h1')).toHaveText('Welcome to BATbern');
+});
+```
+
+### Accessibility Considerations
+
+**Screen Reader Support**:
+```typescript
+// Update HTML lang attribute and announce change
+const handleLanguageChange = async (newLang: 'de' | 'en') => {
+  await i18n.changeLanguage(newLang);
+  document.documentElement.lang = newLang;
+
+  // Announce language change to screen readers
+  const announcement = document.createElement('div');
+  announcement.setAttribute('role', 'status');
+  announcement.setAttribute('aria-live', 'polite');
+  announcement.textContent = newLang === 'de'
+    ? 'Sprache wurde auf Deutsch geändert'
+    : 'Language changed to English';
+  document.body.appendChild(announcement);
+  setTimeout(() => announcement.remove(), 1000);
+};
+```
+
+**Keyboard Navigation**:
+- Language switcher fully keyboard accessible
+- Focus management maintained during language switch
+
+### Performance Optimization
+
+**Bundle Size Management**:
+- All translations bundled at build time (~50KB total for de + en)
+- Vite tree-shaking removes unused namespaces
+- Common namespace loaded immediately (~5KB)
+- Role-specific namespaces lazy-loaded on route navigation
+
+**Caching**:
+- Language preference cached in localStorage
+- Translations cached by browser (static assets with cache headers)
+
+**Initial Load Performance**:
+```
+Initial bundle: common.json (de) + auth.json (de) = ~8KB
+On role switch: Load role namespace = ~5KB additional
+On language switch: Load en namespaces = ~25KB additional (lazy)
+```

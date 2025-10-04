@@ -181,14 +181,14 @@
 ## User Interactions
 
 1. **Edit Event Information**: Click edit icon (✎) to modify title, description, or theme
-2. **Change Event Date**: Click date field to open calendar picker and select new date
+2. **Change Event Date**: Click date field to open calendar picker and select new date (all dates and times in Swiss timezone CET/CEST only)
 3. **Update Event Type**: Select from dropdown (Full Day, Afternoon, Evening) to reconfigure slots
 4. **View Workflow Details**: Click workflow section to navigate to detailed 16-step visualization
 5. **Change Venue**: Click [Change Venue] to open venue selection dialog
 6. **Configure Catering**: Select caterer, configure menu options, specify dietary requirements
 7. **Manage Topics**: View topic details, remove topics, or add from backlog
 8. **View Speaker Details**: Click [View Details] to see full speaker profile and session information
-9. **Edit Slot Assignment**: Reassign speakers to different time slots via drag-and-drop or manual selection
+9. **Edit Slot Assignment**: Reassign speakers to different time slots via drag-and-drop or manual selection (all slot times in Swiss timezone CET/CEST)
 10. **Auto-Assign Speakers**: Use AI algorithm to automatically optimize speaker slot assignments
 11. **Assign Team Members**: Select organizers, moderators, and reviewers from team member list
 12. **Configure Publishing**: Set up progressive publishing timeline and quality checkpoints
@@ -198,10 +198,14 @@
 
 ## Technical Notes
 
-- Form auto-save to prevent data loss (save every 30 seconds)
+- **Auto-save always enabled** - Saves automatically with 5-second debounce after field changes (not configurable per user)
 - Optimistic UI updates for immediate feedback
 - Real-time validation for required fields and constraints
 - Confirmation dialogs for destructive actions (delete event, remove speakers)
+- **Deletion requires organizer confirmation only** - No admin approval needed (organizer role has sufficient authority)
+- **No event templates in MVP** - Each event created from scratch
+- **Swiss timezone only (CET/CEST)** - All times displayed in local Swiss timezone, no special timezone handling for international speakers
+- **No real-time presence indicators** - Concurrent editing conflicts resolved via version mismatch detection and conflict dialog
 - Rich text editor for event description with formatting options
 - Inline editing for quick updates without page navigation
 - Responsive layout adapts to tablet and mobile devices
@@ -276,10 +280,11 @@ When the Event Detail/Edit Screen loads, the following APIs are called to provid
 ### Event Information Updates
 
 1. **PUT /api/v1/events/{eventId}**
-   - Triggered by: [Save Changes] button or auto-save (every 30 seconds)
+   - Triggered by: [Save Changes] button or auto-save (5-second debounce after field changes)
    - Payload: `{ title?, description?, eventDate?, eventType?, theme?, registrationDeadline?, capacity? }`
-   - Response: Updated event entity with new updatedAt timestamp, validation results
+   - Response: Updated event entity with new updatedAt timestamp, validation results, version number for conflict detection
    - Used for: Save all event information changes
+   - Note: Auto-save is always enabled for all organizers (not configurable)
 
 2. **PATCH /api/v1/events/{eventId}/title**
    - Triggered by: Inline title edit field blur
@@ -454,11 +459,15 @@ When the Event Detail/Edit Screen loads, the following APIs are called to provid
     - Triggered by: [Delete Event] → Confirmation dialog → Confirm Delete
     - Response: Deletion confirmation, cleanup status (associated data removed)
     - Used for: Permanently delete event (with cascade delete of related data)
+    - Authorization: Organizer role required (no admin approval needed)
+    - Validation: Cannot delete if registrations exist (must cancel event instead)
 
 30. **GET /api/v1/events/{eventId}/deletion-impact**
     - Triggered by: [Delete Event] button click (before confirmation)
-    - Returns: Impact analysis with registrationCount, confirmedSpeakers, associatedMaterials, dependentData
+    - Returns: Impact analysis with registrationCount, confirmedSpeakers, associatedMaterials, dependentData, canDelete (boolean)
     - Used for: Show deletion impact in confirmation dialog
+    - Displays: "This will permanently delete: X registrations, Y confirmed speakers, Z materials"
+    - If registrations exist: Shows "Cannot delete - please cancel event instead" message
 
 ---
 
@@ -632,10 +641,13 @@ When the Event Detail/Edit Screen loads, the following APIs are called to provid
     - Context: May navigate to workflow-specific screen
 
 27. **[Delete Event] button** → Opens `Delete Confirmation Dialog` (Modal)
-    - Deletion impact summary
+    - Deletion impact summary (registrations, speakers, materials counts)
     - Cascading deletion warnings
+    - Organizer confirmation required (no admin approval)
+    - Validation: Cannot delete if registrations exist
     - Confirm/cancel options
-    - On confirm: Navigate to `Event Management Dashboard`
+    - On confirm: Delete event and navigate to `Event Management Dashboard`
+    - On validation failure: Show "Cannot delete - cancel event instead" message
 
 28. **[Cancel Changes] button** → Discards changes and returns to `Event Management Dashboard`
     - Confirmation dialog if unsaved changes
@@ -660,10 +672,12 @@ When the Event Detail/Edit Screen loads, the following APIs are called to provid
     - Context: Shows "Event not found" error
 
 32. **Concurrent Edit Conflict** → Shows `Conflict Resolution Dialog` (Modal)
-    - Another organizer modified event
-    - Shows conflicting changes
-    - Options: reload, force save, merge changes
-    - Context: Allows user to resolve conflict
+    - Another organizer modified event (detected via version number mismatch)
+    - Shows conflicting changes with diff view
+    - Options: reload (discard local changes), force save (overwrite server changes)
+    - No real-time presence indicators (MVP limitation)
+    - Context: Allows user to resolve conflict manually
+    - Note: Last-write-wins strategy, no automatic merge
 
 ## Responsive Design Considerations
 
@@ -714,7 +728,8 @@ When the Event Detail/Edit Screen loads, the following APIs are called to provid
 - Dirty/modified flags to track unsaved changes
 - Modal open/close states (venueSelectionOpen, cateringConfigOpen)
 - Expanded/collapsed states for speaker/session rows
-- Auto-save timer state
+- Auto-save debounce timer (5 seconds after last field change)
+- Last saved timestamp for user feedback
 
 ### Global State (Zustand Store)
 
@@ -736,13 +751,16 @@ When the Event Detail/Edit Screen loads, the following APIs are called to provid
 - Automatic refetch on window focus
 - Optimistic updates for immediate UI feedback
 
-### Concurrent Editing
+### Concurrent Editing (No Real-Time Collaboration)
 
+- **No real-time presence indicators** - MVP limitation, deferred to future enhancement
 - Version-based conflict detection (optimistic concurrency control)
 - Save conflicts detected via version number mismatch
 - Show conflict resolution dialog when save fails due to concurrent edit
 - User must manually reload to see other users' changes
-- No real-time presence indicators
+- Last-write-wins strategy for conflict resolution
+- Auto-save (5-second debounce) may trigger conflict detection if another organizer saves between intervals
+- No live cursors, no collaborative editing indicators
 
 ## Form Validation Rules
 
@@ -784,29 +802,64 @@ When the Event Detail/Edit Screen loads, the following APIs are called to provid
 - **Past Event Date**: Display read-only archive mode with limited editing capabilities
 - **Insufficient Permissions**: Hide edit controls, show read-only view
 - **Network Offline**: Cache form data locally, show offline indicator, sync when online
-- **Auto-Save Failure**: Show persistent warning banner until successful save
+- **Auto-Save Failure**: Show persistent warning banner until successful save (auto-save always enabled, not configurable)
 - **Validation Errors on Save**: Scroll to first error field, highlight all errors, show summary message
+- **Deletion Blocked**: If registrations exist, show error: "Cannot delete event with registrations. Please cancel event instead."
+- **Concurrent Edit Detected**: Show conflict dialog with options to reload or force save (no automatic merge, no real-time presence)
 
 ## Change Log
 
 | Date       | Version | Description                            | Author     |
 |------------|---------|----------------------------------------|------------|
 | 2025-10-01 | 1.0     | Initial wireframe creation             | Sally (UX) |
+| 2025-10-04 | 1.1     | Updated with stakeholder decisions: auto-save always enabled (5s debounce), Swiss timezone only, no templates, organizer-only deletion, no real-time collaboration | Sally (UX) |
 
 ## Review Notes
 
 ### Stakeholder Feedback
 
-- (To be collected during review sessions)
+- ✅ Auto-save always enabled (5-second debounce) - not configurable per user
+- ✅ Swiss timezone only (CET/CEST) - no special timezone handling
+- ✅ No event templates in MVP - each event created from scratch
+- ✅ Deletion requires organizer confirmation only - no admin approval
+- ✅ No real-time presence indicators - conflict resolution via version mismatch dialog
 
 ### Design Iterations
 
 - v1.0: Initial comprehensive design with all functional sections
+- v1.1: Clarified based on stakeholder decisions:
+  - Auto-save always enabled (5-second debounce, not configurable)
+  - Swiss timezone only (no international timezone support)
+  - No event templates in MVP
+  - Deletion: organizer confirmation only (no admin approval)
+  - No real-time collaboration features (presence indicators, live cursors)
 
 ### Open Questions
 
-1. Should auto-save be configurable per user preference?
-2. How should we handle timezone display for international speakers?
-3. Should we support event templates for faster event creation?
-4. Should deletion require admin approval or just organizer confirmation?
-5. Should concurrent editing show real-time cursors/presence indicators?
+All open questions have been resolved:
+
+1. ✅ **Auto-save Configuration**: Should auto-save be configurable per user preference?
+   - **DECISION: No** - Auto-save is always enabled for all organizers (5-second debounce after field changes)
+   - Consistent behavior across all users
+   - Simpler implementation and UX
+
+2. ✅ **Timezone Display**: How should we handle timezone display for international speakers?
+   - **DECISION: No special timezone handling** - All times displayed in local timezone (CET/CEST for Switzerland)
+   - Event times are Swiss-local only
+   - International speakers work with Swiss time
+
+3. ✅ **Event Templates**: Should we support event templates for faster event creation?
+   - **DECISION: No** - Not in MVP scope
+   - Each event created from scratch
+   - Can be added as future enhancement if needed
+
+4. ✅ **Deletion Approval**: Should deletion require admin approval or just organizer confirmation?
+   - **DECISION: Organizer confirmation only** - Only organizers can delete events anyway
+   - Confirmation dialog with impact summary required
+   - No additional admin approval needed
+   - Organizer role already has sufficient authority
+
+5. ✅ **Real-Time Presence Indicators**: Should concurrent editing show real-time cursors/presence indicators?
+   - **DECISION: No** - Not in MVP scope
+   - Conflict resolution via last-write-wins with conflict dialog
+   - Real-time collaboration features deferred to future enhancement

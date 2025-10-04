@@ -65,6 +65,68 @@ As an **organizer**, I want to select topics from our backlog with intelligent s
 - **AI/ML**: Basic similarity detection using PostgreSQL full-text search
 - **Frontend**: React topic selector with search and suggestions
 
+**Wireframe Context:**
+
+### Wireframe References
+**From docs/wireframes/sitemap.md:**
+- **Main Screen:** `docs/wireframes/story-2.2-topic-backlog-management.md` ✅
+  - Topic Backlog Manager with heat map visualization
+  - Visual representation of topic usage over 24 months
+  - Interactive topic cards with selection interface
+  - Filter panel with category, status, partner interest filters
+  - AI suggestions panel showing trending topics
+
+### UI Components
+**Key interface elements:**
+- **Heat Map Visualization**: Interactive grid showing topic usage patterns from 2020-2025
+  - Darker cells = more recent/frequent usage
+  - Color-coded by staleness (red: <6 months, yellow: 6-12 months, green: >12 months)
+  - Click to select topic
+  - Hover for usage details tooltip
+- **Topic Details Panel**: Displays selected topic information:
+  - Performance metrics (attendance, ratings, downloads, engagement)
+  - Partner interest (votes, priority, sponsor names, comments)
+  - Similarity analysis (15-22% overlap indicators with related topics)
+  - Last used date and suggested wait period
+  - Related topics list
+- **AI Suggestions Panel**: Machine learning-powered topic recommendations
+  - Trending industry topics
+  - Partner-requested topics
+  - Topics aligned with current trends
+  - "Platform Engineering", "FinOps & Cloud Cost", "Zero Trust Security"
+- **Filter Panel**: Multi-criteria filtering
+  - Category dropdown (All Categories, Infrastructure, Security, AI/ML, etc.)
+  - Status dropdown (Available, Used, Stale)
+  - Last Used dropdown (Any Time, >6 months, >12 months)
+  - Partner Interest dropdown (High, Medium, Low)
+- **View Options**: Sort and group controls
+  - Sort by: Partner Priority, Last Used, Rating, Category
+  - Group by: Category, Status, Year
+  - View toggle: Heat Map, List, Board
+- **Action Buttons**:
+  - [+ Add] - Create new topic
+  - [Select for Event] - Assign topic to current event
+  - [View History] - See complete usage history
+  - [Similar Topics] - Show similarity analysis
+  - [Partner Feedback] - View partner voting and comments
+
+### Wireframe Status
+- ✅ **EXISTS**: Topic Backlog Management wireframe fully documented
+  - Complete heat map visualization with 20+ years of usage data
+  - Interactive topic selection interface
+  - Partner voting integration (from Story 6.4)
+  - AI-powered suggestions panel
+  - Similarity detection and staleness indicators
+
+### Navigation
+**Key navigation paths from this screen:**
+- → Topic Details Screen (click topic for full details)
+- → Event Detail (assign topic via [Select for Event])
+- → Topic Voting Interface (partner feedback - story-6.4-topic-voting.md)
+- → Partner Profile (click sponsor name)
+- → AI Topic Suggestions Screen (click [See All →])
+- ⤴ Event Management Dashboard
+
 **Acceptance Criteria:**
 
 **Topic Management:**
@@ -144,6 +206,65 @@ As an **organizer**, I want created events with topics to be immediately visible
 - **CDN**: CloudFront for public content delivery
 - **Frontend**: React components for public display
 
+**Wireframe Context:**
+
+### Wireframe References
+**From docs/wireframes/sitemap.md:**
+- **Main Screen:** `docs/wireframes/story-2.3-basic-publishing-engine.md` ✅
+  - Publishing controls interface within Event Detail/Edit screen
+  - Content scheduling and preview interface
+  - Publishing status dashboard
+  - Draft/Published state toggle
+
+### UI Components
+**Key interface elements:**
+- **Publishing Control Panel**: Status and action controls
+  - Current status badge (Draft/Published/Archived)
+  - [Publish Event] button (primary action)
+  - [Preview] button (see public view)
+  - [Unpublish] button (rollback capability)
+  - Publishing validation checklist (required fields completed)
+- **Publishing Validation Checklist**: Pre-publish requirements
+  - ✓ Event title and description
+  - ✓ Date and time set
+  - ✓ Topics selected
+  - ✓ Venue configured
+  - ⚠ Missing items highlighted in red
+  - Disabled publish button until all requirements met
+- **Preview Panel**: Shows public-facing event view
+  - Event landing page preview
+  - Session list preview
+  - Speaker lineup preview
+  - [Edit] link to return to event editor
+- **Publishing Status Timeline**: Publication history
+  - Published date/time
+  - Published by (organizer name)
+  - Unpublished events (if any)
+  - Cache invalidation status
+- **CDN Cache Status**: Real-time cache state
+  - Cache status indicator (cached/invalidating/fresh)
+  - Last invalidation timestamp
+  - [Force Cache Clear] button (manual invalidation)
+- **Notification Settings**: Publishing notification config
+  - Recipients list (organizers, partners)
+  - Email template selection
+  - Send notification checkbox
+
+### Wireframe Status
+- ✅ **EXISTS**: Basic Publishing Engine wireframe fully documented
+  - Complete publishing control interface
+  - Validation checklist component
+  - Preview functionality
+  - Status tracking and history
+
+### Navigation
+**Key navigation paths from this screen:**
+- → Event Preview (public view)
+- → Event Detail/Edit (edit before publishing)
+- → Publishing Templates (email template editor)
+- → Notification Center (view sent notifications)
+- ⤴ Event Management Dashboard
+
 **Acceptance Criteria:**
 
 **Publishing Workflow:**
@@ -191,6 +312,92 @@ As an **attendee**, I want to see the current/upcoming BATbern event prominently
 - **Backend**: Attendee Experience Service (basic implementation)
 - **CDN**: CloudFront for global content delivery
 - **Cache**: Redis for event data caching
+
+**Wireframe Context:**
+
+### Wireframe References
+**From docs/wireframes/sitemap.md:**
+
+1. **Current Event Landing:** `docs/wireframes/story-2.4-current-event-landing.md` ✅
+   - Hero section with event title, date, location
+   - Countdown timer (if within 30 days)
+   - Event highlights and topic description
+   - Session schedule overview
+   - Speaker lineup with photos
+   - Venue information with map
+   - [Register Now] call-to-action button
+   - Footer with historical events link
+
+2. **Event Registration Flow:** `docs/wireframes/story-2.4-event-registration.md` ✅
+   - Multi-step registration wizard (3 steps)
+   - **Step 1/3**: Personal information (name, email, company, role)
+   - **Step 2/3**: Session selection (choose sessions to attend)
+   - **Step 3/3**: Review & confirm (summary with edit options)
+   - Progress indicator showing current step
+   - [Back] and [Next]/[Submit] navigation buttons
+
+3. **Registration Confirmation:** `docs/wireframes/story-2.4-registration-confirmation.md` ✅
+   - Success message with registration number
+   - Registration summary (event, sessions, personal details)
+   - QR code for event check-in
+   - [Download Calendar] button (iCal format)
+   - Email confirmation notice
+   - [View My Registrations] link to dashboard
+
+4. **Session Details Modal:** `docs/wireframes/story-2.4-session-details-modal.md` ✅
+   - Modal overlay triggered from landing page session list
+   - Session title, time, duration, room/location
+   - Speaker information with photo and bio
+   - Session description and learning objectives
+   - Session capacity and availability indicator
+   - [Add to My Schedule] button
+   - [Share Session] social media buttons
+   - [Close] modal control
+
+### UI Components
+**Key interface elements:**
+- **Hero Banner**: Full-width banner with event visual, title, date, countdown
+- **Event Stats**: Quick facts cards (date, location, free attendance badge, topic)
+- **Session Cards**: Session grid/list with time, speaker, room, capacity
+- **Speaker Lineup**: Photo grid with names, companies, session titles
+- **Venue Map**: Embedded Google Maps with directions link
+- **Registration Form**: Multi-step form with validation and progress tracking
+- **QR Code Display**: Scannable QR code for check-in access
+- **Social Sharing**: Pre-populated share buttons (LinkedIn, Twitter, Email)
+- **Filter Controls**: Session filtering by time, topic, speaker
+- **Calendar Export**: Generate iCal file for calendar apps
+
+### Wireframe Status
+- ✅ **EXISTS**: All four wireframes fully documented and ready for implementation
+  - Current Event Landing Page (public-facing hero page)
+  - Event Registration Flow (3-step registration wizard)
+  - Registration Confirmation (success page with QR code)
+  - Session Details Modal (detailed session info overlay)
+
+### Navigation
+**Key navigation paths from these screens:**
+- **Current Event Landing →**
+  - → Event Registration Flow (click [Register Now])
+  - → Session Details Modal (click session card)
+  - → Speaker Profile Detail View (click speaker photo)
+  - → Venue Details (click map/venue info)
+  - → Filter Modal (apply session filters)
+- **Event Registration (Step 1/3) →**
+  - → Event Registration (Step 2/3) (click [Next])
+  - ⤴ Current Event Landing (click [Cancel])
+- **Event Registration (Step 2/3) →**
+  - → Event Registration (Step 3/3) (click [Next])
+  - ⤴ Event Registration (Step 1/3) (click [Back])
+- **Event Registration (Step 3/3) →**
+  - → Registration Confirmation (click [Submit])
+  - ⤴ Event Registration (Step 2/3) (click [Back])
+- **Registration Confirmation →**
+  - → Ticket/QR Code Page (included in confirmation)
+  - → Personal Attendee Dashboard (click [View My Registrations])
+  - → Current Event Landing (click [Back to Event])
+- **Session Details Modal →**
+  - Close (returns to Current Event Landing)
+  - → Speaker Profile (click speaker name/photo)
 
 **Acceptance Criteria:**
 

@@ -28,6 +28,44 @@ As an **organizer**, I want to invite speakers efficiently through an automated 
 - **Database**: PostgreSQL invitations and response tracking
 - **Frontend**: React invitation management interface
 
+**Wireframe Context:**
+
+### Wireframe References
+**From docs/wireframes/sitemap.md:**
+- **Main Screen:** `docs/wireframes/story-3.1-speaker-matching-interface.md` ✅
+  - Speaker Matching Interface with AI-powered recommendations
+  - Speaker search and filtering capabilities
+  - Invitation management and tracking
+  - Bulk invitation operations
+
+### UI Components
+**Key interface elements:**
+- **Speaker Search**: Search bar with autocomplete for speaker names, companies, expertise
+- **Filter Panel**: Multi-criteria filters (expertise, company, past participation, availability)
+- **Speaker Cards**: Grid/list view with speaker photos, names, companies, expertise tags
+- **AI Matching Score**: Visual indicators showing speaker-topic fit percentage
+- **Selection Controls**: Checkboxes for bulk selection, "Select All" option
+- **Invitation Panel**: Right sidebar showing selected speakers for invitation
+- **[Send Invitations] Button**: Triggers bulk invitation workflow
+- **Status Indicators**: Visual badges showing invitation status (sent/opened/accepted/declined)
+- **Speaker Profile Preview**: Quick view panel with speaker bio, speaking history
+- **Company Affiliation**: Company logos and partner status badges
+
+### Wireframe Status
+- ✅ **EXISTS**: Speaker Matching Interface wireframe fully documented
+  - Complete speaker discovery and selection interface
+  - AI-powered matching recommendations
+  - Bulk invitation management
+  - Status tracking dashboard
+
+### Navigation
+**Key navigation paths from this screen:**
+- → Speaker Profile Detail View (click speaker card)
+- → Invitation Management Screen (manage sent invitations)
+- → Company Management Screen (click company logo)
+- → Event Detail/Edit (back to event being planned)
+- ⤴ Event Management Dashboard
+
 **Acceptance Criteria:**
 
 **Invitation Management:**
@@ -63,6 +101,49 @@ As a **speaker**, I want to easily respond to invitations with my availability a
 - **Database**: PostgreSQL speaker responses and constraints
 - **Notifications**: Real-time updates to organizers
 
+**Wireframe Context:**
+
+### Wireframe References
+**From docs/wireframes/sitemap.md:**
+- **Main Screen:** `docs/wireframes/story-3.2-invitation-response.md` ✅
+  - Invitation Response form accessible via unique link (no auth required)
+  - Invitation details display (event, date, topic, organizer)
+  - Response options (Accept/Decline/Tentative)
+  - Availability and constraints form
+  - Alternative date suggestions
+
+### UI Components
+**Key interface elements:**
+- **Invitation Summary**: Event title, date, location, topic description
+- **Response Options**: Large, clear radio buttons or cards for Accept/Decline/Tentative
+- **Availability Form** (if Accept/Tentative):
+  - Preferred date/time slots
+  - Scheduling constraints
+  - Technical requirements (AV, equipment)
+  - Dietary restrictions (for catering)
+- **Decline Form** (if Decline):
+  - Optional reason for declining
+  - Alternative speaker suggestions
+  - Alternative date preferences
+- **Contact Information**: Speaker can update contact details
+- **Comments Box**: Free-form text for additional information
+- **[Submit Response] Button**: Primary action to submit
+- **Confirmation Message**: Success feedback after submission
+- **Email Confirmation**: Notice that confirmation email sent
+
+### Wireframe Status
+- ✅ **EXISTS**: Invitation Response wireframe fully documented
+  - Complete response form with all accept/decline/tentative paths
+  - No-authentication unique link access
+  - Real-time status updates to organizer
+  - Constraint collection forms
+
+### Navigation
+**Key navigation paths from this screen:**
+- → Confirmation Page (after submit)
+- → Help/FAQ (if link provided)
+- No navigation required (standalone unique link page)
+
 **Acceptance Criteria:**
 
 **Response Interface:**
@@ -97,6 +178,72 @@ As a **speaker**, I want to submit my presentation materials through a simple po
 - **Backend**: Speaker Coordination Service validation
 - **Database**: PostgreSQL submission tracking
 - **Frontend**: React upload interface
+
+**Wireframe Context:**
+
+### Wireframe References
+**From docs/wireframes/sitemap.md:**
+
+1. **Material Submission Wizard:** `docs/wireframes/story-3.3-material-submission-wizard.md` ✅
+   - Multi-step submission wizard guiding speakers through material upload
+   - Step-by-step progress indicator
+   - Required vs optional fields clearly marked
+   - Metadata entry forms (title, abstract, bio, tags)
+   - Draft auto-save functionality
+   - Review and submit final step
+
+2. **Presentation Upload:** `docs/wireframes/story-3.3-presentation-upload.md` ✅
+   - Drag-and-drop file upload interface
+   - Upload progress bar with percentage and ETA
+   - File validation (type, size, format)
+   - Thumbnail/preview generation
+   - Version management (replace previous upload)
+   - File metadata editor
+
+### UI Components
+**Key interface elements:**
+- **Multi-Step Wizard**:
+  - Step 1: Speaker Bio & Photo
+  - Step 2: Presentation Details (title, abstract, learning objectives)
+  - Step 3: File Upload (presentation, supporting materials)
+  - Step 4: Review & Submit
+  - Progress indicator showing current step
+- **File Upload Panel**:
+  - Drag-and-drop zone with visual feedback
+  - Browse file button alternative
+  - Upload progress bar (percentage, MB uploaded, ETA)
+  - File validation messages (✓ Valid format, ⚠ File too large)
+  - Preview thumbnail after upload
+- **Form Fields**:
+  - Title (required, max 200 chars)
+  - Abstract (required, max 1000 chars, character counter)
+  - Learning objectives (optional, bullet points)
+  - Tags/keywords (optional, autocomplete)
+  - Biography (required if not on file, rich text editor)
+  - Professional photo upload (required, face detection validation)
+- **Action Buttons**:
+  - [Save Draft] - Auto-save with manual trigger
+  - [Previous]/[Next] - Step navigation
+  - [Preview] - See how materials will appear
+  - [Submit for Review] - Final submission to moderator queue
+
+### Wireframe Status
+- ✅ **EXISTS**: Both wireframes fully documented and ready for implementation
+  - Material Submission Wizard (multi-step guided workflow)
+  - Presentation Upload (advanced file upload with progress tracking)
+  - Integration with moderator review queue (Story 4.1)
+
+### Navigation
+**Key navigation paths from these screens:**
+- Material Submission Wizard →
+  - → Presentation Upload (step 3 of wizard)
+  - → Preview Modal (click [Preview])
+  - → Content Detail/Edit (view submitted materials)
+  - → Speaker Dashboard (after submission)
+- Presentation Upload →
+  - Part of Material Submission Wizard Step 3
+  - → Metadata Editor (after upload completes)
+  - → Version History (if replacing file)
 
 **Acceptance Criteria:**
 
@@ -170,6 +317,60 @@ As an **organizer**, I want to track speaker outreach with automated reminders a
 - **Communication**: AWS SES for automated follow-ups
 - **Database**: PostgreSQL status tracking with audit trail
 - **Frontend**: React pipeline visualization
+
+**Wireframe Context:**
+
+### Wireframe References
+**From docs/wireframes/sitemap.md:**
+- **Main Screen:** `docs/wireframes/story-3.5-event-timeline.md` ✅
+  - Event Timeline view showing key dates and milestones
+  - Task list with speaker-specific deadlines
+  - Status indicators for each timeline phase
+  - Automated reminder schedule visualization
+
+### UI Components
+**Key interface elements:**
+- **Timeline Visualization**: Gantt-style timeline showing event lifecycle
+  - Key dates & milestones (invitation sent, response due, materials due, event date)
+  - Current position indicator ("You are here")
+  - Color-coded phases (planning, outreach, preparation, execution)
+  - Countdown timers for upcoming deadlines
+- **Task List Panel**: Speaker-specific tasks with status
+  - [ ] Respond to invitation (due: 2 weeks)
+  - [ ] Submit presentation materials (due: 4 weeks before event)
+  - [ ] Confirm technical requirements (due: 2 weeks before event)
+  - [ ] Complete pre-event checklist (due: 3 days before event)
+  - Task status badges (pending, overdue, completed)
+- **Status Dashboard**: Current speaker status summary
+  - Overall status badge (On Track / At Risk / Overdue)
+  - Completion percentage (e.g., "3/5 tasks completed")
+  - Next action required with deadline
+  - Risk indicators (⚠ Materials due in 3 days)
+- **Communication Log**: History of automated reminders
+  - Reminder sent dates
+  - Email open/click tracking
+  - Response timestamps
+  - Manual follow-up notes
+- **Event Details Panel**: Quick reference info
+  - Event date, location, topic
+  - Session time slot
+  - Contact information for organizers
+
+### Wireframe Status
+- ✅ **EXISTS**: Event Timeline wireframe fully documented
+  - Complete timeline visualization for speakers
+  - Task list with deadlines and status tracking
+  - Automated reminder integration
+  - Risk detection and escalation indicators
+
+### Navigation
+**Key navigation paths from this screen:**
+- → Material Submission Wizard (click task to complete)
+- → Invitation Response (if not yet responded)
+- → Event Details (speaker view)
+- → Session Details (assigned session info)
+- → Communication Hub (view all messages)
+- ⤴ Speaker Dashboard
 
 **Acceptance Criteria:**
 
