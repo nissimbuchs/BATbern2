@@ -1,5 +1,6 @@
 package ch.batbern.gateway.security;
 
+import ch.batbern.gateway.util.LogSanitizer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
@@ -69,7 +70,7 @@ public class InMemoryRateLimitStorage implements RateLimitStorage {
     public void resetRequestCount(String userId, String endpoint) {
         String key = createKey(userId, endpoint);
         rateLimitMap.remove(key);
-        log.debug("Reset rate limit for key: {}", key);
+        log.debug("Reset rate limit for key: {}", LogSanitizer.sanitize(key));
     }
 
     @Override

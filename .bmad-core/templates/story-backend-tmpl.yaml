@@ -1,0 +1,843 @@
+# <!-- Powered by BMAD™ Core -->
+template:
+  id: story-backend-implementation-template-v1
+  name: Backend Implementation Story Template
+  version: 1.0
+  description: Backend business logic and data layer implementation validating against API contract
+  output:
+    format: markdown
+    filename: docs/stories/{{epic_num}}.{{story_num}}c.backend-{{story_title_short}}.md
+    title: "Story {{epic_num}}.{{story_num}}c: Backend - {{story_title_short}}"
+
+workflow:
+  mode: interactive
+  elicitation: advanced-elicitation
+
+agent_config:
+  editable_sections:
+    - Status
+    - Story
+    - Domain Context
+    - Architecture Context
+    - Service Specifications
+    - Acceptance Criteria
+    - Tasks / Subtasks
+    - Dev Notes
+    - Change Log
+
+sections:
+  - id: status
+    title: Status
+    type: choice
+    choices: [Blocked, Draft, Approved, InProgress, Review, Done]
+    instruction: |
+      Select the current status of the backend story.
+      Status should be "Blocked" until API Contract story {{epic_num}}.{{story_num}}a is Done.
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+
+  - id: story
+    title: Story
+    type: template-text
+    template: |
+      **As a** {{role}},
+      **I want** {{action}},
+      **so that** {{benefit}}
+
+      **Backend Focus:** This story implements the business logic and data layer that validates against the API contract defined in Story {{epic_num}}.{{story_num}}a.
+    instruction: Define the user story focusing on business logic and data requirements
+    elicit: true
+    owner: scrum-master
+    editors: [scrum-master]
+
+  - id: dependencies
+    title: Story Dependencies
+    instruction: |
+      **Blocking Dependencies:**
+      - ⚠️ BLOCKED until Story {{epic_num}}.{{story_num}}a (API Contract) is Done
+      - Requires: OpenAPI specification
+      - Requires: Java DTOs generated from API contract
+      - Requires: Contract tests defined
+
+      **Integration Story:**
+      - This story will be integrated with frontend in Story {{epic_num}}.{{story_num}}d
+    owner: scrum-master
+    editors: [scrum-master]
+
+  - id: domain-context
+    title: Domain Context
+    instruction: Identify the domain and services for this backend implementation
+    owner: scrum-master
+    editors: [scrum-master]
+    sections:
+      - id: primary-domain
+        title: Primary Domain
+        instruction: |
+          Identify the bounded context:
+          - Event Management Domain
+          - Speaker Coordination Domain
+          - Partner Analytics Domain
+          - Attendee Experience Domain
+          - Company Management Domain
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: involved-services
+        title: Involved Services
+        instruction: |
+          List specific microservices:
+          - Event Management Service
+          - Speaker Coordination Service
+          - Partner Analytics Service
+          - Attendee Experience Service
+          - Company Management Service
+
+          Specify which service(s) this story modifies.
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: cross-domain-dependencies
+        title: Cross-Domain Dependencies
+        instruction: |
+          List any services/domains this story depends on or integrates with:
+          - EventBridge events consumed
+          - EventBridge events published
+          - Synchronous API calls to other services
+          - Shared database concerns
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: api-contract-reference
+        title: API Contract Reference
+        instruction: |
+          Reference the API Contract story:
+          - Story number: {{epic_num}}.{{story_num}}a
+          - OpenAPI spec location
+          - Endpoints implemented
+          - Generated Java DTOs used
+          - Contract tests to validate against
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+  - id: architecture-context
+    title: Architecture Context
+    instruction: Reference specific architecture patterns and infrastructure components
+    owner: scrum-master
+    editors: [scrum-master]
+    sections:
+      - id: architecture-patterns
+        title: Architecture Patterns
+        instruction: |
+          Reference specific patterns from architecture docs:
+          - DDD patterns (Aggregates, Value Objects, Domain Events)
+          - Repository pattern
+          - Service layer pattern
+          - Event sourcing (if applicable)
+          - CQRS (if applicable)
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: infrastructure-components
+        title: Infrastructure Components
+        instruction: |
+          List AWS services and infrastructure:
+          - Database: Tables, schemas, indexes
+          - EventBridge: Event types, rules
+          - S3: Buckets for file storage (if applicable)
+          - ElastiCache: Cache keys and TTL
+          - SQS/SNS: Message queues (if applicable)
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+  - id: service-specifications
+    title: Service Specifications
+    instruction: |
+      Define the backend services, domain models, and data layer for this feature.
+      These will follow Spring Boot and DDD patterns from our architecture.
+    owner: scrum-master
+    editors: [scrum-master]
+    sections:
+      - id: domain-model
+        title: Domain Model
+        instruction: |
+          Define domain entities and aggregates:
+
+          **Aggregates:**
+          - AggregateName (Aggregate Root)
+            - Entities within aggregate
+            - Value Objects
+            - Invariants to enforce
+            - Domain events published
+
+          **Value Objects:**
+          - ValueObjectName: Purpose and immutability rules
+
+          **Domain Events:**
+          - EventName: When published, payload structure
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: service-layer
+        title: Service Layer
+        instruction: |
+          Define service classes and methods:
+
+          **Service: ServiceName**
+          ```java
+          public class ServiceName {
+              // Method signatures with brief description
+              public ReturnType methodName(ParamType param) {
+                  // Business logic flow
+              }
+          }
+          ```
+
+          Include:
+          - Service responsibilities
+          - Transaction boundaries
+          - Error handling approach
+          - External service calls
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: repository-layer
+        title: Repository Layer
+        instruction: |
+          Define repository interfaces:
+
+          **Repository: RepositoryName**
+          ```java
+          public interface RepositoryName extends JpaRepository<Entity, ID> {
+              // Custom query methods
+              Optional<Entity> findByField(String field);
+              List<Entity> findByCondition(Condition condition);
+          }
+          ```
+
+          Include:
+          - Query methods needed
+          - Custom JPQL queries
+          - Pagination requirements
+          - Performance considerations
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: controller-layer
+        title: Controller Layer
+        instruction: |
+          Define REST controllers:
+
+          **Controller: ControllerName**
+          ```java
+          @RestController
+          @RequestMapping("/api/v1/...")
+          public class ControllerName {
+              // Endpoint mappings
+              @PostMapping
+              public ResponseEntity<ResponseDTO> create(@Valid @RequestBody RequestDTO request) {
+                  // Delegate to service
+              }
+          }
+          ```
+
+          Must match API contract from Story {{epic_num}}.{{story_num}}a exactly.
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+  - id: database-design
+    title: Database Design
+    instruction: Define database schema changes for this feature
+    owner: scrum-master
+    editors: [scrum-master]
+    sections:
+      - id: schema-changes
+        title: Schema Changes
+        instruction: |
+          Define Flyway migration scripts:
+
+          **New Tables:**
+          ```sql
+          CREATE TABLE table_name (
+              id UUID PRIMARY KEY,
+              field1 VARCHAR(255) NOT NULL,
+              field2 INTEGER,
+              created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+              updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+          );
+          ```
+
+          **Modified Tables:**
+          - ALTER TABLE statements
+
+          **Indexes:**
+          ```sql
+          CREATE INDEX idx_table_field ON table_name(field);
+          ```
+
+          **Foreign Keys:**
+          ```sql
+          ALTER TABLE table_name ADD CONSTRAINT fk_name
+              FOREIGN KEY (field) REFERENCES other_table(id);
+          ```
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: data-migration
+        title: Data Migration (if applicable)
+        instruction: |
+          If migrating existing data:
+          - Migration script approach
+          - Rollback strategy
+          - Data validation after migration
+          - Performance considerations for large datasets
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+  - id: acceptance-criteria
+    title: Acceptance Criteria
+    type: numbered-list
+    instruction: |
+      Define acceptance criteria focused on business logic and data integrity:
+      - All API endpoints implement contract correctly
+      - Business rules enforced properly
+      - Data persisted correctly
+      - Domain events published appropriately
+      - Contract tests pass
+      - Integration tests pass
+      - Database migrations work
+    elicit: true
+    owner: scrum-master
+    editors: [scrum-master]
+
+  - id: test-specifications
+    title: Test Specifications (TDD)
+    instruction: |
+      ⚠️ CRITICAL: Define backend test cases BEFORE implementation.
+      Tests must validate against the API contract from Story {{epic_num}}.{{story_num}}a.
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+    sections:
+      - id: contract-test-scenarios
+        title: Contract Test Scenarios
+        instruction: |
+          Tests validating implementation against API contract:
+
+          **Contract Tests:**
+          - Test 1.1: should_matchOpenAPISpec_for_endpoint
+          - Test 1.2: should_returnExpectedSchema_when_successfulRequest
+          - Test 1.3: should_returnStandardError_when_validationFails
+          - Test 1.4: should_enforceAuthentication_per_contract
+
+          Use Spring Cloud Contract or custom contract validation.
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master, dev-agent]
+
+      - id: unit-test-scenarios
+        title: Unit Test Scenarios
+        instruction: |
+          Map each acceptance criterion to unit tests:
+
+          **Service: ServiceName**
+          - Test 2.1: should_performAction_when_validInput
+          - Test 2.2: should_throwException_when_invalidInput
+          - Test 2.3: should_publishDomainEvent_when_actionCompletes
+
+          **Domain Model: AggregateName**
+          - Test 3.1: should_enforceInvariant_when_stateChanges
+          - Test 3.2: should_raiseEvent_when_commandExecuted
+
+          Use JUnit 5 and Mockito.
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master, dev-agent]
+
+      - id: integration-test-scenarios
+        title: Integration Test Scenarios
+        instruction: |
+          End-to-end integration tests with TestContainers:
+
+          **Integration Tests:**
+          - Test 4.1: should_persistData_when_validRequestReceived
+          - Test 4.2: should_returnData_when_queryExecuted
+          - Test 4.3: should_rollbackTransaction_when_errorOccurs
+          - Test 4.4: should_publishEvent_when_actionCompletes
+
+          Use @SpringBootTest with TestContainers (PostgreSQL).
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master, dev-agent]
+
+      - id: repository-test-scenarios
+        title: Repository Test Scenarios
+        instruction: |
+          Repository layer tests:
+
+          **Repository: RepositoryName**
+          - Test 5.1: should_saveEntity_when_validDataProvided
+          - Test 5.2: should_findEntity_when_criteriaMatches
+          - Test 5.3: should_updateEntity_when_modificationsApplied
+          - Test 5.4: should_deleteEntity_when_requested
+
+          Use @DataJpaTest with TestContainers.
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master, dev-agent]
+
+  - id: tasks-subtasks
+    title: Tasks / Subtasks (TDD Workflow)
+    type: bullet-list
+    instruction: |
+      Break down the backend implementation following TDD workflow.
+      CRITICAL: Tests must be written BEFORE implementation code.
+    template: |
+      - [ ] Task 1: Database Schema Setup (RED Phase)
+        - [ ] Create Flyway migration script
+        - [ ] Write failing repository tests expecting schema
+        - [ ] Apply migration in test environment
+        - [ ] Verify schema created correctly
+
+      - [ ] Task 2: Write Domain Model Tests (RED Phase)
+        - [ ] Write failing tests for aggregate creation
+        - [ ] Write failing tests for aggregate behavior
+        - [ ] Write failing tests for invariant enforcement
+        - [ ] Write failing tests for domain event publishing
+        - [ ] Verify domain tests fail appropriately
+
+      - [ ] Task 3: Write Repository Tests (RED Phase)
+        - [ ] Write failing tests for CRUD operations
+        - [ ] Write failing tests for custom queries
+        - [ ] Write failing tests for pagination
+        - [ ] Verify repository tests fail appropriately
+
+      - [ ] Task 4: Write Service Layer Tests (RED Phase)
+        - [ ] Write failing tests for business logic
+        - [ ] Write failing tests for error handling
+        - [ ] Write failing tests for transaction boundaries
+        - [ ] Write failing tests for event publishing
+        - [ ] Verify service tests fail appropriately
+
+      - [ ] Task 5: Write Contract Tests (RED Phase)
+        - [ ] Write failing tests validating against OpenAPI spec
+        - [ ] Write failing tests for request validation
+        - [ ] Write failing tests for response schemas
+        - [ ] Verify contract tests fail appropriately
+
+      - [ ] Task 6: Implement Domain Model (GREEN Phase)
+        - [ ] Create entity classes
+        - [ ] Create value objects
+        - [ ] Implement aggregate logic
+        - [ ] Implement domain event publishing
+        - [ ] Verify domain tests pass
+
+      - [ ] Task 7: Implement Repository Layer (GREEN Phase)
+        - [ ] Create repository interfaces
+        - [ ] Implement custom queries
+        - [ ] Configure JPA mappings
+        - [ ] Verify repository tests pass
+
+      - [ ] Task 8: Implement Service Layer (GREEN Phase)
+        - [ ] Create service classes
+        - [ ] Implement business logic
+        - [ ] Add transaction management
+        - [ ] Implement error handling
+        - [ ] Verify service tests pass
+
+      - [ ] Task 9: Implement Controller Layer (GREEN Phase)
+        - [ ] Create controller classes
+        - [ ] Map endpoints per API contract
+        - [ ] Add validation annotations
+        - [ ] Implement response mapping
+        - [ ] Verify contract tests pass
+
+      - [ ] Task 10: Integration Testing (GREEN Phase)
+        - [ ] Configure TestContainers
+        - [ ] Run full integration tests
+        - [ ] Verify end-to-end flows work
+        - [ ] Test error scenarios
+
+      - [ ] Task 11: Refactor (REFACTOR Phase)
+        - [ ] Extract reusable logic
+        - [ ] Optimize database queries
+        - [ ] Improve error messages
+        - [ ] Add code documentation
+        - [ ] Verify all tests still pass
+
+      - [ ] Task 12: Performance Optimization
+        - [ ] Add database indexes
+        - [ ] Implement caching strategy
+        - [ ] Optimize N+1 query problems
+        - [ ] Load test critical endpoints
+    elicit: true
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+
+  - id: dev-notes
+    title: Dev Notes - Implementation Guide
+    instruction: |
+      CONSOLIDATED IMPLEMENTATION GUIDE for the Dev Agent:
+      Everything needed for backend implementation validating against API contract.
+    elicit: true
+    owner: scrum-master
+    editors: [scrum-master]
+    sections:
+      - id: service-structure
+        title: Service Structure
+        instruction: |
+          Exact service location and package structure:
+
+          ```
+          [service-name]/
+          ├── src/main/java/ch/batbern/[domain]/
+          │   ├── controller/
+          │   │   └── ControllerName.java
+          │   ├── service/
+          │   │   ├── ServiceName.java
+          │   │   └── impl/ServiceNameImpl.java
+          │   ├── repository/
+          │   │   └── RepositoryName.java
+          │   ├── domain/
+          │   │   ├── Aggregate.java
+          │   │   ├── ValueObject.java
+          │   │   └── events/DomainEvent.java
+          │   ├── dto/
+          │   │   ├── RequestDTO.java (generated from OpenAPI)
+          │   │   └── ResponseDTO.java (generated from OpenAPI)
+          │   └── exception/
+          │       └── CustomException.java
+          ├── src/main/resources/
+          │   └── db/migration/
+          │       └── V1__initial_schema.sql
+          └── src/test/
+              ├── unit/
+              ├── integration/
+              └── contract/
+          ```
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: ddd-patterns
+        title: DDD Implementation Patterns
+        instruction: |
+          Specific DDD patterns to apply:
+
+          **Aggregate Pattern:**
+          ```java
+          @Entity
+          public class Aggregate {
+              @EmbeddedId
+              private AggregateId id;
+
+              // Behavior methods, not setters
+              public void performAction(params) {
+                  // Enforce invariants
+                  // Raise domain events
+              }
+
+              @DomainEvents
+              Collection<Object> domainEvents() {
+                  return events;
+              }
+          }
+          ```
+
+          **Repository Pattern:**
+          - Only aggregate roots have repositories
+          - No business logic in repositories
+          - Return domain objects, not DTOs
+
+          **Domain Events:**
+          - Use Spring's @DomainEvents
+          - Publish to EventBridge for cross-domain
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: spring-boot-patterns
+        title: Spring Boot Implementation Patterns
+        instruction: |
+          Spring Boot specific patterns:
+
+          **Controller Pattern:**
+          ```java
+          @RestController
+          @RequestMapping("/api/v1/events")
+          @RequiredArgsConstructor
+          public class EventController {
+
+              private final EventService eventService;
+
+              @PostMapping
+              public ResponseEntity<EventResponse> create(
+                  @Valid @RequestBody CreateEventRequest request
+              ) {
+                  Event event = eventService.createEvent(request);
+                  return ResponseEntity
+                      .created(URI.create("/api/v1/events/" + event.getId()))
+                      .body(EventMapper.toResponse(event));
+              }
+          }
+          ```
+
+          **Service Pattern:**
+          - Use @Transactional at service layer
+          - Delegate to domain model for business logic
+          - Map between DTOs and domain objects
+
+          **Exception Handling:**
+          - Use @ControllerAdvice for global error handling
+          - Return standard error format per API contract
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: database-implementation
+        title: Database Implementation Guide
+        instruction: |
+          Database implementation specifics:
+
+          **Flyway Migrations:**
+          - Location: src/main/resources/db/migration/
+          - Naming: V{version}__{description}.sql
+          - Always include rollback strategy in comments
+
+          **JPA Configuration:**
+          ```java
+          @Entity
+          @Table(name = "events", indexes = {
+              @Index(name = "idx_event_date", columnList = "event_date")
+          })
+          public class Event {
+              @Id
+              @GeneratedValue(strategy = GenerationType.UUID)
+              private UUID id;
+
+              // Use appropriate column types
+              @Column(nullable = false, length = 255)
+              private String title;
+          }
+          ```
+
+          **Query Optimization:**
+          - Use @EntityGraph for eager loading
+          - Use @Query with JPQL for complex queries
+          - Enable query logging in dev
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: testing-setup
+        title: Testing Setup Guide
+        instruction: |
+          Backend testing configuration:
+
+          **TestContainers Setup:**
+          ```java
+          @SpringBootTest
+          @Testcontainers
+          class IntegrationTest {
+              @Container
+              static PostgreSQLContainer<?> postgres =
+                  new PostgreSQLContainer<>("postgres:15-alpine");
+
+              @DynamicPropertySource
+              static void configureProperties(DynamicPropertyRegistry registry) {
+                  registry.add("spring.datasource.url", postgres::getJdbcUrl);
+              }
+          }
+          ```
+
+          **Contract Testing:**
+          - Use RestAssured to validate OpenAPI spec
+          - Load spec from Story {{epic_num}}.{{story_num}}a
+          - Validate all responses match schema
+
+          **Unit Testing:**
+          - Mock dependencies with Mockito
+          - Test domain logic in isolation
+          - Use ArgumentCaptor for verification
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: eventbridge-integration
+        title: EventBridge Integration Guide
+        instruction: |
+          If this story publishes or consumes domain events:
+
+          **Publishing Events:**
+          ```java
+          @Service
+          @RequiredArgsConstructor
+          public class EventPublisher {
+              private final EventBridgeClient eventBridge;
+
+              public void publish(DomainEvent event) {
+                  PutEventsRequest request = PutEventsRequest.builder()
+                      .entries(PutEventsRequestEntry.builder()
+                          .source("batbern.events")
+                          .detailType(event.getClass().getSimpleName())
+                          .detail(toJson(event))
+                          .build())
+                      .build();
+
+                  eventBridge.putEvents(request);
+              }
+          }
+          ```
+
+          **Consuming Events:**
+          - Use @EventListener for internal events
+          - Use Lambda handler for EventBridge events
+          - Implement idempotency for event processing
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+  - id: definition-of-done
+    title: Definition of Done Checklist
+    instruction: |
+      ⚠️ CRITICAL: Backend story cannot be marked complete until ALL items are checked.
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+    sections:
+      - id: development-complete
+        title: Development Complete
+        type: checklist
+        template: |
+          - [ ] All tests written BEFORE implementation (TDD followed)
+          - [ ] All acceptance criteria have corresponding tests
+          - [ ] All acceptance criteria implemented
+          - [ ] Domain model tests passing (>95% coverage)
+          - [ ] Service layer tests passing (>90% coverage)
+          - [ ] Repository tests passing (>90% coverage)
+          - [ ] Contract tests passing (validates OpenAPI spec)
+          - [ ] Integration tests passing
+          - [ ] Code follows DDD patterns
+          - [ ] Code follows Spring Boot best practices
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: database-complete
+        title: Database Complete ⚠️ CRITICAL
+        type: checklist
+        template: |
+          - [ ] Flyway migration scripts created
+          - [ ] Database schema created successfully
+          - [ ] Indexes created for performance
+          - [ ] Foreign keys and constraints defined
+          - [ ] Migration tested (up and down)
+          - [ ] Data migration completed (if applicable)
+          - [ ] Database documentation updated
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: api-contract-validated
+        title: API Contract Validated ⚠️ CRITICAL
+        type: checklist
+        template: |
+          - [ ] All endpoints match OpenAPI spec exactly
+          - [ ] Request validation matches contract
+          - [ ] Response schemas match contract
+          - [ ] Error responses match contract format
+          - [ ] Authentication enforced per contract
+          - [ ] Rate limiting implemented per contract
+          - [ ] Contract tests pass 100%
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: integration-ready
+        title: Integration Ready
+        type: checklist
+        template: |
+          - [ ] Service deployed to dev environment
+          - [ ] Database migrations applied to dev
+          - [ ] Health check endpoint responding
+          - [ ] Metrics and logging configured
+          - [ ] Ready for frontend integration (Story {{epic_num}}.{{story_num}}d)
+          - [ ] API documented and accessible
+        owner: dev-agent
+        editors: [dev-agent]
+
+  - id: integration-notes
+    title: Integration Notes for Story {{epic_num}}.{{story_num}}d
+    instruction: |
+      Notes for the integration story that will connect frontend to this backend:
+      - Service endpoint URLs
+      - Authentication requirements
+      - Environment variables needed
+      - Expected performance characteristics
+      - Known limitations or constraints
+    owner: dev-agent
+    editors: [dev-agent]
+
+  - id: change-log
+    title: Change Log
+    type: table
+    columns: [Date, Version, Description, Author]
+    instruction: Track changes made to this backend story
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+
+  - id: dev-agent-record
+    title: Dev Agent Record
+    instruction: This section is populated during backend implementation
+    owner: dev-agent
+    editors: [dev-agent]
+    sections:
+      - id: agent-model
+        title: Agent Model Used
+        template: "{{agent_model_name_version}}"
+        instruction: Record the AI agent model and version used
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: implementation-approach
+        title: Implementation Approach
+        instruction: Document the actual approach taken, any deviations, and rationale
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: file-list
+        title: Files Changed
+        instruction: |
+          List all files created, modified, or deleted:
+          - Created: [list of new files]
+          - Modified: [list of changed files]
+          - Deleted: [list of removed files]
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: migration-scripts
+        title: Database Migration Scripts
+        instruction: |
+          List all Flyway migration scripts:
+          - V{version}__{description}.sql
+          - Purpose of each migration
+          - Rollback strategy
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: performance-notes
+        title: Performance Notes
+        instruction: |
+          Document performance considerations:
+          - Query performance
+          - Caching strategy implemented
+          - Known bottlenecks
+          - Optimization opportunities
+        owner: dev-agent
+        editors: [dev-agent]

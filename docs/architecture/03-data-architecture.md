@@ -536,6 +536,335 @@ enum QualityReviewStatus {
 }
 ```
 
+### Content Storage & File Management
+
+#### Content Metadata
+
+**Purpose:** Track all uploaded files with S3 references, checksums, and quota management.
+
+```typescript
+interface ContentMetadata {
+  fileId: string; // UUID
+  s3Bucket: string; // Bucket name
+  s3Key: string; // Full S3 object key
+  originalFilename: string;
+  fileSizeBytes: number;
+  mimeType: string;
+  checksum: string; // SHA-256 hash
+  contentType: ContentType;
+  uploadStatus: UploadStatus;
+  uploadedBy: string; // User ID
+  uploadedAt?: Date;
+  cloudFrontUrl?: string; // CDN URL if published
+  metadata: Record<string, string>; // Custom metadata
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+enum ContentType {
+  PRESENTATION = 'presentation',
+  LOGO = 'logo',
+  SPEAKER_PHOTO = 'speaker_photo',
+  SPEAKER_CV = 'speaker_cv',
+  EVENT_PHOTO = 'event_photo',
+  ARCHIVE_MATERIAL = 'archive_material'
+}
+
+enum UploadStatus {
+  PENDING = 'pending',
+  UPLOADING = 'uploading',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
+  VIRUS_DETECTED = 'virus_detected',
+  DELETED = 'deleted'
+}
+```
+
+#### Session Materials (Enhanced)
+
+**Purpose:** Extended session materials model with comprehensive file tracking and presentation management.
+
+```typescript
+interface SessionMaterials {
+  sessionId: string;
+  presentationFiles: PresentationFile[];
+  supplementaryMaterials: SupplementaryMaterial[];
+  recordingUrl?: string;
+  photosGallery?: string[]; // Array of ContentMetadata fileIds
+  materialsPublishedAt?: Date;
+}
+
+interface PresentationFile {
+  fileId: string; // References ContentMetadata
+  title: string;
+  description?: string;
+  isPrimary: boolean;
+  uploadedBy: string; // Speaker ID
+  uploadedAt: Date;
+  downloadCount: number;
+  fileUrl: string; // CloudFront CDN URL
+  lastAccessedAt?: Date;
+}
+
+interface SupplementaryMaterial {
+  fileId: string; // References ContentMetadata
+  title: string;
+  description?: string;
+  materialType: 'code_sample' | 'slides' | 'handout' | 'resource_link' | 'demo_video';
+  uploadedBy: string;
+  uploadedAt: Date;
+  downloadCount: number;
+}
+```
+
+#### Storage Quota Management
+
+**Purpose:** Track and enforce storage quotas per user role with usage monitoring and alerts.
+
+```typescript
+interface StorageQuota {
+  userId: string;
+  userRole: UserRole;
+  quotaLimitBytes: number; // -1 for unlimited (organizers)
+  currentUsageBytes: number;
+  fileCount: number;
+  lastUpdated: Date;
+  quotaWarningIssued: boolean;
+  quotaExceededAt?: Date;
+}
+
+interface StorageUsageLog {
+  id: string;
+  userId: string;
+  fileId: string;
+  action: 'upload' | 'delete';
+  fileSizeBytes: number;
+  timestamp: Date;
+  newTotalUsageBytes: number;
+}
+
+interface StorageQuotaInfo {
+  quotaLimitBytes: number;
+  currentUsageBytes: number;
+  fileCount: number;
+  percentageUsed: number;
+  warningThresholdPercentage: number; // 80%
+  availableBytes: number;
+}
+```
+
+#### File Upload/Download DTOs
+
+**Purpose:** Data transfer objects for file upload/download workflows with presigned URLs.
+
+```typescript
+interface PresignedUploadUrl {
+  uploadUrl: string;
+  fileId: string;
+  expiresIn: number; // seconds
+  requiredHeaders: Record<string, string>;
+}
+
+interface PresignedDownloadUrl {
+  downloadUrl: string;
+  filename: string;
+  fileSizeBytes: number;
+  mimeType: string;
+  expiresIn: number; // seconds
+}
+
+interface FileUploadRequest {
+  filename: string;
+  contentType: ContentType;
+  fileSizeBytes: number;
+  mimeType: string;
+}
+
+interface FileUploadConfirmation {
+  fileId: string;
+  checksum: string; // SHA-256 hash
+}
+```
+
+#### Content Metadata Database Schema
+
+```sql
+-- Content metadata table
+CREATE TABLE content_metadata (
+    file_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    s3_bucket VARCHAR(255) NOT NULL,
+    s3_key VARCHAR(1000) NOT NULL,
+    original_filename VARCHAR(255) NOT NULL,
+    file_size_bytes BIGINT NOT NULL,
+    mime_type VARCHAR(100) NOT NULL,
+    checksum VARCHAR(64), -- SHA-256 hash
+    content_type VARCHAR(50) NOT NULL CHECK (content_type IN (
+        'presentation', 'logo', 'speaker_photo', 'speaker_cv',
+        'event_photo', 'archive_material'
+    )),
+    upload_status VARCHAR(20) NOT NULL CHECK (upload_status IN (
+        'pending', 'uploading', 'completed', 'failed', 'virus_detected', 'deleted'
+    )),
+    uploaded_by UUID NOT NULL REFERENCES users(id),
+    uploaded_at TIMESTAMP,
+    cloudfront_url VARCHAR(500),
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT unique_s3_key UNIQUE (s3_bucket, s3_key)
+);
+
+CREATE INDEX idx_content_metadata_uploaded_by ON content_metadata(uploaded_by);
+CREATE INDEX idx_content_metadata_content_type ON content_metadata(content_type);
+CREATE INDEX idx_content_metadata_upload_status ON content_metadata(upload_status);
+CREATE INDEX idx_content_metadata_created_at ON content_metadata(created_at DESC);
+
+-- Storage quota table
+CREATE TABLE storage_quota (
+    user_id UUID PRIMARY KEY REFERENCES users(id),
+    user_role VARCHAR(50) NOT NULL,
+    quota_limit_bytes BIGINT NOT NULL, -- -1 for unlimited
+    current_usage_bytes BIGINT NOT NULL DEFAULT 0,
+    file_count INTEGER NOT NULL DEFAULT 0,
+    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    quota_warning_issued BOOLEAN NOT NULL DEFAULT false,
+    quota_exceeded_at TIMESTAMP
+);
+
+CREATE INDEX idx_storage_quota_usage ON storage_quota(current_usage_bytes DESC);
+CREATE INDEX idx_storage_quota_warning ON storage_quota(quota_warning_issued) WHERE quota_warning_issued = true;
+
+-- Storage usage log table for audit trail
+CREATE TABLE storage_usage_log (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id),
+    file_id UUID REFERENCES content_metadata(file_id),
+    action VARCHAR(10) NOT NULL CHECK (action IN ('upload', 'delete')),
+    file_size_bytes BIGINT NOT NULL,
+    timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    new_total_usage_bytes BIGINT NOT NULL
+);
+
+CREATE INDEX idx_storage_usage_log_user_id ON storage_usage_log(user_id, timestamp DESC);
+CREATE INDEX idx_storage_usage_log_timestamp ON storage_usage_log(timestamp DESC);
+
+-- Presentation files table (links content to sessions)
+CREATE TABLE presentation_files (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id UUID NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+    file_id UUID NOT NULL REFERENCES content_metadata(file_id),
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    is_primary BOOLEAN NOT NULL DEFAULT false,
+    uploaded_by UUID NOT NULL REFERENCES users(id),
+    uploaded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    download_count INTEGER NOT NULL DEFAULT 0,
+    last_accessed_at TIMESTAMP,
+
+    CONSTRAINT unique_session_primary_file UNIQUE (session_id, is_primary) WHERE is_primary = true
+);
+
+CREATE INDEX idx_presentation_files_session_id ON presentation_files(session_id);
+CREATE INDEX idx_presentation_files_file_id ON presentation_files(file_id);
+CREATE INDEX idx_presentation_files_download_count ON presentation_files(download_count DESC);
+
+-- Supplementary materials table
+CREATE TABLE supplementary_materials (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id UUID NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+    file_id UUID NOT NULL REFERENCES content_metadata(file_id),
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    material_type VARCHAR(50) NOT NULL CHECK (material_type IN (
+        'code_sample', 'slides', 'handout', 'resource_link', 'demo_video'
+    )),
+    uploaded_by UUID NOT NULL REFERENCES users(id),
+    uploaded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    download_count INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX idx_supplementary_materials_session_id ON supplementary_materials(session_id);
+CREATE INDEX idx_supplementary_materials_file_id ON supplementary_materials(file_id);
+```
+
+#### Content Management Triggers
+
+```sql
+-- Trigger to update storage quota on file upload
+CREATE OR REPLACE FUNCTION update_quota_on_upload()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.upload_status = 'completed' AND
+       (OLD.upload_status IS NULL OR OLD.upload_status != 'completed') THEN
+
+        UPDATE storage_quota
+        SET current_usage_bytes = current_usage_bytes + NEW.file_size_bytes,
+            file_count = file_count + 1,
+            last_updated = CURRENT_TIMESTAMP
+        WHERE user_id = NEW.uploaded_by;
+
+        -- Check if quota exceeded
+        UPDATE storage_quota
+        SET quota_exceeded_at = CURRENT_TIMESTAMP
+        WHERE user_id = NEW.uploaded_by
+            AND quota_limit_bytes > 0
+            AND current_usage_bytes > quota_limit_bytes
+            AND quota_exceeded_at IS NULL;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_quota_on_upload
+    AFTER INSERT OR UPDATE ON content_metadata
+    FOR EACH ROW
+    EXECUTE FUNCTION update_quota_on_upload();
+
+-- Trigger to update storage quota on file deletion
+CREATE OR REPLACE FUNCTION update_quota_on_delete()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.upload_status = 'deleted' AND OLD.upload_status = 'completed' THEN
+        UPDATE storage_quota
+        SET current_usage_bytes = GREATEST(0, current_usage_bytes - NEW.file_size_bytes),
+            file_count = GREATEST(0, file_count - 1),
+            last_updated = CURRENT_TIMESTAMP,
+            quota_warning_issued = false
+        WHERE user_id = NEW.uploaded_by;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_quota_on_delete
+    AFTER UPDATE ON content_metadata
+    FOR EACH ROW
+    WHEN (NEW.upload_status = 'deleted')
+    EXECUTE FUNCTION update_quota_on_delete();
+
+-- Trigger to increment download count
+CREATE OR REPLACE FUNCTION increment_download_count()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.download_count = OLD.download_count + 1;
+    NEW.last_accessed_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+#### Content Storage Relationships
+- **One-to-Many:** User → ContentMetadata (user uploads many files)
+- **One-to-Many:** Session → PresentationFiles (session has multiple presentations)
+- **One-to-Many:** Session → SupplementaryMaterials (session has multiple supplementary materials)
+- **One-to-One:** User → StorageQuota (each user has one quota record)
+- **One-to-Many:** User → StorageUsageLog (audit trail of all storage operations)
+- **Many-to-One:** PresentationFile → ContentMetadata (file reference)
+- **Many-to-One:** SupplementaryMaterial → ContentMetadata (file reference)
+
 #### Relationships
 - **One-to-Many:** Event → Sessions (event contains multiple sessions)
 - **One-to-Many:** Event → EventSlots (event contains multiple time slots)
@@ -577,6 +906,169 @@ interface EventRegistration {
   specialRequests?: string;
   attendanceConfirmed?: boolean;
   actualAttendance: boolean;
+}
+```
+
+### Notification Domain Models
+
+#### Email Templates
+
+**Purpose:** Manage email templates for all notification types with versioning and multilingual support.
+
+**Key Attributes:**
+- id: UUID - Unique template identifier
+- templateType: TemplateType - Type of notification (speaker_invitation, deadline_reminder, etc.)
+- language: string - Template language (de, en)
+- subject: string - Email subject line with variable placeholders
+- htmlBody: string - HTML version of email body
+- textBody: string - Plain text version of email body
+- variables: string[] - List of available template variables
+- version: number - Template version number
+- isActive: boolean - Whether template is currently active
+
+#### TypeScript Interface
+```typescript
+interface EmailTemplate {
+  id: string;
+  templateType: TemplateType;
+  language: 'de' | 'en';
+  subject: string;
+  htmlBody: string;
+  textBody: string;
+  variables: string[]; // e.g., ['speakerName', 'eventTitle', 'deadline']
+  version: number;
+  isActive: boolean;
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+enum TemplateType {
+  SPEAKER_INVITATION = 'speaker_invitation',
+  DEADLINE_REMINDER_48H = 'deadline_reminder_48h',
+  DEADLINE_REMINDER_24H = 'deadline_reminder_24h',
+  DEADLINE_CRITICAL = 'deadline_critical',
+  MATERIAL_RECEIVED = 'material_received_confirmation',
+  EVENT_PUBLISHED = 'event_published',
+  NEWSLETTER_PROGRESSIVE = 'newsletter_progressive',
+  NEWSLETTER_FINAL = 'newsletter_final',
+  AGENDA_UPDATE = 'agenda_update'
+}
+```
+
+#### Notification Preferences
+
+**Purpose:** Store user-specific notification preferences across channels and types.
+
+**Key Attributes:**
+- id: UUID - Unique preference identifier
+- userId: UUID - Reference to user
+- channel: NotificationChannel - Delivery channel
+- notificationType: string - Specific notification type
+- isEnabled: boolean - Whether notifications are enabled
+- frequency: FrequencyType - Notification frequency
+- quietHoursStart: Time - Start of quiet hours
+- quietHoursEnd: Time - End of quiet hours
+
+#### TypeScript Interface
+```typescript
+interface NotificationPreferences {
+  id: string;
+  userId: string;
+  channel: NotificationChannel;
+  notificationType: string;
+  isEnabled: boolean;
+  frequency: FrequencyType;
+  quietHoursStart?: string; // HH:MM format
+  quietHoursEnd?: string; // HH:MM format
+  updatedAt: Date;
+}
+
+enum NotificationChannel {
+  EMAIL = 'email',
+  IN_APP = 'in_app',
+  PUSH = 'push',
+  SMS = 'sms'
+}
+
+enum FrequencyType {
+  IMMEDIATE = 'immediate',
+  DAILY_DIGEST = 'daily_digest',
+  WEEKLY_DIGEST = 'weekly_digest'
+}
+```
+
+#### Escalation Rules
+
+**Purpose:** Define multi-tier escalation workflows for deadline management.
+
+**Key Attributes:**
+- id: UUID - Unique rule identifier
+- eventId: UUID - Event this rule applies to
+- ruleType: string - Type of escalation (speaker_deadline, content_review, etc.)
+- tier1HoursBefore: number - Hours before deadline for reminder
+- tier2HoursBefore: number - Hours before deadline for warning
+- tier3HoursBefore: number - Hours before deadline for critical
+- escalationThreshold: number - Minutes after critical to escalate
+- backupOrganizerIds: UUID[] - Backup organizers for escalation
+- isActive: boolean - Whether rule is active
+
+#### TypeScript Interface
+```typescript
+interface EscalationRule {
+  id: string;
+  eventId: string;
+  ruleType: string; // e.g., 'speaker_deadline', 'content_review'
+  tier1HoursBefore: number; // e.g., 48 hours
+  tier2HoursBefore: number; // e.g., 24 hours
+  tier3HoursBefore: number; // e.g., 0 hours (deadline)
+  escalationThreshold?: number; // Minutes after deadline to escalate
+  backupOrganizerIds: string[];
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
+#### Notification Log
+
+**Purpose:** Comprehensive audit trail of all sent notifications with delivery tracking.
+
+**Key Attributes:**
+- id: UUID - Unique log entry identifier
+- userId: UUID - Recipient user
+- notificationType: string - Type of notification sent
+- channel: NotificationChannel - Delivery channel used
+- templateId: UUID - Template used (if applicable)
+- subject: string - Actual subject sent
+- sentAt: Date - When notification was sent
+- deliveryStatus: DeliveryStatus - Current delivery status
+- sesMessageId: string - AWS SES message ID
+- errorMessage: string - Error details if failed
+- metadata: JSON - Additional context data
+
+#### TypeScript Interface
+```typescript
+interface NotificationLog {
+  id: string;
+  userId: string;
+  notificationType: string;
+  channel: NotificationChannel;
+  templateId?: string;
+  subject: string;
+  sentAt: Date;
+  deliveryStatus: DeliveryStatus;
+  sesMessageId?: string;
+  errorMessage?: string;
+  metadata: Record<string, any>;
+}
+
+enum DeliveryStatus {
+  SENT = 'sent',
+  DELIVERED = 'delivered',
+  BOUNCED = 'bounced',
+  FAILED = 'failed',
+  COMPLAINED = 'complained'
 }
 ```
 
@@ -954,6 +1446,81 @@ CREATE TABLE role_change_approvals (
 );
 
 CREATE INDEX idx_approvals_request ON role_change_approvals(role_change_request_id);
+```
+
+### Notification Service Database Schema
+
+```sql
+-- Email Templates Table
+CREATE TABLE email_templates (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    template_type VARCHAR(50) NOT NULL, -- speaker_invitation, deadline_reminder, newsletter, etc.
+    language VARCHAR(2) NOT NULL DEFAULT 'de',
+    subject VARCHAR(200) NOT NULL,
+    html_body TEXT NOT NULL,
+    text_body TEXT NOT NULL,
+    variables JSONB NOT NULL, -- List of available template variables
+    version INTEGER NOT NULL DEFAULT 1,
+    is_active BOOLEAN DEFAULT true,
+    created_by UUID REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(template_type, language, version)
+);
+
+CREATE INDEX idx_email_templates_type_lang ON email_templates(template_type, language) WHERE is_active = true;
+
+-- Notification Preferences Table
+CREATE TABLE notification_preferences (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id),
+    channel VARCHAR(20) NOT NULL, -- email, in_app, push, sms
+    notification_type VARCHAR(50) NOT NULL, -- event_update, speaker_deadline, etc.
+    is_enabled BOOLEAN DEFAULT true,
+    frequency VARCHAR(20) DEFAULT 'immediate', -- immediate, daily_digest, weekly_digest
+    quiet_hours_start TIME,
+    quiet_hours_end TIME,
+    updated_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(user_id, channel, notification_type)
+);
+
+CREATE INDEX idx_notification_prefs_user ON notification_preferences(user_id);
+
+-- Escalation Rules Table
+CREATE TABLE escalation_rules (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_id UUID REFERENCES events(id),
+    rule_type VARCHAR(50) NOT NULL, -- speaker_deadline, content_review, etc.
+    tier_1_hours_before INTEGER NOT NULL, -- Hours before deadline for reminder
+    tier_2_hours_before INTEGER NOT NULL, -- Hours before deadline for warning
+    tier_3_hours_before INTEGER NOT NULL, -- Hours before deadline for critical alert
+    escalation_threshold INTEGER, -- Minutes after critical with no action
+    backup_organizer_ids UUID[], -- Array of backup organizer IDs
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT NOW(),
+    CONSTRAINT valid_tiers CHECK (tier_1_hours_before > tier_2_hours_before AND tier_2_hours_before > tier_3_hours_before)
+);
+
+CREATE INDEX idx_escalation_rules_event ON escalation_rules(event_id) WHERE is_active = true;
+
+-- Notification Log Table
+CREATE TABLE notification_log (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id),
+    notification_type VARCHAR(50) NOT NULL,
+    channel VARCHAR(20) NOT NULL,
+    template_id UUID REFERENCES email_templates(id),
+    subject VARCHAR(200),
+    sent_at TIMESTAMP DEFAULT NOW(),
+    delivery_status VARCHAR(20) DEFAULT 'sent', -- sent, delivered, bounced, failed
+    ses_message_id VARCHAR(100),
+    error_message TEXT,
+    metadata JSONB
+);
+
+CREATE INDEX idx_notification_log_user_sent ON notification_log(user_id, sent_at DESC);
+CREATE INDEX idx_notification_log_ses_message ON notification_log(ses_message_id);
+CREATE INDEX idx_notification_log_delivery_status ON notification_log(delivery_status, sent_at DESC);
 ```
 
 ### Business Rule Enforcement

@@ -55,15 +55,33 @@ commands:
   - help: Show numbered list of the following commands to allow selection
   - correct-course: Execute task correct-course.md
   - draft: Execute task create-next-story.md
+  - draft-api-contract: Execute create-doc with story-api-contract-tmpl.yaml (4-story approach - step 1)
+  - draft-frontend: Execute create-doc with story-frontend-tmpl.yaml (4-story approach - step 2)
+  - draft-backend: Execute create-doc with story-backend-tmpl.yaml (4-story approach - step 3)
+  - draft-integration: Execute create-doc with story-integration-tmpl.yaml (4-story approach - step 4)
+  - draft-infrastructure: Execute create-doc with story-infrastructure-tmpl.yaml (cross-cutting)
+  - draft-frontend-first: Execute create-doc with story-frontend-first-tmpl.yaml (2-story approach - step 1)
+  - draft-backend-integration: Execute create-doc with story-backend-integration-tmpl.yaml (2-story approach - step 2)
   - story-checklist: Execute task execute-checklist.md with checklist story-draft-checklist.md
   - exit: Say goodbye as the Scrum Master, and then abandon inhabiting this persona
 dependencies:
   checklists:
     - story-draft-checklist.md
+  docs:
+    - story-template-guide.md
+    - story-splitting-examples.md
   tasks:
     - correct-course.md
     - create-next-story.md
+    - create-doc.md
     - execute-checklist.md
   templates:
     - story-tmpl.yaml
+    - story-api-contract-tmpl.yaml
+    - story-frontend-tmpl.yaml
+    - story-backend-tmpl.yaml
+    - story-integration-tmpl.yaml
+    - story-infrastructure-tmpl.yaml
+    - story-frontend-first-tmpl.yaml
+    - story-backend-integration-tmpl.yaml
 ```

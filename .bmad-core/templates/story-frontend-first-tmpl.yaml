@@ -1,0 +1,805 @@
+# <!-- Powered by BMAD™ Core -->
+template:
+  id: story-frontend-first-template-v1
+  name: Frontend-First Story Template (2-Story Approach)
+  version: 1.0
+  description: Define API contract inline and implement frontend with MSW mocks
+  output:
+    format: markdown
+    filename: docs/stories/{{epic_num}}.{{story_num}}-1.frontend-first-{{story_title_short}}.md
+    title: "Story {{epic_num}}.{{story_num}}-1: Frontend-First - {{story_title_short}}"
+
+workflow:
+  mode: interactive
+  elicitation: advanced-elicitation
+
+agent_config:
+  editable_sections:
+    - Status
+    - Story
+    - API Contract Definition
+    - Component Specifications
+    - Acceptance Criteria
+    - Tasks / Subtasks
+    - Dev Notes
+    - Change Log
+
+sections:
+  - id: status
+    title: Status
+    type: choice
+    choices: [Draft, Approved, InProgress, Review, Done]
+    instruction: Select the current status of the frontend-first story
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+
+  - id: story
+    title: Story
+    type: template-text
+    template: |
+      **As a** {{role}},
+      **I want** {{action}},
+      **so that** {{benefit}}
+
+      **Frontend-First Focus:** This story defines the API contract inline and implements the complete UI/UX with MSW mocks. Backend implementation follows in Story {{epic_num}}.{{story_num}}-2.
+    instruction: Define the user story focusing on user interface and experience
+    elicit: true
+    owner: scrum-master
+    editors: [scrum-master]
+
+  - id: two-story-context
+    title: Two-Story Approach Context
+    instruction: |
+      This story is Part 1 of a 2-story approach:
+      - **This story ({{epic_num}}.{{story_num}}-1):** API contract + Frontend with mocks
+      - **Next story ({{epic_num}}.{{story_num}}-2):** Backend implementation + Integration
+
+      **When to use this approach:**
+      - Simple CRUD features (3-6 days total)
+      - Small team (1-2 developers)
+      - Low complexity
+      - Tight timeline
+
+      **Benefits:**
+      - Simpler than 4-story split
+      - Still enables some parallelization
+      - Frontend-first approach
+      - Faster than monolithic story
+    owner: scrum-master
+    editors: [scrum-master]
+
+  - id: domain-context
+    title: Domain Context
+    instruction: Identify the domain and components for this feature
+    owner: scrum-master
+    editors: [scrum-master]
+    sections:
+      - id: primary-domain
+        title: Primary Domain
+        instruction: |
+          Identify the bounded context:
+          - Event Management Domain
+          - Speaker Coordination Domain
+          - Partner Analytics Domain
+          - Attendee Experience Domain
+          - Company Management Domain
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: role-context
+        title: User Role Context
+        instruction: |
+          Which user role is this UI for:
+          - Organizer
+          - Speaker
+          - Partner
+          - Attendee
+          - Public (unauthenticated)
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+  - id: api-contract-inline
+    title: API Contract Definition (Inline)
+    instruction: |
+      Define the API contract inline (simpler than separate story).
+      This serves as the contract for Story {{epic_num}}.{{story_num}}-2 (Backend).
+    owner: scrum-master
+    editors: [scrum-master]
+    sections:
+      - id: api-endpoints
+        title: API Endpoints
+        instruction: |
+          Define all endpoints needed for this feature:
+
+          **Example:**
+          ```
+          GET /api/v1/companies
+            - Query params: search, limit, offset
+            - Response: { companies: Company[], pagination: Pagination }
+            - Auth: Required (all roles)
+
+          POST /api/v1/companies
+            - Request: { name, address, contactEmail }
+            - Response: Company
+            - Auth: Required (organizer only)
+
+          GET /api/v1/companies/{id}
+            - Response: Company with details
+            - Auth: Required (all roles)
+
+          PUT /api/v1/companies/{id}
+            - Request: { name?, address?, contactEmail? }
+            - Response: Company
+            - Auth: Required (organizer or company admin)
+
+          DELETE /api/v1/companies/{id}
+            - Response: 204 No Content
+            - Auth: Required (organizer only)
+          ```
+
+          Include:
+          - HTTP method and path
+          - Request body (if applicable)
+          - Query parameters (if applicable)
+          - Response format
+          - Authentication requirements
+          - Validation rules
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: request-response-schemas
+        title: Request/Response Schemas
+        instruction: |
+          Define TypeScript interfaces for requests and responses:
+
+          **Example:**
+          ```typescript
+          // Request DTOs
+          interface CreateCompanyRequest {
+            name: string;        // min: 2, max: 255
+            address: string;     // min: 5, max: 500
+            contactEmail: string; // email format
+          }
+
+          interface UpdateCompanyRequest {
+            name?: string;
+            address?: string;
+            contactEmail?: string;
+          }
+
+          // Response DTOs
+          interface Company {
+            id: string;
+            name: string;
+            address: string;
+            contactEmail: string;
+            createdAt: string;
+            updatedAt: string;
+          }
+
+          interface CompanyList {
+            companies: Company[];
+            pagination: {
+              total: number;
+              limit: number;
+              offset: number;
+              hasMore: boolean;
+            };
+          }
+
+          // Error Response
+          interface ErrorResponse {
+            error: {
+              code: string;
+              message: string;
+              details?: Array<{
+                field: string;
+                issue: string;
+              }>;
+            };
+          }
+          ```
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: validation-rules
+        title: Validation Rules
+        instruction: |
+          Define all validation rules:
+
+          **Field Validations:**
+          - name: required, min 2 chars, max 255 chars
+          - address: required, min 5 chars, max 500 chars
+          - contactEmail: required, valid email format
+
+          **Business Rules:**
+          - Company name must be unique
+          - Cannot delete company with active events
+          - Only organizers can create/delete companies
+          - Company admins can update their own company
+
+          **Error Codes:**
+          - VALIDATION_ERROR: 400 - Invalid input
+          - COMPANY_EXISTS: 409 - Company name already exists
+          - COMPANY_HAS_EVENTS: 409 - Cannot delete company with events
+          - UNAUTHORIZED: 401 - Not authenticated
+          - FORBIDDEN: 403 - Insufficient permissions
+          - NOT_FOUND: 404 - Company not found
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+  - id: wireframe-context
+    title: Wireframe Context
+    instruction: Link to relevant wireframes and UI specifications
+    owner: scrum-master
+    editors: [scrum-master]
+    sections:
+      - id: wireframe-references
+        title: Wireframe References
+        instruction: |
+          List relevant wireframe files:
+          - Path to wireframe
+          - Specific screens/flows
+          - Design system components
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: ui-behavior
+        title: UI Behavior Specifications
+        instruction: |
+          Define UI behaviors:
+          - Form validation feedback
+          - Loading states
+          - Error handling display
+          - Empty states
+          - Success confirmations
+          - Delete confirmations
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+  - id: component-specifications
+    title: Component Specifications
+    instruction: Define React components to be created for this feature
+    owner: scrum-master
+    editors: [scrum-master]
+    sections:
+      - id: component-list
+        title: Component List
+        instruction: |
+          List all React components:
+
+          **New Components:**
+          - CompanyList: Display paginated company list
+          - CompanyCard: Individual company display
+          - CompanyForm: Create/edit company form
+          - CompanyDeleteDialog: Delete confirmation
+          - CompanySearch: Search and filter
+
+          **Component Props:**
+          ```typescript
+          interface CompanyListProps {
+            onCompanySelect?: (company: Company) => void;
+          }
+
+          interface CompanyFormProps {
+            company?: Company; // undefined for create, Company for edit
+            onSubmit: (data: CreateCompanyRequest) => Promise<void>;
+            onCancel: () => void;
+          }
+          ```
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: state-management
+        title: State Management
+        instruction: |
+          Define state management approach:
+
+          **React Query Hooks:**
+          ```typescript
+          // useCompanies.ts
+          export const useCompanies = (filters: CompanyFilters) => {
+            return useQuery<CompanyList>({
+              queryKey: ['companies', filters],
+              queryFn: () => companyApi.getCompanies(filters)
+            });
+          };
+
+          // useCreateCompany.ts
+          export const useCreateCompany = () => {
+            return useMutation({
+              mutationFn: (data: CreateCompanyRequest) =>
+                companyApi.createCompany(data),
+              onSuccess: () => {
+                queryClient.invalidateQueries(['companies']);
+              }
+            });
+          };
+          ```
+
+          **Zustand Store (if needed):**
+          ```typescript
+          interface CompanyStore {
+            selectedCompany: Company | null;
+            setSelectedCompany: (company: Company | null) => void;
+          }
+          ```
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+  - id: msw-mock-setup
+    title: MSW Mock Configuration
+    instruction: |
+      Define MSW handlers for API mocking during frontend development.
+      These mocks will be replaced in Story {{epic_num}}.{{story_num}}-2.
+    owner: scrum-master
+    editors: [scrum-master]
+    sections:
+      - id: mock-handlers
+        title: Mock Handlers
+        instruction: |
+          Define MSW handlers:
+
+          ```typescript
+          // src/mocks/handlers/companyHandlers.ts
+          import { rest } from 'msw';
+          import { mockCompanies } from '../data/companies';
+
+          export const companyHandlers = [
+            // List companies
+            rest.get('/api/v1/companies', (req, res, ctx) => {
+              const search = req.url.searchParams.get('search');
+              let filtered = mockCompanies;
+
+              if (search) {
+                filtered = filtered.filter(c =>
+                  c.name.toLowerCase().includes(search.toLowerCase())
+                );
+              }
+
+              return res(
+                ctx.delay(100),
+                ctx.status(200),
+                ctx.json({
+                  companies: filtered,
+                  pagination: { total: filtered.length }
+                })
+              );
+            }),
+
+            // Create company
+            rest.post('/api/v1/companies', async (req, res, ctx) => {
+              const body = await req.json();
+
+              // Simulate duplicate name check
+              const exists = mockCompanies.some(c => c.name === body.name);
+              if (exists) {
+                return res(
+                  ctx.status(409),
+                  ctx.json({
+                    error: {
+                      code: 'COMPANY_EXISTS',
+                      message: 'Company name already exists'
+                    }
+                  })
+                );
+              }
+
+              return res(
+                ctx.status(201),
+                ctx.json({ id: 'new-uuid', ...body })
+              );
+            }),
+
+            // Get company
+            rest.get('/api/v1/companies/:id', (req, res, ctx) => {
+              const { id } = req.params;
+              const company = mockCompanies.find(c => c.id === id);
+
+              if (!company) {
+                return res(
+                  ctx.status(404),
+                  ctx.json({
+                    error: {
+                      code: 'NOT_FOUND',
+                      message: 'Company not found'
+                    }
+                  })
+                );
+              }
+
+              return res(ctx.status(200), ctx.json(company));
+            }),
+
+            // Update company
+            rest.put('/api/v1/companies/:id', async (req, res, ctx) => {
+              const { id } = req.params;
+              const body = await req.json();
+              const company = mockCompanies.find(c => c.id === id);
+
+              if (!company) {
+                return res(ctx.status(404), ctx.json({
+                  error: { code: 'NOT_FOUND', message: 'Company not found' }
+                }));
+              }
+
+              return res(
+                ctx.status(200),
+                ctx.json({ ...company, ...body })
+              );
+            }),
+
+            // Delete company
+            rest.delete('/api/v1/companies/:id', (req, res, ctx) => {
+              return res(ctx.status(204));
+            })
+          ];
+          ```
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: mock-data
+        title: Mock Data
+        instruction: |
+          Define mock data for development:
+
+          ```typescript
+          // src/mocks/data/companies.ts
+          export const mockCompanies: Company[] = [
+            {
+              id: '1',
+              name: 'Acme Corporation',
+              address: '123 Main St, Bern, Switzerland',
+              contactEmail: 'contact@acme.com',
+              createdAt: '2024-01-15T10:00:00Z',
+              updatedAt: '2024-01-15T10:00:00Z'
+            },
+            {
+              id: '2',
+              name: 'Tech Innovations GmbH',
+              address: '456 Tech Ave, Zurich, Switzerland',
+              contactEmail: 'info@techinnovations.ch',
+              createdAt: '2024-02-20T14:30:00Z',
+              updatedAt: '2024-02-20T14:30:00Z'
+            }
+            // ... more mock companies
+          ];
+          ```
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+  - id: acceptance-criteria
+    title: Acceptance Criteria
+    type: numbered-list
+    instruction: |
+      Define acceptance criteria for frontend functionality with mocks:
+      - All UI components render correctly
+      - Form validation works as specified
+      - CRUD operations work with MSW mocks
+      - Loading and error states display correctly
+      - Mobile responsive
+      - Accessibility requirements met
+    elicit: true
+    owner: scrum-master
+    editors: [scrum-master]
+
+  - id: test-specifications
+    title: Test Specifications (TDD)
+    instruction: |
+      ⚠️ CRITICAL: Define frontend tests with MSW mocks BEFORE implementation.
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+    sections:
+      - id: component-tests
+        title: Component Test Scenarios
+        instruction: |
+          Tests for all components:
+
+          **CompanyList Component:**
+          - Test 1.1: should_renderCompanyList_when_dataProvided
+          - Test 1.2: should_displayLoading_when_fetching
+          - Test 1.3: should_displayError_when_fetchFails
+          - Test 1.4: should_filterCompanies_when_searchEntered
+
+          **CompanyForm Component:**
+          - Test 2.1: should_validateName_when_submitted
+          - Test 2.2: should_validateEmail_when_submitted
+          - Test 2.3: should_showError_when_duplicateName
+          - Test 2.4: should_callOnSubmit_when_validDataEntered
+
+          **CompanyDeleteDialog:**
+          - Test 3.1: should_confirmDelete_when_yesClicked
+          - Test 3.2: should_cancelDelete_when_noClicked
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master, dev-agent]
+
+      - id: integration-tests
+        title: Integration Test Scenarios (with MSW)
+        instruction: |
+          Full user flow tests:
+
+          - Test 4.1: should_createCompany_when_formSubmitted
+          - Test 4.2: should_updateCompany_when_editSaved
+          - Test 4.3: should_deleteCompany_when_confirmed
+          - Test 4.4: should_searchCompanies_when_queryEntered
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master, dev-agent]
+
+  - id: tasks-subtasks
+    title: Tasks / Subtasks (TDD Workflow)
+    type: bullet-list
+    instruction: |
+      Break down frontend-first implementation with inline API contract.
+    template: |
+      - [ ] Task 1: API Contract Definition (Inline)
+        - [ ] Define all endpoint signatures
+        - [ ] Define request/response TypeScript interfaces
+        - [ ] Define validation rules
+        - [ ] Define error codes and messages
+        - [ ] Document in story (this file)
+
+      - [ ] Task 2: MSW Mock Setup (RED Phase)
+        - [ ] Create mock handlers for all endpoints
+        - [ ] Create mock data
+        - [ ] Configure MSW in test environment
+        - [ ] Test mock responses match contract
+
+      - [ ] Task 3: Write Component Tests (RED Phase)
+        - [ ] Write failing tests for all components
+        - [ ] Write failing tests for hooks
+        - [ ] Write failing tests for user interactions
+        - [ ] Verify tests fail appropriately
+
+      - [ ] Task 4: Implement Components (GREEN Phase)
+        - [ ] Create component files
+        - [ ] Implement minimal logic to pass tests
+        - [ ] Implement Material-UI integration
+        - [ ] Implement form validation
+        - [ ] Verify all tests pass
+
+      - [ ] Task 5: Implement API Client
+        - [ ] Create API client service
+        - [ ] Create React Query hooks
+        - [ ] Test with MSW mocks
+        - [ ] Verify CRUD operations work
+
+      - [ ] Task 6: Refactor (REFACTOR Phase)
+        - [ ] Extract reusable logic
+        - [ ] Optimize performance
+        - [ ] Add JSDoc documentation
+        - [ ] Verify tests still pass
+
+      - [ ] Task 7: Accessibility & Responsive
+        - [ ] Add ARIA labels
+        - [ ] Test keyboard navigation
+        - [ ] Test mobile responsive
+        - [ ] Run Lighthouse audit
+
+      - [ ] Task 8: Documentation
+        - [ ] Create Storybook stories
+        - [ ] Document component usage
+        - [ ] Document API contract for backend team
+        - [ ] Create handoff notes for Story {{epic_num}}.{{story_num}}-2
+    elicit: true
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+
+  - id: dev-notes
+    title: Dev Notes - Implementation Guide
+    instruction: |
+      Implementation guide for frontend-first development with inline API contract.
+    elicit: true
+    owner: scrum-master
+    editors: [scrum-master]
+    sections:
+      - id: api-contract-export
+        title: API Contract for Backend Team
+        instruction: |
+          Export the API contract for Story {{epic_num}}.{{story_num}}-2:
+
+          **Deliverables to Backend:**
+          - TypeScript interfaces (can be converted to Java DTOs)
+          - Endpoint specifications
+          - Validation rules
+          - Error codes
+          - Example requests/responses
+
+          The backend story will implement against this contract.
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: msw-setup
+        title: MSW Setup Guide
+        instruction: |
+          Configure MSW for development:
+
+          ```typescript
+          // src/mocks/browser.ts
+          import { setupWorker } from 'msw';
+          import { companyHandlers } from './handlers/companyHandlers';
+
+          export const worker = setupWorker(...companyHandlers);
+
+          // Only enable in development
+          if (process.env.NODE_ENV === 'development' &&
+              process.env.REACT_APP_USE_MOCKS === 'true') {
+            worker.start();
+          }
+          ```
+
+          **Environment variables:**
+          ```
+          # .env.development (with mocks)
+          REACT_APP_USE_MOCKS=true
+
+          # .env.production (no mocks)
+          REACT_APP_USE_MOCKS=false
+          ```
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: testing-patterns
+        title: Testing with MSW
+        instruction: |
+          Testing patterns:
+
+          ```typescript
+          import { render, screen, waitFor } from '@testing-library/react';
+          import userEvent from '@testing-library/user-event';
+          import { server } from '@/mocks/server';
+          import { rest } from 'msw';
+
+          test('should create company when form submitted', async () => {
+            render(<CompanyForm onSubmit={mockSubmit} />);
+
+            await userEvent.type(screen.getByLabelText('Name'), 'New Company');
+            await userEvent.type(screen.getByLabelText('Email'), 'test@company.com');
+            await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+            await waitFor(() => {
+              expect(screen.getByText('Company created')).toBeInTheDocument();
+            });
+          });
+
+          test('should show error when duplicate name', async () => {
+            // Override mock for this test
+            server.use(
+              rest.post('/api/v1/companies', (req, res, ctx) => {
+                return res(
+                  ctx.status(409),
+                  ctx.json({ error: { code: 'COMPANY_EXISTS' } })
+                );
+              })
+            );
+
+            render(<CompanyForm onSubmit={mockSubmit} />);
+            // ... test error handling
+          });
+          ```
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+  - id: definition-of-done
+    title: Definition of Done Checklist
+    instruction: |
+      ⚠️ CRITICAL: Story cannot be marked complete until ALL items checked.
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+    sections:
+      - id: api-contract-complete
+        title: API Contract Complete
+        type: checklist
+        template: |
+          - [ ] All endpoints defined with signatures
+          - [ ] Request/response schemas documented
+          - [ ] Validation rules documented
+          - [ ] Error codes defined
+          - [ ] API contract ready for backend team (Story {{epic_num}}.{{story_num}}-2)
+        owner: scrum-master
+        editors: [scrum-master, dev-agent]
+
+      - id: frontend-complete
+        title: Frontend Complete
+        type: checklist
+        template: |
+          - [ ] All components implemented
+          - [ ] All tests passing (>90% coverage)
+          - [ ] MSW mocks working correctly
+          - [ ] Form validation working
+          - [ ] Loading states implemented
+          - [ ] Error states implemented
+          - [ ] Mobile responsive
+          - [ ] Accessibility score >90
+          - [ ] Works completely in isolation with mocks
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: documentation-complete
+        title: Documentation Complete
+        type: checklist
+        template: |
+          - [ ] Storybook stories created
+          - [ ] Component usage documented
+          - [ ] API contract documented for backend
+          - [ ] Handoff notes written for Story {{epic_num}}.{{story_num}}-2
+        owner: dev-agent
+        editors: [dev-agent]
+
+  - id: backend-story-notes
+    title: Notes for Story {{epic_num}}.{{story_num}}-2 (Backend)
+    instruction: |
+      Information for the backend implementation story:
+
+      **API Contract Location:**
+      - This story document (see "API Contract Definition" section)
+      - TypeScript interfaces to convert to Java DTOs
+      - MSW handlers show expected behavior
+
+      **Integration Points:**
+      - MSW handlers in: src/mocks/handlers/{{domain}}Handlers.ts
+      - API client service: src/services/{{domain}}Api.ts
+      - React Query hooks: src/hooks/use{{Domain}}.ts
+
+      **Backend Tasks:**
+      - Implement all endpoints per contract
+      - Replace MSW mocks with real APIs
+      - Run integration tests
+      - Deploy and validate
+    owner: scrum-master
+    editors: [scrum-master]
+
+  - id: change-log
+    title: Change Log
+    type: table
+    columns: [Date, Version, Description, Author]
+    instruction: Track changes to this frontend-first story
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+
+  - id: dev-agent-record
+    title: Dev Agent Record
+    instruction: Populated during frontend development
+    owner: dev-agent
+    editors: [dev-agent]
+    sections:
+      - id: agent-model
+        title: Agent Model Used
+        template: "{{agent_model_name_version}}"
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: implementation-approach
+        title: Implementation Approach
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: file-list
+        title: Files Created/Modified
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: api-contract-export-location
+        title: API Contract Export
+        instruction: |
+          Location of exported API contract for backend:
+          - TypeScript interfaces: [path]
+          - Endpoint documentation: [path]
+          - MSW handlers: [path]
+        owner: dev-agent
+        editors: [dev-agent]

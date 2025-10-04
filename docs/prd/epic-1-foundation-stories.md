@@ -869,6 +869,39 @@ As a **partner or attendee**, I want my company affiliation to be properly manag
 - **Storage**: AWS S3 for company logos and documentation
 - **Cache**: ElastiCache Redis for company search and validation
 
+**Wireframe Context:**
+
+### Wireframe References
+**From docs/wireframes/sitemap.md:**
+- **Main Screen:** `docs/wireframes/story-1.14-company-management-screen.md` ✅
+  - Company CRUD operations interface
+  - Company profile editor with logo upload
+  - Employee relationship management
+  - Partner status toggle
+  - Swiss UID verification
+
+### UI Components
+**Key interface elements:**
+- **Company Form**: Create/edit company profiles with Swiss UID validation
+- **Logo Upload**: Drag-and-drop interface for company logo with preview
+- **Employee List**: Display and manage employee-company relationships
+- **Partner Toggle**: Enable/disable partner status with privilege indicators
+- **Search Interface**: Autocomplete company search with Redis-backed results
+- **Verification Status**: Visual indicators for company verification state
+
+### Wireframe Status
+- ✅ **EXISTS**: Company Management Screen wireframe fully documented
+  - Complete company CRUD operations interface
+  - Swiss UID verification integration
+  - Logo upload and CDN management
+  - Partner status toggle and employee relationships
+
+### Navigation
+**Key navigation paths from this screen:**
+- → Associated Speakers/Employees list
+- → Company Statistics dashboard
+- ⤴ Event Management Dashboard (if accessed from organizer portal)
+
 **Acceptance Criteria:**
 
 **Company Data Model:**
@@ -963,6 +996,62 @@ As an **organizer**, I want to access and manage events through a robust service
 - **Cache**: Redis for workflow state caching and performance optimization
 - **Events**: Domain events published to EventBridge for cross-service coordination
 
+**Wireframe Context:**
+
+### Wireframe References
+**From docs/wireframes/sitemap.md:**
+- **Main Dashboard:** `docs/wireframes/story-1.16-event-management-dashboard.md` ✅
+  - Organizer's central command center for all events
+  - Event list with status indicators and quick actions
+  - Workflow progress visualization for each event
+  - Quick navigation to event details, topics, speakers, partners
+
+- **Event Detail/Edit:** `docs/wireframes/story-1.16-event-detail-edit.md` ✅
+  - Comprehensive event editor with all event properties
+  - Status and workflow position indicators
+  - Assigned topics, confirmed speakers, registration statistics
+  - Publishing controls and event settings access
+
+- **Workflow Visualization:** `docs/wireframes/story-1.16-workflow-visualization.md` ✅
+  - Interactive 16-step workflow state machine visualization
+  - Current step highlighting with progress indicators
+  - Transition buttons for moving between workflow states
+  - Step details with deadlines and requirements
+
+### UI Components
+**Key interface elements:**
+- **Event Dashboard**: Event cards with status badges, progress bars, quick action buttons
+- **Event Editor**: Multi-section form with tabbed interface for event details
+- **Workflow Widget**: Interactive state machine diagram with clickable steps
+- **Status Indicators**: Visual workflow progress (Step 3 of 16, color-coded status)
+- **Quick Actions**: Context-sensitive buttons (Edit, Publish, View, Archive)
+- **Search & Filters**: Event filtering by status, date range, workflow step
+- **Timeline View**: Gantt-style visualization of event deadlines and milestones
+
+### Wireframe Status
+- ✅ **EXISTS**: All three wireframes fully documented and ready for implementation
+  - Event Management Dashboard (main organizer portal screen)
+  - Event Detail/Edit Screen (comprehensive event editor)
+  - Workflow Visualization (16-step state machine interface)
+
+### Navigation
+**Key navigation paths from these screens:**
+- Event Management Dashboard →
+  - → Event Detail/Edit Screen (click event card)
+  - → Workflow Visualization (click workflow progress)
+  - → Topic Backlog Management (assign topics button)
+  - → Speaker Matching Interface (manage speakers button)
+  - → Historical Archive (view past events)
+  - → Notification Center (global navigation)
+- Event Detail/Edit →
+  - → Publishing Controls (Progressive Publishing)
+  - → Event Settings (configuration)
+  - ⤴ Event Management Dashboard
+- Workflow Visualization →
+  - → Event Detail (click step for details)
+  - → Moderator Review Queue (Step 7)
+  - ⤴ Event Management Dashboard
+
 **Acceptance Criteria:**
 
 **Event Domain Model:**
@@ -1014,6 +1103,51 @@ As a **user of any role**, I want to access a modern, responsive web application
 - **UI Framework**: Material-UI (MUI) 5.14+ with Swiss design standards
 - **Build**: Vite 5.0+ with optimized bundling and development experience
 
+**Wireframe Context:**
+
+### Wireframe References
+**From docs/wireframes/sitemap.md:**
+- **Main Navigation Bar/Menu:** `docs/wireframes/story-1.17-main-navigation.md` ✅
+  - Role-adaptive menu that changes based on authenticated user role
+  - Persistent top navigation with role-specific menu items
+  - User profile dropdown, notification bell, help center access
+  - Logout functionality with session cleanup
+
+### UI Components
+**Key interface elements:**
+- **Role-Adaptive Navigation**: Top navigation bar that renders different menu items based on user role:
+  - **Organizer**: Events, Topics, Speakers, Partners, Analytics
+  - **Speaker**: Dashboard, Materials, Profile, Community, Communications
+  - **Partner**: Analytics, Voting, Meetings, Settings
+  - **Attendee**: Events, Content, Learning, Profile
+- **User Menu**: Dropdown with profile, settings, notifications, help, logout
+- **Notification Bell**: Real-time notification indicator with unread count
+- **Role Indicator**: Visual badge showing current user role
+- **Search Bar**: Global search (role-specific results)
+- **Mobile Navigation**: Hamburger menu for responsive mobile layout
+- **Breadcrumbs**: Contextual navigation trail showing current location
+
+### Wireframe Status
+- ✅ **EXISTS**: Main Navigation Bar/Menu wireframe fully documented
+  - Complete role-adaptive navigation system
+  - All four user role experiences defined
+  - Global navigation patterns established
+  - Mobile-responsive hamburger menu
+
+### Navigation
+**Key navigation paths from main nav:**
+- **Global (All Roles):**
+  - → User Profile Screen
+  - → Notification Center
+  - → Help Center
+  - → User Settings
+  - → Logout (returns to Login Screen)
+- **Role-Specific Dashboards:**
+  - → Event Management Dashboard (Organizer)
+  - → Speaker Dashboard (Speaker)
+  - → Partner Analytics Dashboard (Partner)
+  - → Personal Attendee Dashboard (Attendee)
+
 **Acceptance Criteria:**
 
 **Role-Adaptive Component Architecture:**
@@ -1064,6 +1198,48 @@ As a **visitor or attendee**, I want to browse and view historical BATbern event
 - **Backend**: Attendee Experience Service for content discovery and search
 - **Search**: AWS OpenSearch for full-text content search
 - **CDN**: CloudFront for optimized content delivery
+
+**Wireframe Context:**
+
+### Wireframe References
+**From docs/wireframes/sitemap.md:**
+- **Main Screen:** `docs/wireframes/story-1.18-historical-archive.md` ✅
+  - Historical event browsing interface with 20+ years of BATbern content
+  - Grid/list view toggle for event cards
+  - Advanced search and filtering capabilities
+  - Timeline visualization showing events by year/quarter
+  - Content preview panels with presentation thumbnails
+
+### UI Components
+**Key interface elements:**
+- **Event Archive Grid**: Card-based layout showing event thumbnails, dates, titles, topics
+- **Search Bar**: Full-text search with autocomplete suggestions
+- **Filter Panel**: Multi-criteria filtering sidebar with:
+  - Year/date range selector
+  - Topic category checkboxes
+  - Speaker search/filter
+  - Company affiliation filter
+  - Content type filters (presentations, photos, videos)
+- **Timeline View**: Interactive timeline showing event distribution over 20+ years
+- **Event Cards**: Rich cards displaying event preview, key stats, featured speakers
+- **Content Preview**: Inline preview modals for presentations and materials
+- **Sort Controls**: Sort by date, relevance, popularity, topic
+- **Pagination**: Load more functionality with infinite scroll option
+
+### Wireframe Status
+- ✅ **EXISTS**: Historical Archive wireframe fully documented and ready for implementation
+  - Complete browsing interface for 54+ historical events
+  - Advanced search and filtering system
+  - Timeline visualization component
+
+### Navigation
+**Key navigation paths from this screen:**
+- → Event Detail (read-only historical event view)
+- → Content Detail/Edit Screen (view presentation details and metadata)
+- → Speaker Profile (view speaker bio and presentation history)
+- → Content Viewer (open presentation for viewing/download)
+- ⤴ Event Management Dashboard (if accessed from organizer role)
+- ⤴ Personal Attendee Dashboard (if accessed from attendee role)
 
 **Acceptance Criteria:**
 
@@ -1157,6 +1333,84 @@ As an **organizer**, I want to manage user roles with promotion and demotion cap
 - **Database**: PostgreSQL with role management tables
 - **Integration**: AWS Cognito for role attribute updates
 - **Frontend**: React role management interface for organizers
+
+**Wireframe Context:**
+
+### Wireframe References
+**From docs/wireframes/sitemap.md:**
+- **Notification Center:** `docs/wireframes/story-1.20-notification-center.md` ✅
+  - Central notification hub accessible from all role portals
+  - Notification list filtered by role-specific content
+  - Mark read/unread, archive/delete functionality
+  - Links to related content based on notification context
+  - Notification settings and preferences
+
+- **User Settings:** `docs/wireframes/story-5.2-user-settings.md` ✅ (Attendee version)
+  - User profile settings and account management
+  - Password change and security settings
+  - Email notification preferences
+  - Privacy controls and data management
+  - Note: General user settings wireframe needed for all roles
+
+### UI Components
+**Key interface elements:**
+- **User Profile Screen**:
+  - Personal information view/edit form
+  - Contact details management
+  - Role-specific information display
+  - Activity history timeline
+  - Link to User Settings
+- **Notification Center**:
+  - Notification list with filtering (unread, type, date)
+  - Notification cards with context and actions
+  - Real-time notification badge (unread count)
+  - Settings link for notification preferences
+  - Archive and delete controls
+- **Role Management Panel** (Organizer only):
+  - User search and selection interface
+  - Current role display with badges
+  - Promote/demote action buttons
+  - Approval workflow interface
+  - Role change history log
+- **User Settings**:
+  - Account settings tabs
+  - Password change form
+  - Email preferences checkboxes
+  - Privacy controls (data export/delete per Story 1.11)
+  - Notification settings (email, push, in-app)
+
+### Wireframe Status
+- ✅ **EXISTS**: Notification Center wireframe fully documented (`story-1.20-notification-center.md`)
+  - Role-adaptive notification system
+  - Comprehensive notification management interface
+- ✅ **EXISTS**: User Settings wireframe (`story-5.2-user-settings.md` - attendee version)
+  - Basic user settings for all roles
+  - Notification preferences and privacy controls
+- ✅ **EXISTS**: User Profile Screen (`story-1.20-user-profile.md`)
+  - General profile view for all roles
+  - Activity history and role-specific information
+- 🔄 **PARTIAL**: Role Management Panel (organizer-specific functionality in progress)
+
+### Navigation
+**Key navigation paths from these screens:**
+- **User Profile Screen:**
+  - → User Settings Screen
+  - → Activity History
+  - ⤴ Previous Screen (role-dependent)
+- **Notification Center:**
+  - → Related Content (context-specific based on notification)
+  - → Notification Settings (in User Settings)
+  - → Archive/Delete actions
+  - ⤴ Any screen (accessible from global navigation)
+- **User Settings:**
+  - → Notification Settings
+  - → Privacy Controls (GDPR export/delete from Story 1.11)
+  - → Account Security
+  - ⤴ User Profile Screen
+- **Role Management Panel** (Organizer):
+  - → User Profile (view target user)
+  - → Approval Workflow (for demotion requests)
+  - ⤴ Event Management Dashboard
 
 **Acceptance Criteria:**
 

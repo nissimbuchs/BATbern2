@@ -1,0 +1,675 @@
+# <!-- Powered by BMAD™ Core -->
+template:
+  id: story-integration-template-v1
+  name: Full-Stack Integration Story Template
+  version: 1.0
+  description: Replace mocks with real backend and validate end-to-end integration
+  output:
+    format: markdown
+    filename: docs/stories/{{epic_num}}.{{story_num}}d.integration-{{story_title_short}}.md
+    title: "Story {{epic_num}}.{{story_num}}d: Integration - {{story_title_short}}"
+
+workflow:
+  mode: interactive
+  elicitation: advanced-elicitation
+
+agent_config:
+  editable_sections:
+    - Status
+    - Story
+    - Integration Context
+    - Acceptance Criteria
+    - Tasks / Subtasks
+    - Dev Notes
+    - Change Log
+
+sections:
+  - id: status
+    title: Status
+    type: choice
+    choices: [Blocked, Draft, Approved, InProgress, Review, Done]
+    instruction: |
+      Select the current status of the integration story.
+      Status should be "Blocked" until:
+      - Story {{epic_num}}.{{story_num}}b (Frontend) is Done
+      - Story {{epic_num}}.{{story_num}}c (Backend) is Done
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+
+  - id: story
+    title: Story
+    type: template-text
+    template: |
+      **As a** {{role}},
+      **I want** {{action}},
+      **so that** {{benefit}}
+
+      **Integration Focus:** This story replaces MSW mocks with real backend APIs and validates complete end-to-end functionality.
+    instruction: Define the user story focusing on the complete integrated experience
+    elicit: true
+    owner: scrum-master
+    editors: [scrum-master]
+
+  - id: dependencies
+    title: Story Dependencies
+    instruction: |
+      **Blocking Dependencies:**
+      - ⚠️ BLOCKED until Story {{epic_num}}.{{story_num}}a (API Contract) is Done
+      - ⚠️ BLOCKED until Story {{epic_num}}.{{story_num}}b (Frontend) is Done
+      - ⚠️ BLOCKED until Story {{epic_num}}.{{story_num}}c (Backend) is Done
+
+      **Required Artifacts:**
+      - API contract with OpenAPI spec
+      - Frontend implementation with MSW mocks
+      - Backend service deployed and healthy
+      - Database migrations applied
+      - Environment configuration ready
+    owner: scrum-master
+    editors: [scrum-master]
+
+  - id: integration-context
+    title: Integration Context
+    instruction: Context for integrating frontend and backend implementations
+    owner: scrum-master
+    editors: [scrum-master]
+    sections:
+      - id: component-stories
+        title: Component Stories
+        instruction: |
+          Reference the component stories being integrated:
+          - API Contract Story: {{epic_num}}.{{story_num}}a
+          - Frontend Story: {{epic_num}}.{{story_num}}b
+          - Backend Story: {{epic_num}}.{{story_num}}c
+
+          Include links to the actual story documents.
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: integration-scope
+        title: Integration Scope
+        instruction: |
+          What needs to be integrated:
+          - Frontend components consuming real APIs
+          - MSW mocks to be removed/disabled
+          - API client configuration changes
+          - Environment variable configuration
+          - Authentication integration
+          - Error handling validation
+          - Performance baseline establishment
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: environment-requirements
+        title: Environment Requirements
+        instruction: |
+          Environment setup needed:
+          - Backend service URL
+          - Database connection details
+          - AWS Cognito configuration
+          - API Gateway endpoints
+          - CloudFront distribution
+          - Environment variables for each environment (dev/staging/prod)
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: rollback-strategy
+        title: Rollback Strategy
+        instruction: |
+          Plan for rollback if integration fails:
+          - Re-enable MSW mocks as fallback
+          - Feature flag configuration
+          - Deployment rollback procedure
+          - Communication plan
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+  - id: acceptance-criteria
+    title: Acceptance Criteria
+    type: numbered-list
+    instruction: |
+      Define acceptance criteria focused on end-to-end integration:
+      - Frontend successfully calls real backend APIs
+      - All user workflows complete successfully
+      - MSW mocks removed/disabled in production
+      - Error scenarios handled correctly
+      - Loading states work with real network timing
+      - Authentication flows work end-to-end
+      - Performance meets requirements
+      - E2E tests pass with real backend
+    elicit: true
+    owner: scrum-master
+    editors: [scrum-master]
+
+  - id: test-specifications
+    title: Test Specifications
+    instruction: |
+      ⚠️ CRITICAL: Define E2E tests that validate complete integration.
+      These tests run against real backend, not mocks.
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+    sections:
+      - id: e2e-test-scenarios
+        title: E2E Test Scenarios
+        instruction: |
+          End-to-end test scenarios with real backend:
+
+          **Happy Path Tests:**
+          - Test 1.1: should_completeFullUserJourney_when_allSystemsOperational
+          - Test 1.2: should_persistData_when_formSubmitted
+          - Test 1.3: should_displayData_when_pageLoaded
+
+          **Error Scenario Tests:**
+          - Test 2.1: should_displayError_when_backendReturns400
+          - Test 2.2: should_displayError_when_backendReturns500
+          - Test 2.3: should_handleTimeout_when_backendSlow
+
+          **Authentication Tests:**
+          - Test 3.1: should_redirectToLogin_when_unauthenticated
+          - Test 3.2: should_refreshToken_when_tokenExpired
+
+          Use Playwright or Cypress with real backend.
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master, dev-agent]
+
+      - id: integration-test-scenarios
+        title: Integration Test Scenarios
+        instruction: |
+          Integration tests for frontend-backend communication:
+
+          **API Integration Tests:**
+          - Test 4.1: should_receiveValidResponse_when_validRequest
+          - Test 4.2: should_handleCORS_correctly
+          - Test 4.3: should_includeAuthToken_in_requests
+          - Test 4.4: should_retryFailed_requests
+
+          **State Management Integration:**
+          - Test 5.1: should_updateStore_when_apiResponds
+          - Test 5.2: should_invalidateCache_when_dataMutated
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master, dev-agent]
+
+      - id: performance-test-scenarios
+        title: Performance Test Scenarios
+        instruction: |
+          Performance validation tests:
+
+          **Performance Tests:**
+          - Test 6.1: should_loadPageIn_lessThan2Seconds
+          - Test 6.2: should_respondToUserAction_within500ms
+          - Test 6.3: should_handleConcurrentRequests_correctly
+
+          Define performance baselines and thresholds.
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master, dev-agent]
+
+  - id: tasks-subtasks
+    title: Tasks / Subtasks
+    type: bullet-list
+    instruction: |
+      Break down the integration work systematically.
+      CRITICAL: This story validates that frontend and backend work together.
+    template: |
+      - [ ] Task 1: Environment Configuration
+        - [ ] Configure backend service URLs for each environment
+        - [ ] Set up environment variables
+        - [ ] Configure AWS Cognito settings
+        - [ ] Configure API Gateway endpoints
+        - [ ] Test environment connectivity
+
+      - [ ] Task 2: Remove/Disable MSW Mocks
+        - [ ] Identify all MSW handlers to disable
+        - [ ] Configure MSW to only run in development/test
+        - [ ] Update API client to use real endpoints
+        - [ ] Verify mocks disabled in production build
+        - [ ] Keep mocks available for unit tests
+
+      - [ ] Task 3: API Client Configuration
+        - [ ] Update base URLs for API calls
+        - [ ] Configure authentication headers
+        - [ ] Configure request/response interceptors
+        - [ ] Add retry logic for failed requests
+        - [ ] Add request timeout configuration
+        - [ ] Test API client with real backend
+
+      - [ ] Task 4: Write E2E Tests (with Real Backend)
+        - [ ] Set up E2E test environment
+        - [ ] Write tests for happy path scenarios
+        - [ ] Write tests for error scenarios
+        - [ ] Write tests for authentication flows
+        - [ ] Configure test data setup/teardown
+        - [ ] Run E2E tests against dev backend
+
+      - [ ] Task 5: Integration Testing
+        - [ ] Test each user workflow end-to-end
+        - [ ] Verify data persistence
+        - [ ] Verify data retrieval
+        - [ ] Test error handling
+        - [ ] Test loading states with real timing
+        - [ ] Verify authentication and authorization
+
+      - [ ] Task 6: Fix Integration Issues
+        - [ ] Debug any API communication issues
+        - [ ] Fix CORS issues (if any)
+        - [ ] Fix authentication issues (if any)
+        - [ ] Fix data mapping issues (if any)
+        - [ ] Verify error messages are user-friendly
+
+      - [ ] Task 7: Performance Validation
+        - [ ] Measure page load times
+        - [ ] Measure API response times
+        - [ ] Identify performance bottlenecks
+        - [ ] Implement optimizations (if needed)
+        - [ ] Verify performance meets requirements
+
+      - [ ] Task 8: Security Validation
+        - [ ] Verify authentication enforcement
+        - [ ] Verify authorization rules
+        - [ ] Test with different user roles
+        - [ ] Verify sensitive data protection
+        - [ ] Run security scan (if applicable)
+
+      - [ ] Task 9: Cross-Browser Testing
+        - [ ] Test in Chrome
+        - [ ] Test in Firefox
+        - [ ] Test in Safari
+        - [ ] Test in Edge
+        - [ ] Fix browser-specific issues
+
+      - [ ] Task 10: Deployment Validation
+        - [ ] Deploy to dev environment
+        - [ ] Smoke test in dev
+        - [ ] Deploy to staging environment
+        - [ ] Full regression test in staging
+        - [ ] Prepare for production deployment
+    elicit: true
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+
+  - id: dev-notes
+    title: Dev Notes - Integration Guide
+    instruction: |
+      CONSOLIDATED INTEGRATION GUIDE for the Dev Agent:
+      Everything needed to integrate frontend and backend successfully.
+    elicit: true
+    owner: scrum-master
+    editors: [scrum-master]
+    sections:
+      - id: msw-removal-guide
+        title: MSW Removal/Disable Guide
+        instruction: |
+          How to transition from mocks to real APIs:
+
+          **MSW Configuration:**
+          ```typescript
+          // src/mocks/browser.ts
+          export const worker = setupWorker(...handlers);
+
+          // Only enable in development
+          if (process.env.NODE_ENV === 'development' && process.env.REACT_APP_USE_MOCKS === 'true') {
+            worker.start();
+          }
+          ```
+
+          **Environment Variables:**
+          ```
+          # .env.development (with mocks)
+          REACT_APP_USE_MOCKS=true
+          REACT_APP_API_BASE_URL=http://localhost:3000
+
+          # .env.development.real (without mocks)
+          REACT_APP_USE_MOCKS=false
+          REACT_APP_API_BASE_URL=https://api-dev.batbern.ch
+
+          # .env.production (never use mocks)
+          REACT_APP_USE_MOCKS=false
+          REACT_APP_API_BASE_URL=https://api.batbern.ch
+          ```
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: api-client-configuration
+        title: API Client Configuration
+        instruction: |
+          Configure API client for real backend:
+
+          **Axios Configuration:**
+          ```typescript
+          // src/services/apiClient.ts
+          import axios from 'axios';
+
+          const apiClient = axios.create({
+            baseURL: process.env.REACT_APP_API_BASE_URL,
+            timeout: 30000,
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+
+          // Request interceptor for auth token
+          apiClient.interceptors.request.use((config) => {
+            const token = getAuthToken();
+            if (token) {
+              config.headers.Authorization = `Bearer ${token}`;
+            }
+            return config;
+          });
+
+          // Response interceptor for error handling
+          apiClient.interceptors.response.use(
+            (response) => response,
+            async (error) => {
+              if (error.response?.status === 401) {
+                // Handle token refresh
+                await refreshAuthToken();
+                return apiClient(error.config);
+              }
+              return Promise.reject(error);
+            }
+          );
+
+          export default apiClient;
+          ```
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: e2e-test-setup
+        title: E2E Test Setup
+        instruction: |
+          E2E testing with real backend:
+
+          **Playwright Configuration:**
+          ```typescript
+          // playwright.config.ts
+          export default defineConfig({
+            use: {
+              baseURL: process.env.E2E_BASE_URL || 'http://localhost:3000',
+              extraHTTPHeaders: {
+                // Add any required headers
+              },
+            },
+            projects: [
+              {
+                name: 'dev-backend',
+                use: {
+                  baseURL: 'https://dev.batbern.ch',
+                  // Use real backend API
+                },
+              },
+            ],
+          });
+          ```
+
+          **Test Data Management:**
+          - Use test data builders
+          - Set up test data before tests
+          - Clean up test data after tests
+          - Use transactions for isolation
+
+          **Authentication in E2E Tests:**
+          ```typescript
+          test.beforeEach(async ({ page }) => {
+            // Authenticate before each test
+            await loginAsUser(page, testUser);
+          });
+          ```
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: error-handling-integration
+        title: Error Handling Integration
+        instruction: |
+          Verify error handling works with real backend:
+
+          **Error Response Handling:**
+          ```typescript
+          try {
+            const response = await apiClient.post('/api/v1/events', data);
+            return response.data;
+          } catch (error) {
+            if (axios.isAxiosError(error)) {
+              const errorResponse = error.response?.data?.error;
+              if (errorResponse) {
+                // Display structured error from backend
+                showError(errorResponse.message);
+                if (errorResponse.details) {
+                  displayValidationErrors(errorResponse.details);
+                }
+              }
+            }
+            throw error;
+          }
+          ```
+
+          Verify:
+          - 400 validation errors display field-level feedback
+          - 401 triggers re-authentication
+          - 403 shows "insufficient permissions" message
+          - 404 shows "not found" message
+          - 500 shows generic error with request ID
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: performance-monitoring
+        title: Performance Monitoring Setup
+        instruction: |
+          Monitor performance of integrated system:
+
+          **Frontend Performance:**
+          - Core Web Vitals (LCP, FID, CLS)
+          - Time to Interactive (TTI)
+          - API call duration
+          - Bundle size
+
+          **Backend Performance:**
+          - API response times (P50, P95, P99)
+          - Database query times
+          - Error rates
+          - Throughput
+
+          **Tools:**
+          - Lighthouse CI
+          - CloudWatch dashboards
+          - Application performance monitoring (APM)
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: deployment-checklist
+        title: Deployment Checklist
+        instruction: |
+          Steps for deploying integrated feature:
+
+          **Pre-Deployment:**
+          - [ ] All E2E tests pass
+          - [ ] Performance baselines met
+          - [ ] Security scan completed
+          - [ ] Database migrations ready
+          - [ ] Rollback plan documented
+
+          **Deployment Steps:**
+          1. Deploy backend to environment
+          2. Apply database migrations
+          3. Deploy frontend to environment
+          4. Invalidate CDN cache
+          5. Run smoke tests
+          6. Monitor logs and metrics
+          7. Verify with manual testing
+
+          **Post-Deployment:**
+          - Monitor error rates
+          - Monitor performance metrics
+          - Check user feedback
+          - Verify rollback capability
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+  - id: definition-of-done
+    title: Definition of Done Checklist
+    instruction: |
+      ⚠️ CRITICAL: Integration story cannot be marked complete until ALL items are checked.
+      This represents the COMPLETE feature ready for production.
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+    sections:
+      - id: integration-complete
+        title: Integration Complete
+        type: checklist
+        template: |
+          - [ ] MSW mocks removed/disabled in production builds
+          - [ ] Frontend successfully calls real backend APIs
+          - [ ] All API endpoints responding correctly
+          - [ ] Authentication flow works end-to-end
+          - [ ] Authorization enforced correctly
+          - [ ] CORS configuration correct
+          - [ ] Error handling works as designed
+          - [ ] Loading states display correctly
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: testing-complete
+        title: Testing Complete ⚠️ CRITICAL
+        type: checklist
+        template: |
+          - [ ] All E2E tests passing with real backend
+          - [ ] Integration tests passing
+          - [ ] Cross-browser testing completed
+          - [ ] Mobile responsive testing completed
+          - [ ] Performance tests passing
+          - [ ] Security validation completed
+          - [ ] Regression tests passing
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: performance-validated
+        title: Performance Validated
+        type: checklist
+        template: |
+          - [ ] Page load time <2 seconds
+          - [ ] API response time P95 <500ms
+          - [ ] Time to Interactive <3 seconds
+          - [ ] Lighthouse score >90
+          - [ ] No performance regressions
+          - [ ] Performance monitoring enabled
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: deployment-ready
+        title: Deployment Ready ⚠️ CRITICAL
+        type: checklist
+        template: |
+          - [ ] Deployed to dev environment successfully
+          - [ ] Deployed to staging environment successfully
+          - [ ] Smoke tests passing in all environments
+          - [ ] Environment variables configured
+          - [ ] Database migrations applied
+          - [ ] CloudWatch monitoring enabled
+          - [ ] Rollback procedure tested
+          - [ ] Production deployment plan documented
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: documentation-complete
+        title: Documentation Complete
+        type: checklist
+        template: |
+          - [ ] API integration documented
+          - [ ] Environment setup documented
+          - [ ] Deployment procedure documented
+          - [ ] Rollback procedure documented
+          - [ ] Known issues documented (if any)
+          - [ ] User-facing documentation updated (if needed)
+        owner: dev-agent
+        editors: [dev-agent]
+
+  - id: original-story-reference
+    title: Original Story Reference
+    instruction: |
+      This integration story completes the original user story:
+      - Original Story: {{epic_num}}.{{story_num}}
+      - Component Stories:
+        - {{epic_num}}.{{story_num}}a: API Contract
+        - {{epic_num}}.{{story_num}}b: Frontend
+        - {{epic_num}}.{{story_num}}c: Backend
+        - {{epic_num}}.{{story_num}}d: Integration (this story)
+
+      When this story is Done, the original story {{epic_num}}.{{story_num}} is fully complete.
+    owner: scrum-master
+    editors: [scrum-master]
+
+  - id: change-log
+    title: Change Log
+    type: table
+    columns: [Date, Version, Description, Author]
+    instruction: Track changes made during integration
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+
+  - id: dev-agent-record
+    title: Dev Agent Record
+    instruction: This section is populated during integration implementation
+    owner: dev-agent
+    editors: [dev-agent]
+    sections:
+      - id: agent-model
+        title: Agent Model Used
+        template: "{{agent_model_name_version}}"
+        instruction: Record the AI agent model and version used
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: integration-issues
+        title: Integration Issues Encountered
+        instruction: |
+          Document any issues encountered during integration:
+          - Issue description
+          - Root cause
+          - Resolution
+          - Lessons learned
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: configuration-details
+        title: Configuration Details
+        instruction: |
+          Document final configuration:
+          - Environment variables used
+          - API endpoints configured
+          - Feature flags (if any)
+          - Performance settings
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: deployment-notes
+        title: Deployment Notes
+        instruction: |
+          Document deployment details:
+          - Deployment date/time per environment
+          - Issues encountered during deployment
+          - Rollback triggers (if any)
+          - Post-deployment observations
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: performance-metrics
+        title: Actual Performance Metrics
+        instruction: |
+          Record actual performance after integration:
+          - Page load times
+          - API response times
+          - Error rates
+          - Throughput
+          - Comparison to baselines
+        owner: dev-agent
+        editors: [dev-agent]

@@ -21,7 +21,6 @@
 │  │  ○ Privacy                    │  │  Email Address                        │ │
 │  │  ○ Content Preferences        │  │  ┌─────────────────────────────────┐ │ │
 │  │  ○ Language & Accessibility   │  │  │ john.smith@techcorp.ch          │ │ │
-│  │  ○ App Settings (PWA)         │  │  └─────────────────────────────────┘ │ │
 │  │  ○ Data & Export              │  │  ✓ Verified                          │ │
 │  │                               │  │                                       │ │
 │  │                               │  │  First Name                           │ │
@@ -45,6 +44,14 @@
 │  │                               │  │  │ Senior DevOps Engineer          │ │ │
 │  │                               │  │  └─────────────────────────────────┘ │ │
 │  │                               │  │                                       │ │
+│  │                               │  │  Profile Picture                      │ │
+│  │                               │  │  ┌─────────────────────┐               │ │
+│  │                               │  │  │   [👤 Photo]        │               │ │
+│  │                               │  │  │   200×200px         │               │ │
+│  │                               │  │  └─────────────────────┘               │ │
+│  │                               │  │  [Upload New Photo] [Remove]          │ │
+│  │                               │  │  (JPEG/PNG, max 5MB)                  │ │
+│  │                               │  │                                       │ │
 │  │                               │  │  Password                             │ │
 │  │                               │  │  [Change Password]                    │ │
 │  │                               │  │                                       │ │
@@ -63,7 +70,6 @@
 │  │  ○ Privacy                    │  │  Event Updates                        │ │
 │  │  ○ Content Preferences        │  │  ☑ Upcoming event reminders          │ │
 │  │  ○ Language & Accessibility   │  │     Send reminders:                   │ │
-│  │  ○ App Settings (PWA)         │  │     ☑ 7 days before event            │ │
 │  │  ○ Data & Export              │  │     ☑ 1 day before event             │ │
 │  │                               │  │     ☐ 1 hour before event            │ │
 │  │                               │  │                                       │ │
@@ -79,11 +85,6 @@
 │  │                               │  │  Newsletter                           │ │
 │  │                               │  │  ☑ Subscribe to BATbern newsletter    │ │
 │  │                               │  │     Frequency: ● Monthly ○ Quarterly  │ │
-│  │                               │  │                                       │ │
-│  │                               │  │  Push Notifications (Mobile PWA)      │ │
-│  │                               │  │  ☑ Enable push notifications          │ │
-│  │                               │  │  ☑ Event day reminders                │ │
-│  │                               │  │  ☐ Breaking news & announcements      │ │
 │  │                               │  │                                       │ │
 │  │                               │  │  Email Digest Format                  │ │
 │  │                               │  │  ● HTML (Rich formatting)             │ │
@@ -103,7 +104,6 @@
 │  │  ● Privacy                    │  │  Who can see your profile?            │ │
 │  │  ○ Content Preferences        │  │  ● BATbern community members          │ │
 │  │  ○ Language & Accessibility   │  │  ○ Only organizers                    │ │
-│  │  ○ App Settings (PWA)         │  │  ○ Private (no one)                   │ │
 │  │  ○ Data & Export              │  │                                       │ │
 │  │                               │  │  Activity Visibility                  │ │
 │  │                               │  │  ☑ Show events I'm attending          │ │
@@ -138,12 +138,11 @@
 │  │  ○ Privacy                    │  │  Select your areas of interest:       │ │
 │  │  ● Content Preferences        │  │                                       │ │
 │  │  ○ Language & Accessibility   │  │  [✓ Kubernetes]  [✓ Cloud Native]    │ │
-│  │  ○ App Settings (PWA)         │  │  [✓ DevOps]      [✓ Security]        │ │
 │  │  ○ Data & Export              │  │  [  Microservices] [  Databases]     │ │
 │  │                               │  │  [  AI/ML]       [  Frontend]        │ │
 │  │                               │  │  [  Agile]       [  Leadership]      │ │
 │  │                               │  │                                       │ │
-│  │                               │  │  + Add custom interest                │ │
+│  │                               │  │  + Add custom interest (unlimited)    │ │
 │  │                               │  │                                       │ │
 │  │                               │  │  Content Language                     │ │
 │  │                               │  │  Preferred presentation language:     │ │
@@ -178,7 +177,6 @@
 │  │  ○ Privacy                    │  │  Select your interface language:      │ │
 │  │  ○ Content Preferences        │  │  ● Deutsch (German)                   │ │
 │  │  ● Language & Accessibility   │  │  ○ English                            │ │
-│  │  ○ App Settings (PWA)         │  │                                       │ │
 │  │  ○ Data & Export              │  │  Date & Time Format                   │ │
 │  │                               │  │  ● DD.MM.YYYY (European)              │ │
 │  │                               │  │  ○ MM/DD/YYYY (US)                    │ │
@@ -205,42 +203,6 @@
 │  └───────────────────────────────┘  └───────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────────────────┘
 
-[APP SETTINGS (PWA) TAB]
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  ┌─── SETTINGS NAVIGATION ──────┐  ┌─── APP SETTINGS (PWA) ───────────────┐ │
-│  │                               │  │                                       │ │
-│  │  ○ Account                    │  │  Installation                         │ │
-│  │  ○ Notifications              │  │                                       │ │
-│  │  ○ Privacy                    │  │  ✓ BATbern app installed              │ │
-│  │  ○ Content Preferences        │  │  Version: 1.0.2                       │ │
-│  │  ○ Language & Accessibility   │  │  Last updated: 2025-09-25             │ │
-│  │  ● App Settings (PWA)         │  │                                       │ │
-│  │  ○ Data & Export              │  │  [Update Available - Install Now]     │ │
-│  │                               │  │                                       │ │
-│  │                               │  │  Offline Content                      │ │
-│  │                               │  │                                       │ │
-│  │                               │  │  ☑ Enable offline mode                │ │
-│  │                               │  │  ☑ Auto-download upcoming events      │ │
-│  │                               │  │  ☑ Cache recent content               │ │
-│  │                               │  │                                       │ │
-│  │                               │  │  Storage Usage                        │ │
-│  │                               │  │  Content: 245 MB / 500 MB             │ │
-│  │                               │  │  ████████░░░░░ 49% used               │ │
-│  │                               │  │                                       │ │
-│  │                               │  │  [Manage Offline Content]             │ │
-│  │                               │  │  [Clear Cache]                        │ │
-│  │                               │  │                                       │ │
-│  │                               │  │  Data Sync                            │ │
-│  │                               │  │  ● Auto-sync when online              │ │
-│  │                               │  │  ○ Manual sync only                   │ │
-│  │                               │  │  ○ Sync on WiFi only                  │ │
-│  │                               │  │                                       │ │
-│  │                               │  │  Last synced: 2 minutes ago           │ │
-│  │                               │  │  [Sync Now]                           │ │
-│  │                               │  │                                       │ │
-│  └───────────────────────────────┘  └───────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────────┘
-
 [DATA & EXPORT TAB]
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  ┌─── SETTINGS NAVIGATION ──────┐  ┌─── DATA & EXPORT ────────────────────┐ │
@@ -250,7 +212,6 @@
 │  │  ○ Privacy                    │  │  Download a copy of all your data:    │ │
 │  │  ○ Content Preferences        │  │  • Profile information                │ │
 │  │  ○ Language & Accessibility   │  │  • Event registrations                │ │
-│  │  ○ App Settings (PWA)         │  │  • Bookmarked content                 │ │
 │  │  ● Data & Export              │  │  • Download history                   │ │
 │  │                               │  │  • Preferences & settings             │ │
 │  │                               │  │                                       │ │
@@ -269,6 +230,8 @@
 │  │                               │  │                                       │ │
 │  │                               │  │  Deactivate Account                   │ │
 │  │                               │  │  Temporarily disable your account     │ │
+│  │                               │  │  (60-day retention, then auto-deleted)│ │
+│  │                               │  │  ⚠️ Unregisters from all events       │ │
 │  │                               │  │  [Deactivate Account]                 │ │
 │  │                               │  │                                       │ │
 │  │                               │  │  Delete Account                       │ │
@@ -283,12 +246,12 @@
 
 ## Key Interactive Elements
 
-- **Tab Navigation**: Six distinct settings categories accessible from left sidebar navigation
+- **Tab Navigation**: Six distinct settings categories accessible from left sidebar navigation (Account, Notifications, Privacy, Content Preferences, Language & Accessibility, Data & Export)
 - **Form Controls**: Text inputs, checkboxes, radio buttons for various preferences
 - **Company Search**: Autocomplete search for company affiliation with validation
-- **Tag Selection**: Multi-select interest tags with visual feedback
+- **Profile Picture Upload**: Upload/change profile photo in Account settings (JPEG/PNG, max 5MB)
+- **Tag Selection**: Multi-select interest tags with visual feedback (unlimited custom tags allowed)
 - **Toggle Switches**: Enable/disable notifications, privacy options, and features
-- **Storage Management**: Visual progress bar showing offline content usage with cache management
 - **Data Export**: Request button triggering asynchronous data export process
 - **Danger Zone Actions**: Account deactivation and deletion with confirmation workflows
 - **Save/Cancel**: Persistent save bar for unsaved changes with auto-save indication
@@ -301,24 +264,24 @@
 - **FR14 (Personal Engagement Management)**: Complete control over content preferences, bookmarks, newsletters, and personal engagement settings
 - **NFR1 (Responsive Design)**: Settings layout adapts for mobile, tablet, and desktop with appropriate control sizing
 - **NFR4 (Multi-language Support)**: Interface language selection between German and English with date/time format preferences
-- **FR15 (Mobile-Optimized Experience)**: PWA-specific settings including offline content, storage management, and sync controls
+- **FR15 (Mobile-Optimized Experience)**: Responsive settings layout optimized for mobile, tablet, and desktop devices
 
 ---
 
 ## User Interactions
 
 ### Account Tab
-1. **Edit Profile**: Update email, name, company, and job title
-2. **Company Search**: Type to search and select company from database
-3. **Change Password**: Navigate to password change flow with security validation
-4. **Save Changes**: Persist profile updates with validation
+1. **Upload Profile Picture**: Upload or change profile photo (JPEG/PNG, max 5MB, 200x200px minimum)
+2. **Edit Profile**: Update email, name, company, and job title
+3. **Company Search**: Type to search and select company from database
+4. **Change Password**: Navigate to password change flow with security validation
+5. **Save Changes**: Persist profile updates with validation
 
 ### Notifications Tab
 1. **Toggle Notifications**: Enable/disable specific notification types
 2. **Configure Frequency**: Set reminder timing preferences
 3. **Newsletter Subscription**: Subscribe/unsubscribe with frequency selection
-4. **Push Notifications**: Enable mobile push notifications (PWA only)
-5. **Test Notifications**: Send test email to verify notification settings
+4. **Test Notifications**: Send test email to verify notification settings
 
 ### Privacy Tab
 1. **Profile Visibility**: Control who can view profile and activity
@@ -329,7 +292,7 @@
 
 ### Content Preferences Tab
 1. **Select Interests**: Multi-select tags for topic interests
-2. **Add Custom Interest**: Create custom interest tags
+2. **Add Custom Interest**: Create unlimited custom interest tags
 3. **Language Preferences**: Select preferred content language(s)
 4. **Experience Level**: Filter content by difficulty level
 5. **Content Format**: Choose preferred session formats
@@ -342,16 +305,9 @@
 4. **Keyboard Shortcuts**: Enable keyboard navigation with shortcuts reference
 5. **Screen Reader**: Optimize for assistive technologies
 
-### App Settings (PWA) Tab
-1. **Check Updates**: Install available app updates
-2. **Offline Content**: Toggle auto-download and caching preferences
-3. **Manage Storage**: View and manage offline content storage
-4. **Clear Cache**: Remove cached content to free space
-5. **Sync Settings**: Configure automatic or manual data synchronization
-
 ### Data & Export Tab
 1. **Export Data**: Request complete data export in JSON or CSV format
-2. **Deactivate Account**: Temporarily disable account with reactivation option
+2. **Deactivate Account**: Temporarily disable account (60-day retention, auto-unregisters from events)
 3. **Delete Account**: Permanently remove account and all associated data
 
 ---
@@ -365,9 +321,7 @@
 - **Optimistic Updates**: Immediate UI feedback with server sync in background
 - **Error Handling**: Inline error messages with retry capability for failed saves
 - **Company Autocomplete**: Debounced search with typeahead suggestions from company database
-- **PWA Detection**: Conditionally show "App Settings" tab only when running as installed PWA
-- **Storage API**: Use StorageManager API to display quota and usage for offline content
-- **Service Worker**: Cache management via Service Worker for offline content control
+- **Image Upload**: File upload with preview, crop functionality, and format/size validation (max 5MB)
 - **i18n Integration**: React-i18next for multi-language support with locale switching
 - **ARIA Labels**: Complete accessibility support with proper ARIA attributes and keyboard navigation
 - **Responsive Layout**: Sidebar navigation collapses to top tabs on mobile (<768px)
@@ -410,11 +364,6 @@ When the Settings screen loads, the following APIs are called:
            "subscribed": "boolean",
            "frequency": "monthly | quarterly"
          },
-         "pushNotifications": {
-           "enabled": "boolean",
-           "eventDay": "boolean",
-           "breakingNews": "boolean"
-         },
          "emailFormat": "html | plain"
        },
        "privacy": {
@@ -450,14 +399,7 @@ When the Settings screen loads, the following APIs are called:
          "keyboardShortcuts": "boolean",
          "screenReaderOptimized": "boolean"
        },
-       "pwaSettings": {
-         "offlineMode": "boolean",
-         "autoDownload": "boolean",
-         "cacheRecent": "boolean",
-         "syncMode": "auto | manual | wifi_only",
-         "storageUsedMB": "number",
-         "storageQuotaMB": "number"
-       }
+       "profilePictureUrl": "string | null"
      }
      ```
    - Used for: Populate all settings fields across all tabs with current user preferences
@@ -478,7 +420,25 @@ When the Settings screen loads, the following APIs are called:
    - Used for: Company autocomplete search in Account tab
    - Note: Called on-demand when user types in company field
 
-3. **GET /api/v1/reference/interests**
+3. **POST /api/v1/users/{userId}/profile-picture**
+   - Triggered by: [Upload New Photo] button in Account tab
+   - Payload: Multipart form data with image file
+   - Response:
+     ```json
+     {
+       "profilePictureUrl": "string",
+       "uploadedAt": "ISO-8601 datetime"
+     }
+     ```
+   - Used for: Upload and update user profile picture
+   - Validation: JPEG/PNG only, max 5MB, minimum 200x200px
+
+4. **DELETE /api/v1/users/{userId}/profile-picture**
+   - Triggered by: [Remove] button next to profile picture
+   - Response: Confirmation of removal
+   - Used for: Remove user profile picture
+
+5. **GET /api/v1/reference/interests**
    - Query params: None
    - Returns: Available interest tags
      ```json
@@ -492,21 +452,6 @@ When the Settings screen loads, the following APIs are called:
      ]
      ```
    - Used for: Display available interest tags in Content Preferences tab
-
-4. **GET /api/v1/users/{userId}/pwa-status**
-   - Query params: None
-   - Returns: PWA installation status
-     ```json
-     {
-       "installed": "boolean",
-       "version": "string",
-       "lastUpdated": "ISO-8601 datetime",
-       "updateAvailable": "boolean",
-       "newVersion": "string | null"
-     }
-     ```
-   - Used for: Display PWA status and update availability in App Settings tab
-   - Note: Only called if running as PWA (detected via matchMedia or navigator.standalone)
 
 ---
 
@@ -580,7 +525,7 @@ APIs called by user interactions and actions:
 
 ### Notification Actions
 
-5. **POST /api/v1/users/{userId}/test-notifications**
+6. **POST /api/v1/users/{userId}/test-notifications**
    - Triggered by: [Test Email Notifications] button
    - Payload: None
    - Response: Test email sent confirmation
@@ -592,31 +537,9 @@ APIs called by user interactions and actions:
      ```
    - Used for: Send test email to verify notification settings work correctly
 
-6. **POST /api/v1/users/{userId}/push-subscription**
-   - Triggered by: Toggle push notifications in Notifications tab
-   - Payload: Push subscription object from browser
-     ```json
-     {
-       "endpoint": "string",
-       "keys": {
-         "p256dh": "string",
-         "auth": "string"
-       }
-     }
-     ```
-   - Response: Subscription confirmation
-   - Used for: Register device for push notifications (PWA)
-   - Note: Requires user permission via browser Notification API
-
-7. **DELETE /api/v1/users/{userId}/push-subscription**
-   - Triggered by: Disable push notifications
-   - Payload: None
-   - Response: Unsubscribe confirmation
-   - Used for: Remove push notification subscription
-
 ### Data Export Actions
 
-8. **POST /api/v1/users/{userId}/export-data**
+7. **POST /api/v1/users/{userId}/export-data**
    - Triggered by: [Request Data Export] button
    - Payload:
      ```json
@@ -636,7 +559,7 @@ APIs called by user interactions and actions:
    - Used for: Initiate asynchronous data export process
    - Note: User receives email when export is ready for download
 
-9. **GET /api/v1/users/{userId}/exports/{exportId}**
+8. **GET /api/v1/users/{userId}/exports/{exportId}**
    - Triggered by: Link in export ready email or manual check
    - Response: Export file URL
      ```json
@@ -652,7 +575,7 @@ APIs called by user interactions and actions:
 
 ### Account Management Actions
 
-10. **POST /api/v1/users/{userId}/deactivate**
+9. **POST /api/v1/users/{userId}/deactivate**
     - Triggered by: [Deactivate Account] button with confirmation dialog
     - Payload: None
     - Response: Deactivation confirmation
@@ -660,13 +583,20 @@ APIs called by user interactions and actions:
       {
         "deactivated": "boolean",
         "deactivatedAt": "ISO-8601 datetime",
-        "reactivationToken": "string"
+        "reactivationToken": "string",
+        "retentionPeriodDays": 60,
+        "permanentDeletionDate": "ISO-8601 datetime",
+        "unregisteredEventsCount": "number"
       }
       ```
-    - Used for: Temporarily disable account, allow future reactivation
-    - Side effect: User logged out, data preserved
+    - Used for: Temporarily disable account, allow future reactivation within 60 days
+    - Side effects:
+      - User logged out
+      - All upcoming event registrations cancelled automatically
+      - Account and data preserved for 60 days, then permanently deleted
+      - Past event attendance history preserved
 
-11. **POST /api/v1/users/{userId}/reactivate**
+10. **POST /api/v1/users/{userId}/reactivate**
     - Triggered by: Login attempt with deactivated account
     - Payload:
       ```json
@@ -677,7 +607,7 @@ APIs called by user interactions and actions:
     - Response: Reactivation confirmation
     - Used for: Restore previously deactivated account
 
-12. **DELETE /api/v1/users/{userId}**
+11. **DELETE /api/v1/users/{userId}**
     - Triggered by: [Delete My Account] button with double confirmation
     - Payload: Confirmation input (e.g., type "DELETE" to confirm)
       ```json
@@ -696,34 +626,6 @@ APIs called by user interactions and actions:
     - Used for: Permanently delete user account and all associated data
     - Security: Requires password confirmation and explicit consent
     - Side effect: User logged out, all data marked for deletion (GDPR compliant)
-
-### PWA-Specific Actions
-
-13. **POST /api/v1/users/{userId}/pwa/sync**
-    - Triggered by: [Sync Now] button in App Settings tab
-    - Payload: None
-    - Response: Sync status
-      ```json
-      {
-        "synced": "boolean",
-        "lastSyncedAt": "ISO-8601 datetime",
-        "itemsSynced": "number"
-      }
-      ```
-    - Used for: Manual data synchronization in PWA mode
-
-14. **DELETE /api/v1/users/{userId}/pwa/cache**
-    - Triggered by: [Clear Cache] button
-    - Payload: None
-    - Response: Cache clear confirmation
-      ```json
-      {
-        "cleared": "boolean",
-        "spaceFreedb": "number"
-      }
-      ```
-    - Used for: Clear offline content cache to free storage
-    - Note: Client-side Service Worker also clears local cache
 
 ---
 
@@ -782,16 +684,9 @@ Screen transitions triggered by actions and events:
    - Feedback: Toast: "Test email sent to {email}"
    - Check: User should check inbox for test email
 
-8. **Enable Push Notifications Toggle**
-   - Action: Browser permission request → POST /api/v1/users/{userId}/push-subscription
-   - No Navigation: Remains on Notifications tab
-   - Permission: Browser native permission dialog appears
-   - On Granted: Subscribe to push, enable toggle
-   - On Denied: Show message: "Push notifications blocked. Please enable in browser settings."
-
 ### Privacy Tab Navigation
 
-9. **[View Privacy Policy] link**
+8. **[View Privacy Policy] link**
    - Target: Privacy Policy page
    - Type: Open in new tab/window
    - Context: External link to legal privacy policy document
@@ -799,13 +694,13 @@ Screen transitions triggered by actions and events:
 
 ### Content Preferences Tab Navigation
 
-10. **Interest Tag Click**
+9. **Interest Tag Click**
     - Action: Toggle interest selection (local state)
     - No Navigation: Remains on Content Preferences tab
     - Feedback: Visual toggle (filled vs outlined)
     - Save: Changes saved when [Save Changes] clicked
 
-11. **+ Add Custom Interest**
+10. **+ Add Custom Interest**
     - Action: Show inline text input to create custom interest
     - No Navigation: Inline expansion on Content Preferences tab
     - On Submit: Add custom interest to selection, close input
@@ -813,59 +708,37 @@ Screen transitions triggered by actions and events:
 
 ### Language & Accessibility Tab Navigation
 
-12. **Interface Language Change**
+11. **Interface Language Change**
     - Action: PUT /api/v1/users/{userId}/settings + page reload
     - Feedback: "Language changed. Reloading..." message
     - Reload: Full page reload to apply new language
     - Context: All UI text switches to selected language (i18n)
 
-13. **[View Keyboard Shortcuts] link**
+12. **[View Keyboard Shortcuts] link**
     - Target: Keyboard Shortcuts Modal
     - Type: Modal overlay with shortcut reference table
     - Context: Display all available keyboard shortcuts
     - Close: Remains on Language & Accessibility tab
 
-### App Settings (PWA) Tab Navigation
-
-14. **[Update Available - Install Now] button**
-    - Action: Trigger PWA update via Service Worker
-    - Feedback: "Updating app..." progress indicator
-    - Reload: App reloads automatically after update
-    - Success: Toast: "App updated to version {version}"
-
-15. **[Manage Offline Content] button**
-    - Target: Offline Content Management screen
-    - Type: New page or expanded section within tab
-    - Context: Show list of offline content with delete options
-    - Return: Back to App Settings tab
-
-16. **[Clear Cache] button**
-    - Action: DELETE /api/v1/users/{userId}/pwa/cache + clear local Service Worker cache
-    - Confirmation: "Clear all offline content?" dialog
-    - Feedback: Toast: "Cache cleared. {MB} freed."
-    - Update: Storage usage bar updated
-
-17. **[Sync Now] button**
-    - Action: POST /api/v1/users/{userId}/pwa/sync
-    - Feedback: Progress spinner during sync
-    - Success: Toast: "Synced successfully. {count} items updated."
-    - Update: "Last synced" timestamp updated
-
 ### Data & Export Tab Navigation
 
-18. **[Request Data Export] button**
+13. **[Request Data Export] button**
     - Action: POST /api/v1/users/{userId}/export-data
     - Feedback: Toast: "Export requested. You'll receive an email when ready."
     - No Navigation: Remains on Data & Export tab
     - Update: Show export status: "Export pending... Estimated: 24 hours"
 
-19. **[Deactivate Account] button**
-    - Confirmation: Modal dialog: "Are you sure you want to deactivate your account?"
-    - Action: POST /api/v1/users/{userId}/deactivate
-    - On Confirm: Account deactivated, user logged out
-    - Target: Login page with message: "Account deactivated. You can reactivate by logging in."
 
-20. **[Delete My Account] button**
+14. **[Deactivate Account] button**
+   - Confirmation: Modal dialog with warning:
+     - "Are you sure you want to deactivate your account?"
+     - "⚠️ This will unregister you from all {count} upcoming events"
+     - "You can reactivate within 60 days. After that, your account will be permanently deleted."
+   - Action: POST /api/v1/users/{userId}/deactivate
+   - On Confirm: Account deactivated, all event registrations cancelled, user logged out
+   - Target: Login page with message: "Account deactivated. You can reactivate by logging in within 60 days."
+
+15. **[Delete My Account] button**
     - Confirmation: Multi-step confirmation modal
       1. "This action cannot be undone. Are you sure?"
       2. "Type DELETE to confirm"
@@ -877,29 +750,29 @@ Screen transitions triggered by actions and events:
 
 ### Error States & Redirects
 
-21. **On Unauthorized (401)**
+16. **On Unauthorized (401)**
     - Target: Login page
     - Context: Session expired
     - Message: "Your session has expired. Please log in again."
     - Return: After login, redirect back to Settings page
 
-22. **On Forbidden (403)**
+17. **On Forbidden (403)**
     - Target: Dashboard or error page
     - Message: "You don't have permission to access settings."
     - Cause: User role doesn't allow settings modification
 
-23. **On Network Error**
+18. **On Network Error**
     - No Navigation: Remains on current settings tab
     - Feedback: Error banner: "Unable to connect. Your changes will be saved when online."
-    - Auto-retry: Retry save when connection restored (PWA offline support)
+    - Auto-retry: Retry save when connection restored
 
-24. **On Validation Error**
+19. **On Validation Error**
     - No Navigation: Remains on current settings tab
     - Feedback: Inline error messages on invalid fields
     - Focus: Auto-scroll to first error field
     - Example: "Email address is invalid" or "Password must be at least 8 characters"
 
-25. **On Save Failure**
+20. **On Save Failure**
     - No Navigation: Remains on current settings tab
     - Feedback: Error toast: "Failed to save settings. Please try again."
     - Action: [Retry] button to attempt save again
@@ -907,12 +780,12 @@ Screen transitions triggered by actions and events:
 
 ### Auto-Save Behavior
 
-26. **On Field Blur (Auto-save)**
+21. **On Field Blur (Auto-save)**
     - Action: Debounced PUT /api/v1/users/{userId}/settings (3-second delay)
-    - No Navigation: Remains on current field
-    - Feedback: Small checkmark icon appears next to saved field
-    - Update: "Auto-saved {time} ago" indicator at top of page
 
+22. **On Page Unload with Unsaved Changes**
+   - Browser Warning: "You have unsaved changes. Are you sure you want to leave?"
+   - Options: [Stay] [Leave]
 27. **On Page Unload with Unsaved Changes**
     - Browser Warning: "You have unsaved changes. Are you sure you want to leave?"
     - Options: [Stay] [Leave]
@@ -953,7 +826,6 @@ Screen transitions triggered by actions and events:
 ### Mobile-Specific Interactions
 
 - **Swipe Navigation**: Swipe left/right between settings tabs (mobile only)
-- **Pull to Refresh**: Pull down to refresh settings data (PWA)
 - **Native Pickers**: Use native date/time pickers on mobile devices
 - **Tap Feedback**: Visual tap feedback (ripple effect) on all buttons
 - **Autocomplete**: Native keyboard with autocomplete suggestions
@@ -1055,10 +927,6 @@ Screen transitions triggered by actions and events:
   - Cache time: 1 day (static reference data)
   - Stale time: 24 hours
 
-- **pwaStatus** - PWA installation status
-  - Query key: `['pwa-status', userId]`
-  - Cache time: 5 minutes
-  - Enabled only in PWA mode
 
 ### Real-Time Updates
 
@@ -1068,12 +936,6 @@ Screen transitions triggered by actions and events:
   - Trigger: Field blur or value change
   - Feedback: "Auto-saved {time} ago" indicator
 
-### Offline Support (PWA)
-
-- **IndexedDB**: Store pending settings changes when offline
-- **Background Sync**: Sync settings when connection restored
-- **Conflict Resolution**: Last write wins (settings are user-specific)
-- **Sync Indicator**: Show "Offline - changes will sync when online" banner
 
 ---
 
@@ -1117,7 +979,7 @@ Screen transitions triggered by actions and events:
 
 - **Custom Interests**:
   - Max length: 30 characters per interest
-  - Max total: 20 custom interests
+  - No maximum limit on number of custom interests (unlimited)
   - No duplicates (case-insensitive)
 
 ### Form-Level Validations
@@ -1125,7 +987,6 @@ Screen transitions triggered by actions and events:
 - **Profile Completeness**: Warn if critical fields empty (company, name)
 - **Notification Consistency**: If newsletter enabled, at least one frequency selected
 - **Privacy Settings**: If profile private, hide activity visibility options
-- **PWA Storage**: Warn if storage quota exceeded (>90% full)
 - **Language Consistency**: If interface language changed, confirm content language preferences
 
 ---
@@ -1146,23 +1007,18 @@ Screen transitions triggered by actions and events:
 
 - **Company Not Found**: If selected company deleted, show warning: "Your company is no longer in our system. Please select a new company."
 
-- **PWA Not Installed**: Hide "App Settings" tab when not running as installed PWA
-
-- **Storage Quota Exceeded**: When offline storage >90% full, show warning: "Storage almost full. Clear cache to free space."
-
-- **Push Notification Blocked**: If browser blocks push, show: "Push notifications blocked. Enable in browser settings to receive notifications."
 
 - **Export Request Pending**: Show status: "Data export in progress... You'll receive an email when ready (usually within 24 hours)."
 
 - **Export Failed**: Email user with failure notice and support contact
 
-- **Account Deactivation Conflict**: If user has pending speaker invitations, warn: "You have pending speaker invitations. Deactivating your account will decline them."
+- **Account Deactivation Warning**: Before deactivation, show warning with upcoming event count: "⚠️ This will unregister you from all {count} upcoming events. You can reactivate within 60 days. After that, your account will be permanently deleted."
 
 - **Account Deletion Confirmation**: Multi-step confirmation with explicit consent: "This action cannot be undone. Type DELETE to confirm."
 
 - **Session Timeout**: Auto-save settings before redirecting to login on session expiration
 
-- **Network Error (Offline)**: Show banner: "You're offline. Changes will be saved when connection is restored." (PWA only)
+- **Network Error (Offline)**: Show banner: "You're offline. Changes will be saved when connection is restored."
 
 - **Slow Network**: Show loading skeleton immediately, timeout after 15 seconds with retry option
 
@@ -1179,25 +1035,68 @@ Screen transitions triggered by actions and events:
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
 | 2025-10-02 | 1.0 | Initial wireframe creation for User Settings Screen (Attendee) | Sally (UX Expert) |
+| 2025-10-04 | 1.1 | Updated based on 8 stakeholder decisions: added profile picture upload, removed 2FA/PWA/calendar features, unlimited custom tags, 60-day retention, auto-unregister on deactivation | Sally (UX Expert) |
 
 ---
 
 ## Review Notes
 
 ### Stakeholder Feedback
-- Awaiting product owner review for PWA settings scope
+- ✅ Profile picture upload approved for Account settings (v1.1)
+- ✅ 2FA deferred to post-MVP (v1.1)
+- ✅ Admin-controlled settings not needed for MVP (v1.1)
+- ✅ Auto-unregister from events on deactivation confirmed (v1.1)
+- ✅ PWA/offline features removed from MVP scope (v1.1)
+- ✅ Calendar integration deferred to post-MVP (v1.1)
+- ✅ Unlimited custom interest tags approved (v1.1)
+- ✅ 60-day retention period confirmed (matching AWS Cognito default) (v1.1)
 - Need confirmation on data export timeframe (24 hours vs faster)
-- Confirm GDPR compliance for account deletion (30-day grace period)
 
 ### Design Iterations
 - Version 1.0: Initial creation based on FR14, NFR1, NFR4 requirements
+- Version 1.1: Simplified MVP scope based on stakeholder decisions - added profile picture upload, removed 2FA/PWA/calendar integration, unlimited custom tags, 60-day account retention with auto-unregistration from events
 
 ### Open Questions
-1. Should we support profile picture upload in Account settings or separate screen?
-2. Do we need two-factor authentication (2FA) settings?
-3. Should there be admin-controlled settings that users cannot modify?
-4. What happens to scheduled event registrations when account is deactivated?
-5. Should we allow users to download specific content categories (e.g., only presentations) for offline access?
-6. Do we need integration with external calendar apps beyond iCal export?
-7. Should interest tags be pre-defined only or allow unlimited custom tags?
-8. What's the retention period for deactivated accounts before auto-deletion?
+
+All open questions have been resolved:
+
+1. ✅ **Profile Picture Upload**: Should we support profile picture upload in Account settings or separate screen?
+   - **DECISION: In Account settings** - Profile picture upload integrated directly into Account tab
+   - Upload/change photo inline with other profile fields (JPEG/PNG, max 5MB, 200x200px minimum)
+
+2. ✅ **Two-Factor Authentication (2FA)**: Do we need two-factor authentication (2FA) settings?
+   - **DECISION: NO** - Not in MVP scope
+   - 2FA can be added as future security enhancement
+   - Focus on basic authentication for MVP
+
+3. ✅ **Admin-Controlled Settings**: Should there be admin-controlled settings that users cannot modify?
+   - **DECISION: NO** - All settings user-controlled in MVP
+   - Admin overrides can be added in future if needed
+   - MVP focuses on user autonomy
+
+4. ✅ **Event Registrations on Deactivation**: What happens to scheduled event registrations when account is deactivated?
+   - **DECISION: User is automatically unregistered** - All upcoming event registrations cancelled
+   - Past event attendance history preserved in deactivated state
+   - User warned before deactivation: "This will unregister you from all upcoming events"
+
+5. ✅ **Offline Content Downloads**: Should we allow users to download specific content categories (e.g., only presentations) for offline access?
+   - **DECISION: NO - No offline feature** - Removed from MVP scope entirely
+   - PWA/offline functionality removed
+   - All content accessed online only
+
+6. ✅ **Calendar App Integration**: Do we need integration with external calendar apps beyond iCal export?
+   - **DECISION: NO** - No external calendar integration
+   - Users manage their schedule within BATbern platform only
+   - Can be added as future enhancement if requested
+
+7. ✅ **Interest Tags Limit**: Should interest tags be pre-defined only or allow unlimited custom tags?
+   - **DECISION: Allow unlimited custom tags**
+   - Users can create as many custom interest tags as needed
+   - No maximum limit on custom tags (previously 20, now unlimited)
+   - Still limited to 30 characters per tag
+
+8. ✅ **Retention Period for Deactivated Accounts**: What's the retention period for deactivated accounts before auto-deletion?
+   - **DECISION: 60 days** (same as AWS Cognito default)
+   - User can reactivate by logging in within 60 days
+   - After 60 days, account and all data permanently deleted
+   - User notified at deactivation: "You can reactivate within 60 days. After that, your account will be permanently deleted."

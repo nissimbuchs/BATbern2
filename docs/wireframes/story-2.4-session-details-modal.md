@@ -23,6 +23,7 @@
 │  │                                                                        │  │
 │  │  📍 Main Hall                       🎯 Technical Deep Dive            │  │
 │  │  Kursaal Bern                       ⭐ Advanced Level                 │  │
+│  │  👥 87/150 registered               🔴 Filling up fast!               │  │
 │  │                                                                        │  │
 │  └────────────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
@@ -118,7 +119,9 @@
 
 - **[Register for Event →] button**: Navigates to event registration page (story-2.4-event-registration.md)
 
-- **Related session links**: Clicking any related session opens that session's detail modal
+- **Related session links**: Clicking any related session closes current modal and opens that session's detail modal (no modal stacking)
+
+- **Real-time attendance counter**: Shows live registration count (e.g., "87/150 registered") with status indicator ("Filling up fast" when >50% full)
 
 ---
 
@@ -138,13 +141,13 @@
 
 - **Modal implementation**: Use React portal for overlay rendering outside DOM hierarchy
 - **Scroll behavior**: Modal body scrollable while backdrop prevents page scroll (overflow: hidden on body)
-- **Deep linking**: Generate shareable URLs like `/events/{eventId}/sessions/{sessionId}` that open modal on landing page
+- **No deep linking support**: Modal only opens via user interaction on event landing page (no direct URL access to modal state)
 - **Keyboard navigation**: ESC key closes modal, Tab key cycles through interactive elements
 - **Focus management**: Focus trap within modal, return focus to trigger element on close
 - **Animation**: Smooth fade-in/scale animation for modal appearance (300ms transition)
 - **Mobile optimization**: Full-screen modal on mobile (<768px), centered with max-width on desktop
 - **Share API**: Use native Web Share API on mobile devices when available
-- **Calendar integration**: "Add to My Schedule" creates iCal format for authenticated users
+- **Calendar integration**: "Add to My Schedule" saves to user's personal schedule in BATbern platform only (no external calendar app integration)
 - **Analytics tracking**: Track modal views, share actions, and slide downloads for session popularity metrics
 - **Lazy loading**: Speaker photo loaded only when modal opens (not on initial page load)
 - **State persistence**: If user closes modal and reopens, scroll position resets to top
@@ -178,12 +181,13 @@ When the Session Details Modal opens, the following APIs are called:
        "prerequisites": "string",
        "capacity": "integer",
        "registeredCount": "integer",
+       "registrationStatus": "enum (Open, Filling Fast, Almost Full, Full)",
        "tags": ["string[]"],
        "slidesAvailable": "boolean",
        "slidesUrl": "string | null"
      }
      ```
-   - Used for: Display session title, time, duration, location, level, description, takeaways, audience info, enable/disable slides download
+   - Used for: Display session title, time, duration, location, level, description, takeaways, audience info, real-time attendance count (registeredCount/capacity), registration status indicator, enable/disable slides download
 
 2. **GET /api/v1/speakers/{speakerId}**
    - Returns: Speaker details
@@ -245,18 +249,18 @@ When the Session Details Modal opens, the following APIs are called:
      ```
    - Used for: Adds session to user's personal schedule, shows success toast message, handles conflicts if any
 
-5. **GET /api/v1/events/{eventId}/sessions/{sessionId}/share-link**
+5. **GET /api/v1/events/{eventId}/share-link** (Event-level sharing, not session-specific)
    - Triggered by: User clicks [🔗 Share Session]
-   - Returns: Shareable deep link
+   - Returns: Shareable event landing page URL
      ```json
      {
-       "shareUrl": "string (https://batbern.ch/events/{eventId}?session={sessionId})",
-       "title": "string (session title for share preview)",
-       "description": "string (session abstract snippet)",
-       "imageUrl": "string (speaker photo or event banner)"
+       "shareUrl": "string (https://batbern.ch/events/{eventId})",
+       "title": "string (event title for share preview)",
+       "description": "string (includes session reference in share text: 'Check out this session: [Session Title]')",
+       "imageUrl": "string (event banner)"
      }
      ```
-   - Used for: Generates shareable URL for social media, email, or copy to clipboard, provides Open Graph metadata for rich previews
+   - Used for: Generates shareable event URL for social media, email, or copy to clipboard (no session-specific deep linking)
 
 6. **GET /api/v1/events/{eventId}/sessions/{sessionId}/slides**
    - Triggered by: User clicks [📄 Download Slides] (only if slidesAvailable = true)
@@ -302,14 +306,14 @@ When the Session Details Modal opens, the following APIs are called:
 4. **[View Full Profile →] link** → Navigate to `Speaker Profile Detail View`
    - Target: Speaker Profile Detail View (story-7.1-speaker-profile-detail-view.md)
    - Context: speakerId, source: "session_modal"
-   - Behavior: Opens new modal overlaying session modal (modal stacking) OR navigates to speaker page
+   - Behavior: Closes current session modal, then navigates to speaker profile page (no modal stacking)
 
 ### Secondary Navigation (Data Interactions)
 
-5. **Related session link click** → Opens `Session Details Modal` (recursive)
+5. **Related session link click** → Opens `Session Details Modal` for new session
    - Target: Session Details Modal for related session
-   - Context: New sessionId, replaces current modal content
-   - Behavior: Modal content transitions to new session (slide animation), maintains modal open state
+   - Context: New sessionId
+   - Behavior: Closes current modal first, then opens new session modal (no modal stacking, no content transition)
 
 6. **[📅 Add to My Schedule] button** → Inline state update
    - Target: Same modal (no navigation)
@@ -319,8 +323,8 @@ When the Session Details Modal opens, the following APIs are called:
 
 7. **[🔗 Share Session] button** → Opens `Share Modal` or native share
    - Target: Share modal (desktop) or native share sheet (mobile)
-   - Context: Session share URL, title, description
-   - Behavior: On mobile, triggers Web Share API; on desktop, shows share options modal overlay
+   - Context: Session title, description (no deep link URL - shares event landing page URL only)
+   - Behavior: On mobile, triggers Web Share API; on desktop, shows share options modal overlay with event landing page URL
 
 ### Event-Driven Navigation
 
@@ -381,7 +385,7 @@ When the Session Details Modal opens, the following APIs are called:
 - **Swipe down gesture**: Swipe down from top of modal to close (mobile only)
 - **Tap outside modal**: Tap on backdrop closes modal (with visual feedback)
 - **Share via native sheet**: Share button uses Web Share API on mobile for system sharing
-- **Add to device calendar**: "Add to My Schedule" offers native calendar integration on mobile
+- **Add to My Schedule**: Saves to BATbern personal schedule only (no native device calendar integration)
 - **Speaker photo tap**: Tap on speaker photo opens full profile (not just link)
 
 ---
@@ -465,6 +469,11 @@ When the Session Details Modal opens, the following APIs are called:
 
 ### Real-Time Updates
 
+- **Attendance count updates**: WebSocket subscription to session registration updates
+  - Channel: `events/${eventId}/sessions/${sessionId}/registrations`
+  - Events: `registration.added`, `registration.removed`
+  - Behavior: Live update of "X/Y registered" counter and status indicator ("Filling up fast", "Almost full", "Full")
+
 - **Session changes**: WebSocket subscription to session updates (title, time, cancellation)
   - Channel: `events/${eventId}/sessions/${sessionId}`
   - Events: `session.updated`, `session.canceled`, `session.time_changed`
@@ -496,7 +505,7 @@ When the Session Details Modal opens, the following APIs are called:
 
 - **Share API not supported**: Fallback to copy-to-clipboard with confirmation toast: "Link copied to clipboard"
 
-- **Session full (capacity reached)**: Show "Session is full" badge, disable "Add to Schedule", offer waitlist option
+- **Session full (capacity reached)**: Show "Session is full" badge (when registeredCount >= capacity), disable "Add to Schedule" button, display message "This session has reached capacity"
 
 - **Related sessions empty**: Hide "Related Sessions" section entirely if no related sessions found
 
@@ -515,23 +524,69 @@ When the Session Details Modal opens, the following APIs are called:
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
 | 2025-10-02 | 1.0 | Initial wireframe creation for Session Details Modal | Sally (UX Expert) |
+| 2025-10-04 | 1.1 | Updated with stakeholder decisions: added real-time attendance, removed Q&A, no modal stacking, no calendar integration, no deep linking | Sally (UX Expert) |
 
 ---
 
 ## Review Notes
 
 ### Stakeholder Feedback
-- Awaiting product owner review for "Add to My Schedule" feature scope
-- Need confirmation on whether slides should be downloadable before or after event
+- ✅ "Add to My Schedule" scope confirmed: Platform schedule only, no external calendar integration
+- ✅ Slides downloadable after event only (Download button disabled until event completion)
+- ✅ Real-time attendance counter approved for display
+- ✅ No modal stacking - close current before opening related session
+- ✅ No deep linking support in MVP
+- ✅ Q&A section, speaker ratings, and "other sessions by speaker" deferred to future enhancements
 
 ### Design Iterations
 - Version 1.0: Initial creation based on current event landing page navigation flows
+- Version 1.1: Updated based on stakeholder decisions:
+  - Added real-time attendance counter with status indicators
+  - Removed Q&A section (deferred)
+  - Clarified no modal stacking for related sessions
+  - Removed speaker ratings/reviews (deferred)
+  - Removed calendar app integration (platform schedule only)
+  - Removed deep linking support
+  - Removed "other sessions by speaker" feature (deferred)
 
 ### Open Questions
-1. Should we show real-time attendance count ("120/150 registered")?
-2. Do we need a Q&A section for attendees to submit questions in advance?
-3. Should related sessions be clickable from within the modal (modal stacking) or close current modal first?
-4. Should we display speaker rating/reviews from past events?
-5. Do we need to integrate with calendar apps for "Add to My Schedule" (beyond authentication)?
-6. Should the modal support deep linking (direct URL access)?
-7. What happens if a speaker has multiple sessions at the event - show "Other sessions by this speaker"?
+
+All open questions have been resolved:
+
+1. ✅ **Real-time attendance count**: Should we show real-time attendance count ("120/150 registered")?
+   - **DECISION: YES** - Show live attendance counter with status indicators
+   - Display format: "87/150 registered" with status badge ("Filling up fast" when >50%, "Almost full" when >80%, "Full" when at capacity)
+   - Updates via WebSocket for real-time accuracy
+
+2. ✅ **Q&A section**: Do we need a Q&A section for attendees to submit questions in advance?
+   - **DECISION: NO** - Not in MVP scope
+   - Q&A functionality deferred to future enhancement
+   - Focus on core session information and schedule management
+
+3. ✅ **Related sessions navigation**: Should related sessions be clickable from within the modal (modal stacking) or close current modal first?
+   - **DECISION: Close current modal first** - No modal stacking
+   - User experience: Click related session → current modal closes → new session modal opens
+   - Simpler state management and cleaner UX
+
+4. ✅ **Speaker ratings/reviews**: Should we display speaker rating/reviews from past events?
+   - **DECISION: NO** - Not in MVP scope
+   - Speaker ratings deferred to future enhancement (Epic 7)
+   - Focus on current session details and speaker credentials only
+
+5. ✅ **Calendar app integration**: Do we need to integrate with calendar apps for "Add to My Schedule" (beyond authentication)?
+   - **DECISION: NO** - Platform schedule only
+   - "Add to My Schedule" saves to BATbern personal schedule only
+   - No iCal export, no Google Calendar integration, no device calendar sync in MVP
+   - Users can view their schedule in attendee dashboard
+
+6. ✅ **Deep linking support**: Should the modal support deep linking (direct URL access)?
+   - **DECISION: NO** - No deep linking in MVP
+   - Modal only opens via user interaction on event landing page
+   - Share button shares event landing page URL only (not session-specific deep link)
+   - Simpler implementation and URL structure
+
+7. ✅ **Other sessions by speaker**: What happens if a speaker has multiple sessions at the event - show "Other sessions by this speaker"?
+   - **DECISION: NO** - Not in MVP scope
+   - Related sessions shown by topic/theme only, not by speaker
+   - Speaker's other sessions could be added in future enhancement
+   - Users can find speaker's sessions via speaker profile page (Story 7.1)

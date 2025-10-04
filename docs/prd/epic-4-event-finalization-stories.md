@@ -27,6 +27,24 @@ As a **moderator**, I want to review speaker content for quality and ensure mini
 - **Frontend**: React moderation dashboard
 - **Workflow**: Quality review state machine
 
+**Wireframe Context:**
+
+### Wireframe References
+**From docs/wireframes/sitemap.md:**
+- **Main Screen:** `docs/wireframes/story-4.1-moderator-review-queue.md` ✅
+  - Moderator quality review workflow before slot assignment
+  - Pending reviews list with urgency indicators
+  - Content preview (abstract, materials, speaker info)
+  - Review form with quality checks and ratings
+  - Approve/reject actions with feedback mechanism
+
+### Wireframe Status
+- ✅ **EXISTS**: Moderator Review Queue wireframe fully documented
+  - Complete review workflow interface
+  - Quality assessment criteria
+  - Feedback and approval mechanisms
+  - Assignment controls to prevent duplicate work
+
 **Acceptance Criteria:**
 
 **Quality Standards:**
@@ -98,6 +116,70 @@ As an **organizer**, I want content to publish progressively with automated agen
 - **Cache**: Redis for published content
 - **CDN**: CloudFront cache invalidation
 
+**Wireframe Context:**
+
+### Wireframe References
+**From docs/wireframes/sitemap.md:**
+- **Main Screen:** Progressive Publishing interface
+  - **Status:** 🔄 PARTIAL (referenced in wireframes-organizer.md but needs dedicated file)
+  - Publishing phases configuration (Topic → Speakers → Final Agenda → Post-Event)
+  - Phase scheduling and automation settings
+  - Newsletter system templates
+  - Content scheduling calendar
+
+### UI Components
+**Key interface elements:**
+- **Publishing Phases Timeline**: Visual timeline showing 4 publishing phases
+  - Phase 1: Topic Announcement (immediate, auto-triggered)
+  - Phase 2: Speaker Reveal (4 weeks before event, auto or manual)
+  - Phase 3: Final Agenda Lock (2 weeks before, enforced freeze)
+  - Phase 4: Post-Event Materials (after event, manual trigger)
+  - Current phase indicator with countdown to next phase
+- **Phase Configuration Panel**: Settings for each publishing phase
+  - Trigger timing (auto schedule or manual)
+  - Content included in phase (topics, speakers, sessions, materials)
+  - Newsletter template selection
+  - Target audience segments (speakers, attendees, partners, organizers)
+  - Preview before publish
+- **Newsletter Management**: Newsletter composition and scheduling
+  - Template editor with variable substitution ({{firstName}}, {{eventDate}})
+  - Segmented mailing list selection
+  - Subject line A/B testing interface
+  - Send time optimization suggestions
+  - Preview rendering for different email clients
+- **Content Validation Checklist**: Pre-publish validation
+  - ✓ All required fields completed
+  - ✓ Speaker photos uploaded
+  - ✓ Session times assigned
+  - ✓ Venue details confirmed
+  - ⚠ Warnings for missing optional content
+- **Agenda Lock Controls**: Two-week freeze mechanism
+  - Lock status indicator (Unlocked / Locked / Override Active)
+  - [Lock Agenda] button (2 weeks before event)
+  - [Request Emergency Override] button (requires approval)
+  - Change log showing modifications after lock
+- **Dropout Management**: Handle speaker cancellations
+  - Overflow speaker pool display
+  - Auto-promotion rules configuration
+  - Manual speaker replacement interface
+  - Re-publish controls for agenda updates
+
+### Wireframe Status
+- ✅ **EXISTS**: Progressive Publishing integrated in Event Settings Screen (`story-1.16-event-settings.md`)
+  - Publishing configuration available in Event Settings (Publishing tab)
+  - Phase configuration and scheduling
+  - Newsletter management system
+  - Content validation and agenda lock controls
+
+### Navigation
+**Key navigation paths from this screen:**
+- → Event Settings (publishing configuration)
+- → Newsletter Template Editor (create/edit templates)
+- → Content Preview (see public view before publish)
+- → Publishing History (view past publishes and newsletters)
+- → Mailing List Management (segment configuration)
+- ⤴ Event Detail/Edit Screen
+
 **Acceptance Criteria:**
 
 **Publishing Phases:**
@@ -108,10 +190,16 @@ As an **organizer**, I want content to publish progressively with automated agen
 5. **Post-Event**: Materials and recordings
 
 **Newsletter System:**
-6. **Segmented Lists**: Different stakeholder groups
-7. **Progressive Updates**: Match publishing phases
-8. **Final Announcement**: Complete agenda email
-9. **Analytics**: Track open rates and clicks
+6. **Segmented Lists**: Different stakeholder groups (speakers, attendees, partners, organizers)
+7. **Progressive Updates**: Match publishing phases (topic → speakers → final agenda)
+8. **Final Announcement**: Complete agenda email with registration link
+9. **Analytics**: Track open rates and clicks via SES click tracking
+10. **Template Management**: Use email_templates table with newsletter templates
+11. **Personalization**: Variable substitution for personalized content ({{firstName}}, {{eventDate}}, etc.)
+12. **A/B Testing**: Support for A/B testing subject lines and content variations
+13. **Unsubscribe Handling**: One-click unsubscribe with preference management
+14. **Bounce Processing**: Automatic handling of bounces and complaints via SNS
+15. **Delivery Optimization**: Schedule sends during optimal engagement windows
 
 **Agenda Management:**
 10. **Two-Week Lock**: Enforce agenda freeze
@@ -126,46 +214,69 @@ As an **organizer**, I want content to publish progressively with automated agen
 - [ ] Agenda lock enforced with overrides
 - [ ] Dropout handling within 24 hours
 - [ ] Version history maintained
+- [ ] Newsletter templates created for all publishing phases
+- [ ] Segmented mailing lists operational for all stakeholder groups
+- [ ] SES configuration set tracking opens and clicks
+- [ ] Bounce/complaint handling reducing bad addresses
+- [ ] Unsubscribe links compliant with GDPR
+- [ ] A/B testing framework functional for subject lines
+- [ ] Delivery timing optimized based on engagement data
 
 ---
 
 ## Story 4.4: Event Logistics Coordination (Workflow Steps 14-15)
 
 **User Story:**
-As an **organizer**, I want to coordinate moderation, catering, and venue through integrated workflows, so that all event logistics are professionally managed.
+As an **organizer**, I want to set reservation dates for the venue for the next year and have an overview of catering orders before the event.
 
 **Architecture Integration:**
 - **Service**: Event Management Service coordination module
-- **Integrations**: External catering and venue APIs
 - **Database**: PostgreSQL logistics tracking
 - **Frontend**: React coordination dashboard
 
-**Acceptance Criteria:**
+**Wireframe Context:**
 
-**Moderation Assignment:**
-1. **Moderator Pool**: Database of qualified moderators
-2. **Assignment Workflow**: Match moderator to event
-3. **Briefing Package**: Auto-generate moderator materials
-4. **Confirmation Tracking**: Monitor confirmations
+### Wireframe References
+**From docs/wireframes/sitemap.md:**
+- **Main Screen:** `docs/wireframes/story-4.4-logistics-coordination.md` ✅
+  - Logistics Coordination dashboard integrating venue and catering
+
+### UI Components
+**Key interface elements:**
+- **Logistics Dashboard**: Overview cards for all logistics areas
+  - Venue status (confirmed/pending)
+  - Catering order status
+- **Catering Coordination**:
+  - Attendee count projections
+  - [Request Quote] form
+  - Order confirmation workflow
+
+### Wireframe Status
+- ✅ **EXISTS**: Logistics Coordination wireframe fully documented
+  - Complete coordination dashboard
+  - Integration points for venue, catering, moderation
+  - Multi-year venue booking support (FR21)
+  - Equipment tracking
+
+### Navigation
+**Key navigation paths from this screen:**
+- → Event Detail/Edit (parent event)
+- ⤴ Event Management Dashboard
+
+**Acceptance Criteria:**
 
 **Catering Coordination:**
 5. **Quote Management**: Request and compare quotes
-6. **Dietary Requirements**: Track and communicate
 7. **Order Generation**: Based on registrations
-8. **Budget Tracking**: Monitor against budget
 
 **Venue Management:**
 9. **Long-term Booking**: 2+ year advance booking
 10. **Capacity Planning**: Match to expected attendance
-11. **Setup Requirements**: Room and technical needs
 12. **Contract Storage**: Digital contract management
 
 **Definition of Done:**
-- [ ] Moderator assigned 3+ weeks before event
-- [ ] Catering quotes processed <48 hours
+- [ ] Catering quotes processed <30 days
 - [ ] Venue bookings confirmed 2+ years ahead
-- [ ] Dietary requirements 100% captured
-- [ ] Budget maintained within 5% target
 - [ ] All confirmations documented
 
 ---
