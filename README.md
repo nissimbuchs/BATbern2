@@ -12,8 +12,8 @@ Enterprise event management platform for Berner Architekten Treffen (BATbern) co
 | API Gateway & Auth | ✅ Complete | Story 1.2 |
 | Multi-Env Infrastructure | ✅ Complete | Story 1.3 |
 | CI/CD Pipeline | ✅ Complete | Story 1.4 |
-| Environment Automation | 📝 Draft | Story 1.5 |
-| Monitoring & Alerting | 📝 Draft | Story 1.6 |
+| Environment Automation | ✅ Complete | Story 1.5 |
+| Monitoring & Alerting | ✅ Complete | Story 1.6 |
 | Domain Services | ⏳ Upcoming | Stories 1.14-1.19 |
 | React Frontend | ⏳ Upcoming | Story 1.17 |
 
