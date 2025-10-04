@@ -32,7 +32,8 @@ public class UserDataDeletionService {
         confirmationTokens.put(userId, confirmationToken);
 
         // In production: Send confirmation email with token
-        log.info("Confirmation token generated for user: {} - Token: {}", userId, confirmationToken);
+        // Security: Never log the actual token value
+        log.info("Confirmation token generated for user: {}", userId);
 
         return confirmationToken;
     }
