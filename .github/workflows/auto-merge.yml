@@ -48,8 +48,6 @@ jobs:
           # Wait for these required checks to complete
           running-workflow-name: 'auto-merge'
           allowed-conclusions: success,skipped
-          # Timeout after 30 minutes
-          check-timeout: 1800
 
       - name: Enable auto-merge
         if: steps.should-automerge.outputs.should_merge == 'true'
