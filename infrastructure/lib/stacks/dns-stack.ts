@@ -21,7 +21,7 @@ export interface DnsStackProps extends cdk.StackProps {
  *
  * Features:
  * - Creates hosted zone if hostedZoneId not provided
- * - Creates certificates if certificateArn not provided
+ * - Creates certificates if frontendCertificateArn not provided
  * - Imports existing resources if IDs/ARNs are provided
  */
 export class DnsStack extends cdk.Stack {
@@ -69,12 +69,12 @@ export class DnsStack extends cdk.Stack {
 
     // ACM Certificate - Create or Import
     // IMPORTANT: Must be in us-east-1 for CloudFront
-    if (props.config.domain?.certificateArn) {
+    if (props.config.domain?.frontendCertificateArn) {
       // Import existing certificate
       this.certificate = certificatemanager.Certificate.fromCertificateArn(
         this,
         'Certificate',
-        props.config.domain.certificateArn
+        props.config.domain.frontendCertificateArn
       );
 
       new cdk.CfnOutput(this, 'CertificateArnImported', {
@@ -120,7 +120,7 @@ export class DnsStack extends cdk.Stack {
       });
     }
 
-    if (!props.config.domain?.certificateArn) {
+    if (!props.config.domain?.frontendCertificateArn) {
       new cdk.CfnOutput(this, 'CertificateValidationInstructions', {
         value: `Certificate validation records automatically created in Route53. Validation may take 5-30 minutes.`,
         description: 'Certificate Status',

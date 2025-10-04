@@ -43,7 +43,8 @@ export const prodConfig: EnvironmentConfig = {
     apiDomain: 'api.batbern.ch',
     // Centralized DNS in management account (510187933511)
     hostedZoneId: 'Z04921951F6B818JF0POD',
-    certificateArn: 'arn:aws:acm:us-east-1:510187933511:certificate/3644eb35-b649-45e7-a198-05b01611ff09',
+    frontendCertificateArn: 'arn:aws:acm:us-east-1:510187933511:certificate/3644eb35-b649-45e7-a198-05b01611ff09',
+    apiCertificateArn: 'arn:aws:acm:eu-central-1:510187933511:certificate/1033ffde-72a7-46c3-94cc-d68124fb1588',
   },
   tags: {
     Environment: 'production',

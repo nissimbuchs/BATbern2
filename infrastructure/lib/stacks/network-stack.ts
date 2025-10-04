@@ -53,27 +53,40 @@ export class NetworkStack extends cdk.Stack {
     cdk.Tags.of(this.vpc).add('ManagedBy', 'CDK');
     cdk.Tags.of(this.vpc).add('Component', 'Network');
 
-    // Create ACM Certificate for API Gateway (if domain configured)
-    // NOTE: This certificate is in the same region as API Gateway (eu-central-1)
-    if (props.config.domain?.apiDomain && props.config.domain?.hostedZoneId) {
-      // Extract zone name from domain (e.g., api-staging.batbern.ch -> batbern.ch)
-      const zoneName = props.config.domain.apiDomain.split('.').slice(-2).join('.');
+    // Setup ACM Certificate for API Gateway (if domain configured)
+    // NOTE: This certificate must be in the same region as API Gateway (eu-central-1)
+    if (props.config.domain?.apiDomain) {
+      // Use existing certificate if provided (cross-account scenario)
+      if (props.config.domain.apiCertificateArn) {
+        this.apiCertificate = certificatemanager.Certificate.fromCertificateArn(
+          this,
+          'ApiCertificate',
+          props.config.domain.apiCertificateArn
+        );
+      }
+      // Create new certificate if hosted zone is in same account
+      else if (props.config.domain.hostedZoneId) {
+        // Extract zone name from domain (e.g., api-staging.batbern.ch -> batbern.ch)
+        const zoneName = props.config.domain.apiDomain.split('.').slice(-2).join('.');
 
-      const hostedZone = route53.HostedZone.fromHostedZoneAttributes(this, 'ApiHostedZone', {
-        hostedZoneId: props.config.domain.hostedZoneId,
-        zoneName,
-      });
+        const hostedZone = route53.HostedZone.fromHostedZoneAttributes(this, 'ApiHostedZone', {
+          hostedZoneId: props.config.domain.hostedZoneId,
+          zoneName,
+        });
 
-      this.apiCertificate = new certificatemanager.Certificate(this, 'ApiCertificate', {
-        domainName: props.config.domain.apiDomain,
-        validation: certificatemanager.CertificateValidation.fromDns(hostedZone),
-      });
+        this.apiCertificate = new certificatemanager.Certificate(this, 'ApiCertificate', {
+          domainName: props.config.domain.apiDomain,
+          validation: certificatemanager.CertificateValidation.fromDns(hostedZone),
+        });
+      }
 
-      new cdk.CfnOutput(this, 'ApiCertificateArn', {
-        value: this.apiCertificate.certificateArn,
-        description: `ACM Certificate ARN for API Gateway - ${props.config.domain.apiDomain}`,
-        exportName: `${props.config.envName}-ApiCertificateArn`,
-      });
+      if (this.apiCertificate) {
+        new cdk.CfnOutput(this, 'ApiCertificateArn', {
+          value: this.apiCertificate.certificateArn,
+          description: `ACM Certificate ARN for API Gateway - ${props.config.domain.apiDomain}`,
+          exportName: `${props.config.envName}-ApiCertificateArn`,
+        });
+      }
     }
 
     // Export VPC ID for cross-stack references
