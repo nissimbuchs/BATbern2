@@ -1,16 +1,30 @@
 import * as cdk from 'aws-cdk-lib';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
-import * as path from 'path';
 import { Construct } from 'constructs';
+import { EnvironmentConfig } from '../config/environment-config';
 
+export interface CognitoStackProps extends cdk.StackProps {
+  config: EnvironmentConfig;
+}
+
+/**
+ * Cognito Stack - Provides user authentication and authorization
+ *
+ * Implements:
+ * - AC16: AWS Cognito for authentication with role-based access
+ * - AC4: Security Boundaries with user pool groups and custom attributes
+ */
 export class CognitoStack extends cdk.Stack {
   public readonly userPool: cognito.UserPool;
   public readonly userPoolClient: cognito.UserPoolClient;
   public readonly userPoolDomain: cognito.UserPoolDomain;
 
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+  constructor(scope: Construct, id: string, props: CognitoStackProps) {
     super(scope, id, props);
+
+    const isProd = props.config.envName === 'production';
+    const envName = props.config.envName;
 
     // Create Pre-Signup Lambda Trigger for validation
     const preSignupLambda = new lambda.Function(this, 'PreSignupTrigger', {
@@ -35,7 +49,7 @@ export class CognitoStack extends cdk.Stack {
           }
 
           // Auto-verify email for development
-          if (process.env.NODE_ENV === 'development') {
+          if (process.env.ENVIRONMENT === 'development') {
             event.response.autoConfirmUser = true;
             event.response.autoVerifyEmail = true;
           }
@@ -43,12 +57,15 @@ export class CognitoStack extends cdk.Stack {
           return event;
         };
       `),
+      environment: {
+        ENVIRONMENT: envName,
+      },
       timeout: cdk.Duration.seconds(5),
     });
 
     // Create Cognito User Pool
     this.userPool = new cognito.UserPool(this, 'UserPool', {
-      userPoolName: 'batbern-user-pool',
+      userPoolName: `batbern-${envName}-user-pool`,
       selfSignUpEnabled: true,
       signInAliases: {
         email: true,
@@ -93,12 +110,26 @@ export class CognitoStack extends cdk.Stack {
       lambdaTriggers: {
         preSignUp: preSignupLambda,
       },
+      removalPolicy: isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
     });
+
+    // Determine callback URLs based on environment
+    const callbackUrls = envName === 'production'
+      ? ['https://www.batbern.ch/auth/callback']
+      : envName === 'staging'
+      ? ['https://staging.batbern.ch/auth/callback']
+      : ['http://localhost:3000/auth/callback'];
+
+    const logoutUrls = envName === 'production'
+      ? ['https://www.batbern.ch/logout']
+      : envName === 'staging'
+      ? ['https://staging.batbern.ch/logout']
+      : ['http://localhost:3000/logout'];
 
     // Create User Pool Client
     this.userPoolClient = new cognito.UserPoolClient(this, 'UserPoolClient', {
       userPool: this.userPool,
-      userPoolClientName: 'batbern-web-client',
+      userPoolClientName: `batbern-${envName}-web-client`,
       authFlows: {
         userPassword: true,
         custom: true,
@@ -117,16 +148,8 @@ export class CognitoStack extends cdk.Stack {
           cognito.OAuthScope.OPENID,
           cognito.OAuthScope.PROFILE,
         ],
-        callbackUrls: [
-          'https://www.batbern.ch/auth/callback',
-          'https://staging.batbern.ch/auth/callback',
-          'http://localhost:3000/auth/callback',
-        ],
-        logoutUrls: [
-          'https://www.batbern.ch/logout',
-          'https://staging.batbern.ch/logout',
-          'http://localhost:3000/logout',
-        ],
+        callbackUrls,
+        logoutUrls,
       },
       supportedIdentityProviders: [
         cognito.UserPoolClientIdentityProvider.COGNITO,
@@ -143,7 +166,7 @@ export class CognitoStack extends cdk.Stack {
     this.userPoolDomain = new cognito.UserPoolDomain(this, 'UserPoolDomain', {
       userPool: this.userPool,
       cognitoDomain: {
-        domainPrefix: 'batbern-auth',
+        domainPrefix: `batbern-${envName}-auth`,
       },
     });
 
@@ -158,23 +181,34 @@ export class CognitoStack extends cdk.Stack {
       });
     });
 
+    // Apply tags
+    cdk.Tags.of(this).add('Environment', envName);
+    cdk.Tags.of(this).add('Component', 'Authentication');
+    cdk.Tags.of(this).add('Project', 'BATbern');
+
     // Outputs
     new cdk.CfnOutput(this, 'UserPoolId', {
       value: this.userPool.userPoolId,
       description: 'Cognito User Pool ID',
-      exportName: `${id}-UserPoolId`,
+      exportName: `${envName}-UserPoolId`,
+    });
+
+    new cdk.CfnOutput(this, 'UserPoolArn', {
+      value: this.userPool.userPoolArn,
+      description: 'Cognito User Pool ARN',
+      exportName: `${envName}-UserPoolArn`,
     });
 
     new cdk.CfnOutput(this, 'UserPoolClientId', {
       value: this.userPoolClient.userPoolClientId,
       description: 'Cognito User Pool Client ID',
-      exportName: `${id}-UserPoolClientId`,
+      exportName: `${envName}-UserPoolClientId`,
     });
 
     new cdk.CfnOutput(this, 'UserPoolDomainUrl', {
       value: `https://${this.userPoolDomain.domainName}.auth.${this.region}.amazoncognito.com`,
       description: 'Cognito User Pool Domain URL',
-      exportName: `${id}-UserPoolDomainUrl`,
+      exportName: `${envName}-UserPoolDomainUrl`,
     });
   }
 }

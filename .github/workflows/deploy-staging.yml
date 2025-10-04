@@ -58,7 +58,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::510187933511:role/batbern-staging-github-actions-role
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Set up Node.js 20

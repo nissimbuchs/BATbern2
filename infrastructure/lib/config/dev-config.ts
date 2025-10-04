@@ -8,7 +8,7 @@ import { EnvironmentConfig } from './environment-config';
 export const devConfig: EnvironmentConfig = {
   envName: 'development',
   region: 'eu-central-1',
-  account: process.env.CDK_DEFAULT_ACCOUNT || '',
+  account: '954163570305', // BATbern Development account
   vpc: {
     cidr: '10.0.0.0/16',
     maxAzs: 2,
