@@ -42,6 +42,22 @@ const env = {
 console.log(`Deploying BATbern infrastructure for environment: ${config.envName}`);
 console.log(`AWS Account: ${env.account}, Region: ${env.region}`);
 
+// Validate deployment account matches expected configuration
+if (env.account !== config.account) {
+  throw new Error(
+    `\n❌ ACCOUNT MISMATCH DETECTED!\n` +
+    `\n  Current AWS credentials point to account: ${env.account}` +
+    `\n  Expected account for ${config.envName}:     ${config.account}` +
+    `\n` +
+    `\n  This prevents accidental deployment to the wrong AWS account.` +
+    `\n` +
+    `\n  To fix:` +
+    `\n  - Use the npm scripts: npm run deploy:${config.envName}` +
+    `\n  - Or set correct profile: export AWS_PROFILE=batbern-${config.envName}` +
+    `\n`
+  );
+}
+
 // Create stacks for the selected environment
 const stackPrefix = `BATbern-${config.envName}`;
 
@@ -141,7 +157,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     userPoolClient: cognitoStack.userPoolClient,
     domainName: config.domain?.apiDomain,
     hostedZoneId: dnsStack?.hostedZone.hostedZoneId || config.domain?.hostedZoneId,
-    certificateArn: networkStack.apiCertificate?.certificateArn || config.domain?.certificateArn,
+    certificateArn: networkStack.apiCertificate?.certificateArn || config.domain?.apiCertificateArn,
     env,
     description: `BATbern API Gateway - ${config.envName}`,
     tags: config.tags,
@@ -159,7 +175,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     logsBucket: storageStack.logsBucket,
     domainName: config.domain?.frontendDomain,
     hostedZoneId: dnsStack?.hostedZone.hostedZoneId || config.domain?.hostedZoneId,
-    certificateArn: dnsStack?.certificate.certificateArn || config.domain?.certificateArn,
+    certificateArn: dnsStack?.certificate.certificateArn || config.domain?.frontendCertificateArn,
     env,
     description: `BATbern Frontend Application - ${config.envName}`,
     tags: config.tags,

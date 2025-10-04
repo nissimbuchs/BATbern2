@@ -64,7 +64,8 @@ export interface DomainConfig {
   frontendDomain: string;
   apiDomain: string;
   hostedZoneId?: string;
-  certificateArn?: string;
+  frontendCertificateArn?: string; // us-east-1 for CloudFront
+  apiCertificateArn?: string; // eu-central-1 for API Gateway
 }
 
 export interface VpcConfig {
