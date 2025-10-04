@@ -1,0 +1,113 @@
+name: Auto-Merge PR
+
+# Automatically merge PRs when all checks pass
+# Handles:
+# - Dependabot PRs (security updates)
+# - PRs with 'automerge' label
+# - PRs with 'dependencies' label
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - labeled
+      - unlabeled
+  check_suite:
+    types:
+      - completed
+  pull_request_review:
+    types:
+      - submitted
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    # Only run on PRs to develop or main
+    if: |
+      github.event.pull_request.base.ref == 'develop' ||
+      github.event.pull_request.base.ref == 'main'
+
+    steps:
+      - name: Check if PR should auto-merge
+        id: should-automerge
+        run: |
+          PR_AUTHOR="${{ github.event.pull_request.user.login }}"
+          PR_LABELS="${{ toJSON(github.event.pull_request.labels.*.name) }}"
+
+          echo "PR Author: $PR_AUTHOR"
+          echo "PR Labels: $PR_LABELS"
+
+          # Auto-merge Dependabot PRs
+          if [[ "$PR_AUTHOR" == "dependabot[bot]" ]]; then
+            echo "should_merge=true" >> $GITHUB_OUTPUT
+            echo "reason=Dependabot PR" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Auto-merge PRs with 'automerge' label
+          if echo "$PR_LABELS" | grep -q "automerge"; then
+            echo "should_merge=true" >> $GITHUB_OUTPUT
+            echo "reason=Has automerge label" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Auto-merge PRs with 'dependencies' label (for non-Dependabot dependency updates)
+          if echo "$PR_LABELS" | grep -q "dependencies"; then
+            echo "should_merge=true" >> $GITHUB_OUTPUT
+            echo "reason=Has dependencies label" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "should_merge=false" >> $GITHUB_OUTPUT
+          echo "reason=No auto-merge criteria met" >> $GITHUB_OUTPUT
+
+      - name: Wait for required checks
+        if: steps.should-automerge.outputs.should_merge == 'true'
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 30
+          # Wait for these required checks to complete
+          running-workflow-name: 'auto-merge'
+          allowed-conclusions: success,skipped
+          # Timeout after 30 minutes
+          check-timeout: 1800
+
+      - name: Enable auto-merge
+        if: steps.should-automerge.outputs.should_merge == 'true'
+        run: |
+          echo "Enabling auto-merge for PR #${{ github.event.pull_request.number }}"
+          echo "Reason: ${{ steps.should-automerge.outputs.reason }}"
+
+          gh pr merge ${{ github.event.pull_request.number }} \
+            --auto \
+            --squash \
+            --delete-branch \
+            --repo ${{ github.repository }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Comment on PR
+        if: steps.should-automerge.outputs.should_merge == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🤖 Auto-merge enabled\n\n**Reason:** ${{ steps.should-automerge.outputs.reason }}\n\nThis PR will be automatically merged when all required checks pass.`
+            })
+
+      - name: Log skip reason
+        if: steps.should-automerge.outputs.should_merge == 'false'
+        run: |
+          echo "⏭️ Skipping auto-merge"
+          echo "Reason: ${{ steps.should-automerge.outputs.reason }}"
