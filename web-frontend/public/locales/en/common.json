@@ -1,0 +1,36 @@
+{
+  "app": {
+    "name": "BATbern",
+    "tagline": "Event Management for Bern"
+  },
+  "navigation": {
+    "home": "Home",
+    "events": "Events",
+    "speakers": "Speakers",
+    "partners": "Partners",
+    "profile": "Profile",
+    "logout": "Logout"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "filter": "Filter",
+    "reset": "Reset",
+    "submit": "Submit",
+    "close": "Close",
+    "sending": "Sending..."
+  },
+  "language": {
+    "select": "Select Language",
+    "de": "Deutsch",
+    "en": "English"
+  },
+  "status": {
+    "wait": "Wait {{seconds}} seconds",
+    "didntReceive": "Didn't receive the email?"
+  }
+}

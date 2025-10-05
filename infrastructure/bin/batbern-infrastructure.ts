@@ -9,6 +9,7 @@ import { SecretsStack } from '../lib/stacks/secrets-stack';
 import { MonitoringStack } from '../lib/stacks/monitoring-stack';
 import { CICDStack } from '../lib/stacks/cicd-stack';
 import { CognitoStack } from '../lib/stacks/cognito-stack';
+import { SesStack } from '../lib/stacks/ses-stack';
 import { ApiGatewayStack } from '../lib/stacks/api-gateway-stack';
 import { FrontendStack } from '../lib/stacks/frontend-stack';
 import { MicroservicesStack } from '../lib/stacks/microservices-stack';
@@ -147,7 +148,15 @@ const cognitoStack = new CognitoStack(app, `${stackPrefix}-Cognito`, {
   tags: config.tags,
 });
 
-// 9. Microservices Stack (ECS Fargate services for backend)
+// 9. SES Stack (Email templates for authentication workflows)
+const sesStack = new SesStack(app, `${stackPrefix}-SES`, {
+  config,
+  env,
+  description: `BATbern Email Templates - ${config.envName}`,
+  tags: config.tags,
+});
+
+// 10. Microservices Stack (ECS Fargate services for backend)
 // NOTE: Only deploy for cloud environments (staging/production)
 // Development runs microservices locally in Docker
 let microservicesStack: MicroservicesStack | undefined;
@@ -166,7 +175,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   microservicesStack.addDependency(cicdStack); // Depends on ECR repositories
 }
 
-// 10. API Gateway Stack (AWS API Gateway proxy to Spring Boot API Gateway)
+// 11. API Gateway Stack (AWS API Gateway proxy to Spring Boot API Gateway)
 // NOTE: Only deploy for cloud environments (staging/production)
 // Development runs API Gateway locally in Docker
 if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
@@ -189,7 +198,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   }
 }
 
-// 11. Frontend Stack (React web application)
+// 12. Frontend Stack (React web application)
 // NOTE: Only deploy for cloud environments (staging/production)
 // Development runs Frontend locally in Docker
 if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {

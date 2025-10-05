@@ -92,6 +92,14 @@ public class InMemoryRateLimitStorage implements RateLimitStorage {
         return ChronoUnit.MINUTES.between(entry.getTimestamp(), LocalDateTime.now()) >= 1;
     }
 
+    /**
+     * Clear all rate limit data (for testing)
+     */
+    public void clearAll() {
+        rateLimitMap.clear();
+        log.debug("Cleared all rate limit data");
+    }
+
     private static class RateLimitEntry {
         private int requestCount;
         private final LocalDateTime timestamp;

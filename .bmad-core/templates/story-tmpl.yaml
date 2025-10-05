@@ -284,30 +284,38 @@ sections:
         - [ ] Write failing E2E test for main user journey
         - [ ] Verify test fails with meaningful error
 
-      - [ ] Task 2: Backend TDD Implementation (AC: # if applicable)
+      - [ ] Task 2a: Backend TDD Tests (RED Phase) (AC: # if applicable)
         - [ ] Write failing integration tests for API endpoints
         - [ ] Write failing unit tests for service methods
         - [ ] Write failing unit tests for domain logic
-        - [ ] Implement minimal code to make tests pass (GREEN)
-        - [ ] Refactor code while keeping tests green (REFACTOR)
 
-      - [ ] Task 3: Frontend TDD Implementation (AC: # if applicable)
+      - [ ] Task 2b: Backend TDD Implementation (GREEN Phase) (AC: # if applicable)
+        - [ ] Implement minimal code to make tests pass (GREEN)
+
+      - [ ] Task 3a: Frontend TDD Implementation (RED Phase) (next AC: # if applicable)
         - [ ] Write failing component tests
         - [ ] Write failing hook tests (if applicable)
         - [ ] Write failing service tests
-        - [ ] Implement minimal component code to pass tests (GREEN)
-        - [ ] Refactor and optimize components (REFACTOR)
-      - [ ] Task 3: Infrastructure Setup (AC: # if applicable)
-        - [ ] Update CDK stacks
-        - [ ] Configure AWS resources
-        - [ ] Set up EventBridge rules
-        - [ ] Test infrastructure
-      - [ ] Task 4 (AC: # if applicable)
-        - [ ] Subtask1.1...
-      - [ ] Task 5 (AC: # if applicable)
-        - [ ] Subtask 2.1...
-      - [ ] Task 6 (AC: # if applicable)
-        - [ ] Subtask 3.1...
+
+      - [ ] Task 3b: Frontend TDD Implementation (GREEN Phase) (next AC: # if applicable)
+        - [ ] Implement minimal component code to pass tests
+
+      - [ ] Task Xa .. (RED Phase) (next AC: # if applicable)
+        - [ ] subtasks
+
+      - [ ] Task Xb .. (GREEN Phase) (next AC: # if applicable)
+        - [ ] subtasks
+
+      - [ ] Task xx: Infrastructure Setup
+        - [ ] Check, all needed AWS resources are defined in CDK stacks
+        - [ ] Test correct wiring of frontend to backend via API-gateway
+
+      - [ ] Task xx: Backend and Fronend Refactoring (REFACTOR)
+        - [ ] Verify all no mocks where used except in the tests
+        - [ ] Verify all E2E Tests pass (GREEN)
+        - [ ] Refactor backend code while keeping tests green
+        - [ ] Refactor and optimize frontend components (REFACTOR)
+
     elicit: true
     owner: scrum-master
     editors: [scrum-master, dev-agent]

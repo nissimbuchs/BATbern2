@@ -1,6 +1,6 @@
 /**
  * LoginForm Component Implementation
- * Story 1.2: AWS Cognito Authentication UI
+ * Story 1.2.1: AWS Cognito Authentication UI with i18n
  */
 
 import React, { useState, useEffect } from 'react';
@@ -16,21 +16,22 @@ import {
   Link,
   Paper,
   Container,
+  IconButton,
+  InputAdornment,
 } from '@mui/material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@hooks/useAuth';
 import { LoginCredentials } from '@/types/auth';
 
-// Validation schema
-const loginSchema = z.object({
-  email: z.string().min(1, 'Email is required').email('Please enter a valid email'),
-  password: z.string().min(1, 'Password is required'),
-  rememberMe: z.boolean().default(false),
-});
-
-type LoginFormData = z.infer<typeof loginSchema>;
+type LoginFormData = {
+  email: string;
+  password: string;
+  rememberMe: boolean;
+};
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -38,9 +39,38 @@ interface LoginFormProps {
   onSignUp?: () => void;
 }
 
+// Factory function for localized validation schema
+const createLoginSchema = (t: (key: string) => string) =>
+  z.object({
+    email: z
+      .string()
+      .min(1, t('validation:email.required'))
+      .email(t('validation:email.invalid'))
+      .max(255, t('validation:email.tooLong')),
+    password: z
+      .string()
+      .min(1, t('validation:password.required'))
+      .min(8, t('validation:password.tooShort'))
+      .max(128, t('validation:password.tooLong')),
+    rememberMe: z.boolean().default(false),
+  });
+
+// Map error codes to i18n keys
+const getErrorTranslationKey = (errorCode?: string): string => {
+  const errorMap: Record<string, string> = {
+    INVALID_CREDENTIALS: 'auth:errors.invalidCredentials',
+    EMAIL_NOT_VERIFIED: 'auth:errors.emailNotVerified',
+    ACCOUNT_LOCKED: 'auth:errors.accountLocked',
+    NETWORK_ERROR: 'auth:errors.networkError',
+  };
+  return errorMap[errorCode || ''] || 'auth:errors.unknownError';
+};
+
 export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPassword, onSignUp }) => {
+  const { t } = useTranslation(['auth', 'validation']);
   const { signIn, isLoading, error, clearError } = useAuth();
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     control,
@@ -49,7 +79,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPasswor
     watch,
     reset,
   } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
+    resolver: zodResolver(createLoginSchema(t)),
     defaultValues: {
       email: '',
       password: '',
@@ -85,8 +115,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPasswor
         reset();
         onSuccess?.();
       }
-    } catch (err: any) {
-      setSubmitError(err.message || 'An unexpected error occurred');
+    } catch (err) {
+      setSubmitError(t('auth:errors.unknownError'));
     }
   };
 
@@ -98,18 +128,19 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPasswor
     onSignUp?.();
   };
 
-  const displayError = error?.message || submitError;
+  // Get localized error message
+  const displayError = error ? t(getErrorTranslationKey(error.code)) : submitError;
 
   return (
     <Container maxWidth="sm">
       <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <Typography component="h1" variant="h4" gutterBottom>
-            Sign In
+            {t('auth:login.title')}
           </Typography>
 
           <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
-            Welcome back to BATbern Platform
+            {t('auth:login.subtitle')}
           </Typography>
 
           {displayError && (
@@ -126,9 +157,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPasswor
                 <TextField
                   {...field}
                   fullWidth
-                  label="Email"
+                  label={t('auth:login.emailLabel')}
+                  placeholder={t('auth:login.emailPlaceholder')}
                   type="email"
-                  autoComplete="email"
+                  autoComplete="email username"
                   autoFocus
                   margin="normal"
                   error={!!errors.email}
@@ -145,13 +177,31 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPasswor
                 <TextField
                   {...field}
                   fullWidth
-                  label="Password"
-                  type="password"
+                  label={t('auth:login.passwordLabel')}
+                  placeholder={t('auth:login.passwordPlaceholder')}
+                  type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   margin="normal"
                   error={!!errors.password}
                   helperText={errors.password?.message}
                   disabled={isLoading}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label={
+                            showPassword
+                              ? t('auth:login.hidePassword')
+                              : t('auth:login.showPassword')
+                          }
+                          onClick={() => setShowPassword(!showPassword)}
+                          edge="end"
+                        >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
                 />
               )}
             />
@@ -169,7 +219,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPasswor
                       disabled={isLoading}
                     />
                   }
-                  label="Remember me"
+                  label={t('auth:login.rememberMe')}
                   sx={{ mt: 1 }}
                 />
               )}
@@ -183,7 +233,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPasswor
               disabled={isLoading || !isValid}
               startIcon={isLoading ? <CircularProgress size={20} /> : null}
             >
-              {isLoading ? 'Signing In...' : 'Sign In'}
+              {t('auth:login.signInButton')}
             </Button>
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
@@ -195,19 +245,24 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPasswor
                 disabled={isLoading}
                 sx={{ textDecoration: 'none' }}
               >
-                Forgot password?
+                {t('auth:login.forgotPassword')}
               </Link>
 
-              <Link
-                component="button"
-                variant="body2"
-                type="button"
-                onClick={handleSignUp}
-                disabled={isLoading}
-                sx={{ textDecoration: 'none' }}
-              >
-                Don't have an account? Sign up
-              </Link>
+              <Box sx={{ textAlign: 'right' }}>
+                <Typography variant="body2" component="span" color="text.secondary">
+                  {t('auth:login.noAccount')}{' '}
+                </Typography>
+                <Link
+                  component="button"
+                  variant="body2"
+                  type="button"
+                  onClick={handleSignUp}
+                  disabled={isLoading}
+                  sx={{ textDecoration: 'none' }}
+                >
+                  {t('auth:login.createAccount')}
+                </Link>
+              </Box>
             </Box>
           </Box>
         </Box>

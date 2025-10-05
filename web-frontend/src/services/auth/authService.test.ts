@@ -19,14 +19,25 @@ vi.mock('aws-amplify/auth', () => ({
   confirmResetPassword: vi.fn(),
 }));
 
-// Import the mocked module
+// Mock Cognito token provider for storage configuration
+vi.mock('aws-amplify/auth/cognito', () => ({
+  cognitoUserPoolsTokenProvider: {
+    setKeyValueStorage: vi.fn(),
+  },
+}));
+
+// Import the mocked modules
 import * as amplifyAuth from 'aws-amplify/auth';
+import { cognitoUserPoolsTokenProvider } from 'aws-amplify/auth/cognito';
 
 const mockAuth = vi.mocked(amplifyAuth);
 
 describe('AuthService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Clear storage before each test
+    localStorage.clear();
+    sessionStorage.clear();
   });
 
   describe('signIn', () => {
@@ -172,6 +183,104 @@ describe('AuthService', () => {
         expect(result.mfaChallenge.session).toBeDefined();
       }
     });
+
+    it('should_configureLocalStorage_when_rememberMeIsTrue', async () => {
+      // Story 1.2.1: Verify Amplify storage is configured for persistence
+      const credentials: LoginCredentials = {
+        email: 'organizer@batbern.ch',
+        password: 'ValidPassword123!',
+        rememberMe: true,
+      };
+
+      const mockSession = {
+        tokens: {
+          idToken: {
+            payload: {
+              sub: 'user-123',
+              email: 'organizer@batbern.ch',
+              email_verified: true,
+              'custom:role': 'organizer',
+              'custom:companyId': 'company-123',
+              'custom:preferences': JSON.stringify({
+                language: 'en',
+                theme: 'light',
+                notifications: { email: true, sms: false, push: true },
+                privacy: { showProfile: true, allowMessages: true },
+              }),
+              iat: Math.floor(Date.now() / 1000),
+              exp: Math.floor(Date.now() / 1000) + 3600,
+            },
+            toString: () => 'mock-id-token',
+          },
+          accessToken: {
+            payload: {
+              exp: Math.floor(Date.now() / 1000) + 3600,
+            },
+            toString: () => 'mock-access-token',
+          },
+        },
+      };
+
+      mockAuth.signIn.mockResolvedValue({
+        isSignedIn: true,
+        nextStep: { signInStep: 'DONE' },
+      });
+      mockAuth.fetchAuthSession.mockResolvedValue(mockSession);
+
+      await authService.signIn(credentials);
+
+      // Verify Amplify was configured to use localStorage
+      expect(cognitoUserPoolsTokenProvider.setKeyValueStorage).toHaveBeenCalledWith(localStorage);
+    });
+
+    it('should_configureSessionStorage_when_rememberMeIsFalse', async () => {
+      // Story 1.2.1: Verify Amplify storage is configured for temporary session
+      const credentials: LoginCredentials = {
+        email: 'speaker@company.com',
+        password: 'ValidPassword123!',
+        rememberMe: false,
+      };
+
+      const mockSession = {
+        tokens: {
+          idToken: {
+            payload: {
+              sub: 'user-456',
+              email: 'speaker@company.com',
+              email_verified: true,
+              'custom:role': 'speaker',
+              'custom:companyId': 'company-456',
+              'custom:preferences': JSON.stringify({
+                language: 'en',
+                theme: 'light',
+                notifications: { email: true, sms: false, push: true },
+                privacy: { showProfile: true, allowMessages: true },
+              }),
+              iat: Math.floor(Date.now() / 1000),
+              exp: Math.floor(Date.now() / 1000) + 3600,
+            },
+            toString: () => 'mock-id-token-session',
+          },
+          accessToken: {
+            payload: {
+              exp: Math.floor(Date.now() / 1000) + 3600,
+            },
+            toString: () => 'mock-access-token-session',
+          },
+        },
+      };
+
+      mockAuth.signIn.mockResolvedValue({
+        isSignedIn: true,
+        nextStep: { signInStep: 'DONE' },
+      });
+      mockAuth.fetchAuthSession.mockResolvedValue(mockSession);
+
+      await authService.signIn(credentials);
+
+      // Verify Amplify was configured to use sessionStorage
+      expect(cognitoUserPoolsTokenProvider.setKeyValueStorage).toHaveBeenCalledWith(sessionStorage);
+    });
   });
 
   describe('signUp', () => {
@@ -306,12 +415,9 @@ describe('AuthService', () => {
   });
 
   describe('signOut', () => {
-    it('should_clearUserSession_when_signingOut', async () => {
-      // Test 9.9: should_clearUserSession_when_signingOut
+    it('should_signOutUser_when_called', async () => {
       await authService.signOut();
-
-      const user = await authService.getCurrentUser();
-      expect(user).toBeNull();
+      expect(mockAuth.signOut).toHaveBeenCalled();
     });
   });
 

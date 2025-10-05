@@ -48,8 +48,10 @@ jobs:
           # Wait for these required checks to complete
           running-workflow-name: 'auto-merge'
           allowed-conclusions: success,skipped
-          # Ignore GitHub CodeQL App check (we use custom CodeQL workflow instead)
-          check-regexp: '^(?!CodeQL$).*'
+          # Ignore non-blocking checks:
+          # - CodeQL App (we use custom CodeQL workflow instead)
+          # - SonarCloud Code Analysis (advisory only, not blocking)
+          check-regexp: '^(?!CodeQL$|SonarCloud Code Analysis$).*'
 
       - name: Enable auto-merge
         if: steps.should-automerge.outputs.should_merge == 'true'
