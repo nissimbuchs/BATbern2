@@ -160,9 +160,9 @@
 
 When the Session Details Modal opens, the following APIs are called:
 
-1. **GET /api/v1/events/{eventId}/sessions/{sessionId}**
-   - Query params: None
-   - Returns: Complete session details
+1. **GET /api/v1/events/{eventId}/sessions/{sessionId}?include=speaker,relatedSessions**
+   - Query params: `include=speaker,relatedSessions` (consolidated resource expansion)
+   - Returns: Complete session details with expanded speaker and related sessions
      ```json
      {
        "sessionId": "uuid",
@@ -184,62 +184,56 @@ When the Session Details Modal opens, the following APIs are called:
        "registrationStatus": "enum (Open, Filling Fast, Almost Full, Full)",
        "tags": ["string[]"],
        "slidesAvailable": "boolean",
-       "slidesUrl": "string | null"
+       "slidesUrl": "string | null",
+       "speaker": {
+         "speakerId": "uuid",
+         "firstName": "string",
+         "lastName": "string",
+         "profilePhoto": "string (URL)",
+         "company": "string",
+         "position": "string",
+         "bio": "string",
+         "expertiseAreas": ["string[]"],
+         "yearsExperience": "integer",
+         "certifications": ["string[]"],
+         "socialLinks": {
+           "linkedin": "string | null",
+           "twitter": "string | null",
+           "github": "string | null"
+         }
+       },
+       "relatedSessions": [
+         {
+           "sessionId": "uuid",
+           "title": "string",
+           "startTime": "ISO-8601 datetime",
+           "sessionType": "string"
+         }
+       ]
      }
      ```
-   - Used for: Display session title, time, duration, location, level, description, takeaways, audience info, real-time attendance count (registeredCount/capacity), registration status indicator, enable/disable slides download
-
-2. **GET /api/v1/speakers/{speakerId}**
-   - Returns: Speaker details
-     ```json
-     {
-       "speakerId": "uuid",
-       "firstName": "string",
-       "lastName": "string",
-       "profilePhoto": "string (URL)",
-       "company": "string",
-       "position": "string",
-       "bio": "string",
-       "expertiseAreas": ["string[]"],
-       "yearsExperience": "integer",
-       "certifications": ["string[]"],
-       "socialLinks": {
-         "linkedin": "string | null",
-         "twitter": "string | null",
-         "github": "string | null"
-       }
-     }
-     ```
-   - Used for: Display speaker name, photo, company, position, experience, certifications in speaker section
-
-3. **GET /api/v1/events/{eventId}/sessions?relatedTo={sessionId}**
-   - Query params: `relatedTo` (sessionId to find related sessions)
-   - Returns: Array of related sessions (max 3)
-     ```json
-     [
-       {
-         "sessionId": "uuid",
-         "title": "string",
-         "startTime": "ISO-8601 datetime",
-         "sessionType": "string"
-       }
-     ]
-     ```
-   - Used for: Display related sessions list with titles and times, enable click-through to view related session modals
+   - Used for: Display all session details including speaker info and related sessions in a single API call
+   - Performance: Single API call replaces 3 separate calls (session + speaker + related sessions)
 
 ### User Action APIs
 
-4. **POST /api/v1/attendees/{userId}/schedule**
+2. **PATCH /api/v1/attendees/me**
    - Triggered by: User clicks [📅 Add to My Schedule] (authenticated users only)
    - Payload:
      ```json
      {
-       "sessionId": "uuid",
-       "eventId": "uuid",
-       "source": "session_modal"
+       "schedule": {
+         "add": [
+           {
+             "sessionId": "uuid",
+             "eventId": "uuid",
+             "source": "session_modal"
+           }
+         ]
+       }
      }
      ```
-   - Returns: Schedule confirmation
+   - Returns: Updated attendee profile with schedule confirmation
      ```json
      {
        "scheduleId": "uuid",
@@ -247,9 +241,9 @@ When the Session Details Modal opens, the following APIs are called:
        "conflictingSessions": ["sessionId[]"] // empty if no conflicts
      }
      ```
-   - Used for: Adds session to user's personal schedule, shows success toast message, handles conflicts if any
+   - Used for: Adds session to user's personal schedule using consolidated Attendees API (Story 1.25), shows success toast message, handles conflicts if any
 
-5. **GET /api/v1/events/{eventId}/share-link** (Event-level sharing, not session-specific)
+3. **GET /api/v1/events/{eventId}/share-link** (Event-level sharing, not session-specific)
    - Triggered by: User clicks [🔗 Share Session]
    - Returns: Shareable event landing page URL
      ```json
@@ -262,12 +256,12 @@ When the Session Details Modal opens, the following APIs are called:
      ```
    - Used for: Generates shareable event URL for social media, email, or copy to clipboard (no session-specific deep linking)
 
-6. **GET /api/v1/events/{eventId}/sessions/{sessionId}/slides**
+4. **GET /api/v1/events/{eventId}/sessions/{sessionId}/slides**
    - Triggered by: User clicks [📄 Download Slides] (only if slidesAvailable = true)
    - Returns: PDF file or redirect URL to S3/CloudFront
    - Used for: Downloads session presentation slides, tracks download analytics
 
-7. **POST /api/v1/analytics/session-view**
+5. **POST /api/v1/analytics/session-view**
    - Triggered by: Modal opens (automatic, no user action)
    - Payload:
      ```json
@@ -448,24 +442,18 @@ When the Session Details Modal opens, the following APIs are called:
 
 ### Server State (React Query)
 
-- **sessionDetails** - Cached session data, 5-minute stale time, invalidated on session updates
-  - Query key: `['session', eventId, sessionId]`
+- **sessionDetails** - Cached session data with expanded speaker and related sessions (consolidated API)
+  - Query key: `['session', eventId, sessionId, 'speaker,relatedSessions']`
   - Cache time: 10 minutes
+  - Stale time: 5 minutes
   - Refetch on mount: false (modal-specific data)
-
-- **speakerProfile** - Cached speaker data, 1-hour stale time
-  - Query key: `['speaker', speakerId]`
-  - Cache time: 1 hour
-  - Shared across all session modals with same speaker
-
-- **relatedSessions** - Cached related sessions, 10-minute stale time
-  - Query key: `['related-sessions', sessionId]`
-  - Cache time: 10 minutes
+  - Single API call replaces 3 separate queries (session + speaker + related sessions)
 
 - **userSchedule** - User's personal schedule, invalidated on add/remove
-  - Query key: `['user-schedule', userId]`
+  - Query key: `['attendee', 'me', 'schedule']`
   - Cache time: 5 minutes
   - Refetch on window focus: true
+  - Managed via PATCH /api/v1/attendees/me (Story 1.25)
 
 ### Real-Time Updates
 
@@ -525,6 +513,7 @@ When the Session Details Modal opens, the following APIs are called:
 |------|---------|-------------|--------|
 | 2025-10-02 | 1.0 | Initial wireframe creation for Session Details Modal | Sally (UX Expert) |
 | 2025-10-04 | 1.1 | Updated with stakeholder decisions: added real-time attendance, removed Q&A, no modal stacking, no calendar integration, no deep linking | Sally (UX Expert) |
+| 2025-10-04 | 1.2 | Updated to use consolidated APIs from Stories 1.17, 1.19, 1.25: single session endpoint with ?include=speaker,relatedSessions (reduced 3 API calls to 1), schedule management via PATCH /api/v1/attendees/me | Winston (Architect) |
 
 ---
 

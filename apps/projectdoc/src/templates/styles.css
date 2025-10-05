@@ -888,6 +888,34 @@ blockquote p:last-child {
   font-weight: 500;
 }
 
+.expand-button {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  margin-top: var(--space-2);
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--primary-color);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.expand-button:hover {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.expand-button:active {
+  transform: scale(0.98);
+}
+
 .more-documents {
   padding: var(--space-2) var(--space-3);
   text-align: center;

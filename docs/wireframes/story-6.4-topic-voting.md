@@ -89,41 +89,54 @@
 
 ## API Requirements
 
+### Consolidated APIs (Story 1.21)
+
+**Note**: This wireframe now uses the consolidated Topics APIs from Story 1.21. The voting functionality integrates with the voting-session resource consolidation, reducing specialized endpoints.
+
 ### Initial Page Load APIs
 
 When the Strategic Topic Planning screen loads, the following APIs are called to provide the necessary data:
 
-1. **GET /api/v1/partners/{partnerId}/topics/voting-session/current**
-   - Returns: Current voting session details (planning period, voting deadline, status), partner's voting power
-   - Used for: Display voting period and deadline information
+1. **GET /api/v1/topics/voting-sessions/{sessionId}?include=topics,results** (voting-session resource)
+   - Query params: `include=topics,results`
+   - Returns: Current voting session details (planning period, voting deadline, status), available topics, current results
+   - Used for: Display voting period, deadline, and available topics
+   - **Consolidation**: Voting session resource includes session metadata and topics in one call
 
-2. **GET /api/v1/partners/{partnerId}/topics/votes/current**
-   - Query params: sessionId
+2. **GET /api/v1/topics?filter={"votingSessionId":"{sessionId}"}&include=votes**
+   - Query params: filter (votingSessionId), include=votes, sort=-votes
    - Returns: Partner's current topic rankings with priorities, impact ratings, justifications, vote counts from other partners
    - Used for: Populate "Your Topic Priorities" section with ranked topics
+   - **Consolidation**: Uses main topics list with voting session filter
 
-3. **GET /api/v1/topics/voting-session/{sessionId}/all-topics**
-   - Query params: sortBy (votes, alphabetical)
+3. **GET /api/v1/topics?filter={"votingSessionId":"{sessionId}"}&sort=votes**
+   - Query params: filter (votingSessionId), sort (votes, alphabetical), limit, page
    - Returns: All available topics for voting with descriptions, vote counts, impact ratings
    - Used for: Enable "View All Topics" functionality
+   - **Consolidation**: Standard topic list with voting session filter
 
-4. **GET /api/v1/partners/{partnerId}/topics/suggestions/drafts**
+4. **GET /api/v1/topics?filter={"suggestedBy":"partner_{partnerId}","status":"draft"}**
+   - Query params: filter (suggestedBy partner, status=draft)
    - Returns: Saved draft topic suggestions for the partner
    - Used for: Pre-fill suggestion form if draft exists
+   - **Consolidation**: Filter on main topics list for drafts
 
-5. **GET /api/v1/topics/community-trends**
-   - Query params: limit (10)
+5. **GET /api/v1/topics/trending?type=community&timeframe=month**
+   - Query params: type=community, timeframe=month, limit=10, include=votes
    - Returns: Top voted topics across all partners, vote counts, trending topics
    - Used for: Populate "What Other Partners Are Requesting" section
+   - **Consolidation**: Single trending endpoint with type=community parameter
 
-6. **GET /api/v1/topics/industry-trends**
-   - Query params: limit (5)
+6. **GET /api/v1/topics/trending?type=industry&timeframe=quarter**
+   - Query params: type=industry, timeframe=quarter, limit=5
    - Returns: Industry trending topics from external sources, relevance scores
    - Used for: Display "Industry Trends" section
+   - **Consolidation**: Single trending endpoint with type=industry parameter
 
-7. **GET /api/v1/partners/{partnerId}/topics/influence-score**
+7. **GET /api/v1/partners/{partnerId}/influence-score** (Partner API - not Topics)
    - Returns: Partner's influence score (0-100), score breakdown (attendance, engagement, sponsorship), historical trend
    - Used for: Display influence score with explanation
+   - **Note**: Partner analytics API (not part of Topics API consolidation)
 
 ---
 
@@ -131,93 +144,115 @@ When the Strategic Topic Planning screen loads, the following APIs are called to
 
 ### Voting Actions
 
-1. **PUT /api/v1/partners/{partnerId}/topics/votes**
-   - Payload: `{ sessionId, rankings: [{ topicId, rank, impactRating: "high|medium|low", justification }] }`
+1. **PUT /api/v1/topics/voting-sessions/{sessionId}/votes** (voting-session resource)
+   - Payload: `{ partnerId, rankings: [{ topicId, rank, impactRating: "high|medium|low", justification }] }`
    - Response: Updated vote confirmation, new influence score
    - Used for: Submit or update topic rankings
+   - **Consolidation**: Votes managed through voting-session resource
 
-2. **POST /api/v1/partners/{partnerId}/topics/votes/auto-save**
-   - Payload: `{ sessionId, rankings: [] }`
+2. **PATCH /api/v1/topics/voting-sessions/{sessionId}/votes** (voting-session resource)
+   - Payload: `{ partnerId, rankings: [] }`
    - Response: Auto-save confirmation
    - Used for: Automatically save vote rankings as user drags/reorders (periodic auto-save)
+   - **Consolidation**: PATCH for partial updates/auto-save
 
-3. **GET /api/v1/topics/{topicId}/details**
-   - Returns: Detailed topic information, vote history, related content, potential speakers
+3. **GET /api/v1/topics/{topicId}?include=votes,history,insights**
+   - Query params: `include=votes,history,insights`
+   - Returns: Detailed topic information, vote history, related content, AI insights
    - Used for: View detailed information about a specific topic
+   - **Consolidation**: Single endpoint with ?include parameter
 
 ### Topic Suggestion
 
-4. **POST /api/v1/partners/{partnerId}/topics/suggest**
-   - Payload: `{ title, businessJustification, targetAudience: [], supportingLinks: [] }`
-   - Response: Suggestion ID, review status, expected review timeline
+4. **POST /api/v1/topics**
+   - Payload: `{ title, description, businessJustification, targetAudience: [], supportingLinks: [], suggestedBy: "partner_{partnerId}", status: "pending" }`
+   - Response: Topic ID, review status, expected review timeline
    - Used for: Submit new topic suggestion
+   - **Consolidation**: Standard POST on /topics endpoint
 
-5. **POST /api/v1/partners/{partnerId}/topics/suggestions/draft**
-   - Payload: `{ title, businessJustification, targetAudience: [] }`
-   - Response: Draft ID, save confirmation
+5. **POST /api/v1/topics**
+   - Payload: `{ title, description, businessJustification, targetAudience: [], status: "draft", suggestedBy: "partner_{partnerId}" }`
+   - Response: Draft topic ID, save confirmation
    - Used for: Save topic suggestion as draft
+   - **Consolidation**: Same POST endpoint with status=draft
 
-6. **PUT /api/v1/partners/{partnerId}/topics/suggestions/{suggestionId}/draft**
-   - Payload: Updated draft data
+6. **PUT /api/v1/topics/{suggestionId}**
+   - Payload: Updated draft data `{ title, description, businessJustification, targetAudience: [] }`
    - Response: Update confirmation
    - Used for: Update existing draft
+   - **Consolidation**: Standard PUT on /topics/{id}
 
-7. **DELETE /api/v1/partners/{partnerId}/topics/suggestions/{suggestionId}/draft**
-   - Response: Deletion confirmation
+7. **DELETE /api/v1/topics/{suggestionId}** or **POST /api/v1/topics/{suggestionId}/archive**
+   - Payload: `{ reason: "draft abandoned" }`
+   - Response: Deletion/archive confirmation
    - Used for: Delete draft suggestion
+   - **Consolidation**: Standard DELETE or archive action
 
-8. **GET /api/v1/partners/{partnerId}/topics/suggestions/submitted**
-   - Query params: status (pending, approved, rejected), limit, offset
+8. **GET /api/v1/topics?filter={"suggestedBy":"partner_{partnerId}"}&sort=-createdAt**
+   - Query params: filter (suggestedBy, status), sort, limit, page
    - Returns: List of previously submitted suggestions with review status and feedback
    - Used for: View history of topic suggestions
+   - **Consolidation**: Filter on main topics list
 
 ### Topic Discovery & Research
 
-9. **GET /api/v1/topics/voting-session/{sessionId}/all**
-   - Query params: filters (category, popularity), sortBy (votes, alphabetical), limit, offset
+9. **GET /api/v1/topics?filter={"votingSessionId":"{sessionId}"}&sort={}&page={}**
+   - Query params: filter (votingSessionId, category, popularity), sort (votes, alphabetical), limit, page
    - Returns: Comprehensive list of all votable topics with details
    - Used for: Navigate to "All Topics" browsing screen
+   - **Consolidation**: Standard topics list with voting session filter
 
-10. **POST /api/v1/partners/{partnerId}/topics/custom/add**
-    - Payload: `{ topicId, priority }`
+10. **PUT /api/v1/topics/voting-sessions/{sessionId}/votes**
+    - Payload: `{ partnerId, addTopics: [{ topicId, priority }] }`
     - Response: Updated rankings with newly added topic
     - Used for: Add existing topic to partner's voting list from "All Topics" view
+    - **Consolidation**: Update votes through voting-session resource
 
-11. **DELETE /api/v1/partners/{partnerId}/topics/votes/{topicId}**
+11. **PUT /api/v1/topics/voting-sessions/{sessionId}/votes**
+    - Payload: `{ partnerId, removeTopics: [topicId] }`
     - Response: Updated rankings with topic removed
     - Used for: Remove topic from partner's voting list
+    - **Consolidation**: Update votes through voting-session resource
 
 ### Community & Trends
 
-12. **GET /api/v1/topics/community-trends/detailed**
-    - Query params: dateRange, partnerSegment (industry, size)
+12. **GET /api/v1/topics/trending?type=community&detailed=true**
+    - Query params: type=community, detailed=true, dateRange, partnerSegment (industry, size)
     - Returns: Detailed trending analysis, vote patterns, emerging topics, correlation with partner success
     - Used for: Navigate to detailed community trends analysis
+    - **Consolidation**: Trending endpoint with detailed flag and type=community
 
-13. **GET /api/v1/topics/industry-trends/detailed**
-    - Query params: sources (conferences, publications, surveys)
+13. **GET /api/v1/topics/trending?type=industry&detailed=true**
+    - Query params: type=industry, detailed=true, sources (conferences, publications, surveys)
     - Returns: Comprehensive industry trend report, relevance analysis, recommended topics
     - Used for: Navigate to detailed industry trends report
+    - **Consolidation**: Trending endpoint with detailed flag and type=industry
 
-14. **GET /api/v1/topics/industry-trends/research**
-    - Query params: topicKeywords
-    - Returns: Research data supporting topic relevance, market demand, skill gaps
+14. **GET /api/v1/topics/ai-suggestions?context={"keywords":["..."],"purpose":"research"}**
+    - Query params: context (keywords, purpose=research)
+    - Returns: Research data supporting topic relevance, market demand, skill gaps, AI-powered analysis
     - Used for: Research support for topic suggestions
+    - **Consolidation**: AI suggestions endpoint with research context
 
 ### Influence & Analytics
 
-15. **GET /api/v1/partners/{partnerId}/topics/influence-score/breakdown**
+15. **GET /api/v1/partners/{partnerId}/influence-score?breakdown=true**
+    - Query params: breakdown=true, includeHistory=true
     - Returns: Detailed influence score calculation, component breakdowns, improvement recommendations, historical trends
     - Used for: View detailed influence score analysis
+    - **Note**: Partner analytics API (not part of Topics API consolidation)
 
-16. **GET /api/v1/partners/{partnerId}/topics/voting-history**
-    - Query params: limit (10), offset
+16. **GET /api/v1/topics/voting-sessions?filter={"partnerId":"{partnerId}"}&include=votes,outcomes**
+    - Query params: filter (partnerId), include (votes, outcomes), limit, page
     - Returns: Historical voting sessions, topics voted for, outcomes (selected/not selected), impact on events
     - Used for: View voting history and track record
+    - **Consolidation**: List voting sessions with partner filter
 
-17. **GET /api/v1/topics/voting-results/{sessionId}**
+17. **GET /api/v1/topics/voting-sessions/{sessionId}?include=results,topics**
+    - Query params: include=results,topics
     - Returns: Final voting results for completed session, selected topics, partner contribution impact
     - Used for: View results of past voting sessions
+    - **Consolidation**: Voting session resource with results inclusion
 
 ---
 

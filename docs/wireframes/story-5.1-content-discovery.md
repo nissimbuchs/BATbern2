@@ -156,24 +156,29 @@ APIs needed to load and display data for this screen:
 
 ### Search & Filtering
 
-4. **GET /api/v1/content/search**
-   - Retrieve search results
-   - Query params: `query`, `topics[]`, `period`, `contentTypes[]`, `sort`, `page`, `limit`
-   - Response includes: results with match scores, metadata, statistics
+4. **GET /api/v1/content?filter={}&sort={}&page={}&facets=year,speaker,topic,format**
+   - Retrieve search results with faceted filtering
+   - Query params: `filter={"title":{"$contains":"kubernetes"}}`, `topics[]`, `year`, `contentTypes[]`, `sort`, `page`, `limit`
+   - Response includes: results with match scores, metadata, statistics, facet aggregations
    - Used for: Main search results display
-   - Processing: Semantic search with ML embeddings
+   - **Consolidated**: Single unified search endpoint (was /api/v1/content/search)
+   - **Benefit**: Rich filtering with JSON filter syntax, faceted navigation in single call
 
-5. **GET /api/v1/content/filters/metadata**
+5. **GET /api/v1/content?filter={}&facets=year,speaker,topic,format&aggregateOnly=true**
    - Retrieve available filter options and counts
-   - Response includes: topic categories with counts, time periods, content types
+   - Response includes: facet aggregations (topic categories with counts, year ranges, content types)
    - Used for: Populating filter options with result counts
+   - **Consolidated**: Same search endpoint with aggregateOnly flag (was /api/v1/content/filters/metadata)
+   - **Benefit**: Filter metadata comes from actual search results
 
-6. **GET /api/v1/content/search/autocomplete**
+6. **GET /api/v1/content?filter={"title":{"$startsWith":"{query}"}}&limit=10&fields=id,title,speaker**
    - Retrieve search autocomplete suggestions
-   - Query params: `query`, `limit=10`
-   - Response includes: suggested queries, speakers, topics
+   - Query params: Filter by title prefix, limit to 10 results, sparse fieldset
+   - Response includes: suggested content with title, speaker, topic
    - Used for: Real-time search suggestions as user types
    - Debounced: 300ms delay
+   - **Consolidated**: Uses same search with field selection (was /api/v1/content/search/autocomplete)
+   - **Benefit**: No separate autocomplete endpoint needed
 
 ---
 
@@ -183,48 +188,59 @@ APIs called by user interactions and actions:
 
 ### Search & Discovery
 
-1. **POST /api/v1/content/search**
+1. **GET /api/v1/content?filter={query}&sort={sort}&page={page}&facets=year,speaker,topic,format**
    - Triggered by: Search query submission or filter application
-   - Payload: `{ query, filters: { topics, period, contentTypes }, sort, page }`
-   - Response: Search results with match scores, facets, total count
+   - Query params: `filter={"$or":[{"title":{"$contains":"query"}},{"description":{"$contains":"query"}}]}`, `sort`, `page`
+   - Response: Search results with match scores, facet aggregations, total count
    - Processing:
-     - Semantic search using embeddings
-     - Collaborative filtering
-     - User context for personalization
+     - Text search with rich filtering
+     - User context for personalization (if authenticated)
    - Analytics: Logs search query for recommendations
+   - **Consolidated**: Single GET endpoint replaces POST search (was POST /api/v1/content/search)
+   - **Benefit**: Cacheable, stateless, RESTful design
 
-2. **POST /api/v1/content/search/feedback**
+2. **POST /api/v1/content/{contentId}/analytics** (with search interaction data)
    - Triggered by: User interaction with search results
-   - Payload: `{ query, resultId, action: "click|save|ignore", position }`
+   - Payload: `{ event: "search_result_click", query, position, context }`
    - Response: Feedback recorded
-   - Used for: Improving ML ranking models
+   - Used for: Improving ranking models and analytics
+   - **Consolidated**: Uses standard analytics endpoint (was POST /api/v1/content/search/feedback)
+   - **Benefit**: Unified analytics tracking
 
 ### Filtering & Sorting
 
-3. **PUT /api/v1/content/search/filters**
+3. **GET /api/v1/content?filter={appliedFilters}&facets=year,speaker,topic,format**
    - Triggered by: [Apply Filters] button or real-time filter changes
-   - Payload: `{ topics[], period, contentTypes[] }`
-   - Response: Updated search results matching filters
+   - Query params: `filter={"topics":{"$in":["kubernetes","security"]},"year":2024}`, facets
+   - Response: Updated search results matching filters with facet counts
    - Updates: Search results panel refreshes
+   - **Consolidated**: Same search endpoint with new filter params (was PUT /api/v1/content/search/filters)
+   - **Benefit**: Stateless filtering, URL-shareable searches
 
-4. **DELETE /api/v1/content/search/filters**
+4. **GET /api/v1/content?query={originalQuery}**
    - Triggered by: [Clear All] button
-   - Response: Search results without filters
+   - Response: Search results without filters (original query only)
    - Updates: All filter checkboxes cleared, results refresh
+   - **Consolidated**: Same search endpoint without filter params (was DELETE /api/v1/content/search/filters)
+   - **Benefit**: No special delete endpoint needed
 
-5. **PUT /api/v1/content/search/sort**
+5. **GET /api/v1/content?filter={currentFilters}&sort={newSort}**
    - Triggered by: Sort dropdown selection
-   - Payload: `{ sortBy: "relevance|date|rating|downloads" }`
+   - Query params: `sort=-downloads` (for descending downloads), `sort=title` (for ascending title)
    - Response: Re-sorted search results
    - Updates: Results reorder
+   - **Consolidated**: Same search endpoint with sort param (was PUT /api/v1/content/search/sort)
+   - **Benefit**: Sorting is just another query parameter
 
 ### Content Actions
 
-6. **GET /api/v1/content/{contentId}**
+6. **GET /api/v1/content/{contentId}?include=analytics,reviews,related**
    - Triggered by: [View] button on result card
-   - Response: Full content details, viewer URL
+   - Response: Full content details, viewer URL, optional related content
    - Opens: Content viewer (PDF viewer, video player, etc.)
    - Analytics: Increments view count
+   - **Consolidated**: Story 1.20 standard content endpoint with includes
+   - **Benefit**: Single call retrieves content + related data
 
 7. **GET /api/v1/content/{contentId}/download**
    - Triggered by: [Download PDF] button
@@ -232,36 +248,43 @@ APIs called by user interactions and actions:
    - Downloads: PDF file
    - Analytics: Increments download count
    - Auth: May require login for some content
+   - **Consolidated**: Story 1.20 standard download endpoint
 
-8. **POST /api/v1/content/{contentId}/share**
+8. **POST /api/v1/content/{contentId}/reviews** (with share metadata)
     - Triggered by: [Share] button
     - Opens: Share modal with options
-    - Payload: `{ method: "email|link|social", recipients: [] }`
+    - Payload: `{ method: "email|link|social", recipients: [], shareType: "share" }`
     - Response: Share link generated, emails sent
     - Options: Email, copy link, LinkedIn, Twitter
+    - **Note**: Share tracking can use reviews/analytics endpoint
 
 ### Personalization
 
-9. **GET /api/v1/content/recommendations**
+9. **GET /api/v1/content/recommendations?userId={userId}&limit=10**
     - Triggered by: [View Recommendations →] button
     - Query params: `userId`, `limit=10`
-    - Response: AI-recommended content based on activity
+    - Response: ML-recommended content based on activity
     - Opens: Recommendations modal or dedicated page
-    - ML: Collaborative filtering + content-based
+    - **Consolidated**: Story 1.20 standard recommendations endpoint
+    - **Benefit**: Single endpoint for all user recommendations
 
-10. **PUT /api/v1/users/{userId}/interests**
+10. **PATCH /api/v1/users/{userId}**
     - Triggered by: [Customize Interests] button
     - Opens: Interest customization modal
-    - Payload: `{ topics: [], speakers: [], excludeTopics: [] }`
-    - Response: Updated interest preferences
+    - Payload: `{ interests: { topics: [], speakers: [], excludeTopics: [] } }`
+    - Response: Updated user preferences
     - Updates: "Your Interests" panel, search results personalization
+    - **Consolidated**: Standard user update endpoint (was PUT /api/v1/users/{userId}/interests)
+    - **Benefit**: Consistent with other PATCH operations
 
-11. **POST /api/v1/users/{userId}/activity**
+11. **POST /api/v1/content/{contentId}/analytics**
     - Triggered by: Various user interactions (auto-tracked)
-    - Payload: `{ action: "view|download|search", contentId, metadata }`
+    - Payload: `{ event: "view|download|search", userId, contentId, metadata }`
     - Response: Activity logged
     - Used for: Personalization and recommendations
     - Background: Async, doesn't block UI
+    - **Consolidated**: Uses Story 1.20 analytics endpoint (was POST /api/v1/users/{userId}/activity)
+    - **Benefit**: Content-centric analytics tracking
 
 
 ---

@@ -381,107 +381,133 @@
 
 ## API Requirements
 
+### Consolidated APIs (Story 1.21)
+
+**Note**: This wireframe now uses the consolidated Topics APIs from Story 1.21. The browsing functionality benefits from unified filtering and the voting-session resource consolidation.
+
 ### Initial Page Load APIs
 
-1. **GET /api/v1/topics/voting-session/{sessionId}/all-topics**
-   - Query params: `limit=20, offset=0, sortBy=votes, order=desc`
-   - Returns: Paginated list of all votable topics
+1. **GET /api/v1/topics?filter={"votingSessionId":"{sessionId}"}&sort=-votes&page=1&limit=20**
+   - Query params: `filter={"votingSessionId":"{sessionId}"}, sort=-votes, page=1, limit=20, include=votes`
+   - Returns: Paginated list of all votable topics with comprehensive data
    - Response: `{ topics: [{ id, title, description, category, voteCount, votePercentage, trending, isNew, lastUsedAt, impact, topRequestingPartners }], pagination, totalCount }`
    - Used for: Initial topic list display
+   - **Consolidation**: Main topics list with voting session filter replaces specialized voting-session/all-topics endpoint
 
-2. **GET /api/v1/partners/{partnerId}/topics/votes/current**
-   - Query params: `sessionId={id}`
-   - Returns: Partner's current topic voting list
+2. **GET /api/v1/topics/voting-sessions/{sessionId}/votes?partnerId={partnerId}**
+   - Query params: `partnerId={partnerId}`
+   - Returns: Partner's current topic voting list for this session
    - Response: `{ topicIds: [], votingLimit: 10, currentCount: 5 }`
    - Used for: Mark topics as "IN YOUR LIST" and show vote count
+   - **Consolidation**: Votes managed through voting-session resource
 
-3. **GET /api/v1/topics/voting-session/{sessionId}/statistics**
-   - Returns: Overall voting statistics
+3. **GET /api/v1/topics/statistics?groupBy=votingSession&sessionId={sessionId}**
+   - Query params: `groupBy=votingSession, sessionId={sessionId}`
+   - Returns: Overall voting statistics for the session
    - Response: `{ totalTopics: 47, trendingCount: 8, mostVotedTopic: { id, title, voteCount } }`
    - Used for: Topic statistics bar
+   - **Consolidation**: Statistics endpoint with voting session grouping
 
-4. **GET /api/v1/topics/categories**
-   - Returns: Available topic categories
+4. **GET /api/v1/topics/statistics?groupBy=category**
+   - Query params: `groupBy=category`
+   - Returns: Available topic categories with counts
    - Response: `{ categories: [{ name, count, description }] }`
    - Used for: Populate category filter dropdown
+   - **Consolidation**: Statistics endpoint with category grouping
 
 ### Action APIs
 
 #### Topic Management
 
-5. **GET /api/v1/topics/search**
+5. **GET /api/v1/topics?filter={"votingSessionId":"{sessionId}","title":{"$contains":"{text}"}}&limit=20**
    - Triggered by: Search input (debounced)
-   - Query params: `query={text}, sessionId={id}, limit=20`
-   - Returns: Matching topics with highlighted search terms
+   - Query params: `filter (votingSessionId, title/description contains text), limit=20`
+   - Returns: Matching topics with search relevance
    - Used for: Real-time topic search
+   - **Consolidation**: Search integrated into main list endpoint with $contains filter operator
 
-6. **GET /api/v1/topics/voting-session/{sessionId}/all-topics**
+6. **GET /api/v1/topics?filter={"votingSessionId":"{sessionId}","category":"{cat}"}&sort={field}&page={n}**
    - Triggered by: Filter changes, sort changes, load more
-   - Query params: `category={cat}, popularity={range}, sortBy={field}, limit=20, offset={n}`
-   - Returns: Filtered and sorted topic list
+   - Query params: `filter (votingSessionId, category, popularity range), sort, page, limit`
+   - Returns: Filtered and sorted topic list with pagination
    - Used for: Apply filters and sorting
+   - **Consolidation**: Unified filtering via JSON filter parameter - no new endpoints needed
 
-7. **POST /api/v1/partners/{partnerId}/topics/votes/add**
+7. **PUT /api/v1/topics/voting-sessions/{sessionId}/votes**
    - Triggered by: [+ Add to My List] button
-   - Payload: `{ sessionId, topicId }`
+   - Payload: `{ partnerId, addTopics: [topicId] }`
    - Returns: `{ success: true, currentVoteCount: 6, limit: 10 }`
    - Side effects: Adds topic to partner's voting list
    - Used for: Add topic to voting list
+   - **Consolidation**: Votes managed through voting-session resource
 
-8. **DELETE /api/v1/partners/{partnerId}/topics/votes/{topicId}**
+8. **PUT /api/v1/topics/voting-sessions/{sessionId}/votes**
    - Triggered by: [✓ Added] button (toggle off)
+   - Payload: `{ partnerId, removeTopics: [topicId] }`
    - Returns: `{ success: true, currentVoteCount: 4 }`
    - Side effects: Removes topic from voting list
    - Used for: Remove topic from voting list
+   - **Consolidation**: Same endpoint as add, different payload
 
-9. **GET /api/v1/topics/{topicId}/details**
+9. **GET /api/v1/topics/{topicId}?include=votes,history,insights**
    - Triggered by: [View Details] button
-   - Returns: Complete topic information
+   - Query params: `include=votes,history,insights`
+   - Returns: Complete topic information with comprehensive data
    - Opens: Topic Detail Screen
    - Used for: Navigate to topic details
+   - **Consolidation**: Single endpoint with ?include parameter
 
 #### Topic Comparison
 
-10. **POST /api/v1/topics/compare**
+10. **GET /api/v1/topics?filter={"ids":{"$in":[id1,id2,id3]}}&include=votes,insights**
     - Triggered by: [Compare] button
-    - Payload: `{ topicIds: [id1, id2, id3], sessionId }`
-    - Returns: Side-by-side comparison data
-    - Response: `{ topics: [{ id, title, votes, impact, trend, topPartners, lastUsed, industryTrend }], recommendation: "text" }`
+    - Query params: `filter (ids in array), include=votes,insights, context (sessionId)`
+    - Returns: Side-by-side comparison data with AI recommendation
+    - Response: `{ topics: [{ id, title, votes, impact, trend, topPartners, lastUsed, industryTrend }], aiRecommendation: "text" }`
     - Used for: Open comparison modal
+    - **Consolidation**: Use main list endpoint with ID filter for comparison data
 
-11. **POST /api/v1/partners/{partnerId}/topics/votes/bulk-add**
+11. **PUT /api/v1/topics/voting-sessions/{sessionId}/votes**
     - Triggered by: [Add All to My List] in comparison modal
-    - Payload: `{ sessionId, topicIds: [] }`
+    - Payload: `{ partnerId, addTopics: [id1, id2, id3] }`
     - Returns: `{ success: true, addedCount: 3, currentVoteCount: 8 }`
     - Used for: Bulk add compared topics to voting list
+    - **Consolidation**: Same voting-session votes endpoint handles bulk operations
 
 #### Filtering & Sorting
 
-12. **GET /api/v1/topics/voting-session/{sessionId}/trending**
+12. **GET /api/v1/topics/trending?type=community&sessionId={sessionId}&timeframe=week**
     - Triggered by: [Trending 📈] quick filter
-    - Returns: Topics with increasing votes
+    - Query params: `type=community, sessionId={sessionId}, timeframe=week`
+    - Returns: Topics with increasing votes in this session
     - Response: `{ topics: [], voteChanges: [{ topicId, changeThisWeek }] }`
     - Used for: Show trending topics
+    - **Consolidation**: Trending endpoint with session filter
 
-13. **GET /api/v1/topics/voting-session/{sessionId}/new**
+13. **GET /api/v1/topics?filter={"votingSessionId":"{sessionId}","isNew":true}&sort=-createdAt**
     - Triggered by: [New Topics ✨] quick filter
-    - Returns: Recently added topics
+    - Query params: `filter (votingSessionId, isNew=true), sort=-createdAt`
+    - Returns: Recently added topics for this session
     - Response: `{ topics: [], addedDates: [] }`
     - Used for: Show new topics
+    - **Consolidation**: Filter on main list for new topics
 
-14. **GET /api/v1/partners/{partnerId}/topics/interests**
+14. **GET /api/v1/topics/ai-suggestions?context={"partnerId":"{partnerId}","purpose":"recommendations"}**
     - Triggered by: [Your Interests] quick filter
-    - Returns: Topics matching partner's industry/preferences
-    - Response: `{ topics: [], matchReasons: [] }`
+    - Query params: `context (partnerId, partner industry/preferences, purpose=recommendations)`
+    - Returns: Topics matching partner's profile with AI-powered matching
+    - Response: `{ topics: [], matchReasons: [], confidence: [] }`
     - Used for: Personalized topic recommendations
+    - **Consolidation**: AI suggestions endpoint with partner context for personalization
 
 #### Pagination
 
-15. **GET /api/v1/topics/voting-session/{sessionId}/all-topics**
-    - Triggered by: [Load More] button
-    - Query params: `limit=20, offset={currentOffset}`
-    - Returns: Next batch of topics
+15. **GET /api/v1/topics?filter={"votingSessionId":"{sessionId}"}&page={page}&limit=20**
+    - Triggered by: [Load More] button or infinite scroll
+    - Query params: `filter (votingSessionId), page={page}, limit=20`
+    - Returns: Next batch of topics with pagination metadata
     - Used for: Load additional topics
+    - **Consolidation**: Standard pagination on main list endpoint
 
 ---
 

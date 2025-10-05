@@ -5,6 +5,15 @@
 **User Role**: Organizer
 **Related FR**: FR21 (Multi-Year Planning)
 
+**API Consolidation Update** (2025-10-04):
+This wireframe has been updated to use consolidated APIs from Stories 1.17, 1.18, and 1.27:
+- Replaced `/planning/dashboard` with domain-specific endpoints (Events, Venues, Partners)
+- Calendar views now use `/api/v1/events` with filtering (Story 1.17)
+- Venue management uses standard `/api/v1/venues` CRUD (Story 1.27)
+- Partner meetings use `/api/v1/partners/{id}/meetings` (Story 1.18)
+- Planning tasks use `/api/v1/planning/milestones` (Story 1.27)
+- **API Reduction**: From 15 fragmented endpoints to 4 consolidated domain APIs
+
 ---
 
 ## Multi-Year Planning Dashboard (FR21)
@@ -97,30 +106,33 @@ APIs needed to load and display data for this screen:
 
 ### Initial Page Load
 
-1. **GET /api/v1/planning/dashboard**
-   - Retrieve multi-year planning overview
-   - Query params: `years=[2024,2025,2026]`
-   - Response includes: events calendar, venue bookings, partner meetings
-   - Used for: Complete dashboard initialization
-   - Aggregated: Single call for multi-year planning data
+1. **GET /api/v1/events**
+   - Retrieve events for calendar view across multiple years
+   - Query params: `filter={"year": [2024,2025,2026]}&include=venue&fields=id,title,date,status,venue`
+   - Response includes: event list with venue data for calendar display
+   - Used for: Calendar visualization with event markers
+   - Source: Story 1.17 (Events API Consolidation)
 
-2. **GET /api/v1/planning/calendar**
-   - Retrieve planning calendar for selected years
-   - Query params: `years=[2025,2026]`, `view=calendar|timeline`
-   - Response includes: all events, meetings, deadlines, venue bookings
-   - Used for: Calendar visualization at top
-
-3. **GET /api/v1/venues/reservations**
+2. **GET /api/v1/venues**
    - Retrieve venue reservations by year
-   - Query params: `year=2025`, `includeAdvance=true`
-   - Response includes: booking status, venue details, capacity, confirmation status
+   - Query params: `filter={"year": 2025, "status": ["tentative", "confirmed"]}&page=1&limit=20`
+   - Response includes: venue bookings with status, capacity, dates
    - Used for: Venue reservations panel
+   - Source: Story 1.27 (Remaining Resources - Venues)
 
-4. **GET /api/v1/partners/meetings**
+3. **GET /api/v1/partners/{partnerId}/meetings**
    - Retrieve partner meeting schedule
-   - Query params: `year=2025`, `includeRecurring=true`
+   - Query params: `filter={"year": 2025}&page=1&limit=50`
    - Response includes: meeting dates, attendees, agendas, room bookings, status
    - Used for: Partner meetings panel
+   - Source: Story 1.18 (Partners API Consolidation)
+
+4. **GET /api/v1/planning/timeline**
+   - Retrieve planning timeline for timeline view
+   - Query params: `eventId={}&years=[2025,2026]`
+   - Response includes: Gantt-style timeline data for events, milestones, deadlines
+   - Used for: Timeline view when toggled
+   - Source: Story 1.27 (Remaining Resources - Planning)
 
 ---
 
@@ -130,114 +142,131 @@ APIs called by user interactions and actions:
 
 ### View Control
 
-1. **PUT /api/v1/planning/view-preference**
+1. **PATCH /api/v1/users/{userId}/preferences**
    - Triggered by: View toggle buttons (Calendar, Timeline)
-   - Payload: `{ view: "calendar|timeline" }`
-   - Response: View preference saved
+   - Payload: `{ "planningView": "calendar|timeline" }`
+   - Response: User preference saved
    - Updates: Main display area re-renders with selected view
+   - Source: Standard user preferences pattern
 
 2. **GET /api/v1/planning/timeline**
    - Triggered by: [○ Timeline] view selection
-   - Query params: `years=[2025,2026]`
+   - Query params: `eventId={}&years=[2025,2026]`
    - Response: Timeline data optimized for Gantt-style display
    - Used for: Timeline view rendering
+   - Source: Story 1.27 (Remaining Resources - Planning)
 
 ### Year Selection
 
-3. **GET /api/v1/planning/dashboard**
+3. **GET /api/v1/events**
    - Triggered by: Year dropdown selection changes
-   - Query params: `years=[selected years]`
-   - Response: Updated data for selected years
-   - Updates: All panels refresh with new year data
+   - Query params: `filter={"year": [selected years]}&include=venue&fields=id,title,date,status,venue`
+   - Response: Updated event data for selected years
+   - Updates: Calendar panel refreshes
+   - Source: Story 1.17 (Events API Consolidation)
 
 ### Venue Management
 
-4. **GET /api/v1/venues/availability**
+4. **GET /api/v1/venues/{venueId}**
    - Triggered by: [Check Availability] button
-   - Query params: `venueId`, `quarter=Q3`, `year=2025`
-   - Response: Available dates, capacity, pricing
+   - Query params: `include=availability,bookings&filter={"quarter":"Q3","year":2025}`
+   - Response: Venue details with available dates, capacity, pricing
    - Opens: Availability calendar modal
+   - Source: Story 1.27 (Remaining Resources - Venues)
 
-5. **POST /api/v1/venues/reservations**
+5. **POST /api/v1/venues**
    - Triggered by: Making new venue reservation
-   - Payload: `{ venueId, eventDate, capacity, status: "tentative|confirmed" }`
-   - Response: Reservation created, booking ID
+   - Payload: `{ "venueId": "ven-123", "eventDate": "2025-09-15", "capacity": 250, "status": "tentative|confirmed" }`
+   - Response: Reservation created with booking ID
    - Side effects:
      - Sends confirmation email
      - Updates calendar
      - Creates budget line item
      - Checks for conflicts
+   - Source: Story 1.27 (Remaining Resources - Venues)
 
-6. **PUT /api/v1/venues/reservations/{reservationId}**
+6. **PUT /api/v1/venues/{venueId}**
    - Triggered by: Updating venue reservation status
-   - Payload: `{ status: "tentative|confirmed|cancelled" }`
+   - Payload: `{ "status": "tentative|confirmed|cancelled", "bookingId": "..." }`
    - Response: Updated reservation details
    - Side effects:
      - Sends status update email
      - Updates budget if cancelled
      - Releases hold if cancelled
+   - Source: Story 1.27 (Remaining Resources - Venues)
 
-7. **GET /api/v1/venues/{venueId}/details**
+7. **GET /api/v1/venues/{venueId}**
    - Triggered by: Clicking on venue name in booking
+   - Query params: `include=amenities,contacts,history`
    - Response: Full venue details, amenities, contacts, past events
    - Opens: Venue details modal
+   - Source: Story 1.27 (Remaining Resources - Venues)
 
 ### Partner Meeting Management
 
-8. **POST /api/v1/partners/meetings**
+8. **POST /api/v1/partners/{partnerId}/meetings**
    - Triggered by: [Schedule Meeting] button
    - Opens: Meeting scheduling modal
-   - Payload: `{ date, attendees: [], agenda, roomBooking }`
+   - Payload: `{ "date": "2025-04-15T14:00:00Z", "attendees": ["partner-id-1", "partner-id-2"], "agenda": "...", "roomBooking": {...} }`
    - Response: Meeting created, calendar invites sent
    - Side effects:
      - Sends calendar invites to partners
      - Books meeting room
      - Creates agenda document
+   - Source: Story 1.18 (Partners API Consolidation)
 
-9. **PUT /api/v1/partners/meetings/{meetingId}**
+9. **PUT /api/v1/partners/{partnerId}/meetings/{meetingId}**
    - Triggered by: Updating meeting details
-   - Payload: `{ date, attendees, agenda, status }`
+   - Payload: `{ "date": "...", "attendees": [...], "agenda": "...", "status": "scheduled|completed|cancelled" }`
    - Response: Updated meeting details
    - Side effect: Sends update emails to attendees
+   - Source: Story 1.18 (Partners API Consolidation)
 
-10. **GET /api/v1/partners/meetings/history**
+10. **GET /api/v1/partners/{partnerId}/meetings**
     - Triggered by: [View 2024 History] link
-    - Query params: `year=2024`
+    - Query params: `filter={"year": 2024}&page=1&limit=50`
     - Response: Historical meeting data, attendance, outcomes
     - Opens: Meeting history modal or page
+    - Source: Story 1.18 (Partners API Consolidation)
 
-11. **POST /api/v1/partners/meetings/{meetingId}/notes**
+11. **PATCH /api/v1/partners/{partnerId}/meetings/{meetingId}**
     - Triggered by: Adding meeting notes/outcomes
-    - Payload: `{ notes, decisions: [], actionItems: [] }`
+    - Payload: `{ "notes": "...", "decisions": [...], "actionItems": [...] }`
     - Response: Meeting notes saved
     - Used for: Documenting meeting outcomes
+    - Source: Story 1.18 (Partners API Consolidation)
 
 ### Export & Reporting
 
-12. **GET /api/v1/planning/export**
+12. **POST /api/v1/events/export**
     - Triggered by: [Export] button (top-right)
-    - Query params: `format=pdf|excel|csv`, `years=[2025,2026]`, `sections=all`
+    - Payload: `{ "format": "pdf|excel|csv", "filter": {"years": [2025,2026]}, "sections": "all" }`
     - Response: Download URL or file stream
     - Downloads: Comprehensive planning report
+    - Source: Story 1.17 (Events API Consolidation)
 
 ### Recurring Tasks
 
-13. **GET /api/v1/planning/recurring-tasks**
+13. **GET /api/v1/planning/milestones**
     - Triggered by: Auto-load on page load
-    - Response: List of recurring tasks with next due dates
+    - Query params: `filter={"type": "recurring", "status": "active"}&page=1&limit=20`
+    - Response: List of recurring tasks/milestones with next due dates
     - Used for: Displaying recurring tasks list
+    - Source: Story 1.27 (Remaining Resources - Planning)
 
-14. **POST /api/v1/planning/recurring-tasks/{taskId}/complete**
+14. **PUT /api/v1/planning/milestones/{milestoneId}**
     - Triggered by: Marking recurring task as complete
-    - Payload: `{ completedDate, notes }`
-    - Response: Task marked complete, next occurrence scheduled
+    - Payload: `{ "status": "completed", "completedDate": "2025-01-15T10:00:00Z", "notes": "..." }`
+    - Response: Milestone marked complete, next occurrence scheduled
     - Updates: Task list, next due date
+    - Source: Story 1.27 (Remaining Resources - Planning)
 
-15. **POST /api/v1/planning/recurring-tasks**
+15. **POST /api/v1/planning/milestones**
     - Triggered by: Creating new recurring task
-    - Payload: `{ name, frequency: "quarterly|monthly|annually", startDate, reminder }`
-    - Response: Recurring task created
+    - Payload: `{ "name": "...", "type": "recurring", "frequency": "quarterly|monthly|annually", "startDate": "...", "reminder": {...} }`
+    - Response: Recurring milestone created
     - Side effect: Schedules reminder notifications
+    - Source: Story 1.27 (Remaining Resources - Planning)
 
 ---
 

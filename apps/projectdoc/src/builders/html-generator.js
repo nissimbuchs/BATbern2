@@ -190,12 +190,17 @@ class HtmlGenerator {
     Object.entries(this.config.categories).forEach(([key, categoryConfig]) => {
       const docs = allDocuments.filter(doc => doc.category === key);
 
+      // Sort documents alphabetically by title
+      const sortedDocs = docs.sort((a, b) =>
+        a.metadata.title.localeCompare(b.metadata.title)
+      );
+
       result[key] = {
         ...categoryConfig,
         key,
-        documents: docs,
-        documentCount: docs.length,
-        lastUpdated: this.getLastUpdatedDate(docs)
+        documents: sortedDocs,
+        documentCount: sortedDocs.length,
+        lastUpdated: this.getLastUpdatedDate(sortedDocs)
       };
     });
 
@@ -325,9 +330,11 @@ class HtmlGenerator {
           <div class="category-documents">
       `;
 
-      category.documents.slice(0, 5).forEach(doc => {
+      // Show all documents, mark the ones beyond 5 as hidden
+      category.documents.forEach((doc, index) => {
+        const isHidden = index >= 5;
         content += `
-          <a href="${doc.urlPath}" class="document-link">
+          <a href="${doc.urlPath}" class="document-link${isHidden ? ' hidden-document' : ''}" ${isHidden ? 'style="display: none;"' : ''}>
             <span class="document-title">${doc.metadata.title}</span>
             ${doc.metadata.epicInfo ? `<span class="epic-badge">Epic ${doc.metadata.epicInfo.number}</span>` : ''}
           </a>
@@ -335,7 +342,12 @@ class HtmlGenerator {
       });
 
       if (category.documents.length > 5) {
-        content += `<div class="more-documents">+${category.documents.length - 5} more documents</div>`;
+        content += `
+          <button class="expand-button" onclick="toggleCategoryDocuments('${key}')">
+            <span class="expand-text">Show ${category.documents.length - 5} more</span>
+            <span class="collapse-text" style="display: none;">Show less</span>
+          </button>
+        `;
       }
 
       content += `

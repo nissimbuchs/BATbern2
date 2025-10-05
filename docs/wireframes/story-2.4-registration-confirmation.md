@@ -191,78 +191,87 @@ When the Registration Confirmation Page loads, the following APIs are called:
 
 1. **GET /api/v1/events/{eventId}/registrations/{confirmationCode}**
    - Query params: None (confirmation code in URL path)
-   - Returns: Complete registration details (registrationId, attendeeInfo, eventInfo, ticketUrl, emailStatus)
+   - Returns: Complete registration details (registrationId, attendeeInfo, eventInfo with embedded venue, ticketUrl, emailStatus)
    - Used for: Validate confirmation code exists, display registration details, show attendee info, verify email sent, enable ticket download button
+   - Consolidation: Uses nested registrations endpoint under Events API (Story 1.17)
 
-2. **GET /api/v1/events/{eventId}**
-   - Returns: Event details (title, eventDate, venue with full address, startTime, endTime, description)
-   - Used for: Display event information section, populate calendar invite data, show location details, generate directions link
+2. **GET /api/v1/events/{eventId}?include=venue,sessions,speakers**
+   - Query params: `include=venue,sessions,speakers` (to embed venue and session data)
+   - Returns: Event details with embedded venue (title, eventDate, startTime, endTime, description, venue.name, venue.fullAddress, venue.coordinates, venue.parkingInfo, venue.wifiInfo, venue.accessibilityInfo)
+   - Used for: Display event information section, populate calendar invite data, show location details, generate directions link, display "Getting There" information
+   - Consolidation: Single endpoint replaces separate event + venue calls (Story 1.17)
 
-3. **GET /api/v1/events/{eventId}/venue**
-   - Returns: Venue details (name, fullAddress, coordinates, parkingInfo, wifiInfo, accessibilityInfo, mapUrl)
-   - Used for: Display "Getting There" information, show parking details, provide Wi-Fi info, generate map directions link
-
-4. **GET /api/v1/newsletter/status?email={email}**
-   - Query params: email (from registration)
-   - Returns: Newsletter subscription status (isSubscribed, subscriptionDate, frequency)
+3. **GET /api/v1/notifications/subscriptions?email={email}&type=newsletter**
+   - Query params: `email` (from registration), `type=newsletter`
+   - Returns: Newsletter subscription status (isSubscribed, subscriptionDate, frequency, preferences)
    - Used for: Show newsletter subscription confirmation if user opted in during registration
+   - Consolidation: Uses consolidated Notifications API (Story 1.26)
 
 ### User Action APIs
 
-5. **GET /api/v1/events/{eventId}/registrations/{registrationId}/ticket.pdf**
+4. **GET /api/v1/events/{eventId}/registrations/{registrationId}/ticket.pdf**
    - Triggered by: User clicks [📄 Download PDF Ticket]
    - Returns: PDF file with ticket, QR code, event details
    - Used for: Downloads personalized ticket PDF with QR code containing registrationId
+   - Consolidation: Nested under Events/Registrations API (Story 1.17)
 
-6. **GET /api/v1/events/{eventId}/calendar.ics**
+5. **GET /api/v1/events/{eventId}/calendar.ics?registrationId={registrationId}**
    - Triggered by: User clicks [📅 Download .ics file]
-   - Query params: registrationId (to personalize)
-   - Returns: .ics calendar file with event details
+   - Query params: `registrationId` (to personalize)
+   - Returns: .ics calendar file with event details and venue information
    - Used for: Downloads calendar file for importing to calendar applications
+   - Consolidation: Nested under Events API, includes venue data (Story 1.17)
 
-7. **POST /api/v1/calendar/google/add**
+6. **POST /api/v1/integrations/calendar/google**
    - Triggered by: User clicks [📅 Add to Google Calendar]
    - Payload: `{ eventId: uuid, registrationId: uuid, attendeeEmail: string }`
    - Returns: Google Calendar OAuth redirect URL or success confirmation
    - Used for: Initiates Google Calendar API flow to add event directly
+   - Consolidation: Uses consolidated Integrations API (Story 1.27)
 
-8. **PUT /api/v1/events/{eventId}/registrations/{registrationId}/dietary-requirements**
+7. **PATCH /api/v1/events/{eventId}/registrations/{registrationId}**
    - Triggered by: User clicks [Update Preferences] in catering section
    - Payload: `{ dietaryRequirements: string[], accessibilityNeeds: string }`
    - Returns: Updated registration confirmation
    - Used for: Opens modal to update dietary requirements and accessibility needs
+   - Consolidation: Uses PATCH for partial updates (Story 1.17)
 
-9. **PUT /api/v1/events/{eventId}/registrations/{registrationId}**
+8. **GET /api/v1/events/{eventId}/registrations/{registrationId}**
    - Triggered by: User clicks [Edit Registration]
    - Returns: Current registration data for editing
-   - Used for: Navigates to registration form with pre-filled data for modifications
+   - Used for: Fetches registration data to pre-fill edit form
+   - Consolidation: Nested under Events API (Story 1.17)
 
-10. **DELETE /api/v1/events/{eventId}/registrations/{registrationId}**
+9. **DELETE /api/v1/events/{eventId}/registrations/{registrationId}**
     - Triggered by: User confirms cancellation via [Cancel Registration]
     - Returns: Cancellation confirmation (canceledAt, cancellationMessage)
     - Response example: `{ "success": true, "canceledAt": "2025-03-15T10:30:00Z", "message": "Sorry to see you go! We've sent you an email confirmation." }`
     - Used for: Cancels registration (simple unregistration), sends cancellation email with "sorry" message and event details, shows cancellation confirmation
     - Note: Free events only - no refunds, no payment processing
+    - Consolidation: Nested under Events API (Story 1.17)
 
-11. **GET /api/v1/events/{eventId}/agenda.pdf**
+10. **GET /api/v1/events/{eventId}/agenda.pdf**
     - Triggered by: User clicks [View Full Agenda]
     - Returns: PDF file with complete event agenda
     - Used for: Downloads full agenda document
+    - Consolidation: Nested under Events API (Story 1.17)
 
-12. **POST /api/v1/attendee/preferences**
+11. **PUT /api/v1/attendees/me**
     - Triggered by: User clicks [Update My Preferences]
-    - Payload: `{ email: string, notificationPreferences: object, newsletterFrequency: string }`
-    - Returns: Updated preference confirmation
+    - Payload: `{ email: string, preferences: { notifications: object, newsletter: { frequency: string } } }`
+    - Returns: Updated attendee profile with preferences
     - Used for: Opens modal or navigates to preferences page for managing communication settings
+    - Consolidation: Uses consolidated Attendees API with embedded preferences (Story 1.25)
 
-13. **POST /api/v1/social/share**
+12. **POST /api/v1/content/share**
     - Triggered by: User clicks social sharing button (LinkedIn, Twitter/X, or Email)
-    - Payload: `{ platform: "linkedin" | "twitter" | "email", eventId: uuid, registrationId: uuid, shareMessage: string }`
+    - Payload: `{ platform: "linkedin" | "twitter" | "email", contentType: "event_registration", eventId: uuid, registrationId: uuid, shareMessage: string }`
     - Returns: Share URL or success confirmation
     - Used for: Generates shareable link and pre-filled message for social platforms
     - LinkedIn: Opens LinkedIn share dialog with event URL and message
     - Twitter/X: Opens Twitter/X share dialog with event hashtag and message
     - Email: Opens mailto: link with pre-filled subject and body
+    - Consolidation: Uses consolidated Content API for sharing features (Story 1.20)
 
 ---
 

@@ -117,34 +117,30 @@ APIs needed to load and display data for this screen:
 
 ### Initial Page Load
 
-1. **GET /api/v1/speakers/{speakerId}/events/{eventId}/presentation**
-   - Retrieve presentation details and upload status
-   - Response includes: uploaded files, version history, supplementary materials, compliance status
-   - Used for: Populating all presentation information and status
+1. **GET /api/v1/speakers/{speakerId}/events/{eventId}?include=materials,checklist**
+   - **Consolidated API**: Replaces multiple endpoints (`/presentation`, `/presentation/versions`, `/supplementary-materials`)
+   - Retrieve event details with materials and checklist included
+   - Response includes:
+     - Presentation materials with version history
+     - Supplementary materials (all types unified under `/materials`)
+     - Compliance checklist status
+     - Material upload status and metadata
+   - Used for: Populating all presentation information, version history, and supplementary materials in a single call
+   - **Consolidation benefit**: 4 endpoints → 1 endpoint (75% reduction), atomic data consistency
 
 2. **GET /api/v1/events/{eventId}/presentation-requirements**
    - Retrieve event-specific presentation requirements
    - Response includes: format requirements, branding guidelines, accessibility standards, deadline
    - Used for: Requirements checklist display and validation
 
-3. **GET /api/v1/speakers/{speakerId}/events/{eventId}/presentation/versions**
-   - Retrieve version history of uploaded presentations
-   - Response includes: version number, upload timestamp, file details, uploader
-   - Used for: Version history display
-
-4. **GET /api/v1/speakers/{speakerId}/events/{eventId}/supplementary-materials**
-   - Retrieve all supplementary materials
-   - Response includes: file list, URLs, metadata, download settings
-   - Used for: Additional resources section
-
 ### Template & Guidelines
 
-5. **GET /api/v1/events/{eventId}/presentation/template**
+3. **GET /api/v1/events/{eventId}/presentation/template**
    - Retrieve presentation template file
    - Response: Template download URL or redirect to S3
    - Used for: [Download Template] action
 
-6. **GET /api/v1/events/{eventId}/presentation/guidelines**
+4. **GET /api/v1/events/{eventId}/presentation/guidelines**
    - Retrieve presentation guidelines document
    - Response: Guidelines PDF or markdown content
    - Used for: [View Guidelines] action
@@ -157,17 +153,19 @@ APIs called by user interactions and actions:
 
 ### File Upload
 
-1. **POST /api/v1/speakers/{speakerId}/events/{eventId}/presentation/upload**
+1. **POST /api/v1/speakers/{speakerId}/events/{eventId}/materials**
+   - **Consolidated API**: Replaces `/presentation/upload` and `/supplementary/upload`
    - Triggered by: Drop file or [Browse Files] button
-   - Payload: Multipart form-data with presentation file
-   - Response: Upload confirmation, file URL, metadata (slide count, size)
+   - Payload: Multipart form-data with file + `{ type: "presentation" | "supplementary" }`
+   - Response: Upload confirmation, file URL, metadata (slide count for presentations, size)
    - Integration: AWS S3 with resumable upload support
    - Processing:
-     - Generate PDF preview
-     - Extract slide count
+     - Generate PDF preview (for presentations)
+     - Extract slide count (for presentations)
      - Create thumbnail previews
-   - Max size: 50MB
-   - Supported formats: PPTX, PDF, KEY, Google Slides link
+   - Max size: 50MB for presentations, 25MB for supplementary
+   - Supported formats: PPTX, PDF, KEY, Google Slides link, any file type for supplementary
+   - **Consolidation benefit**: Unified material upload endpoint handles all material types
 
 2. **GET /api/v1/speakers/{speakerId}/presentations/{fileId}/upload-progress**
    - Triggered by: Polling during large file upload
@@ -176,16 +174,21 @@ APIs called by user interactions and actions:
 
 ### File Management
 
-3. **DELETE /api/v1/speakers/{speakerId}/presentations/{fileId}**
-   - Triggered by: [Delete] button
+3. **DELETE /api/v1/speakers/{speakerId}/events/{eventId}/materials/{materialId}**
+   - **Consolidated API**: Replaces `/presentations/{fileId}` and `/supplementary/{fileId}` DELETE endpoints
+   - Triggered by: [Delete] or [Remove] button
    - Response: Deletion confirmation
    - Side effect: Remove file from S3, archive in version history
+   - **Consolidation benefit**: Single endpoint for all material deletions
 
-4. **POST /api/v1/speakers/{speakerId}/presentations/{fileId}/replace**
-   - Triggered by: [Replace] button
-   - Opens: File picker for new file
-   - Action: Uploads new version, archives old version
-   - Maintains version history
+4. **PUT /api/v1/speakers/{speakerId}/events/{eventId}/materials/{materialId}**
+   - **Consolidated API**: Replaces `/presentations/{fileId}/replace` and `/supplementary/{fileId}` PUT endpoints
+   - Triggered by: [Replace] button or updating resource metadata
+   - Payload: New file (multipart) OR metadata `{ filename, description, availableAfterEvent }`
+   - Response: Updated material details with version history
+   - Action: Uploads new version (archives old), or updates metadata
+   - Maintains version history for all material types
+   - **Consolidation benefit**: Unified material update endpoint with versioning
 
 5. **GET /api/v1/presentations/{fileId}/preview**
    - Triggered by: [Preview] button
@@ -194,36 +197,22 @@ APIs called by user interactions and actions:
 
 ### Version Control
 
-6. **POST /api/v1/speakers/{speakerId}/presentations/restore**
+6. **POST /api/v1/speakers/{speakerId}/events/{eventId}/materials/{materialId}/restore**
+   - **Consolidated API**: Replaces `/presentations/restore`
    - Triggered by: [Restore] button on version history item
    - Payload: `{ versionId }`
    - Response: Restored version details
    - Action: Makes selected version current, archives current as new version
+   - **Consolidation benefit**: Standard versioning for all material types
 
 7. **GET /api/v1/presentations/{fileId}/download**
    - Triggered by: Download link on version history
    - Response: Presigned S3 URL for file download
    - Used for: Downloading previous versions
 
-### Supplementary Materials
+### GitHub Integration
 
-8. **POST /api/v1/speakers/{speakerId}/events/{eventId}/supplementary/upload**
-   - Triggered by: [+ Add Resource] button
-   - Payload: Multipart form-data with resource file
-   - Response: File upload confirmation, URL, metadata
-   - Supported: Any file type (PDFs, ZIPs, MD, code files)
-   - Max size: 25MB per file
-
-9. **PUT /api/v1/speakers/{speakerId}/events/{eventId}/supplementary/{fileId}**
-   - Triggered by: Updating resource metadata or download settings
-   - Payload: `{ filename, description, availableAfterEvent }`
-   - Response: Updated resource details
-
-10. **DELETE /api/v1/speakers/{speakerId}/supplementary/{fileId}**
-    - Triggered by: [Remove] button on supplementary material
-    - Response: Deletion confirmation
-
-11. **PUT /api/v1/speakers/{speakerId}/events/{eventId}/github-repo**
+8. **PUT /api/v1/speakers/{speakerId}/events/{eventId}/github-repo**
     - Triggered by: Entering/updating GitHub URL
     - Payload: `{ repoUrl }`
     - Response: Validation result, repo metadata (stars, description)
@@ -231,7 +220,7 @@ APIs called by user interactions and actions:
 
 ### Compliance & Validation
 
-12. **POST /api/v1/presentations/{fileId}/validate-requirements**
+9. **POST /api/v1/presentations/{fileId}/validate-requirements**
     - Triggered by: Auto after upload or [Validate] button
     - Payload: `{ eventId }`
     - Response: Compliance check results
@@ -240,18 +229,21 @@ APIs called by user interactions and actions:
 
 ### Submission
 
-13. **POST /api/v1/speakers/{speakerId}/events/{eventId}/presentation/submit**
+10. **POST /api/v1/speakers/{speakerId}/events/{eventId}/materials/submit**
+    - **Consolidated API**: Replaces `/presentation/submit`
     - Triggered by: [Submit for Review] button
-    - Payload: `{ presentationFileId, supplementaryMaterials: [], notes }`
+    - Payload: `{ materials: [{ id, type }], notes }`
     - Response: Submission confirmation, review timeline
     - Side effects:
       - Notifies organizer of submission
       - Updates speaker task status to "completed"
       - Locks current version for review
       - Triggers quality review workflow
-    - State change: Presentation status → "under_review"
+    - State change: Materials status → "under_review"
+    - **Consolidation benefit**: Single submission endpoint for all material types
 
-14. **POST /api/v1/speakers/{speakerId}/events/{eventId}/presentation/request-feedback**
+11. **POST /api/v1/speakers/{speakerId}/events/{eventId}/materials/request-feedback**
+    - **Consolidated API**: Replaces `/presentation/request-feedback`
     - Triggered by: [Request Feedback] button
     - Payload: `{ specificQuestions: [] }`
     - Response: Feedback request sent confirmation
@@ -259,7 +251,8 @@ APIs called by user interactions and actions:
 
 ### Progress Tracking
 
-15. **PUT /api/v1/speakers/{speakerId}/events/{eventId}/presentation/progress**
+12. **PUT /api/v1/speakers/{speakerId}/events/{eventId}/materials/progress**
+    - **Consolidated API**: Replaces `/presentation/progress`
     - Triggered by: [Save Progress] button or auto-save
     - Payload: All form data including checkboxes, URLs, settings
     - Response: Save confirmation, last saved timestamp

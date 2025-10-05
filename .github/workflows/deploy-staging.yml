@@ -1,59 +1,25 @@
 name: Deploy to Staging
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version to deploy (e.g., commit SHA or tag)'
-        required: true
-        default: 'latest-dev'
+  workflow_run:
+    workflows: ["Build Pipeline"]
+    types: [completed]
+    branches: [develop]
 
 env:
   AWS_REGION: eu-central-1
   ENVIRONMENT: staging
 
 jobs:
-  pre-deployment-validation:
-    runs-on: ubuntu-latest
-    environment:
-      name: staging
-      url: https://staging.batbern.ch
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Validate version
-        run: |
-          echo "Deploying version: ${{ github.event.inputs.version }}"
-          echo "Validating version exists..."
-
-          # If version is a git tag, verify it exists
-          if [[ "${{ github.event.inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
-            git fetch --tags
-            if ! git tag | grep -q "^${{ github.event.inputs.version }}$"; then
-              echo "::error::Version ${{ github.event.inputs.version }} does not exist"
-              exit 1
-            fi
-          fi
-
-      - name: Check dev deployment status
-        run: |
-          echo "Checking if version was successfully deployed to dev..."
-          # TODO: Add logic to verify dev deployment status
-
   deploy-to-staging:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
     permissions:
       id-token: write
       contents: read
-    needs: pre-deployment-validation
-    runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.inputs.version }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -70,13 +36,24 @@ jobs:
 
       - name: Install CDK dependencies
         working-directory: ./infrastructure
+        run: npm ci
+
+      - name: Build frontend for deployment
+        working-directory: ./web-frontend
         run: |
           if [ -f "package.json" ]; then
+            echo "Building frontend for staging..."
             npm ci
+            npm run build
+            echo "✅ Frontend build complete: dist/ ready for CDK deployment"
           else
-            echo "::warning::Infrastructure package.json not found"
-            exit 0
+            echo "::warning::Frontend package.json not found, skipping build"
           fi
+        env:
+          VITE_API_URL: https://api-staging.batbern.ch
+          VITE_AWS_REGION: ${{ env.AWS_REGION }}
+          VITE_COGNITO_USER_POOL_ID: ${{ secrets.STAGING_COGNITO_USER_POOL_ID }}
+          VITE_COGNITO_CLIENT_ID: ${{ secrets.STAGING_COGNITO_CLIENT_ID }}
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -124,16 +101,16 @@ jobs:
         working-directory: ./infrastructure
         run: |
           if [ -f "package.json" ]; then
-            echo "Deploying version: ${{ github.event.inputs.version }}"
+            echo "Deploying version: ${{ github.sha }}"
 
             npm run deploy:staging -- \
-              --context version=${{ github.event.inputs.version }} \
+              --context version=${{ github.sha }} \
               --require-approval never || echo "::warning::CDK deployment not fully configured yet"
           else
             echo "::warning::Infrastructure not configured yet"
           fi
         env:
-          IMAGE_TAG: ${{ github.event.inputs.version }}
+          IMAGE_TAG: ${{ github.sha }}
 
       - name: Wait for ECS services to stabilize
         run: |
@@ -174,10 +151,12 @@ jobs:
         if: success()
         run: |
           echo "✅ Staging deployment successful"
-          echo "Version: ${{ github.event.inputs.version }}"
+          echo "Version: ${{ github.sha }}"
+          echo "Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
       - name: Notify deployment failure
         if: failure()
         run: |
           echo "❌ Staging deployment failed"
           echo "Database backup available: ${{ env.SNAPSHOT_ID }}"
+          echo "Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

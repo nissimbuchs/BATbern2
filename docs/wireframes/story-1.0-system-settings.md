@@ -364,9 +364,12 @@
 
 ## API Requirements
 
+> **API Consolidation Note (Story 1.23 & 1.27)**: This wireframe has been updated to use consolidated APIs from Stories 1.23 (Users API) and 1.27 (Remaining Resources - Admin). These consolidations simplify admin endpoints while maintaining all functionality through optimized query patterns.
+
 ### Initial Page Load APIs
 
-1. **GET /api/v1/admin/system-config**
+1. **GET /api/v1/admin/system-config** *(Story 1.27)*
+   - **Consolidation**: Unified system configuration endpoint
    - **Authorization**: Requires `ADMIN_SETTINGS` permission
    - **Query Params**: None
    - **Returns**: Complete system configuration object
@@ -412,8 +415,11 @@
      }
      ```
    - **Used for**: Populating all configuration forms with current values
+   - **Performance**: <300ms (P95)
+   - **Consolidation Benefit**: Single endpoint replaces multiple fragmented config endpoints
 
-2. **GET /api/v1/admin/system-status**
+2. **GET /api/v1/admin/system/status** *(Story 1.27)*
+   - **Consolidation**: Part of standardized admin endpoints
    - **Authorization**: Requires `ADMIN_SETTINGS` permission
    - **Query Params**: None
    - **Returns**: Real-time system health and metrics
@@ -449,8 +455,10 @@
      }
      ```
    - **Used for**: System Status dashboard, real-time monitoring
+   - **Performance**: <200ms (P95)
 
-3. **GET /api/v1/admin/feature-flags**
+3. **GET /api/v1/admin/feature-flags** *(Story 1.27)*
+   - **Consolidation**: Standardized admin feature flags endpoint
    - **Authorization**: Requires `ADMIN_SETTINGS` permission
    - **Query Params**: `?environment={dev|staging|production}`
    - **Returns**: Feature flag states for specified environment
@@ -477,10 +485,14 @@
      }
      ```
    - **Used for**: Feature Flags section, environment-specific toggle states
+   - **Performance**: <150ms (P95)
 
-4. **GET /api/v1/admin/access-control**
+4. **GET /api/v1/admin/users?filter={"role":"SYSTEM_ADMIN"}&include=security** *(Story 1.23)*
+   - **Consolidation**: Uses consolidated Users API with admin filter instead of separate access-control endpoint
    - **Authorization**: Requires `ADMIN_SETTINGS` permission
-   - **Query Params**: None
+   - **Query Params**:
+     - `filter={"role":"SYSTEM_ADMIN"}` (filter for admin users)
+     - `include=security` (include security settings)
    - **Returns**: Admin user list and access control settings
      ```json
      {

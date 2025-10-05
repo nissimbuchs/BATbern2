@@ -519,12 +519,31 @@ None required for this screen.
 - **Resend Cooldown**: After resending, disable [Resend Reset Link] button for 60 seconds to prevent spam
 - **Link Expiration Notice**: Clear messaging that reset link expires in 1 hour
 
+## API Consolidation Notes
+
+**AWS Cognito Managed Endpoints**: The following endpoints are part of AWS Cognito's managed authentication service and are intentionally not consolidated:
+- `POST /cognito/forgotPassword` (SDK method) - AWS Cognito API for initiating password reset flow
+- `POST /cognito/confirmForgotPassword` (SDK method) - AWS Cognito API for completing password reset with verification code
+
+These endpoints are part of AWS Cognito's specialized password reset flow and follow AWS SDK patterns. They are managed by AWS and provide infrastructure-level authentication capabilities.
+
+**Consolidated Custom Endpoints**: Custom wrapper endpoints follow the consolidated API patterns from Story 1.16 (API Consolidation Foundation):
+- `POST /api/v1/auth/forgot-password` (Story 1.16) - Wrapper endpoint that follows consolidated patterns and handles Cognito integration
+- `POST /api/v1/auth/resend-reset-link` (Story 1.16) - Wrapper endpoint for resending password reset emails
+
+**Rationale**:
+- **AWS Cognito endpoints** are specialized managed services that handle password reset flows, token generation, email delivery coordination, and security features (rate limiting, expiration, single-use tokens). These are infrastructure-level authentication services, not application domain APIs, and therefore exist outside the scope of API consolidation (Stories 1.16-1.27).
+- **Wrapper endpoints** provide a simplified interface that abstracts AWS Cognito complexity while following the consolidated API patterns established in Story 1.16 (consistent error handling, request/response formats, logging, monitoring).
+- **Separation of concerns**: Password reset flows are specialized authentication operations handled by Cognito's managed service. The consolidation effort (Stories 1.16-1.27) focuses on application domain APIs (events, partners, speakers, users, etc.), not managed authentication infrastructure.
+- **Security best practices**: AWS Cognito's password reset implementation includes built-in security features (time-limited tokens, rate limiting, email enumeration prevention) that would need to be reimplemented if not using the managed service.
+
 ## Change Log
 
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
 | 2025-10-04 | 1.0 | Initial wireframe creation | Sally (UX Expert) |
 | 2025-10-04 | 1.1 | Added language selector (EN/DE per NFR4); Added bilingual email templates (German/English); Added i18n implementation details | Sally (UX Expert) |
+| 2025-10-04 | 1.2 | Added API Consolidation Notes section explaining AWS Cognito password reset endpoints and their relationship to consolidated APIs | Claude (AI Assistant) |
 
 ## Review Notes
 

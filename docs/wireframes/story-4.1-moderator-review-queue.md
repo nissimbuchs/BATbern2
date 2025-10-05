@@ -5,6 +5,16 @@
 **User Role**: Moderator (Organizer with Moderator Role)
 **Related FR**: FR9 (Quality Control Standards)
 
+**API Consolidation Update** (2025-10-04):
+This wireframe has been updated to use consolidated APIs from Stories 1.17, 1.20, and 1.26:
+- Review queue now uses `/api/v1/content?filter={"status":"pending_review"}` (Story 1.20)
+- Content details use `/api/v1/content/{id}?include=session,speaker,event,materials` (Story 1.20)
+- File operations unified under `/api/v1/content/{id}/download` and `/preview` (Story 1.20)
+- Review submissions use `PATCH /api/v1/content/{id}` for status updates (Story 1.20)
+- Bulk operations supported via array PATCH (Story 1.20)
+- Notifications use `/api/v1/notifications` (Story 1.26)
+- **API Reduction**: From 13 fragmented endpoints to 6 consolidated content APIs
+
 ---
 
 ## Visual Wireframe
@@ -296,76 +306,95 @@
 
 ### Initial Page Load APIs
 
-1. **GET /api/v1/moderators/{moderatorId}/reviews**
-   - Query params: status=pending, sortBy=deadline, order=asc, limit=50
-   - Returns: Array of ContentQualityReview objects (id, sessionId, speakerId, status, abstractReview, materialReview, submittedAt, deadline, urgencyLevel)
-   - Used for: Display pending reviews queue, calculate statistics
+1. **GET /api/v1/content**
+   - Query params: `filter={"status": "pending_review", "moderatorId": "{userId}"}&sort=deadline&order=asc&page=1&limit=50&include=session,speaker,event,materials`
+   - Returns: Array of content submissions with full context (session details, speaker info, event data, materials)
+   - Used for: Display pending reviews queue with all required information
+   - Source: Story 1.20 (Content API Consolidation)
 
-2. **GET /api/v1/moderators/{moderatorId}/reviews/statistics**
-   - Returns: Queue statistics (pendingCount, underReviewCount, approvedCount, requiresChangesCount, rejectedCount, averageReviewTime, thisWeekCompleted)
-   - Used for: Display queue overview section
+2. **GET /api/v1/content/analytics**
+   - Query params: `metrics=pending,underReview,approved,requiresChanges,rejected,averageReviewTime,weeklyCompleted&userId={moderatorId}`
+   - Returns: Queue statistics (counts by status, performance metrics)
+   - Used for: Display queue overview section with statistics
+   - Source: Story 1.20 (Content API Consolidation)
 
-3. **GET /api/v1/events?status=active&limit=100**
+3. **GET /api/v1/events**
+   - Query params: `filter={"status": "active"}&fields=id,title,date&limit=100`
    - Returns: List of active events for filter dropdown
    - Used for: Populate event filter options
+   - Source: Story 1.17 (Events API Consolidation)
 
 ### User Action APIs
 
-4. **GET /api/v1/sessions/{sessionId}/quality-review**
+4. **GET /api/v1/content/{contentId}**
    - Triggered by: User clicks [Review Now] on a submission
-   - Returns: Complete ContentQualityReview object with full details (abstract, materials, speaker info, event details, submission history)
+   - Query params: `include=session,speaker,event,materials,reviews,history`
+   - Returns: Complete content object with full details (abstract, materials, speaker info, event details, submission history)
    - Used for: Display review detail modal with all information
+   - Source: Story 1.20 (Content API Consolidation)
 
-5. **PUT /api/v1/sessions/{sessionId}/quality-review**
+5. **PATCH /api/v1/content/{contentId}**
    - Triggered by: User clicks [Submit Review] after completing review
-   - Payload: `{ status: "approved" | "requires_changes" | "rejected", feedback: "string", abstractReview: {...}, materialReview: {...}, revisionRequested: boolean, revisionDeadline: "2025-05-10T17:00:00Z", internalNotes: "string" }`
-   - Returns: Updated ContentQualityReview object
+   - Payload: `{ "status": "approved" | "requires_changes" | "rejected", "reviewFeedback": "...", "abstractReview": {...}, "materialReview": {...}, "revisionRequested": true, "revisionDeadline": "2025-05-10T17:00:00Z", "internalNotes": "..." }`
+   - Returns: Updated content object with review decision
    - Used for: Submit review decision, send notifications to speaker
+   - Source: Story 1.20 (Content API Consolidation)
 
-6. **POST /api/v1/sessions/{sessionId}/quality-review/claim**
+6. **PATCH /api/v1/content/{contentId}**
    - Triggered by: User clicks [Assign to Me]
-   - Payload: `{ reviewerId: "uuid" }`
-   - Returns: Updated review with status="under_review" and assigned reviewerId
+   - Payload: `{ "status": "under_review", "reviewerId": "{userId}", "reviewStartedAt": "2025-01-15T10:00:00Z" }`
+   - Returns: Updated content with assigned reviewer
    - Used for: Claim review to prevent duplicate work, update queue status
+   - Source: Story 1.20 (Content API Consolidation)
 
-7. **POST /api/v1/sessions/{sessionId}/quality-review/draft**
+7. **PATCH /api/v1/content/{contentId}**
    - Triggered by: Auto-save every 30 seconds or [Save Draft] click
-   - Payload: `{ feedback: "string", abstractReview: {...}, materialReview: {...}, internalNotes: "string" }`
+   - Payload: `{ "draftReview": { "feedback": "...", "abstractReview": {...}, "materialReview": {...}, "internalNotes": "..." } }`
    - Returns: Confirmation of draft saved
    - Used for: Save work in progress without changing review status
+   - Source: Story 1.20 (Content API Consolidation)
 
-8. **GET /api/v1/files/{fileId}/download-url**
+8. **GET /api/v1/content/{contentId}/download**
    - Triggered by: User clicks [Download] on presentation or materials
-   - Returns: Presigned S3 download URL (downloadUrl, filename, fileSizeBytes, mimeType, expiresIn)
+   - Query params: `materialId={}&type=presentation|document|attachment`
+   - Returns: Presigned S3 download URL or direct file stream
    - Used for: Download submitted materials for review
+   - Source: Story 1.20 (Content API Consolidation)
 
-9. **GET /api/v1/files/{fileId}/preview**
+9. **GET /api/v1/content/{contentId}/preview**
    - Triggered by: User clicks [Preview] on presentation
-   - Returns: Presigned S3 URL or base64-encoded PDF for in-browser viewing
-   - Used for: In-browser PDF preview in modal
+   - Query params: `materialId={}`
+   - Returns: Presigned S3 URL or base64-encoded content for in-browser viewing
+   - Used for: In-browser PDF/document preview in modal
+   - Source: Story 1.20 (Content API Consolidation)
 
-10. **POST /api/v1/moderators/bulk-review**
+10. **PATCH /api/v1/content**
     - Triggered by: User selects multiple reviews and clicks [Bulk Approve Selected] or [Bulk Request Changes]
-    - Payload: `{ reviewIds: ["uuid1", "uuid2"], action: "approve" | "require_changes", feedback: "string" }`
-    - Returns: Batch operation result with success/failure status per review
+    - Payload: `[{ "id": "content-1", "status": "approved", "reviewFeedback": "..." }, { "id": "content-2", "status": "approved", "reviewFeedback": "..." }]`
+    - Returns: Batch operation result with success/failure status per item
     - Used for: Process multiple reviews simultaneously
+    - Source: Story 1.20 (Content API Consolidation) - bulk operations
 
-11. **GET /api/v1/moderators/{moderatorId}/reviews/export**
+11. **POST /api/v1/content/export**
     - Triggered by: User clicks [Export Report]
-    - Query params: format=csv|pdf, status=all|pending|approved, dateRange=last_week|last_month|custom
-    - Returns: Downloadable report file
+    - Payload: `{ "format": "csv|pdf", "filter": {"status": "all|pending|approved", "dateRange": "last_week|last_month|custom"}, "moderatorId": "{userId}" }`
+    - Returns: Download URL or file stream for report
     - Used for: Generate queue status report for management
+    - Source: Story 1.20 (Content API Consolidation)
 
-12. **POST /api/v1/notifications/send-reminder**
+12. **POST /api/v1/notifications**
     - Triggered by: User clicks [Send Reminder] on revision-requested item
-    - Payload: `{ reviewId: "uuid", recipientId: "speakerId", reminderType: "revision_deadline", customMessage?: "string" }`
+    - Payload: `{ "type": "revision_reminder", "recipientId": "{speakerId}", "contentId": "{contentId}", "customMessage": "..." }`
     - Returns: Notification sent confirmation
     - Used for: Send reminder email to speaker about pending revision
+    - Source: Story 1.26 (Notifications API Consolidation)
 
-13. **GET /api/v1/sessions/{sessionId}/quality-review/history**
+13. **GET /api/v1/content/{contentId}/versions**
     - Triggered by: User clicks [View Original Feedback] on revision item
-    - Returns: Array of previous review cycles (reviewerId, reviewedAt, status, feedback, changes)
+    - Query params: `include=reviews&page=1&limit=10`
+    - Returns: Array of previous content versions with review cycles (reviewerId, reviewedAt, status, feedback, changes)
     - Used for: Display revision history and previous feedback
+    - Source: Story 1.20 (Content API Consolidation)
 
 ---
 

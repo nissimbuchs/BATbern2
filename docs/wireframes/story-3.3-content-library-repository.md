@@ -420,37 +420,47 @@
 
 ### Initial Page Load APIs
 
-1. **GET /api/v1/content/search**
-   - Query params: `limit=20, offset=0, sortBy=recent, order=desc, status=published`
-   - Returns: Paginated list of content
-   - Response: `{ results: [{ id, title, description, contentType, fileId, eventTitle, eventDate, speakerName, companyName, thumbnailUrl, downloadUrl, tags, viewCount, downloadCount, createdAt, status }], facets, pagination }`
+1. **GET /api/v1/content?filter={"status":"published"}&sort=-createdAt&page=1&limit=20&facets=contentType,year,speaker,event,tag**
+   - Query params: Filter by published status, sort by recent, pagination, request facets
+   - Returns: Paginated list of content with facet aggregations
+   - Response: `{ data: [{ id, title, description, contentType, fileId, eventTitle, eventDate, speakerName, companyName, thumbnailUrl, downloadUrl, tags, viewCount, downloadCount, createdAt, status }], facets: {...}, pagination: {...} }`
    - Used for: Initial content list display
+   - **Consolidated**: Story 1.20 unified search with facets (was /api/v1/content/search)
+   - **Benefit**: Single call gets content + filter options
 
-2. **GET /api/v1/content/statistics**
-   - Returns: Overall library statistics
+2. **GET /api/v1/content?aggregateOnly=true&metrics=totalFiles,totalSize,byType**
+   - Returns: Overall library statistics via aggregation
    - Response: `{ totalFiles: 1247, presentations: 892, videos: 156, documents: 199, storageUsed: 48693493760, storageLimit: 214748364800 }`
    - Used for: Library statistics bar
+   - **Consolidated**: Same search endpoint with aggregateOnly flag (was /api/v1/content/statistics)
+   - **Benefit**: Statistics derived from actual content query
 
-3. **GET /api/v1/content/facets**
-   - Returns: Available filter options
-   - Response: `{ contentTypes: [], years: [], speakers: [], events: [], tags: [] }`
-   - Used for: Populate filter dropdowns
+3. **GET /api/v1/content?filter={}&facets=contentType,year,speaker,event,tag&aggregateOnly=true**
+   - Returns: Available filter options via facet aggregations
+   - Response: `{ facets: { contentTypes: [{value, count}], years: [{value, count}], speakers: [{value, count}], events: [{value, count}], tags: [{value, count}] } }`
+   - Used for: Populate filter dropdowns with counts
+   - **Consolidated**: Same search endpoint with facets (was /api/v1/content/facets)
+   - **Benefit**: Facets always reflect current filter state
 
 ### Action APIs
 
 #### Search & Filter
 
-4. **GET /api/v1/content/search**
+4. **GET /api/v1/content?filter={complexFilter}&sort={field}&page={n}&limit=20&facets=contentType,year,speaker,event,tag**
    - Triggered by: Search input, filter changes, sort changes
-   - Query params: `query={text}, contentType={type}, eventId={id}, speakerId={id}, year={year}, tags={tags}, status={status}, sortBy={field}, limit=20, offset={n}`
-   - Returns: Filtered content list
+   - Query params: `filter={"$and":[{"title":{"$contains":"text"}},{"contentType":"presentation"},{"year":2024}]}`, `sort=-createdAt`, pagination, facets
+   - Returns: Filtered content list with facet counts
    - Used for: Real-time search and filtering
+   - **Consolidated**: Story 1.20 unified search (was /api/v1/content/search)
+   - **Benefit**: Single endpoint handles all search/filter combinations, facets update dynamically
 
-5. **GET /api/v1/content/search/advanced**
+5. **GET /api/v1/content?filter={advancedCriteria}&facets=all&include=analytics**
    - Triggered by: [Advanced Search] button
-   - Payload: Complex search criteria
-   - Returns: Advanced search results
-   - Opens: Advanced search modal
+   - Query params: Complex filter with multiple conditions, all facets, include analytics
+   - Returns: Advanced search results with full metadata
+   - Opens: Advanced search modal with results
+   - **Consolidated**: Same search endpoint with complex filters (was /api/v1/content/search/advanced)
+   - **Benefit**: No separate advanced search API needed
 
 #### Content Management
 
@@ -484,69 +494,84 @@
 
 #### Version Management
 
-11. **GET /api/v1/content/{contentId}/versions**
+11. **GET /api/v1/content/{contentId}/versions?page=1&limit=10**
     - Triggered by: [Version History] button
-    - Returns: List of all versions
-    - Response: `{ versions: [{ versionNumber, uploadedAt, uploadedBy, fileSize, fileName, status, changeNotes }] }`
+    - Returns: Paginated list of all versions
+    - Response: `{ versions: [{ versionNumber, uploadedAt, uploadedBy, fileSize, fileName, status, changeNotes }], pagination: {...} }`
     - Opens: Version History modal
+    - **Consolidated**: Story 1.20 standard versions endpoint with pagination
 
 12. **POST /api/v1/content/{contentId}/versions**
     - Triggered by: Upload new version
     - Payload: New file + change notes
     - Returns: New version object
     - Side effects: Creates new version, archives previous
+    - **Consolidated**: Story 1.20 standard version creation
 
-13. **POST /api/v1/content/{contentId}/versions/{versionId}/revert**
+13. **POST /api/v1/content/{contentId}/versions/{versionId}/revert** (or PATCH with revert action)
     - Triggered by: [Revert to this version] button
     - Returns: Reverted content object
     - Side effects: Makes selected version current, creates new version entry
+    - **Note**: Can be implemented as PATCH with revert action for RESTful design
 
-14. **GET /api/v1/content/{contentId}/versions/compare**
+14. **GET /api/v1/content/{contentId}/versions/compare?v1={n}&v2={m}**
     - Triggered by: [Compare with v{n}] button
-    - Query params: `version1={n}, version2={m}`
+    - Query params: `v1={versionNumber1}`, `v2={versionNumber2}`
     - Returns: Comparison data
     - Opens: Version comparison view
+    - **Note**: Could be implemented as sub-resource or query params
 
 #### Analytics
 
-15. **GET /api/v1/content/{contentId}/analytics**
+15. **GET /api/v1/content/{contentId}/analytics?metrics=views,downloads,rating&period=30days**
     - Triggered by: [Analytics] button
-    - Query params: `period=30days`
-    - Returns: Analytics data
+    - Query params: `metrics=views,downloads,rating,reviews`, `period=30days`
+    - Returns: Analytics data with selected metrics
     - Response: `{ views, downloads, rating, reviews, viewsOverTime, downloadsOverTime, topViewerCompanies, viewerRoles, recentReviews }`
     - Opens: Analytics modal
+    - **Consolidated**: Story 1.20 analytics endpoint with metrics parameter
+    - **Benefit**: Flexible metric selection, reduces payload size
 
-16. **GET /api/v1/content/{contentId}/analytics/export**
+16. **GET /api/v1/content/{contentId}/analytics/export?format=pdf**
     - Triggered by: [Export Report] button
     - Query params: `format=pdf`
-    - Returns: `{ downloadUrl }`
+    - Returns: `{ downloadUrl, expiresAt }`
     - Used for: Download analytics report
+    - **Note**: Standard export pattern for analytics data
 
 #### Bulk Operations
 
-17. **POST /api/v1/content/bulk/download**
+17. **POST /api/v1/content/bulk**
     - Triggered by: [Download Selected] button
-    - Payload: `{ contentIds: [] }`
-    - Returns: `{ zipUrl: "presigned S3 URL for ZIP" }`
+    - Payload: `{ action: "download", contentIds: [] }`
+    - Returns: `{ zipUrl: "presigned S3 URL for ZIP", expiresAt }`
     - Used for: Bulk download as ZIP
+    - **Consolidated**: Single bulk endpoint (was POST /api/v1/content/bulk/download)
+    - **Benefit**: Unified bulk operations API
 
-18. **POST /api/v1/content/bulk/tag**
+18. **POST /api/v1/content/bulk**
     - Triggered by: [Tag] button
-    - Payload: `{ contentIds: [], addTags: [], removeTags: [] }`
-    - Returns: `{ updatedCount: n }`
+    - Payload: `{ action: "tag", contentIds: [], addTags: [], removeTags: [] }`
+    - Returns: `{ updatedCount: n, successful: [...], failed: [...] }`
     - Used for: Bulk tag management
+    - **Consolidated**: Same bulk endpoint with tag action (was POST /api/v1/content/bulk/tag)
+    - **Benefit**: Consistent bulk operation pattern
 
-19. **POST /api/v1/content/bulk/archive**
+19. **POST /api/v1/content/bulk**
     - Triggered by: [Archive] button
-    - Payload: `{ contentIds: [] }`
-    - Returns: `{ archivedCount: n }`
+    - Payload: `{ action: "archive", contentIds: [] }`
+    - Returns: `{ archivedCount: n, successful: [...], failed: [...] }`
     - Used for: Bulk archive
+    - **Consolidated**: Same bulk endpoint with archive action (was POST /api/v1/content/bulk/archive)
+    - **Benefit**: Single API for all bulk operations
 
-20. **POST /api/v1/content/bulk/delete**
+20. **POST /api/v1/content/bulk**
     - Triggered by: [Delete] button confirmation
-    - Payload: `{ contentIds: [] }`
-    - Returns: `{ deletedCount: n }`
+    - Payload: `{ action: "delete", contentIds: [] }`
+    - Returns: `{ deletedCount: n, successful: [...], failed: [...] }`
     - Used for: Bulk delete
+    - **Consolidated**: Same bulk endpoint with delete action (was POST /api/v1/content/bulk/delete)
+    - **Benefit**: Consistent error handling across all bulk operations
 
 #### Review & Approval (Organizer Only)
 

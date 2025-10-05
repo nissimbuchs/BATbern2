@@ -204,17 +204,24 @@ APIs needed to load and display data for this screen:
 
 ### Initial Load
 
-1. **GET /api/v1/speakers/{speakerId}/events/{eventId}/materials/draft**
-   - Retrieve existing draft or previously submitted materials
-   - Response includes: all form data from previous steps, file metadata, submission status
+1. **GET /api/v1/speakers/{speakerId}/events/{eventId}?include=materials,checklist**
+   - **Consolidated API**: Replaces `/materials/draft` endpoint
+   - Retrieve event details with materials and checklist
+   - Response includes:
+     - Draft/submitted materials with all form data
+     - File metadata and submission status
+     - Event-specific requirements and checklist
    - Used for: Pre-populating form fields with saved/existing data
    - Auto-recovery: If session interrupted, resume from last saved state
+   - **Consolidation benefit**: Single call for event context and materials
 
-2. **GET /api/v1/speakers/{speakerId}/profile**
+2. **GET /api/v1/speakers/{speakerId}?include=profile**
+   - **Consolidated API**: Uses standard speaker endpoint with profile inclusion
    - Retrieve speaker profile data
    - Response includes: bio, photo, company, social links, speaking history
    - Used for: Pre-filling biography step (Step 3) with existing profile data
    - Optimization: Reduce duplicate data entry
+   - **Consolidation benefit**: Consistent profile data access pattern
 
 3. **GET /api/v1/events/{eventId}/submission-requirements**
    - Retrieve event-specific submission requirements and guidelines
@@ -237,12 +244,14 @@ APIs called by user interactions and actions:
 
 ### Auto-Save
 
-1. **PUT /api/v1/speakers/{speakerId}/events/{eventId}/materials/draft**
+1. **PATCH /api/v1/speakers/{speakerId}/events/{eventId}/materials**
+   - **Consolidated API**: Uses PATCH for draft auto-save
    - Triggered by: Auto-save (every 30 seconds) or field blur
    - Payload: Partial material data (current step + all previous steps)
    - Response: Draft saved timestamp, draft ID
    - Debounced: 30-second interval to reduce API calls
    - Offline support: Queue in IndexedDB, sync when online
+   - **Consolidation benefit**: Standard PATCH pattern for partial updates
 
 ### Step Navigation
 
@@ -263,19 +272,23 @@ APIs called by user interactions and actions:
    - Processing: Server-side image optimization and validation
    - Max size: 5MB
 
-4. **POST /api/v1/speakers/{speakerId}/upload/presentation**
+4. **POST /api/v1/speakers/{speakerId}/events/{eventId}/materials**
+   - **Consolidated API**: Uses unified materials endpoint
    - Triggered by: Presentation file drop or browse (Step 5)
-   - Payload: Multipart form-data with presentation file
+   - Payload: Multipart form-data with presentation file + `{ type: "presentation" }`
    - Response: File URL, CDN path, page count (for PDFs), file size
    - Integration: AWS S3 with resumable upload support
    - Supported formats: PDF, PPTX, KEY, Google Slides link
    - Max size: 50MB
    - Chunked upload: For large files, support resume capability
+   - **Consolidation benefit**: Single materials endpoint handles all material types
 
-5. **DELETE /api/v1/speakers/{speakerId}/files/{fileId}**
+5. **DELETE /api/v1/speakers/{speakerId}/events/{eventId}/materials/{materialId}**
+   - **Consolidated API**: Uses nested materials endpoint
    - Triggered by: [Remove] or [Replace] button on uploaded files
    - Response: File deleted confirmation
    - Side effect: Remove file from S3 storage
+   - **Consolidation benefit**: Consistent material deletion pattern
 
 ### Submission
 
@@ -291,12 +304,15 @@ APIs called by user interactions and actions:
 
 ### Draft Management
 
-7. **GET /api/v1/speakers/{speakerId}/events/{eventId}/materials/versions**
+7. **GET /api/v1/speakers/{speakerId}/events/{eventId}?include=materials**
+   - **Consolidated API**: Uses event endpoint with materials inclusion
    - Triggered by: Optional "View Previous Versions" link
-   - Response: List of material versions with timestamps
+   - Response: Event data with material versions and timestamps
    - Used for: Viewing submission history, reverting to previous versions
+   - **Consolidation benefit**: Materials history is part of event resource
 
-8. **POST /api/v1/speakers/{speakerId}/events/{eventId}/materials/revert**
+8. **POST /api/v1/speakers/{speakerId}/events/{eventId}/materials/{materialId}/restore**
+   - **Consolidated API**: Uses materials restore endpoint
    - Triggered by: "Revert to Version" action
    - Payload: `{ versionId }`
    - Response: Reverted material data
@@ -304,15 +320,17 @@ APIs called by user interactions and actions:
 
 ### Profile Integration
 
-9. **POST /api/v1/speakers/{speakerId}/profile/save-from-submission**
+9. **PATCH /api/v1/speakers/{speakerId}**
+   - **Consolidated API**: Uses speaker PATCH for profile updates
    - Triggered by: Checkbox "Save bio to my profile" (Step 3)
-   - Payload: Bio, photo, company, social links
+   - Payload: `{ bio, photo, company, socialLinks }`
    - Response: Profile updated confirmation
    - Optimization: Allow speakers to update profile while submitting materials
+   - **Consolidation benefit**: Standard PATCH pattern, no special endpoint needed
 
 ### Validation & Feedback
 
-11. **POST /api/v1/materials/check-quality**
+10. **POST /api/v1/materials/check-quality**
     - Triggered by: Real-time as user types in abstract field
     - Payload: `{ abstract }`
     - Response: Quality score, suggestions, requirement check

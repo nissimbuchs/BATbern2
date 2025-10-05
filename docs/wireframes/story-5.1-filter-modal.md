@@ -446,13 +446,16 @@
 
 ## API Requirements
 
+> **API Consolidation Note (Stories 1.19, 1.20, 1.21, 1.22)**: This wireframe has been updated to use consolidated APIs from Stories 1.19 (Speakers), 1.20 (Content), 1.21 (Topics), and 1.22 (Companies). These consolidations use standardized `?filter={}` patterns and faceted search capabilities, reducing API calls while providing rich filtering options.
+
 ### Initial Page Load APIs
 
-1. **GET /api/v1/filters/options**
+1. **GET /api/v1/content?facets=topics,speakers,companies,contentTypes,years** *(Story 1.20)*
+   - **Consolidation**: Uses faceted search pattern to get filter options with counts in single request
    - **Authorization**: Optional (some filters require auth for personalization)
    - **Query Params**:
-     - `context` (required): "content" | "events" | "speakers" | "sessions"
-     - `includePresets` (optional): `true` | `false` (default: false)
+     - `facets=topics,speakers,companies,contentTypes,years` (request filter facets)
+     - `context` (optional): "content" | "events" | "speakers" | "sessions"
    - **Returns**: Available filter options with counts
      ```json
      {
@@ -531,17 +534,21 @@
            },
            "createdAt": "2024-03-15T10:00:00Z"
          }
-       ]
+       ],
+       "presets": [...]
      }
      ```
-   - **Used for**: Populate filter options, show counts, load saved presets
+   - **Used for**: Populate filter options, show counts with facet data
+   - **Performance**: <500ms (P95) with facets
+   - **Consolidation Benefit**: Single request provides all filter options using faceted search (eliminates need for separate filter-options endpoint)
 
-2. **GET /api/v1/users/{userId}/filter-presets**
+2. **GET /api/v1/users/{userId}/preferences?include=filterPresets** *(Story 1.23)*
+   - **Consolidation**: Uses unified preferences endpoint to fetch filter presets
    - **Authorization**: Requires authenticated user
    - **Path Params**: `userId` (UUID)
    - **Query Params**:
-     - `context` (optional): "content" | "events" | "speakers"
-   - **Returns**: User's saved filter presets
+     - `include=filterPresets` (expand filter presets from preferences)
+   - **Returns**: User's saved filter presets in preferences
      ```json
      {
        "presets": [
@@ -575,16 +582,22 @@
        ]
      }
      ```
-   - **Used for**: Load user's saved filter presets in "Filter Presets" section
+   - **Used for**: Load user's saved filter presets from preferences
+   - **Performance**: <150ms (P95)
+   - **Consolidation Benefit**: Filter presets integrated into user preferences
 
 ---
 
 ### User Action APIs
 
-1. **POST /api/v1/filters/count**
+1. **GET /api/v1/content?filter={}&facets=topics,speakers,companies** *(Story 1.20)*
+   - **Consolidation**: Real-time filter count uses same content endpoint with filter parameters
    - **Triggered by**: Filter changes (debounced 500ms), real-time result count updates
    - **Authorization**: Optional
-   - **Payload**: Current filter state
+   - **Query Params**:
+     - `filter={}` (current filter state as JSON)
+     - `facets=topics,speakers,companies` (get updated facet counts)
+   - **Payload**: N/A (GET request with query params)
      ```json
      {
        "context": "content",
@@ -633,12 +646,15 @@
      }
      ```
    - **Used for**: Update result count display, update counts next to each filter option
+   - **Performance**: <500ms (P95)
+   - **Consolidation Benefit**: Single content endpoint handles both search and facet counting (eliminates separate /filters/count endpoint)
 
-2. **POST /api/v1/users/{userId}/filter-presets**
+2. **PUT /api/v1/users/{userId}/preferences** *(Story 1.23)*
+   - **Consolidation**: Save filter presets through unified preferences endpoint
    - **Triggered by**: **[Save Preset]** button in save preset modal
    - **Authorization**: Requires authenticated user
    - **Path Params**: `userId` (UUID)
-   - **Payload**: Preset details
+   - **Payload**: Partial update with new filter preset
      ```json
      {
        "name": "AI & Cloud Resources",
@@ -665,40 +681,55 @@
        "success": true
      }
      ```
-   - **Used for**: Save current filter state as reusable preset
+   - **Used for**: Save current filter state as reusable preset in user preferences
+   - **Performance**: <150ms (P95)
+   - **Consolidation Benefit**: Filter presets managed through user preferences (no separate preset endpoints)
 
-3. **PUT /api/v1/users/{userId}/filter-presets/{presetId}**
-   - **Triggered by**: Edit existing preset (future enhancement)
-   - **Authorization**: Requires authenticated user, preset owner
-   - **Path Params**: `userId` (UUID), `presetId` (UUID)
-   - **Payload**: Updated preset details (same structure as create)
-   - **Response**: Updated preset object
-   - **Used for**: Update existing filter preset
-
-4. **DELETE /api/v1/users/{userId}/filter-presets/{presetId}**
-   - **Triggered by**: **[Delete]** button next to saved preset
-   - **Authorization**: Requires authenticated user, preset owner
-   - **Path Params**: `userId` (UUID), `presetId` (UUID)
-   - **Payload**: None
-   - **Response**:
-     ```json
-     {
-       "presetId": "preset-789",
-       "deleted": true,
-       "deletedAt": "2024-04-01T15:05:00Z"
-     }
-     ```
-   - **Used for**: Remove saved filter preset
-
-5. **GET /api/v1/filters/autocomplete**
-   - **Triggered by**: Typing in filter search boxes (speakers, topics, companies)
+3. **GET /api/v1/topics?filter={"query":"{searchTerm}"}&limit=10** *(Story 1.21)*
+   - **Consolidation**: Topic autocomplete uses consolidated Topics API
+   - **Triggered by**: Typing in topic filter search box
    - **Authorization**: Optional
    - **Query Params**:
-     - `query` (required): Search query string
-     - `type` (required): "topic" | "speaker" | "company"
-     - `context` (optional): "content" | "events" | "speakers"
-     - `limit` (optional): Max results (default: 10, max: 50)
-   - **Returns**: Autocomplete suggestions
+     - `filter={"query":"secur"}` (search filter)
+     - `limit=10` (max autocomplete results)
+   - **Returns**: Topic autocomplete suggestions
+     ```json
+     {
+       "topics": [
+         {
+           "id": "topic-security",
+           "name": "Security",
+           "count": 89
+         },
+         {
+           "id": "topic-security-audit",
+           "name": "Security Audit Logging",
+           "count": 12
+         }
+       ],
+       "totalMatches": 3
+     }
+     ```
+   - **Performance**: <200ms (P95)
+
+4. **GET /api/v1/speakers?filter={"query":"{searchTerm}"}&limit=10** *(Story 1.19)*
+   - **Consolidation**: Speaker autocomplete uses consolidated Speakers API
+   - **Triggered by**: Typing in speaker filter search box
+   - **Authorization**: Optional
+   - **Query Params**:
+     - `filter={"query":"weber"}` (search filter)
+     - `limit=10` (max autocomplete results)
+   - **Returns**: Speaker autocomplete suggestions
+   - **Performance**: <300ms (P95)
+
+5. **GET /api/v1/companies/search?query={searchTerm}&limit=10** *(Story 1.22)*
+   - **Consolidation**: Company autocomplete uses dedicated search endpoint with Redis caching
+   - **Triggered by**: Typing in company filter search box
+   - **Authorization**: Optional
+   - **Query Params**:
+     - `query={searchTerm}` (search query)
+     - `limit=10` (max autocomplete results)
+   - **Returns**: Company autocomplete suggestions
      ```json
      {
        "query": "secur",
@@ -729,7 +760,8 @@
        "totalMatches": 3
      }
      ```
-   - **Used for**: Real-time autocomplete in filter search boxes
+   - **Performance**: <100ms (P95) with Redis caching
+   - **Consolidation Benefit**: Dedicated search endpoints replace generic autocomplete API, optimized per resource type
 
 ---
 

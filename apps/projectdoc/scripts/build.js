@@ -546,6 +546,35 @@ function toggleEpicStories(element) {
     }
   }
 }
+
+// Category documents expand/collapse functionality
+function toggleCategoryDocuments(categoryKey) {
+  const card = document.querySelector('.category-card[data-category="' + categoryKey + '"]');
+  if (!card) return;
+
+  const hiddenDocs = card.querySelectorAll('.hidden-document');
+  const button = card.querySelector('.expand-button');
+  const expandText = button.querySelector('.expand-text');
+  const collapseText = button.querySelector('.collapse-text');
+
+  const isExpanded = hiddenDocs[0].style.display !== 'none';
+
+  hiddenDocs.forEach(function(doc) {
+    if (isExpanded) {
+      doc.style.display = 'none';
+    } else {
+      doc.style.display = '';
+    }
+  });
+
+  if (isExpanded) {
+    expandText.style.display = '';
+    collapseText.style.display = 'none';
+  } else {
+    expandText.style.display = 'none';
+    collapseText.style.display = '';
+  }
+}
 `;
 
     await fs.writeFile(path.join(outputPath, 'scripts/main.js'), jsContent);

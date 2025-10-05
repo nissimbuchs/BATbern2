@@ -14,15 +14,10 @@ export interface DnsStackProps extends cdk.StackProps {
  *
  * IMPORTANT: This stack must be deployed to us-east-1 for CloudFront certificates
  *
- * Implements:
- * - Route53 hosted zone for domain management
- * - ACM certificates for HTTPS (CloudFront requires us-east-1)
- * - DNS validation for certificates
- *
- * Features:
- * - Creates hosted zone if hostedZoneId not provided
- * - Creates certificates if certificateArn not provided
- * - Imports existing resources if IDs/ARNs are provided
+ * Architecture:
+ * - Production: batbern.ch hosted zone owns root domain
+ * - Staging: staging.batbern.ch hosted zone (delegated subdomain)
+ * - Each environment manages its own certificates with automatic DNS validation
  */
 export class DnsStack extends cdk.Stack {
   public readonly hostedZone: route53.IHostedZone;
@@ -31,100 +26,46 @@ export class DnsStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: DnsStackProps) {
     super(scope, id, props);
 
-    const isProd = props.config.envName === 'production';
     const envName = props.config.envName;
 
-    // Route53 Hosted Zone - Create or Import
-    if (props.config.domain?.hostedZoneId) {
-      // Import existing hosted zone
-      this.hostedZone = route53.HostedZone.fromHostedZoneAttributes(this, 'HostedZone', {
-        hostedZoneId: props.config.domain.hostedZoneId,
-        zoneName: props.domainName,
-      });
-
-      new cdk.CfnOutput(this, 'HostedZoneIdImported', {
-        value: this.hostedZone.hostedZoneId,
-        description: `Imported Route53 Hosted Zone ID for ${props.domainName}`,
-        exportName: `${envName}-HostedZoneId`,
-      });
-    } else {
-      // Create new hosted zone
-      this.hostedZone = new route53.HostedZone(this, 'HostedZone', {
-        zoneName: props.domainName,
-        comment: `BATbern Platform - ${envName} - ${props.domainName}`,
-      });
-
-      // Output nameservers for domain registrar configuration
-      new cdk.CfnOutput(this, 'NameServers', {
-        value: cdk.Fn.join(', ', this.hostedZone.hostedZoneNameServers || []),
-        description: 'Route53 nameservers - Configure these at your domain registrar',
-      });
-
-      new cdk.CfnOutput(this, 'HostedZoneIdCreated', {
-        value: this.hostedZone.hostedZoneId,
-        description: `Route53 Hosted Zone ID for ${props.domainName}`,
-        exportName: `${envName}-HostedZoneId`,
-      });
+    // Import existing hosted zone (now in same account)
+    if (!props.config.domain?.hostedZoneId) {
+      throw new Error('hostedZoneId must be provided in domain config');
     }
 
-    // ACM Certificate - Create or Import
-    // IMPORTANT: Must be in us-east-1 for CloudFront
-    if (props.config.domain?.certificateArn) {
-      // Import existing certificate
-      this.certificate = certificatemanager.Certificate.fromCertificateArn(
-        this,
-        'Certificate',
-        props.config.domain.certificateArn
-      );
+    this.hostedZone = route53.HostedZone.fromHostedZoneAttributes(this, 'HostedZone', {
+      hostedZoneId: props.config.domain.hostedZoneId,
+      zoneName: props.domainName,
+    });
 
-      new cdk.CfnOutput(this, 'CertificateArnImported', {
-        value: this.certificate.certificateArn,
-        description: `Imported ACM Certificate ARN for ${props.domainName}`,
-        exportName: `${envName}-CertificateArn`,
-      });
-    } else {
-      // Create new certificate with DNS validation
-      // This will automatically create the validation DNS records in the hosted zone
-      this.certificate = new certificatemanager.Certificate(this, 'Certificate', {
-        domainName: props.domainName,
-        subjectAlternativeNames: [
-          `*.${props.domainName}`, // Wildcard for subdomains
-        ],
-        validation: certificatemanager.CertificateValidation.fromDns(this.hostedZone),
-      });
+    // Create ACM certificate for frontend (CloudFront)
+    // Automatic DNS validation works because hosted zone is in same account!
+    this.certificate = new certificatemanager.Certificate(this, 'Certificate', {
+      domainName: props.config.domain!.frontendDomain,
+      validation: certificatemanager.CertificateValidation.fromDns(this.hostedZone),
+    });
 
-      new cdk.CfnOutput(this, 'CertificateArnCreated', {
-        value: this.certificate.certificateArn,
-        description: `ACM Certificate ARN for ${props.domainName} (us-east-1)`,
-        exportName: `${envName}-CertificateArn`,
-      });
-    }
+    // Outputs
+    new cdk.CfnOutput(this, 'HostedZoneId', {
+      value: this.hostedZone.hostedZoneId,
+      description: `Route53 Hosted Zone ID`,
+      exportName: `${envName}-HostedZoneId`,
+    });
+
+    new cdk.CfnOutput(this, 'CertificateArn', {
+      value: this.certificate.certificateArn,
+      description: `ACM Certificate ARN for ${props.config.domain!.frontendDomain} (us-east-1 for CloudFront)`,
+      exportName: `${envName}-FrontendCertificateArn`,
+    });
+
+    new cdk.CfnOutput(this, 'CertificateValidation', {
+      value: 'Automatic DNS validation (same account)',
+      description: 'Certificate Validation Method',
+    });
 
     // Apply tags
     cdk.Tags.of(this).add('Environment', envName);
     cdk.Tags.of(this).add('Component', 'DNS');
     cdk.Tags.of(this).add('Project', 'BATbern');
-
-    // Additional outputs
-    new cdk.CfnOutput(this, 'HostedZoneName', {
-      value: this.hostedZone.zoneName,
-      description: 'Route53 Hosted Zone Name',
-      exportName: `${envName}-HostedZoneName`,
-    });
-
-    // Output instructions for manual steps if resources were created
-    if (!props.config.domain?.hostedZoneId) {
-      new cdk.CfnOutput(this, 'DomainRegistrarInstructions', {
-        value: `Update your domain registrar to use the Route53 nameservers listed above`,
-        description: 'Action Required',
-      });
-    }
-
-    if (!props.config.domain?.certificateArn) {
-      new cdk.CfnOutput(this, 'CertificateValidationInstructions', {
-        value: `Certificate validation records automatically created in Route53. Validation may take 5-30 minutes.`,
-        description: 'Certificate Status',
-      });
-    }
   }
 }

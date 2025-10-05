@@ -117,12 +117,13 @@
 
 ### Initial Page Load APIs
 
-1. **GET /api/v1/events/{eventId}/attendees**
+1. **GET /api/v1/events/{eventId}/attendees?include=company,connections**
    - Query params:
-     - `networkingOptIn=true` (only show users who enabled networking)
+     - `include=company,connections` (consolidated resource expansion from Story 1.17)
+     - `filter={"networkingOptIn":true}` (only show users who enabled networking)
      - `limit=20` (pagination)
      - `offset=0` (pagination cursor)
-   - Returns: Array of attendee objects
+   - Returns: Array of attendee objects with expanded company and connection data
      ```json
      {
        "attendees": [
@@ -132,12 +133,19 @@
            "lastName": "Kim",
            "profilePhotoUrl": "https://cdn.batbern.ch/...",
            "jobTitle": "Senior Architect",
-           "companyName": "Docker Inc.",
            "location": "Zürich",
            "role": "SPEAKER",
-           "isConnected": false,
-           "connectionRequestPending": false,
-           "networkingOptIn": true
+           "networkingOptIn": true,
+           "company": {
+             "id": "uuid",
+             "name": "Docker Inc.",
+             "logo": "https://cdn.batbern.ch/..."
+           },
+           "connection": {
+             "isConnected": false,
+             "requestPending": false,
+             "requestId": null
+           }
          }
        ],
        "totalCount": 47,
@@ -145,42 +153,39 @@
        "nextOffset": 20
      }
      ```
-   - Used for: Populate attendee list, show total count in header, enable pagination
+   - Used for: Populate attendee list with company and connection data in single API call, show total count in header, enable pagination
+   - Performance: Single API call replaces 3 separate calls (attendees + connections + settings)
 
-2. **GET /api/v1/users/me/connections**
-   - Query params: `eventId={eventId}` (filter to event context)
-   - Returns: Array of user IDs the current user is connected with
+2. **GET /api/v1/attendees/me?include=settings**
+   - Query params: `include=settings` (consolidated Attendees API from Story 1.25)
+   - Returns: Current user's profile with privacy settings
      ```json
      {
-       "connections": ["uuid-1", "uuid-2", "uuid-3"],
-       "pendingRequests": ["uuid-4", "uuid-5"]
+       "userId": "uuid",
+       "firstName": "string",
+       "lastName": "string",
+       "settings": {
+         "networkingOptIn": true,
+         "privacyLevel": "public"
+       }
      }
      ```
-   - Used for: Mark attendees with "✓ Connected" badge, show connection status
-
-3. **GET /api/v1/users/me/settings**
-   - Returns: User privacy settings including `networkingOptIn` boolean
    - Used for: Check if current user is visible to others, show privacy notice if opted out
 
 ### User Action APIs
 
-4. **POST /api/v1/events/{eventId}/attendees/search**
-   - Triggered by: User types in search box (debounced 300ms)
-   - Payload:
-     ```json
-     {
-       "query": "sara",
-       "companies": ["Docker Inc.", "Google"],
-       "roles": ["SPEAKER"],
-       "connectedOnly": false,
-       "limit": 20,
-       "offset": 0
-     }
-     ```
-   - Response: Filtered attendee list (same schema as #1)
-   - Used for: Real-time search filtering without page reload
+3. **GET /api/v1/events/{eventId}/attendees?include=company,connections&filter={...}**
+   - Triggered by: User types in search box (debounced 300ms) or changes filters
+   - Query params (using consolidated filter syntax from Story 1.16):
+     - `include=company,connections`
+     - `filter={"query":"sara","companies":["Docker Inc."],"roles":["SPEAKER"],"networkingOptIn":true}`
+     - `limit=20`
+     - `offset=0`
+   - Response: Filtered attendee list (same schema as initial load)
+   - Used for: Real-time search filtering without separate search endpoint
+   - Performance: Uses same endpoint as initial load with different filter parameters
 
-5. **POST /api/v1/users/{userId}/connection-requests**
+4. **POST /api/v1/users/{userId}/connection-requests**
    - Triggered by: User clicks [🔗 Connect] button
    - Payload:
      ```json
@@ -200,22 +205,29 @@
      ```
    - Used for: Send connection request, show "Request Sent" button state
 
-6. **DELETE /api/v1/users/me/connection-requests/{requestId}**
+5. **DELETE /api/v1/users/me/connection-requests/{requestId}**
    - Triggered by: User clicks "Cancel Request" in more options menu (⋮)
    - Returns: 204 No Content
    - Used for: Cancel pending connection request
 
-7. **GET /api/v1/events/{eventId}/attendees?offset={cursor}**
+6. **GET /api/v1/events/{eventId}/attendees?include=company,connections&offset={cursor}**
    - Triggered by: User clicks [Load More] button or scrolls to bottom
-   - Query params: `offset={nextOffset}`, `limit=20`
+   - Query params: `offset={nextOffset}`, `limit=20`, same filters as current view
    - Returns: Next batch of attendees (append to existing list)
    - Used for: Infinite scroll pagination
 
-8. **PUT /api/v1/users/me/settings**
+7. **PATCH /api/v1/attendees/me**
    - Triggered by: User toggles networking opt-in via privacy settings link
-   - Payload: `{ "networkingOptIn": true }`
-   - Response: Updated user settings
-   - Used for: Update privacy visibility, refresh modal content
+   - Payload:
+     ```json
+     {
+       "settings": {
+         "networkingOptIn": true
+       }
+     }
+     ```
+   - Response: Updated attendee profile
+   - Used for: Update privacy visibility using consolidated Attendees API (Story 1.25), refresh modal content
 
 ---
 
@@ -374,11 +386,18 @@
 
 ### Server State (React Query)
 
-- **Query Key**: `['event-attendees', eventId, searchQuery, selectedCompanies, selectedRoles, showMyNetworkOnly]`
-- **Stale Time**: 5 minutes (data is relatively static during event)
-- **Cache Time**: 30 minutes
-- **Refetch on Focus**: true (refresh when user returns to tab)
-- **Retry**: 2 attempts with exponential backoff
+- **eventAttendees** - Cached attendee list with expanded company and connection data (consolidated API)
+  - Query Key: `['event-attendees', eventId, 'company,connections', filterParams]`
+  - Stale Time: 5 minutes (data is relatively static during event)
+  - Cache Time: 30 minutes
+  - Refetch on Focus: true (refresh when user returns to tab)
+  - Retry: 2 attempts with exponential backoff
+  - Single API call with `?include=company,connections` replaces 3 separate queries
+
+- **currentAttendeeSettings** - Current user's profile and settings
+  - Query Key: `['attendee', 'me', 'settings']`
+  - Stale Time: 10 minutes
+  - Managed via consolidated Attendees API (Story 1.25)
 
 ### Real-Time Updates (Optional Enhancement)
 
@@ -488,6 +507,7 @@ No form-level validations required. This is a read-only list with filtering capa
 | Date       | Version | Description                              | Author     |
 |------------|---------|------------------------------------------|------------|
 | 2025-10-04 | 1.0     | Initial wireframe creation               | Sally (UX) |
+| 2025-10-04 | 1.1     | Updated to use consolidated APIs from Stories 1.16, 1.17, 1.25: single attendees endpoint with ?include=company,connections (reduced 3 API calls to 1), filter syntax for search, settings management via PATCH /api/v1/attendees/me | Winston (Architect) |
 
 ---
 
