@@ -40,11 +40,12 @@ export const stagingConfig: EnvironmentConfig = {
   },
   domain: {
     frontendDomain: 'staging.batbern.ch',
-    apiDomain: 'api-staging.batbern.ch',
-    // Centralized DNS in management account (510187933511)
-    hostedZoneId: 'Z04921951F6B818JF0POD',
-    frontendCertificateArn: 'arn:aws:acm:us-east-1:510187933511:certificate/1862d58a-8d73-48e4-946e-1b34e4c44302',
-    apiCertificateArn: 'arn:aws:acm:eu-central-1:510187933511:certificate/5d407286-3b6f-4750-a2c5-32692977388f',
+    apiDomain: 'api.staging.batbern.ch',
+    // Staging account owns staging.batbern.ch hosted zone (delegated subdomain)
+    hostedZoneId: 'Z00395322M4O1QCL0M7UA',
+    // Certificates created via DNS stack with automatic validation
+    // frontendCertificateArn: undefined, // Created by DNS stack
+    // apiCertificateArn: undefined, // Created by Network stack
   },
   tags: {
     Environment: 'staging',

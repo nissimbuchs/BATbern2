@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
+import { DnsStack } from '../lib/stacks/dns-stack';
 import { NetworkStack } from '../lib/stacks/network-stack';
 import { DatabaseStack } from '../lib/stacks/database-stack';
 import { StorageStack } from '../lib/stacks/storage-stack';
@@ -11,7 +12,7 @@ import { CognitoStack } from '../lib/stacks/cognito-stack';
 import { SesStack } from '../lib/stacks/ses-stack';
 import { ApiGatewayStack } from '../lib/stacks/api-gateway-stack';
 import { FrontendStack } from '../lib/stacks/frontend-stack';
-import { DnsStack } from '../lib/stacks/dns-stack';
+import { MicroservicesStack } from '../lib/stacks/microservices-stack';
 import { devConfig } from '../lib/config/dev-config';
 import { stagingConfig } from '../lib/config/staging-config';
 import { prodConfig } from '../lib/config/prod-config';
@@ -62,28 +63,27 @@ if (env.account !== config.account) {
 // Create stacks for the selected environment
 const stackPrefix = `BATbern-${config.envName}`;
 
-// 1. DNS Stack (Route53, ACM Certificates) - CENTRALIZED IN MANAGEMENT ACCOUNT
-// DNS is managed centrally in the management account (510187933511)
-// - Hosted Zone: Z04921951F6B818JF0POD (batbern.ch)
-// - Certificates created manually in us-east-1 for CloudFront
-// - Each environment references the centralized hosted zone via hostedZoneId in config
+// 1. DNS & Certificates - Subdomain Delegation Architecture
+// - Production account owns batbern.ch hosted zone
+// - Staging account owns staging.batbern.ch delegated subdomain
+// - Each environment creates certificates with automatic DNS validation
+// - Frontend certificates in us-east-1 (for CloudFront)
+// - API certificates in eu-central-1 (for API Gateway)
 let dnsStack: DnsStack | undefined;
-// DNS stack creation disabled - using centralized DNS in management account
-// if (config.domain && EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
-//   const dnsEnv = {
-//     account: env.account,
-//     region: 'us-east-1', // CloudFront requires certificates in us-east-1
-//   };
-//
-//   dnsStack = new DnsStack(app, `${stackPrefix}-DNS`, {
-//     config,
-//     domainName: config.domain.frontendDomain.split('.').slice(-2).join('.'), // Extract root domain (batbern.ch)
-//     env: dnsEnv,
-//     description: `BATbern DNS Infrastructure - ${config.envName}`,
-//     tags: config.tags,
-//     crossRegionReferences: true, // Allow exporting certificate to other regions
-//   });
-// }
+if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
+  const domainName = config.envName === 'production' ? 'batbern.ch' : `${config.envName}.batbern.ch`;
+  dnsStack = new DnsStack(app, `${stackPrefix}-DNS`, {
+    config,
+    domainName,
+    env: {
+      account: env.account,
+      region: 'us-east-1', // CloudFront requires certificates in us-east-1
+    },
+    description: `BATbern DNS & Certificates - ${config.envName}`,
+    tags: config.tags,
+    crossRegionReferences: true, // Required to reference us-east-1 certificate from eu-central-1
+  });
+}
 
 // 2. Network Stack (VPC, Security Groups)
 const networkStack = new NetworkStack(app, `${stackPrefix}-Network`, {
@@ -156,7 +156,26 @@ const sesStack = new SesStack(app, `${stackPrefix}-SES`, {
   tags: config.tags,
 });
 
-// 10. API Gateway Stack (Unified API with routing)
+// 10. Microservices Stack (ECS Fargate services for backend)
+// NOTE: Only deploy for cloud environments (staging/production)
+// Development runs microservices locally in Docker
+let microservicesStack: MicroservicesStack | undefined;
+if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
+  microservicesStack = new MicroservicesStack(app, `${stackPrefix}-Microservices`, {
+    config,
+    vpc: networkStack.vpc,
+    databaseEndpoint: databaseStack.databaseEndpoint,
+    cacheEndpoint: databaseStack.cacheEndpoint,
+    env,
+    description: `BATbern Microservices (ECS Fargate) - ${config.envName}`,
+    tags: config.tags,
+  });
+  microservicesStack.addDependency(networkStack);
+  microservicesStack.addDependency(databaseStack);
+  microservicesStack.addDependency(cicdStack); // Depends on ECR repositories
+}
+
+// 11. API Gateway Stack (AWS API Gateway proxy to Spring Boot API Gateway)
 // NOTE: Only deploy for cloud environments (staging/production)
 // Development runs API Gateway locally in Docker
 if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
@@ -165,17 +184,21 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     userPool: cognitoStack.userPool,
     userPoolClient: cognitoStack.userPoolClient,
     domainName: config.domain?.apiDomain,
-    hostedZoneId: dnsStack?.hostedZone.hostedZoneId || config.domain?.hostedZoneId,
+    hostedZoneId: config.domain?.hostedZoneId,
     certificateArn: networkStack.apiCertificate?.certificateArn || config.domain?.apiCertificateArn,
+    apiGatewayServiceUrl: microservicesStack?.apiGatewayUrl, // Spring Boot API Gateway internal ALB
     env,
     description: `BATbern API Gateway - ${config.envName}`,
     tags: config.tags,
   });
   apiGatewayStack.addDependency(cognitoStack);
   apiGatewayStack.addDependency(networkStack); // Depends on Network for certificate
+  if (microservicesStack) {
+    apiGatewayStack.addDependency(microservicesStack); // Depends on microservices for routing
+  }
 }
 
-// 11. Frontend Stack (React web application)
+// 12. Frontend Stack (React web application)
 // NOTE: Only deploy for cloud environments (staging/production)
 // Development runs Frontend locally in Docker
 if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
@@ -183,8 +206,8 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     config,
     logsBucket: storageStack.logsBucket,
     domainName: config.domain?.frontendDomain,
-    hostedZoneId: dnsStack?.hostedZone.hostedZoneId || config.domain?.hostedZoneId,
-    certificateArn: dnsStack?.certificate.certificateArn || config.domain?.frontendCertificateArn,
+    hostedZoneId: config.domain?.hostedZoneId,
+    certificateArn: dnsStack?.certificate.certificateArn,
     env,
     description: `BATbern Frontend Application - ${config.envName}`,
     tags: config.tags,
@@ -192,7 +215,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   });
   frontendStack.addDependency(storageStack);
   if (dnsStack) {
-    frontendStack.addDependency(dnsStack);
+    frontendStack.addDependency(dnsStack); // Depends on DNS stack for certificate
   }
 }
 

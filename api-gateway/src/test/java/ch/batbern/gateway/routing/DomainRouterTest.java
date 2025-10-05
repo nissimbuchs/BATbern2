@@ -5,22 +5,38 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class DomainRouterTest {
+
+    @Mock
+    private RestTemplate restTemplate;
 
     private DomainRouter domainRouter;
 
     @BeforeEach
     void setUp() {
-        domainRouter = new DomainRouter();
+        domainRouter = new DomainRouter(restTemplate);
+
+        // Set service URL properties using ReflectionTestUtils
+        ReflectionTestUtils.setField(domainRouter, "eventManagementUrl", "http://localhost:8081");
+        ReflectionTestUtils.setField(domainRouter, "speakerCoordinationUrl", "http://localhost:8082");
+        ReflectionTestUtils.setField(domainRouter, "partnerCoordinationUrl", "http://localhost:8083");
+        ReflectionTestUtils.setField(domainRouter, "attendeeExperienceUrl", "http://localhost:8084");
+        ReflectionTestUtils.setField(domainRouter, "companyManagementUrl", "http://localhost:8085");
     }
 
     // Test 5.1: should_routeToEventService_when_eventsEndpointCalled
@@ -28,7 +44,7 @@ class DomainRouterTest {
     @DisplayName("should_routeToEventService_when_eventsEndpointCalled")
     void should_routeToEventService_when_eventsEndpointCalled() {
         // Given
-        String requestPath = "/api/events/create";
+        String requestPath = "/api/v1/events/create";
 
         // When
         String targetService = domainRouter.determineTargetService(requestPath);
@@ -42,7 +58,7 @@ class DomainRouterTest {
     @DisplayName("should_routeToSpeakerService_when_speakersEndpointCalled")
     void should_routeToSpeakerService_when_speakersEndpointCalled() {
         // Given
-        String requestPath = "/api/speakers/invite";
+        String requestPath = "/api/v1/speakers/invite";
 
         // When
         String targetService = domainRouter.determineTargetService(requestPath);
@@ -56,7 +72,7 @@ class DomainRouterTest {
     @DisplayName("should_routeToPartnerService_when_partnersEndpointCalled")
     void should_routeToPartnerService_when_partnersEndpointCalled() {
         // Given
-        String requestPath = "/api/partners/coordination";
+        String requestPath = "/api/v1/partners/coordination";
 
         // When
         String targetService = domainRouter.determineTargetService(requestPath);
@@ -70,7 +86,7 @@ class DomainRouterTest {
     @DisplayName("should_routeToAttendeeService_when_contentEndpointCalled")
     void should_routeToAttendeeService_when_contentEndpointCalled() {
         // Given
-        String requestPath = "/api/content/search";
+        String requestPath = "/api/v1/content/search";
 
         // When
         String targetService = domainRouter.determineTargetService(requestPath);
@@ -79,11 +95,25 @@ class DomainRouterTest {
         assertThat(targetService).isEqualTo("attendee-experience-service");
     }
 
+    // Test 5.5: should_routeToCompanyService_when_companiesEndpointCalled
+    @Test
+    @DisplayName("should_routeToCompanyService_when_companiesEndpointCalled")
+    void should_routeToCompanyService_when_companiesEndpointCalled() {
+        // Given
+        String requestPath = "/api/v1/companies/search";
+
+        // When
+        String targetService = domainRouter.determineTargetService(requestPath);
+
+        // Then
+        assertThat(targetService).isEqualTo("company-management-service");
+    }
+
     @Test
     @DisplayName("should_throwRoutingException_when_unknownPathProvided")
     void should_throwRoutingException_when_unknownPathProvided() {
         // Given
-        String unknownPath = "/api/unknown/endpoint";
+        String unknownPath = "/api/v1/unknown/endpoint";
 
         // When / Then
         assertThatThrownBy(() -> domainRouter.determineTargetService(unknownPath))
@@ -97,8 +127,16 @@ class DomainRouterTest {
         // Given
         String targetService = "event-management-service";
         MockHttpServletRequest request = new MockHttpServletRequest();
-        request.setRequestURI("/api/events/list");
+        request.setRequestURI("/api/v1/events/list");
         request.setMethod("GET");
+
+        // Mock RestTemplate response
+        when(restTemplate.exchange(
+            anyString(),
+            any(),
+            any(),
+            eq(String.class)
+        )).thenReturn(ResponseEntity.ok("{\"status\":\"success\"}"));
 
         // When
         CompletableFuture<ResponseEntity<String>> response = domainRouter.routeRequest(targetService, request);
@@ -106,13 +144,14 @@ class DomainRouterTest {
         // Then
         assertThat(response).isNotNull();
         assertThat(response).succeedsWithin(java.time.Duration.ofSeconds(5));
+        assertThat(response.join().getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
     @Test
     @DisplayName("should_handleNestedPaths_when_deepPathProvided")
     void should_handleNestedPaths_when_deepPathProvided() {
         // Given
-        String nestedPath = "/api/events/2024/batbern/speakers";
+        String nestedPath = "/api/v1/events/2024/batbern/speakers";
 
         // When
         String targetService = domainRouter.determineTargetService(nestedPath);
@@ -125,7 +164,7 @@ class DomainRouterTest {
     @DisplayName("should_handleQueryParameters_when_pathWithQueryProvided")
     void should_handleQueryParameters_when_pathWithQueryProvided() {
         // Given
-        String pathWithQuery = "/api/speakers/search?name=John&role=keynote";
+        String pathWithQuery = "/api/v1/speakers/search?name=John&role=keynote";
 
         // When
         String targetService = domainRouter.determineTargetService(pathWithQuery);
