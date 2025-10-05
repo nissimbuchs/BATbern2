@@ -27,9 +27,9 @@ on:
 
 env:
   AWS_REGION: eu-central-1
-  AWS_ACCOUNT_ID: '510187933511'
-  ECR_REGISTRY: 510187933511.dkr.ecr.eu-central-1.amazonaws.com
-  ENVIRONMENT: development
+  AWS_ACCOUNT_ID: '188701360969'
+  ECR_REGISTRY: 188701360969.dkr.ecr.eu-central-1.amazonaws.com
+  ENVIRONMENT: staging
 
 jobs:
   # ═══════════════════════════════════════════════════════════
@@ -134,10 +134,10 @@ jobs:
           # Generate version tag
           VERSION="${GITHUB_SHA:0:7}"
           if [ "$GITHUB_REF" != "refs/heads/main" ]; then
-            VERSION="${VERSION}-dev.${GITHUB_RUN_NUMBER}"
+            VERSION="${VERSION}-staging.${GITHUB_RUN_NUMBER}"
           fi
 
-          # ECR repository path format: batbern/development/service-name
+          # ECR repository path format: batbern/staging/service-name
           ECR_REPO="${{ env.ECR_REGISTRY }}/batbern/${{ env.ENVIRONMENT }}/${{ matrix.service }}"
           echo "Building image: ${ECR_REPO}:${VERSION}"
           ./gradlew bootBuildImage \
@@ -147,7 +147,7 @@ jobs:
         if: steps.check-service.outputs.exists == 'true' && github.event_name == 'push'
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::510187933511:role/batbern-development-github-actions-role
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
@@ -160,21 +160,21 @@ jobs:
           # Generate version tag
           VERSION="${GITHUB_SHA:0:7}"
           if [ "$GITHUB_REF" != "refs/heads/main" ]; then
-            VERSION="${VERSION}-dev.${GITHUB_RUN_NUMBER}"
+            VERSION="${VERSION}-staging.${GITHUB_RUN_NUMBER}"
           fi
 
-          # ECR repository path format: batbern/development/service-name
+          # ECR repository path format: batbern/staging/service-name
           ECR_REPO="${{ env.ECR_REGISTRY }}/batbern/${{ env.ENVIRONMENT }}/${{ matrix.service }}"
           echo "Pushing image: ${ECR_REPO}:${VERSION}"
           docker push ${ECR_REPO}:${VERSION}
 
           # Tag and push as latest for the branch
           if [ "$GITHUB_REF" = "refs/heads/develop" ]; then
-            docker tag ${ECR_REPO}:${VERSION} ${ECR_REPO}:latest-dev
-            docker push ${ECR_REPO}:latest-dev
-          elif [ "$GITHUB_REF" = "refs/heads/main" ]; then
             docker tag ${ECR_REPO}:${VERSION} ${ECR_REPO}:latest
             docker push ${ECR_REPO}:latest
+          elif [ "$GITHUB_REF" = "refs/heads/main" ]; then
+            docker tag ${ECR_REPO}:${VERSION} ${ECR_REPO}:latest-production
+            docker push ${ECR_REPO}:latest-production
           fi
 
   # ═══════════════════════════════════════════════════════════
