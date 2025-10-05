@@ -24,14 +24,14 @@
 **🎯 Ready to Start - Core Functionality (Stories 1.14-1.20):**
 - **Story 1.14**: Company Management Service
 - **Story 1.15**: Historical Data Migration
-- ✅ **Story 1.15a**: API Consolidation Foundation (COMPLETE - enables 1.17-1.27)
+- ✅ **Story 1.15a**: API Consolidation Foundation (COMPLETE - enables 1.15a.1-1.15a.11)
 - **Story 1.16**: Event Management Service Core
 - **Story 1.17**: React Frontend Foundation (or Events API Consolidation - see note)
 - **Story 1.18**: Basic Event Display & Archive (or Partners API - see note)
 - **Story 1.19**: Speaker Coordination Service (or Speakers API - see note)
 - **Story 1.20**: User Role Management
 
-**Note:** Stories 1.17-1.27 in the stories directory are domain-specific API consolidations that build on Story 1.15a. The original Epic 1 stories (1.17-1.20 above) may need renumbering.
+**Note:** Stories 1.15a.1 to 1.15a.11 in the stories directory are domain-specific API consolidations that build on Story 1.15a.
 
 **📦 MOVED TO BACKLOG (Epic: "Infrastructure Enhancements"):**
 - 📦 **Story 1.8**: Advanced Quality Infrastructure (SonarQube, mutation testing) - *4 weeks saved*
