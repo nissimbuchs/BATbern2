@@ -23,11 +23,10 @@ import static org.assertj.core.api.Assertions.*;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource(properties = {
-        "COGNITO_USER_POOL_ID=test-pool-id",
-        "COGNITO_REGION=us-east-1",
-        "COGNITO_CLIENT_ID=test-client-id",
         "aws.cognito.userPoolId=test-pool-id",
         "aws.cognito.region=us-east-1",
+        "aws.cognito.appClientId=test-client-id",
+        "aws.cognito.userPoolClientId=test-client-id",
         "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://test.example.com"
 })
 class OpenApiConfigTest {
