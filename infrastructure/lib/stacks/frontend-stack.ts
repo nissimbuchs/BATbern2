@@ -241,6 +241,21 @@ function handler(event) {
       });
     }
 
+    // Deploy frontend files to S3
+    // Note: This requires web-frontend/dist to exist before CDK deploy
+    // In CI/CD: frontend is built before running CDK
+    // For local deploys: run `npm run build` in web-frontend first
+    const frontendDistPath = '../web-frontend/dist';
+
+    new s3deploy.BucketDeployment(this, 'DeployWebsite', {
+      sources: [s3deploy.Source.asset(frontendDistPath)],
+      destinationBucket: this.websiteBucket,
+      distribution: this.distribution,
+      distributionPaths: ['/*'],
+      prune: true, // Remove files that don't exist in source
+      memoryLimit: 512,
+    });
+
     // Set website URL
     this.websiteUrl = props.domainName
       ? `https://${props.domainName}`

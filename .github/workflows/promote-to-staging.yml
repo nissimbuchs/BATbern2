@@ -148,6 +148,23 @@ jobs:
         working-directory: ./infrastructure
         run: npm ci
 
+      - name: Build frontend for deployment
+        working-directory: ./web-frontend
+        run: |
+          if [ -f "package.json" ]; then
+            echo "Building frontend for staging..."
+            npm ci
+            npm run build
+            echo "✅ Frontend build complete: dist/ ready for CDK deployment"
+          else
+            echo "::warning::Frontend package.json not found, skipping build"
+          fi
+        env:
+          VITE_API_URL: https://api.staging.batbern.ch
+          VITE_AWS_REGION: ${{ env.AWS_REGION }}
+          VITE_COGNITO_USER_POOL_ID: ${{ secrets.STAGING_COGNITO_USER_POOL_ID }}
+          VITE_COGNITO_CLIENT_ID: ${{ secrets.STAGING_COGNITO_CLIENT_ID }}
+
       - name: Deploy to staging (Blue/Green)
         working-directory: ./infrastructure
         run: |

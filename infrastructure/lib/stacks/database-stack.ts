@@ -25,6 +25,8 @@ export interface DatabaseStackProps extends cdk.StackProps {
 export class DatabaseStack extends cdk.Stack {
   public readonly database: rds.DatabaseInstance;
   public readonly cacheCluster?: elasticache.CfnReplicationGroup;
+  public readonly databaseEndpoint: string;
+  public readonly cacheEndpoint?: string;
 
   constructor(scope: Construct, id: string, props: DatabaseStackProps) {
     super(scope, id, props);
@@ -44,6 +46,7 @@ export class DatabaseStack extends cdk.Stack {
 
     // Expose database instance
     this.database = rdsCluster.database;
+    this.databaseEndpoint = this.database.dbInstanceEndpointAddress;
 
     // Create ElastiCache Redis cluster if cache security group provided
     // Note: Temporarily disabled for development to unblock initial deployment
@@ -80,6 +83,8 @@ export class DatabaseStack extends cdk.Stack {
           { key: 'Project', value: 'BATbern' },
         ],
       });
+
+      this.cacheEndpoint = this.cacheCluster.attrPrimaryEndPointAddress;
     }
 
     // Apply tags
