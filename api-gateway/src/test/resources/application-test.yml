@@ -31,8 +31,19 @@ aws:
   region: eu-central-1
   cognito:
     userPoolId: eu-central-1_TestPool
+    userPoolClientId: test-client-id
     region: eu-central-1
     appClientId: test-client-id
+  ses:
+    from-email: noreply@batbern.ch
+    template:
+      password-reset-de: BATbern-test-PasswordReset-DE
+      password-reset-en: BATbern-test-PasswordReset-EN
+
+# App Configuration
+app:
+  frontend:
+    url: http://localhost:3000
 
 # Cognito Configuration
 cognito:

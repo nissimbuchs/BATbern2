@@ -18,6 +18,7 @@ import {
   AttendeeRoute,
 } from '@components/auth/ProtectedRoute';
 import { LoginForm } from '@components/auth/LoginForm';
+import { ForgotPasswordForm } from '@components/auth/ForgotPasswordForm';
 
 // Create Material-UI theme
 const theme = createTheme({
@@ -131,6 +132,7 @@ function App() {
           <Routes>
             {/* Public routes */}
             <Route path="/login" element={<LoginForm />} />
+            <Route path="/auth/forgot-password" element={<ForgotPasswordForm />} />
 
             {/* Protected routes */}
             <Route

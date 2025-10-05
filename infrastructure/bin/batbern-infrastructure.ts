@@ -8,6 +8,7 @@ import { SecretsStack } from '../lib/stacks/secrets-stack';
 import { MonitoringStack } from '../lib/stacks/monitoring-stack';
 import { CICDStack } from '../lib/stacks/cicd-stack';
 import { CognitoStack } from '../lib/stacks/cognito-stack';
+import { SesStack } from '../lib/stacks/ses-stack';
 import { ApiGatewayStack } from '../lib/stacks/api-gateway-stack';
 import { FrontendStack } from '../lib/stacks/frontend-stack';
 import { DnsStack } from '../lib/stacks/dns-stack';
@@ -147,7 +148,15 @@ const cognitoStack = new CognitoStack(app, `${stackPrefix}-Cognito`, {
   tags: config.tags,
 });
 
-// 9. API Gateway Stack (Unified API with routing)
+// 9. SES Stack (Email templates for authentication workflows)
+const sesStack = new SesStack(app, `${stackPrefix}-SES`, {
+  config,
+  env,
+  description: `BATbern Email Templates - ${config.envName}`,
+  tags: config.tags,
+});
+
+// 10. API Gateway Stack (Unified API with routing)
 // NOTE: Only deploy for cloud environments (staging/production)
 // Development runs API Gateway locally in Docker
 if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
@@ -166,7 +175,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   apiGatewayStack.addDependency(networkStack); // Depends on Network for certificate
 }
 
-// 10. Frontend Stack (React web application)
+// 11. Frontend Stack (React web application)
 // NOTE: Only deploy for cloud environments (staging/production)
 // Development runs Frontend locally in Docker
 if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {

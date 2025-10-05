@@ -1,6 +1,10 @@
 /**
  * Authentication Service Implementation
  * Story 1.2: AWS Cognito Integration
+ * Story 1.2.1: "Remember me" session persistence via Amplify storage configuration
+ *
+ * Amplify V6 handles all token storage internally. We configure the storage location
+ * (localStorage vs sessionStorage) to control session persistence.
  */
 
 import {
@@ -10,6 +14,7 @@ import {
   getCurrentUser as amplifyGetCurrentUser,
   fetchAuthSession,
 } from 'aws-amplify/auth';
+import { cognitoUserPoolsTokenProvider } from 'aws-amplify/auth/cognito';
 import {
   UserContext,
   LoginCredentials,
@@ -26,7 +31,6 @@ interface SignInResult {
   success: boolean;
   user?: UserContext;
   accessToken?: string;
-  refreshToken?: string;
   error?: AuthError;
   mfaChallenge?: MfaChallenge;
 }
@@ -39,16 +43,22 @@ interface SignUpResult {
 
 class AuthService {
   /**
-   * Sign in user with Cognito
+   * Configure session persistence based on "Remember me" preference
+   * @param rememberMe - localStorage (persistent) or sessionStorage (temporary)
    */
+  private configureSessionPersistence(rememberMe: boolean): void {
+    const storage = rememberMe ? localStorage : sessionStorage;
+    cognitoUserPoolsTokenProvider.setKeyValueStorage(storage);
+  }
   async signIn(credentials: LoginCredentials): Promise<SignInResult> {
     try {
+      this.configureSessionPersistence(credentials.rememberMe || false);
+
       const result = await amplifySignIn({
         username: credentials.email,
         password: credentials.password,
       });
 
-      // Handle MFA challenge or other next steps
       if (result.nextStep && result.nextStep.signInStep !== 'DONE') {
         return {
           success: false,
@@ -60,7 +70,6 @@ class AuthService {
         };
       }
 
-      // Extract user context from Cognito session
       const session = await fetchAuthSession();
       const tokens = session.tokens;
 
@@ -76,7 +85,6 @@ class AuthService {
         success: true,
         user: userContext,
         accessToken: tokens.accessToken?.toString() || '',
-        refreshToken: tokens.accessToken?.toString() || '',
       };
     } catch (error: any) {
       return {
@@ -162,20 +170,10 @@ class AuthService {
     }
   }
 
-  /**
-   * Sign out current user
-   */
   async signOut(): Promise<void> {
-    try {
-      await amplifySignOut();
-    } catch (error) {
-      console.error('Sign out error:', error);
-    }
+    await amplifySignOut();
   }
 
-  /**
-   * Refresh access token
-   */
   async refreshToken(): Promise<TokenRefreshResponse> {
     try {
       const session = await fetchAuthSession({ forceRefresh: true });
@@ -200,7 +198,6 @@ class AuthService {
       return {
         success: true,
         accessToken: tokens.accessToken.toString(),
-        refreshToken: tokens.accessToken.toString(),
         expiresIn,
       };
     } catch (error: any) {

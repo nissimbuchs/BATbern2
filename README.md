@@ -223,11 +223,25 @@ All secrets stored in GitHub Secrets and AWS Secrets Manager.
 
 ## Documentation
 
+### Architecture & Standards
 - [Architecture Documentation](docs/architecture/)
+- [Development Standards](docs/architecture/coding-standards.md)
+- [Source Tree Structure](docs/architecture/source-tree.md)
+- [Tech Stack](docs/architecture/tech-stack.md)
+
+### API Documentation
 - [API Documentation](docs/api/)
+- [Authentication Endpoints](docs/api/auth-endpoints.openapi.yml) - OpenAPI 3.1 spec
+
+### User Guides
+- [Forgot Password Flow](docs/guides/forgot-password-flow.md) - Password reset functionality (Story 1.2.2)
+- [AWS SES Configuration](docs/guides/aws-ses-configuration.md) - Email template setup
+- [Rate Limiting Rules](docs/guides/rate-limiting.md) - Security and abuse prevention
+- [Troubleshooting Guide](docs/guides/troubleshooting-forgot-password.md) - Common issues and solutions
+
+### Deployment
 - [Deployment Guide](docs/deployment/)
 - [CI/CD Pipeline Guide](docs/deployment/cicd-pipeline-guide.md)
-- [Development Standards](docs/architecture/coding-standards.md)
 
 ## Contributing
 

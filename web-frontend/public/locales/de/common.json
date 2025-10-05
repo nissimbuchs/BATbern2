@@ -1,0 +1,36 @@
+{
+  "app": {
+    "name": "BATbern",
+    "tagline": "Veranstaltungsmanagement für Bern"
+  },
+  "navigation": {
+    "home": "Startseite",
+    "events": "Veranstaltungen",
+    "speakers": "Sprecher",
+    "partners": "Partner",
+    "profile": "Profil",
+    "logout": "Abmelden"
+  },
+  "actions": {
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "create": "Erstellen",
+    "search": "Suchen",
+    "filter": "Filtern",
+    "reset": "Zurücksetzen",
+    "submit": "Absenden",
+    "close": "Schliessen",
+    "sending": "Wird gesendet..."
+  },
+  "language": {
+    "select": "Sprache wählen",
+    "de": "Deutsch",
+    "en": "English"
+  },
+  "status": {
+    "wait": "Warten Sie {{seconds}} Sekunden",
+    "didntReceive": "Keine E-Mail erhalten?"
+  }
+}

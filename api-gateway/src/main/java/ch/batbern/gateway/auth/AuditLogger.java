@@ -54,9 +54,30 @@ public class AuditLogger {
         auditEventRepository.save(securityEvent);
     }
 
+    public void logPasswordResetAttempt(String email, String clientIp, String status) {
+        log.info("Password reset attempt - Email: {}, IP: {}, Status: {}",
+            maskEmail(email), clientIp, status);
+
+        Object passwordResetEvent = new PasswordResetEvent(email, clientIp, status, LocalDateTime.now());
+        auditEventRepository.save(passwordResetEvent);
+    }
+
     public String formatAuditMessage(String userId, String action, String resource, boolean granted) {
         String decision = granted ? "GRANTED" : "DENIED";
         return String.format("User [%s] %s access to [%s] for action [%s]", userId, decision, resource, action);
+    }
+
+    private String maskEmail(String email) {
+        if (email == null || !email.contains("@")) {
+            return "***";
+        }
+        String[] parts = email.split("@");
+        String local = parts[0];
+        String domain = parts[1];
+        if (local.length() <= 1) {
+            return "*@" + domain;
+        }
+        return local.charAt(0) + "***@" + domain;
     }
 
     // Inner class for security events
@@ -80,6 +101,27 @@ public class AuditLogger {
         public String getDescription() { return description; }
         public String getUserId() { return userId; }
         public String getClientIp() { return clientIp; }
+        public LocalDateTime getTimestamp() { return timestamp; }
+    }
+
+    // Inner class for password reset events
+    private static class PasswordResetEvent {
+        private final String email;
+        private final String clientIp;
+        private final String status;
+        private final LocalDateTime timestamp;
+
+        public PasswordResetEvent(String email, String clientIp, String status, LocalDateTime timestamp) {
+            this.email = email;
+            this.clientIp = clientIp;
+            this.status = status;
+            this.timestamp = timestamp;
+        }
+
+        // Getters for JSON serialization
+        public String getEmail() { return email; }
+        public String getClientIp() { return clientIp; }
+        public String getStatus() { return status; }
         public LocalDateTime getTimestamp() { return timestamp; }
     }
 }

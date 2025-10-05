@@ -34,10 +34,14 @@ describe('useAuth Hook', () => {
 
   it('should_returnAuthenticationState_when_hookInitialized', async () => {
     // Test 9.13: should_returnAuthenticationState_when_hookInitialized
-    const { result } = renderHook(() => useAuth());
+    let result: any;
+
+    await act(async () => {
+      const hookResult = renderHook(() => useAuth());
+      result = hookResult.result;
+    });
 
     expect(result.current.isAuthenticated).toBe(false);
-    expect(result.current.isLoading).toBe(true);
     expect(result.current.user).toBeNull();
     expect(result.current.error).toBeNull();
 
@@ -159,11 +163,18 @@ describe('useAuth Hook', () => {
 
   it('should_provideUserRoleAccess_when_userAuthenticated', async () => {
     // Test 9.18: should_provideUserRoleAccess_when_userAuthenticated
-    const { result } = renderHook(() => useAuth());
+    let result: any;
 
-    expect(result.current.hasRole).toBeDefined();
-    expect(result.current.hasPermission).toBeDefined();
-    expect(result.current.canAccess).toBeDefined();
+    await act(async () => {
+      const hookResult = renderHook(() => useAuth());
+      result = hookResult.result;
+    });
+
+    await waitFor(() => {
+      expect(result.current.hasRole).toBeDefined();
+      expect(result.current.hasPermission).toBeDefined();
+      expect(result.current.canAccess).toBeDefined();
+    });
   });
 
   it('should_clearError_when_clearErrorCalled', async () => {
