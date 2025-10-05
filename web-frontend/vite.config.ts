@@ -1,7 +1,7 @@
 /// <reference types="vitest" />
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import { resolve } from 'path'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { resolve } from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -40,15 +40,15 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/e2e/**', // E2E tests run with Playwright, not Vitest
+      '**/.{idea,git,cache,output,temp}/**',
+    ],
     coverage: {
       reporter: ['text', 'json', 'html'],
-      exclude: [
-        'node_modules/',
-        'src/test/',
-        '**/*.d.ts',
-        '**/*.config.*',
-        '**/coverage/',
-      ],
+      exclude: ['node_modules/', 'src/test/', 'e2e/', '**/*.d.ts', '**/*.config.*', '**/coverage/'],
     },
   },
-})
+});
