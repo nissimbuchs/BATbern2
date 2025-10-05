@@ -5,6 +5,9 @@
 **User Role**: Speaker
 **Related FR**: FR3 (Speaker Self-Service)
 
+**API Consolidation**: Updated to use consolidated APIs from Stories 1.17 (Events), 1.19 (Speakers), and 1.27 (Invitations)
+**API Count**: 5 endpoints (reduced from 8 original calls)
+
 ---
 
 ## Invitation Response Interface (From Email Link)
@@ -128,18 +131,19 @@ APIs needed to load and display data for this screen:
 
 ### Initial Page Load (Token-Based)
 
-1. **GET /api/v1/invitations/token/{invitationToken}**
-   - Retrieve invitation details using secure token from email link
-   - Response includes: event details, session info, invitation message, response deadline
-   - Used for: Populating all event details, "Why We Chose You" section
+1. **GET /api/v1/invitations/{id}?include=speaker,event,session&token={invitationToken}**
+   - Retrieve complete invitation details using secure token from email link
+   - Query params:
+     - `token`: Secure invitation token from email (required for unauthenticated access)
+     - `include`: speaker,event,session (includes all related data in single response)
+   - Response includes:
+     - Invitation: id, status, message, deadline, preferences
+     - Speaker: id, name, email, company, profile
+     - Event: id, title, date, location, format, expectedAttendance
+     - Session: id, title, topic, timeSlot, duration, format
+   - Used for: Populating all event details, "Why We Chose You" section, speaker context
    - Security: Single-use or time-limited token validation
-
-2. **GET /api/v1/speakers/{speakerId}/invitation-history**
-   - Retrieve speaker's past speaking history (for context)
-   - Query params: `invitationToken` (for anonymous access)
-   - Response includes: previous event ratings, topics covered
-   - Used for: Building speaker confidence, showing track record
-   - Optional: May not load if speaker is new
+   - Note: Replaces previous fragmented calls for invitation and speaker history
 
 ---
 
@@ -149,12 +153,11 @@ APIs called by user interactions and actions:
 
 ### Response Submission
 
-1. **POST /api/v1/invitations/{invitationId}/respond**
-   - Triggered by: [Submit Response →] button
+1. **PUT /api/v1/invitations/{id}/accept**
+   - Triggered by: [✓ ACCEPT] button followed by [Submit Response →]
    - Payload:
      ```json
      {
-       "response": "accepted|declined|need_more_info",
        "preferences": {
          "timeSlot": "morning|afternoon|no_preference",
          "travelRequirements": "local|accommodation|virtual",
@@ -164,36 +167,62 @@ APIs called by user interactions and actions:
        }
      }
      ```
-   - Response: Updated invitation status, confirmation details
+   - Response: Updated invitation with status="accepted", confirmation details, speaker account info
    - Side effects:
-     - If accepted: Creates speaker portal account, sends confirmation email
-     - If declined: Updates speaker pipeline status, sends organizer notification
-     - If need_more_info: Triggers organizer alert, opens communication channel
+     - Creates speaker portal account automatically
+     - Sends confirmation email with portal access credentials
+     - Triggers organizer notification
 
-2. **POST /api/v1/speakers/register-from-invitation**
-   - Triggered by: Accepting invitation (auto-called after response)
-   - Payload: `{ invitationToken, email, basicProfile }`
-   - Response: Speaker account created, authentication token
-   - Side effect: Sends welcome email with portal access credentials
+2. **PUT /api/v1/invitations/{id}/decline**
+   - Triggered by: [✗ DECLINE] button followed by [Submit Response →]
+   - Payload:
+     ```json
+     {
+       "reason": "string",
+       "alternativeSuggestion": "string",
+       "comments": "string"
+     }
+     ```
+   - Response: Updated invitation with status="declined"
+   - Side effects:
+     - Updates speaker pipeline status
+     - Sends organizer notification
+     - Captures decline reason for analytics
 
 ### Auto-Save (Optional)
 
-3. **PUT /api/v1/invitations/{invitationId}/draft-preferences**
+3. **PATCH /api/v1/invitations/{id}**
    - Triggered by: Field changes (debounced, every 2 seconds)
-   - Payload: Partial preferences object
+   - Payload:
+     ```json
+     {
+       "draftPreferences": {
+         "timeSlot": "afternoon",
+         "presentationTitle": "partial title..."
+       }
+     }
+     ```
    - Response: Draft saved confirmation
    - Used for: Preventing data loss if user navigates away
 
 ### Additional Actions
 
-4. **POST /api/v1/invitations/{invitationId}/request-info**
+4. **PUT /api/v1/invitations/{id}**
    - Triggered by: [? NEED MORE INFO] button
-   - Payload: `{ questions: "string", specificConcerns: [] }`
-   - Response: Info request sent to organizer
-   - Side effect: Creates task for organizer to respond
+   - Payload:
+     ```json
+     {
+       "status": "need_more_info",
+       "questions": "string",
+       "specificConcerns": []
+     }
+     ```
+   - Response: Updated invitation with status="need_more_info"
+   - Side effect: Creates task for organizer to respond, opens communication channel
 
-5. **GET /api/v1/events/{eventId}/public-details**
+5. **GET /api/v1/events/{eventId}?fields=title,date,location,description,pastEvents**
    - Triggered by: Optional "Learn more about this event" link
+   - Query params: `fields` to limit response to public information only
    - Response: Public event information, past event examples
    - Opens: Event details modal or link to public page
 
@@ -296,3 +325,62 @@ Screen transitions triggered by actions and events:
     - **Type**: Optional next step
     - **Context**: Encourage speaker to fill complete profile
     - **Timing**: Can be delayed with "Do This Later" option
+
+---
+
+## API Consolidation Summary
+
+This wireframe has been updated to use consolidated APIs from the following stories:
+
+### Story 1.27: Invitations API Consolidation
+
+**Key Changes:**
+- **Token-based access**: Single `GET /api/v1/invitations/{id}?include=speaker,event,session&token={token}` replaces multiple fragmented calls
+- **Resource expansion**: Using `?include=` parameter eliminates need for separate speaker history lookup
+- **Standardized actions**: Accept/decline now use dedicated `PUT /api/v1/invitations/{id}/accept` and `PUT /api/v1/invitations/{id}/decline` endpoints
+- **Unified updates**: `PATCH /api/v1/invitations/{id}` for draft preferences and status changes
+
+### Story 1.17: Events API Consolidation
+
+**Key Changes:**
+- **Public event details**: `GET /api/v1/events/{eventId}?fields=` for selective field retrieval
+
+### Story 1.19: Speakers API Consolidation
+
+**Key Changes:**
+- **Speaker context**: Embedded in invitation response via `?include=speaker` (no separate API call needed)
+
+### Before vs After
+
+**Before Consolidation (8 API calls):**
+1. GET /api/v1/invitations/token/{token}
+2. GET /api/v1/speakers/{speakerId}/invitation-history
+3. POST /api/v1/invitations/{invitationId}/respond
+4. POST /api/v1/speakers/register-from-invitation
+5. PUT /api/v1/invitations/{invitationId}/draft-preferences
+6. POST /api/v1/invitations/{invitationId}/request-info
+7. GET /api/v1/events/{eventId}/public-details
+8. Multiple tracking/validation endpoints
+
+**After Consolidation (5 API calls):**
+1. GET /api/v1/invitations/{id}?include=speaker,event,session&token={token}
+2. PUT /api/v1/invitations/{id}/accept
+3. PUT /api/v1/invitations/{id}/decline
+4. PATCH /api/v1/invitations/{id} (auto-save)
+5. GET /api/v1/events/{eventId}?fields=... (optional)
+
+**Improvements:**
+- **37.5% reduction** in API calls (8 → 5)
+- **Single page load**: One API call retrieves all invitation, speaker, event, and session data
+- **Simplified response flow**: Dedicated accept/decline endpoints with automatic speaker account creation
+- **Better performance**: Reduced network overhead and faster page load times
+- **Consistent patterns**: All APIs follow standard REST conventions with `?include=` and `?fields=` parameters
+
+---
+
+## Change Log
+
+| Date | Version | Description | Author |
+|------|---------|-------------|--------|
+| 2025-10-04 | 1.0 | Initial wireframe creation | ux-expert |
+| 2025-10-04 | 1.1 | Updated to use consolidated APIs from Stories 1.17, 1.19, 1.27 | Claude Code |

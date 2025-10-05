@@ -327,17 +327,31 @@
   - `companyDetail` query: Cached for 10 minutes
   - `companySuggestions` query: Cached for 15 minutes
 
-### API Integration
-- **Search**: `GET /api/v1/companies?query={text}&isPartner={bool}` (autocomplete)
-- **Create**: `POST /api/v1/companies` (multipart/form-data for logo)
-- **Logo Upload**: Presigned S3 URL workflow
-  - Request: `POST /api/v1/files/presigned-upload-url`
-  - Upload: Direct to S3
-  - Confirm: `POST /api/v1/files/{fileId}/confirm`
-- **Update**: `PUT /api/v1/companies/{companyId}`
-- **Delete**: `DELETE /api/v1/companies/{companyId}`
-- **Get Detail**: `GET /api/v1/companies/{companyId}`
-- **Link Speaker**: `POST /api/v1/companies/{companyId}/speakers/{speakerId}`
+### API Integration (Updated from Story 1.22)
+
+**Consolidation: 42 → 10 endpoints**
+
+- **List/Search**: `GET /api/v1/companies?filter={}&sort={}&page={}`
+- **Autocomplete**: `GET /api/v1/companies/search?query={}&limit=20` (Redis cached)
+- **Get Detail**: `GET /api/v1/companies/{id}?include=employees,statistics,logo`
+- **Create**: `POST /api/v1/companies`
+- **Update**: `PUT /api/v1/companies/{id}` or `PATCH /api/v1/companies/{id}`
+- **Delete**: `DELETE /api/v1/companies/{id}`
+- **Swiss UID Validation**: `GET /api/v1/companies/validate-uid?uid={}`
+- **Logo Upload**: `POST /api/v1/companies/{id}/logo` (presigned S3 URL)
+- **Employee Relationships**:
+  - List: `GET /api/v1/companies/{id}/employees`
+  - Add: `POST /api/v1/companies/{id}/employees`
+  - Remove: `DELETE /api/v1/companies/{id}/employees/{userId}`
+- **Partner Operations**:
+  - Promote: `POST /api/v1/companies/{id}/promote-partner`
+  - Verify: `POST /api/v1/companies/{id}/verify`
+- **Statistics**: `GET /api/v1/companies/{id}/statistics`
+
+**Benefits**:
+- Redis caching for <100ms (P95) autocomplete performance
+- Swiss UID validation integration for automated verification
+- Consolidated employee management (replaces separate speaker linking)
 
 ### File Upload Workflow
 1. User selects logo file (drag-and-drop or browse)
@@ -375,136 +389,136 @@
 
 ### Initial Page Load APIs
 
+**Updated with Story 1.22 Consolidated APIs**
+
 When the Company Management Screen loads, the following APIs are called:
 
-1. **GET /api/v1/companies**
-   - Query params: `limit=20, offset=0, sortBy=name, order=asc`
+1. **GET /api/v1/companies?filter={}&sort={}&page={}**
+   - Query params: `limit=20, page=1, sort=name, order=asc`
    - Returns: Paginated list of companies with basic info
    - Used for: Initial company list display
    - Response includes: id, name, displayName, isPartner, logo CDN URL, industry, employeeCount, verificationStatus
+   - **Consolidated**: Replaces GET /companies, /companies/stats, /companies/filter (3 → 1 endpoint)
 
-2. **GET /api/v1/companies/stats**
-   - Returns: Overall statistics
-   - Used for: Display total companies, partners, verified count
-   - Response: `{ totalCompanies: 23, partnerCount: 5, verifiedCount: 18 }`
-
-3. **GET /api/v1/companies/industries**
-   - Returns: List of available industries for filtering
-   - Used for: Populate industry filter dropdown
-   - Response: `{ industries: ["Cloud Computing", "Financial Services", ...] }`
+2. **GET /api/v1/companies/search?query={}&limit=20**
+   - Triggered by: User typing in search bar (debounced)
+   - Returns: Autocomplete suggestions from Redis cache
+   - Response: `{ suggestions: [{ id, name, displayName, logo }] }`
+   - Used for: Autocomplete dropdown
+   - **Performance**: <100ms (P95) with Redis caching
 
 ### Action APIs
 
 APIs called by user interactions:
 
-#### Search & Filter
+#### Search & Filter (Consolidated)
 
-4. **GET /api/v1/companies**
+3. **GET /api/v1/companies?filter={}&sort={}&page={}**
    - Triggered by: Search input (debounced), filter changes, sort changes
-   - Query params: `query={searchText}&isPartner={bool}&industry={industry}&limit=20&offset=0`
+   - Query params: `filter={"isPartner":true,"industry":"Cloud"}&sort=name&page=1&limit=20`
    - Returns: Filtered and paginated company list
    - Used for: Real-time search and filtering
+   - **Consolidated**: Single endpoint replaces /companies, /companies/filter, /companies/search
 
-5. **GET /api/v1/companies/suggestions**
-   - Triggered by: Search input (autocomplete)
-   - Query params: `q={searchText}&limit=10`
+4. **GET /api/v1/companies/search?query={}&limit=10**
+   - Triggered by: Search input (autocomplete, debounced)
    - Returns: Autocomplete suggestions from Redis cache
    - Response: `{ suggestions: [{ id, name, displayName, logo }] }`
    - Used for: Autocomplete dropdown
+   - **Performance**: <100ms (P95) with Redis caching
 
-#### CRUD Operations
+#### CRUD Operations (Consolidated)
 
-6. **POST /api/v1/companies**
+5. **POST /api/v1/companies**
    - Triggered by: [Save & Create] button in create form
-   - Content-Type: `multipart/form-data`
-   - Payload: Company data + logo file (if provided)
-   - Returns: Created company with ID and CDN URLs
-   - Side effects: Creates company, uploads logo to S3, publishes CompanyCreatedEvent
+   - Payload: Company data (JSON)
+   - Returns: Created company with ID
+   - Side effects: Creates company, publishes CompanyCreatedEvent
+   - **Note**: Logo upload now uses separate endpoint
 
-7. **PUT /api/v1/companies/{companyId}**
+6. **PUT /api/v1/companies/{id}** or **PATCH /api/v1/companies/{id}**
    - Triggered by: [Save] button in edit form
-   - Payload: Updated company data
+   - Payload: Full (PUT) or partial (PATCH) company data
    - Returns: Updated company object
    - Side effects: Updates company, invalidates cache, publishes CompanyUpdatedEvent
+   - **Consolidated**: Supports both full and partial updates
 
-8. **DELETE /api/v1/companies/{companyId}**
+7. **DELETE /api/v1/companies/{id}**
    - Triggered by: [Delete] button confirmation
    - Returns: `{ success: true }`
    - Side effects: Soft delete company, removes from search index, publishes CompanyDeletedEvent
 
-9. **GET /api/v1/companies/{companyId}**
+8. **GET /api/v1/companies/{id}?include=employees,statistics,logo**
    - Triggered by: Click company card, navigate to detail view
-   - Returns: Complete company details
+   - Query params: `include` parameter for related data
+   - Returns: Complete company details with included relations
    - Used for: Detail view display
+   - **Consolidated**: Single endpoint with flexible includes (replaces 4 separate calls)
 
-#### Logo Management (Presigned URL Workflow)
+#### Logo Management (Consolidated)
 
-10. **POST /api/v1/files/presigned-upload-url**
+9. **POST /api/v1/companies/{id}/logo**
     - Triggered by: Logo file selected in upload component
-    - Payload: `{ filename, contentType: "logo", fileSizeBytes, mimeType }`
-    - Returns: `{ uploadUrl, fileId, expiresIn: 900, requiredHeaders }`
-    - Used for: Generate S3 presigned upload URL
+    - Payload: Form data with logo file
+    - Returns: `{ logoUrl, cdnUrl, uploadedAt }`
+    - Used for: Upload company logo with presigned S3 URL workflow
+    - **Consolidated**: Single endpoint handles presigned URL generation and confirmation (replaces 3-step workflow)
+    - **Benefits**: Simpler integration, automatic S3 upload
 
-11. **POST /api/v1/files/{fileId}/confirm**
-    - Triggered by: After successful S3 upload
-    - Payload: `{ checksum: "SHA-256 hash" }`
-    - Returns: `{ fileId, status: "completed", cdnUrl }`
-    - Used for: Confirm upload and get CDN URL
-    - Side effects: Activates file, returns CloudFront URL
+#### Swiss UID Validation & Partner Management (Consolidated)
 
-12. **DELETE /api/v1/files/{fileId}**
-    - Triggered by: [Remove] logo button
-    - Returns: `{ success: true }`
-    - Used for: Delete logo from S3
-    - Side effects: Soft delete file, update storage quota
-
-#### Verification & Partner Management
-
-13. **POST /api/v1/companies/{companyId}/verify**
+10. **GET /api/v1/companies/validate-uid?uid={CHE-XXX.XXX.XXX}**
     - Triggered by: [🔍 Verify] button for UID verification
-    - Payload: `{ uid: "CHE-XXX.XXX.XXX" }`
-    - Returns: `{ verified: true, source: "uid_register", verifiedAt }`
-    - Used for: Automatic Swiss UID verification
-    - Side effects: Updates verification status
+    - Query params: `uid` (Swiss UID format)
+    - Returns: `{ valid: true, companyName, verificationSource: "uid_register" }`
+    - Used for: Automatic Swiss UID verification against Swiss Business Registry
+    - **New in Story 1.22**: Swiss UID validation integration
 
-14. **POST /api/v1/companies/{companyId}/partner-status**
+11. **POST /api/v1/companies/{id}/verify**
+    - Triggered by: Manual verification or after UID validation
+    - Payload: `{ method: "uid|manual|domain", verificationData }`
+    - Returns: `{ verified: true, verifiedAt, verificationMethod }`
+    - Side effects: Updates verification status
+    - **Consolidated**: Unified verification endpoint
+
+12. **POST /api/v1/companies/{id}/promote-partner**
     - Triggered by: Partner status toggle (organizer-only)
-    - Payload: `{ isPartner: true, partnerLevel: "gold", startDate, endDate }`
+    - Payload: `{ partnerLevel: "bronze|silver|gold|platinum", startDate, endDate }`
     - Returns: Updated company with partner status
     - Side effects: Publishes PartnerStatusChangedEvent
+    - **Consolidated**: Dedicated partner promotion endpoint (was part of PUT /companies)
 
-#### Speaker Association
+#### Employee Relationships (Consolidated)
 
-15. **GET /api/v1/companies/{companyId}/speakers**
+13. **GET /api/v1/companies/{id}/employees**
     - Triggered by: Company detail view load
-    - Query params: `limit=10, offset=0`
-    - Returns: Paginated list of associated speakers
-    - Used for: Display speaker list in detail view
+    - Query params: `limit=10, page=1`
+    - Returns: Paginated list of employees (including speakers)
+    - Used for: Display employee/speaker list in detail view
+    - **Consolidated**: Replaces separate /speakers endpoint
 
-16. **POST /api/v1/companies/{companyId}/speakers/{speakerId}**
-    - Triggered by: [+ Link Speaker] button
+14. **POST /api/v1/companies/{id}/employees**
+    - Triggered by: [+ Link Employee/Speaker] button
+    - Payload: `{ userId, role: "employee|speaker", jobTitle }`
     - Returns: `{ success: true, relationship }`
-    - Used for: Link speaker to company
+    - Used for: Link user to company
     - Side effects: Creates employee-company relationship
+    - **Consolidated**: Handles both employees and speakers
 
-17. **DELETE /api/v1/companies/{companyId}/speakers/{speakerId}**
-    - Triggered by: [Unlink] speaker button
+15. **DELETE /api/v1/companies/{id}/employees/{userId}**
+    - Triggered by: [Unlink] button
     - Returns: `{ success: true }`
-    - Used for: Remove speaker-company association
+    - Used for: Remove employee-company association
+    - **Consolidated**: Single endpoint for all employee removals
 
-#### Statistics & Analytics
+#### Statistics (Consolidated)
 
-18. **GET /api/v1/companies/{companyId}/statistics**
-    - Triggered by: Company detail view load
-    - Returns: Participation statistics
-    - Response: `{ totalEvents, totalPresentations, totalAttendees, firstEvent, mostRecentEvent, topicExpertise }`
+16. **GET /api/v1/companies/{id}/statistics**
+    - Triggered by: Company detail view load or [View Statistics] button
+    - Returns: Comprehensive participation statistics
+    - Response: `{ totalEvents, totalPresentations, totalEmployees, totalAttendees, firstEvent, mostRecentEvent, topicExpertise }`
     - Used for: Statistics section in detail view
-
-19. **GET /api/v1/companies/{companyId}/activity**
-    - Triggered by: Company detail view load
-    - Query params: `limit=5, offset=0`
-    - Returns: Recent activity timeline
-    - Used for: Activity history section
+    - **Consolidated**: Single endpoint replaces /statistics and /activity (activity now included in statistics)
 
 ---
 

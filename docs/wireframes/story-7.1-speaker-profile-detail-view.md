@@ -186,68 +186,20 @@
 
 When the Speaker Profile Detail View screen loads, the following APIs are called to provide the necessary data:
 
-1. **GET /api/v1/speakers/{speakerId}/profile**
-   - Returns: Complete speaker profile including:
-     - Personal info (name, title, company, location, photo URL)
-     - Bio and description
-     - Social media links (LinkedIn, Twitter, GitHub, website)
-     - Member since date
-     - Overall statistics (total talks, average rating, total attendees)
-   - Used for: Populate speaker profile header and bio section
+1. **GET /api/v1/speakers/{speakerId}?include=profile,events,materials,timeline,feedback**
+   - **Consolidated API**: Replaces 7 separate endpoints (`/profile`, `/expertise`, `/speaking-history`, `/availability`, `/ratings`, `/feedback`, `/statistics`)
+   - Returns: Complete speaker profile with all related data:
+     - Profile data (name, title, company, location, photo URL, bio, social links, member since)
+     - Expertise areas/topics and languages (embedded in profile)
+     - Events/speaking history (paginated within response)
+     - Availability status and preferences
+     - Feedback summary with ratings breakdown
+     - Statistics (total talks, attendees, ratings, profile views)
+   - Used for: Populate entire speaker profile page in a single call
+   - **Consolidation benefit**: 7 endpoints → 1 endpoint (86% reduction), atomic data load, no waterfall requests
+   - Note: Events are included with `?page=1&limit=10` for initial load, load more via separate call if needed
 
-2. **GET /api/v1/speakers/{speakerId}/expertise**
-   - Returns: List of expertise areas/topics speaker can present on
-   - Response: `{ expertiseAreas: string[], languages: string[] }`
-   - Used for: Display expertise tags and language proficiency
-
-3. **GET /api/v1/speakers/{speakerId}/speaking-history**
-   - Query params: `limit=10, offset=0, sortBy=date, order=desc`
-   - Returns: Paginated list of past speaking engagements including:
-     - Event name and date
-     - Presentation title
-     - Rating and review count
-     - Attendee count
-     - Presentation file URL
-     - Top comment
-   - Used for: Populate speaking history section with past talks
-
-4. **GET /api/v1/speakers/{speakerId}/availability**
-   - Returns: Current availability status and preferences:
-     - `isAvailable: boolean`
-     - `preferredTopics: string[]`
-     - `preferredFormats: string[]`
-     - `travelWillingness: string`
-     - `availabilityNotes: string`
-   - Used for: Display availability and preferences section (organizer-only)
-
-5. **GET /api/v1/speakers/{speakerId}/ratings**
-   - Query params: `summary=true`
-   - Returns: Aggregated rating data:
-     - Overall rating (average)
-     - Total rating count
-     - Breakdown by category (content quality, delivery, engagement, practical value)
-   - Used for: Display ratings overview in ratings & feedback section
-
-6. **GET /api/v1/speakers/{speakerId}/feedback**
-   - Query params: `limit=3, offset=0, sortBy=date, order=desc`
-   - Returns: Recent feedback/comments from attendees:
-     - Rating (stars)
-     - Comment text
-     - Reviewer name
-     - Event name
-     - Date
-   - Used for: Display recent feedback in ratings & feedback section
-
-7. **GET /api/v1/speakers/{speakerId}/statistics**
-   - Returns: Detailed speaker statistics:
-     - Total talks delivered
-     - Total attendees reached
-     - Average attendance per talk
-     - Profile view count
-     - Bookmark count
-   - Used for: Display speaker metrics in profile header
-
-8. **GET /api/v1/users/me/bookmarks/speakers/{speakerId}**
+2. **GET /api/v1/users/me/bookmarks/speakers/{speakerId}**
    - Requires authentication
    - Returns: `{ isBookmarked: boolean }`
    - Used for: Show bookmark button state (filled vs. unfilled)
@@ -312,25 +264,31 @@ APIs called by user interactions and actions:
    - Used for: Download presentation materials
    - Opens: File download or viewer modal
 
-8. **GET /api/v1/speakers/{speakerId}/speaking-history**
+8. **GET /api/v1/speakers/{speakerId}/events?filter={}&page={currentPage}**
+   - **Consolidated API**: Uses events endpoint with pagination
    - Triggered by: [Load More...] button click in speaking history
-   - Query params: `limit=10, offset={currentOffset}, sortBy=date, order=desc`
-   - Returns: Next page of speaking history items
+   - Query params: `page={currentPage}, limit=10, sort=-date`
+   - Returns: Next page of speaking events/history
    - Used for: Load additional speaking history entries (pagination)
+   - **Consolidation benefit**: Events are part of speaker resource, consistent pagination pattern
 
-9. **GET /api/v1/speakers/{speakerId}/speaking-history**
+9. **GET /api/v1/speakers/{speakerId}/events?filter={"topic":"{selectedTopic}"}&page=1**
+   - **Consolidated API**: Uses events endpoint with filtering
    - Triggered by: [Filter by Topic] dropdown selection
-   - Query params: `topicFilter={selectedTopic}, limit=10, offset=0`
+   - Query params: Uses JSON filter syntax for topic filtering
    - Returns: Filtered speaking history
    - Used for: Filter speaking history by topic
+   - **Consolidation benefit**: Standard filter pattern across all resources
 
 ### Ratings & Feedback Actions
 
-10. **GET /api/v1/speakers/{speakerId}/feedback**
+10. **GET /api/v1/speakers/{speakerId}/feedback?filter={}&page=1&limit=50**
+    - **Consolidated API**: Uses feedback endpoint with pagination
     - Triggered by: [View All Feedback (89)] link click
-    - Query params: `limit=50, offset=0, sortBy=date, order=desc`
+    - Query params: `limit=50, page=1, sort=-date`
     - Returns: Complete list of feedback/ratings
     - Opens: Feedback modal or separate page
+    - **Consolidation benefit**: Standard pagination and filtering
 
 11. **POST /api/v1/speakers/{speakerId}/ratings**
     - Triggered by: User submits rating (attendees who attended speaker's talk)

@@ -49,24 +49,23 @@
 
 ### Initial Page Load APIs
 
+**Note**: This wireframe has been updated to use the consolidated Partners API from Story 1.18 (109 → 20 endpoints, 82% reduction).
+
 When the Partner Meeting Hub screen loads, the following APIs are called to provide the necessary data:
 
-1. **GET /api/v1/partners/{partnerId}/meetings/upcoming**
-   - Query params: limit (5)
-   - Returns: List of upcoming partner meetings with dates, times, locations, meeting types, attendance status
+1. **GET /api/v1/partners/{partnerId}/meetings?filter={"upcoming":true}&page=1&limit=5**
+   - Consolidates: Former `/meetings/upcoming` endpoint using standard filtering
+   - Query params: filter (JSON filter for upcoming meetings), page, limit, sort (-scheduledDate)
+   - Returns: List of upcoming partner meetings with dates, times, locations, meeting types, RSVP status
    - Used for: Populate upcoming partner meetings section
+   - **Consolidation Benefit**: Standard filtering pattern consistent with other list endpoints
 
-2. **GET /api/v1/partners/{partnerId}/meetings/{meetingId}/details**
-   - Returns: Complete meeting details (agenda with times, participants with RSVP status, action items, materials), meeting host
-   - Used for: Display detailed meeting information for the next upcoming meeting
-
-3. **GET /api/v1/partners/{partnerId}/meetings/{meetingId}/action-items**
-   - Returns: Action items assigned to partner with due dates, completion status, priorities
-   - Used for: Display "Your Action Items" section
-
-4. **GET /api/v1/partners/{partnerId}/meetings/{meetingId}/materials**
-   - Returns: List of meeting materials with file names, types, sizes, upload dates
-   - Used for: Display meeting materials section
+2. **GET /api/v1/partners/{partnerId}/meetings/{meetingId}?include=agenda,participants,materials,actionItems**
+   - Consolidates: Former separate calls for meeting details, action items, and materials
+   - Query params: include (comma-separated list of embedded resources)
+   - Returns: Complete meeting entity including agenda with times, participants with RSVP status, materials list, action items assigned to partner, meeting host
+   - Used for: Display all meeting information in single request
+   - **Consolidation Benefit**: Include parameter replaces 3 separate API calls with single request
 
 ---
 
@@ -74,86 +73,94 @@ When the Partner Meeting Hub screen loads, the following APIs are called to prov
 
 ### Meeting RSVP & Attendance
 
-1. **PUT /api/v1/partners/{partnerId}/meetings/{meetingId}/rsvp**
-   - Payload: `{ status: "confirmed|declined|tentative", attendees: [{ name, email, role }], dietaryRestrictions, specialRequests }`
-   - Response: Updated RSVP status, calendar invite
+1. **PUT /api/v1/partners/{partnerId}/meetings/{meetingId}**
+   - Consolidates: Former `/meetings/{meetingId}/rsvp` into standard update pattern
+   - Payload: `{ rsvpStatus: "confirmed|declined|tentative", attendees: [{ name, email, role }], dietaryRestrictions, specialRequests }`
+   - Response: Updated meeting with RSVP status, calendar invite generated
    - Used for: Confirm or update meeting attendance
+   - **Consolidation Benefit**: Standard PUT for resource updates instead of specialized RSVP endpoint
 
-2. **POST /api/v1/partners/{partnerId}/meetings/{meetingId}/calendar**
-   - Response: iCal file URL for calendar integration
-   - Used for: Add meeting to calendar
+2. **GET /api/v1/partners/{partnerId}/meetings/{meetingId}/calendar.ics**
+   - Consolidates: Calendar export using resource representation with file extension
+   - Response: iCal file content for calendar integration
+   - Used for: Download meeting as calendar file
+   - **Consolidation Benefit**: RESTful file representation pattern
 
 ### Meeting Materials & Preparation
 
-3. **GET /api/v1/partners/{partnerId}/meetings/{meetingId}/materials/{materialId}/download**
-   - Returns: Download URL, expiration timestamp
-   - Used for: Download individual meeting material
+3. **GET /api/v1/partners/{partnerId}/meetings/{meetingId}/materials/{materialId}**
+   - Consolidates: Former `/materials/{materialId}/download` using content negotiation
+   - Headers: `Accept: application/octet-stream` for download
+   - Returns: File content with download headers OR material metadata (JSON)
+   - Used for: Download or view individual meeting material
+   - **Consolidation Benefit**: Single endpoint serves both metadata and file download via content negotiation
 
-4. **POST /api/v1/partners/{partnerId}/meetings/{meetingId}/materials/download-all**
-   - Response: Zip archive URL with all materials
-   - Used for: Download all meeting materials as archive
+4. **POST /api/v1/partners/{partnerId}/meetings/{meetingId}/materials/export**
+   - Consolidates: Former `/materials/download-all` using standard export pattern
+   - Payload: `{ format: "zip", materialIds: [] }` (empty array = all materials)
+   - Response: Export task ID, zip archive URL when ready
+   - Used for: Download all or selected meeting materials as archive
+   - **Consolidation Benefit**: Consistent export pattern across platform
 
-5. **POST /api/v1/partners/{partnerId}/meetings/{meetingId}/materials/upload**
-   - Payload: File upload (multipart/form-data)
-   - Response: Material ID, upload confirmation
+5. **POST /api/v1/partners/{partnerId}/meetings/{meetingId}/materials**
+   - Consolidates: Former `/materials/upload` using standard POST for creation
+   - Payload: File upload (multipart/form-data) with metadata
+   - Response: Created material ID, material object, upload confirmation
    - Used for: Upload additional materials to share with meeting participants
+   - **Consolidation Benefit**: Standard RESTful POST pattern for creating materials
 
 ### Questions & Discussion
 
-6. **POST /api/v1/partners/{partnerId}/meetings/{meetingId}/questions/submit**
+6. **POST /api/v1/partners/{partnerId}/meetings/{meetingId}/questions**
+   - Consolidates: Simplified creation endpoint (removed `/submit` suffix)
    - Payload: `{ question, relatedAgendaItem, anonymous: boolean }`
-   - Response: Question submission confirmation, question ID
-   - Used for: Submit questions in advance of meeting
+   - Response: Created question ID, confirmation
+   - **Consolidation Benefit**: Standard RESTful POST pattern
 
-7. **GET /api/v1/partners/{partnerId}/meetings/{meetingId}/questions**
-   - Returns: List of submitted questions (own and from others if not anonymous), answers if available
-   - Used for: View submitted questions and answers
+7. **GET /api/v1/partners/{partnerId}/meetings/{meetingId}/questions?filter={}**
+   - Maintains standard list endpoint with filtering
+   - Returns: List of submitted questions, answers if available
+   - **Consolidation Benefit**: Standard filtering for own vs. all questions
 
-### Agenda Management
+### Agenda Management (Embedded in Meeting Resource)
 
-8. **POST /api/v1/partners/{partnerId}/meetings/{meetingId}/agenda/propose**
+8. **POST /api/v1/partners/{partnerId}/meetings/{meetingId}/agenda**
+   - Consolidates: Former `/agenda/propose` simplified
    - Payload: `{ title, description, estimatedDuration, priority: "high|medium|low", supportingMaterials: [] }`
    - Response: Proposal ID, review status
-   - Used for: Propose new agenda item for meeting
+   - **Consolidation Benefit**: Standard sub-resource creation pattern
 
-9. **GET /api/v1/meetings/{meetingId}/agenda/proposals**
-    - Returns: All proposed agenda items from partners, voting/support status
-    - Used for: View proposed agenda items from all partners
+9. **GET /api/v1/partners/{partnerId}/meetings/{meetingId}/agenda?status=proposed**
+    - Consolidates: Former separate proposals endpoint
+    - Returns: Agenda items filtered by status (proposed, approved, completed)
+    - **Consolidation Benefit**: Standard filtering replaces specialized endpoint
 
-10. **POST /api/v1/partners/{partnerId}/meetings/{meetingId}/agenda/proposals/{proposalId}/support**
-    - Response: Updated support count
-    - Used for: Express support for proposed agenda item
+10. **PATCH /api/v1/partners/{partnerId}/meetings/{meetingId}/agenda/{itemId}**
+    - Consolidates: Support voting via PATCH operation
+    - Payload: `{ supportedBy: ["partnerId"], supportCount: increment }`
+    - **Consolidation Benefit**: Standard PATCH for partial updates
 
-### Action Items Management
+### Action Items (Already in Meeting Include)
 
-11. **PUT /api/v1/partners/{partnerId}/meetings/{meetingId}/action-items/{actionItemId}/status**
-    - Payload: `{ status: "completed|in-progress|blocked", notes, completionDate }`
-    - Response: Updated action item status
-    - Used for: Mark action item as complete or update status
-
-12. **POST /api/v1/partners/{partnerId}/meetings/{meetingId}/action-items/{actionItemId}/evidence**
-    - Payload: File upload or link to evidence of completion
-    - Response: Evidence upload confirmation
-    - Used for: Provide evidence of action item completion
+11. **PATCH /api/v1/partners/{partnerId}/meetings/{meetingId}/action-items/{itemId}**
+    - Consolidates: Status updates via PATCH
+    - Payload: `{ status: "completed|in-progress|blocked", notes, completionDate, evidence: fileUrl }`
+    - Response: Updated action item
+    - **Consolidation Benefit**: Standard PATCH pattern; evidence included in same request
 
 ### Meeting Scheduling & Requests
 
-13. **POST /api/v1/partners/{partnerId}/meetings/request**
-    - Payload: `{ type: "planning|review|strategic|ad-hoc", proposedDates: [], attendees: [], agenda, objectives }`
-    - Response: Meeting request ID, review status
-    - Used for: Request new partner meeting
+12. **POST /api/v1/partners/{partnerId}/meetings**
+    - Consolidates: Standard POST for creating meetings (includes requests)
+    - Payload: `{ type: "planning|review|strategic|ad-hoc", proposedDates: [], attendees: [], agenda, objectives, requestStatus: "pending" }`
+    - Response: Created meeting ID, review status
+    - **Consolidation Benefit**: Single endpoint for both scheduled meetings and requests
 
-14. **GET /api/v1/partners/{partnerId}/meetings/availability**
-    - Query params: dateRange
-    - Returns: Available meeting slots, participant availability, recommended dates
-    - Used for: Check availability for meeting scheduling
-
-### Calendar & Overview
-
-15. **GET /api/v1/partners/{partnerId}/meetings/calendar**
-    - Query params: year (2025), view (month, quarter, year)
-    - Returns: Calendar view of all partner meetings, key dates, milestones
-    - Used for: Navigate to calendar view of all meetings
+13. **GET /api/v1/partners/{partnerId}/meetings?filter={"scheduledDate":{"$gte":"2025-05-01","$lte":"2025-05-31"}}**
+    - Consolidates: Calendar functionality via date filtering
+    - Query params: filter (date range), view metadata
+    - Returns: Meetings within date range for calendar rendering
+    - **Consolidation Benefit**: Standard filtering eliminates specialized calendar endpoint
 
 ---
 

@@ -402,150 +402,164 @@
 
 ### Initial Page Load APIs
 
-1. **GET /api/v1/companies/{companyId}**
-   - Returns: Company details (id, name, displayName, isPartner, partnerTier, website, industry, logo, primaryContact, partnershipStartDate)
-   - Used for: Display company settings tab
+**Note**: This wireframe has been updated to use the consolidated Partners API from Story 1.18 (109 → 20 endpoints, 82% reduction).
 
-2. **GET /api/v1/notifications/preferences**
-   - Returns: User notification preferences (channels, quietHours, notificationTypes)
-   - Used for: Display notification preferences tab
-
-3. **GET /api/v1/companies/{companyId}/integrations**
-   - Returns: Integration settings (calendar: {provider, connected, expiresAt}, sso: {enabled, provider, entityId}, webhooks: {url, secretKey, events}, apiKey: {masked})
-   - Used for: Display integration settings tab
-
-4. **GET /api/v1/companies/{companyId}/subscription**
-   - Returns: Subscription details (tier, benefits, renewalDate, autoRenewal, annualFee, paymentMethod, billingContact, billingAddress)
-   - Used for: Display billing & subscription tab
-
-5. **GET /api/v1/companies/{companyId}/team**
-   - Returns: Team members (id, name, email, role, status, lastActive, invitedAt)
-   - Used for: Display team & access tab
-
-6. **GET /api/v1/companies/{companyId}/privacy-settings**
-   - Returns: Privacy settings (dataSharing, employeePrivacy, logoUsage, dataRetention)
-   - Used for: Display privacy & data tab
+1. **GET /api/v1/partners/{partnerId}?include=settings,integrations,subscription,team,privacy**
+   - Consolidates: Former separate calls for company, integrations, subscription, team, and privacy settings
+   - Query params: include (comma-separated list of setting categories)
+   - Returns: Complete partner entity with embedded settings objects:
+     - Company: name, tier, website, industry, logo, primaryContact, partnershipStartDate
+     - Settings: notification preferences, portal configuration
+     - Integrations: calendar, SSO, webhooks, API key status
+     - Subscription: tier, benefits, renewalDate, billing info
+     - Team: team members with roles and status
+     - Privacy: data sharing, employee privacy, logo usage settings
+   - Used for: Populate all settings tabs with single request
+   - **Consolidation Benefit**: Include parameter replaces 6 separate API calls with single request, significantly reducing initial page load time
 
 ### User Action APIs
 
-7. **PUT /api/v1/companies/{companyId}**
+2. **PATCH /api/v1/partners/{partnerId}**
+   - Consolidates: Company information updates via PATCH (partial update)
    - Triggered by: User clicks [Save Changes] on Company Settings tab
    - Payload: `{ website: "string", industry: "string", primaryContactId: "uuid" }`
-   - Returns: Updated company object
+   - Returns: Updated partner entity with changed fields
    - Used for: Update company information
+   - **Consolidation Benefit**: Standard PATCH pattern on main partner resource
 
-8. **POST /api/v1/files/presigned-upload-url**
+3. **POST /api/v1/partners/{partnerId}/logo**
+   - Consolidates: Logo upload as sub-resource action
    - Triggered by: User clicks [Upload New Logo]
-   - Payload: `{ filename: "logo.png", contentType: "logo", fileSizeBytes: 524288, mimeType: "image/png" }`
-   - Returns: Presigned upload URL for logo
-   - Used for: Upload company logo to S3
+   - Payload: Multipart form upload or `{ presignedUrl: true }` for presigned URL
+   - Returns: Upload URL (if presigned) OR uploaded logo metadata
+   - Used for: Upload company logo
+   - **Consolidation Benefit**: Logo management nested under partner resource
 
-9. **PUT /api/v1/notifications/preferences**
+4. **PATCH /api/v1/partners/{partnerId}**
+   - Consolidates: Notification preferences via PATCH on settings section
    - Triggered by: User clicks [Save Changes] on Notifications tab
-   - Payload: `{ channels: {...}, quietHours: {...}, notificationTypes: {...} }`
-   - Returns: Updated preferences
+   - Payload: `{ settings: { notifications: { channels: {...}, quietHours: {...}, types: {...} } } }`
+   - Returns: Updated partner with new notification preferences
    - Used for: Update notification preferences
+   - **Consolidation Benefit**: Settings updates use same PATCH endpoint as other partner updates
 
-10. **POST /api/v1/notifications/test**
+5. **POST /api/v1/partners/{partnerId}/notifications/test**
+    - Consolidates: Test notifications as partner sub-resource action
     - Triggered by: User clicks [Test Notifications]
     - Payload: `{ email: "string", channels: ["email", "inApp"] }`
     - Returns: Test send confirmation
     - Used for: Send test notification to verify settings
+    - **Consolidation Benefit**: Partner-specific action endpoint
 
-11. **PUT /api/v1/companies/{companyId}/integrations/calendar**
+6. **PATCH /api/v1/partners/{partnerId}**
+    - Consolidates: Integration updates via PATCH on integrations section
     - Triggered by: User connects calendar integration
-    - Payload: `{ provider: "outlook" | "google" | "apple", authCode: "string", syncSettings: {...} }`
-    - Returns: Calendar integration status with OAuth tokens
+    - Payload: `{ integrations: { calendar: { provider: "outlook", authCode: "string", syncSettings: {...} } } }`
+    - Returns: Updated partner with calendar integration status
     - Used for: Connect/update calendar integration
+    - **Consolidation Benefit**: Integrations managed via partner PATCH endpoint
 
-12. **POST /api/v1/companies/{companyId}/integrations/sso**
+7. **PATCH /api/v1/partners/{partnerId}**
+    - Consolidates: SSO configuration via PATCH
     - Triggered by: User configures SSO
-    - Payload: `{ enabled: true, provider: "azure" | "okta" | "saml", metadataUrl: "string", entityId: "string" }`
-    - Returns: SSO configuration with SAML endpoints
+    - Payload: `{ integrations: { sso: { enabled: true, provider: "azure", metadataUrl: "string", entityId: "string" } } }`
+    - Returns: Updated partner with SSO configuration
     - Used for: Configure SSO for team members
+    - **Consolidation Benefit**: SSO settings use same PATCH pattern
 
-13. **PUT /api/v1/companies/{companyId}/integrations/webhooks**
+8. **PATCH /api/v1/partners/{partnerId}**
+    - Consolidates: Webhook configuration via PATCH
     - Triggered by: User updates webhook settings
-    - Payload: `{ url: "https://api.techcorp.ch/webhooks", events: ["topic_voting_open", "meeting_scheduled"], active: true }`
+    - Payload: `{ integrations: { webhooks: { url: "https://...", events: [], active: true } } }`
     - Returns: Updated webhook configuration with secret key
     - Used for: Configure webhook integration
+    - **Consolidation Benefit**: Webhooks managed via PATCH like other integrations
 
-14. **POST /api/v1/companies/{companyId}/integrations/webhooks/regenerate-secret**
+9. **POST /api/v1/partners/{partnerId}/integrations/webhooks/regenerate**
+    - Consolidates: Webhook secret regeneration as action endpoint
     - Triggered by: User clicks [Regenerate Secret]
-    - Payload: `{}`
     - Returns: New secret key
     - Used for: Generate new webhook secret for security
+    - **Consolidation Benefit**: Action endpoint nested under partner resource
 
-15. **POST /api/v1/companies/{companyId}/integrations/webhooks/test**
+10. **POST /api/v1/partners/{partnerId}/integrations/webhooks/test**
+    - Consolidates: Webhook testing as action endpoint
     - Triggered by: User clicks [Test Webhook]
     - Payload: `{ eventType: "test" }`
     - Returns: Test webhook delivery status
     - Used for: Verify webhook integration
+    - **Consolidation Benefit**: Test action nested under partner integrations
 
-16. **GET /api/v1/companies/{companyId}/api-key**
-    - Triggered by: User clicks [View API Key] (requires password confirmation)
-    - Returns: Full API key (unhashed)
-    - Used for: Display API key for external integration
-
-17. **POST /api/v1/companies/{companyId}/api-key/regenerate**
-    - Triggered by: User clicks [Regenerate] API key
-    - Payload: `{}`
-    - Returns: New API key
-    - Used for: Generate new API key (invalidates old one)
-
-18. **PUT /api/v1/companies/{companyId}/subscription**
+11. **PATCH /api/v1/partners/{partnerId}**
+    - Consolidates: Billing and subscription updates via PATCH
     - Triggered by: User updates billing information
-    - Payload: `{ billingContact: {...}, billingAddress: {...}, autoRenewal: boolean }`
-    - Returns: Updated subscription details
+    - Payload: `{ subscription: { billingContact: {...}, billingAddress: {...}, autoRenewal: boolean } }`
+    - Returns: Updated partner with new billing details
     - Used for: Update billing settings
+    - **Consolidation Benefit**: Subscription managed via partner PATCH endpoint
 
-19. **GET /api/v1/companies/{companyId}/invoices**
+12. **GET /api/v1/partners/{partnerId}/reports?type=invoice**
+    - Consolidates: Invoices available via reports endpoint with type filter
     - Triggered by: User clicks [View All Invoices]
-    - Query params: limit=50, offset=0
-    - Returns: Array of invoices (id, date, amount, status, pdfUrl)
+    - Query params: type=invoice, limit=50, page=1
+    - Returns: Array of invoice reports (id, date, amount, status, downloadUrl)
     - Used for: Display invoice history
+    - **Consolidation Benefit**: Invoices accessible via unified reports endpoint
 
-20. **POST /api/v1/companies/{companyId}/team/invite**
+13. **POST /api/v1/partners/{partnerId}/team**
+    - Consolidates: Team invitations using standard POST on team sub-resource
     - Triggered by: User clicks [+ Invite Team Member]
-    - Payload: `{ email: "string", role: "administrator" | "manager" | "member", message?: "string" }`
-    - Returns: Invitation created with unique link
+    - Payload: `{ email: "string", role: "administrator|manager|member", message?: "string" }`
+    - Returns: Created invitation with unique link
     - Used for: Invite new team member
+    - **Consolidation Benefit**: Standard RESTful POST pattern for team creation
 
-21. **PUT /api/v1/companies/{companyId}/team/{userId}/role**
+14. **PATCH /api/v1/partners/{partnerId}/team/{userId}**
+    - Consolidates: Role updates via PATCH (partial update)
     - Triggered by: User edits team member role
-    - Payload: `{ role: "administrator" | "manager" | "member" }`
+    - Payload: `{ role: "administrator|manager|member" }`
     - Returns: Updated team member
     - Used for: Change team member role/permissions
+    - **Consolidation Benefit**: Standard PATCH for team member updates
 
-22. **DELETE /api/v1/companies/{companyId}/team/{userId}**
+15. **DELETE /api/v1/partners/{partnerId}/team/{userId}**
+    - Maintains: Standard DELETE pattern
     - Triggered by: User removes team member
     - Payload: `{ reason?: "string" }`
     - Returns: Removal confirmation
     - Used for: Remove team member access
 
-23. **PUT /api/v1/companies/{companyId}/privacy-settings**
+16. **PATCH /api/v1/partners/{partnerId}**
+    - Consolidates: Privacy settings via PATCH
     - Triggered by: User updates privacy settings
-    - Payload: `{ dataSharing: {...}, employeePrivacy: {...}, logoUsage: {...} }`
-    - Returns: Updated privacy settings
+    - Payload: `{ privacy: { dataSharing: {...}, employeePrivacy: {...}, logoUsage: {...} } }`
+    - Returns: Updated partner with new privacy preferences
     - Used for: Update privacy and data sharing preferences
+    - **Consolidation Benefit**: Privacy settings use same PATCH pattern as other settings
 
-24. **GET /api/v1/companies/{companyId}/data-export**
+17. **POST /api/v1/partners/{partnerId}/export**
+    - Consolidates: Data export using unified export endpoint
     - Triggered by: User clicks [Export All Data]
-    - Query params: format=json|pdf
-    - Returns: Downloadable data export file
+    - Payload: `{ exportType: "all", format: "json|pdf", includeTeam: true, includeActivity: true }`
+    - Returns: Export task ID, download URL when ready
     - Used for: GDPR data export
+    - **Consolidation Benefit**: Same export endpoint used for all partner data exports
 
-25. **POST /api/v1/companies/{companyId}/data-deletion-request**
+18. **POST /api/v1/partners/{partnerId}/data-deletion**
+    - Consolidates: Data deletion request as action endpoint
     - Triggered by: User clicks [Request Data Deletion]
-    - Payload: `{ reason: "string", confirmPassword: "string" }`
-    - Returns: Data deletion request created (requires approval)
+    - Payload: `{ reason: "string", confirmPassword: "string", scope: "partial|complete" }`
+    - Returns: Deletion request ID, review status
     - Used for: GDPR right to erasure
+    - **Consolidation Benefit**: Action endpoint nested under partner resource
 
-26. **POST /api/v1/companies/{companyId}/termination-request**
+19. **DELETE /api/v1/partners/{partnerId}**
+    - Consolidates: Partnership termination using standard DELETE
     - Triggered by: User clicks [Terminate Partnership]
-    - Payload: `{ reason: "string", effectiveDate: "2025-12-31", confirmPassword: "string" }`
-    - Returns: Termination request created (requires organizer approval)
+    - Payload (in request body): `{ reason: "string", effectiveDate: "2025-12-31", confirmPassword: "string" }`
+    - Returns: Termination confirmation, data retention policy
     - Used for: End partnership agreement
+    - **Consolidation Benefit**: Standard RESTful DELETE for resource removal
 
 ---
 

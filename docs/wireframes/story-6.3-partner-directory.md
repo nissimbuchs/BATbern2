@@ -152,77 +152,86 @@
 
 ### Initial Page Load APIs
 
-1. **GET /api/v1/companies?isPartner=true&limit=50**
-   - Query params: isPartner=true, sortBy=engagementScore, order=desc, limit=50, offset=0
-   - Returns: Array of partner companies (id, name, displayName, isPartner, logo, industry, contactPerson, contactEmail, partnerTier, createdAt, updatedAt)
-   - Used for: Display partner list, populate filters, show tier distribution
+**Note**: This wireframe has been updated to use the consolidated Partners API from Story 1.18 (109 → 20 endpoints, 82% reduction).
 
-2. **GET /api/v1/partners/engagement-metrics**
-   - Returns: Partner engagement metrics (partnerId, engagementScore, lastEventDate, employeeAttendanceCount, topicVotesActive, nextMeetingDate, engagementLevel)
-   - Used for: Display engagement scores, activity indicators, engagement warnings
+1. **GET /api/v1/partners?filter={"status":"active"}&sort=-engagementScore&page=1&limit=50**
+   - Consolidates: Former `/companies?isPartner=true` and `/partners/engagement-metrics` into single query
+   - Query params: filter (JSON filter), sort (engagement, name, tier), page, limit
+   - Returns: Array of partner entities with embedded engagement metrics (id, name, logo, industry, tier, engagementScore, lastEvent, activeVotes, nextMeeting)
+   - Used for: Display partner list with engagement data in single request
+   - **Consolidation Benefit**: Eliminates separate engagement metrics call; returns partners with scores embedded
 
-3. **GET /api/v1/partners/statistics**
-   - Returns: Aggregate statistics (totalPartners, activePartners, tierDistribution, averageEngagement)
-   - Used for: Display partner overview section, tier distribution chart
+2. **GET /api/v1/partners?metrics=summary**
+   - Consolidates: Former `/partners/statistics` using metrics parameter
+   - Query params: metrics=summary (returns aggregate data instead of partner list)
+   - Returns: Aggregate statistics (totalPartners, activePartners, tierDistribution, averageEngagement, trends)
+   - Used for: Display partner overview section and tier distribution
+   - **Consolidation Benefit**: Same endpoint serves both list and summary via metrics parameter
 
-4. **GET /api/v1/partners/{partnerId}/contact-info**
-   - Returns: Contact details (primaryContactName, primaryContactEmail, primaryContactPhone, secondaryContacts[], linkedInProfile)
+3. **GET /api/v1/partners/{partnerId}?include=contacts**
+   - Consolidates: Former `/partners/{partnerId}/contact-info` using include parameter
+   - Query params: include=contacts (embeds contact information)
+   - Returns: Partner entity with embedded contacts (primaryContact, secondaryContacts[], communicationPreferences)
    - Used for: Display contact information on partner cards
+   - **Consolidation Benefit**: Main resource endpoint with include parameter instead of separate contact endpoint
 
 ### User Action APIs
 
-5. **GET /api/v1/companies?isPartner=true&query={searchTerm}**
+4. **GET /api/v1/partners?filter={"name":{"$contains":"Tech"}}&limit=20**
+   - Consolidates: Search using standard JSON filter pattern
    - Triggered by: User types in search box
-   - Query params: query, isPartner=true, limit=20
+   - Query params: filter (JSON with text search operators), limit
    - Returns: Filtered partner list matching search term
    - Used for: Real-time search results, autocomplete suggestions
+   - **Consolidation Benefit**: Consistent filter syntax eliminates separate search endpoint
 
-6. **GET /api/v1/companies?isPartner=true&partnerTier={tier}&engagementLevel={level}**
+5. **GET /api/v1/partners?filter={"tier":"gold","engagementLevel":"active"}&page=1**
+   - Consolidates: Multi-criteria filtering via JSON filter
    - Triggered by: User selects tier/status filters
-   - Query params: partnerTier (premium|gold|silver|bronze), engagementLevel (active|inactive|low)
+   - Query params: filter (JSON with multiple criteria)
    - Returns: Filtered partner list
    - Used for: Filter partners by tier and engagement status
+   - **Consolidation Benefit**: Single endpoint handles all filter combinations via JSON
 
-7. **POST /api/v1/companies/{companyId}/promote-to-partner**
+6. **POST /api/v1/partners**
+   - Consolidates: Partner creation (promotes company) using standard POST
    - Triggered by: User clicks [+ Add Partner] and selects company
-   - Payload: `{ partnerTier: "bronze", primaryContactId: "uuid", effectiveDate: "2025-01-01" }`
-   - Returns: Updated company with isPartner=true
+   - Payload: `{ companyId: "uuid", partnerTier: "bronze", primaryContactId: "uuid", effectiveDate: "2025-01-01" }`
+   - Returns: Created partner entity with isPartner=true
    - Used for: Promote existing company to partner status
+   - **Consolidation Benefit**: Standard RESTful POST replaces `/companies/{id}/promote-to-partner`
 
-8. **PUT /api/v1/partners/{partnerId}/tier**
+7. **PATCH /api/v1/partners/{partnerId}**
+   - Consolidates: Tier changes via PATCH (partial update)
    - Triggered by: Organizer changes partner tier
-   - Payload: `{ partnerTier: "gold", reason: "Increased sponsorship", effectiveDate: "2025-05-01" }`
+   - Payload: `{ tier: "gold", tierChangeReason: "Increased sponsorship", effectiveDate: "2025-05-01" }`
    - Returns: Updated partner with new tier
    - Used for: Change partner tier level
+   - **Consolidation Benefit**: Standard PATCH pattern instead of specialized tier endpoint
 
-9. **POST /api/v1/partners/bulk-email**
-   - Triggered by: User clicks [Send Bulk Email] with selected partners
-   - Payload: `{ partnerIds: ["uuid1", "uuid2"], subject: "string", messageBody: "string", templateId?: "uuid" }`
-   - Returns: Email sending status and delivery tracking
-   - Used for: Send email to multiple partners simultaneously
+8. **POST /api/v1/partners/export**
+   - Consolidates: Bulk email and export into single export endpoint
+   - Triggered by: User clicks [Send Bulk Email] or [Export Contact List]
+   - Payload: `{ action: "email|export", partnerIds: [], format: "csv|xlsx", emailTemplate?: {}, fields: [] }`
+   - Returns: Email task ID or export download URL
+   - Used for: Bulk email or export partner data
+   - **Consolidation Benefit**: Single export endpoint handles both email and file export
 
-10. **GET /api/v1/partners/export**
-    - Triggered by: User clicks [Export Contact List]
-    - Query params: format=csv|xlsx, partnerIds=["uuid1","uuid2"], fields=["name","email","tier","engagement"]
-    - Returns: Downloadable file (CSV or Excel)
-    - Used for: Export partner contact information
+9. **POST /api/v1/partners/{partnerId}/meetings**
+   - Consolidates: Meeting scheduling nested under partner resource
+   - Triggered by: User clicks [Schedule Meeting] on partner card
+   - Payload: `{ type: "strategic_planning", proposedDates: [], agenda }`
+   - Returns: Created meeting ID, availability conflicts
+   - Used for: Schedule meeting with specific partner
+   - **Consolidation Benefit**: Partner-specific meetings use standard sub-resource pattern
 
-11. **POST /api/v1/meetings/schedule**
-    - Triggered by: User clicks [Schedule Meeting] on partner card
-    - Payload: `{ partnerId: "uuid", eventId?: "uuid", meetingType: "strategic_planning", proposedDates: ["2025-05-20T14:00:00Z"], agenda: "string" }`
-    - Returns: Meeting scheduling request with availability check
-    - Used for: Schedule meeting with partner
-
-12. **GET /api/v1/partners/{partnerId}/analytics**
+10. **GET /api/v1/partners/{partnerId}/analytics?metrics=attendance,roi,engagement**
+    - Consolidates: Partner analytics using flexible metrics parameter
     - Triggered by: User clicks [Analytics] button (if FR4 restored)
-    - Returns: Comprehensive partner analytics (attendance, ROI, brand exposure, engagement trends)
-    - Used for: Navigate to partner analytics dashboard
-
-13. **POST /api/v1/partners/{partnerId}/follow-up-task**
-    - Triggered by: User clicks [⚠️ Follow Up] for low-engagement partner
-    - Payload: `{ taskType: "low_engagement_follow_up", assignedTo: "organizerId", dueDate: "2025-06-01", notes: "Partner engagement dropped below 40%" }`
-    - Returns: Created task
-    - Used for: Create follow-up task for organizer
+    - Query params: metrics (flexible selection)
+    - Returns: Selected analytics metrics
+    - Used for: Navigate to or fetch partner analytics
+    - **Consolidation Benefit**: Same analytics endpoint used across all partner screens
 
 ---
 
