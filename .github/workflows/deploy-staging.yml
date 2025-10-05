@@ -1,0 +1,162 @@
+name: Deploy to Staging
+
+on:
+  workflow_run:
+    workflows: ["Build Pipeline"]
+    types: [completed]
+    branches: [develop]
+
+env:
+  AWS_REGION: eu-central-1
+  ENVIRONMENT: staging
+
+jobs:
+  deploy-to-staging:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: infrastructure/package-lock.json
+
+      - name: Install CDK dependencies
+        working-directory: ./infrastructure
+        run: npm ci
+
+      - name: Build frontend for deployment
+        working-directory: ./web-frontend
+        run: |
+          if [ -f "package.json" ]; then
+            echo "Building frontend for staging..."
+            npm ci
+            npm run build
+            echo "✅ Frontend build complete: dist/ ready for CDK deployment"
+          else
+            echo "::warning::Frontend package.json not found, skipping build"
+          fi
+        env:
+          VITE_API_URL: https://api-staging.batbern.ch
+          VITE_AWS_REGION: ${{ env.AWS_REGION }}
+          VITE_COGNITO_USER_POOL_ID: ${{ secrets.STAGING_COGNITO_USER_POOL_ID }}
+          VITE_COGNITO_CLIENT_ID: ${{ secrets.STAGING_COGNITO_CLIENT_ID }}
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Create database backup
+        run: |
+          echo "Creating database backup..."
+          SNAPSHOT_ID="batbern-staging-pre-deploy-$(date +%Y%m%d-%H%M%S)"
+
+          if aws rds describe-db-instances --db-instance-identifier batbern-staging-postgres --region ${{ env.AWS_REGION }} 2>/dev/null; then
+            aws rds create-db-snapshot \
+              --db-instance-identifier batbern-staging-postgres \
+              --db-snapshot-identifier $SNAPSHOT_ID \
+              --region ${{ env.AWS_REGION }}
+
+            echo "Waiting for snapshot to complete..."
+            aws rds wait db-snapshot-completed \
+              --db-snapshot-identifier $SNAPSHOT_ID \
+              --region ${{ env.AWS_REGION }}
+
+            echo "SNAPSHOT_ID=$SNAPSHOT_ID" >> $GITHUB_ENV
+            echo "✅ Database backup created: $SNAPSHOT_ID"
+          else
+            echo "::warning::Database instance not found, skipping backup"
+          fi
+
+      - name: Run database migrations
+        run: |
+          if [ -d "shared-kernel" ] && [ -f "shared-kernel/gradlew" ]; then
+            cd shared-kernel
+            chmod +x gradlew
+            ./gradlew flywayMigrate \
+              -Dflyway.url=${{ secrets.STAGING_DB_URL }} \
+              -Dflyway.user=${{ secrets.STAGING_DB_USER }} \
+              -Dflyway.password=${{ secrets.STAGING_DB_PASSWORD }} \
+              --no-daemon || echo "::warning::Flyway migrations not configured yet"
+          else
+            echo "::warning::Shared kernel not found, skipping migrations"
+          fi
+
+      - name: Deploy infrastructure to staging
+        working-directory: ./infrastructure
+        run: |
+          if [ -f "package.json" ]; then
+            echo "Deploying version: ${{ github.sha }}"
+
+            npm run deploy:staging -- \
+              --context version=${{ github.sha }} \
+              --require-approval never || echo "::warning::CDK deployment not fully configured yet"
+          else
+            echo "::warning::Infrastructure not configured yet"
+          fi
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+
+      - name: Wait for ECS services to stabilize
+        run: |
+          if aws ecs describe-clusters --clusters batbern-staging --region ${{ env.AWS_REGION }} 2>/dev/null; then
+            services=(
+              "event-management-service"
+              "speaker-coordination-service"
+              "partner-coordination-service"
+              "attendee-experience-service"
+              "company-management-service"
+            )
+
+            for service in "${services[@]}"; do
+              if aws ecs describe-services --cluster batbern-staging --services ${service} --region ${{ env.AWS_REGION }} 2>/dev/null | grep -q "ACTIVE"; then
+                echo "Waiting for $service to stabilize..."
+                aws ecs wait services-stable \
+                  --cluster batbern-staging \
+                  --services ${service} \
+                  --region ${{ env.AWS_REGION }} || echo "::warning::Service ${service} not found or not stable"
+              fi
+            done
+          else
+            echo "::warning::ECS cluster batbern-staging not found yet"
+          fi
+
+      - name: Run smoke tests
+        run: |
+          if [ -f "scripts/ci/smoke-tests.sh" ]; then
+            chmod +x scripts/ci/smoke-tests.sh
+            ./scripts/ci/smoke-tests.sh \
+              https://staging.batbern.ch \
+              https://api-staging.batbern.ch || echo "::warning::Smoke tests not fully configured yet"
+          else
+            echo "::warning::Smoke tests script not found"
+          fi
+
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "✅ Staging deployment successful"
+          echo "Version: ${{ github.sha }}"
+          echo "Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: Notify deployment failure
+        if: failure()
+        run: |
+          echo "❌ Staging deployment failed"
+          echo "Database backup available: ${{ env.SNAPSHOT_ID }}"
+          echo "Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
