@@ -1,7 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import * as certificatemanager from 'aws-cdk-lib/aws-certificatemanager';
 import * as route53 from 'aws-cdk-lib/aws-route53';
+import * as certificatemanager from 'aws-cdk-lib/aws-certificatemanager';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
 import { VpcConstruct } from '../constructs/vpc-construct';
@@ -21,7 +21,7 @@ export interface NetworkStackProps extends cdk.StackProps {
  * - VPC with public, private, and isolated subnets
  * - NAT Gateways for private subnet internet access
  * - Security groups for application, database, and cache tiers
- * - ACM certificate for API Gateway (same region)
+ * - ACM certificate for API Gateway (eu-central-1, automatic DNS validation)
  */
 export class NetworkStack extends cdk.Stack {
   public readonly vpc: ec2.Vpc;
@@ -53,40 +53,29 @@ export class NetworkStack extends cdk.Stack {
     cdk.Tags.of(this.vpc).add('ManagedBy', 'CDK');
     cdk.Tags.of(this.vpc).add('Component', 'Network');
 
-    // Setup ACM Certificate for API Gateway (if domain configured)
-    // NOTE: This certificate must be in the same region as API Gateway (eu-central-1)
-    if (props.config.domain?.apiDomain) {
-      // Use existing certificate if provided (cross-account scenario)
-      if (props.config.domain.apiCertificateArn) {
-        this.apiCertificate = certificatemanager.Certificate.fromCertificateArn(
-          this,
-          'ApiCertificate',
-          props.config.domain.apiCertificateArn
-        );
-      }
-      // Create new certificate if hosted zone is in same account
-      else if (props.config.domain.hostedZoneId) {
-        // Extract zone name from domain (e.g., api-staging.batbern.ch -> batbern.ch)
-        const zoneName = props.config.domain.apiDomain.split('.').slice(-2).join('.');
+    // Create ACM Certificate for API Gateway in same region (eu-central-1)
+    // Uses automatic DNS validation with hosted zone in same account
+    if (props.config.domain?.apiDomain && props.config.domain?.hostedZoneId) {
+      // Get domain name based on environment
+      const domainName = props.config.envName === 'production' ? 'batbern.ch' : `${props.config.envName}.batbern.ch`;
 
-        const hostedZone = route53.HostedZone.fromHostedZoneAttributes(this, 'ApiHostedZone', {
-          hostedZoneId: props.config.domain.hostedZoneId,
-          zoneName,
-        });
+      // Import hosted zone from same account
+      const hostedZone = route53.HostedZone.fromHostedZoneAttributes(this, 'HostedZone', {
+        hostedZoneId: props.config.domain.hostedZoneId,
+        zoneName: domainName,
+      });
 
-        this.apiCertificate = new certificatemanager.Certificate(this, 'ApiCertificate', {
-          domainName: props.config.domain.apiDomain,
-          validation: certificatemanager.CertificateValidation.fromDns(hostedZone),
-        });
-      }
+      // Create certificate with automatic DNS validation
+      this.apiCertificate = new certificatemanager.Certificate(this, 'ApiCertificate', {
+        domainName: props.config.domain.apiDomain,
+        validation: certificatemanager.CertificateValidation.fromDns(hostedZone),
+      });
 
-      if (this.apiCertificate) {
-        new cdk.CfnOutput(this, 'ApiCertificateArn', {
-          value: this.apiCertificate.certificateArn,
-          description: `ACM Certificate ARN for API Gateway - ${props.config.domain.apiDomain}`,
-          exportName: `${props.config.envName}-ApiCertificateArn`,
-        });
-      }
+      new cdk.CfnOutput(this, 'ApiCertificateArn', {
+        value: this.apiCertificate.certificateArn,
+        description: `ACM Certificate ARN for API Gateway (eu-central-1, automatic DNS validation)`,
+        exportName: `${props.config.envName}-ApiCertificateArn`,
+      });
     }
 
     // Export VPC ID for cross-stack references
