@@ -32,7 +32,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
 
     // AWS SDK for EventBridge
-    implementation platform('software.amazon.awssdk:bom:2.25.0')
+    implementation platform('software.amazon.awssdk:bom:2.35.0')
     implementation 'software.amazon.awssdk:eventbridge'
 
     // Lombok for boilerplate reduction
