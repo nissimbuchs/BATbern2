@@ -44,7 +44,7 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.3'
 
     // OpenAPI Support
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13'
 
     // Monitoring & Logging
     implementation 'io.micrometer:micrometer-registry-prometheus'
