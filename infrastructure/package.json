@@ -35,7 +35,7 @@
     "@aws-sdk/client-sns": "^3.901.0",
     "@types/jest": "^29.5.11",
     "@types/js-yaml": "^4.0.9",
-    "@types/node": "^20.10.5",
+    "@types/node": "^24.7.0",
     "aws-cdk": "^2.110.0",
     "jest": "^29.7.0",
     "js-yaml": "^4.1.0",
