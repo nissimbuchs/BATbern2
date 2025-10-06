@@ -16,8 +16,7 @@
     "lint:fix": "eslint src --ext ts,tsx --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,json,css,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,json,css,md}\"",
-    "type-check": "tsc --noEmit",
-    "prepare": "node -e \"if (process.env.CI !== 'true') { require('child_process').execSync('husky install', {stdio: 'inherit'}) }\""
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@aws-amplify/ui-react": "^6.0.0",

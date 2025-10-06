@@ -1,4 +1,14 @@
 rootProject.name = 'BATbern-Platform'
 
+// Foundation
 include 'shared-kernel'
+
+// API Gateway
 include 'api-gateway'
+
+// Domain Services
+include 'services:event-management-service'
+include 'services:speaker-coordination-service'
+include 'services:partner-coordination-service'
+include 'services:company-management-service'
+include 'services:attendee-experience-service'

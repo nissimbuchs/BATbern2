@@ -112,6 +112,84 @@ AWS_PROFILE=batbern-mgmt ./scripts/dev/setup-env.sh
 docker-compose down -v
 ```
 
+## Build Commands
+
+The platform includes a unified build system using **Makefile** that orchestrates both Java/Gradle and Node.js/npm projects.
+
+### Quick Reference
+
+```bash
+# Show all available commands
+make help
+
+# Install all dependencies
+make install
+
+# Build everything
+make build
+
+# Run all tests
+make test
+
+# Verify before commit (lint + test)
+make verify
+
+# Complete workflow
+make all
+```
+
+### Common Tasks
+
+**Setup & Dependencies:**
+```bash
+make install           # Install all (Java + Node)
+make install-java      # Java dependencies only
+make install-node      # Node.js dependencies only
+```
+
+**Building:**
+```bash
+make build             # Build all projects
+make build-java        # Java/Gradle projects only
+make build-node        # Node.js projects only
+```
+
+**Testing:**
+```bash
+make test              # Run all tests
+make test-java         # Java tests only
+make test-node         # Node.js tests only
+make test-coverage     # Tests with coverage reports
+```
+
+**Code Quality:**
+```bash
+make lint              # Run all linters
+make format            # Format all code
+make verify            # Pre-commit checks
+```
+
+**Docker:**
+```bash
+make docker-up         # Start services (same as docker-compose up -d)
+make docker-down       # Stop services
+make docker-build      # Build Docker images
+```
+
+**Cleanup:**
+```bash
+make clean             # Clean all build artifacts
+make clean-java        # Clean Java builds only
+make clean-node        # Clean Node.js builds only
+```
+
+### CI/CD Commands
+
+```bash
+make ci-build          # Full CI build (clean + install + build)
+make ci-test           # All CI tests (coverage + lint)
+```
+
 ## CI/CD Pipeline
 
 The platform uses GitHub Actions for automated building, testing, and deployment.
@@ -185,19 +263,37 @@ Version: v1.2.3
 
 ## Testing
 
-### Run Tests (Current Components)
+### Run Tests
+
+**Unified Commands (Recommended):**
+```bash
+# Run all tests (Java + Node.js)
+make test
+
+# Run specific technology tests
+make test-java         # Java/Gradle tests only
+make test-node         # Node.js tests only
+
+# Run with coverage reports
+make test-coverage
+```
+
+**Individual Component Tests:**
 ```bash
 # Shared kernel tests
-cd shared-kernel
-./gradlew test
+cd shared-kernel && ./gradlew test
 
 # API Gateway tests
-cd api-gateway
-./gradlew test
+cd api-gateway && ./gradlew test
 
-# Frontend tests (when available)
-cd web-frontend
-npm test
+# Domain services tests
+cd services/event-management-service && ./gradlew test
+
+# Infrastructure tests
+cd infrastructure && npm test
+
+# Frontend tests
+cd web-frontend && npm test
 ```
 
 ### TDD Standards
