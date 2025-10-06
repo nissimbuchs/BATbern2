@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import axios, { AxiosError } from 'axios';
+import { AxiosError } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import apiClient from './apiClient';
 import i18n from '@/i18n/config';
@@ -20,6 +20,10 @@ vi.mock('@/i18n/config', () => ({
     language: 'de',
   },
 }));
+
+interface I18nMock {
+  language: string;
+}
 
 describe('API Client', () => {
   let mockAxios: MockAdapter;
@@ -40,7 +44,7 @@ describe('API Client', () => {
   describe('Request Interceptor', () => {
     it('should_addAcceptLanguageHeader_when_requestMade', async () => {
       // Mock i18n language
-      (i18n as any).language = 'de';
+      (i18n as I18nMock).language = 'de';
 
       mockAxios.onGet('/test').reply((config) => {
         expect(config.headers?.['Accept-Language']).toBe('de');
@@ -52,7 +56,7 @@ describe('API Client', () => {
 
     it('should_changeAcceptLanguageHeader_when_languageChanged', async () => {
       // Test with English
-      (i18n as any).language = 'en';
+      (i18n as I18nMock).language = 'en';
 
       mockAxios.onGet('/test').reply((config) => {
         expect(config.headers?.['Accept-Language']).toBe('en');
@@ -110,7 +114,7 @@ describe('API Client', () => {
     it('should_handleUnauthorizedError_when_401Received', async () => {
       // Mock window.location.href
       const originalLocation = window.location;
-      delete (window as any).location;
+      delete (window as { location?: Location }).location;
       window.location = { ...originalLocation, href: '' } as Location;
 
       mockAxios.onGet('/protected').reply(401, { message: 'Unauthorized' });

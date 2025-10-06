@@ -25,7 +25,7 @@ global.IntersectionObserver = class IntersectionObserver {
   takeRecords(): IntersectionObserverEntry[] {
     return [];
   }
-} as any;
+} as unknown as typeof IntersectionObserver;
 
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {

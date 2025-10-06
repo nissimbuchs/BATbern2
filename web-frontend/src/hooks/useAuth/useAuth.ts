@@ -100,13 +100,13 @@ export function useAuth(): UseAuthReturn {
         }));
         return false;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       setState((prev) => ({
         ...prev,
         isLoading: false,
         error: {
           code: 'SIGN_IN_ERROR',
-          message: error.message || 'An error occurred during sign in',
+          message: error instanceof Error ? error.message : 'An error occurred during sign in',
         },
       }));
       return false;
@@ -129,13 +129,13 @@ export function useAuth(): UseAuthReturn {
         accessToken: null,
         refreshToken: null,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       setState((prev) => ({
         ...prev,
         isLoading: false,
         error: {
           code: 'SIGN_OUT_ERROR',
-          message: error.message || 'An error occurred during sign out',
+          message: error instanceof Error ? error.message : 'An error occurred during sign out',
         },
       }));
     }
@@ -157,13 +157,13 @@ export function useAuth(): UseAuthReturn {
       }));
 
       return result.success;
-    } catch (error: any) {
+    } catch (error: unknown) {
       setState((prev) => ({
         ...prev,
         isLoading: false,
         error: {
           code: 'SIGN_UP_ERROR',
-          message: error.message || 'An error occurred during sign up',
+          message: error instanceof Error ? error.message : 'An error occurred during sign up',
         },
       }));
       return false;

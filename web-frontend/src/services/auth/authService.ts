@@ -86,7 +86,7 @@ class AuthService {
         user: userContext,
         accessToken: tokens.accessToken?.toString() || '',
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
         error: this.mapCognitoError(error),
@@ -140,7 +140,7 @@ class AuthService {
         success: true,
         requiresConfirmation: !result.isSignUpComplete,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
         requiresConfirmation: false,
@@ -200,7 +200,7 @@ class AuthService {
         accessToken: tokens.accessToken.toString(),
         expiresIn,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
         accessToken: '',
@@ -249,8 +249,11 @@ class AuthService {
   /**
    * Map Cognito errors to application errors
    */
-  private mapCognitoError(error: any): AuthError {
-    const errorCode = error.code || error.name || 'UNKNOWN_ERROR';
+  private mapCognitoError(error: unknown): AuthError {
+    const errorCode =
+      (error as { code?: string; name?: string }).code ||
+      (error as { code?: string; name?: string }).name ||
+      'UNKNOWN_ERROR';
 
     switch (errorCode) {
       case 'NotAuthorizedException':
@@ -282,7 +285,7 @@ class AuthService {
       default:
         return {
           code: errorCode,
-          message: error.message || 'An unexpected error occurred',
+          message: (error as { message?: string }).message || 'An unexpected error occurred',
         };
     }
   }

@@ -5,7 +5,7 @@
 
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { ThemeProvider } from '@mui/material/styles';
 import { CssBaseline, Box } from '@mui/material';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { configureAmplify } from '@/config/amplify';
@@ -19,21 +19,7 @@ import {
 } from '@components/auth/ProtectedRoute';
 import { LoginForm } from '@components/auth/LoginForm';
 import { ForgotPasswordForm } from '@components/auth/ForgotPasswordForm';
-
-// Create Material-UI theme
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
-  },
-  typography: {
-    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
-  },
-});
+import theme from '@/theme';
 
 // Create React Query client
 const queryClient = new QueryClient({

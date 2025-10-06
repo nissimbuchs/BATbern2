@@ -104,11 +104,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 /**
  * Higher-order component for protecting routes
  */
-export const withProtectedRoute = (
-  Component: React.ComponentType<any>,
+export const withProtectedRoute = <P extends object>(
+  Component: React.ComponentType<P>,
   options?: Omit<ProtectedRouteProps, 'children'>
 ) => {
-  return (props: any) => (
+  return (props: P) => (
     <ProtectedRoute {...options}>
       <Component {...props} />
     </ProtectedRoute>

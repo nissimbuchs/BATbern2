@@ -40,6 +40,14 @@ async function submitForgotPasswordForm(page: Page, email: string) {
   await page.click('button[type="submit"]');
 }
 
+interface MailhogEmail {
+  To?: Array<{ Mailbox?: string; Domain?: string }>;
+  Content?: {
+    Headers?: { Subject?: string[] };
+    Body?: string;
+  };
+}
+
 /**
  * Helper: Check for email in MailHog
  * Returns the email object if found
@@ -48,12 +56,12 @@ async function getEmailFromMailHog(
   page: Page,
   recipientEmail: string,
   subject: string
-): Promise<any> {
+): Promise<MailhogEmail | undefined> {
   const response = await page.request.get(`${MAILHOG_URL}/api/v2/messages`);
   const data = await response.json();
 
-  const email = data.items?.find(
-    (item: any) =>
+  const email = (data.items as MailhogEmail[] | undefined)?.find(
+    (item: MailhogEmail) =>
       item.To?.[0]?.Mailbox + '@' + item.To?.[0]?.Domain === recipientEmail &&
       item.Content?.Headers?.Subject?.[0]?.includes(subject)
   );
@@ -141,7 +149,7 @@ test.describe('Forgot Password - Basic Flow', () => {
 // ============================================================================
 
 test.describe('Forgot Password - Email Delivery', () => {
-  test('should_sendGermanEmail_when_userLanguageIsGerman', async ({ page, request }) => {
+  test('should_sendGermanEmail_when_userLanguageIsGerman', async ({ page }) => {
     // AC15: German email template
     // Set Accept-Language header to German
     await page.setExtraHTTPHeaders({ 'Accept-Language': 'de-CH' });
@@ -270,8 +278,8 @@ test.describe('Forgot Password - Resend Functionality', () => {
     // Verify new email in MailHog
     const emails = await page.request.get(`${MAILHOG_URL}/api/v2/messages`);
     const data = await emails.json();
-    const matchingEmails = data.items?.filter(
-      (item: any) => item.To?.[0]?.Mailbox + '@' + item.To?.[0]?.Domain === TEST_EMAIL
+    const matchingEmails = (data.items as MailhogEmail[])?.filter(
+      (item) => item.To?.[0]?.Mailbox + '@' + item.To?.[0]?.Domain === TEST_EMAIL
     );
 
     expect(matchingEmails.length).toBeGreaterThanOrEqual(2);

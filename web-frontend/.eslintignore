@@ -12,6 +12,10 @@ e2e/**/*.md
 # Markdown files
 **/*.md
 
+# CSS files
+*.css
+**/*.css
+
 # Configuration files
 *.config.js
 *.config.ts
