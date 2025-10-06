@@ -22,7 +22,7 @@ export const ForgotPasswordForm: React.FC = () => {
   const [submittedEmail, setSubmittedEmail] = useState('');
   const [rateLimitCountdown, setRateLimitCountdown] = useState(0);
 
-  const { mutate: forgotPassword, isLoading, isError, error, reset } = useForgotPassword();
+  const { mutate: forgotPassword, isPending, isError, error, reset } = useForgotPassword();
 
   const {
     register,
@@ -144,7 +144,7 @@ export const ForgotPasswordForm: React.FC = () => {
           margin="normal"
           error={!!errors.email}
           helperText={errors.email?.message}
-          disabled={isLoading}
+          disabled={isPending}
         />
 
         <Button
@@ -152,11 +152,11 @@ export const ForgotPasswordForm: React.FC = () => {
           fullWidth
           variant="contained"
           size="large"
-          disabled={!isValid || isLoading || rateLimitCountdown > 0}
+          disabled={!isValid || isPending || rateLimitCountdown > 0}
           sx={{ mt: 2, mb: 2 }}
-          startIcon={isLoading ? <CircularProgress size={20} /> : null}
+          startIcon={isPending ? <CircularProgress size={20} /> : null}
         >
-          {isLoading
+          {isPending
             ? t('common:actions.sending')
             : rateLimitCountdown > 0
               ? t('common:status.wait', { seconds: rateLimitCountdown })
