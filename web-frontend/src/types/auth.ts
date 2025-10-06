@@ -37,6 +37,7 @@ export interface AuthenticationState {
   user: UserContext | null;
   error: AuthError | null;
   accessToken: string | null;
+  refreshToken: string | null;
 }
 
 export interface AuthError {
@@ -87,6 +88,7 @@ export interface MfaResponse {
 export interface TokenRefreshResponse {
   success?: boolean;
   accessToken: string;
+  refreshToken: string;
   expiresIn: number;
   error?: AuthError;
 }

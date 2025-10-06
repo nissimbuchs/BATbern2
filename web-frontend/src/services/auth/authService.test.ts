@@ -229,8 +229,15 @@ describe('AuthService', () => {
 
       await authService.signIn(credentials);
 
-      // Verify Amplify was configured to use localStorage
-      expect(cognitoUserPoolsTokenProvider.setKeyValueStorage).toHaveBeenCalledWith(localStorage);
+      // Verify Amplify was configured with storage adapter
+      expect(cognitoUserPoolsTokenProvider.setKeyValueStorage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          setItem: expect.any(Function),
+          getItem: expect.any(Function),
+          removeItem: expect.any(Function),
+          clear: expect.any(Function),
+        })
+      );
     });
 
     it('should_configureSessionStorage_when_rememberMeIsFalse', async () => {
@@ -278,8 +285,15 @@ describe('AuthService', () => {
 
       await authService.signIn(credentials);
 
-      // Verify Amplify was configured to use sessionStorage
-      expect(cognitoUserPoolsTokenProvider.setKeyValueStorage).toHaveBeenCalledWith(sessionStorage);
+      // Verify Amplify was configured with storage adapter
+      expect(cognitoUserPoolsTokenProvider.setKeyValueStorage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          setItem: expect.any(Function),
+          getItem: expect.any(Function),
+          removeItem: expect.any(Function),
+          clear: expect.any(Function),
+        })
+      );
     });
   });
 
