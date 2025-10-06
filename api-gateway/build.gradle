@@ -37,7 +37,7 @@ dependencies {
     implementation 'software.amazon.awssdk:auth'
 
     // JWT Processing
-    implementation 'com.auth0:java-jwt:4.4.0'
+    implementation 'com.auth0:java-jwt:4.5.0'
     implementation 'com.auth0:jwks-rsa:0.22.1'
 
     // Jackson for JSON processing
