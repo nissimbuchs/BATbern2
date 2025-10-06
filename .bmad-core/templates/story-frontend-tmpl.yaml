@@ -1,0 +1,625 @@
+# <!-- Powered by BMAD™ Core -->
+template:
+  id: story-frontend-feature-template-v1
+  name: Frontend Feature Story Template
+  version: 1.0
+  description: Frontend implementation with MSW mocked backend for isolated UI development
+  output:
+    format: markdown
+    filename: docs/stories/{{epic_num}}.{{story_num}}b.frontend-{{story_title_short}}.md
+    title: "Story {{epic_num}}.{{story_num}}b: Frontend - {{story_title_short}}"
+
+workflow:
+  mode: interactive
+  elicitation: advanced-elicitation
+
+agent_config:
+  editable_sections:
+    - Status
+    - Story
+    - Domain Context
+    - Wireframe Context
+    - Component Specifications
+    - Acceptance Criteria
+    - Tasks / Subtasks
+    - Dev Notes
+    - Change Log
+
+sections:
+  - id: status
+    title: Status
+    type: choice
+    choices: [Blocked, Draft, Approved, InProgress, Review, Done]
+    instruction: |
+      Select the current status of the frontend story.
+      Status should be "Blocked" until API Contract story {{epic_num}}.{{story_num}}a is Done.
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+
+  - id: story
+    title: Story
+    type: template-text
+    template: |
+      **As a** {{role}},
+      **I want** {{action}},
+      **so that** {{benefit}}
+
+      **Frontend Focus:** This story implements the UI/UX using MSW (Mock Service Worker) to mock backend APIs defined in Story {{epic_num}}.{{story_num}}a.
+    instruction: Define the user story focusing on the user interface and experience
+    elicit: true
+    owner: scrum-master
+    editors: [scrum-master]
+
+  - id: dependencies
+    title: Story Dependencies
+    instruction: |
+      **Blocking Dependencies:**
+      - ⚠️ BLOCKED until Story {{epic_num}}.{{story_num}}a (API Contract) is Done
+      - Requires: OpenAPI specification
+      - Requires: TypeScript types generated from API contract
+      - Requires: Mock data specifications
+
+      **Integration Story:**
+      - This story will be integrated with backend in Story {{epic_num}}.{{story_num}}d
+    owner: scrum-master
+    editors: [scrum-master]
+
+  - id: domain-context
+    title: Domain Context
+    instruction: Identify the frontend domain and components for this feature
+    owner: scrum-master
+    editors: [scrum-master]
+    sections:
+      - id: role-context
+        title: User Role Context
+        instruction: |
+          Which user role is this UI for:
+          - Organizer
+          - Speaker
+          - Partner
+          - Attendee
+          - Public (unauthenticated)
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: component-location
+        title: Component Location
+        instruction: |
+          Where in the frontend structure:
+          - web-frontend/src/components/organizer/
+          - web-frontend/src/components/speaker/
+          - web-frontend/src/components/partner/
+          - web-frontend/src/components/attendee/
+          - web-frontend/src/components/shared/
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: api-dependencies
+        title: API Contract Dependencies
+        instruction: |
+          Reference the API Contract story:
+          - Story number: {{epic_num}}.{{story_num}}a
+          - Endpoints used by this UI
+          - Generated TypeScript types used
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+  - id: wireframe-context
+    title: Wireframe Context
+    instruction: Link to relevant wireframes and UI specifications
+    owner: scrum-master
+    editors: [scrum-master]
+    sections:
+      - id: wireframe-references
+        title: Wireframe References
+        instruction: |
+          List relevant wireframe files and specific sections:
+          - Wireframe file path
+          - Specific screens/flows relevant to this story
+          - Design system components to use
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: ui-behavior-specifications
+        title: UI Behavior Specifications
+        instruction: |
+          Define UI behaviors and interactions:
+          - Form validation feedback
+          - Loading states
+          - Error handling display
+          - Empty states
+          - Success confirmations
+          - Animations/transitions
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+  - id: component-specifications
+    title: Component Specifications
+    instruction: |
+      Define React components to be created or modified for this feature.
+      These will be implemented following Material-UI patterns and our component architecture.
+    owner: scrum-master
+    editors: [scrum-master]
+    sections:
+      - id: component-list
+        title: Component List
+        instruction: |
+          List all React components needed:
+
+          **New Components:**
+          - ComponentName: Brief description
+            - Location: web-frontend/src/components/[role]/[ComponentName]/
+            - Type: Page | Container | Presentational
+            - State Management: Zustand | React Query | Local State
+
+          **Modified Components:**
+          - ComponentName: What modifications needed
+
+          **Shared Components:**
+          - List shared components that will be used
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: component-props
+        title: Component Props Interfaces
+        instruction: |
+          Define TypeScript interfaces for component props:
+
+          ```typescript
+          interface ComponentNameProps {
+            // Define all props
+            prop1: string;
+            prop2: number;
+            onAction?: (data: ActionData) => void;
+          }
+          ```
+
+          Include props for all major components.
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: state-management
+        title: State Management Strategy
+        instruction: |
+          Define state management approach:
+
+          **Zustand Stores:**
+          - Store name, state shape, actions
+
+          **React Query Hooks:**
+          - Query keys, query functions, cache strategy
+
+          **Local Component State:**
+          - Components using useState/useReducer
+          - When and why local state is appropriate
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: custom-hooks
+        title: Custom Hooks
+        instruction: |
+          Define custom React hooks needed:
+
+          **New Hooks:**
+          - useHookName: Description
+            - Location: web-frontend/src/hooks/[hookName]/
+            - Parameters and return type
+            - Purpose and usage
+
+          **Existing Hooks:**
+          - List existing hooks to be used
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+  - id: acceptance-criteria
+    title: Acceptance Criteria
+    type: numbered-list
+    instruction: |
+      Define acceptance criteria focused on UI/UX functionality:
+      - All UI components render correctly
+      - Form validation works as specified
+      - Loading states display appropriately
+      - Error states handled gracefully
+      - Mobile responsive behavior verified
+      - Accessibility requirements met
+      - MSW mocks respond correctly
+    elicit: true
+    owner: scrum-master
+    editors: [scrum-master]
+
+  - id: test-specifications
+    title: Test Specifications (TDD)
+    instruction: |
+      ⚠️ CRITICAL: Define frontend test cases BEFORE implementation.
+      Tests should use MSW to mock API responses defined in the API contract.
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+    sections:
+      - id: component-test-scenarios
+        title: Component Test Scenarios
+        instruction: |
+          Map each acceptance criterion to component tests:
+
+          **Component: ComponentName**
+          - Test 1.1: should_renderCorrectly_when_dataProvided
+          - Test 1.2: should_displayLoading_when_dataFetching
+          - Test 1.3: should_displayError_when_requestFails
+          - Test 1.4: should_callOnAction_when_buttonClicked
+
+          Use React Testing Library patterns (@testing-library/react).
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master, dev-agent]
+
+      - id: hook-test-scenarios
+        title: Hook Test Scenarios
+        instruction: |
+          Tests for custom hooks:
+
+          **Hook: useHookName**
+          - Test 2.1: should_returnExpectedValue_when_called
+          - Test 2.2: should_handleError_when_queryFails
+
+          Use @testing-library/react-hooks.
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master, dev-agent]
+
+      - id: msw-mock-setup
+        title: MSW Mock Configuration
+        instruction: |
+          Define MSW handlers for API mocking:
+
+          ```typescript
+          // web-frontend/src/mocks/handlers/[domain]Handlers.ts
+          export const handlers = [
+            rest.get('/api/v1/events', (req, res, ctx) => {
+              return res(ctx.status(200), ctx.json(mockEvents));
+            }),
+            // ... more handlers
+          ];
+          ```
+
+          Include:
+          - Success scenarios
+          - Error scenarios (400, 401, 403, 404, 500)
+          - Edge cases
+          - Delayed responses for loading state testing
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master, dev-agent]
+
+      - id: integration-test-scenarios
+        title: Integration Test Scenarios (Optional)
+        instruction: |
+          Component integration tests (if needed):
+          - Multi-component user flows
+          - Complex state interactions
+          - Navigation flows
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master, dev-agent]
+
+  - id: tasks-subtasks
+    title: Tasks / Subtasks (TDD Workflow)
+    type: bullet-list
+    instruction: |
+      Break down the frontend implementation following TDD workflow.
+      CRITICAL: Tests with MSW mocks must be written BEFORE implementation.
+    template: |
+      - [ ] Task 1: Setup MSW Mocks (RED Phase)
+        - [ ] Create MSW handlers based on API contract
+        - [ ] Configure success response mocks
+        - [ ] Configure error response mocks
+        - [ ] Test MSW setup works in test environment
+        - [ ] Verify mock responses match OpenAPI spec
+
+      - [ ] Task 2: Write Component Tests (RED Phase)
+        - [ ] Write failing tests for component rendering
+        - [ ] Write failing tests for user interactions
+        - [ ] Write failing tests for loading states
+        - [ ] Write failing tests for error handling
+        - [ ] Write failing tests for form validation
+        - [ ] Verify tests fail with meaningful errors
+
+      - [ ] Task 3: Write Custom Hook Tests (RED Phase)
+        - [ ] Write failing tests for hook behavior
+        - [ ] Write failing tests for hook error handling
+        - [ ] Write failing tests for hook edge cases
+        - [ ] Verify hook tests fail appropriately
+
+      - [ ] Task 4: Implement Components (GREEN Phase)
+        - [ ] Create component files and structure
+        - [ ] Implement minimal component logic to pass tests
+        - [ ] Implement Material-UI integration
+        - [ ] Implement state management (Zustand/React Query)
+        - [ ] Verify all component tests pass
+
+      - [ ] Task 5: Implement Custom Hooks (GREEN Phase)
+        - [ ] Create hook files
+        - [ ] Implement minimal hook logic to pass tests
+        - [ ] Verify all hook tests pass
+
+      - [ ] Task 6: Refactor (REFACTOR Phase)
+        - [ ] Extract reusable logic
+        - [ ] Optimize performance (useMemo, useCallback)
+        - [ ] Improve code organization
+        - [ ] Add JSDoc documentation
+        - [ ] Verify tests still pass after refactoring
+
+      - [ ] Task 7: Accessibility & Responsive Design
+        - [ ] Add ARIA labels and roles
+        - [ ] Test keyboard navigation
+        - [ ] Test screen reader compatibility
+        - [ ] Test mobile responsive behavior
+        - [ ] Test tablet responsive behavior
+        - [ ] Run Lighthouse accessibility audit
+
+      - [ ] Task 8: Storybook Stories (Documentation)
+        - [ ] Create Storybook stories for components
+        - [ ] Document component variations
+        - [ ] Document component usage examples
+    elicit: true
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+
+  - id: dev-notes
+    title: Dev Notes - Implementation Guide
+    instruction: |
+      CONSOLIDATED IMPLEMENTATION GUIDE for the Dev Agent:
+      Everything needed for frontend implementation with mocked backend.
+    elicit: true
+    owner: scrum-master
+    editors: [scrum-master]
+    sections:
+      - id: api-integration-guide
+        title: API Integration Guide
+        instruction: |
+          How to integrate with the API contract:
+          - Import generated TypeScript types from API contract
+          - API client service setup (using Axios/Fetch)
+          - React Query configuration
+          - Error handling patterns
+          - Loading state patterns
+
+          Example:
+          ```typescript
+          import { Event, CreateEventRequest } from '@/types/generated/api';
+          import { useQuery, useMutation } from '@tanstack/react-query';
+
+          export const useEvents = () => {
+            return useQuery<Event[]>({
+              queryKey: ['events'],
+              queryFn: () => apiClient.get('/api/v1/events')
+            });
+          };
+          ```
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: material-ui-patterns
+        title: Material-UI Component Patterns
+        instruction: |
+          Specific Material-UI components to use:
+          - Layout components (Grid, Box, Container)
+          - Form components (TextField, Select, Button)
+          - Feedback components (Alert, Snackbar, Dialog)
+          - Data display components (Table, Card, List)
+
+          Include theme customization and styling approach.
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: msw-setup-guide
+        title: MSW Setup Guide
+        instruction: |
+          Mock Service Worker configuration:
+          - Handler file locations
+          - How to add new handlers
+          - How to override handlers in tests
+          - How to simulate delays
+          - How to simulate errors
+
+          Example:
+          ```typescript
+          // src/mocks/handlers.ts
+          import { rest } from 'msw';
+
+          export const handlers = [
+            rest.get('/api/v1/events', (req, res, ctx) => {
+              return res(
+                ctx.delay(100), // Simulate network delay
+                ctx.status(200),
+                ctx.json(mockEventData)
+              );
+            })
+          ];
+          ```
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: testing-patterns
+        title: Testing Patterns
+        instruction: |
+          Frontend testing best practices:
+          - React Testing Library patterns
+          - How to test user interactions (fireEvent, userEvent)
+          - How to test async behavior (waitFor, findBy)
+          - How to test forms
+          - How to test error states
+          - How to mock MSW responses in tests
+
+          Example:
+          ```typescript
+          import { render, screen, waitFor } from '@testing-library/react';
+          import userEvent from '@testing-library/user-event';
+
+          test('should submit form when valid data entered', async () => {
+            render(<EventForm />);
+
+            await userEvent.type(screen.getByLabelText('Title'), 'BATbern 2024');
+            await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+            await waitFor(() => {
+              expect(screen.getByText('Event saved')).toBeInTheDocument();
+            });
+          });
+          ```
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+  - id: definition-of-done
+    title: Definition of Done Checklist
+    instruction: |
+      ⚠️ CRITICAL: Frontend story cannot be marked complete until ALL items are checked.
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+    sections:
+      - id: development-complete
+        title: Development Complete
+        type: checklist
+        template: |
+          - [ ] All component tests written BEFORE implementation (TDD)
+          - [ ] All acceptance criteria have corresponding tests
+          - [ ] All acceptance criteria implemented
+          - [ ] Component tests passing (>90% coverage)
+          - [ ] Hook tests passing (>90% coverage)
+          - [ ] MSW mocks properly configured and tested
+          - [ ] TypeScript types properly used (no 'any')
+          - [ ] Code follows React best practices
+          - [ ] ESLint passes with no errors
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: ux-complete
+        title: UX Complete
+        type: checklist
+        template: |
+          - [ ] UI matches wireframe designs
+          - [ ] Responsive design tested (mobile/tablet/desktop)
+          - [ ] Loading states implemented and tested
+          - [ ] Error states implemented and tested
+          - [ ] Empty states implemented and tested
+          - [ ] Form validation provides clear feedback
+          - [ ] Material-UI theme applied consistently
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: accessibility-complete
+        title: Accessibility Complete ⚠️ CRITICAL
+        type: checklist
+        template: |
+          - [ ] ARIA labels added to interactive elements
+          - [ ] Keyboard navigation works correctly
+          - [ ] Focus indicators visible
+          - [ ] Screen reader tested (basic)
+          - [ ] Color contrast meets WCAG 2.1 AA
+          - [ ] Lighthouse accessibility score >90
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: documentation-complete
+        title: Documentation Complete
+        type: checklist
+        template: |
+          - [ ] Storybook stories created for components
+          - [ ] Component props documented
+          - [ ] Usage examples provided
+          - [ ] JSDoc comments added
+          - [ ] README updated if needed
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: integration-ready
+        title: Integration Ready
+        type: checklist
+        template: |
+          - [ ] MSW mocks match API contract exactly
+          - [ ] Generated TypeScript types used correctly
+          - [ ] API client services ready for backend integration
+          - [ ] Mock data documented for integration story
+          - [ ] Component ready to consume real APIs
+        owner: dev-agent
+        editors: [dev-agent]
+
+  - id: integration-notes
+    title: Integration Notes for Story {{epic_num}}.{{story_num}}d
+    instruction: |
+      Notes for the integration story that will replace mocks with real backend:
+      - Which MSW handlers need to be removed
+      - Which API client services will be activated
+      - Which environment variables need to be configured
+      - Expected behavior changes (if any)
+    owner: dev-agent
+    editors: [dev-agent]
+
+  - id: change-log
+    title: Change Log
+    type: table
+    columns: [Date, Version, Description, Author]
+    instruction: Track changes made to this frontend story
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+
+  - id: dev-agent-record
+    title: Dev Agent Record
+    instruction: This section is populated during frontend implementation
+    owner: dev-agent
+    editors: [dev-agent]
+    sections:
+      - id: agent-model
+        title: Agent Model Used
+        template: "{{agent_model_name_version}}"
+        instruction: Record the AI agent model and version used
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: implementation-approach
+        title: Implementation Approach
+        instruction: Document the actual approach taken, any deviations, and rationale
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: file-list
+        title: Files Changed
+        instruction: |
+          List all files created, modified, or deleted:
+          - Created: [list of new files]
+          - Modified: [list of changed files]
+          - Deleted: [list of removed files]
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: msw-configuration
+        title: MSW Configuration Details
+        instruction: |
+          Document MSW setup:
+          - Handler file locations
+          - Mock data file locations
+          - How to run with mocks enabled
+          - How to disable mocks for integration
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: component-locations
+        title: Component Locations
+        instruction: |
+          Map of components and their locations:
+          - ComponentName → web-frontend/src/components/[path]
+          - Hook names → web-frontend/src/hooks/[path]
+          - Store names → web-frontend/src/stores/[path]
+        owner: dev-agent
+        editors: [dev-agent]

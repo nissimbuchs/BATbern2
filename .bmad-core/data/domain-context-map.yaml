@@ -1,0 +1,297 @@
+# <!-- Powered by BMAD™ Core -->
+# Domain Context Map for BATbern Event Management Platform
+# Maps epics, services, and documentation to DDD bounded contexts
+
+# Functional Requirements from docs/prd-enhanced.md
+functional_requirements_definitions:
+  FR1: "Role-based authentication with distinct interfaces for organizers, speakers, partners, and attendees"
+  FR2: "Event organizers manage complete 16-step event workflow through intelligent task sequencing, automated deadline tracking, stakeholder coordination, and real-time progress dashboards"
+  FR3: "Automated speaker invitation, submission, and material collection workflows with real-time status updates"
+  FR4: "Partner/sponsor users access real-time analytics dashboards showing employee attendance, brand exposure metrics, and ROI data"
+  FR5: "Progressive event publishing with automatic content updates from topic definition through final agenda publication"
+  FR6: "Attendees access prominent current event landing page with complete logistics, speaker lineup, agenda details, and registration"
+  FR7: "Email notification workflows for event updates, speaker deadlines, and newsletter distribution"
+  FR8: "Partner users vote on topic priorities and submit strategic topic suggestions"
+  FR9: "Generate automated reports for partner meetings including attendance statistics, topic performance, and engagement metrics"
+  FR10: "Speaker users access self-service portal for submission management, agenda viewing, and presentation upload"
+  FR11: "Complete event archive with presentation downloads, speaker profiles, and photo galleries accessible via secondary navigation"
+  FR12: "Event organizers manage multi-year venue reservations, catering coordination, partner meeting scheduling, and logistics through integrated workflow tools"
+  FR13: "Attendees access intelligent content discovery across historical BATbern events (20+ years) with AI-powered search and personalized recommendations"
+  FR14: "Attendees manage personal engagement through newsletter subscriptions, content bookmarking, and presentation downloads"
+  FR15: "Mobile-optimized attendee experience with offline content access, event check-in capabilities, and progressive web app functionality"
+  FR16: "Attendees access community features including content ratings, social sharing, and curated learning pathways"
+  FR17: "Intelligent speaker matching and assignment tracking with automated workflow states and real-time organizer collaboration"
+  FR18: "Smart topic backlog management with historical usage tracking, partner influence integration, and duplicate avoidance algorithms"
+  FR19: "Progressive publishing engine with content validation, quality review, and phased publication with automated standards enforcement"
+  FR20: "Intelligent notification system with role-based alerts, cross-stakeholder visibility, and automated escalation workflows"
+  FR21: "Long-term planning capabilities including multi-year venue booking, seasonal partner meeting coordination, and strategic budget planning"
+
+non_functional_requirements_definitions:
+  NFR1: "Responsive design optimized for mobile, tablet, and desktop access"
+  NFR2: "Database supports advanced text search across all historical content with sub-second response times"
+  NFR3: "Integration with external services (email, payment processing, file storage) through configurable APIs"
+  NFR4: "Multi-language content support (German, English) with internationalization framework"
+
+compatibility_requirements_definitions:
+  CR1: "Migrate all existing event data (54+ events, presentations, speaker profiles) without data loss"
+  CR2: "Maintain existing external integrations (Slideshare, Twitter, venue websites) during transition period"
+  CR3: "Preserve existing URL structure for SEO and bookmark compatibility where feasible"
+  CR4: "Export data in standard formats for partner analytics and reporting tools"
+
+domains:
+  event-management:
+    name: Event Management Domain
+    description: Organizer workflows and event planning automation
+    services:
+      - Event Management Service
+      - API Gateway (event endpoints)
+    epics: [2, 4]  # Basic creation & finalization
+    stories_prefix: ["2.", "4."]
+    architecture_sections:
+      - file: 01-system-overview.md
+        sections: ["Event Management Service", "Component Diagram"]
+      - file: 02-infrastructure-deployment.md
+        sections: ["Event Service Infrastructure", "Workflow Engine"]
+      - file: 03-data-architecture.md
+        sections: ["Event Aggregate", "Timeline Entity", "Topic Management"]
+      - file: 04-api-design.md
+        sections: ["Event Management Endpoints", "/api/events", "/api/workflows"]
+      - file: 06-backend-architecture.md
+        sections: ["Event Service Architecture", "Workflow State Machine", "Publishing Engine"]
+    wireframes:
+      - file: docs/wireframes/wireframes-organizer.md
+        components:
+          - Event Timeline View
+          - Speaker Pipeline
+          - Task Management
+          - Publishing Controls
+          - Multi-organizer Features
+          - Real-time Sync
+    functional_requirements: [FR2, FR5, FR7, FR12, FR17, FR18, FR19, FR20, FR21]  # Event workflow, publishing, notifications, planning
+    workflow_steps: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+
+  speaker-coordination:
+    name: Speaker Coordination Domain
+    description: Speaker portal, submissions, and communication workflows
+    services:
+      - Speaker Coordination Service
+      - API Gateway (speaker endpoints)
+    epics: [3, 7]  # Core management & enhanced features
+    stories_prefix: ["3.", "7.1-7.3"]
+    architecture_sections:
+      - file: 01-system-overview.md
+        sections: ["Speaker Coordination Service"]
+      - file: 03-data-architecture.md
+        sections: ["Speaker Entity", "Submission Management", "Material Storage"]
+      - file: 04-api-design.md
+        sections: ["Speaker Portal Endpoints", "/api/speakers", "/api/submissions"]
+      - file: 05-frontend-architecture.md
+        sections: ["Speaker Portal Components", "Submission Forms"]
+      - file: 06-backend-architecture.md
+        sections: ["Speaker Service Architecture", "Invitation System", "Content Validation"]
+    wireframes:
+      - file: docs/wireframes/wireframes-speaker.md
+        components:
+          - Speaker Dashboard
+          - Submission Forms
+          - Material Upload
+          - Communication Center
+          - Event Calendar
+    functional_requirements: [FR3, FR10, FR17]  # Speaker workflows, portal, assignment tracking
+    content_requirements:
+      - Abstract: max 1000 chars with lessons learned
+      - CV: required
+      - Photo: professional quality
+      - Materials: 1 month before event deadline
+
+  partner-analytics:
+    name: Partner Analytics Domain
+    description: ROI tracking, analytics dashboards, and strategic partnership tools
+    services:
+      - Partner Analytics Service
+      - API Gateway (partner endpoints)
+    epics: [6]  # Complete partner platform
+    stories_prefix: "6."
+    architecture_sections:
+      - file: 01-system-overview.md
+        sections: ["Partner Analytics Service"]
+      - file: 03-data-architecture.md
+        sections: ["Partner Entity", "Analytics Data Models", "ROI Calculations"]
+      - file: 04-api-design.md
+        sections: ["Partner API Endpoints", "/api/partners", "/api/analytics"]
+      - file: 06-backend-architecture.md
+        sections: ["Analytics Service Architecture", "Reporting Engine", "Data Aggregation"]
+      - file: 09-aiml-architecture.md
+        sections: ["Predictive Analytics", "ROI Prediction Models", "Topic Success Analysis"]
+    wireframes:
+      - file: docs/wireframes/wireframes-partner.md
+        components:
+          - Analytics Dashboard
+          - ROI Reports
+          - Topic Voting Interface
+          - Employee Attendance Tracking
+          - Strategic Planning Tools
+    functional_requirements: [FR4, FR8, FR9]  # Partner analytics, topic voting, reports
+
+  attendee-experience:
+    name: Attendee Experience Domain
+    description: Content discovery, event registration, and community features
+    services:
+      - Attendee Experience Service
+      - API Gateway (public endpoints)
+    epics: [2, 5, 7]  # Landing page, core experience, community
+    stories_prefix: ["2.4", "5.", "7.4-7.6"]
+    architecture_sections:
+      - file: 01-system-overview.md
+        sections: ["Attendee Experience Service"]
+      - file: 03-data-architecture.md
+        sections: ["Attendee Entity", "Registration Management", "Content Search"]
+      - file: 04-api-design.md
+        sections: ["Public API Endpoints", "/api/events/public", "/api/content", "/api/search"]
+      - file: 05-frontend-architecture.md
+        sections: ["PWA Architecture", "Offline Support", "Content Discovery Components"]
+      - file: 06-backend-architecture.md
+        sections: ["Search Service", "Content Delivery", "Registration Workflows"]
+    wireframes:
+      - file: docs/wireframes/wireframes-attendee.md
+        components:
+          - Search Interface
+          - Content Browser
+          - Filter Controls
+          - Recommendation Engine
+          - Mobile Experience
+          - Offline Content
+          - Push Notifications
+          - Hero Section
+          - Event Details
+          - Registration Form
+          - Speaker Showcase
+    functional_requirements: [FR6, FR11, FR13, FR14, FR15, FR16]  # Landing page, archive, discovery, mobile, community
+
+  shared-infrastructure:
+    name: Shared Infrastructure & Core Services
+    description: Authentication, company management, and cross-cutting concerns
+    services:
+      - Company Management Service
+      - API Gateway (core)
+      - AWS Cognito
+      - EventBridge
+    epics: [1]
+    stories_prefix: "1."
+    architecture_sections:
+      - file: 01-system-overview.md
+        sections: ["System Overview", "C4 Model", "API Gateway"]
+      - file: 02-infrastructure-deployment.md
+        sections: ["AWS Infrastructure", "CDK Setup", "Deployment Pipeline"]
+      - file: 03-data-architecture.md
+        sections: ["Shared Domain Types", "Company Entity", "User Management"]
+      - file: 04-api-design.md
+        sections: ["API Gateway Configuration", "Authentication", "CORS"]
+      - file: 07-development-standards.md
+        sections: ["All sections"]
+      - file: 08-operations-security.md
+        sections: ["Security Architecture", "Monitoring", "Compliance"]
+    wireframes:
+      - file: docs/wireframes/wireframes-organizer.md
+        components:
+          - Navigation Bar
+          - User Menu
+          - Role Switcher
+          - Notification Center
+    functional_requirements: [FR1]  # Role-based authentication
+    non_functional_requirements: [NFR1, NFR2, NFR3, NFR4]  # Responsive, search, integrations, i18n
+    compatibility_requirements: [CR1, CR2, CR3, CR4]  # Data migration, integrations, URLs, exports
+
+# Cross-domain integration patterns
+integration_patterns:
+  event_to_speaker:
+    source: event-management
+    target: speaker-coordination
+    mechanisms:
+      - EventBridge events (SpeakerInvitedEvent, SpeakerAcceptedEvent)
+      - API calls for speaker status
+      - Shared speaker IDs
+
+  event_to_partner:
+    source: event-management
+    target: partner-analytics
+    mechanisms:
+      - EventBridge events (EventPublishedEvent, RegistrationEvent)
+      - Analytics data aggregation
+      - Topic voting integration
+
+  event_to_attendee:
+    source: event-management
+    target: attendee-experience
+    mechanisms:
+      - Public API for event data
+      - Progressive publishing
+      - Content delivery via CDN
+
+  speaker_to_attendee:
+    source: speaker-coordination
+    target: attendee-experience
+    mechanisms:
+      - Speaker profiles and bios
+      - Presentation materials
+      - Content search indexing
+
+# Common patterns across all domains
+common_patterns:
+  backend:
+    - DDD with aggregates and entities
+    - CQRS for complex queries
+    - Event sourcing for audit trails
+    - Spring Boot 3.2 with Java 21
+    - PostgreSQL with proper indexing
+    - Redis caching for performance
+
+  frontend:
+    - React 18.2 with TypeScript
+    - Material-UI components
+    - Zustand for state management
+    - React Query for server state
+    - Role-adaptive components
+    - PWA capabilities
+
+  infrastructure:
+    - AWS CDK for IaC
+    - API Gateway for routing
+    - Lambda for serverless compute
+    - S3 for file storage
+    - CloudFront for CDN
+    - EventBridge for domain events
+    - ElastiCache for caching
+    - OpenSearch for full-text search
+
+# Testing standards by domain
+testing_requirements:
+  unit_test_coverage: 80
+  integration_test_required: true
+  e2e_test_for_critical_paths: true
+
+  by_domain:
+    event-management:
+      focus: Workflow state transitions, publishing logic
+      critical_paths: [Event creation, Speaker assignment, Publishing]
+
+    speaker-coordination:
+      focus: Submission validation, invitation flows
+      critical_paths: [Speaker invitation, Material submission]
+
+    partner-analytics:
+      focus: Data accuracy, report generation
+      critical_paths: [ROI calculation, Analytics dashboard]
+
+    attendee-experience:
+      focus: Search relevance, registration flow
+      critical_paths: [Event registration, Content search]
+
+    shared-infrastructure:
+      focus: Authentication, authorization, data migration
+      critical_paths: [User login, Role-based access]
+
+# Requirements Reference
+# All functional (FR), non-functional (NFR), and compatibility (CR) requirements
+# are defined in docs/prd-enhanced.md and mapped to domains above
+# Use the functional_requirements_definitions section for quick reference

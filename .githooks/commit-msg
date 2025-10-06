@@ -1,0 +1,56 @@
+#!/bin/bash
+
+# BATbern Platform - Commit Message Hook
+# Validates commit message format using commitlint
+
+COMMIT_MSG_FILE=$1
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
+# Use commitlint if available in web-frontend
+if [ -d "web-frontend" ] && [ -f "web-frontend/node_modules/.bin/commitlint" ]; then
+    cd web-frontend
+    if npx commitlint --edit "$1" >/dev/null 2>&1; then
+        echo -e "${GREEN}✅ Commit message format valid${NC}"
+        exit 0
+    else
+        echo -e "${RED}❌ Invalid commit message format!${NC}"
+        echo ""
+        echo "Please run commitlint for details:"
+        echo "  cd web-frontend && npx commitlint --edit $1"
+        exit 1
+    fi
+fi
+
+# Fallback to basic validation if commitlint not available
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# Skip validation for merge commits
+if echo "$COMMIT_MSG" | grep -qE "^Merge"; then
+    exit 0
+fi
+
+# Check conventional commit format: type(scope): description
+if ! echo "$COMMIT_MSG" | grep -qE "^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?: .+"; then
+    echo -e "${RED}❌ Invalid commit message format!${NC}"
+    echo ""
+    echo "Commit message must follow conventional commits format:"
+    echo "  <type>(<scope>): <description>"
+    echo ""
+    echo "Valid types: feat, fix, docs, style, refactor, test, chore, perf, ci, build, revert"
+    echo ""
+    echo "Examples:"
+    echo "  feat(auth): add login with Google"
+    echo "  fix(api): resolve timeout issue in event creation"
+    echo "  test(user): add unit tests for user service"
+    echo ""
+    echo "Your commit message:"
+    echo "  $COMMIT_MSG"
+    exit 1
+fi
+
+echo -e "${GREEN}✅ Commit message format valid${NC}"
+exit 0

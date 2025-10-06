@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🧪 Running full test suite before push..."
+
+# Change to web-frontend directory
+cd web-frontend || exit 1
+
+# Run full test suite
+npm run test:run
+
+if [ $? -ne 0 ]; then
+  echo "❌ Test suite failed. Push aborted."
+  exit 1
+fi
+
+echo "✅ All tests passed! Proceeding with push."

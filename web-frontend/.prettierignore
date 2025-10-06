@@ -1,0 +1,12 @@
+node_modules
+dist
+coverage
+build
+.husky
+*.min.js
+*.min.css
+package-lock.json
+.env*
+.prettierignore
+.eslintrc.cjs
+.eslintignore

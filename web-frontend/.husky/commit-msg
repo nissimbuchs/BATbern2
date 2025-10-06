@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Change to web-frontend directory
+cd web-frontend || exit 1
+
+# Validate commit message format
+npx --no -- commitlint --edit $1

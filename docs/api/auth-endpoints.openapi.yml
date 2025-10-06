@@ -1,0 +1,359 @@
+openapi: 3.1.0
+info:
+  title: BATbern Authentication API
+  description: |
+    Authentication and password management endpoints for BATbern platform.
+
+    **Story 1.2.2: Forgot Password Flow**
+    - Email-based password reset with bilingual support
+    - Rate limiting (3 requests per hour per email)
+    - Email enumeration prevention
+    - Security audit logging
+  version: 1.0.0
+  contact:
+    name: BATbern API Support
+    email: api@batbern.ch
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://api.batbern.ch/api/v1
+    description: Production server
+  - url: https://api-staging.batbern.ch/api/v1
+    description: Staging server
+  - url: http://localhost:8080/api/v1
+    description: Local development server
+
+tags:
+  - name: Authentication
+    description: User authentication and password management
+
+paths:
+  /auth/forgot-password:
+    post:
+      tags:
+        - Authentication
+      summary: Request password reset
+      description: |
+        Initiates password reset flow by sending a reset link to the user's email.
+
+        **Security Features:**
+        - Email enumeration prevention (always returns success)
+        - Rate limiting (3 requests per hour per email)
+        - Bilingual email templates (German/English)
+        - Security audit logging
+
+        **Email Template Selection:**
+        - German: Accept-Language header starts with "de"
+        - English: All other languages default to English
+
+        **Reset Link Format:**
+        ```
+        https://app.batbern.ch/auth/reset-password?email={email}&lang={lang}
+        ```
+
+        **Token Expiration:** 1 hour (enforced by AWS Cognito)
+
+      operationId: forgotPassword
+
+      parameters:
+        - name: Accept-Language
+          in: header
+          description: User's preferred language (de-CH or en-US)
+          required: false
+          schema:
+            type: string
+            enum: [de-CH, de, en-US, en]
+            default: de
+          example: de-CH
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+            examples:
+              validRequest:
+                summary: Valid email address
+                value:
+                  email: user@batbern.ch
+              longEmail:
+                summary: Maximum length email
+                value:
+                  email: very.long.email.address.with.many.characters@example-domain.com
+
+      responses:
+        '200':
+          description: |
+            Success response (always returned to prevent email enumeration).
+
+            **Note:** The same success response is returned regardless of whether
+            the email exists in the system. This prevents attackers from
+            discovering valid email addresses.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForgotPasswordResponse'
+              examples:
+                success:
+                  summary: Successful request
+                  value:
+                    success: true
+                    message: If an account exists with this email, you will receive a password reset link.
+
+        '400':
+          description: Invalid request (email validation failed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidEmail:
+                  summary: Invalid email format
+                  value:
+                    success: false
+                    error: Validation failed
+                    message: Invalid email format
+                    details:
+                      - field: email
+                        message: Email must be a valid email address
+                emailTooLong:
+                  summary: Email exceeds maximum length
+                  value:
+                    success: false
+                    error: Validation failed
+                    message: Email too long
+                    details:
+                      - field: email
+                        message: Email must not exceed 255 characters
+
+        '429':
+          description: Rate limit exceeded (3 requests per hour per email)
+          headers:
+            Retry-After:
+              description: Number of seconds until next request is allowed
+              schema:
+                type: integer
+                example: 3600
+            X-RateLimit-Limit:
+              description: Maximum requests per hour
+              schema:
+                type: integer
+                example: 3
+            X-RateLimit-Remaining:
+              description: Remaining requests in current window
+              schema:
+                type: integer
+                example: 0
+            X-RateLimit-Reset:
+              description: Unix timestamp when rate limit resets
+              schema:
+                type: integer
+                example: 1696521600
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                rateLimitExceeded:
+                  summary: Too many requests
+                  value:
+                    success: false
+                    error: Rate limit exceeded
+                    message: Too many password reset requests. Please try again later.
+                    retryAfter: 3600
+
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                serverError:
+                  summary: Server error
+                  value:
+                    success: false
+                    error: Internal server error
+                    message: An unexpected error occurred. Please try again later.
+
+  /auth/resend-reset-link:
+    post:
+      tags:
+        - Authentication
+      summary: Resend password reset link
+      description: |
+        Resends the password reset link to the user's email.
+
+        **Same rate limiting as /auth/forgot-password:**
+        - 3 requests per hour per email (combined limit)
+        - 60-second cooldown enforced on frontend
+
+        **Use Cases:**
+        - User didn't receive the original email
+        - Email was deleted accidentally
+        - Reset link expired (1 hour expiration)
+
+      operationId: resendResetLink
+
+      parameters:
+        - name: Accept-Language
+          in: header
+          description: User's preferred language (de-CH or en-US)
+          required: false
+          schema:
+            type: string
+            enum: [de-CH, de, en-US, en]
+            default: de
+          example: de-CH
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendResetLinkRequest'
+            examples:
+              validRequest:
+                summary: Valid resend request
+                value:
+                  email: user@batbern.ch
+
+      responses:
+        '200':
+          description: Reset link resent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResendResetLinkResponse'
+              examples:
+                success:
+                  summary: Successful resend
+                  value:
+                    success: true
+                    message: Reset link sent again to your email.
+
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+        '429':
+          description: Rate limit exceeded
+          headers:
+            Retry-After:
+              description: Number of seconds until next request is allowed
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    ForgotPasswordRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 5
+          maxLength: 255
+          description: User's email address
+          example: user@batbern.ch
+
+    ForgotPasswordResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Always true for valid requests
+          example: true
+        message:
+          type: string
+          description: Generic success message (prevents email enumeration)
+          example: If an account exists with this email, you will receive a password reset link.
+
+    ResendResetLinkRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 5
+          maxLength: 255
+          description: User's email address
+          example: user@batbern.ch
+
+    ResendResetLinkResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Indicates if resend was successful
+          example: true
+        message:
+          type: string
+          description: Confirmation message
+          example: Reset link sent again to your email.
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Always false for errors
+          example: false
+        error:
+          type: string
+          description: Error type
+          example: Validation failed
+        message:
+          type: string
+          description: Human-readable error message
+          example: Invalid email format
+        details:
+          type: array
+          description: Detailed validation errors
+          items:
+            $ref: '#/components/schemas/ValidationError'
+        retryAfter:
+          type: integer
+          description: Seconds until retry is allowed (rate limit errors only)
+          example: 3600
+
+    ValidationError:
+      type: object
+      properties:
+        field:
+          type: string
+          description: Field name that failed validation
+          example: email
+        message:
+          type: string
+          description: Validation error message
+          example: Email must be a valid email address
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from login endpoint
+
+security: []  # These endpoints are public (no authentication required)

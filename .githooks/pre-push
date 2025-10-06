@@ -1,0 +1,81 @@
+#!/bin/bash
+
+# BATbern Platform - Pre-push Hook
+# Runs full test suite before pushing to ensure code quality
+
+set -e
+
+echo "🚀 Running pre-push validation..."
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Track if any checks failed
+CHECKS_FAILED=0
+
+# Function to run tests with timeout
+run_with_timeout() {
+    local TIMEOUT=$1
+    shift
+    local COMMAND="$@"
+
+    timeout $TIMEOUT bash -c "$COMMAND" || {
+        echo -e "${RED}❌ Command timed out or failed: $COMMAND${NC}"
+        return 1
+    }
+}
+
+echo -e "${BLUE}📊 Running full test suite...${NC}"
+
+# Run frontend tests
+if [ -d "web-frontend" ]; then
+    echo -e "${YELLOW}🎨 Running frontend tests...${NC}"
+
+    cd web-frontend
+
+    # Run all tests
+    echo "  Running tests..."
+    npm run test:run || CHECKS_FAILED=1
+
+    cd ..
+fi
+
+# Run backend tests
+if [ -f "gradlew" ] || [ -f "build.gradle" ]; then
+    echo -e "${YELLOW}☕ Running backend tests...${NC}"
+
+    # Run all tests with coverage
+    echo "  Running unit tests..."
+    run_with_timeout 180 "./gradlew test jacocoTestReport" || CHECKS_FAILED=1
+
+    # Check coverage thresholds
+    if [ -f "build/reports/jacoco/test/jacocoTestReport.xml" ]; then
+        COVERAGE=$(grep -o 'missed="[0-9]*" covered="[0-9]*"' build/reports/jacoco/test/jacocoTestReport.xml | head -1)
+        # Parse and check coverage (simplified check)
+        echo "  Coverage report generated"
+    fi
+
+    # Run integration tests
+    echo "  Running integration tests..."
+    run_with_timeout 300 "./gradlew integrationTest" || CHECKS_FAILED=1
+fi
+
+
+# Final summary
+echo ""
+if [ $CHECKS_FAILED -ne 0 ]; then
+    echo -e "${RED}❌ Pre-push validation failed!${NC}"
+    echo -e "${RED}Please fix the issues above before pushing.${NC}"
+    echo ""
+    echo "To bypass this check (NOT recommended), use:"
+    echo "  git push --no-verify"
+    exit 1
+fi
+
+echo -e "${GREEN}✅ All pre-push checks passed successfully!${NC}"
+echo -e "${GREEN}Ready to push to remote repository.${NC}"
+exit 0

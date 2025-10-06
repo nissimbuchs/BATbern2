@@ -1,0 +1,10 @@
+build/
+.gradle/
+*.class
+*.jar
+*.war
+*.ear
+*.iml
+.idea/
+target/
+out/

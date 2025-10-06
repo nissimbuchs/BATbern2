@@ -1,12 +1,14 @@
 # See http://help.github.com/ignore-files/ for more about ignoring files.
 
 # compiled output
-/dist
+/BATspa-old/dist
 /tmp
 /out-tsc
 
 # dependencies
-/node_modules
+/BATspa-old/node_modules
+apps/*/node_modules
+apps/*/dist
 
 # IDEs and editors
 /.idea
@@ -25,7 +27,7 @@
 !.vscode/extensions.json
 
 # misc
-/.angular/cache
+/BATspa-old/.angular/cache
 /.sass-cache
 /connect.lock
 /coverage
@@ -38,3 +40,74 @@ testem.log
 # System Files
 .DS_Store
 Thumbs.db
+
+# Gradle build artifacts
+.gradle/
+**/build/
+# Exclude bin directories but keep infrastructure/bin (CDK entry points)
+**/bin/
+!infrastructure/bin/
+**/out/
+*.class
+*.jar
+*.war
+*.ear
+
+# Gradle wrapper (keep the wrapper jar for CI/CD)
+!gradle/wrapper/gradle-wrapper.jar
+
+# Spring Boot specific
+*.log
+*.pid
+*.seed
+*.pid.lock
+
+# CDK and infrastructure artifacts
+infrastructure/node_modules/
+infrastructure/cdk.out/
+infrastructure/dist/
+infrastructure/*.js
+infrastructure/*.d.ts
+!infrastructure/jest.config.js
+
+# API Gateway build artifacts
+api-gateway/build/
+api-gateway/.gradle/
+api-gateway/bin/
+api-gateway/out/
+
+# Shared kernel build artifacts
+shared-kernel/build/
+shared-kernel/.gradle/
+shared-kernel/bin/
+shared-kernel/out/
+
+# Test reports
+**/test-results/
+**/reports/
+**/jacoco/
+
+# Local environment files
+.env
+.env.local
+.env.*.local
+*.env
+
+# AWS credentials (never commit these!)
+.aws/
+aws-exports.js
+
+# Web frontend build artifacts
+web-frontend/node_modules/
+web-frontend/dist/
+web-frontend/build/
+web-frontend/.next/
+web-frontend/.nuxt/
+web-frontend/coverage/
+web-frontend/.vite/
+web-frontend/.storybook-out/
+
+# Frontend test artifacts
+web-frontend/test-results/
+web-frontend/playwright-report/
+web-frontend/test-results.xml

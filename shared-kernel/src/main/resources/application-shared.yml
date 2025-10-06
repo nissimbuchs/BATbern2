@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: batbern-shared-kernel
+
+aws:
+  eventbridge:
+    region: eu-central-1
+    event-bus-name: batbern-platform-events
+    source: ch.batbern.shared
+    retry:
+      max-attempts: 3
+      initial-interval: 1000
+      max-interval: 10000
+      multiplier: 2.0
+
+logging:
+  level:
+    ch.batbern.shared: DEBUG
+    software.amazon.awssdk: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

@@ -1,0 +1,443 @@
+# <!-- Powered by BMAD™ Core -->
+template:
+  id: story-api-contract-template-v1
+  name: API Contract Story Template
+  version: 1.0
+  description: Contract-First API definition with OpenAPI specs and gateway configuration
+  output:
+    format: markdown
+    filename: docs/stories/{{epic_num}}.{{story_num}}a.api-{{story_title_short}}.md
+    title: "Story {{epic_num}}.{{story_num}}a: API Contract - {{story_title_short}}"
+
+workflow:
+  mode: interactive
+  elicitation: advanced-elicitation
+
+agent_config:
+  editable_sections:
+    - Status
+    - Story
+    - Domain Context
+    - API Contract Specification
+    - Acceptance Criteria
+    - Tasks / Subtasks
+    - Dev Notes
+    - Change Log
+
+sections:
+  - id: status
+    title: Status
+    type: choice
+    choices: [Draft, Approved, InProgress, Review, Done]
+    instruction: Select the current status of the API contract story
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+
+  - id: story
+    title: Story
+    type: template-text
+    template: |
+      **As a** {{role}},
+      **I want** {{action}},
+      **so that** {{benefit}}
+
+      **API Contract Focus:** This story defines the API contract that both frontend and backend teams will implement against.
+    instruction: Define the user story focusing on the API contract definition
+    elicit: true
+    owner: scrum-master
+    editors: [scrum-master]
+
+  - id: domain-context
+    title: Domain Context
+    instruction: Identify the domain and API Gateway routes for this contract
+    owner: scrum-master
+    editors: [scrum-master]
+    sections:
+      - id: primary-domain
+        title: Primary Domain
+        instruction: |
+          Identify the bounded context:
+          - Event Management Domain
+          - Speaker Coordination Domain
+          - Partner Analytics Domain
+          - Attendee Experience Domain
+          - Company Management Domain
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: api-gateway-routes
+        title: API Gateway Routes
+        instruction: |
+          List the API Gateway routes this contract defines:
+          - HTTP methods (GET, POST, PUT, DELETE, PATCH)
+          - Endpoint paths (e.g., /api/v1/events, /api/v1/events/{id})
+          - Route priority and ordering
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: cross-domain-dependencies
+        title: Cross-Domain API Dependencies
+        instruction: List any other API contracts this depends on or integrates with
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+  - id: api-contract-specification
+    title: API Contract Specification
+    instruction: |
+      Define the complete OpenAPI specification for this API contract.
+      This is the source of truth that both frontend and backend will implement.
+    owner: scrum-master
+    editors: [scrum-master]
+    sections:
+      - id: openapi-spec
+        title: OpenAPI Specification (YAML)
+        instruction: |
+          Provide complete OpenAPI 3.0 specification including:
+          - Endpoint paths and methods
+          - Request schemas with validation rules
+          - Response schemas for success and error cases
+          - Authentication requirements
+          - Rate limiting specifications
+          - Example requests and responses
+
+          This spec MUST be complete and executable (can be loaded in Swagger UI).
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: request-validation
+        title: Request Validation Rules
+        instruction: |
+          Detail all validation rules for requests:
+          - Required vs optional fields
+          - Data types and formats
+          - Min/max length constraints
+          - Pattern matching (regex)
+          - Cross-field validation rules
+          - Custom business validation
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: response-contracts
+        title: Response Contracts
+        instruction: |
+          Define all possible response scenarios:
+          - Success responses (200, 201, 204)
+          - Client error responses (400, 401, 403, 404, 409, 422)
+          - Server error responses (500, 502, 503)
+          - Each with schema and example
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: error-format
+        title: Error Response Format
+        instruction: |
+          Standardized error response format:
+          ```json
+          {
+            "error": {
+              "code": "ERROR_CODE",
+              "message": "Human-readable message",
+              "details": [
+                {
+                  "field": "fieldName",
+                  "issue": "validation error description"
+                }
+              ],
+              "requestId": "uuid",
+              "timestamp": "ISO-8601"
+            }
+          }
+          ```
+          List all error codes this API can return.
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: authentication-authorization
+        title: Authentication & Authorization
+        instruction: |
+          Specify security requirements:
+          - Authentication method (JWT via Cognito)
+          - Required roles for each endpoint
+          - Permission model
+          - Token validation requirements
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+  - id: acceptance-criteria
+    title: Acceptance Criteria
+    type: numbered-list
+    instruction: |
+      Define acceptance criteria focused on contract completeness:
+      - OpenAPI spec is valid and complete
+      - All validation rules documented
+      - All response scenarios defined
+      - Gateway routes configured
+      - Contract tests written
+      - API documentation generated
+    elicit: true
+    owner: scrum-master
+    editors: [scrum-master]
+
+  - id: test-specifications
+    title: Contract Test Specifications
+    instruction: |
+      ⚠️ CRITICAL: Define contract tests that validate the API specification.
+      These tests will be used by both frontend (mock validation) and backend (implementation validation).
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+    sections:
+      - id: contract-test-scenarios
+        title: Contract Test Scenarios
+        instruction: |
+          Define contract tests for each endpoint:
+          - Request schema validation tests
+          - Response schema validation tests
+          - Error scenario validation tests
+          - Authentication/authorization tests
+
+          Format:
+          **Endpoint: POST /api/v1/events**
+          - Test 1.1: should_acceptValidRequest_when_allRequiredFieldsProvided
+          - Test 1.2: should_return400_when_requiredFieldMissing
+          - Test 1.3: should_return401_when_authenticationMissing
+          - Test 1.4: should_return403_when_insufficientPermissions
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master, dev-agent]
+
+      - id: mock-data-specification
+        title: Mock Data Specification
+        instruction: |
+          Define mock data for frontend development:
+          - Success response examples
+          - Error response examples
+          - Edge case scenarios
+          - Performance simulation (delays)
+
+          This will be used to configure MSW (Mock Service Worker).
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+  - id: tasks-subtasks
+    title: Tasks / Subtasks (TDD Workflow)
+    type: bullet-list
+    instruction: |
+      Break down the API contract definition work.
+      CRITICAL: Contract tests define the behavior that implementations must follow.
+    template: |
+      - [ ] Task 1: OpenAPI Specification Definition
+        - [ ] Define endpoint paths and methods
+        - [ ] Define request schemas with validation
+        - [ ] Define response schemas for all scenarios
+        - [ ] Validate OpenAPI spec syntax
+        - [ ] Generate API documentation from spec
+
+      - [ ] Task 2: Write Contract Tests (RED Phase)
+        - [ ] Write failing tests for request validation
+        - [ ] Write failing tests for response schemas
+        - [ ] Write failing tests for error scenarios
+        - [ ] Write failing tests for authentication
+        - [ ] Verify contract tests run and fail appropriately
+
+      - [ ] Task 3: API Gateway Configuration
+        - [ ] Configure routes in API Gateway
+        - [ ] Set up request validation at gateway
+        - [ ] Configure authentication integration
+        - [ ] Set up rate limiting rules
+        - [ ] Configure CORS policies
+
+      - [ ] Task 4: Mock Data Generation
+        - [ ] Create success response examples
+        - [ ] Create error response examples
+        - [ ] Create edge case scenarios
+        - [ ] Document mock data for frontend team
+
+      - [ ] Task 5: Documentation Generation
+        - [ ] Generate Swagger UI documentation
+        - [ ] Create API usage examples
+        - [ ] Document authentication flow
+        - [ ] Create Postman/Insomnia collection
+    elicit: true
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+
+  - id: dev-notes
+    title: Dev Notes - Implementation Guide
+    instruction: |
+      CONSOLIDATED GUIDE for API contract implementation:
+      This provides everything needed to define the API contract.
+    elicit: true
+    owner: scrum-master
+    editors: [scrum-master]
+    sections:
+      - id: gateway-configuration
+        title: API Gateway Configuration
+        instruction: |
+          Specific gateway configuration details:
+          - Route definitions with exact paths
+          - Request/response transformation rules
+          - Throttling and rate limiting settings
+          - CORS configuration
+          - Authentication integration setup
+
+          Include actual configuration code/CDK constructs.
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: openapi-generation
+        title: OpenAPI Spec Generation
+        instruction: |
+          Tools and process for OpenAPI spec:
+          - How to validate the spec
+          - How to generate documentation
+          - How to generate TypeScript types for frontend
+          - How to generate Java DTOs for backend
+          - Tooling: openapi-generator, swagger-ui
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: contract-testing-approach
+        title: Contract Testing Approach
+        instruction: |
+          Contract testing strategy:
+          - Tools: Pact, Spring Cloud Contract, or custom
+          - Where contract tests live (shared-kernel?)
+          - How frontend validates against contract
+          - How backend validates against contract
+          - CI/CD integration for contract validation
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+  - id: definition-of-done
+    title: Definition of Done Checklist
+    instruction: |
+      ⚠️ CRITICAL: API contract cannot be marked complete until ALL items are checked.
+      Frontend and backend stories depend on this being complete and stable.
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+    sections:
+      - id: contract-complete
+        title: Contract Complete
+        type: checklist
+        template: |
+          - [ ] OpenAPI 3.0 specification is syntactically valid
+          - [ ] All endpoints have complete request schemas
+          - [ ] All endpoints have complete response schemas
+          - [ ] All validation rules documented in spec
+          - [ ] All error scenarios defined with codes and messages
+          - [ ] Authentication/authorization requirements specified
+          - [ ] Rate limiting rules defined
+          - [ ] API versioning strategy documented
+        owner: scrum-master
+        editors: [scrum-master, dev-agent]
+
+      - id: gateway-configured
+        title: Gateway Configured
+        type: checklist
+        template: |
+          - [ ] API Gateway routes created for all endpoints
+          - [ ] Request validation enabled at gateway
+          - [ ] CORS policies configured correctly
+          - [ ] Authentication integration tested
+          - [ ] Rate limiting applied and tested
+          - [ ] Gateway integration tests passing
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: contract-tests-ready
+        title: Contract Tests Ready
+        type: checklist
+        template: |
+          - [ ] Contract tests written for all endpoints
+          - [ ] Request schema validation tests written
+          - [ ] Response schema validation tests written
+          - [ ] Error scenario tests written
+          - [ ] All contract tests documented
+          - [ ] Contract tests can be run independently
+          - [ ] Mock data prepared for frontend team
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: documentation-complete
+        title: Documentation Complete
+        type: checklist
+        template: |
+          - [ ] Swagger UI documentation generated and accessible
+          - [ ] API usage examples documented
+          - [ ] Authentication flow documented
+          - [ ] Postman/Insomnia collection created
+          - [ ] TypeScript types generated for frontend
+          - [ ] Java DTOs generated for backend
+          - [ ] Contract versioning strategy documented
+        owner: dev-agent
+        editors: [dev-agent]
+
+  - id: dependent-stories
+    title: Dependent Stories
+    instruction: |
+      Stories that depend on this API contract being complete:
+      - Frontend implementation story: {{epic_num}}.{{story_num}}b
+      - Backend implementation story: {{epic_num}}.{{story_num}}c
+      - Integration story: {{epic_num}}.{{story_num}}d
+
+      ⚠️ These stories CANNOT start until this contract story is marked Done.
+    owner: scrum-master
+    editors: [scrum-master]
+
+  - id: change-log
+    title: Change Log
+    type: table
+    columns: [Date, Version, Description, Author]
+    instruction: Track changes made to this API contract (versioning is critical!)
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+
+  - id: dev-agent-record
+    title: Dev Agent Record
+    instruction: This section is populated during contract implementation
+    owner: dev-agent
+    editors: [dev-agent]
+    sections:
+      - id: agent-model
+        title: Agent Model Used
+        template: "{{agent_model_name_version}}"
+        instruction: Record the AI agent model and version used
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: implementation-approach
+        title: Implementation Approach
+        instruction: Document the approach taken for contract definition
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: contract-validation-results
+        title: Contract Validation Results
+        instruction: Results from OpenAPI validation and contract testing
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: generated-artifacts
+        title: Generated Artifacts
+        instruction: |
+          List all artifacts generated from this contract:
+          - OpenAPI spec location
+          - Generated TypeScript types location
+          - Generated Java DTOs location
+          - Swagger UI URL
+          - Postman collection location
+          - Mock data files location
+        owner: dev-agent
+        editors: [dev-agent]

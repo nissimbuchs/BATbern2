@@ -1,0 +1,661 @@
+# <!-- Powered by BMAD™ Core -->
+template:
+  id: story-infrastructure-template-v1
+  name: Infrastructure/Architecture Story Template
+  version: 1.0
+  description: Cross-cutting infrastructure and architecture concerns requiring full-stack coordination
+  output:
+    format: markdown
+    filename: docs/stories/{{epic_num}}.{{story_num}}.infra-{{story_title_short}}.md
+    title: "Story {{epic_num}}.{{story_num}}: Infrastructure - {{story_title_short}}"
+
+workflow:
+  mode: interactive
+  elicitation: advanced-elicitation
+
+agent_config:
+  editable_sections:
+    - Status
+    - Story
+    - Domain Context
+    - Infrastructure Context
+    - Acceptance Criteria
+    - Tasks / Subtasks
+    - Dev Notes
+    - Change Log
+
+sections:
+  - id: status
+    title: Status
+    type: choice
+    choices: [Draft, Approved, InProgress, Review, Done]
+    instruction: Select the current status of the infrastructure story
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+
+  - id: story
+    title: Story
+    type: template-text
+    template: |
+      **As a** {{role}},
+      **I want** {{action}},
+      **so that** {{benefit}}
+
+      **Infrastructure Focus:** This story addresses cross-cutting infrastructure concerns that span multiple layers or enable other features.
+    instruction: Define the user story focusing on infrastructure capabilities
+    elicit: true
+    owner: scrum-master
+    editors: [scrum-master]
+
+  - id: domain-context
+    title: Domain Context
+    instruction: Identify the scope and impact of this infrastructure change
+    owner: scrum-master
+    editors: [scrum-master]
+    sections:
+      - id: infrastructure-type
+        title: Infrastructure Type
+        instruction: |
+          Categorize this infrastructure story:
+          - AWS Infrastructure (CDK, ECS, RDS, S3, etc.)
+          - CI/CD Pipeline
+          - Monitoring & Observability
+          - Security & Compliance
+          - Development Tools & Workflow
+          - Database Infrastructure
+          - Authentication & Authorization
+          - API Gateway Configuration
+          - Cross-cutting Concerns
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: affected-services
+        title: Affected Services
+        instruction: |
+          List all services/components affected by this change:
+          - Event Management Service
+          - Speaker Coordination Service
+          - Partner Analytics Service
+          - Attendee Experience Service
+          - Company Management Service
+          - API Gateway
+          - Web Frontend
+          - Shared Kernel
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: dependencies
+        title: Dependencies
+        instruction: |
+          List dependencies for this infrastructure work:
+          - Required AWS services
+          - Prerequisite infrastructure
+          - External systems or tools
+          - Team dependencies
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+  - id: infrastructure-context
+    title: Infrastructure Context
+    instruction: Define the infrastructure components and architecture
+    owner: scrum-master
+    editors: [scrum-master]
+    sections:
+      - id: architecture-diagram
+        title: Architecture Diagram
+        instruction: |
+          Provide architecture diagram or reference:
+          - Current state diagram
+          - Desired state diagram
+          - Migration path
+          - Component relationships
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: aws-resources
+        title: AWS Resources
+        instruction: |
+          List AWS resources to be created/modified:
+
+          **Compute:**
+          - ECS Services, Tasks, Task Definitions
+          - Lambda Functions
+          - Fargate configurations
+
+          **Storage:**
+          - RDS instances, databases, schemas
+          - S3 buckets, lifecycle policies
+          - ElastiCache clusters
+
+          **Networking:**
+          - VPCs, Subnets, Security Groups
+          - Load Balancers, Target Groups
+          - Route53 records
+
+          **Security:**
+          - Cognito User Pools, Identity Pools
+          - IAM Roles, Policies
+          - Secrets Manager entries
+          - KMS keys
+
+          **Monitoring:**
+          - CloudWatch Logs, Alarms, Dashboards
+          - X-Ray tracing
+          - SNS topics for alerts
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: cdk-stacks
+        title: CDK Stack Changes
+        instruction: |
+          Define CDK stack modifications:
+
+          **New Stacks:**
+          - Stack name and purpose
+          - Resources contained
+          - Dependencies on other stacks
+
+          **Modified Stacks:**
+          - Stack name
+          - Changes required
+          - Impact on existing resources
+
+          Include CDK code structure.
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: configuration-management
+        title: Configuration Management
+        instruction: |
+          Configuration changes needed:
+          - Environment variables (dev/staging/prod)
+          - Secrets Manager secrets
+          - Parameter Store parameters
+          - Feature flags
+          - Configuration files
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+  - id: acceptance-criteria
+    title: Acceptance Criteria
+    type: numbered-list
+    instruction: |
+      Define acceptance criteria for infrastructure changes:
+      - All AWS resources created successfully
+      - Configuration applied correctly
+      - Services deploy and run successfully
+      - Monitoring and alerting configured
+      - Security requirements met
+      - Performance requirements met
+      - Cost within budget
+      - Documentation updated
+    elicit: true
+    owner: scrum-master
+    editors: [scrum-master]
+
+  - id: test-specifications
+    title: Test Specifications
+    instruction: |
+      ⚠️ CRITICAL: Define tests for infrastructure changes.
+      Infrastructure must be validated before services depend on it.
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+    sections:
+      - id: infrastructure-tests
+        title: Infrastructure Tests
+        instruction: |
+          Tests for AWS infrastructure:
+
+          **Resource Creation Tests:**
+          - Test 1.1: should_createAllResources_when_stackDeployed
+          - Test 1.2: should_configureSecurityGroups_correctly
+          - Test 1.3: should_setupIAMPermissions_withLeastPrivilege
+
+          **Integration Tests:**
+          - Test 2.1: should_allowServiceConnectivity_between_components
+          - Test 2.2: should_allowDatabaseAccess_from_services
+          - Test 2.3: should_blockUnauthorizedAccess
+
+          **Smoke Tests:**
+          - Test 3.1: should_respondToHealthCheck_after_deployment
+          - Test 3.2: should_accessDatabase_successfully
+          - Test 3.3: should_writeToLogs_correctly
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master, dev-agent]
+
+      - id: security-validation
+        title: Security Validation Tests
+        instruction: |
+          Security tests for infrastructure:
+
+          **Security Tests:**
+          - Test 4.1: should_enforceEncryptionAtRest_for_data
+          - Test 4.2: should_enforceEncryptionInTransit_for_communication
+          - Test 4.3: should_restrictAccess_to_authorizedIPs
+          - Test 4.4: should_rotateSecrets_automatically
+          - Test 4.5: should_auditAccess_to_resources
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master, dev-agent]
+
+      - id: performance-validation
+        title: Performance Validation Tests
+        instruction: |
+          Performance tests for infrastructure:
+
+          **Performance Tests:**
+          - Test 5.1: should_handleExpectedLoad_without_degradation
+          - Test 5.2: should_scaleAutomatically_under_load
+          - Test 5.3: should_meetLatencyRequirements
+          - Test 5.4: should_recoverQuickly_after_failure
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master, dev-agent]
+
+  - id: tasks-subtasks
+    title: Tasks / Subtasks
+    type: bullet-list
+    instruction: |
+      Break down the infrastructure implementation work.
+      CRITICAL: Infrastructure changes can be risky - test thoroughly.
+    template: |
+      - [ ] Task 1: CDK Infrastructure Code
+        - [ ] Write CDK constructs for new resources
+        - [ ] Define stack dependencies
+        - [ ] Configure resource properties
+        - [ ] Add tags for resource management
+        - [ ] Write CDK tests (cdk synth validation)
+
+      - [ ] Task 2: Security Configuration
+        - [ ] Configure IAM roles with least privilege
+        - [ ] Set up security groups and network ACLs
+        - [ ] Configure encryption (at rest and in transit)
+        - [ ] Set up secrets in Secrets Manager
+        - [ ] Configure audit logging
+
+      - [ ] Task 3: Monitoring & Alerting Setup
+        - [ ] Create CloudWatch dashboards
+        - [ ] Configure CloudWatch alarms
+        - [ ] Set up SNS topics for alerts
+        - [ ] Configure log retention policies
+        - [ ] Enable X-Ray tracing (if applicable)
+
+      - [ ] Task 4: Deploy to Dev Environment
+        - [ ] Run CDK diff to review changes
+        - [ ] Deploy stack to dev
+        - [ ] Verify all resources created
+        - [ ] Run smoke tests
+        - [ ] Check CloudWatch logs
+
+      - [ ] Task 5: Validation Testing
+        - [ ] Run infrastructure tests
+        - [ ] Run security validation tests
+        - [ ] Run performance validation tests
+        - [ ] Test failure scenarios
+        - [ ] Test rollback capability
+
+      - [ ] Task 6: Deploy to Staging Environment
+        - [ ] Review diff for staging
+        - [ ] Deploy to staging
+        - [ ] Run full test suite
+        - [ ] Performance testing
+        - [ ] Security scanning
+
+      - [ ] Task 7: Documentation
+        - [ ] Update architecture diagrams
+        - [ ] Document new AWS resources
+        - [ ] Document configuration
+        - [ ] Document runbooks for operations
+        - [ ] Update deployment guides
+
+      - [ ] Task 8: Production Preparation
+        - [ ] Review production diff
+        - [ ] Plan deployment window
+        - [ ] Prepare rollback procedure
+        - [ ] Notify stakeholders
+        - [ ] Prepare monitoring dashboards
+    elicit: true
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+
+  - id: dev-notes
+    title: Dev Notes - Implementation Guide
+    instruction: |
+      CONSOLIDATED IMPLEMENTATION GUIDE for infrastructure changes.
+      Include specific CDK code examples and AWS configurations.
+    elicit: true
+    owner: scrum-master
+    editors: [scrum-master]
+    sections:
+      - id: cdk-implementation
+        title: CDK Implementation Guide
+        instruction: |
+          Specific CDK code patterns:
+
+          **Stack Structure:**
+          ```typescript
+          // infrastructure/lib/stacks/StackName.ts
+          export class StackNameStack extends Stack {
+            constructor(scope: Construct, id: string, props: StackProps) {
+              super(scope, id, props);
+
+              // Define resources
+              const resource = new Service(this, 'Resource', {
+                // configuration
+              });
+
+              // Outputs
+              new CfnOutput(this, 'ResourceArn', {
+                value: resource.arn,
+                exportName: 'resource-arn'
+              });
+            }
+          }
+          ```
+
+          **Best Practices:**
+          - Use constructs for reusable patterns
+          - Externalize configuration
+          - Use tags consistently
+          - Export important values
+          - Add descriptions to resources
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: security-implementation
+        title: Security Implementation Guide
+        instruction: |
+          Security configuration specifics:
+
+          **IAM Roles:**
+          ```typescript
+          const role = new Role(this, 'ServiceRole', {
+            assumedBy: new ServicePrincipal('ecs-tasks.amazonaws.com'),
+            managedPolicies: [
+              // Use AWS managed policies when appropriate
+            ],
+            inlinePolicies: {
+              'custom-policy': new PolicyDocument({
+                statements: [
+                  new PolicyStatement({
+                    effect: Effect.ALLOW,
+                    actions: ['specific:Action'],
+                    resources: ['specific-arn']
+                  })
+                ]
+              })
+            }
+          });
+          ```
+
+          **Encryption:**
+          - Enable encryption at rest for all data stores
+          - Use KMS customer-managed keys
+          - Enable encryption in transit (TLS 1.2+)
+          - Rotate encryption keys
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: monitoring-implementation
+        title: Monitoring Implementation Guide
+        instruction: |
+          Monitoring setup specifics:
+
+          **CloudWatch Alarms:**
+          ```typescript
+          const alarm = new Alarm(this, 'HighErrorRate', {
+            metric: service.metricError(),
+            threshold: 10,
+            evaluationPeriods: 2,
+            treatMissingData: TreatMissingData.NOT_BREACHING,
+            alarmDescription: 'Alert when error rate exceeds threshold',
+          });
+
+          alarm.addAlarmAction(new SnsAction(snsTopic));
+          ```
+
+          **Dashboard Setup:**
+          - Key metrics to monitor
+          - Widget configurations
+          - Threshold definitions
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: deployment-procedure
+        title: Deployment Procedure
+        instruction: |
+          Step-by-step deployment guide:
+
+          **Pre-Deployment:**
+          1. Review CDK diff: `cdk diff StackName`
+          2. Verify no unexpected changes
+          3. Check dependencies are deployed
+          4. Review rollback procedure
+
+          **Deployment:**
+          1. Deploy: `cdk deploy StackName --require-approval never`
+          2. Monitor CloudWatch logs during deployment
+          3. Watch for CloudFormation events
+          4. Verify successful completion
+
+          **Post-Deployment:**
+          1. Run smoke tests
+          2. Check CloudWatch metrics
+          3. Verify monitoring and alerting
+          4. Update runbooks
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: rollback-procedure
+        title: Rollback Procedure
+        instruction: |
+          How to rollback infrastructure changes:
+
+          **Rollback Options:**
+          1. **CloudFormation Rollback:** Automatic on failure
+          2. **Manual Rollback:** Deploy previous version
+          3. **Resource Deletion:** Remove problematic resources
+
+          **Rollback Steps:**
+          1. Identify the issue
+          2. Check CloudFormation events
+          3. Decide on rollback approach
+          4. Execute rollback
+          5. Verify system stability
+          6. Investigate root cause
+
+          **Rollback Considerations:**
+          - Database migrations (may not be reversible)
+          - Data loss potential
+          - Service downtime
+          - Dependent services impact
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: cost-estimation
+        title: Cost Estimation
+        instruction: |
+          Estimate costs for new infrastructure:
+
+          **Monthly Cost Breakdown:**
+          - Compute (ECS/Lambda): $X
+          - Storage (RDS/S3): $X
+          - Networking (Data Transfer): $X
+          - Other Services: $X
+          - Total Estimated: $X
+
+          **Cost Optimization:**
+          - Reserved capacity options
+          - Auto-scaling configuration
+          - Lifecycle policies
+          - Data transfer optimization
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+  - id: definition-of-done
+    title: Definition of Done Checklist
+    instruction: |
+      ⚠️ CRITICAL: Infrastructure story cannot be marked complete until ALL items are checked.
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+    sections:
+      - id: infrastructure-deployed
+        title: Infrastructure Deployed
+        type: checklist
+        template: |
+          - [ ] All AWS resources created successfully
+          - [ ] CDK stacks deployed without errors
+          - [ ] Resource tagging applied correctly
+          - [ ] Configuration applied correctly
+          - [ ] Outputs exported for dependent stacks
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: security-validated
+        title: Security Validated ⚠️ CRITICAL
+        type: checklist
+        template: |
+          - [ ] IAM roles follow least privilege principle
+          - [ ] Security groups configured correctly
+          - [ ] Encryption at rest enabled
+          - [ ] Encryption in transit enabled
+          - [ ] Secrets stored securely in Secrets Manager
+          - [ ] Audit logging configured
+          - [ ] Security scan completed with no critical issues
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: monitoring-configured
+        title: Monitoring Configured ⚠️ CRITICAL
+        type: checklist
+        template: |
+          - [ ] CloudWatch dashboards created
+          - [ ] CloudWatch alarms configured
+          - [ ] SNS topics set up for alerts
+          - [ ] Log groups created with retention policies
+          - [ ] X-Ray tracing enabled (if applicable)
+          - [ ] Metrics being collected correctly
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: testing-complete
+        title: Testing Complete
+        type: checklist
+        template: |
+          - [ ] Infrastructure tests passing
+          - [ ] Security validation tests passing
+          - [ ] Performance validation tests passing
+          - [ ] Smoke tests passing
+          - [ ] Integration tests passing
+          - [ ] Rollback tested successfully
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: documentation-complete
+        title: Documentation Complete
+        type: checklist
+        template: |
+          - [ ] Architecture diagrams updated
+          - [ ] AWS resources documented
+          - [ ] Configuration documented
+          - [ ] Deployment procedure documented
+          - [ ] Rollback procedure documented
+          - [ ] Runbooks created/updated
+          - [ ] Cost analysis documented
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: environments-validated
+        title: Environments Validated
+        type: checklist
+        template: |
+          - [ ] Deployed to dev environment
+          - [ ] Validated in dev environment
+          - [ ] Deployed to staging environment
+          - [ ] Validated in staging environment
+          - [ ] Production deployment plan approved
+          - [ ] Ready for production deployment
+        owner: dev-agent
+        editors: [dev-agent]
+
+  - id: change-log
+    title: Change Log
+    type: table
+    columns: [Date, Version, Description, Author]
+    instruction: Track changes made to this infrastructure story
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+
+  - id: dev-agent-record
+    title: Dev Agent Record
+    instruction: This section is populated during infrastructure implementation
+    owner: dev-agent
+    editors: [dev-agent]
+    sections:
+      - id: agent-model
+        title: Agent Model Used
+        template: "{{agent_model_name_version}}"
+        instruction: Record the AI agent model and version used
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: implementation-approach
+        title: Implementation Approach
+        instruction: Document the actual approach taken, any deviations, and rationale
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: aws-resources-created
+        title: AWS Resources Created
+        instruction: |
+          List all AWS resources created with their ARNs:
+          - Resource Type: ARN
+          - CloudFormation Stack: Stack ARN
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: deployment-timeline
+        title: Deployment Timeline
+        instruction: |
+          Document deployment to each environment:
+          - Dev: Date/Time, Duration, Issues
+          - Staging: Date/Time, Duration, Issues
+          - Production: Date/Time, Duration, Issues
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: issues-encountered
+        title: Issues Encountered
+        instruction: |
+          Document any issues during deployment:
+          - Issue description
+          - Resolution
+          - Lessons learned
+          - Preventive measures
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: actual-costs
+        title: Actual Costs
+        instruction: |
+          Track actual costs vs estimates:
+          - Estimated monthly cost: $X
+          - Actual monthly cost: $Y
+          - Variance: $Z
+          - Explanation for variance
+        owner: dev-agent
+        editors: [dev-agent]
