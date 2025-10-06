@@ -10,7 +10,7 @@
 # Run 'make help' to see all available targets
 
 .DEFAULT_GOAL := help
-.PHONY: help install build test lint clean docker-up docker-down docker-build verify ci-build ci-test all
+.PHONY: help install build test lint clean docker-up docker-down docker-build verify ci-build ci-test check-outdated update-deps audit-security all
 
 # ═══════════════════════════════════════════════════════════
 # HELP & DOCUMENTATION
@@ -57,6 +57,11 @@ help: ## Show this help message
 	@echo "🚀 CI/CD:"
 	@echo "  make ci-build         - Full CI build (clean + build + test)"
 	@echo "  make ci-test          - Run all CI tests"
+	@echo ""
+	@echo "📊 Dependency Management:"
+	@echo "  make check-outdated   - Check for outdated dependencies"
+	@echo "  make update-deps      - Update safe dependencies (patch/minor)"
+	@echo "  make audit-security   - Run security audits"
 	@echo ""
 	@echo "🔍 Utilities:"
 	@echo "  make verify           - Pre-commit verification (lint + test)"
@@ -214,6 +219,50 @@ ci-build: clean install build ## Full CI build (clean + install + build)
 
 ci-test: test-coverage lint ## Run all CI tests with coverage and linting
 	@echo "✓ CI tests complete"
+
+# ═══════════════════════════════════════════════════════════
+# DEPENDENCY MANAGEMENT
+# ═══════════════════════════════════════════════════════════
+
+check-outdated: ## Check for outdated dependencies
+	@echo "🔍 Checking outdated dependencies..."
+	@echo ""
+	@echo "→ Checking Java/Gradle dependencies..."
+	@echo "  Note: Gradle doesn't have built-in outdated check"
+	@echo "  Check manually: https://spring.io/projects/spring-boot#learn"
+	@echo ""
+	@echo "→ Checking infrastructure npm packages..."
+	@cd infrastructure && npm outdated || true
+	@echo ""
+	@echo "→ Checking web-frontend npm packages..."
+	@cd web-frontend && npm outdated || true
+	@echo ""
+	@echo "✓ Outdated check complete"
+
+update-deps: ## Update safe dependencies (patch/minor only)
+	@echo "📦 Updating safe dependencies..."
+	@echo ""
+	@echo "→ Updating infrastructure npm packages..."
+	@cd infrastructure && npm update
+	@echo ""
+	@echo "→ Updating web-frontend npm packages (safe updates)..."
+	@cd web-frontend && npm update
+	@echo ""
+	@echo "✓ Dependencies updated"
+	@echo ""
+	@echo "⚠️  Note: Major version updates require manual updates and testing"
+	@echo "   Run 'make check-outdated' to see available major updates"
+
+audit-security: ## Run security audits on all projects
+	@echo "🔒 Running security audits..."
+	@echo ""
+	@echo "→ Auditing infrastructure..."
+	@cd infrastructure && npm audit
+	@echo ""
+	@echo "→ Auditing web-frontend..."
+	@cd web-frontend && npm audit
+	@echo ""
+	@echo "✓ Security audit complete"
 
 # ═══════════════════════════════════════════════════════════
 # UTILITIES
