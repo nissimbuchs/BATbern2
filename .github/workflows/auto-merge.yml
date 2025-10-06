@@ -59,10 +59,22 @@ jobs:
           echo "Enabling auto-merge for PR #${{ github.event.pull_request.number }}"
           echo "Reason: ${{ steps.should-automerge.outputs.reason }}"
 
+          # Determine if we should delete the branch
+          # Never delete long-lived branches (develop, main)
+          SOURCE_BRANCH="${{ github.event.pull_request.head.ref }}"
+          DELETE_BRANCH_FLAG=""
+
+          if [[ "$SOURCE_BRANCH" != "develop" && "$SOURCE_BRANCH" != "main" ]]; then
+            DELETE_BRANCH_FLAG="--delete-branch"
+            echo "Will delete branch '$SOURCE_BRANCH' after merge (feature branch)"
+          else
+            echo "Will preserve branch '$SOURCE_BRANCH' after merge (long-lived branch)"
+          fi
+
           gh pr merge ${{ github.event.pull_request.number }} \
             --auto \
             --squash \
-            --delete-branch \
+            $DELETE_BRANCH_FLAG \
             --repo ${{ github.repository }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -72,9 +84,15 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            const sourceBranch = context.payload.pull_request.head.ref;
+            const isLongLivedBranch = sourceBranch === 'develop' || sourceBranch === 'main';
+            const branchDeletionNote = isLongLivedBranch
+              ? `🔒 Branch \`${sourceBranch}\` will be preserved (long-lived branch)`
+              : `🗑️ Branch \`${sourceBranch}\` will be deleted after merge`;
+
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `🤖 **Auto-merge enabled**\n\nThis PR will be automatically merged when all required checks pass.\n\n✅ All tests must pass\n✅ All required workflows must complete successfully\n✅ Branch will be deleted after merge`
+              body: `🤖 **Auto-merge enabled**\n\nThis PR will be automatically merged when all required checks pass.\n\n✅ All tests must pass\n✅ All required workflows must complete successfully\n${branchDeletionNote}`
             })
