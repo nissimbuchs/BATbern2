@@ -17,7 +17,7 @@ const mockResendLink = vi.fn();
 
 const mockUseResendResetLink = {
   mutate: mockResendLink,
-  isLoading: false,
+  isPending: false,
   isSuccess: false,
   isError: false,
   error: null,
@@ -58,7 +58,7 @@ describe('ForgotPasswordConfirmation Component - Rendering Tests', () => {
     await i18n.changeLanguage('en');
     Object.assign(mockUseResendResetLink, {
       mutate: mockResendLink,
-      isLoading: false,
+      isPending: false,
       isSuccess: false,
       isError: false,
       error: null,
@@ -68,9 +68,7 @@ describe('ForgotPasswordConfirmation Component - Rendering Tests', () => {
 
   it('should_renderConfirmationScreen_when_emailProvided', async () => {
     // Test: should_renderConfirmationScreen_when_emailProvided
-    await act(async () => {
-      renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
-    });
+    renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
 
     await waitFor(() => {
       expect(screen.getByText(/check your email/i)).toBeInTheDocument();
@@ -82,9 +80,7 @@ describe('ForgotPasswordConfirmation Component - Rendering Tests', () => {
 
   it('should_displaySuccessIcon_when_componentRendered', async () => {
     // Test: should_displaySuccessIcon_when_componentRendered
-    await act(async () => {
-      renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
-    });
+    renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
 
     await waitFor(() => {
       // Check for success icon (CheckCircle from MUI)
@@ -97,9 +93,7 @@ describe('ForgotPasswordConfirmation Component - Rendering Tests', () => {
     // Test: should_displayGermanText_when_languageIsGerman
     await i18n.changeLanguage('de');
 
-    await act(async () => {
-      renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
-    });
+    renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
 
     await waitFor(() => {
       expect(screen.getByText(/e-mail überprüfen/i)).toBeInTheDocument();
@@ -109,9 +103,7 @@ describe('ForgotPasswordConfirmation Component - Rendering Tests', () => {
 
   it('should_displayEnglishText_when_languageIsEnglish', async () => {
     // Test: should_displayEnglishText_when_languageIsEnglish
-    await act(async () => {
-      renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
-    });
+    renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
 
     await waitFor(() => {
       expect(screen.getByText(/check your email/i)).toBeInTheDocument();
@@ -121,9 +113,7 @@ describe('ForgotPasswordConfirmation Component - Rendering Tests', () => {
 
   it('should_displayInstructions_when_componentRendered', async () => {
     // Test: should_displayInstructions_when_componentRendered
-    await act(async () => {
-      renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
-    });
+    renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
 
     await waitFor(() => {
       expect(
@@ -139,7 +129,7 @@ describe('ForgotPasswordConfirmation Component - Email Display Tests', () => {
     await i18n.changeLanguage('en');
     Object.assign(mockUseResendResetLink, {
       mutate: mockResendLink,
-      isLoading: false,
+      isPending: false,
       isSuccess: false,
       isError: false,
       error: null,
@@ -149,9 +139,7 @@ describe('ForgotPasswordConfirmation Component - Email Display Tests', () => {
 
   it('should_displayMaskedEmail_when_emailProvided', async () => {
     // Test 2.4 & Test 5.5: should_displayMaskedEmail_when_emailProvided
-    await act(async () => {
-      renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
-    });
+    renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
 
     await waitFor(() => {
       // Email should be masked as t***@example.com
@@ -161,9 +149,7 @@ describe('ForgotPasswordConfirmation Component - Email Display Tests', () => {
 
   it('should_maskSingleCharacterLocal_when_shortEmailProvided', async () => {
     // Test: should_maskSingleCharacterLocal_when_shortEmailProvided
-    await act(async () => {
-      renderWithTheme(<ForgotPasswordConfirmation email="a@example.com" />);
-    });
+    renderWithTheme(<ForgotPasswordConfirmation email="a@example.com" />);
 
     await waitFor(() => {
       // Single character should be shown without masking or as a*
@@ -173,9 +159,7 @@ describe('ForgotPasswordConfirmation Component - Email Display Tests', () => {
 
   it('should_maskLongEmail_when_longLocalPartProvided', async () => {
     // Test: should_maskLongEmail_when_longLocalPartProvided
-    await act(async () => {
-      renderWithTheme(<ForgotPasswordConfirmation email="verylongemail@example.com" />);
-    });
+    renderWithTheme(<ForgotPasswordConfirmation email="verylongemail@example.com" />);
 
     await waitFor(() => {
       // Should show first character and mask the rest
@@ -187,11 +171,10 @@ describe('ForgotPasswordConfirmation Component - Email Display Tests', () => {
 describe('ForgotPasswordConfirmation Component - Resend Functionality Tests', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
-    vi.useFakeTimers();
     await i18n.changeLanguage('en');
     Object.assign(mockUseResendResetLink, {
       mutate: mockResendLink,
-      isLoading: false,
+      isPending: false,
       isSuccess: false,
       isError: false,
       error: null,
@@ -199,15 +182,9 @@ describe('ForgotPasswordConfirmation Component - Resend Functionality Tests', ()
     });
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   it('should_enableResendButton_when_confirmationDisplayed', async () => {
     // Test 3.1: should_enableResendButton_when_confirmationDisplayed
-    await act(async () => {
-      renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
-    });
+    renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
 
     await waitFor(() => {
       const resendButton = screen.getByRole('button', { name: /resend link/i });
@@ -225,9 +202,7 @@ describe('ForgotPasswordConfirmation Component - Resend Functionality Tests', ()
       onSuccess?.({ success: true, message: 'Link resent' });
     });
 
-    await act(async () => {
-      renderWithTheme(<ForgotPasswordConfirmation email={testEmail} />);
-    });
+    renderWithTheme(<ForgotPasswordConfirmation email={testEmail} />);
 
     const resendButton = screen.getByRole('button', { name: /resend link/i });
 
@@ -253,9 +228,7 @@ describe('ForgotPasswordConfirmation Component - Resend Functionality Tests', ()
       onSuccess?.({ success: true, message: 'Link resent' });
     });
 
-    await act(async () => {
-      renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
-    });
+    renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
 
     // Click resend button to trigger cooldown
     const resendButton = screen.getByRole('button', { name: /resend link/i });
@@ -284,9 +257,7 @@ describe('ForgotPasswordConfirmation Component - Resend Functionality Tests', ()
       onSuccess?.({ success: true, message: 'Link resent' });
     });
 
-    await act(async () => {
-      renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
-    });
+    renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
 
     const resendButton = screen.getByRole('button', { name: /resend link/i });
 
@@ -326,9 +297,7 @@ describe('ForgotPasswordConfirmation Component - Resend Functionality Tests', ()
       onSuccess?.({ success: true, message: 'Link resent' });
     });
 
-    await act(async () => {
-      renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
-    });
+    renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
 
     const resendButton = screen.getByRole('button', { name: /resend link/i });
 
@@ -359,9 +328,7 @@ describe('ForgotPasswordConfirmation Component - Resend Functionality Tests', ()
       onSuccess?.({ success: true, message: 'Link resent' });
     });
 
-    await act(async () => {
-      renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
-    });
+    renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
 
     const resendButton = screen.getByRole('button', { name: /resend link/i });
 
@@ -382,7 +349,7 @@ describe('ForgotPasswordConfirmation Component - Navigation Tests', () => {
     await i18n.changeLanguage('en');
     Object.assign(mockUseResendResetLink, {
       mutate: mockResendLink,
-      isLoading: false,
+      isPending: false,
       isSuccess: false,
       isError: false,
       error: null,
@@ -392,9 +359,7 @@ describe('ForgotPasswordConfirmation Component - Navigation Tests', () => {
 
   it('should_provideBackToLoginButton_when_confirmationDisplayed', async () => {
     // Test: should_provideBackToLoginButton_when_confirmationDisplayed
-    await act(async () => {
-      renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
-    });
+    renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
 
     await waitFor(() => {
       const backLink = screen.getByRole('link', { name: /back to login/i });
@@ -405,9 +370,7 @@ describe('ForgotPasswordConfirmation Component - Navigation Tests', () => {
 
   it('should_navigateToLogin_when_backButtonClicked', async () => {
     // Test: should_navigateToLogin_when_backButtonClicked
-    await act(async () => {
-      renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
-    });
+    renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
 
     await waitFor(() => {
       const backLink = screen.getByRole('link', { name: /back to login/i });
@@ -422,7 +385,7 @@ describe('ForgotPasswordConfirmation Component - Help Text Tests', () => {
     await i18n.changeLanguage('en');
     Object.assign(mockUseResendResetLink, {
       mutate: mockResendLink,
-      isLoading: false,
+      isPending: false,
       isSuccess: false,
       isError: false,
       error: null,
@@ -432,9 +395,7 @@ describe('ForgotPasswordConfirmation Component - Help Text Tests', () => {
 
   it('should_displaySpamFolderHelp_when_confirmationShown', async () => {
     // Test: should_displaySpamFolderHelp_when_confirmationShown
-    await act(async () => {
-      renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
-    });
+    renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
 
     await waitFor(() => {
       expect(
@@ -445,9 +406,7 @@ describe('ForgotPasswordConfirmation Component - Help Text Tests', () => {
 
   it('should_displayDidntReceiveText_when_confirmationShown', async () => {
     // Test: should_displayDidntReceiveText_when_confirmationShown
-    await act(async () => {
-      renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
-    });
+    renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
 
     await waitFor(() => {
       expect(screen.getByText(/didn't receive/i)).toBeInTheDocument();
@@ -465,16 +424,14 @@ describe('ForgotPasswordConfirmation Component - Loading State Tests', () => {
     // Test: should_showLoadingState_when_resendInProgress
     Object.assign(mockUseResendResetLink, {
       mutate: mockResendLink,
-      isLoading: true,
+      isPending: true,
       isSuccess: false,
       isError: false,
       error: null,
       data: null,
     });
 
-    await act(async () => {
-      renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
-    });
+    renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
 
     await waitFor(() => {
       const resendButton = screen.getByRole('button', { name: /resend link/i });
@@ -488,7 +445,7 @@ describe('ForgotPasswordConfirmation Component - Localization Tests', () => {
     vi.clearAllMocks();
     Object.assign(mockUseResendResetLink, {
       mutate: mockResendLink,
-      isLoading: false,
+      isPending: false,
       isSuccess: false,
       isError: false,
       error: null,
@@ -500,9 +457,7 @@ describe('ForgotPasswordConfirmation Component - Localization Tests', () => {
     // Test: should_displayGermanConfirmationMessage_when_languageIsGerman
     await i18n.changeLanguage('de');
 
-    await act(async () => {
-      renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
-    });
+    renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
 
     await waitFor(() => {
       expect(
@@ -515,9 +470,7 @@ describe('ForgotPasswordConfirmation Component - Localization Tests', () => {
     // Test: should_displayEnglishConfirmationMessage_when_languageIsEnglish
     await i18n.changeLanguage('en');
 
-    await act(async () => {
-      renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
-    });
+    renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
 
     await waitFor(() => {
       expect(screen.getByText(/we've sent a reset link to/i)).toBeInTheDocument();
@@ -528,9 +481,7 @@ describe('ForgotPasswordConfirmation Component - Localization Tests', () => {
     // Test: should_displayLocalizedResendButton_when_languageChanged
     await i18n.changeLanguage('de');
 
-    await act(async () => {
-      renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
-    });
+    renderWithTheme(<ForgotPasswordConfirmation email="test@example.com" />);
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /link erneut senden/i })).toBeInTheDocument();

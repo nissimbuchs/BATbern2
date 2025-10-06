@@ -83,8 +83,9 @@ describe('i18n Configuration', () => {
       expect(translation).toBe('E-Mail ist erforderlich');
     });
 
-    it('should_useSuspense_when_configured', () => {
-      expect(i18n.options.react?.useSuspense).toBe(true);
+    it('should_disableSuspense_when_inTestMode', () => {
+      // Suspense is disabled in test mode to avoid React 19 test rendering issues
+      expect(i18n.options.react?.useSuspense).toBe(false);
     });
   });
 });
