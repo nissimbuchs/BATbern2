@@ -30,7 +30,7 @@ import { LoginCredentials } from '@/types/auth';
 type LoginFormData = {
   email: string;
   password: string;
-  rememberMe: boolean;
+  rememberMe?: boolean;
 };
 
 interface LoginFormProps {

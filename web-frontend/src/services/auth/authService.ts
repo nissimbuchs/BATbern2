@@ -31,6 +31,7 @@ interface SignInResult {
   success: boolean;
   user?: UserContext;
   accessToken?: string;
+  refreshToken?: string;
   error?: AuthError;
   mfaChallenge?: MfaChallenge;
 }
@@ -41,6 +42,24 @@ interface SignUpResult {
   error?: AuthError;
 }
 
+// Adapter to make localStorage/sessionStorage compatible with Amplify's KeyValueStorageInterface
+function createStorageAdapter(storage: Storage) {
+  return {
+    async setItem(key: string, value: string): Promise<void> {
+      storage.setItem(key, value);
+    },
+    async getItem(key: string): Promise<string | null> {
+      return storage.getItem(key);
+    },
+    async removeItem(key: string): Promise<void> {
+      storage.removeItem(key);
+    },
+    async clear(): Promise<void> {
+      storage.clear();
+    },
+  };
+}
+
 class AuthService {
   /**
    * Configure session persistence based on "Remember me" preference
@@ -48,7 +67,7 @@ class AuthService {
    */
   private configureSessionPersistence(rememberMe: boolean): void {
     const storage = rememberMe ? localStorage : sessionStorage;
-    cognitoUserPoolsTokenProvider.setKeyValueStorage(storage);
+    cognitoUserPoolsTokenProvider.setKeyValueStorage(createStorageAdapter(storage));
   }
   async signIn(credentials: LoginCredentials): Promise<SignInResult> {
     try {
@@ -183,6 +202,7 @@ class AuthService {
         return {
           success: false,
           accessToken: '',
+          refreshToken: '',
           expiresIn: 0,
           error: {
             code: 'NO_TOKEN',
@@ -198,12 +218,14 @@ class AuthService {
       return {
         success: true,
         accessToken: tokens.accessToken.toString(),
+        refreshToken: '', // AWS Amplify handles refresh tokens internally
         expiresIn,
       };
     } catch (error: any) {
       return {
         success: false,
         accessToken: '',
+        refreshToken: '',
         expiresIn: 0,
         error: this.mapCognitoError(error),
       };

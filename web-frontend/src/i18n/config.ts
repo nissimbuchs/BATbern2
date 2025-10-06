@@ -39,7 +39,7 @@ i18n
       escapeValue: false, // React already escapes
     },
     react: {
-      useSuspense: true,
+      useSuspense: typeof window !== 'undefined' && !import.meta.env.VITEST,
     },
   });
 
