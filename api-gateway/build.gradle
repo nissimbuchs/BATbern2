@@ -41,7 +41,7 @@ dependencies {
     implementation 'com.auth0:jwks-rsa:0.22.1'
 
     // Jackson for JSON processing
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.3'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.20.0'
 
     // OpenAPI Support
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
