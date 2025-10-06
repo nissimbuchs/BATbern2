@@ -38,7 +38,7 @@ dependencies {
 
     // JWT Processing
     implementation 'com.auth0:java-jwt:4.4.0'
-    implementation 'com.auth0:jwks-rsa:0.22.1'
+    implementation 'com.auth0:jwks-rsa:0.23.0'
 
     // Jackson for JSON processing
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.3'
