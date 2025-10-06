@@ -1,0 +1,738 @@
+# <!-- Powered by BMAD™ Core -->
+template:
+  id: story-backend-integration-template-v1
+  name: Backend-Integration Story Template (2-Story Approach)
+  version: 1.0
+  description: Implement backend against contract and integrate with frontend
+  output:
+    format: markdown
+    filename: docs/stories/{{epic_num}}.{{story_num}}-2.backend-integration-{{story_title_short}}.md
+    title: "Story {{epic_num}}.{{story_num}}-2: Backend-Integration - {{story_title_short}}"
+
+workflow:
+  mode: interactive
+  elicitation: advanced-elicitation
+
+agent_config:
+  editable_sections:
+    - Status
+    - Story
+    - Service Specifications
+    - Acceptance Criteria
+    - Tasks / Subtasks
+    - Dev Notes
+    - Change Log
+
+sections:
+  - id: status
+    title: Status
+    type: choice
+    choices: [Blocked, Draft, Approved, InProgress, Review, Done]
+    instruction: |
+      Select the current status of the backend-integration story.
+      Status should be "Blocked" until Story {{epic_num}}.{{story_num}}-1 is Done.
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+
+  - id: story
+    title: Story
+    type: template-text
+    template: |
+      **As a** {{role}},
+      **I want** {{action}},
+      **so that** {{benefit}}
+
+      **Backend-Integration Focus:** This story implements the backend against the API contract from Story {{epic_num}}.{{story_num}}-1 and replaces MSW mocks with real APIs.
+    instruction: Define the user story focusing on backend implementation and integration
+    elicit: true
+    owner: scrum-master
+    editors: [scrum-master]
+
+  - id: dependencies
+    title: Story Dependencies
+    instruction: |
+      **Blocking Dependency:**
+      - ⚠️ BLOCKED until Story {{epic_num}}.{{story_num}}-1 (Frontend-First) is Done
+
+      **Required from Story {{epic_num}}.{{story_num}}-1:**
+      - API contract definition
+      - TypeScript interfaces (convert to Java DTOs)
+      - MSW handlers (show expected behavior)
+      - Endpoint specifications
+      - Validation rules
+      - Error codes
+
+      **This story completes:**
+      - Backend implementation
+      - MSW mock removal
+      - Frontend integration
+      - E2E testing
+      - Deployment
+    owner: scrum-master
+    editors: [scrum-master]
+
+  - id: domain-context
+    title: Domain Context
+    instruction: Identify domain and services for backend implementation
+    owner: scrum-master
+    editors: [scrum-master]
+    sections:
+      - id: primary-domain
+        title: Primary Domain
+        instruction: |
+          Bounded context:
+          - Event Management Domain
+          - Speaker Coordination Domain
+          - Partner Analytics Domain
+          - Attendee Experience Domain
+          - Company Management Domain
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: involved-services
+        title: Involved Services
+        instruction: |
+          Microservices to modify:
+          - Event Management Service
+          - Speaker Coordination Service
+          - Partner Analytics Service
+          - Attendee Experience Service
+          - Company Management Service
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: api-contract-reference
+        title: API Contract Reference
+        instruction: |
+          Reference to Story {{epic_num}}.{{story_num}}-1:
+          - Story file: docs/stories/{{epic_num}}.{{story_num}}-1.frontend-first-{{story_title_short}}.md
+          - API Contract section in that story
+          - MSW handlers location
+          - TypeScript interfaces to convert
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+  - id: service-specifications
+    title: Service Specifications
+    instruction: |
+      Define backend services, domain models, and data layer.
+      Implement against the API contract from Story {{epic_num}}.{{story_num}}-1.
+    owner: scrum-master
+    editors: [scrum-master]
+    sections:
+      - id: domain-model
+        title: Domain Model
+        instruction: |
+          Define domain entities and aggregates:
+
+          **Example:**
+          ```java
+          @Entity
+          @Table(name = "companies")
+          public class Company {
+              @Id
+              @GeneratedValue(strategy = GenerationType.UUID)
+              private UUID id;
+
+              @Column(nullable = false, unique = true, length = 255)
+              private String name;
+
+              @Column(nullable = false, length = 500)
+              private String address;
+
+              @Column(nullable = false)
+              @Email
+              private String contactEmail;
+
+              @CreatedDate
+              private LocalDateTime createdAt;
+
+              @LastModifiedDate
+              private LocalDateTime updatedAt;
+
+              // Business methods
+              public void updateDetails(String name, String address, String contactEmail) {
+                  validateName(name);
+                  validateAddress(address);
+                  validateEmail(contactEmail);
+
+                  this.name = name;
+                  this.address = address;
+                  this.contactEmail = contactEmail;
+              }
+
+              private void validateName(String name) {
+                  if (name == null || name.length() < 2 || name.length() > 255) {
+                      throw new ValidationException("Name must be 2-255 characters");
+                  }
+              }
+          }
+          ```
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: service-layer
+        title: Service Layer
+        instruction: |
+          Define service classes:
+
+          **Example:**
+          ```java
+          @Service
+          @Transactional
+          public class CompanyService {
+
+              private final CompanyRepository companyRepository;
+
+              public Page<Company> findCompanies(CompanySearchCriteria criteria, Pageable pageable) {
+                  Specification<Company> spec = CompanySpecifications.fromCriteria(criteria);
+                  return companyRepository.findAll(spec, pageable);
+              }
+
+              public Company createCompany(CreateCompanyRequest request) {
+                  // Check for duplicate name
+                  if (companyRepository.existsByName(request.getName())) {
+                      throw new CompanyAlreadyExistsException(request.getName());
+                  }
+
+                  Company company = new Company();
+                  company.setName(request.getName());
+                  company.setAddress(request.getAddress());
+                  company.setContactEmail(request.getContactEmail());
+
+                  return companyRepository.save(company);
+              }
+
+              public Company updateCompany(UUID id, UpdateCompanyRequest request) {
+                  Company company = companyRepository.findById(id)
+                      .orElseThrow(() -> new CompanyNotFoundException(id));
+
+                  if (request.getName() != null) {
+                      // Check if new name is duplicate
+                      if (companyRepository.existsByNameAndIdNot(request.getName(), id)) {
+                          throw new CompanyAlreadyExistsException(request.getName());
+                      }
+                      company.setName(request.getName());
+                  }
+
+                  if (request.getAddress() != null) {
+                      company.setAddress(request.getAddress());
+                  }
+
+                  if (request.getContactEmail() != null) {
+                      company.setContactEmail(request.getContactEmail());
+                  }
+
+                  return companyRepository.save(company);
+              }
+
+              public void deleteCompany(UUID id) {
+                  Company company = companyRepository.findById(id)
+                      .orElseThrow(() -> new CompanyNotFoundException(id));
+
+                  // Check if company has active events
+                  if (companyHasActiveEvents(id)) {
+                      throw new CompanyHasEventsException(id);
+                  }
+
+                  companyRepository.delete(company);
+              }
+          }
+          ```
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: repository-layer
+        title: Repository Layer
+        instruction: |
+          Define repository:
+
+          ```java
+          public interface CompanyRepository extends JpaRepository<Company, UUID> {
+              boolean existsByName(String name);
+              boolean existsByNameAndIdNot(String name, UUID id);
+              Optional<Company> findByName(String name);
+
+              @Query("SELECT c FROM Company c WHERE LOWER(c.name) LIKE LOWER(CONCAT('%', :search, '%'))")
+              Page<Company> findByNameContaining(@Param("search") String search, Pageable pageable);
+          }
+          ```
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: controller-layer
+        title: Controller Layer
+        instruction: |
+          Define REST controllers matching API contract from Story {{epic_num}}.{{story_num}}-1:
+
+          ```java
+          @RestController
+          @RequestMapping("/api/v1/companies")
+          @RequiredArgsConstructor
+          public class CompanyController {
+
+              private final CompanyService companyService;
+
+              @GetMapping
+              public ResponseEntity<CompanyListResponse> getCompanies(
+                  @RequestParam(required = false) String search,
+                  @RequestParam(defaultValue = "20") int limit,
+                  @RequestParam(defaultValue = "0") int offset
+              ) {
+                  Pageable pageable = PageRequest.of(offset / limit, limit);
+                  CompanySearchCriteria criteria = new CompanySearchCriteria(search);
+
+                  Page<Company> page = companyService.findCompanies(criteria, pageable);
+
+                  return ResponseEntity.ok(CompanyMapper.toListResponse(page));
+              }
+
+              @PostMapping
+              public ResponseEntity<CompanyResponse> createCompany(
+                  @Valid @RequestBody CreateCompanyRequest request
+              ) {
+                  Company company = companyService.createCompany(request);
+                  return ResponseEntity
+                      .created(URI.create("/api/v1/companies/" + company.getId()))
+                      .body(CompanyMapper.toResponse(company));
+              }
+
+              @GetMapping("/{id}")
+              public ResponseEntity<CompanyResponse> getCompany(@PathVariable UUID id) {
+                  Company company = companyService.findById(id);
+                  return ResponseEntity.ok(CompanyMapper.toResponse(company));
+              }
+
+              @PutMapping("/{id}")
+              public ResponseEntity<CompanyResponse> updateCompany(
+                  @PathVariable UUID id,
+                  @Valid @RequestBody UpdateCompanyRequest request
+              ) {
+                  Company company = companyService.updateCompany(id, request);
+                  return ResponseEntity.ok(CompanyMapper.toResponse(company));
+              }
+
+              @DeleteMapping("/{id}")
+              public ResponseEntity<Void> deleteCompany(@PathVariable UUID id) {
+                  companyService.deleteCompany(id);
+                  return ResponseEntity.noContent().build();
+              }
+          }
+          ```
+
+          Must match API contract from Story {{epic_num}}.{{story_num}}-1 exactly!
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+  - id: database-design
+    title: Database Design
+    instruction: Define database schema for this feature
+    owner: scrum-master
+    editors: [scrum-master]
+    sections:
+      - id: schema
+        title: Database Schema
+        instruction: |
+          Flyway migration script:
+
+          ```sql
+          -- V{version}__create_companies_table.sql
+          CREATE TABLE companies (
+              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+              name VARCHAR(255) NOT NULL UNIQUE,
+              address VARCHAR(500) NOT NULL,
+              contact_email VARCHAR(255) NOT NULL,
+              created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+              updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+              CONSTRAINT name_min_length CHECK (LENGTH(name) >= 2),
+              CONSTRAINT address_min_length CHECK (LENGTH(address) >= 5)
+          );
+
+          CREATE INDEX idx_companies_name ON companies(name);
+          CREATE INDEX idx_companies_email ON companies(contact_email);
+          ```
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+  - id: acceptance-criteria
+    title: Acceptance Criteria
+    type: numbered-list
+    instruction: |
+      Acceptance criteria for backend implementation and integration:
+      - All API endpoints match contract from Story {{epic_num}}.{{story_num}}-1
+      - Business rules enforced correctly
+      - Data persisted correctly
+      - Frontend successfully calls real APIs
+      - MSW mocks removed/disabled
+      - E2E tests passing
+      - Deployed and validated
+    elicit: true
+    owner: scrum-master
+    editors: [scrum-master]
+
+  - id: test-specifications
+    title: Test Specifications (TDD)
+    instruction: |
+      Backend tests + integration tests replacing mocks.
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+    sections:
+      - id: backend-tests
+        title: Backend Test Scenarios
+        instruction: |
+          Unit and integration tests:
+
+          **Service Tests:**
+          - Test 1.1: should_createCompany_when_validData
+          - Test 1.2: should_throwException_when_duplicateName
+          - Test 1.3: should_throwException_when_companyHasEvents
+          - Test 1.4: should_updateCompany_when_validData
+
+          **Repository Tests:**
+          - Test 2.1: should_saveCompany_when_valid
+          - Test 2.2: should_findByName_when_exists
+          - Test 2.3: should_checkDuplicate_before_save
+
+          **Controller Tests:**
+          - Test 3.1: should_return201_when_companyCreated
+          - Test 3.2: should_return409_when_duplicateName
+          - Test 3.3: should_return404_when_companyNotFound
+          - Test 3.4: should_return204_when_companyDeleted
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master, dev-agent]
+
+      - id: integration-tests
+        title: Integration Test Scenarios (Frontend + Backend)
+        instruction: |
+          E2E tests with real backend:
+
+          - Test 4.1: should_createCompany_endToEnd
+          - Test 4.2: should_updateCompany_endToEnd
+          - Test 4.3: should_deleteCompany_endToEnd
+          - Test 4.4: should_searchCompanies_endToEnd
+          - Test 4.5: should_handleErrors_endToEnd
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master, dev-agent]
+
+  - id: tasks-subtasks
+    title: Tasks / Subtasks (TDD Workflow)
+    type: bullet-list
+    instruction: |
+      Backend implementation + integration tasks.
+    template: |
+      - [ ] Task 1: Convert API Contract to Java
+        - [ ] Convert TypeScript interfaces to Java DTOs
+        - [ ] Create request/response classes
+        - [ ] Add validation annotations
+        - [ ] Verify matches contract from Story {{epic_num}}.{{story_num}}-1
+
+      - [ ] Task 2: Database Setup (RED Phase)
+        - [ ] Create Flyway migration script
+        - [ ] Write failing repository tests
+        - [ ] Apply migration in test environment
+        - [ ] Verify schema created
+
+      - [ ] Task 3: Write Backend Tests (RED Phase)
+        - [ ] Write failing domain model tests
+        - [ ] Write failing service tests
+        - [ ] Write failing repository tests
+        - [ ] Write failing controller tests
+        - [ ] Verify tests fail appropriately
+
+      - [ ] Task 4: Implement Backend (GREEN Phase)
+        - [ ] Implement domain model
+        - [ ] Implement repository
+        - [ ] Implement service layer
+        - [ ] Implement controller
+        - [ ] Verify all backend tests pass
+
+      - [ ] Task 5: Backend Refactor (REFACTOR Phase)
+        - [ ] Extract reusable logic
+        - [ ] Optimize queries
+        - [ ] Add documentation
+        - [ ] Verify tests still pass
+
+      - [ ] Task 6: Frontend Integration
+        - [ ] Disable MSW mocks in production
+        - [ ] Update API client to use real endpoints
+        - [ ] Configure environment variables
+        - [ ] Test API calls work
+
+      - [ ] Task 7: E2E Testing
+        - [ ] Write E2E tests with real backend
+        - [ ] Test all CRUD operations
+        - [ ] Test error scenarios
+        - [ ] Test performance
+
+      - [ ] Task 8: Deploy and Validate
+        - [ ] Deploy backend to dev
+        - [ ] Deploy frontend to dev
+        - [ ] Run smoke tests
+        - [ ] Monitor logs and metrics
+        - [ ] Deploy to staging
+        - [ ] Validate in staging
+    elicit: true
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+
+  - id: dev-notes
+    title: Dev Notes - Implementation Guide
+    instruction: |
+      Backend implementation and integration guide.
+    elicit: true
+    owner: scrum-master
+    editors: [scrum-master]
+    sections:
+      - id: api-contract-import
+        title: Import API Contract from Story {{epic_num}}.{{story_num}}-1
+        instruction: |
+          Get API contract from Story {{epic_num}}.{{story_num}}-1:
+
+          **Locations in Story {{epic_num}}.{{story_num}}-1:**
+          - API endpoints section
+          - Request/response schemas (TypeScript)
+          - Validation rules
+          - Error codes
+          - MSW handlers (show expected behavior)
+
+          **Convert to Java:**
+          - TypeScript interfaces → Java DTOs
+          - Validation rules → @Valid annotations
+          - Error codes → Exception classes
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: backend-implementation
+        title: Backend Implementation Patterns
+        instruction: |
+          Spring Boot patterns:
+
+          **DTO Conversion:**
+          ```java
+          // Request DTO with validation
+          public class CreateCompanyRequest {
+              @NotBlank
+              @Size(min = 2, max = 255)
+              private String name;
+
+              @NotBlank
+              @Size(min = 5, max = 500)
+              private String address;
+
+              @NotBlank
+              @Email
+              private String contactEmail;
+          }
+
+          // Response DTO
+          @Builder
+          public class CompanyResponse {
+              private UUID id;
+              private String name;
+              private String address;
+              private String contactEmail;
+              private LocalDateTime createdAt;
+              private LocalDateTime updatedAt;
+          }
+          ```
+
+          **Exception Handling:**
+          ```java
+          @ControllerAdvice
+          public class GlobalExceptionHandler {
+              @ExceptionHandler(CompanyAlreadyExistsException.class)
+              public ResponseEntity<ErrorResponse> handleDuplicate(CompanyAlreadyExistsException ex) {
+                  return ResponseEntity
+                      .status(HttpStatus.CONFLICT)
+                      .body(ErrorResponse.builder()
+                          .code("COMPANY_EXISTS")
+                          .message(ex.getMessage())
+                          .build());
+              }
+          }
+          ```
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: frontend-integration
+        title: Frontend Integration Guide
+        instruction: |
+          Replace MSW mocks with real backend:
+
+          **Disable MSW:**
+          ```typescript
+          // .env.production
+          REACT_APP_USE_MOCKS=false
+          REACT_APP_API_BASE_URL=https://api.batbern.ch
+          ```
+
+          **Update API Client:**
+          ```typescript
+          // src/services/apiClient.ts
+          const apiClient = axios.create({
+            baseURL: process.env.REACT_APP_API_BASE_URL,
+            timeout: 30000
+          });
+          ```
+
+          **No Code Changes Needed:**
+          - React Query hooks stay the same
+          - Components stay the same
+          - Only configuration changes
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+      - id: e2e-testing
+        title: E2E Testing with Real Backend
+        instruction: |
+          E2E tests with deployed backend:
+
+          ```typescript
+          test('should create company end-to-end', async ({ page }) => {
+            await loginAsOrganizer(page);
+            await page.goto('/companies');
+
+            await page.click('[data-testid="create-company"]');
+            await page.fill('[name="name"]', 'Test Company');
+            await page.fill('[name="address"]', '123 Test St, Bern');
+            await page.fill('[name="contactEmail"]', 'test@company.com');
+            await page.click('[data-testid="save"]');
+
+            // Verify created
+            await expect(page.locator('[data-testid="company-list"]'))
+              .toContainText('Test Company');
+
+            // Cleanup
+            await deleteTestCompany('Test Company');
+          });
+          ```
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
+  - id: definition-of-done
+    title: Definition of Done Checklist
+    instruction: |
+      ⚠️ CRITICAL: Story cannot be complete until ALL items checked.
+      This story completes the entire feature (Story {{epic_num}}.{{story_num}}).
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+    sections:
+      - id: backend-complete
+        title: Backend Complete
+        type: checklist
+        template: |
+          - [ ] All endpoints match API contract from Story {{epic_num}}.{{story_num}}-1
+          - [ ] Domain model implements business rules
+          - [ ] Service layer complete
+          - [ ] Repository layer complete
+          - [ ] Controller layer complete
+          - [ ] Database migrations applied
+          - [ ] All backend tests passing (>90% coverage)
+          - [ ] Integration tests passing
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: integration-complete
+        title: Integration Complete ⚠️ CRITICAL
+        type: checklist
+        template: |
+          - [ ] MSW mocks removed/disabled in production
+          - [ ] Frontend successfully calls real backend APIs
+          - [ ] All CRUD operations work end-to-end
+          - [ ] Error handling works correctly
+          - [ ] Authentication enforced
+          - [ ] E2E tests passing with real backend
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: deployment-complete
+        title: Deployment Complete ⚠️ CRITICAL
+        type: checklist
+        template: |
+          - [ ] Backend deployed to dev
+          - [ ] Frontend deployed to dev (without mocks)
+          - [ ] Smoke tests passing in dev
+          - [ ] Backend deployed to staging
+          - [ ] Frontend deployed to staging
+          - [ ] Full regression tests passing in staging
+          - [ ] Performance validated
+          - [ ] Ready for production
+        owner: dev-agent
+        editors: [dev-agent]
+
+  - id: original-story-complete
+    title: Original Story Complete
+    instruction: |
+      This story completes the full feature from the original epic:
+
+      **Story {{epic_num}}.{{story_num}} is now COMPLETE:**
+      - Story {{epic_num}}.{{story_num}}-1: Frontend-First with API contract ✅
+      - Story {{epic_num}}.{{story_num}}-2: Backend-Integration (this story) ✅
+
+      When this story is marked Done, update the original story status.
+    owner: scrum-master
+    editors: [scrum-master]
+
+  - id: change-log
+    title: Change Log
+    type: table
+    columns: [Date, Version, Description, Author]
+    instruction: Track changes to this backend-integration story
+    owner: scrum-master
+    editors: [scrum-master, dev-agent]
+
+  - id: dev-agent-record
+    title: Dev Agent Record
+    instruction: Populated during backend implementation and integration
+    owner: dev-agent
+    editors: [dev-agent]
+    sections:
+      - id: agent-model
+        title: Agent Model Used
+        template: "{{agent_model_name_version}}"
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: implementation-approach
+        title: Implementation Approach
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: backend-files
+        title: Backend Files Created/Modified
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: frontend-changes
+        title: Frontend Changes (MSW Removal)
+        instruction: |
+          Frontend files modified to remove mocks:
+          - Environment configuration
+          - API client configuration
+          - Any mock-specific code removed
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: integration-issues
+        title: Integration Issues Encountered
+        instruction: |
+          Document any issues during integration:
+          - Issue description
+          - Resolution
+          - Lessons learned
+        owner: dev-agent
+        editors: [dev-agent]

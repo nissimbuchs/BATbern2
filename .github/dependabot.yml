@@ -1,0 +1,111 @@
+# Dependabot Configuration for Automated Dependency Updates and Security Scanning
+#
+# Implements AC11: Dependency Scanning from Story 1.11
+#
+# This configuration enables GitHub Dependabot to:
+# - Automatically check for vulnerable dependencies
+# - Create pull requests for security updates
+# - Keep dependencies up to date
+#
+# More info: https://docs.github.com/en/code-security/dependabot
+
+version: 2
+updates:
+  # Gradle dependencies for API Gateway
+  - package-ecosystem: "gradle"
+    directory: "/api-gateway"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "nissimbuchs"
+    labels:
+      - "dependencies"
+      - "security"
+      - "api-gateway"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  # Gradle dependencies for Shared Kernel
+  - package-ecosystem: "gradle"
+    directory: "/shared-kernel"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "nissimbuchs"
+    labels:
+      - "dependencies"
+      - "security"
+      - "shared-kernel"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  # npm dependencies for Infrastructure (CDK)
+  - package-ecosystem: "npm"
+    directory: "/infrastructure"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:30"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "nissimbuchs"
+    labels:
+      - "dependencies"
+      - "security"
+      - "infrastructure"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    versioning-strategy: increase
+
+  # npm dependencies for Frontend
+  - package-ecosystem: "npm"
+    directory: "/web-frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "nissimbuchs"
+    labels:
+      - "dependencies"
+      - "security"
+      - "frontend"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    versioning-strategy: increase
+    # Ignore major version updates for React and Material-UI (manual review needed)
+    ignore:
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@mui/*"
+        update-types: ["version-update:semver-major"]
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:30"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "nissimbuchs"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore(ci)"
+      include: "scope"

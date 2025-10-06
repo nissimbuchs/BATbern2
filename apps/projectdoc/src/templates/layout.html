@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{#if title}}{{title}} - {{/if}}{{siteConfig.siteName}}</title>
+    <meta name="description" content="{{description}}">
+    <meta name="author" content="{{siteConfig.author}}">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{siteConfig.baseUrl}}">
+    <meta property="og:title" content="{{#if title}}{{title}} - {{/if}}{{siteConfig.siteName}}">
+    <meta property="og:description" content="{{description}}">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="{{siteConfig.baseUrl}}">
+    <meta property="twitter:title" content="{{#if title}}{{title}} - {{/if}}{{siteConfig.siteName}}">
+    <meta property="twitter:description" content="{{description}}">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="stylesheet" href="/styles/highlight.css">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="header-container">
+            <div class="header-brand">
+                <a href="/" class="brand-link">
+                    <img src="/assets/BATbern_color_logo_transparent.png" alt="BATbern Logo" class="brand-logo">
+                    <span class="brand-text">{{siteConfig.siteName}}</span>
+                </a>
+            </div>
+
+            <nav class="header-nav">
+                <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+                    <span class="nav-toggle-icon"></span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Layout -->
+    <div class="main-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-content">
+                <!-- Search -->
+                <div class="search-container">
+                    <input type="search" class="search-input" placeholder="Search documentation..." id="searchInput">
+                    <button class="search-button" aria-label="Search">🔍</button>
+                </div>
+
+                <!-- Navigation -->
+                <nav class="sidebar-nav">
+                    {{#if isIndexPage}}
+                    <div class="nav-section nav-section-expanded">
+                        <h3 class="nav-section-title">
+                            <span class="nav-section-icon">🏠</span>
+                            Overview
+                        </h3>
+                    </div>
+                    {{/if}}
+
+                    {{#each navigation}}
+                    <div class="nav-section nav-section-expanded" data-category="{{@key}}">
+                        <h3 class="nav-section-title" onclick="toggleNavSection(this)">
+                            <span class="nav-section-icon">{{icon}}</span>
+                            {{title}}
+                            <span class="nav-section-count">{{documents.length}}</span>
+                            <span class="nav-section-toggle">▼</span>
+                        </h3>
+
+                        {{#if documents}}
+                        <ul class="nav-section-items">
+                            {{#each documents}}
+                            <li class="nav-item">
+                                {{#if epicInfo}}
+                                <!-- Epic with potential stories -->
+                                <div class="nav-epic-container">
+                                    <div class="nav-epic-header" onclick="toggleEpicStories(this)">
+                                        <a href="{{url}}" class="nav-link epic-link" onclick="event.stopPropagation()">
+                                            <span class="nav-link-title">{{title}}</span>
+                                            <span class="epic-badge">Epic {{epicInfo.number}}</span>
+                                        </a>
+                                        {{#if stories}}
+                                        <span class="epic-toggle">▶</span>
+                                        {{/if}}
+                                    </div>
+                                    {{#if stories}}
+                                    <ul class="epic-stories">
+                                        {{#each stories}}
+                                        <li class="story-item">
+                                            <a href="{{url}}" class="nav-link story-link">
+                                                <span class="nav-link-title">{{title}}</span>
+                                                {{#if storyId}}
+                                                <span class="story-badge">{{storyId}}</span>
+                                                {{/if}}
+                                            </a>
+                                        </li>
+                                        {{/each}}
+                                    </ul>
+                                    {{/if}}
+                                </div>
+                                {{else}}
+                                <!-- Regular document -->
+                                <a href="{{url}}" class="nav-link">
+                                    <span class="nav-link-title">{{title}}</span>
+                                </a>
+                                {{/if}}
+                            </li>
+                            {{/each}}
+                        </ul>
+                        {{/if}}
+                    </div>
+                    {{/each}}
+                </nav>
+
+                <!-- Footer info -->
+                <div class="sidebar-footer">
+                    <div class="build-info">
+                        <small>Last updated: {{formatDate buildTime}}</small>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Breadcrumbs -->
+            {{#if breadcrumbs}}
+            {{renderBreadcrumbs breadcrumbs}}
+            {{/if}}
+
+            <!-- Content Header -->
+            {{#unless isIndexPage}}
+            <div class="content-header">
+                <div class="content-meta">
+                    {{#if category}}
+                    <span class="content-category">
+                        {{categoryIcon category}} {{category}}
+                    </span>
+                    {{/if}}
+
+                    {{#if metadata.epicInfo}}
+                    <span class="epic-info">
+                        {{epicNumber metadata.epicInfo}}
+                    </span>
+                    {{/if}}
+                </div>
+
+                <h1 class="content-title">{{title}}</h1>
+
+                {{#if description}}
+                <p class="content-description">{{description}}</p>
+                {{/if}}
+
+                <div class="content-stats">
+                    {{#if metadata.lastModified}}
+                    <span class="stat">
+                        <span class="stat-label">Last updated:</span>
+                        <span class="stat-value">{{formatDate metadata.lastModified}}</span>
+                    </span>
+                    {{/if}}
+
+                    {{#if metadata.wordCount}}
+                    <span class="stat">
+                        <span class="stat-label">Reading time:</span>
+                        <span class="stat-value">{{readingTime metadata.wordCount}}</span>
+                    </span>
+                    {{/if}}
+
+                    {{#if metadata.storyCount}}
+                    <span class="stat">
+                        <span class="stat-label">User stories:</span>
+                        <span class="stat-value">{{metadata.storyCount}}</span>
+                    </span>
+                    {{/if}}
+
+                    {{#if metadata.size}}
+                    <span class="stat">
+                        <span class="stat-label">File size:</span>
+                        <span class="stat-value">{{formatSize metadata.size}}</span>
+                    </span>
+                    {{/if}}
+                </div>
+            </div>
+            {{/unless}}
+
+            <!-- Table of Contents -->
+            {{#if tableOfContents}}
+            <div class="toc-container" id="tocContainer">
+                <div class="toc-header">
+                    <h2 class="toc-title">Table of Contents</h2>
+                    <button class="toc-toggle" id="tocToggle" aria-label="Toggle table of contents">
+                        <span class="toc-toggle-icon">▼</span>
+                    </button>
+                </div>
+                <div class="toc-content" id="tocContent">
+                    {{renderToc tableOfContents}}
+                </div>
+            </div>
+            {{/if}}
+
+            <!-- Document Content -->
+            <div class="document-content">
+                {{{content}}}
+            </div>
+
+            <!-- Content Footer -->
+            <footer class="content-footer">
+                <div class="content-actions">
+                    <a href="https://github.com/batbern/platform/tree/main/{{metadata.relativePath}}"
+                       class="action-link" target="_blank" rel="noopener">
+                        📝 Edit on GitHub
+                    </a>
+
+                    <button class="action-link" onclick="window.print()">
+                        🖨️ Print this page
+                    </button>
+
+                    <button class="action-link" id="shareButton">
+                        🔗 Share this page
+                    </button>
+                </div>
+
+                <div class="content-navigation">
+                    <!-- Previous/Next navigation would be implemented here -->
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <!-- Back to top button -->
+    <button class="back-to-top" id="backToTop" aria-label="Back to top">
+        ↑
+    </button>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <script src="/scripts/main.js"></script>
+
+    <!-- Analytics (if needed) -->
+    {{#if siteConfig.analytics}}
+    <script>
+        // Analytics code would go here
+    </script>
+    {{/if}}
+</body>
+</html>

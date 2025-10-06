@@ -1,0 +1,58 @@
+<!-- Navigation Template -->
+<nav class="documentation-navigation">
+  {{#each categories}}
+  <div class="nav-section {{#if @first}}nav-section-expanded{{else}}nav-section-expanded{{/if}}" data-category="{{@key}}">
+    <h3 class="nav-section-title" onclick="toggleNavSection(this)">
+      <span class="nav-section-icon">{{icon}}</span>
+      {{title}}
+      <span class="nav-section-count">{{documents.length}}</span>
+      <span class="nav-section-toggle">▼</span>
+    </h3>
+
+    {{#if documents}}
+    <ul class="nav-section-items">
+      {{#each documents}}
+      <li class="nav-item">
+        {{#if epicInfo}}
+        <!-- Epic with potential stories -->
+        <div class="nav-epic-container">
+          <div class="nav-epic-header" onclick="toggleEpicStories(this)">
+            <a href="{{url}}" class="nav-link epic-link" onclick="event.stopPropagation()">
+              <span class="nav-link-title">{{title}}</span>
+              <span class="epic-badge">Epic {{epicInfo.number}}</span>
+              {{#if storyCount}}
+              <span class="story-count">{{storyCount}} stories</span>
+              {{/if}}
+            </a>
+            {{#if stories}}
+            <span class="epic-toggle">▶</span>
+            {{/if}}
+          </div>
+          {{#if stories}}
+          <ul class="epic-stories">
+            {{#each stories}}
+            <li class="story-item">
+              <a href="{{url}}" class="nav-link story-link">
+                <span class="nav-link-title">{{title}}</span>
+                {{#if storyId}}
+                <span class="story-badge">{{storyId}}</span>
+                {{/if}}
+              </a>
+            </li>
+            {{/each}}
+          </ul>
+          {{/if}}
+        </div>
+        {{else}}
+        <!-- Regular document -->
+        <a href="{{url}}" class="nav-link">
+          <span class="nav-link-title">{{title}}</span>
+        </a>
+        {{/if}}
+      </li>
+      {{/each}}
+    </ul>
+    {{/if}}
+  </div>
+  {{/each}}
+</nav>

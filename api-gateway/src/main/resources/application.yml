@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: api-gateway
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+# Microservices Configuration
+# In development: localhost with different ports
+# In staging/production: internal ALB endpoints (set via environment variables)
+services:
+  event-management:
+    url: ${EVENT_MANAGEMENT_SERVICE_URL:http://localhost:8081}
+  speaker-coordination:
+    url: ${SPEAKER_COORDINATION_SERVICE_URL:http://localhost:8082}
+  partner-coordination:
+    url: ${PARTNER_COORDINATION_SERVICE_URL:http://localhost:8083}
+  attendee-experience:
+    url: ${ATTENDEE_EXPERIENCE_SERVICE_URL:http://localhost:8084}
+  company-management:
+    url: ${COMPANY_MANAGEMENT_SERVICE_URL:http://localhost:8085}
+
+# AWS Cognito Configuration
+aws:
+  cognito:
+    userPoolId: ${COGNITO_USER_POOL_ID}
+    region: ${AWS_REGION:eu-central-1}
+    appClientId: ${COGNITO_CLIENT_ID}
+
+logging:
+  level:
+    ch.batbern: DEBUG
+    org.springframework: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{correlationId}] %-5level %logger{36} - %msg%n"
+
+# Error handling configuration
+server:
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: on_param  # Only in dev/staging via profile
+    include-exception: false      # Never expose internal exception classes

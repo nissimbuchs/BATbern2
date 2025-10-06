@@ -1,0 +1,2072 @@
+[
+    {
+      "bat": 1,
+      "pdf": "BAT_Nr.01.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 1,
+      "pdf": "BAT01_Mobiliar_UserInterface.pdf",
+      "authoren": "Thomas Goetz (Die Mobiliar)",
+      "title": "User Interface"
+    },
+    {
+      "bat": 1,
+      "pdf": "BAT01_PostFinance_GUIs.pdf",
+      "authoren": "Volkert Barr (Postfinance)",
+      "title": "GUIs - Heute und Morgen in PostFinance"
+    },
+    {
+      "bat": 1,
+      "pdf": "BAT01_RTC_IBISDesktop.pdf",
+      "authoren": "Dr. Nissim J. Buchs (RTC)",
+      "title": "IBIS Desktop"
+    },
+    {
+      "bat": 2,
+      "pdf": "BAT_Nr.02.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 2,
+      "pdf": "BAT-architecturemobi-v1.0.pdf",
+      "authoren": "Peter Kummer (Die Mobiliar)",
+      "title": "Enterprise Architecture"
+    },
+    {
+      "bat": 2,
+      "pdf": "CS_2005-11-11 - BAT-Vortrag.pdf",
+      "authoren": "Matilda Anello (Credit Suisse)",
+      "title": "Herausforderung und Implikationen"
+    },
+    {
+      "bat": 2,
+      "pdf": "EAPM_Erfa-Ber.pdf",
+      "authoren": "Beat M. Stöckli / Alain Jacot-Guillarmod (PostMail)",
+      "title": "Ein Erfahrungsbericht"
+    },
+    {
+      "bat": 3,
+      "pdf": "BAT_Nr.03.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 3,
+      "pdf": "BAT03_SBB.pdf",
+      "authoren": "Stefan Meichtry (SBB AG) / Stefan Becker (Network 24/7 AG)",
+      "title": "Der SBB-Online Ticketshop - mit SOA zum Erfolg"
+    },
+    {
+      "bat": 3,
+      "pdf": "SOA_bei_Postfinance.pdf",
+      "authoren": "Dr. Harald Aust (PostFinance)",
+      "title": "Service Oriented Architecture bei PostFinance"
+    },
+    {
+      "bat": 3,
+      "pdf": "SOA_Swisscom_Fixnet.pdf",
+      "authoren": "Walter Grolimund (Swisscom Fixnet)",
+      "title": "Swisscom Fixnet, SOA - Aller Anfang ist schwer"
+    },
+    {
+      "bat": 4,
+      "pdf": "BAT_Nr.04.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 4,
+      "pdf": "Workflow_anaptecs_Integration.pdf",
+      "authoren": "Tillmann Schall (anaptecs GmbH)",
+      "title": "Integration von Workflow-Management Systemen in der Praxis"
+    },
+    {
+      "bat": 4,
+      "pdf": "Workflow_ISB_Flexible_Prozesse.pdf",
+      "authoren": "Marc Schaffroth (Informatikstrategieorgan Bund ISB)",
+      "title": "Flexible Prozesse - Modulare Gestaltungskonzepte und Umsetzungsbeispiele aus der öffentlichen Verwaltung"
+    },
+    {
+      "bat": 4,
+      "pdf": "Workflow_RTC_BPM_IBIS.pdf",
+      "authoren": "Jean-Marc Terrettaz (RTC AG)",
+      "title": "BPM für IBIS"
+    },
+    {
+      "bat": 5,
+      "pdf": "BAT_Nr.05.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 5,
+      "pdf": "SAP_BKW_SAP_Plattformstrategie.pdf",
+      "authoren": "Dr. Thomas Wettstein und Christian Hürlimann (BKW FMB Energie AG)",
+      "title": "Chancen und Grenzen der SAP Plattform-Strategie der BKW FMB Energie AG"
+    },
+    {
+      "bat": 5,
+      "pdf": "SAP_ISB_ERP_in_der_Bundesverwaltung.pdf",
+      "authoren": "Richard Schären (Informatikstrategieorgan Bund ISB)",
+      "title": "Enterprise Resource Planning in der Bundesverwaltung � Gestern, Heute und Morgen"
+    },
+    {
+      "bat": 5,
+      "pdf": "SAP_RTC_SAP_Bestandteil_von_IBIS.pdf",
+      "authoren": "Guido Steiner (RTC AG)",
+      "title": "SAP ein Bestandteil von IBIS?"
+    },
+    {
+      "bat": 6,
+      "pdf": "BAT_CHOOSE_Architekturforum.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 6,
+      "pdf": "BAT_Mobiliar_Semture_Koenig_Fachprozess.pdf",
+      "authoren": "Dr. Andreas Dietzsch und Dr. Steffen Greiffenberg (Die Mobiliar und Semture GmbH)",
+      "title": "König Fachprozess - Nutzerorientierte Fachprozessmodellierung"
+    },
+    {
+      "bat": 6,
+      "pdf": "BAT_PostFinance_UML_Framework.pdf",
+      "authoren": "Dr. Andreas Spichiger (PostFinance)",
+      "title": "Erarbeitung und Einsatz des UML-Frameworks bei PostFinance"
+    },
+    {
+      "bat": 6,
+      "pdf": "BAT_RTC_FRAGen.pdf",
+      "authoren": "Andreas Grütter (RTC AG)",
+      "title": "FRAGen (Full RTC Application Generator)"
+    },
+    {
+      "bat": 6,
+      "pdf": "CHOOSE_SoftMetaWare_Transitioning_To_MDSD.pdf",
+      "authoren": "Jorn Bettin (SoftMetaWare)",
+      "title": "Transitioning to Model Driven Software Development: Preparing for the Paradigm Shift"
+    },
+    {
+      "bat": 6,
+      "pdf": "CHOOSE_Zuehlke_MDSD_with_OpenSource.pdf",
+      "authoren": "Ulrich Brawand (Zühlke Engineering)",
+      "title": "MDSD mit Open Source Tools � eine schrittweise Einführung"
+    },
+    {
+      "bat": 7,
+      "pdf": "BAT_Nr.07.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 7,
+      "pdf": "Messen_Verkaufen_CSC_Architekturmarketing.pdf",
+      "authoren": "Daniel Bernasconi (CSC Switzerland)",
+      "title": "Der richtige Mix"
+    },
+    {
+      "bat": 7,
+      "pdf": "Messen_Verkaufen_RTC_Architektursteuerung.pdf",
+      "authoren": "Felix Grimm (RTC AG) und Matthias Stutz (Universität St. Gallen)",
+      "title": "Wertorientierte Architektursteuerung bei der RTC"
+    },
+    {
+      "bat": 8,
+      "pdf": "BAT_Nr.08.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 8,
+      "pdf": "EA-Tools_PostFinance_Tooleinfuehrung_pragmatisch.pdf",
+      "authoren": "Reto Peter (PostFinance)",
+      "title": "Einführung eines EA Tools - ein pragmatischer Ansatz"
+    },
+    {
+      "bat": 8,
+      "pdf": "EA-Tools_SBB_EA_Werkzeug_Erfahrungsbericht.pdf",
+      "authoren": "Bernhard Rytz (SBB)",
+      "title": "Ein Werkzeug ist nicht alles, aber ohne Werkzeug ist Enterprise Architecture Management unrealistisch - ein Erfahrungsbericht der SBB"
+    },
+    {
+      "bat": 8,
+      "pdf": "EA-Tools_TUM_Evaluating_Selecting_EAM_Tools.pdf",
+      "authoren": "Josef Lankes (TU München)",
+      "title": "Bewertung und Auswahl von Enterprise Architecture Management-Werkzeugen: Tool Survey von 2005 und 2008"
+    },
+    {
+      "bat": 9,
+      "pdf": "BAT_Nr.09.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 9,
+      "pdf": "Business_Rules_PF_Innovations_BRM.pdf",
+      "authoren": "Patrice Witschi (RTC)",
+      "title": "Business Rules Ansatz - it's a long way..."
+    },
+    {
+      "bat": 9,
+      "pdf": "Business_Rules_RTC_Business_Rules_Ansatz.pdf",
+      "authoren": "Elmar Boschung (PostFinance), Thomas Fries (innovations)",
+      "title": "Business rules management im Bereich Compliance der PostFinance"
+    },
+    {
+      "bat": 9,
+      "pdf": "Business_Rules_syngenio_drools.pdf",
+      "authoren": "Michael Frandsen (syngenio AG)",
+      "title": "Integration der Drools Rule Engine in IT-Architekturen"
+    },
+    {
+      "bat": 10,
+      "pdf": "BAT_Architekturforum_RIA.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 10,
+      "pdf": "BAT_Forum_RIA_AJAX_for_Enterprise.pdf",
+      "authoren": "Björn Müller (CaptainCasa)",
+      "title": "AJAX for Enterprise Applications"
+    },
+    {
+      "bat": 10,
+      "pdf": "BAT_Forum_RIA_Eclipse_RAP.pdf",
+      "authoren": "Frank Appel (Innoopract)",
+      "title": "Die Eclipse Rich Ajax Platform"
+    },
+    {
+      "bat": 10,
+      "pdf": "BAT_Forum_RIA_KomplexeGUIs_DHL.pdf",
+      "authoren": "Michael Schwendimann, Marco Venzi (ipt)",
+      "title": "Interaktive komplexe GUI's bei DHL"
+    },
+    {
+      "bat": 10,
+      "pdf": "BAT_Forum_RIA_KomplexeGUIs_RIA@DHL.pdf",
+      "authoren": "Michael Schwendimann, Marco Venzi (ipt)",
+      "title": "Interaktive komplexe GUI's bei DHL"
+    },
+    {
+      "bat": 10,
+      "pdf": "BAT_Forum_RIA_MS_Silverlight2.pdf",
+      "authoren": "Sascha P. Corti (Microsoft)",
+      "title": "Silverlight 2 und die RIA Plattform von Microsoft"
+    },
+    {
+      "bat": 10,
+      "pdf": "BAT_Forum_RIA_TaxMe_Online.pdf",
+      "authoren": "Hans Frauchiger (kant. Steuerverw.), Matthias Germann, Thomas Meister (DV Bern)",
+      "title": "TaxMe-Online - die Steuererklärung online ausfüllen"
+    },
+    {
+      "bat": 11,
+      "pdf": "BAT_N11_Moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 11,
+      "pdf": "BAT_N11_PFGUI_Vision_Strategie2010_BAT.pdf",
+      "authoren": "Rudolf Oppliger (PostFinance)",
+      "title": "GUI Vision, GUI Strategie und GUI Framework für Rich Client"
+    },
+    {
+      "bat": 11,
+      "pdf": "BAT_N11_RTC_Workplace.pdf",
+      "authoren": "Mauro Sala (RTC)",
+      "title": "Evolution der Workplaces und Herausforderungen in ihrem Management"
+    },
+    {
+      "bat": 11,
+      "pdf": "BAT_N11_SBB_Einflussfaktoren_IT-Arbeitsplatz.pdf",
+      "authoren": "Ernst Kammermann-Gerber (SBB)",
+      "title": "Einflussfaktoren bei der Gestaltung eines IT-Arbeitsplatzes"
+    },
+    {
+      "bat": 11,
+      "pdf": "BAT_N11_SC_Future_Workplace_Teil1.pdf",
+      "authoren": "Andreas R. Lehmann (Swisscom)",
+      "title": "Future Workplace, oder wie arbeitet der KnowledgeWorker der Zukunft"
+    },
+    {
+      "bat": 11,
+      "pdf": "BAT_N11_SC_Future_Workplace_Teil2.pdf",
+      "authoren": "Andreas R. Lehmann (Swisscom)",
+      "title": "Future Workplace, oder wie arbeitet der KnowledgeWorker der Zukunft"
+    },
+    {
+      "bat": 11,
+      "pdf": "BAT_No11.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 12,
+      "pdf": "BAT_N12_BKW_IT-Architekturmanagement.pdf",
+      "authoren": "Christian Beyeler, BKW FMB Energie AG",
+      "title": "Zusammenarbeit mit dem Business in der IT-Architekturentwicklung"
+    },
+    {
+      "bat": 12,
+      "pdf": "BAT_N12_RTC_Architekturgetriebene_Gesamtplanung.pdf",
+      "authoren": "Dr. Nissim Buchs, RTC AG",
+      "title": "Architekturgetriebene Gesamtplanung bei der RTC"
+    },
+    {
+      "bat": 12,
+      "pdf": "BAT_N12_SBB_Handout_Bebauungsplanung.pdf",
+      "authoren": "Hans-Jakob Gfeller, SBB",
+      "title": "Bebauungsplanung bei der SBB"
+    },
+    {
+      "bat": 12,
+      "pdf": "BAT_No12.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 13,
+      "pdf": "BAT_13_Alain_Wegmann.pdf",
+      "authoren": "Prof. Dr. Alain Wegmann, Systemic Modeling Laboratory (LAMS), EPFL",
+      "title": "Are your ITIL and your SOA services aligned? Should they be?"
+    },
+    {
+      "bat": 13,
+      "pdf": "BAT_13_Dierk_Matthaeus.pdf",
+      "authoren": "Dierk Matthäus, Medizinische Fakultät und Informatikdienste der Universität Bern",
+      "title": "SOA Reloaded: DEI: Alles wird besser!"
+    },
+    {
+      "bat": 13,
+      "pdf": "BAT_13_Hans_Ulrich_Wiedmer.pdf",
+      "authoren": "Hans Ulrich Wiedmer, swisstopo",
+      "title": "Geoinformations-Services für Geschäftsprozesse mit Raumbezug."
+    },
+    {
+      "bat": 13,
+      "pdf": "BAT_13_Robert_Winter.pdf",
+      "authoren": "Prof. Dr. Robert Winter, Institut für Wirtschaftsinformatik der Universität St. Gallen",
+      "title": "One size fits all? Unternehmensarchitekturmanagement im Spannungsfeld von Standardisierung und (unternehmens-)individueller Nutzenmaximierung."
+    },
+    {
+      "bat": 13,
+      "pdf": "BAT_13_Stephan_Aier.pdf",
+      "authoren": "Dr. Stephan Aier, Institut für Wirtschaftsinformatik der Universität St. Gallen",
+      "title": "Serviceorientierung in Unternehmensarchitekturen: Die \"richtige\" Transparenz als Basis von Flexibilität und Agilität."
+    },
+    {
+      "bat": 13,
+      "pdf": "BAT_13_Willy_Mueller.pdf",
+      "authoren": "Willy Müller, Eidgenössisches Finanzdepartement EFD, Informatikstrategieorgan Bund ISB",
+      "title": "SOA: Herausforderungen in einem Multi-Organisationskontext."
+    },
+    {
+      "bat": 13,
+      "pdf": "BAT_No13.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 14,
+      "pdf": "0_bat_14_moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 14,
+      "pdf": "1_bat_14_sbb.pdf",
+      "authoren": "Bruno Linder, Michael T. Pilawa, SBB",
+      "title": "Testautomatisierung bei der SBB - Ein Bericht aus der Praxis."
+    },
+    {
+      "bat": 14,
+      "pdf": "2_bat_14_ige.pdf",
+      "authoren": "Eric Lewis, IGE",
+      "title": "Continuous Integration in der Praxis."
+    },
+    {
+      "bat": 14,
+      "pdf": "3_bat_14_rtc.pdf",
+      "authoren": "Pascal Auderset, RTC",
+      "title": "Qualitätssichernde Architekturvorgaben in der IBIS3G Kontoführung."
+    },
+    {
+      "bat": 14,
+      "pdf": "BAT_No14.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 15,
+      "pdf": "0_bat_15_moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 15,
+      "pdf": "1_BI_BKW.pdf",
+      "authoren": "Olivier Raemy, BKW FMB Energie AG",
+      "title": "Business Intelligence bei BKW - der Weg ist das Ziel"
+    },
+    {
+      "bat": 15,
+      "pdf": "2_Agilitaet_BI_SC.pdf",
+      "authoren": "Peter Kühni, Swisscom AG",
+      "title": "BI Architektur bei der Swisscom"
+    },
+    {
+      "bat": 15,
+      "pdf": "3_ Informationslogistik_UniSG.pdf",
+      "authoren": "Dr. Christian Wilhelmi, alpiq AG",
+      "title": "Unternehmensweite Informationslogistik"
+    },
+    {
+      "bat": 15,
+      "pdf": "BAT_No15.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 16,
+      "pdf": "0_BAT16_moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 16,
+      "pdf": "1_BAT16_Haemmerli.pdf",
+      "authoren": "Prof. Bernhard Hämmerli, Hochschule Luzern",
+      "title": "Herausforderungen der Informationssicherheit"
+    },
+    {
+      "bat": 16,
+      "pdf": "2_BAT16_SuisseID.pdf",
+      "authoren": "Urs Bürge, Urs Bürge Beratung GmbH",
+      "title": "Die SuisseID für Identitäts- und Funktionsnachweis"
+    },
+    {
+      "bat": 16,
+      "pdf": "3_BAT16_SWITCHaai .pdf",
+      "authoren": "Thomas Lenggenhager, SWITCH",
+      "title": "AAI - Die Authentifizierungs- und Autorisierungs- Infrastruktur der Schweizer Hochschulen"
+    },
+    {
+      "bat": 16,
+      "pdf": "4_BAT16_Architektur_Sicherheit_BIT.pdf",
+      "authoren": "Reto Inversini, Thierry Perroud, BIT",
+      "title": "Sicherheits- und Architekturkonformität in Projekten"
+    },
+    {
+      "bat": 16,
+      "pdf": "5_BAT16_branchenkonforme_IT-Sicherheit.pdf",
+      "authoren": "Markus Siffert, PostFinance",
+      "title": "Branchenkonforme IT-Sicherheit"
+    },
+    {
+      "bat": 16,
+      "pdf": "6_BAT16_IBIS3G_Security.pdf",
+      "authoren": "Michael Held, HP Banking Service Center Bern",
+      "title": "IBIS3G Security (applikatorische Sicht)"
+    },
+    {
+      "bat": 16,
+      "pdf": "7_AXSionics_im_E-Banking_IT.pdf",
+      "authoren": "Stefan Wyss, BEKB und Alain Rollier, Axsionics",
+      "title": "Innovative Bankenprodukte benötigen eine sichere Technologieumgebung"
+    },
+    {
+      "bat": 16,
+      "pdf": "BAT_No16.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 17,
+      "pdf": "0_bat_17_moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 17,
+      "pdf": "1_PostFinance_iApp.pdf",
+      "authoren": "Vivian Cina, PostFinance",
+      "title": "PostFinance iApp"
+    },
+    {
+      "bat": 17,
+      "pdf": "2_HPBSC_IP-Storage.pdf",
+      "authoren": "Markus Gerber, HP BSC; Cuno Vuillemin, VR2Swiss AG",
+      "title": "IP-Storage und -Backup Architektur"
+    },
+    {
+      "bat": 17,
+      "pdf": "3_Canoo_FindIT.pdf",
+      "authoren": "Dr. Stephan Gillmeier, Canoo AG",
+      "title": "FindIT � Innovative Suche in Medienarchiven"
+    },
+    {
+      "bat": 17,
+      "pdf": "bat_17_flyer_a4_v0.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 17,
+      "pdf": "BAT_No17.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 18,
+      "pdf": "0_bat_18_moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 18,
+      "pdf": "1_EVD_ArchitekturGovernance.pdf",
+      "authoren": "Hans Ulrich Wiedmer, Information Service Center, EVD",
+      "title": "Architektur-Governance, Informations-Architektur und Unternehmensdaten im EVD"
+    },
+    {
+      "bat": 18,
+      "pdf": "2_RUAG_NAF.pdf",
+      "authoren": "Philippe Chammartin, RUAG",
+      "title": "Enterprise Architektur-Modellierung mit dem NATO Architecture Framework � Ein Erfahrungsbericht"
+    },
+    {
+      "bat": 18,
+      "pdf": "3_SNB_LangzeiterhaltungVonE-Daten.pdf",
+      "authoren": "Hansueli Locher, Schweizerische Nationalbibliothek, EDI",
+      "title": "Strategien und Massnahmen der Schweizerischen Nationalbibliothek zur Langzeiterhaltung digitaler Daten"
+    },
+    {
+      "bat": 18,
+      "pdf": "BAT_No18.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 19,
+      "pdf": "0_bat_19_moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 19,
+      "pdf": "1_ZKB_Vortrag_aktuell.pdf",
+      "authoren": "Dr. Pascal Kurtansky, ZKB",
+      "title": "Erneuerung Integrationsplattform"
+    },
+    {
+      "bat": 19,
+      "pdf": "2_Integrationsarchitektur bei der BKW FMB Energie AG.pdf",
+      "authoren": "Dr. Felix Grimm und Baltisar Oswald, BKW FMB Energie AG",
+      "title": "Integrationsarchitektur bei der BKW FMB Energie AG"
+    },
+    {
+      "bat": 19,
+      "pdf": "3_BAT Integration - Foederalismus v3.pdf",
+      "authoren": "Stefan Haller, Bedag Informatik AG",
+      "title": "Herausforderungen im föderalistischen Staat"
+    },
+    {
+      "bat": 19,
+      "pdf": "4_BAT19_Keynote.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Aufwärmrunde"
+    },
+    {
+      "bat": 19,
+      "pdf": "5_itServeSwissdec20110631All.pdf",
+      "authoren": "Anton Böhm, itServe",
+      "title": "swissdec - Architektur zur Integration und Automatisation von Geschäftsprozessen zwischen Unternehmen, Versicherern und Behörden in der Schweiz"
+    },
+    {
+      "bat": 19,
+      "pdf": "6_E-Government Web Services bei e-dec V 1.1.pdf",
+      "authoren": "Dr. Stefan Hüsemann, ipt",
+      "title": "eGovernment Web Services zur Integration von Bund und Wirtschaft � standardbasierte e-dec Services für elektronische Verzollungen"
+    },
+    {
+      "bat": 19,
+      "pdf": "7_SBB-IT-AQ_IT_EOL_einer_hochintegrierten_Anwendung_BAT_v008.pdf",
+      "authoren": "Peter Moosmann und Jakob Erber, SBB",
+      "title": "End-of-Life einer hochintegrierten Anwendung - wie Unternehmensarchitektur helfen kann"
+    },
+    {
+      "bat": 19,
+      "pdf": "BAT_No19.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 20,
+      "pdf": "0_bat_20_moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 20,
+      "pdf": "BAT_No20.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 21,
+      "pdf": "1_bls_andreas_kronawitter.pdf",
+      "authoren": "Andreas Kronawitter, BLS AG",
+      "title": "Emergente und geplante Strategien für Social Medi"
+    },
+    {
+      "bat": 21,
+      "pdf": "2_tirsus_ursula_deriu.pdf",
+      "authoren": "Ursula Deriu, Tirsus GmbH",
+      "title": "Veränderung der Unternehmenskultur durch Enterprise 2.0"
+    },
+    {
+      "bat": 21,
+      "pdf": "BAT_No21_v1.1.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 22,
+      "pdf": "03_Praesentation_BAT22_SWISSCOM.pdf",
+      "authoren": "David C. Gürlet, RFIDnet und Gerhard Schedler, Swisscom",
+      "title": "RFID, IoT, M-to-M - from Hype to Reality"
+    },
+    {
+      "bat": 22,
+      "pdf": "1_BAT-BYOD_bei_SBB.pdf",
+      "authoren": "Philip Büchler, SBB",
+      "title": "Bring your own Device"
+    },
+    {
+      "bat": 22,
+      "pdf": "2_FIS-Kommunikation.pdf",
+      "authoren": "Marco Knaeple, BLS",
+      "title": "Fahrgastinformation - die Kommunikation mit fahrenden LANs, genannt Züge"
+    },
+    {
+      "bat": 22,
+      "pdf": "5_BAT22-Mobilkommunikation-Geoinformation-SNP-BAFU-EVD.pdf",
+      "authoren": "Dr. Thomas Klingl, BAFU, Hans Ulrich Wiedmer, EVD und Dr. Ruedi Haller, Schweiz. Nationalpark",
+      "title": "Mobilkommunikation und Geoinformation: Realitäten und Visionen im EVD und im BAFU"
+    },
+    {
+      "bat": 22,
+      "pdf": "BAT_No22_v1.1.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 23,
+      "pdf": "BAT_No23_V1.0.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 23,
+      "pdf": "BAT_No23_V1.1.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 23,
+      "pdf": "BAT23_BKW.pdf",
+      "authoren": "Martin Kochert, BKW FMB Energie AG",
+      "title": "Projektportfolio-Management in Verbindung mit Architektur-Management bei der BKW"
+    },
+    {
+      "bat": 23,
+      "pdf": "BAT23_Entris.pdf",
+      "authoren": "Thomas Spahr, Entris Banking",
+      "title": "IT-Plattformmigration von 43 Banken in time / on budget / on quality"
+    },
+    {
+      "bat": 23,
+      "pdf": "BAT23_Moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 23,
+      "pdf": "BAT23_SBB.pdf",
+      "authoren": "Hans-Jakob Gfeller und Stephan Hofstetter, SBB CFF FFS",
+      "title": "IT-Projektportfoliomanagement im Spannungsfeld zwischen Geschäftsbedürfnis und Architekturplanung"
+    },
+    {
+      "bat": 24,
+      "pdf": "0_bat_24_moderation_v1.0.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 24,
+      "pdf": "02_ESB Eval_v3.pdf",
+      "authoren": "Jérémie Granat und Felix Winistoerfer, HP Banking Service Center",
+      "title": "Evaluation einer JMS- und ESB-Plattform: Ist Open Source wirklich konkurrenzfähig?"
+    },
+    {
+      "bat": 24,
+      "pdf": "03_jubla_final.pdf",
+      "authoren": "Martin Zust, Jungwacht Blauring Kanton Luzern; Pascal Zumkehr und Mark Waber, Puzzle ITC",
+      "title": "Open Source Mitglieder-Datenbank für die Jubla"
+    },
+    {
+      "bat": 24,
+      "pdf": "1_bat_M-Stuermer.pdf",
+      "authoren": "Dr. Matthias Stürmer, /ch/open",
+      "title": "Das Potential von Open Source Software nutzen und die Risiken minimieren"
+    },
+    {
+      "bat": 24,
+      "pdf": "BAT_No24_V1.0.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 25,
+      "pdf": "0_bat_25_moderation_v1.0.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 25,
+      "pdf": "1_BAT_25_Willy_Mueller.pdf",
+      "authoren": "Willy Müller, Informatiksteuerungsorgan des Bundes",
+      "title": "Fertigungstiefe im Zeitalter des Cloud Computing - Implikationen der Cloud-Strategie der Schweizer Behörden"
+    },
+    {
+      "bat": 25,
+      "pdf": "2_BAT_25_Thomas_Zerndt.pdf",
+      "authoren": "Thomas Zerndt, Business Engineering Institute, St. Gallen",
+      "title": "Sourcing im Bankenumfeld"
+    },
+    {
+      "bat": 25,
+      "pdf": "3_BAT_25_Michele_De_Lorenzi.pdf",
+      "authoren": "Dr. Michele De Lorenzi, Centro Svizzero di Calcolo Scientifico",
+      "title": "Sourcing im Scientific Computing"
+    },
+    {
+      "bat": 25,
+      "pdf": "4_BAT_25_Wolfgang_Giersche.pdf",
+      "authoren": "Zacharias Laibi, Swisscom (Schweiz) AG und Wolfgang Giersche, Zühlke Engineering AG",
+      "title": "Outsourcing - Wie wir unsere eigene Lieferfähigkeit steigern"
+    },
+    {
+      "bat": 25,
+      "pdf": "4_BAT_25_Zacharias_Laibi.pdf",
+      "authoren": "Zacharias Laibi, Swisscom (Schweiz) AG und Wolfgang Giersche, Zühlke Engineering AG",
+      "title": "Outsourcing - Wie wir unsere eigene Lieferfähigkeit steigern"
+    },
+    {
+      "bat": 25,
+      "pdf": "5_BAT_Simon_Martinelli.pdf",
+      "authoren": "Simon Martinelli, simas GmbH",
+      "title": "1+n = Outsourcing für Kleinfirmen und Individualsoftware für Vereine und Verbände dank Offshoring"
+    },
+    {
+      "bat": 25,
+      "pdf": "6_BAT_Hans_Ulrich_Wiedmer-Stephan_Sutter.pdf",
+      "authoren": "Hans Ulrich Wiedmer, Eidgenössisches Departement für Wirtschaft, Bildung und Forschung und Stephan Sutter, ti&m AG",
+      "title": "Industrialisierung: Vergleiche zwischen Maschinenbau, Elektrotechnik, Städtebau und Informatik"
+    },
+    {
+      "bat": 25,
+      "pdf": "BAT_No25.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 26,
+      "pdf": "0_bat_26_moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 26,
+      "pdf": "1_bat_26_glue.pdf",
+      "authoren": "Erich Helwin (PostAuto), Roland Loser (Glue)",
+      "title": "Reiseplanung Tür-zu-Tür und intermodal bei der PostAuto App"
+    },
+    {
+      "bat": 26,
+      "pdf": "1_bat_26_postauto.pdf",
+      "authoren": "Erich Helwin (PostAuto), Roland Loser (Glue)",
+      "title": "Reiseplanung Tür-zu-Tür und intermodal bei der PostAuto App"
+    },
+    {
+      "bat": 26,
+      "pdf": "2_bat_26_sbb.pdf",
+      "authoren": "Tobias Röthlisberger, Erich Siegrist (SBB)",
+      "title": "Mobile Enterprise Application Plattform − die Zukunft mobiler Anwendungen bei der SBB"
+    },
+    {
+      "bat": 26,
+      "pdf": "3_bat_26_netcetera_HSLU.pdf",
+      "authoren": "Stefan Fraefel (HSLU), Angela Bühler (Netcetera)",
+      "title": "Indoor Navigation − von der Forschung zur App"
+    },
+    {
+      "bat": 26,
+      "pdf": "BAT_No26.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 27,
+      "pdf": "0_bat27_moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 27,
+      "pdf": "1_bat27_melani.pdf",
+      "authoren": "Max Klaus, Melde- und Analysestelle Informationssicherung MELANI",
+      "title": "MELANI und der tägliche Kampf gegen die Internetkriminalität"
+    },
+    {
+      "bat": 27,
+      "pdf": "2_bat27_sbb.pdf",
+      "authoren": "Ernst Kammermann und Thomas Ragaz, SBB IT und ProBIT AG",
+      "title": "Die neue Netzwerkzonierung der SBB"
+    },
+    {
+      "bat": 27,
+      "pdf": "3_bat27_ejpd.pdf",
+      "authoren": "Peter Andres, ISC-EJPD",
+      "title": "MobileID - die neue Authentisierungsart am SSO-Portal EJPD"
+    },
+    {
+      "bat": 27,
+      "pdf": "BAT_No27.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 28,
+      "pdf": "0_bat28_moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 28,
+      "pdf": "2_bat28_postfinance.pdf",
+      "authoren": "David Kauer, PostFinance AG",
+      "title": "Die digitale Revolution"
+    },
+    {
+      "bat": 28,
+      "pdf": "3_bat28_inventique.pdf",
+      "authoren": "Marcel Altherr, Inventique GmbH",
+      "title": "Requirements Engineering mit Design Thinking"
+    },
+    {
+      "bat": 28,
+      "pdf": "BAT_No28.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 29,
+      "pdf": "1_bat29_swisscom.pdf",
+      "authoren": "Victor Schlegel, Swisscom AG",
+      "title": "Nutzen von BigData heute und morgen"
+    },
+    {
+      "bat": 29,
+      "pdf": "2_bat29_postfinance.pdf",
+      "authoren": "Eric Müller, PostFinance AG",
+      "title": "Operational Intelligence"
+    },
+    {
+      "bat": 29,
+      "pdf": "3_bat29_sbb.pdf",
+      "authoren": "Bernhard Rytz und Jürg Frühauf, SBB IT",
+      "title": "BigData macht sich an den Datenschatz der SBB"
+    },
+    {
+      "bat": 29,
+      "pdf": "BAT_No29.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 30,
+      "pdf": "0_bat_30_moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 30,
+      "pdf": "1_bat_30_mguenter.pdf",
+      "authoren": "Matthias Günter, GnostX GmbH",
+      "title": "Wie agil kann und soll Architektur sein?"
+    },
+    {
+      "bat": 30,
+      "pdf": "2_bat_30_wschaefer.pdf",
+      "authoren": "Werner Schäfer, PostFinance AG",
+      "title": "IT-Architektur im Spannungsfeld von Veränderungen und Unsicherheiten"
+    },
+    {
+      "bat": 30,
+      "pdf": "3_bat_30_afuhrer.pdf",
+      "authoren": "Andreas Fuhrer, SBB Informatik",
+      "title": "Wer bewegt wen? Architektur in Grossprojekten"
+    },
+    {
+      "bat": 30,
+      "pdf": "BAT_No30.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 31,
+      "pdf": "BAT31_Moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 31,
+      "pdf": "BAT31_OpenData.pdf",
+      "authoren": "André Golliez, Opendata.ch",
+      "title": "Open Data und Datenwirtschaft in der Schweiz - eine Standortbestimmung"
+    },
+    {
+      "bat": 31,
+      "pdf": "BAT31_Programmheft.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 31,
+      "pdf": "n/a",
+      "authoren": "Christian Trachsel, SBB",
+      "title": "ÖV Information 2.0 auf Basis von offenen Daten - wie macht die SBB da mit?"
+    },
+    {
+      "bat": 31,
+      "pdf": "n/a",
+      "authoren": "Dr. Matthias Stürmer, Uni Bern",
+      "title": "Open Data Highlights aus der Theorie und Praxis"
+    },
+    {
+      "bat": 31,
+      "pdf": "n/a",
+      "authoren": "Adrian Gschwend, zazuko GmbH",
+      "title": "ÖV 3.0: Hands-on mit Fahrplandaten der SBB als Linked Open Data"
+    },
+    {
+      "bat": 31,
+      "pdf": "n/a",
+      "authoren": "Christian Trachsel, SBB",
+      "title": ""
+    },
+    {
+      "bat": 31,
+      "pdf": "n/a",
+      "authoren": "Hannes Gassert",
+      "title": "Open Data Geschäftsmodelle, konkret"
+    },
+    {
+      "bat": 32,
+      "pdf": "BAT32_Dolfus_Basler__IoT_SBB.pdf",
+      "authoren": "Kirsten Dolfus, Markus Basler, SBB",
+      "title": "Elektrisches Lastmanagement mithilfe von Internet-of-Things"
+    },
+    {
+      "bat": 32,
+      "pdf": "BAT32_Furrer_Inniger_IoT_in_der_Sicherheitstechnik.pdf",
+      "authoren": "Jörg Furrer, Securiton AG, Hansjürg Inniger, Zühlke AG",
+      "title": "Internet-of-Things − Buzzword oder ernstzunehmender Trend für neue Geschäftsfelder?"
+    },
+    {
+      "bat": 32,
+      "pdf": "BAT32_Haller_IoT-Referenzmodell.pdf",
+      "authoren": "Stephan Haller, Berner Fachhochschule",
+      "title": "Ein Referenzmodell für das Internet der Dinge?"
+    },
+    {
+      "bat": 32,
+      "pdf": "BAT32_Moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 32,
+      "pdf": "BAT32_Programmheft.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 33,
+      "pdf": "BAT33_Esser_Enterprise-NoSQL-mit-MarkLogic.pdf",
+      "authoren": "Andreas Esser, Tripons GmbH",
+      "title": "Enterprise NoSQL mit der MarkLogic-Datenbank"
+    },
+    {
+      "bat": 33,
+      "pdf": "BAT33_Leipner_NoSQL_Datenbanken.pdf",
+      "authoren": "Ralf Leipner, PostFinance AG",
+      "title": "NoSQL Datenbanksysteme: Übersicht, Abgrenzung & Charakteristik"
+    },
+    {
+      "bat": 33,
+      "pdf": "BAT33_Moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 33,
+      "pdf": "BAT33_Programmheft.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 33,
+      "pdf": "BAT33_Suter_Mangold_InformationenEffizientBereitstellen.pdf",
+      "authoren": "Pirmin Suter, PENTAG Informatik AG, Johannes Mangold, Trivadis AG",
+      "title": "Informationen effizient bereitstellen"
+    },
+    {
+      "bat": 34,
+      "pdf": "BAT34_Amberg_LoRaWAN_IoT_Infrastruktur.pdf",
+      "authoren": "Thomas Amberg, IoT Zürich Meetup / Yaler.net",
+      "title": "LoRaWAN IoT Infrastruktur - vom Sensor zur Cloud"
+    },
+    {
+      "bat": 34,
+      "pdf": "BAT34_Basler_IT_als_bremsende_Kraft_der_digitalen_Transformation.pdf",
+      "authoren": "Markus Basler, SBB",
+      "title": "Die IT als bremsende Kraft der Digitalen Transformation?"
+    },
+    {
+      "bat": 34,
+      "pdf": "BAT34_Boenzli_Linder_Datengetriebene_Entscheidfindung.pdf",
+      "authoren": "Patrick Bönzli, soom-it GmbH und Manuel Linder, Noser Group",
+      "title": "Datengetriebene Entscheidungsfindung"
+    },
+    {
+      "bat": 34,
+      "pdf": "BAT34_Gruetter_Der_Weg_der_Mobiliar_ins_digitale_Zeitalter.pdf",
+      "authoren": "Andreas Grütter, Die Mobiliar",
+      "title": "Persönlich - auch digital. Der Weg der Mobiliar ins digitale Zeitalter"
+    },
+    {
+      "bat": 34,
+      "pdf": "BAT34_Helwin_Autonomes_Fahren.pdf",
+      "authoren": "Erich Helwin, PostAuto Schweiz",
+      "title": "Autonomes Fahren – Traum oder Realität"
+    },
+    {
+      "bat": 34,
+      "pdf": "BAT34_Horster_InternetderDinge.pdf",
+      "authoren": "Dr. Bettina Horster, Vivai Software AG",
+      "title": "Das Internet der Dinge - Erfahrungen, Innovationen und Umsetzungstipps"
+    },
+    {
+      "bat": 34,
+      "pdf": "BAT34_Knolmayer_Industrie4.0_Revolution_Evolution_Hype.pdf",
+      "authoren": "Prof. Dr. Gerhard Knolmayer, Universität Bern",
+      "title": "Industrie 4.0: Revolution, Evolution und/oder Hype?"
+    },
+    {
+      "bat": 34,
+      "pdf": "BAT34_Kronawitter_Edel_MobileTicketing_Digitalisierung_Infrastruktur.pdf",
+      "authoren": "Dr. Andreas Kronawitter und Marcel Edel, BLS",
+      "title": "Mobile Ticketing und Digitalisierung in der Infrastruktur"
+    },
+    {
+      "bat": 34,
+      "pdf": "BAT34_Moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 34,
+      "pdf": "BAT34_Programmheft.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 34,
+      "pdf": "BAT34_Stalder_Digitalisierung_bei_der_Post.pdf",
+      "authoren": "Roman Stalder, Post",
+      "title": "Digitalisierung bei der Post - wo wir stehen und was uns fordert"
+    },
+    {
+      "bat": 35,
+      "pdf": "BAT35_Affentranger_Hochverfuegbar_als_Service.pdf",
+      "authoren": "Paul Affentranger, afca.",
+      "title": "Hochverfügbar als Service - erste Erfahrungen mit AWS Lambda und Azure Service Fabric"
+    },
+    {
+      "bat": 35,
+      "pdf": "BAT35_Andres_Hochverfuegbarkeit_ISCEJPD.pdf",
+      "authoren": "Peter Andres, ISC-EJPD",
+      "title": "Hochverfügbare Applikationen und Services im EJPD"
+    },
+    {
+      "bat": 35,
+      "pdf": "BAT35_Aust_Hochverfuegbarkeit_PostFinance.pdf",
+      "authoren": "Harald Aust, PostFinance",
+      "title": "Von 'normalverfügbar' zu 'always-on' - Hochverfügbares Rechenzentrum mit zwei Standorten"
+    },
+    {
+      "bat": 35,
+      "pdf": "BAT35_Moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 35,
+      "pdf": "BAT35_Programmheft.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 35,
+      "pdf": "BAT35_Schmid_Cluster_Pacemaker.pdf",
+      "authoren": "Philippe Schmid, Puzzle",
+      "title": "HA Cluster mit Pacemaker und Corosync"
+    },
+    {
+      "bat": 36,
+      "pdf": "BAT36_Mobiliar_Container_als_Immutable_Infrastructure.pdf",
+      "authoren": "John Hutchison, Die Mobiliar",
+      "title": "Container als Immutable Infrastructure"
+    },
+    {
+      "bat": 36,
+      "pdf": "BAT36_Moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 36,
+      "pdf": "BAT36_PostFinance_Erfahrungsbericht-Container.pdf",
+      "authoren": "Mathias Herzog, PostFinance",
+      "title": "Linux Container im Betrieb – ein Erfahrungsbericht"
+    },
+    {
+      "bat": 36,
+      "pdf": "BAT36_Programmheft.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 36,
+      "pdf": "BAT36_SBB_ContainerVirtualisierung.pdf",
+      "authoren": "Baltisar Oswald und Szabolcs Szádeczky-Kardoss, SBB",
+      "title": "Sind Container die Virtualisierung der Zukunft? – Ein Erfahrungsbericht der SBB"
+    },
+    {
+      "bat": 37,
+      "pdf": "BAT37_Bandi_JavaScript_Universal_Platform.pdf",
+      "authoren": "Jonas Bandi",
+      "title": "Write once, run everywhere"
+    },
+    {
+      "bat": 37,
+      "pdf": "BAT37_ETH_Bedeutung_von_Paralleler_Programmierung.pdf",
+      "authoren": "Michael Faes, ETH Zürich",
+      "title": "Bedeutung von paralleler Programmierung"
+    },
+    {
+      "bat": 37,
+      "pdf": "BAT37_linkyard_Scala_wo_macht_der_Einsatz_Sinn.pdf",
+      "authoren": "Mario Siegenthaler, linkyard ag",
+      "title": "Scala - wo macht der Einsatz Sinn?"
+    },
+    {
+      "bat": 37,
+      "pdf": "BAT37_Moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 37,
+      "pdf": "BAT37_PostFinance_NotonlyJava.pdf",
+      "authoren": "Barbara Marti, PostFinance",
+      "title": "Stellenwert von Java heute aus der Sicht des IT Managements"
+    },
+    {
+      "bat": 37,
+      "pdf": "BAT37_Programmheft.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 38,
+      "pdf": "BAT38_AouiniBogosAlvarado_zk-SNARK_Blockchain.pdf",
+      "authoren": "Nagib Aouini, Sonia Bogos und Jorge Alvarado, ELCA",
+      "title": "Privacy-preserving techniques using zero knowledge proof in public Ethereum blockchain"
+    },
+    {
+      "bat": 38,
+      "pdf": "BAT38_FischliLocherFankhauser_Evoting.pdf",
+      "authoren": "Stephan Fischli, Philipp Locher und Benjamin Fankhauser, Berner Fachhochschule",
+      "title": "E-Voting - Herausforderung an Kryptographie und Praxis"
+    },
+    {
+      "bat": 38,
+      "pdf": "BAT38_Goetz_Zauber_von_Blockchain.pdf",
+      "authoren": "Thomas Goetz, PostFinance",
+      "title": "Der Zauber von Blockchain"
+    },
+    {
+      "bat": 38,
+      "pdf": "BAT38_Moderation.pdf",
+      "authoren": "Thomas Goetz",
+      "title": "Moderation"
+    },
+    {
+      "bat": 38,
+      "pdf": "BAT38_Programmheft.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 39,
+      "pdf": "BAT39_BoenzliZaugg_SPOUD.pdf",
+      "authoren": "Patrick Bönzli und Lukas Zaugg, SPOUD",
+      "title": "From Zero to Cloud and Back: Cloud als Startup-Enabler"
+    },
+    {
+      "bat": 39,
+      "pdf": "BAT39_Imsand_ServerlessApplicationFramework.pdf",
+      "authoren": "Matthias Imsand, Amanox Solutions",
+      "title": "Serverless Application Framework"
+    },
+    {
+      "bat": 39,
+      "pdf": "BAT39_Programmheft.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 39,
+      "pdf": "BAT39_SzadeczkyKardoss_SBBPublicCloud.pdf",
+      "authoren": "Szabolcs Szadeczky-Kardoss, SBB",
+      "title": "Public Cloud Erfahrungsbericht"
+    },
+    {
+      "bat": 40,
+      "pdf": "BAT40_Programmheft.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 40,
+      "pdf": "https://www.slideshare.net/batbern/bat40-zhaw-stadelmann-deep-learningbased-pattern-recognition-in-business",
+      "authoren": "Thilo Stadelmann, ZHAW ",
+      "title": "Deep Learning-based Pattern Recognition in Business "
+    },
+    {
+      "bat": 40,
+      "pdf": "https://www.slideshare.net/batbern/bat40-humanist-portmann-smart-citys-cognitive-computing-fr-stdte",
+      "authoren": "Edy Portmann, Universität Freiburg ",
+      "title": "Smart Cities: Cognitive-Computing für Städte "
+    },
+    {
+      "bat": 40,
+      "pdf": "https://www.slideshare.net/batbern/bat40-ccsourcing-auge-zerndt-artificial-intelligence-an-der-kundenschnittstelle",
+      "authoren": "Thomas Zerndt, Stefanie Auge-Dickhut, CC Sourcing ",
+      "title": "AI an der Kundenschnittstelle? "
+    },
+    {
+      "bat": 40,
+      "pdf": "https://www.slideshare.net/batbern/bat40-inselgruppe-zuehlke-endrich-kmpf-dikk-multilabel-textklassifikation-von-med-berichten",
+      "authoren": "Olga Endrich, Matthias Kämpf, Insel Gruppe und Tomas Dikk, Zühlke Engineering ",
+      "title": "Multilabel Text-Klassifikation von medizinischen Berichten "
+    },
+    {
+      "bat": 40,
+      "pdf": "https://www.slideshare.net/batbern/bat40-mobiliar-koller-msching-aimobiliar-wie-aiservices-in-der-mobiliar-gebaut-und-eingesetzt-werden",
+      "authoren": "Andreas Mösching, Jérôme Koller, Die Mobiliar ",
+      "title": "Wie AI-Services in der Mobiliar gebaut und eingesetzt werden "
+    },
+    {
+      "bat": 40,
+      "pdf": "https://www.slideshare.net/batbern/bat40-sbb-jckel-optische-zuglokalisation-mit-machine-learning",
+      "authoren": "Lothar Jöckel, SBB ",
+      "title": "Optische Zuglokalisation mit Machine Learning "
+    },
+    {
+      "bat": 40,
+      "pdf": "https://www.slideshare.net/batbern/bat40-nvidia-stampfli-knstliche-intelligenz-roboter-und-autonome-fahrzeuge-revolution-und-chance",
+      "authoren": "Marc Stampfli, NVIDIA ",
+      "title": "Künstliche Intelligenz, Roboter und autonome Fahrzeuge – Revolution und Chance? "
+    },
+    {
+      "bat": 41,
+      "pdf": "BAT41_Programmheft.pdf",
+      "authoren": "",
+      "title": "Programmheft"
+    },
+    {
+      "bat": 41,
+      "pdf": "https://www.slideshare.net/batbern/die-evolution-zu-microservices",
+      "authoren": "Pascal Auderset, Die Mobiliar ",
+      "title": "Die Evolution zu Microservices "
+    },
+    {
+      "bat": 41,
+      "pdf": "https://www.slideshare.net/batbern/soa-vs-microservices-oder-soa-microservices",
+      "authoren": "Gion Sialm, BIT ",
+      "title": "SOA vs. Microservices oder SOA & Microservices? "
+    },
+    {
+      "bat": 41,
+      "pdf": "https://www.slideshare.net/batbern/microservicesenterprise",
+      "authoren": "Florian Seidel, SBB CFF FFS ",
+      "title": "Microservices@Enterprise "
+    },
+    {
+      "bat": 42,
+      "pdf": "BATbern42_Moderation.pdf",
+      "authoren": "Nissim Buchs",
+      "title": "Moderation"
+    },
+    {
+      "bat": 42,
+      "pdf": "https://www.slideshare.net/batbern/batbern42-vom-frontend-monolithen-zu-microfrontends",
+      "title": "Vom Frontend Monolithen zu Micro-Frontends",
+      "abstract": "In der  Mobiliar sind wir vermehrt mit der Herausforderung konfrontiert, schneller und agiler Funktionalität auszuliefern. Das Rezept der Stunde dazu ist die Microservice Architektur. Auch im Frontend verbreitet sich der Bedürfnis nach Möglichkeiten grosse Applikationen in kleinere, interagierende, unabhängig auszuliefernde Teilapplikationen aufzuteilen. In den letzten zwei Jahren hat die Mobiliar das Vorhaben angepackt ihr Mitarbeiterportal (B2E) in kleinere SPAs aufzuteilen. In diesem Vortrag werden die verschiedenen Herausforderungen auf dem Weg zu Micro-Frontends  thematisiert. Es wird die Abfolge von Motivation, Visionen, Entscheidungen, Problemen, Lösungen und Alternativen aufgezeigt.",
+      "referenten": [
+        {
+          "name": "Emanuel Indermühle, Die Mobiliar",
+          "bio": "Emanuel Indermühle arbeitet in der Technologie Architektur der Mobiliar und verantwortet Techstacks für Angular und Node.js. In dieser Rolle treibt er die Modularisierung im Frontend und die LifeCycle Migration nach Angular voran. Zuvor arbeitete er beim Softwaredienstleister Mimacom und studierte Informatik an der Universität Bern.",
+          "portrait": "Emanuel_Indermuehle.jpg",
+          "company": "mobiliar.jpg"
+        }
+      ]
+    },
+    {
+      "bat": 42,
+      "pdf": "https://www.slideshare.net/batbern/batbern42-endtoend-verantwortlichkeit-in-der-praxis-scion-workbench",
+      "title": "End-to-End Verantwortlichkeit in der Praxis: Scion Workbench",
+      "abstract": "Das neue Traffic Management System der SBB basiert auf einer Microservice Architektur. Unterschiedliche Problemstellungen erfordern dediziertes Knowhow und haben sehr unterschiedliche Anforderungen an Time-to-Market, Verfügbarkeit, Technologie, Lifecycle, etc. Wir glauben, dass wir mit ganzheitlich verantwortlichen Teams die Effizienz und Qualität der einzelnen Services erheblich steigern können. Die einzelnen Teams entwickeln ihre Microservices vertikal über den gesamten Stack - von der Persistenz bis hin zum UI. Eine der Herausforderungen liegt in der GUI Integration der verschiedenen Microfrontends. Hier hilft uns das eigens dafür entwickelte Opensource Framework SCION Workbench, welches einen leichtgewichtigen Applikationsrahmen zur Verfügung stellt und die einfache und kohärente Integration verschiedener Webanwendungen ermöglicht. Inhalte können als View, Popup oder Activity eingebunden werden. Views ihrerseits können durch den Benutzer flexibel angeordnet werden. Grundsätzlich kann jede Webapplikation eingebunden werden. Die Applikationen sind frei in der Wahl ihrer Technologien und geben in einem Manifest ihre Fähigkeiten und Absichten an. Dies ermöglicht eine lose gekoppelte Interaktion zwischen den Applikationen. Im einfachsten Fall sind keine Anpassungen in der einzubindenden Applikation erforderlich. Wenn eine Applikation aber mit der Plattform interagieren möchte, kann sie ein Framework agnostisches Gast API einbinden.",
+      "referenten": [
+        {
+          "name": "Christoph Bühlmann, SBB AG",
+          "bio": "Christoph Bühlmann arbeitet als Software Ingenieur bei SBB AG. Zu seinem Glück ist seine Vergangenheit mit RCP und JEE nicht ganz so lang. Aktuell beschäftigt er sich als Full-Stack Entwickler, Architekt und DevOps Evangelist mit der Automatisierung der Infrastruktur-Planung.",
+          "portrait": "Christoph_Buehlmann.jpg",
+          "company": "sbb.jpg"
+        },
+        {
+          "name": "Daniel Wiehl, mtrail GmbH",
+          "bio": "Daniel Wiehl arbeitet als Software Ingenieur bei der mtrail GmbH. Daniel ist Projektlead der SCION Workbench. Er kommt aus einem Java- und Eclipse-RCP-Hintergrund. Sein Schwerpunkt liegt nun auf der Entwicklung moderner Webanwendungen auf Basis von Angular.",
+          "portrait": "Daniel_Wiehl.jpg",
+          "company": "mtrail.jpg"
+        },
+        {
+          "name": "Simon Eggler, mtrail GmbH",
+          "bio": "Simon Eggler arbeitet als Software Ingenieur bei mtrail GmbH. Unglaublich viele Jahre lang hat er für die Postfinance und die SBB Rich Clients programmiert. Aktuell liegt sein Fokus als Full-Stack Entwickler auf der Umsetzung von Optimierungs-Algorithmen für die Planungsautomatisierung.",
+          "portrait": "Simon_Eggler.jpg",
+          "company": "mtrail.jpg"
+        }
+      ]
+    },
+    {
+      "bat": 42,
+      "pdf": "https://www.slideshare.net/batbern/batbern42-largescale-frontends-mit-mixed-reality",
+      "title": "Large-scale Frontends mit Mixed Reality",
+      "abstract": "Frontends sind dank Augmented- und Mixed Reality immer öfters in der reellen Welt eingebettet und werden sich in Zukunft mehr und mehr von Screens lösen. Traditionelle GUIs werden so durch Mixed Reality kombiniert mit AI-basierten virtuellen Assistenten erweitert oder ersetzt. Dies gilt insbesondere für Firstline-Workers welche nur sporadisch an einem festen Arbeitsplatz sitzen. So entsteht ein neues Interaktions-Paradigma mit geringerem 'cognitive load' für die Benutzer. Diese neuartigen Frontends erleichtern für viele Mitarbeiter den Zugang zu Informationen und Funktionalitäten. Simon Scheidegger und Paul Affentranger zeigen anhand eines konkreten Projekts bei CSL Behring Möglichkeiten, erste Erfahrungen, Limitierungen und werfen einen Blick auf die Zukunft von Mixed Reality Frontends.",
+      "referenten": [
+        {
+          "name": "Simon Scheidegger, CSL Behring",
+          "bio": "Simon Scheidegger arbeitet als Leiter Fraktionierung bei der CSL Behring. Ursprünglich Biochemiker beschäftigt er sich heute intensiv mit der prozessseitigen und technischen Entwicklung des Produktionsbereiches.",
+          "portrait": "Simon_Scheidegger.jpg",
+          "company": "cslbehring.jpg"
+        },
+        {
+          "name": "Paul Affentranger, afca.",
+          "bio": "Paul Affentranger arbeitet als Software Architekt und Entwickler bei afca. ag. Sein primärer Fokus ist das Zusammenspiel von Mixed- und Augmented Reality mit AI und Cloud Services.",
+          "portrait": "Paul_Affentranger.jpg",
+          "company": "afca.jpg"
+        }
+      ]
+    },
+    {
+      "bat": 43,
+      "pdf": "BATbern43_Moderation.pdf",
+      "authoren": "Daniel Kühni",
+      "title": "Moderation"
+    },
+    {
+      "bat": 43,
+      "pdf": "https://www.slideshare.net/batbern/batbern43-command-events-divide-and-conquer-in-microservice-architekturen",
+      "title": "Commands & Events – Divide and Conquer in Microservice Architekturen",
+      "abstract": "Das Teilen liegt in der Natur von Microservice Architekturen. Business Prozesse machen aber selten halt an den Microservice Grenzen. In diesem Vortrag wird besprochen wie mit Commands und Events die Umsetzung von Business Prozessen beherscht werden kann, so dass schlussendlich ein konsistenter Zustand erreicht wird. Und wie mit Fällen und Aufgaben die Benutzer dabei involviert werden und ihnen damit die Übersicht über die verteilten Prozesse ermöglicht wird.",
+      "referenten": [
+        {
+          "name": "Beat Winistörfer, Die Mobiliar",
+          "bio": "Beat Winistörfer arbeitet seit über 5 Jahren in der Applikationsarchitektur der Mobiliar als Domänenarchitekt Partner und Basisdienste sowie als Systemarchitekt in einem der Release Trains der agilen Software Delivery Organisation. In diesen Rollen beschäftigt er sich intensiv mit der Umsetzung von Business Prozessen und den damit einhergehenden Anforderungen an die Arbeitsorganisation. Zuvor war er bei hp und rtc für die BEKB tätig, auch dort mit Schwerpunkt Business Transaktionen. Er hat an der Universität Zürich Wirtschaftsinformatik studiert.",
+          "portrait": "Beat_Winistoerfer.png",
+          "company": "mobiliar.jpg"
+        }
+      ]
+    },
+    {
+      "bat": 43,
+      "pdf": "https://www.slideshare.net/batbern/batbern43-events-aus-business-sicht-bei-der-verwaltung",
+      "title": "Events aus Business Sicht bei der Verwaltung",
+      "abstract": "Heiraten ist eine ziemlich komplizierte Sache – erst recht, wenn man sich mal überlegt, was da dahintersteckt. Im Rahmen der Implementierung der Registerharmonisierung hat man festgestellt, dass das Muster der Prozessintegration für diesen Kontext nicht taugt. Man hat daher auf Events gesetzt. Dies ist ein schlankes Mittel der Implementierung – wenn man die Semantik beherrscht. Und nicht immer läuft alles rund …",
+      "referenten": [
+        {
+          "name": "Andreas Spichiger, BFH/ISB",
+          "bio": "Ein bunter und sehr spannender Strauss von Architektur-bezogenen Tätigkeiten im Rucksack kam Andreas Spichiger 2008 an die Berner Fachhochschule. Hier hat er mitgewirkt, die Vertiefung Enterprise Architecture im Bachelor Wirtschaftsinformatik zu verankern und auch das CAS Enterprise Architecture Management aufzubauen. Per 1. Juli 2019 ist nun Zeit für einen Seitenwechsel: er wechselt als Leiter Architektur zum Informatiksteuerungsorgan des Bundes ISB.",
+          "portrait": "Andreas_Spichiger.png"
+        }
+      ]	  
+    },
+    {
+      "bat": 43,
+      "pdf": "https://www.slideshare.net/batbern/batbern43-stream-all-things-patterns-of-data-integration-in-event-driven-systems",
+      "title": "Stream All Things - Patterns of Data Integration in Event Driven Systems",
+	    "abstract": "In this presentation, we’ll discuss the basic challenges of data integration in the context of event driven systems. We'll separate what is really important from what is merely nice to have and introduce design and architecture patterns that are used to tackle these challenges. We will then explore how these patterns can be implemented on streams of events and Apache Kafka. We offer no silver bullets. Instead, we will share pragmatic solutions that many engineering organizations used to build fast, scalable and manageable streaming data pipelines.",
+      "referenten": [
+        {
+          "name": "Konstantine Karantasis, Confluent",
+          "bio": "Konstantine Karantasis is a software engineer at Confluent. He’s a main contributor to Apache Kafka and its Connect API, and an author of widely used software, such as Confluent’s S3 and Replicator connectors, class loading isolation in Kafka Connect, Incremental Cooperative Rebalancing in Kafka, the Confluent CLI and more. Previously, he built scalable open source web services at Yahoo! and researched high-performance computing at the University of Illinois at Urbana-Champaign. Konstantine holds a Ph.D. from the University of Patras.",
+          "portrait": "Konstantine_Karantasis.png",
+          "company": "confluent.jpg"
+        }
+      ]
+    },
+    {
+      "bat": 43,
+      "pdf": "https://www.slideshare.net/batbern/batbern43-events-lessons-learnt-building-an-enterprise-data-bus",
+      "title": "Events - Lessons learnt building an Enterprise Data Bus",
+      "abstract": "Swissport ist weltweit der führende Dienstleister im Groundhandling und bei Cargo. Über 300 Flughäfen in 50 Ländern werden bedient. Dabei spielen Daten eine führende Rolle: wann und wo hebt ein Flugzeug ab, wie lange dauerte die Betankung, welche Gepäcktücke sind auszuladen? Aufgrund von Wachstum durch Übernahmen ist die IT Landschaft durch eine Vielzahl von Silos charakterisiert - was übergreifende Analytik und die Nutzung von Daten in neuen Kontexten erschwert. Gleichzeitig werden weltweit verschiedene IT Governance Modelle verfolgt, was zu Inkonsistenzen in Prozessen, Datenzugriffen und Datenqualitätsverlusten führt. Diese Situation wird adressiert durch eine Vision für eine Eventgetriebene Architektur und deren Verankerung im Management Prozessen und Prinzipien zur Realisierung der Vision - sowie deren Umsetzung den Aufbau eines Enterprise Datenmodells, Governance für den Zugriff und die Dokumentation von Daten. Erfahrungen aus diesen Schritten werden in der Präsentation reflektiert. Dabei ist zu beachten, dass der Aufbau der zugrundeliegenden Plattform unter strikter Kostenkontrolle stand und lediglich 10 zweiwöchentliche Sprints für die erste Produktivsetzung genutzt werden konnten.",
+      "referenten": [
+        {
+          "name": "Stefan Brock, Swissport",
+          "bio": "Head of IT Architecture Swissport, davor Head Production Architecture bei Swisscom und CTO bei mehreren Startups.",
+          "portrait": "Stefan_Brock.png",
+          "company": "swissport.jpg"
+        },
+        {
+          "name": "Markus Ehrenmann, Sqooba",
+          "bio": "Co-Creator bei sqooba, davor Lead Architect AI, Head BI & Big Data Architecture bei Swisscom.",
+          "portrait": "Markus_Ehrenmann.png",
+          "company": "sqooba.jpg"
+        }
+      ]
+    },
+    {
+      "bat": 43,
+      "pdf": "https://www.slideshare.net/batbern/batbern43-morphologischer-kasten-als-architektur-framework",
+      "title": "Morphologischer Kasten als Architektur Framework",
+	    "abstract": "Swisscom hat ihre Arbeitsweise auf agile Organisationsstrukturen nach Safe umgestellt. Um den agilen, dezentralen Umsetzungseinheiten einen gemeinsamen Leitstern zu geben wurde der Auftrag erteilt, eine Architekturvision 2025 zu erstellen. Basis der Architekturvision ist das Swisscom Architecture Framework, das die Gesamtarchitektur in sechs entkoppelte Bereiche einteilt. Ziel des Vortrags ist es, das Framework und seine wichtigsten Eigenschaften zu beleuchten.",
+      "referenten": [
+        {
+          "name": "Christoph Meier, Swisscom",
+          "bio": "Christoph Meier ist gelernter Physiker und arbeitet seit 13 Jahren bei Swisscom in diversen Architekturrollen. Seit Sommer 2018 leitet er das Team Architecture Vision in der Abteilung Enterprise Architecture und Innovation.",
+          "portrait": "Christoph_Meier.png",
+          "company": "swisscom.jpg"
+        }
+      ]
+    },
+    {
+      "bat": 43,
+      "pdf": "https://www.slideshare.net/batbern/batbern43-rail-control-system-hochverfgbare-anwendungen-fr-die-bahnproduktion",
+      "title": "Rail Control System: Hochverfügbare Anwendungen für die Bahnproduktion",
+	    "abstract": "Die Schweizerischen Bundesbahnen betreiben eines der weltweit dichtest befahrenen Bahnnetze der Welt. Zur Überwachung und Steuerung ist seit nunmehr 10 Jahren das eigenentwickelte Rail Control System (RCS) im Einsatz und wird laufend weiterentwickelt. In dieser Präsentation stellen wir die auf Event-Verarbeitung basierenden Lösungsansätze vor, welche die hohen Anforderungen bezüglich Latenz und Hochverfügbarkeit für Systeme der Bahnproduktion adressieren",
+      "referenten": [
+        {
+          "name": "Marc Hoffmann, mtrail",
+          "bio": "Marc beschäftigt sich seit über 10 Jahren als Softwareentwickler und Architekt mit Lösungen für die Bahnproduktion. Der regelmässige Sprecher auf Konferenzen und Open Source Autor wurde er 2014 als Java Champion ausgezeichnet. Marc ist CTO bei der mtrail GmbH in Bern. Auf Twitter ist Marc unter @marcandsweep zu finden.",
+          "portrait": "Marc_Hoffmann.png",
+          "company": "mtrail.jpg"
+        },
+        {
+          "name": "Erwann Wernli, SBB",
+          "bio": "Erwann Wernli arbeitet als Software Architekt bei der SBB und begleitet die Weiterentwicklung der Gesamtarchitektur RCS in einem dezentralisierten agilen Umfeld. Er hat früher an die Universität geforscht und Lösungen für Enterprise Content Management entwickelt. Online kann er auf Twitter unter @wrnli gefunden werden.",
+          "portrait": "Erwann_Wernli.png",
+          "company": "sbb.jpg"
+        }
+      ]
+    },
+    {
+      "bat": 43,
+      "pdf": "https://www.slideshare.net/batbern/batbern43-fraud-detection-mit-stream-analytics",
+      "title": "Fraud Detection mit Stream Analytics",
+	    "abstract": "Die Postfinance hat zusammen mit ELCA die bestehende Betrugserkennung-Lösung auf eine neue Stream Analytics Plattform mit BigData Stack (Apache Kafka, Apache Spark Streaming, Cloudian S3 Storage und Kubernetes) migriert. In der Präsentation wird die neue Lösung sowie Erfahrungen und Erkenntnisse mit den neuen Technologien vorgestellt.",
+      "referenten": [
+        {
+          "name": "Matej Ilicic, PostFinance",
+          "bio": "Matej Ilicic hat 2011 den Master of Science in Software Engineering an der Universität Zagreb abgeschlossen, war 5 Jahre als Software-Engineer tätig, und ist in den letzten 2,5 Jahren bei der PostFinance als Solution Architekt hauptsächlich in Compliance & Risk Bereich tätig.",
+          "portrait": "Matej_Ilicic.png",
+          "company": "postfinance.jpg"
+        },
+        {
+          "name": "Zacharias Kull, ELCA",
+          "bio": "Zacharias Kull hat Software Entwicklung studiert und ist Datenexperte bei ELCA. Er ist fasziniert von den Möglichkeiten neuer Technologien wie Kafka und Spark und wie dadurch verschiedene Disziplinen wie Batch, Streaming und DevOps zusammenkommen.",
+          "portrait": "Zacharias_Kull.png",
+          "company": "elca.jpg"
+        }
+      ]
+    },
+    {
+      "bat": 43,
+      "pdf": "https://www.slideshare.net/batbern/batbern43-self-service-on-a-big-data-platform",
+      "title": "Self Service on a Big Data Platform",
+	    "abstract": "Kafka has been used for several years at Swisscom to stream data from various sources to sinks such as Hadoop. Providing Kafka and Hadoop as a Service to multiple teams in a large company presents governance, security and multi-tenancy challenges. In this talk we will present how we have built our self-service Swisscom Big Data Platform which enables teams to use Kafka, Hadoop and Kubernetes internally. We will explain how we have tackled these challenges by describing our governance model, our identity & ACLs management, and our self-service capabilities. We will also present how we leverage Kubernetes and how it simplifies our operations.",
+      "referenten": [
+        {
+          "name": "Sammy Ramareddy, Swisscom",
+          "bio": "Sammy Ramareddy is a system architect at Swisscom, where he started on the initial engineering big data platform team. He has a mixed software and system engineering background, which makes him feel home when it’s about platforms and infrastructure. For the last three years, he has been building the self-service big data platform within Swisscom.",
+          "portrait": "Sammy_Ramareddy.png",
+          "company": "swisscom.jpg"
+        },
+        {
+          "name": "Thibaud Chardonnens, Swisscom",
+          "bio": "Thibaud Chardonnens is a technical product owner at Swisscom where he was one of the first engineers involved in the development of the big data platform. For the last five years, he was mainly building streaming applications and integrating the Kafka ecosystem within Swisscom.",
+          "portrait": "Thibaud_Chardonnens.png",
+          "company": "swisscom.jpg"
+        }
+      ]
+    },
+    {
+      "bat": 44,
+      "pdf": "https://www.slideshare.net/batbern/",
+      "authoren": "Baltisar Oswald",
+      "title": "Moderation"
+    },
+	{
+      "bat": 44,
+      "pdf": "https://www.slideshare.net/batbern/",
+      "title": "Rechtsberatung & intelligente Bots",
+	  "abstract": "Die Art und Weise wie Rechtsdienstleistungen erbracht, wie sie konsumiert und nachgefragt werden, ist im Umbruch begriffen. Die Coop Rechtsschutz AG und ihre Tochtergesellschaft YLEX versuchen mit der Vermählung von Recht und Technologie diesen Veränderungen Rechnung zu tragen und gleichzeitig dem Bürger den Zugang zum Recht zu erleichtern. Ioannis Martinis, Head of Legal Tech der Coop Rechtsschutz AG und Head of Communication der YLEX AG, gibt einen Einblick in die Legal Tech Projekte und erzählt von den Hürden, die es zu meistern gilt.",
+      "referenten": [
+        {
+          "name": "Ioannis Martinis, Coop Rechtsschutz",
+          "bio": "Ioannis Martinis - Head of Legal Tech der Coop Rechtsschutz AG, Kommunikationsverantwortlicher bei YLEX, Executive Board Member der Swiss LegalTech Association, Mitgründer der Digital Minds Society und Dozent für Recht im digitalen Zeitalter an der Hochschule für Wirtschaft Zürich.",
+          "portrait": "Ioannis_Martinis.png",
+          "company": "cooprechtsschutz.jpg"
+        }
+      ]
+    },
+	{
+      "bat": 44,
+      "pdf": "https://www.slideshare.net/batbern/",
+      "title": "Vom Chatbot zum Voicebot – Aufbau und Transformation",
+  	  "abstract": "Die Referenten geben einen Überblick über das Virtual Assistant-Projekt von PostFinance. Der Hauptfokus der Präsentation liegt auf der Art und Weise, wie ein solches System funktioniert und bedient wird, sowie die grössten Herausforderungen, welche mit der Einführung und Weiterentwicklung eines Virtual Assistant gemeistert werden müssen.",
+      "referenten": [
+        {
+          "name": "Dominic Spalinger, PostFinance",
+          "bio": "Dominic Spalinger ist als Product Owner Chatbot tätig. Zuvor arbeitete er als Scrum Master und Projektleiter. Er besitzt einen MSc. in Business Information Systems, sowie einen BSc. in Engineering and Management.",
+          "portrait": "Dominic_Spalinger.png",
+          "company": "logo-pf.jpg"
+        },
+        {
+          "name": "Andreas Hess, ELCA",
+          "bio": "Andreas Hess, lic. rer. pol. Universität Basel ist als Business Consultant und Projekt Manager bei ELCA Informatik AG tätig. Er verfügt über 18 Jahre Erfahrung in Beratung und Projekt Management in der IT-, Retail- und Finanz-Industrie.",
+          "portrait": "Andreas_Hess.png",
+          "company": "elca.jpg"
+        }
+      ]
+    },
+	{
+    "bat": 44,
+    "pdf": "https://www.slideshare.net/batbern/conversational-ai-wie-funktioniert-es-und-was-sind-die-anwendungen",
+    "title": "Conversational AI - Wie funktioniert es und was sind die Anwendungen?",
+    "abstract": "Die Swisscom Data, Analytik and KI-Experten Mario Paonessa und Philipp Egolf zeigen, wie künstliche Intelligenz mit Kundeninteraktionen verknüpft ist, was ihr zugrunde liegt und wofür sie verwendet wird. Plato, die Dialogplattform von Swisscom die alle digitalen Kundeninteraktionen verwaltet, wird ebenso vorgestellt wie Alltagsanwendungen.",
+    "referenten": [
+      {
+        "name": "Philipp Egolf, Swisscom",
+        "bio": "Philipp Egolf ist Principal Product Manager für Daten, Analytik und KI bei Swisscom. Er ist verantwortlich für die Entdeckung neuer Geschäftsfelder im Bereich Künstliche Intelligenz und die Produktentwicklung rund um Robotic Process Automation, Chatbots und Spracherkennung. Philipp Egolf verfügt über mehrjährige Erfahrung im Umfeld der Künstlichen Intelligenz mit einem Hintergrund im Maschinenbau, der Entwicklung von Produktvisionen und -strategien und Human Centered Design Thinking.",
+        "portrait": "Philipp_Egolf.png",
+        "company": "swisscom.jpg"
+      },
+      {
+        "name": "Mario Paonessa, Swisscom",
+        "bio": "Mario Paonessa ist System Architekt für Daten, Analytik und KI bei Swisscom. Er ist verantwortlich für die technische Entwicklung der Dialogplattform Plato. Er hat einen Hintergrund in Informatik und verfügt neben Erfahrungen im Bereich der künstlichen Intelligenz über langjährige und fundierte Kenntnisse im Bereich der Softwareentwicklung und Geschäftsprozessautomatisierung. Er hat neben KI-Services erfolgreich verschiedene Systeme rund um Contact Center Lösungen aufgebaut.",
+        "portrait": "Mario_Paonessa.png",
+        "company": "swisscom.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 45,
+    "pdf": "https://www.slideshare.net/batbern/umgang-mit-legacy-in-der-digitalen-transformation-andreas-grtter-die-mobiliar",
+    "title": "Umgang mit Legacy in der Digitalen Transformation",
+    "abstract": "Digitalisierung, Cloud, AI, Microservices, Agile etc. all diese Themen prägen unseren Alltag bei der Modernisierung des Versicherungsgeschäfts und der dafür notwendigen IT Lösungen. Was aber geschieht mit den Systemen, mit denen heute immer noch ein Grossteil des Geldes verdient wird und auf Technologien wie Smalltalk, Cobol oder Siebel basieren? Hierfür gibt es unterschiedliche Strategien und Massnahmen, deren konkrete Anwendung in der Mobiliar in diesem Vortrag aufgezeigt werden.",
+    "referenten": [
+      {
+        "name": "Andreas Grütter, Die Mobiliar",
+        "bio": "Arbeitet seit 2013 bei der Mobiliar und hat die IT Architektur inklusive der notwendigen Prozesse und Praktiken für die digitale Transformation Mobiliar neu aufgebaut. Zusammen mit seinem Team hat er diese auf die strategischen Geschäftsziele ausgerichtet und in der Organisation etabliert. Zuvor arbeitete er u.a. als IT Architekt, Projektleiter und Software Engineer bei RTC, HP und der Bank Julius Bär. Sein Spezialgebiet ist die IT Modernisierung, damit die digitale Transformation gemeistert werden kann. Andreas Grütter hat an der Fachhochschule Nordwestschweiz Informatik studiert und besitzt einen EMBA in Innovation Management der Berner Fachhochschule.",
+        "portrait": "andreas_gruetter.png",
+        "company": "mobiliar.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 45,
+    "pdf": "https://www.slideshare.net/batbern/legacy-wsjf-baltisar-oswald-sbb-cff-ffs-250625003",
+    "title": "Legacy WSJF!",
+    "abstract": "Legacy sind schwer wiegende technische Schulden einer IT. Dies ist bei der SBB IT nicht anders. Deshalb haben wir uns entschieden, diese Schulden aktiv und kontinuierlich zu priorisieren und abzubauen. Der kontinuierliche Abbau respektive Umgang mit Legacy ist dabei das hehre Ziel. Denn sobald eine Plattform/Applikation in Betrieb ist, steht sie kurz davor, Legacy zu werden.",
+    "referenten": [
+      {
+        "name": "Baltisar Oswald, SBB CFF FFS",
+        "bio": "Baltisar Oswald ist als Stackverantwortlicher (PO) Cloud Stack, sowie Teamleiter Delivery für die Umsetzung der Cloud Strategie der SBB verantwortlich. Davor war er als Software Architekt und Methodik Leiter der Software Entwicklung bei der SBB, sowie als Software Entwickler und Architekt in diversen Firmen im Raum Bern tätig. Baltisar Oswald hat an der Universität Bern Mathematik und Informatik studiert.",
+        "portrait": "ok_baltisar_oswald.jpg",
+        "company": "sbb.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 45,
+    "pdf": "https://www.slideshare.net/batbern/automatisierungsmglichkeiten-beim-legacyreengineering-andres-koch-object-engineering",
+    "title": "Automatisierungsmöglichkeiten beim Legacy-Reengineering",
+    "abstract": "Wenn man die Menge an Code und die Anzahl anderer Artefakte in Betracht zieht, welcher sich in Legacy-Applikationen über die Jahre angesammelt haben, dann sieht man schnell, dass diese ohne maschinelle Hilfe weder zu analysieren noch sinnvoll zu modernisieren sind. Ein:e Software-Architekt:in muss wissen, was in der zu modernisierenden Applikation enthalten ist, um die richtigen Entscheide in Bezug auf das modernisierte Zielsystem zu fällen. Eine häufige Lösung ist, alles neu zu entwickeln und das Alte wegzuwerfen. Wenn das in bestimmten Fällen auch der richtige Weg sein kann, gehen dabei gerne die verborgenen Wissens-Schätze in der bestehenden Applikation vergessen, welche dann in einer neuen Applikation auf die harte Weise wiedergefunden und entwickelt werden müssen. Ein Tabu für Entwickler ist, dass aus bestehenden Metadaten generierter Code nicht wartbar ist und darum eine maschinelle Hilfe vorneweg ausgeschlossen wird. Dieser Vortrag soll aufzeigen, inwieweit ein maschinelles Reengineering in vernünftigem Mass erfolgreich sein kann und unter welchen Umständen es nicht angewendet werden soll. Mit Praxis-Beispielen mit Kennzahlen aus kleineren und grösseren Projekten werden die gemachten Aussagen untermalt.",
+    "referenten": [
+      {
+        "name": "Andres Koch, Object Engineering",
+        "bio": "Andres Koch promovierte 1976 als Elektro-Ingenieur an der Ingenieurschule des Interkantonalen Technikums in Rapperswil und 1981 mit dem Master Degree in Computer Science der University of Waterloo, Kanada. Mehrere Jahre arbeitete er als Software-Ingenieur in der Industrie, darauf als Entwicklungsleiter eines mittleren Softwarehauses im kommerziellen Softwarebereich. Seit 1989 ist er als lehrbeauftragter Dozent am Nachdiplom-Studium (MAS) für Software-Engineering der Hochschule für Technik, Rapperswil tätig. Er ist Geschäftsführer der Object Engineering GmbH, welche seit 26 Jahren auf die Modernisierung von Software-Systemen spezialisiert ist. Andres Koch befasste sich viele Jahre mit Software-Architektur objektorientierter und verteilter Systeme und hat mehrere Migrations- und Modernisierungs-Projekte und servicebasierte Systeme in der Praxis realisiert. Er veröffentlichte verschiedene Vorträge und Artikel zum Thema Legacy-Modernisierung.",
+        "portrait": "AKOPortrait.jpeg",
+        "company": "oe_logo.png"
+      }
+    ]
+  },
+  {
+    "bat": 46,
+    "pdf": "https://www.slideshare.net/batbern/batbern46swisstopoapiinderffentlichenverwaltungpdf",
+    "title": "API’s entwickeln und betreiben in der öffentlichen Verwaltung",
+    "abstract": "swisstopo entwickelt und betreibt seit über 12 Jahren API’s, welche mehrheitlich von Fachkunden und der breiten Öffentlichkeit genutzt werden. Zu den Erfolgsfaktoren gehören der offene Zugang, die auf mehrheitlich offenen Standards basierten API Spezifikationen und der frühe Einsatz von Cloud Technologien. Nichts desto trotz stand auch die Swisstopo vor grossen Herausforderungen und mit dem Erfolg kamen auch (mit Grüssen aus Russland) unvorhersehbare Ansprüche.",
+    "referenten": [
+      {
+        "name": "Gilbert Jeiziner, swisstopo",
+        "bio": "Gilbert Jeiziner ist gelernter Geomatiker und ist seit knapp 10 Jahren in verschiedenen Rollen im Bereich API Entwicklung und Betrieb tätig. Er ist ein Open Source, Open Data und Open Standards Advokat und zeigt mit seinem Geodaten Team, dass Innovation und agiles Vorgehen auch in der öffentlichen Verwaltung möglich ist.",
+        "portrait": "Jeiziner_Gilbert 1.jpg",
+        "company": "swisstopo.JPG"
+      }
+    ]
+  },
+  {
+    "bat": 46,
+    "pdf": "https://www.slideshare.net/batbern/batbern46syncier-marketplacepdf",
+    "title": "API-Ökosysteme für die Versicherungsbranche",
+    "abstract": "Nur durch qualitativ hochwertiges und zielgerichtetes API Management können lebendige API-Ökosysteme geschaffen werden. Diese API-Ökosysteme bieten Unternehmen die Chance ihre IT-Assets optimal an interne und externe Stakeholder anzubinden. Dadurch bietet sich ein hohes Potenzial, Unternehmen können sowohl bestehende IT-Systeme optimieren als auch komplett neue Geschäftsideen und Partnerschaften umsetzen. Doch was bedeutet qualitativ hochwertiges und zielgerichtetes API Management? Und wie kann man die Integration in bestehende, stark regulierte IT Landschaften schaffen und dabei Mehrwert für interne Beteiligten als auch externe Partner generieren? Wir stellen unseren Ansatz und Erfahrungen mit der SaaS Plattform und API Marketplace 'Syncier Marketplace' vor und gehen auf die Herausforderungen in der Versicherungsbranche ein.",
+    "referenten": [
+      {
+        "name": "Wolfgang Heinz, Syncier",
+        "bio": "Wolfgang Heinz ist seit 2019 als Product Owner verantwortlich für die Produktstrategie des Syncier Marketplace als API-Ökosystem sowie der dazugehörigen Software-as-a-Service Plattform. Er verfügt über langjährige Erfahrung im Aufbau und der Entwicklung von B2B und B2C SaaS-Produkten im E-Commerce und bei globalen Finanzdienstleistern.",
+        "portrait": "WolfgangHeinz.jpeg",
+        "company": "syncier.JPG"
+      },
+	  {
+        "name": "Fabian Kolbe, Syncier",
+        "bio": "Fabian Kolbe ist als IT Consultant für das Onboarding von API Services in den Syncier Marketplace und das Ausrollen und die technische Integration der API Services in Unternehmen verantwortlich. Er ist seit dem Start des Syncier Marketplace 2018 dabei und hat die Plattform und das Ecosystem ausgebaut. Zuvor arbeitete er für die Allianz in München und Bangkok als IT-Trainee und IT Consultant. Er hat in München und Stockholm studiert und besitzt einen Master Wirtschaftsinformatik der TU München.",
+        "portrait": "FabianKolbe.jpeg",
+        "company": "syncier.JPG"
+      }
+    ]
+  },
+  {
+    "bat": 46,
+    "pdf": "https://www.slideshare.net/batbern/batbern46bcgeapimanagmentpdf",
+    "title": "The BCGE journey to API management",
+    "abstract": "In this presentation we will present the BCGE journey to API management in a banking context. We will introduce BCGE business drivers and technical challenges regarding API management. We will discuss the prerequisites for a successful API management program, such as API governance, API development best practices, security concepts. Then we will describe BCGE transformation roadmap and the technical challenges/best practices we faced at each phase, e.g. identity propagation, complex transformation and change management. We will conclude on the benefit of implementing an API Management as a core building bloc within the information systems in the context of multiple third-party integrators.",
+    "referenten": [
+      {
+        "name": "Frédéric Maye, Banque Cantonale de Genève",
+        "bio": "Frédéric Maye joined BCGE in 2018 as an IT project manager. In 2019, he moved to the IT architecture section within the IT department. The IT architecture section is in charge of providing upstream support for all projects that have an impact on the bank's information systems to ensure consistency, integration and compliance with the guiding principles. Before joining BCGE, he acquired over 15 years of banking experience as a developer, project manager and development manager.",
+        "portrait": "FredericMaye.png",
+        "company": "bcge.jpg"
+      },
+	  {
+        "name": "Florent Martin, ELCA",
+        "bio": "Florent Martin joined ELCA in 2017 as a solution Architect. He developed a strong expertise on modern integration strategy (API management, IPaaS, decentralized integration) and cybersecurity (API security, IAM/IdP). With more than 20 years of professional experience in IT,  he has proven practice in API management training, API governance, API best practices, product selection, architecture design and implementation.",
+        "portrait": "FlorentMartin.png",
+        "company": "elca.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 46,
+    "pdf": "https://www.slideshare.net/batbern/batbern46openbankingpdf",
+    "title": "Open Banking – ein Konzept mit viel Potenzial auch für die Schweizer Finanzindustrie und darüber hinaus",
+    "abstract": "Weltweit gewinnt Open Banking an Bedeutung. In Grossbritannien beispielsweise erfolgen in diesem Bereich monatlich rund 800 Millionen API-Aufrufe. Auch für die Schweiz ist dieses Konzept, dass den Kunden im Umgang mit seinen Daten stärkt, hochrelevant und erste Umsetzungen sind produktiv. Dieses Referat gibt eine Kurzeinführung ins Thema, schafft einen Überblick aus fachlicher sowie technischer Sicht und geht auf wesentliche Bausteine in der Schweiz inklusive erster Praxiserfahrungen ein.",
+    "referenten": [
+      {
+        "name": "Simon Bleher, Business Engineering Institute St. Gallen",
+        "bio": "Simon Bleher ist Projektleiter der Initiative OpenBankingProject.ch. Als Senior Consultant des Business Engineering Institute St. Gallen unterstützt er Unternehmen von der Gestaltung ihrer Strategien bis zu deren konkreter Umsetzung mit Fokus auf Geschäftsarchitekturen und Digitalisierung in der Finanzindustrie.",
+        "portrait": "Simon Bleher.jpg",
+        "company": "BEI.png"
+      },
+	  {
+        "name": "Sven Biellmann, Finnova",
+        "bio": "Sven Biellmann arbeitet seit gut 4 Jahren als Product Manager Open Finance bei der finnova AG Bankware. In dieser Funktion beschäftigt er sich intensiv mit den Themen Open Finance, Wertschöpfungsintegration und digitale Ökosysteme und deren Auswirkung auf die Finanzindustrie und die Anbieter von Bankensoftware. Vor seinem Wechsel zu Finnova war Sven über 10 Jahre bei der UBS AG in verschiedenen Bereichen als IT Service & Product Manager tätig. Zwischenzeitliche Abstecher in die (Rück-)Versicherungsindustrie sowie in den Energiehandel haben es ihm ermöglicht Erfahrung ausserhalb der Finanzdienstleistungsbranche zu sammeln. Sven hält einen Master of Science Abschluss in Communication Systems der ETH Lausanne.",
+        "portrait": "Sven Biellmann.jpg",
+        "company": "Finnova_Logo.jpg"
+      },
+	  {
+        "name": "Olivier Châtelain, DXC Technology",
+        "bio": "Olivier Chatelain arbeitet seit 20 Jahren in der Bankinformatik, in den letzten 10 Jahren mit Fokus auf Electronic- & Internet-Banking als Business Analyst mit Fokus auf technische Integrationen. In dieser Funktion beschäftigt er sich die letzten 2 Jahre intensiv mit dem Thema Open Banking und steht er im regen Kontakt und Austausch zu nationalen und internationalen Normierungsgremien, wie dem Open-Banking Project, der Berlin-Group Advisory Group, SIF, der SIX und dem SFTI. Olivier hält einen Abschluss als Informatikingenieur der EPFL",
+        "portrait": "Olivier Chatelain.jpg",
+        "company": "DXC Logo.png"
+      }
+    ]
+  },
+    {
+      "bat": 47,
+      "pdf": "https://de.slideshare.net/batbern/00batbern47moderationpptx",
+      "authoren": "Daniel Kühni",
+      "title": "Moderation"
+    },
+  {
+    "bat": 47,
+    "pdf": "https://de.slideshare.net/batbern/01batbern47rainergraupdf",
+    "title": "Shift Left fängt ganz links an",
+    "abstract": "Shift Left ist der Ansatz das Testen ganz zum Anfang der Produktentwicklung zu verschieben. Haben wir das auch richtig verstanden? Was bedeutet «ganz am Anfang»?! Wenn wir in den Mindset von Lean Startup oder Design Thinking eintauchen, dann steht «ganz am Anfang» die Kundin, deren Bedürfnisse wir (leider noch) nicht kennen. Lean Startup ist das Testen, das Experimentieren mit dem Kunden, das Shift Left bis in die reale Welt des kompetitiven Markets. Diese Kunst zu beherrschen, bringt Dynamik und Geschwindigkeit in die Entwicklung von Produkten die unsere Kund:innen lieben. Denn Dynamik und Geschwindigkeit sind die neuen Gewinner am Markt – Fast is the new Big. Dieser Talk will Impulse setzen dem Shift Left konsequent bis ganz links zu folgen, gewürzt mit Beispielen aus dem Erlebnisschatz des Vortragenden.",
+    "referenten": [
+      {
+        "name": "Rainer Grau, pragmatic solutions",
+        "bio": "Rainer Grau begleitet seit über zwanzig Jahren Unternehmen auf dem Weg fokussiert, schlank und wertorientiert zu agieren. Vom Software Nerd über den IT-Architect sind weitere Stationen seines Werdeganges: Distinguished Consultant und Partner bei Zühlke Engineering, Head Business Development bei Digitec Galaxus, Aufbau und Durchführung von Lehrgängen in den Themen Innovation, Business Agility, Lean Portfolio Management an Fachhochschulen, Gründer des Swiss Agile Leaders Circle, Vorstand des IREB und noch ein paar mehr. Rainer ist Mit-Inhaber und Think Tank der pragmatic solutions GmbH. Die anderen 24h des Tages verbringt Rainer Grau gerne mit seiner Familie, bei Sport und mit seiner Gibson Les Paul.",
+        "portrait": "Rainer_Grau.png",
+        "company": "pragmaticsolutions.png"
+      }
+    ]
+  },
+  {
+    "bat": 47,
+    "pdf": "https://de.slideshare.net/batbern/erfolgreich-scheitern-mit-shift-left-und-devops",
+    "title": "Erfolgreich scheitern mit Shift Left und DevOps",
+    "abstract": "Mit einem Augenzwinkern wird eine Anleitung dafür gegeben, wie man mit Shift Left und DevOps erfolgreich scheitert. Wie probieren wir die Kultur zu beeinflussen, damit sie garantiert niemand lebt? Wie wird verhindert, dass Teams miteinander sprechen? Wie stellen wir sicher, dass sich niemand um betriebliche Themen kümmert? Welcher Entwicklungsprozess ist am besten dafür geeignet, unsichere Applikationen zu entwickeln? Wie machen wir Deployments und Releases möglichst mühsam und stellen dabei eine tiefbleibende Qualität sicher? Wie können wir uns möglichst von Stakeholdern und Nutzerinnen abschotten? Dabei werden Theorie und Praxis gegenübergestellt und einige Erfahrungen - sei es durch Scheitern oder Erfolg - aus dem Alltag damit verwoben.",
+    "referenten": [
+      {
+        "name": "Matthias Fritschi, avega IT",
+        "bio": "Matthias ist seit vielen Jahren in der Software-Entwicklung in verschiedenen Rollen tätig. Am liebsten arbeitet er in der Nähe des Maschinenraums, fährt aber mit dem Architektur-Lift auch gerne mal ins Penthouse, um den Blick etwas weiter schweifen zu lassen und über Methoden und Prozesse nachzudenken, um möglichst nahe an den Kund:innen „Working Software” zu produzieren. Neben der Arbeit als IT-Architekt und Consultant bei avega IT AG ist er auch an der BFH Bern als Dozent tätig und einer der Mitgründer des Berner DevOps Meetups.",
+        "portrait": "Matthias_Fritschi.jpg",
+        "company": "avega.png"
+      }
+    ]
+  },
+  {
+    "bat": 47,
+    "pdf": "https://de.slideshare.net/batbern/shift-left-security-252037095",
+    "title": "Shift Left Security",
+    "abstract": "The presentation focuses on the responsibilities, practices, processes, tools, and techniques that systematically increase security in the software development lifecycle (SSDLC). Software should be provisioned uniformly declarative regardless of whether software artifacts are produced in-house or purchased. This is the foundation for effective quality and security standardization, which are key facilitators of reliability engineering.",
+    "referenten": [
+      {
+        "name": "Florian Kammermann, Swisscom",
+        "bio": "In my professional life so far, I have worked in many different IT areas. I am interested in everything (practices, technology, human aspects) that makes software development and system engineering faster, more valuable, more reliable and more transparent. At the moment I work at Swisscom as Reliability Enterprise Architect. I help the company to shape modern Operation. I am also part of the SRE Community of Practice, where we try to implement SRE practices in Swisscom.",
+        "portrait": "Florian_Kammermann.jpg",
+        "company": "swisscom.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 47,
+    "pdf": "https://de.slideshare.net/batbern/compliance-und-governance-in-der-devopsacht",
+    "title": "Compliance und Governance in der DevOps-Acht",
+    "abstract": "In der Cloud leben wir im Spannungsfeld zwischen Enterprise Compliance und Continuous Delivery. Wie schaffen wir es, dass Entwickler:innen schnell Wert liefern können, ohne dabei Compliance und Governance zu vernachlässigen oder die DevOps-Acht zu unterbrechen? Wir zeigen anhand von verschiedenen Beispielen wie wir diese Herausforderungen lösen und wie bei uns Shift Left gelebt wird.",
+    "referenten": [
+      {
+        "name": "Stefan Johner, die Mobiliar",
+        "bio": "Stefan Johner, Mathias Schnydrig und Christof Leuenberger führen zusammen den agilen Release Train 'Skywalker'. Dieser entwickelt und betreibt die System- und Applikationsplattform der Mobiliar in der Cloud. Alle drei sind Ende 2018 bei der Mobiliar eingestiegen und kombinieren ihre Erfahrungen aus den Bereichen Infrastruktur, Public Cloud und Softwareentwicklung um die Entwickler:innen der Mobiliar die Plattform der Zukunft zur Verfügung zu stellen.",
+        "portrait": "Stefan_Johner.png",
+        "company": "mobiliar.jpg"
+      },
+	  {
+        "name": "Christof Leuenberger, die Mobiliar",
+        "bio": "",
+        "portrait": "Christof_Leuenberger.png",
+        "company": "mobiliar.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 47,
+    "pdf": "https://de.slideshare.net/batbern/devsecopsteams-das-securitysteuer-berlassen",
+    "title": "DevSecOps-Teams das Security-Steuer überlassen",
+    "abstract": "Public-Cloud Kunden, haben Multi-Account Architekturen (z.B. Landing Zone), um den DevOps-Teams Autonomie und Geschwindigkeit zu geben. In diesem Umfeld zentrale Security Anforderungen im Bezug Governance und Compliance zu erfüllen, ist eine Herausforderung. Nuvibit Semper unterstützt die Reise vom DevOps- zum DevSecOps-Team, indem es erlaubt, Security Anforderungen durch das Applikations-Team zu spezifizieren und direkt zu applizieren. Unterschiedliche Anforderungen für z.B. Dev, Test, Prod können mit Policies spezifiziert werden. Die Lösung zeigt, was mit AWS nativen Security Services erreicht werden kann.",
+    "referenten": [
+      {
+        "name": "Michael Ullrich, Nuvibit",
+        "bio": "Michael ist Experte, wenn es um Sicherheit und Compliance in der Cloud geht und verfügt über mehr als 25 Jahre Beratungserfahrung! Er ist Diplomingenieur, hat einen MBA, ist zertifizierter AWS Solutions Architect Professional und AWS DevOps Engineer Professional.",
+        "portrait": "Michael Ullrich.jpg",
+        "company": "nuvibit-logo.png"
+      },
+      {
+        "name": "Jann Wild, AWS",
+        "bio": "Solutions Architect bei AWS in der Schweiz. Unterstützt Kunden seit 4 Jahren in der effizienten Nutzung der AWS Services, mit einem Fokus auf Sicherheit und Compliance. Im früheren Leben als Consultant und Software Architekt für regulierte Unternehmen tätig.",
+        "portrait": "Jann_Wild.jpg",
+        "company": "aws-logo.png"
+      },
+      {
+        "name": "Simon Messerli, AWS",
+        "bio": "Solutions Architect bei AWS in der Schweiz. Unterstützt Kunden auf der Cloud Journey mit Best Practices & Erfahrungen. Hintergrund in System- & Software Engineering, sowie als AWS Trainer",
+        "portrait": "Simon_Messerli.jpg",
+        "company": "aws-logo.png"
+      }
+    ]
+  },
+  {
+    "bat": 47,
+    "pdf": "https://de.slideshare.net/batbern/why-did-the-shiftleft-end-up-in-the-cloud-for-bank-julius-baer",
+    "title": "Why did the shift-left end up in the cloud for Bank Julius Baer?",
+    "abstract": "The efficient collaboration with development partners and the requirement to deliver high quality software led to an evolutionary journey where BJB has shifted the software engineering discipline all the way from on-prem to DevCloud. In this session you will learn how ‘Scotty’ ensures release quality, while experimentation and fast on-boarding of new developers is guaranteed.",
+    "referenten": [
+      {
+        "name": "Jürg Haldimann, Bank Julius Baer",
+        "bio": "Jürg Haldimann is leading the global Software Architecture discipline as part of the Architecture Center of Excellence at Bank Julius Baer. He has been passionate about creating customer value by automating and standardizing the software delivery value chain across technologies and locations in order to deliver quality software in a fast way. He studied Computer Science at Bern University of Applied Sciences and holds a Master in Advanced Studies ETH in Management, Technology, and Economics.",
+        "portrait": "Jürg_Haldimann.png",
+        "company": "JB_LA_RGB_blue.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 47,
+    "pdf": "https://de.slideshare.net/batbern/zeitnahe-reaktion-auf-verordnungsnderungen-mit-feature-toggles",
+    "title": "Zeitnahe Reaktion auf Verordnungsänderungen mit Feature Toggles",
+    "abstract": "Häufige und kurzfristige Änderungen an gesetzlichen Grundlagen, die berücksichtigt werden müssen, stellen selbst kurze Releasezyklen vor Herausforderungen. Das Team vom Covid Zertifikat zeigt, wie sie solche Herausforderungen vor allem auch von Features die deaktiviert werden, gelöst haben.",
+    "referenten": [
+      {
+        "name": "Iris Hunkeler, ti&m",
+        "bio": "Iris Hunkeler arbeitet als Lead Engineer bei der ti&m. Davor war sie auch als Requirements Engineer und Projektleiterin tätig. Sie ist gelernte Softwareentwicklerin und studierte Wirtschaftsinformatik an der ZHAW (BSc) und FHNW (MSc).",
+        "portrait": "Iris Hunkeler.jpg",
+        "company": "ti8m.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 47,
+    "pdf": "https://de.slideshare.net/batbern/creating-a-product-through-devops-the-story-of-appuio-cloud",
+    "title": "Creating a Product through DevOps: The Story of APPUiO Cloud",
+    "abstract": "Since its foundation in 2014, the slogan of VSHN has been 'The DevOps Company'. Following that ethos, VSHN applied all of its practice of DevOps and Agile to the creation of its latest product, APPUiO Cloud. In this session we are going to see how DevOps shaped product and human management decisions throughout the process, from idea to market.",
+    "referenten": [
+      {
+        "name": "Adrian Kosmaczewski, VSHN",
+        "bio": "Adrian Kosmaczewski is a writer, a software developer and a trainer. He is a published author, and has worked as a professional software developer since 1996. Adrian holds a Master in Information Technology from the University of Liverpool.",
+        "portrait": "Adrian_Kosmaczewski.png",
+        "company": "vshn.png"
+      }
+    ]
+  },
+  {
+    "bat": 48,
+    "pdf": "https://www.slideshare.net/batbern/batbern48zero-trust-architektur-des-iscejpdpdf",
+    "title": "Zero Trust Architektur des ISC-EJPD",
+    "abstract": "Das Zero-Trust-Modell ist ein Sicherheitskonzept, das auf dem Grundsatz basiert, keinem Gerät, Nutzer oder Dienst innerhalb oder ausserhalb des eigenen Netzwerks zu vertrauen. Dieses Konzept wird im EJPD schon seit 2003 – Einführung des SSO-Portals – aktiv umgesetzt.",
+    "referenten": [
+      {
+        "name": "Peter Andres, ISC-EJPD",
+        "bio": "Peter Andres ein Software-Architekt, welcher versucht Management, Politik und Technologie zusammenzubringen, so dass innovative, sichere und nachhaltige Lösungen gebaut werden können.",
+        "portrait": "peter_andres.jpg",
+        "company": "isc-ejpd.png"
+      },
+      {
+        "name": "Matthias Germann, ISC-EJPD",
+        "bio": "Matthias Germann ist der Leiter der Architektur und Architekt aus Leidenschaft. In der Architektur sind Konzepte wie Security by design und by default, sowie eine Zero Trust Architektur zentrale Pfeiler der Gesamtarchitektur.",
+        "portrait": "matthias_germann.jpeg",
+        "company": "isc-ejpd.png"
+      }	    ]
+  },
+  {
+    "bat": 48,
+    "pdf": "https://www.slideshare.net/batbern/batbern48how-zero-trust-can-help-your-organisation-keep-safepdf",
+    "title": "How Zero Trust can help your organisation keep safe",
+    "abstract": "This presentation will bring insights into how the Zero Trust framework can help organizations improve their cybersecurity posture and resilience and what the organizational challenges are.",
+    "referenten": [
+      {
+        "name": "Nathalie Mombelli, Microsoft",
+        "bio": "Nathalie Mombelli has been active in the field of security over the past 20 years, both at the corporate and governmental level. Among others she used to work for the Federal Criminal Police as investigator and then immersed herself into the exciting world of cybersecurity as a consultant and now as a Security Executive at Microsoft, supporting Public Sector organizations to shape their cybersecurity strategy and implement overall resilience to cyber threats.",
+        "portrait": "nathalie_mombelli.jpg",
+        "company": "microsoft.png"
+      }
+    ]
+  },
+  {
+    "bat": 48,
+    "pdf": "https://www.slideshare.net/batbern/batbern48zerotrustkonzept-und-realittpdf",
+    "title": "Zero Trust - Konzept und Realität",
+    "abstract": "Bei Zero Trust wird keinem Akteur, der Zugang zu Ressorucen oder Diensten im Netzwerk will, von vornherein vertraut. Gemäss dem Motto «never trust, always verify» erfordert jede Abfrage im System eine neue Verifizierung. Es wird aufgezeigt, wie dies in einer Umgebung mit vielen verschiedenen Akteuren durchgängig umgesetzt werden kann. Dabei nehmen OAuth-Token und die Funktionalität Token-Exchange eine zentrale Rolle ein.",
+    "referenten": [
+      {
+        "name": "Michael Gerber, SBB",
+        "bio": "Michael Gerber ist Senior Systemarchitekt bei der SBB im Bereich Customer Identity and Access Management (CIAM). Im SwissPass Ökosystem mit über 5 Millionen online Kunden und den vielen beteiligten Transportunternehmen ist Sicherheit ein zentrales Thema.",
+        "portrait": "michael_gerber.jpg",
+        "company": "sbb.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 48,
+    "pdf": "https://www.slideshare.net/batbern/",
+    "authoren": "Baltisar Oswald",
+    "title": "Moderation"
+  },
+  {
+    "bat": 49,
+    "pdf": "https://www.slideshare.net/batbern/klassifizierung-von-versicherungsschden-ai-und-mlops-bei-der-mobiliar",
+    "title": "Klassifizierung von Versicherungsschäden – AI und MLOps bei der Mobiliar",
+    "abstract": "MLOps-Prozesse und -Infrastruktur stellen die Grundlage dar für effizientes Entwickeln und nachhaltigen Betrieb von Machine Learning Modellen. Unser NLP Modell zur Klassifizierung von Versicherungsschäden veranschaulicht, wie die Mobiliar MLOps verwendet, um Mitarbeiter sowie Kunden zu befähigen und zu entlasten. Neben der Entwicklungsarbeit im interdisziplinären Team zeigen wir, wie das Modell in Geschäftsprozessen (B2E und B2C) eingebunden wird. Wir beleuchten anhand konkreter Beispiele, weshalb die MLOps-Prozesse und -Infrastruktur der Mobiliar zentral sind für die Entwicklung und den Betrieb von Machine Learning Modellen. Dabei sollen angetroffene Stolpersteine nicht ausgespart werden, zum Beispiel im Monitoring des Modells im Geschäftsprozess.",
+    "referenten": [
+      {
+        "name": "Tobias Egli, die Mobiliar",
+        "bio": "Tobias Egli arbeitet als Data Scientist und Product Owner für MLOps bei der Mobiliar. Davor war er als Analytics Consultant und wissenschaftlicher Forscher (PhD in molekularen Neurowissenschaften) tätig.",
+        "portrait": "TobiasEgli.jpg",
+        "company": "mobiliar.jpg"
+      },
+      {
+        "name": "Thomas Baumann, die Mobiliar",
+        "bio": "Thomas Baumann ist Teamleiter im Prozess Schaden der Mobiliar und Product Owner eines interdisziplinären agilen Teams welches datengetriebene Lösungen entwickelt. Früher arbeitete er als IT Projektleiter in der Bundesverwaltung.",
+        "portrait": "ThomasBaumann.jpg",
+        "company": "mobiliar.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 49,
+    "pdf": "https://www.slideshare.net/batbern/the-future-of-coaching-in-sport-with-aiml",
+    "title": "The Future of Coaching in Sport with AI/ML",
+    "abstract": "Data is a critical component of today management governance in all companies and industries, and so it is in sports as well. Data can be generated by a lot of different sources like human annotations, sensors, optical tracking and should be produced to help decision makers to take better decisions. The aim of this presentation is first to share Dartfish experience on today Data generation using AI and Machine Learning, but as well to explore the future usage of AI/ML in Data mining to produced better decision indicators.",
+    "referenten": [
+      {
+        "name": "Jean Sebastien Merieux, Dartfish",
+        "bio": "Jean Sebastien joined Dartfish in 2015 and was appointed CEO in June 2017 after 2 years as Head of Product & CTO. In addition to this mission, he leads Dartfish's efforts in the development of products and offerings based on Computer Vision technology and dedicated to sports performance and fan engagement. Prior to joining Dartfish, Jean Sebastien had a 15-year career in Telecom and IT industry in different positions.  Jean Sebastien has a Master in Mechanical Engineering from INSA Lyon and a Master in Marketing from HEC Paris.",
+        "portrait": "jean-sebastien_merieux.jpg",
+        "company": "dartfish.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 49,
+    "pdf": "https://www.slideshare.net/batbern/from-ideation-to-production-in-7-days-the-scoring-factory-at-raiffeisen",
+    "title": "From Ideation to Production in 7 days: The Scoring Factory at Raiffeisen",
+    "abstract": "Imagine a world where you transform a business problem into data specification, collect a data set, learn a ML model and put it into stable, scheduled production within 7 days – rather than spending weeks on data preparation and implementing a production pipeline. At Raiffeisen Data Science this became reality with our Scoring Factory, a ML OPs framework where all customer data is condensed and prepared in a 'feature data layer' - ready to be used for ML algorithms, and a “Scoring Template” with which ML models are created in hours and which delivers production ready code. This overcomes our biggest obstacles in implementing new ML use cases: Data preparation and deployment used to demand so much time, that we were very limited in taking on new ML use cases. In particular, we can now try new ideas fast and without the risk of too much initial time investment. The Scoring Factory is the so-far final piece in a 3 year long effort to build a versatile, automated, robust data platform which allows to unleash the full potential of customer analytics and which started with local models executed on desktop PCs. The foundation is the Customer Analytics Platform. A Hadoop-Cluster where data from various sources gets collected, cleaned, interconnected and aggregated, resulting in thousands of attributes describing the customer in any angle which the business needs to solve their questions. In this talk, we give details about the Architecture of the Customer Analytics Platform and the key ingredients of the Scoring Factory.",
+    "referenten": [
+      {
+        "name": "Philipp Thomann, D One",
+        "bio": "Philipp received his Ph.D. in Mathematics from the University of Zurich in 2013. Afterwards he served as a postdoctoral researcher at the University of Stuttgart, Germany. His areas of expertise are machine learning, natural language processing, search, distributed computation, and ML Ops. Philipp is Managing Consultant at D ONE and in the team since 2017.",
+        "portrait": "PhilippThomann.jpg",
+        "company": "done.jpg"
+      },
+      {
+        "name": "Philipp Thomas, Raiffeisen",
+        "bio": "Philipp joined the customer analytics team of Raiffeisen Schweiz in 2018. In his role as Data Scientist, he focuses on gaining business insights via statistical methods. He received his PhD in Psychology from the University of Bern in 2017.",
+        "portrait": "PhilippThomas.jpg",
+        "company": "raiffeisen.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 49,
+    "pdf": "https://www.slideshare.net/batbern/mlops-journey-at-swisscom-ai-use-cases-architecture-and-future-vision",
+    "title": "MLOps journey at Swisscom: AI Use Cases, Architecture and Future Vision",
+    "abstract": "What powers the AI/ML services of Switzerland's leading telecommunication company? In this talk, we will provide an overview of the different AI/ML projects at Swisscom, from Conversational AI and Recommender Systems to Anomaly Detection. Moreover, we will show how we automate, scale, and operationalise these ML pipelines in production, highlighting the MLOps techniques and open source tools that are used. Finally, we will present Swisscom's roadmap towards the cloud with AWS and discuss how we envision a common MLOps solution for the organisation.",
+    "referenten": [
+      {
+        "name": "Joana Soares Machado, Swisscom",
+        "bio": "Joana is a Senior Data Scientist at Swisscom. As part of the Data, Analytics and AI department, she develops ML solutions to automate the real-time monitoring of Swisscom’s business processes and IT services. Joana holds a Master’s degree in Communication Systems from EPFL, where she previously worked as a research scientist in the domain of applied machine learning in privacy and security.",
+        "portrait": "JoanaSoaresMachado.jpg",
+        "company": "swisscom.jpg"
+      },
+      {
+        "name": "Maxime Darçot, Swisscom",
+        "bio": "Maxime has been a Data Scientist for 7 years at Swisscom where he worked on diverse projects mostly related to improving customer service. He is also helping coordinate several aspects related to how we deal with Machine Learning at Swisscom. Previously, he graduated from Ecole Centrale Paris (former CentraleSupelec) and UMPC in France and cofounded a startup at EPFL after his studies.",
+        "portrait": "MaximeDarcot.jpg",
+        "company": "swisscom.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 50,
+    "pdf": "",
+    "title": "Hommage ans BAT",
+    "abstract": "Ein Rückblick anlässlich des 50. BAT aus Sicht eines treuen Partners",
+    "referenten": [
+      {
+        "name": "Peter Kummer, Leiter Infrastruktur SBB",
+        "bio": "Peter Kummer leitet seit 2020 die Division Infrastruktur und ist Mitglied der Konzernleitung der SBB. Die Division Infrastruktur gewährleistet eine optimale Auslastung und Steuerung des Personen- und Güterverkehrs und ist für den Unterhalt, die Entwicklung und den Ausbau des Telekom-  Strom- und Schienennetzes der SBB zuständig. Peter Kummer stiess 2007 als Chief IT Architect zu den Schweizerischen Bundesbahnen SBB. 2009 wurde er zum CIO und Mitglied der Konzernleitung der SBB ernannt. Vor dem Eintritt bei der SBB war Peter Kummer “Head of Enterprise Architecture & IT Strategy” bei der  Versicherungsgesellschaft Die Mobiliar.",
+        "portrait": "peter.kummer.jpg",
+        "company": "sbb.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 50,
+    "pdf": "",
+    "title": "Navigating the next phase of digital innovation",
+    "abstract": "Warum wir ein neues Fundament für Fortschritt benötigen. Beyond FOMO: Umgang mit Unsicherheit und der hohen Dynamik der Veränderung. Understanding Society: Ausblick auf die künftigen Rahmenbediungen von Wirtschaft und Gesellschaft. Reverse the paradigm: Künftige Innovationsfelder für Technologie- und Informationsarchitektur. Creating trust: Gestaltungsfelder für die nächste Phase der digitalen Transformation",
+    "referenten": [
+      {
+        "name": "Stephan Sigrist, W.I.R.E",
+        "bio": "Stephan Sigrist ist Gründer und Leiter des Zürcher Thinktanks W.I.R.E. Er ist zudem Herausgeber der Buchreihe ABSTRAKT. Sigrist studierte an der ETH Zürich Biochemie und promovierte am Collegium Helveticum. Anschliessend arbeitete er als Beratur für Roland Berger sowie am Gottlieb Duttweiler Institut.",
+        "portrait": "stephan_sigrist.jpg",
+        "company": "wire_minilogo.png"
+      }
+    ]
+  },
+  {
+    "bat": 50,
+    "pdf": "",
+    "title": "Aufbruch in ein neues IT-Zeitalter: Quantum Computing",
+    "abstract": "Das Wachstum der digitalen Wirtschaft war schon immer eng mit dem Fortschritt der Halbleiterindustrie und in jüngerer Zeit mit der Erweiterung von KI-Fähigkeiten verbunden. Dies hat letztlich die Grenzen von Technologie verschoben, um so immer komplexere Probleme anzugehen. Einige unserer grössten Probleme von Heute, wie die Bekämpfung des Klimawandels, neu auftretender Krankheiten oder volatiler Märkte, erfordern weitere tiefgreifende Fortschritte und Innovationen in Computertechnologien. In dieser Präsentation erfahren Sie mehr über Quantencomputer, eine grundlegend neue Form der Informationsverarbeitung, die sich die Kraft quantenmechanischer Eigenschaften der Natur zunutze macht, sowie das Zusammenspiel mit Hochleistungsrechnern und KI. Neben einer Einführung in dieses neue Computerparadigma erfahren Sie mehr über IBMs Quantenhardware, Software und den Aufbau eines globalen Ökosystems. Darüber hinaus wird ein Einblick in die Landschaft quantengestützter Anwendungsfälle in der Industrie präsentiert.",
+    "referenten": [
+      {
+        "name": "Manuel Proissl, IBM",
+        "bio": "Dr. Manuel Proissl ist IBM Quantum Industry Applications Lead for Financial Services in EMEA mit Sitz in der Schweiz, wo er Institutionen aktiv dabei unterstützt, Quantenanwendungsfälle zu untersuchen und sie quantentauglich zu machen. Zuvor war er für Tier-1-Banken in verschiedenen leitenden, beratenden und hands-on Funktionen tätig, um digitale Innovationen und die Monetarisierung von Daten, KI und neuen Technologien voranzutreiben, wobei er hauptsächlich dem COO, CRO oder CIO unterstellt war. Darunter war Manuel tätig als Quantum Strategy and R&D Lead, als Head of AI in Banking and Quantum Computing, als Lead Data Scientist für quantitatives Risikomanagement und Compliance-Transformation für Banken weltweit und als Senior Advisor für Finanzaufsichtsbehörden (FED, EZB, FINMA, MAS), Regierungen (US DOE, Europäische Kommission) und verschiedene Konsortien der europäischen KI- und Quantenindustrie. Davor war er als Quantenphysiker in der Forschung, wobei er zu mehreren wissenschaftlichen Durchbrüchen beitragen konnte, darunter einer, der mit dem Nobelpreis ausgezeichnet wurde.",
+        "portrait": "manuel_proissl.jpg",
+        "company": "ibm.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 50,
+    "pdf": "",
+    "title": "Quantencomputer und die Bedrohung für die digitale Sicherheit",
+    "abstract": "Quantencomputer – wenn sie ausreichend groß sind – werden es ermöglichen, einige der mathematischen Probleme hinter der aktuellen Kryptographie effizient zu lösen, und damit praktisch die gesamte digitale Kommunikation unsicher machen. Die jüngsten Fortschritte beim Quantencomputing haben bei Regierungen und Standardisierungsgremien ein erhöhtes Gefühl der Dringlichkeit ausgelöst. Diese Präsentation bietet einen Überblick über die mit Quantencomputing verbundene Bedrohung der aktuellen Kryptographie und stellt einige der neuen quantensicheren Algorithmen vor, die unter Leitung des US National Institute for Standards and Technology (NIST) standardisiert werden. Darüber hinaus werden die Auswirkungen auf die Sicherheit der heutigen digitalen Kommunikation und Datenverarbeitung diskutiert und eine Reihe damit zusammenhängender Minderungsmaßnahmen skizziert, wie von verschiedenen Standardisierungsgremien und Regierungsinstitutionen in Europa und den USA empfohlen.",
+    "referenten": [
+      {
+        "name": "Marco Brenner, IBM",
+        "bio": "Marco Brenner arbeitet als Program Executive bei IBM Quantum in der Schweiz, mit besonderem Fokus auf Kryptographie und modernste Datenschutzlösungen zur Unterstützung von Vertraulichkeit und Compliance. Er arbeitet eng mit IBM Research an innovativen Lösungen und ist für deren Umsetzung bei Kunden in ganz Europa verantwortlich. Marco hat einen Master-Abschluss der ETH Zürich in Informatik mit Spezialisierung auf Kryptographie und Informationssicherheit und einen MBA des Henley Management College/University of Reading.",
+        "portrait": "marco_brenner.jpg",
+        "company": "ibm.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 50,
+    "pdf": "",
+    "title": "Mind the gap — 50 years of shortening feedback loops",
+    "abstract": "There have been many advances in Software Engineering over the past 50 years. Each has addressed a gap between expectations or needs and reality. Advances were made by automating or commoditizing some aspect of the software development process. Often the real benefits are not seen in advance simply because opportunities are created that were not possible before. For example DevOps enables real-time experimentation with new features. In this talk, we review several of these advances, and explore some of opportunities they open up.",
+    "referenten": [
+      {
+        "name": "Oscar Nierstrasz, Prof. em. UniBe and feenk",
+        "bio": "Oscar Nierstrasz is Professor emeritus of Computer Science at the University of Bern, where he founded the Software Composition Group in 1994. He retired from the University at the end of 2021, and is currently working at feenk.com to support onboarding and teaching of moldable development. He is co-author of over 400 publications, including the open-source books Object-Oriented Reengineering Patterns and Pharo by Example.",
+        "portrait": "oscar_nierstrasz.jpg",
+        "company": "feenk.png"
+      }
+    ]
+  },
+  {
+    "bat": 50,
+    "pdf": "",
+    "title": "Podiumsdiskussion",
+    "abstract": "Die Referenten diskutieren mit den Moderatoren über aktuelle Fragen und Herausforderungen",
+    "referenten": [
+      {
+        "name": "Peter Kummer, Stephan Sigrist, Marco Brenner, Oscar Nierstrasz - Moderation: Nissim Buchs, Andreas Grütter",
+        "bio": "",
+        "portrait": "panel.jpg",
+        "company": ""
+      }
+    ]
+  }
+
+
+]

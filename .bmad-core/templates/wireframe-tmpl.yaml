@@ -1,0 +1,360 @@
+# <!-- Powered by BMAD™ Core -->
+template:
+  id: wireframe-template-v1
+  name: User Interface Wireframe Document
+  version: 1.0
+  output:
+    format: markdown
+    filename: docs/wireframes/story-{{epic_num}}.{{story_num}}-{{wireframe_filename}}.md
+    title: "{{wireframe_title}}"
+
+workflow:
+  mode: interactive
+  elicitation: advanced-elicitation
+
+agent_config:
+  editable_sections:
+    - Header Information
+    - Visual Wireframe
+    - Key Interactive Elements
+    - Functional Requirements Met
+    - User Interactions
+    - Technical Notes
+    - API Requirements
+    - Navigation Map
+
+sections:
+  - id: header-information
+    title: Header Information
+    instruction: |
+      Capture essential metadata about this wireframe.
+      This helps organize wireframes by story, epic, user role, and functional requirements.
+    elicit: true
+    sections:
+      - id: story-reference
+        title: Story
+        instruction: "Reference the epic and story number (e.g., Epic 2, Story 2.3)"
+        example: "Epic 3, Story 3.1 - Speaker Management Service"
+        elicit: true
+
+      - id: screen-name
+        title: Screen
+        instruction: "Descriptive name of the screen or interface"
+        example: "Intelligent Speaker Matching Interface"
+        elicit: true
+
+      - id: user-role
+        title: User Role
+        instruction: "Primary user role(s) for this screen"
+        choices: [Organizer, Speaker, Partner, Attendee, Public, Admin, System]
+        example: "Organizer"
+        elicit: true
+
+      - id: related-fr
+        title: Related FR
+        instruction: "List related functional requirements from PRD"
+        example: "FR17 (AI-Powered Speaker Matching)"
+        elicit: true
+
+  - id: visual-wireframe
+    title: Visual Wireframe
+    instruction: |
+      Create ASCII art wireframe showing the screen layout and key elements.
+
+      WIREFRAME GUIDELINES:
+      - Use box-drawing characters for structure (┌─┐ │ └─┘ ├─┤ ┬ ┴)
+      - Show all major UI sections and panels
+      - Include navigation elements (← Back, [Menu], etc.)
+      - Label all interactive elements ([Button], checkbox ☐, radio ○)
+      - Show data presentation (tables, lists, cards)
+      - Include status indicators (✓ ⚠️ ✗ ●)
+      - Represent progress bars and metrics visually
+      - Show placeholder content where dynamic data appears
+      - Keep width under 85 characters for readability
+
+      SECTIONS TO INCLUDE:
+      - Header with navigation
+      - Main content areas
+      - Interactive controls
+      - Footer or action buttons
+
+      Start and end with markdown code fence (```).
+    elicit: true
+    type: code-block
+    example: |
+      ```
+      ┌─────────────────────────────────────────────────────────────────┐
+      │ ← Back        Screen Title                        [Action]      │
+      ├─────────────────────────────────────────────────────────────────┤
+      │                                                                  │
+      │  ┌─── SECTION 1 ──────────────────────────────────┐            │
+      │  │                                                 │            │
+      │  │  Content here with [Interactive Elements]      │            │
+      │  │                                                 │            │
+      │  └─────────────────────────────────────────────────┘            │
+      │                                                                  │
+      │  ┌─── SECTION 2 ───────┬─── SECTION 3 ───────────┐            │
+      │  │                      │                          │            │
+      │  │  Left panel content  │  Right panel content    │            │
+      │  │                      │                          │            │
+      │  └──────────────────────┴──────────────────────────┘            │
+      │                                                                  │
+      └─────────────────────────────────────────────────────────────────┘
+      ```
+
+  - id: key-interactive-elements
+    title: Key Interactive Elements
+    instruction: |
+      List and describe the key interactive components on this screen.
+      Focus on elements that users can interact with and their purpose.
+
+      Use bullet points with clear, concise descriptions.
+    elicit: true
+    type: bullet-list
+    examples:
+      - "**Progress bars**: Click to drill down into specific workflow steps"
+      - "**Drag-and-Drop**: Move speakers between pipeline stages"
+      - "**Smart Filters**: Multi-dimensional filtering (topic, time, content type)"
+      - "**Search Box**: Natural language search with semantic understanding"
+
+  - id: functional-requirements-met
+    title: Functional Requirements Met
+    instruction: |
+      Map this wireframe to specific functional requirements from the PRD.
+      Show how this screen implements or supports each requirement.
+
+      Reference FR numbers and briefly explain the implementation.
+    elicit: true
+    type: bullet-list
+    examples:
+      - "**FR17**: AI-powered intelligent speaker matching based on topic, experience, availability"
+      - "**FR2**: Display 16-step workflow progress for multiple events"
+      - "**FR19**: Progressive publishing with validation checks"
+
+  - id: technical-notes
+    title: Technical Notes
+    instruction: |
+      Document technical implementation considerations and requirements.
+      Include framework choices, integration points, and technical constraints.
+
+      This guides the development team on implementation approach.
+    elicit: true
+    type: bullet-list
+    examples:
+      - "Real-time WebSocket updates for activity feed"
+      - "ML matching algorithm considers topic expertise, speaking experience, availability"
+      - "Elasticsearch/OpenSearch for full-text search"
+      - "Drag-and-drop UI using HTML5 drag API or react-beautiful-dnd"
+
+  - id: api-requirements
+    title: API Requirements
+    instruction: |
+      Document ALL API endpoints needed for this screen.
+      Organize into: Initial Page Load APIs and User Action APIs.
+
+      For EACH API, specify:
+      - HTTP method and endpoint path
+      - Query parameters or payload structure
+      - Response data structure
+      - How the data is used in the UI
+      - When it's triggered (for action APIs)
+
+      Be thorough - missing APIs block development.
+    elicit: true
+    sections:
+      - id: initial-load-apis
+        title: Initial Page Load APIs
+        instruction: |
+          List all APIs called when the screen first loads.
+          Number each API and provide complete specification.
+
+          Template:
+          1. **GET /api/v1/resource/{id}**
+             - Query params: param1, param2
+             - Returns: Data structure description
+             - Used for: How this data populates the UI
+        elicit: true
+        type: numbered-list
+
+      - id: action-apis
+        title: User Action APIs
+        instruction: |
+          List all APIs called by user interactions.
+          Number each API and specify the trigger.
+
+          Template:
+          1. **POST /api/v1/resource**
+             - Triggered by: [Button Click] or user action
+             - Payload: { field1, field2 }
+             - Response: What comes back
+             - Used for: What happens next in UI
+        elicit: true
+        type: numbered-list
+
+  - id: navigation-map
+    title: Navigation Map
+    instruction: |
+      Document all navigation paths and screen transitions from this wireframe.
+      Organize by navigation type: Primary, Secondary, Event-Driven, Error States.
+
+      For EACH navigation action, specify:
+      - Trigger (button, link, event)
+      - Target screen or modal
+      - Navigation type (full page, modal, inline)
+      - Context/data passed
+      - Validation or conditions
+
+      This is critical for understanding user flow and implementing routing.
+    elicit: true
+    sections:
+      - id: primary-navigation
+        title: Primary Navigation Actions
+        instruction: |
+          List main navigation paths (buttons, links in header/footer).
+          Number each action clearly.
+
+          Template:
+          1. **← Back button** → Navigate to `Previous Screen`
+             - Target: Screen name (reference wireframe)
+             - Context: Data passed between screens
+        elicit: true
+        type: numbered-list
+
+      - id: secondary-navigation
+        title: Secondary Navigation (Data Interactions)
+        instruction: |
+          List navigation triggered by data interactions (clicking cards, table rows, etc.).
+        elicit: false
+        type: numbered-list
+
+      - id: event-driven-navigation
+        title: Event-Driven Navigation
+        instruction: |
+          List navigation triggered by system events (form submission, data updates, etc.).
+        elicit: false
+        type: numbered-list
+
+      - id: error-states
+        title: Error States & Redirects
+        instruction: |
+          List navigation for error conditions (unauthorized, not found, etc.).
+        elicit: false
+        type: numbered-list
+
+  - id: responsive-design
+    title: Responsive Design Considerations
+    condition: Mobile or responsive design required
+    instruction: |
+      Document how this screen adapts to different device sizes.
+      Specify layout changes, hidden elements, or mobile-specific interactions.
+    elicit: false
+    sections:
+      - id: mobile-layout
+        title: Mobile Layout Changes
+        instruction: "Describe how layout changes on mobile devices"
+
+      - id: tablet-layout
+        title: Tablet Layout Changes
+        instruction: "Describe how layout changes on tablet devices"
+
+      - id: mobile-interactions
+        title: Mobile-Specific Interactions
+        instruction: "List any mobile-specific gestures or interactions (swipe, pinch, etc.)"
+
+  - id: accessibility-notes
+    title: Accessibility Notes
+    condition: Accessibility requirements specified
+    instruction: |
+      Document accessibility considerations for this screen.
+      Include ARIA labels, keyboard navigation, screen reader support.
+    elicit: false
+    type: bullet-list
+    examples:
+      - "All interactive elements keyboard accessible with tab navigation"
+      - "ARIA labels on all form inputs and buttons"
+      - "Color contrast meets WCAG 2.1 AA standards"
+      - "Focus indicators clearly visible"
+
+  - id: state-management
+    title: State Management
+    condition: Complex state or real-time updates
+    instruction: |
+      Document state management requirements for this screen.
+      Specify local state, global state, caching, and real-time updates.
+    elicit: false
+    sections:
+      - id: local-state
+        title: Local Component State
+        instruction: "List state managed within this screen/component"
+
+      - id: global-state
+        title: Global State (Store)
+        instruction: "List state shared across application (Zustand, Redux, etc.)"
+
+      - id: server-state
+        title: Server State (React Query)
+        instruction: "List data fetched from APIs and caching strategy"
+
+      - id: realtime-updates
+        title: Real-Time Updates
+        instruction: "Describe WebSocket or polling strategy for live data"
+
+  - id: validation-rules
+    title: Form Validation Rules
+    condition: Screen contains forms
+    instruction: |
+      Document all form validation rules for this screen.
+      Specify field-level and form-level validations.
+    elicit: false
+    sections:
+      - id: field-validations
+        title: Field-Level Validations
+        instruction: |
+          List validation rules per form field.
+          Template:
+          - **Field Name**: Required, min/max length, pattern, custom rules
+        type: bullet-list
+
+      - id: form-validations
+        title: Form-Level Validations
+        instruction: "List validations that check multiple fields or business rules"
+        type: bullet-list
+
+  - id: edge-cases
+    title: Edge Cases & Error Handling
+    instruction: |
+      Document edge cases and how the UI should handle them.
+      Consider empty states, loading states, error states, permission issues.
+    elicit: false
+    type: bullet-list
+    examples:
+      - "**Empty State**: Show 'No events yet' message with [Create Event] CTA"
+      - "**Loading State**: Display skeleton screens during data fetch"
+      - "**Error State**: Show error message with [Retry] button"
+      - "**Permission Denied**: Redirect to login or show access denied message"
+
+  - id: change-log
+    title: Change Log
+    type: table
+    columns: [Date, Version, Description, Author]
+    instruction: Track changes made to this wireframe document
+    owner: ux-expert
+    editors: [ux-expert, pm]
+
+  - id: review-notes
+    title: Review Notes
+    instruction: Notes from stakeholder reviews and design iterations
+    owner: ux-expert
+    editors: [ux-expert, pm, dev-lead]
+    sections:
+      - id: stakeholder-feedback
+        title: Stakeholder Feedback
+        instruction: Document feedback received during reviews
+
+      - id: design-iterations
+        title: Design Iterations
+        instruction: Track major design changes and rationale
+
+      - id: open-questions
+        title: Open Questions
+        instruction: List unresolved questions or decisions needed

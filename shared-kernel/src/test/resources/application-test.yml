@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: shared-kernel-test
+
+aws:
+  region: us-east-1
+  eventbridge:
+    bus-name: test-events
+    source: batbern.test
+    retry:
+      max-attempts: 3
+      delay-ms: 100
+
+logging:
+  level:
+    ch.batbern: DEBUG
+    software.amazon.awssdk: WARN

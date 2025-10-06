@@ -1,0 +1,18 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Running pre-commit checks..."
+
+# Change to web-frontend directory
+cd web-frontend || exit 1
+
+# Run lint-staged for changed files
+npx lint-staged
+
+# Check if tests passed
+if [ $? -ne 0 ]; then
+  echo "❌ Pre-commit checks failed. Please fix errors before committing."
+  exit 1
+fi
+
+echo "✅ Pre-commit checks passed!"
