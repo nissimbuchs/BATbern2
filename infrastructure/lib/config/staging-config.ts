@@ -11,31 +11,33 @@ export const stagingConfig: EnvironmentConfig = {
   account: '188701360969', // BATbern Staging account
   vpc: {
     cidr: '10.1.0.0/16',
-    maxAzs: 2,
-    natGateways: 2, // High availability for staging
+    maxAzs: 1, // Single AZ for cost optimization (test environment)
+    natGateways: 1, // Single NAT Gateway for cost savings
   },
   rds: {
-    instanceClass: ec2.InstanceClass.T3,
-    instanceSize: ec2.InstanceSize.SMALL,
-    multiAz: true, // Multi-AZ for staging reliability
-    backupRetention: cdk.Duration.days(14),
-    allocatedStorage: 50,
-    deletionProtection: true,
+    instanceClass: ec2.InstanceClass.T4G, // ARM-based for better price/performance
+    instanceSize: ec2.InstanceSize.MICRO, // Sufficient for testing
+    multiAz: false, // Single-AZ for cost savings (test environment)
+    backupRetention: cdk.Duration.days(7), // Reduced backup retention
+    allocatedStorage: 20, // Reduced storage (test environment)
+    deletionProtection: false, // Allow deletion in staging
   },
   elasticache: {
-    nodeType: 'cache.t3.small',
-    numNodes: 2,
-    automaticFailoverEnabled: true,
-    snapshotRetentionLimit: 5,
+    // Redis disabled for cost optimization (test environment)
+    nodeType: 'cache.t3.micro',
+    numNodes: 0, // Redis disabled
+    automaticFailoverEnabled: false,
+    snapshotRetentionLimit: 0,
   },
   ecs: {
-    desiredCount: 2,
-    cpu: 512,
-    memory: 1024,
+    // Minimal ECS config (will be replaced by App Runner)
+    desiredCount: 1,
+    cpu: 256,
+    memory: 512,
     autoScaling: {
-      minCapacity: 2,
-      maxCapacity: 4,
-      targetCpuUtilization: 60,
+      minCapacity: 1,
+      maxCapacity: 2,
+      targetCpuUtilization: 70,
     },
   },
   domain: {
