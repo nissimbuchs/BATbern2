@@ -31,7 +31,6 @@ interface SignInResult {
   success: boolean;
   user?: UserContext;
   accessToken?: string;
-  refreshToken?: string;
   error?: AuthError;
   mfaChallenge?: MfaChallenge;
 }
@@ -45,17 +44,17 @@ interface SignUpResult {
 // Adapter to make localStorage/sessionStorage compatible with Amplify's KeyValueStorageInterface
 function createStorageAdapter(storage: Storage) {
   return {
-    async setItem(key: string, value: string): Promise<void> {
-      storage.setItem(key, value);
+    setItem(key: string, value: string): Promise<void> {
+      return Promise.resolve(storage.setItem(key, value));
     },
-    async getItem(key: string): Promise<string | null> {
-      return storage.getItem(key);
+    getItem(key: string): Promise<string | null> {
+      return Promise.resolve(storage.getItem(key));
     },
-    async removeItem(key: string): Promise<void> {
-      storage.removeItem(key);
+    removeItem(key: string): Promise<void> {
+      return Promise.resolve(storage.removeItem(key));
     },
-    async clear(): Promise<void> {
-      storage.clear();
+    clear(): Promise<void> {
+      return Promise.resolve(storage.clear());
     },
   };
 }
