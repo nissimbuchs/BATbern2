@@ -11,31 +11,34 @@ export const prodConfig: EnvironmentConfig = {
   account: '422940799530', // BATbern Production account
   vpc: {
     cidr: '10.2.0.0/16',
-    maxAzs: 3, // High availability across 3 AZs
-    natGateways: 3,
+    maxAzs: 1, // Single AZ for cost optimization (low traffic: 1000 users/month)
+    natGateways: 1, // Single NAT Gateway for cost savings
   },
   rds: {
-    instanceClass: ec2.InstanceClass.T3,
-    instanceSize: ec2.InstanceSize.MEDIUM,
-    multiAz: true, // Multi-AZ for production
+    instanceClass: ec2.InstanceClass.T4G, // ARM-based for better price/performance
+    instanceSize: ec2.InstanceSize.MICRO, // Sufficient for 1000 users
+    multiAz: false, // Single-AZ for cost savings (low traffic use case)
     backupRetention: cdk.Duration.days(30),
-    allocatedStorage: 100,
+    allocatedStorage: 50, // Reduced storage (was 100GB)
     deletionProtection: true,
   },
   elasticache: {
-    nodeType: 'cache.t3.medium',
-    numNodes: 3,
-    automaticFailoverEnabled: true,
-    snapshotRetentionLimit: 14,
+    // Redis cluster removed for cost optimization
+    // Application will use in-memory caching instead
+    nodeType: 'cache.t3.micro', // Placeholder (not deployed)
+    numNodes: 0, // Disabled
+    automaticFailoverEnabled: false,
+    snapshotRetentionLimit: 0,
   },
   ecs: {
-    desiredCount: 3,
-    cpu: 1024,
-    memory: 2048,
+    // Legacy ECS config - replaced by App Runner
+    desiredCount: 1,
+    cpu: 512,
+    memory: 1024,
     autoScaling: {
-      minCapacity: 3,
-      maxCapacity: 10,
-      targetCpuUtilization: 50,
+      minCapacity: 1,
+      maxCapacity: 3,
+      targetCpuUtilization: 70,
     },
   },
   domain: {
