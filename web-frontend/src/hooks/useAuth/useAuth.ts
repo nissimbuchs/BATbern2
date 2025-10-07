@@ -26,7 +26,6 @@ export function useAuth(): UseAuthReturn {
     user: null,
     error: null,
     accessToken: null,
-    refreshToken: null,
   });
 
   /**
@@ -47,7 +46,6 @@ export function useAuth(): UseAuthReturn {
             user,
             error: null,
             accessToken: tokenResult.accessToken || null,
-            refreshToken: null, // AWS Amplify manages refresh tokens internally
           });
         } else {
           setState((prev) => ({
@@ -86,7 +84,6 @@ export function useAuth(): UseAuthReturn {
           user: result.user,
           error: null,
           accessToken: result.accessToken || null,
-          refreshToken: null, // AWS Amplify manages refresh tokens internally
         });
         return true;
       } else {
@@ -127,7 +124,6 @@ export function useAuth(): UseAuthReturn {
         user: null,
         error: null,
         accessToken: null,
-        refreshToken: null,
       });
     } catch (error: any) {
       setState((prev) => ({
@@ -181,7 +177,6 @@ export function useAuth(): UseAuthReturn {
         setState((prev) => ({
           ...prev,
           accessToken: result.accessToken || null,
-          refreshToken: null, // AWS Amplify manages refresh tokens internally
         }));
         return true;
       }
