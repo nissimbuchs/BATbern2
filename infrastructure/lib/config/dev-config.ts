@@ -11,22 +11,23 @@ export const devConfig: EnvironmentConfig = {
   account: '954163570305', // BATbern Development account
   vpc: {
     cidr: '10.0.0.0/16',
-    maxAzs: 2,
-    natGateways: 1, // Cost optimization for dev
+    maxAzs: 1, // Single AZ for development (services run locally)
+    natGateways: 1, // Single NAT Gateway for cost optimization
   },
   rds: {
-    instanceClass: ec2.InstanceClass.T3,
+    instanceClass: ec2.InstanceClass.T4G, // ARM-based for better price/performance
     instanceSize: ec2.InstanceSize.MICRO,
-    multiAz: false, // Single AZ for dev
+    multiAz: false, // Single AZ for development
     backupRetention: cdk.Duration.days(7),
     allocatedStorage: 20,
-    deletionProtection: false,
+    deletionProtection: false, // Allow deletion in development
   },
   elasticache: {
+    // Redis disabled for development (services run locally in Docker Compose)
     nodeType: 'cache.t3.micro',
-    numNodes: 1,
+    numNodes: 0, // Disabled - local Docker services don't need AWS Redis
     automaticFailoverEnabled: false,
-    snapshotRetentionLimit: 1,
+    snapshotRetentionLimit: 0,
   },
   ecs: {
     desiredCount: 1,
