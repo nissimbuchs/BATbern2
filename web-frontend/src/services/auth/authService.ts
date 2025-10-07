@@ -201,7 +201,6 @@ class AuthService {
         return {
           success: false,
           accessToken: '',
-          refreshToken: '',
           expiresIn: 0,
           error: {
             code: 'NO_TOKEN',
@@ -217,14 +216,12 @@ class AuthService {
       return {
         success: true,
         accessToken: tokens.accessToken.toString(),
-        refreshToken: '', // AWS Amplify handles refresh tokens internally
         expiresIn,
       };
     } catch (error: any) {
       return {
         success: false,
         accessToken: '',
-        refreshToken: '',
         expiresIn: 0,
         error: this.mapCognitoError(error),
       };

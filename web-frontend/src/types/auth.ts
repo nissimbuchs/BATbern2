@@ -37,7 +37,7 @@ export interface AuthenticationState {
   user: UserContext | null;
   error: AuthError | null;
   accessToken: string | null;
-  refreshToken: string | null;
+  // refreshToken removed - AWS Amplify manages refresh tokens internally
 }
 
 export interface AuthError {
@@ -88,7 +88,7 @@ export interface MfaResponse {
 export interface TokenRefreshResponse {
   success?: boolean;
   accessToken: string;
-  refreshToken: string;
+  // refreshToken removed - AWS Amplify manages refresh tokens internally
   expiresIn: number;
   error?: AuthError;
 }
