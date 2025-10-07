@@ -32,5 +32,17 @@
   "status": {
     "wait": "Wait {{seconds}} seconds",
     "didntReceive": "Didn't receive the email?"
+  },
+  "menu": {
+    "profile": "Profile",
+    "settings": "Settings",
+    "help": "Help",
+    "logout": "Logout"
+  },
+  "role": {
+    "organizer": "Organizer",
+    "speaker": "Speaker",
+    "partner": "Partner",
+    "attendee": "Attendee"
   }
 }

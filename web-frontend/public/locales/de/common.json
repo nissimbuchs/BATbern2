@@ -32,5 +32,17 @@
   "status": {
     "wait": "Warten Sie {{seconds}} Sekunden",
     "didntReceive": "Keine E-Mail erhalten?"
+  },
+  "menu": {
+    "profile": "Profil",
+    "settings": "Einstellungen",
+    "help": "Hilfe",
+    "logout": "Abmelden"
+  },
+  "role": {
+    "organizer": "Veranstalter",
+    "speaker": "Sprecher",
+    "partner": "Partner",
+    "attendee": "Teilnehmer"
   }
 }

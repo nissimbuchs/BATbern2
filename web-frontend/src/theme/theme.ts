@@ -165,7 +165,7 @@ const swissTypography = {
   },
 };
 
-// Component style overrides
+// Component style overrides with WCAG 2.1 AA accessibility
 const swissComponents = {
   MuiButton: {
     styleOverrides: {
@@ -178,10 +178,27 @@ const swissComponents = {
         '&:hover': {
           boxShadow: 'none',
         },
+        // WCAG 2.1 AA Focus Indicator (2.4.7)
+        '&:focus-visible': {
+          outline: '3px solid #0288D1',
+          outlineOffset: '2px',
+        },
       },
       contained: {
         '&:hover': {
           boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+        },
+      },
+    },
+  },
+  MuiIconButton: {
+    styleOverrides: {
+      root: {
+        // WCAG 2.1 AA Focus Indicator for icon buttons
+        '&:focus-visible': {
+          outline: '3px solid #0288D1',
+          outlineOffset: '2px',
+          backgroundColor: 'rgba(2, 136, 209, 0.08)',
         },
       },
     },
@@ -199,6 +216,11 @@ const swissComponents = {
       root: {
         '& .MuiOutlinedInput-root': {
           borderRadius: 4,
+          // Focus indicator for form inputs
+          '&.Mui-focused fieldset': {
+            borderWidth: '2px',
+            borderColor: '#0288D1',
+          },
         },
       },
     },
@@ -207,6 +229,41 @@ const swissComponents = {
     styleOverrides: {
       root: {
         boxShadow: '0px 1px 4px rgba(0, 0, 0, 0.1)',
+      },
+    },
+  },
+  MuiLink: {
+    styleOverrides: {
+      root: {
+        // WCAG 2.1 AA Focus Indicator for links
+        '&:focus-visible': {
+          outline: '3px solid #0288D1',
+          outlineOffset: '2px',
+          textDecoration: 'underline',
+        },
+      },
+    },
+  },
+  MuiTab: {
+    styleOverrides: {
+      root: {
+        // Focus indicator for navigation tabs
+        '&:focus-visible': {
+          outline: '3px solid #0288D1',
+          outlineOffset: '2px',
+        },
+      },
+    },
+  },
+  MuiMenuItem: {
+    styleOverrides: {
+      root: {
+        // Focus indicator for menu items
+        '&:focus-visible': {
+          outline: '2px solid #0288D1',
+          outlineOffset: '-2px',
+          backgroundColor: 'rgba(2, 136, 209, 0.08)',
+        },
       },
     },
   },

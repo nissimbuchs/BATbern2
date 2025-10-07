@@ -18,9 +18,12 @@ type SupportedLocale = keyof typeof locales;
 
 /**
  * Get date-fns locale object for a given locale code
- * Falls back to German (de) for unsupported locales
+ * Falls back to German (de) for unsupported locales or missing locale
  */
-function getLocale(locale: string): Locale {
+function getLocale(locale?: string | null): Locale {
+  if (!locale) {
+    return locales.de;
+  }
   const normalizedLocale = locale.toLowerCase() as SupportedLocale;
   return locales[normalizedLocale] || locales.de;
 }
