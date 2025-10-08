@@ -1,6 +1,7 @@
 /**
  * Authentication and authorization types for BATbern platform
  * Based on Story 1.2 specifications and AWS Cognito integration
+ * Updated: 2025-10-08 - Testing deploy workflow with correct commit SHA
  */
 
 export type UserRole = 'organizer' | 'speaker' | 'partner' | 'attendee';
