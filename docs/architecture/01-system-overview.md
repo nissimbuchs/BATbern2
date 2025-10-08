@@ -324,7 +324,7 @@ graph TB
 - PostgreSQL (event data persistence with workflow state)
 - Caffeine Cache (in-memory workflow state caching and optimization)
 
-**Technology Stack:** Java 21 + Spring Boot 3.2, PostgreSQL, Caffeine Cache (in-memory caching), EventBridge (domain events), WebSocket (real-time notifications)
+**Technology Stack:** Java 21 + Spring Boot 3.x, PostgreSQL 15+, Caffeine 3.x (in-memory caching), EventBridge (domain events), WebSocket (real-time notifications)
 
 ### Speaker Coordination Service
 
@@ -405,7 +405,7 @@ graph TB
 - All domain services (company relationship validation)
 - Shared Kernel (company domain events)
 
-**Technology Stack:** Java 21 + Spring Boot 3.2, PostgreSQL, AWS S3 (logo storage), Caffeine Cache (company search caching)
+**Technology Stack:** Java 21 + Spring Boot 3.x, PostgreSQL 15+, AWS S3 (logo storage), Caffeine 3.x (company search caching)
 
 ### Frontend Application
 
