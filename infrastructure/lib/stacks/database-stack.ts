@@ -73,7 +73,7 @@ export class DatabaseStack extends cdk.Stack {
         automaticFailoverEnabled: props.config.elasticache.automaticFailoverEnabled,
         multiAzEnabled: props.config.elasticache.automaticFailoverEnabled,
         cacheSubnetGroupName: cacheSubnetGroup.ref,
-        securityGroupIds: [props.cacheSecurityGroup.securityGroupId],
+        securityGroupIds: [props.cacheSecurityGroup!.securityGroupId],
         atRestEncryptionEnabled: true,
         transitEncryptionEnabled: true,
         snapshotRetentionLimit: props.config.elasticache.snapshotRetentionLimit,
