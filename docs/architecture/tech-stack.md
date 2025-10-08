@@ -13,7 +13,7 @@
 | Backend Framework | Spring Boot | 3.5+ | Microservices and REST APIs | Industry standard for Java enterprise, excellent cloud integration |
 | API Style | REST + OpenAPI | 3.1 | Service communication | Clear documentation, tooling support, enterprise standard |
 | Database | PostgreSQL | 15+ | Primary data storage | ACID compliance, JSON support, excellent performance |
-| Cache | Redis | 7.2+ | Session and content caching | High performance, supports complex data structures |
+| Cache | Caffeine | 3.1+ | Application-level in-memory caching | High performance, cost-effective, zero external dependencies |
 | File Storage | AWS S3 | Latest | Document and media storage | Enterprise-grade, CDN integration, Swiss compliance capable |
 | Authentication | AWS Cognito | Latest | Multi-role user management | Enterprise SSO, fine-grained permissions, AWS ecosystem |
 | Frontend Testing | Vitest + React Testing Library | 1.0+ / 13.4+ | Component and integration testing | Fast, TypeScript native, React best practices |
@@ -57,8 +57,8 @@
 - **Spring Data JPA**: Repository pattern, query generation, transaction management
 
 ### Database & Caching
-- **PostgreSQL 15+**: Advanced SQL features, JSON support, full-text search
-- **Redis 7.2+**: In-memory caching, pub/sub, data structures
+- **PostgreSQL 15+ (db.t4g.micro ARM-based, Single-AZ)**: Advanced SQL features, JSON support, full-text search, cost-optimized
+- **Caffeine 3.1+**: Application-level in-memory caching (replaces Redis ElastiCache for cost savings)
 - **Flyway**: Database migration and versioning
 
 ### Build & Testing
@@ -69,13 +69,14 @@
 
 ## Infrastructure Technology
 
-### AWS Cloud Services
+### AWS Cloud Services (Cost-Optimized)
 - **AWS ECS Fargate**: Serverless container orchestration
 - **AWS Cognito**: User authentication and authorization
 - **AWS S3**: Object storage with CDN integration
 - **AWS CloudFront**: Global content delivery network
-- **AWS ElastiCache**: Managed Redis caching service
-- **AWS RDS**: Managed PostgreSQL database service
+- **AWS RDS (Single-AZ, db.t4g.micro)**: Managed PostgreSQL database service (cost-optimized)
+- **AWS VPC (Single AZ, 1 NAT Gateway)**: Cost-optimized networking infrastructure
+- **Note**: ElastiCache Redis removed; using application-level Caffeine caching for 83% cost reduction
 
 ### Infrastructure as Code
 - **AWS CDK 2.110+**: Type-safe infrastructure definition
@@ -136,9 +137,11 @@ gradle --version       # Gradle 8.5+
 - **Java over Node.js/Python**: Enterprise ecosystem, long-term support, team expertise
 - **Spring Boot over Micronaut/Quarkus**: Industry standard, extensive documentation, cloud integration
 - **PostgreSQL over MySQL/MongoDB**: ACID compliance, advanced features, JSON support
-- **Redis over Memcached**: Richer data structures, pub/sub capabilities, clustering support
+- **Caffeine (in-memory) over Redis ElastiCache**: Cost-effective ($149/month savings), zero network latency, simplified architecture
 
 ### Infrastructure Choices
 - **AWS over Azure/GCP**: Comprehensive service offering, CDK support, Swiss region availability
 - **ECS Fargate over EKS**: Simpler operations, serverless scaling, lower management overhead
 - **CDK over Terraform**: Type safety, AWS native, better IDE support
+- **Single-AZ over Multi-AZ**: Cost-effective for low traffic (1000 users/month), acceptable 5-minute manual failover
+- **ARM-based T4G instances over x86 T3**: Better price/performance ratio, 20% cost savings
