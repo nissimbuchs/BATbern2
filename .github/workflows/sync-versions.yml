@@ -1,0 +1,136 @@
+name: Sync Documentation Versions
+
+# Automatically updates docs/versions.json when dependencies change
+# This prevents version drift between actual dependencies and architecture documentation
+
+on:
+  # Trigger on dependency file changes
+  push:
+    branches:
+      - develop
+      - main
+    paths:
+      - 'web-frontend/package.json'
+      - 'api-gateway/build.gradle'
+      - 'infrastructure/package.json'
+      - 'shared-kernel/build.gradle'
+      - 'scripts/update-versions.js'
+
+  # Trigger on Dependabot PRs
+  pull_request:
+    branches:
+      - develop
+      - main
+    paths:
+      - 'web-frontend/package.json'
+      - 'api-gateway/build.gradle'
+      - 'infrastructure/package.json'
+      - 'shared-kernel/build.gradle'
+
+  # Allow manual triggering
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync-versions:
+    name: Update versions.json
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Fetch full history for proper git operations
+          fetch-depth: 0
+          # Use PAT if available for better permissions, otherwise use GITHUB_TOKEN
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Extract versions from dependencies
+        id: extract
+        run: |
+          echo "Running version extraction script..."
+          node scripts/update-versions.js
+
+          # Check if versions.json was modified
+          if git diff --quiet docs/versions.json; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "✅ No version changes detected"
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "📝 Version changes detected"
+          fi
+
+      - name: Show version changes
+        if: steps.extract.outputs.changed == 'true'
+        run: |
+          echo "Version changes:"
+          git diff docs/versions.json
+
+      # For pull requests: Add a commit to the PR branch
+      - name: Commit version changes (PR)
+        if: |
+          steps.extract.outputs.changed == 'true' &&
+          github.event_name == 'pull_request'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add docs/versions.json
+          git commit -m "chore(docs): sync versions.json with dependency updates
+
+          Automatically updated by sync-versions workflow.
+
+          This commit ensures architecture documentation stays in sync with actual dependency versions."
+
+          # Push to the PR branch
+          git push origin HEAD:${{ github.head_ref }}
+
+      # For direct pushes to develop/main: Create a new commit
+      - name: Commit version changes (Direct Push)
+        if: |
+          steps.extract.outputs.changed == 'true' &&
+          github.event_name == 'push'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add docs/versions.json
+          git commit -m "chore(docs): sync versions.json with dependency updates
+
+          Automatically updated by sync-versions workflow.
+
+          This commit ensures architecture documentation stays in sync with actual dependency versions."
+
+          git push
+
+      - name: Add comment to PR (Dependabot)
+        if: |
+          steps.extract.outputs.changed == 'true' &&
+          github.event_name == 'pull_request' &&
+          github.actor == 'dependabot[bot]'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `📚 **Documentation Update**\n\nI've automatically updated \`docs/versions.json\` to reflect the dependency changes in this PR.\n\nThis ensures our architecture documentation stays in sync with actual dependency versions.\n\n✅ Review the changes to \`docs/versions.json\` in this PR.`
+            })
+
+      - name: Summary
+        run: |
+          if [ "${{ steps.extract.outputs.changed }}" == "true" ]; then
+            echo "✅ Successfully updated docs/versions.json"
+            echo "📝 Changes have been committed to the branch"
+          else
+            echo "✅ No version updates needed - documentation is already up to date"
+          fi

@@ -48,10 +48,12 @@ export class DatabaseStack extends cdk.Stack {
     this.database = rdsCluster.database;
     this.databaseEndpoint = this.database.dbInstanceEndpointAddress;
 
-    // Create ElastiCache Redis cluster if cache security group provided
-    // Note: Temporarily disabled for development to unblock initial deployment
-    const isProd = props.config.envName === 'production';
-    if (props.cacheSecurityGroup && isProd) {
+    // Create ElastiCache Redis cluster only if enabled (numNodes > 0)
+    // For production with 1000 users, Redis is disabled for cost optimization
+    // Application uses in-memory caching instead
+    const isRedisEnabled = props.cacheSecurityGroup && props.config.elasticache.numNodes > 0;
+
+    if (isRedisEnabled) {
       // Create cache subnet group
       const cacheSubnetGroup = new elasticache.CfnSubnetGroup(this, 'CacheSubnetGroup', {
         description: 'Subnet group for ElastiCache Redis',
@@ -71,7 +73,7 @@ export class DatabaseStack extends cdk.Stack {
         automaticFailoverEnabled: props.config.elasticache.automaticFailoverEnabled,
         multiAzEnabled: props.config.elasticache.automaticFailoverEnabled,
         cacheSubnetGroupName: cacheSubnetGroup.ref,
-        securityGroupIds: [props.cacheSecurityGroup.securityGroupId],
+        securityGroupIds: [props.cacheSecurityGroup!.securityGroupId],
         atRestEncryptionEnabled: true,
         transitEncryptionEnabled: true,
         snapshotRetentionLimit: props.config.elasticache.snapshotRetentionLimit,

@@ -41,6 +41,24 @@ interface SignUpResult {
   error?: AuthError;
 }
 
+// Adapter to make localStorage/sessionStorage compatible with Amplify's KeyValueStorageInterface
+function createStorageAdapter(storage: Storage) {
+  return {
+    setItem(key: string, value: string): Promise<void> {
+      return Promise.resolve(storage.setItem(key, value));
+    },
+    getItem(key: string): Promise<string | null> {
+      return Promise.resolve(storage.getItem(key));
+    },
+    removeItem(key: string): Promise<void> {
+      return Promise.resolve(storage.removeItem(key));
+    },
+    clear(): Promise<void> {
+      return Promise.resolve(storage.clear());
+    },
+  };
+}
+
 class AuthService {
   /**
    * Configure session persistence based on "Remember me" preference
@@ -48,9 +66,7 @@ class AuthService {
    */
   private configureSessionPersistence(rememberMe: boolean): void {
     const storage = rememberMe ? localStorage : sessionStorage;
-    // Cast to any to avoid KeyValueStorageInterface type mismatch
-    // localStorage/sessionStorage implement the required interface methods
-    cognitoUserPoolsTokenProvider.setKeyValueStorage(storage as any);
+    cognitoUserPoolsTokenProvider.setKeyValueStorage(createStorageAdapter(storage));
   }
   async signIn(credentials: LoginCredentials): Promise<SignInResult> {
     try {

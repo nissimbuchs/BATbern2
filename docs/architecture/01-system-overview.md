@@ -144,8 +144,8 @@ graph TB
 
     subgraph "Data & Infrastructure"
         M[Authentication<br/>AWS Cognito<br/>User management & SSO]
-        N[Database Cluster<br/>PostgreSQL (Multi-AZ)<br/>Per-service databases]
-        O[Cache Layer<br/>Redis ElastiCache<br/>Session & data caching]
+        N[Database<br/>PostgreSQL (Single-AZ)<br/>Cost-optimized db.t4g.micro]
+        O[In-Memory Cache<br/>Caffeine (Application-level)<br/>Replaces Redis for cost savings]
         P[File Storage<br/>AWS S3<br/>Documents & media]
         Q[CDN<br/>CloudFront<br/>Global content delivery]
     end
@@ -322,9 +322,9 @@ graph TB
 - Shared Kernel (enhanced domain events, workflow types)
 - AWS Cognito (organizer authentication)
 - PostgreSQL (event data persistence with workflow state)
-- Redis (workflow state caching and slot assignment optimization)
+- Caffeine Cache (in-memory workflow state caching and optimization)
 
-**Technology Stack:** Java 21 + Spring Boot 3.2, PostgreSQL, Redis (enhanced workflow state caching), EventBridge (domain events), WebSocket (real-time notifications)
+**Technology Stack:** Java 21 + Spring Boot 3.x, PostgreSQL 15+, Caffeine 3.x (in-memory caching), EventBridge (domain events), WebSocket (real-time notifications)
 
 ### Speaker Coordination Service
 
@@ -405,7 +405,7 @@ graph TB
 - All domain services (company relationship validation)
 - Shared Kernel (company domain events)
 
-**Technology Stack:** Java 21 + Spring Boot 3.2, PostgreSQL, AWS S3 (logo storage), ElastiCache Redis (company search caching)
+**Technology Stack:** Java 21 + Spring Boot 3.x, PostgreSQL 15+, AWS S3 (logo storage), Caffeine 3.x (company search caching)
 
 ### Frontend Application
 

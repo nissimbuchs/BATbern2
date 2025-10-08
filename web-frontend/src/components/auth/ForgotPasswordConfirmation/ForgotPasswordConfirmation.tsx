@@ -19,7 +19,7 @@ export const ForgotPasswordConfirmation: React.FC<ForgotPasswordConfirmationProp
   const { t } = useTranslation(['auth', 'common']);
   const [cooldown, setCooldown] = useState(0);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
-  const { mutate: resendLink, isLoading } = useResendResetLink();
+  const { mutate: resendLink, isPending } = useResendResetLink();
 
   useEffect(() => {
     if (cooldown > 0) {
@@ -74,7 +74,7 @@ export const ForgotPasswordConfirmation: React.FC<ForgotPasswordConfirmationProp
         <Typography variant="body2" color="text.secondary">
           {t('auth:forgot.didntReceive')}
         </Typography>
-        <Button onClick={handleResend} disabled={cooldown > 0 || isLoading} sx={{ mt: 1 }}>
+        <Button onClick={handleResend} disabled={cooldown > 0 || isPending} sx={{ mt: 1 }}>
           {cooldown > 0
             ? t('common:status.wait', { seconds: cooldown })
             : t('auth:forgot.resendButton')}

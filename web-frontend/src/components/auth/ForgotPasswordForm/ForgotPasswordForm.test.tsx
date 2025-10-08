@@ -17,7 +17,7 @@ const mockForgotPassword = vi.fn();
 
 const mockUseForgotPassword = {
   mutate: mockForgotPassword,
-  isLoading: false,
+  isPending: false,
   isSuccess: false,
   isError: false,
   error: null,
@@ -60,7 +60,7 @@ describe('ForgotPasswordForm Component - Rendering Tests', () => {
     // Reset mock state
     Object.assign(mockUseForgotPassword, {
       mutate: mockForgotPassword,
-      isLoading: false,
+      isPending: false,
       isSuccess: false,
       isError: false,
       error: null,
@@ -140,7 +140,7 @@ describe('ForgotPasswordForm Component - Email Validation Tests', () => {
     await i18n.changeLanguage('en');
     Object.assign(mockUseForgotPassword, {
       mutate: mockForgotPassword,
-      isLoading: false,
+      isPending: false,
       isSuccess: false,
       isError: false,
       error: null,
@@ -247,7 +247,7 @@ describe('ForgotPasswordForm Component - Form Submission Tests', () => {
     await i18n.changeLanguage('en');
     Object.assign(mockUseForgotPassword, {
       mutate: mockForgotPassword,
-      isLoading: false,
+      isPending: false,
       isSuccess: false,
       isError: false,
       error: null,
@@ -328,7 +328,7 @@ describe('ForgotPasswordForm Component - Loading State Tests', () => {
     // Update mock to show loading state
     Object.assign(mockUseForgotPassword, {
       mutate: mockForgotPassword,
-      isLoading: true,
+      isPending: true,
       isSuccess: false,
       isError: false,
       error: null,
@@ -351,7 +351,7 @@ describe('ForgotPasswordForm Component - Loading State Tests', () => {
     // Test: should_disableInputs_when_requestInProgress
     Object.assign(mockUseForgotPassword, {
       mutate: mockForgotPassword,
-      isLoading: true,
+      isPending: true,
       isSuccess: false,
       isError: false,
       error: null,
@@ -375,7 +375,7 @@ describe('ForgotPasswordForm Component - View Transition Tests', () => {
     await i18n.changeLanguage('en');
     Object.assign(mockUseForgotPassword, {
       mutate: mockForgotPassword,
-      isLoading: false,
+      isPending: false,
       isSuccess: false,
       isError: false,
       error: null,
@@ -457,7 +457,7 @@ describe('ForgotPasswordForm Component - Error Handling Tests', () => {
     await i18n.changeLanguage('en');
     Object.assign(mockUseForgotPassword, {
       mutate: mockForgotPassword,
-      isLoading: false,
+      isPending: false,
       isSuccess: false,
       isError: false,
       error: null,
@@ -469,7 +469,7 @@ describe('ForgotPasswordForm Component - Error Handling Tests', () => {
     // Test 4.2: should_displayRateLimitError_when_429Response
     Object.assign(mockUseForgotPassword, {
       mutate: mockForgotPassword,
-      isLoading: false,
+      isPending: false,
       isSuccess: false,
       isError: true,
       error: {
@@ -495,7 +495,7 @@ describe('ForgotPasswordForm Component - Error Handling Tests', () => {
     // Test 4.3: should_displayNetworkError_when_requestFails
     Object.assign(mockUseForgotPassword, {
       mutate: mockForgotPassword,
-      isLoading: false,
+      isPending: false,
       isSuccess: false,
       isError: true,
       error: {
@@ -523,7 +523,7 @@ describe('ForgotPasswordForm Component - Navigation Tests', () => {
     await i18n.changeLanguage('en');
     Object.assign(mockUseForgotPassword, {
       mutate: mockForgotPassword,
-      isLoading: false,
+      isPending: false,
       isSuccess: false,
       isError: false,
       error: null,

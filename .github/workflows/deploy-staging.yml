@@ -20,6 +20,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          # Use the exact commit SHA from the triggering workflow run
+          # workflow_run doesn't automatically use the triggering commit without this
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
@@ -144,6 +148,39 @@ jobs:
           else
             echo "::warning::Smoke tests script not found"
           fi
+
+      - name: Run E2E infrastructure tests
+        working-directory: ./infrastructure
+        run: |
+          echo "Running E2E tests against deployed staging infrastructure..."
+          TEST_E2E=true TEST_ENVIRONMENT=staging npm test -- test/e2e/ || echo "::warning::E2E tests not fully configured yet"
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ env.AWS_SESSION_TOKEN }}
+
+      - name: Run frontend E2E tests (Playwright)
+        working-directory: ./web-frontend
+        run: |
+          echo "Running Playwright E2E tests against deployed staging environment..."
+          # Install Playwright if not cached
+          npm install -D @playwright/test || true
+          npx playwright install --with-deps chromium || echo "::warning::Playwright installation failed"
+          # Run E2E tests
+          npx playwright test --project=chromium || echo "::warning::Frontend E2E tests not fully configured yet"
+        env:
+          E2E_BASE_URL: https://staging.batbern.ch
+          E2E_API_URL: https://api-staging.batbern.ch
+          E2E_AWS_REGION: ${{ env.AWS_REGION }}
+
+      - name: Upload Playwright test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-staging
+          path: web-frontend/playwright-report/
+          retention-days: 7
 
       - name: Notify deployment success
         if: success()
