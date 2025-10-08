@@ -82,5 +82,6 @@
   "overrides": {
     "test-exclude": "^7.0.1"
   },
-  "_comment_overrides": "Force test-exclude@7+ to eliminate deprecated glob@7.2.3/inflight@1.0.6. Remove when upstream deps update"
+  "_comment_overrides": "Force test-exclude@7+ to eliminate deprecated glob@7.2.3/inflight@1.0.6. Remove when upstream deps update",
+  "_comment_build": "Build verified 2025-10-08 - TypeScript compilation successful"
 }
