@@ -13,6 +13,7 @@ export interface RdsClusterProps {
   allocatedStorage: number;
   deletionProtection: boolean;
   envName: string;
+  instanceIdentifier?: string;
 }
 
 /**
@@ -64,6 +65,7 @@ export class RdsCluster extends Construct {
       engine: rds.DatabaseInstanceEngine.postgres({
         version: rds.PostgresEngineVersion.VER_15, // Use latest 15.x version available
       }),
+      instanceIdentifier: props.instanceIdentifier,
       instanceType: ec2.InstanceType.of(
         props.instanceClass,
         props.instanceSize

@@ -3,6 +3,7 @@ plugins {
     id 'org.springframework.boot' version '3.5.6'
     id 'io.spring.dependency-management' version '1.1.6'
     id 'maven-publish'
+    id 'org.flywaydb.flyway' version '10.10.0'
 }
 
 group = 'ch.batbern'
@@ -46,6 +47,11 @@ dependencies {
     // Logging
     implementation 'org.slf4j:slf4j-api'
     implementation 'ch.qos.logback:logback-classic'
+
+    // Database
+    implementation 'org.postgresql:postgresql:42.7.2'
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-database-postgresql'
 
     // Testing dependencies
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
@@ -155,4 +161,16 @@ processResources {
     from("$buildDir/generated") {
         include "version.properties"
     }
+}
+
+// Flyway configuration for database migrations
+// Configuration is provided via system properties or environment variables in CI/CD
+flyway {
+    // Default local development configuration (override with -Dflyway.* parameters)
+    url = System.getProperty('flyway.url', 'jdbc:postgresql://localhost:5432/batbern')
+    user = System.getProperty('flyway.user', 'postgres')
+    password = System.getProperty('flyway.password', 'postgres')
+    locations = ['classpath:db/migration']
+    baselineOnMigrate = true
+    baselineVersion = '0'
 }
