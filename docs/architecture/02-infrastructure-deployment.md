@@ -1,5 +1,222 @@
 # Infrastructure & Deployment
 
+## Cost-Optimized AWS Infrastructure
+
+### Overview
+
+The BATbern platform infrastructure has been optimized for cost-efficiency while maintaining reliability for our use case of 1000 monthly active users with 3 peak event periods per year.
+
+**Total Cost Reduction: 83%**
+- Production: $675/month → $110/month (-84%)
+- Staging: $381/month → $70/month (-82%)
+- Development: $72/month → $55/month (-24%)
+- **Annual Savings: $10,716/year**
+
+### Infrastructure Configuration by Environment
+
+#### Production Environment
+
+| Component | Configuration | Cost Optimization |
+|-----------|--------------|-------------------|
+| **VPC** | Single AZ (eu-central-1a) | Reduced from 3 AZs |
+| **NAT Gateway** | 1 NAT Gateway | Reduced from 3 |
+| **RDS Database** | db.t4g.micro (ARM-based), Single-AZ | Reduced from db.t3.medium Multi-AZ |
+| **Storage** | 50GB gp3 | Reduced from 100GB |
+| **ElastiCache Redis** | Removed | Now using in-memory caching (Caffeine) |
+| **Log Retention** | 30 days | Reduced from 180 days |
+| **Backup Retention** | 30 days | Optimized for compliance |
+
+#### Staging Environment
+
+| Component | Configuration | Cost Optimization |
+|-----------|--------------|-------------------|
+| **VPC** | Single AZ (eu-central-1a) | Reduced from 2 AZs |
+| **NAT Gateway** | 1 NAT Gateway | Reduced from 2 |
+| **RDS Database** | db.t4g.micro (ARM-based), Single-AZ | Reduced from db.t3.small Multi-AZ |
+| **Storage** | 20GB gp3 | Reduced from 50GB |
+| **ElastiCache Redis** | Removed | In-memory caching |
+| **Log Retention** | 30 days | Reduced from 90 days |
+| **Backup Retention** | 7 days | Testing-appropriate |
+
+#### Development Environment
+
+| Component | Configuration | Cost Optimization |
+|-----------|--------------|-------------------|
+| **VPC** | Single AZ (eu-central-1a) | Reduced from 2 AZs |
+| **NAT Gateway** | 1 NAT Gateway | Already optimized |
+| **RDS Database** | db.t4g.micro (ARM-based), Single-AZ | ARM upgrade |
+| **Storage** | 20GB gp3 | Minimal storage |
+| **ElastiCache Redis** | Removed | Services run in Docker Compose |
+| **Log Retention** | 30 days | Standard |
+| **Note** | Services, API Gateway, Frontend run locally in Docker Compose | Only infrastructure deployed to AWS |
+
+### Architecture Decisions & Trade-offs
+
+#### 1. Single Availability Zone Deployment
+
+**Decision:** Deploy all infrastructure in a single AZ instead of Multi-AZ configuration.
+
+**Benefits:**
+- **Cost Reduction:** Eliminates cross-AZ data transfer costs ($70/month savings on NAT Gateways alone)
+- **Simplified Management:** Reduced complexity in networking and service coordination
+- **Sufficient Reliability:** For 1000 users/month, manual failover within 5 minutes is acceptable
+
+**Trade-offs:**
+- **No Automatic Failover:** AZ-level failures require manual intervention
+- **Acceptable for Use Case:** BAT events occur 3 times per year; minimal impact window
+- **Mitigation:** Comprehensive monitoring, automated backups, documented runbooks
+
+#### 2. RDS Database Optimization
+
+**Decision:** Migrate from db.t3.medium Multi-AZ to db.t4g.micro Single-AZ.
+
+**Benefits:**
+- **80% Cost Reduction:** From $99/month to $19/month (production)
+- **ARM Performance:** T4G instances provide better price/performance ratio
+- **Sufficient Capacity:** 1GB RAM and burstable CPU handles 1000 users effectively
+
+**Trade-offs:**
+- **No Automatic Failover:** Single-AZ means database downtime during AZ failure
+- **Connection Limits:** Max 100 connections (sufficient for current load)
+- **Mitigation:** Daily automated backups (30-day retention), point-in-time recovery, event-based scaling
+
+#### 3. ElastiCache Redis Removal
+
+**Decision:** Remove ElastiCache Redis entirely and use application-level in-memory caching.
+
+**Benefits:**
+- **$149/month Savings:** Complete elimination of Redis costs (production)
+- **Simplified Architecture:** One less service to manage and monitor
+- **Application Caching:** Spring Boot Caffeine cache provides excellent performance
+
+**Trade-offs:**
+- **Cache Not Shared:** Each application instance maintains separate cache
+- **Slight Latency Increase:** +20-50ms for cache misses (acceptable for low traffic)
+- **Mitigation:** Optimized database queries, selective caching of frequently accessed data
+
+**Application Configuration:**
+```yaml
+# application-production.yml
+spring:
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=500,expireAfterWrite=10m
+```
+
+#### 4. Log Retention Reduction
+
+**Decision:** Reduce CloudWatch Logs retention from 180 days to 30 days.
+
+**Benefits:**
+- **$13/month Savings:** Significant reduction in log storage costs
+- **Compliance:** 30 days sufficient for operational troubleshooting
+
+**Trade-offs:**
+- **Limited Historical Analysis:** Cannot analyze logs older than 30 days
+- **Mitigation:** Export critical logs to S3 for long-term archival if needed
+
+### Event Scaling Strategy
+
+For the 3 annual BAT events, the infrastructure can be temporarily scaled up:
+
+**Pre-Event Scaling (1 week before event):**
+```bash
+# Scale up RDS instance
+aws rds modify-db-instance \
+  --db-instance-identifier batbern-production \
+  --db-instance-class db.t4g.small \
+  --apply-immediately
+
+# Temporarily enable Redis (optional, if high concurrency expected)
+# Update prod-config.ts: numNodes: 1, nodeType: 'cache.t3.micro'
+```
+
+**Post-Event Scaling:**
+```bash
+# Scale back down
+aws rds modify-db-instance \
+  --db-instance-identifier batbern-production \
+  --db-instance-class db.t4g.micro \
+  --apply-immediately
+```
+
+**Event Cost Impact:** ~$40 per event week × 3 = $120/year additional
+**Total Annual Cost with Events:** $2,160 + $120 = $2,280/year (vs. $12,672 previously)
+
+### Monitoring Cost-Optimized Infrastructure
+
+**Critical Metrics to Monitor:**
+
+1. **RDS Performance**
+   - CPU utilization (alert > 80%)
+   - Connection count (alert > 80 connections)
+   - Storage usage (alert > 80% of 50GB)
+   - Burst credits remaining
+
+2. **NAT Gateway**
+   - Single point of failure monitoring
+   - Data transfer metrics
+   - Connection tracking
+
+3. **Application Performance**
+   - API response time (P95 < 500ms)
+   - Cache hit ratio (target > 80%)
+   - Memory usage per service instance
+
+4. **Cost Monitoring**
+   - AWS Cost Explorer daily checks
+   - Budget alerts at $150/month (production)
+   - Unexpected cost spike detection
+
+**CloudWatch Alarms:**
+```yaml
+Alarms:
+  RDS_HighCPU:
+    Metric: CPUUtilization
+    Threshold: 80%
+    Action: SNS notification to ops team
+
+  RDS_HighConnections:
+    Metric: DatabaseConnections
+    Threshold: 80
+    Action: SNS notification
+
+  API_HighLatency:
+    Metric: P95Latency
+    Threshold: 500ms
+    Action: Slack alert #dev-alerts
+
+  CostAnomaly:
+    Metric: EstimatedCharges
+    Threshold: $150
+    Action: Email + PagerDuty
+```
+
+### Disaster Recovery & Business Continuity
+
+**Recovery Time Objective (RTO):** 4 hours
+**Recovery Point Objective (RPO):** 1 hour (automated backups every hour)
+
+**Backup Strategy:**
+- **RDS Automated Backups:** Daily, 30-day retention (production), 7-day (staging)
+- **Database Snapshots:** Weekly manual snapshots, 90-day retention
+- **S3 Content:** Versioning enabled, lifecycle policies to Glacier after 2 years
+- **Infrastructure as Code:** All infrastructure defined in CDK (infrastructure/)
+
+**Disaster Recovery Procedures:**
+1. **Database Failure:** Restore from latest automated backup (< 1 hour old)
+2. **AZ Failure:** Manual deployment to different AZ (documented in COST_OPTIMIZATION.md)
+3. **Region Failure:** Cross-region replication for S3 only; database restore from snapshots
+
+### Cost Optimization Documentation
+
+For detailed deployment instructions, rollback procedures, and performance considerations, refer to:
+- `infrastructure/COST_OPTIMIZATION.md` - Complete deployment guide
+- `infrastructure/lib/config/prod-config.ts` - Production infrastructure configuration
+- `infrastructure/lib/config/staging-config.ts` - Staging infrastructure configuration
+- `infrastructure/lib/config/dev-config.ts` - Development infrastructure configuration
+
 ## Deployment Strategy
 
 **Frontend Deployment:**
@@ -30,11 +247,11 @@
 
 ## Environments
 
-| Environment | Frontend URL | Backend URL | Purpose |
-|-------------|--------------|-------------|---------|
-| Development | http://localhost:3000 | http://localhost:8080 | Local development |
-| Staging | https://staging.batbern.ch | https://api-staging.batbern.ch | Pre-production testing |
-| Production | https://www.batbern.ch | https://api.batbern.ch | Live Swiss conference platform |
+| Environment | AWS Account | Frontend URL | Backend URL | Purpose |
+|-------------|-------------|--------------|-------------|---------|
+| Development | 954163570305 | http://localhost:3000 | http://localhost:8080 | Local development |
+| Staging | 188701360969 | https://staging.batbern.ch | https://api-staging.batbern.ch | Pre-production testing |
+| Production | 422940799530 | https://www.batbern.ch | https://api.batbern.ch | Live Swiss conference platform |
 
 ## Infrastructure as Code with DNS and Certificate Management
 
