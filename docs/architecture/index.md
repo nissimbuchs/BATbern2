@@ -88,6 +88,28 @@ The architecture documentation has been organized into 9 comprehensive sections 
 - **Performance Standards**: Reference [08-operations-security.md](./08-operations-security.md)
 - **Security Requirements**: Check [08-operations-security.md](./08-operations-security.md)
 
+## Technology Versions
+
+The platform maintains a **single source of truth** for all technology versions in **[versions.json](../versions.json)**. This file is automatically synchronized with actual dependency files to prevent documentation drift.
+
+### Version Management
+
+- **📋 Current Versions**: See [versions.json](../versions.json) for exact technology versions
+- **📝 Version Ranges**: Architecture docs use `major.x` notation (e.g., `5.x` = version 5.x+)
+- **🔄 Automatic Sync**: GitHub Actions automatically updates `versions.json` when dependencies change
+- **🛠️ Manual Updates**: Run `node scripts/update-versions.js` to manually sync versions
+- **✅ CI Validation**: Build pipeline checks for version drift between docs and dependencies
+
+### Key Technologies
+
+For detailed technology stack information, see [tech-stack.md](./tech-stack.md).
+
+**Current Major Versions:**
+- **Frontend**: React 19.x, TypeScript 5.x, MUI 7.x, Vite 7.x
+- **Backend**: Java 21 LTS, Spring Boot 3.x, PostgreSQL 15+, Caffeine 3.x
+- **Infrastructure**: AWS CDK 2.x, Single-AZ deployment (cost-optimized)
+- **Testing**: JUnit 5.x, Vitest 3.x, Playwright 1.x, Testcontainers 1.x
+
 ## Key Architectural Decisions
 
 ### Domain-Driven Design Approach

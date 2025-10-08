@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "description": "Single source of truth for technology versions in BATbern platform. This file is automatically updated by scripts/update-versions.js when dependencies change.",
+  "lastUpdated": "2025-10-08",
+  "frontend": {
+    "typescript": "5.x",
+    "react": "19.x",
+    "mui": "7.x",
+    "tanstack-query": "5.x",
+    "zustand": "5.x",
+    "vite": "7.x",
+    "vitest": "3.x",
+    "react-testing-library": "16.x",
+    "playwright": "1.x",
+    "eslint": "9.x",
+    "prettier": "3.x",
+    "axios": "1.x",
+    "react-router-dom": "7.x",
+    "i18next": "25.x"
+  },
+  "backend": {
+    "java": "21",
+    "spring-boot": "3.x",
+    "junit": "5.x",
+    "testcontainers": "1.x",
+    "gradle": "8.x",
+    "mockito": "5.x",
+    "aws-sdk": "2.x",
+    "openapi": "3.x"
+  },
+  "infrastructure": {
+    "aws-cdk": "2.x",
+    "typescript": "5.x",
+    "jest": "30.x",
+    "node": "20"
+  },
+  "database": {
+    "postgresql": "15",
+    "flyway": "Latest"
+  },
+  "cache": {
+    "caffeine": "3.x"
+  },
+  "aws": {
+    "rds-instance-type": "db.t4g.micro",
+    "deployment-model": "Single-AZ",
+    "region": "eu-central-1"
+  },
+  "monitoring": {
+    "cloudwatch": "Latest",
+    "grafana": "10.x",
+    "micrometer": "Latest",
+    "logback": "1.x"
+  }
+}
