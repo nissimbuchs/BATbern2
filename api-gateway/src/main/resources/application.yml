@@ -4,6 +4,10 @@ spring:
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
 
+# Application Configuration
+app:
+  environment: ${APP_ENVIRONMENT:development}  # development, staging, or production
+
 # Microservices Configuration
 # In development: localhost with different ports
 # In staging/production: internal ALB endpoints (set via environment variables)

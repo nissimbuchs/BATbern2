@@ -1,5 +1,4 @@
 import { AxiosError } from 'axios';
-import i18n from '@/i18n/config';
 
 export interface FormattedError {
   message: string;
@@ -30,14 +29,9 @@ const ERROR_MESSAGES: Record<number, string> = {
  *
  * @param statusCode - HTTP status code
  * @param customMessage - Optional custom message from API
- * @param locale - Optional locale for i18n (defaults to current i18n language)
  * @returns User-friendly error message
  */
-export function getErrorMessage(
-  statusCode: number,
-  customMessage?: string,
-  locale?: string
-): string {
+export function getErrorMessage(statusCode: number, customMessage?: string): string {
   // If custom message provided and not empty, use it
   if (customMessage && customMessage.trim()) {
     return customMessage;

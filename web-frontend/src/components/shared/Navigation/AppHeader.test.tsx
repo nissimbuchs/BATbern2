@@ -26,6 +26,16 @@ vi.mock('@/hooks/useNotifications', () => ({
   })),
 }));
 
+// Mock useBreakpoints hook to return desktop breakpoints
+vi.mock('@/hooks/useBreakpoints', () => ({
+  useBreakpoints: vi.fn(() => ({
+    isMobile: false,
+    isTablet: false,
+    isDesktop: true,
+    isLargeDesktop: false,
+  })),
+}));
+
 describe('AppHeader Component', () => {
   let queryClient: QueryClient;
 
@@ -83,6 +93,11 @@ describe('AppHeader Component', () => {
   });
 
   const renderWithProviders = (component: React.ReactElement) => {
+    // Set desktop viewport size to ensure navigation menu is visible (not mobile drawer)
+    global.innerWidth = 1024;
+    global.innerHeight = 768;
+    global.dispatchEvent(new Event('resize'));
+
     return render(
       <BrowserRouter>
         <QueryClientProvider client={queryClient}>{component}</QueryClientProvider>

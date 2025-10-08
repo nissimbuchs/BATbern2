@@ -1,5 +1,18 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Component, ErrorInfo, ReactNode } from 'react';
 import { Alert, Button, Box } from '@mui/material';
+
+/**
+ * Sanitize error message to prevent XSS attacks
+ * Removes HTML tags and limits message length
+ * @param message - Raw error message
+ * @returns Sanitized error message safe for display
+ */
+function sanitizeErrorMessage(message: string): string {
+  // Remove HTML tags
+  const withoutTags = message.replace(/<[^>]*>/g, '');
+  // Limit length to prevent DoS via large error messages
+  return withoutTags.slice(0, 500);
+}
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -109,7 +122,9 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
           >
             <Box>
               <strong>Something went wrong</strong>
-              {error.message && <Box sx={{ marginTop: 1 }}>{error.message}</Box>}
+              {error.message && (
+                <Box sx={{ marginTop: 1 }}>{sanitizeErrorMessage(error.message)}</Box>
+              )}
             </Box>
           </Alert>
           <Button variant="contained" onClick={this.resetError} aria-label="Try again">

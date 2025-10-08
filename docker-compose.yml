@@ -27,6 +27,9 @@ services:
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-local}
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
 
+      # Application Configuration
+      - APP_ENVIRONMENT=development
+
       # AWS Configuration
       - AWS_REGION=${AWS_REGION:-eu-central-1}
 
@@ -71,15 +74,10 @@ services:
     ports:
       - "3000:3000"
     environment:
-      # API Configuration
-      - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:8080}
-
-      # AWS Configuration
-      - VITE_AWS_REGION=${VITE_AWS_REGION:-eu-central-1}
-
-      # Cognito Configuration (AWS)
-      - VITE_COGNITO_USER_POOL_ID=${VITE_COGNITO_USER_POOL_ID}
-      - VITE_COGNITO_CLIENT_ID=${VITE_COGNITO_CLIENT_ID}
+      # NO VITE_ variables needed!
+      # Frontend loads runtime config from http://localhost:8080/api/v1/config
+      # This enables "build once, deploy everywhere"
+      - NODE_ENV=development
     volumes:
       - ./web-frontend:/app
       - /app/node_modules

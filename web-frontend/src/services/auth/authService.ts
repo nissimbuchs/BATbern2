@@ -48,7 +48,9 @@ class AuthService {
    */
   private configureSessionPersistence(rememberMe: boolean): void {
     const storage = rememberMe ? localStorage : sessionStorage;
-    cognitoUserPoolsTokenProvider.setKeyValueStorage(storage);
+    // Cast to any to avoid KeyValueStorageInterface type mismatch
+    // localStorage/sessionStorage implement the required interface methods
+    cognitoUserPoolsTokenProvider.setKeyValueStorage(storage as any);
   }
   async signIn(credentials: LoginCredentials): Promise<SignInResult> {
     try {

@@ -43,6 +43,9 @@ const AppHeader = React.memo(function AppHeader({
   const notificationsData = notificationsProp || hookNotificationsData;
   const unreadCount = notificationsData?.unreadCount ?? 0;
 
+  // Extract current role - handle both UserContext (role) and UserProfile (currentRole)
+  const currentRole = user && ('currentRole' in user ? user.currentRole : user.role);
+
   const handleNotificationClick = () => {
     setNotificationMenuOpen(!notificationMenuOpen);
     setNotificationDrawerOpen(true);
@@ -113,9 +116,9 @@ const AppHeader = React.memo(function AppHeader({
           </Box>
 
           {/* Desktop/Tablet Navigation */}
-          {!isMobile && (
+          {!isMobile && currentRole && (
             <Box sx={{ flex: 1 }}>
-              <NavigationMenu userRole={user.currentRole} showText={!isTablet} />
+              <NavigationMenu userRole={currentRole} showText={!isTablet} />
             </Box>
           )}
 
@@ -186,12 +189,14 @@ const AppHeader = React.memo(function AppHeader({
       </AppBar>
 
       {/* Mobile Drawer */}
-      <MobileDrawer
-        open={mobileDrawerOpen}
-        onClose={() => setMobileDrawerOpen(false)}
-        userRole={user.currentRole}
-        userEmail={user.email}
-      />
+      {currentRole && (
+        <MobileDrawer
+          open={mobileDrawerOpen}
+          onClose={() => setMobileDrawerOpen(false)}
+          userRole={currentRole}
+          userEmail={user.email}
+        />
+      )}
     </>
   );
 });

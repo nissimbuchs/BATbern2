@@ -31,6 +31,7 @@ import {
   PriorityHigh as PriorityHighIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n/config';
 import { Notification } from '../../../types/notification';
 import { formatDateTime } from '../../../utils/date';
 
@@ -143,7 +144,7 @@ export const NotificationDropdown = React.memo<NotificationDropdownProps>(
                     color="text.disabled"
                     sx={{ display: 'block', mt: 0.5 }}
                   >
-                    {formatDateTime(new Date(notification.timestamp))}
+                    {formatDateTime(new Date(notification.timestamp), i18n.language)}
                   </Typography>
                 </>
               }

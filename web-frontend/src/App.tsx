@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import { CssBaseline, Box, CircularProgress } from '@mui/material';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -19,6 +19,7 @@ import {
 } from '@components/auth/ProtectedRoute';
 import { LoginForm } from '@components/auth/LoginForm';
 import { ForgotPasswordForm } from '@components/auth/ForgotPasswordForm';
+import { setNavigationCallback } from '@/services/api/apiClient';
 import theme from '@/theme';
 
 // Create React Query client
@@ -79,6 +80,19 @@ const AuthWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <AuthenticatedLayout>{children}</AuthenticatedLayout>;
 };
 
+// Navigation setup component (must be inside Router)
+const NavigationSetup: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Configure API client to use React Router navigate instead of window.location
+    // ARCH-002 Fix: Replace window.location.href with React Router navigate()
+    setNavigationCallback(navigate);
+  }, [navigate]);
+
+  return <>{children}</>;
+};
+
 function App() {
   useEffect(() => {
     // Configure AWS Amplify on app initialization
@@ -94,86 +108,88 @@ function App() {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <Router>
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
-              {/* Public routes */}
-              <Route path="/login" element={<LoginForm />} />
-              <Route path="/auth/forgot-password" element={<ForgotPasswordForm />} />
+          <NavigationSetup>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                {/* Public routes */}
+                <Route path="/login" element={<LoginForm />} />
+                <Route path="/auth/forgot-password" element={<ForgotPasswordForm />} />
 
-              {/* Protected routes with lazy-loaded components */}
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <AuthWrapper>
-                      <Dashboard />
-                    </AuthWrapper>
-                  </ProtectedRoute>
-                }
-              />
+                {/* Protected routes with lazy-loaded components */}
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <AuthWrapper>
+                        <Dashboard />
+                      </AuthWrapper>
+                    </ProtectedRoute>
+                  }
+                />
 
-              <Route
-                path="/events"
-                element={
-                  <ProtectedRoute>
-                    <AuthWrapper>
-                      <Events />
-                    </AuthWrapper>
-                  </ProtectedRoute>
-                }
-              />
+                <Route
+                  path="/events"
+                  element={
+                    <ProtectedRoute>
+                      <AuthWrapper>
+                        <Events />
+                      </AuthWrapper>
+                    </ProtectedRoute>
+                  }
+                />
 
-              <Route
-                path="/speakers"
-                element={
-                  <SpeakerRoute>
-                    <AuthWrapper>
-                      <Speakers />
-                    </AuthWrapper>
-                  </SpeakerRoute>
-                }
-              />
+                <Route
+                  path="/speakers"
+                  element={
+                    <SpeakerRoute>
+                      <AuthWrapper>
+                        <Speakers />
+                      </AuthWrapper>
+                    </SpeakerRoute>
+                  }
+                />
 
-              <Route
-                path="/partners"
-                element={
-                  <PartnerRoute>
-                    <AuthWrapper>
-                      <Partners />
-                    </AuthWrapper>
-                  </PartnerRoute>
-                }
-              />
+                <Route
+                  path="/partners"
+                  element={
+                    <PartnerRoute>
+                      <AuthWrapper>
+                        <Partners />
+                      </AuthWrapper>
+                    </PartnerRoute>
+                  }
+                />
 
-              <Route
-                path="/analytics"
-                element={
-                  <PartnerRoute>
-                    <AuthWrapper>
-                      <Analytics />
-                    </AuthWrapper>
-                  </PartnerRoute>
-                }
-              />
+                <Route
+                  path="/analytics"
+                  element={
+                    <PartnerRoute>
+                      <AuthWrapper>
+                        <Analytics />
+                      </AuthWrapper>
+                    </PartnerRoute>
+                  }
+                />
 
-              <Route
-                path="/content"
-                element={
-                  <AttendeeRoute>
-                    <AuthWrapper>
-                      <Content />
-                    </AuthWrapper>
-                  </AttendeeRoute>
-                }
-              />
+                <Route
+                  path="/content"
+                  element={
+                    <AttendeeRoute>
+                      <AuthWrapper>
+                        <Content />
+                      </AuthWrapper>
+                    </AttendeeRoute>
+                  }
+                />
 
-              {/* Default redirect */}
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                {/* Default redirect */}
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-              {/* Catch all route */}
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
-          </Suspense>
+                {/* Catch all route */}
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              </Routes>
+            </Suspense>
+          </NavigationSetup>
         </Router>
       </ThemeProvider>
     </QueryClientProvider>

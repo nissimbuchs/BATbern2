@@ -6,7 +6,7 @@
  */
 
 import { format, formatDistance, formatDistanceToNow, parseISO, parse, isValid } from 'date-fns';
-import { de, enUS } from 'date-fns/locale';
+import { de, enUS, type Locale } from 'date-fns/locale';
 
 // Supported locales
 const locales = {
