@@ -52,7 +52,7 @@ jobs:
             echo "::warning::Frontend package.json not found, skipping build"
           fi
         env:
-          VITE_API_URL: https://api-staging.batbern.ch
+          VITE_API_URL: https://api.staging.batbern.ch
           VITE_AWS_REGION: ${{ env.AWS_REGION }}
           VITE_COGNITO_USER_POOL_ID: ${{ secrets.STAGING_COGNITO_USER_POOL_ID }}
           VITE_COGNITO_CLIENT_ID: ${{ secrets.STAGING_COGNITO_CLIENT_ID }}
@@ -90,13 +90,16 @@ jobs:
           if [ -d "shared-kernel" ] && [ -f "shared-kernel/gradlew" ]; then
             cd shared-kernel
             chmod +x gradlew
+            echo "Running Flyway migrations..."
             ./gradlew flywayMigrate \
               -Dflyway.url=${{ secrets.STAGING_DB_URL }} \
               -Dflyway.user=${{ secrets.STAGING_DB_USER }} \
               -Dflyway.password=${{ secrets.STAGING_DB_PASSWORD }} \
-              --no-daemon || echo "::warning::Flyway migrations not configured yet"
+              --no-daemon
+            echo "✅ Database migrations completed successfully"
           else
-            echo "::warning::Shared kernel not found, skipping migrations"
+            echo "::error::Shared kernel or gradlew not found"
+            exit 1
           fi
 
       - name: Deploy infrastructure to staging
@@ -107,9 +110,12 @@ jobs:
 
             npm run deploy:staging -- \
               --context version=${{ github.sha }} \
-              --require-approval never || echo "::warning::CDK deployment not fully configured yet"
+              --require-approval never
+
+            echo "✅ CDK deployment completed successfully"
           else
-            echo "::warning::Infrastructure not configured yet"
+            echo "::error::Infrastructure package.json not found"
+            exit 1
           fi
         env:
           IMAGE_TAG: ${{ github.sha }}
@@ -142,18 +148,26 @@ jobs:
         run: |
           if [ -f "scripts/ci/smoke-tests.sh" ]; then
             chmod +x scripts/ci/smoke-tests.sh
+            echo "Running smoke tests against deployed staging environment..."
             ./scripts/ci/smoke-tests.sh \
               https://staging.batbern.ch \
-              https://api-staging.batbern.ch || echo "::warning::Smoke tests not fully configured yet"
+              https://api.staging.batbern.ch
+            echo "✅ Smoke tests passed"
           else
-            echo "::warning::Smoke tests script not found"
+            echo "::error::Smoke tests script not found at scripts/ci/smoke-tests.sh"
+            exit 1
           fi
 
       - name: Run E2E infrastructure tests
         working-directory: ./infrastructure
         run: |
           echo "Running E2E tests against deployed staging infrastructure..."
-          TEST_E2E=true TEST_ENVIRONMENT=staging npm test -- test/e2e/ || echo "::warning::E2E tests not fully configured yet"
+          if [ -d "test/e2e" ]; then
+            TEST_E2E=true TEST_ENVIRONMENT=staging npm test -- test/e2e/
+            echo "✅ E2E infrastructure tests passed"
+          else
+            echo "::warning::E2E test directory not found, skipping"
+          fi
         env:
           AWS_REGION: ${{ env.AWS_REGION }}
           AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
@@ -165,13 +179,18 @@ jobs:
         run: |
           echo "Running Playwright E2E tests against deployed staging environment..."
           # Install Playwright if not cached
-          npm install -D @playwright/test || true
-          npx playwright install --with-deps chromium || echo "::warning::Playwright installation failed"
-          # Run E2E tests
-          npx playwright test --project=chromium || echo "::warning::Frontend E2E tests not fully configured yet"
+          if [ -f "playwright.config.ts" ] || [ -f "playwright.config.js" ]; then
+            npm install -D @playwright/test
+            npx playwright install --with-deps chromium
+            # Run E2E tests
+            npx playwright test --project=chromium
+            echo "✅ Frontend E2E tests passed"
+          else
+            echo "::warning::Playwright config not found, skipping frontend E2E tests"
+          fi
         env:
           E2E_BASE_URL: https://staging.batbern.ch
-          E2E_API_URL: https://api-staging.batbern.ch
+          E2E_API_URL: https://api.staging.batbern.ch
           E2E_AWS_REGION: ${{ env.AWS_REGION }}
 
       - name: Upload Playwright test results
