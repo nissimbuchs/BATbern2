@@ -52,7 +52,7 @@ jobs:
             echo "::warning::Frontend package.json not found, skipping build"
           fi
         env:
-          VITE_API_URL: https://api-staging.batbern.ch
+          VITE_API_URL: https://api.staging.batbern.ch
           VITE_AWS_REGION: ${{ env.AWS_REGION }}
           VITE_COGNITO_USER_POOL_ID: ${{ secrets.STAGING_COGNITO_USER_POOL_ID }}
           VITE_COGNITO_CLIENT_ID: ${{ secrets.STAGING_COGNITO_CLIENT_ID }}

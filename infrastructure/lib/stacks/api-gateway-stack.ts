@@ -169,14 +169,11 @@ export class ApiGatewayStack extends cdk.Stack {
       });
 
       // Create Route 53 record (if hosted zone provided)
-      if (props.hostedZoneId && props.domainName) {
-        // Extract zone name from domain (e.g., api-staging.batbern.ch -> batbern.ch)
-        const zoneName = props.domainName.split('.').slice(-2).join('.');
-
+      if (props.hostedZoneId && props.domainName && props.config.domain?.zoneName) {
         const hostedZone = route53.HostedZone.fromHostedZoneAttributes(
           this, 'HostedZone', {
             hostedZoneId: props.hostedZoneId,
-            zoneName,
+            zoneName: props.config.domain.zoneName,
           }
         );
 

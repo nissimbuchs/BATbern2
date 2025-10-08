@@ -250,45 +250,30 @@ For detailed deployment instructions, rollback procedures, and performance consi
 | Environment | AWS Account | Frontend URL | Backend URL | Purpose |
 |-------------|-------------|--------------|-------------|---------|
 | Development | 954163570305 | http://localhost:3000 | http://localhost:8080 | Local development |
-| Staging | 188701360969 | https://staging.batbern.ch | https://api-staging.batbern.ch | Pre-production testing |
+| Staging | 188701360969 | https://staging.batbern.ch | https://api.staging.batbern.ch | Pre-production testing |
 | Production | 422940799530 | https://www.batbern.ch | https://api.batbern.ch | Live Swiss conference platform |
 
 ## Infrastructure as Code with DNS and Certificate Management
 
 ### DNS Strategy with AWS Route53
 
-**Certificate Stack (us-east-1 only):**
-```typescript
-// Certificate for batbern.ch domain
-const certificate = new Certificate(this, 'BATbernCertificate', {
-  domainName: 'www.batbern.ch',
-  subjectAlternativeNames: [
-    'dev.batbern.ch',
-    'staging.batbern.ch',
-    'api.batbern.ch',
-    'api-dev.batbern.ch',
-    'api-staging.batbern.ch'
-  ],
-  validation: CertificateValidation.fromDns(), // Manual DNS validation
-});
-```
+**DNS Architecture with Subdomain Delegation:**
 
-**DNS Output Stack for Hostpoint Configuration:**
-```typescript
-// Output CNAME records for Hostpoint DNS configuration
-new CfnOutput(this, 'HostpointCNAMERecords', {
-  value: JSON.stringify({
-    "CNAME Records for Hostpoint DNS": {
-      "www.batbern.ch": productionCloudFront,
-      "staging.batbern.ch": stagingCloudFront,
-      "dev.batbern.ch": devCloudFront,
-      "api.batbern.ch": productionApiGateway,
-      "api-staging.batbern.ch": stagingApiGateway,
-      "api-dev.batbern.ch": devApiGateway
-    }
-  }, null, 2),
-  description: 'Route53 DNS records automatically configured'
-});
+The BATbern platform uses subdomain delegation for environment isolation:
+
+- **Production (422940799530):** Owns `batbern.ch` hosted zone
+  - Frontend: `www.batbern.ch`
+  - API: `api.batbern.ch`
+
+- **Staging (188701360969):** Owns `staging.batbern.ch` delegated subdomain zone
+  - Frontend: `staging.batbern.ch`
+  - API: `api.staging.batbern.ch` (subdomain within delegated zone)
+
+- **Development (954163570305):** Local Docker services (no custom domains)
+  - Frontend: `http://localhost:3000`
+  - API: `http://localhost:8080`
+
+Each environment creates its own certificates with automatic DNS validation in Route53.
 
 // Route53 Hosted Zone for batbern.ch
 const hostedZone = new HostedZone(this, 'BATbernHostedZone', {
@@ -997,7 +982,7 @@ export class ContentStorageStack extends cdk.Stack {
       case 'production':
         return ['https://www.batbern.ch', 'https://api.batbern.ch'];
       case 'staging':
-        return ['https://staging.batbern.ch', 'https://api-staging.batbern.ch'];
+        return ['https://staging.batbern.ch', 'https://api.staging.batbern.ch'];
       case 'development':
         return ['https://dev.batbern.ch', 'https://api-dev.batbern.ch', 'http://localhost:3000'];
       default:

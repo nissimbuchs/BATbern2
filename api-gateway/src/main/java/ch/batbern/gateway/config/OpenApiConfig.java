@@ -103,10 +103,7 @@ public class OpenApiConfig {
                                 .url("http://localhost:8080")
                                 .description("Local development server"),
                         new Server()
-                                .url("https://api-dev.batbern.ch")
-                                .description("Development environment"),
-                        new Server()
-                                .url("https://api-staging.batbern.ch")
+                                .url("https://api.staging.batbern.ch")
                                 .description("Staging environment"),
                         new Server()
                                 .url("https://api.batbern.ch")

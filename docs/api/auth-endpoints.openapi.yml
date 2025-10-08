@@ -19,7 +19,7 @@ info:
 servers:
   - url: https://api.batbern.ch/api/v1
     description: Production server
-  - url: https://api-staging.batbern.ch/api/v1
+  - url: https://api.staging.batbern.ch/api/v1
     description: Staging server
   - url: http://localhost:8080/api/v1
     description: Local development server
