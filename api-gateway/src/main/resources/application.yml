@@ -3,6 +3,11 @@ spring:
     name: api-gateway
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://cognito-idp.${AWS_REGION:eu-central-1}.amazonaws.com/${COGNITO_USER_POOL_ID}
 
 # Application Configuration
 app:
@@ -29,6 +34,7 @@ aws:
     userPoolId: ${COGNITO_USER_POOL_ID}
     region: ${AWS_REGION:eu-central-1}
     appClientId: ${COGNITO_CLIENT_ID}
+    userPoolClientId: ${COGNITO_CLIENT_ID}
 
 logging:
   level:

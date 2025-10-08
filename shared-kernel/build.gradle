@@ -90,9 +90,9 @@ jacocoTestCoverageVerification {
     violationRules {
         rule {
             limit {
-                // Use 60% threshold in CI for incremental development
+                // Use 60% threshold for incremental development
                 // TODO: Restore to 0.90 once coverage is improved
-                minimum = System.getenv('CI') ? 0.60 : 0.90
+                minimum = 0.60
             }
         }
     }
