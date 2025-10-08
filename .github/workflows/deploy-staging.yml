@@ -147,6 +147,17 @@ jobs:
             echo "::warning::Smoke tests script not found"
           fi
 
+      - name: Run E2E infrastructure tests
+        working-directory: ./infrastructure
+        run: |
+          echo "Running E2E tests against deployed staging infrastructure..."
+          TEST_E2E=true TEST_ENVIRONMENT=staging npm test -- test/e2e/ || echo "::warning::E2E tests not fully configured yet"
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ env.AWS_SESSION_TOKEN }}
+
       - name: Notify deployment success
         if: success()
         run: |
