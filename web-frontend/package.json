@@ -78,5 +78,9 @@
     "*.{json,css,md}": [
       "prettier --write"
     ]
-  }
+  },
+  "overrides": {
+    "test-exclude": "^7.0.1"
+  },
+  "_comment_overrides": "Force test-exclude@7+ to eliminate deprecated glob@7.2.3/inflight@1.0.6. Remove when upstream deps update"
 }
