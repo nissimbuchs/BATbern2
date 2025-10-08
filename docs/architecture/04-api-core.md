@@ -13,10 +13,10 @@ info:
 servers:
   - url: https://api.batbern.ch
     description: Production API
-  - url: https://api-staging.batbern.ch
+  - url: https://api.staging.batbern.ch
     description: Staging API
-  - url: https://api-dev.batbern.ch
-    description: Development API
+  - url: http://localhost:8080
+    description: Local Development API
 
 security:
   - BearerAuth: []

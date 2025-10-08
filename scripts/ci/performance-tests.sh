@@ -7,7 +7,7 @@ TARGET_URL=$1
 
 if [ -z "$TARGET_URL" ]; then
     echo "Usage: $0 <target_url>"
-    echo "Example: $0 https://api-staging.batbern.ch"
+    echo "Example: $0 https://api.staging.batbern.ch"
     exit 1
 fi
 

@@ -31,7 +31,7 @@ export interface MicroservicesStackProps extends cdk.StackProps {
  * 6. company-management       - Handles /api/v1/companies
  *
  * Path-based routing (NOT subdomain routing):
- * Client → api-staging.batbern.ch/api/v1/events → API Gateway → event-management:8080
+ * Client → api.staging.batbern.ch/api/v1/events → API Gateway → event-management:8080
  */
 export class MicroservicesStack extends cdk.Stack {
   public readonly cluster: ecs.Cluster;

@@ -43,6 +43,7 @@ export const stagingConfig: EnvironmentConfig = {
   domain: {
     frontendDomain: 'staging.batbern.ch',
     apiDomain: 'api.staging.batbern.ch',
+    zoneName: 'staging.batbern.ch', // Delegated subdomain zone
     // Staging account owns staging.batbern.ch hosted zone (delegated subdomain)
     hostedZoneId: 'Z00395322M4O1QCL0M7UA',
     // Certificates created via DNS stack with automatic validation
