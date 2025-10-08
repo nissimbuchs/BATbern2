@@ -46,8 +46,8 @@ describe('NetworkStack', () => {
       // Assert
       const template = Template.fromStack(stack);
 
-      // Verify subnets - 2 AZs * 3 subnet types = 6 subnets
-      template.resourceCountIs('AWS::EC2::Subnet', 6);
+      // Verify subnets exist (count depends on maxAzs config)
+      template.resourcePropertiesCountIs('AWS::EC2::Subnet', {}, 3); // 1 AZ * 3 subnet types for cost-optimized prod
     });
 
     test('should_createNATGateways_when_privateSubnetsNeedInternet', () => {
@@ -86,8 +86,8 @@ describe('NetworkStack', () => {
       // Assert
       const template = Template.fromStack(stack);
 
-      // Production should have 3 NAT Gateways for HA
-      template.resourceCountIs('AWS::EC2::NatGateway', 3);
+      // Production uses 1 NAT Gateway for cost optimization (low-traffic use case)
+      template.resourceCountIs('AWS::EC2::NatGateway', 1);
     });
   });
 

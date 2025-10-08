@@ -5,8 +5,13 @@ import { CloudWatchClient, GetDashboardCommand, GetMetricDataCommand } from '@aw
  *
  * This test validates that the monitoring infrastructure is correctly deployed
  * and dashboards are accessible with the expected widgets and metrics.
+ *
+ * NOTE: These tests require actual AWS resources and will be skipped unless
+ * TEST_E2E=true environment variable is set (for deployed environments only)
  */
-describe('CloudWatch Dashboard E2E Tests', () => {
+const describeE2E = process.env.TEST_E2E === 'true' ? describe : describe.skip;
+
+describeE2E('CloudWatch Dashboard E2E Tests', () => {
   let cloudwatchClient: CloudWatchClient;
   const environment = process.env.TEST_ENVIRONMENT || 'dev';
   const dashboardName = `BATbern-${environment}`;

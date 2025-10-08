@@ -291,14 +291,13 @@ describe('MonitoringStack', () => {
       const devTemplate = Template.fromStack(devStack);
       const prodTemplate = Template.fromStack(prodStack);
 
-      // Dev should have 30 days retention
+      // Both dev and prod use 30 days retention for cost optimization
       devTemplate.hasResourceProperties('AWS::Logs::LogGroup', {
         RetentionInDays: 30,
       });
 
-      // Prod should have 180 days (6 months) retention
       prodTemplate.hasResourceProperties('AWS::Logs::LogGroup', {
-        RetentionInDays: 180,
+        RetentionInDays: 30,
       });
     });
 

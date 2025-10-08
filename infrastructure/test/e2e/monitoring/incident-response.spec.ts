@@ -7,8 +7,13 @@ import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda';
  *
  * This test validates that incident management workflows are correctly configured,
  * including PagerDuty integration, runbook automation, and StatusPage updates.
+ *
+ * NOTE: These tests require actual AWS resources and will be skipped unless
+ * TEST_E2E=true environment variable is set (for deployed environments only)
  */
-describe('Incident Response E2E Tests', () => {
+const describeE2E = process.env.TEST_E2E === 'true' ? describe : describe.skip;
+
+describeE2E('Incident Response E2E Tests', () => {
   let cloudwatchClient: CloudWatchClient;
   let snsClient: SNSClient;
   let lambdaClient: LambdaClient;

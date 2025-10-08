@@ -19,7 +19,7 @@ export interface SecretsStackProps extends cdk.StackProps {
  * Note: Database credentials are managed by RDS stack automatically
  */
 export class SecretsStack extends cdk.Stack {
-  public readonly redisSecret: secretsmanager.Secret;
+  // Redis secret removed - Redis disabled for cost optimization
   public readonly jwtSecret: secretsmanager.Secret;
   public readonly secretsKey: kms.Key;
 
@@ -36,18 +36,7 @@ export class SecretsStack extends cdk.Stack {
     });
 
     // Note: Database credentials are automatically created and managed by RDS stack
-
-    // Redis authentication token secret
-    this.redisSecret = new secretsmanager.Secret(this, 'RedisSecret', {
-      secretName: `batbern/${props.config.envName}/redis/auth-token`,
-      description: 'ElastiCache Redis authentication token',
-      encryptionKey: this.secretsKey,
-      generateSecretString: {
-        excludeCharacters: ' %+~`#$&*()|[]{}:;<>?!\'/@"\\',
-        passwordLength: 32,
-        excludePunctuation: true,
-      },
-    });
+    // Note: Redis disabled for cost optimization - secret creation removed
 
     // JWT signing secret for API authentication
     this.jwtSecret = new secretsmanager.Secret(this, 'JWTSecret', {
@@ -81,12 +70,7 @@ export class SecretsStack extends cdk.Stack {
 
     // Outputs
     // Note: Database secret ARN is exported by Database stack
-
-    new cdk.CfnOutput(this, 'RedisSecretArn', {
-      value: this.redisSecret.secretArn,
-      description: 'ARN of Redis auth token secret',
-      exportName: `${props.config.envName}-RedisSecretArn`,
-    });
+    // Note: Redis secret output removed (Redis disabled for cost optimization)
 
     new cdk.CfnOutput(this, 'JWTSecretArn', {
       value: this.jwtSecret.secretArn,
