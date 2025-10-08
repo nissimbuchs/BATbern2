@@ -7,7 +7,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { authService } from '@services/auth/authService';
 import { AuthenticationState, LoginCredentials, SignUpData, UserRole } from '@/types/auth';
 
-interface UseAuthReturn extends Omit<AuthenticationState, 'refreshToken'> {
+interface UseAuthReturn extends AuthenticationState {
   refreshToken: () => Promise<boolean>;
   signIn: (credentials: LoginCredentials) => Promise<boolean>;
   signOut: () => Promise<void>;
@@ -26,7 +26,6 @@ export function useAuth(): UseAuthReturn {
     user: null,
     error: null,
     accessToken: null,
-    refreshToken: null,
   });
 
   /**
@@ -47,7 +46,6 @@ export function useAuth(): UseAuthReturn {
             user,
             error: null,
             accessToken: tokenResult.accessToken || null,
-            refreshToken: tokenResult.refreshToken || null,
           });
         } else {
           setState((prev) => ({
@@ -86,7 +84,6 @@ export function useAuth(): UseAuthReturn {
           user: result.user,
           error: null,
           accessToken: result.accessToken || null,
-          refreshToken: result.refreshToken || null,
         });
         return true;
       } else {
@@ -127,7 +124,6 @@ export function useAuth(): UseAuthReturn {
         user: null,
         error: null,
         accessToken: null,
-        refreshToken: null,
       });
     } catch (error: any) {
       setState((prev) => ({
@@ -181,7 +177,6 @@ export function useAuth(): UseAuthReturn {
         setState((prev) => ({
           ...prev,
           accessToken: result.accessToken || null,
-          refreshToken: result.refreshToken || prev.refreshToken,
         }));
         return true;
       }
