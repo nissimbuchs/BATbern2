@@ -164,18 +164,11 @@ echo ""
 
 # Environment-specific configuration
 if [ "$ENVIRONMENT" == "development" ]; then
-    # Development uses local Redis in Docker
-    REDIS_HOST="redis"
-    REDIS_PORT="6379"
-    REDIS_PASSWORD=""
+    # Development uses in-memory caching (no Redis)
     SPRING_PROFILE="local"
     LOG_LEVEL="DEBUG"
 else
-    # Staging/Production use ElastiCache
-    CACHE_ENDPOINT=$(get_stack_output "${DB_STACK}" "CacheEndpoint") || REDIS_HOST="NOT_DEPLOYED"
-    REDIS_HOST="${CACHE_ENDPOINT:-NOT_DEPLOYED}"
-    REDIS_PORT="6379"
-    REDIS_PASSWORD=""
+    # Staging/Production also use in-memory caching (Redis removed for cost optimization)
     SPRING_PROFILE="${ENVIRONMENT}"
     LOG_LEVEL="INFO"
 fi
@@ -198,9 +191,6 @@ cat "${TEMPLATE_FILE}" | \
     sed "s|{{DB_NAME}}|${DB_NAME}|g" | \
     sed "s|{{DB_USER}}|${DB_USER}|g" | \
     sed "s|{{DB_PASSWORD}}|${DB_PASSWORD}|g" | \
-    sed "s|{{REDIS_HOST}}|${REDIS_HOST}|g" | \
-    sed "s|{{REDIS_PORT}}|${REDIS_PORT}|g" | \
-    sed "s|{{REDIS_PASSWORD}}|${REDIS_PASSWORD}|g" | \
     sed "s|{{COGNITO_USER_POOL_ID}}|${COGNITO_USER_POOL_ID}|g" | \
     sed "s|{{COGNITO_CLIENT_ID}}|${COGNITO_CLIENT_ID}|g" | \
     sed "s|{{COGNITO_DOMAIN_URL}}|${COGNITO_DOMAIN_URL}|g" | \
@@ -226,7 +216,6 @@ echo "Environment:         ${ENVIRONMENT}"
 echo ""
 echo "Database:            ${DB_ENDPOINT}"
 echo "Cognito Pool:        ${COGNITO_USER_POOL_ID}"
-echo "Redis:               ${REDIS_HOST}"
 echo ""
 echo "Next steps:"
 echo "  1. Review the generated ${OUTPUT_FILE} file"
