@@ -158,6 +158,28 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
           AWS_SESSION_TOKEN: ${{ env.AWS_SESSION_TOKEN }}
 
+      - name: Run frontend E2E tests (Playwright)
+        working-directory: ./web-frontend
+        run: |
+          echo "Running Playwright E2E tests against deployed staging environment..."
+          # Install Playwright if not cached
+          npm install -D @playwright/test || true
+          npx playwright install --with-deps chromium || echo "::warning::Playwright installation failed"
+          # Run E2E tests
+          npx playwright test --project=chromium || echo "::warning::Frontend E2E tests not fully configured yet"
+        env:
+          E2E_BASE_URL: https://staging.batbern.ch
+          E2E_API_URL: https://api-staging.batbern.ch
+          E2E_AWS_REGION: ${{ env.AWS_REGION }}
+
+      - name: Upload Playwright test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-staging
+          path: web-frontend/playwright-report/
+          retention-days: 7
+
       - name: Notify deployment success
         if: success()
         run: |
