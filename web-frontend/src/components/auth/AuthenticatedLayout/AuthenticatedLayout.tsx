@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   AppBar,
@@ -85,6 +86,7 @@ const navigationItems: NavigationItem[] = [
 
 export const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) => {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
@@ -103,6 +105,7 @@ export const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ childr
   const handleSignOut = async () => {
     handleMenuClose();
     await signOut();
+    navigate('/login', { replace: true });
   };
 
   const getVisibleNavigationItems = () => {

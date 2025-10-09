@@ -3,10 +3,10 @@
  * Story 1.17: React Frontend Foundation - Task 13b (Performance Optimization)
  */
 
-import React, { useEffect, Suspense } from 'react';
+import React, { useEffect, Suspense, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
-import { CssBaseline, Box, CircularProgress } from '@mui/material';
+import { CssBaseline, Box, CircularProgress, Typography, Button } from '@mui/material';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuth } from '@hooks/useAuth';
 import { AuthenticatedLayout } from '@components/auth/AuthenticatedLayout';
@@ -53,30 +53,70 @@ const PageLoader = () => (
   </Box>
 );
 
-// Authentication wrapper component
-const AuthWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  if (isLoading) {
-    return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '100vh',
-        }}
-      >
-        Loading...
-      </Box>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <LoginForm />;
-  }
-
+// Layout wrapper for authenticated routes
+const AuthLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <AuthenticatedLayout>{children}</AuthenticatedLayout>;
+};
+
+// Login page component with navigation logic
+const LoginPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+
+  // Redirect to dashboard if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+
+  const handleLoginSuccess = useCallback(() => {
+    navigate('/dashboard', { replace: true });
+  }, [navigate]);
+
+  const handleForgotPassword = useCallback(() => {
+    navigate('/auth/forgot-password');
+  }, [navigate]);
+
+  const handleSignUp = useCallback(() => {
+    navigate('/auth/signup');
+  }, [navigate]);
+
+  return (
+    <LoginForm
+      onSuccess={handleLoginSuccess}
+      onForgotPassword={handleForgotPassword}
+      onSignUp={handleSignUp}
+    />
+  );
+};
+
+// Forgot Password page component with navigation logic
+const ForgotPasswordPage: React.FC = () => {
+  // For now, render the ForgotPasswordForm as-is
+  // ForgotPasswordForm has a hardcoded link to /auth/login
+  // TODO: Refactor to accept onBackToLogin callback for programmatic navigation
+  return <ForgotPasswordForm />;
+};
+
+// Signup placeholder page (Story 1.2.3 not implemented yet)
+const SignupPage: React.FC = () => {
+  const navigate = useNavigate();
+
+  return (
+    <Box sx={{ maxWidth: 400, mx: 'auto', mt: 8, textAlign: 'center' }}>
+      <Typography variant="h4" gutterBottom>
+        Sign Up
+      </Typography>
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+        User registration is not yet available. Please contact an administrator to create your
+        account.
+      </Typography>
+      <Button variant="outlined" onClick={() => navigate('/login')}>
+        Back to Login
+      </Button>
+    </Box>
+  );
 };
 
 // Navigation setup component (must be inside Router)
@@ -102,17 +142,18 @@ function App() {
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 {/* Public routes */}
-                <Route path="/login" element={<LoginForm />} />
-                <Route path="/auth/forgot-password" element={<ForgotPasswordForm />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/auth/signup" element={<SignupPage />} />
 
                 {/* Protected routes with lazy-loaded components */}
                 <Route
                   path="/dashboard"
                   element={
                     <ProtectedRoute>
-                      <AuthWrapper>
+                      <AuthLayout>
                         <Dashboard />
-                      </AuthWrapper>
+                      </AuthLayout>
                     </ProtectedRoute>
                   }
                 />
@@ -121,9 +162,9 @@ function App() {
                   path="/events"
                   element={
                     <ProtectedRoute>
-                      <AuthWrapper>
+                      <AuthLayout>
                         <Events />
-                      </AuthWrapper>
+                      </AuthLayout>
                     </ProtectedRoute>
                   }
                 />
@@ -132,9 +173,9 @@ function App() {
                   path="/speakers"
                   element={
                     <SpeakerRoute>
-                      <AuthWrapper>
+                      <AuthLayout>
                         <Speakers />
-                      </AuthWrapper>
+                      </AuthLayout>
                     </SpeakerRoute>
                   }
                 />
@@ -143,9 +184,9 @@ function App() {
                   path="/partners"
                   element={
                     <PartnerRoute>
-                      <AuthWrapper>
+                      <AuthLayout>
                         <Partners />
-                      </AuthWrapper>
+                      </AuthLayout>
                     </PartnerRoute>
                   }
                 />
@@ -154,9 +195,9 @@ function App() {
                   path="/analytics"
                   element={
                     <PartnerRoute>
-                      <AuthWrapper>
+                      <AuthLayout>
                         <Analytics />
-                      </AuthWrapper>
+                      </AuthLayout>
                     </PartnerRoute>
                   }
                 />
@@ -165,9 +206,9 @@ function App() {
                   path="/content"
                   element={
                     <AttendeeRoute>
-                      <AuthWrapper>
+                      <AuthLayout>
                         <Content />
-                      </AuthWrapper>
+                      </AuthLayout>
                     </AttendeeRoute>
                   }
                 />
