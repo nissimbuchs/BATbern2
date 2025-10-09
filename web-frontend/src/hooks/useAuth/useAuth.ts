@@ -53,7 +53,8 @@ export function useAuth(): UseAuthReturn {
             isLoading: false,
           }));
         }
-      } catch (error) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (_error) {
         setState((prev) => ({
           ...prev,
           isLoading: false,
@@ -72,12 +73,20 @@ export function useAuth(): UseAuthReturn {
    * Sign in user
    */
   const signIn = useCallback(async (credentials: LoginCredentials): Promise<boolean> => {
+    console.log('[useAuth] signIn called');
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
+      console.log('[useAuth] Calling authService.signIn');
       const result = await authService.signIn(credentials);
+      console.log('[useAuth] authService.signIn result:', {
+        success: result.success,
+        hasUser: !!result.user,
+        error: result.error,
+      });
 
       if (result.success && result.user) {
+        console.log('[useAuth] Sign in successful, updating state');
         setState({
           isAuthenticated: true,
           isLoading: false,
@@ -87,6 +96,7 @@ export function useAuth(): UseAuthReturn {
         });
         return true;
       } else {
+        console.log('[useAuth] Sign in failed:', result.error);
         setState((prev) => ({
           ...prev,
           isLoading: false,
@@ -98,6 +108,7 @@ export function useAuth(): UseAuthReturn {
         return false;
       }
     } catch (error: unknown) {
+      console.error('[useAuth] Exception during sign in:', error);
       setState((prev) => ({
         ...prev,
         isLoading: false,
@@ -181,7 +192,8 @@ export function useAuth(): UseAuthReturn {
         return true;
       }
       return false;
-    } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_error) {
       return false;
     }
   }, []);

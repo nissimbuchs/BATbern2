@@ -6,8 +6,9 @@
 import React, { useEffect, Suspense, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
-import { CssBaseline, Box, CircularProgress, Typography, Button } from '@mui/material';
+import { CssBaseline, Box, CircularProgress, Typography, Button, Container } from '@mui/material';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@hooks/useAuth';
 import { AuthenticatedLayout } from '@components/auth/AuthenticatedLayout';
 import {
@@ -19,6 +20,7 @@ import {
 import { LoginForm } from '@components/auth/LoginForm';
 import { ForgotPasswordForm } from '@components/auth/ForgotPasswordForm';
 import { setNavigationCallback } from '@/services/api/apiClient';
+import LanguageSwitcher from '@components/shared/LanguageSwitcher/LanguageSwitcher';
 import theme from '@/theme';
 
 // Create React Query client
@@ -71,6 +73,7 @@ const LoginPage: React.FC = () => {
   }, [isAuthenticated, navigate]);
 
   const handleLoginSuccess = useCallback(() => {
+    console.log('[LoginPage] handleLoginSuccess called, navigating to /dashboard');
     navigate('/dashboard', { replace: true });
   }, [navigate]);
 
@@ -102,20 +105,25 @@ const ForgotPasswordPage: React.FC = () => {
 // Signup placeholder page (Story 1.2.3 not implemented yet)
 const SignupPage: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation('auth');
 
   return (
-    <Box sx={{ maxWidth: 400, mx: 'auto', mt: 8, textAlign: 'center' }}>
-      <Typography variant="h4" gutterBottom>
-        Sign Up
-      </Typography>
-      <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-        User registration is not yet available. Please contact an administrator to create your
-        account.
-      </Typography>
-      <Button variant="outlined" onClick={() => navigate('/login')}>
-        Back to Login
-      </Button>
-    </Box>
+    <Container maxWidth="sm">
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+        <LanguageSwitcher />
+      </Box>
+      <Box sx={{ maxWidth: 400, mx: 'auto', mt: 6, textAlign: 'center' }}>
+        <Typography variant="h4" gutterBottom>
+          {t('signup.title')}
+        </Typography>
+        <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+          {t('signup.notAvailable')}
+        </Typography>
+        <Button variant="outlined" onClick={() => navigate('/login')}>
+          {t('signup.backToLogin')}
+        </Button>
+      </Box>
+    </Container>
   );
 };
 

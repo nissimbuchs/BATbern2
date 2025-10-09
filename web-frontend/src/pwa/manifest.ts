@@ -33,7 +33,7 @@ export function getManifest(): WebAppManifest {
   return {
     name: 'BATbern Platform',
     short_name: 'BATbern',
-    description: 'BATbern Event Management Platform - Business Accelerator for Tomorrow',
+    description: 'BATbern Event Management Platform - Berner Architekten Treffen',
     start_url: '/',
     display: 'standalone',
     theme_color: '#D52B1E', // Swiss red

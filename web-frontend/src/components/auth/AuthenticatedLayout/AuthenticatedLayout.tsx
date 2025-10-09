@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   AppBar,
@@ -33,51 +34,52 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '@hooks/useAuth';
 import { UserRole } from '@/types/auth';
+import LanguageSwitcher from '@components/shared/LanguageSwitcher/LanguageSwitcher';
 
 interface AuthenticatedLayoutProps {
   children: React.ReactNode;
 }
 
 interface NavigationItem {
-  label: string;
+  labelKey: string;
   path: string;
   icon: React.ReactNode;
   roles: UserRole[];
 }
 
-const navigationItems: NavigationItem[] = [
+const navigationItemsConfig: NavigationItem[] = [
   {
-    label: 'Dashboard',
+    labelKey: 'common:navigation.dashboard',
     path: '/dashboard',
     icon: <Dashboard />,
     roles: ['organizer', 'speaker', 'partner', 'attendee'],
   },
   {
-    label: 'Events',
+    labelKey: 'common:navigation.events',
     path: '/events',
     icon: <Event />,
     roles: ['organizer', 'speaker', 'partner', 'attendee'],
   },
   {
-    label: 'Speakers',
+    labelKey: 'common:navigation.speakers',
     path: '/speakers',
     icon: <People />,
     roles: ['organizer', 'speaker'],
   },
   {
-    label: 'Partners',
+    labelKey: 'common:navigation.partners',
     path: '/partners',
     icon: <People />,
     roles: ['organizer', 'partner'],
   },
   {
-    label: 'Analytics',
+    labelKey: 'common:navigation.analytics',
     path: '/analytics',
     icon: <Analytics />,
     roles: ['organizer', 'partner'],
   },
   {
-    label: 'Content Search',
+    labelKey: 'common:navigation.content',
     path: '/content',
     icon: <Search />,
     roles: ['attendee', 'organizer'],
@@ -87,6 +89,7 @@ const navigationItems: NavigationItem[] = [
 export const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation('common');
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
@@ -111,25 +114,21 @@ export const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ childr
   const getVisibleNavigationItems = () => {
     if (!user) return [];
 
-    return navigationItems.filter((item) => item.roles.includes(user.role));
+    return navigationItemsConfig.filter((item) => item.roles.includes(user.role));
   };
 
   const getRoleDisplayName = (role: UserRole): string => {
-    const roleNames = {
-      organizer: 'Event Organizer',
-      speaker: 'Speaker',
-      partner: 'Partner',
-      attendee: 'Attendee',
-    };
-    return roleNames[role] || role;
+    return t(`role.${role}` as const);
   };
 
   const drawerContent = (
     <Box>
-      <Toolbar>
-        <Typography variant="h6" noWrap component="div">
-          BATbern
-        </Typography>
+      <Toolbar sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+        <img
+          src="/BATbern_color_logo.svg"
+          alt={t('app.name')}
+          style={{ height: 80, width: 'auto' }}
+        />
       </Toolbar>
       <Divider />
       <List>
@@ -147,7 +146,7 @@ export const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ childr
             }}
           >
             <ListItemIcon>{item.icon}</ListItemIcon>
-            <ListItemText primary={item.label} />
+            <ListItemText primary={t(item.labelKey)} />
           </ListItem>
         ))}
       </List>
@@ -177,11 +176,12 @@ export const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ childr
           </IconButton>
 
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            BATbern Platform
+            {t('app.title')}
           </Typography>
 
           {user && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <LanguageSwitcher />
               <Typography variant="body2" sx={{ display: { xs: 'none', md: 'block' } }}>
                 {user.email}
               </Typography>
@@ -269,14 +269,14 @@ export const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ childr
           <ListItemIcon>
             <Settings fontSize="small" />
           </ListItemIcon>
-          Profile Settings
+          {t('menu.profileSettings')}
         </MenuItem>
         <Divider />
         <MenuItem onClick={handleSignOut}>
           <ListItemIcon>
             <Logout fontSize="small" />
           </ListItemIcon>
-          Sign Out
+          {t('menu.signOut')}
         </MenuItem>
       </Menu>
     </Box>
