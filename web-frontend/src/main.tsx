@@ -1,3 +1,6 @@
+/* eslint-disable react-refresh/only-export-components */
+// ^^^ This file is the app entry point/bootstrap - components here don't need fast refresh
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
@@ -7,6 +10,7 @@ import { logWebVitals, sendWebVitalsToAnalytics } from './utils/performance/repo
 import { registerSW } from 'virtual:pwa-register'; // Vite PWA plugin (Task 14b)
 import { loadRuntimeConfig } from './config/runtime-config';
 import { ConfigProvider } from './contexts/ConfigContext';
+import { configureAmplify } from './config/amplify';
 
 /**
  * Loading Screen Component
@@ -112,6 +116,14 @@ async function bootstrap() {
     const config = await loadRuntimeConfig();
 
     console.log('[Bootstrap] Configuration loaded successfully');
+
+    // Configure Amplify with runtime config (before rendering app)
+    try {
+      configureAmplify(config);
+    } catch (error) {
+      console.error('[Bootstrap] Failed to configure Amplify:', error);
+      // Continue anyway - auth features may not work but app can still load
+    }
 
     // Render app with configuration
     root.render(

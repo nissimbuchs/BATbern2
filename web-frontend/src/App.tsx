@@ -8,7 +8,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'r
 import { ThemeProvider } from '@mui/material/styles';
 import { CssBaseline, Box, CircularProgress } from '@mui/material';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { configureAmplify } from '@/config/amplify';
 import { useAuth } from '@hooks/useAuth';
 import { AuthenticatedLayout } from '@components/auth/AuthenticatedLayout';
 import {
@@ -94,15 +93,6 @@ const NavigationSetup: React.FC<{ children: React.ReactNode }> = ({ children }) 
 };
 
 function App() {
-  useEffect(() => {
-    // Configure AWS Amplify on app initialization
-    try {
-      configureAmplify();
-    } catch (error) {
-      console.error('Failed to configure Amplify:', error);
-    }
-  }, []);
-
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
