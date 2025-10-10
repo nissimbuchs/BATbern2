@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BATbern Archive: 20+ Years of Knowledge</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2C5F7C;
+            --primary-dark: #1A3A4D;
+            --secondary: #4A90B8;
+            --accent: #E67E22;
+            --success: #27AE60;
+            --warning: #F39C12;
+            --error: #E74C3C;
+            --neutral-900: #34495E;
+            --neutral-700: #7F8C8D;
+            --neutral-500: #95A5A6;
+            --neutral-300: #BDC3C7;
+            --neutral-100: #ECF0F1;
+            --white: #FFFFFF;
+            --spacing-1: 4px;
+            --spacing-2: 8px;
+            --spacing-3: 16px;
+            --spacing-4: 24px;
+            --spacing-5: 32px;
+            --spacing-6: 48px;
+            --border-radius: 8px;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--neutral-100);
+            color: var(--neutral-900);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--spacing-4);
+        }
+
+        /* Header */
+        .header {
+            background-color: var(--white);
+            border-bottom: 1px solid var(--neutral-300);
+            padding: var(--spacing-3) 0;
+            margin-bottom: var(--spacing-5);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 var(--spacing-4);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-4);
+        }
+
+        .back-button {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-1);
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .back-button:hover {
+            color: var(--primary-dark);
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+            flex: 1;
+        }
+
+        /* Year Selector */
+        .year-selector-section {
+            background-color: var(--white);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-4);
+            margin-bottom: var(--spacing-4);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .year-selector-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--neutral-700);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: var(--spacing-3);
+        }
+
+        .year-buttons {
+            display: flex;
+            gap: var(--spacing-2);
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .year-button {
+            background-color: var(--neutral-100);
+            border: 2px solid var(--neutral-300);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-2) var(--spacing-3);
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--neutral-700);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .year-button:hover {
+            background-color: var(--primary);
+            color: var(--white);
+            border-color: var(--primary);
+        }
+
+        .year-button.active {
+            background-color: var(--primary);
+            color: var(--white);
+            border-color: var(--primary);
+        }
+
+        .show-all-button {
+            background-color: var(--white);
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .show-all-button:hover {
+            background-color: var(--primary);
+            color: var(--white);
+        }
+
+        /* Section */
+        .section {
+            background-color: var(--white);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-4);
+            margin-bottom: var(--spacing-4);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .section-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--neutral-700);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: var(--spacing-4);
+        }
+
+        /* Event Card */
+        .event-card {
+            background-color: var(--neutral-100);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-4);
+            margin-bottom: var(--spacing-3);
+            border-left: 4px solid var(--primary);
+        }
+
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--spacing-3);
+        }
+
+        .event-title {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-2);
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary-dark);
+            margin-bottom: var(--spacing-1);
+        }
+
+        .event-date {
+            color: var(--neutral-700);
+            font-size: 1rem;
+        }
+
+        .event-meta {
+            display: flex;
+            gap: var(--spacing-3);
+            color: var(--neutral-700);
+            font-size: 0.875rem;
+            margin-bottom: var(--spacing-3);
+        }
+
+        .event-subtitle {
+            font-size: 1.125rem;
+            font-weight: 500;
+            color: var(--primary);
+            margin-bottom: var(--spacing-3);
+        }
+
+        .presentations-list {
+            list-style: none;
+            margin-bottom: var(--spacing-3);
+        }
+
+        .presentation-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-2) 0;
+            border-bottom: 1px solid var(--neutral-300);
+        }
+
+        .presentation-item:last-child {
+            border-bottom: none;
+        }
+
+        .presentation-title {
+            color: var(--neutral-900);
+            font-weight: 500;
+        }
+
+        .presentation-stats {
+            display: flex;
+            gap: var(--spacing-3);
+            align-items: center;
+            color: var(--neutral-700);
+            font-size: 0.875rem;
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-1);
+        }
+
+        .star-icon {
+            color: var(--warning);
+        }
+
+        .download-icon {
+            color: var(--neutral-700);
+        }
+
+        /* Button Group */
+        .button-group {
+            display: flex;
+            gap: var(--spacing-2);
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: var(--spacing-2) var(--spacing-3);
+            border-radius: var(--border-radius);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-1);
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: var(--white);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            border-color: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background-color: var(--white);
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--primary);
+            color: var(--white);
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            color: var(--white);
+            border: 2px solid var(--success);
+        }
+
+        .btn-success:hover {
+            background-color: #229954;
+            border-color: #229954;
+        }
+
+        /* Upcoming Badge */
+        .upcoming-badge {
+            background-color: var(--warning);
+            color: var(--white);
+            padding: var(--spacing-1) var(--spacing-2);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        /* Topic Statistics */
+        .topic-list {
+            list-style: none;
+        }
+
+        .topic-item {
+            margin-bottom: var(--spacing-3);
+        }
+
+        .topic-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-1);
+        }
+
+        .topic-name {
+            font-weight: 600;
+            color: var(--neutral-900);
+        }
+
+        .topic-count {
+            color: var(--neutral-700);
+            font-size: 0.875rem;
+        }
+
+        .topic-bar {
+            height: 24px;
+            background-color: var(--neutral-100);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .topic-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            transition: width 0.3s ease;
+        }
+
+        /* Hall of Fame */
+        .hall-of-fame-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--spacing-4);
+        }
+
+        .hall-column {
+            background-color: var(--neutral-100);
+            padding: var(--spacing-3);
+            border-radius: var(--border-radius);
+        }
+
+        .hall-column-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: var(--spacing-3);
+            text-align: center;
+        }
+
+        .hall-list {
+            list-style: none;
+        }
+
+        .hall-item {
+            padding: var(--spacing-2) 0;
+            color: var(--neutral-900);
+        }
+
+        .hall-rank {
+            font-weight: 600;
+            color: var(--primary-dark);
+        }
+
+        .hall-score {
+            color: var(--neutral-700);
+            font-size: 0.875rem;
+        }
+
+        @media (max-width: 768px) {
+            .hall-of-fame-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <a href="#" class="back-button">
+                <span class="material-icons">arrow_back</span>
+                Back
+            </a>
+            <h1 class="page-title">BATbern Archive: 20+ Years of Knowledge</h1>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Year Selector -->
+        <div class="year-selector-section">
+            <div class="year-selector-title">Browse by Year</div>
+            <div class="year-buttons">
+                <button class="year-button active">2025</button>
+                <button class="year-button">2024</button>
+                <button class="year-button">2023</button>
+                <button class="year-button">2022</button>
+                <button class="year-button">2021</button>
+                <button class="year-button">2020</button>
+                <button class="year-button">2019</button>
+                <button class="year-button">2018</button>
+                <button class="year-button">2017</button>
+                <button class="year-button">2016</button>
+                <button class="year-button show-all-button">Show All Years</button>
+            </div>
+        </div>
+
+        <!-- 2025 Events -->
+        <div class="section">
+            <h2 class="section-title">2025 Events</h2>
+
+            <!-- Event Card 1 -->
+            <div class="event-card">
+                <div class="event-header">
+                    <div>
+                        <div class="event-title">
+                            <span class="material-icons">event</span>
+                            Spring Conference 2025
+                        </div>
+                        <div class="event-date">May 15, 2025</div>
+                    </div>
+                </div>
+                <div class="event-meta">
+                    <span>8 Speakers</span>
+                    <span>•</span>
+                    <span>247 Attendees</span>
+                </div>
+                <div class="event-subtitle">Cloud Native Architecture</div>
+
+                <h3 style="font-size: 0.875rem; font-weight: 600; color: var(--neutral-700); margin-bottom: var(--spacing-2);">Featured Presentations:</h3>
+                <ul class="presentations-list">
+                    <li class="presentation-item">
+                        <span class="presentation-title">• Kubernetes Best Practices - P. Muller</span>
+                        <div class="presentation-stats">
+                            <span class="stat">
+                                <span class="material-icons star-icon" style="font-size: 16px;">star</span>
+                                4.8
+                            </span>
+                            <span class="stat">
+                                <span class="material-icons download-icon" style="font-size: 16px;">download</span>
+                                523
+                            </span>
+                        </div>
+                    </li>
+                    <li class="presentation-item">
+                        <span class="presentation-title">• Container Security - S. Kim</span>
+                        <div class="presentation-stats">
+                            <span class="stat">
+                                <span class="material-icons star-icon" style="font-size: 16px;">star</span>
+                                4.9
+                            </span>
+                            <span class="stat">
+                                <span class="material-icons download-icon" style="font-size: 16px;">download</span>
+                                891
+                            </span>
+                        </div>
+                    </li>
+                    <li class="presentation-item">
+                        <span class="presentation-title">• Zero Trust Architecture - T. Weber</span>
+                        <div class="presentation-stats">
+                            <span class="stat">
+                                <span class="material-icons star-icon" style="font-size: 16px;">star</span>
+                                4.7
+                            </span>
+                            <span class="stat">
+                                <span class="material-icons download-icon" style="font-size: 16px;">download</span>
+                                445
+                            </span>
+                        </div>
+                    </li>
+                </ul>
+
+                <div class="button-group">
+                    <a href="#" class="btn btn-primary">View Event</a>
+                    <a href="#" class="btn btn-secondary">Browse Presentations</a>
+                    <a href="#" class="btn btn-secondary">Photo Gallery</a>
+                </div>
+            </div>
+
+            <!-- Event Card 2 - Upcoming -->
+            <div class="event-card" style="border-left-color: var(--warning);">
+                <div class="event-header">
+                    <div>
+                        <div class="event-title">
+                            <span class="material-icons">event</span>
+                            Summer Workshop 2025
+                        </div>
+                        <div class="event-date">July 20, 2025</div>
+                    </div>
+                    <span class="upcoming-badge">Upcoming</span>
+                </div>
+                <div class="event-meta">
+                    <span>Registration Open</span>
+                </div>
+                <div class="event-subtitle">AI/ML in Production</div>
+
+                <h3 style="font-size: 0.875rem; font-weight: 600; color: var(--neutral-700); margin-bottom: var(--spacing-2);">Confirmed Speakers:</h3>
+                <ul class="presentations-list">
+                    <li class="presentation-item">
+                        <span class="presentation-title">• Deep Learning at Scale - Dr. A. Mueller</span>
+                    </li>
+                    <li class="presentation-item">
+                        <span class="presentation-title">• MLOps Best Practices - L. Chen</span>
+                    </li>
+                    <li class="presentation-item">
+                        <span class="presentation-title" style="color: var(--neutral-700); font-style: italic;">More speakers being confirmed...</span>
+                    </li>
+                </ul>
+
+                <div class="button-group">
+                    <a href="#" class="btn btn-success">Register Now</a>
+                    <a href="#" class="btn btn-secondary">View Details</a>
+                    <a href="#" class="btn btn-secondary">Set Reminder</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Topic Statistics -->
+        <div class="section">
+            <h2 class="section-title">Explore by Topic</h2>
+            <h3 style="font-size: 1rem; font-weight: 600; color: var(--neutral-900); margin-bottom: var(--spacing-4);">📊 Topic Evolution Over Time</h3>
+
+            <ul class="topic-list">
+                <li class="topic-item">
+                    <div class="topic-header">
+                        <span class="topic-name">Kubernetes</span>
+                        <span class="topic-count">142 presentations</span>
+                    </div>
+                    <div class="topic-bar">
+                        <div class="topic-bar-fill" style="width: 95%;"></div>
+                    </div>
+                </li>
+                <li class="topic-item">
+                    <div class="topic-header">
+                        <span class="topic-name">DevOps</span>
+                        <span class="topic-count">134 presentations</span>
+                    </div>
+                    <div class="topic-bar">
+                        <div class="topic-bar-fill" style="width: 90%;"></div>
+                    </div>
+                </li>
+                <li class="topic-item">
+                    <div class="topic-header">
+                        <span class="topic-name">Security</span>
+                        <span class="topic-count">89 presentations</span>
+                    </div>
+                    <div class="topic-bar">
+                        <div class="topic-bar-fill" style="width: 60%;"></div>
+                    </div>
+                </li>
+                <li class="topic-item">
+                    <div class="topic-header">
+                        <span class="topic-name">Cloud Native</span>
+                        <span class="topic-count">78 presentations</span>
+                    </div>
+                    <div class="topic-bar">
+                        <div class="topic-bar-fill" style="width: 52%;"></div>
+                    </div>
+                </li>
+                <li class="topic-item">
+                    <div class="topic-header">
+                        <span class="topic-name">AI/ML</span>
+                        <span class="topic-count">67 presentations</span>
+                    </div>
+                    <div class="topic-bar">
+                        <div class="topic-bar-fill" style="width: 45%;"></div>
+                    </div>
+                </li>
+                <li class="topic-item">
+                    <div class="topic-header">
+                        <span class="topic-name">Microservices</span>
+                        <span class="topic-count">56 presentations</span>
+                    </div>
+                    <div class="topic-bar">
+                        <div class="topic-bar-fill" style="width: 37%;"></div>
+                    </div>
+                </li>
+                <li class="topic-item">
+                    <div class="topic-header">
+                        <span class="topic-name">Data Engineering</span>
+                        <span class="topic-count">45 presentations</span>
+                    </div>
+                    <div class="topic-bar">
+                        <div class="topic-bar-fill" style="width: 30%;"></div>
+                    </div>
+                </li>
+            </ul>
+
+            <div class="button-group" style="margin-top: var(--spacing-4);">
+                <a href="#" class="btn btn-primary">View Topic Timeline</a>
+                <a href="#" class="btn btn-secondary">Compare Topics</a>
+                <a href="#" class="btn btn-secondary">Download Stats</a>
+            </div>
+        </div>
+
+        <!-- Speakers Hall of Fame -->
+        <div class="section">
+            <h2 class="section-title">Speakers Hall of Fame</h2>
+
+            <div class="hall-of-fame-grid">
+                <div class="hall-column">
+                    <div class="hall-column-title">Most Presentations</div>
+                    <ul class="hall-list">
+                        <li class="hall-item">
+                            <span class="hall-rank">1.</span> Thomas Weber <span class="hall-score">(15)</span>
+                        </li>
+                        <li class="hall-item">
+                            <span class="hall-rank">2.</span> Sara Kim <span class="hall-score">(12)</span>
+                        </li>
+                        <li class="hall-item">
+                            <span class="hall-rank">3.</span> Peter Muller <span class="hall-score">(12)</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="hall-column">
+                    <div class="hall-column-title">Highest Rated</div>
+                    <ul class="hall-list">
+                        <li class="hall-item">
+                            <span class="hall-rank">1.</span> Sara Kim <span class="hall-score">(4.9)</span>
+                        </li>
+                        <li class="hall-item">
+                            <span class="hall-rank">2.</span> Anna Lopez <span class="hall-score">(4.8)</span>
+                        </li>
+                        <li class="hall-item">
+                            <span class="hall-rank">3.</span> Marc Baum <span class="hall-score">(4.8)</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="hall-column">
+                    <div class="hall-column-title">Most Downloaded</div>
+                    <ul class="hall-list">
+                        <li class="hall-item">
+                            <span class="hall-rank">1.</span> Peter Muller <span class="hall-score">(3,421)</span>
+                        </li>
+                        <li class="hall-item">
+                            <span class="hall-rank">2.</span> Sara Kim <span class="hall-score">(2,987)</span>
+                        </li>
+                        <li class="hall-item">
+                            <span class="hall-rank">3.</span> Thomas Weber <span class="hall-score">(2,654)</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="button-group" style="margin-top: var(--spacing-4);">
+                <a href="#" class="btn btn-primary">View All Speakers</a>
+                <a href="#" class="btn btn-secondary">Speaker Directory</a>
+                <a href="#" class="btn btn-secondary">Become a Speaker</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BATbern Spring Conference 2025: Cloud Native Architecture</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2C5F7C;
+            --primary-dark: #1A3A4D;
+            --secondary: #4A90B8;
+            --accent: #E67E22;
+            --success: #27AE60;
+            --warning: #F39C12;
+            --neutral-900: #34495E;
+            --neutral-700: #7F8C8D;
+            --neutral-500: #95A5A6;
+            --neutral-300: #BDC3C7;
+            --neutral-100: #ECF0F1;
+            --white: #FFFFFF;
+            --spacing-2: 8px;
+            --spacing-3: 16px;
+            --spacing-4: 24px;
+            --spacing-5: 32px;
+            --spacing-6: 48px;
+            --border-radius: 8px;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--neutral-100);
+            color: var(--neutral-900);
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        /* Top Navigation */
+        .top-nav {
+            background-color: var(--white);
+            border-bottom: 1px solid var(--neutral-300);
+            padding: var(--spacing-3) 0;
+        }
+
+        .top-nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 var(--spacing-4);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: var(--spacing-5);
+            align-items: center;
+        }
+
+        .nav-link {
+            color: var(--neutral-700);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover {
+            color: var(--primary);
+        }
+
+        .lang-switcher {
+            color: var(--neutral-700);
+            font-size: 0.875rem;
+        }
+
+        .login-btn {
+            background-color: var(--primary);
+            color: var(--white);
+            padding: var(--spacing-2) var(--spacing-4);
+            border-radius: var(--border-radius);
+            text-decoration: none;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        .login-btn:hover {
+            background-color: var(--primary-dark);
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: var(--white);
+            padding: var(--spacing-6) var(--spacing-4);
+            text-align: center;
+        }
+
+        .hero-content {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .hero-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: var(--spacing-3);
+            line-height: 1.2;
+        }
+
+        .hero-subtitle {
+            font-size: 1.5rem;
+            font-weight: 500;
+            margin-bottom: var(--spacing-4);
+            opacity: 0.95;
+        }
+
+        .hero-divider {
+            width: 300px;
+            height: 3px;
+            background-color: var(--accent);
+            margin: var(--spacing-4) auto;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-2);
+            font-size: 1.25rem;
+            font-weight: 600;
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: var(--spacing-3) var(--spacing-4);
+            border-radius: var(--border-radius);
+            margin-bottom: var(--spacing-3);
+        }
+
+        .hero-tagline {
+            font-size: 1.125rem;
+            margin-bottom: var(--spacing-5);
+        }
+
+        .hero-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-2);
+            background-color: var(--accent);
+            color: var(--white);
+            padding: var(--spacing-3) var(--spacing-6);
+            border-radius: var(--border-radius);
+            font-size: 1.125rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .hero-cta:hover {
+            background-color: #D35400;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--spacing-4);
+        }
+
+        /* Section */
+        .section {
+            background-color: var(--white);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-5);
+            margin-bottom: var(--spacing-4);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .section-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--neutral-700);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: var(--spacing-4);
+        }
+
+        /* Event Highlights */
+        .highlights-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--spacing-4);
+        }
+
+        .highlight-card {
+            background-color: var(--neutral-100);
+            padding: var(--spacing-4);
+            border-radius: var(--border-radius);
+        }
+
+        .highlight-icon {
+            font-size: 2rem;
+            margin-bottom: var(--spacing-2);
+        }
+
+        .highlight-title {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: var(--spacing-2);
+        }
+
+        .highlight-details {
+            color: var(--neutral-700);
+            font-size: 0.875rem;
+            line-height: 1.6;
+        }
+
+        .highlight-link {
+            display: inline-block;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            margin-top: var(--spacing-2);
+            font-size: 0.875rem;
+        }
+
+        .highlight-link:hover {
+            text-decoration: underline;
+        }
+
+        .highlight-topics {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .highlight-topics li {
+            padding: var(--spacing-2) 0;
+        }
+
+        /* Speaker Cards */
+        .speakers-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--spacing-4);
+            margin-bottom: var(--spacing-4);
+        }
+
+        .speaker-card {
+            background-color: var(--neutral-100);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-4);
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .speaker-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .speaker-photo {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 50%;
+            margin: 0 auto var(--spacing-3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        .speaker-name {
+            font-weight: 600;
+            color: var(--primary-dark);
+            margin-bottom: var(--spacing-2);
+        }
+
+        .speaker-company {
+            color: var(--neutral-700);
+            font-size: 0.875rem;
+            margin-bottom: var(--spacing-2);
+        }
+
+        .speaker-topic {
+            color: var(--neutral-700);
+            font-size: 0.875rem;
+            font-style: italic;
+        }
+
+        .view-all-link {
+            text-align: center;
+            margin-top: var(--spacing-4);
+        }
+
+        .view-all-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-2);
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            padding: var(--spacing-2) var(--spacing-4);
+            border: 2px solid var(--primary);
+            border-radius: var(--border-radius);
+            transition: all 0.2s;
+        }
+
+        .view-all-btn:hover {
+            background-color: var(--primary);
+            color: var(--white);
+        }
+
+        /* Agenda */
+        .agenda-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-5);
+        }
+
+        .agenda-column h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: var(--spacing-3);
+        }
+
+        .agenda-item {
+            display: flex;
+            gap: var(--spacing-3);
+            margin-bottom: var(--spacing-3);
+            padding-bottom: var(--spacing-3);
+            border-bottom: 1px solid var(--neutral-300);
+        }
+
+        .agenda-item:last-child {
+            border-bottom: none;
+        }
+
+        .agenda-time {
+            font-weight: 600;
+            color: var(--primary);
+            white-space: nowrap;
+        }
+
+        .agenda-title {
+            color: var(--neutral-900);
+        }
+
+        .download-link {
+            text-align: center;
+            margin-top: var(--spacing-4);
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-2);
+            background-color: var(--success);
+            color: var(--white);
+            padding: var(--spacing-2) var(--spacing-4);
+            border-radius: var(--border-radius);
+            text-decoration: none;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        .download-btn:hover {
+            background-color: #229954;
+        }
+
+        /* Bottom Section */
+        .bottom-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-4);
+        }
+
+        .why-attend-list {
+            list-style: none;
+        }
+
+        .why-attend-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--spacing-2);
+            margin-bottom: var(--spacing-3);
+            color: var(--neutral-900);
+        }
+
+        .checkmark {
+            color: var(--success);
+            flex-shrink: 0;
+        }
+
+        .quick-links-list {
+            list-style: none;
+        }
+
+        .quick-links-list li {
+            margin-bottom: var(--spacing-3);
+        }
+
+        .quick-link {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-2);
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .quick-link:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 1.75rem;
+            }
+            .hero-subtitle {
+                font-size: 1.25rem;
+            }
+            .highlights-grid,
+            .speakers-grid,
+            .agenda-grid,
+            .bottom-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+        <div class="top-nav-content">
+            <a href="#" class="logo">BATbern</a>
+            <div class="nav-menu">
+                <a href="#" class="nav-link">Upcoming Events</a>
+                <a href="#" class="nav-link">Archive</a>
+                <span class="lang-switcher">EN | DE</span>
+                <a href="#" class="login-btn">Login</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">🚀 SPRING CONFERENCE 2025: CLOUD NATIVE ARCHITECTURE</h1>
+            <p class="hero-subtitle">MAY 15, 2025 • KURSAAL BERN</p>
+            <div class="hero-divider"></div>
+            <div class="hero-badge">
+                <span class="material-icons">confirmation_number</span>
+                FREE ADMISSION
+            </div>
+            <p class="hero-tagline">Limited Seats - Register Now!</p>
+            <a href="#" class="hero-cta">
+                REGISTER FOR FREE
+                <span class="material-icons">arrow_forward</span>
+            </a>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Event Highlights -->
+        <section class="section">
+            <h2 class="section-title">Event Highlights</h2>
+            <div class="highlights-grid">
+                <div class="highlight-card">
+                    <div class="highlight-icon">📍</div>
+                    <div class="highlight-title">Location</div>
+                    <div class="highlight-details">
+                        Kursaal Bern<br>
+                        Kornhausstrasse 3<br>
+                        3013 Bern
+                    </div>
+                    <a href="#" class="highlight-link">[Get Directions]</a>
+                </div>
+                <div class="highlight-card">
+                    <div class="highlight-icon">⏰</div>
+                    <div class="highlight-title">Schedule</div>
+                    <div class="highlight-details">
+                        08:30 Registration<br>
+                        09:00 Keynote<br>
+                        17:30 Networking
+                    </div>
+                    <a href="#" class="highlight-link">[Full Schedule]</a>
+                </div>
+                <div class="highlight-card">
+                    <div class="highlight-icon">🎯</div>
+                    <div class="highlight-title">Topics</div>
+                    <ul class="highlight-topics">
+                        <li>• Kubernetes at Scale</li>
+                        <li>• Service Mesh</li>
+                        <li>• Cloud Security</li>
+                        <li>• GitOps & CI/CD</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Featured Speakers -->
+        <section class="section">
+            <h2 class="section-title">Featured Speakers</h2>
+            <div class="speakers-grid">
+                <div class="speaker-card">
+                    <div class="speaker-photo">SK</div>
+                    <div class="speaker-name">Sara Kim</div>
+                    <div class="speaker-company">Docker Inc.</div>
+                    <div class="speaker-topic">"Container Security"</div>
+                </div>
+                <div class="speaker-card">
+                    <div class="speaker-photo">PM</div>
+                    <div class="speaker-name">Peter Muller</div>
+                    <div class="speaker-company">TechCorp</div>
+                    <div class="speaker-topic">"K8s Best Practices"</div>
+                </div>
+                <div class="speaker-card">
+                    <div class="speaker-photo">TW</div>
+                    <div class="speaker-name">Thomas Weber</div>
+                    <div class="speaker-company">Swiss Re</div>
+                    <div class="speaker-topic">"Zero Trust Security"</div>
+                </div>
+                <div class="speaker-card">
+                    <div class="speaker-photo">AL</div>
+                    <div class="speaker-name">Anna Lopez</div>
+                    <div class="speaker-company">Google</div>
+                    <div class="speaker-topic">"AI/ML on Kubernetes"</div>
+                </div>
+            </div>
+            <div class="view-all-link">
+                <a href="#" class="view-all-btn">
+                    View All 8 Speakers
+                    <span class="material-icons">arrow_forward</span>
+                </a>
+            </div>
+        </section>
+
+        <!-- Agenda -->
+        <section class="section">
+            <h2 class="section-title">Agenda at a Glance</h2>
+            <div class="agenda-grid">
+                <div class="agenda-column">
+                    <h3>Morning Sessions (Technical Deep Dives)</h3>
+                    <div class="agenda-item">
+                        <div class="agenda-time">09:00</div>
+                        <div class="agenda-title">Keynote: Future of Cloud Native</div>
+                    </div>
+                    <div class="agenda-item">
+                        <div class="agenda-time">09:45</div>
+                        <div class="agenda-title">Kubernetes Best Practices</div>
+                    </div>
+                    <div class="agenda-item">
+                        <div class="agenda-time">10:30</div>
+                        <div class="agenda-title">Coffee Break & Networking</div>
+                    </div>
+                    <div class="agenda-item">
+                        <div class="agenda-time">11:00</div>
+                        <div class="agenda-title">Service Mesh Architecture</div>
+                    </div>
+                    <div class="agenda-item">
+                        <div class="agenda-time">11:45</div>
+                        <div class="agenda-title">GitOps Implementation</div>
+                    </div>
+                    <div class="agenda-item">
+                        <div class="agenda-time">12:30</div>
+                        <div class="agenda-title">Lunch Break</div>
+                    </div>
+                </div>
+                <div class="agenda-column">
+                    <h3>Afternoon (Practical Applications)</h3>
+                    <div class="agenda-item">
+                        <div class="agenda-time">13:30</div>
+                        <div class="agenda-title">Workshop: Hands-on K8s</div>
+                    </div>
+                    <div class="agenda-item">
+                        <div class="agenda-time">14:15</div>
+                        <div class="agenda-title">Panel: Security Challenges</div>
+                    </div>
+                    <div class="agenda-item">
+                        <div class="agenda-time">15:00</div>
+                        <div class="agenda-title">Container Orchestration</div>
+                    </div>
+                    <div class="agenda-item">
+                        <div class="agenda-time">15:45</div>
+                        <div class="agenda-title">Coffee & Demos</div>
+                    </div>
+                    <div class="agenda-item">
+                        <div class="agenda-time">16:15</div>
+                        <div class="agenda-title">Closing Keynote</div>
+                    </div>
+                    <div class="agenda-item">
+                        <div class="agenda-time">17:00</div>
+                        <div class="agenda-title">Networking Apéro</div>
+                    </div>
+                </div>
+            </div>
+            <div class="download-link">
+                <a href="#" class="download-btn">
+                    <span class="material-icons">download</span>
+                    Download Full Agenda (PDF)
+                </a>
+            </div>
+        </section>
+
+        <!-- Why Attend & Quick Links -->
+        <section class="section">
+            <div class="bottom-grid">
+                <div>
+                    <h2 class="section-title">Why Attend</h2>
+                    <ul class="why-attend-list">
+                        <li>
+                            <span class="material-icons checkmark">check_circle</span>
+                            <span>Learn from industry experts</span>
+                        </li>
+                        <li>
+                            <span class="material-icons checkmark">check_circle</span>
+                            <span>Network with 200+ IT professionals</span>
+                        </li>
+                        <li>
+                            <span class="material-icons checkmark">check_circle</span>
+                            <span>Free admission & lunch</span>
+                        </li>
+                        <li>
+                            <span class="material-icons checkmark">check_circle</span>
+                            <span>Practical takeaways</span>
+                        </li>
+                        <li>
+                            <span class="material-icons checkmark">check_circle</span>
+                            <span>CPE credits available</span>
+                        </li>
+                    </ul>
+                </div>
+                <div>
+                    <h2 class="section-title">Quick Links</h2>
+                    <ul class="quick-links-list">
+                        <li>
+                            <a href="#" class="quick-link">
+                                <span class="material-icons">library_books</span>
+                                Browse Past Events
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="quick-link">
+                                <span class="material-icons">search</span>
+                                Search Archive (20+ years)
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="quick-link">
+                                <span class="material-icons">email</span>
+                                Subscribe to Newsletter
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </div>
+</body>
+</html>
