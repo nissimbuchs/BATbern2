@@ -145,7 +145,7 @@ jobs:
 
       - name: Configure AWS credentials
         if: steps.check-service.outputs.exists == 'true' && github.event_name == 'push'
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}

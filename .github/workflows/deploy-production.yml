@@ -39,7 +39,7 @@ jobs:
           echo "✅ Version ${{ github.event.inputs.version }} exists"
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::422940799530:role/batbern-production-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
@@ -83,7 +83,7 @@ jobs:
 
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::422940799530:role/batbern-production-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
@@ -130,7 +130,7 @@ jobs:
           ref: ${{ github.event.inputs.version }}
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::422940799530:role/batbern-production-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
@@ -216,7 +216,7 @@ jobs:
           ref: ${{ github.event.inputs.version }}
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::422940799530:role/batbern-production-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
@@ -342,7 +342,7 @@ jobs:
           node-version: '20'
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::422940799530:role/batbern-production-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
@@ -417,7 +417,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::422940799530:role/batbern-production-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
