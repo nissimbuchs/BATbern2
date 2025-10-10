@@ -25,5 +25,5 @@
     "resolveJsonModule": true
   },
   "include": ["**/*.ts"],
-  "exclude": ["node_modules", "cdk.out", "dist"]
+  "exclude": ["node_modules", "cdk.out", "dist", "**/*.test.ts", "**/__tests__/**", "test/**"]
 }

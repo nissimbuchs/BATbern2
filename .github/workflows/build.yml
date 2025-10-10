@@ -362,28 +362,33 @@ jobs:
         working-directory: ./shared-kernel
         run: |
           chmod +x gradlew
-          ./gradlew clean test jacocoTestReport --no-daemon
+          # Compile and test to ensure classes exist for SonarCloud
+          ./gradlew clean compileJava test jacocoTestReport --no-daemon
 
       - name: Build api-gateway and generate coverage
         working-directory: ./api-gateway
         run: |
           chmod +x gradlew
-          ./gradlew clean test jacocoTestReport --no-daemon
+          # Compile and test to ensure classes exist for SonarCloud
+          ./gradlew clean compileJava test jacocoTestReport --no-daemon
 
       - name: Build services and generate coverage
         run: |
+          REPO_ROOT=$(pwd)
           # Build each service that exists
           for service in event-management-service attendee-experience-service company-management-service partner-coordination-service speaker-coordination-service; do
+            cd "$REPO_ROOT"  # Return to repo root before checking
             if [ -d "services/$service" ]; then
               echo "Building services/$service..."
-              cd "services/$service"
+              cd "$REPO_ROOT/services/$service"
               chmod +x gradlew
-              ./gradlew clean test jacocoTestReport --no-daemon
-              cd ../..
+              # Always compile main classes (required for SonarCloud), then run tests if they exist
+              ./gradlew clean compileJava test jacocoTestReport --no-daemon
             else
               echo "::warning::Service $service does not exist yet, skipping coverage generation"
             fi
           done
+          cd "$REPO_ROOT"
 
       # ─────────────────────────────────────────────────────────
       # Frontend Setup & Coverage Generation
@@ -418,5 +423,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
+          # Note: sonar-project.properties contains full multi-module configuration
+          # These args provide explicit overrides and debugging
           args: >
+            -Dsonar.projectKey=nissimbuchs_BATbern2
+            -Dsonar.organization=nissimbuchs
             -Dsonar.verbose=true

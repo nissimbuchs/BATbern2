@@ -70,14 +70,18 @@ class AuthService {
   }
   async signIn(credentials: LoginCredentials): Promise<SignInResult> {
     try {
+      console.log('[authService] signIn called with email:', credentials.email);
       this.configureSessionPersistence(credentials.rememberMe || false);
 
+      console.log('[authService] Calling amplifySignIn');
       const result = await amplifySignIn({
         username: credentials.email,
         password: credentials.password,
       });
+      console.log('[authService] amplifySignIn result:', { nextStep: result.nextStep?.signInStep });
 
       if (result.nextStep && result.nextStep.signInStep !== 'DONE') {
+        console.log('[authService] MFA challenge required:', result.nextStep.signInStep);
         return {
           success: false,
           mfaChallenge: {
@@ -88,8 +92,13 @@ class AuthService {
         };
       }
 
+      console.log('[authService] Fetching auth session');
       const session = await fetchAuthSession();
       const tokens = session.tokens;
+      console.log('[authService] Session tokens:', {
+        hasIdToken: !!tokens?.idToken,
+        hasAccessToken: !!tokens?.accessToken,
+      });
 
       if (!tokens?.idToken) {
         throw new Error('No ID token found in session');
@@ -98,16 +107,86 @@ class AuthService {
       const userContext = this.extractUserContextFromToken(
         tokens.idToken.payload as unknown as CognitoTokenClaims
       );
+      console.log('[authService] User context extracted:', {
+        userId: userContext.userId,
+        email: userContext.email,
+        role: userContext.role,
+      });
 
       return {
         success: true,
         user: userContext,
         accessToken: tokens.accessToken?.toString() || '',
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      console.error('[authService] Error during sign in:', error);
+
+      // Handle case where user is already signed in
+      const errorCode =
+        (error as { code?: string; name?: string }).code ||
+        (error as { code?: string; name?: string }).name;
+
+      if (errorCode === 'UserAlreadyAuthenticatedException') {
+        console.log('[authService] User already authenticated, signing out and retrying...');
+        try {
+          // Sign out the existing user
+          await amplifySignOut();
+
+          // Retry sign in
+          console.log('[authService] Retrying amplifySignIn after signout');
+          const retryResult = await amplifySignIn({
+            username: credentials.email,
+            password: credentials.password,
+          });
+
+          if (retryResult.nextStep && retryResult.nextStep.signInStep !== 'DONE') {
+            return {
+              success: false,
+              mfaChallenge: {
+                challengeName: retryResult.nextStep.signInStep,
+                challengeParameters: {},
+                session: '',
+              },
+            };
+          }
+
+          const session = await fetchAuthSession();
+          const tokens = session.tokens;
+
+          if (!tokens?.idToken) {
+            throw new Error('No ID token found in session');
+          }
+
+          const userContext = this.extractUserContextFromToken(
+            tokens.idToken.payload as unknown as CognitoTokenClaims
+          );
+          console.log('[authService] Retry successful, user context:', {
+            userId: userContext.userId,
+            email: userContext.email,
+            role: userContext.role,
+          });
+
+          return {
+            success: true,
+            user: userContext,
+            accessToken: tokens.accessToken?.toString() || '',
+          };
+        } catch (retryError) {
+          console.error('[authService] Retry failed:', retryError);
+          const mappedError = this.mapCognitoError(retryError);
+          console.log('[authService] Mapped retry error:', mappedError);
+          return {
+            success: false,
+            error: mappedError,
+          };
+        }
+      }
+
+      const mappedError = this.mapCognitoError(error);
+      console.log('[authService] Mapped error:', mappedError);
       return {
         success: false,
-        error: this.mapCognitoError(error),
+        error: mappedError,
       };
     }
   }
@@ -158,7 +237,7 @@ class AuthService {
         success: true,
         requiresConfirmation: !result.isSignUpComplete,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
         requiresConfirmation: false,
@@ -183,7 +262,8 @@ class AuthService {
       return this.extractUserContextFromToken(
         tokens.idToken.payload as unknown as CognitoTokenClaims
       );
-    } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_error) {
       return null;
     }
   }
@@ -218,7 +298,7 @@ class AuthService {
         accessToken: tokens.accessToken.toString(),
         expiresIn,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
         accessToken: '',
@@ -240,7 +320,8 @@ class AuthService {
       const currentTime = Math.floor(Date.now() / 1000);
 
       return payload.exp <= currentTime;
-    } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_error) {
       return true;
     }
   }
@@ -267,8 +348,11 @@ class AuthService {
   /**
    * Map Cognito errors to application errors
    */
-  private mapCognitoError(error: any): AuthError {
-    const errorCode = error.code || error.name || 'UNKNOWN_ERROR';
+  private mapCognitoError(error: unknown): AuthError {
+    const errorCode =
+      (error as { code?: string; name?: string }).code ||
+      (error as { code?: string; name?: string }).name ||
+      'UNKNOWN_ERROR';
 
     switch (errorCode) {
       case 'NotAuthorizedException':
@@ -300,7 +384,7 @@ class AuthService {
       default:
         return {
           code: errorCode,
-          message: error.message || 'An unexpected error occurred',
+          message: (error as { message?: string }).message || 'An unexpected error occurred',
         };
     }
   }

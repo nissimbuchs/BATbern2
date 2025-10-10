@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <springProperty scope="context" name="applicationName" source="spring.application.name"/>
+    <springProperty scope="context" name="environment" source="spring.profiles.active"/>
+
+    <!-- Console appender with JSON format for tests -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeMdc>true</includeMdc>
+            <includeContext>true</includeContext>
+            <customFields>{"application":"${applicationName}","environment":"${environment}"}</customFields>
+        </encoder>
+    </appender>
+
+    <!-- Root logger - NO CloudWatch appender in tests -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+    <!-- Application logger -->
+    <logger name="ch.batbern" level="DEBUG"/>
+
+    <!-- Spring Framework -->
+    <logger name="org.springframework" level="INFO"/>
+
+    <!-- Reduce noise from other frameworks -->
+    <logger name="org.hibernate" level="WARN"/>
+    <logger name="org.apache" level="WARN"/>
+</configuration>

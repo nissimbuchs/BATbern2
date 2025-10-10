@@ -15,7 +15,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,7 +35,7 @@ import java.util.Map;
 @Tag(name = "Authentication", description = "Authentication and password management endpoints")
 public class AuthController {
 
-    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthController.class);
 
     private final PasswordResetService passwordResetService;
 
@@ -50,8 +54,8 @@ public class AuthController {
     @PostMapping("/forgot-password")
     @Operation(
         summary = "Request password reset",
-        description = "Initiates password reset flow by sending a reset link to the user's email. " +
-                     "Always returns success to prevent email enumeration."
+        description = "Initiates password reset flow by sending a reset link to the user's email. "
+                     + "Always returns success to prevent email enumeration."
     )
     @ApiResponse(responseCode = "200", description = "Password reset email sent (or would be sent if email exists)")
     @ApiResponse(responseCode = "400", description = "Invalid request (email validation failed)")
@@ -67,7 +71,7 @@ public class AuthController {
         // Get client IP address
         String ipAddress = getClientIpAddress(httpRequest);
 
-        logger.info("Forgot password request received for email (masked), language: {}, IP: {}",
+        LOGGER.info("Forgot password request received for email (masked), language: {}, IP: {}",
             language, ipAddress);
 
         try {
@@ -82,7 +86,7 @@ public class AuthController {
 
         } catch (RateLimitExceededException e) {
             // AC13: Rate limit exceeded - return 429
-            logger.warn("Rate limit exceeded for forgot password request from IP: {}", ipAddress);
+            LOGGER.warn("Rate limit exceeded for forgot password request from IP: {}", ipAddress);
 
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("error", "Rate limit exceeded");
@@ -102,8 +106,8 @@ public class AuthController {
     @PostMapping("/resend-reset-link")
     @Operation(
         summary = "Resend password reset link",
-        description = "Resends the password reset link to the user's email. " +
-                     "Subject to same rate limiting as forgot-password (3 per hour)."
+        description = "Resends the password reset link to the user's email. "
+                     + "Subject to same rate limiting as forgot-password (3 per hour)."
     )
     @ApiResponse(responseCode = "200", description = "Reset link resent successfully")
     @ApiResponse(responseCode = "400", description = "Invalid request")
@@ -116,7 +120,7 @@ public class AuthController {
         String language = acceptLanguage.toLowerCase().startsWith("de") ? "de" : "en";
         String ipAddress = getClientIpAddress(httpRequest);
 
-        logger.info("Resend reset link request received, language: {}, IP: {}", language, ipAddress);
+        LOGGER.info("Resend reset link request received, language: {}, IP: {}", language, ipAddress);
 
         try {
             // Reuse the same password reset service (same rate limiting)
@@ -128,7 +132,7 @@ public class AuthController {
             ));
 
         } catch (RateLimitExceededException e) {
-            logger.warn("Rate limit exceeded for resend request from IP: {}", ipAddress);
+            LOGGER.warn("Rate limit exceeded for resend request from IP: {}", ipAddress);
 
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                 .body(new ResendResetLinkResponse(false, e.getMessage()));

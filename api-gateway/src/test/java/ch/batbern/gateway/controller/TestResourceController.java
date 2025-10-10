@@ -1,6 +1,15 @@
 package ch.batbern.gateway.controller;
 
-import ch.batbern.shared.api.*;
+import ch.batbern.shared.api.FieldSelector;
+import ch.batbern.shared.api.FilterCriteria;
+import ch.batbern.shared.api.FilterOperator;
+import ch.batbern.shared.api.FilterParser;
+import ch.batbern.shared.api.IncludeParser;
+import ch.batbern.shared.api.PaginationParams;
+import ch.batbern.shared.api.PaginationUtils;
+import ch.batbern.shared.api.SortCriteria;
+import ch.batbern.shared.api.SortDirection;
+import ch.batbern.shared.api.SortParser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -11,10 +20,20 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -53,45 +72,47 @@ public class TestResourceController {
                     """
     )
     @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Successfully retrieved resources",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(value = """
-                                    {
-                                      "data": [
-                                        {"id": "1", "title": "First Post", "status": "published", "votes": 15},
-                                        {"id": "2", "title": "Second Post", "status": "published", "votes": 25}
-                                      ],
-                                      "pagination": {
-                                        "page": 1,
-                                        "limit": 20,
-                                        "total": 45,
-                                        "totalPages": 3,
-                                        "hasNext": true,
-                                        "hasPrev": false
-                                      }
-                                    }
-                                    """)
-                    )
+        @ApiResponse(
+                responseCode = "200",
+                description = "Successfully retrieved resources",
+                content = @Content(
+                        mediaType = "application/json",
+                        examples = @ExampleObject(value = """
+                                {
+                                  "data": [
+                                    {"id": "1", "title": "First Post", "status": "published", "votes": 15},
+                                    {"id": "2", "title": "Second Post", "status": "published", "votes": 25}
+                                  ],
+                                  "pagination": {
+                                    "page": 1,
+                                    "limit": 20,
+                                    "total": 45,
+                                    "totalPages": 3,
+                                    "hasNext": true,
+                                    "hasPrev": false
+                                  }
+                                }
+                                """)
+                )
             ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Invalid query parameters",
-                    content = @Content(mediaType = "application/json")
+        @ApiResponse(
+                responseCode = "400",
+                description = "Invalid query parameters",
+                content = @Content(mediaType = "application/json")
             )
     })
     public ResponseEntity<List<Map<String, Object>>> getAll(
             @Parameter(
-                    description = "JSON filter expression. Supports: $eq, $ne, $gt, $gte, $lt, $lte, $and, $or, $not, $contains, $in",
-                    example = "{\"$and\":[{\"status\":\"published\"},{\"votes\":{\"$gte\":10}}]}"
+                description = "JSON filter expression. Supports: $eq, $ne, $gt, $gte, $lt, "
+                    + "$lte, $and, $or, $not, $contains, $in",
+                example = "{\"$and\":[{\"status\":\"published\"},{\"votes\":{\"$gte\":10}}]}"
             )
             @RequestParam(required = false) String filter,
 
             @Parameter(
-                    description = "Sort specification. Use +/- prefix for ascending/descending. Multiple fields separated by comma.",
-                    example = "-votes,+createdAt"
+                description = "Sort specification. Use +/- prefix for ascending/descending. "
+                    + "Multiple fields separated by comma.",
+                example = "-votes,+createdAt"
             )
             @RequestParam(required = false) String sort,
 
@@ -278,9 +299,15 @@ public class TestResourceController {
             Object v1 = getFieldValue(r1, field);
             Object v2 = getFieldValue(r2, field);
 
-            if (v1 == null && v2 == null) return 0;
-            if (v1 == null) return 1;
-            if (v2 == null) return -1;
+            if (v1 == null && v2 == null) {
+                return 0;
+            }
+            if (v1 == null) {
+                return 1;
+            }
+            if (v2 == null) {
+                return -1;
+            }
 
             if (v1 instanceof Comparable && v2 instanceof Comparable) {
                 return ((Comparable<Object>) v1).compareTo(v2);
@@ -299,11 +326,21 @@ public class TestResourceController {
         return data.stream()
                 .map(r -> {
                     Map<String, Object> selected = new LinkedHashMap<>();
-                    if (fields.contains("id")) selected.put("id", r.id);
-                    if (fields.contains("title")) selected.put("title", r.title);
-                    if (fields.contains("status")) selected.put("status", r.status);
-                    if (fields.contains("votes")) selected.put("votes", r.votes);
-                    if (fields.contains("createdAt")) selected.put("createdAt", r.createdAt);
+                    if (fields.contains("id")) {
+                        selected.put("id", r.id);
+                    }
+                    if (fields.contains("title")) {
+                        selected.put("title", r.title);
+                    }
+                    if (fields.contains("status")) {
+                        selected.put("status", r.status);
+                    }
+                    if (fields.contains("votes")) {
+                        selected.put("votes", r.votes);
+                    }
+                    if (fields.contains("createdAt")) {
+                        selected.put("createdAt", r.createdAt);
+                    }
                     return selected;
                 })
                 .collect(Collectors.toList());
