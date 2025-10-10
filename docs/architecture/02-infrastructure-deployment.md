@@ -18,7 +18,7 @@ The BATbern platform infrastructure has been optimized for cost-efficiency while
 
 | Component | Configuration | Cost Optimization |
 |-----------|--------------|-------------------|
-| **VPC** | Single AZ (eu-central-1a) | Reduced from 3 AZs |
+| **VPC** | 2 AZ (eu-central-1a) | Reduced from 3 AZs |
 | **NAT Gateway** | 1 NAT Gateway | Reduced from 3 |
 | **RDS Database** | db.t4g.micro (ARM-based), Single-AZ | Reduced from db.t3.medium Multi-AZ |
 | **Storage** | 50GB gp3 | Reduced from 100GB |
@@ -30,7 +30,7 @@ The BATbern platform infrastructure has been optimized for cost-efficiency while
 
 | Component | Configuration | Cost Optimization |
 |-----------|--------------|-------------------|
-| **VPC** | Single AZ (eu-central-1a) | Reduced from 2 AZs |
+| **VPC** | 2 AZ (eu-central-1a) | Reduced from 2 AZs |
 | **NAT Gateway** | 1 NAT Gateway | Reduced from 2 |
 | **RDS Database** | db.t4g.micro (ARM-based), Single-AZ | Reduced from db.t3.small Multi-AZ |
 | **Storage** | 20GB gp3 | Reduced from 50GB |
@@ -42,7 +42,7 @@ The BATbern platform infrastructure has been optimized for cost-efficiency while
 
 | Component | Configuration | Cost Optimization |
 |-----------|--------------|-------------------|
-| **VPC** | Single AZ (eu-central-1a) | Reduced from 2 AZs |
+| **VPC** | 2 AZ (eu-central-1a) | Reduced from 2 AZs |
 | **NAT Gateway** | 1 NAT Gateway | Already optimized |
 | **RDS Database** | db.t4g.micro (ARM-based), Single-AZ | ARM upgrade |
 | **Storage** | 20GB gp3 | Minimal storage |

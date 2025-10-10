@@ -11,7 +11,7 @@ export const stagingConfig: EnvironmentConfig = {
   account: '188701360969', // BATbern Staging account
   vpc: {
     cidr: '10.1.0.0/16',
-    maxAzs: 1, // Single AZ for cost optimization (test environment)
+    maxAzs: 2, // Minimum 2 AZs required for RDS subnet groups
     natGateways: 1, // Single NAT Gateway for cost savings
   },
   rds: {

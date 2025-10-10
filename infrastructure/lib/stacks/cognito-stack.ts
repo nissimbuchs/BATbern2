@@ -1,6 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as logs from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
 
@@ -26,11 +27,19 @@ export class CognitoStack extends cdk.Stack {
     const isProd = props.config.envName === 'production';
     const envName = props.config.envName;
 
+    // Create stable log group for Pre-Signup Lambda Trigger
+    const preSignupLogGroup = new logs.LogGroup(this, 'PreSignupLogGroup', {
+      logGroupName: `/aws/lambda/BATbern-${envName}/presignup-trigger`,
+      retention: isProd ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
     // Create Pre-Signup Lambda Trigger for validation
     const preSignupLambda = new lambda.Function(this, 'PreSignupTrigger', {
-      functionName: `${id}-PreSignupTrigger`,
+      functionName: `batbern-${envName}-presignup-trigger`,
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'presignup.handler',
+      logGroup: preSignupLogGroup,
       code: lambda.Code.fromInline(`
         exports.handler = async (event) => {
           console.log('Pre-signup trigger:', JSON.stringify(event));

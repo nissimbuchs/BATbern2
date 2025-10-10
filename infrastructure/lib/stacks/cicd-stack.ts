@@ -660,7 +660,7 @@ export class CICDStack extends cdk.Stack {
 
     // Log group for CI/CD pipeline logs
     const pipelineLogGroup = new cdk.aws_logs.LogGroup(this, 'PipelineLogGroup', {
-      logGroupName: `/batbern/cicd/${config.envName}/pipeline`,
+      logGroupName: `/aws/cicd/BATbern-${config.envName}/pipeline`,
       retention: config.envName === 'production'
         ? cdk.aws_logs.RetentionDays.ONE_MONTH
         : cdk.aws_logs.RetentionDays.ONE_WEEK,

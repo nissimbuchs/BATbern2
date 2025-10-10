@@ -5,6 +5,8 @@ import * as ecr from 'aws-cdk-lib/aws-ecr';
 import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as ecsPatterns from 'aws-cdk-lib/aws-ecs-patterns';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as cognito from 'aws-cdk-lib/aws-cognito';
+import * as path from 'path';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
 
@@ -13,6 +15,8 @@ export interface MicroservicesStackProps extends cdk.StackProps {
   vpc: ec2.IVpc;
   databaseEndpoint?: string;
   cacheEndpoint?: string;
+  userPool: cognito.IUserPool;
+  userPoolClient: cognito.IUserPoolClient;
 }
 
 /**
@@ -109,17 +113,20 @@ export class MicroservicesStack extends cdk.Stack {
       },
     ];
 
+    // Create stable log groups for all domain microservices
+    const serviceLogGroups: { [key: string]: logs.LogGroup } = {};
+    services.forEach(serviceConfig => {
+      serviceLogGroups[serviceConfig.name] = new logs.LogGroup(this, `${serviceConfig.name}-log-group`, {
+        logGroupName: `/aws/ecs/BATbern-${envName}/${serviceConfig.name}`,
+        retention: isProd ? logs.RetentionDays.SIX_MONTHS : logs.RetentionDays.ONE_MONTH,
+        removalPolicy: cdk.RemovalPolicy.RETAIN, // Preserve logs on stack deletion
+      });
+    });
+
     // Create domain microservices with internal ALBs
     const serviceUrls: { [key: string]: string } = {};
 
     services.forEach(serviceConfig => {
-      // Import ECR repository
-      const repository = ecr.Repository.fromRepositoryName(
-        this,
-        `${serviceConfig.name}-repo`,
-        `batbern/${serviceConfig.name}-service`
-      );
-
       // Create task definition
       const taskDefinition = new ecs.FargateTaskDefinition(this, `${serviceConfig.name}-task`, {
         cpu: serviceConfig.cpu,
@@ -130,16 +137,21 @@ export class MicroservicesStack extends cdk.Stack {
         },
       });
 
-      // Add container
+      // Add container with automatic Docker build from source
       const container = taskDefinition.addContainer(`${serviceConfig.name}-container`, {
-        image: ecs.ContainerImage.fromEcrRepository(repository, 'latest'),
+        image: ecs.ContainerImage.fromAsset(path.join(__dirname, '../../..'), {
+          file: `services/${serviceConfig.name}-service/Dockerfile`,
+        }),
         logging: ecs.LogDrivers.awsLogs({
+          logGroup: serviceLogGroups[serviceConfig.name],
           streamPrefix: serviceConfig.name,
-          logRetention: isProd ? logs.RetentionDays.SIX_MONTHS : logs.RetentionDays.ONE_MONTH,
         }),
         environment: {
           ...commonEnv,
           SERVICE_NAME: serviceConfig.name,
+          // Cognito configuration
+          COGNITO_USER_POOL_ID: props.userPool.userPoolId,
+          COGNITO_CLIENT_ID: props.userPoolClient.userPoolClientId,
         },
         healthCheck: {
           command: ['CMD-SHELL', `curl -f http://localhost:${serviceConfig.port}${serviceConfig.healthCheck} || exit 1`],
@@ -202,11 +214,12 @@ export class MicroservicesStack extends cdk.Stack {
     });
 
     // Create API Gateway service (public ALB)
-    const apiGatewayRepo = ecr.Repository.fromRepositoryName(
-      this,
-      'api-gateway-repo',
-      'batbern/api-gateway'
-    );
+    // Create stable log group for API Gateway
+    const apiGatewayLogGroup = new logs.LogGroup(this, 'api-gateway-log-group', {
+      logGroupName: `/aws/ecs/BATbern-${envName}/api-gateway`,
+      retention: isProd ? logs.RetentionDays.SIX_MONTHS : logs.RetentionDays.ONE_MONTH,
+      removalPolicy: cdk.RemovalPolicy.RETAIN, // Preserve logs on stack deletion
+    });
 
     const apiGatewayTaskDef = new ecs.FargateTaskDefinition(this, 'api-gateway-task', {
       cpu: 512,
@@ -218,10 +231,12 @@ export class MicroservicesStack extends cdk.Stack {
     });
 
     const apiGatewayContainer = apiGatewayTaskDef.addContainer('api-gateway-container', {
-      image: ecs.ContainerImage.fromEcrRepository(apiGatewayRepo, 'latest'),
+      image: ecs.ContainerImage.fromAsset(path.join(__dirname, '../../..'), {
+        file: 'api-gateway/Dockerfile',
+      }),
       logging: ecs.LogDrivers.awsLogs({
+        logGroup: apiGatewayLogGroup,
         streamPrefix: 'api-gateway',
-        logRetention: isProd ? logs.RetentionDays.SIX_MONTHS : logs.RetentionDays.ONE_MONTH,
       }),
       environment: {
         ...commonEnv,
@@ -232,6 +247,9 @@ export class MicroservicesStack extends cdk.Stack {
         PARTNER_COORDINATION_SERVICE_URL: serviceUrls['partner-coordination'],
         ATTENDEE_EXPERIENCE_SERVICE_URL: serviceUrls['attendee-experience'],
         COMPANY_MANAGEMENT_SERVICE_URL: serviceUrls['company-management'],
+        // Cognito configuration
+        COGNITO_USER_POOL_ID: props.userPool.userPoolId,
+        COGNITO_CLIENT_ID: props.userPoolClient.userPoolClientId,
       },
       healthCheck: {
         command: ['CMD-SHELL', 'curl -f http://localhost:8080/actuator/health || exit 1'],

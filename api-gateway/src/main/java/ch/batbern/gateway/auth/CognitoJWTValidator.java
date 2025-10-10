@@ -20,14 +20,14 @@ public class CognitoJWTValidator {
     private final CognitoJWKSProvider jwksProvider;
     private final String userPoolId;
     private final String region;
-    private final String appClientId;
+    private final String userPoolClientId;
     private final UserContextExtractor userContextExtractor;
 
-    public CognitoJWTValidator(CognitoJWKSProvider jwksProvider, String userPoolId, String region, String appClientId) {
+    public CognitoJWTValidator(CognitoJWKSProvider jwksProvider, String userPoolId, String region, String userPoolClientId) {
         this.jwksProvider = jwksProvider;
         this.userPoolId = userPoolId;
         this.region = region;
-        this.appClientId = appClientId;
+        this.userPoolClientId = userPoolClientId;
         this.userContextExtractor = new UserContextExtractor(new com.fasterxml.jackson.databind.ObjectMapper());
     }
 
@@ -63,14 +63,14 @@ public class CognitoJWTValidator {
                     throw new AuthenticationException("Invalid issuer");
                 }
 
-                if (jwt.getAudience() != null && !jwt.getAudience().contains(appClientId)) {
+                if (jwt.getAudience() != null && !jwt.getAudience().contains(userPoolClientId)) {
                     throw new AuthenticationException("Invalid audience");
                 }
             } else {
                 // Production verification with real algorithm
                 JWTVerifier verifier = JWT.require(algorithm)
                         .withIssuer(expectedIssuer)
-                        .withAudience(appClientId)
+                        .withAudience(userPoolClientId)
                         .build();
 
                 verifier.verify(jwt);
