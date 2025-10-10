@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
   "description": "Single source of truth for technology versions in BATbern platform. This file is automatically updated by scripts/update-versions.js when dependencies change.",
-  "lastUpdated": "2025-10-08",
+  "lastUpdated": "2025-10-10",
   "frontend": {
     "typescript": "5.x",
     "react": "19.x",
@@ -21,7 +21,7 @@
   "backend": {
     "java": "21",
     "spring-boot": "3.x",
-    "junit": "5.x",
+    "junit": "6.x",
     "testcontainers": "1.x",
     "gradle": "8.x",
     "mockito": "5.x",
