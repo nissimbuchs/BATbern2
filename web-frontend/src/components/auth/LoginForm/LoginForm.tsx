@@ -26,6 +26,7 @@ import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@hooks/useAuth';
 import { LoginCredentials } from '@/types/auth';
+import LanguageSwitcher from '@components/shared/LanguageSwitcher/LanguageSwitcher';
 
 type LoginFormData = {
   email: string;
@@ -85,7 +86,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPasswor
       password: '',
       rememberMe: false,
     },
-    mode: 'onBlur',
+    mode: 'onChange',
   });
 
   // Clear errors when user starts typing
@@ -101,6 +102,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPasswor
 
   const onSubmit = async (data: LoginFormData) => {
     try {
+      console.log('[LoginForm] Form submitted with data:', {
+        email: data.email,
+        rememberMe: data.rememberMe,
+      });
       setSubmitError(null);
 
       const credentials: LoginCredentials = {
@@ -109,13 +114,19 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPasswor
         rememberMe: data.rememberMe,
       };
 
+      console.log('[LoginForm] Calling signIn...');
       const success = await signIn(credentials);
+      console.log('[LoginForm] signIn result:', success);
 
       if (success) {
+        console.log('[LoginForm] Sign in successful, calling onSuccess callback');
         reset();
         onSuccess?.();
+      } else {
+        console.log('[LoginForm] Sign in failed');
       }
     } catch (err) {
+      console.error('[LoginForm] Error during sign in:', err);
       setSubmitError(t('auth:errors.unknownError'));
     }
   };
@@ -133,7 +144,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPasswor
 
   return (
     <Container maxWidth="sm">
-      <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+        <LanguageSwitcher />
+      </Box>
+      <Paper elevation={3} sx={{ p: 4, mt: 2 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <Typography component="h1" variant="h4" gutterBottom>
             {t('auth:login.title')}

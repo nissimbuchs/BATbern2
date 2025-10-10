@@ -1,7 +1,10 @@
 package ch.batbern.gateway.exception;
 
 import ch.batbern.shared.dto.ErrorResponse;
-import ch.batbern.shared.exception.*;
+import ch.batbern.shared.exception.NotFoundException;
+import ch.batbern.shared.exception.ServiceException;
+import ch.batbern.shared.exception.UnauthorizedException;
+import ch.batbern.shared.exception.ValidationException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,8 +22,9 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class GlobalExceptionHandlerTest {

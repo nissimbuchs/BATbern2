@@ -1,16 +1,16 @@
 /**
  * Main App Component
- * Story 1.2: React Application with Authentication
+ * Story 1.17: React Frontend Foundation - Task 13b (Performance Optimization)
  */
 
-import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CssBaseline, Box } from '@mui/material';
+import React, { useEffect, Suspense, useCallback } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { ThemeProvider } from '@mui/material/styles';
+import { CssBaseline, Box, CircularProgress, Typography, Button, Container } from '@mui/material';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { configureAmplify } from '@/config/amplify';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@hooks/useAuth';
-import { AuthenticatedLayout } from '@components/auth/AuthenticatedLayout';
+import { BaseLayout } from '@components/shared/Layout/BaseLayout';
 import {
   ProtectedRoute,
   SpeakerRoute,
@@ -19,21 +19,9 @@ import {
 } from '@components/auth/ProtectedRoute';
 import { LoginForm } from '@components/auth/LoginForm';
 import { ForgotPasswordForm } from '@components/auth/ForgotPasswordForm';
-
-// Create Material-UI theme
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
-  },
-  typography: {
-    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
-  },
-});
+import { setNavigationCallback } from '@/services/api/apiClient';
+import LanguageSwitcher from '@components/shared/LanguageSwitcher/LanguageSwitcher';
+import theme from '@/theme';
 
 // Create React Query client
 const queryClient = new QueryClient({
@@ -45,168 +33,202 @@ const queryClient = new QueryClient({
   },
 });
 
-// Placeholder components for different pages
-const Dashboard = () => (
-  <Box>
-    <h1>Dashboard</h1>
-    <p>Welcome to your dashboard</p>
+// Route-level code splitting with React.lazy() (Task 13b)
+const Dashboard = React.lazy(() => import('@pages/Dashboard'));
+const Events = React.lazy(() => import('@pages/Events'));
+const Speakers = React.lazy(() => import('@pages/Speakers'));
+const Partners = React.lazy(() => import('@pages/Partners'));
+const Content = React.lazy(() => import('@pages/Content'));
+const Analytics = React.lazy(() => import('@pages/Analytics'));
+
+// Loading fallback component for Suspense
+const PageLoader = () => (
+  <Box
+    sx={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      minHeight: '50vh',
+    }}
+  >
+    <CircularProgress />
   </Box>
 );
 
-const Events = () => (
-  <Box>
-    <h1>Events</h1>
-    <p>Event management interface</p>
-  </Box>
-);
+// Layout wrapper for authenticated routes
+const AuthLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return <BaseLayout>{children}</BaseLayout>;
+};
 
-const Speakers = () => (
-  <Box>
-    <h1>Speakers</h1>
-    <p>Speaker coordination interface</p>
-  </Box>
-);
+// Login page component with navigation logic
+const LoginPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
-const Partners = () => (
-  <Box>
-    <h1>Partners</h1>
-    <p>Partner analytics interface</p>
-  </Box>
-);
+  // Redirect to dashboard if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
-const Content = () => (
-  <Box>
-    <h1>Content Search</h1>
-    <p>Content discovery interface</p>
-  </Box>
-);
+  const handleLoginSuccess = useCallback(() => {
+    console.log('[LoginPage] handleLoginSuccess called, navigating to /dashboard');
+    navigate('/dashboard', { replace: true });
+  }, [navigate]);
 
-const Analytics = () => (
-  <Box>
-    <h1>Analytics</h1>
-    <p>Analytics dashboard</p>
-  </Box>
-);
+  const handleForgotPassword = useCallback(() => {
+    navigate('/auth/forgot-password');
+  }, [navigate]);
 
-// Authentication wrapper component
-const AuthWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const handleSignUp = useCallback(() => {
+    navigate('/auth/signup');
+  }, [navigate]);
 
-  if (isLoading) {
-    return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '100vh',
-        }}
-      >
-        Loading...
+  return (
+    <LoginForm
+      onSuccess={handleLoginSuccess}
+      onForgotPassword={handleForgotPassword}
+      onSignUp={handleSignUp}
+    />
+  );
+};
+
+// Forgot Password page component with navigation logic
+const ForgotPasswordPage: React.FC = () => {
+  // For now, render the ForgotPasswordForm as-is
+  // ForgotPasswordForm has a hardcoded link to /auth/login
+  // TODO: Refactor to accept onBackToLogin callback for programmatic navigation
+  return <ForgotPasswordForm />;
+};
+
+// Signup placeholder page (Story 1.2.3 not implemented yet)
+const SignupPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { t } = useTranslation('auth');
+
+  return (
+    <Container maxWidth="sm">
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+        <LanguageSwitcher />
       </Box>
-    );
-  }
+      <Box sx={{ maxWidth: 400, mx: 'auto', mt: 6, textAlign: 'center' }}>
+        <Typography variant="h4" gutterBottom>
+          {t('signup.title')}
+        </Typography>
+        <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+          {t('signup.notAvailable')}
+        </Typography>
+        <Button variant="outlined" onClick={() => navigate('/login')}>
+          {t('signup.backToLogin')}
+        </Button>
+      </Box>
+    </Container>
+  );
+};
 
-  if (!isAuthenticated) {
-    return <LoginForm />;
-  }
+// Navigation setup component (must be inside Router)
+const NavigationSetup: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const navigate = useNavigate();
 
-  return <AuthenticatedLayout>{children}</AuthenticatedLayout>;
+  useEffect(() => {
+    // Configure API client to use React Router navigate instead of window.location
+    // ARCH-002 Fix: Replace window.location.href with React Router navigate()
+    setNavigationCallback(navigate);
+  }, [navigate]);
+
+  return <>{children}</>;
 };
 
 function App() {
-  useEffect(() => {
-    // Configure AWS Amplify on app initialization
-    try {
-      configureAmplify();
-    } catch (error) {
-      console.error('Failed to configure Amplify:', error);
-    }
-  }, []);
-
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <Router>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/login" element={<LoginForm />} />
-            <Route path="/auth/forgot-password" element={<ForgotPasswordForm />} />
+          <NavigationSetup>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                {/* Public routes */}
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/auth/signup" element={<SignupPage />} />
 
-            {/* Protected routes */}
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <AuthWrapper>
-                    <Dashboard />
-                  </AuthWrapper>
-                </ProtectedRoute>
-              }
-            />
+                {/* Protected routes with lazy-loaded components */}
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <AuthLayout>
+                        <Dashboard />
+                      </AuthLayout>
+                    </ProtectedRoute>
+                  }
+                />
 
-            <Route
-              path="/events"
-              element={
-                <ProtectedRoute>
-                  <AuthWrapper>
-                    <Events />
-                  </AuthWrapper>
-                </ProtectedRoute>
-              }
-            />
+                <Route
+                  path="/events"
+                  element={
+                    <ProtectedRoute>
+                      <AuthLayout>
+                        <Events />
+                      </AuthLayout>
+                    </ProtectedRoute>
+                  }
+                />
 
-            <Route
-              path="/speakers"
-              element={
-                <SpeakerRoute>
-                  <AuthWrapper>
-                    <Speakers />
-                  </AuthWrapper>
-                </SpeakerRoute>
-              }
-            />
+                <Route
+                  path="/speakers"
+                  element={
+                    <SpeakerRoute>
+                      <AuthLayout>
+                        <Speakers />
+                      </AuthLayout>
+                    </SpeakerRoute>
+                  }
+                />
 
-            <Route
-              path="/partners"
-              element={
-                <PartnerRoute>
-                  <AuthWrapper>
-                    <Partners />
-                  </AuthWrapper>
-                </PartnerRoute>
-              }
-            />
+                <Route
+                  path="/partners"
+                  element={
+                    <PartnerRoute>
+                      <AuthLayout>
+                        <Partners />
+                      </AuthLayout>
+                    </PartnerRoute>
+                  }
+                />
 
-            <Route
-              path="/analytics"
-              element={
-                <PartnerRoute>
-                  <AuthWrapper>
-                    <Analytics />
-                  </AuthWrapper>
-                </PartnerRoute>
-              }
-            />
+                <Route
+                  path="/analytics"
+                  element={
+                    <PartnerRoute>
+                      <AuthLayout>
+                        <Analytics />
+                      </AuthLayout>
+                    </PartnerRoute>
+                  }
+                />
 
-            <Route
-              path="/content"
-              element={
-                <AttendeeRoute>
-                  <AuthWrapper>
-                    <Content />
-                  </AuthWrapper>
-                </AttendeeRoute>
-              }
-            />
+                <Route
+                  path="/content"
+                  element={
+                    <AttendeeRoute>
+                      <AuthLayout>
+                        <Content />
+                      </AuthLayout>
+                    </AttendeeRoute>
+                  }
+                />
 
-            {/* Default redirect */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                {/* Default redirect */}
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-            {/* Catch all route */}
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
+                {/* Catch all route */}
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              </Routes>
+            </Suspense>
+          </NavigationSetup>
         </Router>
       </ThemeProvider>
     </QueryClientProvider>

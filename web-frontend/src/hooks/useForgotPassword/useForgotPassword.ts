@@ -37,11 +37,18 @@ export const useForgotPassword = (options?: UseForgotPasswordOptions) => {
       return response.data;
     },
     onSuccess: options?.onSuccess,
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       // Handle rate limit error (429)
-      if (error.response?.status === 429) {
-        const retryAfter = error.response.headers?.['retry-after']
-          ? parseInt(error.response.headers['retry-after'])
+      if ((error as { response?: { status?: number } }).response?.status === 429) {
+        const axiosError = error as {
+          response: {
+            status: number;
+            headers?: { 'retry-after'?: string };
+            data?: { message?: string };
+          };
+        };
+        const retryAfter = axiosError.response.headers?.['retry-after']
+          ? parseInt(axiosError.response.headers['retry-after'])
           : 60; // Default to 60 seconds if no Retry-After header
 
         const transformedError: ExtendedError = Object.assign(new Error('Rate limit exceeded'), {
@@ -55,7 +62,10 @@ export const useForgotPassword = (options?: UseForgotPasswordOptions) => {
       }
 
       // Handle network errors (no response from server)
-      if (!error.response) {
+      const errorWithResponse = error as {
+        response?: { status?: number; data?: { message?: string } };
+      };
+      if (!errorWithResponse.response) {
         const transformedError: ExtendedError = Object.assign(
           new Error('Network connection failed'),
           {
@@ -70,10 +80,10 @@ export const useForgotPassword = (options?: UseForgotPasswordOptions) => {
 
       // Handle other errors
       const transformedError: ExtendedError = Object.assign(
-        new Error(error.response?.data?.message || 'Unknown error'),
+        new Error(errorWithResponse.response?.data?.message || 'Unknown error'),
         {
           type: 'unknownError' as const,
-          statusCode: error.response?.status || 500,
+          statusCode: errorWithResponse.response?.status || 500,
         }
       );
 

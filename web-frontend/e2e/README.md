@@ -156,18 +156,63 @@ npx playwright show-report
 
 ```
 e2e/
+├── accessibility/               # WCAG 2.1 AA compliance (Story 1.17)
+│   ├── navigation.spec.ts      # Navigation accessibility
+│   ├── layout.spec.ts          # Layout & focus management
+│   └── screen-reader.spec.ts   # Screen reader announcements
 ├── auth/
-│   ├── forgot-password.spec.ts   # Story 1.2.2
-│   ├── login.spec.ts             # Story 1.2
-│   └── reset-password.spec.ts    # Future
+│   ├── forgot-password.spec.ts # Story 1.2.2
+│   ├── login.spec.ts           # Story 1.2
+│   └── reset-password.spec.ts  # Future
 ├── fixtures/
-│   └── test-users.ts             # Test user data
+│   └── test-users.ts           # Test user data
 └── helpers/
-    ├── email-helpers.ts          # MailHog utilities
-    └── auth-helpers.ts           # Authentication utilities
+    ├── email-helpers.ts        # MailHog utilities
+    └── auth-helpers.ts         # Authentication utilities
 ```
 
 ## Test Coverage
+
+### Accessibility Tests (Story 1.17 - WCAG 2.1 AA)
+
+**Purpose**: Replace jsdom-based accessibility tests with real browser validation using Playwright and axe-core.
+
+#### Navigation Accessibility (`navigation.spec.ts`)
+
+- No accessibility violations on navigation
+- Keyboard navigation through menu items
+- Screen reader announcements for notifications
+- ARIA attributes on navigation elements
+- Semantic HTML landmarks
+- Skip to main content link
+- Color contrast requirements
+- Mobile drawer accessibility
+- Focus trap in dropdowns
+
+#### Layout Accessibility (`layout.spec.ts`)
+
+- No accessibility violations on base layout
+- Visible focus indicators on all interactive elements
+- 4.5:1 contrast ratio for normal text
+- Responsive layout accessibility (mobile/tablet/desktop)
+- Proper heading hierarchy
+- Descriptive page titles
+- Focus restoration after modal close
+- 200% zoom support without horizontal scroll
+- Proper lang attribute
+
+#### Screen Reader Accessibility (`screen-reader.spec.ts`)
+
+- ARIA live regions for dynamic content
+- Form error announcements
+- Descriptive labels for form inputs
+- Loading state announcements
+- Screen reader text for icons
+- Table accessibility
+- Notification announcements
+- Route change announcements
+- No ARIA violations
+- High contrast mode support
 
 ### Forgot Password Flow (Story 1.2.2)
 

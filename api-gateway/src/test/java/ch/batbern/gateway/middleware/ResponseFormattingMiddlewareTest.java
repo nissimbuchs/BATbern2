@@ -20,8 +20,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import java.util.List;
 import java.util.Map;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests for ResponseFormattingMiddleware (Story 1.15a).

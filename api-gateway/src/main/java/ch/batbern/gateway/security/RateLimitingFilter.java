@@ -3,7 +3,12 @@ package ch.batbern.gateway.security;
 import ch.batbern.gateway.auth.model.UserContext;
 import ch.batbern.gateway.security.exception.RateLimitExceededException;
 import ch.batbern.gateway.util.LogSanitizer;
-import jakarta.servlet.*;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -70,7 +75,9 @@ public class RateLimitingFilter implements Filter {
                 httpResponse.setStatus(429); // HTTP 429 Too Many Requests
                 httpResponse.setContentType("application/json");
                 httpResponse.getWriter().write(String.format(
-                    "{\"error\":\"Rate limit exceeded\",\"message\":\"Too many requests. Limit: %d requests per minute.\",\"limit\":%d,\"retryAfter\":60}",
+                    "{\"error\":\"Rate limit exceeded\","
+                    + "\"message\":\"Too many requests. Limit: %d requests per minute.\","
+                    + "\"limit\":%d,\"retryAfter\":60}",
                     rateLimit, rateLimit
                 ));
                 return;

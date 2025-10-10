@@ -1,13 +1,15 @@
 /**
  * AWS Amplify Configuration
  * Story 1.2: AWS Cognito Integration Setup
+ * Updated to use runtime config instead of build-time env vars
  */
 
 import { Amplify, type ResourcesConfig } from 'aws-amplify';
+import type { AppConfig } from './runtime-config';
 
-// Environment-specific configuration
-const getAmplifyConfig = (): ResourcesConfig => {
-  const environment = import.meta.env.VITE_APP_ENV || 'development';
+// Build Amplify config from runtime config
+const getAmplifyConfig = (runtimeConfig: AppConfig): ResourcesConfig => {
+  const { environment, cognito } = runtimeConfig;
 
   // Determine OAuth redirect URLs based on environment
   let redirectSignIn = 'http://localhost:3000/auth/callback';
@@ -27,11 +29,11 @@ const getAmplifyConfig = (): ResourcesConfig => {
   const config: ResourcesConfig = {
     Auth: {
       Cognito: {
-        userPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID || '',
-        userPoolClientId: import.meta.env.VITE_COGNITO_WEB_CLIENT_ID || '',
+        userPoolId: cognito.userPoolId,
+        userPoolClientId: cognito.clientId,
         loginWith: {
           oauth: {
-            domain: import.meta.env.VITE_COGNITO_DOMAIN || '',
+            domain: `batbern-${environment}.auth.${cognito.region}.amazoncognito.com`,
             scopes: ['email', 'openid', 'profile'],
             redirectSignIn: [redirectSignIn],
             redirectSignOut: [redirectSignOut],
@@ -45,18 +47,18 @@ const getAmplifyConfig = (): ResourcesConfig => {
   return config;
 };
 
-// Configure Amplify
-export const configureAmplify = () => {
-  const config = getAmplifyConfig();
+// Configure Amplify with runtime config
+export const configureAmplify = (runtimeConfig: AppConfig) => {
+  const config = getAmplifyConfig(runtimeConfig);
 
   try {
     Amplify.configure(config);
-    console.log('✅ AWS Amplify configured successfully');
+    console.log(
+      '✅ AWS Amplify configured successfully for environment:',
+      runtimeConfig.environment
+    );
   } catch (error) {
     console.error('❌ Failed to configure AWS Amplify:', error);
     throw new Error('Amplify configuration failed');
   }
 };
-
-// Export configuration for testing
-export const amplifyConfig = getAmplifyConfig();

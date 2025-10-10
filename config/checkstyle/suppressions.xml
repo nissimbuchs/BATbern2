@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC
+    "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+    "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+
+<suppressions>
+    <!-- Suppress all checks for generated code -->
+    <suppress files="[\\/]generated[\\/]" checks=".*"/>
+    <suppress files="[\\/]build[\\/]" checks=".*"/>
+
+    <!-- Relax some checks for test files -->
+    <suppress files="Test\.java$" checks="MagicNumber"/>
+    <suppress files="Test\.java$" checks="MethodLength"/>
+    <suppress files="Test\.java$" checks="LineLength"/>
+
+    <!-- Allow longer parameter lists in configuration classes -->
+    <suppress files="Config\.java$" checks="ParameterNumber"/>
+
+    <!-- Lombok generates code that may violate some rules -->
+    <suppress checks="HiddenField" files=".*\.java"/>
+</suppressions>
