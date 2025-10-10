@@ -59,9 +59,13 @@ if [ -f "gradlew" ] || [ -f "build.gradle" ]; then
         echo "  Coverage report generated"
     fi
 
-    # Run integration tests
-    echo "  Running integration tests..."
-    run_with_timeout 300 "./gradlew integrationTest" || CHECKS_FAILED=1
+    # Run integration tests if task exists
+    if ./gradlew tasks --all 2>/dev/null | grep -q "^integrationTest "; then
+        echo "  Running integration tests..."
+        run_with_timeout 300 "./gradlew integrationTest" || CHECKS_FAILED=1
+    else
+        echo "  Skipping integration tests (task not configured)"
+    fi
 fi
 
 
