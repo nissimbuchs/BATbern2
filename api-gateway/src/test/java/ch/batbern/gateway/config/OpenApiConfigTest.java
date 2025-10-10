@@ -25,7 +25,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @TestPropertySource(properties = {
     "aws.cognito.userPoolId=test-pool-id",
     "aws.cognito.region=us-east-1",
-    "aws.cognito.appClientId=test-client-id",
     "aws.cognito.userPoolClientId=test-client-id",
     "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://test.example.com"
 })

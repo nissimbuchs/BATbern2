@@ -34,7 +34,7 @@ public class ConfigController {
     @Value("${aws.cognito.userPoolId}")
     private String cognitoUserPoolId;
 
-    @Value("${aws.cognito.appClientId}")
+    @Value("${aws.cognito.userPoolClientId}")
     private String cognitoClientId;
 
     @Value("${aws.cognito.region}")
