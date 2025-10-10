@@ -1,5 +1,6 @@
 import * as cdk from 'aws-cdk-lib';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as logs from 'aws-cdk-lib/aws-logs';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as s3 from 'aws-cdk-lib/aws-s3';
@@ -38,6 +39,32 @@ export class IncidentManagementStack extends cdk.Stack {
     super(scope, id, props);
 
     const isProd = props.config.envName === 'production';
+    const envName = props.config.envName;
+
+    // Create stable log groups for all Lambda functions
+    const pagerDutyLogGroup = new logs.LogGroup(this, 'PagerDutyLogGroup', {
+      logGroupName: `/aws/lambda/BATbern-${envName}/pagerduty-integration`,
+      retention: isProd ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
+    const runbookLogGroup = new logs.LogGroup(this, 'RunbookLogGroup', {
+      logGroupName: `/aws/lambda/BATbern-${envName}/runbook-automation`,
+      retention: isProd ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
+    const postMortemLogGroup = new logs.LogGroup(this, 'PostMortemLogGroup', {
+      logGroupName: `/aws/lambda/BATbern-${envName}/postmortem-creation`,
+      retention: isProd ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
+    const statusPageLogGroup = new logs.LogGroup(this, 'StatusPageLogGroup', {
+      logGroupName: `/aws/lambda/BATbern-${envName}/statuspage-integration`,
+      retention: isProd ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
 
     // S3 Bucket for storing incident data, post-mortems, and runbook logs
     this.incidentBucket = new s3.Bucket(this, 'IncidentBucket', {
@@ -65,9 +92,10 @@ export class IncidentManagementStack extends cdk.Stack {
 
     // PagerDuty Integration Lambda (AC: 13)
     this.pagerDutyIntegrationFunction = new lambda.Function(this, 'PagerDutyIntegration', {
-      functionName: `batbern-${props.config.envName}-pagerduty-integration`,
+      functionName: `batbern-${envName}-pagerduty-integration`,
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: 'index.handler',
+      logGroup: pagerDutyLogGroup,
       code: lambda.Code.fromInline(`
         // PagerDuty Integration Lambda
         // TODO: Implement full PagerDuty API integration
@@ -110,9 +138,10 @@ export class IncidentManagementStack extends cdk.Stack {
 
     // Runbook Automation Lambda (AC: 14)
     this.runbookAutomationFunction = new lambda.Function(this, 'RunbookAutomation', {
-      functionName: `batbern-${props.config.envName}-runbook-automation`,
+      functionName: `batbern-${envName}-runbook-automation`,
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: 'index.handler',
+      logGroup: runbookLogGroup,
       code: lambda.Code.fromInline(`
         // Runbook Automation Lambda
         // TODO: Implement runbook execution logic
@@ -148,9 +177,10 @@ export class IncidentManagementStack extends cdk.Stack {
 
     // Post-Mortem Creation Lambda (AC: 15)
     this.postMortemFunction = new lambda.Function(this, 'PostMortemCreation', {
-      functionName: `batbern-${props.config.envName}-create-postmortem`,
+      functionName: `batbern-${envName}-create-postmortem`,
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: 'index.handler',
+      logGroup: postMortemLogGroup,
       code: lambda.Code.fromInline(`
         // Post-Mortem Creation Lambda
         // TODO: Implement post-mortem template generation
@@ -200,9 +230,10 @@ export class IncidentManagementStack extends cdk.Stack {
 
     // StatusPage Integration Lambda (AC: 16)
     this.statusPageIntegrationFunction = new lambda.Function(this, 'StatusPageIntegration', {
-      functionName: `batbern-${props.config.envName}-update-statuspage`,
+      functionName: `batbern-${envName}-update-statuspage`,
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: 'index.handler',
+      logGroup: statusPageLogGroup,
       code: lambda.Code.fromInline(`
         // StatusPage Integration Lambda
         // TODO: Implement StatusPage API integration

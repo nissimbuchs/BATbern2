@@ -11,7 +11,7 @@ export const prodConfig: EnvironmentConfig = {
   account: '422940799530', // BATbern Production account
   vpc: {
     cidr: '10.2.0.0/16',
-    maxAzs: 1, // Single AZ for cost optimization (low traffic: 1000 users/month)
+    maxAzs: 2, // Minimum 2 AZs required for RDS subnet groups
     natGateways: 1, // Single NAT Gateway for cost savings
   },
   rds: {
