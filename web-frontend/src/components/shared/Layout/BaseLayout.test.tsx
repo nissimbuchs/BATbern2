@@ -9,25 +9,92 @@ import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BaseLayout } from './BaseLayout';
 
-// Mock auth store
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: vi.fn(() => ({
+// Mock useAuth hook
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: vi.fn(() => ({
     user: {
       userId: 'user-123',
       email: 'test@batbern.ch',
+      emailVerified: true,
       role: 'organizer',
       companyId: 'company-123',
+      preferences: {
+        language: 'de',
+        theme: 'light',
+        notifications: { email: true, sms: false, push: true },
+        privacy: { showProfile: true, allowMessages: true },
+      },
+      issuedAt: 0,
+      expiresAt: 0,
+      tokenId: '',
     },
     isAuthenticated: true,
+    isLoading: false,
+    error: null,
+    signOut: vi.fn(),
   })),
 }));
 
 // Mock UI store
 vi.mock('@/stores/uiStore', () => ({
   useUIStore: vi.fn(() => ({
+    locale: 'de',
     sidebarCollapsed: false,
+    notificationDrawerOpen: false,
+    userMenuOpen: false,
+    setLocale: vi.fn(),
+    toggleSidebar: vi.fn(),
     setSidebarCollapsed: vi.fn(),
+    setNotificationDrawerOpen: vi.fn(),
+    setUserMenuOpen: vi.fn(),
+    reset: vi.fn(),
   })),
+}));
+
+// Mock useNotifications hook
+vi.mock('@/hooks/useNotifications', () => ({
+  useNotifications: vi.fn(() => ({
+    data: {
+      notifications: [],
+      unreadCount: 0,
+    },
+    isLoading: false,
+  })),
+}));
+
+// Mock useBreakpoints hook
+vi.mock('@/hooks/useBreakpoints', () => ({
+  useBreakpoints: vi.fn(() => ({
+    isMobile: false,
+    isTablet: false,
+    isDesktop: true,
+    isLargeDesktop: false,
+  })),
+}));
+
+// Mock i18next
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => {
+      const translations: Record<string, string> = {
+        'navigation.dashboard': 'Dashboard',
+        'navigation.events': 'Events',
+        'navigation.speakers': 'Speakers',
+        'navigation.partners': 'Partners',
+        'navigation.analytics': 'Analytics',
+        'menu.profile': 'Profile',
+        'menu.settings': 'Settings',
+        'menu.help': 'Help',
+        'menu.logout': 'Logout',
+        'role.organizer': 'Organizer',
+      };
+      return translations[key] || key;
+    },
+    i18n: {
+      language: 'en',
+      changeLanguage: vi.fn().mockResolvedValue(undefined),
+    },
+  }),
 }));
 
 describe('BaseLayout Component', () => {
