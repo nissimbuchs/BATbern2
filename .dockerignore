@@ -1,0 +1,21 @@
+# Infrastructure and CDK output
+infrastructure/
+.git/
+.github/
+
+# Build artifacts
+**/build/
+**/target/
+**/.gradle/
+**/node_modules/
+
+# IDE
+**/.idea/
+**/.vscode/
+**/*.iml
+
+# Docs and config
+docs/
+mockups/
+*.md
+!README.md
