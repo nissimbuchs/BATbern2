@@ -233,7 +233,7 @@ jobs:
       - name: Build frontend
         if: steps.check-frontend.outputs.exists == 'true'
         working-directory: ./web-frontend
-        run: npx vite build  # Skip tsc in CI for incremental development
+        run: npm run build  # Run full build including TypeScript checking
         env:
           VITE_API_URL: https://api.batbern.ch
 
@@ -332,3 +332,95 @@ jobs:
             **/build/reports/tests/
             **/build/test-results/
           retention-days: 7
+
+  # ═══════════════════════════════════════════════════════════
+  # CODE QUALITY ANALYSIS: SonarCloud Multi-Module Scan
+  # ═══════════════════════════════════════════════════════════
+  sonarcloud:
+    name: SonarCloud Analysis
+    needs: [build-shared-kernel, build-services, build-frontend]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for better analysis relevancy
+
+      # ─────────────────────────────────────────────────────────
+      # Java Setup & Coverage Generation
+      # ─────────────────────────────────────────────────────────
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
+
+      - name: Build shared-kernel and generate coverage
+        working-directory: ./shared-kernel
+        run: |
+          chmod +x gradlew
+          ./gradlew clean test jacocoTestReport --no-daemon
+
+      - name: Build api-gateway and generate coverage
+        working-directory: ./api-gateway
+        run: |
+          chmod +x gradlew
+          ./gradlew clean test jacocoTestReport --no-daemon
+
+      - name: Build services and generate coverage
+        run: |
+          # Build each service that exists
+          for service in event-management-service attendee-experience-service company-management-service partner-coordination-service speaker-coordination-service; do
+            if [ -d "services/$service" ]; then
+              echo "Building services/$service..."
+              cd "services/$service"
+              chmod +x gradlew
+              ./gradlew clean test jacocoTestReport --no-daemon
+              cd ../..
+            else
+              echo "::warning::Service $service does not exist yet, skipping coverage generation"
+            fi
+          done
+
+      # ─────────────────────────────────────────────────────────
+      # Frontend Setup & Coverage Generation
+      # ─────────────────────────────────────────────────────────
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: web-frontend/package-lock.json
+
+      - name: Install frontend dependencies and generate coverage
+        if: hashFiles('web-frontend/package.json') != ''
+        working-directory: ./web-frontend
+        run: |
+          npm ci
+          npm test -- --coverage --run || echo "::warning::Frontend tests failed or not configured"
+
+      # ─────────────────────────────────────────────────────────
+      # SonarCloud Scan
+      # ─────────────────────────────────────────────────────────
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          # Note: sonar-project.properties contains full multi-module configuration
+          # These args provide explicit overrides and debugging
+          args: >
+            -Dsonar.projectKey=nissimbuchs_BATbern2
+            -Dsonar.organization=nissimbuchs
+            -Dsonar.verbose=true
