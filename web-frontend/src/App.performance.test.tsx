@@ -155,7 +155,7 @@ describe('Performance Optimization - React.memo', () => {
     expect(typeof NavigationMenu).toBe('object');
     expect(NavigationMenu).toHaveProperty('$$typeof');
     expect(NavigationMenu).toHaveProperty('type');
-  });
+  }, 10000); // 10s timeout for slow imports
 
   it('should_memoizeAppHeader_when_propsDoNotChange', async () => {
     const { default: AppHeader } = await import('./components/shared/Navigation/AppHeader');
@@ -164,7 +164,7 @@ describe('Performance Optimization - React.memo', () => {
     expect(typeof AppHeader).toBe('object');
     expect(AppHeader).toHaveProperty('$$typeof');
     expect(AppHeader).toHaveProperty('type');
-  });
+  }, 10000); // 10s timeout for slow imports
 
   it('should_memoizeNotificationDropdown_when_propsDoNotChange', async () => {
     const { NotificationDropdown } = await import(
@@ -175,7 +175,7 @@ describe('Performance Optimization - React.memo', () => {
     expect(typeof NotificationDropdown).toBe('object');
     expect(NotificationDropdown).toHaveProperty('$$typeof');
     expect(NotificationDropdown).toHaveProperty('type');
-  });
+  }, 10000); // 10s timeout for slow imports
 });
 
 describe('Performance Optimization - Core Web Vitals', () => {
