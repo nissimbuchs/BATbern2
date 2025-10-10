@@ -17,7 +17,7 @@ vi.mock('react', async () => {
   const actual = await vi.importActual<typeof React>('react');
   return {
     ...actual,
-    lazy: vi.fn((factory: () => Promise<{ default: React.ComponentType<any> }>) => {
+    lazy: vi.fn((factory: () => Promise<{ default: React.ComponentType<unknown> }>) => {
       // Track which components are lazy loaded
       const component = originalLazy(factory);
       lazyComponents.push(factory.toString());
@@ -80,7 +80,7 @@ describe('Performance Optimization - Code Splitting', () => {
           )
       );
 
-      const { container } = render(
+      render(
         <React.Suspense fallback={<div>Loading...</div>}>
           <LazyComponent />
         </React.Suspense>
@@ -130,8 +130,9 @@ describe('Performance Optimization - Bundle Size', () => {
     const configStr = viteConfig || '';
 
     // Should split vendor chunks (react, react-dom, @mui)
-    expect(configStr).toContain('manualChunks') ||
-      expect(configStr).toContain('splitVendorChunkPlugin');
+    const hasVendorSplitting =
+      configStr.includes('manualChunks') || configStr.includes('splitVendorChunkPlugin');
+    expect(hasVendorSplitting).toBe(true);
   });
 
   it('should_compressAssets_when_buildingForProduction', async () => {
@@ -140,9 +141,9 @@ describe('Performance Optimization - Bundle Size', () => {
     const configStr = viteConfig || '';
 
     // Should have compression plugin (gzip or brotli)
-    expect(configStr).toContain('compress') ||
-      expect(configStr).toContain('gzip') ||
-      expect(configStr).toContain('brotli');
+    const hasCompression =
+      configStr.includes('compress') || configStr.includes('gzip') || configStr.includes('brotli');
+    expect(hasCompression).toBe(true);
   });
 });
 
