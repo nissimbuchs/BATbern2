@@ -377,6 +377,7 @@ jobs:
           REPO_ROOT=$(pwd)
           # Build each service that exists
           for service in event-management-service attendee-experience-service company-management-service partner-coordination-service speaker-coordination-service; do
+            cd "$REPO_ROOT"  # Return to repo root before checking
             if [ -d "services/$service" ]; then
               echo "Building services/$service..."
               cd "$REPO_ROOT/services/$service"
