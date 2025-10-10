@@ -362,13 +362,15 @@ jobs:
         working-directory: ./shared-kernel
         run: |
           chmod +x gradlew
-          ./gradlew clean test jacocoTestReport --no-daemon
+          # Compile and test to ensure classes exist for SonarCloud
+          ./gradlew clean compileJava test jacocoTestReport --no-daemon
 
       - name: Build api-gateway and generate coverage
         working-directory: ./api-gateway
         run: |
           chmod +x gradlew
-          ./gradlew clean test jacocoTestReport --no-daemon
+          # Compile and test to ensure classes exist for SonarCloud
+          ./gradlew clean compileJava test jacocoTestReport --no-daemon
 
       - name: Build services and generate coverage
         run: |
@@ -379,7 +381,8 @@ jobs:
               echo "Building services/$service..."
               cd "$REPO_ROOT/services/$service"
               chmod +x gradlew
-              ./gradlew clean test jacocoTestReport --no-daemon
+              # Always compile main classes (required for SonarCloud), then run tests if they exist
+              ./gradlew clean compileJava test jacocoTestReport --no-daemon
             else
               echo "::warning::Service $service does not exist yet, skipping coverage generation"
             fi
