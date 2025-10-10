@@ -23,10 +23,25 @@ run_with_timeout() {
     shift
     local COMMAND="$@"
 
-    timeout $TIMEOUT bash -c "$COMMAND" || {
-        echo -e "${RED}❌ Command timed out or failed: $COMMAND${NC}"
-        return 1
-    }
+    # Use gtimeout if available (macOS with coreutils), otherwise use timeout (Linux),
+    # or just run without timeout if neither is available
+    if command -v gtimeout &> /dev/null; then
+        gtimeout $TIMEOUT bash -c "$COMMAND" || {
+            echo -e "${RED}❌ Command timed out or failed: $COMMAND${NC}"
+            return 1
+        }
+    elif command -v timeout &> /dev/null; then
+        timeout $TIMEOUT bash -c "$COMMAND" || {
+            echo -e "${RED}❌ Command timed out or failed: $COMMAND${NC}"
+            return 1
+        }
+    else
+        # No timeout command available, just run the command
+        bash -c "$COMMAND" || {
+            echo -e "${RED}❌ Command failed: $COMMAND${NC}"
+            return 1
+        }
+    fi
 }
 
 echo -e "${BLUE}📊 Running full test suite...${NC}"
