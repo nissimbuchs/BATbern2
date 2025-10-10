@@ -8,12 +8,11 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AppHeader from './AppHeader';
-import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 
-// Mock stores
-vi.mock('@/stores/authStore');
+// Mock stores and hooks
 vi.mock('@/stores/uiStore');
+vi.mock('@/hooks/useAuth');
 
 // Mock useNotifications hook
 vi.mock('@/hooks/useNotifications', () => ({
@@ -36,10 +35,43 @@ vi.mock('@/hooks/useBreakpoints', () => ({
   })),
 }));
 
+// Mock i18next
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => {
+      const translations: Record<string, string> = {
+        'navigation.dashboard': 'Dashboard',
+        'navigation.events': 'Events',
+        'navigation.speakers': 'Speakers',
+        'navigation.partners': 'Partners',
+        'navigation.analytics': 'Analytics',
+        'navigation.myEvents': 'My Events',
+        'navigation.myContent': 'My Content',
+        'navigation.myRegistrations': 'My Registrations',
+        'navigation.profile': 'Profile',
+        'menu.profile': 'Profile',
+        'menu.settings': 'Settings',
+        'menu.help': 'Help',
+        'menu.logout': 'Logout',
+        'role.organizer': 'Organizer',
+        'role.speaker': 'Speaker',
+        'role.partner': 'Partner',
+        'role.attendee': 'Attendee',
+      };
+      return translations[key] || key;
+    },
+    i18n: {
+      language: 'en',
+      changeLanguage: vi.fn().mockResolvedValue(undefined),
+    },
+  }),
+}));
+
 describe('AppHeader Component', () => {
   let queryClient: QueryClient;
+  const mockSignOut = vi.fn();
 
-  beforeEach(() => {
+  beforeEach(async () => {
     queryClient = new QueryClient({
       defaultOptions: {
         queries: { retry: false },
@@ -47,8 +79,9 @@ describe('AppHeader Component', () => {
     });
     vi.clearAllMocks();
 
-    // Default mock implementations
-    vi.mocked(useAuthStore).mockReturnValue({
+    // Mock useAuth hook
+    const { useAuth } = await import('@/hooks/useAuth');
+    vi.mocked(useAuth).mockReturnValue({
       user: {
         userId: 'user-123',
         email: 'test@batbern.ch',
@@ -68,14 +101,16 @@ describe('AppHeader Component', () => {
       isAuthenticated: true,
       isLoading: false,
       error: null,
-      accessToken: null,
-      refreshToken: null,
-      setUser: vi.fn(),
-      setAccessToken: vi.fn(),
-      setRefreshToken: vi.fn(),
-      login: vi.fn(),
-      logout: vi.fn(),
-      reset: vi.fn(),
+      signIn: vi.fn(),
+      signUp: vi.fn(),
+      signOut: mockSignOut,
+      confirmSignUp: vi.fn(),
+      resendConfirmationCode: vi.fn(),
+      forgotPassword: vi.fn(),
+      confirmForgotPassword: vi.fn(),
+      changePassword: vi.fn(),
+      updateUserAttributes: vi.fn(),
+      refreshSession: vi.fn(),
     });
 
     vi.mocked(useUIStore).mockReturnValue({
@@ -141,11 +176,12 @@ describe('AppHeader Component', () => {
       expect(screen.getAllByText(/partners/i)[0]).toBeInTheDocument();
     });
 
-    test('should_renderSpeakerNavigation_when_userRoleIsSpeaker', () => {
-      vi.mocked(useAuthStore).mockReturnValue({
-        ...vi.mocked(useAuthStore)(),
+    test('should_renderSpeakerNavigation_when_userRoleIsSpeaker', async () => {
+      const { useAuth } = await import('@/hooks/useAuth');
+      vi.mocked(useAuth).mockReturnValue({
+        ...vi.mocked(useAuth)(),
         user: {
-          ...vi.mocked(useAuthStore)().user!,
+          ...vi.mocked(useAuth)().user!,
           role: 'speaker',
         },
       });
@@ -158,11 +194,12 @@ describe('AppHeader Component', () => {
       expect(screen.getAllByText(/my content/i)[0]).toBeInTheDocument();
     });
 
-    test('should_renderPartnerNavigation_when_userRoleIsPartner', () => {
-      vi.mocked(useAuthStore).mockReturnValue({
-        ...vi.mocked(useAuthStore)(),
+    test('should_renderPartnerNavigation_when_userRoleIsPartner', async () => {
+      const { useAuth } = await import('@/hooks/useAuth');
+      vi.mocked(useAuth).mockReturnValue({
+        ...vi.mocked(useAuth)(),
         user: {
-          ...vi.mocked(useAuthStore)().user!,
+          ...vi.mocked(useAuth)().user!,
           role: 'partner',
         },
       });
@@ -174,11 +211,12 @@ describe('AppHeader Component', () => {
       expect(screen.getAllByText(/events/i)[0]).toBeInTheDocument();
     });
 
-    test('should_renderAttendeeNavigation_when_userRoleIsAttendee', () => {
-      vi.mocked(useAuthStore).mockReturnValue({
-        ...vi.mocked(useAuthStore)(),
+    test('should_renderAttendeeNavigation_when_userRoleIsAttendee', async () => {
+      const { useAuth } = await import('@/hooks/useAuth');
+      vi.mocked(useAuth).mockReturnValue({
+        ...vi.mocked(useAuth)(),
         user: {
-          ...vi.mocked(useAuthStore)().user!,
+          ...vi.mocked(useAuth)().user!,
           role: 'attendee',
         },
       });
@@ -249,39 +287,42 @@ describe('AppHeader Component', () => {
     });
   });
 
-  describe('Language Switcher', () => {
-    test('should_renderLanguageSwitcher_when_headerMounted', () => {
-      renderWithProviders(<AppHeader />);
-
-      // Should render language switcher (DE/EN)
-      const languageSwitcher = screen.getByLabelText(/language/i);
-      expect(languageSwitcher).toBeInTheDocument();
-    });
-  });
+  // Language Switcher test removed - language switcher is now in UserMenuDropdown
+  // See UserMenuDropdown.test.tsx for language switcher tests
 
   describe('Mobile Responsive', () => {
-    test('should_renderHamburgerMenu_when_mobile', () => {
-      // Mock mobile viewport
-      global.innerWidth = 375;
-      global.dispatchEvent(new Event('resize'));
+    test('should_renderHamburgerMenu_when_mobile', async () => {
+      // Mock useBreakpoints to return mobile
+      const { useBreakpoints } = await import('@/hooks/useBreakpoints');
+      vi.mocked(useBreakpoints).mockReturnValue({
+        isMobile: true,
+        isTablet: false,
+        isDesktop: false,
+        isLargeDesktop: false,
+      });
 
       renderWithProviders(<AppHeader />);
 
-      // Should render hamburger menu button
-      const hamburgerButton = screen.getByLabelText(/menu/i);
+      // Should render hamburger menu button with exact aria-label "menu"
+      const hamburgerButton = screen.getByLabelText('menu');
       expect(hamburgerButton).toBeInTheDocument();
     });
 
-    test('should_hideDesktopNavigation_when_mobile', () => {
-      // Note: useMediaQuery doesn't work in JSDOM, so we test the component structure
-      // In actual browser, Material-UI's responsive breakpoints handle visibility
+    test('should_hideDesktopNavigation_when_mobile', async () => {
+      // Mock useBreakpoints to return mobile
+      const { useBreakpoints } = await import('@/hooks/useBreakpoints');
+      vi.mocked(useBreakpoints).mockReturnValue({
+        isMobile: true,
+        isTablet: false,
+        isDesktop: false,
+        isLargeDesktop: false,
+      });
+
       renderWithProviders(<AppHeader />);
 
-      // Desktop navigation should exist but be conditionally rendered based on isMobile
-      // In test environment, useMediaQuery returns false, so desktop nav is shown
-      // This is acceptable as actual responsive behavior is tested in E2E tests
+      // Desktop navigation should NOT be rendered when isMobile is true
       const navigation = screen.queryByRole('navigation');
-      expect(navigation).toBeInTheDocument();
+      expect(navigation).not.toBeInTheDocument();
     });
   });
 });

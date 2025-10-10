@@ -5,12 +5,12 @@
  * Tests semantic HTML, keyboard navigation, screen reader support, and color contrast.
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import { BaseLayout } from './BaseLayout';
-import { axe, toHaveNoViolations } from 'jest-axe';
+import { axe, toHaveNoViolations } from 'vitest-axe';
 import type { UserProfile } from '@/types/user';
 
 expect.extend(toHaveNoViolations);

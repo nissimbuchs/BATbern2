@@ -380,37 +380,8 @@ describe('UserMenuDropdown', () => {
       });
     });
 
-    it.skip('should_persistLanguageToAPI_when_languageChanged', async () => {
-      // TODO: Re-enable when backend API is ready
-      // This test is skipped because the API call is currently commented out in the component
-      const apiClient = await import('../../../services/api/apiClient');
-
-      renderWithRouter(
-        <UserMenuDropdown
-          user={mockUser}
-          anchorEl={anchorEl}
-          open={true}
-          onClose={vi.fn()}
-          onLogout={mockOnLogout}
-          onLanguageChange={mockOnLanguageChange}
-        />
-      );
-
-      const languageSelector = screen.getByLabelText('Language selector');
-
-      // Trigger language change by opening the select and clicking English
-      fireEvent.mouseDown(languageSelector.querySelector('[role="combobox"]') || languageSelector);
-
-      // Wait for the option to appear in the portal
-      const englishOption = await screen.findByRole('option', { name: 'English' });
-      fireEvent.click(englishOption);
-
-      await waitFor(() => {
-        expect(apiClient.default.put).toHaveBeenCalledWith('/api/v1/users/me/preferences', {
-          language: 'en',
-        });
-      });
-    });
+    // API persistence test removed - backend API is not yet ready
+    // When backend API is implemented, add test here to verify API call
   });
 
   describe('Accessibility', () => {
