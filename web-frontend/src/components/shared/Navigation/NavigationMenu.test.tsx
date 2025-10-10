@@ -7,7 +7,30 @@ import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { NavigationMenu } from './NavigationMenu';
-import type { UserRole } from '@/types/auth';
+
+// Mock i18next with actual translations
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => {
+      const translations: Record<string, string> = {
+        'navigation.dashboard': 'Dashboard',
+        'navigation.events': 'Events',
+        'navigation.speakers': 'Speakers',
+        'navigation.partners': 'Partners',
+        'navigation.analytics': 'Analytics',
+        'navigation.content': 'Content',
+        'navigation.profile': 'Profile',
+        'navigation.myEvents': 'My Events',
+        'navigation.myContent': 'My Content',
+        'navigation.myRegistrations': 'My Registrations',
+      };
+      return translations[key] || key;
+    },
+    i18n: {
+      language: 'en',
+    },
+  }),
+}));
 
 describe('NavigationMenu Component', () => {
   beforeEach(() => {
