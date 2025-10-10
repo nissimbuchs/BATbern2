@@ -16,7 +16,7 @@ import {
 } from '@mui/icons-material';
 
 export interface NavigationItem {
-  label: string;
+  labelKey: string;
   path: string;
   icon: typeof Dashboard;
   roles: UserRole[];
@@ -30,28 +30,28 @@ export interface NavigationItem {
 export const navigationConfig: NavigationItem[] = [
   // Organizer-specific items
   {
-    label: 'Events',
+    labelKey: 'navigation.events',
     path: '/organizer/events',
     icon: Event,
     roles: ['organizer'],
     description: 'Manage all events',
   },
   {
-    label: 'Speakers',
+    labelKey: 'navigation.speakers',
     path: '/organizer/speakers',
     icon: People,
     roles: ['organizer'],
     description: 'Manage speakers',
   },
   {
-    label: 'Partners',
+    labelKey: 'navigation.partners',
     path: '/organizer/partners',
     icon: Handshake,
     roles: ['organizer'],
     description: 'Manage partners',
   },
   {
-    label: 'Analytics',
+    labelKey: 'navigation.analytics',
     path: '/organizer/analytics',
     icon: BarChart,
     roles: ['organizer'],
@@ -60,28 +60,28 @@ export const navigationConfig: NavigationItem[] = [
 
   // Speaker-specific items
   {
-    label: 'Dashboard',
+    labelKey: 'navigation.dashboard',
     path: '/speaker/dashboard',
     icon: Dashboard,
     roles: ['speaker'],
     description: 'Speaker dashboard',
   },
   {
-    label: 'My Events',
+    labelKey: 'navigation.myEvents',
     path: '/speaker/events',
     icon: Event,
     roles: ['speaker'],
     description: 'Your assigned events',
   },
   {
-    label: 'My Content',
+    labelKey: 'navigation.myContent',
     path: '/speaker/content',
     icon: ContentPaste,
     roles: ['speaker'],
     description: 'Manage your content',
   },
   {
-    label: 'Profile',
+    labelKey: 'navigation.profile',
     path: '/speaker/profile',
     icon: Person,
     roles: ['speaker'],
@@ -90,28 +90,28 @@ export const navigationConfig: NavigationItem[] = [
 
   // Partner-specific items
   {
-    label: 'Dashboard',
+    labelKey: 'navigation.dashboard',
     path: '/partner/dashboard',
     icon: Dashboard,
     roles: ['partner'],
     description: 'Partner dashboard',
   },
   {
-    label: 'Events',
+    labelKey: 'navigation.events',
     path: '/partner/events',
     icon: Event,
     roles: ['partner'],
     description: 'View events',
   },
   {
-    label: 'Analytics',
+    labelKey: 'navigation.analytics',
     path: '/partner/analytics',
     icon: BarChart,
     roles: ['partner'],
     description: 'View analytics',
   },
   {
-    label: 'Profile',
+    labelKey: 'navigation.profile',
     path: '/partner/profile',
     icon: Person,
     roles: ['partner'],
@@ -120,21 +120,21 @@ export const navigationConfig: NavigationItem[] = [
 
   // Attendee-specific items
   {
-    label: 'Events',
+    labelKey: 'navigation.events',
     path: '/attendee/events',
     icon: Event,
     roles: ['attendee'],
     description: 'Browse events',
   },
   {
-    label: 'Speakers',
+    labelKey: 'navigation.speakers',
     path: '/attendee/speakers',
     icon: People,
     roles: ['attendee'],
     description: 'Browse speakers',
   },
   {
-    label: 'My Registrations',
+    labelKey: 'navigation.myRegistrations',
     path: '/attendee/registrations',
     icon: EventAvailable,
     roles: ['attendee'],

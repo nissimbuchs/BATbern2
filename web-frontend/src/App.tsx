@@ -10,7 +10,7 @@ import { CssBaseline, Box, CircularProgress, Typography, Button, Container } fro
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@hooks/useAuth';
-import { AuthenticatedLayout } from '@components/auth/AuthenticatedLayout';
+import { BaseLayout } from '@components/shared/Layout/BaseLayout';
 import {
   ProtectedRoute,
   SpeakerRoute,
@@ -57,7 +57,7 @@ const PageLoader = () => (
 
 // Layout wrapper for authenticated routes
 const AuthLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  return <AuthenticatedLayout>{children}</AuthenticatedLayout>;
+  return <BaseLayout>{children}</BaseLayout>;
 };
 
 // Login page component with navigation logic

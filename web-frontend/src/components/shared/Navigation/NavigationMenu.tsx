@@ -11,6 +11,7 @@
 import React from 'react';
 import { List, ListItem, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getNavigationForRole, isPathActive } from '@/config/navigationConfig';
 import type { UserRole } from '@/types/auth';
 
@@ -27,6 +28,7 @@ export const NavigationMenu = React.memo(function NavigationMenu({
   showText = true,
   variant = 'horizontal',
 }: NavigationMenuProps) {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigationItems = getNavigationForRole(userRole);
 
@@ -77,7 +79,7 @@ export const NavigationMenu = React.memo(function NavigationMenu({
                 </ListItemIcon>
                 {showText && (
                   <ListItemText
-                    primary={item.label}
+                    primary={t(item.labelKey)}
                     primaryTypographyProps={{
                       variant: 'body2',
                       sx: { fontWeight: active ? 600 : 400 },

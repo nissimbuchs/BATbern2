@@ -12,7 +12,10 @@
     "analytics": "Analytik",
     "content": "Inhaltssuche",
     "profile": "Profil",
-    "logout": "Abmelden"
+    "logout": "Abmelden",
+    "myEvents": "Meine Veranstaltungen",
+    "myContent": "Meine Inhalte",
+    "myRegistrations": "Meine Anmeldungen"
   },
   "actions": {
     "save": "Speichern",

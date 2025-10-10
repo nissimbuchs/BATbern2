@@ -13,73 +13,80 @@
 
 import { createTheme, ThemeOptions } from '@mui/material/styles';
 
-// Swiss Design Color Palette
+// Swiss Design Color Palette (Front-End Spec Section 6.2)
 const swissColors = {
-  // Primary: Swiss red (based on Swiss flag)
+  // Primary: Professional blue (Navigation, CTAs, organizer role)
   primary: {
-    main: '#FF0000',
-    light: '#FF3333',
-    dark: '#CC0000',
+    main: '#2C5F7C', // rgb(44, 95, 124) - AA contrast on white
+    light: '#4A90B8', // rgb(74, 144, 184) - Secondary blue, speaker role
+    dark: '#1A3A4D', // rgb(26, 58, 77) - Hover states, AAA contrast on white
     contrastText: '#FFFFFF',
   },
-  // Secondary: Neutral gray for balance
+  // Secondary: Professional blue for highlights and secondary actions
   secondary: {
-    main: '#2C2C2C',
-    light: '#4A4A4A',
-    dark: '#1A1A1A',
+    main: '#4A90B8', // rgb(74, 144, 184) - Speaker role indicator
+    light: '#6BAED6',
+    dark: '#2C5F7C',
+    contrastText: '#FFFFFF',
+  },
+  // Accent: Partner role indicator and important highlights
+  accent: {
+    main: '#E67E22', // rgb(230, 126, 34) - Partner role, AA contrast on white
+    light: '#F39C12',
+    dark: '#D35400',
     contrastText: '#FFFFFF',
   },
   // Error states
   error: {
-    main: '#D32F2F',
+    main: '#E74C3C', // rgb(231, 76, 60) - Front-End Spec
     light: '#EF5350',
     dark: '#C62828',
     contrastText: '#FFFFFF',
   },
   // Warning states
   warning: {
-    main: '#ED6C02',
-    light: '#FF9800',
+    main: '#F39C12', // rgb(243, 156, 18) - Front-End Spec
+    light: '#FFA726',
     dark: '#E65100',
-    contrastText: '#FFFFFF',
+    contrastText: '#000000',
   },
-  // Info states
+  // Info states (Attendee role indicator)
   info: {
-    main: '#0288D1',
-    light: '#03A9F4',
-    dark: '#01579B',
+    main: '#3498DB', // rgb(52, 152, 219) - Front-End Spec, attendee role
+    light: '#5DADE2',
+    dark: '#2874A6',
     contrastText: '#FFFFFF',
   },
   // Success states
   success: {
-    main: '#2E7D32',
+    main: '#27AE60', // rgb(39, 174, 96) - Front-End Spec
     light: '#4CAF50',
     dark: '#1B5E20',
     contrastText: '#FFFFFF',
   },
-  // Grayscale for text and backgrounds
+  // Grayscale for text and backgrounds (Front-End Spec Neutral colors)
   grey: {
     50: '#FAFAFA',
-    100: '#F5F5F5',
+    100: '#ECF0F1', // Neutral 100 from spec
     200: '#EEEEEE',
-    300: '#E0E0E0',
+    300: '#BDC3C7', // Neutral 300 from spec
     400: '#BDBDBD',
-    500: '#9E9E9E',
+    500: '#95A5A6', // Neutral 500 from spec
     600: '#757575',
-    700: '#616161',
+    700: '#7F8C8D', // Neutral 700 from spec
     800: '#424242',
-    900: '#212121',
+    900: '#34495E', // Neutral 900 from spec - primary text
   },
   // Background colors
   background: {
     default: '#FFFFFF',
     paper: '#FAFAFA',
   },
-  // Text colors
+  // Text colors (Front-End Spec)
   text: {
-    primary: '#212121',
-    secondary: '#616161',
-    disabled: '#9E9E9E',
+    primary: '#34495E', // Neutral 900 - AAA contrast on white
+    secondary: '#7F8C8D', // Neutral 700 - AA contrast on white
+    disabled: '#95A5A6', // Neutral 500
   },
 };
 
@@ -300,6 +307,8 @@ const themeOptions: ThemeOptions = {
     grey: swissColors.grey,
     background: swissColors.background,
     text: swissColors.text,
+    // @ts-expect-error - Custom accent color for partner role
+    accent: swissColors.accent,
   },
   typography: swissTypography,
   spacing,

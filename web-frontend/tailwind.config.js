@@ -8,29 +8,54 @@ export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
-      // Swiss Design Color Palette (matching Material-UI theme)
+      // Swiss Design Color Palette (Front-End Spec Section 6.2)
       colors: {
         primary: {
-          DEFAULT: '#FF0000',
-          light: '#FF3333',
-          dark: '#CC0000',
+          DEFAULT: '#2C5F7C', // Professional blue
+          light: '#4A90B8',
+          dark: '#1A3A4D',
         },
         secondary: {
-          DEFAULT: '#2C2C2C',
-          light: '#4A4A4A',
-          dark: '#1A1A1A',
+          DEFAULT: '#4A90B8', // Secondary blue
+          light: '#6BAED6',
+          dark: '#2C5F7C',
+        },
+        accent: {
+          DEFAULT: '#E67E22', // Partner role, important highlights
+          light: '#F39C12',
+          dark: '#D35400',
+        },
+        success: {
+          DEFAULT: '#27AE60',
+          light: '#4CAF50',
+          dark: '#1B5E20',
+        },
+        warning: {
+          DEFAULT: '#F39C12',
+          light: '#FFA726',
+          dark: '#E65100',
+        },
+        error: {
+          DEFAULT: '#E74C3C',
+          light: '#EF5350',
+          dark: '#C62828',
+        },
+        info: {
+          DEFAULT: '#3498DB', // Attendee role
+          light: '#5DADE2',
+          dark: '#2874A6',
         },
         gray: {
           50: '#FAFAFA',
-          100: '#F5F5F5',
+          100: '#ECF0F1', // Neutral 100 from spec
           200: '#EEEEEE',
-          300: '#E0E0E0',
+          300: '#BDC3C7', // Neutral 300 from spec
           400: '#BDBDBD',
-          500: '#9E9E9E',
+          500: '#95A5A6', // Neutral 500 from spec
           600: '#757575',
-          700: '#616161',
+          700: '#7F8C8D', // Neutral 700 from spec
           800: '#424242',
-          900: '#212121',
+          900: '#34495E', // Neutral 900 from spec
         },
       },
       // Swiss Typography (matching Material-UI theme)

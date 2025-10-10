@@ -18,7 +18,7 @@ import HelpIcon from '@mui/icons-material/Help';
 import LogoutIcon from '@mui/icons-material/Logout';
 import LanguageIcon from '@mui/icons-material/Language';
 import { UserContext } from '../../../types/auth';
-import apiClient from '../../../services/api/apiClient';
+// import apiClient from '../../../services/api/apiClient'; // TODO: Re-enable when backend is ready
 
 interface UserMenuDropdownProps {
   user: UserContext;
@@ -74,14 +74,15 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
     document.documentElement.lang = newLang;
     localStorage.setItem('batbern-language', newLang);
 
+    // TODO: Re-enable when backend API is ready
     // Persist to API
-    try {
-      await apiClient.put('/api/v1/users/me/preferences', {
-        language: newLang,
-      });
-    } catch (error) {
-      console.error('Failed to persist language preference:', error);
-    }
+    // try {
+    //   await apiClient.put('/api/v1/users/me/preferences', {
+    //     language: newLang,
+    //   });
+    // } catch (error) {
+    //   console.error('Failed to persist language preference:', error);
+    // }
 
     // Notify parent
     onLanguageChange(newLang);
@@ -104,7 +105,7 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
           {user.email}
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          {t(`common.role.${user.role}`)}
+          {t(`role.${user.role}`)}
         </Typography>
       </Box>
 
@@ -115,7 +116,7 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
         <ListItemIcon>
           <PersonIcon fontSize="small" />
         </ListItemIcon>
-        <ListItemText>{t('common.menu.profile')}</ListItemText>
+        <ListItemText>{t('menu.profile')}</ListItemText>
       </MenuItem>
 
       {/* Settings Menu Item */}
@@ -123,18 +124,8 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
         <ListItemIcon>
           <SettingsIcon fontSize="small" />
         </ListItemIcon>
-        <ListItemText>{t('common.menu.settings')}</ListItemText>
+        <ListItemText>{t('menu.settings')}</ListItemText>
       </MenuItem>
-
-      {/* Help Menu Item */}
-      <MenuItem onClick={handleHelpClick} role="menuitem">
-        <ListItemIcon>
-          <HelpIcon fontSize="small" />
-        </ListItemIcon>
-        <ListItemText>{t('common.menu.help')}</ListItemText>
-      </MenuItem>
-
-      <Divider />
 
       {/* Language Switcher */}
       <Box sx={{ px: 2, py: 1.5 }}>
@@ -147,11 +138,21 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
             sx={{ minWidth: 100 }}
             aria-label="Language selector"
           >
-            <MenuItem value="de">DE</MenuItem>
-            <MenuItem value="en">EN</MenuItem>
+            <MenuItem value="de">Deutsch</MenuItem>
+            <MenuItem value="en">English</MenuItem>
           </Select>
         </Box>
       </Box>
+
+      <Divider />
+
+      {/* Help Menu Item */}
+      <MenuItem onClick={handleHelpClick} role="menuitem">
+        <ListItemIcon>
+          <HelpIcon fontSize="small" />
+        </ListItemIcon>
+        <ListItemText>{t('menu.help')}</ListItemText>
+      </MenuItem>
 
       <Divider />
 
@@ -160,7 +161,7 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
         <ListItemIcon>
           <LogoutIcon fontSize="small" />
         </ListItemIcon>
-        <ListItemText>{t('common.menu.logout')}</ListItemText>
+        <ListItemText>{t('menu.logout')}</ListItemText>
       </MenuItem>
     </Menu>
   );

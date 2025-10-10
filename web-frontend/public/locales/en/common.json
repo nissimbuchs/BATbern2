@@ -12,7 +12,10 @@
     "analytics": "Analytics",
     "content": "Content Search",
     "profile": "Profile",
-    "logout": "Logout"
+    "logout": "Logout",
+    "myEvents": "My Events",
+    "myContent": "My Content",
+    "myRegistrations": "My Registrations"
   },
   "actions": {
     "save": "Save",

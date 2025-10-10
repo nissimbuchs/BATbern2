@@ -9,16 +9,19 @@
  */
 
 import React, { useState } from 'react';
-import { AppBar, Box, Toolbar, IconButton, Badge, Avatar, Typography } from '@mui/material';
-import { Menu, Notifications, Language } from '@mui/icons-material';
+import { AppBar, Box, Toolbar, IconButton, Badge, Avatar } from '@mui/material';
+import { Menu, Notifications } from '@mui/icons-material';
 import { NavigationMenu } from './NavigationMenu';
 import { MobileDrawer } from './MobileDrawer';
-import { useAuthStore } from '@/stores/authStore';
+import UserMenuDropdown from './UserMenuDropdown';
 import { useUIStore } from '@/stores/uiStore';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
+import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 import type { UserProfile } from '@/types/user';
 import type { NotificationsResponse } from '@/types/notification';
+import type { UserContext } from '@/types/auth';
 
 interface AppHeaderProps {
   user?: UserProfile;
@@ -33,11 +36,13 @@ const AppHeader = React.memo(function AppHeader({
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [notificationMenuOpen, setNotificationMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [userMenuAnchorEl, setUserMenuAnchorEl] = useState<null | HTMLElement>(null);
 
   // Use props if provided, otherwise fall back to stores/hooks
-  const { user: storeUser } = useAuthStore();
+  const { user: storeUser, signOut } = useAuth();
   const { setNotificationDrawerOpen, setUserMenuOpen: setUserMenuOpenState } = useUIStore();
   const { data: hookNotificationsData } = useNotifications();
+  const navigate = useNavigate();
 
   const user = userProp || storeUser;
   const notificationsData = notificationsProp || hookNotificationsData;
@@ -51,9 +56,26 @@ const AppHeader = React.memo(function AppHeader({
     setNotificationDrawerOpen(true);
   };
 
-  const handleUserMenuClick = () => {
-    setUserMenuOpen(!userMenuOpen);
+  const handleUserMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+    setUserMenuAnchorEl(event.currentTarget);
+    setUserMenuOpen(true);
     setUserMenuOpenState(true);
+  };
+
+  const handleUserMenuClose = () => {
+    setUserMenuAnchorEl(null);
+    setUserMenuOpen(false);
+    setUserMenuOpenState(false);
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/login', { replace: true });
+  };
+
+  const handleLanguageChange = (language: 'de' | 'en') => {
+    // Language change is handled inside UserMenuDropdown
+    console.log('[AppHeader] Language changed to:', language);
   };
 
   const handleMobileMenuToggle = () => {
@@ -94,25 +116,10 @@ const AppHeader = React.memo(function AppHeader({
           {/* Logo */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mr: 4 }}>
             <img
-              src="/logo.svg"
+              src="/BATbern_color_logo.svg"
               alt="BATbern"
-              style={{ height: 40, width: 40 }}
-              onError={(e) => {
-                // Fallback if logo doesn't exist
-                e.currentTarget.style.display = 'none';
-              }}
+              style={{ height: 40, width: 'auto' }}
             />
-            {!isMobile && (
-              <Typography
-                variant="h6"
-                component="div"
-                sx={{
-                  fontWeight: 700,
-                }}
-              >
-                BATbern
-              </Typography>
-            )}
           </Box>
 
           {/* Desktop/Tablet Navigation */}
@@ -124,13 +131,8 @@ const AppHeader = React.memo(function AppHeader({
 
           <Box sx={{ flex: 1, display: { xs: 'block', md: 'none' } }} />
 
-          {/* Right Section: Language, Notifications, User Menu */}
+          {/* Right Section: Notifications, User Menu */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {/* Language Switcher */}
-            <IconButton color="inherit" aria-label="language">
-              <Language />
-            </IconButton>
-
             {/* Notifications */}
             <IconButton
               color="inherit"
@@ -195,6 +197,18 @@ const AppHeader = React.memo(function AppHeader({
           onClose={() => setMobileDrawerOpen(false)}
           userRole={currentRole}
           userEmail={user.email}
+        />
+      )}
+
+      {/* User Menu Dropdown */}
+      {user && (
+        <UserMenuDropdown
+          user={user as UserContext}
+          anchorEl={userMenuAnchorEl}
+          open={userMenuOpen}
+          onClose={handleUserMenuClose}
+          onLogout={handleLogout}
+          onLanguageChange={handleLanguageChange}
         />
       )}
     </>
