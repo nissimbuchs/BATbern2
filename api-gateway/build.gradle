@@ -48,7 +48,7 @@ dependencies {
 
     // Monitoring & Logging
     implementation 'io.micrometer:micrometer-registry-prometheus'
-    implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
+    implementation 'net.logstash.logback:logstash-logback-encoder:8.1'
 
     // CloudWatch Logging
     implementation 'software.amazon.awssdk:cloudwatchlogs'
