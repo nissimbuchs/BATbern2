@@ -12,7 +12,7 @@ import org.springframework.http.ResponseEntity;
 
 import java.util.Map;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(MockitoExtension.class)
 class ResponseStandardizerTest {

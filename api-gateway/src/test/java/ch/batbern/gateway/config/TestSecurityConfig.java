@@ -11,11 +11,19 @@ import org.springframework.security.oauth2.jwt.JwtException;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.*;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.CodeDeliveryDetailsType;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.DeliveryMediumType;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.ForgotPasswordRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.ForgotPasswordResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.UserNotFoundException;
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient;
-import software.amazon.awssdk.services.cloudwatchlogs.model.*;
+import software.amazon.awssdk.services.cloudwatchlogs.model.CreateLogGroupRequest;
+import software.amazon.awssdk.services.cloudwatchlogs.model.CreateLogGroupResponse;
+import software.amazon.awssdk.services.cloudwatchlogs.model.CreateLogStreamRequest;
+import software.amazon.awssdk.services.cloudwatchlogs.model.CreateLogStreamResponse;
+import software.amazon.awssdk.services.cloudwatchlogs.model.PutLogEventsRequest;
+import software.amazon.awssdk.services.cloudwatchlogs.model.PutLogEventsResponse;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -99,7 +107,8 @@ public class TestSecurityConfig {
                         .build())
                 .build();
 
-        org.mockito.Mockito.when(mockClient.forgotPassword(org.mockito.ArgumentMatchers.any(ForgotPasswordRequest.class)))
+        org.mockito.Mockito.when(mockClient.forgotPassword(
+                org.mockito.ArgumentMatchers.any(ForgotPasswordRequest.class)))
                 .thenAnswer(invocation -> {
                     ForgotPasswordRequest request = invocation.getArgument(0);
                     if (request.username().contains("nonexistent")) {
@@ -138,14 +147,18 @@ public class TestSecurityConfig {
     public CloudWatchLogsClient mockCloudWatchLogsClient() {
         CloudWatchLogsClient mockClient = org.mockito.Mockito.mock(CloudWatchLogsClient.class);
 
-        org.mockito.Mockito.when(mockClient.createLogGroup(org.mockito.ArgumentMatchers.any(CreateLogGroupRequest.class)))
+        org.mockito.Mockito.when(mockClient.createLogGroup(
+                org.mockito.ArgumentMatchers.any(CreateLogGroupRequest.class)))
                 .thenReturn(CreateLogGroupResponse.builder().build());
 
-        org.mockito.Mockito.when(mockClient.createLogStream(org.mockito.ArgumentMatchers.any(CreateLogStreamRequest.class)))
+        org.mockito.Mockito.when(mockClient.createLogStream(
+                org.mockito.ArgumentMatchers.any(CreateLogStreamRequest.class)))
                 .thenReturn(CreateLogStreamResponse.builder().build());
 
-        org.mockito.Mockito.when(mockClient.putLogEvents(org.mockito.ArgumentMatchers.any(PutLogEventsRequest.class)))
-                .thenReturn(PutLogEventsResponse.builder().nextSequenceToken("test-sequence-token").build());
+        org.mockito.Mockito.when(mockClient.putLogEvents(
+                org.mockito.ArgumentMatchers.any(PutLogEventsRequest.class)))
+                .thenReturn(PutLogEventsResponse.builder()
+                        .nextSequenceToken("test-sequence-token").build());
 
         return mockClient;
     }

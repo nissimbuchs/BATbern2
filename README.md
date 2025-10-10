@@ -38,7 +38,7 @@ git clone https://github.com/nisimbuchs/BATbern2.git
 cd BATbern
 
 # Generate environment configuration from AWS
-AWS_PROFILE=batbern-mgmt ./scripts/dev/setup-env.sh
+./scripts/config/sync-backend-config.sh development
 
 # Start all services with Docker Compose
 docker-compose up -d
@@ -106,7 +106,7 @@ docker exec -it batbern-redis redis-cli
 AWS_PROFILE=batbern-mgmt psql -h $(grep DB_HOST .env | cut -d '=' -f2) -U postgres -d batbern
 
 # Regenerate .env from AWS (after infrastructure changes)
-AWS_PROFILE=batbern-mgmt ./scripts/dev/setup-env.sh
+./scripts/config/sync-backend-config.sh development
 
 # Clean up local services (keeps AWS infrastructure)
 docker-compose down -v

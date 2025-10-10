@@ -53,7 +53,8 @@ export function useAuth(): UseAuthReturn {
             isLoading: false,
           }));
         }
-      } catch (error) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (_error) {
         setState((prev) => ({
           ...prev,
           isLoading: false,
@@ -72,12 +73,20 @@ export function useAuth(): UseAuthReturn {
    * Sign in user
    */
   const signIn = useCallback(async (credentials: LoginCredentials): Promise<boolean> => {
+    console.log('[useAuth] signIn called');
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
+      console.log('[useAuth] Calling authService.signIn');
       const result = await authService.signIn(credentials);
+      console.log('[useAuth] authService.signIn result:', {
+        success: result.success,
+        hasUser: !!result.user,
+        error: result.error,
+      });
 
       if (result.success && result.user) {
+        console.log('[useAuth] Sign in successful, updating state');
         setState({
           isAuthenticated: true,
           isLoading: false,
@@ -87,6 +96,7 @@ export function useAuth(): UseAuthReturn {
         });
         return true;
       } else {
+        console.log('[useAuth] Sign in failed:', result.error);
         setState((prev) => ({
           ...prev,
           isLoading: false,
@@ -97,13 +107,14 @@ export function useAuth(): UseAuthReturn {
         }));
         return false;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      console.error('[useAuth] Exception during sign in:', error);
       setState((prev) => ({
         ...prev,
         isLoading: false,
         error: {
           code: 'SIGN_IN_ERROR',
-          message: error.message || 'An error occurred during sign in',
+          message: error instanceof Error ? error.message : 'An error occurred during sign in',
         },
       }));
       return false;
@@ -125,13 +136,13 @@ export function useAuth(): UseAuthReturn {
         error: null,
         accessToken: null,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       setState((prev) => ({
         ...prev,
         isLoading: false,
         error: {
           code: 'SIGN_OUT_ERROR',
-          message: error.message || 'An error occurred during sign out',
+          message: error instanceof Error ? error.message : 'An error occurred during sign out',
         },
       }));
     }
@@ -153,13 +164,13 @@ export function useAuth(): UseAuthReturn {
       }));
 
       return result.success;
-    } catch (error: any) {
+    } catch (error: unknown) {
       setState((prev) => ({
         ...prev,
         isLoading: false,
         error: {
           code: 'SIGN_UP_ERROR',
-          message: error.message || 'An error occurred during sign up',
+          message: error instanceof Error ? error.message : 'An error occurred during sign up',
         },
       }));
       return false;
@@ -181,7 +192,8 @@ export function useAuth(): UseAuthReturn {
         return true;
       }
       return false;
-    } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_error) {
       return false;
     }
   }, []);

@@ -1,15 +1,17 @@
 /**
  * API Client Tests
  * Story 1.2.1: QA Fix - API Client Interceptor Coverage
+ * Story 1.17 QA Fix: SEC-001 (secure token storage), SEC-002 (correlation IDs)
  *
  * Tests for axios interceptors:
  * - Accept-Language header injection
- * - Authorization token retrieval from storage
+ * - Authorization token retrieval from AWS Amplify
+ * - X-Correlation-ID header generation
  * - Error response handling (401/403/500)
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import axios, { AxiosError } from 'axios';
+import { AxiosError } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import apiClient from './apiClient';
 import i18n from '@/i18n/config';
@@ -21,14 +23,22 @@ vi.mock('@/i18n/config', () => ({
   },
 }));
 
+// Mock AWS Amplify auth
+vi.mock('aws-amplify/auth', () => ({
+  fetchAuthSession: vi.fn(),
+}));
+
+import { fetchAuthSession } from 'aws-amplify/auth';
+
+interface I18nMock {
+  language: string;
+}
+
 describe('API Client', () => {
   let mockAxios: MockAdapter;
 
   beforeEach(() => {
     mockAxios = new MockAdapter(apiClient);
-    // Clear storage before each test
-    localStorage.clear();
-    sessionStorage.clear();
     // Clear mock calls
     vi.clearAllMocks();
   });
@@ -40,7 +50,7 @@ describe('API Client', () => {
   describe('Request Interceptor', () => {
     it('should_addAcceptLanguageHeader_when_requestMade', async () => {
       // Mock i18n language
-      (i18n as any).language = 'de';
+      (i18n as I18nMock).language = 'de';
 
       mockAxios.onGet('/test').reply((config) => {
         expect(config.headers?.['Accept-Language']).toBe('de');
@@ -52,7 +62,7 @@ describe('API Client', () => {
 
     it('should_changeAcceptLanguageHeader_when_languageChanged', async () => {
       // Test with English
-      (i18n as any).language = 'en';
+      (i18n as I18nMock).language = 'en';
 
       mockAxios.onGet('/test').reply((config) => {
         expect(config.headers?.['Accept-Language']).toBe('en');
@@ -62,34 +72,37 @@ describe('API Client', () => {
       await apiClient.get('/test');
     });
 
-    it('should_addAuthorizationHeader_when_tokenInSessionStorage', async () => {
-      sessionStorage.setItem('accessToken', 'session-token-123');
+    it('should_addAuthorizationHeader_when_amplifySessionHasToken', async () => {
+      // Mock AWS Amplify fetchAuthSession to return a token
+      vi.mocked(fetchAuthSession).mockResolvedValue({
+        tokens: {
+          accessToken: {
+            toString: () => 'amplify-token-123',
+          },
+        },
+      } as any);
 
       mockAxios.onGet('/test').reply((config) => {
-        expect(config.headers?.['Authorization']).toBe('Bearer session-token-123');
+        expect(config.headers?.['Authorization']).toBe('Bearer amplify-token-123');
         return [200, { success: true }];
       });
 
       await apiClient.get('/test');
     });
 
-    it('should_addAuthorizationHeader_when_tokenInLocalStorage', async () => {
-      localStorage.setItem('accessToken', 'local-token-456');
+    it('should_addCorrelationIdHeader_when_requestMade', async () => {
+      // Mock AWS Amplify - no token
+      vi.mocked(fetchAuthSession).mockResolvedValue({
+        tokens: undefined,
+      } as any);
 
       mockAxios.onGet('/test').reply((config) => {
-        expect(config.headers?.['Authorization']).toBe('Bearer local-token-456');
-        return [200, { success: true }];
-      });
-
-      await apiClient.get('/test');
-    });
-
-    it('should_preferSessionStorage_when_tokenInBothStorages', async () => {
-      sessionStorage.setItem('accessToken', 'session-token');
-      localStorage.setItem('accessToken', 'local-token');
-
-      mockAxios.onGet('/test').reply((config) => {
-        expect(config.headers?.['Authorization']).toBe('Bearer session-token');
+        expect(config.headers?.['X-Correlation-ID']).toBeDefined();
+        expect(typeof config.headers?.['X-Correlation-ID']).toBe('string');
+        // Should be a valid UUID format
+        expect(config.headers?.['X-Correlation-ID']).toMatch(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+        );
         return [200, { success: true }];
       });
 
@@ -97,6 +110,11 @@ describe('API Client', () => {
     });
 
     it('should_notAddAuthorizationHeader_when_noToken', async () => {
+      // Mock AWS Amplify - no tokens available
+      vi.mocked(fetchAuthSession).mockResolvedValue({
+        tokens: undefined,
+      } as any);
+
       mockAxios.onGet('/test').reply((config) => {
         expect(config.headers?.['Authorization']).toBeUndefined();
         return [200, { success: true }];
@@ -108,33 +126,43 @@ describe('API Client', () => {
 
   describe('Response Interceptor - Error Handling', () => {
     it('should_handleUnauthorizedError_when_401Received', async () => {
-      // Mock window.location.href
-      const originalLocation = window.location;
-      delete (window as any).location;
-      window.location = { ...originalLocation, href: '' } as Location;
+      // Mock AWS Amplify
+      vi.mocked(fetchAuthSession).mockResolvedValue({
+        tokens: undefined,
+      } as any);
 
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       mockAxios.onGet('/protected').reply(401, { message: 'Unauthorized' });
 
       try {
         await apiClient.get('/protected');
       } catch (error) {
-        expect(window.location.href).toBe('/login');
+        // Should log with correlation ID
+        expect(consoleErrorSpy).toHaveBeenCalled();
+        const callArgs = consoleErrorSpy.mock.calls[0][0];
+        expect(callArgs).toMatch(/\[.*\] Unauthorized - session expired/);
         expect((error as AxiosError).response?.status).toBe(401);
       }
 
-      // Restore
-      window.location = originalLocation;
+      consoleErrorSpy.mockRestore();
     });
 
     it('should_handleForbiddenError_when_403Received', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      // Mock AWS Amplify
+      vi.mocked(fetchAuthSession).mockResolvedValue({
+        tokens: undefined,
+      } as any);
 
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       mockAxios.onGet('/admin').reply(403, { message: 'Forbidden' });
 
       try {
         await apiClient.get('/admin');
       } catch (error) {
-        expect(consoleErrorSpy).toHaveBeenCalledWith('Forbidden: Insufficient permissions');
+        // Should log with correlation ID
+        expect(consoleErrorSpy).toHaveBeenCalled();
+        const callArgs = consoleErrorSpy.mock.calls[0][0];
+        expect(callArgs).toMatch(/\[.*\] Forbidden: Insufficient permissions/);
         expect((error as AxiosError).response?.status).toBe(403);
       }
 
@@ -142,14 +170,21 @@ describe('API Client', () => {
     });
 
     it('should_handleServerError_when_500Received', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      // Mock AWS Amplify
+      vi.mocked(fetchAuthSession).mockResolvedValue({
+        tokens: undefined,
+      } as any);
 
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       mockAxios.onGet('/data').reply(500, { message: 'Internal Server Error' });
 
       try {
         await apiClient.get('/data');
       } catch (error) {
-        expect(consoleErrorSpy).toHaveBeenCalledWith('Server error occurred');
+        // Should log with correlation ID
+        expect(consoleErrorSpy).toHaveBeenCalled();
+        const callArgs = consoleErrorSpy.mock.calls[0][0];
+        expect(callArgs).toMatch(/\[.*\] Server error occurred/);
         expect((error as AxiosError).response?.status).toBe(500);
       }
 
@@ -157,6 +192,11 @@ describe('API Client', () => {
     });
 
     it('should_passThrough2xxResponses_when_successful', async () => {
+      // Mock AWS Amplify
+      vi.mocked(fetchAuthSession).mockResolvedValue({
+        tokens: undefined,
+      } as any);
+
       mockAxios.onGet('/data').reply(200, { data: 'test' });
 
       const response = await apiClient.get('/data');
@@ -166,6 +206,12 @@ describe('API Client', () => {
     });
 
     it('should_rejectWithError_when_networkErrorOccurs', async () => {
+      // Mock AWS Amplify
+      vi.mocked(fetchAuthSession).mockResolvedValue({
+        tokens: undefined,
+      } as any);
+
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       mockAxios.onGet('/data').networkError();
 
       try {
@@ -174,7 +220,11 @@ describe('API Client', () => {
       } catch (error) {
         expect(error).toBeDefined();
         expect((error as AxiosError).message).toContain('Network Error');
+        // Should log network error with correlation ID
+        expect(consoleErrorSpy).toHaveBeenCalled();
       }
+
+      consoleErrorSpy.mockRestore();
     });
   });
 

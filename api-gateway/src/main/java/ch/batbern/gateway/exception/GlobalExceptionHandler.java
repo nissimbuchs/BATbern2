@@ -119,6 +119,10 @@ public class GlobalExceptionHandler {
                 log.error("Domain exception [{}] - {}: {}",
                     correlationId, ex.getErrorCode(), ex.getMessage(), ex);
                 break;
+            default:
+                log.warn("Unknown severity level for exception [{}]: {}",
+                    correlationId, ex.getMessage());
+                break;
         }
     }
 
@@ -129,7 +133,9 @@ public class GlobalExceptionHandler {
     }
 
     private Map<String, Object> sanitizeDetails(Map<String, Object> details) {
-        if (details == null) return null;
+        if (details == null) {
+            return null;
+        }
 
         Map<String, Object> sanitized = new HashMap<>(details);
         // Remove sensitive fields

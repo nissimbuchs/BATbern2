@@ -10,3 +10,10 @@ package-lock.json
 .prettierignore
 .eslintrc.cjs
 .eslintignore
+*.ico
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.webp

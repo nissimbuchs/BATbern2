@@ -418,5 +418,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
+          # Note: sonar-project.properties contains full multi-module configuration
+          # These args provide explicit overrides and debugging
           args: >
+            -Dsonar.projectKey=nissimbuchs_BATbern2
+            -Dsonar.organization=nissimbuchs
             -Dsonar.verbose=true
