@@ -33,7 +33,6 @@ aws:
   cognito:
     userPoolId: ${COGNITO_USER_POOL_ID}
     region: ${AWS_REGION:eu-central-1}
-    appClientId: ${COGNITO_CLIENT_ID}
     userPoolClientId: ${COGNITO_CLIENT_ID}
 
 logging:

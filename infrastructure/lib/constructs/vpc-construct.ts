@@ -1,4 +1,5 @@
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as logs from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
 import * as cdk from 'aws-cdk-lib';
 
@@ -26,6 +27,13 @@ export class VpcConstruct extends Construct {
 
   constructor(scope: Construct, id: string, props: VpcConstructProps) {
     super(scope, id);
+
+    // Create log group for VPC custom resource Lambda
+    const customResourceLogGroup = new logs.LogGroup(this, 'CustomResourceLogGroup', {
+      logGroupName: `/aws/lambda/BATbern-${props.envName}/vpc-restrict-default-sg`,
+      retention: logs.RetentionDays.ONE_WEEK,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
 
     // Create VPC with standardized subnet configuration
     this.vpc = new ec2.Vpc(this, 'VPC', {

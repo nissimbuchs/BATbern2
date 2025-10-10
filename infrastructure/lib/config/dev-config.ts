@@ -11,7 +11,7 @@ export const devConfig: EnvironmentConfig = {
   account: '954163570305', // BATbern Development account
   vpc: {
     cidr: '10.0.0.0/16',
-    maxAzs: 2, // 2 AZs required for RDS subnet group (AWS requirement)
+    maxAzs: 2, // Minimum 2 AZs required for RDS subnet groups
     natGateways: 1, // Single NAT Gateway for cost optimization
   },
   rds: {

@@ -166,6 +166,8 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     vpc: networkStack.vpc,
     databaseEndpoint: databaseStack.databaseEndpoint,
     cacheEndpoint: databaseStack.cacheEndpoint,
+    userPool: cognitoStack.userPool,
+    userPoolClient: cognitoStack.userPoolClient,
     env,
     description: `BATbern Microservices (ECS Fargate) - ${config.envName}`,
     tags: config.tags,
@@ -173,6 +175,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   microservicesStack.addDependency(networkStack);
   microservicesStack.addDependency(databaseStack);
   microservicesStack.addDependency(cicdStack); // Depends on ECR repositories
+  microservicesStack.addDependency(cognitoStack); // Depends on Cognito for user pool ID
 }
 
 // 11. API Gateway Stack (AWS API Gateway proxy to Spring Boot API Gateway)
