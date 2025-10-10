@@ -1,19 +1,4 @@
 services:
-  redis:
-    image: redis:7.2-alpine
-    container_name: batbern-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-    networks:
-      - batbern-network
-
   api-gateway:
     build:
       context: ./api-gateway
@@ -27,6 +12,9 @@ services:
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-local}
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
 
+      # Application Configuration
+      - APP_ENVIRONMENT=development
+
       # AWS Configuration
       - AWS_REGION=${AWS_REGION:-eu-central-1}
 
@@ -38,10 +26,6 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DATABASE_URL=${DATABASE_URL}
 
-      # Redis Configuration (Local Container)
-      - REDIS_HOST=${REDIS_HOST:-redis}
-      - REDIS_PORT=${REDIS_PORT:-6379}
-
       # Cognito Configuration (AWS)
       - COGNITO_USER_POOL_ID=${COGNITO_USER_POOL_ID}
       - COGNITO_CLIENT_ID=${COGNITO_CLIENT_ID}
@@ -51,9 +35,6 @@ services:
     volumes:
       - .:/workspace
       - gradle-cache:/root/.gradle
-    depends_on:
-      redis:
-        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 30s
@@ -71,15 +52,10 @@ services:
     ports:
       - "3000:3000"
     environment:
-      # API Configuration
-      - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:8080}
-
-      # AWS Configuration
-      - VITE_AWS_REGION=${VITE_AWS_REGION:-eu-central-1}
-
-      # Cognito Configuration (AWS)
-      - VITE_COGNITO_USER_POOL_ID=${VITE_COGNITO_USER_POOL_ID}
-      - VITE_COGNITO_CLIENT_ID=${VITE_COGNITO_CLIENT_ID}
+      # NO VITE_ variables needed!
+      # Frontend loads runtime config from http://localhost:8080/api/v1/config
+      # This enables "build once, deploy everywhere"
+      - NODE_ENV=development
     volumes:
       - ./web-frontend:/app
       - /app/node_modules
@@ -90,8 +66,6 @@ services:
       - batbern-network
 
 volumes:
-  redis-data:
-    driver: local
   gradle-cache:
     driver: local
 

@@ -88,7 +88,8 @@ public class AuditLogger {
         private final String clientIp;
         private final LocalDateTime timestamp;
 
-        public SecurityEvent(String eventType, String description, String userId, String clientIp, LocalDateTime timestamp) {
+        SecurityEvent(String eventType, String description, String userId,
+                String clientIp, LocalDateTime timestamp) {
             this.eventType = eventType;
             this.description = description;
             this.userId = userId;
@@ -97,11 +98,25 @@ public class AuditLogger {
         }
 
         // Getters for JSON serialization
-        public String getEventType() { return eventType; }
-        public String getDescription() { return description; }
-        public String getUserId() { return userId; }
-        public String getClientIp() { return clientIp; }
-        public LocalDateTime getTimestamp() { return timestamp; }
+        public String getEventType() {
+            return eventType;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public String getUserId() {
+            return userId;
+        }
+
+        public String getClientIp() {
+            return clientIp;
+        }
+
+        public LocalDateTime getTimestamp() {
+            return timestamp;
+        }
     }
 
     // Inner class for password reset events
@@ -111,7 +126,7 @@ public class AuditLogger {
         private final String status;
         private final LocalDateTime timestamp;
 
-        public PasswordResetEvent(String email, String clientIp, String status, LocalDateTime timestamp) {
+        PasswordResetEvent(String email, String clientIp, String status, LocalDateTime timestamp) {
             this.email = email;
             this.clientIp = clientIp;
             this.status = status;
@@ -119,9 +134,20 @@ public class AuditLogger {
         }
 
         // Getters for JSON serialization
-        public String getEmail() { return email; }
-        public String getClientIp() { return clientIp; }
-        public String getStatus() { return status; }
-        public LocalDateTime getTimestamp() { return timestamp; }
+        public String getEmail() {
+            return email;
+        }
+
+        public String getClientIp() {
+            return clientIp;
+        }
+
+        public String getStatus() {
+            return status;
+        }
+
+        public LocalDateTime getTimestamp() {
+            return timestamp;
+        }
     }
 }

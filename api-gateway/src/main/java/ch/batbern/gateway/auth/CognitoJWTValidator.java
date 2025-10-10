@@ -23,7 +23,11 @@ public class CognitoJWTValidator {
     private final String userPoolClientId;
     private final UserContextExtractor userContextExtractor;
 
-    public CognitoJWTValidator(CognitoJWKSProvider jwksProvider, String userPoolId, String region, String userPoolClientId) {
+    public CognitoJWTValidator(
+            CognitoJWKSProvider jwksProvider,
+            String userPoolId,
+            String region,
+            String userPoolClientId) {
         this.jwksProvider = jwksProvider;
         this.userPoolId = userPoolId;
         this.region = region;

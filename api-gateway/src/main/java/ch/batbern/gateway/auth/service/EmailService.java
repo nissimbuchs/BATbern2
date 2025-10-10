@@ -5,9 +5,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.ses.SesClient;
-import software.amazon.awssdk.services.ses.model.*;
-
-import java.util.Map;
+import software.amazon.awssdk.services.ses.model.Destination;
+import software.amazon.awssdk.services.ses.model.SendTemplatedEmailRequest;
+import software.amazon.awssdk.services.ses.model.SendTemplatedEmailResponse;
 
 /**
  * Email service for sending templated emails via AWS SES
@@ -17,7 +17,7 @@ import java.util.Map;
 @Service
 public class EmailService {
 
-    private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(EmailService.class);
 
     private final SesClient sesClient;
 
@@ -51,12 +51,12 @@ public class EmailService {
                 ? passwordResetTemplateDE
                 : passwordResetTemplateEN;
 
-            logger.info("Sending password reset email to {} using template {} (language: {})",
+            LOGGER.info("Sending password reset email to {} using template {} (language: {})",
                 maskEmail(toEmail), templateName, language);
 
             // In test profile, log instead of sending actual email
             if ("test".equals(activeProfile)) {
-                logger.info("TEST MODE: Would send email to {} with reset link: {}",
+                LOGGER.info("TEST MODE: Would send email to {} with reset link: {}",
                     maskEmail(toEmail), resetLink);
                 return;
             }
@@ -77,11 +77,11 @@ public class EmailService {
             // Send the email
             SendTemplatedEmailResponse response = sesClient.sendTemplatedEmail(emailRequest);
 
-            logger.info("Password reset email sent successfully. Message ID: {}",
+            LOGGER.info("Password reset email sent successfully. Message ID: {}",
                 response.messageId());
 
         } catch (Exception e) {
-            logger.error("Failed to send password reset email to {}: {}",
+            LOGGER.error("Failed to send password reset email to {}: {}",
                 maskEmail(toEmail), e.getMessage(), e);
             // Don't throw exception - we don't want to reveal if email exists
             // The user will see generic success message regardless

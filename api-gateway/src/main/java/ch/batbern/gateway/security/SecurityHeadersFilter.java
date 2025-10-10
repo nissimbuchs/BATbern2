@@ -1,7 +1,12 @@
 package ch.batbern.gateway.security;
 
 import ch.batbern.gateway.util.LogSanitizer;
-import jakarta.servlet.*;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -113,16 +118,16 @@ public class SecurityHeadersFilter implements Filter {
      * Builds Permissions Policy header value
      */
     private String buildPermissionsPolicy() {
-        return "geolocation=(), " +
-                "microphone=(), " +
-                "camera=(), " +
-                "payment=(), " +
-                "usb=(), " +
-                "magnetometer=(), " +
-                "gyroscope=(), " +
-                "speaker=(), " +
-                "vibrate=(), " +
-                "fullscreen=(self)";
+        return "geolocation=(), "
+                + "microphone=(), "
+                + "camera=(), "
+                + "payment=(), "
+                + "usb=(), "
+                + "magnetometer=(), "
+                + "gyroscope=(), "
+                + "speaker=(), "
+                + "vibrate=(), "
+                + "fullscreen=(self)";
     }
 
     @Override

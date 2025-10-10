@@ -26,7 +26,7 @@ import java.nio.charset.StandardCharsets;
 @Service
 public class PasswordResetService {
 
-    private static final Logger logger = LoggerFactory.getLogger(PasswordResetService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(PasswordResetService.class);
 
     private final CognitoIdentityProviderClient cognitoClient;
     private final EmailService emailService;
@@ -59,12 +59,12 @@ public class PasswordResetService {
      * @param ipAddress User's IP address for audit logging
      */
     public void initiatePasswordReset(String email, String language, String ipAddress) {
-        logger.info("Password reset requested for email: {} (language: {})",
+        LOGGER.info("Password reset requested for email: {} (language: {})",
             maskEmail(email), language);
 
         // AC13: Check rate limit (3 per hour per email)
         if (!rateLimitService.allowPasswordReset(email)) {
-            logger.warn("Rate limit exceeded for password reset: {}", maskEmail(email));
+            LOGGER.warn("Rate limit exceeded for password reset: {}", maskEmail(email));
             auditLogger.logPasswordResetAttempt(email, ipAddress, "RATE_LIMIT_EXCEEDED");
             throw new RateLimitExceededException(
                 "Too many password reset requests. Please try again later."
@@ -83,7 +83,7 @@ public class PasswordResetService {
             // Get the verification code delivery destination
             String codeDeliveryDestination = cognitoResponse.codeDeliveryDetails().destination();
 
-            logger.info("Cognito password reset initiated. Code will be sent to: {}",
+            LOGGER.info("Cognito password reset initiated. Code will be sent to: {}",
                 codeDeliveryDestination);
 
             // Build reset link
@@ -103,12 +103,12 @@ public class PasswordResetService {
             // AC14: Log successful attempt
             auditLogger.logPasswordResetAttempt(email, ipAddress, "SUCCESS");
 
-            logger.info("Password reset email sent successfully to: {}", maskEmail(email));
+            LOGGER.info("Password reset email sent successfully to: {}", maskEmail(email));
 
         } catch (UserNotFoundException e) {
             // AC12: Email enumeration prevention
             // Don't reveal that user doesn't exist - just log and continue
-            logger.info("Password reset requested for non-existent user: {}",
+            LOGGER.info("Password reset requested for non-existent user: {}",
                 maskEmail(email));
             auditLogger.logPasswordResetAttempt(email, ipAddress, "USER_NOT_FOUND");
 
@@ -116,7 +116,7 @@ public class PasswordResetService {
 
         } catch (Exception e) {
             // Log error but don't throw - enumeration prevention
-            logger.error("Failed to initiate password reset for {}: {}",
+            LOGGER.error("Failed to initiate password reset for {}: {}",
                 maskEmail(email), e.getMessage(), e);
             auditLogger.logPasswordResetAttempt(email, ipAddress, "FAILURE");
 

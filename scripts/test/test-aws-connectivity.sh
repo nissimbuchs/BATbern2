@@ -157,7 +157,7 @@ if [ -f ".env" ]; then
     fi
 else
     echo -e "${YELLOW}Note: .env file not found${NC}"
-    echo -e "${YELLOW}Run 'AWS_PROFILE=batbern-mgmt ./scripts/dev/setup-env.sh' to generate${NC}"
+    echo -e "${YELLOW}Run './scripts/config/sync-backend-config.sh development' to generate${NC}"
     echo -e "${YELLOW}Skipping integration tests that require .env file${NC}"
     echo ""
 fi

@@ -88,6 +88,7 @@ describe('LoginForm Component', () => {
 
   it('should_validatePasswordRequired_when_passwordEmpty', async () => {
     // Test 9.22: should_validatePasswordRequired_when_passwordEmpty
+    // Note: Form uses mode: 'onChange', so validation requires a change event
     const user = userEvent.setup();
 
     await act(async () => {
@@ -97,8 +98,10 @@ describe('LoginForm Component', () => {
     const passwordInput = screen.getByPlaceholderText(/enter your password/i);
 
     await act(async () => {
-      await user.click(passwordInput);
-      await user.tab(); // Trigger blur event
+      // Type something to trigger onChange, then clear it
+      await user.type(passwordInput, 'a');
+      await user.clear(passwordInput);
+      await user.tab(); // Move focus away
     });
 
     await waitFor(() => {

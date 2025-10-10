@@ -7,7 +7,15 @@ import org.springframework.stereotype.Component;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 @Slf4j
 @Component
@@ -81,7 +89,7 @@ public class RequestTransformer {
     private static class EnhancedHttpServletRequestWrapper extends HttpServletRequestWrapper {
         private final Map<String, String> additionalHeaders;
 
-        public EnhancedHttpServletRequestWrapper(HttpServletRequest request, Map<String, String> additionalHeaders) {
+        EnhancedHttpServletRequestWrapper(HttpServletRequest request, Map<String, String> additionalHeaders) {
             super(request);
             this.additionalHeaders = additionalHeaders != null ? additionalHeaders : new HashMap<>();
         }

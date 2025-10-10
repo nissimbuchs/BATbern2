@@ -540,7 +540,7 @@ describe('ForgotPasswordForm Component - Navigation Tests', () => {
     await waitFor(() => {
       const backLink = screen.getByText(/back to login/i);
       expect(backLink).toBeInTheDocument();
-      expect(backLink.closest('a')).toHaveAttribute('href', '/auth/login');
+      expect(backLink.closest('a')).toHaveAttribute('href', '/login');
     });
   });
 });
