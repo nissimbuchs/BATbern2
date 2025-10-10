@@ -1,15 +1,21 @@
 {
   "app": {
     "name": "BATbern",
-    "tagline": "Event Management for Bern"
+    "tagline": "Event Management Platform"
   },
   "navigation": {
     "home": "Home",
+    "dashboard": "Dashboard",
     "events": "Events",
     "speakers": "Speakers",
     "partners": "Partners",
+    "analytics": "Analytics",
+    "content": "Content Search",
     "profile": "Profile",
-    "logout": "Logout"
+    "logout": "Logout",
+    "myEvents": "My Events",
+    "myContent": "My Content",
+    "myRegistrations": "My Registrations"
   },
   "actions": {
     "save": "Save",
@@ -32,5 +38,23 @@
   "status": {
     "wait": "Wait {{seconds}} seconds",
     "didntReceive": "Didn't receive the email?"
+  },
+  "menu": {
+    "profile": "Profile",
+    "profileSettings": "Profile Settings",
+    "settings": "Settings",
+    "help": "Help",
+    "logout": "Logout",
+    "signOut": "Sign Out"
+  },
+  "role": {
+    "organizer": "Event Organizer",
+    "speaker": "Speaker",
+    "partner": "Partner",
+    "attendee": "Attendee"
+  },
+  "app": {
+    "title": "BATbern Event Management Platform",
+    "name": "BATbern"
   }
 }

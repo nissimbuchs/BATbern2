@@ -111,3 +111,6 @@ web-frontend/.storybook-out/
 web-frontend/test-results/
 web-frontend/playwright-report/
 web-frontend/test-results.xml
+test-results/
+playwright-report/
+playwright/.cache/

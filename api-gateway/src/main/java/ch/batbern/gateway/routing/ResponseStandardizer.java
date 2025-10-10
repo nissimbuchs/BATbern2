@@ -15,7 +15,8 @@ import java.util.Map;
 @Component
 public class ResponseStandardizer {
 
-    public ResponseEntity<StandardResponse<Object>> standardizeResponse(Object data, String requestId, HttpStatus status) {
+    public ResponseEntity<StandardResponse<Object>> standardizeResponse(Object data, String requestId,
+            HttpStatus status) {
         log.debug("Standardizing response for request: {}", requestId);
 
         StandardResponse<Object> response = StandardResponse.success(data, requestId);

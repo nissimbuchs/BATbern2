@@ -165,7 +165,7 @@ describe('AWS Integration Configuration (AC1, AC4, AC9)', () => {
   describe('AC9: AWS Credentials', () => {
     test('should_validateAWSCredentials_when_setupEnvStarts', () => {
       // Arrange & Act
-      const setupEnvPath = path.join(projectRoot, 'scripts/dev/setup-env.sh');
+      const setupEnvPath = path.join(projectRoot, 'scripts/config/sync-backend-config.sh');
       expect(fs.existsSync(setupEnvPath)).toBe(true);
 
       const setupEnvContent = fs.readFileSync(setupEnvPath, 'utf-8');
@@ -177,7 +177,7 @@ describe('AWS Integration Configuration (AC1, AC4, AC9)', () => {
 
     test('should_failWithError_when_stackNotDeployed', () => {
       // Arrange & Act
-      const setupEnvPath = path.join(projectRoot, 'scripts/dev/setup-env.sh');
+      const setupEnvPath = path.join(projectRoot, 'scripts/config/sync-backend-config.sh');
       const setupEnvContent = fs.readFileSync(setupEnvPath, 'utf-8');
 
       // Assert - Script checks for stack outputs and fails if missing

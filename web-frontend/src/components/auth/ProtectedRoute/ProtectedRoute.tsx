@@ -57,17 +57,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   if (requiresAuth && user) {
     // Check if user's role is in allowed roles
     if (!allowedRoles.includes(user.role)) {
-      return (
-        <Box sx={{ p: 3 }}>
-          <Alert severity="error">
-            <Typography variant="h6">Access Denied</Typography>
-            <Typography variant="body2">
-              You don't have permission to access this page. Your role ({user.role}) is not
-              authorized for this content.
-            </Typography>
-          </Alert>
-        </Box>
-      );
+      // Redirect to dashboard instead of showing error
+      return <Navigate to="/dashboard" replace />;
     }
 
     // Check email verification if required
@@ -86,14 +77,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
     // Check path-based access control
     if (!canAccess(location.pathname)) {
-      return (
-        <Box sx={{ p: 3 }}>
-          <Alert severity="error">
-            <Typography variant="h6">Access Denied</Typography>
-            <Typography variant="body2">You don't have permission to access this path.</Typography>
-          </Alert>
-        </Box>
-      );
+      // Redirect to dashboard instead of showing error
+      return <Navigate to="/dashboard" replace />;
     }
   }
 
@@ -104,11 +89,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 /**
  * Higher-order component for protecting routes
  */
-export const withProtectedRoute = (
-  Component: React.ComponentType<any>,
+export const withProtectedRoute = <P extends object>(
+  Component: React.ComponentType<P>,
   options?: Omit<ProtectedRouteProps, 'children'>
 ) => {
-  return (props: any) => (
+  return (props: P) => (
     <ProtectedRoute {...options}>
       <Component {...props} />
     </ProtectedRoute>

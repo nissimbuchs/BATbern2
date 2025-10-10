@@ -1,7 +1,7 @@
 name: Auto-Merge PR
 
-# Automatically merge ALL PRs to develop/main when all checks pass
-# This enables fast-paced development with confidence in automated testing
+# Automatically merge PRs to develop when all checks pass
+# PRs to main require manual approval for production safety
 
 on:
   pull_request:
@@ -25,10 +25,8 @@ permissions:
 jobs:
   auto-merge:
     runs-on: ubuntu-latest
-    # Only run on PRs to develop or main
-    if: |
-      github.event.pull_request.base.ref == 'develop' ||
-      github.event.pull_request.base.ref == 'main'
+    # Only run on PRs to develop (main requires manual approval)
+    if: github.event.pull_request.base.ref == 'develop'
 
     steps:
       - name: Auto-merge all feature branches

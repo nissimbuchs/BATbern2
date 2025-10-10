@@ -100,7 +100,7 @@ public class TestRateLimitConfig {
             private int requestCount;
             private final LocalDateTime timestamp;
 
-            public RateLimitEntry(int requestCount, LocalDateTime timestamp) {
+            RateLimitEntry(int requestCount, LocalDateTime timestamp) {
                 this.requestCount = requestCount;
                 this.timestamp = timestamp;
             }

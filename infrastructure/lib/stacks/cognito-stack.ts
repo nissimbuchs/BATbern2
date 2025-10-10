@@ -4,6 +4,7 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
+import { BootstrapOrganizer } from '../constructs/bootstrap-organizer';
 
 export interface CognitoStackProps extends cdk.StackProps {
   config: EnvironmentConfig;
@@ -143,7 +144,7 @@ export class CognitoStack extends cdk.Stack {
       authFlows: {
         userPassword: true,
         custom: true,
-        userSrp: false,
+        userSrp: true, // Enable SRP authentication for secure password flow
       },
       generateSecret: false,
       refreshTokenValidity: cdk.Duration.days(30),
@@ -189,6 +190,14 @@ export class CognitoStack extends cdk.Stack {
         description: `Group for ${groupName} users`,
         precedence: groups.indexOf(groupName),
       });
+    });
+
+    // Create bootstrap organizer user for environment setup
+    // This user is created automatically on stack deployment
+    new BootstrapOrganizer(this, 'BootstrapOrganizer', {
+      userPool: this.userPool,
+      email: 'nissim@buchs.be',
+      password: 'Ur@batbern01',
     });
 
     // Apply tags

@@ -80,7 +80,7 @@ export const ForgotPasswordForm: React.FC = () => {
   return (
     <Box sx={{ maxWidth: 400, mx: 'auto', mt: 8 }}>
       <Link
-        href="/auth/login"
+        href="/login"
         sx={{
           display: 'flex',
           alignItems: 'center',

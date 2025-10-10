@@ -27,7 +27,8 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    fallbackLng: 'de',
+    lng: 'de', // Default language for first access
+    fallbackLng: 'de', // Fallback if language not found
     defaultNS: 'common',
     ns: ['common', 'auth', 'validation'],
     detection: {

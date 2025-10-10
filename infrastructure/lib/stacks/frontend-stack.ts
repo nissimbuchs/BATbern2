@@ -125,6 +125,20 @@ function handler(event) {
           modeBlock: true,
           override: true,
         },
+        contentSecurityPolicy: {
+          contentSecurityPolicy:
+            "default-src 'self'; " +
+            "script-src 'self' 'unsafe-inline'; " +
+            "style-src 'self' 'unsafe-inline'; " +
+            "img-src 'self' data: https:; " +
+            "font-src 'self' data:; " +
+            "connect-src 'self' https://*.amazonaws.com; " +
+            "object-src 'none'; " +
+            "base-uri 'self'; " +
+            "form-action 'self'; " +
+            "frame-ancestors 'none';",
+          override: true,
+        },
       },
     });
 

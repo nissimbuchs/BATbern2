@@ -10,7 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests for OpenAPI configuration and documentation generation.
@@ -23,11 +23,10 @@ import static org.assertj.core.api.Assertions.*;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource(properties = {
-        "aws.cognito.userPoolId=test-pool-id",
-        "aws.cognito.region=us-east-1",
-        "aws.cognito.appClientId=test-client-id",
-        "aws.cognito.userPoolClientId=test-client-id",
-        "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://test.example.com"
+    "aws.cognito.userPoolId=test-pool-id",
+    "aws.cognito.region=us-east-1",
+    "aws.cognito.userPoolClientId=test-client-id",
+    "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://test.example.com"
 })
 class OpenApiConfigTest {
 
