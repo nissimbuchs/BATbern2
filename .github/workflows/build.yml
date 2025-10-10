@@ -62,7 +62,7 @@ jobs:
 
       - name: Upload coverage reports
         if: always()
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           files: shared-kernel/build/reports/jacoco/test/jacocoTestReport.xml
           flags: shared-kernel
@@ -247,7 +247,7 @@ jobs:
 
       - name: Upload coverage reports
         if: steps.check-frontend.outputs.exists == 'true' && always()
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           files: web-frontend/coverage/coverage-final.json
           flags: frontend
