@@ -9,7 +9,7 @@ import * as path from 'path';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
 
-export interface ApiGatewayServiceStackProps extends cdk.StackProps {
+export interface CompanyManagementStackProps extends cdk.StackProps {
   config: EnvironmentConfig;
   cluster: ecs.ICluster;
   vpc: ec2.IVpc;
@@ -17,53 +17,45 @@ export interface ApiGatewayServiceStackProps extends cdk.StackProps {
   cacheEndpoint?: string;
   userPool: cognito.IUserPool;
   userPoolClient: cognito.IUserPoolClient;
-  eventManagementServiceUrl?: string;
-  speakerCoordinationServiceUrl?: string;
-  partnerCoordinationServiceUrl?: string;
-  attendeeExperienceServiceUrl?: string;
-  companyManagementServiceUrl?: string;
 }
 
 /**
- * API Gateway Service Stack - Spring Boot API Gateway on ECS Fargate
+ * Company Management Service Stack
  *
- * This is the Spring Boot application that routes requests to domain microservices.
- * It runs on ECS with a public ALB and handles all API routing logic.
- *
- * Architecture:
- * Client → AWS API Gateway (Cognito auth) → **This Service** → Domain Microservices
+ * Domain microservice for managing company profiles, employees, and corporate data.
+ * Handles /api/v1/companies routes.
  */
-export class ApiGatewayServiceStack extends cdk.Stack {
+export class CompanyManagementStack extends cdk.Stack {
   public readonly service: ecsPatterns.ApplicationLoadBalancedFargateService;
-  public readonly apiGatewayUrl: string;
+  public readonly serviceUrl: string;
 
-  constructor(scope: Construct, id: string, props: ApiGatewayServiceStackProps) {
+  constructor(scope: Construct, id: string, props: CompanyManagementStackProps) {
     super(scope, id, props);
 
     const envName = props.config.envName;
     const isProd = envName === 'production';
+    const serviceName = 'company-management';
 
     // Common environment variables
     const commonEnv = {
       SPRING_PROFILES_ACTIVE: envName,
-      APP_ENVIRONMENT: envName,
       AWS_REGION: props.config.region,
       LOG_LEVEL: isProd ? 'INFO' : 'DEBUG',
       ...(props.databaseEndpoint && { DATABASE_ENDPOINT: props.databaseEndpoint }),
       ...(props.cacheEndpoint && { REDIS_ENDPOINT: props.cacheEndpoint }),
     };
 
-    // Create stable log group for API Gateway
+    // Create stable log group
     const logGroup = new logs.LogGroup(this, 'LogGroup', {
-      logGroupName: `/aws/ecs/BATbern-${envName}/api-gateway`,
+      logGroupName: `/aws/ecs/BATbern-${envName}/${serviceName}`,
       retention: isProd ? logs.RetentionDays.SIX_MONTHS : logs.RetentionDays.ONE_MONTH,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     // Create task definition
     const taskDefinition = new ecs.FargateTaskDefinition(this, 'TaskDef', {
-      cpu: 512,
-      memoryLimitMiB: 1024,
+      cpu: 256,
+      memoryLimitMiB: 512,
       runtimePlatform: {
         operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
         cpuArchitecture: ecs.CpuArchitecture.ARM64,
@@ -73,21 +65,15 @@ export class ApiGatewayServiceStack extends cdk.Stack {
     // Add container
     const container = taskDefinition.addContainer('Container', {
       image: ecs.ContainerImage.fromAsset(path.join(__dirname, '../../..'), {
-        file: 'api-gateway/Dockerfile',
+        file: `services/${serviceName}-service/Dockerfile`,
       }),
       logging: ecs.LogDrivers.awsLogs({
         logGroup,
-        streamPrefix: 'api-gateway',
+        streamPrefix: serviceName,
       }),
       environment: {
         ...commonEnv,
-        SERVICE_NAME: 'api-gateway',
-        // Service discovery URLs for internal routing
-        EVENT_MANAGEMENT_SERVICE_URL: props.eventManagementServiceUrl || 'http://event-management.internal',
-        SPEAKER_COORDINATION_SERVICE_URL: props.speakerCoordinationServiceUrl || 'http://speaker-coordination.internal',
-        PARTNER_COORDINATION_SERVICE_URL: props.partnerCoordinationServiceUrl || 'http://partner-coordination.internal',
-        ATTENDEE_EXPERIENCE_SERVICE_URL: props.attendeeExperienceServiceUrl || 'http://attendee-experience.internal',
-        COMPANY_MANAGEMENT_SERVICE_URL: props.companyManagementServiceUrl || 'http://company-management.internal',
+        SERVICE_NAME: serviceName,
         // Cognito configuration
         COGNITO_USER_POOL_ID: props.userPool.userPoolId,
         COGNITO_CLIENT_ID: props.userPoolClient.userPoolClientId,
@@ -118,11 +104,11 @@ export class ApiGatewayServiceStack extends cdk.Stack {
       resources: ['*'],
     }));
 
-    // Create service with PUBLIC ALB
+    // Create service with INTERNAL ALB
     this.service = new ecsPatterns.ApplicationLoadBalancedFargateService(this, 'Service', {
       cluster: props.cluster,
       taskDefinition,
-      publicLoadBalancer: true,
+      publicLoadBalancer: false, // Internal ALB only
       desiredCount: isProd ? 2 : 1,
       healthCheckGracePeriod: cdk.Duration.seconds(60),
       assignPublicIp: false,
@@ -144,7 +130,7 @@ export class ApiGatewayServiceStack extends cdk.Stack {
     // Configure auto-scaling
     const scaling = this.service.service.autoScaleTaskCount({
       minCapacity: isProd ? 2 : 1,
-      maxCapacity: isProd ? 8 : 4,
+      maxCapacity: (isProd ? 2 : 1) * 4,
     });
 
     scaling.scaleOnCpuUtilization('CpuScaling', {
@@ -153,24 +139,18 @@ export class ApiGatewayServiceStack extends cdk.Stack {
       scaleOutCooldown: cdk.Duration.seconds(60),
     });
 
-    this.apiGatewayUrl = `http://${this.service.loadBalancer.loadBalancerDnsName}`;
+    this.serviceUrl = `http://${this.service.loadBalancer.loadBalancerDnsName}`;
 
     // Apply tags
     cdk.Tags.of(this).add('Environment', envName);
-    cdk.Tags.of(this).add('Component', 'ApiGateway-Service');
+    cdk.Tags.of(this).add('Component', 'CompanyManagement-Service');
     cdk.Tags.of(this).add('Project', 'BATbern');
 
     // Outputs
     new cdk.CfnOutput(this, 'ServiceUrl', {
-      value: this.apiGatewayUrl,
-      description: 'API Gateway Service URL (internal ALB)',
-      exportName: `${envName}-ApiGatewayServiceUrl`,
-    });
-
-    new cdk.CfnOutput(this, 'LoadBalancerArn', {
-      value: this.service.loadBalancer.loadBalancerArn,
-      description: 'API Gateway Load Balancer ARN',
-      exportName: `${envName}-ApiGatewayLoadBalancerArn`,
+      value: this.serviceUrl,
+      description: 'Company Management Service internal URL',
+      exportName: `${envName}-company-management-url`,
     });
   }
 }
