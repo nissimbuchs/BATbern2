@@ -103,7 +103,7 @@ function getApiUrl(): string {
   }
 
   if (hostname === 'staging.batbern.ch') {
-    return 'https://api-staging.batbern.ch';
+    return 'https://api.staging.batbern.ch';
   }
 
   // Production (batbern.ch or www.batbern.ch)
