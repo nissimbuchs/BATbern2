@@ -12,7 +12,13 @@ import { CognitoStack } from '../lib/stacks/cognito-stack';
 import { SesStack } from '../lib/stacks/ses-stack';
 import { ApiGatewayStack } from '../lib/stacks/api-gateway-stack';
 import { FrontendStack } from '../lib/stacks/frontend-stack';
-import { MicroservicesStack } from '../lib/stacks/microservices-stack';
+import { ClusterStack } from '../lib/stacks/cluster-stack';
+import { ApiGatewayServiceStack } from '../lib/stacks/api-gateway-service-stack';
+import { EventManagementStack } from '../lib/stacks/event-management-stack';
+import { SpeakerCoordinationStack } from '../lib/stacks/speaker-coordination-stack';
+import { PartnerCoordinationStack } from '../lib/stacks/partner-coordination-stack';
+import { AttendeeExperienceStack } from '../lib/stacks/attendee-experience-stack';
+import { CompanyManagementStack } from '../lib/stacks/company-management-stack';
 import { devConfig } from '../lib/config/dev-config';
 import { stagingConfig } from '../lib/config/staging-config';
 import { prodConfig } from '../lib/config/prod-config';
@@ -156,26 +162,145 @@ const sesStack = new SesStack(app, `${stackPrefix}-SES`, {
   tags: config.tags,
 });
 
-// 10. Microservices Stack (ECS Fargate services for backend)
+// 10. ECS Cluster Stack (Shared cluster for all microservices)
 // NOTE: Only deploy for cloud environments (staging/production)
 // Development runs microservices locally in Docker
-let microservicesStack: MicroservicesStack | undefined;
+let clusterStack: ClusterStack | undefined;
+let eventManagementStack: EventManagementStack | undefined;
+let speakerCoordinationStack: SpeakerCoordinationStack | undefined;
+let partnerCoordinationStack: PartnerCoordinationStack | undefined;
+let attendeeExperienceStack: AttendeeExperienceStack | undefined;
+let companyManagementStack: CompanyManagementStack | undefined;
+let apiGatewayServiceStack: ApiGatewayServiceStack | undefined;
+
 if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
-  microservicesStack = new MicroservicesStack(app, `${stackPrefix}-Microservices`, {
+  // Create shared ECS cluster
+  clusterStack = new ClusterStack(app, `${stackPrefix}-Cluster`, {
     config,
+    vpc: networkStack.vpc,
+    env,
+    description: `BATbern ECS Cluster - ${config.envName}`,
+    tags: config.tags,
+  });
+  clusterStack.addDependency(networkStack);
+
+  // 10a. Event Management Service
+  eventManagementStack = new EventManagementStack(app, `${stackPrefix}-EventManagement`, {
+    config,
+    cluster: clusterStack.cluster,
     vpc: networkStack.vpc,
     databaseEndpoint: databaseStack.databaseEndpoint,
     cacheEndpoint: databaseStack.cacheEndpoint,
     userPool: cognitoStack.userPool,
     userPoolClient: cognitoStack.userPoolClient,
     env,
-    description: `BATbern Microservices (ECS Fargate) - ${config.envName}`,
+    description: `BATbern Event Management Service - ${config.envName}`,
     tags: config.tags,
   });
-  microservicesStack.addDependency(networkStack);
-  microservicesStack.addDependency(databaseStack);
-  microservicesStack.addDependency(cicdStack); // Depends on ECR repositories
-  microservicesStack.addDependency(cognitoStack); // Depends on Cognito for user pool ID
+  eventManagementStack.addDependency(clusterStack);
+  eventManagementStack.addDependency(databaseStack);
+  eventManagementStack.addDependency(cicdStack);
+  eventManagementStack.addDependency(cognitoStack);
+
+  // 10b. Speaker Coordination Service
+  speakerCoordinationStack = new SpeakerCoordinationStack(app, `${stackPrefix}-SpeakerCoordination`, {
+    config,
+    cluster: clusterStack.cluster,
+    vpc: networkStack.vpc,
+    databaseEndpoint: databaseStack.databaseEndpoint,
+    cacheEndpoint: databaseStack.cacheEndpoint,
+    userPool: cognitoStack.userPool,
+    userPoolClient: cognitoStack.userPoolClient,
+    env,
+    description: `BATbern Speaker Coordination Service - ${config.envName}`,
+    tags: config.tags,
+  });
+  speakerCoordinationStack.addDependency(clusterStack);
+  speakerCoordinationStack.addDependency(databaseStack);
+  speakerCoordinationStack.addDependency(cicdStack);
+  speakerCoordinationStack.addDependency(cognitoStack);
+
+  // 10c. Partner Coordination Service
+  partnerCoordinationStack = new PartnerCoordinationStack(app, `${stackPrefix}-PartnerCoordination`, {
+    config,
+    cluster: clusterStack.cluster,
+    vpc: networkStack.vpc,
+    databaseEndpoint: databaseStack.databaseEndpoint,
+    cacheEndpoint: databaseStack.cacheEndpoint,
+    userPool: cognitoStack.userPool,
+    userPoolClient: cognitoStack.userPoolClient,
+    env,
+    description: `BATbern Partner Coordination Service - ${config.envName}`,
+    tags: config.tags,
+  });
+  partnerCoordinationStack.addDependency(clusterStack);
+  partnerCoordinationStack.addDependency(databaseStack);
+  partnerCoordinationStack.addDependency(cicdStack);
+  partnerCoordinationStack.addDependency(cognitoStack);
+
+  // 10d. Attendee Experience Service
+  attendeeExperienceStack = new AttendeeExperienceStack(app, `${stackPrefix}-AttendeeExperience`, {
+    config,
+    cluster: clusterStack.cluster,
+    vpc: networkStack.vpc,
+    databaseEndpoint: databaseStack.databaseEndpoint,
+    cacheEndpoint: databaseStack.cacheEndpoint,
+    userPool: cognitoStack.userPool,
+    userPoolClient: cognitoStack.userPoolClient,
+    env,
+    description: `BATbern Attendee Experience Service - ${config.envName}`,
+    tags: config.tags,
+  });
+  attendeeExperienceStack.addDependency(clusterStack);
+  attendeeExperienceStack.addDependency(databaseStack);
+  attendeeExperienceStack.addDependency(cicdStack);
+  attendeeExperienceStack.addDependency(cognitoStack);
+
+  // 10e. Company Management Service
+  companyManagementStack = new CompanyManagementStack(app, `${stackPrefix}-CompanyManagement`, {
+    config,
+    cluster: clusterStack.cluster,
+    vpc: networkStack.vpc,
+    databaseEndpoint: databaseStack.databaseEndpoint,
+    cacheEndpoint: databaseStack.cacheEndpoint,
+    userPool: cognitoStack.userPool,
+    userPoolClient: cognitoStack.userPoolClient,
+    env,
+    description: `BATbern Company Management Service - ${config.envName}`,
+    tags: config.tags,
+  });
+  companyManagementStack.addDependency(clusterStack);
+  companyManagementStack.addDependency(databaseStack);
+  companyManagementStack.addDependency(cicdStack);
+  companyManagementStack.addDependency(cognitoStack);
+
+  // 10f. API Gateway Service (Spring Boot)
+  apiGatewayServiceStack = new ApiGatewayServiceStack(app, `${stackPrefix}-ApiGatewayService`, {
+    config,
+    cluster: clusterStack.cluster,
+    vpc: networkStack.vpc,
+    databaseEndpoint: databaseStack.databaseEndpoint,
+    cacheEndpoint: databaseStack.cacheEndpoint,
+    userPool: cognitoStack.userPool,
+    userPoolClient: cognitoStack.userPoolClient,
+    eventManagementServiceUrl: eventManagementStack.serviceUrl,
+    speakerCoordinationServiceUrl: speakerCoordinationStack.serviceUrl,
+    partnerCoordinationServiceUrl: partnerCoordinationStack.serviceUrl,
+    attendeeExperienceServiceUrl: attendeeExperienceStack.serviceUrl,
+    companyManagementServiceUrl: companyManagementStack.serviceUrl,
+    env,
+    description: `BATbern API Gateway Service (Spring Boot) - ${config.envName}`,
+    tags: config.tags,
+  });
+  apiGatewayServiceStack.addDependency(clusterStack);
+  apiGatewayServiceStack.addDependency(databaseStack);
+  apiGatewayServiceStack.addDependency(cicdStack);
+  apiGatewayServiceStack.addDependency(cognitoStack);
+  apiGatewayServiceStack.addDependency(eventManagementStack);
+  apiGatewayServiceStack.addDependency(speakerCoordinationStack);
+  apiGatewayServiceStack.addDependency(partnerCoordinationStack);
+  apiGatewayServiceStack.addDependency(attendeeExperienceStack);
+  apiGatewayServiceStack.addDependency(companyManagementStack);
 }
 
 // 11. API Gateway Stack (AWS API Gateway proxy to Spring Boot API Gateway)
@@ -189,15 +314,15 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     domainName: config.domain?.apiDomain,
     hostedZoneId: config.domain?.hostedZoneId,
     certificateArn: networkStack.apiCertificate?.certificateArn || config.domain?.apiCertificateArn,
-    apiGatewayServiceUrl: microservicesStack?.apiGatewayUrl, // Spring Boot API Gateway internal ALB
+    apiGatewayServiceUrl: apiGatewayServiceStack?.apiGatewayUrl, // Spring Boot API Gateway internal ALB
     env,
     description: `BATbern API Gateway - ${config.envName}`,
     tags: config.tags,
   });
   apiGatewayStack.addDependency(cognitoStack);
   apiGatewayStack.addDependency(networkStack); // Depends on Network for certificate
-  if (microservicesStack) {
-    apiGatewayStack.addDependency(microservicesStack); // Depends on microservices for routing
+  if (apiGatewayServiceStack) {
+    apiGatewayStack.addDependency(apiGatewayServiceStack); // Depends on API Gateway Service for routing
   }
 }
 

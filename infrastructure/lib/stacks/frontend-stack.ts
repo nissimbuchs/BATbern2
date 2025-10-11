@@ -129,10 +129,10 @@ function handler(event) {
           contentSecurityPolicy:
             "default-src 'self'; " +
             "script-src 'self' 'unsafe-inline'; " +
-            "style-src 'self' 'unsafe-inline'; " +
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
             "img-src 'self' data: https:; " +
-            "font-src 'self' data:; " +
-            "connect-src 'self' https://*.amazonaws.com; " +
+            "font-src 'self' data: https://fonts.gstatic.com; " +
+            "connect-src 'self' https://*.amazonaws.com https://api.staging.batbern.ch https://api.batbern.ch; " +
             "object-src 'none'; " +
             "base-uri 'self'; " +
             "form-action 'self'; " +

@@ -63,7 +63,7 @@ bootstrap()
 
 // 2. Fetch config from backend based on hostname
 const config = await fetch('http://localhost:8080/api/v1/config')
-// or: https://api-staging.batbern.ch/api/v1/config
+// or: https://api.staging.batbern.ch/api/v1/config
 // or: https://api.batbern.ch/api/v1/config
 
 // 3. Backend returns environment-specific config:
@@ -95,7 +95,7 @@ The frontend automatically detects which API to call:
 | Hostname             | API Endpoint                     |
 | -------------------- | -------------------------------- |
 | `localhost`          | `http://localhost:8080`          |
-| `staging.batbern.ch` | `https://api-staging.batbern.ch` |
+| `staging.batbern.ch` | `https://api.staging.batbern.ch` |
 | `batbern.ch`         | `https://api.batbern.ch`         |
 
 **Same build works everywhere!**
@@ -205,7 +205,7 @@ aws cloudfront create-invalidation --distribution-id XXXXXX --paths "/*"
 When users visit `staging.batbern.ch`:
 
 1. App loads
-2. Fetches config from `https://api-staging.batbern.ch/api/v1/config`
+2. Fetches config from `https://api.staging.batbern.ch/api/v1/config`
 3. Backend returns staging configuration
 4. App renders with staging settings
 
@@ -285,7 +285,7 @@ aws:
 | Environment | APP_ENVIRONMENT | Cognito Pool    | API URL                                 |
 | ----------- | --------------- | --------------- | --------------------------------------- |
 | Development | `development`   | Dev Pool        | `http://localhost:8080/api/v1`          |
-| Staging     | `staging`       | Staging Pool    | `https://api-staging.batbern.ch/api/v1` |
+| Staging     | `staging`       | Staging Pool    | `https://api.staging.batbern.ch/api/v1` |
 | Production  | `production`    | Production Pool | `https://api.batbern.ch/api/v1`         |
 
 ### Docker Compose
@@ -348,8 +348,8 @@ docker-compose exec api-gateway env | grep APP_ENVIRONMENT
 ```bash
 # Build for each environment
 VITE_API_URL=http://localhost:8080 npm run build  # Dev build
-VITE_API_URL=https://api-staging npm run build   # Staging build
-VITE_API_URL=https://api.batbern npm run build   # Prod build
+VITE_API_URL=https://api.staging.batbern.ch npm run build   # Staging build
+VITE_API_URL=https://api.batbern.batbern.ch npm run build   # Prod build
 ```
 
 **After (Runtime Config):**

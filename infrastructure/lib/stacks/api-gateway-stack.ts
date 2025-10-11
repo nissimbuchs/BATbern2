@@ -125,6 +125,30 @@ export class ApiGatewayStack extends cdk.Stack {
       });
     });
 
+    // Public config endpoint (no auth required) for frontend bootstrap
+    const configIntegration = new apigateway.HttpIntegration(`${apiGatewayServiceUrl}/api/v1/config`, {
+      httpMethod: 'GET',
+      options: {
+        connectionType: apigateway.ConnectionType.INTERNET,
+        requestParameters: {
+          'integration.request.header.X-Forwarded-For': 'context.identity.sourceIp',
+        },
+        integrationResponses: [{
+          statusCode: '200',
+        }],
+      },
+    });
+
+    const apiResource = this.api.root.addResource('api');
+    const v1Resource = apiResource.addResource('v1');
+    const configResource = v1Resource.addResource('config');
+    configResource.addMethod('GET', configIntegration, {
+      authorizationType: apigateway.AuthorizationType.NONE,
+      methodResponses: [{
+        statusCode: '200',
+      }],
+    });
+
     // Health check endpoint (no auth required)
     const healthResource = this.api.root.addResource('health');
     healthResource.addMethod('GET', new apigateway.MockIntegration({
@@ -215,7 +239,6 @@ export class ApiGatewayStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'ApiGatewayServiceUrl', {
       value: apiGatewayServiceUrl,
       description: 'Spring Boot API Gateway Service URL (internal)',
-      exportName: `${envName}-ApiGatewayServiceUrl`,
     });
   }
 }

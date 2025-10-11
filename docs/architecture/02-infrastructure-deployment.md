@@ -308,7 +308,7 @@ new ARecord(this, 'ProductionApiARecord', {
 
 new ARecord(this, 'StagingApiARecord', {
   zone: hostedZone,
-  recordName: 'api-staging',
+  recordName: 'api.staging',
   target: RecordTarget.fromAlias(new ApiGatewayDomain(stagingApiGateway))
 });
 
