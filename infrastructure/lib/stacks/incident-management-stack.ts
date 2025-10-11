@@ -45,25 +45,25 @@ export class IncidentManagementStack extends cdk.Stack {
     const pagerDutyLogGroup = new logs.LogGroup(this, 'PagerDutyLogGroup', {
       logGroupName: `/aws/lambda/BATbern-${envName}/pagerduty-integration`,
       retention: isProd ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     const runbookLogGroup = new logs.LogGroup(this, 'RunbookLogGroup', {
       logGroupName: `/aws/lambda/BATbern-${envName}/runbook-automation`,
       retention: isProd ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     const postMortemLogGroup = new logs.LogGroup(this, 'PostMortemLogGroup', {
       logGroupName: `/aws/lambda/BATbern-${envName}/postmortem-creation`,
       retention: isProd ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     const statusPageLogGroup = new logs.LogGroup(this, 'StatusPageLogGroup', {
       logGroupName: `/aws/lambda/BATbern-${envName}/statuspage-integration`,
       retention: isProd ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     // S3 Bucket for storing incident data, post-mortems, and runbook logs

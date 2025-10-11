@@ -6,6 +6,7 @@ import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as ecsPatterns from 'aws-cdk-lib/aws-ecs-patterns';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import * as path from 'path';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
@@ -119,7 +120,7 @@ export class MicroservicesStack extends cdk.Stack {
       serviceLogGroups[serviceConfig.name] = new logs.LogGroup(this, `${serviceConfig.name}-log-group`, {
         logGroupName: `/aws/ecs/BATbern-${envName}/${serviceConfig.name}`,
         retention: isProd ? logs.RetentionDays.SIX_MONTHS : logs.RetentionDays.ONE_MONTH,
-        removalPolicy: cdk.RemovalPolicy.RETAIN, // Preserve logs on stack deletion
+        removalPolicy: cdk.RemovalPolicy.DESTROY,
       });
     });
 
@@ -166,6 +167,18 @@ export class MicroservicesStack extends cdk.Stack {
         containerPort: serviceConfig.port,
         protocol: ecs.Protocol.TCP,
       });
+
+      // Grant CloudWatch Logs permissions to task role for direct logging
+      taskDefinition.taskRole.addToPrincipalPolicy(new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'logs:CreateLogGroup',
+          'logs:CreateLogStream',
+          'logs:PutLogEvents',
+          'logs:DescribeLogStreams',
+        ],
+        resources: ['*'], // Allow all log groups - services will create their own
+      }));
 
       // Create Fargate service with internal ALB
       const service = new ecsPatterns.ApplicationLoadBalancedFargateService(this, `${serviceConfig.name}-service`, {
@@ -218,7 +231,7 @@ export class MicroservicesStack extends cdk.Stack {
     const apiGatewayLogGroup = new logs.LogGroup(this, 'api-gateway-log-group', {
       logGroupName: `/aws/ecs/BATbern-${envName}/api-gateway`,
       retention: isProd ? logs.RetentionDays.SIX_MONTHS : logs.RetentionDays.ONE_MONTH,
-      removalPolicy: cdk.RemovalPolicy.RETAIN, // Preserve logs on stack deletion
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     const apiGatewayTaskDef = new ecs.FargateTaskDefinition(this, 'api-gateway-task', {
@@ -264,6 +277,18 @@ export class MicroservicesStack extends cdk.Stack {
       containerPort: 8080,
       protocol: ecs.Protocol.TCP,
     });
+
+    // Grant CloudWatch Logs permissions to API Gateway task role for direct logging
+    apiGatewayTaskDef.taskRole.addToPrincipalPolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        'logs:CreateLogGroup',
+        'logs:CreateLogStream',
+        'logs:PutLogEvents',
+        'logs:DescribeLogStreams',
+      ],
+      resources: ['*'], // Allow all log groups - service will create its own
+    }));
 
     // Create API Gateway service with PUBLIC ALB
     this.apiGatewayService = new ecsPatterns.ApplicationLoadBalancedFargateService(this, 'api-gateway-service', {

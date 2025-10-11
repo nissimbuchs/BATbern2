@@ -32,14 +32,14 @@ export class CognitoStack extends cdk.Stack {
     const preSignupLogGroup = new logs.LogGroup(this, 'PreSignupLogGroup', {
       logGroupName: `/aws/lambda/BATbern-${envName}/presignup-trigger`,
       retention: isProd ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     // Create Pre-Signup Lambda Trigger for validation
     const preSignupLambda = new lambda.Function(this, 'PreSignupTrigger', {
       functionName: `batbern-${envName}-presignup-trigger`,
       runtime: lambda.Runtime.NODEJS_18_X,
-      handler: 'presignup.handler',
+      handler: 'index.handler',
       logGroup: preSignupLogGroup,
       code: lambda.Code.fromInline(`
         exports.handler = async (event) => {
