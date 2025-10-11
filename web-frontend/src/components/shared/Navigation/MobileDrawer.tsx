@@ -10,13 +10,13 @@ import {
   Drawer,
   Box,
   IconButton,
-  Typography,
   Divider,
   List,
   ListItem,
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  Typography,
 } from '@mui/material';
 import { Close, Logout } from '@mui/icons-material';
 import { NavigationMenu } from './NavigationMenu';
@@ -61,19 +61,12 @@ export function MobileDrawer({ open, onClose, userRole, userEmail }: MobileDrawe
             p: 2,
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <img
-              src="/logo.svg"
+              src="/BATbern_color_logo.svg"
               alt="BATbern"
-              style={{ height: 32, width: 32 }}
-              onError={(e) => {
-                // Fallback if logo doesn't exist
-                e.currentTarget.style.display = 'none';
-              }}
+              style={{ height: 36, width: 'auto' }}
             />
-            <Typography variant="h6" component="div" sx={{ fontWeight: 700 }}>
-              BATbern
-            </Typography>
           </Box>
           <IconButton onClick={onClose} edge="end" aria-label="close">
             <Close />
