@@ -79,13 +79,22 @@
 
 ## API Requirements
 
+**ARCHITECTURAL PRINCIPLE:**
+Historical events are accessed through the **Event Management Service** (`/api/v1/events`) with `status` filters (`archived`, `completed`), not through a separate archive API. This ensures:
+- Single source of truth for all events
+- Consistent API patterns across the application
+- Simplified architecture (no separate archive service)
+- Public read access controlled via API Gateway authorization
+
 ### Initial Page Load APIs
 
 When the Historical Archive Browser screen loads, the following APIs are called to provide the necessary data:
 
-1. **GET /api/v1/archive/years**
+1. **TODO: Statistics API - Year selector**
+   - **Future endpoint**: `GET /api/v1/events/statistics/by-year` or similar
    - Returns: List of years with event counts, earliest year, most recent year
    - Used for: Populate year selector with available years
+   - **Current workaround**: Query events grouped by year client-side or hardcode known years
 
 2. **GET /api/v1/events?filter={"year":2025,"status":["archived","upcoming"]}&include=speakers,sessions,analytics&sort=-eventDate&limit=20**
    - Returns: Events for selected year with all event card data in a single consolidated call
@@ -99,13 +108,16 @@ When the Historical Archive Browser screen loads, the following APIs are called 
 
 ---
 
-**MIGRATION NOTE (Story 1.17 - Events Portion):**
-The original implementation used:
-- 1 call to GET /api/v1/archive/events (list of events)
+**ARCHITECTURE NOTE - No Separate Archive API:**
+Historical events are accessed through the Event Management Service using `status` filters, not a separate archive API.
+
+**Previous approach:**
+- Separate `/api/v1/archive/events` endpoint
 - 1 call per event to GET /api/v1/events/{eventId}/summary (20 additional calls for 20 events)
 - Total: 21 API calls for initial page load
 
-The new consolidated API uses `?include=speakers,sessions,analytics` to fetch all event card data in one call. This provides:
+**Current consolidated approach:**
+Uses Event Management API with `?include=speakers,sessions,analytics` to fetch all event card data in one call. This provides:
 - Page load time: ~90% faster (from ~5s to <500ms for 20 events)
 - Single loading state for entire year's events
 - Instant event card rendering with all details
@@ -113,15 +125,19 @@ The new consolidated API uses `?include=speakers,sessions,analytics` to fetch al
 - Better caching efficiency (single cache entry vs 21 entries)
 - Atomic data consistency (all events at same point in time)
 
-3. **GET /api/v1/archive/topics/statistics**
+3. **TODO: Statistics API - Topic usage**
+   - **Future endpoint**: `GET /api/v1/topics/statistics` (enhance existing topic backlog endpoint)
    - Query params: minPresentations (5), sortBy (count)
    - Returns: Topic statistics with presentation counts, year ranges, growth trends, popularity over time
    - Used for: Populate "Explore by Topic" section with topic bars
+   - **Current workaround**: Aggregate content data client-side or defer this feature
 
-5. **GET /api/v1/archive/speakers/hall-of-fame**
+5. **TODO: Statistics API - Speakers hall of fame**
+   - **Future endpoint**: `GET /api/v1/speakers/statistics/hall-of-fame`
    - Query params: categories (most-presentations, highest-rated, most-downloaded)
    - Returns: Top speakers in each category with counts, ratings, download stats, profile links
    - Used for: Populate "Speakers Hall of Fame" section
+   - **Current workaround**: Aggregate speaker data client-side or defer this feature
 
 6. **GET /api/v1/content?filter={"eventId":"{eventId}","featured":true}&sort=-rating&limit=3**
    - Query params: Filter by eventId and featured flag, sort by rating, limit to 3
@@ -170,17 +186,20 @@ The new consolidated API uses `?include=speakers,sessions,analytics` to fetch al
 
 ### Topic Analysis
 
-7. **GET /api/v1/archive/topics/{topicName}/timeline**
+7. **TODO: Statistics API - Topic timeline**
+   - **Future endpoint**: `GET /api/v1/topics/{topicName}/timeline`
    - Query params: includeEvents (true)
    - Returns: Topic evolution over time with yearly counts, associated events, trend analysis, related topics
    - Used for: Display topic timeline from [View Topic Timeline]
 
-8. **GET /api/v1/archive/topics/compare**
+8. **TODO: Statistics API - Topic comparison**
+   - **Future endpoint**: `GET /api/v1/topics/compare`
    - Query params: topics: [], startYear, endYear
    - Returns: Comparison data with trend lines, correlation analysis, speaker overlap, presentation counts
    - Used for: Compare topics from [Compare Topics]
 
-9. **GET /api/v1/archive/topics/export**
+9. **TODO: Statistics API - Topic export**
+   - **Future endpoint**: `GET /api/v1/topics/export`
    - Query params: format (csv|pdf|json), includeTimeline (true)
    - Returns: Download URL for topic statistics, expiration timestamp
    - Used for: Download statistics from [Download Stats]
@@ -203,12 +222,14 @@ The new consolidated API uses `?include=speakers,sessions,analytics` to fetch al
 
 ### Year Navigation
 
-13. **GET /api/v1/archive/events**
-    - Query params: year, status
-    - Returns: Events for newly selected year
+13. **GET /api/v1/events?filter={"year":{year},"status":["archived","completed"]}&include=speakers,sessions,analytics**
+    - Query params: year, status filter
+    - Returns: Events for newly selected year with all event card data
     - Used for: Load events when year is changed in selector
+    - **Consolidated**: Uses Event Management API (was /api/v1/archive/events)
 
-14. **GET /api/v1/archive/years/range**
+14. **TODO: Statistics API - Year range statistics**
+    - **Future endpoint**: `GET /api/v1/events/statistics/year-range`
     - Query params: startYear, endYear
     - Returns: Event summary statistics across year range
     - Used for: Show multi-year statistics when expanding year selector

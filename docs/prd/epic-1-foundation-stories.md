@@ -946,7 +946,7 @@ As a **platform stakeholder**, I want all 20+ years of historical BATbern event 
 
 **Architecture Integration:**
 - **Migration Tool**: Dedicated Spring Boot application with batch processing
-- **Source**: Existing Angular application data (JSON, files, images)
+- **Source**: Existing Angular application data from BATspa-old (JSON, files, images)
 - **Targets**: Multiple microservice databases with proper domain separation
 - **Validation**: Comprehensive data integrity checking and reporting
 
@@ -959,7 +959,7 @@ As a **platform stakeholder**, I want all 20+ years of historical BATbern event 
 4. **Migration Strategy**: Define incremental migration approach with rollback capabilities
 
 **Migration Implementation:**
-5. **Batch Processing**: Implement Spring Batch jobs for large-scale data migration
+5. **Batch Processing**: Implement Spring Batch jobs for the data migration
 6. **Event Data Migration**: Migrate 54+ historical events to Event Management Service database
 7. **Speaker Data Migration**: Migrate speaker profiles and presentations to Speaker Coordination Service
 8. **Content Migration**: Migrate presentations and media to Attendee Experience Service with full-text indexing
@@ -1248,9 +1248,10 @@ As a **user of any role**, I want to access a modern, responsive web application
 As a **visitor or attendee**, I want to browse and view historical BATbern events with rich content and search capabilities, so that I can explore 20+ years of conference knowledge and expertise.
 
 **Architecture Integration:**
-- **Frontend**: React event browsing components with search and filtering
-- **Backend**: Attendee Experience Service for content discovery and search
-- **Search**: AWS OpenSearch for full-text content search
+- **Frontend**: React event browsing components with search and filtering accessible through the existing Navigation Bar in the public space, not requiring login
+- **Backend - Events**: Event Management Service for event listing, filtering, and metadata (historical events accessed via `status: archived`)
+- **Backend - Content**: Attendee Experience Service for presentation search, downloads, and content discovery
+- **Search**: PostgreSQL full-text search for event and content metadata
 - **CDN**: CloudFront for optimized content delivery
 
 **Wireframe Context:**
@@ -1298,10 +1299,10 @@ As a **visitor or attendee**, I want to browse and view historical BATbern event
 **Acceptance Criteria:**
 
 **Event Archive Interface:**
-1. **Event Listing Page**: Grid/list view of all historical events with filtering and sorting
+1. **Event Listing Page**: Grid/list view of historical events (via Event Management Service `GET /api/v1/events?status=archived`) with filtering and sorting
 2. **Event Detail Pages**: Rich event pages with sessions, speakers, presentations, and photo galleries
-3. **Search Functionality**: Full-text search across events, speakers, topics, and presentation content
-4. **Advanced Filtering**: Filter by year, topic, speaker, company, and content type
+3. **Search Functionality**: Full-text search across events, speakers, topics (Event Management) and presentation content (Attendee Experience)
+4. **Advanced Filtering**: Filter by year, topic, speaker, company via Event Management API and content type via Attendee Experience API
 
 **Content Discovery Features:**
 5. **Content Preview**: Preview presentations and materials without full download
@@ -1316,15 +1317,17 @@ As a **visitor or attendee**, I want to browse and view historical BATbern event
 12. **SEO Optimization**: Proper meta tags and structured data for search engine visibility
 
 **Search & Performance:**
-13. **Search Integration**: OpenSearch integration with intelligent ranking and suggestions
-14. **Content Indexing**: Full-text indexing of presentation content and metadata
-15. **Caching Strategy**: Multi-level caching for optimal page load times
-16. **CDN Integration**: Optimized content delivery through CloudFront
+13. **Search Integration**: PostgreSQL full-text search for events and content metadata with intelligent ranking
+14. **Content Indexing**: Full-text indexing of presentation content and metadata in Attendee Experience Service
+15. **Caching Strategy**: Multi-level caching for optimal page load times (Redis for events, CDN for files)
+16. **CDN Integration**: Optimized content delivery through CloudFront for presentation files
 
 **Definition of Done:**
 - [ ] Event archive browsing interface deployed and fully functional
+- [ ] Event listing via Event Management Service (`GET /api/v1/events?status=archived`) working correctly
+- [ ] Content search via Attendee Experience Service (`GET /api/v1/content/search`) working correctly
 - [ ] Search functionality returns relevant results within <500ms
-- [ ] Advanced filtering works across all content dimensions
+- [ ] Advanced filtering works across all content dimensions (events and presentations)
 - [ ] Presentation download system working with proper access controls
 - [ ] Responsive design verified across mobile, tablet, and desktop
 - [ ] Search indexing covers all historical content with >95% accuracy
