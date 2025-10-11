@@ -1,6 +1,7 @@
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as customResources from 'aws-cdk-lib/custom-resources';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 
 /**
@@ -26,6 +27,19 @@ export interface BootstrapOrganizerProps {
 export class BootstrapOrganizer extends Construct {
   constructor(scope: Construct, id: string, props: BootstrapOrganizerProps) {
     super(scope, id);
+
+    // Create log groups for custom resources
+    const createUserLogGroup = new logs.LogGroup(this, 'CreateUserLogGroup', {
+      logGroupName: `/aws/lambda/bootstrap-organizer-create-user`,
+      retention: logs.RetentionDays.ONE_WEEK,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    const setPasswordLogGroup = new logs.LogGroup(this, 'SetPasswordLogGroup', {
+      logGroupName: `/aws/lambda/bootstrap-organizer-set-password`,
+      retention: logs.RetentionDays.ONE_WEEK,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
 
     // Create bootstrap organizer user via custom resource
     const createUserCustomResource = new customResources.AwsCustomResource(
@@ -75,7 +89,7 @@ export class BootstrapOrganizer extends Construct {
         policy: customResources.AwsCustomResourcePolicy.fromSdkCalls({
           resources: customResources.AwsCustomResourcePolicy.ANY_RESOURCE,
         }),
-        logRetention: logs.RetentionDays.ONE_WEEK,
+        logGroup: createUserLogGroup,
       }
     );
 
@@ -100,7 +114,7 @@ export class BootstrapOrganizer extends Construct {
         policy: customResources.AwsCustomResourcePolicy.fromSdkCalls({
           resources: customResources.AwsCustomResourcePolicy.ANY_RESOURCE,
         }),
-        logRetention: logs.RetentionDays.ONE_WEEK,
+        logGroup: setPasswordLogGroup,
       }
     );
 
