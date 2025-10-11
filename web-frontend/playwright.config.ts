@@ -25,7 +25,7 @@ const envConfig = {
   },
   staging: {
     baseURL: 'https://staging.batbern.ch',
-    apiURL: 'https://api-staging.batbern.ch',
+    apiURL: 'https://api.staging.batbern.ch',
   },
   production: {
     baseURL: 'https://batbern.ch',
