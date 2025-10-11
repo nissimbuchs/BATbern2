@@ -53,6 +53,13 @@ export class EcsService extends Construct {
       },
     });
 
+    // Create log group for the service
+    const logGroup = new logs.LogGroup(this, 'LogGroup', {
+      logGroupName: `/aws/ecs/${props.envName}/${props.serviceName}`,
+      retention: isProd ? logs.RetentionDays.SIX_MONTHS : logs.RetentionDays.ONE_MONTH,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
     // Add container to task definition
     this.container = this.taskDefinition.addContainer('Container', {
       image: props.repository
@@ -60,9 +67,7 @@ export class EcsService extends Construct {
         : ecs.ContainerImage.fromRegistry('public.ecr.aws/docker/library/nginx:alpine'),
       logging: ecs.LogDrivers.awsLogs({
         streamPrefix: props.serviceName,
-        logRetention: isProd
-          ? logs.RetentionDays.SIX_MONTHS
-          : logs.RetentionDays.ONE_MONTH,
+        logGroup: logGroup,
       }),
       environment: props.environment,
       secrets: props.secrets,
