@@ -62,12 +62,15 @@ export default defineConfig({
       workbox: {
         // Service worker caching strategies
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+        skipWaiting: true, // Activate new service worker immediately
+        clientsClaim: true, // Take control of all pages immediately
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: 'CacheFirst',
+            handler: 'NetworkFirst',
             options: {
               cacheName: 'google-fonts-stylesheets',
+              networkTimeoutSeconds: 3, // Fallback to cache if network is slow
               expiration: {
                 maxEntries: 10,
                 maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
@@ -79,9 +82,10 @@ export default defineConfig({
           },
           {
             urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-            handler: 'CacheFirst',
+            handler: 'NetworkFirst',
             options: {
               cacheName: 'google-fonts-webfonts',
+              networkTimeoutSeconds: 3, // Fallback to cache if network is slow
               expiration: {
                 maxEntries: 30,
                 maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
@@ -118,9 +122,9 @@ export default defineConfig({
             },
           },
         ],
-        // Offline fallback
+        // Offline fallback - exclude auth pages and API routes
         navigateFallback: '/offline.html',
-        navigateFallbackDenylist: [/^\/api/],
+        navigateFallbackDenylist: [/^\/api/, /^\/login/, /^\/register/, /^\/forgot-password/],
       },
       devOptions: {
         enabled: false, // Disable PWA in development for faster builds
