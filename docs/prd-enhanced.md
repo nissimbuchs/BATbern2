@@ -172,14 +172,17 @@ For comprehensive technical implementation details, refer to the following archi
 - Architecture finalization with architect
 - Development environment preparation
 
-**Epic Timeline**:
-- **Epic 1**: Weeks 1-12 (Foundation & Core Infrastructure)
-- **Epic 2**: Weeks 13-20 (Basic Event Creation & Publishing)
-- **Epic 3**: Weeks 21-30 (Core Speaker Management)
-- **Epic 4**: Weeks 31-38 (Event Finalization & Quality)
-- **Epic 5**: Weeks 39-46 (Attendee Experience)
-- **Epic 6**: Weeks 47-50 (Partner Coordination)
-- **Epic 7**: Weeks 57-62 (Enhanced Features)
+**Epic Timeline (REVISED - CRUD-First Strategy with API Consolidation)**:
+- **Epic 1**: Weeks 1-9 (Foundation & Essential Infrastructure)
+- **Epic 2**: Weeks 10-18 (Entity CRUD & Domain Services + API Consolidation)
+- **Epic 3**: Weeks 19-21 (Historical Data Migration)
+- **Epic 4**: Weeks 22-26 (Public Website & Content Discovery)
+- **Epic 5**: Weeks 27+ (Enhanced Organizer Workflows - DEFERRED)
+- **Epic 6**: Weeks 27+ (Speaker Portal & Support - DEFERRED)
+- **Epic 7**: Weeks 27+ (Attendee Experience Enhancements - DEFERRED)
+- **Epic 8**: Weeks 27+ (Partner Coordination - DEFERRED)
+
+**Reorganization Rationale**: Epic structure revised to prioritize functional delivery (CRUD with consolidated APIs, data migration, public website) before workflow automation. This accelerates public website launch from Week 38+ to Week 26 while preserving all functional requirements. Epic 2 includes API consolidation (Stories 1.15a.1-1.15a.8) to ensure production-ready RESTful APIs from the start.
 
 ### 4.2 Content Management & Storage Architecture
 
@@ -293,15 +296,19 @@ Examples:
 
 ### Detailed Epic Implementation
 
-The comprehensive epic breakdown follows a vertical slice approach, delivering complete functionality each epic:
+The comprehensive epic breakdown follows a CRUD-first approach, prioritizing functional entity management and public website delivery before workflow automation:
 
-- **[Epic 1: Foundation & Core Infrastructure](./prd/epic-1-foundation-stories.md)** - Platform foundation with authentication, data migration, and basic event browsing (12 weeks)
-- **[Epic 2: Basic Event Creation & Publishing](./prd/epic-2-event-creation-publishing-stories.md)** - Minimal viable event management with immediate publishing (8 weeks)
-- **[Epic 3: Core Speaker Management](./prd/epic-3-speaker-management-stories.md)** - Essential speaker invitation and material collection workflow (10 weeks)
-- **[Epic 4: Event Finalization & Quality](./prd/epic-4-event-finalization-stories.md)** - Complete event planning cycle with quality control (8 weeks)
-- **[Epic 5: Attendee Experience](./prd/epic-5-attendee-experience-stories.md)** - Content discovery, personal engagement, and mobile access (8 weeks)
-- **[Epic 6: Partner Coordination](./prd/epic-6-partner-coordination-stories.md)** - Strategic partnership tools including topic voting and meeting coordination (4 weeks)
-- **[Epic 7: Enhanced Features](./prd/epic-7-enhanced-features-stories.md)** - Platform polish with advanced capabilities (6 weeks)
+**Phase 1: Foundation & Core Functionality (Weeks 1-26)**
+- **[Epic 1: Foundation & Essential Infrastructure](./prd/epic-1-foundation-stories.md)** - Platform foundation with authentication, monitoring, security (9 weeks)
+- **[Epic 2: Entity CRUD & Domain Services](./prd/epic-2-entity-crud-domain-services.md)** - End-to-end CRUD with consolidated RESTful APIs for Event, Speaker, Company, User entities (9 weeks, includes API consolidation 1.15a.1-1.15a.8)
+- **[Epic 3: Historical Data Migration](./prd/epic-3-historical-data-migration.md)** - Migrate 20+ years of BATbern event data (3 weeks)
+- **[Epic 4: Public Website & Content Discovery](./prd/epic-4-public-website-content-discovery.md)** - Public event pages, registration, historical archive browsing (5 weeks)
+
+**Phase 2: Enhanced Workflows & Advanced Features (Weeks 26+, DEFERRED)**
+- **[Epic 5: Enhanced Organizer Workflows](./prd/epic-5-enhanced-organizer-workflows.md)** - 16-step event planning automation with intelligent features (18 weeks, DEFERRED)
+- **[Epic 6: Speaker Portal & Support](./prd/epic-6-speaker-portal-support.md)** - Self-service speaker portal with advanced material management (8 weeks, DEFERRED)
+- **[Epic 7: Attendee Experience Enhancements](./prd/epic-7-attendee-experience-enhancements.md)** - Personal engagement, mobile PWA, offline access (6 weeks, DEFERRED)
+- **[Epic 8: Partner Coordination](./prd/epic-8-partner-coordination.md)** - Analytics dashboards, topic voting, meeting coordination (4 weeks, DEFERRED)
 
 Each epic document contains:
 - Detailed user stories with architecture alignment
@@ -315,19 +322,72 @@ Each epic document contains:
 
 ## Success Metrics
 
-### Epic 1 Success (Foundation - Week 12)
-- 100% historical data migrated successfully
-- User authentication operational for all roles
-- Basic event browsing functional
+### Phase 1: Foundation & Core Functionality (Weeks 1-25)
+
+**Epic 1 Success (Foundation - Week 9)**
+- User authentication operational for all roles (Organizer, Speaker, Partner, Attendee)
+- API Gateway routing to all microservices with <50ms overhead
+- CI/CD pipeline with automated deployments and <10min build time
+- Infrastructure monitoring with <5min MTTD (Mean Time To Detection)
+- Essential security controls and GDPR compliance operational
 - Platform foundation ready for feature development
 
-### Epic Deliverables & Success Metrics
-- **Epic 2**: Event creation to publication in <30 minutes, landing page live
-- **Epic 3**: 90% speaker invitation acceptance rate, materials collected
-- **Epic 4**: Complete event workflow operational, quality control enforced
-- **Epic 5**: Content search across 20+ years functional, personal preferences managed, mobile access enabled
-- **Epic 6**: Partner topic voting adoption by 100% of partners, efficient meeting coordination
-- **Epic 7**: User satisfaction scores >4.5/5 across all roles
+**Epic 2 Success (Entity CRUD + API Consolidation - Week 18)**
+- All entity CRUD operations functional with <200ms P95 response time
+- **Consolidated RESTful APIs operational** (Stories 1.15a.1-1.15a.8: 80-90% reduction in HTTP requests)
+- Company management with Swiss UID validation operational
+- Event CRUD with type support (full-day, afternoon, evening)
+- Speaker profiles and basic coordination working
+- User role management with promotion/demotion workflows
+- React frontend with role-adaptive navigation deployed
+- **Resource expansion working** (`?include=` pattern reduces multi-API calls to 1-2 per page)
+- **Advanced filtering** with JSON filter syntax operational across all entities
+
+**Epic 3 Success (Data Migration - Week 21)**
+- 100% historical data migrated successfully (54+ events)
+- All speaker profiles and presentations migrated to S3
+- Company relationships established in Company Management Service
+- Data integrity validation 100% pass rate
+- Search indexes built for content discovery
+- Migration completed in <4 hours total time
+
+**Epic 4 Success (Public Website - Week 26)**
+- Public event landing page live with current/upcoming events
+- Event registration flow functional (3-step wizard with QR code)
+- Historical archive browsing operational (20+ years of content)
+- Full-text search across events, speakers, presentations working
+- Mobile-responsive design with <2.5s Largest Contentful Paint
+- >99.5% uptime for public-facing pages
+
+### Phase 2: Enhanced Workflows & Advanced Features (Weeks 26+, DEFERRED)
+
+**Epic 5 Success (Enhanced Organizer Workflows)**
+- Event creation to publication in <30 minutes
+- 16-step workflow automation operational with intelligent task sequencing
+- Progressive publishing engine with automated content updates
+- Topic selection with ML-powered duplicate detection
+- Automated deadline tracking and escalation
+
+**Epic 6 Success (Speaker Portal & Support)**
+- 90% speaker invitation acceptance rate
+- Materials collected 1 month before events via self-service portal
+- Speaker dashboard with performance metrics operational
+- Communication hub with real-time messaging functional
+- Advanced material management with version control
+
+**Epic 7 Success (Attendee Experience Enhancements)**
+- Personal engagement dashboard with bookmarks and preferences
+- Mobile PWA with offline capabilities functional
+- Granular notification preferences respected across all channels
+- Content recommendation engine providing relevant suggestions
+- User satisfaction scores >4.5/5 for attendee experience
+
+**Epic 8 Success (Partner Coordination)**
+- Partner topic voting adoption by 100% of partners
+- Analytics dashboards showing employee attendance and engagement
+- Efficient meeting coordination with automated scheduling
+- Topic suggestions influencing event planning decisions
+- Partner satisfaction with strategic influence mechanisms
 
 ### Overall Platform Success
 - Successful migration of 20+ years of event content

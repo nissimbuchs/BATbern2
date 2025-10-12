@@ -25,8 +25,8 @@ services:
     url: ${PARTNER_COORDINATION_SERVICE_URL:http://localhost:8083}
   attendee-experience:
     url: ${ATTENDEE_EXPERIENCE_SERVICE_URL:http://localhost:8084}
-  company-management:
-    url: ${COMPANY_MANAGEMENT_SERVICE_URL:http://localhost:8085}
+  company-user-management:
+    url: ${COMPANY_USER_MANAGEMENT_SERVICE_URL:http://localhost:8085}
 
 # AWS Cognito Configuration
 aws:

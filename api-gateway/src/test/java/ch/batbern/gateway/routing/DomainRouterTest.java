@@ -39,7 +39,7 @@ class DomainRouterTest {
         ReflectionTestUtils.setField(domainRouter, "speakerCoordinationUrl", "http://localhost:8082");
         ReflectionTestUtils.setField(domainRouter, "partnerCoordinationUrl", "http://localhost:8083");
         ReflectionTestUtils.setField(domainRouter, "attendeeExperienceUrl", "http://localhost:8084");
-        ReflectionTestUtils.setField(domainRouter, "companyManagementUrl", "http://localhost:8085");
+        ReflectionTestUtils.setField(domainRouter, "companyUserManagementUrl", "http://localhost:8085");
     }
 
     // Test 5.1: should_routeToEventService_when_eventsEndpointCalled
@@ -109,7 +109,7 @@ class DomainRouterTest {
         String targetService = domainRouter.determineTargetService(requestPath);
 
         // Then
-        assertThat(targetService).isEqualTo("company-management-service");
+        assertThat(targetService).isEqualTo("company-user-management-service");
     }
 
     @Test
