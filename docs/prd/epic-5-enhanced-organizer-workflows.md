@@ -1,8 +1,16 @@
-# Epic 2: Basic Event Creation & Publishing - Vertical Slice Stories
+# Epic 5: Enhanced Organizer Workflows - DEFERRED
+
+**Status:** 📦 **DEFERRED TO PHASE 2** (Week 26+)
+
+**Reorganization Note:** This epic was formerly "Epic 2: Basic Event Creation & Publishing" and now includes stories from original Epic 4 (Event Finalization). It has been reorganized and deferred to Phase 2 to prioritize CRUD foundation and public website launch in Phase 1.
+
+**Phase 1 Priority:** Epics 1-4 (Foundation, CRUD, Migration, Public Website) deliver functional platform by Week 25.
+
+---
 
 ## Epic Overview
 
-**Epic Goal**: Deliver minimal viable event management functionality that allows organizers to create events with topics and immediately publish them to a public landing page, providing immediate value to the platform.
+**Epic Goal**: Implement the complete 16-step event planning workflow with intelligent automation, topic management, progressive publishing, and quality control, transforming manual event coordination into streamlined automated workflows.
 
 **Deliverable**: Organizers can create events, select topics, and have them immediately visible on a public landing page - achieving end-to-end event visibility in <30 minutes.
 
