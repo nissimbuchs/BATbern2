@@ -172,17 +172,17 @@ For comprehensive technical implementation details, refer to the following archi
 - Architecture finalization with architect
 - Development environment preparation
 
-**Epic Timeline (REVISED - CRUD-First Strategy)**:
+**Epic Timeline (REVISED - CRUD-First Strategy with API Consolidation)**:
 - **Epic 1**: Weeks 1-9 (Foundation & Essential Infrastructure)
-- **Epic 2**: Weeks 10-17 (Entity CRUD & Domain Services)
-- **Epic 3**: Weeks 18-20 (Historical Data Migration)
-- **Epic 4**: Weeks 21-25 (Public Website & Content Discovery)
-- **Epic 5**: Weeks 26+ (Enhanced Organizer Workflows - DEFERRED)
-- **Epic 6**: Weeks 26+ (Speaker Portal & Support - DEFERRED)
-- **Epic 7**: Weeks 26+ (Attendee Experience Enhancements - DEFERRED)
-- **Epic 8**: Weeks 26+ (Partner Coordination - DEFERRED)
+- **Epic 2**: Weeks 10-18 (Entity CRUD & Domain Services + API Consolidation)
+- **Epic 3**: Weeks 19-21 (Historical Data Migration)
+- **Epic 4**: Weeks 22-26 (Public Website & Content Discovery)
+- **Epic 5**: Weeks 27+ (Enhanced Organizer Workflows - DEFERRED)
+- **Epic 6**: Weeks 27+ (Speaker Portal & Support - DEFERRED)
+- **Epic 7**: Weeks 27+ (Attendee Experience Enhancements - DEFERRED)
+- **Epic 8**: Weeks 27+ (Partner Coordination - DEFERRED)
 
-**Reorganization Rationale**: Epic structure revised to prioritize functional delivery (CRUD, data migration, public website) before workflow automation. This accelerates public website launch from Week 38+ to Week 25 while preserving all functional requirements.
+**Reorganization Rationale**: Epic structure revised to prioritize functional delivery (CRUD with consolidated APIs, data migration, public website) before workflow automation. This accelerates public website launch from Week 38+ to Week 26 while preserving all functional requirements. Epic 2 includes API consolidation (Stories 1.15a.1-1.15a.8) to ensure production-ready RESTful APIs from the start.
 
 ### 4.2 Content Management & Storage Architecture
 
@@ -298,9 +298,9 @@ Examples:
 
 The comprehensive epic breakdown follows a CRUD-first approach, prioritizing functional entity management and public website delivery before workflow automation:
 
-**Phase 1: Foundation & Core Functionality (Weeks 1-25)**
+**Phase 1: Foundation & Core Functionality (Weeks 1-26)**
 - **[Epic 1: Foundation & Essential Infrastructure](./prd/epic-1-foundation-stories.md)** - Platform foundation with authentication, monitoring, security (9 weeks)
-- **[Epic 2: Entity CRUD & Domain Services](./prd/epic-2-entity-crud-domain-services.md)** - End-to-end CRUD for Event, Speaker, Company, User entities (8 weeks)
+- **[Epic 2: Entity CRUD & Domain Services](./prd/epic-2-entity-crud-domain-services.md)** - End-to-end CRUD with consolidated RESTful APIs for Event, Speaker, Company, User entities (9 weeks, includes API consolidation 1.15a.1-1.15a.8)
 - **[Epic 3: Historical Data Migration](./prd/epic-3-historical-data-migration.md)** - Migrate 20+ years of BATbern event data (3 weeks)
 - **[Epic 4: Public Website & Content Discovery](./prd/epic-4-public-website-content-discovery.md)** - Public event pages, registration, historical archive browsing (5 weeks)
 
@@ -332,15 +332,18 @@ Each epic document contains:
 - Essential security controls and GDPR compliance operational
 - Platform foundation ready for feature development
 
-**Epic 2 Success (Entity CRUD - Week 17)**
+**Epic 2 Success (Entity CRUD + API Consolidation - Week 18)**
 - All entity CRUD operations functional with <200ms P95 response time
+- **Consolidated RESTful APIs operational** (Stories 1.15a.1-1.15a.8: 80-90% reduction in HTTP requests)
 - Company management with Swiss UID validation operational
 - Event CRUD with type support (full-day, afternoon, evening)
 - Speaker profiles and basic coordination working
 - User role management with promotion/demotion workflows
 - React frontend with role-adaptive navigation deployed
+- **Resource expansion working** (`?include=` pattern reduces multi-API calls to 1-2 per page)
+- **Advanced filtering** with JSON filter syntax operational across all entities
 
-**Epic 3 Success (Data Migration - Week 20)**
+**Epic 3 Success (Data Migration - Week 21)**
 - 100% historical data migrated successfully (54+ events)
 - All speaker profiles and presentations migrated to S3
 - Company relationships established in Company Management Service
@@ -348,7 +351,7 @@ Each epic document contains:
 - Search indexes built for content discovery
 - Migration completed in <4 hours total time
 
-**Epic 4 Success (Public Website - Week 25)**
+**Epic 4 Success (Public Website - Week 26)**
 - Public event landing page live with current/upcoming events
 - Event registration flow functional (3-step wizard with QR code)
 - Historical archive browsing operational (20+ years of content)
