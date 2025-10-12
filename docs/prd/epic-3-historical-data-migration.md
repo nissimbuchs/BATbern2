@@ -13,7 +13,7 @@
 - **Storage**: AWS S3 for presentations, photos, and media with CDN
 - **Validation**: Comprehensive data integrity checking and reporting
 
-**Duration**: 3 weeks (Weeks 18-20)
+**Duration**: 3 weeks (Weeks 19-21)
 
 **Prerequisites**: Epic 2 complete (all entity CRUD APIs operational and ready to receive data)
 

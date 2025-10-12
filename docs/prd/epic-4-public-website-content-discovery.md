@@ -13,7 +13,7 @@
 - **CDN**: CloudFront for global content delivery
 - **Cache**: Redis for event data and search results
 
-**Duration**: 5 weeks (Weeks 21-25)
+**Duration**: 5 weeks (Weeks 22-26)
 
 **Prerequisites**: Epic 3 complete (historical data migrated and searchable)
 
