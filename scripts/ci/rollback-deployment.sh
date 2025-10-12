@@ -24,7 +24,7 @@ SERVICES=(
     "speaker-coordination-service"
     "partner-coordination-service"
     "attendee-experience-service"
-    "company-management-service"
+    "company-user-management-service"
 )
 
 echo ""

@@ -33,7 +33,7 @@ export interface MicroservicesStackProps extends cdk.StackProps {
  * 3. speaker-coordination     - Handles /api/v1/speakers
  * 4. partner-coordination     - Handles /api/v1/partners
  * 5. attendee-experience      - Handles /api/v1/content
- * 6. company-management       - Handles /api/v1/companies
+ * 6. company-user-management - Handles /api/v1/companies and /api/v1/users
  *
  * Path-based routing (NOT subdomain routing):
  * Client → api.staging.batbern.ch/api/v1/events → API Gateway → event-management:8080
@@ -104,7 +104,7 @@ export class MicroservicesStack extends cdk.Stack {
         healthCheck: '/actuator/health',
       },
       {
-        name: 'company-management',
+        name: 'company-user-management',
         port: 8080,
         cpu: 256,
         memory: 512,
@@ -259,7 +259,7 @@ export class MicroservicesStack extends cdk.Stack {
         SPEAKER_COORDINATION_SERVICE_URL: serviceUrls['speaker-coordination'],
         PARTNER_COORDINATION_SERVICE_URL: serviceUrls['partner-coordination'],
         ATTENDEE_EXPERIENCE_SERVICE_URL: serviceUrls['attendee-experience'],
-        COMPANY_MANAGEMENT_SERVICE_URL: serviceUrls['company-management'],
+        COMPANY_USER_MANAGEMENT_SERVICE_URL: serviceUrls['company-user-management'],
         // Cognito configuration
         COGNITO_USER_POOL_ID: props.userPool.userPoolId,
         COGNITO_CLIENT_ID: props.userPoolClient.userPoolClientId,

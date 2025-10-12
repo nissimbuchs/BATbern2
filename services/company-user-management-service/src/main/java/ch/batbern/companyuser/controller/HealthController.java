@@ -1,4 +1,4 @@
-package ch.batbern.companies.controller;
+package ch.batbern.companyuser.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,7 +16,7 @@ public class HealthController {
     public ResponseEntity<Map<String, Object>> health() {
         return ResponseEntity.ok(Map.of(
             "status", "UP",
-            "service", "company-management-service",
+            "service", "company-user-management-service",
             "timestamp", Instant.now().toString()
         ));
     }
@@ -24,9 +24,9 @@ public class HealthController {
     @GetMapping("/info")
     public ResponseEntity<Map<String, Object>> info() {
         return ResponseEntity.ok(Map.of(
-            "service", "company-management-service",
+            "service", "company-user-management-service",
             "version", "1.0.0",
-            "description", "Company Management Service for BATbern Platform"
+            "description", "Company & User Management Service for BATbern Platform"
         ));
     }
 }

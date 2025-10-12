@@ -38,7 +38,7 @@ export class CICDStack extends cdk.Stack {
       'speaker-coordination-service',
       'partner-coordination-service',
       'attendee-experience-service',
-      'company-management-service',
+      'company-user-management-service',
     ];
 
     this.ecrRepositories = new Map();

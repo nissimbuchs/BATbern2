@@ -27,7 +27,7 @@ DOMAIN_SERVICES=(
     "event-management-service"
     "speaker-coordination-service"
     "partner-coordination-service"
-    "company-management-service"
+    "company-user-management-service"
     "attendee-experience-service"
 )
 
