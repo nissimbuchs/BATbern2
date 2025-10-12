@@ -42,7 +42,7 @@ class RequestRoutingIntegrationTest {
         ReflectionTestUtils.setField(domainRouter, "speakerCoordinationUrl", "http://localhost:8082");
         ReflectionTestUtils.setField(domainRouter, "partnerCoordinationUrl", "http://localhost:8083");
         ReflectionTestUtils.setField(domainRouter, "attendeeExperienceUrl", "http://localhost:8084");
-        ReflectionTestUtils.setField(domainRouter, "companyManagementUrl", "http://localhost:8085");
+        ReflectionTestUtils.setField(domainRouter, "companyUserManagementUrl", "http://localhost:8085");
     }
 
     @Test

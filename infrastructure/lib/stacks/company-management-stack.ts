@@ -20,10 +20,17 @@ export interface CompanyManagementStackProps extends cdk.StackProps {
 }
 
 /**
- * Company Management Service Stack
+ * Company & User Management Service Stack
  *
- * Domain microservice for managing company profiles, employees, and corporate data.
- * Handles /api/v1/companies routes.
+ * Consolidated master data microservice for managing:
+ * - Company profiles, employees, and corporate data (/api/v1/companies)
+ * - User profiles, preferences, settings, and roles (/api/v1/users)
+ * - User-company relationships
+ * - AWS Cognito integration
+ * - File storage (logos, profile pictures) with S3 presigned URLs
+ *
+ * This service consolidates Company Management and User Management into a single
+ * service because both are tightly coupled master data concerns used by all domain services.
  */
 export class CompanyManagementStack extends cdk.Stack {
   public readonly service: ecsPatterns.ApplicationLoadBalancedFargateService;
@@ -34,7 +41,7 @@ export class CompanyManagementStack extends cdk.Stack {
 
     const envName = props.config.envName;
     const isProd = envName === 'production';
-    const serviceName = 'company-management';
+    const serviceName = 'company-user-management';
 
     // Common environment variables
     const commonEnv = {
@@ -74,9 +81,13 @@ export class CompanyManagementStack extends cdk.Stack {
       environment: {
         ...commonEnv,
         SERVICE_NAME: serviceName,
-        // Cognito configuration
+        // Cognito configuration for user management
         COGNITO_USER_POOL_ID: props.userPool.userPoolId,
         COGNITO_CLIENT_ID: props.userPoolClient.userPoolClientId,
+        // Service scope - consolidated master data
+        SERVICE_SCOPE: 'companies-and-users',
+        HANDLES_COMPANIES: 'true',
+        HANDLES_USERS: 'true',
       },
       healthCheck: {
         command: ['CMD-SHELL', 'curl -f http://localhost:8080/actuator/health || exit 1'],
@@ -143,14 +154,15 @@ export class CompanyManagementStack extends cdk.Stack {
 
     // Apply tags
     cdk.Tags.of(this).add('Environment', envName);
-    cdk.Tags.of(this).add('Component', 'CompanyManagement-Service');
+    cdk.Tags.of(this).add('Component', 'CompanyUserManagement-Service');
     cdk.Tags.of(this).add('Project', 'BATbern');
+    cdk.Tags.of(this).add('Consolidation', 'Companies+Users');
 
     // Outputs
     new cdk.CfnOutput(this, 'ServiceUrl', {
       value: this.serviceUrl,
-      description: 'Company Management Service internal URL',
-      exportName: `${envName}-company-management-url`,
+      description: 'Company & User Management Service internal URL (consolidated)',
+      exportName: `${envName}-company-user-management-url`,
     });
   }
 }

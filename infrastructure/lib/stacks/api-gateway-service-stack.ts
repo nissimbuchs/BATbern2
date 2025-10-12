@@ -21,7 +21,7 @@ export interface ApiGatewayServiceStackProps extends cdk.StackProps {
   speakerCoordinationServiceUrl?: string;
   partnerCoordinationServiceUrl?: string;
   attendeeExperienceServiceUrl?: string;
-  companyManagementServiceUrl?: string;
+  companyUserManagementServiceUrl?: string;
 }
 
 /**
@@ -87,7 +87,7 @@ export class ApiGatewayServiceStack extends cdk.Stack {
         SPEAKER_COORDINATION_SERVICE_URL: props.speakerCoordinationServiceUrl || 'http://speaker-coordination.internal',
         PARTNER_COORDINATION_SERVICE_URL: props.partnerCoordinationServiceUrl || 'http://partner-coordination.internal',
         ATTENDEE_EXPERIENCE_SERVICE_URL: props.attendeeExperienceServiceUrl || 'http://attendee-experience.internal',
-        COMPANY_MANAGEMENT_SERVICE_URL: props.companyManagementServiceUrl || 'http://company-management.internal',
+        COMPANY_USER_MANAGEMENT_SERVICE_URL: props.companyUserManagementServiceUrl || 'http://company-user-management.internal',
         // Cognito configuration
         COGNITO_USER_POOL_ID: props.userPool.userPoolId,
         COGNITO_CLIENT_ID: props.userPoolClient.userPoolClientId,

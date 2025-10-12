@@ -1,8 +1,16 @@
-# Epic 3: Core Speaker Management - Vertical Slice Stories
+# Epic 6: Speaker Portal & Support - DEFERRED
+
+**Status:** 📦 **DEFERRED TO PHASE 2** (Week 26+)
+
+**Reorganization Note:** This epic was formerly "Epic 3: Core Speaker Management" and now focuses on the self-service speaker portal and advanced features. Basic speaker CRUD is in Epic 2.
+
+**Phase 1 Priority:** Epic 2 provides speaker entity CRUD. This epic adds invitation workflows, material submission portal, and communication hub.
+
+---
 
 ## Epic Overview
 
-**Epic Goal**: Implement essential speaker workflow from invitation through material collection, providing the foundation for speaker coordination without requiring the full portal.
+**Epic Goal**: Deliver comprehensive self-service speaker portal with invitation workflows, material submission, performance dashboards, and communication hub, enabling speakers to manage their BATbern participation independently.
 
 **Deliverable**: Complete speaker invitation, response tracking, and material collection workflow enabling organizers to manage speakers end-to-end.
 
