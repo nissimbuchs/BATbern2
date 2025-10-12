@@ -1,8 +1,16 @@
-# Epic 6: Partner Coordination - Vertical Slice Stories
+# Epic 8: Partner Coordination - DEFERRED
+
+**Status:** 📦 **DEFERRED TO PHASE 2** (Week 26+)
+
+**Reorganization Note:** This epic was formerly "Epic 6: Partner Coordination" and remains focused on partner-specific features (analytics, topic voting, meeting coordination).
+
+**Phase 1 Priority:** Partner entity management included in Epic 2. This epic adds strategic partnership tools for ROI analytics and topic influence.
+
+---
 
 ## Epic Overview
 
-**Epic Goal**: Deliver strategic partnership tools enabling partners to influence event topics and coordinate efficiently with organizers.
+**Epic Goal**: Deliver strategic partnership tools including analytics dashboards, topic voting with weighted influence, and automated meeting coordination, enabling partners to demonstrate ROI and guide event direction.
 
 **Deliverable**: Partners can vote on topics, submit suggestions, and organizers can coordinate seasonal partner meetings with automated scheduling and materials.
 
@@ -25,6 +33,27 @@ As a **partner**, I want to view comprehensive analytics about employee attendan
 - Analytics: AWS QuickSight embedded dashboards
 - Database: PostgreSQL materialized views
 - Frontend: React dashboard components
+
+---
+
+### Wireframe References
+**From docs/wireframes/sitemap.md:**
+
+1. **Partner Analytics Dashboard**: `docs/wireframes/story-6.1-partner-analytics-dashboard.md` ✅
+   - Comprehensive analytics overview
+   - Attendance metrics visualization
+   - Trend analysis charts
+   - Department breakdown
+   - Comparative benchmarking
+   - Export controls (PDF/Excel)
+
+2. **Employee Analytics**: `docs/wireframes/story-6.1-employee-analytics.md` ✅
+   - Detailed employee participation tracking
+   - Individual engagement scores
+   - Content interaction metrics
+   - Department-level insights
+
+---
 
 **Acceptance Criteria**:
 1. **Attendance Metrics**: Employee attendance by event

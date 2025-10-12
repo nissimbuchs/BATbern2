@@ -2,9 +2,9 @@
 
 ## Epic Overview
 
-**Epic Goal**: Establish the core platform foundation with Domain-Driven Design microservices architecture, multi-role authentication, essential infrastructure, and role-adaptive React frontend - **optimized for rapid functional delivery**.
+**Epic Goal**: Establish the core platform foundation with Domain-Driven Design microservices architecture, multi-role authentication, and essential infrastructure - **optimized for rapid functional delivery**.
 
-**📋 Story Status Summary (REVISED - Focus on Functionality)**
+**📋 Story Status Summary (REVISED - Infrastructure Foundation Only)**
 
 **✅ Completed Stories (Foundation Ready):**
 - ✅ **Story 1.1**: Shared Kernel Infrastructure Setup
@@ -21,15 +21,15 @@
 - 📝 **Story 1.9**: Error Handling Essentials (SIMPLIFIED - 1 week)
 - 📝 **Story 1.11**: Security Essentials (SIMPLIFIED - 1.5 weeks)
 
-**🎯 Ready to Start - Core Functionality (Stories 1.14-1.20):**
-- **Story 1.14**: Company Management Service
-- **Story 1.15**: Historical Data Migration
-- ✅ **Story 1.15a**: API Consolidation Foundation (COMPLETE - enables 1.15a.1-1.15a.11)
-- **Story 1.16**: Event Management Service Core
-- **Story 1.17**: React Frontend Foundation (or Events API Consolidation - see note)
-- **Story 1.18**: Basic Event Display & Archive (or Partners API - see note)
-- **Story 1.19**: Speaker Coordination Service (or Speakers API - see note)
-- **Story 1.20**: User Role Management
+**📦 Stories Moved to Other Epics (Epic Reorganization 2025-10-12):**
+- **Story 1.14 → 2.1** (Company Management) → **Epic 2: Entity CRUD & Domain Services**
+- **Story 1.15 → 3.1** (Historical Data Migration) → **Epic 3: Historical Data Migration**
+- **Story 1.16 → 2.2** (Event Management) → **Epic 2: Entity CRUD & Domain Services**
+- **Story 1.17 → 2.5** (React Frontend) → **Epic 2: Entity CRUD & Domain Services**
+- **Story 1.18 → 4.2** (Historical Archive) → **Epic 4: Public Website & Content Discovery**
+- **Story 1.19 → 2.3** (Speaker Coordination) → **Epic 2: Entity CRUD & Domain Services**
+- **Story 1.20 → 2.4** (User Role Management) → **Epic 2: Entity CRUD & Domain Services**
+- ✅ **Story 1.15a**: API Consolidation Foundation (COMPLETE - enables domain API consolidations)
 
 **Note:** Stories 1.15a.1 to 1.15a.11 in the stories directory are domain-specific API consolidations that build on Story 1.15a.
 
@@ -357,10 +357,10 @@ As a **developer**, I want a single-command local development environment with D
 - [ ] Tested on macOS, Linux, and Windows environments
 
 **Progressive Enhancement Notes:**
-- Story 1.14 (Company Management): Add `company-management` service to docker-compose.yml
-- Story 1.16 (Event Management): Add `event-management` service to docker-compose.yml
-- Story 1.17 (React Frontend): Add `web-frontend` service to docker-compose.yml
-- Story 1.19 (Speaker Coordination): Add `speaker-coordination` service to docker-compose.yml
+- Story 2.1 (Company Management): Add `company-management` service to docker-compose.yml
+- Story 2.2 (Event Management): Add `event-management` service to docker-compose.yml
+- Story 2.5 (React Frontend): Add `web-frontend` service to docker-compose.yml
+- Story 2.3 (Speaker Coordination): Add `speaker-coordination` service to docker-compose.yml
 
 Each subsequent story that implements a domain service should include:
 1. Dockerfile.dev for hot reload support
@@ -861,131 +861,17 @@ As a **backend developer**, I want a comprehensive caching strategy implemented 
 - [ ] Team trained on caching patterns
 
 ---
-## Story 1.14: Company Management Service Foundation
+## 📦 Stories 1.14-1.20, 1.15, 1.18 Moved to Other Epics
 
-**User Story:**
-As a **partner or attendee**, I want my company affiliation to be properly managed and verified, so that I can access company-specific features and analytics while maintaining data integrity.
+**Note:** The following stories have been reorganized into separate epics as part of the CRUD-first strategy (2025-10-12):
 
-**Architecture Integration:**
-- **Service**: `company-management-service/` (Java 21 + Spring Boot 3.2)
-- **Database**: PostgreSQL with company profiles, employee relationships
-- **Storage**: AWS S3 for company logos and documentation
-- **Cache**: ElastiCache Redis for company search and validation
-
-**Wireframe Context:**
-
-### Wireframe References
-**From docs/wireframes/sitemap.md:**
-- **Main Screen:** `docs/wireframes/story-1.14-company-management-screen.md` ✅
-  - Company CRUD operations interface
-  - Company profile editor with logo upload
-  - Employee relationship management
-  - Partner status toggle
-  - Swiss UID verification
-
-### UI Components
-**Key interface elements:**
-- **Company Form**: Create/edit company profiles with Swiss UID validation
-- **Logo Upload**: Drag-and-drop interface for company logo with preview
-- **Employee List**: Display and manage employee-company relationships
-- **Partner Toggle**: Enable/disable partner status with privilege indicators
-- **Search Interface**: Autocomplete company search with Redis-backed results
-- **Verification Status**: Visual indicators for company verification state
-
-### Wireframe Status
-- ✅ **EXISTS**: Company Management Screen wireframe fully documented
-  - Complete company CRUD operations interface
-  - Swiss UID verification integration
-  - Logo upload and CDN management
-  - Partner status toggle and employee relationships
-
-### Navigation
-**Key navigation paths from this screen:**
-- → Associated Speakers/Employees list
-- → Company Statistics dashboard
-- ⤴ Event Management Dashboard (if accessed from organizer portal)
-
-**Acceptance Criteria:**
-
-**Company Data Model:**
-1. **Company Entity**: Create Company aggregate with Swiss business validation (UID register integration)
-2. **Employee Relationships**: Model employee-company associations with role verification
-3. **Company Profiles**: Support company metadata (logo, description, contact information, partner status)
-4. **Data Validation**: Validate Swiss company UIDs and maintain data quality
-
-**Service Implementation:**
-5. **REST API**: Implement OpenAPI-documented endpoints for company CRUD operations
-6. **Search Functionality**: Enable company search with autocomplete using Redis caching
-7. **Partner Management**: Special handling for partner companies with enhanced privileges
-8. **Company Verification**: Automated verification workflows for new company registrations
-
-**Integration Points:**
-9. **Domain Events**: Publish CompanyCreatedEvent, PartnerStatusChangedEvent to EventBridge
-10. **File Storage**: Secure logo upload to S3 with CDN integration
-11. **Search Cache**: Implement Redis-based company search with automatic cache invalidation
-12. **Authentication Integration**: Validate user-company relationships during authentication
-
-**Definition of Done:**
-- [ ] Company domain model implemented with proper DDD patterns
-- [ ] PostgreSQL schema created with proper indexes and constraints
-- [ ] REST API implemented with full OpenAPI documentation
-- [ ] Company search with Redis caching working efficiently
-- [ ] Swiss UID validation integrated and tested
-- [ ] S3 logo storage with proper access controls
-- [ ] Domain events properly published to EventBridge
-- [ ] Integration tests verify all company management workflows
-- [ ] **Docker Compose**: Service added to docker-compose.yml with proper configuration
-- [ ] **Dockerfile.dev**: Hot reload development container created
-- [ ] **Environment Variables**: Service configuration documented in .env.example
-
----
-## Story 1.15: Historical Data Migration Service
-
-**User Story:**
-As a **platform stakeholder**, I want all 20+ years of historical BATbern event data migrated accurately, so that the new platform maintains continuity and preserves our valuable content archive.
-
-**Architecture Integration:**
-- **Migration Tool**: Dedicated Spring Boot application with batch processing
-- **Source**: Existing Angular application data from BATspa-old (JSON, files, images)
-- **Targets**: Multiple microservice databases with proper domain separation
-- **Validation**: Comprehensive data integrity checking and reporting
-
-**Acceptance Criteria:**
-
-**Data Analysis & Mapping:**
-1. **Data Inventory**: Complete audit of existing data sources (events, speakers, presentations, images)
-2. **Domain Mapping**: Map legacy data to new DDD bounded contexts and microservice schemas
-3. **Data Quality Assessment**: Identify and catalog data quality issues requiring cleanup
-4. **Migration Strategy**: Define incremental migration approach with rollback capabilities
-
-**Migration Implementation:**
-5. **Batch Processing**: Implement Spring Batch jobs for the data migration
-6. **Event Data Migration**: Migrate 54+ historical events to Event Management Service database
-7. **Speaker Data Migration**: Migrate speaker profiles and presentations to Speaker Coordination Service
-8. **Content Migration**: Migrate presentations and media to Attendee Experience Service with full-text indexing
-9. **Company Data Migration**: Establish company relationships in Company Management Service
-
-**Data Integrity & Validation:**
-10. **Referential Integrity**: Ensure all foreign key relationships are properly established
-11. **File Migration**: Migrate all presentation files, images, and documents to AWS S3
-12. **Search Index Building**: Build search indexes for migrated content in OpenSearch
-13. **Data Validation Reports**: Generate comprehensive migration success/failure reports
-
-**Migration Monitoring:**
-14. **Progress Tracking**: Real-time migration progress dashboard with ETA calculations
-15. **Error Handling**: Robust error handling with detailed logging and retry mechanisms
-16. **Performance Optimization**: Optimize batch sizes and parallel processing for efficiency
-17. **Rollback Capability**: Implement rollback procedures for failed migrations
-
-**Definition of Done:**
-- [ ] Complete data inventory and mapping documentation
-- [ ] Spring Batch migration jobs implemented and tested
-- [ ] All 54+ historical events successfully migrated with data integrity verification
-- [ ] Speaker profiles and presentation files migrated to appropriate services
-- [ ] Search indexes built and verified for content discovery
-- [ ] Migration monitoring dashboard shows 100% success rate
-- [ ] Data validation reports confirm referential integrity
-- [ ] Performance benchmarks meet < 4 hour total migration time requirement
+- **Story 1.14 → 2.1 (Company Management Service)** → See **Epic 2: Entity CRUD & Domain Services**
+- **Story 1.15 → 3.1 (Historical Data Migration)** → See **Epic 3: Historical Data Migration**
+- **Story 1.16 → 2.2 (Event Management Service Core)** → See **Epic 2: Entity CRUD & Domain Services**
+- **Story 1.17 → 2.5 (React Frontend Foundation)** → See **Epic 2: Entity CRUD & Domain Services**
+- **Story 1.18 → 4.2 (Basic Event Display & Archive)** → See **Epic 4: Public Website & Content Discovery**
+- **Story 1.19 → 2.3 (Speaker Coordination Service)** → See **Epic 2: Entity CRUD & Domain Services**
+- **Story 1.20 → 2.4 (User Role Management)** → See **Epic 2: Entity CRUD & Domain Services**
 
 ---
 ## Story 1.15a: API Consolidation Foundation ✅
@@ -1509,9 +1395,9 @@ As an **organizer**, I want to manage user roles with promotion and demotion cap
 
 ---
 
-## Epic 1 Success Metrics (REVISED)
+## Epic 1 Success Metrics (REVISED - Infrastructure Foundation Only)
 
-**🎯 Pragmatic Foundation Success Criteria (End of Week 8-10):**
+**🎯 Infrastructure Foundation Success Criteria (End of Week 9):**
 
 **✅ Core Platform Foundation (Stories 1.1-1.6, Complete):**
 - ✅ **Shared Kernel**: Domain events, common types, and utilities operational
@@ -1521,46 +1407,41 @@ As an **organizer**, I want to manage user roles with promotion and demotion cap
 - ✅ **Environment Promotion**: Automated promotion with validation gates
 - ✅ **Monitoring**: CloudWatch dashboards, alerting, PagerDuty integration, <5min MTTD
 
-**📝 Essential Infrastructure (Stories 1.7, 1.9, 1.11 - Simplified, 2.5 weeks):**
+**📝 Essential Infrastructure (Stories 1.7, 1.9, 1.11 - Simplified, 2.5 weeks remaining):**
 - ✅ **Basic Developer Workflow** (Story 1.7 - COMPLETE): Git hooks for linting, formatting, test execution
 - 📝 **Error Handling** (Story 1.9): Standardized exceptions, correlation IDs, consistent JSON errors
 - 📝 **Security Essentials** (Story 1.11): Headers, input validation, basic GDPR, GitHub security scanning
 
-**🎯 Core Functionality (Stories 1.14-1.20, Ready to Start):**
-- ✅ **Company Management**: Swiss company profiles with UID validation
-- ✅ **Data Migration**: 100% historical data (54+ events) migrated with integrity verification
-- ✅ **Event Management**: Core service with 16-step workflow engine
-- ✅ **React Frontend**: Role-adaptive UI with PWA capabilities
-- ✅ **Event Browsing**: Archive with search and content discovery
-- ✅ **Speaker Service**: Foundation for Epic 2 speaker workflows
-- ✅ **Role Management**: Promotion/demotion workflows with business rules
-
-**📦 Smart Deferrals (Stories 1.8, 1.10, 1.12, 1.13 → Backlog, 16 weeks saved):**
+**📦 Smart Deferrals (Stories 1.8, 1.10, 1.12, 1.13 → Backlog, 12 weeks saved):**
 - 📦 **Advanced Quality Infrastructure**: SonarQube, mutation testing (use GitHub tools instead)
 - 📦 **Circuit Breaker Patterns**: Resilience4j advanced patterns (basic retries sufficient for MVP)
 - 📦 **Performance SLA Tracking**: Dedicated tools (Story 1.6 monitoring covers basics)
 - 📦 **Advanced Caching**: Sophisticated patterns (simple cache-aside with TTLs sufficient)
 
-**📊 Revised Technical KPIs:**
-- **Performance**: API Gateway <50ms, Event Service <150ms, Frontend <2.5s LCP
+**📦 Functional Stories Moved to Other Epics (Epic Reorganization 2025-10-12):**
+- **Stories 1.14, 1.16, 1.17, 1.19, 1.20 → 2.1-2.5** → **Epic 2: Entity CRUD & Domain Services** (9 weeks)
+- **Story 1.15 → 3.1** → **Epic 3: Historical Data Migration** (3 weeks)
+- **Story 1.18 → 4.2** → **Epic 4: Public Website & Content Discovery** (included in 5 weeks)
+
+**📊 Infrastructure Technical KPIs:**
+- **Performance**: API Gateway <50ms authentication overhead
 - **Reliability**: 99.9% uptime target, <0.1% error rate
 - **Security**: Zero critical vulnerabilities, GDPR basics operational
-- **Migration**: 100% data integrity, <4 hour migration time
-- **User Experience**: WCAG 2.1 AA compliance, mobile-responsive
 - **Code Quality**: >85% test coverage (pragmatic target), basic quality gates
-- **Deployment**: <5 minute rollback, automated promotion
+- **Deployment**: <5 minute rollback, automated promotion, <10min build time
+- **Monitoring**: <5 minute Mean Time To Detection (MTTD) for incidents
 
 **⏱️ Timeline Impact:**
-- **Original Epic 1**: 21 stories over 18-20 weeks (infrastructure-heavy)
-- **Revised Epic 1**: 13 stories over 8-10 weeks (functionality-focused)
-- **Time Saved**: ~16 weeks → redirected to Epic 2 (Event Creation & Publishing)
-- **Outcome**: Start Epic 2 **4 months earlier**, first stakeholder demo in Q2 instead of Q4
+- **Original Epic 1**: 21 stories over 18-20 weeks (infrastructure + CRUD mixed)
+- **Revised Epic 1**: 8 stories over 9 weeks (infrastructure essentials only)
+- **Time Saved**: ~9-11 weeks → functional stories moved to dedicated epics
+- **Outcome**: Clear infrastructure foundation, ready for Epic 2 (Entity CRUD) by Week 10
 
 **💡 Value Proposition:**
-This revised Epic 1 delivers the **essential foundation** needed for functional development while deferring **infrastructure gold plating** to a backlog epic. The platform launches with:
+This revised Epic 1 delivers the **essential infrastructure foundation** needed for functional development:
 - ✅ Solid authentication, monitoring, and deployment capabilities
 - ✅ Essential security and error handling
-- ✅ All core microservices and frontend ready for feature development
-- 📦 Advanced infrastructure patterns available when proven necessary by real usage
+- ✅ Platform ready for microservice development (Epic 2)
+- 📦 Advanced infrastructure patterns deferred until proven necessary by operational data
 
 **Philosophy**: Build infrastructure **progressively** alongside business features, not all upfront. This approach accelerates time-to-value while maintaining quality and allowing infrastructure to mature based on actual operational needs rather than theoretical requirements.

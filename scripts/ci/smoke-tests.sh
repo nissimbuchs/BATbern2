@@ -59,7 +59,7 @@ fi
 
 # Test 3: Service health checks
 echo -e "\n${YELLOW}Test 3:${NC} Service health checks"
-services=("event-management" "speaker-coordination" "partner-coordination" "attendee-experience" "company-management")
+services=("event-management" "speaker-coordination" "partner-coordination" "attendee-experience" "company-user-management")
 service_tests_passed=true
 
 for service in "${services[@]}"; do

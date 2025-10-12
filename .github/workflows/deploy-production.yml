@@ -266,7 +266,7 @@ jobs:
               "speaker-coordination-service"
               "partner-coordination-service"
               "attendee-experience-service"
-              "company-management-service"
+              "company-user-management-service"
             )
 
             for service in "${services[@]}"; do
@@ -432,7 +432,7 @@ jobs:
               "speaker-coordination-service"
               "partner-coordination-service"
               "attendee-experience-service"
-              "company-management-service"
+              "company-user-management-service"
             )
 
             # Get previous task definition for each service

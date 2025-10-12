@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: company-management-service
+    name: company-user-management-service
 
 management:
   endpoints:
