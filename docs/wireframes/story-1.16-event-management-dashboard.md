@@ -95,16 +95,19 @@
 
 When the Event Management Dashboard screen loads, the following APIs are called to provide the necessary data:
 
-**CONSOLIDATED API APPROACH (Story 1.17):**
+**CONSOLIDATED API APPROACH (Story 1.15a.1 - Events API Consolidation):**
 
-1. **GET /api/v1/events?filter={"status":"active","organizerId":"{organizerId}"}&include=workflow,metrics&sort=-eventDate&limit=10**
-   - Returns: List of active events with complete workflow and metrics data in a single call
+1. **GET /api/v1/events?filter={"status":"active","organizerId":"{organizerId}"}&include=workflow,sessions,registrations&sort=-date&limit=10**
+   - **Implementation**: Story 1.15a.1 consolidated Events API with resource expansion
+   - Returns: List of active events with complete workflow and associated data in a single call
    - Response includes per event:
-     - Event core data: id, eventNumber, title, eventDate, status, publishingDate
-     - workflow: Current step (1-16), completion percentage, step details, warnings, blockers
-     - metrics: Speaker counts, task counts, registration stats
+     - Event core data: id, title, date, status, description, workflowState
+     - workflow: Current workflow state, progression
+     - sessions: Event sessions with filtering support
+     - registrations: Registration counts and status
    - Used for: Populate active events pipeline section with all necessary data
    - **Performance**: Reduced from 2 API calls per event to 1 call for all events (80% reduction)
+   - **Caching**: 15-minute Caffeine in-memory cache with automatic invalidation on updates
 
 2. **GET /api/v1/organizers/{organizerId}/dashboard**
    - Returns: Dashboard overview with active events summary, critical task count, pending notification count
@@ -126,18 +129,19 @@ When the Event Management Dashboard screen loads, the following APIs are called 
 
 ---
 
-**MIGRATION NOTE (Story 1.17):**
+**MIGRATION NOTE (Story 1.15a.1 - Events API Consolidation):**
 The original implementation made 1 dashboard call + 2 calls per active event (event details + workflow status). With 3 active events, this meant 7 API calls total.
 
-The new consolidated approach makes:
-- 1 call for all events with workflow/metrics included
-- 4 supporting calls for dashboard data
+The new consolidated approach (Story 1.15a.1) makes:
+- 1 call for all events with workflow/sessions/registrations included via `?include=` parameter
+- 4 supporting calls for dashboard data (organizer, tasks, activity, notifications)
 
 This reduces the total from 7 calls to 5 calls (29% reduction), with further benefits:
 - Single loading state for all events
 - Atomic data consistency across events
-- Better caching efficiency
-- Faster dashboard render time (~60% improvement)
+- Better caching efficiency (Caffeine in-memory cache, 15min TTL)
+- Faster dashboard render time (~60% improvement with caching)
+- <500ms response time for event detail with all includes (P95)
 
 
 ---
@@ -147,18 +151,23 @@ This reduces the total from 7 calls to 5 calls (29% reduction), with further ben
 ### Event Management
 
 1. **POST /api/v1/events**
-   - Payload: `{ title, eventDate, venueId, eventType, description }`
-   - Response: Event ID, initial workflow step, creation confirmation
+   - **Implementation**: Story 1.15a.1 (AC3)
+   - Payload: `{ title, date, venueId, status, description }`
+   - Response: Event ID, initial workflow state, creation confirmation (201 Created)
    - Used for: Create new event from [+ New Event] button
 
-2. **GET /api/v1/events/{eventId}/details**
-   - Returns: Full event details, workflow status, team assignments, timeline
+2. **GET /api/v1/events/{eventId}?include=workflow,sessions,registrations,team**
+   - **Implementation**: Story 1.15a.1 (AC2) with resource expansion
+   - Returns: Full event details with all associated resources in single call
    - Used for: Navigate to event detail view when clicking event card
+   - **Performance**: Cached response <50ms, uncached <500ms with all includes
 
-3. **PUT /api/v1/events/{eventId}/workflow/step**
-   - Payload: `{ currentStep, action: "advance|rollback|skip", notes }`
-   - Response: Updated workflow step, new completion percentage, next actions
+3. **POST /api/v1/events/{eventId}/workflow/advance**
+   - **Implementation**: Story 1.15a.1 (AC8)
+   - Payload: None (advances to next workflow state)
+   - Response: Updated event with new workflowState, completion percentage
    - Used for: Advance workflow to next step
+   - Cache invalidation: Automatically clears event cache
 
 ### Critical Task Actions
 

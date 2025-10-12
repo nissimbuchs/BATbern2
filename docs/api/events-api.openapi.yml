@@ -1,0 +1,1307 @@
+openapi: 3.0.3
+info:
+  title: BATbern Events API
+  version: 1.0.0
+  description: |
+    Consolidated Events API for BATbern Event Management Platform.
+
+    This API consolidates 130 fragmented endpoints into 25 efficient endpoints using:
+    - **Resource Expansion**: `?include=` parameter for sub-resources
+    - **Rich Filtering**: JSON filter syntax for complex queries
+    - **Pagination**: Standard page/limit parameters
+    - **Caching**: Caffeine in-memory cache (15min TTL)
+
+    **Story**: 1.15a.1 - Events API Consolidation
+
+    **Performance Targets**:
+    - Event list (no includes): <100ms (P95)
+    - Event detail (basic): <150ms (P95)
+    - Event detail (all includes): <500ms (P95)
+    - Cached response: <50ms (P95)
+
+  contact:
+    name: BATbern Platform Team
+    email: platform@batbern.ch
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://api.batbern.ch/api/v1
+    description: Production
+  - url: https://dev.api.batbern.ch/api/v1
+    description: Development
+  - url: http://localhost:8080/api/v1
+    description: Local Development
+
+tags:
+  - name: Events
+    description: Event CRUD and listing operations
+  - name: Event Actions
+    description: Event publishing and workflow operations
+  - name: Sessions
+    description: Event session management
+  - name: Registrations
+    description: Event registration management
+  - name: Analytics
+    description: Event analytics and metrics
+  - name: Bulk Operations
+    description: Batch operations on multiple events
+
+paths:
+  /events:
+    get:
+      tags:
+        - Events
+      summary: List and search events
+      description: |
+        Retrieve a paginated list of events with optional filtering and sorting.
+
+        **Acceptance Criteria**: AC1
+
+        **Filter Syntax Examples**:
+        - Single filter: `{"status":"published"}`
+        - Multiple operators: `{"date":{"$gte":"2025-01-01","$lte":"2025-12-31"}}`
+        - Logical operators: `{"$or":[{"status":"published"},{"status":"archived"}]}`
+        - In operator: `{"status":{"$in":["published","archived"]}}`
+
+        **Sort Syntax**:
+        - Ascending: `date`
+        - Descending: `-date`
+
+        **Performance**: <100ms (P95)
+
+      operationId: listEvents
+      parameters:
+        - name: filter
+          in: query
+          description: JSON filter criteria
+          required: false
+          schema:
+            type: string
+            example: '{"status":"published","year":2025}'
+        - name: sort
+          in: query
+          description: Sort field (prefix with - for descending)
+          required: false
+          schema:
+            type: string
+            example: '-date'
+        - name: page
+          in: query
+          description: Page number (0-indexed)
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          description: Items per page (max 100)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: include
+          in: query
+          description: Comma-separated list of resources to include
+          required: false
+          schema:
+            type: string
+            example: 'venue,speakers,sessions'
+      responses:
+        '200':
+          description: Successful response with paginated events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Event'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationMetadata'
+              examples:
+                basicList:
+                  summary: Basic event list
+                  value:
+                    data:
+                      - id: evt-001
+                        title: Spring Conference 2025
+                        date: 2025-05-15T09:00:00Z
+                        status: published
+                        description: Cloud Native Architecture
+                        maxAttendees: 200
+                    pagination:
+                      page: 0
+                      limit: 20
+                      totalItems: 1
+                      totalPages: 1
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - Events
+      summary: Create a new event
+      description: |
+        Create a new event with complete event data.
+
+        **Acceptance Criteria**: AC3
+
+        **Performance**: <200ms (P95)
+
+      operationId: createEvent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRequest'
+            examples:
+              basicEvent:
+                summary: Basic event creation
+                value:
+                  title: Summer Workshop 2025
+                  date: 2025-07-20T09:00:00Z
+                  status: draft
+                  description: AI/ML in Production
+                  venueId: ven-001
+                  maxAttendees: 150
+      responses:
+        '201':
+          description: Event created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    patch:
+      tags:
+        - Bulk Operations
+      summary: Batch update multiple events
+      description: |
+        Update multiple events in a single request.
+
+        **Acceptance Criteria**: AC14
+
+        **Performance**: <1000ms for 50 events (P95)
+
+      operationId: batchUpdateEvents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchUpdateRequest'
+      responses:
+        '200':
+          description: Batch update completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchUpdateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{id}:
+    get:
+      tags:
+        - Events
+      summary: Get event details
+      description: |
+        Retrieve detailed information about a specific event with optional resource expansion.
+
+        **Acceptance Criteria**: AC2
+
+        **Include Options**:
+        - `venue`: Venue details with address and capacity
+        - `speakers`: Complete speaker list with profiles
+        - `sessions`: Event sessions with schedule
+        - `topics`: Event topics and categories
+        - `workflow`: Workflow state and history
+        - `registrations`: Registration counts and status
+        - `catering`: Catering arrangements
+        - `team`: Team assignments
+        - `publishing`: Publishing details
+        - `notifications`: Notification settings
+        - `analytics`: Event analytics and metrics
+
+        **Performance**:
+        - Basic (no includes): <150ms (P95)
+        - All includes: <500ms (P95)
+        - Cached: <50ms (P95)
+
+        **Caching**: 15-minute TTL with automatic invalidation on updates
+
+      operationId: getEvent
+      parameters:
+        - name: id
+          in: path
+          description: Event ID
+          required: true
+          schema:
+            type: string
+            example: evt-001
+        - name: include
+          in: query
+          description: Comma-separated list of resources to include
+          required: false
+          schema:
+            type: string
+            example: 'venue,speakers,sessions,workflow'
+      responses:
+        '200':
+          description: Event details retrieved successfully
+          headers:
+            X-Cache-Status:
+              description: Cache hit status (HIT or MISS)
+              schema:
+                type: string
+                enum: [HIT, MISS]
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventDetail'
+              examples:
+                basicEvent:
+                  summary: Basic event (no includes)
+                  value:
+                    id: evt-001
+                    title: Spring Conference 2025
+                    date: 2025-05-15T09:00:00Z
+                    status: published
+                    description: Cloud Native Architecture
+                    workflowState: published
+                expandedEvent:
+                  summary: Event with venue and speakers
+                  value:
+                    id: evt-001
+                    title: Spring Conference 2025
+                    date: 2025-05-15T09:00:00Z
+                    status: published
+                    description: Cloud Native Architecture
+                    workflowState: published
+                    venue:
+                      id: ven-001
+                      name: Kursaal Bern
+                      address: Kornhausstrasse 3, 3013 Bern
+                      capacity: 500
+                    speakers:
+                      - id: spk-001
+                        firstName: Sara
+                        lastName: Kim
+                        company: Docker Inc.
+                        title: Container Security Expert
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      tags:
+        - Events
+      summary: Update event (full replacement)
+      description: |
+        Replace all event data with new data.
+
+        **Acceptance Criteria**: AC4
+
+        **Cache Invalidation**: All event caches cleared on update
+
+      operationId: updateEvent
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEventRequest'
+      responses:
+        '200':
+          description: Event updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    patch:
+      tags:
+        - Events
+      summary: Partially update event
+      description: |
+        Update specific fields of an event without replacing all data.
+
+        **Acceptance Criteria**: AC5
+
+        **Cache Invalidation**: All event caches cleared on update
+
+      operationId: patchEvent
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchEventRequest'
+            examples:
+              updateTitle:
+                summary: Update only title
+                value:
+                  title: Spring Conference 2025 - Updated
+      responses:
+        '200':
+          description: Event patched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags:
+        - Events
+      summary: Delete event
+      description: |
+        Delete an event and all associated data.
+
+        **Acceptance Criteria**: AC6
+
+        **Cascade Deletion**: Deletes all sessions, registrations, and related data
+        **Cache Invalidation**: All event caches cleared on deletion
+
+      operationId: deleteEvent
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Event deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{id}/publish:
+    post:
+      tags:
+        - Event Actions
+      summary: Publish event
+      description: |
+        Publish an event after validation checks.
+
+        **Acceptance Criteria**: AC7
+
+        **Validation Rules**:
+        - Event must have a date
+        - Event must have a title
+        - Event must be in draft status
+
+        **Cache Invalidation**: All event caches cleared on publish
+
+      operationId: publishEvent
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Event published successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{id}/workflow/advance:
+    post:
+      tags:
+        - Event Actions
+      summary: Advance workflow to next state
+      description: |
+        Advance event workflow to the next state in the state machine.
+
+        **Acceptance Criteria**: AC8
+
+        **Workflow States**:
+        1. draft → planning
+        2. planning → ready
+        3. ready → published
+        4. published → completed
+
+        **Invalid Transitions**: archived events cannot advance workflow
+
+        **Cache Invalidation**: All event caches cleared on workflow advance
+
+      operationId: advanceWorkflow
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Workflow advanced successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{id}/sessions:
+    get:
+      tags:
+        - Sessions
+      summary: List event sessions
+      description: |
+        Retrieve all sessions for a specific event with optional filtering.
+
+        **Acceptance Criteria**: AC9
+
+        **Filter Examples**:
+        - By type: `{"type":"keynote"}`
+        - By time range: `{"startTime":{"$gte":"2025-05-15T09:00:00Z"}}`
+
+      operationId: listSessions
+      parameters:
+        - name: id
+          in: path
+          description: Event ID
+          required: true
+          schema:
+            type: string
+        - name: filter
+          in: query
+          description: JSON filter criteria
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Sessions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Session'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationMetadata'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - Sessions
+      summary: Create session
+      description: |
+        Create a new session for the event.
+
+        **Acceptance Criteria**: AC10
+
+      operationId: createSession
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionRequest'
+      responses:
+        '201':
+          description: Session created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{id}/sessions/{sessionId}:
+    put:
+      tags:
+        - Sessions
+      summary: Update session
+      description: |
+        Update an existing session.
+
+        **Acceptance Criteria**: AC10
+
+      operationId: updateSession
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSessionRequest'
+      responses:
+        '200':
+          description: Session updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags:
+        - Sessions
+      summary: Delete session
+      description: |
+        Delete a session from the event.
+
+        **Acceptance Criteria**: AC10
+
+      operationId: deleteSession
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Session deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{id}/registrations:
+    get:
+      tags:
+        - Registrations
+      summary: List event registrations
+      description: |
+        Retrieve all registrations for a specific event with optional filtering.
+
+        **Acceptance Criteria**: AC11
+
+        **Filter Examples**:
+        - By status: `{"status":"confirmed"}`
+        - By date: `{"registrationDate":{"$gte":"2025-01-01"}}`
+
+      operationId: listRegistrations
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: filter
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Registrations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Registration'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationMetadata'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - Registrations
+      summary: Create registration
+      description: |
+        Create a new registration for the event.
+
+        **Acceptance Criteria**: AC12
+
+      operationId: createRegistration
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRegistrationRequest'
+      responses:
+        '201':
+          description: Registration created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Registration'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{id}/registrations/{registrationId}:
+    patch:
+      tags:
+        - Registrations
+      summary: Update registration
+      description: |
+        Partially update a registration.
+
+        **Acceptance Criteria**: AC12
+
+      operationId: updateRegistration
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: registrationId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchRegistrationRequest'
+      responses:
+        '200':
+          description: Registration updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Registration'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags:
+        - Registrations
+      summary: Delete registration
+      description: |
+        Delete a registration from the event.
+
+        **Acceptance Criteria**: AC12
+
+      operationId: deleteRegistration
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: registrationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Registration deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{id}/analytics:
+    get:
+      tags:
+        - Analytics
+      summary: Get event analytics
+      description: |
+        Retrieve analytics data for a specific event.
+
+        **Acceptance Criteria**: AC13
+
+        **Metrics Available**:
+        - attendance: Attendance counts and trends
+        - registrations: Registration statistics
+        - engagement: User engagement metrics
+        - revenue: Revenue and ticket sales
+
+        **Timeframe Options**: day, week, month, all
+
+      operationId: getEventAnalytics
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: metrics
+          in: query
+          description: Comma-separated list of metrics
+          required: false
+          schema:
+            type: string
+            example: 'attendance,registrations,engagement'
+        - name: timeframe
+          in: query
+          description: Time period for analytics
+          required: false
+          schema:
+            type: string
+            enum: [day, week, month, all]
+            default: all
+      responses:
+        '200':
+          description: Analytics data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventAnalytics'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    Event:
+      type: object
+      required:
+        - id
+        - title
+        - date
+        - status
+      properties:
+        id:
+          type: string
+          example: evt-001
+        title:
+          type: string
+          example: Spring Conference 2025
+        date:
+          type: string
+          format: date-time
+          example: 2025-05-15T09:00:00Z
+        status:
+          type: string
+          enum: [draft, planning, ready, published, completed, archived]
+          example: published
+        description:
+          type: string
+          example: Cloud Native Architecture and Best Practices
+        venueId:
+          type: string
+          example: ven-001
+        maxAttendees:
+          type: integer
+          example: 200
+        workflowState:
+          type: string
+          enum: [draft, planning, ready, published, completed, archived]
+          example: published
+        registrationOpen:
+          type: string
+          format: date-time
+        registrationDeadline:
+          type: string
+          format: date-time
+        admissionFee:
+          type: number
+          format: double
+          example: 0.00
+
+    EventDetail:
+      allOf:
+        - $ref: '#/components/schemas/Event'
+        - type: object
+          properties:
+            venue:
+              $ref: '#/components/schemas/Venue'
+            speakers:
+              type: array
+              items:
+                $ref: '#/components/schemas/Speaker'
+            sessions:
+              type: array
+              items:
+                $ref: '#/components/schemas/Session'
+
+    Venue:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        address:
+          type: string
+        capacity:
+          type: integer
+
+    Speaker:
+      type: object
+      properties:
+        id:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        company:
+          type: string
+        title:
+          type: string
+        profilePhoto:
+          type: string
+          format: uri
+
+    Session:
+      type: object
+      required:
+        - id
+        - eventId
+        - title
+        - startTime
+      properties:
+        id:
+          type: string
+        eventId:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        type:
+          type: string
+          enum: [keynote, workshop, panel, networking]
+        speakerId:
+          type: string
+
+    Registration:
+      type: object
+      required:
+        - id
+        - eventId
+        - attendeeEmail
+        - status
+      properties:
+        id:
+          type: string
+        eventId:
+          type: string
+        attendeeEmail:
+          type: string
+          format: email
+        attendeeName:
+          type: string
+        status:
+          type: string
+          enum: [pending, confirmed, cancelled, waitlist]
+        registrationDate:
+          type: string
+          format: date-time
+
+    CreateEventRequest:
+      type: object
+      required:
+        - title
+        - date
+        - status
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        date:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [draft, planning, ready]
+        description:
+          type: string
+        venueId:
+          type: string
+        maxAttendees:
+          type: integer
+          minimum: 1
+
+    UpdateEventRequest:
+      type: object
+      required:
+        - title
+        - date
+        - status
+      properties:
+        title:
+          type: string
+        date:
+          type: string
+          format: date-time
+        status:
+          type: string
+        description:
+          type: string
+        venueId:
+          type: string
+        maxAttendees:
+          type: integer
+
+    PatchEventRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        date:
+          type: string
+          format: date-time
+        status:
+          type: string
+        description:
+          type: string
+        venueId:
+          type: string
+        maxAttendees:
+          type: integer
+
+    CreateSessionRequest:
+      type: object
+      required:
+        - title
+        - startTime
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        type:
+          type: string
+        speakerId:
+          type: string
+
+    UpdateSessionRequest:
+      type: object
+      required:
+        - title
+        - startTime
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        type:
+          type: string
+        speakerId:
+          type: string
+
+    CreateRegistrationRequest:
+      type: object
+      required:
+        - attendeeEmail
+        - attendeeName
+      properties:
+        attendeeEmail:
+          type: string
+          format: email
+        attendeeName:
+          type: string
+
+    PatchRegistrationRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, confirmed, cancelled, waitlist]
+        attendeeName:
+          type: string
+
+    BatchUpdateRequest:
+      type: object
+      required:
+        - updates
+      properties:
+        updates:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              fields:
+                type: object
+
+    BatchUpdateResponse:
+      type: object
+      properties:
+        successful:
+          type: integer
+          example: 45
+        failed:
+          type: integer
+          example: 5
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              error:
+                type: string
+
+    EventAnalytics:
+      type: object
+      properties:
+        eventId:
+          type: string
+        totalRegistrations:
+          type: integer
+        confirmedAttendees:
+          type: integer
+        cancellations:
+          type: integer
+        waitlist:
+          type: integer
+        registrationTrend:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+              count:
+                type: integer
+
+    PaginationMetadata:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 0
+        limit:
+          type: integer
+          example: 20
+        totalItems:
+          type: integer
+          example: 100
+        totalPages:
+          type: integer
+          example: 5
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        errorCode:
+          type: string
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            validationError:
+              value:
+                error: VALIDATION_ERROR
+                errorCode: BAD_REQUEST
+                message: Invalid filter syntax
+                timestamp: 2025-01-15T10:30:00Z
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            eventNotFound:
+              value:
+                error: RESOURCE_NOT_FOUND
+                errorCode: NOT_FOUND
+                message: Event not found with id evt-999
+                timestamp: 2025-01-15T10:30:00Z
+
+    UnprocessableEntity:
+      description: Request cannot be processed due to business logic
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            workflowError:
+              value:
+                error: WORKFLOW_ERROR
+                errorCode: UNPROCESSABLE_ENTITY
+                message: Cannot advance workflow for archived event
+                timestamp: 2025-01-15T10:30:00Z
+            validationError:
+              value:
+                error: VALIDATION_ERROR
+                errorCode: UNPROCESSABLE_ENTITY
+                message: Event must have a date before publishing
+                timestamp: 2025-01-15T10:30:00Z
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            serverError:
+              value:
+                error: INTERNAL_SERVER_ERROR
+                errorCode: INTERNAL_ERROR
+                message: An unexpected error occurred
+                timestamp: 2025-01-15T10:30:00Z
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: AWS Cognito JWT token
+
+security:
+  - BearerAuth: []

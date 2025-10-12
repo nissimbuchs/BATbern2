@@ -223,9 +223,10 @@
 
 When the Event Detail/Edit Screen loads, the following APIs are called to provide the necessary data:
 
-**CONSOLIDATED API APPROACH (Story 1.17):**
+**CONSOLIDATED API APPROACH (Story 1.15a.1 - Events API Consolidation):**
 
-1. **GET /api/v1/events/{eventId}?include=venue,catering,speakers,sessions,topics,workflow,registrations,team,publishing,notifications,analytics**
+1. **GET /api/v1/events/{eventId}?include=venue,speakers,sessions,workflow,registrations,team,analytics**
+   - **Implementation**: Story 1.15a.1 (AC2) with resource expansion
    - Returns: Complete event entity with all sub-resources expanded in a single call
    - Response includes:
      - Event core data: id, eventNumber, title, description, eventDate, eventType, status, workflowState, theme, registrationDeadline, capacity, currentAttendeeCount, publishedAt, metadata
@@ -240,6 +241,8 @@ When the Event Detail/Edit Screen loads, the following APIs are called to provid
      - notifications: Active notification automations with type, description, status (active/paused), scheduledDate
    - Used for: Populate all sections of the event detail screen in a single request
    - **Performance**: Reduced from 10 API calls to 1 (90% reduction in HTTP requests)
+   - **Caching**: 15-minute Caffeine in-memory cache with automatic invalidation on updates
+   - **Response Time**: <50ms cached, <500ms uncached with all includes (P95)
 
 2. **GET /api/v1/venues**
    - Query params: available=true, includeMetadata=true
@@ -252,16 +255,17 @@ When the Event Detail/Edit Screen loads, the following APIs are called to provid
 
 ---
 
-**MIGRATION NOTE (Story 1.17):**
-The original implementation required 12 separate API calls on page load, causing slow initial render and complex loading states. The new consolidated API reduces this to 3 calls:
-- 1 primary call for all event data (previously 10 calls)
+**MIGRATION NOTE (Story 1.15a.1 - Events API Consolidation):**
+The original implementation required 12 separate API calls on page load, causing slow initial render and complex loading states. The new consolidated API (Story 1.15a.1) reduces this to 3 calls:
+- 1 primary call for all event data with `?include=` parameter (previously 10 calls)
 - 2 supporting calls for dropdowns (venues, team members)
 
 This consolidation improves:
-- Page load time: ~80% faster (from ~3s to <500ms)
+- Page load time: ~80% faster (from ~3s to <500ms with caching)
 - Loading state complexity: Single loading indicator instead of 10
 - Data consistency: Atomic snapshot of event state
 - Network efficiency: Reduced latency from multiple round trips
+- Caching efficiency: Caffeine in-memory cache (15min TTL) provides <50ms cached responses
 
 ---
 
@@ -270,38 +274,31 @@ This consolidation improves:
 ### Event Information Updates
 
 1. **PUT /api/v1/events/{eventId}**
+   - **Implementation**: Story 1.15a.1 (AC4)
    - Triggered by: [Save Changes] button or auto-save (5-second debounce after field changes)
-   - Payload: `{ title?, description?, eventDate?, eventType?, theme?, registrationDeadline?, capacity? }`
-   - Response: Updated event entity with new updatedAt timestamp, validation results, version number for conflict detection
-   - Used for: Save all event information changes
+   - Payload: `{ title?, description?, date?, status?, theme?, capacity? }`
+   - Response: Updated event entity with new updatedAt timestamp, validation results
+   - Used for: Save all event information changes (full replacement)
+   - Cache invalidation: Automatically clears event cache
    - Note: Auto-save is always enabled for all organizers (not configurable)
 
-2. **PATCH /api/v1/events/{eventId}/title**
-   - Triggered by: Inline title edit field blur
-   - Payload: `{ title: string }`
-   - Response: Confirmation with updated title, timestamp
-   - Used for: Quick inline update of event title
-
-3. **PATCH /api/v1/events/{eventId}/description**
-   - Triggered by: Inline description edit field blur
-   - Payload: `{ description: string }`
-   - Response: Confirmation with updated description, timestamp
-   - Used for: Quick inline update of event description
-
-4. **PUT /api/v1/events/{eventId}/event-type**
-   - Triggered by: Event Type dropdown change
-   - Payload: `{ eventType: "full_day" | "afternoon" | "evening" }`
-   - Response: Updated event type, reconfigured slot configuration (minSlots, maxSlots, slotDuration)
-   - Used for: Change event type and automatically reconfigure time slots
+2. **PATCH /api/v1/events/{eventId}**
+   - **Implementation**: Story 1.15a.1 (AC5)
+   - Triggered by: Inline field edit (title, description, etc.) on blur
+   - Payload: `{ title?: string, description?: string, ... }` (only changed fields)
+   - Response: Confirmation with updated fields, timestamp
+   - Used for: Quick inline update of event fields (partial update)
+   - Cache invalidation: Automatically clears event cache
 
 ### Workflow Management
 
-5. **POST /api/v1/events/{eventId}/workflow/advance**
+3. **POST /api/v1/events/{eventId}/workflow/advance**
+   - **Implementation**: Story 1.15a.1 (AC8)
    - Triggered by: [View Workflow Details] → Advance Step button
-   - Payload: `{ targetStep: number, notes?: string }`
-   - Response: Updated workflow state with new currentStep, completionPercentage, validation results
+   - Payload: None (advances to next workflow state)
+   - Response: Updated event with new workflowState, completion percentage
    - Used for: Manually advance workflow to next step
-   - **Note**: Uses consolidated workflow endpoint from Story 1.17
+   - Cache invalidation: Automatically clears event cache
 
 ### Venue & Logistics Management
 
@@ -442,9 +439,11 @@ This consolidation improves:
     - Used for: Save incomplete changes as draft without validation
 
 29. **DELETE /api/v1/events/{eventId}**
+    - **Implementation**: Story 1.15a.1 (AC6)
     - Triggered by: [Delete Event] → Confirmation dialog → Confirm Delete
-    - Response: Deletion confirmation, cleanup status (associated data removed)
-    - Used for: Permanently delete event (with cascade delete of related data)
+    - Response: 204 No Content on success
+    - Used for: Permanently delete event
+    - Cache invalidation: Automatically clears event cache
     - Authorization: Organizer role required (no admin approval needed)
     - Validation: Cannot delete if registrations exist (must cancel event instead)
 

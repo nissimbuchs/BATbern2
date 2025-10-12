@@ -97,6 +97,7 @@ When the Historical Archive Browser screen loads, the following APIs are called 
    - **Current workaround**: Query events grouped by year client-side or hardcode known years
 
 2. **GET /api/v1/events?filter={"year":2025,"status":["archived","upcoming"]}&include=speakers,sessions,analytics&sort=-eventDate&limit=20**
+   - **Implementation**: Story 1.15a.1 consolidated Events API with resource expansion (AC2, AC4)
    - Returns: Events for selected year with all event card data in a single consolidated call
    - Response includes per event:
      - Event core data: title, date, topic, status
@@ -105,6 +106,8 @@ When the Historical Archive Browser screen loads, the following APIs are called 
      - analytics: Attendee count, download counts, rating statistics, photos count
    - Used for: Populate events list for selected year with complete card details
    - **Performance**: Reduced from 21 API calls to 1 (95% reduction for 20 events - was 1 archive call + 20 summary calls)
+   - **Caching**: 15-minute Caffeine in-memory cache with automatic invalidation (AC15-16)
+   - **Response Time**: <50ms cached, <500ms uncached with all includes (P95)
 
 ---
 
@@ -116,14 +119,15 @@ Historical events are accessed through the Event Management Service using `statu
 - 1 call per event to GET /api/v1/events/{eventId}/summary (20 additional calls for 20 events)
 - Total: 21 API calls for initial page load
 
-**Current consolidated approach:**
+**Current consolidated approach (Story 1.15a.1):**
 Uses Event Management API with `?include=speakers,sessions,analytics` to fetch all event card data in one call. This provides:
 - Page load time: ~90% faster (from ~5s to <500ms for 20 events)
 - Single loading state for entire year's events
 - Instant event card rendering with all details
 - Reduced database load (1 optimized query vs 21 separate queries)
-- Better caching efficiency (single cache entry vs 21 entries)
+- Better caching efficiency (single cache entry vs 21 entries, 15-minute TTL)
 - Atomic data consistency (all events at same point in time)
+- In-memory caching: <50ms cached response time with Caffeine
 
 3. **TODO: Statistics API - Topic usage**
    - **Future endpoint**: `GET /api/v1/topics/statistics` (enhance existing topic backlog endpoint)
@@ -223,10 +227,12 @@ Uses Event Management API with `?include=speakers,sessions,analytics` to fetch a
 ### Year Navigation
 
 13. **GET /api/v1/events?filter={"year":{year},"status":["archived","completed"]}&include=speakers,sessions,analytics**
+    - **Implementation**: Story 1.15a.1 consolidated Events API (AC2, AC4)
     - Query params: year, status filter
     - Returns: Events for newly selected year with all event card data
     - Used for: Load events when year is changed in selector
     - **Consolidated**: Uses Event Management API (was /api/v1/archive/events)
+    - **Caching**: 15-minute Caffeine cache, <50ms cached response
 
 14. **TODO: Statistics API - Year range statistics**
     - **Future endpoint**: `GET /api/v1/events/statistics/year-range`
