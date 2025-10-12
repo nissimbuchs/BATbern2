@@ -34,6 +34,27 @@ As a **partner**, I want to view comprehensive analytics about employee attendan
 - Database: PostgreSQL materialized views
 - Frontend: React dashboard components
 
+---
+
+### Wireframe References
+**From docs/wireframes/sitemap.md:**
+
+1. **Partner Analytics Dashboard**: `docs/wireframes/story-6.1-partner-analytics-dashboard.md` ✅
+   - Comprehensive analytics overview
+   - Attendance metrics visualization
+   - Trend analysis charts
+   - Department breakdown
+   - Comparative benchmarking
+   - Export controls (PDF/Excel)
+
+2. **Employee Analytics**: `docs/wireframes/story-6.1-employee-analytics.md` ✅
+   - Detailed employee participation tracking
+   - Individual engagement scores
+   - Content interaction metrics
+   - Department-level insights
+
+---
+
 **Acceptance Criteria**:
 1. **Attendance Metrics**: Employee attendance by event
 2. **Trend Analysis**: Historical attendance patterns

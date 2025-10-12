@@ -58,6 +58,20 @@ As a **partner or attendee**, I want my company affiliation to be properly manag
 7. **Resource Expansion**: Include employees, partner details, event participation in single API call
 8. **Performance**: <200ms response time with caching, reduce multiple API calls to 1-2 calls
 
+---
+
+### Wireframe Reference
+**From docs/wireframes/sitemap.md:**
+- **Main Screen**: `docs/wireframes/story-1.14-company-management-screen.md` ✅
+  - Company list with search and filtering
+  - Company detail view with edit capabilities
+  - Swiss UID validation display
+  - Employee affiliation management
+  - Partner status toggle interface
+  - Logo upload component
+
+---
+
 **Acceptance Criteria Summary:**
 - [ ] Company domain model with DDD patterns
 - [ ] **Consolidated REST API** implementing Stories 1.15a.6 + 1.15a.2 patterns
@@ -100,6 +114,35 @@ As an **organizer**, I want to access and manage events through consolidated RES
 6. **Advanced Filtering**: JSON filter syntax for complex event searches
 7. **Performance**: Event detail with all includes <500ms P95
 8. **EXCLUDES**: 16-step workflow automation (deferred to Epic 5)
+
+---
+
+### Wireframe References
+**From docs/wireframes/sitemap.md:**
+
+1. **Event Management Dashboard**: `docs/wireframes/story-1.16-event-management-dashboard.md` ✅
+   - Event list with status indicators
+   - Quick filters and search
+   - Event cards with key metrics
+   - Create new event button
+
+2. **Event Detail/Edit**: `docs/wireframes/story-1.16-event-detail-edit.md` ✅
+   - Comprehensive event editing interface
+   - Event type selection
+   - Timeline and deadlines management
+   - Venue, speakers, sessions configuration
+
+3. **Event Settings**: `docs/wireframes/story-1.16-event-settings.md` ✅
+   - Event configuration panel
+   - Status management
+   - Advanced settings
+
+4. **Workflow Visualization**: `docs/wireframes/story-1.16-workflow-visualization.md` ✅
+   - Event lifecycle visualization
+   - Status transitions
+   - Milestone tracking
+
+---
 
 **Acceptance Criteria Summary:**
 - [ ] Event aggregate with DDD patterns
@@ -235,6 +278,35 @@ As a **user of any role**, I want to access CRUD forms for all main entities thr
 5. User role management interface
 6. Form validation and error handling
 7. **EXCLUDES**: Advanced features (workflow automation, speaker portal, PWA)
+
+---
+
+### Wireframe References
+**From docs/wireframes/sitemap.md:**
+
+This story implements the frontend consuming all entity CRUD APIs. Wireframes are organized by entity:
+
+1. **Company Management**: `docs/wireframes/story-1.14-company-management-screen.md` ✅
+   - Company list, search, and filters
+   - Company create/edit forms
+   - Swiss UID validation UI
+   - Employee affiliation interface
+
+2. **Event Management**: `docs/wireframes/story-1.16-*.md` ✅
+   - Event Management Dashboard
+   - Event Detail/Edit screen
+   - Event Settings panel
+   - Workflow Visualization (read-only in this story)
+
+3. **Main Navigation**: `docs/wireframes/story-1.17-main-navigation.md` ✅
+   - Role-adaptive navigation bar
+   - User menu and profile access
+   - Breadcrumb navigation
+   - Mobile responsive menu
+
+**Note**: Speaker and User wireframes exist in Epic 1 but are simpler CRUD forms without dedicated wireframe files for this story.
+
+---
 
 **Acceptance Criteria Summary:**
 - [ ] Role-adaptive navigation operational

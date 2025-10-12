@@ -209,6 +209,21 @@ As an **visitor or attendee**, I want to browse and view historical BATbern even
 
 ---
 
+### Wireframe Reference
+**From docs/wireframes/sitemap.md:**
+- **Main Screen**: `docs/wireframes/story-1.18-historical-archive.md` ✅
+  - Event archive grid with card layout
+  - Interactive timeline visualization (2000-2025)
+  - Multi-criteria filter panel
+  - Grid/list/timeline view toggle
+  - Sort controls (date, relevance, popularity)
+  - Event detail pages with sessions, speakers, presentations
+  - Photo gallery with lightbox
+  - Presentation download interface
+  - Related events recommendation panel
+
+---
+
 ### Acceptance Criteria
 
 **Archive Interface:**
@@ -250,8 +265,6 @@ As an **visitor or attendee**, I want to browse and view historical BATbern even
 
 **Estimated Duration:** 2 weeks
 
-**Reference:** See `docs/prd/epic-1-foundation-stories.md` Story 1.18 for additional wireframe details
-
 ---
 
 ## Story 4.3: Historical Content Search & Discovery
@@ -274,6 +287,32 @@ As an **attendee**, I want to search 20+ years of BATbern content with filtering
 4. **Content Preview**: Hover preview with abstract excerpts and speaker info
 5. **Relevance Ranking**: Intelligent ranking using PostgreSQL ts_rank
 6. **Content Actions**: Save to library, rate, review, share, download from search results
+
+---
+
+### Wireframe References
+**From docs/wireframes/sitemap.md:**
+
+1. **Content Discovery**: `docs/wireframes/story-5.1-content-discovery.md` ✅
+   - Search bar with autocomplete
+   - Faceted filter panel (year, topic, speaker, company, rating)
+   - Content results grid with thumbnails
+   - Sort controls (relevance, date, popularity, rating)
+   - Quick actions (save, share, download)
+   - Basic recommendations panel (non-AI)
+
+2. **Content Viewer**: `docs/wireframes/story-5.1-content-viewer.md` ✅
+   - PDF/presentation viewer
+   - Navigation controls
+   - Bookmarking interface
+   - Rating and review system
+   - Related content suggestions
+
+3. **Filter Modal**: `docs/wireframes/story-5.1-filter-modal.md` ✅
+   - Mobile-responsive filter interface
+   - Multi-select filters with counts
+   - Active filters display
+   - Reset and apply buttons
 
 ---
 
@@ -321,8 +360,6 @@ As an **attendee**, I want to search 20+ years of BATbern content with filtering
 - [ ] Search accuracy validated with test queries (>85% relevance)
 
 **Estimated Duration:** 1.5 weeks
-
-**Reference:** See `docs/prd/epic-5-attendee-experience-stories.md` Story 5.1 for additional wireframe details
 
 **Note:** AI-powered recommendations (FR13) have been removed from MVP scope. Basic non-AI recommendations are included.
 
