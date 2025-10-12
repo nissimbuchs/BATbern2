@@ -256,7 +256,9 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   attendeeExperienceStack.addDependency(cicdStack);
   attendeeExperienceStack.addDependency(cognitoStack);
 
-  // 10e. Company Management Service
+  // 10e. Company & User Management Service (Consolidated)
+  // Handles both /api/v1/companies and /api/v1/users endpoints
+  // Consolidated master data service for companies, users, and user-company relationships
   companyManagementStack = new CompanyManagementStack(app, `${stackPrefix}-CompanyManagement`, {
     config,
     cluster: clusterStack.cluster,
@@ -266,7 +268,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     userPool: cognitoStack.userPool,
     userPoolClient: cognitoStack.userPoolClient,
     env,
-    description: `BATbern Company Management Service - ${config.envName}`,
+    description: `BATbern Company & User Management Service (Consolidated) - ${config.envName}`,
     tags: config.tags,
   });
   companyManagementStack.addDependency(clusterStack);
