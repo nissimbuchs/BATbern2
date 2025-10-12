@@ -289,7 +289,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     speakerCoordinationServiceUrl: speakerCoordinationStack.serviceUrl,
     partnerCoordinationServiceUrl: partnerCoordinationStack.serviceUrl,
     attendeeExperienceServiceUrl: attendeeExperienceStack.serviceUrl,
-    companyManagementServiceUrl: companyManagementStack.serviceUrl,
+    companyUserManagementServiceUrl: companyManagementStack.serviceUrl,
     env,
     description: `BATbern API Gateway Service (Spring Boot) - ${config.envName}`,
     tags: config.tags,
