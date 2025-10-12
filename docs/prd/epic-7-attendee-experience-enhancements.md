@@ -1,8 +1,16 @@
-# Epic 5: Attendee Experience - Vertical Slice Stories
+# Epic 7: Attendee Experience Enhancements - DEFERRED
+
+**Status:** 📦 **DEFERRED TO PHASE 2** (Week 26+)
+
+**Reorganization Note:** This epic was formerly "Epic 5: Attendee Experience". Basic content search (Story 5.1) moved to Epic 4 (Public Website). This epic now focuses on personal engagement enhancements and mobile PWA.
+
+**Phase 1 Priority:** Epic 4 provides public content search and discovery. This epic adds personal dashboards, bookmarks, and offline PWA capabilities.
+
+---
 
 ## Epic Overview
 
-**Epic Goal**: Deliver comprehensive attendee experience with content discovery, personal engagement management, and mobile access to maximize learning and participation.
+**Epic Goal**: Enhance attendee experience with personal engagement dashboards, content bookmarking, granular notification preferences, and mobile PWA with offline capabilities.
 
 **Deliverable**: Attendees can search 20+ years of content, manage preferences, and access everything via mobile PWA.
 

@@ -84,7 +84,7 @@ jobs:
           - speaker-coordination-service
           - partner-coordination-service
           - attendee-experience-service
-          - company-management-service
+          - company-user-management-service
           - api-gateway
       fail-fast: false
 
@@ -376,7 +376,7 @@ jobs:
         run: |
           REPO_ROOT=$(pwd)
           # Build each service that exists
-          for service in event-management-service attendee-experience-service company-management-service partner-coordination-service speaker-coordination-service; do
+          for service in event-management-service attendee-experience-service company-user-management-service partner-coordination-service speaker-coordination-service; do
             cd "$REPO_ROOT"  # Return to repo root before checking
             if [ -d "services/$service" ]; then
               echo "Building services/$service..."

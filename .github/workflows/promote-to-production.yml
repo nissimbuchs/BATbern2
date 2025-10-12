@@ -204,7 +204,7 @@ jobs:
 
       - name: Wait for production services to stabilize
         run: |
-          for service in event-management speaker-coordination partner-coordination attendee-experience company-management; do
+          for service in event-management speaker-coordination partner-coordination attendee-experience company-user-management; do
             echo "Waiting for $service to stabilize..."
             aws ecs wait services-stable \
               --cluster batbern-prod \
