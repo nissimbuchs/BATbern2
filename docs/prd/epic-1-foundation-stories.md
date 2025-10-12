@@ -22,9 +22,13 @@
 - 📝 **Story 1.11**: Security Essentials (SIMPLIFIED - 1.5 weeks)
 
 **📦 Stories Moved to Other Epics (Epic Reorganization 2025-10-12):**
-- **Stories 1.14-1.20, 1.17** → Moved to **Epic 2: Entity CRUD & Domain Services**
-- **Story 1.15** → Moved to **Epic 3: Historical Data Migration**
-- **Story 1.18** → Moved to **Epic 4: Public Website & Content Discovery**
+- **Story 1.14 → 2.1** (Company Management) → **Epic 2: Entity CRUD & Domain Services**
+- **Story 1.15 → 3.1** (Historical Data Migration) → **Epic 3: Historical Data Migration**
+- **Story 1.16 → 2.2** (Event Management) → **Epic 2: Entity CRUD & Domain Services**
+- **Story 1.17 → 2.5** (React Frontend) → **Epic 2: Entity CRUD & Domain Services**
+- **Story 1.18 → 4.2** (Historical Archive) → **Epic 4: Public Website & Content Discovery**
+- **Story 1.19 → 2.3** (Speaker Coordination) → **Epic 2: Entity CRUD & Domain Services**
+- **Story 1.20 → 2.4** (User Role Management) → **Epic 2: Entity CRUD & Domain Services**
 - ✅ **Story 1.15a**: API Consolidation Foundation (COMPLETE - enables domain API consolidations)
 
 **Note:** Stories 1.15a.1 to 1.15a.11 in the stories directory are domain-specific API consolidations that build on Story 1.15a.
@@ -353,10 +357,10 @@ As a **developer**, I want a single-command local development environment with D
 - [ ] Tested on macOS, Linux, and Windows environments
 
 **Progressive Enhancement Notes:**
-- Story 1.14 (Company Management): Add `company-management` service to docker-compose.yml
-- Story 1.16 (Event Management): Add `event-management` service to docker-compose.yml
-- Story 1.17 (React Frontend): Add `web-frontend` service to docker-compose.yml
-- Story 1.19 (Speaker Coordination): Add `speaker-coordination` service to docker-compose.yml
+- Story 2.1 (Company Management): Add `company-management` service to docker-compose.yml
+- Story 2.2 (Event Management): Add `event-management` service to docker-compose.yml
+- Story 2.5 (React Frontend): Add `web-frontend` service to docker-compose.yml
+- Story 2.3 (Speaker Coordination): Add `speaker-coordination` service to docker-compose.yml
 
 Each subsequent story that implements a domain service should include:
 1. Dockerfile.dev for hot reload support
@@ -861,13 +865,13 @@ As a **backend developer**, I want a comprehensive caching strategy implemented 
 
 **Note:** The following stories have been reorganized into separate epics as part of the CRUD-first strategy (2025-10-12):
 
-- **Story 1.14 (Company Management Service)** → See **Epic 2: Entity CRUD & Domain Services**
-- **Story 1.15 (Historical Data Migration)** → See **Epic 3: Historical Data Migration**
-- **Story 1.16 (Event Management Service Core)** → See **Epic 2: Entity CRUD & Domain Services**
-- **Story 1.17 (React Frontend Foundation)** → See **Epic 2: Entity CRUD & Domain Services** (partial)
-- **Story 1.18 (Basic Event Display & Archive)** → See **Epic 4: Public Website & Content Discovery**
-- **Story 1.19 (Speaker Coordination Service)** → See **Epic 2: Entity CRUD & Domain Services**
-- **Story 1.20 (User Role Management)** → See **Epic 2: Entity CRUD & Domain Services**
+- **Story 1.14 → 2.1 (Company Management Service)** → See **Epic 2: Entity CRUD & Domain Services**
+- **Story 1.15 → 3.1 (Historical Data Migration)** → See **Epic 3: Historical Data Migration**
+- **Story 1.16 → 2.2 (Event Management Service Core)** → See **Epic 2: Entity CRUD & Domain Services**
+- **Story 1.17 → 2.5 (React Frontend Foundation)** → See **Epic 2: Entity CRUD & Domain Services**
+- **Story 1.18 → 4.2 (Basic Event Display & Archive)** → See **Epic 4: Public Website & Content Discovery**
+- **Story 1.19 → 2.3 (Speaker Coordination Service)** → See **Epic 2: Entity CRUD & Domain Services**
+- **Story 1.20 → 2.4 (User Role Management)** → See **Epic 2: Entity CRUD & Domain Services**
 
 ---
 ## Story 1.15a: API Consolidation Foundation ✅
@@ -1412,9 +1416,9 @@ As an **organizer**, I want to manage user roles with promotion and demotion cap
 - 📦 **Advanced Caching**: Sophisticated patterns (simple cache-aside with TTLs sufficient)
 
 **📦 Functional Stories Moved to Other Epics (Epic Reorganization 2025-10-12):**
-- **Stories 1.14-1.20** → **Epic 2: Entity CRUD & Domain Services** (8 weeks)
-- **Story 1.15** → **Epic 3: Historical Data Migration** (3 weeks)
-- **Story 1.18** → **Epic 4: Public Website & Content Discovery** (included in 5 weeks)
+- **Stories 1.14, 1.16, 1.17, 1.19, 1.20 → 2.1-2.5** → **Epic 2: Entity CRUD & Domain Services** (9 weeks)
+- **Story 1.15 → 3.1** → **Epic 3: Historical Data Migration** (3 weeks)
+- **Story 1.18 → 4.2** → **Epic 4: Public Website & Content Discovery** (included in 5 weeks)
 
 **📊 Infrastructure Technical KPIs:**
 - **Performance**: API Gateway <50ms authentication overhead

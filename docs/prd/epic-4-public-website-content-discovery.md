@@ -55,6 +55,92 @@ As an **attendee**, I want to see the current/upcoming BATbern event prominently
 
 ---
 
+### Wireframe References
+**From docs/wireframes/sitemap.md:**
+
+1. **Current Event Landing:** `docs/wireframes/story-2.4-current-event-landing.md` ✅
+   - Hero section with event title, date, location
+   - Countdown timer (if within 30 days)
+   - Event highlights and topic description
+   - Session schedule overview
+   - Speaker lineup with photos
+   - Venue information with map
+   - [Register Now] call-to-action button
+   - Footer with historical events link
+
+2. **Event Registration Flow:** `docs/wireframes/story-2.4-event-registration.md` ✅
+   - Multi-step registration wizard (3 steps)
+   - **Step 1/3**: Personal information (name, email, company, role)
+   - **Step 2/3**: Session selection (choose sessions to attend)
+   - **Step 3/3**: Review & confirm (summary with edit options)
+   - Progress indicator showing current step
+   - [Back] and [Next]/[Submit] navigation buttons
+
+3. **Registration Confirmation:** `docs/wireframes/story-2.4-registration-confirmation.md` ✅
+   - Success message with registration number
+   - Registration summary (event, sessions, personal details)
+   - QR code for event check-in
+   - [Download Calendar] button (iCal format)
+   - Email confirmation notice
+   - [View My Registrations] link to dashboard
+
+4. **Session Details Modal:** `docs/wireframes/story-2.4-session-details-modal.md` ✅
+   - Modal overlay triggered from landing page session list
+   - Session title, time, duration, room/location
+   - Speaker information with photo and bio
+   - Session description and learning objectives
+   - Session capacity and availability indicator
+   - [Add to My Schedule] button
+   - [Share Session] social media buttons
+   - [Close] modal control
+
+### UI Components
+**Key interface elements:**
+- **Hero Banner**: Full-width banner with event visual, title, date, countdown
+- **Event Stats**: Quick facts cards (date, location, free attendance badge, topic)
+- **Session Cards**: Session grid/list with time, speaker, room, capacity
+- **Speaker Lineup**: Photo grid with names, companies, session titles
+- **Venue Map**: Embedded Google Maps with directions link
+- **Registration Form**: Multi-step form with validation and progress tracking
+- **QR Code Display**: Scannable QR code for check-in access
+- **Social Sharing**: Pre-populated share buttons (LinkedIn, Twitter, Email)
+- **Filter Controls**: Session filtering by time, topic, speaker
+- **Calendar Export**: Generate iCal file for calendar apps
+
+### Wireframe Status
+- ✅ **EXISTS**: All four wireframes fully documented and ready for implementation
+  - Current Event Landing Page (public-facing hero page)
+  - Event Registration Flow (3-step registration wizard)
+  - Registration Confirmation (success page with QR code)
+  - Session Details Modal (detailed session info overlay)
+
+### Navigation
+**Key navigation paths from these screens:**
+- **Current Event Landing →**
+  - → Event Registration Flow (click [Register Now])
+  - → Session Details Modal (click session card)
+  - → Speaker Profile Detail View (click speaker photo)
+  - → Venue Details (click map/venue info)
+  - → Filter Modal (apply session filters)
+- **Event Registration (Step 1/3) →**
+  - → Event Registration (Step 2/3) (click [Next])
+  - ⤴ Current Event Landing (click [Cancel])
+- **Event Registration (Step 2/3) →**
+  - → Event Registration (Step 3/3) (click [Next])
+  - ⤴ Event Registration (Step 1/3) (click [Back])
+- **Event Registration (Step 3/3) →**
+  - → Registration Confirmation (click [Submit])
+  - ⤴ Event Registration (Step 2/3) (click [Back])
+- **Registration Confirmation →**
+  - → Ticket/QR Code Page (included in confirmation)
+  - → Personal Attendee Dashboard (click [View My Registrations])
+  - → Current Event Landing (click [Back to Event])
+- **Session Details Modal →**
+  - Close (returns to Current Event Landing)
+  - → Speaker Profile (click speaker name/photo)
+
+---
+
 ### Acceptance Criteria
 
 **Landing Page Components:**
@@ -96,8 +182,6 @@ As an **attendee**, I want to see the current/upcoming BATbern event prominently
 - [ ] Performance benchmarks met (<1.5s LCP)
 
 **Estimated Duration:** 1.5 weeks
-
-**Reference:** See `docs/prd/epic-2-event-creation-publishing-stories.md` Story 2.4 for additional wireframe details
 
 ---
 

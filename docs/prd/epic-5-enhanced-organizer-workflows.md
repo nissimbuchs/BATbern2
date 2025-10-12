@@ -12,19 +12,19 @@
 
 **Epic Goal**: Implement the complete 16-step event planning workflow with intelligent automation, topic management, progressive publishing, and quality control, transforming manual event coordination into streamlined automated workflows.
 
-**Deliverable**: Organizers can create events, select topics, and have them immediately visible on a public landing page - achieving end-to-end event visibility in <30 minutes.
+**Deliverable**: Organizers can create events with intelligent topic selection, automated publishing workflows, and instant visibility - achieving end-to-end event creation in <30 minutes.
 
 **Architecture Context**:
 - **Core Service**: Event Management Service (Java 21 + Spring Boot 3.2)
-- **Frontend**: React components for event creation and public landing page
-- **Publishing**: Basic publishing engine with immediate topic publication
-- **Infrastructure**: AWS CloudFront CDN for landing page delivery
+- **Frontend**: React components for event creation and management
+- **Publishing**: Automated publishing engine with immediate publication
+- **Infrastructure**: AWS CloudFront CDN integration
 
 **Duration**: 8 weeks (Weeks 13-20)
 
 ---
 
-## Story 2.1: Event Type Definition (Workflow Step 1)
+## Story 5.1: Event Type Definition (Workflow Step 1)
 
 **User Story:**
 As an **organizer**, I want to define event types with slot requirements, so that I can create events tailored to our different format requirements (full-day, afternoon, evening).
@@ -62,7 +62,7 @@ As an **organizer**, I want to define event types with slot requirements, so tha
 
 ---
 
-## Story 2.2: Topic Selection System (Workflow Step 2)
+## Story 5.2: Topic Selection System (Workflow Step 2)
 
 **User Story:**
 As an **organizer**, I want to select topics from our backlog with intelligent suggestions, so that I can choose compelling topics while avoiding recent duplicates.
@@ -203,7 +203,7 @@ As an **organizer**, I want to select topics from our backlog with intelligent s
 
 ---
 
-## Story 2.3: Basic Publishing Engine (Workflow Step 11 - Partial)
+## Story 5.3: Basic Publishing Engine (Workflow Step 11 - Partial)
 
 **User Story:**
 As an **organizer**, I want created events with topics to be immediately visible on the public website, so that potential attendees can see upcoming events as soon as they're planned.
@@ -310,156 +310,24 @@ As an **organizer**, I want created events with topics to be immediately visible
 
 ---
 
-## Story 2.4: Current Event Landing Page
-
-**User Story:**
-As an **attendee**, I want to see the current/upcoming BATbern event prominently displayed with all key information, so that I can quickly understand event details and decide to attend.
-
-**Architecture Integration:**
-- **Frontend**: React landing page with server-side rendering
-- **Backend**: Attendee Experience Service (basic implementation)
-- **CDN**: CloudFront for global content delivery
-- **Cache**: Redis for event data caching
-
-**Wireframe Context:**
-
-### Wireframe References
-**From docs/wireframes/sitemap.md:**
-
-1. **Current Event Landing:** `docs/wireframes/story-2.4-current-event-landing.md` ✅
-   - Hero section with event title, date, location
-   - Countdown timer (if within 30 days)
-   - Event highlights and topic description
-   - Session schedule overview
-   - Speaker lineup with photos
-   - Venue information with map
-   - [Register Now] call-to-action button
-   - Footer with historical events link
-
-2. **Event Registration Flow:** `docs/wireframes/story-2.4-event-registration.md` ✅
-   - Multi-step registration wizard (3 steps)
-   - **Step 1/3**: Personal information (name, email, company, role)
-   - **Step 2/3**: Session selection (choose sessions to attend)
-   - **Step 3/3**: Review & confirm (summary with edit options)
-   - Progress indicator showing current step
-   - [Back] and [Next]/[Submit] navigation buttons
-
-3. **Registration Confirmation:** `docs/wireframes/story-2.4-registration-confirmation.md` ✅
-   - Success message with registration number
-   - Registration summary (event, sessions, personal details)
-   - QR code for event check-in
-   - [Download Calendar] button (iCal format)
-   - Email confirmation notice
-   - [View My Registrations] link to dashboard
-
-4. **Session Details Modal:** `docs/wireframes/story-2.4-session-details-modal.md` ✅
-   - Modal overlay triggered from landing page session list
-   - Session title, time, duration, room/location
-   - Speaker information with photo and bio
-   - Session description and learning objectives
-   - Session capacity and availability indicator
-   - [Add to My Schedule] button
-   - [Share Session] social media buttons
-   - [Close] modal control
-
-### UI Components
-**Key interface elements:**
-- **Hero Banner**: Full-width banner with event visual, title, date, countdown
-- **Event Stats**: Quick facts cards (date, location, free attendance badge, topic)
-- **Session Cards**: Session grid/list with time, speaker, room, capacity
-- **Speaker Lineup**: Photo grid with names, companies, session titles
-- **Venue Map**: Embedded Google Maps with directions link
-- **Registration Form**: Multi-step form with validation and progress tracking
-- **QR Code Display**: Scannable QR code for check-in access
-- **Social Sharing**: Pre-populated share buttons (LinkedIn, Twitter, Email)
-- **Filter Controls**: Session filtering by time, topic, speaker
-- **Calendar Export**: Generate iCal file for calendar apps
-
-### Wireframe Status
-- ✅ **EXISTS**: All four wireframes fully documented and ready for implementation
-  - Current Event Landing Page (public-facing hero page)
-  - Event Registration Flow (3-step registration wizard)
-  - Registration Confirmation (success page with QR code)
-  - Session Details Modal (detailed session info overlay)
-
-### Navigation
-**Key navigation paths from these screens:**
-- **Current Event Landing →**
-  - → Event Registration Flow (click [Register Now])
-  - → Session Details Modal (click session card)
-  - → Speaker Profile Detail View (click speaker photo)
-  - → Venue Details (click map/venue info)
-  - → Filter Modal (apply session filters)
-- **Event Registration (Step 1/3) →**
-  - → Event Registration (Step 2/3) (click [Next])
-  - ⤴ Current Event Landing (click [Cancel])
-- **Event Registration (Step 2/3) →**
-  - → Event Registration (Step 3/3) (click [Next])
-  - ⤴ Event Registration (Step 1/3) (click [Back])
-- **Event Registration (Step 3/3) →**
-  - → Registration Confirmation (click [Submit])
-  - ⤴ Event Registration (Step 2/3) (click [Back])
-- **Registration Confirmation →**
-  - → Ticket/QR Code Page (included in confirmation)
-  - → Personal Attendee Dashboard (click [View My Registrations])
-  - → Current Event Landing (click [Back to Event])
-- **Session Details Modal →**
-  - Close (returns to Current Event Landing)
-  - → Speaker Profile (click speaker name/photo)
-
-**Acceptance Criteria:**
-
-**Landing Page Components:**
-1. **Hero Section**: Prominent display of next event with title and date
-2. **Event Details**: Clear display of:
-   - Date and time
-   - Location with map link
-   - "Free attendance" badge
-   - Topic description
-3. **Call-to-Action**: Registration button (placeholder for now)
-4. **Countdown Timer**: Days until event (if within 30 days)
-
-**Technical Requirements:**
-5. **Responsive Design**: Mobile-first responsive layout
-6. **Performance**: Page loads in <1.5 seconds globally
-7. **SEO Optimization**: Proper meta tags and structured data
-8. **Social Sharing**: Open Graph tags for social media
-
-**Infrastructure:**
-9. **CloudFront Setup**: CDN distribution for EU regions
-10. **S3 Static Assets**: Images and CSS served from S3
-11. **Redis Caching**: Event data cached with 1-minute TTL
-12. **Health Monitoring**: CloudWatch alarms for availability
-
-**Definition of Done:**
-- [ ] Landing page displays current event prominently
-- [ ] All event logistics clearly visible
-- [ ] Mobile responsive design implemented
-- [ ] Page loads <1.5 seconds from CloudFront
-- [ ] SEO meta tags properly configured
-- [ ] Social sharing produces rich previews
-- [ ] >99% uptime monitoring in place
-
----
-
-## Epic 2 Success Metrics
+## Epic 5 Success Metrics
 
 **Functional Success:**
 - ✅ Event creation to publication in <30 minutes
-- ✅ Landing page live with current event information
 - ✅ 100% of event types supported (full-day, afternoon, evening)
 - ✅ Topic selection prevents duplicates effectively
+- ✅ Publishing workflow operational
 
 **Technical Performance:**
 - **Response Times**: API responses <200ms P95
 - **Publishing Speed**: <1 minute from creation to visibility
-- **Landing Page**: <1.5 second load time globally
-- **Availability**: >99.5% uptime for public page
+- **Topic Search**: Results in <500ms
+- **System Availability**: >99.5% uptime
 
 **Business Value:**
-- **Immediate Visibility**: Events visible to public immediately
-- **Reduced Manual Work**: No manual website updates needed
-- **Professional Presence**: Modern, responsive event landing page
-- **Foundation Ready**: Infrastructure ready for speaker management (Epic 3)
+- **Workflow Automation**: 80% reduction in manual event setup time
+- **Topic Intelligence**: Heat map and similarity detection prevent duplicate topics
+- **Publishing Efficiency**: Automated CDN cache invalidation and notification triggers
+- **Quality Control**: Publishing validation ensures complete event data
 
-This epic delivers the first truly functional vertical slice where organizers can create and publish events that attendees can immediately see, establishing the core event management → public visibility flow.
+This epic delivers enhanced organizer workflows with intelligent topic management, automated publishing, and streamlined event creation processes.
