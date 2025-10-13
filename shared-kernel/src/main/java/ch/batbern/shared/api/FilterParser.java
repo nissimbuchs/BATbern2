@@ -226,38 +226,55 @@ public class FilterParser {
     /**
      * Parses a field with explicit operators.
      * Example: {"votes": {"$gte": 10}}
+     * Multiple operators: {"date": {"$gte": "2024-01-01", "$lte": "2024-12-31"}}
      */
     private static FilterCriteria parseFieldWithOperators(String fieldName, JsonNode operatorNode) {
-        // Get the first (and should be only) operator
         Iterator<Map.Entry<String, JsonNode>> fields = operatorNode.fields();
 
         if (!fields.hasNext()) {
             throw new ValidationException("Empty operator object for field: " + fieldName);
         }
 
-        Map.Entry<String, JsonNode> operatorEntry = fields.next();
-        String operatorStr = operatorEntry.getKey();
-        JsonNode operatorValue = operatorEntry.getValue();
+        // Collect all operator criteria for this field
+        List<FilterCriteria> criteriaList = new ArrayList<>();
 
-        // Map operator string to enum
-        FilterOperator operator = OPERATOR_MAP.get(operatorStr);
-        if (operator == null) {
-            throw new ValidationException("Unknown operator: " + operatorStr);
+        while (fields.hasNext()) {
+            Map.Entry<String, JsonNode> operatorEntry = fields.next();
+            String operatorStr = operatorEntry.getKey();
+            JsonNode operatorValue = operatorEntry.getValue();
+
+            // Map operator string to enum
+            FilterOperator operator = OPERATOR_MAP.get(operatorStr);
+            if (operator == null) {
+                throw new ValidationException("Unknown operator: " + operatorStr);
+            }
+
+            // Extract value (handle array for IN/NIN operators)
+            Object value;
+            if (operator == FilterOperator.IN || operator == FilterOperator.NOT_IN) {
+                value = extractArrayValue(operatorValue);
+            } else {
+                value = extractValue(operatorValue);
+            }
+
+            FilterCriteria criteria = FilterCriteria.builder()
+                    .field(fieldName)
+                    .operator(operator)
+                    .value(value)
+                    .build();
+
+            criteriaList.add(criteria);
         }
 
-        // Extract value (handle array for IN/NIN operators)
-        Object value;
-        if (operator == FilterOperator.IN || operator == FilterOperator.NOT_IN) {
-            value = extractArrayValue(operatorValue);
+        // If multiple operators, combine with AND
+        if (criteriaList.size() > 1) {
+            return FilterCriteria.builder()
+                    .operator(FilterOperator.AND)
+                    .children(criteriaList)
+                    .build();
         } else {
-            value = extractValue(operatorValue);
+            return criteriaList.get(0);
         }
-
-        return FilterCriteria.builder()
-                .field(fieldName)
-                .operator(operator)
-                .value(value)
-                .build();
     }
 
     /**
