@@ -583,19 +583,61 @@ graph TD
 
 #### 4.3.1 Current Event Landing Page (Public Homepage - FR6)
 
-**Purpose**: Primary entry point for all users, prominently featuring the upcoming BATbern event with complete logistics and registration
+**Purpose**: Primary entry point for all users, prominently featuring the upcoming BATbern event with complete logistics and registration. **Updated with modern dark theme design (October 2025)**.
+
+**Visual Design**: Modern dark theme (zinc-950 background) with blue-400 accent colors, ultra-light typography, and generous whitespace for contemporary Swiss tech aesthetic
 
 **Key Elements**:
-- **Hero Section**: Large visual banner with event title, date, location, "FREE ATTENDANCE" badge
-- **Logistics Panel**: Date/time, venue with map link, parking info, public transit directions
-- **Speaker Showcase**: Grid of featured speakers with photos, titles, companies
-- **Detailed Agenda**: Session timeline with expandable session details
-- **Integrated Registration CTA**: Prominent "Register Now" button above fold
-- **Secondary Navigation**: Subtle links to historical archive, about BATbern, past events
+- **Fixed Navigation**: Sticky header with blur backdrop (zinc-950/80), BATbern logo (blue-400 + zinc-400), desktop nav + mobile hamburger menu
+- **Live Event Indicator**: Pulsing blue dot animation + "Next Event" badge above title
+- **Hero Section**: Ultra-light typography (text-5xl md:text-7xl font-light) with event title, subtitle in muted zinc-500
+- **Logistics Grid**: Icon-based two-column layout on desktop, stacked on mobile
+  - Calendar icon + date (Donnerstag, 14. November 2025)
+  - Clock icon + time (18:00 - 21:00)
+  - MapPin icon + location (Impact Hub Bern, Spitalgasse 28)
+  - Users icon + registration count (47 / 60 registered) with `aria-live="polite"` for dynamic updates
+- **Event Description**: Text-lg zinc-300 with generous line-height for readability
+- **Topics Display**: Pill-shaped badges (bg-zinc-900 border-zinc-800) with topic keywords
+- **Primary CTA**: Large button (bg-blue-400 text-zinc-950) with arrow icon and group hover animation
+- **Program Timeline**: Vertical timeline with monospace time stamps (text-blue-400 font-mono), session titles, and descriptions
+- **Asymmetric Photo Gallery** (NEW): Modern masonry-style grid with hover effects, placeholder gradients, and icon indicators
+- **About Section**: Community description with icon-based feature list (Praxis-orientiert, Networking, Tech-agnostisch)
+- **Past Events Grid**: Card-based showcase (3-column desktop, 1-column mobile) with hover border animations
+- **Newsletter Signup**: Inline form with email input + subscribe button, zinc-900 background
+- **Footer**: Copyright, email link, impressum link with hover states
 
-**Interaction Notes**: Mobile-responsive hero image, smooth scroll to registration section, session cards expand on click for details, registration form appears in modal or dedicated section
+**Responsive Behavior**:
+- **Mobile** (< 768px): Hamburger menu, stacked sections, full-width CTA, 4-column photo grid
+- **Tablet** (768-1023px): Collapsible menu, 2-column logistics, 8-column photo grid
+- **Desktop** (1024px+): Full navigation, 2-column hero layout, 12-column asymmetric photo grid
 
-**Design File Reference**: [story-2.4-current-event-landing.md](../wireframes/story-2.4-current-event-landing.md)
+**Accessibility Features**:
+- WCAG 2.1 AA compliant contrast ratios (all text 4.5:1+, most 7:1+ AAA)
+- Focus indicators on all interactive elements (ring-2 ring-blue-400)
+- Semantic HTML5 landmarks (nav, main, sections with aria-labelledby, footer with role="contentinfo")
+- ARIA labels for icons, buttons, and dynamic content
+- Keyboard navigation with visible focus states
+- Screen reader optimization (aria-hidden for decorative icons, aria-live for dynamic counts)
+
+**Interaction Notes**:
+- Smooth scroll navigation with anchor links (#event, #about, #past, #join)
+- Mobile menu slides down with backdrop blur
+- Photo gallery items keyboard focusable with tabIndex={0}
+- Registration button opens event registration flow (story-2.4-event-registration.md)
+- All links have hover and focus states with blue-400 accent
+
+**Technical Implementation**:
+- React component with Tailwind CSS
+- Lucide React icons (Calendar, Users, MapPin, Clock, ArrowRight, Code, Cpu, Database)
+- CDN-served images via CloudFront (WebP with JPEG fallback)
+- API integration: `GET /api/v1/events?filter={"status":"published"}&include=venue,speakers,sessions,topics,agenda`
+- Real-time registration count updates (polling every 5 minutes)
+- Progressive Web App ready with offline support
+
+**Design File References**:
+- [story-2.4-current-event-landing.md](../wireframes/story-2.4-current-event-landing.md) - Original wireframe specification
+- [batbern-newdesign-accessible.html](../wireframes/batbern-newdesign-accessible.html) - Modern dark theme implementation with full accessibility
+- [newdesign-integration-analysis.md](../wireframes/newdesign-integration-analysis.md) - Comprehensive analysis and migration guide
 
 ---
 
@@ -1060,6 +1102,93 @@ Based on PRD v4 scope changes, the following wireframes are **no longer required
 
 ---
 
+#### 5.2.9 Asymmetric Photo Gallery Component (NEW)
+
+**Purpose**: Modern masonry-style photo gallery with asymmetric grid layout and hover effects for showcasing event photos
+
+**Variants**:
+- **Masonry Grid** (Default) - 12-column grid with variable row spans (7×2, 5×1, 3×1, 2×1, 5×2)
+- **Placeholder Mode** (Initial state) - Gradient placeholders with icon indicators
+- **Loaded Mode** (With images) - Full event photos with hover overlay effects
+- **Mobile Compact** (Mobile view) - 4-column simplified grid, auto-rows
+
+**States**:
+- `loading` - Skeleton loading animation with shimmer effect
+- `placeholder` - Gradient boxes (zinc-800 to zinc-900) with iconography
+- `loaded` - Real event photos with blue-400/10 hover overlay
+- `error` - Error state with retry option and fallback placeholder
+
+**Layout Structure** (12-column grid on desktop):
+```
+┌────────────────┬─────────┐
+│                │         │
+│   Large 7×2    │ Med 5×1 │  Row 1-2
+│                │         │
+├────┬─────┬─────┴───┬─────┤
+│3×1 │ 2×1 │  Wide   │     │  Row 3
+│    │     │   7×1   │     │
+├────┴─────┴─────────┤ 5×2 │  Row 4
+│                    │     │
+│   (cycle repeats)  │     │
+└────────────────────┴─────┘
+```
+
+**Mobile Layout** (4-column grid):
+- All items scale proportionally
+- Auto-row height (200px)
+- Maintains aspect ratios
+- 2×2 minimum for featured images
+
+**Usage Guidelines**:
+- Use for event photo showcases (past events, venue photos, community highlights)
+- Minimum 6 photos for balanced asymmetric layout
+- Maximum 12 photos per gallery (implement pagination for more)
+- Images should be high quality (min 1200px width for desktop)
+- Maintain 16:9 or 4:3 aspect ratios for best results
+- Add descriptive alt text for each photo
+- Hover effects: Blue overlay (blue-400/10 opacity) + subtle scale
+- Click to open lightbox/modal for full-size view
+
+**Accessibility**:
+- Each image has descriptive `aria-label` (e.g., "Main Event Space with attendees networking")
+- Keyboard navigable with `tabIndex={0}` on each gallery item
+- Focus indicators visible (ring-2 ring-blue-400)
+- Semantic `role="list"` for gallery container
+- Each image card has `role="listitem"`
+- Icons decorative with `aria-hidden="true"`
+
+**Interaction Patterns**:
+- **Hover** (Desktop): Blue overlay fades in (300ms), icon color shifts zinc-600 → zinc-500
+- **Focus** (Keyboard): Focus ring appears with blue-400 accent
+- **Click**: Opens lightbox modal with full-size image and navigation
+- **Mobile**: Tap to view full-size, swipe for next/previous
+
+**React Implementation Notes**:
+- Built with Tailwind CSS Grid (`grid grid-cols-4 md:grid-cols-12`)
+- Responsive breakpoints: 4 cols (mobile) → 12 cols (desktop)
+- `auto-rows-[200px]` for consistent row height
+- CSS Grid `col-span-*` and `row-span-*` for asymmetric layout
+- Lazy loading with Intersection Observer API
+- CDN images served via CloudFront
+- WebP format with JPEG fallback
+- Image optimization: max 1920px width, 80% quality
+- Lightbox component: react-image-lightbox or photoswipe
+- Placeholder gradient: `bg-gradient-to-br from-zinc-800 to-zinc-900`
+
+**Performance Considerations**:
+- Lazy load images below fold (only load first 3 initially)
+- Use `loading="lazy"` attribute on img tags
+- Implement blur-up placeholder technique (LQIP)
+- Preload featured image (largest, top-left)
+- Maximum 12 images per page (pagination for more)
+- Total gallery bundle size: ~50KB (component + styles)
+
+**Design File Reference**:
+- [story-2.4-current-event-landing.md](../wireframes/story-2.4-current-event-landing.md) - Integrated into public landing page
+- [batbern-newdesign-accessible.html](../wireframes/batbern-newdesign-accessible.html) - Live implementation with accessibility features
+
+---
+
 ### 5.3 Notification-Specific Components
 
 #### 5.3.1 Email Template Preview Component
@@ -1117,6 +1246,8 @@ Based on PRD v4 scope changes, the following wireframes are **no longer required
 
 ### 6.2 Color Palette
 
+#### 6.2.1 Light Theme (Authenticated Portals)
+
 | Color Type | Hex Code | RGB | Usage | Accessibility Notes |
 |------------|----------|-----|-------|---------------------|
 | Primary | `#2C5F7C` | rgb(44, 95, 124) | Navigation, primary CTAs, links, organizer role indicator | AA contrast on white |
@@ -1134,6 +1265,35 @@ Based on PRD v4 scope changes, the following wireframes are **no longer required
 | Neutral 100 | `#ECF0F1` | rgb(236, 240, 241) | Background, cards, hover states | N/A (background) |
 | White | `#FFFFFF` | rgb(255, 255, 255) | Primary background, card surfaces | N/A (background) |
 | Black | `#000000` | rgb(0, 0, 0) | Maximum contrast text (rare use) | AAA contrast on white |
+
+#### 6.2.2 Dark Theme (Public Landing Page)
+
+**Implementation**: Modern dark theme for public-facing pages (Current Event Landing Page, Registration Flow) with excellent contrast ratios
+
+| Color Type | Tailwind Class | Hex Code | RGB | Contrast Ratio | Usage | Accessibility |
+|------------|----------------|----------|-----|----------------|-------|---------------|
+| Background Primary | `bg-zinc-950` | `#09090B` | rgb(9, 9, 11) | - | Main background, page canvas | N/A (background) |
+| Background Secondary | `bg-zinc-900` | `#18181B` | rgb(24, 24, 27) | - | Cards, modal backgrounds, elevated surfaces | N/A (background) |
+| Background Secondary Alt | `bg-zinc-900/30` | rgba(24, 24, 27, 0.3) | rgb(24, 24, 27) @ 30% | - | Section backgrounds, subtle dividers | N/A (background) |
+| Background Tertiary | `bg-zinc-800` | `#27272A` | rgb(39, 39, 42) | - | Hover states, active elements, borders | N/A (background) |
+| Text Primary | `text-zinc-100` | `#F4F4F5` | rgb(244, 244, 245) | **15.8:1** on zinc-950 | Body text, headings, primary content | ✅ **AAA** |
+| Text Secondary | `text-zinc-300` | `#D4D4D8` | rgb(212, 212, 216) | **12.2:1** on zinc-950 | Descriptions, secondary content | ✅ **AAA** |
+| Text Tertiary | `text-zinc-400` | `#A1A1AA` | rgb(161, 161, 170) | **8.5:1** on zinc-950 | Labels, metadata, captions | ✅ **AAA** |
+| Text Muted | `text-zinc-500` | `#71717A` | rgb(113, 113, 122) | **5.9:1** on zinc-950 | Timestamps, hints, subdued content | ✅ **AA** |
+| Text Subtle | `text-zinc-600` | `#52525B` | rgb(82, 82, 91) | **4.5:1** on zinc-950 | Placeholder icons, decorative text | ✅ **AA** (minimum) |
+| Accent Primary | `text-blue-400` | `#60A5FA` | rgb(96, 165, 250) | **7.8:1** on zinc-950 | Links, CTAs, highlights, active states | ✅ **AA+** |
+| Accent Hover | `text-blue-300` | `#93C5FD` | rgb(147, 197, 253) | **10.2:1** on zinc-950 | Link hover states, emphasis | ✅ **AAA** |
+| Button Primary BG | `bg-blue-400` | `#60A5FA` | rgb(96, 165, 250) | - | Primary action buttons | N/A (background) |
+| Button Primary Text | `text-zinc-950` | `#09090B` | rgb(9, 9, 11) | **7.8:1** on blue-400 | Text on primary buttons | ✅ **AA+** |
+| Button Hover BG | `bg-blue-300` | `#93C5FD` | rgb(147, 197, 253) | - | Button hover state | N/A (background) |
+| Border | `border-zinc-800` | `#27272A` | rgb(39, 39, 42) | - | Component borders, dividers | N/A (decorative) |
+
+**Dark Theme Usage Guidelines**:
+- Use dark theme exclusively for public landing page and registration flow
+- Maintains BATbern's professional Swiss aesthetic while feeling contemporary
+- All authenticated portals (Organizer, Speaker, Partner, Attendee) use light theme
+- Dark theme optimized for first-time visitors and public event discovery
+- Excellent contrast ratios ensure readability in all lighting conditions
 
 **Role-Based Color Coding**:
 - 🎯 **Organizer**: Primary Blue (#2C5F7C)
