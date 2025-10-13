@@ -119,9 +119,10 @@
 
 When the Current Event Landing Page loads, the following APIs are called to provide the necessary data:
 
-**CONSOLIDATED API APPROACH (Story 1.17):**
+**CONSOLIDATED API APPROACH (Story 1.15a.1 - Events API Consolidation):**
 
 1. **GET /api/v1/events?filter={"status":"published"}&sort=-eventDate&limit=1&include=venue,speakers,sessions,topics,agenda**
+   - **Implementation**: Story 1.15a.1 consolidated Events API with resource expansion (AC2)
    - Returns: Current/upcoming published event with all sub-resources expanded in a single call
    - Response includes:
      - Event core data: title, eventNumber, eventDate, description, registrationOpen, registrationDeadline, admissionFee, maxAttendees
@@ -132,10 +133,12 @@ When the Current Event Landing Page loads, the following APIs are called to prov
      - agenda: Structured agenda (registrationTime, keynoteTime, networkingEnd, sessions, breaks, pdfUrl)
    - Used for: Populate entire landing page in a single request
    - **Performance**: Reduced from 6 API calls to 1 (83% reduction in HTTP requests)
+   - **Caching**: 15-minute Caffeine in-memory cache with automatic invalidation (AC15-16)
+   - **Response Time**: <50ms cached, <500ms uncached with all includes (P95)
 
 ---
 
-**MIGRATION NOTE (Story 1.17):**
+**MIGRATION NOTE (Story 1.15a.1 - Events API Consolidation):**
 The original implementation required 6 separate API calls on page load:
 - List published events
 - Event details
@@ -144,13 +147,14 @@ The original implementation required 6 separate API calls on page load:
 - Agenda
 - Topics
 
-The new consolidated API uses the `?include=venue,speakers,sessions,topics,agenda` parameter to fetch all data in one call. This provides:
+The new consolidated API (Story 1.15a.1) uses the `?include=venue,speakers,sessions,topics,agenda` parameter to fetch all data in one call. This provides:
 - Page load time: ~80% faster (from ~1.8s to <350ms for public landing page)
 - Instant page render with all content available immediately
 - Better SEO performance (faster initial content paint)
 - Reduced server load (1 database query instead of 6)
 - Atomic data consistency across all sections
 - Improved user experience with no progressive loading flashes
+- In-memory caching: <50ms cached response time, 15-minute TTL
 
 ### User Action APIs
 

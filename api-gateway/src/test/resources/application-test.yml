@@ -104,15 +104,16 @@ security:
     max-age: 3600
 
 # Rate Limiting Configuration
+# Disabled for tests to prevent 429 errors during test execution
 rate-limiting:
-  enabled: true
-  default-limit: 100
+  enabled: false
+  default-limit: 10000
   default-duration: 1m
   role-limits:
-    organizer: 500
-    speaker: 200
-    partner: 300
-    attendee: 100
+    organizer: 10000
+    speaker: 10000
+    partner: 10000
+    attendee: 10000
 
 # Logging Configuration
 logging:

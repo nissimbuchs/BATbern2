@@ -1,6 +1,7 @@
 package ch.batbern.gateway.config;
 
 import ch.batbern.gateway.auth.CognitoJWKSProvider;
+import ch.batbern.gateway.auth.DefaultCognitoJWKSProvider;
 import ch.batbern.gateway.auth.CognitoJWTValidator;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -28,6 +29,21 @@ public class CognitoConfig {
 
     @Value("${aws.cognito.userPoolClientId:#{null}}")
     private String userPoolClientId;
+
+    @Bean
+    public CognitoJWKSProvider cognitoJWKSProvider() {
+        if (userPoolId == null || region == null) {
+            throw new IllegalStateException(
+                "Cognito configuration is missing. Please set aws.cognito.userPoolId and aws.cognito.region"
+            );
+        }
+        String jwksUrl = String.format(
+            "https://cognito-idp.%s.amazonaws.com/%s/.well-known/jwks.json",
+            region,
+            userPoolId
+        );
+        return new DefaultCognitoJWKSProvider(jwksUrl);
+    }
 
     @Bean
     public CognitoJWTValidator cognitoJWTValidator(CognitoJWKSProvider jwksProvider) {
