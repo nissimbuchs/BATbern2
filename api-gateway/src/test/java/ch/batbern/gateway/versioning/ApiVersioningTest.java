@@ -1,5 +1,6 @@
 package ch.batbern.gateway.versioning;
 
+import ch.batbern.gateway.config.TestSecurityConfig;
 import ch.batbern.gateway.controller.TestResourceController;
 import ch.batbern.gateway.filter.ApiVersionHeaderFilter;
 import org.junit.jupiter.api.Disabled;
@@ -7,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -17,19 +19,20 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Integration tests for API versioning infrastructure.
  *
- * NOTE: Currently disabled due to Spring Boot context loading issues with Cognito configuration.
- * The functionality is verified through unit tests in ApiVersionHeaderFilterTest instead.
- *
- * TODO: Enable when test configuration properly mocks Cognito beans.
+ * NOTE: Disabled due to @WebMvcTest slice test limitations with OAuth2ResourceServer autoconfiguration.
+ * The functionality is verified through:
+ * - Unit tests in ApiVersionHeaderFilterTest (filter logic)
+ * - E2E tests in ApiConsolidationIntegrationTest (full integration)
  *
  * Verifies that:
  * - v1 routes are accessible
  * - Unsupported versions return 404
  * - Version headers are included in responses
  */
-@Disabled("Requires test configuration for Cognito beans - functionality verified in unit tests")
+@Disabled("@WebMvcTest incompatible with OAuth2ResourceServer - functionality covered by other tests")
 @WebMvcTest(controllers = TestResourceController.class)
-@Import(ApiVersionHeaderFilter.class)
+@Import({ApiVersionHeaderFilter.class, TestSecurityConfig.class})
+@ActiveProfiles("test")
 class ApiVersioningTest {
 
     @Autowired

@@ -3,7 +3,6 @@ package ch.batbern.gateway.integration;
 import ch.batbern.gateway.config.TestSecurityConfig;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,11 +20,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * E2E Integration Tests for API Consolidation Foundation (Story 1.15a)
  *
- * TDD RED Phase: These tests are written FIRST and should FAIL initially.
  * Tests cover all query parameters, middleware, and standardized responses.
  *
- * DISABLED: Story 1.15a implementation is incomplete. Tests will be enabled
- * once middleware and controllers are fully implemented.
+ * Story 1.15a is COMPLETE - these tests verify the implementation.
  *
  * Acceptance Criteria Coverage:
  * - AC1: API Versioning Infrastructure
@@ -39,7 +36,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * - AC9: Response Formatting Middleware
  * - AC10: Pagination Helper
  */
-@Disabled("Story 1.15a implementation incomplete - TDD RED phase tests")
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
