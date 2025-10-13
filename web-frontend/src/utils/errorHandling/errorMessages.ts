@@ -6,7 +6,7 @@ export interface FormattedError {
   correlationId?: string;
   isNetworkError?: boolean;
   isTimeoutError?: boolean;
-  originalError?: any;
+  originalError?: Error | AxiosError | unknown;
 }
 
 /**
@@ -73,8 +73,8 @@ export function extractCorrelationId(error: AxiosError): string | undefined {
   }
 
   // Check response data
-  const data = error.response.data as any;
-  if (data && data.correlationId) {
+  const data = error.response.data as Record<string, unknown>;
+  if (data && typeof data.correlationId === 'string') {
     return data.correlationId;
   }
 
@@ -90,14 +90,15 @@ export function extractCorrelationId(error: AxiosError): string | undefined {
  * @param error - Error or AxiosError object
  * @returns Formatted error object
  */
-export function formatErrorForDisplay(error: any): FormattedError {
+export function formatErrorForDisplay(error: unknown): FormattedError {
   // Handle AxiosError (API errors)
   // Check for isAxiosError flag, response object, or axios-specific error codes
+  const errorObj = error as Partial<AxiosError>;
   const isAxiosLike =
-    error.isAxiosError ||
-    error.response ||
-    error.code === 'ERR_NETWORK' ||
-    error.code === 'ECONNABORTED';
+    errorObj.isAxiosError ||
+    errorObj.response ||
+    errorObj.code === 'ERR_NETWORK' ||
+    errorObj.code === 'ECONNABORTED';
 
   if (isAxiosLike) {
     const axiosError = error as AxiosError;
@@ -120,7 +121,8 @@ export function formatErrorForDisplay(error: any): FormattedError {
 
     // HTTP error with response
     const statusCode = axiosError.response.status;
-    const customMessage = (axiosError.response.data as any)?.message;
+    const responseData = axiosError.response.data as Record<string, unknown>;
+    const customMessage = typeof responseData?.message === 'string' ? responseData.message : undefined;
     const correlationId = extractCorrelationId(axiosError);
 
     return {
@@ -132,8 +134,9 @@ export function formatErrorForDisplay(error: any): FormattedError {
   }
 
   // Handle generic Error
+  const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.';
   return {
-    message: error.message || 'An unexpected error occurred. Please try again.',
+    message: errorMessage,
     originalError: error,
   };
 }

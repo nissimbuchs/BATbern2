@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import type { ManifestIcon } from './manifest';
 
 /**
  * Test Suite: Web App Manifest Configuration
@@ -40,7 +41,7 @@ describe('Web App Manifest', () => {
     const manifest = getManifest();
 
     const expectedSizes = ['192x192', '512x512'];
-    const iconSizes = manifest.icons.map((icon: any) => icon.sizes);
+    const iconSizes = manifest.icons.map((icon: ManifestIcon) => icon.sizes);
 
     expectedSizes.forEach((size) => {
       expect(iconSizes).toContain(size);
@@ -66,7 +67,7 @@ describe('Web App Manifest', () => {
     const { getManifest } = await import('./manifest');
     const manifest = getManifest();
 
-    const anyPurposeIcon = manifest.icons.find((icon: any) => icon.purpose === 'any');
+    const anyPurposeIcon = manifest.icons.find((icon: ManifestIcon) => icon.purpose === 'any');
 
     expect(anyPurposeIcon).toBeTruthy();
   });
@@ -75,7 +76,7 @@ describe('Web App Manifest', () => {
     const { getManifest } = await import('./manifest');
     const manifest = getManifest();
 
-    const maskableIcon = manifest.icons.find((icon: any) => icon.purpose === 'maskable');
+    const maskableIcon = manifest.icons.find((icon: ManifestIcon) => icon.purpose === 'maskable');
 
     expect(maskableIcon).toBeTruthy();
   });

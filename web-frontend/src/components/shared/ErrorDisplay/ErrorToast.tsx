@@ -64,7 +64,7 @@ const ErrorToast: React.FC<ErrorToastProps> = ({
    * Check if error is critical (should not auto-close)
    */
   const isCritical = (): boolean => {
-    return (error as any)?.severity === 'critical';
+    return (error as typeof error & { severity?: string })?.severity === 'critical';
   };
 
   /**

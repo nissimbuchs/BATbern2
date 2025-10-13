@@ -29,6 +29,7 @@ vi.mock('aws-amplify/auth', () => ({
 }));
 
 import { fetchAuthSession } from 'aws-amplify/auth';
+import type { AuthSession } from 'aws-amplify/auth';
 
 interface I18nMock {
   language: string;
@@ -80,7 +81,7 @@ describe('API Client', () => {
             toString: () => 'amplify-token-123',
           },
         },
-      } as any);
+      } as AuthSession);
 
       mockAxios.onGet('/test').reply((config) => {
         expect(config.headers?.['Authorization']).toBe('Bearer amplify-token-123');
@@ -94,7 +95,7 @@ describe('API Client', () => {
       // Mock AWS Amplify - no token
       vi.mocked(fetchAuthSession).mockResolvedValue({
         tokens: undefined,
-      } as any);
+      } as AuthSession);
 
       mockAxios.onGet('/test').reply((config) => {
         expect(config.headers?.['X-Correlation-ID']).toBeDefined();
@@ -113,7 +114,7 @@ describe('API Client', () => {
       // Mock AWS Amplify - no tokens available
       vi.mocked(fetchAuthSession).mockResolvedValue({
         tokens: undefined,
-      } as any);
+      } as AuthSession);
 
       mockAxios.onGet('/test').reply((config) => {
         expect(config.headers?.['Authorization']).toBeUndefined();
@@ -129,7 +130,7 @@ describe('API Client', () => {
       // Mock AWS Amplify
       vi.mocked(fetchAuthSession).mockResolvedValue({
         tokens: undefined,
-      } as any);
+      } as AuthSession);
 
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       mockAxios.onGet('/protected').reply(401, { message: 'Unauthorized' });
@@ -151,7 +152,7 @@ describe('API Client', () => {
       // Mock AWS Amplify
       vi.mocked(fetchAuthSession).mockResolvedValue({
         tokens: undefined,
-      } as any);
+      } as AuthSession);
 
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       mockAxios.onGet('/admin').reply(403, { message: 'Forbidden' });
@@ -173,7 +174,7 @@ describe('API Client', () => {
       // Mock AWS Amplify
       vi.mocked(fetchAuthSession).mockResolvedValue({
         tokens: undefined,
-      } as any);
+      } as AuthSession);
 
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       mockAxios.onGet('/data').reply(500, { message: 'Internal Server Error' });
@@ -195,7 +196,7 @@ describe('API Client', () => {
       // Mock AWS Amplify
       vi.mocked(fetchAuthSession).mockResolvedValue({
         tokens: undefined,
-      } as any);
+      } as AuthSession);
 
       mockAxios.onGet('/data').reply(200, { data: 'test' });
 
@@ -209,7 +210,7 @@ describe('API Client', () => {
       // Mock AWS Amplify
       vi.mocked(fetchAuthSession).mockResolvedValue({
         tokens: undefined,
-      } as any);
+      } as AuthSession);
 
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       mockAxios.onGet('/data').networkError();

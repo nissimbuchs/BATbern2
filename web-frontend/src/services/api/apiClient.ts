@@ -23,7 +23,7 @@ async function getAccessToken(): Promise<string | null> {
   try {
     const session = await fetchAuthSession();
     return session.tokens?.accessToken?.toString() || null;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
