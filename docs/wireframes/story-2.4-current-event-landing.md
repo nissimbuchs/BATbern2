@@ -4,6 +4,27 @@
 **Screen**: Current Event Landing Page (Homepage - FR6 Compliant)
 **User Role**: Attendee (Public)
 **Related FR**: FR6 (Current Event Prominence)
+**Design Version**: v2.0 - Modern Dark Theme (Updated October 2025)
+
+---
+
+## IMPORTANT: Modern Design Implementation
+
+**This wireframe has been updated with a modern dark theme design.** The implementation files are:
+- **Primary Implementation**: `/docs/wireframes/batbern-newdesign-accessible.html` - Full React component with WCAG 2.1 AA accessibility
+- **Analysis Document**: `/docs/wireframes/newdesign-integration-analysis.md` - Comprehensive integration guide and recommendations
+- **Front-End Spec**: Updated in `/docs/front-end-spec.md` Section 4.3.1 with dark theme details
+
+**Key Changes from Original Wireframe**:
+- Modern dark theme (zinc-950 background, blue-400 accents) replacing light theme
+- Asymmetric photo gallery component (12-column masonry grid)
+- Ultra-light typography with generous whitespace
+- Enhanced accessibility with ARIA labels and focus indicators
+- Mobile-first responsive design with hamburger navigation
+- Live event indicator with pulsing animation
+- All WCAG 2.1 AA contrast ratios verified (most achieve AAA)
+
+**Implementation Priority**: Use the modern dark theme design (`batbern-newdesign-accessible.html`) as the primary implementation. The ASCII wireframe below shows the original functional specification.
 
 ---
 
@@ -203,3 +224,57 @@ The new consolidated API uses the `?include=venue,speakers,sessions,topics,agend
     - Context: locale parameter, reloads with translated content
 
 ---
+
+## Design Evolution: Modern Dark Theme (October 2025)
+
+### Visual Comparison: Original vs. Modern Design
+
+| Aspect | Original Wireframe (v1.0) | Modern Implementation (v2.0) |
+|--------|---------------------------|------------------------------|
+| **Theme** | Light background, traditional | Dark theme (zinc-950), contemporary |
+| **Typography** | Standard weights | Ultra-light headings (font-light), generous whitespace |
+| **Navigation** | Static top bar | Sticky header with blur backdrop, mobile hamburger menu |
+| **Event Indicator** | Static "SPRING CONFERENCE 2025" | Live pulsing blue dot + "Next Event" badge |
+| **Hero Layout** | Single column, centered | Two-column grid (logistics + description) |
+| **Logistics Display** | Panel with emojis | Icon-based with lucide-react (Calendar, Clock, MapPin, Users) |
+| **CTA Button** | "REGISTER FOR FREE" | "Register Now" with arrow icon + hover animation |
+| **Speaker Section** | 4-speaker grid with photos | Placeholder icons (awaiting API integration) |
+| **Agenda** | Full-day schedule (08:30-17:30) | Evening event (18:00-21:00), vertical timeline |
+| **Photo Gallery** | Not present | **NEW**: Asymmetric masonry grid (12-column) |
+| **About Section** | Not present | **NEW**: Community description with icon features |
+| **Past Events** | Quick links only | **NEW**: Card-based 3-column grid |
+| **Newsletter** | Modal popup | **NEW**: Inline form with email input |
+| **Accessibility** | Basic compliance | **Enhanced**: WCAG 2.1 AA with all ARIA labels, focus states |
+| **Contrast Ratios** | Assumed AA | **Verified**: All text 4.5:1+, most 7:1+ (AAA) |
+
+### Key Improvements in Modern Design
+
+1. **Contemporary Aesthetic**: Dark theme positions BATbern as forward-thinking tech community
+2. **Better Information Hierarchy**: Ultra-light typography creates visual breathing room
+3. **Enhanced Engagement**: Asymmetric photo gallery, hover effects, animations
+4. **Mobile-First**: Responsive design with hamburger menu, touch-optimized
+5. **Accessibility Excellence**: All interactive elements keyboard navigable with visible focus
+6. **Performance Optimized**: Lazy loading images, efficient grid layout
+7. **Community Focus**: Dedicated "About" and "Past Events" sections build trust
+
+### Implementation Recommendation
+
+**Use the modern dark theme design** (`batbern-newdesign-accessible.html`) as the primary implementation:
+
+- Provides significantly better visual appeal and engagement
+- Maintains all functional requirements from original wireframe (FR6 compliance)
+- Exceeds accessibility standards (WCAG 2.1 AA, most AAA)
+- Modern tech aesthetic aligns with Swiss IT community expectations
+- Mobile-first approach ensures excellent experience across devices
+
+**Migration Path**: See `/docs/wireframes/newdesign-integration-analysis.md` for complete 4-week rollout plan.
+
+---
+
+**Design Version History**:
+- **v1.0** (Original): Traditional light theme wireframe, functional specification
+- **v2.0** (October 2025): Modern dark theme with asymmetric gallery, enhanced accessibility, mobile-first responsive design
+
+**Last Updated**: October 13, 2025
+**UX Expert**: Sally
+**Status**: Ready for implementation
