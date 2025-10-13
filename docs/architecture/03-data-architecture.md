@@ -15,8 +15,9 @@ This document outlines the comprehensive data model and database design for the 
 - logo: CompanyLogo - Uploaded logo with metadata
 - website: string - Company website URL
 - industry: string - Industry sector classification
-- employeeCount: number - Approximate employee count
 - headquarters: Address - Primary company location
+
+**Note:** User-company relationships are managed by the User Management Service via `User.companyId` field. To query employees of a company, use the User Service endpoint: `GET /api/v1/users?company={companyId}`
 
 #### TypeScript Interface
 ```typescript
@@ -28,13 +29,13 @@ interface Company {
   logo?: CompanyLogo;
   website?: string;
   industry: string;
-  employeeCount?: number;
   headquarters?: Address;
   description?: string;
   socialLinks: SocialLinks;
   createdAt: Date;
   updatedAt: Date;
   createdBy: string; // User ID who created this company
+  // Note: employee relationships managed by User Service via User.companyId
 }
 
 interface CompanyLogo {
@@ -49,9 +50,10 @@ interface CompanyLogo {
 ```
 
 #### Relationships
-- **One-to-Many:** Company → Speakers (speakers belong to companies)
-- **One-to-One:** Company ↔ Partner (partner companies have additional partner data)
-- **One-to-Many:** Company → Attendees (attendees work for companies)
+- **One-to-Many:** Company → Speakers (speakers belong to companies via `Speaker.companyId`)
+- **One-to-One:** Company ↔ Partner (partner companies have additional partner data via `Partner.companyId`)
+- **One-to-Many:** Company → Attendees (attendees work for companies via `Attendee.companyId`)
+- **One-to-Many:** Company → Users (users belong to companies via `User.companyId` in User Service)
 
 ### Partner
 
@@ -104,9 +106,9 @@ enum PartnershipTier {
 ```
 
 #### Relationships
-- **One-to-One:** Partner → Company (partner data extends company)
+- **One-to-One:** Partner → Company (partner data extends company via `Partner.companyId`)
 - **One-to-Many:** Partner → PartnerContacts (multiple contact persons)
-- **One-to-Many:** Partner → EmployeeAttendanceRecords (cross-event attendance tracking)
+- **Cross-Service:** Partner analytics track employee attendance by querying User Service and Event Registration Service
 
 ### Speaker
 
@@ -1222,12 +1224,14 @@ CREATE TABLE companies (
     is_partner BOOLEAN DEFAULT FALSE,
     website VARCHAR(500),
     industry VARCHAR(100),
-    employee_count INTEGER,
     description TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     created_by UUID NOT NULL
 );
+
+-- Note: User-company relationships are managed in User Management Service
+-- Query employee count: SELECT COUNT(*) FROM users WHERE company_id = '{companyId}'
 
 -- Company logos (simplified)
 CREATE TABLE company_logos (
