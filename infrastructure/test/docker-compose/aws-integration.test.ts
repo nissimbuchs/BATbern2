@@ -102,10 +102,9 @@ describe('AWS Integration Configuration (AC1, AC4, AC9)', () => {
       const dockerComposeContent = fs.readFileSync(dockerComposePath, 'utf-8');
       const parsed = require('js-yaml').load(dockerComposeContent);
 
-      // Assert - API Gateway depends on Redis
-      expect(parsed.services['api-gateway'].depends_on).toBeDefined();
-      expect(parsed.services['api-gateway'].depends_on.redis).toBeDefined();
-      expect(parsed.services['api-gateway'].depends_on.redis.condition).toBe('service_healthy');
+      // Assert - API Gateway has no dependencies (Redis removed, using Caffeine for caching)
+      // API Gateway can start independently as it uses in-memory Caffeine cache
+      expect(parsed.services['api-gateway']).toBeDefined();
     });
 
     test('should_connectToAWSRDS_when_apiGatewayStarts', () => {
@@ -121,20 +120,20 @@ describe('AWS Integration Configuration (AC1, AC4, AC9)', () => {
       expect(databaseUrlVar).toMatch(/DATABASE_URL=\${DATABASE_URL}/);
     });
 
-    test('should_connectToLocalRedis_when_apiGatewayStarts', () => {
+    test('should_useCaffeineCache_when_apiGatewayStarts', () => {
       // Arrange & Act
       const dockerComposeContent = fs.readFileSync(dockerComposePath, 'utf-8');
       const parsed = require('js-yaml').load(dockerComposeContent);
 
-      // Assert - API Gateway has Redis configuration
+      // Assert - API Gateway no longer uses Redis (switched to Caffeine in-memory cache for cost reduction)
       const apiGatewayEnv = parsed.services['api-gateway'].environment;
 
+      // Redis configuration should not exist
       const redisHostVar = apiGatewayEnv.find((e: string) => e.startsWith('REDIS_HOST='));
       const redisPortVar = apiGatewayEnv.find((e: string) => e.startsWith('REDIS_PORT='));
 
-      expect(redisHostVar).toBeDefined();
-      expect(redisPortVar).toBeDefined();
-      expect(redisHostVar).toMatch(/REDIS_HOST=.*redis/);
+      expect(redisHostVar).toBeUndefined();
+      expect(redisPortVar).toBeUndefined();
     });
 
     test('should_respondToHealthCheck_when_apiGatewayRunning', () => {

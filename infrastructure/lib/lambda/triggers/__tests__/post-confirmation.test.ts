@@ -67,7 +67,7 @@ function createLambdaContext(): Context {
 }
 
 describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
-  let mockDbClient: jest.Mocked<Client>;
+  let mockDbClient: any;
 
   beforeEach(() => {
     // Reset mocks before each test
@@ -79,7 +79,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       query: jest.fn(),
       release: jest.fn(),
       end: jest.fn(),
-    } as any;
+    };
 
     (Client as any).mockImplementation(() => mockDbClient);
   });
@@ -356,7 +356,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       const event = createPostConfirmationEvent();
       const context = createLambdaContext();
 
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
       mockDbClient.query.mockRejectedValueOnce(new Error('Insert failed'));
 
