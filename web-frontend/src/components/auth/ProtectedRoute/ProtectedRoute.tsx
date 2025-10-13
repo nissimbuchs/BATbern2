@@ -7,15 +7,7 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Box, CircularProgress, Typography, Alert } from '@mui/material';
 import { useAuth } from '@hooks/useAuth';
-import { UserRole } from '@/types/auth';
-
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-  allowedRoles?: UserRole[];
-  requiresAuth?: boolean;
-  requiresVerification?: boolean;
-  fallbackPath?: string;
-}
+import type { ProtectedRouteProps } from './types';
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
@@ -84,20 +76,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Render protected content
   return <>{children}</>;
-};
-
-/**
- * Higher-order component for protecting routes
- */
-export const withProtectedRoute = <P extends object>(
-  Component: React.ComponentType<P>,
-  options?: Omit<ProtectedRouteProps, 'children'>
-) => {
-  return (props: P) => (
-    <ProtectedRoute {...options}>
-      <Component {...props} />
-    </ProtectedRoute>
-  );
 };
 
 /**
