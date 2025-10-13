@@ -23,13 +23,8 @@ describe('Docker Compose Startup Orchestration (AC6, AC7)', () => {
       const dockerComposeContent = fs.readFileSync(dockerComposePath, 'utf-8');
       const parsed = require('js-yaml').load(dockerComposeContent);
 
-      // Assert - Redis should have no dependencies (starts first)
-      expect(parsed.services.redis.depends_on).toBeUndefined();
-
-      // Assert - API Gateway depends on Redis
-      expect(parsed.services['api-gateway'].depends_on).toBeDefined();
-      expect(parsed.services['api-gateway'].depends_on.redis).toBeDefined();
-      expect(parsed.services['api-gateway'].depends_on.redis.condition).toBe('service_healthy');
+      // Assert - API Gateway has no dependencies (using Caffeine for caching, no Redis)
+      // Note: Redis was removed for cost reduction, replaced with Caffeine in-memory cache
 
       // Assert - Web Frontend depends on API Gateway
       expect(parsed.services['web-frontend'].depends_on).toBeDefined();
@@ -41,12 +36,6 @@ describe('Docker Compose Startup Orchestration (AC6, AC7)', () => {
       // Arrange & Act
       const dockerComposeContent = fs.readFileSync(dockerComposePath, 'utf-8');
       const parsed = require('js-yaml').load(dockerComposeContent);
-
-      // Assert - Redis health check configured
-      expect(parsed.services.redis.healthcheck).toBeDefined();
-      expect(parsed.services.redis.healthcheck.test).toContain('redis-cli');
-      expect(parsed.services.redis.healthcheck.interval).toBe('5s');
-      expect(parsed.services.redis.healthcheck.retries).toBe(5);
 
       // Assert - API Gateway health check configured
       expect(parsed.services['api-gateway'].healthcheck).toBeDefined();
@@ -60,14 +49,14 @@ describe('Docker Compose Startup Orchestration (AC6, AC7)', () => {
       const dockerComposeContent = fs.readFileSync(dockerComposePath, 'utf-8');
       const parsed = require('js-yaml').load(dockerComposeContent);
 
-      // Assert - Services have health checks with retry configuration
-      expect(parsed.services.redis.healthcheck.retries).toBeGreaterThan(0);
+      // Assert - API Gateway has health checks with retry configuration
       expect(parsed.services['api-gateway'].healthcheck.retries).toBeGreaterThan(0);
 
       // Docker Compose automatically restarts unhealthy services
       // Verify restart behavior is not explicitly disabled
-      expect(parsed.services.redis.restart).not.toBe('no');
-      expect(parsed.services['api-gateway'].restart).not.toBe('no');
+      if (parsed.services['api-gateway'].restart) {
+        expect(parsed.services['api-gateway'].restart).not.toBe('no');
+      }
     });
 
     test('should_handleStartupFailures_when_serviceNotReady', () => {
@@ -76,7 +65,6 @@ describe('Docker Compose Startup Orchestration (AC6, AC7)', () => {
       const parsed = require('js-yaml').load(dockerComposeContent);
 
       // Assert - Health checks have timeout and retry configuration
-      expect(parsed.services.redis.healthcheck.timeout).toBe('3s');
       expect(parsed.services['api-gateway'].healthcheck.timeout).toBe('10s');
 
       // Assert - Start period gives services time to initialize before health checks fail
@@ -107,8 +95,7 @@ describe('Docker Compose Startup Orchestration (AC6, AC7)', () => {
       const dockerComposeContent = fs.readFileSync(dockerComposePath, 'utf-8');
       const parsed = require('js-yaml').load(dockerComposeContent);
 
-      // Assert - All required services are defined
-      expect(parsed.services.redis).toBeDefined();
+      // Assert - All required services are defined (Redis removed, using Caffeine)
       expect(parsed.services['api-gateway']).toBeDefined();
       expect(parsed.services['web-frontend']).toBeDefined();
     });
@@ -118,8 +105,7 @@ describe('Docker Compose Startup Orchestration (AC6, AC7)', () => {
       const dockerComposeContent = fs.readFileSync(dockerComposePath, 'utf-8');
       const parsed = require('js-yaml').load(dockerComposeContent);
 
-      // Assert - Required volumes are defined
-      expect(parsed.volumes['redis-data']).toBeDefined();
+      // Assert - Required volumes are defined (redis-data removed with Redis)
       expect(parsed.volumes['gradle-cache']).toBeDefined();
     });
 
@@ -138,8 +124,7 @@ describe('Docker Compose Startup Orchestration (AC6, AC7)', () => {
       const dockerComposeContent = fs.readFileSync(dockerComposePath, 'utf-8');
       const parsed = require('js-yaml').load(dockerComposeContent);
 
-      // Assert - Correct ports are exposed
-      expect(parsed.services.redis.ports).toContain('6379:6379');
+      // Assert - Correct ports are exposed (Redis removed)
       expect(parsed.services['api-gateway'].ports[0]).toMatch(/8080/);
       expect(parsed.services['web-frontend'].ports).toContain('3000:3000');
     });
