@@ -7,7 +7,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { authService } from '@services/auth/authService';
 import { AuthenticationState, LoginCredentials, SignUpData, UserRole } from '@/types/auth';
 
-interface UseAuthReturn extends Omit<AuthenticationState, 'refreshToken'> {
+interface UseAuthReturn extends AuthenticationState {
   refreshToken: () => Promise<boolean>;
   signIn: (credentials: LoginCredentials) => Promise<boolean>;
   signOut: () => Promise<void>;

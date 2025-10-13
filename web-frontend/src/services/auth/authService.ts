@@ -66,7 +66,8 @@ class AuthService {
    */
   private configureSessionPersistence(rememberMe: boolean): void {
     const storage = rememberMe ? localStorage : sessionStorage;
-    cognitoUserPoolsTokenProvider.setKeyValueStorage(createStorageAdapter(storage));
+    const storageAdapter = createStorageAdapter(storage);
+    cognitoUserPoolsTokenProvider.setKeyValueStorage(storageAdapter);
   }
   async signIn(credentials: LoginCredentials): Promise<SignInResult> {
     try {
