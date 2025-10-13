@@ -1,0 +1,28 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+
+  flyway:
+    enabled: false  # Disable Flyway for tests - use JPA schema generation
+
+  cache:
+    type: caffeine
+    caffeine:
+      spec: expireAfterWrite=15m,maximumSize=1000
+
+logging:
+  level:
+    ch.batbern: DEBUG
+    org.springframework.cache: DEBUG

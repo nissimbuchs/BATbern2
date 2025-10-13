@@ -11,7 +11,6 @@ This document outlines the comprehensive data model and database design for the 
 **Key Attributes:**
 - id: UUID - Unique company identifier
 - name: string - Official company name
-- isPartner: boolean - Whether company is a BATbern partner
 - logo: CompanyLogo - Uploaded logo with metadata
 - website: string - Company website URL
 - industry: string - Industry sector classification
@@ -25,7 +24,6 @@ interface Company {
   id: string;
   name: string;
   displayName: string;
-  isPartner: boolean;
   logo?: CompanyLogo;
   website?: string;
   industry: string;
@@ -36,6 +34,7 @@ interface Company {
   updatedAt: Date;
   createdBy: string; // User ID who created this company
   // Note: employee relationships managed by User Service via User.companyId
+  // Note: Partnership status managed by Partner Coordination Service via Partnership.companyId
 }
 
 interface CompanyLogo {
@@ -1221,10 +1220,11 @@ CREATE TABLE companies (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
     display_name VARCHAR(255) NOT NULL,
-    is_partner BOOLEAN DEFAULT FALSE,
+    swiss_uid VARCHAR(20),
     website VARCHAR(500),
     industry VARCHAR(100),
     description TEXT,
+    is_verified BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     created_by UUID NOT NULL
@@ -1232,6 +1232,7 @@ CREATE TABLE companies (
 
 -- Note: User-company relationships are managed in User Management Service
 -- Query employee count: SELECT COUNT(*) FROM users WHERE company_id = '{companyId}'
+-- Note: Partnership status managed in Partner Coordination Service via Partnership.companyId
 
 -- Company logos (simplified)
 CREATE TABLE company_logos (
@@ -1249,7 +1250,8 @@ CREATE TABLE company_logos (
 
 -- Indexes
 CREATE INDEX idx_companies_name ON companies(name);
-CREATE INDEX idx_companies_is_partner ON companies(is_partner);
+CREATE INDEX idx_companies_swiss_uid ON companies(swiss_uid);
+CREATE INDEX idx_companies_is_verified ON companies(is_verified);
 CREATE UNIQUE INDEX idx_company_current_logo ON company_logos(company_id) WHERE is_current = TRUE;
 ```
 
@@ -1576,7 +1578,8 @@ interface CompanyCreatedEvent extends DomainEvent {
   data: {
     companyId: string;
     name: string;
-    isPartner: boolean;
+    swissUID?: string;
+    isVerified: boolean;
   };
 }
 
