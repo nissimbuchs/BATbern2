@@ -340,7 +340,8 @@ jobs:
     name: SonarCloud Analysis
     needs: [build-shared-kernel, build-services, build-frontend]
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    # Skip SonarCloud for Dependabot PRs (they don't have access to secrets)
+    if: (github.event_name == 'push' || github.event_name == 'pull_request') && github.actor != 'dependabot[bot]'
 
     steps:
       - name: Checkout code
