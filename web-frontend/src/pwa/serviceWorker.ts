@@ -99,7 +99,7 @@ export async function fetchAndCache(request: Request, cacheName: string): Promis
  */
 export async function skipWaiting(): Promise<void> {
   if ('skipWaiting' in self) {
-    await (self as any).skipWaiting();
+    await (self as ServiceWorkerGlobalScope & { skipWaiting: () => Promise<void> }).skipWaiting();
   }
 }
 
@@ -108,7 +108,7 @@ export async function skipWaiting(): Promise<void> {
  */
 export async function claimClients(): Promise<void> {
   // Access clients through self (ServiceWorkerGlobalScope)
-  const sw = self as any;
+  const sw = self as ServiceWorkerGlobalScope & { clients: { claim: () => Promise<void> } };
   if (sw.clients && sw.clients.claim) {
     await sw.clients.claim();
   }

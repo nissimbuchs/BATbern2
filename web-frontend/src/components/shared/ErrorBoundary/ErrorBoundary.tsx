@@ -53,7 +53,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     // Log error details to console
     try {
-      const correlationId = (error as any).correlationId;
+      const correlationId = (error as Error & { correlationId?: string }).correlationId;
 
       console.error('ErrorBoundary caught an error:', {
         message: error.message,
