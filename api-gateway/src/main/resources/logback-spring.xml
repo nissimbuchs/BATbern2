@@ -16,7 +16,7 @@
 
     <!-- CloudWatch appender for centralized logging -->
     <appender name="CLOUDWATCH" class="ca.pjer.logback.AwsLogsAppender">
-        <logGroupName>/aws/batbern/${environment}/${applicationName}</logGroupName>
+        <logGroupName>/aws/ecs/BATbern-${environment}/${applicationName}</logGroupName>
         <logStreamName>${HOSTNAME:-localhost}</logStreamName>
         <logRegion>eu-central-1</logRegion>
         <maxBatchLogEvents>50</maxBatchLogEvents>
@@ -39,8 +39,8 @@
     <!-- Root logger -->
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
-        <!-- CloudWatch appender enabled only in non-local environments -->
-        <springProfile name="!local">
+        <!-- CloudWatch appender enabled only in non-local and non-test environments -->
+        <springProfile name="!local &amp; !test">
             <appender-ref ref="ASYNC_CLOUDWATCH"/>
         </springProfile>
     </root>

@@ -33,7 +33,6 @@ aws:
     userPoolId: eu-central-1_TestPool
     userPoolClientId: test-client-id
     region: eu-central-1
-    appClientId: test-client-id
   ses:
     from-email: noreply@batbern.ch
     template:
@@ -49,7 +48,7 @@ app:
 cognito:
   userPoolId: eu-central-1_TestPool
   region: eu-central-1
-  appClientId: test-client-id
+  userPoolClientId: test-client-id
   jwksUrl: https://cognito-idp.eu-central-1.amazonaws.com/eu-central-1_TestPool/.well-known/jwks.json
 
 # Gateway Configuration

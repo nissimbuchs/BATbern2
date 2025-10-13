@@ -18,9 +18,12 @@ import org.springframework.web.client.RestTemplate;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.concurrent.CompletableFuture;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class RequestRoutingIntegrationTest {
@@ -39,7 +42,7 @@ class RequestRoutingIntegrationTest {
         ReflectionTestUtils.setField(domainRouter, "speakerCoordinationUrl", "http://localhost:8082");
         ReflectionTestUtils.setField(domainRouter, "partnerCoordinationUrl", "http://localhost:8083");
         ReflectionTestUtils.setField(domainRouter, "attendeeExperienceUrl", "http://localhost:8084");
-        ReflectionTestUtils.setField(domainRouter, "companyManagementUrl", "http://localhost:8085");
+        ReflectionTestUtils.setField(domainRouter, "companyUserManagementUrl", "http://localhost:8085");
     }
 
     @Test

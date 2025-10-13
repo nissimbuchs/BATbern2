@@ -53,8 +53,10 @@ public class OpenApiConfig {
                                 ## Query Parameters
 
                                 All collection endpoints support:
-                                - `filter`: JSON filter syntax (e.g., {"status":"published","votes":{"$gte":10}})
-                                - `sort`: Sort specification (e.g., "-votes,+createdAt" for descending votes, ascending date)
+                                - `filter`: JSON filter syntax
+                                  (e.g., {"status":"published","votes":{"$gte":10}})
+                                - `sort`: Sort specification
+                                  (e.g., "-votes,+createdAt" for descending votes, ascending date)
                                 - `page`: Page number (1-indexed, default: 1)
                                 - `limit`: Items per page (default: 20, max: 100)
                                 - `fields`: Comma-separated field list for sparse fieldsets (e.g., "id,title,status")

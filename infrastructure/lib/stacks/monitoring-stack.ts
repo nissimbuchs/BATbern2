@@ -44,17 +44,17 @@ export class MonitoringStack extends cdk.Stack {
     // Application log group
     // Reduced to 30 days for cost optimization (low traffic application)
     this.applicationLogGroup = new logs.LogGroup(this, 'ApplicationLogGroup', {
-      logGroupName: `/batbern/${props.config.envName}/application`,
+      logGroupName: `/aws/logs/BATbern-${props.config.envName}/application`,
       retention: logs.RetentionDays.ONE_MONTH, // 30 days for all environments
-      removalPolicy: isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     // Infrastructure log group
     // Reduced to 30 days for cost optimization (low traffic application)
     this.infrastructureLogGroup = new logs.LogGroup(this, 'InfrastructureLogGroup', {
-      logGroupName: `/batbern/${props.config.envName}/infrastructure`,
+      logGroupName: `/aws/logs/BATbern-${props.config.envName}/infrastructure`,
       retention: logs.RetentionDays.ONE_MONTH, // 30 days for all environments
-      removalPolicy: isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     // CloudWatch Dashboard

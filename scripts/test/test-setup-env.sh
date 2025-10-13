@@ -1,5 +1,5 @@
 #!/bin/bash
-# Test suite for setup-env.sh script
+# Test suite for sync-backend-config.sh script
 # Tests AC3 (Auto-Generated Environment) and AC9 (AWS Credentials)
 
 set -e
@@ -36,97 +36,97 @@ test_fail() {
 
 # AC3: Auto-Generated Environment Tests
 test_start "should_existAndBeExecutable_when_scriptPresent"
-if [ -x "./scripts/dev/setup-env.sh" ]; then
+if [ -x "./scripts/config/sync-backend-config.sh" ]; then
     test_pass
 else
-    test_fail "setup-env.sh not found or not executable"
+    test_fail "sync-backend-config.sh not found or not executable"
 fi
 
 test_start "should_validateAWSCLI_when_prerequisitesChecked"
-if grep -q "command -v aws" "./scripts/dev/setup-env.sh"; then
+if grep -q "command -v aws" "./scripts/config/sync-backend-config.sh"; then
     test_pass
 else
-    test_fail "setup-env.sh doesn't check for AWS CLI"
+    test_fail "sync-backend-config.sh doesn't check for AWS CLI"
 fi
 
 test_start "should_validateJQ_when_prerequisitesChecked"
-if grep -q "command -v jq" "./scripts/dev/setup-env.sh"; then
+if grep -q "command -v jq" "./scripts/config/sync-backend-config.sh"; then
     test_pass
 else
-    test_fail "setup-env.sh doesn't check for jq"
+    test_fail "sync-backend-config.sh doesn't check for jq"
 fi
 
 test_start "should_fetchDatabaseEndpoint_when_setupEnvRuns"
-if grep -q "DatabaseEndpoint" "./scripts/dev/setup-env.sh"; then
+if grep -q "DatabaseEndpoint" "./scripts/config/sync-backend-config.sh"; then
     test_pass
 else
-    test_fail "setup-env.sh doesn't fetch DatabaseEndpoint"
+    test_fail "sync-backend-config.sh doesn't fetch DatabaseEndpoint"
 fi
 
 test_start "should_retrieveCredentialsFromSecretsManager_when_setupEnvRuns"
-if grep -q "secretsmanager get-secret-value" "./scripts/dev/setup-env.sh"; then
+if grep -q "secretsmanager get-secret-value" "./scripts/config/sync-backend-config.sh"; then
     test_pass
 else
-    test_fail "setup-env.sh doesn't retrieve credentials from Secrets Manager"
+    test_fail "sync-backend-config.sh doesn't retrieve credentials from Secrets Manager"
 fi
 
 test_start "should_fetchCognitoConfig_when_setupEnvRuns"
-if grep -q "UserPoolId" "./scripts/dev/setup-env.sh"; then
+if grep -q "UserPoolId" "./scripts/config/sync-backend-config.sh"; then
     test_pass
 else
-    test_fail "setup-env.sh doesn't fetch Cognito configuration"
+    test_fail "sync-backend-config.sh doesn't fetch Cognito configuration"
 fi
 
 test_start "should_generateEnvFile_when_allOutputsRetrieved"
-if grep -q "cat > \${ENV_FILE}" "./scripts/dev/setup-env.sh" || grep -q "cat > .env" "./scripts/dev/setup-env.sh"; then
+if grep -q "cat > \${ENV_FILE}" "./scripts/config/sync-backend-config.sh" || grep -q "cat > .env" "./scripts/config/sync-backend-config.sh"; then
     test_pass
 else
-    test_fail "setup-env.sh doesn't generate .env file"
+    test_fail "sync-backend-config.sh doesn't generate .env file"
 fi
 
 # AC9: AWS Credentials Tests
 test_start "should_validateAWSCredentials_when_setupEnvStarts"
-if grep -q "aws sts get-caller-identity" "./scripts/dev/setup-env.sh"; then
+if grep -q "aws sts get-caller-identity" "./scripts/config/sync-backend-config.sh"; then
     test_pass
 else
-    test_fail "setup-env.sh doesn't validate AWS credentials"
+    test_fail "sync-backend-config.sh doesn't validate AWS credentials"
 fi
 
 test_start "should_failWithError_when_stackNotDeployed"
-if grep -q "Could not fetch database endpoint" "./scripts/dev/setup-env.sh" && \
-   grep -q "exit 1" "./scripts/dev/setup-env.sh"; then
+if grep -q "Could not fetch database endpoint" "./scripts/config/sync-backend-config.sh" && \
+   grep -q "exit 1" "./scripts/config/sync-backend-config.sh"; then
     test_pass
 else
-    test_fail "setup-env.sh doesn't properly handle missing stack"
+    test_fail "sync-backend-config.sh doesn't properly handle missing stack"
 fi
 
 test_start "should_useAWSProfile_when_profileConfigured"
-if grep -q "AWS_PROFILE" "./scripts/dev/setup-env.sh"; then
+if grep -q "AWS_PROFILE" "./scripts/config/sync-backend-config.sh"; then
     test_pass
 else
-    test_fail "setup-env.sh doesn't support AWS_PROFILE"
+    test_fail "sync-backend-config.sh doesn't support AWS_PROFILE"
 fi
 
 test_start "should_useAWSRegion_when_regionConfigured"
-if grep -q "AWS_REGION" "./scripts/dev/setup-env.sh"; then
+if grep -q "AWS_REGION" "./scripts/config/sync-backend-config.sh"; then
     test_pass
 else
-    test_fail "setup-env.sh doesn't support AWS_REGION"
+    test_fail "sync-backend-config.sh doesn't support AWS_REGION"
 fi
 
 test_start "should_extractDatabaseCredentials_when_secretRetrieved"
-if grep -q "jq -r '.username'" "./scripts/dev/setup-env.sh" && \
-   grep -q "jq -r '.password'" "./scripts/dev/setup-env.sh"; then
+if grep -q "jq -r '.username'" "./scripts/config/sync-backend-config.sh" && \
+   grep -q "jq -r '.password'" "./scripts/config/sync-backend-config.sh"; then
     test_pass
 else
-    test_fail "setup-env.sh doesn't extract username/password from secret"
+    test_fail "sync-backend-config.sh doesn't extract username/password from secret"
 fi
 
 test_start "should_generateDatabaseURL_when_credentialsAvailable"
-if grep -q "DATABASE_URL=" "./scripts/dev/setup-env.sh"; then
+if grep -q "DATABASE_URL=" "./scripts/config/sync-backend-config.sh"; then
     test_pass
 else
-    test_fail "setup-env.sh doesn't generate DATABASE_URL"
+    test_fail "sync-backend-config.sh doesn't generate DATABASE_URL"
 fi
 
 # Print summary

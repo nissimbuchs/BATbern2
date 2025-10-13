@@ -4,7 +4,10 @@ import ch.batbern.gateway.routing.exception.RoutingException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.client.HttpStatusCodeException;
@@ -33,8 +36,8 @@ public class DomainRouter {
     @Value("${services.attendee-experience.url:http://localhost:8084}")
     private String attendeeExperienceUrl;
 
-    @Value("${services.company-management.url:http://localhost:8085}")
-    private String companyManagementUrl;
+    @Value("${services.company-user-management.url:http://localhost:8085}")
+    private String companyUserManagementUrl;
 
     /**
      * Determines the target microservice based on the request path.
@@ -59,8 +62,8 @@ public class DomainRouter {
             return "partner-coordination-service";
         } else if (cleanPath.startsWith("/api/v1/content")) {
             return "attendee-experience-service";
-        } else if (cleanPath.startsWith("/api/v1/companies")) {
-            return "company-management-service";
+        } else if (cleanPath.startsWith("/api/v1/companies") || cleanPath.startsWith("/api/v1/users")) {
+            return "company-user-management-service";
         } else {
             throw new RoutingException("No route found for path: " + cleanPath);
         }
@@ -75,7 +78,7 @@ public class DomainRouter {
             case "speaker-coordination-service" -> speakerCoordinationUrl;
             case "partner-coordination-service" -> partnerCoordinationUrl;
             case "attendee-experience-service" -> attendeeExperienceUrl;
-            case "company-management-service" -> companyManagementUrl;
+            case "company-user-management-service" -> companyUserManagementUrl;
             default -> throw new RoutingException("Unknown target service: " + targetService);
         };
     }

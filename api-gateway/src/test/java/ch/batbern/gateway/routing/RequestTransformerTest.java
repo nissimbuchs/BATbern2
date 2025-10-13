@@ -11,7 +11,8 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 @ExtendWith(MockitoExtension.class)
 class RequestTransformerTest {

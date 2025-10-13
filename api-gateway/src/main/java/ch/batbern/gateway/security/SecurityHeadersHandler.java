@@ -86,8 +86,8 @@ public class SecurityHeadersHandler {
     }
 
     private String buildPermissionsPolicy() {
-        return "geolocation=(), microphone=(), camera=(), payment=(), usb=(), " +
-               "magnetometer=(), gyroscope=(), speaker=(), vibrate=(), fullscreen=(self)";
+        return "geolocation=(), microphone=(), camera=(), payment=(), usb=(), "
+               + "magnetometer=(), gyroscope=(), speaker=(), vibrate=(), fullscreen=(self)";
     }
 
     private void handleCacheControl(HttpServletRequest request, HttpServletResponse response) {

@@ -1,0 +1,29 @@
+/**
+ * Global Styles
+ * Story 1.17: Tailwind CSS directives and global styles
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Swiss Design Global Styles */
+body {
+  margin: 0;
+  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+/* Custom utility classes */
+@layer utilities {
+  .grid-swiss {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 1rem;
+  }
+}

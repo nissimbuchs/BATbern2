@@ -44,7 +44,7 @@ if [ -n "$TS_FILES" ]; then
             echo "  Running ESLint..."
             LINT_FILES=$(echo "$FRONTEND_FILES" | grep -v -E '\.(eslintrc|prettierignore)' | grep -v '\.env' || true)
             if [ -n "$LINT_FILES" ]; then
-                echo "$LINT_FILES" | xargs npx eslint --max-warnings 0 || TESTS_FAILED=1
+                echo "$LINT_FILES" | xargs npx eslint --max-warnings 0 --no-warn-ignored || TESTS_FAILED=1
             fi
 
             # Run Prettier check on changed frontend files (exclude config and env files)
@@ -57,7 +57,7 @@ if [ -n "$TS_FILES" ]; then
         cd ..
     elif [ -f "package.json" ]; then
         # Fallback for non-monorepo structure
-        npx eslint $TS_FILES --max-warnings 0 || TESTS_FAILED=1
+        npx eslint $TS_FILES --max-warnings 0 --no-warn-ignored || TESTS_FAILED=1
         npx prettier --check $TS_FILES || TESTS_FAILED=1
     fi
 fi
