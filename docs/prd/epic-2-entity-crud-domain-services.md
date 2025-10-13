@@ -36,10 +36,12 @@ This epic consolidates stories originally in Epic 1 (1.14-1.20, 1.17) that provi
 ---
 
 ## Story 2.1: Company Management Service Foundation + API Consolidation
-**(Formerly Story 1.14, includes 1.15a.6 Companies API + 1.15a.2 Partners API)**
+**(Formerly Story 1.14, includes 1.15a.6 Companies API)**
+
+**Note:** User Management extracted to Story 2.1b for separation of concerns. Partner-specific logic removed and deferred to Epic 8 (Partner Coordination).
 
 **User Story:**
-As a **partner or attendee**, I want my company affiliation to be properly managed and verified through consolidated RESTful APIs, so that I can access company-specific features and analytics efficiently.
+As a **user of any role**, I want my company affiliation to be properly managed and verified through consolidated RESTful APIs, so that domain services can access company data efficiently.
 
 **Architecture Integration:**
 - **Service**: `company-management-service/` (Java 21 + Spring Boot 3.2)
@@ -51,12 +53,13 @@ As a **partner or attendee**, I want my company affiliation to be properly manag
 **Key Functionality:**
 1. Company CRUD operations with Swiss UID validation
 2. Employee-company relationship management
-3. Partner status toggle with enhanced privileges
-4. Logo upload to S3 with CDN integration
-5. Company search with Redis-backed autocomplete
-6. **Consolidated API**: `GET /api/v1/companies?filter={}&include=employees,partnerships&fields=id,name,uid`
-7. **Resource Expansion**: Include employees, partner details, event participation in single API call
-8. **Performance**: <200ms response time with caching, reduce multiple API calls to 1-2 calls
+3. Logo upload to S3 with CDN integration
+4. Company search with Redis-backed autocomplete
+5. **Consolidated API**: `GET /api/v1/companies?filter={}&include=employees&fields=id,name,uid`
+6. **Resource Expansion**: Include employees, statistics, logo in single API call
+7. **Performance**: <200ms response time with caching, reduce multiple API calls to 1-2 calls
+
+**Note**: Partner status management moved to Epic 8 (Partner Coordination Service) as it's a domain-specific concern, not foundational company data.
 
 ---
 
@@ -74,21 +77,74 @@ As a **partner or attendee**, I want my company affiliation to be properly manag
 
 **Acceptance Criteria Summary:**
 - [ ] Company domain model with DDD patterns
-- [ ] **Consolidated REST API** implementing Stories 1.15a.6 + 1.15a.2 patterns
+- [ ] **Consolidated REST API** implementing Story 1.15a.6 patterns
 - [ ] OpenAPI documentation for all endpoints (basic + consolidated)
 - [ ] Swiss UID validation integrated
 - [ ] Company search with Redis caching
 - [ ] S3 logo storage with CDN
 - [ ] Domain events published to EventBridge
-- [ ] **API Consolidation**: Support `?include=employees,partnerships,events` for resource expansion
+- [ ] **API Consolidation**: Support `?include=employees,statistics,logo` for resource expansion
 - [ ] **Performance**: Company detail with all includes <200ms P95
 - [ ] Integration tests verify all workflows including consolidated APIs
 
-**Estimated Duration:** 2.5 weeks (includes API consolidation implementation)
+**Estimated Duration:** 2 weeks (reduced from 2.5 weeks due to partner logic removal)
 
 **References:**
 - Core functionality: `docs/prd/epic-1-foundation-stories.md` Story 1.14
-- API consolidation: `docs/stories/1.15a.6.companies-api-consolidation.md`, `docs/stories/1.15a.2.partners-api-consolidation.md`
+- Story file: `docs/stories/1.14.company-management-service-foundation.md`
+- API consolidation: `docs/stories/1.15a.6.companies-api-consolidation.md`
+- Partner APIs moved to: `docs/stories/1.15a.2.partners-api-consolidation.md` (Epic 8)
+
+---
+
+## Story 2.1b: User Management Service Foundation + API Consolidation
+**(Story 1.14-2, includes 1.15a.7 Users API + 1.15a.8 Organizers API)**
+
+**User Story:**
+As a **user of any role**, I want my user profile, preferences, and settings managed through consolidated RESTful APIs, so that I can efficiently manage my account and domain services can integrate with user data.
+
+**Architecture Integration:**
+- **Service**: `user-management-service/` (Java 21 + Spring Boot 3.2)
+- **Database**: PostgreSQL with user profiles, preferences, roles, activity history
+- **Storage**: AWS S3 for profile pictures with CloudFront
+- **Cache**: Redis for user search and session caching (10min TTL)
+- **Integration**: AWS Cognito for authentication sync
+- **API Foundation**: Uses Story 1.15a utilities (FilterParser, SortParser, PaginationUtils, FieldSelector, IncludeParser)
+
+**Key Functionality:**
+1. User CRUD operations with consolidated API patterns
+2. User preferences and settings management
+3. Profile picture upload to S3 with CloudFront
+4. Role management with business rules (minimum 2 organizers)
+5. Activity history tracking
+6. GDPR-compliant data export and cascade deletion
+7. **Get-or-Create User Pattern**: Critical endpoint for domain services (Speaker, Partner, Attendee)
+8. **Resource Expansion**: `?include=company,roles,preferences,settings` reduces API calls
+9. **Advanced Filtering**: `?filter={"role":"SPEAKER","company":"comp-123"}`
+10. **Performance**: User detail with includes <150ms P95
+
+**Acceptance Criteria Summary:**
+- [ ] User aggregate with DDD patterns
+- [ ] **Consolidated REST API** implementing Stories 1.15a.7 + 1.15a.8 patterns (7 endpoints)
+- [ ] OpenAPI documentation for all user endpoints
+- [ ] AWS Cognito integration for authentication sync
+- [ ] Profile picture S3 storage with presigned URLs
+- [ ] User preferences and settings management
+- [ ] Role management with business rules enforcement (minimum 2 organizers)
+- [ ] Activity history with pagination
+- [ ] **GDPR Compliance**: Data export, cascade deletion, audit logging
+- [ ] **Get-or-Create User**: Idempotent endpoint for domain services (critical for Speaker/Partner/Attendee services)
+- [ ] **API Consolidation**: Support `?include=company,roles,preferences,settings,activity` for resource expansion
+- [ ] **Advanced Search**: Filter by role, company, activity with JSON syntax
+- [ ] **Performance**: List <100ms, detail+includes <150ms (P95)
+- [ ] Integration tests covering all workflows including consolidated APIs
+
+**Estimated Duration:** 2 weeks
+
+**References:**
+- Story file: `docs/stories/1.14-2.user-management-service-foundation.md`
+- API consolidation: `docs/stories/1.15a.7.users-api-consolidation.md`, `docs/stories/1.15a.8.organizers-api-consolidation.md`
+- GDPR requirements: Story 1.11 (Security & Compliance Essentials)
 
 ---
 
@@ -388,13 +444,14 @@ This story implements the frontend consuming all entity CRUD APIs. Wireframes ar
 
 ## Implementation Sequence
 
-**Week 10-11: Backend Services (Parallel)**
+**Week 10-12: Backend Services (Parallel with User Management)**
 - Story 2.1: Company Management Service + API Consolidation (2.5 weeks)
+- **Story 2.1b: User Management Service + API Consolidation (2 weeks) - parallel**
 - Story 2.2: Event Management Service + API Consolidation (3 weeks) - start parallel
 - Story 2.3: Speaker Coordination Service + API Consolidation (2.5 weeks) - start parallel
 
-**Week 12-13: User Management & Integration**
-- Story 2.4: User Role Management + API Consolidation (2 weeks)
+**Week 13: User Role Management & Integration**
+- Story 2.4: User Role Management + API Consolidation (2 weeks) - depends on Story 2.1b
 - Integration testing across all backend services (0.5 weeks)
 
 **Week 14-18: Frontend Development**
@@ -403,6 +460,8 @@ This story implements the frontend consuming all entity CRUD APIs. Wireframes ar
 
 **Rationale:**
 - Backend services can be developed in parallel by different developers
+- Story 2.1b (User Management) can be developed parallel to Story 2.1 (Company Management)
+- Story 2.4 (User Role Management) depends on Story 2.1b completion
 - API consolidation adds ~0.5 weeks per service (worth it to avoid future refactoring)
 - Frontend development benefits from consolidated APIs (fewer integration points)
 - Extra time for frontend reflects complexity of consuming resource expansion APIs
