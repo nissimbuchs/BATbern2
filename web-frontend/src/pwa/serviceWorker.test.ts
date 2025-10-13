@@ -125,7 +125,7 @@ describe('Offline Page Caching', () => {
       }),
     };
 
-    global.caches = mockCaches as any;
+    global.caches = mockCaches as unknown as CacheStorage;
 
     const { getCacheName, cacheAssets } = await import('./serviceWorker');
     const cacheName = getCacheName();
@@ -142,7 +142,7 @@ describe('Offline Page Caching', () => {
       match: vi.fn().mockResolvedValue(mockResponse),
     };
 
-    global.caches = mockCaches as any;
+    global.caches = mockCaches as unknown as CacheStorage;
 
     const { getCachedResponse } = await import('./serviceWorker');
     const response = await getCachedResponse(mockRequest);
@@ -159,7 +159,7 @@ describe('Offline Page Caching', () => {
       match: vi.fn().mockResolvedValue(undefined),
     };
 
-    global.caches = mockCaches as any;
+    global.caches = mockCaches as unknown as CacheStorage;
     global.fetch = vi.fn().mockResolvedValue(mockNetworkResponse);
 
     const { getCachedResponse } = await import('./serviceWorker');
@@ -182,7 +182,7 @@ describe('Offline Page Caching', () => {
       match: vi.fn().mockResolvedValue(undefined),
     };
 
-    global.caches = mockCaches as any;
+    global.caches = mockCaches as unknown as CacheStorage;
     global.fetch = vi.fn().mockResolvedValue(mockResponse.clone());
 
     const { getCacheName, fetchAndCache } = await import('./serviceWorker');
@@ -240,7 +240,7 @@ describe('Service Worker Lifecycle', () => {
       delete: vi.fn().mockResolvedValue(true),
     };
 
-    global.caches = mockCaches as any;
+    global.caches = mockCaches as unknown as CacheStorage;
 
     const { deleteOldCaches } = await import('./serviceWorker');
     await deleteOldCaches(newCacheName);
@@ -270,7 +270,7 @@ describe('Offline Fallback', () => {
         .mockResolvedValueOnce(offlineResponse), // Return offline.html from cache
     };
 
-    global.caches = mockCaches as any;
+    global.caches = mockCaches as unknown as CacheStorage;
     global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
 
     const { handleFetch } = await import('./serviceWorker');
@@ -288,7 +288,7 @@ describe('Offline Fallback', () => {
       open: vi.fn().mockResolvedValue(mockCache),
     };
 
-    global.caches = mockCaches as any;
+    global.caches = mockCaches as unknown as CacheStorage;
 
     const { getCacheName, cacheAssets } = await import('./serviceWorker');
     const cacheName = getCacheName();
