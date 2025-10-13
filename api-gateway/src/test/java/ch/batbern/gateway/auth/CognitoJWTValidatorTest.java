@@ -29,12 +29,16 @@ class CognitoJWTValidatorTest {
     @Mock
     private CognitoJWKSProvider jwksProvider;
 
+    private TestKeyPairGenerator testKeyPair;
+
     private static final String USER_POOL_ID = "eu-central-1_TestPool";
     private static final String REGION = "eu-central-1";
     private static final String APP_CLIENT_ID = "test-client-id";
+    private static final String TEST_KEY_ID = "test-key-id-123";
 
     @BeforeEach
     void setUp() {
+        testKeyPair = new TestKeyPairGenerator();
         jwtValidator = new CognitoJWTValidator(jwksProvider, USER_POOL_ID, REGION, APP_CLIENT_ID);
     }
 
@@ -44,7 +48,7 @@ class CognitoJWTValidatorTest {
     void should_validateJWTToken_when_requestReceived() throws Exception {
         // Given
         String validToken = createValidJwtToken();
-        when(jwksProvider.getAlgorithm(any())).thenReturn(Algorithm.none());
+        when(jwksProvider.getAlgorithm(any())).thenReturn(testKeyPair.getVerificationAlgorithm());
 
         // When
         UserContext userContext = jwtValidator.validateToken(validToken);
@@ -63,7 +67,7 @@ class CognitoJWTValidatorTest {
     void should_extractUserContext_when_validTokenProvided() throws Exception {
         // Given
         String validToken = createValidJwtToken();
-        when(jwksProvider.getAlgorithm(any())).thenReturn(Algorithm.none());
+        when(jwksProvider.getAlgorithm(any())).thenReturn(testKeyPair.getVerificationAlgorithm());
 
         // When
         UserContext userContext = jwtValidator.validateToken(validToken);
@@ -136,12 +140,12 @@ class CognitoJWTValidatorTest {
     void should_rejectTokenWithWrongAudience_when_audienceDoesNotMatch() throws Exception {
         // Given
         String tokenWithWrongAudience = createTokenWithWrongAudience();
-        when(jwksProvider.getAlgorithm(any())).thenReturn(Algorithm.none());
+        when(jwksProvider.getAlgorithm(any())).thenReturn(testKeyPair.getVerificationAlgorithm());
 
         // When / Then
         assertThatThrownBy(() -> jwtValidator.validateToken(tokenWithWrongAudience))
             .isInstanceOf(AuthenticationException.class)
-            .hasMessageContaining("Invalid audience");
+            .hasMessageContaining("audience");
     }
 
     @Test
@@ -149,12 +153,12 @@ class CognitoJWTValidatorTest {
     void should_rejectTokenWithWrongIssuer_when_issuerDoesNotMatch() throws Exception {
         // Given
         String tokenWithWrongIssuer = createTokenWithWrongIssuer();
-        when(jwksProvider.getAlgorithm(any())).thenReturn(Algorithm.none());
+        when(jwksProvider.getAlgorithm(any())).thenReturn(testKeyPair.getVerificationAlgorithm());
 
         // When / Then
         assertThatThrownBy(() -> jwtValidator.validateToken(tokenWithWrongIssuer))
             .isInstanceOf(AuthenticationException.class)
-            .hasMessageContaining("Invalid issuer");
+            .hasMessageContaining("issuer");
     }
 
     @Test
@@ -162,7 +166,7 @@ class CognitoJWTValidatorTest {
     void should_extractAllCustomClaims_when_validTokenProvided() throws Exception {
         // Given
         String tokenWithCustomClaims = createTokenWithCustomClaims();
-        when(jwksProvider.getAlgorithm(any())).thenReturn(Algorithm.none());
+        when(jwksProvider.getAlgorithm(any())).thenReturn(testKeyPair.getVerificationAlgorithm());
 
         // When
         UserContext userContext = jwtValidator.validateToken(tokenWithCustomClaims);
@@ -175,9 +179,34 @@ class CognitoJWTValidatorTest {
         assertThat(userContext.getPreferences()).containsEntry("notifications", "enabled");
     }
 
+    // SECURITY TEST: Critical - Verify Algorithm.none() is explicitly rejected
+    @Test
+    @DisplayName("should_rejectAlgorithmNone_when_unsignedTokenProvided")
+    void should_rejectAlgorithmNone_when_unsignedTokenProvided() throws Exception {
+        // Given - Token signed with Algorithm.none() (security vulnerability)
+        String unsignedToken = JWT.create()
+            .withKeyId(TEST_KEY_ID)
+            .withSubject("attacker-id")
+            .withClaim("email", "attacker@example.com")
+            .withClaim("custom:role", "organizer")  // Attacker claims admin role
+            .withAudience(APP_CLIENT_ID)
+            .withIssuer("https://cognito-idp." + REGION + ".amazonaws.com/" + USER_POOL_ID)
+            .withExpiresAt(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
+            .sign(Algorithm.none());
+
+        // Mock provider returns Algorithm.none() (simulating attack scenario)
+        when(jwksProvider.getAlgorithm(any())).thenReturn(Algorithm.none());
+
+        // When / Then - Validator MUST reject the token
+        assertThatThrownBy(() -> jwtValidator.validateToken(unsignedToken))
+            .isInstanceOf(AuthenticationException.class)
+            .hasMessageContaining("verification failed");
+    }
+
     // Helper methods to create test tokens
     private String createValidJwtToken() {
         return JWT.create()
+            .withKeyId(TEST_KEY_ID)
             .withSubject("test-user-id")
             .withClaim("email", "test@example.com")
             .withClaim("email_verified", true)
@@ -188,33 +217,36 @@ class CognitoJWTValidatorTest {
             .withIssuer("https://cognito-idp." + REGION + ".amazonaws.com/" + USER_POOL_ID)
             .withExpiresAt(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
             .withIssuedAt(Date.from(Instant.now()))
-            .sign(Algorithm.none());
+            .sign(testKeyPair.getAlgorithm());
     }
 
     private String createExpiredJwtToken() {
         return JWT.create()
+            .withKeyId(TEST_KEY_ID)
             .withSubject("test-user-id")
             .withClaim("email", "test@example.com")
             .withAudience(APP_CLIENT_ID)
             .withIssuer("https://cognito-idp." + REGION + ".amazonaws.com/" + USER_POOL_ID)
             .withExpiresAt(Date.from(Instant.now().minus(1, ChronoUnit.HOURS)))
             .withIssuedAt(Date.from(Instant.now().minus(2, ChronoUnit.HOURS)))
-            .sign(Algorithm.none());
+            .sign(testKeyPair.getAlgorithm());
     }
 
     private String createTokenNearExpiration() {
         return JWT.create()
+            .withKeyId(TEST_KEY_ID)
             .withSubject("test-user-id")
             .withClaim("email", "test@example.com")
             .withAudience(APP_CLIENT_ID)
             .withIssuer("https://cognito-idp." + REGION + ".amazonaws.com/" + USER_POOL_ID)
             .withExpiresAt(Date.from(Instant.now().plus(5, ChronoUnit.MINUTES)))
             .withIssuedAt(Date.from(Instant.now().minus(55, ChronoUnit.MINUTES)))
-            .sign(Algorithm.none());
+            .sign(testKeyPair.getAlgorithm());
     }
 
     private String createTokenWithInvalidSignature() {
         return JWT.create()
+            .withKeyId(TEST_KEY_ID)
             .withSubject("test-user-id")
             .withAudience(APP_CLIENT_ID)
             .withIssuer("https://cognito-idp." + REGION + ".amazonaws.com/" + USER_POOL_ID)
@@ -224,24 +256,27 @@ class CognitoJWTValidatorTest {
 
     private String createTokenWithWrongAudience() {
         return JWT.create()
+            .withKeyId(TEST_KEY_ID)
             .withSubject("test-user-id")
             .withAudience("wrong-audience")
             .withIssuer("https://cognito-idp." + REGION + ".amazonaws.com/" + USER_POOL_ID)
             .withExpiresAt(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
-            .sign(Algorithm.none());
+            .sign(testKeyPair.getAlgorithm());
     }
 
     private String createTokenWithWrongIssuer() {
         return JWT.create()
+            .withKeyId(TEST_KEY_ID)
             .withSubject("test-user-id")
             .withAudience(APP_CLIENT_ID)
             .withIssuer("https://wrong-issuer.com")
             .withExpiresAt(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
-            .sign(Algorithm.none());
+            .sign(testKeyPair.getAlgorithm());
     }
 
     private String createTokenWithCustomClaims() {
         return JWT.create()
+            .withKeyId(TEST_KEY_ID)
             .withSubject("test-user-id")
             .withClaim("email", "partner@example.com")
             .withClaim("email_verified", true)
@@ -251,6 +286,6 @@ class CognitoJWTValidatorTest {
             .withAudience(APP_CLIENT_ID)
             .withIssuer("https://cognito-idp." + REGION + ".amazonaws.com/" + USER_POOL_ID)
             .withExpiresAt(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
-            .sign(Algorithm.none());
+            .sign(testKeyPair.getAlgorithm());
     }
 }

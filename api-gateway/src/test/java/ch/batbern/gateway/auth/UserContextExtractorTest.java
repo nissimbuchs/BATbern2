@@ -2,7 +2,6 @@ package ch.batbern.gateway.auth;
 
 import ch.batbern.gateway.auth.model.UserContext;
 import com.auth0.jwt.JWT;
-import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,11 +18,13 @@ class UserContextExtractorTest {
 
     private UserContextExtractor extractor;
     private ObjectMapper objectMapper;
+    private TestKeyPairGenerator testKeyPair;
 
     @BeforeEach
     void setUp() {
         objectMapper = new ObjectMapper();
         extractor = new UserContextExtractor(objectMapper);
+        testKeyPair = new TestKeyPairGenerator();
     }
 
     @Test
@@ -38,7 +39,7 @@ class UserContextExtractorTest {
             .withClaim("custom:companyId", "company-456")
             .withClaim("custom:preferences", "{\"language\":\"en\",\"theme\":\"light\"}")
             .withExpiresAt(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
-            .sign(Algorithm.none());
+            .sign(testKeyPair.getAlgorithm());
 
         DecodedJWT decodedJWT = JWT.decode(token);
 
@@ -65,7 +66,7 @@ class UserContextExtractorTest {
             .withClaim("email", "user@example.com")
             .withClaim("email_verified", false)
             .withExpiresAt(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
-            .sign(Algorithm.none());
+            .sign(testKeyPair.getAlgorithm());
 
         DecodedJWT decodedJWT = JWT.decode(token);
 
@@ -92,7 +93,7 @@ class UserContextExtractorTest {
             .withClaim("email", "user@example.com")
             .withClaim("custom:preferences", complexPreferences)
             .withExpiresAt(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
-            .sign(Algorithm.none());
+            .sign(testKeyPair.getAlgorithm());
 
         DecodedJWT decodedJWT = JWT.decode(token);
 
@@ -115,7 +116,7 @@ class UserContextExtractorTest {
             .withClaim("email", "user@example.com")
             .withClaim("custom:preferences", "invalid-json-{")
             .withExpiresAt(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
-            .sign(Algorithm.none());
+            .sign(testKeyPair.getAlgorithm());
 
         DecodedJWT decodedJWT = JWT.decode(token);
 
@@ -137,7 +138,7 @@ class UserContextExtractorTest {
             .withClaim("custom:role", "organizer")
             .withArrayClaim("custom:additionalRoles", new String[]{"speaker", "partner"})
             .withExpiresAt(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
-            .sign(Algorithm.none());
+            .sign(testKeyPair.getAlgorithm());
 
         DecodedJWT decodedJWT = JWT.decode(token);
 
@@ -161,7 +162,7 @@ class UserContextExtractorTest {
             .withClaim("email", "user@example.com")
             .withIssuedAt(Date.from(issuedAt))
             .withExpiresAt(Date.from(expiresAt))
-            .sign(Algorithm.none());
+            .sign(testKeyPair.getAlgorithm());
 
         DecodedJWT decodedJWT = JWT.decode(token);
 

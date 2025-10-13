@@ -57,28 +57,21 @@ public class CognitoJWTValidator {
                 throw new AuthenticationException("Token signature verification failed", e);
             }
 
-            // Verify the token
+            // SECURITY: Explicitly reject Algorithm.none() to prevent signature bypass attacks
+            if (algorithm == null || "none".equalsIgnoreCase(algorithm.getName())) {
+                throw new AuthenticationException(
+                    "Token verification failed: unsigned tokens (Algorithm.none) are not allowed");
+            }
+
+            // Verify the token using proper cryptographic verification
             String expectedIssuer = "https://cognito-idp." + region + ".amazonaws.com/" + userPoolId;
 
-            // For testing with Algorithm.none(), skip verification
-            if (algorithm.getName().equals("none")) {
-                // Manually check issuer and audience for tests
-                if (!expectedIssuer.equals(jwt.getIssuer())) {
-                    throw new AuthenticationException("Invalid issuer");
-                }
+            JWTVerifier verifier = JWT.require(algorithm)
+                    .withIssuer(expectedIssuer)
+                    .withAudience(userPoolClientId)
+                    .build();
 
-                if (jwt.getAudience() != null && !jwt.getAudience().contains(userPoolClientId)) {
-                    throw new AuthenticationException("Invalid audience");
-                }
-            } else {
-                // Production verification with real algorithm
-                JWTVerifier verifier = JWT.require(algorithm)
-                        .withIssuer(expectedIssuer)
-                        .withAudience(userPoolClientId)
-                        .build();
-
-                verifier.verify(jwt);
-            }
+            verifier.verify(jwt);
 
             // Extract user context
             return userContextExtractor.extractUserContext(jwt);

@@ -1,89 +1,153 @@
 schema: 1
 story: '1.2'
 story_title: 'API Gateway & Authentication Service'
-gate: CONCERNS
-status_reason: 'Backend implementation exists with 12 passing tests, but gaps in test coverage and unverified frontend/infrastructure components'
+gate: FAIL
+status_reason: 'CRITICAL SECURITY FLAW: Algorithm.none() bypass in production code allows JWT signature verification to be completely bypassed. All other functionality implemented with 191 passing tests.'
 reviewer: 'Quinn (Test Architect)'
-updated: '2025-09-29T07:30:00Z'
+updated: '2025-10-12T13:35:00Z'
 
 top_issues:
-  - issue: 'Test coverage discrepancy - 12 test files vs 94 claimed tests'
-    severity: medium
-    refs: ['api-gateway/src/test/', 'Dev Agent Record']
+  - issue: 'CRITICAL: Algorithm.none() bypass in production code (DefaultCognitoJWKSProvider)'
+    severity: high
+    refs:
+      - 'DefaultCognitoJWKSProvider.java:29-37'
+      - 'CognitoJWTValidator.java:63-81'
     suggested_owner: dev
-  - issue: 'Frontend and infrastructure components not verified'
-    severity: medium
-    refs: ['web-frontend/', 'infrastructure/']
-    suggested_owner: dev
-  - issue: 'Algorithm.none() in production code for testing'
-    severity: medium
-    refs: ['CognitoJWTValidator.java:62-70']
-    suggested_owner: dev
-  - issue: 'MFA not implemented despite being in requirements'
+    details: |
+      The no-arg constructor in DefaultCognitoJWKSProvider allows Algorithm.none() to be returned
+      in production if instantiated without jwksUrl. CognitoJWTValidator has a bypass that skips
+      proper JWT verification when algorithm is "none". This creates a critical security vulnerability
+      allowing attackers to forge tokens with no signature.
+  - issue: 'Test discrepancy resolved: 191 passing tests (not 94 as claimed)'
     severity: low
-    refs: ['AC4', 'Authentication Requirements']
-    suggested_owner: sm
+    refs: ['Dev Agent Record', 'Test execution results']
+    suggested_owner: dev
+    details: 'Story claimed 94 tests but actual count is 224 tests (191 passed, 33 skipped)'
 
 waiver:
   active: false
 
-quality_score: 60  # 100 - (4 medium issues * 10)
+quality_score: 20  # 100 - (1 HIGH issue × 80)
 
-expires: '2025-10-13T07:15:00Z'  # Review expires in 2 weeks
+expires: '2025-10-26T13:35:00Z'  # Review expires in 2 weeks
 
 evidence:
-  tests_reviewed: 12  # Test files reviewed
-  risks_identified: 4
+  tests_reviewed: 224
+  tests_passed: 191
+  tests_skipped: 33
+  risks_identified: 1 high severity
   trace:
-    ac_covered: [1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12]  # 11 of 12 ACs have tests
-    ac_gaps: [4]  # MFA not implemented
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]  # ALL 12 ACs have test coverage
+    ac_gaps: []  # No gaps - MFA is implemented!
 
 nfr_validation:
   security:
-    status: CONCERNS
-    notes: 'JWT validation, RBAC, rate limiting implemented. Concern: Algorithm.none() in production code path.'
+    status: FAIL
+    notes: |
+      CRITICAL FLAW: Algorithm.none() bypass allows complete JWT signature verification bypass.
+      Otherwise well implemented: JWT validation, RBAC, rate limiting, CORS, security headers, audit logging.
   performance:
     status: CONCERNS
     notes: 'Code structure reasonable but <50ms P95 not verified without load testing.'
   reliability:
     status: PASS
-    notes: 'Error handling implemented with proper exception hierarchy. Audit logging functional.'
+    notes: 'Comprehensive error handling with proper exception hierarchy. Audit logging functional.'
   maintainability:
     status: PASS
-    notes: 'Clean package structure, proper separation of concerns, follows Spring Boot patterns.'
+    notes: 'Excellent package structure, proper separation of concerns, follows Spring Boot patterns.'
 
 recommendations:
-  immediate:  # Should address before production
-    - action: 'Move Algorithm.none() logic to test profile only'
-      refs: ['CognitoJWTValidator.java:62-70']
+  immediate:  # MUST FIX BEFORE PRODUCTION
+    - action: 'CRITICAL: Remove no-arg constructor from DefaultCognitoJWKSProvider'
+      refs: ['DefaultCognitoJWKSProvider.java:29-31']
       owner: dev
-    - action: 'Verify frontend and infrastructure components'
-      refs: ['web-frontend/', 'infrastructure/']
+      priority: P0
+    - action: 'CRITICAL: Remove Algorithm.none() bypass from CognitoJWTValidator'
+      refs: ['CognitoJWTValidator.java:63-81']
       owner: dev
-    - action: 'Clarify test count discrepancy in Dev Agent Record'
-      refs: ['Dev Agent Record', 'actual test count']
-      owner: sm
+      priority: P0
+    - action: 'Add unit test to verify Algorithm.none() is rejected in production config'
+      refs: ['CognitoJWTValidatorTest.java']
+      owner: dev
+      priority: P0
+    - action: 'Use proper test profiles or mock configuration for test-only behavior'
+      refs: ['src/test/resources/application-test.yml']
+      owner: dev
+      priority: P1
   future:  # Can be addressed later
-    - action: 'Implement MFA for organizer and partner roles'
-      refs: ['AC4', 'Cognito configuration']
-      owner: dev
-    - action: 'Expand integration test coverage'
+    - action: 'Expand integration test coverage for error scenarios'
       refs: ['RequestRoutingIntegrationTest.java']
       owner: dev
-    - action: 'Add E2E tests for complete auth flows'
+      priority: P2
+    - action: 'Add E2E tests for complete auth flows (consider using infrastructure)'
       refs: ['e2e/workflows/authentication/']
       owner: dev
-    - action: 'Performance testing to verify <50ms requirement'
+      priority: P2
+    - action: 'Performance testing to verify <50ms P95 requirement'
       refs: ['Performance benchmarks']
       owner: dev
+      priority: P3
+    - action: 'Update Dev Agent Record with accurate test count (191 passed, 33 skipped, 224 total)'
+      refs: ['Dev Agent Record']
+      owner: sm
+      priority: P3
 
 test_coverage_analysis:
-  planned_tests: 94  # As claimed in Dev Agent Record
-  actual_tests: 12  # Test files found
-  test_gap: 87  # percent (missing 82 tests)
+  total_tests: 224
+  passed_tests: 191
+  skipped_tests: 33
+  test_files: 23
+  coverage_by_ac:
+    AC1_Cognito_Setup: 'Infrastructure tests + validation in pre-signup lambda'
+    AC2_Role_Management: '11 tests in RoleBasedAuthorizerTest'
+    AC3_JWT_Token: '15 tests (9 CognitoJWTValidatorTest + 6 UserContextExtractorTest)'
+    AC4_MFA: 'Implemented in cognito-stack.ts lines 116-120 (Mfa.OPTIONAL with SMS/OTP)'
+    AC5_Request_Routing: '14 tests (11 DomainRouterTest + 3 RequestRoutingIntegrationTest)'
+    AC6_Rate_Limiting: '8 tests in RateLimitingTest'
+    AC7_CORS: '11 tests in CorsConfigurationTest'
+    AC8_Transform: '14 tests (7 RequestTransformerTest + 7 ResponseStandardizerTest)'
+    AC9_Authorization: '11 tests in RoleBasedAuthorizerTest'
+    AC10_Validation: '20 tests (12 RequestValidatorTest + 8 InputValidationTest)'
+    AC11_Audit_Logging: '8 tests in AuditLoggerTest'
+    AC12_Security_Headers: '28 tests (13 SecurityHeadersTest + 15 SecurityHeadersFilterTest)'
 
 risk_assessment:
-  implementation_risk: 4  # Low - backend implemented
-  security_risk: 5  # Medium - Algorithm.none() concern
-  timeline_risk: 3  # Low - mostly complete
-  quality_risk: 6  # Medium - test coverage gap
+  security_risk: 9  # CRITICAL - Algorithm.none() bypass
+  implementation_risk: 2  # Low - comprehensive implementation (60+ Java, 100+ TS files)
+  timeline_risk: 3  # Low - mostly complete, just security fix needed
+  quality_risk: 3  # Low - excellent test coverage and code structure
+  overall_risk: 9  # Driven by critical security flaw
+
+component_verification:
+  backend_api_gateway:
+    status: IMPLEMENTED
+    files: 60+
+    notes: 'Comprehensive Spring Boot implementation with proper package structure'
+  frontend_components:
+    status: IMPLEMENTED
+    files: 100+
+    test_files: 33
+    notes: 'Full React implementation with auth components, hooks, services, stores'
+  infrastructure_cdk:
+    status: IMPLEMENTED
+    stacks:
+      - cognito-stack.ts (with MFA!)
+      - api-gateway-service-stack.ts
+      - multiple microservice stacks
+    notes: 'Complete CDK infrastructure with proper MFA configuration'
+
+previous_review_issues_resolved:
+  - issue: 'Frontend and infrastructure components not verified'
+    status: RESOLVED
+    notes: 'Both verified - extensively implemented'
+  - issue: 'MFA not implemented'
+    status: RESOLVED
+    notes: 'MFA is implemented in cognito-stack.ts:116-120 with OPTIONAL mode, SMS and OTP support'
+  - issue: 'Test count discrepancy'
+    status: RESOLVED
+    notes: 'Actual count is 224 tests (191 passed, 33 skipped) - more than claimed 94'
+
+previous_review_issues_escalated:
+  - issue: 'Algorithm.none() in production code'
+    status: ESCALATED_TO_CRITICAL
+    notes: 'Analysis reveals this is not just a concern but a CRITICAL security flaw that completely bypasses JWT signature verification'

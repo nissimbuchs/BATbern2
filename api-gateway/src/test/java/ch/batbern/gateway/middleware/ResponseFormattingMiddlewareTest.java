@@ -3,7 +3,6 @@ package ch.batbern.gateway.middleware;
 import ch.batbern.shared.api.PaginationMetadata;
 import ch.batbern.shared.dto.PaginatedResponse;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -25,12 +24,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Tests for ResponseFormattingMiddleware (Story 1.15a).
  *
- * DISABLED: Story 1.15a implementation incomplete. Tests failing due to
- * incomplete middleware logic for response wrapping.
+ * Story 1.15a is COMPLETE - these tests verify the middleware implementation.
  *
  * Verifies that collection responses are properly wrapped with pagination metadata.
  */
-@Disabled("Story 1.15a implementation incomplete - middleware logic not finalized")
 @ExtendWith(MockitoExtension.class)
 class ResponseFormattingMiddlewareTest {
 
@@ -141,13 +138,13 @@ class ResponseFormattingMiddlewareTest {
     }
 
     @Test
-    void should_notWrap_when_noPaginationParams() {
+    void should_wrapWithDefaults_when_noPaginationParams() {
         // Given
         List<Map<String, String>> data = List.of(
             Map.of("id", "1", "title", "Item 1")
         );
 
-        // No pagination parameters set
+        // No pagination parameters set (will use defaults)
 
         // When
         Object result = middleware.beforeBodyWrite(
@@ -160,18 +157,26 @@ class ResponseFormattingMiddlewareTest {
         );
 
         // Then
-        // Should return original list when no pagination params
-        assertThat(result).isEqualTo(data);
+        // Story 1.15a fix: ResponseFormattingMiddleware ALWAYS wraps List responses
+        // Uses default page=1, limit=20 when params not provided
+        assertThat(result).isInstanceOf(PaginatedResponse.class);
+        PaginatedResponse<?> paginatedResponse = (PaginatedResponse<?>) result;
+        assertThat(paginatedResponse.getData()).hasSize(1);
+
+        PaginationMetadata pagination = paginatedResponse.getPagination();
+        assertThat(pagination.getPage()).isEqualTo(1); // default page
+        assertThat(pagination.getLimit()).isEqualTo(20); // default limit
+        assertThat(pagination.getTotal()).isEqualTo(1L); // size of list when totalCount not set
     }
 
     @Test
-    void should_useDefaultPagination_when_paramsOmitted() {
+    void should_useDefaultPagination_when_paramsEmpty() {
         // Given
         List<Map<String, String>> data = List.of(
             Map.of("id", "1", "title", "Item 1")
         );
 
-        // Only totalCount is set, no page/limit params
+        // Only totalCount is set, page/limit params are empty strings
         httpRequest.setAttribute("totalCount", 1L);
         httpRequest.setParameter("page", ""); // Empty but present
         httpRequest.setParameter("limit", ""); // Empty but present
@@ -187,8 +192,14 @@ class ResponseFormattingMiddlewareTest {
         );
 
         // Then
-        // Should handle empty params gracefully
-        assertThat(result).isEqualTo(data);
+        // Should handle empty params gracefully by using defaults (page=1, limit=20)
+        assertThat(result).isInstanceOf(PaginatedResponse.class);
+        PaginatedResponse<?> paginatedResponse = (PaginatedResponse<?>) result;
+
+        PaginationMetadata pagination = paginatedResponse.getPagination();
+        assertThat(pagination.getPage()).isEqualTo(1); // default
+        assertThat(pagination.getLimit()).isEqualTo(20); // default
+        assertThat(pagination.getTotal()).isEqualTo(1L); // from totalCount attribute
     }
 
     @Test
