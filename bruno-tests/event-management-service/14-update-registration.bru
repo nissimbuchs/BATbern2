@@ -1,0 +1,39 @@
+meta {
+  name: Update Registration
+  type: http
+  seq: 14
+}
+
+patch {
+  url: {{baseUrl}}/events/{{createdEventId}}/registrations/{{createdRegistrationId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "status": "confirmed",
+    "attendeeName": "Test Attendee - Updated"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("should return 200 status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should update registration", function() {
+    const registration = res.getBody();
+    expect(registration.id).to.equal(bru.getVar("createdRegistrationId"));
+    expect(registration.status).to.equal('confirmed');
+    expect(registration.attendeeName).to.equal('Test Attendee - Updated');
+  });
+}

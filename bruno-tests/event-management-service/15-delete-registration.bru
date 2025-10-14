@@ -1,0 +1,25 @@
+meta {
+  name: Delete Registration
+  type: http
+  seq: 15
+}
+
+delete {
+  url: {{baseUrl}}/events/{{createdEventId}}/registrations/{{createdRegistrationId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 204
+}
+
+tests {
+  test("should return 204 status", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

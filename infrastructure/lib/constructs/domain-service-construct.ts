@@ -24,9 +24,9 @@ export interface DomainServiceConstructProps {
   serviceConfig: DomainServiceConfig;
   cluster: ecs.ICluster;
   vpc: ec2.IVpc;
+  databaseSecurityGroup: ec2.ISecurityGroup;
   databaseEndpoint?: string;
   databaseSecret?: secretsmanager.ISecret;
-  cacheEndpoint?: string;
   userPool: cognito.IUserPool;
   userPoolClient: cognito.IUserPoolClient;
 }
@@ -67,7 +67,6 @@ export function createDomainService(
       ...(props.databaseEndpoint && {
         DATABASE_URL: `jdbc:postgresql://${props.databaseEndpoint}:5432/batbern`,
       }),
-      ...(props.cacheEndpoint && { REDIS_ENDPOINT: props.cacheEndpoint }),
       // Cognito configuration
       COGNITO_USER_POOL_ID: props.userPool.userPoolId,
       COGNITO_CLIENT_ID: props.userPoolClient.userPoolClientId,
@@ -179,6 +178,13 @@ export function createDomainService(
     });
 
     const serviceUrl = `http://${service.loadBalancer.loadBalancerDnsName}`;
+
+    // Allow service to connect to database
+    service.service.connections.allowTo(
+      props.databaseSecurityGroup,
+      ec2.Port.tcp(5432),
+      'Allow ECS tasks to connect to PostgreSQL database'
+    );
 
     // Apply tags
     cdk.Tags.of(scope).add('Environment', envName);

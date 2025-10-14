@@ -1,0 +1,45 @@
+meta {
+  name: Update Session
+  type: http
+  seq: 10
+}
+
+put {
+  url: {{baseUrl}}/events/{{createdEventId}}/sessions/{{createdSessionId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "title": "Opening Keynote - Updated",
+    "description": "Updated session description",
+    "sessionType": "keynote",
+    "startTime": "2025-12-15T09:00:00Z",
+    "endTime": "2025-12-15T10:30:00Z",
+    "room": "Main Hall",
+    "capacity": 150,
+    "language": "de"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("should return 200 status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should update session", function() {
+    const session = res.getBody();
+    expect(session.id).to.equal(bru.getVar("createdSessionId"));
+    expect(session.title).to.equal('Opening Keynote - Updated');
+    expect(session.capacity).to.equal(150);
+  });
+}
