@@ -51,8 +51,8 @@ export class DomainServiceConstruct extends Construct {
   public readonly service: ecsPatterns.ApplicationLoadBalancedFargateService;
   public readonly serviceUrl: string;
 
-  constructor(scope: Construct, id: string, props: DomainServiceConstructProps) {
-    super(scope, id);
+  constructor(scope: Construct, props: DomainServiceConstructProps) {
+    super(scope, '');
 
     const envName = props.config.envName;
     const isProd = envName === 'production';
