@@ -5,6 +5,7 @@ import * as ecsPatterns from 'aws-cdk-lib/aws-ecs-patterns';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as path from 'path';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
@@ -14,6 +15,7 @@ export interface ApiGatewayServiceStackProps extends cdk.StackProps {
   cluster: ecs.ICluster;
   vpc: ec2.IVpc;
   databaseEndpoint?: string;
+  databaseSecret?: secretsmanager.ISecret;
   cacheEndpoint?: string;
   userPool: cognito.IUserPool;
   userPoolClient: cognito.IUserPoolClient;
@@ -43,15 +45,24 @@ export class ApiGatewayServiceStack extends cdk.Stack {
     const envName = props.config.envName;
     const isProd = envName === 'production';
 
-    // Common environment variables
+    // Common environment variables (non-sensitive)
     const commonEnv = {
       SPRING_PROFILES_ACTIVE: envName,
       APP_ENVIRONMENT: envName,
       AWS_REGION: props.config.region,
       LOG_LEVEL: isProd ? 'INFO' : 'DEBUG',
-      ...(props.databaseEndpoint && { DATABASE_ENDPOINT: props.databaseEndpoint }),
+      ...(props.databaseEndpoint && {
+        DATABASE_URL: `jdbc:postgresql://${props.databaseEndpoint}:5432/batbern`,
+      }),
       ...(props.cacheEndpoint && { REDIS_ENDPOINT: props.cacheEndpoint }),
     };
+
+    // Secrets from AWS Secrets Manager
+    const secrets: Record<string, ecs.Secret> = {};
+    if (props.databaseSecret) {
+      secrets.DATABASE_USERNAME = ecs.Secret.fromSecretsManager(props.databaseSecret, 'username');
+      secrets.DATABASE_PASSWORD = ecs.Secret.fromSecretsManager(props.databaseSecret, 'password');
+    }
 
     // Create stable log group for API Gateway
     const logGroup = new logs.LogGroup(this, 'LogGroup', {
@@ -92,6 +103,7 @@ export class ApiGatewayServiceStack extends cdk.Stack {
         COGNITO_USER_POOL_ID: props.userPool.userPoolId,
         COGNITO_CLIENT_ID: props.userPoolClient.userPoolClientId,
       },
+      secrets,
       healthCheck: {
         command: ['CMD-SHELL', 'curl -f http://localhost:8080/actuator/health || exit 1'],
         interval: cdk.Duration.seconds(30),
@@ -118,6 +130,11 @@ export class ApiGatewayServiceStack extends cdk.Stack {
       resources: ['*'],
     }));
 
+    // Grant Secrets Manager permissions to task execution role
+    if (props.databaseSecret) {
+      props.databaseSecret.grantRead(taskDefinition.executionRole!);
+    }
+
     // Create service with PUBLIC ALB
     this.service = new ecsPatterns.ApplicationLoadBalancedFargateService(this, 'Service', {
       cluster: props.cluster,
@@ -130,6 +147,8 @@ export class ApiGatewayServiceStack extends cdk.Stack {
         subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
       },
       listenerPort: 80,
+      minHealthyPercent: 100, // Ensure zero-downtime deployments
+      maxHealthyPercent: 200, // Allow temporary extra tasks during deployments
     });
 
     // Configure health checks
