@@ -44,6 +44,9 @@ export class EventManagementStack extends cdk.Stack {
         routePattern: '/api/v1/events',
         cpu: 512,
         memoryLimitMiB: 1024,
+        additionalEnvironment: {
+          JPA_DDL_AUTO: 'none', // Let Flyway handle all schema management
+        },
       },
       cluster: props.cluster,
       vpc: props.vpc,
