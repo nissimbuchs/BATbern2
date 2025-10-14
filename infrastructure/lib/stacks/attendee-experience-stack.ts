@@ -36,7 +36,7 @@ export class AttendeeExperienceStack extends cdk.Stack {
     const serviceName = 'attendee-experience';
 
     // Create domain service using reusable construct
-    const domainService = new DomainServiceConstruct(this, 'DomainService', {
+    const domainService = new DomainServiceConstruct(this, {
       config: props.config,
       serviceConfig: {
         serviceName,
