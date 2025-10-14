@@ -6,7 +6,7 @@ import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
-import { DomainServiceConstruct } from '../constructs/domain-service-construct';
+import { createDomainService } from '../constructs/domain-service-construct';
 
 export interface CompanyManagementStackProps extends cdk.StackProps {
   config: EnvironmentConfig;
@@ -42,8 +42,8 @@ export class CompanyManagementStack extends cdk.Stack {
     const envName = props.config.envName;
     const serviceName = 'company-user-management';
 
-    // Create domain service using reusable construct with additional environment variables
-    const domainService = new DomainServiceConstruct(this, {
+    // Create domain service using reusable helper function with additional environment variables
+    const domainService = createDomainService(this, {
       config: props.config,
       serviceConfig: {
         serviceName,
@@ -70,7 +70,7 @@ export class CompanyManagementStack extends cdk.Stack {
     this.serviceUrl = domainService.serviceUrl;
 
     // Apply additional tags for consolidated service
-    cdk.Tags.of(domainService).add('Consolidation', 'Companies+Users');
+    cdk.Tags.of(this).add('Consolidation', 'Companies+Users');
 
     // Outputs
     new cdk.CfnOutput(this, 'ServiceUrl', {
