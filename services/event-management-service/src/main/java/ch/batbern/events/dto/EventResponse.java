@@ -3,6 +3,7 @@ package ch.batbern.events.dto;
 import ch.batbern.events.domain.Event;
 import lombok.*;
 import java.time.Instant;
+import java.util.UUID;
 
 /**
  * Event Response DTO
@@ -13,12 +14,20 @@ import java.time.Instant;
 @AllArgsConstructor
 @Builder
 public class EventResponse {
-    private String id;
+    private UUID id;
     private String title;
+    private Integer eventNumber;
     private Instant date;
+    private Instant registrationDeadline;
+    private String venueName;
+    private String venueAddress;
+    private Integer venueCapacity;
     private String status;
+    private UUID organizerId;
+    private Integer currentAttendeeCount;
+    private Instant publishedAt;
+    private String metadata;
     private String description;
-    private String venueId;
     private Instant createdAt;
     private Instant updatedAt;
     private String createdBy;
@@ -31,10 +40,18 @@ public class EventResponse {
         return EventResponse.builder()
                 .id(event.getId())
                 .title(event.getTitle())
+                .eventNumber(event.getEventNumber())
                 .date(event.getDate())
+                .registrationDeadline(event.getRegistrationDeadline())
+                .venueName(event.getVenueName())
+                .venueAddress(event.getVenueAddress())
+                .venueCapacity(event.getVenueCapacity())
                 .status(event.getStatus())
+                .organizerId(event.getOrganizerId())
+                .currentAttendeeCount(event.getCurrentAttendeeCount())
+                .publishedAt(event.getPublishedAt())
+                .metadata(event.getMetadata())
                 .description(event.getDescription())
-                .venueId(event.getVenueId())
                 .createdAt(event.getCreatedAt())
                 .updatedAt(event.getUpdatedAt())
                 .createdBy(event.getCreatedBy())

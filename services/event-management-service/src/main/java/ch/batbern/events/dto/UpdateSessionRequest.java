@@ -23,13 +23,18 @@ public class UpdateSessionRequest {
 
     private String description;
 
+    @NotBlank(message = "Session type is required")
+    private String sessionType; // keynote, presentation, workshop, panel_discussion, networking, break, lunch
+
     @NotNull(message = "Start time is required")
     private String startTime; // ISO-8601 format
 
-    @NotNull(message = "Duration is required")
-    @Min(value = 1, message = "Duration must be at least 1 minute")
-    private Integer duration;
+    @NotNull(message = "End time is required")
+    private String endTime; // ISO-8601 format
 
-    @NotBlank(message = "Session type is required")
-    private String type;
+    private String room;
+
+    private Integer capacity;
+
+    private String language;
 }

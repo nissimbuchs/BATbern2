@@ -18,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -67,8 +68,15 @@ public class EventControllerIntegrationTest {
     private Event createTestEvent(String title, String dateStr, String status) {
         Event event = Event.builder()
                 .title(title)
+                .eventNumber(100 + (int)(Math.random() * 1000))  // Generate random event number
                 .date(Instant.parse(dateStr))
+                .registrationDeadline(Instant.parse(dateStr).minusSeconds(86400 * 7)) // 7 days before event
+                .venueName("Test Venue")
+                .venueAddress("Test Address 123, Bern")
+                .venueCapacity(100)
                 .status(status)
+                .organizerId(UUID.randomUUID())
+                .currentAttendeeCount(0)
                 .description("Test event for " + title)
                 .build();
         return eventRepository.save(event);
@@ -501,7 +509,7 @@ public class EventControllerIntegrationTest {
     @DisplayName("should_deleteEvent_when_deleteRequested")
     void should_deleteEvent_when_deleteRequested() throws Exception {
         Event savedEvent = eventRepository.findAll().get(0);
-        String eventId = savedEvent.getId();
+        UUID eventId = savedEvent.getId();
 
         mockMvc.perform(delete("/api/v1/events/" + eventId)
                         .contentType(MediaType.APPLICATION_JSON))

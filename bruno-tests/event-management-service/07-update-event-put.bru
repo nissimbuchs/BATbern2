@@ -1,0 +1,50 @@
+meta {
+  name: Update Event (Full Replace)
+  type: http
+  seq: 7
+}
+
+put {
+  url: {{baseUrl}}/events/{{createdEventId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "title": "Bruno Test Event - Full Update",
+    "eventNumber": 999,
+    "date": "2025-12-15T09:00:00Z",
+    "registrationDeadline": "2025-12-01T23:59:59Z",
+    "venueName": "Updated Venue",
+    "venueAddress": "Updated Address 2, 3000 Bern",
+    "venueCapacity": 150,
+    "status": "topic_defined",
+    "organizerId": "{{organizerId}}",
+    "description": "Fully updated event description",
+    "currentAttendeeCount": 0
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("should return 200 status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should replace all event fields", function() {
+    const event = res.getBody();
+    expect(event.id).to.equal(bru.getVar("createdEventId"));
+    expect(event.title).to.equal('Bruno Test Event - Full Update');
+    expect(event.status).to.equal('topic_defined');
+    expect(event.venueName).to.equal('Updated Venue');
+    expect(event.venueCapacity).to.equal(150);
+  });
+}

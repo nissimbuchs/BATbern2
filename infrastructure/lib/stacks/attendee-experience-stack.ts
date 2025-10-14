@@ -12,9 +12,9 @@ export interface AttendeeExperienceStackProps extends cdk.StackProps {
   config: EnvironmentConfig;
   cluster: ecs.ICluster;
   vpc: ec2.IVpc;
+  databaseSecurityGroup: ec2.ISecurityGroup;
   databaseEndpoint?: string;
   databaseSecret?: secretsmanager.ISecret;
-  cacheEndpoint?: string;
   userPool: cognito.IUserPool;
   userPoolClient: cognito.IUserPoolClient;
 }
@@ -47,9 +47,9 @@ export class AttendeeExperienceStack extends cdk.Stack {
       },
       cluster: props.cluster,
       vpc: props.vpc,
+      databaseSecurityGroup: props.databaseSecurityGroup,
       databaseEndpoint: props.databaseEndpoint,
       databaseSecret: props.databaseSecret,
-      cacheEndpoint: props.cacheEndpoint,
       userPool: props.userPool,
       userPoolClient: props.userPoolClient,
     });

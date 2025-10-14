@@ -1,0 +1,40 @@
+meta {
+  name: Update Event (Patch)
+  type: http
+  seq: 6
+}
+
+patch {
+  url: {{baseUrl}}/events/{{createdEventId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "title": "Bruno Test Event - Updated",
+    "description": "Updated description via patch"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.id: eq {{createdEventId}}
+}
+
+tests {
+  test("should return 200 status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should update event fields", function() {
+    const event = res.getBody();
+    expect(event.id).to.equal(bru.getVar("createdEventId"));
+    expect(event.title).to.equal('Bruno Test Event - Updated');
+    expect(event.description).to.equal('Updated description via patch');
+  });
+}

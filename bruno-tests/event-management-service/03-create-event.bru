@@ -1,0 +1,59 @@
+meta {
+  name: Create Event
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/events
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "title": "Bruno Test Event {{timestamp}}",
+    "eventNumber": 999,
+    "date": "2025-12-15T09:00:00Z",
+    "registrationDeadline": "2025-12-01T23:59:59Z",
+    "venueName": "Test Venue",
+    "venueAddress": "Test Address 1, 3000 Bern",
+    "venueCapacity": 100,
+    "status": "planning",
+    "organizerId": "{{organizerId}}",
+    "description": "Test event created by Bruno API tests",
+    "currentAttendeeCount": 0
+  }
+}
+
+vars:pre-request {
+  timestamp: Date.now()
+}
+
+assert {
+  res.status: eq 201
+  res.body.id: isDefined
+  res.body.title: isDefined
+}
+
+tests {
+  test("should return 201 status", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("should return created event with id", function() {
+    const event = res.getBody();
+    expect(event.id).to.be.a('string');
+    expect(event.title).to.include('Bruno Test Event');
+    expect(event.status).to.equal('planning');
+    expect(event.eventNumber).to.equal(999);
+  });
+
+  test("should save event id for later tests", function() {
+    bru.setVar("createdEventId", res.getBody().id);
+  });
+}
