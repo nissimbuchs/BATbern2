@@ -2,6 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import * as elasticache from 'aws-cdk-lib/aws-elasticache';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
 import { RdsCluster } from '../constructs/rds-cluster';
@@ -27,6 +28,7 @@ export class DatabaseStack extends cdk.Stack {
   public readonly cacheCluster?: elasticache.CfnReplicationGroup;
   public readonly databaseEndpoint: string;
   public readonly cacheEndpoint?: string;
+  public readonly databaseSecret: secretsmanager.ISecret;
 
   constructor(scope: Construct, id: string, props: DatabaseStackProps) {
     super(scope, id, props);
@@ -48,6 +50,7 @@ export class DatabaseStack extends cdk.Stack {
     // Expose database instance
     this.database = rdsCluster.database;
     this.databaseEndpoint = this.database.dbInstanceEndpointAddress;
+    this.databaseSecret = this.database.secret!;
 
     // Create ElastiCache Redis cluster only if enabled (numNodes > 0)
     // For production with 1000 users, Redis is disabled for cost optimization

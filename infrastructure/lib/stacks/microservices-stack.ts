@@ -53,7 +53,7 @@ export class MicroservicesStack extends cdk.Stack {
     this.cluster = new ecs.Cluster(this, 'MicroservicesCluster', {
       vpc: props.vpc,
       clusterName: `batbern-${envName}`,
-      containerInsights: isProd, // Enable Container Insights for production
+      containerInsightsV2: isProd ? ecs.ContainerInsights.ENABLED : ecs.ContainerInsights.DISABLED, // Enable Container Insights V2 for production
     });
 
     // Common environment variables for all services
