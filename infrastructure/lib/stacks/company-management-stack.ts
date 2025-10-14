@@ -5,6 +5,8 @@ import * as ecsPatterns from 'aws-cdk-lib/aws-ecs-patterns';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as events from 'aws-cdk-lib/aws-events';
 import * as path from 'path';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
@@ -17,6 +19,8 @@ export interface CompanyManagementStackProps extends cdk.StackProps {
   cacheEndpoint?: string;
   userPool: cognito.IUserPool;
   userPoolClient: cognito.IUserPoolClient;
+  contentBucket?: s3.IBucket;
+  eventBus?: events.IEventBus;
 }
 
 /**
@@ -88,6 +92,14 @@ export class CompanyManagementStack extends cdk.Stack {
         SERVICE_SCOPE: 'companies-and-users',
         HANDLES_COMPANIES: 'true',
         HANDLES_USERS: 'true',
+        // S3 bucket for company logos and user profile pictures
+        ...(props.contentBucket && {
+          S3_CONTENT_BUCKET_NAME: props.contentBucket.bucketName,
+        }),
+        // EventBridge for domain events
+        ...(props.eventBus && {
+          EVENT_BUS_NAME: props.eventBus.eventBusName,
+        }),
       },
       healthCheck: {
         command: ['CMD-SHELL', 'curl -f http://localhost:8080/actuator/health || exit 1'],
@@ -114,6 +126,32 @@ export class CompanyManagementStack extends cdk.Stack {
       ],
       resources: ['*'],
     }));
+
+    // Grant S3 permissions for company logos and user profile pictures
+    if (props.contentBucket) {
+      props.contentBucket.grantReadWrite(taskDefinition.taskRole);
+      // Grant permissions for presigned URL generation
+      taskDefinition.taskRole.addToPrincipalPolicy(new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          's3:PutObject',
+          's3:GetObject',
+          's3:DeleteObject',
+        ],
+        resources: [`${props.contentBucket.bucketArn}/*`],
+      }));
+    }
+
+    // Grant EventBridge permissions for domain events
+    if (props.eventBus) {
+      taskDefinition.taskRole.addToPrincipalPolicy(new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'events:PutEvents',
+        ],
+        resources: [props.eventBus.eventBusArn],
+      }));
+    }
 
     // Create service with INTERNAL ALB
     this.service = new ecsPatterns.ApplicationLoadBalancedFargateService(this, 'Service', {

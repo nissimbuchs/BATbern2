@@ -2,11 +2,13 @@ package ch.batbern.companyuser.controller;
 
 import ch.batbern.companyuser.dto.CompanyResponse;
 import ch.batbern.companyuser.dto.CreateCompanyRequest;
+import ch.batbern.companyuser.dto.PaginatedCompanyResponse;
 import ch.batbern.companyuser.dto.UpdateCompanyRequest;
 import ch.batbern.companyuser.exception.CompanyNotFoundException;
 import ch.batbern.companyuser.exception.CompanyValidationException;
 import ch.batbern.companyuser.exception.InvalidUIDException;
 import ch.batbern.companyuser.service.CompanyService;
+import ch.batbern.shared.api.PaginationMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,6 +53,12 @@ class CompanyControllerTest {
 
     @MockBean
     private ch.batbern.companyuser.service.CompanySearchService searchService;
+
+    @MockBean
+    private ch.batbern.companyuser.service.SwissUIDValidationService uidValidationService;
+
+    @MockBean
+    private ch.batbern.companyuser.service.CompanyQueryService queryService;
 
     private UUID testCompanyId;
     private CreateCompanyRequest createRequest;
@@ -195,7 +203,8 @@ class CompanyControllerTest {
 
     /**
      * Test 4.7: should_getAllCompanies_when_requested
-     * Verifies that GET /api/v1/companies returns list of companies
+     * Verifies that GET /api/v1/companies returns paginated list of companies (AC14)
+     * Note: This endpoint now uses CompanyQueryService and returns PaginatedCompanyResponse
      */
     @Test
     @WithMockUser
@@ -210,13 +219,28 @@ class CompanyControllerTest {
                 .build();
 
         List<CompanyResponse> companies = Arrays.asList(companyResponse, company2);
-        when(companyService.getAllCompanies()).thenReturn(companies);
+        PaginatedCompanyResponse paginatedResponse = PaginatedCompanyResponse.builder()
+                .data(companies)
+                .pagination(PaginationMetadata.builder()
+                    .page(1)
+                    .limit(20)
+                    .total(2L)
+                    .totalPages(1)
+                    .hasNext(false)
+                    .hasPrev(false)
+                    .build())
+                .build();
+
+        when(queryService.queryCompanies(any(), any(), any(), any(), any(), any()))
+                .thenReturn(paginatedResponse);
 
         mockMvc.perform(get("/api/v1/companies"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[0].name").value("Test Company AG"))
-                .andExpect(jsonPath("$[1].name").value("Second Company AG"));
+                .andExpect(jsonPath("$.data", hasSize(2)))
+                .andExpect(jsonPath("$.data[0].name").value("Test Company AG"))
+                .andExpect(jsonPath("$.data[1].name").value("Second Company AG"))
+                .andExpect(jsonPath("$.pagination.page").value(1))
+                .andExpect(jsonPath("$.pagination.total").value(2));
     }
 
     /**
@@ -279,12 +303,12 @@ class CompanyControllerTest {
     /**
      * Test 4.11: should_returnUnauthorized_when_notAuthenticated
      * Verifies that unauthenticated requests are rejected
-     * Note: Spring Security returns 403 (Forbidden) for anonymous users by default
+     * Returns 401 Unauthorized for anonymous/unauthenticated users
      */
     @Test
     void should_returnUnauthorized_when_notAuthenticated() throws Exception {
         mockMvc.perform(get("/api/v1/companies/{id}", testCompanyId))
-                .andExpect(status().isForbidden()); // Spring Security default behavior for anonymous
+                .andExpect(status().isUnauthorized()); // 401 for unauthenticated users
     }
 
     /**

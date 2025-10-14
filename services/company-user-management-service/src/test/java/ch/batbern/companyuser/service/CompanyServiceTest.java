@@ -8,6 +8,7 @@ import ch.batbern.companyuser.exception.CompanyNotFoundException;
 import ch.batbern.companyuser.exception.CompanyValidationException;
 import ch.batbern.companyuser.exception.InvalidUIDException;
 import ch.batbern.companyuser.repository.CompanyRepository;
+import ch.batbern.companyuser.security.SecurityContextHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -47,6 +48,9 @@ class CompanyServiceTest {
 
     @Mock
     private CompanySearchService searchService;
+
+    @Mock
+    private SecurityContextHelper securityContextHelper;
 
     @InjectMocks
     private CompanyService companyService;
@@ -98,6 +102,7 @@ class CompanyServiceTest {
     @DisplayName("Test 4.1: should_createCompany_when_validRequestReceived")
     void should_createCompany_when_validRequestReceived() {
         // Given
+        when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
         when(uidValidationService.isValidUID(createRequest.getSwissUID())).thenReturn(true);
         when(companyRepository.existsByName(createRequest.getName())).thenReturn(false);
         when(companyRepository.save(any(Company.class))).thenReturn(existingCompany);
@@ -111,6 +116,7 @@ class CompanyServiceTest {
         assertThat(response.getSwissUID()).isEqualTo("CHE-123.456.789");
         assertThat(response.isVerified()).isFalse();
 
+        verify(securityContextHelper).getCurrentUserId();
         verify(companyRepository).save(any(Company.class));
         verify(eventPublisher).publishCompanyCreatedEvent(any(Company.class));
         verify(searchService).invalidateCache();
@@ -166,6 +172,7 @@ class CompanyServiceTest {
                 .updatedAt(Instant.now())
                 .build();
 
+        when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
         when(companyRepository.existsByName(requestWithoutUID.getName())).thenReturn(false);
         when(companyRepository.save(any(Company.class))).thenReturn(companyWithoutUID);
 
@@ -189,6 +196,7 @@ class CompanyServiceTest {
                 .name("Test Company AG")
                 .build();
 
+        when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
         when(companyRepository.existsByName(requestWithoutDisplay.getName())).thenReturn(false);
         when(companyRepository.save(any(Company.class))).thenAnswer(invocation -> {
             Company company = invocation.getArgument(0);

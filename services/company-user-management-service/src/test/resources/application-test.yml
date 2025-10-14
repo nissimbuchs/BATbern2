@@ -15,7 +15,9 @@ spring:
         format_sql: true
 
   flyway:
-    enabled: false  # Disable Flyway for tests - use JPA schema generation
+    enabled: false  # Disable Flyway for tests - schema created by JPA (ddl-auto: create-drop)
+    # Tests validate business logic using JPA-generated schema
+    # Production uses Flyway migrations from shared-kernel
 
   cache:
     type: caffeine

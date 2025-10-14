@@ -8,6 +8,7 @@ import ch.batbern.companyuser.exception.CompanyNotFoundException;
 import ch.batbern.companyuser.exception.CompanyValidationException;
 import ch.batbern.companyuser.exception.InvalidUIDException;
 import ch.batbern.companyuser.repository.CompanyRepository;
+import ch.batbern.companyuser.security.SecurityContextHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,7 @@ public class CompanyService {
     private final SwissUIDValidationService uidValidationService;
     private final CompanyEventPublisher eventPublisher;
     private final CompanySearchService searchService;
+    private final SecurityContextHelper securityContextHelper;
 
     /**
      * Creates a new company with validation
@@ -58,7 +60,9 @@ public class CompanyService {
             throw new CompanyValidationException("Company with name '" + request.getName() + "' already exists");
         }
 
-        // Build company entity
+        // Build company entity (AC10: Get userId from security context)
+        String currentUserId = securityContextHelper.getCurrentUserId();
+
         Company company = Company.builder()
                 .name(request.getName())
                 .displayName(request.getDisplayName() != null ? request.getDisplayName() : request.getName())
@@ -67,7 +71,7 @@ public class CompanyService {
                 .industry(request.getIndustry())
                 .description(request.getDescription())
                 .isVerified(false)
-                .createdBy("system") // TODO: Get from security context in Task 9
+                .createdBy(currentUserId)
                 .build();
 
         Company savedCompany = companyRepository.save(company);
@@ -118,6 +122,11 @@ public class CompanyService {
 
         // Update only provided fields
         if (request.getName() != null) {
+            // Check for duplicate company name if name is being changed (AC3)
+            if (!request.getName().equals(company.getName()) &&
+                companyRepository.existsByName(request.getName())) {
+                throw new CompanyValidationException("Company with name '" + request.getName() + "' already exists");
+            }
             company.setName(request.getName());
         }
         if (request.getDisplayName() != null) {
@@ -188,6 +197,16 @@ public class CompanyService {
 
         log.info("Company marked as verified: {}", id);
         return mapToResponse(verifiedCompany);
+    }
+
+    /**
+     * Verifies a company (public API method)
+     * AC13: Company verification workflow endpoint
+     * AC7: Publishes CompanyVerifiedEvent
+     * Idempotent operation - can be called multiple times safely
+     */
+    public CompanyResponse verifyCompany(UUID id) {
+        return markAsVerified(id);
     }
 
     /**

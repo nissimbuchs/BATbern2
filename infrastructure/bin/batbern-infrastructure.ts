@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
+import * as events from 'aws-cdk-lib/aws-events';
 import { DnsStack } from '../lib/stacks/dns-stack';
 import { NetworkStack } from '../lib/stacks/network-stack';
 import { DatabaseStack } from '../lib/stacks/database-stack';
@@ -127,6 +128,15 @@ const storageStack = new StorageStack(app, `${stackPrefix}-Storage`, {
   description: `BATbern Storage Infrastructure - ${config.envName}`,
   tags: config.tags,
 });
+
+// 5a. EventBridge Bus for Domain Events
+const eventBus = new events.EventBus(app, `${stackPrefix}-EventBus`, {
+  eventBusName: `batbern-${config.envName}`,
+  description: `BATbern Domain Events - ${config.envName}`,
+});
+cdk.Tags.of(eventBus).add('Environment', config.envName);
+cdk.Tags.of(eventBus).add('Component', 'EventBus');
+cdk.Tags.of(eventBus).add('Project', 'BATbern');
 
 // 6. Monitoring Stack (CloudWatch, Alarms, Logs)
 const monitoringStack = new MonitoringStack(app, `${stackPrefix}-Monitoring`, {
@@ -267,6 +277,8 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     cacheEndpoint: databaseStack.cacheEndpoint,
     userPool: cognitoStack.userPool,
     userPoolClient: cognitoStack.userPoolClient,
+    contentBucket: storageStack.contentBucket,
+    eventBus: eventBus,
     env,
     description: `BATbern Company & User Management Service (Consolidated) - ${config.envName}`,
     tags: config.tags,
@@ -275,6 +287,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   companyManagementStack.addDependency(databaseStack);
   companyManagementStack.addDependency(cicdStack);
   companyManagementStack.addDependency(cognitoStack);
+  companyManagementStack.addDependency(storageStack);
 
   // 10f. API Gateway Service (Spring Boot)
   apiGatewayServiceStack = new ApiGatewayServiceStack(app, `${stackPrefix}-ApiGatewayService`, {

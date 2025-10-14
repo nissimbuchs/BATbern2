@@ -48,6 +48,15 @@ public class Company {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "logo_url", length = 1000)
+    private String logoUrl;
+
+    @Column(name = "logo_s3_key", length = 500)
+    private String logoS3Key;
+
+    @Column(name = "logo_file_id", length = 100)
+    private String logoFileId;
+
     @Column(name = "is_verified", nullable = false)
     @Builder.Default
     private boolean isVerified = false;

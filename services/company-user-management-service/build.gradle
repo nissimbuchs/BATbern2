@@ -18,12 +18,16 @@ repositories {
 }
 
 dependencies {
+    // Shared Kernel - Common types and utilities (composite build from parent directory)
+    implementation 'ch.batbern:shared-kernel'
+
     // Spring Boot Core
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
 
     // Database
     runtimeOnly 'org.postgresql:postgresql'
@@ -33,6 +37,7 @@ dependencies {
     // AWS SDK
     implementation platform('software.amazon.awssdk:bom:2.20.26')
     implementation 'software.amazon.awssdk:s3'
+    implementation 'software.amazon.awssdk:url-connection-client'
     implementation 'software.amazon.awssdk:eventbridge'
 
     // Caching - Caffeine (application-level in-memory cache)

@@ -1,0 +1,42 @@
+# Development Dockerfile with hot reload support for company-user-management-service
+FROM gradle:8.5-jdk21
+
+WORKDIR /workspace
+
+# Install curl for health checks
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+# Copy Gradle wrapper and settings
+COPY settings.gradle ./
+COPY gradle ./gradle
+COPY gradlew ./
+
+# Copy shared-kernel dependency
+COPY shared-kernel/build.gradle ./shared-kernel/
+COPY shared-kernel/src ./shared-kernel/src
+
+# Copy service build file
+COPY services/company-user-management-service/build.gradle ./services/company-user-management-service/
+
+# Download dependencies (cached layer)
+RUN gradle :services:company-user-management-service:dependencies --no-daemon || true
+
+# Copy source code
+COPY services/company-user-management-service/src ./services/company-user-management-service/src
+
+WORKDIR /workspace/services/company-user-management-service
+
+# Expose application port and debug port
+EXPOSE 8080
+EXPOSE 5005
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8080/actuator/health || exit 1
+
+# Run with Gradle bootRun for hot reload
+# Remote debugging enabled on port 5005
+ENTRYPOINT ["gradle", "bootRun", "--no-daemon", \
+    "-Dspring.devtools.restart.enabled=true", \
+    "-Dspring.devtools.livereload.enabled=true", \
+    "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"]
