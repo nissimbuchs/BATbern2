@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.UUID;
 
 /**
  * Registration entity representing event registrations/attendees
@@ -21,14 +22,15 @@ import java.time.Instant;
 public class Registration {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(columnDefinition = "UUID")
+    private UUID id;
 
-    @Column(nullable = false)
-    private String eventId;
+    @Column(nullable = false, columnDefinition = "UUID")
+    private UUID eventId;
 
-    @Column(nullable = false)
-    private String attendeeId;
+    @Column(nullable = false, columnDefinition = "UUID")
+    private UUID attendeeId;
 
     @Column(nullable = false)
     private String attendeeName;

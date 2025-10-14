@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Service for generating event analytics data.
@@ -35,10 +36,10 @@ public class EventAnalyticsService {
      * @param timeframe Optional timeframe as "startTime,endTime" (ISO-8601 format)
      * @return Map containing analytics data
      */
-    public Map<String, Object> generateAnalytics(String eventId, String metrics, String timeframe) {
+    public Map<String, Object> generateAnalytics(UUID eventId, String metrics, String timeframe) {
         // Verify event exists
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventId));
+                .orElseThrow(() -> new EventNotFoundException(eventId));
 
         Map<String, Object> analytics = new HashMap<>();
         analytics.put("eventId", eventId);
@@ -88,7 +89,7 @@ public class EventAnalyticsService {
     /**
      * Calculate registration metrics for an event.
      */
-    private Map<String, Object> calculateRegistrationMetrics(String eventId, Instant startTime, Instant endTime) {
+    private Map<String, Object> calculateRegistrationMetrics(UUID eventId, Instant startTime, Instant endTime) {
         List<Registration> registrations = registrationRepository.findByEventId(eventId);
 
         // Filter by timeframe if provided
@@ -118,7 +119,7 @@ public class EventAnalyticsService {
     /**
      * Calculate attendance metrics for an event.
      */
-    private Map<String, Object> calculateAttendanceMetrics(String eventId, Instant startTime, Instant endTime) {
+    private Map<String, Object> calculateAttendanceMetrics(UUID eventId, Instant startTime, Instant endTime) {
         // For now, attendance is similar to confirmed registrations
         List<Registration> registrations = registrationRepository.findByEventId(eventId);
 
@@ -145,7 +146,7 @@ public class EventAnalyticsService {
     /**
      * Calculate engagement metrics for an event.
      */
-    private Map<String, Object> calculateEngagementMetrics(String eventId, Instant startTime, Instant endTime) {
+    private Map<String, Object> calculateEngagementMetrics(UUID eventId, Instant startTime, Instant endTime) {
         List<Session> sessions = sessionRepository.findByEventId(eventId);
         List<Registration> registrations = registrationRepository.findByEventId(eventId);
 

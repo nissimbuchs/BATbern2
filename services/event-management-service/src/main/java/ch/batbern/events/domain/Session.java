@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.UUID;
 
 /**
  * Session entity representing event sessions (keynotes, workshops, talks, etc.)
@@ -21,11 +22,12 @@ import java.time.Instant;
 public class Session {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(columnDefinition = "UUID")
+    private UUID id;
 
-    @Column(nullable = false)
-    private String eventId;
+    @Column(nullable = false, columnDefinition = "UUID")
+    private UUID eventId;
 
     @Column(nullable = false)
     private String title;
@@ -33,14 +35,23 @@ public class Session {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(nullable = false)
+    @Column(name = "session_type", nullable = false, length = 50)
+    private String sessionType; // keynote, presentation, workshop, panel_discussion, networking, break, lunch
+
+    @Column(name = "start_time", nullable = false)
     private Instant startTime;
 
-    @Column(nullable = false)
-    private Integer duration; // Duration in minutes
+    @Column(name = "end_time", nullable = false)
+    private Instant endTime;
 
-    @Column(nullable = false)
-    private String type; // keynote, workshop, talk, panel, break, etc.
+    @Column(length = 100)
+    private String room;
+
+    @Column
+    private Integer capacity;
+
+    @Column(length = 10)
+    private String language;
 
     @Column(name = "created_at")
     private Instant createdAt;

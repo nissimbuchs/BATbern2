@@ -1,0 +1,44 @@
+meta {
+  name: List Events
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/events?page=0&limit=20
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+params:query {
+  page: 0
+  limit: 20
+}
+
+assert {
+  res.status: eq 200
+  res.body.pagination: isDefined
+  res.body.data: isArray
+}
+
+tests {
+  test("should return 200 status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should have pagination metadata", function() {
+    expect(res.getBody().pagination).to.be.an('object');
+    expect(res.getBody().pagination.page).to.be.a('number');
+    expect(res.getBody().pagination.limit).to.be.a('number');
+    expect(res.getBody().pagination.totalItems).to.be.a('number');
+    expect(res.getBody().pagination.totalPages).to.be.a('number');
+  });
+
+  test("should return array of events", function() {
+    expect(res.getBody().data).to.be.an('array');
+  });
+}

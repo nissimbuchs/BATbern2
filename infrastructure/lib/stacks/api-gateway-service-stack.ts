@@ -14,9 +14,9 @@ export interface ApiGatewayServiceStackProps extends cdk.StackProps {
   config: EnvironmentConfig;
   cluster: ecs.ICluster;
   vpc: ec2.IVpc;
+  databaseSecurityGroup: ec2.ISecurityGroup;
   databaseEndpoint?: string;
   databaseSecret?: secretsmanager.ISecret;
-  cacheEndpoint?: string;
   userPool: cognito.IUserPool;
   userPoolClient: cognito.IUserPoolClient;
   eventManagementServiceUrl?: string;
@@ -54,7 +54,6 @@ export class ApiGatewayServiceStack extends cdk.Stack {
       ...(props.databaseEndpoint && {
         DATABASE_URL: `jdbc:postgresql://${props.databaseEndpoint}:5432/batbern`,
       }),
-      ...(props.cacheEndpoint && { REDIS_ENDPOINT: props.cacheEndpoint }),
     };
 
     // Secrets from AWS Secrets Manager
@@ -173,6 +172,13 @@ export class ApiGatewayServiceStack extends cdk.Stack {
     });
 
     this.apiGatewayUrl = `http://${this.service.loadBalancer.loadBalancerDnsName}`;
+
+    // Allow service to connect to database
+    this.service.service.connections.allowTo(
+      props.databaseSecurityGroup,
+      ec2.Port.tcp(5432),
+      'Allow ECS tasks to connect to PostgreSQL database'
+    );
 
     // Apply tags
     cdk.Tags.of(this).add('Environment', envName);

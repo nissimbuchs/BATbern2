@@ -1,0 +1,40 @@
+meta {
+  name: Get Event Details
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/events/{{createdEventId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.id: eq {{createdEventId}}
+}
+
+tests {
+  test("should return 200 status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return event details", function() {
+    const event = res.getBody();
+    expect(event.id).to.equal(bru.getVar("createdEventId"));
+    expect(event.title).to.be.a('string');
+    expect(event.status).to.be.a('string');
+    expect(event.eventNumber).to.be.a('number');
+    expect(event.date).to.be.a('string');
+  });
+
+  test("should check cache header", function() {
+    const cacheHeader = res.getHeader('X-Cache-Status');
+    expect(['HIT', 'MISS']).to.include(cacheHeader);
+  });
+}

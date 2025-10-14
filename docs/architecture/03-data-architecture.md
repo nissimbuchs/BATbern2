@@ -6,16 +6,14 @@ This document outlines the comprehensive data model and database design for the 
 
 ### Company
 
-**Purpose:** Centralized company entity for speakers, partners, and attendees with logo management and partner company recognition.
+**Purpose:** Centralized company entity for speakers, partners, and attendees with logo management.
 
 **Key Attributes:**
 - id: UUID - Unique company identifier
 - name: string - Official company name
-- isPartner: boolean - Whether company is a BATbern partner
 - logo: CompanyLogo - Uploaded logo with metadata
 - website: string - Company website URL
 - industry: string - Industry sector classification
-- employeeCount: number - Approximate employee count
 - headquarters: Address - Primary company location
 
 #### TypeScript Interface
@@ -24,14 +22,10 @@ interface Company {
   id: string;
   name: string;
   displayName: string;
-  isPartner: boolean;
   logo?: CompanyLogo;
   website?: string;
-  industry: string;
-  employeeCount?: number;
-  headquarters?: Address;
+  industry?: string;
   description?: string;
-  socialLinks: SocialLinks;
   createdAt: Date;
   updatedAt: Date;
   createdBy: string; // User ID who created this company
@@ -49,9 +43,8 @@ interface CompanyLogo {
 ```
 
 #### Relationships
-- **One-to-Many:** Company → Speakers (speakers belong to companies)
+- **One-to-Many:** Company → Users (users belong to companies)
 - **One-to-One:** Company ↔ Partner (partner companies have additional partner data)
-- **One-to-Many:** Company → Attendees (attendees work for companies)
 
 ### Partner
 
@@ -248,6 +241,10 @@ enum SpeakerRole {
 ### Event
 
 **Purpose:** Conference events with attendee registrations and session management, no direct speaker relationships.
+
+**Key Attributes:**
+- id: UUID - Unique session identifier
+- eventId: UUID - Parent event reference
 
 #### TypeScript Interface
 ```typescript

@@ -1,0 +1,12 @@
+FROM flyway/flyway:10-alpine
+
+# Copy migration files
+COPY shared-kernel/src/main/resources/db/migration /flyway/sql
+
+# Add PostgreSQL driver (already included in flyway image)
+# Set working directory
+WORKDIR /flyway
+
+# Entrypoint will be flyway command
+ENTRYPOINT ["flyway"]
+CMD ["migrate"]

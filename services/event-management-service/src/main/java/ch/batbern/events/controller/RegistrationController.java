@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * REST Controller for Event Registration sub-resources
@@ -50,7 +51,7 @@ public class RegistrationController {
      */
     @GetMapping
     public ResponseEntity<Map<String, Object>> listRegistrations(
-            @PathVariable String eventId,
+            @PathVariable UUID eventId,
             @RequestParam(required = false) String filter,
             @RequestParam(required = false, defaultValue = "1") int page,
             @RequestParam(required = false, defaultValue = "20") int limit) {
@@ -106,7 +107,7 @@ public class RegistrationController {
      */
     @PostMapping
     public ResponseEntity<Registration> createRegistration(
-            @PathVariable String eventId,
+            @PathVariable UUID eventId,
             @Valid @RequestBody CreateRegistrationRequest request) {
 
         // Verify event exists
@@ -135,8 +136,8 @@ public class RegistrationController {
      */
     @PatchMapping("/{registrationId}")
     public ResponseEntity<Registration> patchRegistration(
-            @PathVariable String eventId,
-            @PathVariable String registrationId,
+            @PathVariable UUID eventId,
+            @PathVariable UUID registrationId,
             @Valid @RequestBody PatchRegistrationRequest request) {
 
         // Verify event exists
@@ -181,8 +182,8 @@ public class RegistrationController {
      */
     @DeleteMapping("/{registrationId}")
     public ResponseEntity<Void> deleteRegistration(
-            @PathVariable String eventId,
-            @PathVariable String registrationId) {
+            @PathVariable UUID eventId,
+            @PathVariable UUID registrationId) {
 
         // Verify event exists
         if (!eventRepository.existsById(eventId)) {

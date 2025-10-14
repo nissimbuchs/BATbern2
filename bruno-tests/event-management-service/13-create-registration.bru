@@ -1,0 +1,45 @@
+meta {
+  name: Create Registration
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/events/{{createdEventId}}/registrations
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "attendeeId": "550e8400-e29b-41d4-a716-446655440099",
+    "attendeeEmail": "test.attendee@example.com",
+    "attendeeName": "Test Attendee"
+  }
+}
+
+assert {
+  res.status: eq 201
+}
+
+tests {
+  test("should return 201 status", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("should return created registration", function() {
+    const registration = res.getBody();
+    expect(registration.id).to.be.a('string');
+    expect(registration.attendeeEmail).to.equal('test.attendee@example.com');
+    expect(registration.attendeeName).to.equal('Test Attendee');
+    expect(registration.eventId).to.equal(bru.getVar("createdEventId"));
+  });
+
+  test("should save registration id", function() {
+    bru.setVar("createdRegistrationId", res.getBody().id);
+  });
+}
