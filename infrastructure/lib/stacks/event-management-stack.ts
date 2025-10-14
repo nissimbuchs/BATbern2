@@ -36,7 +36,7 @@ export class EventManagementStack extends cdk.Stack {
     const serviceName = 'event-management';
 
     // Create domain service using reusable construct
-    const domainService = new DomainServiceConstruct(this, 'DomainService', {
+    const domainService = new DomainServiceConstruct(this, {
       config: props.config,
       serviceConfig: {
         serviceName,
