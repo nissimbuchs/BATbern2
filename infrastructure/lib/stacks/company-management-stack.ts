@@ -43,7 +43,7 @@ export class CompanyManagementStack extends cdk.Stack {
     const serviceName = 'company-user-management';
 
     // Create domain service using reusable construct with additional environment variables
-    const domainService = new DomainServiceConstruct(this, 'DomainService', {
+    const domainService = new DomainServiceConstruct(this, {
       config: props.config,
       serviceConfig: {
         serviceName,
