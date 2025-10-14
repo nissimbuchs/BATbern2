@@ -32,9 +32,9 @@ export interface DomainServiceConstructProps {
 }
 
 /**
- * Reusable Domain Service Construct for BATbern Microservices
+ * Reusable Domain Service Helper for BATbern Microservices
  *
- * This construct encapsulates the common infrastructure pattern for all domain microservices:
+ * This helper function creates common infrastructure for all domain microservices:
  * - Fargate task definition with ARM64 architecture
  * - Container with Docker build from source
  * - Spring Boot configuration (profiles, database, Cognito)
@@ -46,13 +46,13 @@ export interface DomainServiceConstructProps {
  *
  * Used by: Event Management, Speaker Coordination, Partner Coordination,
  *          Company Management, and Attendee Experience services
+ *
+ * @returns Object with service and serviceUrl properties
  */
-export class DomainServiceConstruct extends Construct {
-  public readonly service: ecsPatterns.ApplicationLoadBalancedFargateService;
-  public readonly serviceUrl: string;
-
-  constructor(scope: Construct, props: DomainServiceConstructProps) {
-    super(scope, '');
+export function createDomainService(
+  scope: Construct,
+  props: DomainServiceConstructProps
+): { service: ecsPatterns.ApplicationLoadBalancedFargateService; serviceUrl: string } {
 
     const envName = props.config.envName;
     const isProd = envName === 'production';
@@ -83,14 +83,14 @@ export class DomainServiceConstruct extends Construct {
     }
 
     // Create stable log group
-    const logGroup = new logs.LogGroup(this, 'LogGroup', {
+    const logGroup = new logs.LogGroup(scope, 'LogGroup', {
       logGroupName: `/aws/ecs/BATbern-${envName}/${serviceName}`,
       retention: isProd ? logs.RetentionDays.SIX_MONTHS : logs.RetentionDays.ONE_MONTH,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     // Create task definition
-    const taskDefinition = new ecs.FargateTaskDefinition(this, 'TaskDef', {
+    const taskDefinition = new ecs.FargateTaskDefinition(scope, 'TaskDef', {
       cpu: props.serviceConfig.cpu,
       memoryLimitMiB: props.serviceConfig.memoryLimitMiB,
       runtimePlatform: {
@@ -142,7 +142,7 @@ export class DomainServiceConstruct extends Construct {
     }
 
     // Create service with INTERNAL ALB
-    this.service = new ecsPatterns.ApplicationLoadBalancedFargateService(this, 'Service', {
+    const service = new ecsPatterns.ApplicationLoadBalancedFargateService(scope, 'Service', {
       cluster: props.cluster,
       taskDefinition,
       publicLoadBalancer: false, // Internal ALB only
@@ -158,7 +158,7 @@ export class DomainServiceConstruct extends Construct {
     });
 
     // Configure health checks
-    this.service.targetGroup.configureHealthCheck({
+    service.targetGroup.configureHealthCheck({
       path: '/actuator/health',
       interval: cdk.Duration.seconds(30),
       timeout: cdk.Duration.seconds(5),
@@ -167,7 +167,7 @@ export class DomainServiceConstruct extends Construct {
     });
 
     // Configure auto-scaling
-    const scaling = this.service.service.autoScaleTaskCount({
+    const scaling = service.service.autoScaleTaskCount({
       minCapacity: isProd ? 2 : 1,
       maxCapacity: (isProd ? 2 : 1) * 4,
     });
@@ -178,11 +178,12 @@ export class DomainServiceConstruct extends Construct {
       scaleOutCooldown: cdk.Duration.seconds(60),
     });
 
-    this.serviceUrl = `http://${this.service.loadBalancer.loadBalancerDnsName}`;
+    const serviceUrl = `http://${service.loadBalancer.loadBalancerDnsName}`;
 
     // Apply tags
-    cdk.Tags.of(this).add('Environment', envName);
-    cdk.Tags.of(this).add('Component', componentTag);
-    cdk.Tags.of(this).add('Project', 'BATbern');
-  }
+    cdk.Tags.of(scope).add('Environment', envName);
+    cdk.Tags.of(scope).add('Component', componentTag);
+    cdk.Tags.of(scope).add('Project', 'BATbern');
+
+    return { service, serviceUrl };
 }

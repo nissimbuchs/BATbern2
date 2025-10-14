@@ -6,7 +6,7 @@ import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
-import { DomainServiceConstruct } from '../constructs/domain-service-construct';
+import { createDomainService } from '../constructs/domain-service-construct';
 
 export interface AttendeeExperienceStackProps extends cdk.StackProps {
   config: EnvironmentConfig;
@@ -35,8 +35,8 @@ export class AttendeeExperienceStack extends cdk.Stack {
     const envName = props.config.envName;
     const serviceName = 'attendee-experience';
 
-    // Create domain service using reusable construct
-    const domainService = new DomainServiceConstruct(this, {
+    // Create domain service using reusable helper function
+    const domainService = createDomainService(this, {
       config: props.config,
       serviceConfig: {
         serviceName,
