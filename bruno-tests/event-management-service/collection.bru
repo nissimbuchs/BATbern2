@@ -1,0 +1,21 @@
+auth {
+  mode: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+script:pre-request {
+  // Common pre-request script for all tests
+  // Generates timestamp for unique test data
+  const timestamp = Date.now();
+  bru.setVar("timestamp", timestamp);
+}
+
+script:post-response {
+  // Common post-response script
+  // Log response time for performance tracking
+  const responseTime = res.getResponseTime();
+  console.log(`Response time: ${responseTime}ms`);
+}

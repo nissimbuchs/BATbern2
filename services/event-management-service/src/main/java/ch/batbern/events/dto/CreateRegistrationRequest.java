@@ -8,6 +8,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 /**
  * Request DTO for creating a new registration
  * Story 1.15a.1: Events API Consolidation - AC12
@@ -18,8 +20,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CreateRegistrationRequest {
 
-    @NotBlank(message = "Attendee ID is required")
-    private String attendeeId;
+    @NotNull(message = "Attendee ID is required")
+    private UUID attendeeId;
 
     @NotBlank(message = "Attendee name is required")
     private String attendeeName;

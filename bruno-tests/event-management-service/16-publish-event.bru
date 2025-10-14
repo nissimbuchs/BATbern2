@@ -1,0 +1,42 @@
+meta {
+  name: Publish Event
+  type: http
+  seq: 16
+}
+
+post {
+  url: {{baseUrl}}/events/{{createdEventId}}/publish
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: in [200, 422]
+}
+
+tests {
+  test("should return success or validation error", function() {
+    const status = res.getStatus();
+    expect([200, 422]).to.include(status);
+  });
+
+  test("if successful, event should be published", function() {
+    if (res.getStatus() === 200) {
+      const event = res.getBody();
+      expect(event.status).to.be.oneOf(['published', 'registration_open']);
+      expect(event.publishedAt).to.be.a('string');
+    }
+  });
+
+  test("if failed, should return validation error", function() {
+    if (res.getStatus() === 422) {
+      const error = res.getBody();
+      expect(error.errorCode).to.equal('UNPROCESSABLE_ENTITY');
+      expect(error.message).to.be.a('string');
+    }
+  });
+}

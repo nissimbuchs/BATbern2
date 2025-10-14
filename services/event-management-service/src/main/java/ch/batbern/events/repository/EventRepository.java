@@ -5,6 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
+import java.util.UUID;
+
 /**
  * Event Repository
  * Story 1.15a.1: Events API Consolidation
@@ -13,7 +15,7 @@ import org.springframework.stereotype.Repository;
  * This enables use of Spring Data JPA Specifications with FilterParser from Story 1.15a.
  */
 @Repository
-public interface EventRepository extends JpaRepository<Event, String>, JpaSpecificationExecutor<Event> {
+public interface EventRepository extends JpaRepository<Event, UUID>, JpaSpecificationExecutor<Event> {
     // JpaRepository provides standard CRUD operations
     // JpaSpecificationExecutor enables dynamic queries for filtering and sorting
 }

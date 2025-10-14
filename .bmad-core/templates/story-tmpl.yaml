@@ -142,7 +142,7 @@ sections:
       - id: architecture-patterns
         title: Architecture Patterns
         instruction: |
-          Reference specific patterns from architecture docs:
+          Reference specific patterns from architecture docs (SOURCE OF TRUTH):
           - API Design (04-api-design.md): RESTful patterns, OpenAPI specs, endpoint structure
           - Frontend (05-frontend-architecture.md): React components, state management, PWA
           - Backend (06-backend-architecture.md): Spring Boot services, DDD patterns, event sourcing
@@ -150,6 +150,23 @@ sections:
         elicit: true
         owner: scrum-master
         editors: [scrum-master]
+
+      - id: database-schema-reference
+        title: Database Schema Reference
+        instruction: |
+          For stories creating/modifying JPA entities:
+
+          **Architecture Schema (Source of Truth):**
+          - Doc: docs/architecture/03-data-architecture.md, Section [X.X]
+          - Tables: [List tables from architecture]
+
+          **Migration Check (Dev Agent completes in Task 0):**
+          - Existing Migration: [To be filled by dev agent]
+          - Status: [To be filled: ✅ Matches | ⚠️ Needs correction | ❌ Create new]
+          - Action: [To be filled by dev agent]
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master, dev-agent]
 
       - id: infrastructure-components
         title: Infrastructure Components
@@ -280,6 +297,14 @@ sections:
       CRITICAL: Tests must be written BEFORE implementation code.
       Reference applicable acceptance criteria numbers where relevant.
     template: |
+      - [ ] Task 0: Schema Validation & Migration (For JPA entities - FIRST)
+        - [ ] Read architecture doc schema (from Database Schema Reference)
+        - [ ] Check if Flyway migration exists in shared-kernel/src/main/resources/db/migration/
+        - [ ] Compare migration to architecture (columns, types, constraints)
+        - [ ] If mismatch or missing: Create/correct migration VX__[Description].sql
+        - [ ] Update Database Schema Reference with migration version and status
+        - [ ] Commit migration BEFORE creating JPA entities
+
       - [ ] Task 1: Write E2E Tests (RED Phase)
         - [ ] Write failing E2E test for main user journey
         - [ ] Verify test fails with meaningful error
@@ -330,7 +355,7 @@ sections:
       Include:
       1. **Service Setup**: Exact service locations, package structure, file paths
       2. **API Specifications**: OpenAPI spec excerpts, endpoint definitions, request/response schemas
-      3. **Database Schema**: CREATE TABLE statements, indexes, foreign keys
+      3. **Database Schema**: Copy CREATE TABLE from architecture doc (03-data-architecture.md, Section X.X)
       4. **React Components**: Full TypeScript interfaces, Material-UI usage, component structure
       5. **Integration Code**: EventBridge event schemas, service-to-service calls
       6. **Configuration**: Environment variables, AWS resource configs, feature flags
@@ -383,6 +408,18 @@ sections:
         owner: scrum-master
         editors: [scrum-master]
 
+      - id: schema-validation-test-spec
+        title: Schema Validation Test (for JPA stories)
+        instruction: |
+          Required test class:
+          - Location: [service]/src/test/java/[package]/validation/SchemaValidationTest.java
+          - Annotations: @SpringBootTest, @FlywayTest (or @Testcontainers)
+          - Database: PostgreSQL (NOT H2 - it hides mismatches)
+          - Validates: Entity mappings match Flyway migrations exactly
+        elicit: true
+        owner: scrum-master
+        editors: [scrum-master]
+
   - id: definition-of-done
     title: Definition of Done Checklist
     instruction: |
@@ -405,6 +442,25 @@ sections:
           - [ ] TypeScript types properly defined
           - [ ] API documentation updated (OpenAPI)
           - [ ] Database migrations created and tested
+        owner: dev-agent
+        editors: [dev-agent]
+
+      - id: schema-validation-complete
+        title: Schema Validation (For JPA/Database stories)
+        type: checklist
+        template: |
+          **Migration Alignment:**
+          - [ ] Task 0 completed: Migration validated against architecture
+          - [ ] Migration matches architecture 100% (or correcting migration created)
+          - [ ] Migration tested with PostgreSQL (not H2)
+
+          **Entity Validation:**
+          - [ ] JPA entity matches architecture schema exactly
+          - [ ] All @Column names/types match architecture
+          - [ ] SchemaValidationTest created and passing (with @FlywayTest + PostgreSQL)
+
+          **Documentation:**
+          - [ ] Database Schema Reference updated with migration version
         owner: dev-agent
         editors: [dev-agent]
 

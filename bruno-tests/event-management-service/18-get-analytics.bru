@@ -1,0 +1,36 @@
+meta {
+  name: Get Event Analytics
+  type: http
+  seq: 18
+}
+
+get {
+  url: {{baseUrl}}/events/{{createdEventId}}/analytics?metrics=attendance,registrations,engagement&timeframe=all
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+params:query {
+  metrics: attendance,registrations,engagement
+  timeframe: all
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("should return 200 status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return analytics data", function() {
+    const analytics = res.getBody();
+    expect(analytics.eventId).to.equal(bru.getVar("createdEventId"));
+    expect(analytics.totalRegistrations).to.be.a('number');
+  });
+}
