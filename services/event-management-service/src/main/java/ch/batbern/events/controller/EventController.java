@@ -157,14 +157,14 @@ public class EventController {
         response.put("eventNumber", event.getEventNumber());
         response.put("status", event.getStatus());
         response.put("description", event.getDescription());
-        response.put("date", event.getDate() != null ? event.getDate().toString() : null);
-        response.put("registrationDeadline", event.getRegistrationDeadline() != null ? event.getRegistrationDeadline().toString() : null);
+        response.put("date", event.getDate());
+        response.put("registrationDeadline", event.getRegistrationDeadline());
         response.put("venueName", event.getVenueName());
         response.put("venueAddress", event.getVenueAddress());
         response.put("venueCapacity", event.getVenueCapacity());
         response.put("organizerId", event.getOrganizerId());
         response.put("currentAttendeeCount", event.getCurrentAttendeeCount());
-        response.put("publishedAt", event.getPublishedAt() != null ? event.getPublishedAt().toString() : null);
+        response.put("publishedAt", event.getPublishedAt());
         response.put("metadata", event.getMetadata());
         return response;
     }
@@ -247,13 +247,13 @@ public class EventController {
                 .title(request.getTitle())
                 .eventNumber(request.getEventNumber())
                 .date(parseDate(request.getDate()))
-                .registrationDeadline(parseDate(request.getRegistrationDeadline()))
+                .registrationDeadline(request.getRegistrationDeadline() != null ? parseDate(request.getRegistrationDeadline()) : null)
                 .venueName(request.getVenueName())
                 .venueAddress(request.getVenueAddress())
                 .venueCapacity(request.getVenueCapacity())
-                .status(request.getStatus())
+                .status(request.getStatus() != null ? request.getStatus() : "planning")
                 .organizerId(request.getOrganizerId())
-                .currentAttendeeCount(request.getCurrentAttendeeCount())
+                .currentAttendeeCount(request.getCurrentAttendeeCount() != null ? request.getCurrentAttendeeCount() : 0)
                 .publishedAt(request.getPublishedAt() != null ? parseDate(request.getPublishedAt()) : null)
                 .metadata(request.getMetadata())
                 .description(request.getDescription())
@@ -293,7 +293,7 @@ public class EventController {
         event.setTitle(request.getTitle());
         event.setEventNumber(request.getEventNumber());
         event.setDate(parseDate(request.getDate()));
-        event.setRegistrationDeadline(parseDate(request.getRegistrationDeadline()));
+        event.setRegistrationDeadline(request.getRegistrationDeadline() != null ? parseDate(request.getRegistrationDeadline()) : null);
         event.setVenueName(request.getVenueName());
         event.setVenueAddress(request.getVenueAddress());
         event.setVenueCapacity(request.getVenueCapacity());
@@ -372,9 +372,22 @@ public class EventController {
         // Process each update request
         for (BatchUpdateRequest request : requests) {
             try {
+                // Parse UUID from string
+                UUID eventId;
+                try {
+                    eventId = UUID.fromString(request.getId());
+                } catch (IllegalArgumentException e) {
+                    // Invalid UUID format
+                    Map<String, Object> failureResult = new HashMap<>();
+                    failureResult.put("id", request.getId());
+                    failureResult.put("error", "Invalid UUID format");
+                    failed.add(failureResult);
+                    continue;
+                }
+
                 // Find existing event
-                Event event = eventRepository.findById(request.getId())
-                        .orElseThrow(() -> new EventNotFoundException(request.getId()));
+                Event event = eventRepository.findById(eventId)
+                        .orElseThrow(() -> new EventNotFoundException(eventId));
 
                 // Apply updates (similar to PATCH)
                 if (request.getTitle() != null) {
@@ -510,6 +523,7 @@ public class EventController {
 
         // Build response
         Map<String, Object> response = buildBasicEventResponse(updatedEvent);
+        response.put("workflowState", nextStatus); // Add workflowState for test compatibility
 
         return ResponseEntity.ok(response);
     }
@@ -550,8 +564,8 @@ public class EventController {
         }
 
         // Simple workflow status progression
-        // draft -> published -> archived
-        if (currentStatus == null || currentStatus.isEmpty() || "draft".equals(currentStatus)) {
+        // planning -> published -> archived
+        if (currentStatus == null || currentStatus.isEmpty() || "planning".equals(currentStatus)) {
             return "published";
         }
 
