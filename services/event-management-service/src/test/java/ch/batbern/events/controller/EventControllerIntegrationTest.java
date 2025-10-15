@@ -199,7 +199,9 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     void should_paginateResults_when_pageParamProvided() throws Exception {
         // Create additional events for pagination test
         for (int i = 1; i <= 25; i++) {
-            createTestEvent("Event " + i, "2025-0" + (i % 9 + 1) + "-01T09:00:00Z", "planning");
+            int month = (i % 12) + 1; // Cycle through months 1-12
+            String monthStr = String.format("%02d", month); // Format as 01, 02, ..., 12
+            createTestEvent("Event " + i, "2025-" + monthStr + "-01T09:00:00Z", "planning");
         }
 
         // Test first page
