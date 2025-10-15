@@ -5,17 +5,15 @@ import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.companyuser.dto.CreateCompanyRequest;
 import ch.batbern.companyuser.dto.UpdateCompanyRequest;
 import ch.batbern.companyuser.repository.CompanyRepository;
+import ch.batbern.shared.test.AbstractIntegrationTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,17 +29,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Comprehensive integration tests for CompanyController REST API
  * Tests all CRUD operations, authentication, authorization, and validation
  * AC4: REST API implementation with full coverage
+ *
+ * Uses Testcontainers PostgreSQL for production parity.
+ * Architecture Reference: docs/architecture/06-backend-architecture.md
  */
-@SpringBootTest(properties = {
-    "spring.flyway.enabled=false",
-    "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration"
-})
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-@Import(TestAwsConfig.class)
 @Transactional
+@Import(TestAwsConfig.class)
 @DisplayName("Company REST API Integration Tests")
-class CompanyControllerIntegrationTest {
+class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;

@@ -3,24 +3,16 @@ package ch.batbern.companyuser.integration;
 import ch.batbern.companyuser.domain.Company;
 import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.companyuser.dto.CompanySearchResponse;
-import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.companyuser.repository.CompanyRepository;
-import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.companyuser.service.CompanySearchService;
-import ch.batbern.companyuser.config.TestAwsConfig;
+import ch.batbern.shared.test.AbstractIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.cache.CacheManager;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.context.annotation.Import;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.context.annotation.Import;
 
 import java.time.Instant;
 import java.util.List;
@@ -38,16 +30,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  * - Cache invalidation works correctly
  * - 15-minute TTL is configured
  * - Performance requirements met (<100ms with cache)
+ *
+ * Uses Testcontainers PostgreSQL for production parity.
+ * Architecture Reference: docs/architecture/06-backend-architecture.md
  */
-@SpringBootTest(properties = {
-    "spring.flyway.enabled=false",
-    "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration"
-})
-@ActiveProfiles("test")
-@Import(TestAwsConfig.class)
 @Transactional
+@Import(TestAwsConfig.class)
 @DisplayName("CompanySearchService Integration Tests")
-class CompanySearchIntegrationTest {
+class CompanySearchIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private CompanySearchService companySearchService;

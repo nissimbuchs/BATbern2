@@ -3,26 +3,16 @@ package ch.batbern.companyuser.integration;
 import ch.batbern.companyuser.domain.Company;
 import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.companyuser.repository.CompanyRepository;
-import ch.batbern.companyuser.config.TestAwsConfig;
+import ch.batbern.shared.test.AbstractIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.context.annotation.Import;
 
 import java.time.Instant;
 
@@ -33,17 +23,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Integration tests for additional company endpoints (Task 15)
  * Tests AC11-13: Advanced search, UID validation, verification workflow
+ *
+ * Uses Testcontainers PostgreSQL for production parity.
+ * Architecture Reference: docs/architecture/06-backend-architecture.md
  */
-@SpringBootTest(properties = {
-    "spring.flyway.enabled=false",
-    "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration"
-})
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-@Import(TestAwsConfig.class)
 @Transactional
+@Import(TestAwsConfig.class)
 @DisplayName("Additional Company Endpoints Integration Tests")
-class AdditionalEndpointsIntegrationTest {
+class AdditionalEndpointsIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;

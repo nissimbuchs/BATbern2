@@ -21,6 +21,9 @@ dependencies {
     // Shared Kernel - Common types and utilities (multi-project dependency)
     implementation project(':shared-kernel')
 
+    // Shared Kernel - Test fixtures for integration testing (Testcontainers PostgreSQL)
+    testImplementation testFixtures(project(':shared-kernel'))
+
     // Spring Boot Core
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
@@ -54,12 +57,12 @@ dependencies {
     // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
-    testImplementation 'org.testcontainers:testcontainers:1.19.3'
-    testImplementation 'org.testcontainers:postgresql:1.19.3'
-    testImplementation 'org.testcontainers:junit-jupiter:1.19.3'
+    testImplementation 'org.testcontainers:testcontainers:1.20.4'
+    testImplementation 'org.testcontainers:postgresql:1.20.4'
+    testImplementation 'org.testcontainers:junit-jupiter:1.20.4'
     testImplementation 'io.rest-assured:rest-assured:5.3.2'
     testImplementation 'org.awaitility:awaitility:4.2.0'
-    testRuntimeOnly 'com.h2database:h2'
+    // Note: H2 removed - all integration tests use Testcontainers PostgreSQL for production parity
 }
 
 test {

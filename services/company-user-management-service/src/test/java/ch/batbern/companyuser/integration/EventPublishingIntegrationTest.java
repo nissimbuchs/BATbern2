@@ -3,21 +3,16 @@ package ch.batbern.companyuser.integration;
 import ch.batbern.companyuser.domain.Company;
 import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.companyuser.dto.CreateCompanyRequest;
-import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.companyuser.dto.UpdateCompanyRequest;
-import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.companyuser.repository.CompanyRepository;
-import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.companyuser.service.CompanyService;
-import ch.batbern.companyuser.config.TestAwsConfig;
+import ch.batbern.shared.test.AbstractIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -33,16 +28,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  * - CompanyCreated
  * - CompanyUpdated
  * - CompanyDeleted
+ *
+ * Uses Testcontainers PostgreSQL for production parity.
+ * Architecture Reference: docs/architecture/06-backend-architecture.md
  */
-@SpringBootTest(properties = {
-    "spring.flyway.enabled=false",
-    "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration"
-})
-@ActiveProfiles("test")
-@Import(TestAwsConfig.class)
 @Transactional
+@Import(TestAwsConfig.class)
 @DisplayName("EventBridge Event Publishing Integration Tests")
-class EventPublishingIntegrationTest {
+class EventPublishingIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private CompanyService companyService;

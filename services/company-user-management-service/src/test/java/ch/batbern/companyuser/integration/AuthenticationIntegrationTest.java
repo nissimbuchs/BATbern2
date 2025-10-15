@@ -3,15 +3,13 @@ package ch.batbern.companyuser.integration;
 import ch.batbern.companyuser.dto.CompanyResponse;
 import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.companyuser.dto.CreateCompanyRequest;
+import ch.batbern.shared.test.AbstractIntegrationTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,17 +22,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Integration tests for authentication and authorization
  * AC10: Authentication integration with API Gateway
  *
- * RED Phase: Writing failing tests first
+ * Uses Testcontainers PostgreSQL for production parity.
+ * Architecture Reference: docs/architecture/06-backend-architecture.md
  */
-@SpringBootTest(properties = {
-    "spring.flyway.enabled=false",
-    "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration"
-})
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-@Import(TestAwsConfig.class)
 @Transactional
-class AuthenticationIntegrationTest {
+@Import(TestAwsConfig.class)
+class AuthenticationIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
