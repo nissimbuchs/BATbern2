@@ -1,14 +1,15 @@
 package ch.batbern.companyuser.repository;
 
+import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.companyuser.domain.Company;
+import ch.batbern.shared.test.AbstractIntegrationTest;
+import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.context.annotation.Import;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,22 +20,23 @@ import static org.assertj.core.api.Assertions.*;
 /**
  * Integration tests for CompanyRepository
  * Tests cover AC1, AC2 - Company persistence and queries
- * Uses in-memory H2 database for fast testing
+ * Uses Testcontainers PostgreSQL for production parity
  */
-@DataJpaTest(excludeAutoConfiguration = {FlywayAutoConfiguration.class})
-@TestPropertySource(properties = {
-        "spring.jpa.hibernate.ddl-auto=create-drop",
-        "spring.datasource.url=jdbc:h2:mem:testdb",
-        "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect"
-})
+@Transactional
+@Import(TestAwsConfig.class)
 @DisplayName("Company Repository Tests")
-class CompanyRepositoryTest {
+class CompanyRepositoryTest extends AbstractIntegrationTest {
 
     @Autowired
     private CompanyRepository companyRepository;
 
     @Autowired
-    private TestEntityManager entityManager;
+    private EntityManager entityManager;
+
+    @BeforeEach
+    void setUp() {
+        companyRepository.deleteAll();
+    }
 
     // AC1 Tests: Company CRUD Operations
 
@@ -199,7 +201,7 @@ class CompanyRepositoryTest {
         // Given
         createAndSaveCompany("Duplicate Name");
 
-        // When/Then
+        // When/Then - PostgreSQL returns different error message than H2
         assertThatThrownBy(() -> {
             Company duplicate = Company.builder()
                     .name("Duplicate Name")
@@ -208,7 +210,12 @@ class CompanyRepositoryTest {
             duplicate.onCreate();
             companyRepository.save(duplicate);
             entityManager.flush();
-        }).hasMessageContaining("Unique index or primary key violation");
+        }).satisfiesAnyOf(
+                // PostgreSQL error message
+                e -> assertThat(e.getMessage()).containsIgnoringCase("duplicate key"),
+                // H2 error message (legacy)
+                e -> assertThat(e.getMessage()).containsIgnoringCase("Unique index or primary key violation")
+        );
     }
 
     @Test
