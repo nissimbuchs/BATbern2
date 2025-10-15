@@ -21,6 +21,7 @@ import {
   CheckCircle as CheckCircleIcon,
   Star as StarIcon,
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { CompanyDetail } from '@/types/company.types';
 import { AssociatedUsersPanel } from '@/components/shared/Company/AssociatedUsersPanel';
 import { PartnerInfoPanel } from '@/components/shared/Company/PartnerInfoPanel';
@@ -65,6 +66,7 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
   onBack,
   onRetry,
 }) => {
+  const { t } = useTranslation('common');
   const [activeTab, setActiveTab] = useState(0);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -111,7 +113,7 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
         </Alert>
         {onRetry && (
           <Button variant="contained" onClick={onRetry}>
-            Retry
+            {t('company.errors.retry')}
           </Button>
         )}
       </Box>
@@ -122,7 +124,7 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
   if (!company) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert severity="info">No company data available</Alert>
+        <Alert severity="info">{t('company.detail.noData')}</Alert>
       </Box>
     );
   }
@@ -139,7 +141,7 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
       {/* Header with Back button */}
       <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
         <Button startIcon={<ArrowBackIcon />} onClick={onBack}>
-          Back
+          {t('company.backToList')}
         </Button>
         {canEdit && (
           <Button
@@ -148,7 +150,7 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
             onClick={handleEdit}
             sx={{ ml: 'auto' }}
           >
-            Edit
+            {t('actions.edit')}
           </Button>
         )}
       </Box>
@@ -179,7 +181,7 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
                     <Chip
                       data-testid="verified-badge"
                       icon={<CheckCircleIcon />}
-                      label="Verified"
+                      label={t('company.badges.verified')}
                       color="success"
                       size="small"
                     />
@@ -188,7 +190,7 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
                     <Chip
                       data-testid="partner-badge"
                       icon={<StarIcon />}
-                      label="Partner"
+                      label={t('company.badges.partner')}
                       color="primary"
                       size="small"
                     />
@@ -271,18 +273,17 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
       {/* Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
         <Tabs value={activeTab} onChange={handleTabChange} aria-label="company detail tabs">
-          <Tab label="Overview" id="company-tab-0" aria-controls="company-tabpanel-0" />
-          <Tab label="Users" id="company-tab-1" aria-controls="company-tabpanel-1" />
-          <Tab label="Statistics" id="company-tab-2" aria-controls="company-tabpanel-2" />
-          <Tab label="Activity" id="company-tab-3" aria-controls="company-tabpanel-3" />
+          <Tab label={t('company.detail.tabs.overview')} id="company-tab-0" aria-controls="company-tabpanel-0" />
+          <Tab label={t('company.detail.tabs.users')} id="company-tab-1" aria-controls="company-tabpanel-1" />
+          <Tab label={t('company.detail.tabs.statistics')} id="company-tab-2" aria-controls="company-tabpanel-2" />
+          <Tab label={t('company.detail.tabs.activity')} id="company-tab-3" aria-controls="company-tabpanel-3" />
         </Tabs>
       </Box>
 
       {/* Tab Panels */}
       <TabPanel value={activeTab} index={0}>
         <Typography variant="body1" paragraph>
-          This overview section can display additional company information, recent updates, or
-          highlights.
+          {t('company.detail.overviewText')}
         </Typography>
       </TabPanel>
 

@@ -23,6 +23,7 @@ import {
 } from '@mui/material';
 import BusinessIcon from '@mui/icons-material/Business';
 import PeopleIcon from '@mui/icons-material/People';
+import { useTranslation } from 'react-i18next';
 import type { CompanyListItem } from '@/types/company.types';
 
 export interface CompanyCardProps {
@@ -36,6 +37,8 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({
   onClick,
   viewMode = 'grid'
 }) => {
+  const { t } = useTranslation('common');
+
   const handleClick = () => {
     onClick(company.id);
   };
@@ -60,7 +63,7 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({
         onClick={handleClick}
         onKeyDown={handleKeyDown}
         role="button"
-        aria-label={`View details for ${company.displayName || company.name}`}
+        aria-label={t('company.viewDetails', { name: company.displayName || company.name })}
         tabIndex={0}
         sx={{
           height: '100%',
@@ -112,17 +115,17 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({
           <Stack direction="row" spacing={0.5} sx={{ mb: 1 }}>
             {company.isPartner && (
               <Chip
-                label="⭐ Partner"
+                label={`⭐ ${t('company.badges.partner')}`}
                 size="small"
-                aria-label="Partner company"
+                aria-label={t('company.badges.partner')}
                 sx={{ height: 20, fontSize: '0.75rem' }}
               />
             )}
             {company.isVerified && (
               <Chip
-                label="✅ Verified"
+                label={`✅ ${t('company.badges.verified')}`}
                 size="small"
-                aria-label="Verified company"
+                aria-label={t('company.badges.verified')}
                 sx={{ height: 20, fontSize: '0.75rem' }}
               />
             )}
@@ -157,7 +160,7 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({
                 mb: 1
               }}
             >
-              Legal: {company.name}
+              {t('company.fields.legalName', { name: company.name })}
             </Typography>
           )}
 
@@ -183,7 +186,7 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             <PeopleIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
             <Typography variant="body2" color="text.secondary">
-              {company.associatedUserCount} {company.associatedUserCount === 1 ? 'user' : 'users'}
+              {t('company.stats.userCount', { count: company.associatedUserCount })}
             </Typography>
           </Box>
         </CardContent>

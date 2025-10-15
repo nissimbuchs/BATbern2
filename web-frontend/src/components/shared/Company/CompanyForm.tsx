@@ -32,6 +32,7 @@ import {
   Alert,
   Box,
 } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import type { Company, CreateCompanyRequest, UpdateCompanyRequest } from '@/types/company.types';
 
 // Validation schema with Zod
@@ -94,6 +95,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
   userRole = 'organizer',
   userCompanyId,
 }) => {
+  const { t } = useTranslation('common');
   const [apiError, setApiError] = useState<string | null>(null);
 
   // Check role-based access control
@@ -165,7 +167,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
   const handleClose = () => {
     if (isDirty) {
       const confirmed = window.confirm(
-        'You have unsaved changes. Are you sure you want to close?'
+        t('company.form.unsavedChanges')
       );
       if (!confirmed) return;
     }
@@ -229,7 +231,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
       if (error?.response?.data?.message) {
         setApiError(error.response.data.message);
       } else {
-        setApiError('An error occurred while saving the company');
+        setApiError(t('company.errors.saveFailed'));
       }
     }
   };
@@ -260,7 +262,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
       if (error?.response?.data?.message) {
         setApiError(error.response.data.message);
       } else {
-        setApiError('An error occurred while saving the company');
+        setApiError(t('company.errors.saveFailed'));
       }
     }
   };
@@ -284,13 +286,13 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
       aria-describedby="company-form-description"
     >
       <DialogTitle id="company-form-title">
-        {mode === 'create' ? 'Create New Company' : 'Edit Company'}
+        {mode === 'create' ? t('company.form.createTitle') : t('company.form.editTitle')}
       </DialogTitle>
 
       <DialogContent id="company-form-description">
         {!hasEditPermission && (
           <Alert severity="error" sx={{ mb: 2 }}>
-            You don't have permission to edit this company. Speakers can only edit their own company.
+            {t('company.form.errors.noPermission')}
           </Alert>
         )}
 
@@ -308,13 +310,13 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
             render={({ field }) => (
               <TextField
                 {...field}
-                label="Company Name *"
+                label={`${t('company.fields.name')} *`}
                 fullWidth
                 margin="normal"
                 error={!!errors.name}
                 helperText={errors.name?.message}
                 disabled={!hasEditPermission}
-                inputProps={{ 'aria-label': 'Company Name' }}
+                inputProps={{ 'aria-label': t('company.fields.name') }}
               />
             )}
           />
@@ -326,13 +328,13 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
             render={({ field }) => (
               <TextField
                 {...field}
-                label="Display Name (if different from legal name)"
+                label={t('company.fields.displayName')}
                 fullWidth
                 margin="normal"
                 error={!!errors.displayName}
                 helperText={errors.displayName?.message}
                 disabled={!hasEditPermission}
-                inputProps={{ 'aria-label': 'Display Name' }}
+                inputProps={{ 'aria-label': t('company.fields.displayName') }}
               />
             )}
           />
@@ -344,14 +346,14 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
             render={({ field }) => (
               <TextField
                 {...field}
-                label="Swiss UID (CHE-XXX.XXX.XXX)"
+                label={t('company.fields.swissUID')}
                 fullWidth
                 margin="normal"
                 error={!!errors.swissUID}
-                helperText={errors.swissUID?.message || 'Optional - for automatic verification'}
+                helperText={errors.swissUID?.message || t('company.form.helpText.swissUID')}
                 disabled={!hasEditPermission}
-                placeholder="CHE-123.456.789"
-                inputProps={{ 'aria-label': 'Swiss UID' }}
+                placeholder={t('company.placeholders.swissUID')}
+                inputProps={{ 'aria-label': t('company.fields.swissUID') }}
               />
             )}
           />
@@ -363,14 +365,14 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
             render={({ field }) => (
               <TextField
                 {...field}
-                label="Website"
+                label={t('company.fields.website')}
                 fullWidth
                 margin="normal"
                 error={!!errors.website}
                 helperText={errors.website?.message}
                 disabled={!hasEditPermission}
-                placeholder="https://example.com"
-                inputProps={{ 'aria-label': 'Website' }}
+                placeholder={t('company.placeholders.website')}
+                inputProps={{ 'aria-label': t('company.fields.website') }}
               />
             )}
           />
@@ -381,25 +383,25 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
             control={control}
             render={({ field }) => (
               <FormControl fullWidth margin="normal" error={!!errors.industry} disabled={!hasEditPermission}>
-                <InputLabel id="industry-label">Industry *</InputLabel>
+                <InputLabel id="industry-label">{t('company.fields.industry')} *</InputLabel>
                 <Select
                   {...field}
                   labelId="industry-label"
-                  label="Industry *"
-                  aria-label="Industry"
+                  label={`${t('company.fields.industry')} *`}
+                  aria-label={t('company.fields.industry')}
                 >
                   <MenuItem value="">
-                    <em>Select Industry</em>
+                    <em>{t('company.industries.selectIndustry')}</em>
                   </MenuItem>
-                  <MenuItem value="Technology">Technology</MenuItem>
-                  <MenuItem value="Cloud Computing">Cloud Computing</MenuItem>
-                  <MenuItem value="DevOps">DevOps</MenuItem>
-                  <MenuItem value="Financial Services">Financial Services</MenuItem>
-                  <MenuItem value="Healthcare">Healthcare</MenuItem>
-                  <MenuItem value="Manufacturing">Manufacturing</MenuItem>
-                  <MenuItem value="Consulting">Consulting</MenuItem>
-                  <MenuItem value="Education">Education</MenuItem>
-                  <MenuItem value="Other">Other</MenuItem>
+                  <MenuItem value="Technology">{t('company.industries.technology')}</MenuItem>
+                  <MenuItem value="Cloud Computing">{t('company.industries.cloudComputing')}</MenuItem>
+                  <MenuItem value="DevOps">{t('company.industries.devOps')}</MenuItem>
+                  <MenuItem value="Financial Services">{t('company.industries.financialServices')}</MenuItem>
+                  <MenuItem value="Healthcare">{t('company.industries.healthcare')}</MenuItem>
+                  <MenuItem value="Manufacturing">{t('company.industries.manufacturing')}</MenuItem>
+                  <MenuItem value="Consulting">{t('company.industries.consulting')}</MenuItem>
+                  <MenuItem value="Education">{t('company.industries.education')}</MenuItem>
+                  <MenuItem value="Other">{t('company.industries.other')}</MenuItem>
                 </Select>
                 {errors.industry && <FormHelperText>{errors.industry.message}</FormHelperText>}
               </FormControl>
@@ -412,20 +414,20 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
             control={control}
             render={({ field }) => (
               <FormControl fullWidth margin="normal" disabled={!hasEditPermission}>
-                <InputLabel id="sector-label">Sector (Optional)</InputLabel>
+                <InputLabel id="sector-label">{t('company.fields.sector')}</InputLabel>
                 <Select
                   {...field}
                   labelId="sector-label"
-                  label="Sector (Optional)"
-                  aria-label="Sector"
+                  label={t('company.fields.sector')}
+                  aria-label={t('company.fields.sector')}
                 >
                   <MenuItem value="">
-                    <em>Select Sector</em>
+                    <em>{t('company.sectors.selectSector')}</em>
                   </MenuItem>
-                  <MenuItem value="Public">Public</MenuItem>
-                  <MenuItem value="Private">Private</MenuItem>
-                  <MenuItem value="Non-profit">Non-profit</MenuItem>
-                  <MenuItem value="Government">Government</MenuItem>
+                  <MenuItem value="Public">{t('company.sectors.public')}</MenuItem>
+                  <MenuItem value="Private">{t('company.sectors.private')}</MenuItem>
+                  <MenuItem value="Non-profit">{t('company.sectors.nonprofit')}</MenuItem>
+                  <MenuItem value="Government">{t('company.sectors.government')}</MenuItem>
                 </Select>
               </FormControl>
             )}
@@ -438,13 +440,13 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
             render={({ field }) => (
               <TextField
                 {...field}
-                label="City *"
+                label={`${t('company.fields.city')} *`}
                 fullWidth
                 margin="normal"
                 error={!!errors.location?.city}
                 helperText={errors.location?.city?.message}
                 disabled={!hasEditPermission}
-                inputProps={{ 'aria-label': 'City' }}
+                inputProps={{ 'aria-label': t('company.fields.city') }}
               />
             )}
           />
@@ -456,14 +458,14 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
             render={({ field }) => (
               <TextField
                 {...field}
-                label="Canton *"
+                label={`${t('company.fields.canton')} *`}
                 fullWidth
                 margin="normal"
                 error={!!errors.location?.canton}
                 helperText={errors.location?.canton?.message}
                 disabled={!hasEditPermission}
-                placeholder="BE, ZH, GE, etc."
-                inputProps={{ 'aria-label': 'Canton' }}
+                placeholder={t('company.placeholders.canton')}
+                inputProps={{ 'aria-label': t('company.fields.canton') }}
               />
             )}
           />
@@ -475,13 +477,13 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
             render={({ field }) => (
               <TextField
                 {...field}
-                label="Country *"
+                label={`${t('company.fields.country')} *`}
                 fullWidth
                 margin="normal"
                 error={!!errors.location?.country}
                 helperText={errors.location?.country?.message}
                 disabled={!hasEditPermission}
-                inputProps={{ 'aria-label': 'Country' }}
+                inputProps={{ 'aria-label': t('company.fields.country') }}
               />
             )}
           />
@@ -493,17 +495,17 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
             render={({ field }) => (
               <TextField
                 {...field}
-                label="Description"
+                label={t('company.fields.description')}
                 fullWidth
                 margin="normal"
                 multiline
                 rows={4}
                 error={!!errors.description}
                 helperText={
-                  errors.description?.message || `${description.length}/500 characters`
+                  errors.description?.message || t('company.form.characterCount', { count: description.length, max: 500 })
                 }
                 disabled={!hasEditPermission}
-                inputProps={{ 'aria-label': 'Description' }}
+                inputProps={{ 'aria-label': t('company.fields.description') }}
               />
             )}
           />
@@ -511,13 +513,13 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={handleClose} aria-label="Cancel">
-          Cancel
+        <Button onClick={handleClose} aria-label={t('actions.cancel')}>
+          {t('actions.cancel')}
         </Button>
 
         {mode === 'create' && allowDraft && hasEditPermission && (
-          <Button onClick={handleSaveDraft} color="secondary" aria-label="Save Draft">
-            Save Draft
+          <Button onClick={handleSaveDraft} color="secondary" aria-label={t('company.form.saveDraft')}>
+            {t('company.form.saveDraft')}
           </Button>
         )}
 
@@ -526,9 +528,9 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
           variant="contained"
           color="primary"
           disabled={!hasEditPermission}
-          aria-label={mode === 'create' ? 'Save & Create' : 'Save Changes'}
+          aria-label={mode === 'create' ? t('company.form.saveCreate') : t('company.form.saveChanges')}
         >
-          {mode === 'create' ? 'Save & Create' : 'Save Changes'}
+          {mode === 'create' ? t('company.form.saveCreate') : t('company.form.saveChanges')}
         </Button>
       </DialogActions>
     </Dialog>

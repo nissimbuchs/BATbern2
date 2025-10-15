@@ -23,6 +23,7 @@ import {
   useMediaQuery
 } from '@mui/material';
 import { Add as AddIcon, ViewModule as GridIcon, ViewList as ListIcon } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { CompanyList } from '@/components/shared/Company/CompanyList';
 import { CompanySearch } from '@/components/shared/Company/CompanySearch';
 import CompanyFilters from '@/components/shared/Company/CompanyFilters';
@@ -52,6 +53,7 @@ const CompanyDetailWrapper: React.FC<{ onBack: () => void; onEdit: (company: Com
 };
 
 const CompanyManagementScreen: React.FC = () => {
+  const { t } = useTranslation('common');
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -128,7 +130,7 @@ const CompanyManagementScreen: React.FC = () => {
           mb={4}
         >
           <Typography variant="h4" component="h1" gutterBottom={isMobile}>
-            Company Management
+            {t('company.title')}
           </Typography>
 
           <Stack direction="row" spacing={2}>
@@ -137,13 +139,13 @@ const CompanyManagementScreen: React.FC = () => {
               value={viewMode}
               exclusive
               onChange={handleViewModeChange}
-              aria-label="view mode"
+              aria-label={t('company.viewMode.toggleCurrent', { mode: viewMode })}
               size="small"
             >
-              <ToggleButton value="grid" aria-label="grid view">
+              <ToggleButton value="grid" aria-label={t('company.viewMode.grid')}>
                 <GridIcon />
               </ToggleButton>
-              <ToggleButton value="list" aria-label="list view">
+              <ToggleButton value="list" aria-label={t('company.viewMode.list')}>
                 <ListIcon />
               </ToggleButton>
             </ToggleButtonGroup>
@@ -153,9 +155,9 @@ const CompanyManagementScreen: React.FC = () => {
               variant="contained"
               startIcon={<AddIcon />}
               onClick={handleCreateCompany}
-              aria-label="create company"
+              aria-label={t('company.createCompany')}
             >
-              Create Company
+              {t('company.createCompany')}
             </Button>
           </Stack>
         </Stack>

@@ -19,6 +19,7 @@ import {
 import Grid from '@mui/material/Grid';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import ViewListIcon from '@mui/icons-material/ViewList';
+import { useTranslation } from 'react-i18next';
 import { CompanyCard } from '@/components/shared/Company/CompanyCard';
 import type { CompanyListItem } from '@/types/company.types';
 
@@ -39,6 +40,8 @@ export const CompanyList: React.FC<CompanyListProps> = ({
   onViewModeToggle,
   onCompanyClick
 }) => {
+  const { t } = useTranslation('common');
+
   // Render loading skeletons
   if (isLoading) {
     return (
@@ -70,10 +73,10 @@ export const CompanyList: React.FC<CompanyListProps> = ({
         }}
       >
         <Typography variant="h6" color="text.secondary">
-          No companies found
+          {t('company.noCompaniesFound')}
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          Try adjusting your search or filters
+          {t('company.adjustFilters')}
         </Typography>
       </Box>
     );
@@ -86,7 +89,7 @@ export const CompanyList: React.FC<CompanyListProps> = ({
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
         <IconButton
           onClick={onViewModeToggle}
-          aria-label={`Toggle view mode. Current: ${viewMode}`}
+          aria-label={t('company.viewMode.toggleCurrent', { mode: viewMode })}
           size="small"
         >
           {viewMode === 'grid' ? <ViewListIcon /> : <ViewModuleIcon />}

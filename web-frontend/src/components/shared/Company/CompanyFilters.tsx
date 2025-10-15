@@ -31,6 +31,7 @@ import {
   Typography
 } from '@mui/material';
 import { FilterList as FilterIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import type { CompanyFilters as CompanyFiltersType } from '@/types/company.types';
 
 interface CompanyFiltersProps {
@@ -52,6 +53,7 @@ const INDUSTRIES = [
 ];
 
 const CompanyFilters: React.FC<CompanyFiltersProps> = ({ onFilterChange, initialFilters = {} }) => {
+  const { t } = useTranslation('common');
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [searchParams, setSearchParams] = useSearchParams();
@@ -112,10 +114,10 @@ const CompanyFilters: React.FC<CompanyFiltersProps> = ({ onFilterChange, initial
           <Checkbox
             checked={isPartner}
             onChange={(e) => setIsPartner(e.target.checked)}
-            aria-label="partner companies only"
+            aria-label={t('company.filters.partnerOnly')}
           />
         }
-        label="Partner Companies Only"
+        label={t('company.filters.partnerOnly')}
       />
 
       {/* Verification Filter */}
@@ -124,25 +126,25 @@ const CompanyFilters: React.FC<CompanyFiltersProps> = ({ onFilterChange, initial
           <Checkbox
             checked={isVerified}
             onChange={(e) => setIsVerified(e.target.checked)}
-            aria-label="verified companies only"
+            aria-label={t('company.filters.verifiedOnly')}
           />
         }
-        label="Verified Companies Only"
+        label={t('company.filters.verifiedOnly')}
       />
 
       {/* Industry Filter */}
       <FormControl sx={{ minWidth: 200 }} size="small">
-        <InputLabel id="industry-filter-label">Industry</InputLabel>
+        <InputLabel id="industry-filter-label">{t('company.filters.industry')}</InputLabel>
         <Select
           labelId="industry-filter-label"
           id="industry-filter"
           value={industry}
-          label="Industry"
+          label={t('company.filters.industry')}
           onChange={(e) => setIndustry(e.target.value)}
-          aria-label="industry"
+          aria-label={t('company.filters.industry')}
         >
           <MenuItem value="">
-            <em>All Industries</em>
+            <em>{t('company.filters.allIndustries')}</em>
           </MenuItem>
           {INDUSTRIES.map((ind) => (
             <MenuItem key={ind} value={ind}>
@@ -158,9 +160,9 @@ const CompanyFilters: React.FC<CompanyFiltersProps> = ({ onFilterChange, initial
         size="small"
         onClick={handleClearFilters}
         disabled={!hasActiveFilters}
-        aria-label="clear all filters"
+        aria-label={t('company.filters.clearAll')}
       >
-        Clear All Filters
+        {t('company.filters.clearAll')}
       </Button>
 
       {/* Active Filter Count Badge */}
@@ -182,12 +184,12 @@ const CompanyFilters: React.FC<CompanyFiltersProps> = ({ onFilterChange, initial
         <Stack direction="row" alignItems="center" spacing={1} mb={1}>
           <IconButton
             onClick={() => setIsExpanded(!isExpanded)}
-            aria-label="filters"
+            aria-label={t('company.filters.filters')}
             size="small"
           >
             <FilterIcon />
           </IconButton>
-          <Typography variant="body2">Filters</Typography>
+          <Typography variant="body2">{t('company.filters.filters')}</Typography>
           {hasActiveFilters && (
             <Chip
               label={activeFilterCount}
