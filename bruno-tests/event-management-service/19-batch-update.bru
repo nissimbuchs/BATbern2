@@ -1,0 +1,45 @@
+meta {
+  name: Batch Update Events
+  type: http
+  seq: 19
+}
+
+patch {
+  url: {{baseUrl}}/events
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "updates": [
+      {
+        "id": "{{createdEventId}}",
+        "fields": {
+          "description": "Batch updated description"
+        }
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("should return 200 status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return batch update results", function() {
+    const result = res.getBody();
+    expect(result.successful).to.be.a('number');
+    expect(result.failed).to.be.a('number');
+    expect(result.errors).to.be.an('array');
+  });
+}

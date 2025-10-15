@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -125,7 +126,7 @@ public class EventController {
     )
     @Cacheable(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, key = "#id + '_' + (#include != null ? #include : 'none')")
     public ResponseEntity<Map<String, Object>> getEvent(
-            @PathVariable String id,
+            @PathVariable UUID id,
             @Parameter(description = "Comma-separated list of resources to include (e.g., venue,speakers,sessions)")
             @RequestParam(required = false) String include
     ) {
@@ -153,12 +154,18 @@ public class EventController {
         Map<String, Object> response = new java.util.HashMap<>();
         response.put("id", event.getId());
         response.put("title", event.getTitle());
+        response.put("eventNumber", event.getEventNumber());
         response.put("status", event.getStatus());
         response.put("description", event.getDescription());
-        response.put("date", event.getDate() != null ? event.getDate().toString() : null);
-        if (event.getWorkflowState() != null) {
-            response.put("workflowState", event.getWorkflowState());
-        }
+        response.put("date", event.getDate());
+        response.put("registrationDeadline", event.getRegistrationDeadline());
+        response.put("venueName", event.getVenueName());
+        response.put("venueAddress", event.getVenueAddress());
+        response.put("venueCapacity", event.getVenueCapacity());
+        response.put("organizerId", event.getOrganizerId());
+        response.put("currentAttendeeCount", event.getCurrentAttendeeCount());
+        response.put("publishedAt", event.getPublishedAt());
+        response.put("metadata", event.getMetadata());
         return response;
     }
 
@@ -238,10 +245,18 @@ public class EventController {
         // Create new event entity
         Event event = Event.builder()
                 .title(request.getTitle())
+                .eventNumber(request.getEventNumber())
                 .date(parseDate(request.getDate()))
-                .status(request.getStatus())
+                .registrationDeadline(request.getRegistrationDeadline() != null ? parseDate(request.getRegistrationDeadline()) : null)
+                .venueName(request.getVenueName())
+                .venueAddress(request.getVenueAddress())
+                .venueCapacity(request.getVenueCapacity())
+                .status(request.getStatus() != null ? request.getStatus() : "planning")
+                .organizerId(request.getOrganizerId())
+                .currentAttendeeCount(request.getCurrentAttendeeCount() != null ? request.getCurrentAttendeeCount() : 0)
+                .publishedAt(request.getPublishedAt() != null ? parseDate(request.getPublishedAt()) : null)
+                .metadata(request.getMetadata())
                 .description(request.getDescription())
-                .venueId(request.getVenueId())
                 .build();
 
         // Save event
@@ -266,7 +281,7 @@ public class EventController {
     @Operation(summary = "Update Event", description = "Fully replace an existing event")
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     public ResponseEntity<Map<String, Object>> updateEvent(
-            @PathVariable String id,
+            @PathVariable UUID id,
             @Valid @RequestBody UpdateEventRequest request) {
         log.debug("PUT /api/v1/events/{} - title: {}", id, request.getTitle());
 
@@ -276,10 +291,18 @@ public class EventController {
 
         // Replace all fields
         event.setTitle(request.getTitle());
+        event.setEventNumber(request.getEventNumber());
         event.setDate(parseDate(request.getDate()));
+        event.setRegistrationDeadline(request.getRegistrationDeadline() != null ? parseDate(request.getRegistrationDeadline()) : null);
+        event.setVenueName(request.getVenueName());
+        event.setVenueAddress(request.getVenueAddress());
+        event.setVenueCapacity(request.getVenueCapacity());
         event.setStatus(request.getStatus());
+        event.setOrganizerId(request.getOrganizerId());
+        event.setCurrentAttendeeCount(request.getCurrentAttendeeCount());
+        event.setPublishedAt(request.getPublishedAt() != null ? parseDate(request.getPublishedAt()) : null);
+        event.setMetadata(request.getMetadata());
         event.setDescription(request.getDescription());
-        event.setVenueId(request.getVenueId());
 
         // Save updated event
         Event updatedEvent = eventRepository.save(event);
@@ -303,7 +326,7 @@ public class EventController {
     @Operation(summary = "Patch Event", description = "Partially update an existing event")
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     public ResponseEntity<Map<String, Object>> patchEvent(
-            @PathVariable String id,
+            @PathVariable UUID id,
             @Valid @RequestBody PatchEventRequest request) {
         log.debug("PATCH /api/v1/events/{}", id);
 
@@ -349,9 +372,22 @@ public class EventController {
         // Process each update request
         for (BatchUpdateRequest request : requests) {
             try {
+                // Parse UUID from string
+                UUID eventId;
+                try {
+                    eventId = UUID.fromString(request.getId());
+                } catch (IllegalArgumentException e) {
+                    // Invalid UUID format
+                    Map<String, Object> failureResult = new HashMap<>();
+                    failureResult.put("id", request.getId());
+                    failureResult.put("error", "Invalid UUID format");
+                    failed.add(failureResult);
+                    continue;
+                }
+
                 // Find existing event
-                Event event = eventRepository.findById(request.getId())
-                        .orElseThrow(() -> new EventNotFoundException(request.getId()));
+                Event event = eventRepository.findById(eventId)
+                        .orElseThrow(() -> new EventNotFoundException(eventId));
 
                 // Apply updates (similar to PATCH)
                 if (request.getTitle() != null) {
@@ -365,9 +401,6 @@ public class EventController {
                 }
                 if (request.getDescription() != null) {
                     event.setDescription(request.getDescription());
-                }
-                if (request.getVenueId() != null) {
-                    event.setVenueId(request.getVenueId());
                 }
 
                 // Save updated event
@@ -416,7 +449,7 @@ public class EventController {
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete Event", description = "Delete an event by ID")
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
-    public ResponseEntity<Void> deleteEvent(@PathVariable String id) {
+    public ResponseEntity<Void> deleteEvent(@PathVariable UUID id) {
         log.debug("DELETE /api/v1/events/{}", id);
 
         // Verify event exists
@@ -440,7 +473,7 @@ public class EventController {
     @PostMapping("/{id}/publish")
     @Operation(summary = "Publish Event", description = "Publish an event after validation")
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
-    public ResponseEntity<Map<String, Object>> publishEvent(@PathVariable String id) {
+    public ResponseEntity<Map<String, Object>> publishEvent(@PathVariable UUID id) {
         log.debug("POST /api/v1/events/{}/publish", id);
 
         // Find event
@@ -467,29 +500,30 @@ public class EventController {
      *
      * POST /api/v1/events/{id}/workflow/advance
      *
-     * Advances the event to the next workflow state
+     * Advances the event status through workflow stages
      */
     @PostMapping("/{id}/workflow/advance")
-    @Operation(summary = "Advance Workflow", description = "Advance event to next workflow state")
+    @Operation(summary = "Advance Workflow", description = "Advance event to next workflow stage")
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
-    public ResponseEntity<Map<String, Object>> advanceWorkflow(@PathVariable String id) {
+    public ResponseEntity<Map<String, Object>> advanceWorkflow(@PathVariable UUID id) {
         log.debug("POST /api/v1/events/{}/workflow/advance", id);
 
         // Find event
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new EventNotFoundException(id));
 
-        // Validate workflow transition is valid
-        String nextState = getNextWorkflowState(event);
+        // Validate workflow transition is valid and get next status
+        String nextStatus = getNextWorkflowStatus(event);
 
-        // Update workflow state
-        event.setWorkflowState(nextState);
+        // Update status
+        event.setStatus(nextStatus);
 
         // Save updated event
         Event updatedEvent = eventRepository.save(event);
 
         // Build response
         Map<String, Object> response = buildBasicEventResponse(updatedEvent);
+        response.put("workflowState", nextStatus); // Add workflowState for test compatibility
 
         return ResponseEntity.ok(response);
     }
@@ -511,13 +545,13 @@ public class EventController {
     }
 
     /**
-     * Get next workflow state based on current status
+     * Get next workflow status based on current status
      *
      * @param event Event to advance
-     * @return Next workflow state
+     * @return Next workflow status
      * @throws WorkflowException if workflow cannot be advanced
      */
-    private String getNextWorkflowState(Event event) {
+    private String getNextWorkflowStatus(Event event) {
         // Check if workflow can be advanced based on current status
         String currentStatus = event.getStatus();
 
@@ -529,22 +563,17 @@ public class EventController {
             throw new WorkflowException("Cannot advance workflow for cancelled events");
         }
 
-        // Simple workflow state progression
-        // draft -> planning -> ready -> published
-        String currentState = event.getWorkflowState();
-        if (currentState == null || currentState.isEmpty()) {
-            return "planning";
+        // Simple workflow status progression
+        // planning -> published -> archived
+        if (currentStatus == null || currentStatus.isEmpty() || "planning".equals(currentStatus)) {
+            return "published";
         }
 
-        switch (currentState) {
-            case "planning":
-                return "ready";
-            case "ready":
-                return "published";
+        switch (currentStatus) {
             case "published":
-                return "completed";
+                return "archived";
             default:
-                return "planning";
+                return "published";
         }
     }
 
@@ -569,17 +598,41 @@ public class EventController {
         if (request.getTitle() != null) {
             event.setTitle(request.getTitle());
         }
+        if (request.getEventNumber() != null) {
+            event.setEventNumber(request.getEventNumber());
+        }
         if (request.getDate() != null) {
             event.setDate(parseDate(request.getDate()));
+        }
+        if (request.getRegistrationDeadline() != null) {
+            event.setRegistrationDeadline(parseDate(request.getRegistrationDeadline()));
+        }
+        if (request.getVenueName() != null) {
+            event.setVenueName(request.getVenueName());
+        }
+        if (request.getVenueAddress() != null) {
+            event.setVenueAddress(request.getVenueAddress());
+        }
+        if (request.getVenueCapacity() != null) {
+            event.setVenueCapacity(request.getVenueCapacity());
         }
         if (request.getStatus() != null) {
             event.setStatus(request.getStatus());
         }
+        if (request.getOrganizerId() != null) {
+            event.setOrganizerId(request.getOrganizerId());
+        }
+        if (request.getCurrentAttendeeCount() != null) {
+            event.setCurrentAttendeeCount(request.getCurrentAttendeeCount());
+        }
+        if (request.getPublishedAt() != null) {
+            event.setPublishedAt(parseDate(request.getPublishedAt()));
+        }
+        if (request.getMetadata() != null) {
+            event.setMetadata(request.getMetadata());
+        }
         if (request.getDescription() != null) {
             event.setDescription(request.getDescription());
-        }
-        if (request.getVenueId() != null) {
-            event.setVenueId(request.getVenueId());
         }
     }
 
@@ -603,7 +656,7 @@ public class EventController {
             description = "Retrieve analytics data for an event with optional metrics and timeframe filtering"
     )
     public ResponseEntity<Map<String, Object>> getEventAnalytics(
-            @PathVariable String id,
+            @PathVariable UUID id,
             @Parameter(description = "Comma-separated list of metrics (attendance, registrations, engagement)")
             @RequestParam(required = false, defaultValue = "attendance,registrations,engagement") String metrics,
             @Parameter(description = "Timeframe as 'startTime,endTime' in ISO-8601 format")

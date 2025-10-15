@@ -1,0 +1,34 @@
+meta {
+  name: Advance Workflow
+  type: http
+  seq: 17
+}
+
+post {
+  url: {{baseUrl}}/events/{{createdEventId}}/workflow/advance
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: in [200, 422]
+}
+
+tests {
+  test("should return success or validation error", function() {
+    const status = res.getStatus();
+    expect([200, 422]).to.include(status);
+  });
+
+  test("if successful, workflow should advance", function() {
+    if (res.getStatus() === 200) {
+      const event = res.getBody();
+      expect(event.id).to.equal(bru.getVar("createdEventId"));
+      expect(event.status).to.be.a('string');
+    }
+  });
+}

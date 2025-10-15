@@ -1,0 +1,35 @@
+meta {
+  name: Get Event Details - Expanded
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/events/{{createdEventId}}?include=venue,speakers,sessions
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+params:query {
+  include: venue,speakers,sessions
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("should return 200 status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return event with expanded resources", function() {
+    const event = res.getBody();
+    expect(event.id).to.equal(bru.getVar("createdEventId"));
+    // Note: venue, speakers, sessions might be null/empty if not set
+  });
+}

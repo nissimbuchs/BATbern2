@@ -1,0 +1,50 @@
+meta {
+  name: Create Session
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/events/{{createdEventId}}/sessions
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "title": "Opening Keynote",
+    "description": "Welcome and introduction to the event",
+    "sessionType": "keynote",
+    "startTime": "2025-12-15T09:00:00Z",
+    "endTime": "2025-12-15T10:00:00Z",
+    "room": "Main Hall",
+    "capacity": 100,
+    "language": "de"
+  }
+}
+
+assert {
+  res.status: eq 201
+}
+
+tests {
+  test("should return 201 status", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("should return created session", function() {
+    const session = res.getBody();
+    expect(session.id).to.be.a('string');
+    expect(session.title).to.equal('Opening Keynote');
+    expect(session.sessionType).to.equal('keynote');
+    expect(session.eventId).to.equal(bru.getVar("createdEventId"));
+  });
+
+  test("should save session id", function() {
+    bru.setVar("createdSessionId", res.getBody().id);
+  });
+}

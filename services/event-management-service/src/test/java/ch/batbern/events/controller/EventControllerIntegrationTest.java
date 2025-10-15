@@ -1,5 +1,6 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.events.AbstractIntegrationTest;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.repository.EventRepository;
@@ -9,15 +10,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -36,13 +35,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * - AC1.5: Paginate event results
  *
  * TDD Workflow: RED Phase - These tests will fail until implementation is complete
+ *
+ * Uses Testcontainers PostgreSQL for production parity.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
 @Transactional
 @Import(TestSecurityConfig.class)
-public class EventControllerIntegrationTest {
+public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -61,14 +59,21 @@ public class EventControllerIntegrationTest {
         // Create test data
         createTestEvent("BATbern 2025", "2025-05-15T09:00:00Z", "published");
         createTestEvent("BATbern 2024", "2024-06-20T09:00:00Z", "archived");
-        createTestEvent("BATbern 2026 Draft", "2026-07-01T09:00:00Z", "draft");
+        createTestEvent("BATbern 2026 Draft", "2026-07-01T09:00:00Z", "planning");
     }
 
     private Event createTestEvent(String title, String dateStr, String status) {
         Event event = Event.builder()
                 .title(title)
+                .eventNumber(100 + (int)(Math.random() * 1000))  // Generate random event number
                 .date(Instant.parse(dateStr))
+                .registrationDeadline(Instant.parse(dateStr).minusSeconds(86400 * 7)) // 7 days before event
+                .venueName("Test Venue")
+                .venueAddress("Test Address 123, Bern")
+                .venueCapacity(100)
                 .status(status)
+                .organizerId(UUID.randomUUID())
+                .currentAttendeeCount(0)
                 .description("Test event for " + title)
                 .build();
         return eventRepository.save(event);
@@ -114,7 +119,7 @@ public class EventControllerIntegrationTest {
     @Test
     @DisplayName("should_filterByMultipleStatuses_when_inOperatorUsed")
     void should_filterByMultipleStatuses_when_inOperatorUsed() throws Exception {
-        String filter = "{\"status\":{\"$in\":[\"published\",\"draft\"]}}";
+        String filter = "{\"status\":{\"$in\":[\"published\",\"planning\"]}}";
 
         mockMvc.perform(get("/api/v1/events")
                         .param("filter", filter)
@@ -194,7 +199,7 @@ public class EventControllerIntegrationTest {
     void should_paginateResults_when_pageParamProvided() throws Exception {
         // Create additional events for pagination test
         for (int i = 1; i <= 25; i++) {
-            createTestEvent("Event " + i, "2025-0" + (i % 9 + 1) + "-01T09:00:00Z", "draft");
+            createTestEvent("Event " + i, "2025-0" + (i % 9 + 1) + "-01T09:00:00Z", "planning");
         }
 
         // Test first page
@@ -330,7 +335,7 @@ public class EventControllerIntegrationTest {
         mockMvc.perform(get("/api/v1/events/" + savedEvent.getId())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(savedEvent.getId()))
+                .andExpect(jsonPath("$.id").value(savedEvent.getId().toString()))
                 .andExpect(jsonPath("$.title").value(savedEvent.getTitle()))
                 .andExpect(jsonPath("$.status").value(savedEvent.getStatus()))
                 .andExpect(jsonPath("$.description").value(savedEvent.getDescription()))
@@ -358,7 +363,7 @@ public class EventControllerIntegrationTest {
                         .param("include", "venue")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(savedEvent.getId()))
+                .andExpect(jsonPath("$.id").value(savedEvent.getId().toString()))
                 .andExpect(jsonPath("$.title").value(savedEvent.getTitle()))
                 // Should include venue object
                 .andExpect(jsonPath("$.venue").exists())
@@ -375,7 +380,7 @@ public class EventControllerIntegrationTest {
                         .param("include", "speakers")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(savedEvent.getId()))
+                .andExpect(jsonPath("$.id").value(savedEvent.getId().toString()))
                 .andExpect(jsonPath("$.title").value(savedEvent.getTitle()))
                 // Should include speakers array
                 .andExpect(jsonPath("$.speakers").isArray());
@@ -390,7 +395,7 @@ public class EventControllerIntegrationTest {
                         .param("include", "venue,speakers,sessions")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(savedEvent.getId()))
+                .andExpect(jsonPath("$.id").value(savedEvent.getId().toString()))
                 .andExpect(jsonPath("$.title").value(savedEvent.getTitle()))
                 // Should include all requested resources
                 .andExpect(jsonPath("$.venue").exists())
@@ -409,7 +414,7 @@ public class EventControllerIntegrationTest {
                 {
                     "title": "BATbern 2027",
                     "date": "2027-08-15T09:00:00Z",
-                    "status": "draft",
+                    "status": "planning",
                     "description": "Annual tech conference 2027"
                 }
                 """;
@@ -420,7 +425,7 @@ public class EventControllerIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.title").value("BATbern 2027"))
-                .andExpect(jsonPath("$.status").value("draft"))
+                .andExpect(jsonPath("$.status").value("planning"))
                 .andExpect(jsonPath("$.description").value("Annual tech conference 2027"));
     }
 
@@ -462,7 +467,7 @@ public class EventControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(updatedEvent))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(savedEvent.getId()))
+                .andExpect(jsonPath("$.id").value(savedEvent.getId().toString()))
                 .andExpect(jsonPath("$.title").value("BATbern 2025 Updated"))
                 .andExpect(jsonPath("$.status").value("published"))
                 .andExpect(jsonPath("$.description").value("Updated description"));
@@ -488,7 +493,7 @@ public class EventControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(patchData))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(savedEvent.getId()))
+                .andExpect(jsonPath("$.id").value(savedEvent.getId().toString()))
                 .andExpect(jsonPath("$.title").value(originalTitle)) // Title should remain unchanged
                 .andExpect(jsonPath("$.status").value("published")); // Status updated
     }
@@ -501,7 +506,7 @@ public class EventControllerIntegrationTest {
     @DisplayName("should_deleteEvent_when_deleteRequested")
     void should_deleteEvent_when_deleteRequested() throws Exception {
         Event savedEvent = eventRepository.findAll().get(0);
-        String eventId = savedEvent.getId();
+        UUID eventId = savedEvent.getId();
 
         mockMvc.perform(delete("/api/v1/events/" + eventId)
                         .contentType(MediaType.APPLICATION_JSON))
@@ -528,13 +533,13 @@ public class EventControllerIntegrationTest {
     @Test
     @DisplayName("should_publishEvent_when_validationPasses")
     void should_publishEvent_when_validationPasses() throws Exception {
-        // Create a draft event that meets all publication requirements
-        Event draftEvent = createTestEvent("BATbern 2028", "2028-09-15T09:00:00Z", "draft");
+        // Create a planning event that meets all publication requirements
+        Event draftEvent = createTestEvent("BATbern 2028", "2028-09-15T09:00:00Z", "planning");
 
         mockMvc.perform(post("/api/v1/events/" + draftEvent.getId() + "/publish")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(draftEvent.getId()))
+                .andExpect(jsonPath("$.id").value(draftEvent.getId().toString()))
                 .andExpect(jsonPath("$.status").value("published"))
                 .andExpect(jsonPath("$.title").value("BATbern 2028"));
     }
@@ -545,7 +550,7 @@ public class EventControllerIntegrationTest {
         // Create an event with invalid data for publishing (e.g., missing required fields)
         Event invalidEvent = Event.builder()
                 .title("Incomplete Event")
-                .status("draft")
+                .status("planning")
                 // Missing date - should fail validation
                 .build();
         Event savedInvalidEvent = eventRepository.save(invalidEvent);
@@ -564,13 +569,13 @@ public class EventControllerIntegrationTest {
     @Test
     @DisplayName("should_advanceWorkflow_when_transitionValid")
     void should_advanceWorkflow_when_transitionValid() throws Exception {
-        // Create event in "draft" status - should advance to "planning"
-        Event draftEvent = createTestEvent("BATbern 2029", "2029-10-15T09:00:00Z", "draft");
+        // Create event in "planning" status - should advance to next state
+        Event draftEvent = createTestEvent("BATbern 2029", "2029-10-15T09:00:00Z", "planning");
 
         mockMvc.perform(post("/api/v1/events/" + draftEvent.getId() + "/workflow/advance")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(draftEvent.getId()))
+                .andExpect(jsonPath("$.id").value(draftEvent.getId().toString()))
                 .andExpect(jsonPath("$.workflowState").exists())
                 .andExpect(jsonPath("$.workflowState").isNotEmpty());
     }
@@ -609,7 +614,7 @@ public class EventControllerIntegrationTest {
     @DisplayName("should_filterSessions_when_filterProvided")
     void should_filterSessions_when_filterProvided() throws Exception {
         Event savedEvent = eventRepository.findAll().get(0);
-        String filter = "{\"type\":\"keynote\"}";
+        String filter = "{\"sessionType\":\"keynote\"}";
 
         mockMvc.perform(get("/api/v1/events/" + savedEvent.getId() + "/sessions")
                         .param("filter", filter)
@@ -640,8 +645,8 @@ public class EventControllerIntegrationTest {
                     "title": "Keynote: AI and the Future",
                     "description": "Opening keynote session",
                     "startTime": "2025-05-15T09:30:00Z",
-                    "duration": 60,
-                    "type": "keynote"
+                    "endTime": "2025-05-15T10:30:00Z",
+                    "sessionType": "keynote"
                 }
                 """;
 
@@ -651,8 +656,7 @@ public class EventControllerIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.title").value("Keynote: AI and the Future"))
-                .andExpect(jsonPath("$.type").value("keynote"))
-                .andExpect(jsonPath("$.duration").value(60));
+                .andExpect(jsonPath("$.sessionType").value("keynote"));
     }
 
     @Test
@@ -662,8 +666,7 @@ public class EventControllerIntegrationTest {
 
         String invalidSession = """
                 {
-                    "title": "",
-                    "duration": -10
+                    "title": ""
                 }
                 """;
 
@@ -684,8 +687,8 @@ public class EventControllerIntegrationTest {
                     "title": "Workshop: Hands-on ML",
                     "description": "Interactive machine learning workshop",
                     "startTime": "2025-05-15T14:00:00Z",
-                    "duration": 120,
-                    "type": "workshop"
+                    "endTime": "2025-05-15T16:00:00Z",
+                    "sessionType": "workshop"
                 }
                 """;
 
@@ -704,8 +707,8 @@ public class EventControllerIntegrationTest {
                     "title": "Workshop: Advanced ML",
                     "description": "Advanced machine learning techniques",
                     "startTime": "2025-05-15T15:00:00Z",
-                    "duration": 180,
-                    "type": "workshop"
+                    "endTime": "2025-05-15T18:00:00Z",
+                    "sessionType": "workshop"
                 }
                 """;
 
@@ -714,8 +717,7 @@ public class EventControllerIntegrationTest {
                         .content(updatedSession))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(sessionId))
-                .andExpect(jsonPath("$.title").value("Workshop: Advanced ML"))
-                .andExpect(jsonPath("$.duration").value(180));
+                .andExpect(jsonPath("$.title").value("Workshop: Advanced ML"));
     }
 
     @Test
@@ -728,8 +730,8 @@ public class EventControllerIntegrationTest {
                 {
                     "title": "Session to Delete",
                     "startTime": "2025-05-15T16:00:00Z",
-                    "duration": 30,
-                    "type": "break"
+                    "endTime": "2025-05-15T16:30:00Z",
+                    "sessionType": "break"
                 }
                 """;
 
@@ -800,16 +802,17 @@ public class EventControllerIntegrationTest {
     @DisplayName("should_createRegistration_when_validData")
     void should_createRegistration_when_validData() throws Exception {
         Event savedEvent = eventRepository.findAll().get(0);
+        UUID attendeeId = UUID.randomUUID();
 
         String newRegistration = """
                 {
-                    "attendeeId": "att-001",
+                    "attendeeId": "%s",
                     "attendeeName": "John Doe",
                     "attendeeEmail": "john.doe@example.com",
                     "status": "pending",
                     "registrationDate": "2025-04-01T10:00:00Z"
                 }
-                """;
+                """.formatted(attendeeId);
 
         mockMvc.perform(post("/api/v1/events/" + savedEvent.getId() + "/registrations")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -843,17 +846,18 @@ public class EventControllerIntegrationTest {
     @DisplayName("should_updateRegistration_when_patchProvided")
     void should_updateRegistration_when_patchProvided() throws Exception {
         Event savedEvent = eventRepository.findAll().get(0);
+        UUID attendeeId = UUID.randomUUID();
 
         // First create a registration
         String newRegistration = """
                 {
-                    "attendeeId": "att-002",
+                    "attendeeId": "%s",
                     "attendeeName": "Jane Smith",
                     "attendeeEmail": "jane.smith@example.com",
                     "status": "pending",
                     "registrationDate": "2025-04-02T10:00:00Z"
                 }
-                """;
+                """.formatted(attendeeId);
 
         String createResponse = mockMvc.perform(post("/api/v1/events/" + savedEvent.getId() + "/registrations")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -884,17 +888,18 @@ public class EventControllerIntegrationTest {
     @DisplayName("should_deleteRegistration_when_requested")
     void should_deleteRegistration_when_requested() throws Exception {
         Event savedEvent = eventRepository.findAll().get(0);
+        UUID attendeeId = UUID.randomUUID();
 
         // First create a registration
         String newRegistration = """
                 {
-                    "attendeeId": "att-003",
+                    "attendeeId": "%s",
                     "attendeeName": "Bob Johnson",
                     "attendeeEmail": "bob.johnson@example.com",
                     "status": "cancelled",
                     "registrationDate": "2025-04-03T10:00:00Z"
                 }
-                """;
+                """.formatted(attendeeId);
 
         String createResponse = mockMvc.perform(post("/api/v1/events/" + savedEvent.getId() + "/registrations")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -928,29 +933,31 @@ public class EventControllerIntegrationTest {
 
         // Create some test data for analytics
         // Add registrations
+        UUID attendeeId1 = UUID.randomUUID();
         String registration1 = """
                 {
-                    "attendeeId": "att-analytics-001",
+                    "attendeeId": "%s",
                     "attendeeName": "Analytics User 1",
                     "attendeeEmail": "analytics1@example.com",
                     "status": "confirmed",
                     "registrationDate": "2025-04-01T10:00:00Z"
                 }
-                """;
+                """.formatted(attendeeId1);
         mockMvc.perform(post("/api/v1/events/" + savedEvent.getId() + "/registrations")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(registration1))
                 .andExpect(status().isCreated());
 
+        UUID attendeeId2 = UUID.randomUUID();
         String registration2 = """
                 {
-                    "attendeeId": "att-analytics-002",
+                    "attendeeId": "%s",
                     "attendeeName": "Analytics User 2",
                     "attendeeEmail": "analytics2@example.com",
                     "status": "confirmed",
                     "registrationDate": "2025-04-02T10:00:00Z"
                 }
-                """;
+                """.formatted(attendeeId2);
         mockMvc.perform(post("/api/v1/events/" + savedEvent.getId() + "/registrations")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(registration2))
@@ -961,7 +968,7 @@ public class EventControllerIntegrationTest {
                         .param("metrics", "attendance,registrations,engagement")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.eventId").value(savedEvent.getId()))
+                .andExpect(jsonPath("$.eventId").value(savedEvent.getId().toString()))
                 .andExpect(jsonPath("$.metrics").exists())
                 .andExpect(jsonPath("$.metrics.registrations").exists())
                 .andExpect(jsonPath("$.metrics.registrations.total").value(greaterThanOrEqualTo(2)))
@@ -975,29 +982,31 @@ public class EventControllerIntegrationTest {
         Event savedEvent = eventRepository.findAll().get(0);
 
         // Create registrations with different dates
+        UUID earlyAttendeeId = UUID.randomUUID();
         String earlyRegistration = """
                 {
-                    "attendeeId": "att-early",
+                    "attendeeId": "%s",
                     "attendeeName": "Early Bird",
                     "attendeeEmail": "early@example.com",
                     "status": "confirmed",
                     "registrationDate": "2025-01-01T10:00:00Z"
                 }
-                """;
+                """.formatted(earlyAttendeeId);
         mockMvc.perform(post("/api/v1/events/" + savedEvent.getId() + "/registrations")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(earlyRegistration))
                 .andExpect(status().isCreated());
 
+        UUID lateAttendeeId = UUID.randomUUID();
         String lateRegistration = """
                 {
-                    "attendeeId": "att-late",
+                    "attendeeId": "%s",
                     "attendeeName": "Late Joiner",
                     "attendeeEmail": "late@example.com",
                     "status": "confirmed",
                     "registrationDate": "2025-05-01T10:00:00Z"
                 }
-                """;
+                """.formatted(lateAttendeeId);
         mockMvc.perform(post("/api/v1/events/" + savedEvent.getId() + "/registrations")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(lateRegistration))
@@ -1009,7 +1018,7 @@ public class EventControllerIntegrationTest {
                         .param("timeframe", "2025-04-01T00:00:00Z,2025-05-31T23:59:59Z")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.eventId").value(savedEvent.getId()))
+                .andExpect(jsonPath("$.eventId").value(savedEvent.getId().toString()))
                 .andExpect(jsonPath("$.timeframe").exists())
                 .andExpect(jsonPath("$.timeframe.start").value("2025-04-01T00:00:00Z"))
                 .andExpect(jsonPath("$.timeframe.end").value("2025-05-31T23:59:59Z"))
@@ -1130,7 +1139,7 @@ public class EventControllerIntegrationTest {
                         .param("include", "venue,speakers,sessions")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(savedEvent.getId()))
+                .andExpect(jsonPath("$.id").value(savedEvent.getId().toString()))
                 .andExpect(jsonPath("$.venue").exists())
                 .andExpect(jsonPath("$.speakers").isArray())
                 .andExpect(jsonPath("$.sessions").isArray());
@@ -1163,7 +1172,7 @@ public class EventControllerIntegrationTest {
                         .param("include", "venue,speakers")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(savedEvent.getId()))
+                .andExpect(jsonPath("$.id").value(savedEvent.getId().toString()))
                 // Should return cached description (not the updated one)
                 .andExpect(jsonPath("$.description").value(originalDescription));
     }
@@ -1198,7 +1207,7 @@ public class EventControllerIntegrationTest {
                         .param("include", "venue,speakers")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(savedEvent.getId()))
+                .andExpect(jsonPath("$.id").value(savedEvent.getId().toString()))
                 // Should return updated description (cache was invalidated)
                 .andExpect(jsonPath("$.description").value("Cache should be invalidated"));
     }
@@ -1215,15 +1224,16 @@ public class EventControllerIntegrationTest {
         // Create test data for performance test
         // Add multiple sessions and registrations
         for (int i = 1; i <= 10; i++) {
+            int hour = 9 + i;
             String session = """
                     {
                         "title": "Session %d",
                         "description": "Performance test session %d",
                         "startTime": "2025-05-15T%02d:00:00Z",
-                        "duration": 60,
-                        "type": "workshop"
+                        "endTime": "2025-05-15T%02d:00:00Z",
+                        "sessionType": "workshop"
                     }
-                    """.formatted(i, i, 9 + i);
+                    """.formatted(i, i, hour, hour + 1);
 
             mockMvc.perform(post("/api/v1/events/" + savedEvent.getId() + "/sessions")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -1232,15 +1242,16 @@ public class EventControllerIntegrationTest {
         }
 
         for (int i = 1; i <= 20; i++) {
+            UUID attendeeId = UUID.randomUUID();
             String registration = """
                     {
-                        "attendeeId": "att-perf-%03d",
+                        "attendeeId": "%s",
                         "attendeeName": "Attendee %d",
                         "attendeeEmail": "attendee%d@example.com",
                         "status": "confirmed",
                         "registrationDate": "2025-04-01T10:00:00Z"
                     }
-                    """.formatted(i, i, i);
+                    """.formatted(attendeeId, i, i);
 
             mockMvc.perform(post("/api/v1/events/" + savedEvent.getId() + "/registrations")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -1254,7 +1265,7 @@ public class EventControllerIntegrationTest {
                         .param("include", "venue,speakers,sessions,topics,workflow,registrations,catering,team,publishing,notifications,analytics")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(savedEvent.getId()));
+                .andExpect(jsonPath("$.id").value(savedEvent.getId().toString()));
         long duration = System.currentTimeMillis() - startTime;
 
         // AC16: Event detail with all includes must respond in <500ms (P95)

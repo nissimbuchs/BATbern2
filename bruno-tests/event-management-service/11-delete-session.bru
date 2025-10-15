@@ -1,0 +1,25 @@
+meta {
+  name: Delete Session
+  type: http
+  seq: 11
+}
+
+delete {
+  url: {{baseUrl}}/events/{{createdEventId}}/sessions/{{createdSessionId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 204
+}
+
+tests {
+  test("should return 204 status", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

@@ -5,9 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -119,6 +121,47 @@ public class GlobalExceptionHandler {
                 .body(Map.of(
                         "error", "WORKFLOW_ERROR",
                         "message", ex.getMessage()
+                ));
+    }
+
+    /**
+     * Handle MethodArgumentTypeMismatchException (invalid UUID format in path variable)
+     * Returns HTTP 404 Not Found
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, Object>> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException ex) {
+        log.warn("Invalid argument type: {}", ex.getMessage());
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(Map.of(
+                        "error", "NOT_FOUND",
+                        "message", "Invalid ID format"
+                ));
+    }
+
+    /**
+     * Handle HttpMessageNotReadableException (JSON parsing errors, including invalid UUID format in request body)
+     * Returns HTTP 400 Bad Request
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, Object>> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
+        log.warn("Invalid request body: {}", ex.getMessage());
+
+        String message = "Invalid request format";
+        // Check if it's a UUID parsing error
+        if (ex.getCause() != null && ex.getCause().getMessage() != null) {
+            String causeMessage = ex.getCause().getMessage();
+            if (causeMessage.contains("UUID")) {
+                message = "Invalid UUID format in request";
+            }
+        }
+
+        return ResponseEntity
+                .badRequest()
+                .body(Map.of(
+                        "error", "VALIDATION_ERROR",
+                        "message", message
                 ));
     }
 

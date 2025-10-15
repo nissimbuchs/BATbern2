@@ -6,7 +6,7 @@ This document outlines the comprehensive data model and database design for the 
 
 ### Company
 
-**Purpose:** Centralized company entity for speakers, partners, and attendees with logo management and partner company recognition.
+**Purpose:** Centralized company entity for speakers, partners, and attendees with logo management.
 
 **Key Attributes:**
 - id: UUID - Unique company identifier
@@ -26,10 +26,8 @@ interface Company {
   displayName: string;
   logo?: CompanyLogo;
   website?: string;
-  industry: string;
-  headquarters?: Address;
+  industry?: string;
   description?: string;
-  socialLinks: SocialLinks;
   createdAt: Date;
   updatedAt: Date;
   createdBy: string; // User ID who created this company
@@ -49,10 +47,8 @@ interface CompanyLogo {
 ```
 
 #### Relationships
-- **One-to-Many:** Company → Speakers (speakers belong to companies via `Speaker.companyId`)
-- **One-to-One:** Company ↔ Partner (partner companies have additional partner data via `Partner.companyId`)
-- **One-to-Many:** Company → Attendees (attendees work for companies via `Attendee.companyId`)
 - **One-to-Many:** Company → Users (users belong to companies via `User.companyId` in User Service)
+- **One-to-One:** Company ↔ Partner (partner companies have additional partner data via `Partner.companyId`)
 
 ### Partner
 
@@ -249,6 +245,10 @@ enum SpeakerRole {
 ### Event
 
 **Purpose:** Conference events with attendee registrations and session management, no direct speaker relationships.
+
+**Key Attributes:**
+- id: UUID - Unique session identifier
+- eventId: UUID - Parent event reference
 
 #### TypeScript Interface
 ```typescript

@@ -882,46 +882,75 @@ components:
       required:
         - id
         - title
+        - eventNumber
         - date
+        - registrationDeadline
+        - venueName
+        - venueAddress
+        - venueCapacity
         - status
+        - organizerId
       properties:
         id:
           type: string
-          example: evt-001
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
         title:
           type: string
+          maxLength: 255
           example: Spring Conference 2025
+        eventNumber:
+          type: integer
+          example: 142
+          description: Sequential event number (e.g., BATbern #142)
         date:
           type: string
           format: date-time
           example: 2025-05-15T09:00:00Z
-        status:
-          type: string
-          enum: [draft, planning, ready, published, completed, archived]
-          example: published
-        description:
-          type: string
-          example: Cloud Native Architecture and Best Practices
-        venueId:
-          type: string
-          example: ven-001
-        maxAttendees:
-          type: integer
-          example: 200
-        workflowState:
-          type: string
-          enum: [draft, planning, ready, published, completed, archived]
-          example: published
-        registrationOpen:
-          type: string
-          format: date-time
+          description: Event date
         registrationDeadline:
           type: string
           format: date-time
-        admissionFee:
-          type: number
-          format: double
-          example: 0.00
+          example: 2025-05-01T23:59:59Z
+        venueName:
+          type: string
+          maxLength: 255
+          example: Kursaal Bern
+        venueAddress:
+          type: string
+          example: Kornhausstrasse 3, 3013 Bern
+        venueCapacity:
+          type: integer
+          example: 500
+        status:
+          type: string
+          enum: [planning, topic_defined, speakers_invited, agenda_draft, published, registration_open, registration_closed, in_progress, completed, archived]
+          example: published
+        organizerId:
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440001
+        currentAttendeeCount:
+          type: integer
+          example: 0
+          default: 0
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        metadata:
+          type: string
+          description: JSONB metadata
+          example: '{"theme":"cloud-native","category":"technology"}'
+        description:
+          type: string
+          example: Cloud Native Architecture and Best Practices
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
 
     EventDetail:
       allOf:
@@ -974,49 +1003,86 @@ components:
         - id
         - eventId
         - title
+        - sessionType
         - startTime
+        - endTime
       properties:
         id:
           type: string
+          format: uuid
         eventId:
           type: string
+          format: uuid
         title:
           type: string
+          maxLength: 255
         description:
           type: string
+        sessionType:
+          type: string
+          enum: [keynote, presentation, workshop, panel_discussion, networking, break, lunch]
+          example: keynote
         startTime:
           type: string
           format: date-time
         endTime:
           type: string
           format: date-time
-        type:
+        room:
           type: string
-          enum: [keynote, workshop, panel, networking]
-        speakerId:
+          maxLength: 100
+          example: Main Hall
+        capacity:
+          type: integer
+          example: 200
+        language:
           type: string
+          maxLength: 10
+          example: de
+          default: de
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
 
     Registration:
       type: object
       required:
         - id
         - eventId
+        - attendeeId
         - attendeeEmail
+        - attendeeName
         - status
       properties:
         id:
           type: string
+          format: uuid
         eventId:
           type: string
+          format: uuid
+        attendeeId:
+          type: string
+          format: uuid
         attendeeEmail:
           type: string
           format: email
+          maxLength: 255
         attendeeName:
           type: string
+          maxLength: 255
         status:
           type: string
-          enum: [pending, confirmed, cancelled, waitlist]
+          enum: [registered, waitlisted, confirmed, cancelled, attended]
         registrationDate:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
           type: string
           format: date-time
 
@@ -1024,127 +1090,229 @@ components:
       type: object
       required:
         - title
+        - eventNumber
         - date
+        - registrationDeadline
+        - venueName
+        - venueAddress
+        - venueCapacity
         - status
+        - organizerId
       properties:
         title:
           type: string
           minLength: 1
-          maxLength: 200
+          maxLength: 255
+        eventNumber:
+          type: integer
         date:
           type: string
           format: date-time
-        status:
+        registrationDeadline:
           type: string
-          enum: [draft, planning, ready]
-        description:
+          format: date-time
+        venueName:
           type: string
-        venueId:
+          maxLength: 255
+        venueAddress:
           type: string
-        maxAttendees:
+        venueCapacity:
           type: integer
           minimum: 1
+        status:
+          type: string
+          enum: [planning, topic_defined, speakers_invited, agenda_draft, published, registration_open, registration_closed, in_progress, completed, archived]
+        organizerId:
+          type: string
+          format: uuid
+        currentAttendeeCount:
+          type: integer
+          default: 0
+        publishedAt:
+          type: string
+          format: date-time
+        metadata:
+          type: string
+        description:
+          type: string
+          maxLength: 5000
 
     UpdateEventRequest:
       type: object
       required:
         - title
+        - eventNumber
         - date
+        - registrationDeadline
+        - venueName
+        - venueAddress
+        - venueCapacity
         - status
+        - organizerId
       properties:
         title:
           type: string
+          maxLength: 255
+        eventNumber:
+          type: integer
         date:
           type: string
           format: date-time
+        registrationDeadline:
+          type: string
+          format: date-time
+        venueName:
+          type: string
+          maxLength: 255
+        venueAddress:
+          type: string
+        venueCapacity:
+          type: integer
         status:
+          type: string
+          enum: [planning, topic_defined, speakers_invited, agenda_draft, published, registration_open, registration_closed, in_progress, completed, archived]
+        organizerId:
+          type: string
+          format: uuid
+        currentAttendeeCount:
+          type: integer
+        publishedAt:
+          type: string
+          format: date-time
+        metadata:
           type: string
         description:
           type: string
-        venueId:
-          type: string
-        maxAttendees:
-          type: integer
+          maxLength: 5000
 
     PatchEventRequest:
       type: object
       properties:
         title:
           type: string
+          maxLength: 255
+        eventNumber:
+          type: integer
         date:
           type: string
           format: date-time
+        registrationDeadline:
+          type: string
+          format: date-time
+        venueName:
+          type: string
+          maxLength: 255
+        venueAddress:
+          type: string
+        venueCapacity:
+          type: integer
         status:
+          type: string
+          enum: [planning, topic_defined, speakers_invited, agenda_draft, published, registration_open, registration_closed, in_progress, completed, archived]
+        organizerId:
+          type: string
+          format: uuid
+        currentAttendeeCount:
+          type: integer
+        publishedAt:
+          type: string
+          format: date-time
+        metadata:
           type: string
         description:
           type: string
-        venueId:
-          type: string
-        maxAttendees:
-          type: integer
+          maxLength: 5000
 
     CreateSessionRequest:
       type: object
       required:
         - title
+        - sessionType
         - startTime
+        - endTime
       properties:
         title:
           type: string
+          maxLength: 255
         description:
           type: string
+        sessionType:
+          type: string
+          enum: [keynote, presentation, workshop, panel_discussion, networking, break, lunch]
         startTime:
           type: string
           format: date-time
         endTime:
           type: string
           format: date-time
-        type:
+        room:
           type: string
-        speakerId:
+          maxLength: 100
+        capacity:
+          type: integer
+        language:
           type: string
+          maxLength: 10
+          default: de
 
     UpdateSessionRequest:
       type: object
       required:
         - title
+        - sessionType
         - startTime
+        - endTime
       properties:
         title:
           type: string
+          maxLength: 255
         description:
           type: string
+        sessionType:
+          type: string
+          enum: [keynote, presentation, workshop, panel_discussion, networking, break, lunch]
         startTime:
           type: string
           format: date-time
         endTime:
           type: string
           format: date-time
-        type:
+        room:
           type: string
-        speakerId:
+          maxLength: 100
+        capacity:
+          type: integer
+        language:
           type: string
+          maxLength: 10
 
     CreateRegistrationRequest:
       type: object
       required:
+        - attendeeId
         - attendeeEmail
         - attendeeName
       properties:
+        attendeeId:
+          type: string
+          format: uuid
         attendeeEmail:
           type: string
           format: email
+          maxLength: 255
         attendeeName:
           type: string
+          maxLength: 255
 
     PatchRegistrationRequest:
       type: object
       properties:
         status:
           type: string
-          enum: [pending, confirmed, cancelled, waitlist]
+          enum: [registered, waitlisted, confirmed, cancelled, attended]
         attendeeName:
           type: string
+          maxLength: 255
 
     BatchUpdateRequest:
       type: object

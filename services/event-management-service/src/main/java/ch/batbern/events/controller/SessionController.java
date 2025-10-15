@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * REST Controller for Event Session sub-resources
@@ -50,7 +51,7 @@ public class SessionController {
      */
     @GetMapping
     public ResponseEntity<Map<String, Object>> listSessions(
-            @PathVariable String eventId,
+            @PathVariable UUID eventId,
             @RequestParam(required = false) String filter,
             @RequestParam(required = false, defaultValue = "1") int page,
             @RequestParam(required = false, defaultValue = "20") int limit) {
@@ -106,7 +107,7 @@ public class SessionController {
      */
     @PostMapping
     public ResponseEntity<Session> createSession(
-            @PathVariable String eventId,
+            @PathVariable UUID eventId,
             @Valid @RequestBody CreateSessionRequest request) {
 
         // Verify event exists
@@ -119,9 +120,12 @@ public class SessionController {
                 .eventId(eventId)
                 .title(request.getTitle())
                 .description(request.getDescription())
+                .sessionType(request.getSessionType())
                 .startTime(parseInstant(request.getStartTime()))
-                .duration(request.getDuration())
-                .type(request.getType())
+                .endTime(parseInstant(request.getEndTime()))
+                .room(request.getRoom())
+                .capacity(request.getCapacity())
+                .language(request.getLanguage())
                 .build();
 
         Session savedSession = sessionRepository.save(session);
@@ -135,8 +139,8 @@ public class SessionController {
      */
     @PutMapping("/{sessionId}")
     public ResponseEntity<Session> updateSession(
-            @PathVariable String eventId,
-            @PathVariable String sessionId,
+            @PathVariable UUID eventId,
+            @PathVariable UUID sessionId,
             @Valid @RequestBody UpdateSessionRequest request) {
 
         // Verify event exists
@@ -159,9 +163,12 @@ public class SessionController {
         Session session = existingSession.get();
         session.setTitle(request.getTitle());
         session.setDescription(request.getDescription());
+        session.setSessionType(request.getSessionType());
         session.setStartTime(parseInstant(request.getStartTime()));
-        session.setDuration(request.getDuration());
-        session.setType(request.getType());
+        session.setEndTime(parseInstant(request.getEndTime()));
+        session.setRoom(request.getRoom());
+        session.setCapacity(request.getCapacity());
+        session.setLanguage(request.getLanguage());
 
         Session updatedSession = sessionRepository.save(session);
 
@@ -174,8 +181,8 @@ public class SessionController {
      */
     @DeleteMapping("/{sessionId}")
     public ResponseEntity<Void> deleteSession(
-            @PathVariable String eventId,
-            @PathVariable String sessionId) {
+            @PathVariable UUID eventId,
+            @PathVariable UUID sessionId) {
 
         // Verify event exists
         if (!eventRepository.existsById(eventId)) {
