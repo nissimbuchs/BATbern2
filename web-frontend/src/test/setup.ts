@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
-// Mock AWS Amplify for tests
+// Mock AWS Amplify for tests (keeping existing global fetch as fallback for non-MSW requests)
 global.fetch =
   global.fetch ||
   (() =>

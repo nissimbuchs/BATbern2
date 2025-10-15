@@ -3,6 +3,9 @@ FROM gradle:8.5-jdk21 AS development
 # Set working directory to workspace root (where settings.gradle is)
 WORKDIR /workspace
 
+# Set unique Gradle user home to avoid cache conflicts with service containers
+ENV GRADLE_USER_HOME=/workspace/api-gateway/.gradle
+
 # Expose application port
 EXPOSE 8080
 
@@ -10,5 +13,6 @@ EXPOSE 8080
 # This allows hot reloading and gives access to shared-kernel dependency
 # Gradle runs from root to access settings.gradle and all subprojects
 
-# Run api-gateway subproject with continuous build for hot reload
-ENTRYPOINT ["gradle", ":api-gateway:bootRun", "--continuous", "--no-daemon", "--info"]
+# Run api-gateway subproject for hot reload
+# Note: --continuous mode removed due to Gradle cache conflicts in multi-project setup
+ENTRYPOINT ["gradle", ":api-gateway:bootRun", "--no-daemon", "--info"]

@@ -1,4 +1,4 @@
-# Development Dockerfile with hot reload support for company-user-management-service
+# Development Dockerfile with hot reload support for partner-coordination-service
 FROM gradle:8.5-jdk21
 
 WORKDIR /workspace
@@ -15,20 +15,19 @@ COPY gradlew ./
 COPY shared-kernel/build.gradle ./shared-kernel/
 COPY shared-kernel/src ./shared-kernel/src
 
-# Build shared-kernel first (required dependency)
-RUN gradle :shared-kernel:build --no-daemon || true
-
 # Copy service build file
-COPY services/company-user-management-service/build.gradle ./services/company-user-management-service/
+COPY services/partner-coordination-service/build.gradle ./services/partner-coordination-service/
 
 # Download dependencies (cached layer)
-RUN gradle :services:company-user-management-service:dependencies --no-daemon || true
+RUN gradle :services:partner-coordination-service:dependencies --no-daemon || true
 
 # Copy source code
-COPY services/company-user-management-service/src ./services/company-user-management-service/src
+COPY services/partner-coordination-service/src ./services/partner-coordination-service/src
+
+WORKDIR /workspace/services/partner-coordination-service
 
 # Set unique Gradle user home to avoid cache conflicts
-ENV GRADLE_USER_HOME=/workspace/services/company-user-management-service/.gradle
+ENV GRADLE_USER_HOME=/workspace/services/partner-coordination-service/.gradle
 
 # Expose application port and debug port
 EXPOSE 8080
@@ -40,5 +39,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
 
 # Run with Gradle bootRun for hot reload
 # Use project-specific task to avoid multi-project conflicts
-# Run from /workspace root so Gradle can access all subprojects
-ENTRYPOINT ["gradle", ":services:company-user-management-service:bootRun", "--no-daemon"]
+ENTRYPOINT ["gradle", ":services:partner-coordination-service:bootRun", "--no-daemon"]

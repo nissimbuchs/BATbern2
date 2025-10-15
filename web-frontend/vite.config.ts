@@ -153,6 +153,7 @@ export default defineConfig({
       '@types': resolve(__dirname, './src/types'),
       '@utils': resolve(__dirname, './src/utils'),
       '@pages': resolve(__dirname, './src/pages'),
+      'msw/node': resolve(__dirname, './node_modules/msw/lib/node/index.mjs'),
     },
   },
   server: {
@@ -213,6 +214,13 @@ export default defineConfig({
     coverage: {
       reporter: ['text', 'json', 'html'],
       exclude: ['node_modules/', 'src/test/', 'e2e/', '**/*.d.ts', '**/*.config.*', '**/coverage/'],
+    },
+    deps: {
+      optimizer: {
+        web: {
+          include: ['msw'],
+        },
+      },
     },
   },
 });

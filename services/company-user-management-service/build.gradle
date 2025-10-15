@@ -18,8 +18,8 @@ repositories {
 }
 
 dependencies {
-    // Shared Kernel - Common types and utilities (composite build from parent directory)
-    implementation 'ch.batbern:shared-kernel'
+    // Shared Kernel - Common types and utilities (multi-project dependency)
+    implementation project(':shared-kernel')
 
     // Spring Boot Core
     implementation 'org.springframework.boot:spring-boot-starter-web'

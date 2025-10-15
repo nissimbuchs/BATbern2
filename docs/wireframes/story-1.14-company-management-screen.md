@@ -18,7 +18,7 @@
 │  │                                                                                   │ │
 │  │  [🔍 Search companies...]                    [Partner Only ☐] [Verified Only ☐] │ │
 │  │                                                                                   │ │
-│  │  Industry: [All ▾]  Employees: [All ▾]  Sort By: [Name A-Z ▾]                   │ │
+│  │  Industry: [All ▾]  Sort By: [Name A-Z ▾]                                        │ │
 │  └───────────────────────────────────────────────────────────────────────────────────┘ │
 │                                                                                       │
 │  ┌─── COMPANY LIST ──────────────────────────────────────────────────────────────────┐ │
@@ -28,25 +28,25 @@
 │  │  ┌────────────────────────────────────────────────────────────────────────────┐  │ │
 │  │  │ [Logo]  TechCorp AG                                    ⭐ PARTNER ✅ VERIFIED│  │ │
 │  │  │         Zurich, Switzerland                                                 │  │ │
-│  │  │         Cloud Computing & DevOps • 142 Employees                           │  │ │
+│  │  │         Cloud Computing & DevOps                                            │  │ │
 │  │  │         🔗 techcorp.ch                                                      │  │ │
-│  │  │         [View Details] [Edit] [12 Associated Speakers →]                   │  │ │
+│  │  │         [View Details] [Edit] [12 Associated Users →]                      │  │ │
 │  │  └────────────────────────────────────────────────────────────────────────────┘  │ │
 │  │                                                                                   │ │
 │  │  ┌────────────────────────────────────────────────────────────────────────────┐  │ │
 │  │  │ [Logo]  SwissBank Ltd                                              ✅ VERIFIED│  │ │
 │  │  │         Basel, Switzerland                                                  │  │ │
-│  │  │         Financial Services • 523 Employees                                  │  │ │
+│  │  │         Financial Services                                                  │  │ │
 │  │  │         🔗 swissbank.ch                                                     │  │ │
-│  │  │         [View Details] [Edit] [5 Associated Speakers →]                    │  │ │
+│  │  │         [View Details] [Edit] [5 Associated Users →]                       │  │ │
 │  │  └────────────────────────────────────────────────────────────────────────────┘  │ │
 │  │                                                                                   │ │
 │  │  ┌────────────────────────────────────────────────────────────────────────────┐  │ │
 │  │  │ [📷]    Digital Solutions GmbH                                 ⏳ PENDING    │  │ │
 │  │  │         Bern, Switzerland                                                   │  │ │
-│  │  │         Software Development • 45 Employees                                 │  │ │
+│  │  │         Software Development                                                │  │ │
 │  │  │         🔗 digitalsol.ch                                                    │  │ │
-│  │  │         [View Details] [Edit] [2 Associated Speakers →]                    │  │ │
+│  │  │         [View Details] [Edit] [2 Associated Users →]                       │  │ │
 │  │  └────────────────────────────────────────────────────────────────────────────┘  │ │
 │  │                                                                                   │ │
 │  │  [Load More...] (20 more companies)                                              │ │
@@ -86,9 +86,6 @@
 │  │  [Select Sector ▾]                                                               │ │
 │  │  [Public] [Private] [Non-profit] [Government]                                    │ │
 │  │                                                                                   │ │
-│  │  Number of Employees                                                              │ │
-│  │  [1-10 ▾] [10-50] [50-200] [200-1000] [1000+]                                   │ │
-│  │                                                                                   │ │
 │  │  Location                                                                         │ │
 │  │  City: [________________] Canton: [Select Canton ▾] Country: [Switzerland ▾]     │ │
 │  │                                                                                   │ │
@@ -119,10 +116,11 @@
 │  │  └─────────┘                                                                     │ │
 │  └───────────────────────────────────────────────────────────────────────────────────┘ │
 │                                                                                       │
-│  ┌─── PARTNER STATUS (Organizer Only) ──────────────────────────────────────────────┐ │
+│  ┌─── PARTNER STATUS (Organizer Only) - Managed in Partner Service ────────────────┐ │
 │  │                                                                                   │ │
 │  │  ⭐ Partner Status                                                                │ │
 │  │  [☐ This company is a BATbern partner]                                           │ │
+│  │  ℹ️  Creates partnership via Partner Coordination Service                        │ │
 │  │                                                                                   │ │
 │  │  Partner Benefits (when enabled):                                                │ │
 │  │  • Priority speaker invitations                                                  │ │
@@ -133,6 +131,8 @@
 │  │  Partner Level: [Bronze ▾] [Silver] [Gold] [Platinum]                           │ │
 │  │  Partnership Start Date: [DD/MM/YYYY]                                            │ │
 │  │  Partnership End Date: [DD/MM/YYYY]                                              │ │
+│  │                                                                                   │ │
+│  │  ⚙️ API: POST /api/v1/partnerships                                                │ │
 │  └───────────────────────────────────────────────────────────────────────────────────┘ │
 │                                                                                       │
 │  ┌─── VERIFICATION ──────────────────────────────────────────────────────────────────┐ │
@@ -165,7 +165,7 @@
 │  │  │  Logo  │  Zurich, Switzerland                                                 │ │
 │  │  │        │  🔗 techcorp.ch                                                      │ │
 │  │  └────────┘  Swiss UID: CHE-123.456.789                                          │ │
-│  │             Employees: 142 • Sector: Private • Founded: 2010                     │ │
+│  │             Sector: Private • Founded: 2010                                      │ │
 │  │                                                                                   │ │
 │  │  ┌─── DESCRIPTION ───────────────────────────────────────────────────────────┐  │ │
 │  │  │ Leading provider of cloud-native solutions and DevOps consulting services │  │ │
@@ -174,9 +174,10 @@
 │  │  └───────────────────────────────────────────────────────────────────────────┘  │ │
 │  └───────────────────────────────────────────────────────────────────────────────────┘ │
 │                                                                                       │
-│  ┌─── ASSOCIATED SPEAKERS & EMPLOYEES ───────────────────────────────────────────────┐ │
+│  ┌─── ASSOCIATED USERS (From User Service) ──────────────────────────────────────────┐ │
 │  │                                                                                   │ │
-│  │  12 Associated Speakers                                       [+ Link Speaker]    │ │
+│  │  12 Associated Users                                          [+ Link User]       │ │
+│  │  ⚙️ Data from: GET /api/v1/users?companyId={companyId}                           │ │
 │  │                                                                                   │ │
 │  │  ┌───────────────────────────────────────────────────────────────────────────┐  │ │
 │  │  │ [Photo] Dr. Peter Muller • Principal Cloud Architect                      │  │ │
@@ -193,7 +194,7 @@
 │  │  [View All Speakers (12) →]                                                       │ │
 │  └───────────────────────────────────────────────────────────────────────────────────┘ │
 │                                                                                       │
-│  ┌─── PARTNER INFORMATION (If Partner) ─────────────────────────────────────────────┐ │
+│  ┌─── PARTNER INFORMATION (From Partner Service) ───────────────────────────────────┐ │
 │  │                                                                                   │ │
 │  │  Partnership Level: Gold Partner                                                 │ │
 │  │  Partnership Period: Jan 2023 - Dec 2025                                         │ │
@@ -205,6 +206,7 @@
 │  │  ✅ Topic voting (3 votes per event)                                              │ │
 │  │  ✅ Logo on event pages and marketing materials                                   │ │
 │  │                                                                                   │ │
+│  │  ⚙️ Data from: GET /api/v1/partnerships?companyId={companyId}                    │ │
 │  │  [📊 View Partner Analytics →]                                                    │ │
 │  └───────────────────────────────────────────────────────────────────────────────────┘ │
 │                                                                                       │
@@ -243,7 +245,7 @@
 
 ### Company List View
 - **Search Bar**: Real-time autocomplete search with Redis-backed suggestions
-- **Filter Controls**: Partner status, verification status, industry, employee count
+- **Filter Controls**: Partner status, verification status, industry
 - **View Toggle**: Switch between grid and list view
 - **Sort Dropdown**: Sort by name, industry, number of speakers, partnership status
 - **Company Cards**: Clickable cards showing key company information
@@ -271,12 +273,12 @@
 
 ## Functional Requirements Met
 
-- **FR3**: Core company management with CRUD operations, Swiss UID validation, and employee relationships
-- **FR12**: Partner company management with special status indicators, partnership levels, and benefit tracking
+- **FR3**: Core company management with CRUD operations and Swiss UID validation
+- **FR12**: Partner company management (via Partner Coordination Service) with special status indicators, partnership levels, and benefit tracking
 - **Logo Management**: S3-based logo upload with CDN integration for fast delivery
 - **Search & Discovery**: Redis-backed autocomplete search for efficient company lookup
 - **Data Integrity**: Duplicate detection, UID verification, and data validation
-- **Relationship Management**: Employee-company associations visible and manageable
+- **User-Company Associations**: User-company relationships managed via User Management Service
 
 ---
 
@@ -287,7 +289,7 @@
 2. **Search Companies**: Type in search bar → Filter by partner/verified status → Sort results
 3. **Edit Company**: Click company card → Click [Edit] → Modify fields → Save changes
 4. **Verify Company**: Open company → Check verification → Click [Manually verify] (if needed)
-5. **Manage Partner Status**: Edit company → Toggle partner status → Set partnership level → Save
+5. **Manage Partner Status**: Create partnership → POST /api/v1/partnerships with company ID → Set partnership level → Save
 6. **Link Speakers**: Company detail → Click [+ Link Speaker] → Search and select speaker
 7. **View Statistics**: Company detail → Review participation metrics and topic expertise
 8. **View Analytics**: Click [📊 View Partner Analytics] (for partner companies)
@@ -327,31 +329,37 @@
   - `companyDetail` query: Cached for 10 minutes
   - `companySuggestions` query: Cached for 15 minutes
 
-### API Integration (Updated from Story 1.22)
+### API Integration (Updated from Story 1.14 Refactoring)
 
-**Consolidation: 42 → 10 endpoints**
-
+**Company Management Service** (Company data only):
 - **List/Search**: `GET /api/v1/companies?filter={}&sort={}&page={}`
-- **Autocomplete**: `GET /api/v1/companies/search?query={}&limit=20` (Redis cached)
-- **Get Detail**: `GET /api/v1/companies/{id}?include=employees,statistics,logo`
+- **Autocomplete**: `GET /api/v1/companies/search?query={}&limit=20` (Caffeine cached)
+- **Get Detail**: `GET /api/v1/companies/{id}?include=statistics,logo`
 - **Create**: `POST /api/v1/companies`
 - **Update**: `PUT /api/v1/companies/{id}` or `PATCH /api/v1/companies/{id}`
 - **Delete**: `DELETE /api/v1/companies/{id}`
 - **Swiss UID Validation**: `GET /api/v1/companies/validate-uid?uid={}`
+- **Verify**: `POST /api/v1/companies/{id}/verify`
 - **Logo Upload**: `POST /api/v1/companies/{id}/logo` (presigned S3 URL)
-- **Employee Relationships**:
-  - List: `GET /api/v1/companies/{id}/employees`
-  - Add: `POST /api/v1/companies/{id}/employees`
-  - Remove: `DELETE /api/v1/companies/{id}/employees/{userId}`
-- **Partner Operations**:
-  - Promote: `POST /api/v1/companies/{id}/promote-partner`
-  - Verify: `POST /api/v1/companies/{id}/verify`
 - **Statistics**: `GET /api/v1/companies/{id}/statistics`
 
+**Partner Coordination Service** (Partnership management - Epic 8):
+- **List Partnerships**: `GET /api/v1/partnerships?companyId={}`
+- **Create Partnership**: `POST /api/v1/partnerships`
+- **Update Partnership**: `PUT /api/v1/partnerships/{id}`
+- **Get Partnership Details**: `GET /api/v1/partnerships/{id}`
+- **Partner Analytics**: `GET /api/v1/partnerships/{id}/analytics`
+
+**User Management Service** (User-company associations):
+- **List Company Users**: `GET /api/v1/users?companyId={}`
+- **Associate User with Company**: `POST /api/v1/users/{userId}/company`
+- **Update User Company**: `PUT /api/v1/users/{userId}/company`
+
 **Benefits**:
-- Redis caching for <100ms (P95) autocomplete performance
+- Caffeine caching for <100ms (P95) autocomplete performance
 - Swiss UID validation integration for automated verification
-- Consolidated employee management (replaces separate speaker linking)
+- Clear service boundaries following DDD principles
+- Partnership data managed separately in Partner Coordination Service
 
 ### File Upload Workflow
 1. User selects logo file (drag-and-drop or browse)
@@ -397,8 +405,9 @@ When the Company Management Screen loads, the following APIs are called:
    - Query params: `limit=20, page=1, sort=name, order=asc`
    - Returns: Paginated list of companies with basic info
    - Used for: Initial company list display
-   - Response includes: id, name, displayName, isPartner, logo CDN URL, industry, employeeCount, verificationStatus
+   - Response includes: id, name, displayName, isPartner (from partnership join), logo CDN URL, industry, verificationStatus
    - **Consolidated**: Replaces GET /companies, /companies/stats, /companies/filter (3 → 1 endpoint)
+   - **Note**: isPartner flag set if partnership exists in Partner Service
 
 2. **GET /api/v1/companies/search?query={}&limit=20**
    - Triggered by: User typing in search bar (debounced)
@@ -448,12 +457,13 @@ APIs called by user interactions:
    - Returns: `{ success: true }`
    - Side effects: Soft delete company, removes from search index, publishes CompanyDeletedEvent
 
-8. **GET /api/v1/companies/{id}?include=employees,statistics,logo**
+8. **GET /api/v1/companies/{id}?include=statistics,logo**
    - Triggered by: Click company card, navigate to detail view
-   - Query params: `include` parameter for related data
+   - Query params: `include` parameter for related data (statistics, logo)
    - Returns: Complete company details with included relations
    - Used for: Detail view display
-   - **Consolidated**: Single endpoint with flexible includes (replaces 4 separate calls)
+   - **Consolidated**: Single endpoint with flexible includes (replaces 3 separate calls)
+   - **Note**: User-company associations retrieved from User Service separately
 
 #### Logo Management (Consolidated)
 
@@ -481,44 +491,58 @@ APIs called by user interactions:
     - Side effects: Updates verification status
     - **Consolidated**: Unified verification endpoint
 
-12. **POST /api/v1/companies/{id}/promote-partner**
+#### Partner Management (Partner Service)
+
+12. **POST /api/v1/partnerships**
     - Triggered by: Partner status toggle (organizer-only)
-    - Payload: `{ partnerLevel: "bronze|silver|gold|platinum", startDate, endDate }`
-    - Returns: Updated company with partner status
-    - Side effects: Publishes PartnerStatusChangedEvent
-    - **Consolidated**: Dedicated partner promotion endpoint (was part of PUT /companies)
+    - Payload: `{ companyId, partnerLevel: "bronze|silver|gold|platinum", startDate, endDate, primaryContact }`
+    - Returns: Created partnership object
+    - Side effects: Publishes PartnershipCreatedEvent
+    - **Service**: Partner Coordination Service (Epic 8)
 
-#### Employee Relationships (Consolidated)
+13. **GET /api/v1/partnerships?companyId={companyId}**
+    - Triggered by: Company detail view load (if company has partnership)
+    - Returns: Partnership details for the company
+    - Used for: Display partner information section
+    - **Service**: Partner Coordination Service
 
-13. **GET /api/v1/companies/{id}/employees**
+14. **PUT /api/v1/partnerships/{id}**
+    - Triggered by: Edit partnership details
+    - Payload: Partial partnership update
+    - Returns: Updated partnership object
+    - **Service**: Partner Coordination Service
+
+#### User-Company Relationships (User Service)
+
+15. **GET /api/v1/users?companyId={companyId}**
     - Triggered by: Company detail view load
-    - Query params: `limit=10, page=1`
-    - Returns: Paginated list of employees (including speakers)
-    - Used for: Display employee/speaker list in detail view
-    - **Consolidated**: Replaces separate /speakers endpoint
+    - Query params: `companyId, limit=10, page=1`
+    - Returns: Paginated list of users associated with company
+    - Used for: Display associated users list in detail view
+    - **Service**: User Management Service
 
-14. **POST /api/v1/companies/{id}/employees**
-    - Triggered by: [+ Link Employee/Speaker] button
-    - Payload: `{ userId, role: "employee|speaker", jobTitle }`
-    - Returns: `{ success: true, relationship }`
-    - Used for: Link user to company
-    - Side effects: Creates employee-company relationship
-    - **Consolidated**: Handles both employees and speakers
+16. **POST /api/v1/users/{userId}/company**
+    - Triggered by: [+ Link User] button
+    - Payload: `{ companyId, jobTitle, role }`
+    - Returns: `{ success: true, association }`
+    - Used for: Associate user with company
+    - **Service**: User Management Service
 
-15. **DELETE /api/v1/companies/{id}/employees/{userId}**
+17. **DELETE /api/v1/users/{userId}/company**
     - Triggered by: [Unlink] button
     - Returns: `{ success: true }`
-    - Used for: Remove employee-company association
-    - **Consolidated**: Single endpoint for all employee removals
+    - Used for: Remove user-company association
+    - **Service**: User Management Service
 
-#### Statistics (Consolidated)
+#### Statistics (Company Service)
 
-16. **GET /api/v1/companies/{id}/statistics**
+18. **GET /api/v1/companies/{id}/statistics**
     - Triggered by: Company detail view load or [View Statistics] button
     - Returns: Comprehensive participation statistics
-    - Response: `{ totalEvents, totalPresentations, totalEmployees, totalAttendees, firstEvent, mostRecentEvent, topicExpertise }`
+    - Response: `{ totalEvents, totalPresentations, totalAttendees, firstEvent, mostRecentEvent, topicExpertise }`
     - Used for: Statistics section in detail view
     - **Consolidated**: Single endpoint replaces /statistics and /activity (activity now included in statistics)
+    - **Service**: Company Management Service
 
 ---
 
@@ -731,7 +755,7 @@ APIs called by user interactions:
 ### Local Component State
 
 - `searchQuery`: string - Current search text
-- `filters`: object - Active filters (isPartner, industry, employeeCount)
+- `filters`: object - Active filters (isPartner, industry, verificationStatus)
 - `viewMode`: 'grid' | 'list' - Current view mode
 - `sortBy`: string - Current sort field
 - `isModalOpen`: boolean - Create/edit modal state
@@ -752,7 +776,8 @@ APIs called by user interactions:
 - `companyDetail`: Individual company (cached for 10 minutes)
 - `companySuggestions`: Autocomplete suggestions (cached for 15 minutes)
 - `companyStatistics`: Company stats (cached for 5 minutes)
-- `associatedSpeakers`: Company speakers (cached for 10 minutes)
+- `associatedUsers`: Company users (cached for 10 minutes, from User Service)
+- `partnerships`: Company partnership details (cached for 10 minutes, from Partner Service)
 
 ### Real-Time Updates
 
@@ -787,6 +812,7 @@ APIs called by user interactions:
 
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
+| 2025-10-14 | 2.0 | **Architectural Refactoring**: Updated wireframe to reflect Story 1.14 service boundary refactoring. Company Service now only manages company data (name, logo, Swiss UID, description, verification). Removed employee/user count fields and employee management features. Partnership management moved to Partner Coordination Service (Epic 8) with separate API endpoints. User-company associations moved to User Management Service. Updated all API Integration sections, UI elements, and data flows to use correct service boundaries per DDD principles. | Winston (Architect) |
 | 2025-10-04 | 1.0 | Initial wireframe creation for Company Management Screen | Sally (UX Expert) |
 
 ---
