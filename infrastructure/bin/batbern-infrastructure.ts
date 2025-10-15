@@ -20,6 +20,7 @@ import { SpeakerCoordinationStack } from '../lib/stacks/speaker-coordination-sta
 import { PartnerCoordinationStack } from '../lib/stacks/partner-coordination-stack';
 import { AttendeeExperienceStack } from '../lib/stacks/attendee-experience-stack';
 import { CompanyManagementStack } from '../lib/stacks/company-management-stack';
+import { BastionStack } from '../lib/stacks/bastion-stack';
 import { devConfig } from '../lib/config/dev-config';
 import { stagingConfig } from '../lib/config/staging-config';
 import { prodConfig } from '../lib/config/prod-config';
@@ -120,6 +121,24 @@ const databaseStack = new DatabaseStack(app, `${stackPrefix}-Database`, {
 });
 databaseStack.addDependency(networkStack);
 databaseStack.addDependency(secretsStack);
+
+// 4a. Bastion Stack (SSM-based secure access to database)
+// NOTE: Only deploy for development environment
+// Staging/Production use VPN or AWS PrivateLink
+let bastionStack: BastionStack | undefined;
+if (config.envName === 'development') {
+  bastionStack = new BastionStack(app, `${stackPrefix}-Bastion`, {
+    config,
+    vpc: networkStack.vpc,
+    databaseSecurityGroup: networkStack.databaseSecurityGroup,
+    env,
+    description: `BATbern Bastion Host for Database Access - ${config.envName}`,
+    tags: config.tags,
+  });
+  bastionStack.addDependency(networkStack);
+  // Note: Don't add database dependency to avoid circular reference
+  // Bastion only needs network + security group which comes from network stack
+}
 
 // 5. Storage Stack (S3, CloudFront)
 const storageStack = new StorageStack(app, `${stackPrefix}-Storage`, {
