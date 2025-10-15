@@ -12,7 +12,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import software.amazon.awssdk.services.eventbridge.EventBridgeClient;
+import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsResponse;
@@ -33,16 +33,16 @@ import java.time.Instant;
 @Slf4j
 public class CompanyEventPublisher {
 
-    private final EventBridgeClient eventBridgeClient;
+    private final EventBridgeAsyncClient eventBridgeAsyncClient;
     private final String eventBusName;
     private final String eventSource;
     private final ObjectMapper objectMapper;
 
     public CompanyEventPublisher(
-            EventBridgeClient eventBridgeClient,
+            EventBridgeAsyncClient eventBridgeAsyncClient,
             @Value("${aws.eventbridge.bus-name:batbern-default-event-bus}") String eventBusName,
             @Value("${aws.eventbridge.source:ch.batbern.company}") String eventSource) {
-        this.eventBridgeClient = eventBridgeClient;
+        this.eventBridgeAsyncClient = eventBridgeAsyncClient;
         this.eventBusName = eventBusName;
         this.eventSource = eventSource;
 
@@ -164,7 +164,9 @@ public class CompanyEventPublisher {
                     .entries(entry)
                     .build();
 
-            PutEventsResponse response = eventBridgeClient.putEvents(request);
+            // Publish event asynchronously and wait for completion
+            PutEventsResponse response = eventBridgeAsyncClient.putEvents(request)
+                    .join(); // Block until async operation completes
 
             if (response.failedEntryCount() > 0) {
                 log.error("Failed to publish event to EventBridge. Failed entries: {}",
