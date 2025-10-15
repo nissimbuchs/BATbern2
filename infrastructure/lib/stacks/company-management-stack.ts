@@ -15,7 +15,9 @@ export interface CompanyManagementStackProps extends cdk.StackProps {
   config: EnvironmentConfig;
   cluster: ecs.ICluster;
   vpc: ec2.IVpc;
+  databaseSecurityGroup: ec2.ISecurityGroup;
   databaseEndpoint?: string;
+  databaseSecret?: any;
   cacheEndpoint?: string;
   userPool: cognito.IUserPool;
   userPoolClient: cognito.IUserPoolClient;

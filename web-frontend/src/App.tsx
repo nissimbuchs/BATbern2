@@ -40,7 +40,7 @@ const Speakers = React.lazy(() => import('@pages/Speakers'));
 const Partners = React.lazy(() => import('@pages/Partners'));
 const Content = React.lazy(() => import('@pages/Content'));
 const Analytics = React.lazy(() => import('@pages/Analytics'));
-const CompanyManagement = React.lazy(() => import('@/features/company-management/components/CompanyManagementScreen'));
+const CompanyManagement = React.lazy(() => import('@components/shared/Company/CompanyManagementScreen'));
 
 // Loading fallback component for Suspense
 const PageLoader = () => (
