@@ -68,13 +68,7 @@ export interface CreateCompanyRequest {
   displayName?: string;
   swissUID?: string;
   website?: string;
-  industry: string;
-  sector?: string;
-  location: {
-    city: string;
-    canton: string;
-    country: string;
-  };
+  industry?: string;
   description?: string;
 }
 

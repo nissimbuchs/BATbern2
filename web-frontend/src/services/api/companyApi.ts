@@ -20,8 +20,9 @@ import type {
 } from '@/types/company.types';
 
 // API base path for company endpoints
-// Note: apiClient already has baseURL='/api', so we only need '/v1/companies'
-const COMPANY_API_PATH = '/v1/companies';
+// Note: apiClient baseURL is set from runtime config to 'http://localhost:8080/api/v1'
+// so we only need '/companies' (the /v1 prefix is already in the baseURL)
+const COMPANY_API_PATH = '/companies';
 
 // File upload constraints
 const MAX_LOGO_SIZE_MB = 5;

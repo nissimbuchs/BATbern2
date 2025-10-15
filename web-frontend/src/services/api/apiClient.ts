@@ -44,14 +44,28 @@ export function setNavigationCallback(navigate: (path: string) => void): void {
 
 /**
  * Create axios instance with default configuration
+ *
+ * Note: baseURL is set to '/api' initially, but will be updated
+ * with runtime config from backend via updateApiClientConfig()
  */
 const apiClient: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+  baseURL: '/api',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+/**
+ * Update API client configuration with runtime config from backend
+ * Called after runtime config is loaded in main.tsx
+ *
+ * @param apiBaseUrl - Base URL from runtime config (e.g., "http://localhost:8080/api/v1")
+ */
+export function updateApiClientConfig(apiBaseUrl: string): void {
+  apiClient.defaults.baseURL = apiBaseUrl;
+  console.log(`[ApiClient] Updated baseURL to: ${apiBaseUrl}`);
+}
 
 /**
  * Request interceptor to add headers (Accept-Language, X-Correlation-ID, Authorization)
