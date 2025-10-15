@@ -9,7 +9,7 @@ services:
     working_dir: /workspace
     environment:
       # Gradle Configuration - Override to use service-specific cache
-      - GRADLE_USER_HOME=/workspace/api-gateway/.gradle
+      - GRADLE_USER_HOME=/gradle-cache
 
       # Spring Configuration
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-local}
@@ -37,7 +37,7 @@ services:
       - ENABLE_COGNITO_AUTH=${ENABLE_COGNITO_AUTH:-true}
     volumes:
       - .:/workspace
-      - api-gateway-gradle-cache:/workspace/api-gateway/.gradle
+      - api-gateway-gradle-cache:/gradle-cache
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 30s
@@ -78,7 +78,7 @@ services:
     working_dir: /workspace
     environment:
       # Gradle Configuration - Override to use service-specific cache
-      - GRADLE_USER_HOME=/workspace/services/company-user-management-service/.gradle
+      - GRADLE_USER_HOME=/gradle-cache
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-local}
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
       - APP_ENVIRONMENT=development
@@ -91,7 +91,7 @@ services:
       - DATABASE_URL=${DATABASE_URL}
     volumes:
       - .:/workspace
-      - company-user-management-gradle-cache:/workspace/services/company-user-management-service/.gradle
+      - company-user-management-gradle-cache:/gradle-cache
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 30s
@@ -111,7 +111,7 @@ services:
     working_dir: /workspace
     environment:
       # Gradle Configuration - Override to use service-specific cache
-      - GRADLE_USER_HOME=/workspace/services/event-management-service/.gradle
+      - GRADLE_USER_HOME=/gradle-cache
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-local}
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
       - APP_ENVIRONMENT=development
@@ -124,7 +124,7 @@ services:
       - DATABASE_URL=${DATABASE_URL}
     volumes:
       - .:/workspace
-      - event-management-gradle-cache:/workspace/services/event-management-service/.gradle
+      - event-management-gradle-cache:/gradle-cache
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 30s
@@ -144,7 +144,7 @@ services:
     working_dir: /workspace
     environment:
       # Gradle Configuration - Override to use service-specific cache
-      - GRADLE_USER_HOME=/workspace/services/speaker-coordination-service/.gradle
+      - GRADLE_USER_HOME=/gradle-cache
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-local}
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
       - APP_ENVIRONMENT=development
@@ -157,7 +157,7 @@ services:
       - DATABASE_URL=${DATABASE_URL}
     volumes:
       - .:/workspace
-      - speaker-coordination-gradle-cache:/workspace/services/speaker-coordination-service/.gradle
+      - speaker-coordination-gradle-cache:/gradle-cache
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 30s
@@ -177,7 +177,7 @@ services:
     working_dir: /workspace
     environment:
       # Gradle Configuration - Override to use service-specific cache
-      - GRADLE_USER_HOME=/workspace/services/partner-coordination-service/.gradle
+      - GRADLE_USER_HOME=/gradle-cache
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-local}
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
       - APP_ENVIRONMENT=development
@@ -190,7 +190,7 @@ services:
       - DATABASE_URL=${DATABASE_URL}
     volumes:
       - .:/workspace
-      - partner-coordination-gradle-cache:/workspace/services/partner-coordination-service/.gradle
+      - partner-coordination-gradle-cache:/gradle-cache
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 30s
@@ -210,7 +210,7 @@ services:
     working_dir: /workspace
     environment:
       # Gradle Configuration - Override to use service-specific cache
-      - GRADLE_USER_HOME=/workspace/services/attendee-experience-service/.gradle
+      - GRADLE_USER_HOME=/gradle-cache
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-local}
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
       - APP_ENVIRONMENT=development
@@ -223,7 +223,7 @@ services:
       - DATABASE_URL=${DATABASE_URL}
     volumes:
       - .:/workspace
-      - attendee-experience-gradle-cache:/workspace/services/attendee-experience-service/.gradle
+      - attendee-experience-gradle-cache:/gradle-cache
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 30s

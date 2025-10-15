@@ -4,7 +4,7 @@ FROM gradle:8.5-jdk21 AS development
 WORKDIR /workspace
 
 # Set unique Gradle user home to avoid cache conflicts with service containers
-ENV GRADLE_USER_HOME=/workspace/api-gateway/.gradle
+ENV GRADLE_USER_HOME=/gradle-cache
 
 # Expose application port
 EXPOSE 8080
@@ -15,4 +15,5 @@ EXPOSE 8080
 
 # Run api-gateway subproject for hot reload
 # Note: --continuous mode removed due to Gradle cache conflicts in multi-project setup
-ENTRYPOINT ["gradle", ":api-gateway:bootRun", "--no-daemon", "--info"]
+# Use --project-cache-dir to avoid conflicts with other containers
+ENTRYPOINT ["gradle", ":api-gateway:bootRun", "--no-daemon", "--project-cache-dir=/gradle-cache/project-cache", "--info"]

@@ -27,7 +27,7 @@ COPY services/speaker-coordination-service/src ./services/speaker-coordination-s
 WORKDIR /workspace/services/speaker-coordination-service
 
 # Set unique Gradle user home to avoid cache conflicts
-ENV GRADLE_USER_HOME=/workspace/services/speaker-coordination-service/.gradle
+ENV GRADLE_USER_HOME=/gradle-cache
 
 # Expose application port and debug port
 EXPOSE 8080
@@ -39,4 +39,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
 
 # Run with Gradle bootRun for hot reload
 # Use project-specific task to avoid multi-project conflicts
-ENTRYPOINT ["gradle", ":services:speaker-coordination-service:bootRun", "--no-daemon"]
+ENTRYPOINT ["gradle", ":services:speaker-coordination-service:bootRun", "--no-daemon", "--project-cache-dir=/gradle-cache/project-cache"]
