@@ -52,7 +52,7 @@ dependencies {
     testImplementation 'org.testcontainers:testcontainers:1.20.4'
     testImplementation 'org.testcontainers:postgresql:1.20.4'
     testImplementation 'org.testcontainers:junit-jupiter:1.20.4'
-    testImplementation 'com.h2database:h2:2.3.232' // For fast unit tests
+    // Note: H2 removed - all integration tests use Testcontainers PostgreSQL for production parity
 }
 
 test {

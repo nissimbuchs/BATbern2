@@ -71,6 +71,7 @@ public class Event {
     private Instant publishedAt;
 
     @Column(name = "metadata", columnDefinition = "JSONB")
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
     private String metadata;
 
     @Size(max = 5000, message = "Description must not exceed 5000 characters")

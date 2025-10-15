@@ -273,6 +273,10 @@ sections:
         instruction: |
           Define test data builders, fixtures, and mock services needed.
           Specify any special test container configurations.
+
+          CRITICAL: All backend integration tests MUST use PostgreSQL via Testcontainers.
+          NEVER use H2 or other in-memory databases - this creates false confidence and
+          hides PostgreSQL-specific issues (JSONB types, functions, etc.).
         template: |
           **Test Data Builders:**
           - EventTestDataBuilder for creating test events
@@ -282,9 +286,17 @@ sections:
           - Mock AWS Cognito responses for authentication tests
           - Mock EventBridge for domain event tests
 
-          **Test Containers:**
-          - PostgreSQL container for integration tests
-          - LocalStack for AWS service mocks
+          **Test Containers (MANDATORY):**
+          - PostgreSQL 16 Alpine via Testcontainers for ALL integration tests
+            - All integration tests MUST extend AbstractIntegrationTest
+            - Use singleton pattern with withReuse(true) for performance
+            - Enable Flyway migrations for production parity
+          - LocalStack for AWS service mocks (S3, EventBridge, etc.)
+
+          **Test Configuration:**
+          - application-test.properties must use PostgreSQL dialect
+          - spring.jpa.hibernate.ddl-auto=validate (let Flyway manage schema)
+          - spring.flyway.enabled=true for testing real migrations
         elicit: true
         owner: scrum-master
         editors: [scrum-master, dev-agent]

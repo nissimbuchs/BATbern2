@@ -193,8 +193,13 @@ test('useAuth returns user data', () => {
 ```
 
 ### Backend Testing
+
+**CRITICAL: Production Parity for Integration Tests**
+
+All integration tests MUST use PostgreSQL via Testcontainers to ensure production parity. Never use H2 or in-memory databases for integration tests, as this creates false confidence and hides database-specific issues (e.g., JSONB types, PostgreSQL functions, etc.).
+
 ```java
-// Unit tests with JUnit 5
+// Unit tests with JUnit 5 - fast, isolated
 @Test
 void shouldCreateEventSuccessfully() {
     // Given
@@ -207,13 +212,75 @@ void shouldCreateEventSuccessfully() {
     assertThat(event.getTitle()).isEqualTo("BATbern 2024");
 }
 
-// Integration tests with Testcontainers
-@SpringBootTest
-@Testcontainers
-class EventServiceIntegrationTest {
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15");
+// Integration tests - MUST extend AbstractIntegrationTest
+@Transactional
+class EventControllerIntegrationTest extends AbstractIntegrationTest {
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Test
+    void should_createEvent_when_validDataProvided() throws Exception {
+        mockMvc.perform(post("/api/events")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                        "title": "BATbern 2024",
+                        "eventNumber": 123,
+                        "date": "2024-12-15T18:00:00Z",
+                        "registrationDeadline": "2024-12-10T23:59:59Z",
+                        "venueName": "Kornhausforum",
+                        "venueAddress": "Kornhausplatz 18, 3011 Bern",
+                        "venueCapacity": 200,
+                        "organizerId": "550e8400-e29b-41d4-a716-446655440000"
+                    }
+                    """))
+                .andExpect(status().isCreated());
+    }
 }
+```
+
+**AbstractIntegrationTest Base Class:**
+
+All integration tests should extend this base class:
+
+```java
+@SpringBootTest
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
+@Testcontainers
+public abstract class AbstractIntegrationTest {
+
+    // Singleton PostgreSQL container - reused across all tests for performance
+    @Container
+    static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
+            .withDatabaseName("testdb")
+            .withUsername("test")
+            .withPassword("test")
+            .withReuse(true);  // Performance optimization
+
+    @DynamicPropertySource
+    static void configureProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", postgres::getJdbcUrl);
+        registry.add("spring.datasource.username", postgres::getUsername);
+        registry.add("spring.datasource.password", postgres::getPassword);
+    }
+}
+```
+
+**Test Configuration (application-test.properties):**
+
+```properties
+# PostgreSQL via Testcontainers (configured dynamically)
+spring.datasource.driver-class-name=org.postgresql.Driver
+spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
+
+# Let Flyway manage schema - validate only
+spring.jpa.hibernate.ddl-auto=validate
+
+# Enable Flyway migrations for production parity
+spring.flyway.enabled=true
+spring.flyway.locations=classpath:db/migration
+spring.flyway.baseline-on-migrate=true
 ```
 
 ### End-to-End Testing
