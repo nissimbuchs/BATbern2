@@ -6,6 +6,7 @@ const glob = require('glob');
 const MarkdownProcessor = require('../src/builders/markdown-processor');
 const HtmlGenerator = require('../src/builders/html-generator');
 const AssetProcessor = require('../src/builders/asset-processor');
+const OpenApiProcessor = require('../src/builders/openapi-processor');
 const config = require('../src/config/site-config');
 
 class DocumentationBuilder {
@@ -14,7 +15,9 @@ class DocumentationBuilder {
     this.markdownProcessor = new MarkdownProcessor(config);
     this.htmlGenerator = new HtmlGenerator(config);
     this.assetProcessor = new AssetProcessor(config);
+    this.openapiProcessor = new OpenApiProcessor(config);
     this.documents = [];
+    this.apiDocuments = [];
     this.categories = {};
   }
 
@@ -190,13 +193,28 @@ class DocumentationBuilder {
       process.stdout.write(`   Processing (${i + 1}/${this.documents.length}): ${doc.relativePath}...`);
 
       try {
-        const processed = await this.markdownProcessor.processFile(doc.sourcePath, doc.relativePath);
+        // Check if this is an OpenAPI spec file
+        if (doc.relativePath.endsWith('.openapi.yml') || doc.relativePath.endsWith('.openapi.yaml')) {
+          const processed = await this.openapiProcessor.processFile(doc.sourcePath, doc.relativePath);
 
-        // Add processed data to document
-        doc.metadata = processed.metadata;
-        doc.content = processed.content;
-        doc.tableOfContents = processed.tableOfContents;
-        doc.rawContent = processed.rawContent;
+          // Add processed data to document
+          doc.metadata = processed.metadata;
+          doc.stats = processed.stats;
+          doc.spec = processed.spec;
+          doc.rawContent = processed.rawContent;
+          doc.isOpenApi = true;
+
+          // Keep track of API documents separately
+          this.apiDocuments.push(doc);
+        } else {
+          const processed = await this.markdownProcessor.processFile(doc.sourcePath, doc.relativePath);
+
+          // Add processed data to document
+          doc.metadata = processed.metadata;
+          doc.content = processed.content;
+          doc.tableOfContents = processed.tableOfContents;
+          doc.rawContent = processed.rawContent;
+        }
 
         console.log(' ✅');
       } catch (error) {
@@ -233,13 +251,22 @@ class DocumentationBuilder {
     // Generate index page
     await this.generateIndexPage();
 
+    // Generate API index page if we have API documents
+    if (this.apiDocuments.length > 0) {
+      await this.generateApiIndexPage();
+    }
+
     // Generate individual document pages
     for (let i = 0; i < this.documents.length; i++) {
       const doc = this.documents[i];
       process.stdout.write(`   Generating (${i + 1}/${this.documents.length}): ${doc.metadata.title}...`);
 
       try {
-        await this.generateDocumentPage(doc);
+        if (doc.isOpenApi) {
+          await this.generateOpenApiPage(doc);
+        } else {
+          await this.generateDocumentPage(doc);
+        }
         console.log(' ✅');
       } catch (error) {
         console.log(` ❌ Error: ${error.message}`);
@@ -280,6 +307,31 @@ class DocumentationBuilder {
     await fs.writeFile(doc.outputPath, pageHtml);
   }
 
+  async generateOpenApiPage(doc) {
+    const pageHtml = await this.htmlGenerator.generateOpenApiPage(doc);
+
+    // Ensure output directory exists
+    await fs.ensureDir(path.dirname(doc.outputPath));
+
+    // Write the page
+    await fs.writeFile(doc.outputPath, pageHtml);
+
+    // Also copy the raw YAML file for download
+    const yamlOutputPath = path.join(path.dirname(doc.outputPath), path.basename(doc.sourcePath));
+    await fs.copy(doc.sourcePath, yamlOutputPath);
+  }
+
+  async generateApiIndexPage() {
+    console.log('   Generating API index page...');
+
+    const indexHtml = await this.htmlGenerator.generateApiIndexPage(this.apiDocuments);
+    const apiDir = path.join(this.config.outputPath, 'api');
+    await fs.ensureDir(apiDir);
+    await fs.writeFile(path.join(apiDir, 'index.html'), indexHtml);
+
+    console.log('   ✅ API index page generated');
+  }
+
   generateBreadcrumbs(doc) {
     const breadcrumbs = [
       { title: 'Home', url: '/' }
@@ -309,6 +361,11 @@ class DocumentationBuilder {
     const cssSource = path.join(__dirname, '../src/templates/styles.css');
     const cssTarget = path.join(outputPath, 'styles/main.css');
     await fs.copy(cssSource, cssTarget);
+
+    // Copy API-specific CSS
+    const apiCssSource = path.join(__dirname, '../src/templates/api-docs.css');
+    const apiCssTarget = path.join(outputPath, 'styles/api-docs.css');
+    await fs.copy(apiCssSource, apiCssTarget);
 
     // Copy highlight.js CSS
     const hljs = require('highlight.js');

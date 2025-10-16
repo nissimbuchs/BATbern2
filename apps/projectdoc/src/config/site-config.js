@@ -76,6 +76,14 @@ module.exports = {
         'test-enhanced-markdown.md',
         'brainstorming-session-results.md'
       ]
+    },
+    'api': {
+      title: 'API Documentation',
+      description: 'OpenAPI specifications for all BATbern platform APIs',
+      icon: '🔌',
+      order: 7,
+      folder: 'api',
+      pattern: '*.openapi.yml'
     }
   },
 

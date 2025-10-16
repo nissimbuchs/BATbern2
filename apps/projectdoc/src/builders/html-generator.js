@@ -23,6 +23,12 @@ class HtmlGenerator {
       const navigationContent = await fs.readFile(path.join(templateDir, 'navigation.html'), 'utf-8');
       this.templates.navigation = handlebars.compile(navigationContent);
 
+      const openApiContent = await fs.readFile(path.join(templateDir, 'openapi-page.html'), 'utf-8');
+      this.templates.openapi = handlebars.compile(openApiContent);
+
+      const apiIndexContent = await fs.readFile(path.join(templateDir, 'api-index.html'), 'utf-8');
+      this.templates.apiIndex = handlebars.compile(apiIndexContent);
+
       console.log('Templates loaded successfully');
     } catch (error) {
       console.error('Error loading templates:', error);
@@ -387,6 +393,61 @@ class HtmlGenerator {
       const docDate = new Date(doc.metadata.lastModified);
       return !latest || docDate > latest ? docDate : latest;
     }, null);
+  }
+
+  /**
+   * Generate OpenAPI documentation page
+   * @param {object} apiDoc - Processed OpenAPI document data
+   * @returns {string} Generated HTML
+   */
+  async generateOpenApiPage(apiDoc) {
+    try {
+      const { metadata, stats, spec, relativePath } = apiDoc;
+
+      // Convert spec to JSON string for embedding
+      const specJson = JSON.stringify(spec, null, 2);
+
+      // Generate download URL
+      const downloadUrl = `/${relativePath}`;
+
+      const pageHtml = this.templates.openapi({
+        title: metadata.title,
+        description: metadata.description,
+        metadata,
+        stats,
+        specJson,
+        downloadUrl,
+        siteConfig: this.config,
+        buildTime: new Date().toISOString()
+      });
+
+      return pageHtml;
+    } catch (error) {
+      console.error('Error generating OpenAPI page:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate API index page with all APIs
+   * @param {array} apiDocuments - Array of processed API documents
+   * @returns {string} Generated HTML
+   */
+  async generateApiIndexPage(apiDocuments) {
+    try {
+      const pageHtml = this.templates.apiIndex({
+        title: 'API Documentation',
+        description: 'BATbern Platform API Documentation',
+        apis: apiDocuments,
+        siteConfig: this.config,
+        buildTime: new Date().toISOString()
+      });
+
+      return pageHtml;
+    } catch (error) {
+      console.error('Error generating API index page:', error);
+      throw error;
+    }
   }
 }
 

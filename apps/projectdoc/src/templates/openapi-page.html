@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}} - {{siteConfig.siteName}}</title>
+    <meta name="description" content="{{description}}">
+    <meta name="author" content="{{siteConfig.author}}">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="stylesheet" href="/styles/api-docs.css">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- Redoc Styles Override -->
+    <style>
+        /* BATbern branded Redoc styling */
+        :root {
+            --primary-color: #1565C0;
+            --secondary-color: #0D47A1;
+            --accent-color: #FF6F00;
+            --background-color: #FAFAFA;
+            --text-color: #212121;
+        }
+
+        /* Full height layout for API docs */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        .api-page-layout {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .api-page-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .api-page-header .header-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .api-page-header .brand-link {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: white;
+            gap: 1rem;
+        }
+
+        .api-page-header .brand-logo {
+            height: 40px;
+            width: auto;
+        }
+
+        .api-page-header .brand-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .api-page-header .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .api-page-header .action-button {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .api-page-header .action-button:hover {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.5);
+        }
+
+        .api-info-bar {
+            background: white;
+            border-bottom: 1px solid #E0E0E0;
+            padding: 1rem 2rem;
+        }
+
+        .api-info-bar .info-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .api-info-bar .api-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-color);
+            margin: 0;
+        }
+
+        .api-info-bar .api-version {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .api-info-bar .api-stats {
+            display: flex;
+            gap: 1.5rem;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .api-info-bar .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .api-info-bar .stat-value {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .api-content-wrapper {
+            flex: 1;
+            background: var(--background-color);
+        }
+
+        /* Redoc container */
+        #redoc-container {
+            min-height: calc(100vh - 180px);
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .api-page-header .header-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .api-info-bar .info-container {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .api-info-bar .api-stats {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="api-page-layout">
+        <!-- Header -->
+        <header class="api-page-header">
+            <div class="header-container">
+                <a href="/" class="brand-link">
+                    <img src="/assets/BATbern_color_logo_transparent.png" alt="BATbern Logo" class="brand-logo">
+                    <span class="brand-text">{{siteConfig.siteName}}</span>
+                </a>
+
+                <div class="header-actions">
+                    <a href="/api/index.html" class="action-button">
+                        📚 All APIs
+                    </a>
+                    <a href="/" class="action-button">
+                        🏠 Documentation Home
+                    </a>
+                    <a href="{{downloadUrl}}" class="action-button" download>
+                        ⬇️ Download Spec
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- API Info Bar -->
+        <div class="api-info-bar">
+            <div class="info-container">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <h1 class="api-title">{{metadata.title}}</h1>
+                    <span class="api-version">v{{metadata.version}}</span>
+                </div>
+
+                <div class="api-stats">
+                    <span class="stat-item">
+                        <span class="stat-label">Endpoints:</span>
+                        <span class="stat-value">{{stats.totalEndpoints}}</span>
+                    </span>
+                    <span class="stat-item">
+                        <span class="stat-label">Schemas:</span>
+                        <span class="stat-value">{{stats.totalSchemas}}</span>
+                    </span>
+                    {{#if stats.hasAuthentication}}
+                    <span class="stat-item">
+                        <span class="stat-label">🔒 Authenticated</span>
+                    </span>
+                    {{/if}}
+                </div>
+            </div>
+        </div>
+
+        <!-- Redoc Content -->
+        <div class="api-content-wrapper">
+            <div id="redoc-container"></div>
+        </div>
+    </div>
+
+    <!-- Redoc Bundle -->
+    <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
+
+    <!-- Initialize Redoc -->
+    <script>
+        // OpenAPI spec embedded as JSON
+        const spec = {{{specJson}}};
+
+        // Initialize Redoc with BATbern theming
+        Redoc.init(spec, {
+            scrollYOffset: 50,
+            hideDownloadButton: false,
+            disableSearch: false,
+            hideHostname: false,
+            expandResponses: '200,201',
+            requiredPropsFirst: true,
+            sortPropsAlphabetically: false,
+            showExtensions: true,
+            nativeScrollbars: false,
+            pathInMiddlePanel: false,
+            theme: {
+                colors: {
+                    primary: {
+                        main: '#1565C0'
+                    },
+                    success: {
+                        main: '#4CAF50'
+                    },
+                    warning: {
+                        main: '#FF6F00'
+                    },
+                    error: {
+                        main: '#D32F2F'
+                    },
+                    text: {
+                        primary: '#212121',
+                        secondary: '#666666'
+                    },
+                    border: {
+                        dark: '#E0E0E0',
+                        light: '#F5F5F5'
+                    }
+                },
+                typography: {
+                    fontSize: '15px',
+                    lineHeight: '1.6',
+                    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                    headings: {
+                        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                        fontWeight: '600'
+                    },
+                    code: {
+                        fontSize: '14px',
+                        fontFamily: '"JetBrains Mono", Monaco, Consolas, monospace',
+                        backgroundColor: '#F5F5F5',
+                        color: '#0D47A1'
+                    }
+                },
+                sidebar: {
+                    backgroundColor: '#FAFAFA',
+                    textColor: '#212121',
+                    activeTextColor: '#1565C0',
+                    width: '280px'
+                },
+                rightPanel: {
+                    backgroundColor: '#263238',
+                    textColor: '#FFFFFF'
+                }
+            }
+        }, document.getElementById('redoc-container'));
+
+        console.log('🔌 API Documentation loaded: {{metadata.title}}');
+    </script>
+</body>
+</html>

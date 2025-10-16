@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation - {{siteConfig.siteName}}</title>
+    <meta name="description" content="Complete API documentation for all BATbern platform services">
+    <meta name="author" content="{{siteConfig.author}}">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/styles/main.css">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <style>
+        .api-index-hero {
+            background: linear-gradient(135deg, #1565C0 0%, #0D47A1 100%);
+            color: white;
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+
+        .api-index-hero h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0 0 1rem 0;
+        }
+
+        .api-index-hero p {
+            font-size: 1.2rem;
+            opacity: 0.95;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .api-cards-container {
+            max-width: 1200px;
+            margin: 3rem auto;
+            padding: 0 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+        }
+
+        .api-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 2rem;
+            transition: all 0.3s;
+            border: 1px solid #E0E0E0;
+        }
+
+        .api-card:hover {
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            transform: translateY(-4px);
+        }
+
+        .api-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .api-card-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #212121;
+            margin: 0;
+        }
+
+        .api-card-version {
+            background: #1565C0;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .api-card-description {
+            color: #666;
+            line-height: 1.6;
+            margin: 1rem 0;
+        }
+
+        .api-card-stats {
+            display: flex;
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+            padding: 1rem 0;
+            border-top: 1px solid #F0F0F0;
+            border-bottom: 1px solid #F0F0F0;
+        }
+
+        .api-stat {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .api-stat-label {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .api-stat-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1565C0;
+        }
+
+        .api-card-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .api-tag {
+            background: #F5F5F5;
+            color: #666;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        .api-card-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .api-action-button {
+            flex: 1;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            text-decoration: none;
+            text-align: center;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .api-action-button.primary {
+            background: #1565C0;
+            color: white;
+            border: 2px solid #1565C0;
+        }
+
+        .api-action-button.primary:hover {
+            background: #0D47A1;
+            border-color: #0D47A1;
+        }
+
+        .api-action-button.secondary {
+            background: white;
+            color: #1565C0;
+            border: 2px solid #1565C0;
+        }
+
+        .api-action-button.secondary:hover {
+            background: #F5F5F5;
+        }
+
+        .api-info-section {
+            max-width: 1200px;
+            margin: 3rem auto;
+            padding: 0 2rem;
+        }
+
+        .info-box {
+            background: #F5F5F5;
+            border-left: 4px solid #1565C0;
+            padding: 1.5rem;
+            border-radius: 4px;
+            margin-bottom: 2rem;
+        }
+
+        .info-box h3 {
+            margin: 0 0 1rem 0;
+            color: #1565C0;
+        }
+
+        .info-box p {
+            margin: 0;
+            line-height: 1.6;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .api-index-hero h1 {
+                font-size: 2rem;
+            }
+
+            .api-cards-container {
+                grid-template-columns: 1fr;
+            }
+
+            .api-card-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="header-container">
+            <div class="header-brand">
+                <a href="/" class="brand-link">
+                    <img src="/assets/BATbern_color_logo_transparent.png" alt="BATbern Logo" class="brand-logo">
+                    <span class="brand-text">{{siteConfig.siteName}}</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <div class="api-index-hero">
+        <h1>🔌 BATbern Platform APIs</h1>
+        <p>
+            Comprehensive REST API documentation for all BATbern event management platform services.
+            Explore interactive API specifications with live examples and code snippets.
+        </p>
+    </div>
+
+    <!-- Main Content -->
+    <main>
+        <!-- API Cards -->
+        <div class="api-cards-container">
+            {{#each apis}}
+            <div class="api-card">
+                <div class="api-card-header">
+                    <h2 class="api-card-title">{{metadata.title}}</h2>
+                    <span class="api-card-version">v{{metadata.version}}</span>
+                </div>
+
+                <p class="api-card-description">
+                    {{metadata.description}}
+                </p>
+
+                <div class="api-card-stats">
+                    <div class="api-stat">
+                        <span class="api-stat-label">Endpoints</span>
+                        <span class="api-stat-value">{{stats.totalEndpoints}}</span>
+                    </div>
+                    <div class="api-stat">
+                        <span class="api-stat-label">Schemas</span>
+                        <span class="api-stat-value">{{stats.totalSchemas}}</span>
+                    </div>
+                    {{#if stats.hasAuthentication}}
+                    <div class="api-stat">
+                        <span class="api-stat-label">Auth</span>
+                        <span class="api-stat-value">🔒</span>
+                    </div>
+                    {{/if}}
+                </div>
+
+                {{#if stats.tags}}
+                <div class="api-card-tags">
+                    {{#each stats.tags}}
+                    <span class="api-tag">{{this}}</span>
+                    {{/each}}
+                </div>
+                {{/if}}
+
+                <div class="api-card-actions">
+                    <a href="{{urlPath}}" class="api-action-button primary">
+                        📖 View Documentation
+                    </a>
+                    <a href="/{{relativePath}}" class="api-action-button secondary" download>
+                        ⬇️ Download Spec
+                    </a>
+                </div>
+            </div>
+            {{/each}}
+        </div>
+
+        <!-- Additional Information -->
+        <div class="api-info-section">
+            <div class="info-box">
+                <h3>🚀 Getting Started</h3>
+                <p>
+                    All BATbern APIs use JWT authentication with AWS Cognito. Obtain your API token from the
+                    authentication service and include it in the Authorization header: <code>Authorization: Bearer &lt;token&gt;</code>
+                </p>
+            </div>
+
+            <div class="info-box">
+                <h3>🌐 Base URLs</h3>
+                <p>
+                    <strong>Production:</strong> https://api.batbern.ch/api/v1<br>
+                    <strong>Staging:</strong> https://api.staging.batbern.ch/api/v1<br>
+                    <strong>Development:</strong> http://localhost:8080/api/v1
+                </p>
+            </div>
+
+            <div class="info-box">
+                <h3>📚 Additional Resources</h3>
+                <p>
+                    Looking for more documentation? Check out our
+                    <a href="/" style="color: #1565C0; text-decoration: underline;">complete project documentation</a>,
+                    including architecture guides, wireframes, and development epics.
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer style="background: #F5F5F5; padding: 2rem; text-align: center; margin-top: 4rem; color: #666;">
+        <p>BATbern Platform API Documentation • Last Updated: {{formatDate buildTime}}</p>
+        <p style="font-size: 0.9rem;">Built with ❤️ by the BATbern Development Team</p>
+    </footer>
+</body>
+</html>
