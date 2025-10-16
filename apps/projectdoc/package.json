@@ -4,9 +4,12 @@
   "description": "BATbern Project Documentation Portal - Generates and deploys public documentation website",
   "main": "scripts/build.js",
   "scripts": {
-    "build": "node scripts/build.js",
+    "build": "npm run build:reports && npm run build",
+    "build:doc": "node scripts/build.js",
+    "build:reports": "node scripts/build-reports.js",
     "deploy": "node scripts/deploy.js",
     "dev": "npm run build && npx http-server dist -p 3000 -o",
+    "dev:reports": "npm run build:reports && npx http-server dist/reports -p 3001 -o",
     "clean": "rm -rf dist/*"
   },
   "dependencies": {
@@ -32,7 +35,8 @@
     "mermaid": "^11.12.0",
     "mime-types": "^2.1.35",
     "node-fetch": "^2.7.0",
-    "redoc": "^2.1.3"
+    "redoc": "^2.1.3",
+    "xml2js": "^0.6.2"
   },
   "devDependencies": {
     "http-server": "^14.1.1"

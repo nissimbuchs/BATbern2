@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coverage Report - Test & Quality Dashboard</title>
+    <link rel="stylesheet" href="../styles/main.css">
+    <link rel="stylesheet" href="../styles/reports.css">
+    <link rel="icon" href="../assets/favicon.ico">
+</head>
+<body class="reports-page coverage-page">
+    <header class="main-header">
+        <div class="header-container">
+            <div class="logo">
+                <img src="../assets/BATbern_color_logo_transparent.png" alt="BATbern Logo">
+                <span>BATbern Platform</span>
+            </div>
+            <nav class="main-nav">
+                <a href="../index.html">📚 Documentation</a>
+                <a href="index.html">📊 Reports</a>
+                <a href="../api/index.html">🔌 APIs</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="breadcrumbs">
+        <a href="../index.html">Home</a>
+        <span>›</span>
+        <a href="index.html">Reports</a>
+        <span>›</span>
+        <span>Coverage</span>
+    </div>
+
+    <main class="coverage-container">
+        <header class="page-header">
+            <h1>Code Coverage Report</h1>
+            <p>Comprehensive coverage analysis across all modules</p>
+        </header>
+
+        <!-- Overall Coverage Summary -->
+        <section class="coverage-summary">
+            <div class="summary-card">
+                <h3>Overall Coverage</h3>
+                <div class="coverage-circle">
+                    <svg viewBox="0 0 36 36" class="circular-chart">
+                        <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                        <path class="circle" stroke-dasharray="{{summary.overall}}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                        <text x="18" y="20.35" class="percentage">{{summary.overall}}%</text>
+                    </svg>
+                </div>
+                <div class="coverage-details">
+                    <div>Java: {{summary.java}}%</div>
+                    <div>Frontend: {{summary.frontend}}%</div>
+                    <div>Target: {{summary.target}}%</div>
+                </div>
+            </div>
+
+            <div class="summary-card">
+                <h3>Coverage Metrics</h3>
+                <div class="metrics-list">
+                    <div class="metric-row">
+                        <span>Total Modules:</span>
+                        <strong>{{javaCoverage.summary.totalModules}}</strong>
+                    </div>
+                    <div class="metric-row">
+                        <span>Total Classes:</span>
+                        <strong>{{javaCoverage.summary.totalClasses}}</strong>
+                    </div>
+                    <div class="metric-row">
+                        <span>Total Methods:</span>
+                        <strong>{{javaCoverage.summary.totalMethods}}</strong>
+                    </div>
+                    {{#if frontendCoverage.coverage}}
+                    <div class="metric-row">
+                        <span>Frontend Files:</span>
+                        <strong>{{frontendCoverage.coverage.summary.totalFiles}}</strong>
+                    </div>
+                    {{/if}}
+                </div>
+            </div>
+        </section>
+
+        <!-- Java Module Coverage -->
+        <section class="module-coverage-section">
+            <h2>Java Module Coverage</h2>
+            <table class="coverage-table">
+                <thead>
+                    <tr>
+                        <th>Module</th>
+                        <th>Classes</th>
+                        <th>Methods</th>
+                        <th>Line Coverage</th>
+                        <th>Branch Coverage</th>
+                        <th>Instruction Coverage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each javaCoverage.summary.modules}}
+                    <tr>
+                        <td class="module-name"><strong>{{this.name}}</strong></td>
+                        <td>{{this.classes}}</td>
+                        <td>{{this.methods}}</td>
+                        <td>
+                            <div class="coverage-bar">
+                                <div class="coverage-fill {{coverageClass this.lineCoverage}}" style="width: {{this.lineCoverage}}%"></div>
+                                <span>{{this.lineCoverage}}%</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="coverage-bar">
+                                <div class="coverage-fill {{coverageClass this.branchCoverage}}" style="width: {{this.branchCoverage}}%"></div>
+                                <span>{{this.branchCoverage}}%</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="coverage-bar">
+                                <div class="coverage-fill {{coverageClass this.instructionCoverage}}" style="width: {{this.instructionCoverage}}%"></div>
+                                <span>{{this.instructionCoverage}}%</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Frontend Coverage -->
+        {{#if frontendCoverage.coverage}}
+        <section class="frontend-coverage-section">
+            <h2>Frontend Coverage</h2>
+            <div class="coverage-summary-cards">
+                <div class="summary-stat">
+                    <h4>Lines</h4>
+                    <div class="stat-value">{{frontendCoverage.coverage.summary.lines.percentage}}%</div>
+                    <div class="stat-detail">
+                        {{frontendCoverage.coverage.summary.lines.hit}} / {{frontendCoverage.coverage.summary.lines.found}}
+                    </div>
+                </div>
+                <div class="summary-stat">
+                    <h4>Functions</h4>
+                    <div class="stat-value">{{frontendCoverage.coverage.summary.functions.percentage}}%</div>
+                    <div class="stat-detail">
+                        {{frontendCoverage.coverage.summary.functions.hit}} / {{frontendCoverage.coverage.summary.functions.found}}
+                    </div>
+                </div>
+                <div class="summary-stat">
+                    <h4>Branches</h4>
+                    <div class="stat-value">{{frontendCoverage.coverage.summary.branches.percentage}}%</div>
+                    <div class="stat-detail">
+                        {{frontendCoverage.coverage.summary.branches.hit}} / {{frontendCoverage.coverage.summary.branches.found}}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Uncovered Files -->
+            {{#if frontendCoverage.topUncovered}}
+            {{#if (gt frontendCoverage.topUncovered.length 0)}}
+            <h3>Files Needing Coverage Attention</h3>
+            <table class="uncovered-files-table">
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Coverage</th>
+                        <th>Uncovered Lines</th>
+                        <th>Uncovered Functions</th>
+                        <th>Uncovered Branches</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each frontendCoverage.topUncovered}}
+                    <tr>
+                        <td class="file-path">{{this.path}}</td>
+                        <td>
+                            <div class="coverage-bar-small">
+                                <div class="coverage-fill {{coverageClass this.coveragePercentage}}" style="width: {{this.coveragePercentage}}%"></div>
+                                <span>{{this.coveragePercentage}}%</span>
+                            </div>
+                        </td>
+                        <td class="text-center">{{this.uncoveredLines}}</td>
+                        <td class="text-center">{{this.uncoveredFunctions}}</td>
+                        <td class="text-center">{{this.uncoveredBranches}}</td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+            {{/if}}
+            {{/if}}
+
+            <!-- Coverage by Directory -->
+            {{#if frontendCoverage.byDirectory}}
+            <h3>Coverage by Directory</h3>
+            <table class="directory-coverage-table">
+                <thead>
+                    <tr>
+                        <th>Directory</th>
+                        <th>Files</th>
+                        <th>Line Coverage</th>
+                        <th>Function Coverage</th>
+                        <th>Branch Coverage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each frontendCoverage.byDirectory}}
+                    <tr>
+                        <td class="dir-path">{{this.path}}</td>
+                        <td>{{this.fileCount}}</td>
+                        <td>
+                            <div class="coverage-bar-small">
+                                <div class="coverage-fill" style="width: {{this.lines.percentage}}%"></div>
+                                <span>{{this.lines.percentage}}%</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="coverage-bar-small">
+                                <div class="coverage-fill" style="width: {{this.functions.percentage}}%"></div>
+                                <span>{{this.functions.percentage}}%</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="coverage-bar-small">
+                                <div class="coverage-fill" style="width: {{this.branches.percentage}}%"></div>
+                                <span>{{this.branches.percentage}}%</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+            {{/if}}
+        </section>
+        {{/if}}
+
+        <!-- Coverage Thresholds -->
+        <section class="thresholds-section">
+            <h2>Coverage Thresholds</h2>
+            <div class="thresholds-grid">
+                <div class="threshold-item">
+                    <span class="threshold-label">Target:</span>
+                    <span class="threshold-value">{{thresholds.target}}%</span>
+                    <span class="threshold-status {{#if (gte summary.overall thresholds.target)}}status-pass{{else}}status-fail{{/if}}">
+                        {{#if (gte summary.overall thresholds.target)}}✅ Met{{else}}❌ Not Met{{/if}}
+                    </span>
+                </div>
+                <div class="threshold-item">
+                    <span class="threshold-label">Minimum:</span>
+                    <span class="threshold-value">{{thresholds.minimum}}%</span>
+                    <span class="threshold-status {{#if (gte summary.overall thresholds.minimum)}}status-pass{{else}}status-fail{{/if}}">
+                        {{#if (gte summary.overall thresholds.minimum)}}✅ Met{{else}}❌ Not Met{{/if}}
+                    </span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="main-footer">
+        <div class="footer-content">
+            <p><a href="index.html">← Back to Dashboard</a></p>
+            <p>BATbern Platform © 2025</p>
+        </div>
+    </footer>
+</body>
+</html>

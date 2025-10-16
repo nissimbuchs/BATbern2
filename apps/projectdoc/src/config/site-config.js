@@ -75,6 +75,14 @@ module.exports = {
       order: 7,
       folder: 'api',
       pattern: '*.openapi.yml'
+    },
+    'reports': {
+      title: 'Test & Quality Reports',
+      description: 'Comprehensive test results, coverage, security, and quality metrics dashboard',
+      icon: '📊',
+      order: 8,
+      externalLink: '/reports/index.html',
+      isExternal: true
     }
   },
 

@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{moduleName}} - Module Report</title>
+    <link rel="stylesheet" href="../../styles/main.css">
+    <link rel="stylesheet" href="../../styles/reports.css">
+    <link rel="icon" href="../../assets/favicon.ico">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body class="reports-page module-detail">
+    <header class="main-header">
+        <div class="header-container">
+            <div class="logo">
+                <img src="../../assets/BATbern_color_logo_transparent.png" alt="BATbern Logo">
+                <span>BATbern Platform</span>
+            </div>
+            <nav class="main-nav">
+                <a href="../../index.html">📚 Documentation</a>
+                <a href="../index.html">📊 Reports</a>
+                <a href="../../api/index.html">🔌 APIs</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="breadcrumbs">
+        <a href="../../index.html">Home</a>
+        <span>›</span>
+        <a href="../index.html">Reports</a>
+        <span>›</span>
+        <span>{{moduleName}}</span>
+    </div>
+
+    <main class="module-detail-container">
+        <header class="module-header">
+            <h1>{{moduleName}}</h1>
+            <div class="module-status-badge status-{{moduleData.status}}">
+                {{#if_eq moduleData.status "passing"}}✅ Passing{{/if_eq}}
+                {{#if_eq moduleData.status "warning"}}⚠️ Warning{{/if_eq}}
+                {{#if_eq moduleData.status "failing"}}❌ Failing{{/if_eq}}
+            </div>
+        </header>
+
+        <!-- Module Summary Cards -->
+        <section class="module-metrics">
+            <div class="metric-card">
+                <h3>Test Results</h3>
+                {{#if moduleData.tests}}
+                <div class="metric-large">{{moduleData.tests.passed}}/{{moduleData.tests.total}}</div>
+                <div class="metric-details">
+                    <div class="detail-row">
+                        <span>Success Rate:</span>
+                        <span class="{{#if (lt moduleData.tests.successRate 100)}}text-error{{else}}text-success{{/if}}">
+                            {{moduleData.tests.successRate}}%
+                        </span>
+                    </div>
+                    {{#if (gt moduleData.tests.failures 0)}}
+                    <div class="detail-row">
+                        <span>Failures:</span>
+                        <span class="text-error">{{moduleData.tests.failures}}</span>
+                    </div>
+                    {{/if}}
+                    {{#if (gt moduleData.tests.errors 0)}}
+                    <div class="detail-row">
+                        <span>Errors:</span>
+                        <span class="text-error">{{moduleData.tests.errors}}</span>
+                    </div>
+                    {{/if}}
+                </div>
+                {{else}}
+                <div class="no-data-message">No test data available</div>
+                {{/if}}
+            </div>
+
+            <div class="metric-card">
+                <h3>Code Coverage</h3>
+                {{#if moduleData.coverage}}
+                <div class="metric-large">{{moduleData.coverage.line}}%</div>
+                <div class="coverage-breakdown">
+                    <div class="coverage-item">
+                        <span>Line Coverage:</span>
+                        <div class="mini-bar">
+                            <div class="mini-bar-fill" style="width: {{moduleData.coverage.line}}%"></div>
+                            <span>{{moduleData.coverage.line}}%</span>
+                        </div>
+                    </div>
+                    <div class="coverage-item">
+                        <span>Branch Coverage:</span>
+                        <div class="mini-bar">
+                            <div class="mini-bar-fill" style="width: {{moduleData.coverage.branch}}%"></div>
+                            <span>{{moduleData.coverage.branch}}%</span>
+                        </div>
+                    </div>
+                    <div class="coverage-item">
+                        <span>Instruction Coverage:</span>
+                        <div class="mini-bar">
+                            <div class="mini-bar-fill" style="width: {{moduleData.coverage.instruction}}%"></div>
+                            <span>{{moduleData.coverage.instruction}}%</span>
+                        </div>
+                    </div>
+                </div>
+                {{else}}
+                <div class="no-data-message">No coverage data available</div>
+                {{/if}}
+            </div>
+
+            <div class="metric-card">
+                <h3>Code Quality</h3>
+                {{#if moduleData.quality}}
+                <div class="metric-large">{{moduleData.quality.violations}}</div>
+                <div class="metric-details">
+                    <div class="detail-row">
+                        <span>Errors:</span>
+                        <span class="{{#if (gt moduleData.quality.errors 0)}}text-error{{else}}text-success{{/if}}">
+                            {{moduleData.quality.errors}}
+                        </span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Warnings:</span>
+                        <span class="{{#if (gt moduleData.quality.warnings 0)}}text-warning{{else}}text-success{{/if}}">
+                            {{moduleData.quality.warnings}}
+                        </span>
+                    </div>
+                </div>
+                {{else}}
+                <div class="no-data-message">No quality data available</div>
+                {{/if}}
+            </div>
+        </section>
+
+        <!-- Failed Tests Section -->
+        {{#if failedTests}}
+        {{#if (gt failedTests.length 0)}}
+        <section class="failed-tests-section">
+            <h2>Failed Tests ({{failedTests.length}})</h2>
+            <div class="failed-tests-list">
+                {{#each failedTests}}
+                <div class="failed-test-item">
+                    <div class="test-header">
+                        <span class="test-status">{{this.status}}</span>
+                        <span class="test-name">{{this.testName}}</span>
+                    </div>
+                    <div class="test-class">{{this.className}}</div>
+                    <div class="test-message">{{this.message}}</div>
+                    <div class="test-meta">Suite: {{this.suite}} | Time: {{this.time}}s</div>
+                </div>
+                {{/each}}
+            </div>
+        </section>
+        {{/if}}
+        {{/if}}
+
+        <!-- Package Coverage Details -->
+        {{#if packages}}
+        <section class="packages-section">
+            <h2>Package Coverage</h2>
+            <table class="packages-table">
+                <thead>
+                    <tr>
+                        <th>Package</th>
+                        <th>Classes</th>
+                        <th>Line Coverage</th>
+                        <th>Branch Coverage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each packages}}
+                    <tr>
+                        <td class="package-name">{{this.name}}</td>
+                        <td>{{this.classes}}</td>
+                        <td>
+                            <div class="coverage-bar-small">
+                                <div class="coverage-fill" style="width: {{this.coverage.line.percentage}}%"></div>
+                                <span>{{this.coverage.line.percentage}}%</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="coverage-bar-small">
+                                <div class="coverage-fill" style="width: {{this.coverage.branch.percentage}}%"></div>
+                                <span>{{this.coverage.branch.percentage}}%</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </section>
+        {{/if}}
+
+        <!-- Quality Violations -->
+        {{#if topViolations}}
+        {{#if (gt topViolations.length 0)}}
+        <section class="violations-section">
+            <h2>Top Quality Violations</h2>
+            <table class="violations-table">
+                <thead>
+                    <tr>
+                        <th>Rule</th>
+                        <th>Severity</th>
+                        <th>Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each topViolations}}
+                    <tr>
+                        <td>{{this.rule}}</td>
+                        <td>
+                            <span class="severity-badge severity-{{this.severity}}">{{this.severity}}</span>
+                        </td>
+                        <td>{{this.count}}</td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </section>
+        {{/if}}
+        {{/if}}
+
+        <!-- Module Trend Chart -->
+        {{#if moduleTrend}}
+        <section class="module-trend-section">
+            <h2>Module Trend (Last {{moduleTrend.labels.length}} Builds)</h2>
+            <div class="chart-container">
+                <canvas id="moduleTrendChart"></canvas>
+            </div>
+        </section>
+        {{/if}}
+
+        <!-- Report Links -->
+        <section class="report-links-section">
+            <h2>Detailed Reports</h2>
+            <div class="links-grid">
+                {{#if htmlReports.tests}}
+                <a href="{{htmlReports.tests}}" target="_blank" class="link-card">
+                    <div class="link-icon">🧪</div>
+                    <h3>Full Test Report</h3>
+                    <p>View complete test execution results</p>
+                </a>
+                {{/if}}
+                {{#if htmlReports.coverage}}
+                <a href="{{htmlReports.coverage}}" target="_blank" class="link-card">
+                    <div class="link-icon">📊</div>
+                    <h3>Full Coverage Report</h3>
+                    <p>View detailed coverage by class and method</p>
+                </a>
+                {{/if}}
+            </div>
+        </section>
+    </main>
+
+    <footer class="main-footer">
+        <div class="footer-content">
+            <p><a href="../index.html">← Back to Dashboard</a></p>
+            <p>BATbern Platform © 2025</p>
+        </div>
+    </footer>
+
+    {{#if moduleTrend}}
+    <script>
+        const moduleTrend = {{{json moduleTrend}}};
+
+        new Chart(document.getElementById('moduleTrendChart'), {
+            type: 'line',
+            data: {
+                labels: moduleTrend.labels,
+                datasets: [
+                    {
+                        label: 'Line Coverage',
+                        data: moduleTrend.coverage,
+                        borderColor: '#1565C0',
+                        backgroundColor: 'rgba(21, 101, 192, 0.1)',
+                        tension: 0.4,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Test Success Rate',
+                        data: moduleTrend.testSuccessRate,
+                        borderColor: '#4CAF50',
+                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                        tension: 0.4,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Violations',
+                        data: moduleTrend.violations,
+                        borderColor: '#F44336',
+                        backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                        tension: 0.4,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' }
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: { display: true, text: 'Percentage (%)' },
+                        max: 100
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: { display: true, text: 'Violations' },
+                        grid: { drawOnChartArea: false }
+                    }
+                }
+            }
+        });
+    </script>
+    {{/if}}
+</body>
+</html>

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quality Report - Test & Quality Dashboard</title>
+    <link rel="stylesheet" href="../styles/main.css">
+    <link rel="stylesheet" href="../styles/reports.css">
+    <link rel="icon" href="../assets/favicon.ico">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body class="reports-page quality-page">
+    <header class="main-header">
+        <div class="header-container">
+            <div class="logo">
+                <img src="../assets/BATbern_color_logo_transparent.png" alt="BATbern Logo">
+                <span>BATbern Platform</span>
+            </div>
+            <nav class="main-nav">
+                <a href="../index.html">📚 Documentation</a>
+                <a href="index.html">📊 Reports</a>
+                <a href="../api/index.html">🔌 APIs</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="breadcrumbs">
+        <a href="../index.html">Home</a>
+        <span>›</span>
+        <a href="index.html">Reports</a>
+        <span>›</span>
+        <span>Quality</span>
+    </div>
+
+    <main class="quality-container">
+        <header class="page-header">
+            <h1>Code Quality Dashboard</h1>
+            <p>Code quality violations and style issues across all modules</p>
+        </header>
+
+        <!-- Quality Summary -->
+        <section class="quality-summary">
+            <div class="summary-card">
+                <div class="summary-icon">✨</div>
+                <div class="summary-content">
+                    <h3>Total Violations</h3>
+                    <div class="summary-value">{{quality.summary.overallStats.totalViolations}}</div>
+                    <div class="summary-detail">
+                        Across {{quality.summary.overallStats.filesWithViolations}} files
+                    </div>
+                </div>
+            </div>
+
+            <div class="summary-card {{#if (gt quality.summary.overallStats.bySeverity.error 0)}}card-error{{else}}card-success{{/if}}">
+                <div class="summary-icon">{{#if (gt quality.summary.overallStats.bySeverity.error 0)}}❌{{else}}✅{{/if}}</div>
+                <div class="summary-content">
+                    <h3>Errors</h3>
+                    <div class="summary-value">{{quality.summary.overallStats.bySeverity.error}}</div>
+                    <div class="summary-detail">
+                        {{#if (eq quality.summary.overallStats.bySeverity.error 0)}}
+                        No errors found
+                        {{else}}
+                        Must be fixed
+                        {{/if}}
+                    </div>
+                </div>
+            </div>
+
+            <div class="summary-card {{#if (gt quality.summary.overallStats.bySeverity.warning 50)}}card-warning{{else}}card-info{{/if}}">
+                <div class="summary-icon">⚠️</div>
+                <div class="summary-content">
+                    <h3>Warnings</h3>
+                    <div class="summary-value">{{quality.summary.overallStats.bySeverity.warning}}</div>
+                    <div class="summary-detail">
+                        Should be addressed
+                    </div>
+                </div>
+            </div>
+
+            <div class="summary-card card-info">
+                <div class="summary-icon">ℹ️</div>
+                <div class="summary-content">
+                    <h3>Info</h3>
+                    <div class="summary-value">{{quality.summary.overallStats.bySeverity.info}}</div>
+                    <div class="summary-detail">
+                        Informational only
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Module Quality Breakdown -->
+        <section class="module-quality-section">
+            <h2>Quality by Module</h2>
+            <table class="module-quality-table">
+                <thead>
+                    <tr>
+                        <th>Module</th>
+                        <th>Total Files</th>
+                        <th>Files with Violations</th>
+                        <th>Errors</th>
+                        <th>Warnings</th>
+                        <th>Total Violations</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each quality.summary.modules}}
+                    <tr>
+                        <td class="module-name"><strong>{{this.name}}</strong></td>
+                        <td>{{this.files}}</td>
+                        <td>{{this.filesWithViolations}}</td>
+                        <td class="{{#if (gt this.errors 0)}}text-error{{else}}text-success{{/if}}">
+                            {{this.errors}}
+                        </td>
+                        <td class="{{#if (gt this.warnings 0)}}text-warning{{else}}text-muted{{/if}}">
+                            {{this.warnings}}
+                        </td>
+                        <td><strong>{{this.violations}}</strong></td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Top Violations -->
+        {{#if quality.summary.topRules}}
+        {{#if (gt quality.summary.topRules.length 0)}}
+        <section class="top-violations-section">
+            <h2>Most Common Violations</h2>
+            <div class="violations-chart-container">
+                <canvas id="violationsChart"></canvas>
+            </div>
+            <table class="top-violations-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Rule</th>
+                        <th>Severity</th>
+                        <th>Occurrences</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each quality.summary.topRules}}
+                    <tr>
+                        <td class="rank">{{add @index 1}}</td>
+                        <td class="rule-name">{{this.rule}}</td>
+                        <td>
+                            <span class="severity-badge severity-{{lowercase this.severity}}">
+                                {{this.severity}}
+                            </span>
+                        </td>
+                        <td class="count"><strong>{{this.count}}</strong></td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </section>
+        {{/if}}
+        {{/if}}
+
+        <!-- Violation Categories (if available) -->
+        {{#if categories}}
+        <section class="categories-section">
+            <h2>Violations by Category</h2>
+            <div class="categories-grid">
+                {{#each categories}}
+                {{#if (gt this.count 0)}}
+                <div class="category-card">
+                    <h4>{{capitalize @key}}</h4>
+                    <div class="category-count">{{this.count}}</div>
+                    <div class="category-rules">{{this.rules.length}} rules</div>
+                </div>
+                {{/if}}
+                {{/each}}
+            </div>
+        </section>
+        {{/if}}
+
+        <!-- Quality Standards -->
+        <section class="standards-section">
+            <h2>Quality Standards</h2>
+            <div class="standards-info">
+                <div class="standard-item">
+                    <h4>Checkstyle</h4>
+                    <p>Based on Google Java Style Guide</p>
+                    <ul>
+                        <li>Max line length: 120 characters</li>
+                        <li>Enforces naming conventions</li>
+                        <li>Whitespace and indentation rules</li>
+                        <li>Import order and organization</li>
+                    </ul>
+                </div>
+                <div class="standard-item">
+                    <h4>Quality Gates</h4>
+                    <p>Build quality thresholds</p>
+                    <ul>
+                        <li>❌ Errors: 0 allowed (build fails)</li>
+                        <li>⚠️ Warnings: Max 50 per module</li>
+                        <li>✅ Info: Unlimited (informational)</li>
+                    </ul>
+                </div>
+                <div class="standard-item">
+                    <h4>Best Practices</h4>
+                    <p>Code quality recommendations</p>
+                    <ul>
+                        <li>Fix errors immediately</li>
+                        <li>Address warnings in each PR</li>
+                        <li>Run Checkstyle locally before commit</li>
+                        <li>Configure IDE with Checkstyle plugin</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- External Tools -->
+        <section class="external-tools-section">
+            <h2>Additional Quality Tools</h2>
+            <div class="tools-grid">
+                {{#if externalLinks.sonarcloud}}
+                <a href="{{externalLinks.sonarcloud}}" target="_blank" class="tool-link-card">
+                    <div class="tool-icon">🔍</div>
+                    <h4>SonarCloud</h4>
+                    <p>Detailed code quality analysis, code smells, and technical debt</p>
+                    <span class="external-link-icon">↗</span>
+                </a>
+                {{/if}}
+                <div class="tool-link-card">
+                    <div class="tool-icon">📝</div>
+                    <h4>Checkstyle Config</h4>
+                    <p>View project Checkstyle configuration</p>
+                    <code>config/checkstyle/checkstyle.xml</code>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="main-footer">
+        <div class="footer-content">
+            <p><a href="index.html">← Back to Dashboard</a></p>
+            <p>BATbern Platform © 2025</p>
+        </div>
+    </footer>
+
+    {{#if quality.summary.topRules}}
+    <script>
+        const topRules = {{{json quality.summary.topRules}}};
+
+        // Only show top 10 for chart readability
+        const chartData = topRules.slice(0, 10);
+
+        new Chart(document.getElementById('violationsChart'), {
+            type: 'bar',
+            data: {
+                labels: chartData.map(r => r.rule.length > 30 ? r.rule.substring(0, 30) + '...' : r.rule),
+                datasets: [{
+                    label: 'Occurrences',
+                    data: chartData.map(r => r.count),
+                    backgroundColor: chartData.map(r => {
+                        switch(r.severity.toLowerCase()) {
+                            case 'error': return '#F44336';
+                            case 'warning': return '#FFC107';
+                            default: return '#2196F3';
+                        }
+                    })
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title: (items) => {
+                                const index = items[0].dataIndex;
+                                return topRules[index].rule;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Number of Occurrences' }
+                    },
+                    x: {
+                        ticks: {
+                            autoSkip: false,
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+    {{/if}}
+</body>
+</html>

@@ -217,6 +217,16 @@ class HtmlGenerator {
     const navigation = {};
 
     Object.entries(this.config.categories).forEach(([key, categoryConfig]) => {
+      // Handle external links (like Reports dashboard)
+      if (categoryConfig.isExternal) {
+        navigation[key] = {
+          ...categoryConfig,
+          isExternalLink: true,
+          externalUrl: categoryConfig.externalLink
+        };
+        return;
+      }
+
       const docs = allDocuments.filter(doc => doc.category === key);
 
       // Special handling for epics - group stories under them

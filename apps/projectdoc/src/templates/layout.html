@@ -75,12 +75,24 @@
 
                     {{#each navigation}}
                     <div class="nav-section nav-section-expanded" data-category="{{@key}}">
+                        {{#if isExternalLink}}
+                        <!-- External link section (like Reports) -->
+                        <a href="{{externalUrl}}" class="nav-section-link">
+                            <h3 class="nav-section-title nav-section-external">
+                                <span class="nav-section-icon">{{icon}}</span>
+                                {{title}}
+                                <span class="external-indicator">↗</span>
+                            </h3>
+                        </a>
+                        {{else}}
+                        <!-- Regular section with documents -->
                         <h3 class="nav-section-title" onclick="toggleNavSection(this)">
                             <span class="nav-section-icon">{{icon}}</span>
                             {{title}}
                             <span class="nav-section-count">{{documents.length}}</span>
                             <span class="nav-section-toggle">▼</span>
                         </h3>
+                        {{/if}}
 
                         {{#if documents}}
                         <ul class="nav-section-items">

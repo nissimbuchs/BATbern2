@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}} - Test & Quality Dashboard</title>
+    <link rel="stylesheet" href="../styles/main.css">
+    <link rel="stylesheet" href="../styles/reports.css">
+    <link rel="icon" href="../assets/favicon.ico">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body class="reports-page">
+    <header class="main-header">
+        <div class="header-container">
+            <div class="logo">
+                <img src="../assets/BATbern_color_logo_transparent.png" alt="BATbern Logo">
+                <span>BATbern Platform</span>
+            </div>
+            <nav class="main-nav">
+                <a href="../index.html">📚 Documentation</a>
+                <a href="index.html" class="active">📊 Reports</a>
+                <a href="../api/index.html">🔌 APIs</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="dashboard-container">
+        <!-- Hero Section with Overall Health -->
+        <section class="hero-section">
+            <div class="health-badge health-{{summary.healthStatus}}">
+                <div class="health-icon">
+                    {{#if_eq summary.healthStatus "passing"}}✅{{/if_eq}}
+                    {{#if_eq summary.healthStatus "warning"}}⚠️{{/if_eq}}
+                    {{#if_eq summary.healthStatus "failing"}}❌{{/if_eq}}
+                </div>
+                <div class="health-info">
+                    <h1>{{#if_eq summary.healthStatus "passing"}}All Systems Passing{{/if_eq}}{{#if_eq summary.healthStatus "warning"}}Build Health: Warning{{/if_eq}}{{#if_eq summary.healthStatus "failing"}}Build Health: Failing{{/if_eq}}</h1>
+                    <p class="build-info">
+                        Build #{{metadata.buildNumber}} • {{metadata.branch}} •
+                        <time datetime="{{metadata.timestamp}}">{{formatDate metadata.timestamp}}</time>
+                    </p>
+                </div>
+            </div>
+
+            {{#if comparison}}
+            <div class="comparison-strip">
+                <span>Compared to build #{{comparison.previous.buildNumber}}:</span>
+                <span class="change-item {{#if (gt comparison.changes.coverage.overall 0)}}positive{{else}}negative{{/if}}">
+                    Coverage: {{comparison.changes.coverage.overall}}%
+                </span>
+                <span class="change-item {{#if (eq comparison.changes.tests.failed 0)}}positive{{else}}negative{{/if}}">
+                    Failed Tests: {{comparison.changes.tests.failed}}
+                </span>
+                <span class="change-item {{#if (lte comparison.changes.security.total 0)}}positive{{else}}negative{{/if}}">
+                    Security Issues: {{comparison.changes.security.total}}
+                </span>
+            </div>
+            {{/if}}
+        </section>
+
+        <!-- Key Metrics Cards -->
+        <section class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-icon">🧪</div>
+                <div class="metric-content">
+                    <h3>Tests</h3>
+                    <div class="metric-value">{{summary.tests.passed}}/{{summary.tests.total}}</div>
+                    <div class="metric-label">
+                        {{summary.tests.successRate}}% Success Rate
+                        {{#if (lt summary.tests.successRate 100)}}
+                        <span class="badge badge-error">{{summary.tests.failed}} Failed</span>
+                        {{/if}}
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon">📊</div>
+                <div class="metric-content">
+                    <h3>Coverage</h3>
+                    <div class="metric-value">{{summary.coverage.overall}}%</div>
+                    <div class="metric-label">
+                        Target: {{summary.coverage.target}}%
+                        {{#if (lt summary.coverage.overall summary.coverage.target)}}
+                        <span class="badge badge-warning">Below Target</span>
+                        {{else}}
+                        <span class="badge badge-success">On Target</span>
+                        {{/if}}
+                    </div>
+                    <div class="metric-breakdown">
+                        Java: {{summary.coverage.java}}% | Frontend: {{summary.coverage.frontend}}%
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon">🔒</div>
+                <div class="metric-content">
+                    <h3>Security</h3>
+                    <div class="metric-value">{{summary.security.totalIssues}}</div>
+                    <div class="metric-label">
+                        {{#if (gt summary.security.critical 0)}}
+                        <span class="badge badge-critical">{{summary.security.critical}} Critical</span>
+                        {{/if}}
+                        {{#if (gt summary.security.high 0)}}
+                        <span class="badge badge-error">{{summary.security.high}} High</span>
+                        {{/if}}
+                        {{#if (eq summary.security.totalIssues 0)}}
+                        <span class="badge badge-success">No Issues</span>
+                        {{/if}}
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon">✨</div>
+                <div class="metric-content">
+                    <h3>Code Quality</h3>
+                    <div class="metric-value">{{summary.quality.totalViolations}}</div>
+                    <div class="metric-label">
+                        {{#if (gt summary.quality.errors 0)}}
+                        <span class="badge badge-error">{{summary.quality.errors}} Errors</span>
+                        {{/if}}
+                        <span class="badge badge-warning">{{summary.quality.warnings}} Warnings</span>
+                        {{#if (eq summary.quality.errors 0)}}
+                        <span class="badge badge-success">No Errors</span>
+                        {{/if}}
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Trend Charts -->
+        {{#if trends}}
+        <section class="charts-section">
+            <h2>Historical Trends</h2>
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h3>Coverage Trend (Last {{trends.labels.length}} Builds)</h3>
+                    <canvas id="coverageTrendChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Test Results Trend</h3>
+                    <canvas id="testTrendChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Security Issues Trend</h3>
+                    <canvas id="securityTrendChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Quality Violations Trend</h3>
+                    <canvas id="qualityTrendChart"></canvas>
+                </div>
+            </div>
+        </section>
+        {{/if}}
+
+        <!-- Module Status Table -->
+        <section class="modules-section">
+            <h2>Module Status</h2>
+            <div class="table-container">
+                <table class="modules-table">
+                    <thead>
+                        <tr>
+                            <th>Module</th>
+                            <th>Status</th>
+                            <th>Tests</th>
+                            <th>Coverage</th>
+                            <th>Quality</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#each modules}}
+                        <tr class="module-row status-{{this.status}}">
+                            <td class="module-name">
+                                <strong>{{this.name}}</strong>
+                            </td>
+                            <td class="module-status">
+                                <span class="status-badge status-{{this.status}}">
+                                    {{#if_eq this.status "passing"}}✅ Passing{{/if_eq}}
+                                    {{#if_eq this.status "warning"}}⚠️ Warning{{/if_eq}}
+                                    {{#if_eq this.status "failing"}}❌ Failing{{/if_eq}}
+                                    {{#if_eq this.status "unknown"}}❓ Unknown{{/if_eq}}
+                                </span>
+                            </td>
+                            <td class="module-tests">
+                                {{#if this.tests}}
+                                <div class="test-stats">
+                                    <span class="test-count">{{this.tests.passed}}/{{this.tests.total}}</span>
+                                    <span class="test-rate {{#if (lt this.tests.successRate 100)}}rate-bad{{else}}rate-good{{/if}}">
+                                        {{this.tests.successRate}}%
+                                    </span>
+                                </div>
+                                {{else}}
+                                <span class="no-data">-</span>
+                                {{/if}}
+                            </td>
+                            <td class="module-coverage">
+                                {{#if this.coverage}}
+                                <div class="coverage-bar">
+                                    <div class="coverage-fill" style="width: {{this.coverage.line}}%"></div>
+                                    <span class="coverage-text">{{this.coverage.line}}%</span>
+                                </div>
+                                {{else}}
+                                <span class="no-data">-</span>
+                                {{/if}}
+                            </td>
+                            <td class="module-quality">
+                                {{#if this.quality}}
+                                <div class="quality-stats">
+                                    {{#if (gt this.quality.errors 0)}}
+                                    <span class="badge badge-error">{{this.quality.errors}} errors</span>
+                                    {{/if}}
+                                    {{#if (gt this.quality.warnings 0)}}
+                                    <span class="badge badge-warning">{{this.quality.warnings}} warnings</span>
+                                    {{/if}}
+                                    {{#if (and (eq this.quality.errors 0) (eq this.quality.warnings 0))}}
+                                    <span class="badge badge-success">Clean</span>
+                                    {{/if}}
+                                </div>
+                                {{else}}
+                                <span class="no-data">-</span>
+                                {{/if}}
+                            </td>
+                            <td class="module-actions">
+                                <a href="modules/{{this.name}}.html" class="btn-small">Details</a>
+                            </td>
+                        </tr>
+                        {{/each}}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Quick Links -->
+        <section class="quick-links">
+            <h2>Detailed Reports</h2>
+            <div class="links-grid">
+                <a href="coverage.html" class="link-card">
+                    <div class="link-icon">📊</div>
+                    <h3>Coverage Report</h3>
+                    <p>Detailed coverage analysis by module and package</p>
+                </a>
+                <a href="security.html" class="link-card">
+                    <div class="link-icon">🔒</div>
+                    <h3>Security Dashboard</h3>
+                    <p>Vulnerability findings and security scan results</p>
+                </a>
+                <a href="quality.html" class="link-card">
+                    <div class="link-icon">✨</div>
+                    <h3>Quality Dashboard</h3>
+                    <p>Code quality violations and style issues</p>
+                </a>
+                {{#if externalLinks.sonarcloud}}
+                <a href="{{externalLinks.sonarcloud}}" target="_blank" class="link-card external">
+                    <div class="link-icon">🔍</div>
+                    <h3>SonarCloud</h3>
+                    <p>View detailed analysis on SonarCloud</p>
+                </a>
+                {{/if}}
+            </div>
+        </section>
+    </main>
+
+    <footer class="main-footer">
+        <div class="footer-content">
+            <p>Generated on {{formatDate metadata.timestamp}} | Build #{{metadata.buildNumber}} ({{metadata.commit}})</p>
+            <p>BATbern Platform © 2025</p>
+        </div>
+    </footer>
+
+    {{#if trends}}
+    <script>
+        // Chart data from server
+        const trendsData = {{{json trends}}};
+
+        // Coverage Trend Chart
+        new Chart(document.getElementById('coverageTrendChart'), {
+            type: 'line',
+            data: {
+                labels: trendsData.labels,
+                datasets: [
+                    {
+                        label: 'Overall',
+                        data: trendsData.coverage.overall,
+                        borderColor: '#1565C0',
+                        backgroundColor: 'rgba(21, 101, 192, 0.1)',
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Java',
+                        data: trendsData.coverage.java,
+                        borderColor: '#FF6F00',
+                        backgroundColor: 'rgba(255, 111, 0, 0.1)',
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Frontend',
+                        data: trendsData.coverage.frontend,
+                        borderColor: '#00897B',
+                        backgroundColor: 'rgba(0, 137, 123, 0.1)',
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: { callback: value => value + '%' }
+                    }
+                }
+            }
+        });
+
+        // Test Results Trend
+        new Chart(document.getElementById('testTrendChart'), {
+            type: 'line',
+            data: {
+                labels: trendsData.labels,
+                datasets: [
+                    {
+                        label: 'Success Rate',
+                        data: trendsData.tests.successRate,
+                        borderColor: '#4CAF50',
+                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                        tension: 0.4,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Failed Tests',
+                        data: trendsData.tests.failed,
+                        borderColor: '#F44336',
+                        backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                        tension: 0.4,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' }
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: { display: true, text: 'Success Rate (%)' },
+                        max: 100
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: { display: true, text: 'Failed Tests' },
+                        grid: { drawOnChartArea: false }
+                    }
+                }
+            }
+        });
+
+        // Security Issues Trend
+        new Chart(document.getElementById('securityTrendChart'), {
+            type: 'bar',
+            data: {
+                labels: trendsData.labels,
+                datasets: [
+                    {
+                        label: 'Critical',
+                        data: trendsData.security.critical,
+                        backgroundColor: '#D32F2F'
+                    },
+                    {
+                        label: 'High',
+                        data: trendsData.security.high,
+                        backgroundColor: '#FF6F00'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' }
+                },
+                scales: {
+                    x: { stacked: true },
+                    y: { stacked: true, beginAtZero: true }
+                }
+            }
+        });
+
+        // Quality Violations Trend
+        new Chart(document.getElementById('qualityTrendChart'), {
+            type: 'line',
+            data: {
+                labels: trendsData.labels,
+                datasets: [
+                    {
+                        label: 'Errors',
+                        data: trendsData.quality.errors,
+                        borderColor: '#F44336',
+                        backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Warnings',
+                        data: trendsData.quality.warnings,
+                        borderColor: '#FFC107',
+                        backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    </script>
+    {{/if}}
+</body>
+</html>
