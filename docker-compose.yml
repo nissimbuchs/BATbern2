@@ -32,6 +32,8 @@ services:
       # Cognito Configuration (AWS)
       - COGNITO_USER_POOL_ID=${COGNITO_USER_POOL_ID}
       - COGNITO_CLIENT_ID=${COGNITO_CLIENT_ID}
+      - COGNITO_ISSUER_URI=https://cognito-idp.${AWS_REGION:-eu-central-1}.amazonaws.com/${COGNITO_USER_POOL_ID}
+      - COGNITO_JWK_SET_URI=https://cognito-idp.${AWS_REGION:-eu-central-1}.amazonaws.com/${COGNITO_USER_POOL_ID}/.well-known/jwks.json
 
       # Feature Flags
       - ENABLE_COGNITO_AUTH=${ENABLE_COGNITO_AUTH:-true}
@@ -107,6 +109,8 @@ services:
       # Cognito Configuration (AWS)
       - COGNITO_USER_POOL_ID=${COGNITO_USER_POOL_ID}
       - COGNITO_CLIENT_ID=${COGNITO_CLIENT_ID}
+      - COGNITO_ISSUER_URI=https://cognito-idp.${AWS_REGION:-eu-central-1}.amazonaws.com/${COGNITO_USER_POOL_ID}
+      - COGNITO_JWK_SET_URI=https://cognito-idp.${AWS_REGION:-eu-central-1}.amazonaws.com/${COGNITO_USER_POOL_ID}/.well-known/jwks.json
     volumes:
       - .:/workspace
       - company-user-management-gradle-cache:/gradle-cache
