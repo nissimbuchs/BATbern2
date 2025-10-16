@@ -76,6 +76,10 @@ const CompanyManagementScreen: React.FC = () => {
     }
   };
 
+  const handleViewModeToggle = () => {
+    setViewMode(prev => prev === 'grid' ? 'list' : 'grid');
+  };
+
   const handleFilterChange = useCallback((newFilters: CompanyFiltersType) => {
     setFilters(newFilters);
   }, []);
@@ -190,7 +194,7 @@ const CompanyManagementScreen: React.FC = () => {
                 companies={companiesData?.data || []}
                 isLoading={isLoadingCompanies}
                 viewMode={viewMode}
-                onViewModeToggle={handleViewModeChange as any}
+                onViewModeToggle={handleViewModeToggle}
                 onCompanyClick={(id) => navigate(`${id}`)}
               />
             }

@@ -163,7 +163,7 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
   );
 
   const onDrop = useCallback(
-    (acceptedFiles: File[], rejectedFiles: any[]) => {
+    <T extends File>(acceptedFiles: T[], fileRejections: import('react-dropzone').FileRejection[]) => {
       // Reset error state
       setError(null);
 
@@ -177,7 +177,7 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
       }
 
       // Check for rejected files
-      if (rejectedFiles.length > 0) {
+      if (fileRejections.length > 0) {
         handleError(
           'INVALID_FILE',
           'File was rejected. Please check file type and size.'
