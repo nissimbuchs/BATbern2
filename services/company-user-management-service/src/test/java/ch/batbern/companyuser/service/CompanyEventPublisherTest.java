@@ -11,13 +11,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import software.amazon.awssdk.services.eventbridge.EventBridgeClient;
+import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsResponse;
 
 import java.time.Instant;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -35,7 +36,7 @@ import static org.mockito.Mockito.*;
 class CompanyEventPublisherTest {
 
     @Mock
-    private EventBridgeClient eventBridgeClient;
+    private EventBridgeAsyncClient eventBridgeClient;
 
     private CompanyEventPublisher companyEventPublisher;
 
@@ -76,7 +77,7 @@ class CompanyEventPublisherTest {
                 .failedEntryCount(0)
                 .build();
         when(eventBridgeClient.putEvents(any(PutEventsRequest.class)))
-                .thenReturn(mockResponse);
+                .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
         // When
         companyEventPublisher.publishCompanyCreatedEvent(testCompany);
@@ -103,7 +104,7 @@ class CompanyEventPublisherTest {
                 .failedEntryCount(0)
                 .build();
         when(eventBridgeClient.putEvents(any(PutEventsRequest.class)))
-                .thenReturn(mockResponse);
+                .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
         // When
         companyEventPublisher.publishCompanyCreatedEvent(testCompany);
@@ -131,7 +132,7 @@ class CompanyEventPublisherTest {
                 .failedEntryCount(0)
                 .build();
         when(eventBridgeClient.putEvents(any(PutEventsRequest.class)))
-                .thenReturn(mockResponse);
+                .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
         // When
         companyEventPublisher.publishCompanyUpdatedEvent(testCompany);
@@ -158,7 +159,7 @@ class CompanyEventPublisherTest {
                 .failedEntryCount(0)
                 .build();
         when(eventBridgeClient.putEvents(any(PutEventsRequest.class)))
-                .thenReturn(mockResponse);
+                .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
         // When
         companyEventPublisher.publishCompanyDeletedEvent(testCompany);
@@ -186,7 +187,7 @@ class CompanyEventPublisherTest {
                 .failedEntryCount(0)
                 .build();
         when(eventBridgeClient.putEvents(any(PutEventsRequest.class)))
-                .thenReturn(mockResponse);
+                .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
         // When
         companyEventPublisher.publishCompanyVerifiedEvent(testCompany);
@@ -214,7 +215,7 @@ class CompanyEventPublisherTest {
                 .failedEntryCount(0)
                 .build();
         when(eventBridgeClient.putEvents(any(PutEventsRequest.class)))
-                .thenReturn(mockResponse);
+                .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
         // When - Test all event types
         companyEventPublisher.publishCompanyCreatedEvent(testCompany);
@@ -239,7 +240,7 @@ class CompanyEventPublisherTest {
                 .failedEntryCount(0)
                 .build();
         when(eventBridgeClient.putEvents(any(PutEventsRequest.class)))
-                .thenReturn(mockResponse);
+                .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
         // When
         companyEventPublisher.publishCompanyCreatedEvent(testCompany);
@@ -255,7 +256,7 @@ class CompanyEventPublisherTest {
                 .failedEntryCount(0)
                 .build();
         when(eventBridgeClient.putEvents(any(PutEventsRequest.class)))
-                .thenReturn(mockResponse);
+                .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
         // When
         companyEventPublisher.publishCompanyCreatedEvent(testCompany);
@@ -275,7 +276,7 @@ class CompanyEventPublisherTest {
                 .failedEntryCount(0)
                 .build();
         when(eventBridgeClient.putEvents(any(PutEventsRequest.class)))
-                .thenReturn(mockResponse);
+                .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
         // When
         companyEventPublisher.publishCompanyCreatedEvent(testCompany);
@@ -295,7 +296,7 @@ class CompanyEventPublisherTest {
                 .failedEntryCount(1)
                 .build();
         when(eventBridgeClient.putEvents(any(PutEventsRequest.class)))
-                .thenReturn(mockResponse);
+                .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
         // When & Then
         assertThatThrownBy(() -> companyEventPublisher.publishCompanyCreatedEvent(testCompany))
@@ -310,7 +311,7 @@ class CompanyEventPublisherTest {
                 .failedEntryCount(0)
                 .build();
         when(eventBridgeClient.putEvents(any(PutEventsRequest.class)))
-                .thenReturn(mockResponse);
+                .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
         // When
         companyEventPublisher.publishCompanyCreatedEvent(testCompany);

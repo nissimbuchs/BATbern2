@@ -15,7 +15,6 @@ import { NavigationMenu } from './NavigationMenu';
 import { MobileDrawer } from './MobileDrawer';
 import UserMenuDropdown from './UserMenuDropdown';
 import { useUIStore } from '@/stores/uiStore';
-import { useNotifications } from '@/hooks/useNotifications';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';

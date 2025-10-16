@@ -1,4 +1,3 @@
-// @ts-nocheck - MUI v7 Grid has known type inference issues with nested Grid components
 import React, { useState } from 'react';
 import {
   Box,
@@ -19,12 +18,10 @@ import {
   ArrowBack as ArrowBackIcon,
   Edit as EditIcon,
   CheckCircle as CheckCircleIcon,
-  Star as StarIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { CompanyDetail } from '@/types/company.types';
 import { AssociatedUsersPanel } from '@/components/shared/Company/AssociatedUsersPanel';
-import { PartnerInfoPanel } from '@/components/shared/Company/PartnerInfoPanel';
 import { CompanyStatistics } from '@/components/shared/Company/CompanyStatistics';
 import { ActivityTimeline } from '@/components/shared/Company/ActivityTimeline';
 

@@ -416,7 +416,7 @@ describe('LogoUpload Component', () => {
           // Trigger load event immediately to simulate successful upload
           setTimeout(() => {
             const loadEvent = { target: this };
-            this.addEventListener.mock.calls.forEach(([event, handler]: [string, Function]) => {
+            this.addEventListener.mock.calls.forEach(([event, handler]: [string, (e: unknown) => void]) => {
               if (event === 'load') handler(loadEvent);
             });
           }, 10);
@@ -517,7 +517,7 @@ describe('LogoUpload Component', () => {
         send: vi.fn(function(this: any) {
           setTimeout(() => {
             const errorEvent = {};
-            this.addEventListener.mock.calls.forEach(([event, handler]: [string, Function]) => {
+            this.addEventListener.mock.calls.forEach(([event, handler]: [string, (e: unknown) => void]) => {
               if (event === 'error') handler(errorEvent);
             });
           }, 10);

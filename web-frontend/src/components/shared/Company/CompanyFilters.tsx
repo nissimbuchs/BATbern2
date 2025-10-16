@@ -68,8 +68,7 @@ const CompanyFilters: React.FC<CompanyFiltersProps> = ({ onFilterChange, initial
 
     if (verifiedParam) setIsVerified(verifiedParam === 'true');
     if (industryParam) setIndustry(industryParam);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchParams]);
 
   // Update URL and notify parent when filters change
   useEffect(() => {
@@ -86,8 +85,7 @@ const CompanyFilters: React.FC<CompanyFiltersProps> = ({ onFilterChange, initial
 
     // Notify parent
     onFilterChange(filters);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isVerified, industry]);
+  }, [isVerified, industry, onFilterChange, setSearchParams]);
 
   const handleClearFilters = () => {
     setIsVerified(false);
