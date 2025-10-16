@@ -9,9 +9,11 @@
 
 import ReportAggregator from '../src/aggregators/report-aggregator.js';
 import HistoryManager from '../src/aggregators/history-manager.js';
+import reportsConfig from '../src/config/reports-config.js';
 import fs from 'fs-extra';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { execSync } from 'child_process';
 import Handlebars from 'handlebars';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -19,9 +21,13 @@ const __dirname = path.dirname(__filename);
 
 class ReportsBuilder {
   constructor(options = {}) {
+    // Base directory for finding source files (project root)
     this.baseDir = options.baseDir || path.resolve(__dirname, '../../..');
     this.config = this.loadConfig();
-    this.outputDir = path.join(this.baseDir, this.config.output.distDir);
+
+    // Output directory should be in apps/projectdoc/dist/reports/
+    const projectDocDir = path.resolve(__dirname, '..');
+    this.outputDir = path.join(projectDocDir, 'dist', 'reports');
 
     console.log('Reports Builder initialized');
     console.log('Base directory:', this.baseDir);
@@ -32,8 +38,7 @@ class ReportsBuilder {
    * Load reports configuration
    */
   loadConfig() {
-    const configPath = path.join(__dirname, '../src/config/reports-config.js');
-    return require(configPath).default;
+    return reportsConfig;
   }
 
   /**
@@ -55,7 +60,7 @@ class ReportsBuilder {
       if (this.config.history.enabled) {
         console.log('\nStep 2: Saving to history...');
         const historyManager = new HistoryManager({
-          historyFile: path.join(this.baseDir, this.config.history.historyFile),
+          historyFile: path.join(this.outputDir, 'data', 'history.json'),
           maxHistoryEntries: this.config.history.maxHistoryEntries
         });
 
@@ -151,10 +156,10 @@ class ReportsBuilder {
         ...moduleData
       });
 
-      await fs.writeFile(
-        path.join(this.outputDir, 'modules', `${moduleName}.html`),
-        moduleHtml
-      );
+      // Create file path - ensure subdirectories exist for nested modules
+      const modulePath = path.join(this.outputDir, 'modules', `${moduleName}.html`);
+      await fs.ensureDir(path.dirname(modulePath));
+      await fs.writeFile(modulePath, moduleHtml);
     }
 
     // Generate coverage page
@@ -223,7 +228,7 @@ class ReportsBuilder {
     // Get module trend from history
     if (this.config.history.enabled) {
       const historyManager = new HistoryManager({
-        historyFile: path.join(this.baseDir, this.config.history.historyFile),
+        historyFile: path.join(this.outputDir, 'data', 'history.json'),
         maxHistoryEntries: this.config.history.maxHistoryEntries
       });
       details.moduleTrend = await historyManager.getModuleTrend(moduleName, 20);
@@ -249,7 +254,8 @@ class ReportsBuilder {
    * Save JSON data files
    */
   async saveDataFiles(reportData) {
-    const dataDir = path.join(this.baseDir, this.config.output.dataDir);
+    // Data directory should also be in apps/projectdoc/dist/reports/data/
+    const dataDir = path.join(this.outputDir, 'data');
     await fs.ensureDir(dataDir);
 
     // Save latest report

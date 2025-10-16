@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { vi, describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { ActivityTimeline } from '@/components/shared/Company/ActivityTimeline';
 
 const mockActivities = [

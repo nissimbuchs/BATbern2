@@ -14,7 +14,7 @@ vi.mock('../AssociatedUsersPanel', () => ({
 // PartnerInfoPanel removed - isPartner field no longer supported by backend
 
 vi.mock('../CompanyStatistics', () => ({
-  CompanyStatistics: ({ statistics }: { statistics: any }) => (
+  CompanyStatistics: ({ statistics }: { statistics?: { totalEvents?: number } }) => (
     <div data-testid="company-statistics">Statistics: {statistics?.totalEvents}</div>
   ),
 }));

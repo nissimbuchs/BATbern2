@@ -105,7 +105,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
     watch,
     reset,
   } = useForm<CompanyFormData>({
-    resolver: zodResolver(companySchema) as any,
+    resolver: zodResolver(companySchema),
     mode: 'onBlur', // Validate on blur for immediate feedback
     defaultValues: initialData
       ? {
@@ -178,7 +178,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
         // Only send changed fields
         const partialUpdate: Partial<CreateCompanyRequest> = {};
         changedFields.forEach((field) => {
-          partialUpdate[field as keyof CreateCompanyRequest] = cleanedData[field as keyof typeof cleanedData] as any;
+          partialUpdate[field as keyof CreateCompanyRequest] = cleanedData[field as keyof typeof cleanedData];
         });
 
         await onSubmit(partialUpdate as UpdateCompanyRequest, {
@@ -193,10 +193,11 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
       }
 
       onClose();
-    } catch (error: any) {
+    } catch (error) {
       // Handle API errors (e.g., duplicate company name)
-      if (error?.response?.data?.message) {
-        setApiError(error.response.data.message);
+      const apiErrorData = error as { response?: { data?: { message?: string } } };
+      if (apiErrorData?.response?.data?.message) {
+        setApiError(apiErrorData.response.data.message);
       } else {
         setApiError(t('company.errors.saveFailed'));
       }
@@ -224,9 +225,10 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
       });
 
       onClose();
-    } catch (error: any) {
-      if (error?.response?.data?.message) {
-        setApiError(error.response.data.message);
+    } catch (error) {
+      const apiErrorData = error as { response?: { data?: { message?: string } } };
+      if (apiErrorData?.response?.data?.message) {
+        setApiError(apiErrorData.response.data.message);
       } else {
         setApiError(t('company.errors.saveFailed'));
       }

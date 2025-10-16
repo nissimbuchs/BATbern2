@@ -1,6 +1,6 @@
 import fs from 'fs-extra';
 import path from 'path';
-import glob from 'glob';
+import { globSync } from 'glob';
 
 /**
  * Parser for SARIF (Static Analysis Results Interchange Format) files
@@ -223,7 +223,7 @@ export class SarifParser {
    */
   static async findAndParseReports(baseDir, pattern = '**/*.sarif') {
     const reports = [];
-    const files = glob.sync(pattern, { cwd: baseDir, absolute: true, ignore: '**/node_modules/**' });
+    const files = globSync(pattern, { cwd: baseDir, absolute: true, ignore: '**/node_modules/**' });
 
     for (const file of files) {
       const findings = await this.parseFile(file);

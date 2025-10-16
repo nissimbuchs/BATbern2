@@ -1,7 +1,7 @@
 import { parseStringPromise } from 'xml2js';
 import fs from 'fs-extra';
 import path from 'path';
-import glob from 'glob';
+import { globSync } from 'glob';
 
 /**
  * Parser for Checkstyle XML reports
@@ -39,7 +39,7 @@ export class CheckstyleParser {
     const version = checkstyle.$.version || 'Unknown';
     const files = checkstyle.file || [];
 
-    const parsedFiles = files.map(file => this.parseFile Violations(file));
+    const parsedFiles = files.map(file => this.parseFileViolations(file));
 
     return {
       type: 'checkstyle',
@@ -148,7 +148,7 @@ export class CheckstyleParser {
    */
   static async findAndParseReports(baseDir, pattern = '**/build/reports/checkstyle/*.xml') {
     const reports = [];
-    const files = glob.sync(pattern, { cwd: baseDir, absolute: true });
+    const files = globSync(pattern, { cwd: baseDir, absolute: true });
 
     for (const file of files) {
       const violations = await this.parseFile(file);
@@ -175,7 +175,13 @@ export class CheckstyleParser {
     const relativePath = path.relative(baseDir, filePath);
     const parts = relativePath.split(path.sep);
 
-    // Typically: module-name/build/reports/checkstyle/*.xml
+    // Handle nested services: services/event-management-service/build/...
+    // or top-level: shared-kernel/build/...
+    if (parts[0] === 'services' && parts.length > 1) {
+      return `${parts[0]}/${parts[1]}`;
+    }
+
+    // Typically: module-name/build/... or module-name/coverage/...
     return parts[0] || 'unknown';
   }
 

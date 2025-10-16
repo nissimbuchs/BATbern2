@@ -212,8 +212,10 @@ export default defineConfig({
       '**/.{idea,git,cache,output,temp}/**',
     ],
     coverage: {
-      reporter: ['text', 'json', 'html'],
+      reporter: ['text', 'json', 'html', 'lcov'],
       exclude: ['node_modules/', 'src/test/', 'e2e/', '**/*.d.ts', '**/*.config.*', '**/coverage/'],
+      reportOnFailure: true, // Generate coverage even when tests fail
+      all: true, // Include all source files in coverage report
     },
     deps: {
       optimizer: {

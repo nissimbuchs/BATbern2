@@ -1,7 +1,7 @@
 import { parseStringPromise } from 'xml2js';
 import fs from 'fs-extra';
 import path from 'path';
-import glob from 'glob';
+import { glob } from 'glob';
 
 /**
  * Parser for JUnit XML test result files
@@ -170,7 +170,8 @@ export class JUnitParser {
    */
   static async findAndParseReports(baseDir, pattern = '**/build/test-results/**/*.xml') {
     const reports = [];
-    const files = glob.sync(pattern, { cwd: baseDir, absolute: true });
+    const { globSync } = await import('glob');
+    const files = globSync(pattern, { cwd: baseDir, absolute: true });
 
     for (const file of files) {
       const testResults = await this.parseFile(file);
@@ -197,7 +198,13 @@ export class JUnitParser {
     const relativePath = path.relative(baseDir, filePath);
     const parts = relativePath.split(path.sep);
 
-    // Typically: module-name/build/test-results/test/*.xml
+    // Handle nested services: services/event-management-service/build/...
+    // or top-level: shared-kernel/build/...
+    if (parts[0] === 'services' && parts.length > 1) {
+      return `${parts[0]}/${parts[1]}`;
+    }
+
+    // Typically: module-name/build/... or module-name/coverage/...
     return parts[0] || 'unknown';
   }
 

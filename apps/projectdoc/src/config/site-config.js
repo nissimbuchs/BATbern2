@@ -1,9 +1,4 @@
-// Load core config
-const fs = require('fs');
-const yaml = require('js-yaml');
-const path = require('path');
-
-module.exports = {
+export default {
   siteName: 'BATbern Platform Rewriting with Claude Code',
   siteDescription: 'Comprehensive documentation for the BATbern event management platform development',
   baseUrl: 'https://project.batbern.ch',

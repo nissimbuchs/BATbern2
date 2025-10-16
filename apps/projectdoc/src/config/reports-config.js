@@ -18,15 +18,15 @@ export default {
       htmlReportsPattern: '**/build/reports/tests/test/index.html',
       htmlCoveragePattern: '**/build/reports/jacoco/test/html/index.html',
 
-      // Modules to scan (empty means scan all)
+      // Modules to scan (with correct paths for nested services)
       modules: [
         'shared-kernel',
         'api-gateway',
-        'event-management-service',
-        'speaker-coordination-service',
-        'partner-coordination-service',
-        'attendee-experience-service',
-        'company-user-management-service'
+        'services/event-management-service',
+        'services/speaker-coordination-service',
+        'services/partner-coordination-service',
+        'services/attendee-experience-service',
+        'services/company-user-management-service'
       ]
     },
 
@@ -107,11 +107,11 @@ export default {
     modules: [
       'shared-kernel',
       'api-gateway',
-      'event-management-service',
-      'attendee-experience-service',
-      'company-user-management-service',
-      'partner-coordination-service',
-      'speaker-coordination-service',
+      'services/event-management-service',
+      'services/attendee-experience-service',
+      'services/company-user-management-service',
+      'services/partner-coordination-service',
+      'services/speaker-coordination-service',
       'web-frontend'
     ]
   },

@@ -182,6 +182,47 @@ a:hover {
   object-fit: contain;
 }
 
+/* Header Navigation */
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.header-nav .nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.header-nav .nav-link:hover {
+  background: var(--surface-color);
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.header-nav .nav-link.active {
+  background: var(--primary-color);
+  color: white;
+}
+
+.brand-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+}
+
 .nav-toggle {
   display: none;
   background: none;
@@ -1021,7 +1062,7 @@ blockquote p:last-child {
     display: block;
   }
 
-  .header-nav .nav-links {
+  .header-nav .nav-link {
     display: none;
   }
 }

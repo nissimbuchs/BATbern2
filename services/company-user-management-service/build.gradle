@@ -3,6 +3,7 @@ plugins {
     id 'org.springframework.boot' version '3.5.6'
     id 'io.spring.dependency-management' version '1.1.6'
     id 'jacoco'
+    id 'org.flywaydb.flyway' version '10.10.0'
 }
 
 group = 'ch.batbern'
@@ -101,3 +102,13 @@ jacocoTestCoverageVerification {
 }
 
 check.dependsOn jacocoTestCoverageVerification
+
+// Flyway configuration for database migrations
+flyway {
+    url = System.getProperty('flyway.url', 'jdbc:postgresql://localhost:5432/batbern')
+    user = System.getProperty('flyway.user', 'batbern_user')
+    password = System.getProperty('flyway.password', 'batbern-dev-password')
+    locations = ['classpath:db/migration']
+    baselineOnMigrate = true
+    baselineVersion = '0'
+}

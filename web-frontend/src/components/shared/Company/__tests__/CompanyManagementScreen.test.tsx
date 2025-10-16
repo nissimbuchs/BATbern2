@@ -6,24 +6,24 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { render, screen } from '@testing-library/react';
+import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import CompanyManagementScreen from '@/components/shared/Company/CompanyManagementScreen';
 
 // Mock child components to isolate testing
 vi.mock('../CompanyFilters', () => ({
-  default: ({ onFilterChange }: any) => <div data-testid="company-filters">Filters Mock</div>
+  default: () => <div data-testid="company-filters">Filters Mock</div>
 }));
 
 vi.mock('../CompanySearch', () => ({
-  default: ({ onSelect, onSearchChange }: any) => (
+  default: () => (
     <input role="combobox" aria-label="search companies" placeholder="Search companies" />
   )
 }));
 
 vi.mock('../CompanyList', () => ({
-  default: ({ viewMode, filters }: any) => <div data-testid="company-list">Company List Mock</div>
+  default: () => <div data-testid="company-list">Company List Mock</div>
 }));
 
 const createTestQueryClient = () => new QueryClient({

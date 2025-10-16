@@ -139,10 +139,10 @@ export class JacocoParser {
    * @returns {Promise<Array>} Array of parsed reports with metadata
    */
   static async findAndParseReports(baseDir, pattern = '**/build/reports/jacoco/test/jacocoTestReport.xml') {
-    const glob = await import('glob');
+    const { globSync } = await import('glob');
     const reports = [];
 
-    const files = glob.sync(pattern, { cwd: baseDir, absolute: true });
+    const files = globSync(pattern, { cwd: baseDir, absolute: true });
 
     for (const file of files) {
       const coverage = await this.parseFile(file);
@@ -169,6 +169,12 @@ export class JacocoParser {
   static extractModuleName(filePath, baseDir) {
     const relativePath = path.relative(baseDir, filePath);
     const parts = relativePath.split(path.sep);
+
+    // Handle nested services: services/event-management-service/build/...
+    // or top-level: shared-kernel/build/...
+    if (parts[0] === 'services' && parts.length > 1) {
+      return `${parts[0]}/${parts[1]}`;
+    }
 
     // Typically: module-name/build/reports/jacoco/test/jacocoTestReport.xml
     return parts[0] || 'unknown';

@@ -1,6 +1,6 @@
-const fs = require('fs-extra');
-const yaml = require('js-yaml');
-const path = require('path');
+import fs from 'fs-extra';
+import yaml from 'js-yaml';
+import path from 'path';
 
 /**
  * OpenAPI Processor
@@ -160,4 +160,4 @@ class OpenApiProcessor {
   }
 }
 
-module.exports = OpenApiProcessor;
+export default OpenApiProcessor;

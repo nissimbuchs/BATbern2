@@ -60,7 +60,8 @@ export class ReportAggregator {
       modules: this.buildModuleData({
         javaTestResults,
         javaCoverage,
-        qualityViolations
+        qualityViolations,
+        frontendCoverage
       }),
       coverage: {
         java: javaCoverage,
@@ -274,7 +275,7 @@ export class ReportAggregator {
    * @returns {Array} Module data
    */
   buildModuleData(data) {
-    const { javaTestResults, javaCoverage, qualityViolations } = data;
+    const { javaTestResults, javaCoverage, qualityViolations, frontendCoverage } = data;
 
     // Get list of all unique modules
     const moduleNames = new Set();
@@ -282,8 +283,8 @@ export class ReportAggregator {
     javaCoverage.reports.forEach(r => moduleNames.add(r.module));
     qualityViolations.reports.forEach(r => moduleNames.add(r.module));
 
-    // Build data for each module
-    return Array.from(moduleNames).map(moduleName => {
+    // Build data for each Java module
+    const modules = Array.from(moduleNames).map(moduleName => {
       const testReport = javaTestResults.reports.find(r => r.module === moduleName);
       const coverageReport = javaCoverage.reports.find(r => r.module === moduleName);
       const qualityReport = qualityViolations.reports.find(r => r.module === moduleName);
@@ -314,6 +315,29 @@ export class ReportAggregator {
         })
       };
     });
+
+    // Add web-frontend module if coverage data exists
+    if (frontendCoverage.coverage && frontendCoverage.coverage.summary.totalFiles > 0) {
+      modules.push({
+        name: 'web-frontend',
+        tests: null, // Frontend tests handled separately (Playwright, etc.)
+        coverage: {
+          line: frontendCoverage.coverage.summary.lines.percentage,
+          branch: frontendCoverage.coverage.summary.branches.percentage,
+          instruction: frontendCoverage.coverage.summary.functions.percentage
+        },
+        quality: null, // No Checkstyle for frontend
+        status: this.determineModuleStatus({
+          tests: null,
+          coverage: {
+            line: { percentage: frontendCoverage.coverage.summary.lines.percentage }
+          },
+          quality: null
+        })
+      });
+    }
+
+    return modules;
   }
 
   /**

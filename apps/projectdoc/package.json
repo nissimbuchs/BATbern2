@@ -2,14 +2,14 @@
   "name": "batbern-projectdoc",
   "version": "1.0.0",
   "description": "BATbern Project Documentation Portal - Generates and deploys public documentation website",
+  "type": "module",
   "main": "scripts/build.js",
   "scripts": {
-    "build": "npm run build:reports && npm run build",
+    "build": "(npm run build:reports || true) && npm run build:doc",
     "build:doc": "node scripts/build.js",
     "build:reports": "node scripts/build-reports.js",
     "deploy": "node scripts/deploy.js",
-    "dev": "npm run build && npx http-server dist -p 3000 -o",
-    "dev:reports": "npm run build:reports && npx http-server dist/reports -p 3001 -o",
+    "dev": "npm run build:dev && npx http-server dist -p 3099 -o",
     "clean": "rm -rf dist/*"
   },
   "dependencies": {

@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Coverage Report - Test & Quality Dashboard</title>
-    <link rel="stylesheet" href="../styles/main.css">
-    <link rel="stylesheet" href="../styles/reports.css">
+    <link rel="stylesheet" href="styles/reports.css">
     <link rel="icon" href="../assets/favicon.ico">
 </head>
 <body class="reports-page coverage-page">
@@ -80,15 +79,15 @@
             </div>
         </section>
 
-        <!-- Java Module Coverage -->
+        <!-- Module Coverage (Java + Frontend) -->
         <section class="module-coverage-section">
-            <h2>Java Module Coverage</h2>
+            <h2>Module Coverage</h2>
             <table class="coverage-table">
                 <thead>
                     <tr>
                         <th>Module</th>
-                        <th>Classes</th>
-                        <th>Methods</th>
+                        <th>Classes/Files</th>
+                        <th>Methods/Functions</th>
                         <th>Line Coverage</th>
                         <th>Branch Coverage</th>
                         <th>Instruction Coverage</th>
@@ -120,37 +119,39 @@
                         </td>
                     </tr>
                     {{/each}}
+                    {{#if frontendCoverage.coverage}}
+                    <tr>
+                        <td class="module-name"><strong>web-frontend</strong></td>
+                        <td>{{frontendCoverage.coverage.summary.totalFiles}}</td>
+                        <td>{{frontendCoverage.coverage.summary.functions.found}}</td>
+                        <td>
+                            <div class="coverage-bar">
+                                <div class="coverage-fill {{coverageClass frontendCoverage.coverage.summary.lines.percentage}}" style="width: {{frontendCoverage.coverage.summary.lines.percentage}}%"></div>
+                                <span>{{frontendCoverage.coverage.summary.lines.percentage}}%</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="coverage-bar">
+                                <div class="coverage-fill {{coverageClass frontendCoverage.coverage.summary.branches.percentage}}" style="width: {{frontendCoverage.coverage.summary.branches.percentage}}%"></div>
+                                <span>{{frontendCoverage.coverage.summary.branches.percentage}}%</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="coverage-bar">
+                                <div class="coverage-fill {{coverageClass frontendCoverage.coverage.summary.functions.percentage}}" style="width: {{frontendCoverage.coverage.summary.functions.percentage}}%"></div>
+                                <span>{{frontendCoverage.coverage.summary.functions.percentage}}%</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {{/if}}
                 </tbody>
             </table>
         </section>
 
-        <!-- Frontend Coverage -->
+        <!-- Frontend Coverage Details -->
         {{#if frontendCoverage.coverage}}
         <section class="frontend-coverage-section">
-            <h2>Frontend Coverage</h2>
-            <div class="coverage-summary-cards">
-                <div class="summary-stat">
-                    <h4>Lines</h4>
-                    <div class="stat-value">{{frontendCoverage.coverage.summary.lines.percentage}}%</div>
-                    <div class="stat-detail">
-                        {{frontendCoverage.coverage.summary.lines.hit}} / {{frontendCoverage.coverage.summary.lines.found}}
-                    </div>
-                </div>
-                <div class="summary-stat">
-                    <h4>Functions</h4>
-                    <div class="stat-value">{{frontendCoverage.coverage.summary.functions.percentage}}%</div>
-                    <div class="stat-detail">
-                        {{frontendCoverage.coverage.summary.functions.hit}} / {{frontendCoverage.coverage.summary.functions.found}}
-                    </div>
-                </div>
-                <div class="summary-stat">
-                    <h4>Branches</h4>
-                    <div class="stat-value">{{frontendCoverage.coverage.summary.branches.percentage}}%</div>
-                    <div class="stat-detail">
-                        {{frontendCoverage.coverage.summary.branches.hit}} / {{frontendCoverage.coverage.summary.branches.found}}
-                    </div>
-                </div>
-            </div>
+            <h2>Frontend Coverage Details</h2>
 
             <!-- Top Uncovered Files -->
             {{#if frontendCoverage.topUncovered}}

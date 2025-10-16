@@ -11,11 +11,11 @@
  * Acceptance Criteria: AC3, AC4
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { CompanyForm } from '@/components/shared/Company/CompanyForm';
-import type { Company, CreateCompanyRequest } from '@/types/company.types';
+import type { Company } from '@/types/company.types';
 
 // Updated to match backend CompanyResponse schema
 const mockCompany: Company = {

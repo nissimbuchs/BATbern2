@@ -1,13 +1,17 @@
 #!/usr/bin/env node
 
-const fs = require('fs-extra');
-const path = require('path');
-const glob = require('glob');
-const MarkdownProcessor = require('../src/builders/markdown-processor');
-const HtmlGenerator = require('../src/builders/html-generator');
-const AssetProcessor = require('../src/builders/asset-processor');
-const OpenApiProcessor = require('../src/builders/openapi-processor');
-const config = require('../src/config/site-config');
+import fs from 'fs-extra';
+import path from 'path';
+import { glob } from 'glob';
+import MarkdownProcessor from '../src/builders/markdown-processor.js';
+import HtmlGenerator from '../src/builders/html-generator.js';
+import AssetProcessor from '../src/builders/asset-processor.js';
+import OpenApiProcessor from '../src/builders/openapi-processor.js';
+import config from '../src/config/site-config.js';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 class DocumentationBuilder {
   constructor() {
@@ -72,9 +76,25 @@ class DocumentationBuilder {
 
     const outputPath = path.resolve(this.config.outputPath);
 
-    // Clean existing output
+    // Clean existing output BUT preserve reports directory
     if (await fs.pathExists(outputPath)) {
+      const reportsDir = path.join(outputPath, 'reports');
+      let reportsBackup = null;
+
+      // Backup reports directory if it exists - move to temp location OUTSIDE output path
+      if (await fs.pathExists(reportsDir)) {
+        const tempDir = path.join(__dirname, '.reports-temp');
+        await fs.move(reportsDir, tempDir, { overwrite: true });
+        reportsBackup = tempDir;
+      }
+
+      // Clean the directory
       await fs.emptyDir(outputPath);
+
+      // Restore reports directory
+      if (reportsBackup && await fs.pathExists(reportsBackup)) {
+        await fs.move(reportsBackup, reportsDir, { overwrite: true });
+      }
     } else {
       await fs.ensureDir(outputPath);
     }
@@ -121,7 +141,7 @@ class DocumentationBuilder {
 
         if (await fs.pathExists(folderPath)) {
           const pattern = categoryConfig.pattern || '*.md';
-          const files = await glob.glob(pattern, {
+          const files = await glob(pattern, {
             cwd: folderPath,
             absolute: false
           });
@@ -368,9 +388,10 @@ class DocumentationBuilder {
     await fs.copy(apiCssSource, apiCssTarget);
 
     // Copy highlight.js CSS
-    const hljs = require('highlight.js');
+    const { fileURLToPath } = await import('url');
+    const hljsStylePath = fileURLToPath(import.meta.resolve('highlight.js/styles/github.css'));
     const hljsCSS = `/* Highlight.js GitHub Theme */
-${require('fs').readFileSync(require.resolve('highlight.js/styles/github.css'), 'utf8')}`;
+${await fs.readFile(hljsStylePath, 'utf8')}`;
     await fs.writeFile(path.join(outputPath, 'styles/highlight.css'), hljsCSS);
 
     // Create basic JavaScript file
@@ -679,9 +700,9 @@ function toggleCategoryDocuments(categoryKey) {
 }
 
 // Run the builder if called directly
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   const builder = new DocumentationBuilder();
   builder.build().catch(console.error);
 }
 
-module.exports = DocumentationBuilder;
+export default DocumentationBuilder;

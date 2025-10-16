@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Security Report - Test & Quality Dashboard</title>
-    <link rel="stylesheet" href="../styles/main.css">
-    <link rel="stylesheet" href="../styles/reports.css">
+    <link rel="stylesheet" href="styles/reports.css">
     <link rel="icon" href="../assets/favicon.ico">
 </head>
 <body class="reports-page security-page">
@@ -87,7 +86,7 @@
         </section>
 
         <!-- Scanning Tools Used -->
-        {{#if (gt (objectKeys security.summary.byTool).length 0)}}
+        {{#if security.summary.byTool}}
         <section class="tools-section">
             <h2>Security Scanning Tools</h2>
             <div class="tools-grid">
