@@ -41,6 +41,7 @@ body {
     background: var(--bg-light);
     display: flex;
     flex-direction: column;
+    padding-top: 4rem;  /* Account for fixed header */
 }
 
 .dashboard-container,
@@ -55,22 +56,31 @@ body {
 }
 
 /* Header */
-.main-header {
+.main-header,
+.site-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4rem;
     background: var(--bg-white);
     border-bottom: 1px solid var(--border-color);
     box-shadow: var(--shadow-sm);
+    z-index: 1000;
 }
 
 .header-container {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 1rem 2rem;
+    padding: 0 2rem;
+    height: 100%;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.logo {
+.logo,
+.header-brand {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -78,13 +88,25 @@ body {
     color: inherit;
 }
 
-.logo img {
+.brand-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    color: inherit;
+    font-weight: 600;
+    font-size: 1.125rem;
+}
+
+.logo img,
+.brand-logo {
     height: 3rem;  /* Match documentation logo size (48px) */
     width: auto;
     object-fit: contain;
 }
 
-.logo span {
+.logo span,
+.brand-text {
     font-size: 1.125rem;  /* 18px */
     font-weight: 600;
     color: var(--text-primary);
@@ -94,14 +116,16 @@ body {
     max-width: 300px;
 }
 
-.main-nav {
+.main-nav,
+.header-nav {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     flex-shrink: 0;
 }
 
-.main-nav a {
+.main-nav a,
+.header-nav .nav-link {
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
@@ -116,12 +140,14 @@ body {
     flex-shrink: 0;
 }
 
-.main-nav a:hover {
+.main-nav a:hover,
+.header-nav .nav-link:hover {
     background: var(--bg-light);
     color: var(--primary-blue);
 }
 
-.main-nav a.active {
+.main-nav a.active,
+.header-nav .nav-link.active {
     background: var(--primary-blue);
     color: white;
 }
@@ -130,7 +156,7 @@ body {
 .breadcrumbs {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 1rem 2rem;
+    padding: 1rem 2rem 0;
     display: flex;
     gap: 0.5rem;
     align-items: center;
