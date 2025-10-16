@@ -1,5 +1,5 @@
 export default {
-  siteName: 'BATbern Platform Rewriting with Claude Code',
+  siteName: 'Platform Rewriting with ClaudeCode',
   siteDescription: 'Comprehensive documentation for the BATbern event management platform development',
   baseUrl: 'https://project.batbern.ch',
   author: 'BATbern Development Team',

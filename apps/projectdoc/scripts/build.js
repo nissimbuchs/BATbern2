@@ -382,6 +382,11 @@ class DocumentationBuilder {
     const cssTarget = path.join(outputPath, 'styles/main.css');
     await fs.copy(cssSource, cssTarget);
 
+    // Copy base CSS (required by styles.css)
+    const baseCssSource = path.join(__dirname, '../src/templates/styles/base.css');
+    const baseCssTarget = path.join(outputPath, 'styles/base.css');
+    await fs.copy(baseCssSource, baseCssTarget);
+
     // Copy API-specific CSS
     const apiCssSource = path.join(__dirname, '../src/templates/api-docs.css');
     const apiCssTarget = path.join(outputPath, 'styles/api-docs.css');

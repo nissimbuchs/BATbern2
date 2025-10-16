@@ -14,8 +14,12 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
  *
  * Provides AWS client beans for S3 and EventBridge.
  * EventBridgeAsyncClient is provided by shared-kernel's EventBridgeConfig.
+ *
+ * Note: This configuration is NOT active for 'local' profile.
+ * LocalAwsConfig provides mock beans for local development.
  */
 @Configuration
+@org.springframework.context.annotation.Profile("!local")
 public class AwsConfig {
 
     @Value("${aws.region:eu-central-1}")
