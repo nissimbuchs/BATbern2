@@ -5,10 +5,12 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
-import software.amazon.awssdk.services.eventbridge.EventBridgeClient;
+import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsResponse;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+
+import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -23,8 +25,8 @@ public class TestAwsConfig {
 
     @Bean
     @Primary
-    public EventBridgeClient eventBridgeClient() {
-        EventBridgeClient mockClient = Mockito.mock(EventBridgeClient.class);
+    public EventBridgeAsyncClient eventBridgeAsyncClient() {
+        EventBridgeAsyncClient mockClient = Mockito.mock(EventBridgeAsyncClient.class);
 
         // Configure mock to return successful response for putEvents
         PutEventsResponse successResponse = PutEventsResponse.builder()
@@ -32,7 +34,7 @@ public class TestAwsConfig {
                 .build();
 
         when(mockClient.putEvents(any(PutEventsRequest.class)))
-                .thenReturn(successResponse);
+                .thenReturn(CompletableFuture.completedFuture(successResponse));
 
         return mockClient;
     }
