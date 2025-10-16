@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
-const fs = require('fs-extra');
-const path = require('path');
-const glob = require('glob');
-const mimeTypes = require('mime-types');
-const { fromIni } = require('@aws-sdk/credential-providers');
-const {
+import fs from 'fs-extra';
+import path from 'path';
+import { glob } from 'glob';
+import mimeTypes from 'mime-types';
+import { fromIni } from '@aws-sdk/credential-providers';
+import {
   S3Client,
   CreateBucketCommand,
   PutBucketWebsiteCommand,
@@ -15,30 +15,30 @@ const {
   PutObjectCommand,
   HeadBucketCommand,
   GetBucketLocationCommand
-} = require('@aws-sdk/client-s3');
-const {
+} from '@aws-sdk/client-s3';
+import {
   CloudFrontClient,
   CreateDistributionCommand,
   CreateInvalidationCommand,
   GetDistributionCommand,
   ListDistributionsCommand,
   UpdateDistributionCommand
-} = require('@aws-sdk/client-cloudfront');
-const {
+} from '@aws-sdk/client-cloudfront';
+import {
   Route53Client,
   ChangeResourceRecordSetsCommand,
   ListHostedZonesCommand,
   ListResourceRecordSetsCommand
-} = require('@aws-sdk/client-route-53');
-const {
+} from '@aws-sdk/client-route-53';
+import {
   ACMClient,
   RequestCertificateCommand,
   DescribeCertificateCommand,
   ListCertificatesCommand
-} = require('@aws-sdk/client-acm');
+} from '@aws-sdk/client-acm';
 
-const config = require('../src/config/site-config');
-const awsConfig = require('../src/config/aws-config');
+import config from '../src/config/site-config.js';
+import awsConfig from '../src/config/aws-config.js';
 
 // Set AWS profile for deployment
 const AWS_PROFILE = process.env.AWS_PROFILE || 'batbern-mgmt';
@@ -884,7 +884,7 @@ async function promptForConfiguration() {
 }
 
 // Run the deployer if called directly
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   const deployer = new DocumentationDeployer();
 
   // Check for required configuration
@@ -895,4 +895,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = DocumentationDeployer;
+export default DocumentationDeployer;

@@ -80,6 +80,9 @@ class ReportsBuilder {
       console.log('\nStep 4: Copying static assets...');
       await this.copyAssets();
 
+      // Step 4a: Copy external HTML reports
+      await this.copyExternalReports();
+
       // Step 5: Save data files
       console.log('\nStep 5: Saving data files...');
       await this.saveDataFiles(reportData);
@@ -219,11 +222,18 @@ class ReportsBuilder {
       details.topViolations = qualityReport.violations.summary.topViolations;
     }
 
-    // Get HTML report links
-    details.htmlReports = {
-      tests: `../../${moduleName}/build/reports/tests/test/index.html`,
-      coverage: `../../${moduleName}/build/reports/jacoco/test/html/index.html`
-    };
+    // Get HTML report links - different paths for frontend vs backend
+    if (moduleName === 'web-frontend') {
+      details.htmlReports = {
+        tests: null, // Vitest doesn't generate HTML test reports by default
+        coverage: `../../web-frontend/coverage/index.html`
+      };
+    } else {
+      details.htmlReports = {
+        tests: `../../${moduleName}/build/reports/tests/test/index.html`,
+        coverage: `../../${moduleName}/build/reports/jacoco/test/html/index.html`
+      };
+    }
 
     // Get module trend from history
     if (this.config.history.enabled) {
@@ -248,6 +258,26 @@ class ReportsBuilder {
     await fs.copy(assetsDir, targetDir);
 
     console.log('  - Copied CSS files');
+  }
+
+  /**
+   * Copy external HTML reports (e.g., web-frontend coverage)
+   */
+  async copyExternalReports() {
+    // Copy web-frontend coverage report
+    const frontendCoverageSource = path.join(this.baseDir, 'web-frontend', 'coverage');
+    const frontendCoverageTarget = path.join(path.dirname(this.outputDir), 'web-frontend', 'coverage');
+
+    console.log(`  - Source: ${frontendCoverageSource}`);
+    console.log(`  - Target: ${frontendCoverageTarget}`);
+
+    if (await fs.pathExists(frontendCoverageSource)) {
+      await fs.ensureDir(path.dirname(frontendCoverageTarget));
+      await fs.copy(frontendCoverageSource, frontendCoverageTarget);
+      console.log('  - Copied web-frontend coverage report');
+    } else {
+      console.warn(`  ⚠️  Web-frontend coverage report not found at: ${frontendCoverageSource}`);
+    }
   }
 
   /**

@@ -27,12 +27,14 @@ export class ReportAggregator {
     // Collect all reports in parallel
     const [
       javaTestResults,
+      frontendTestResults,
       javaCoverage,
       frontendCoverage,
       securityFindings,
       qualityViolations
     ] = await Promise.all([
       this.collectJavaTests(),
+      this.collectFrontendTests(),
       this.collectJavaCoverage(),
       this.collectFrontendCoverage(),
       this.collectSecurityFindings(),
@@ -52,6 +54,7 @@ export class ReportAggregator {
       },
       summary: this.calculateOverallSummary({
         javaTestResults,
+        frontendTestResults,
         javaCoverage,
         frontendCoverage,
         securityFindings,
@@ -59,6 +62,7 @@ export class ReportAggregator {
       }),
       modules: this.buildModuleData({
         javaTestResults,
+        frontendTestResults,
         javaCoverage,
         qualityViolations,
         frontendCoverage
@@ -69,7 +73,7 @@ export class ReportAggregator {
       },
       tests: {
         java: javaTestResults,
-        frontend: {} // Will be populated by Playwright parser
+        frontend: frontendTestResults
       },
       security: securityFindings,
       quality: qualityViolations
@@ -95,6 +99,29 @@ export class ReportAggregator {
     if (reports.length === 0) {
       console.warn('No Java test results found');
       return this.createEmptyJavaTestResults();
+    }
+
+    const summary = JUnitParser.calculateSummary(reports);
+
+    return {
+      reports: reports,
+      summary: summary
+    };
+  }
+
+  /**
+   * Collect frontend test results from Vitest JUnit XML files
+   * @returns {Promise<Object>} Frontend test results
+   */
+  async collectFrontendTests() {
+    console.log('Collecting frontend test results...');
+
+    const pattern = this.config.sources?.frontend?.testResultsPattern || 'web-frontend/test-results/**/*.xml';
+    const reports = await JUnitParser.findAndParseReports(this.baseDir, pattern);
+
+    if (reports.length === 0) {
+      console.warn('No frontend test results found');
+      return this.createEmptyFrontendTestResults();
     }
 
     const summary = JUnitParser.calculateSummary(reports);
@@ -210,12 +237,19 @@ export class ReportAggregator {
    * @returns {Object} Overall summary
    */
   calculateOverallSummary(data) {
-    const { javaTestResults, javaCoverage, frontendCoverage, securityFindings, qualityViolations } = data;
+    const { javaTestResults, frontendTestResults, javaCoverage, frontendCoverage, securityFindings, qualityViolations } = data;
 
-    // Calculate test health
-    const totalTests = javaTestResults.summary.overallStats.totalTests;
-    const failedTests = javaTestResults.summary.overallStats.failures + javaTestResults.summary.overallStats.errors;
-    const testSuccessRate = javaTestResults.summary.overallStats.successRate;
+    // Calculate test health (combine Java + frontend)
+    const javaTests = javaTestResults.summary.overallStats.totalTests;
+    const javaFailedTests = javaTestResults.summary.overallStats.failures + javaTestResults.summary.overallStats.errors;
+    const frontendTests = frontendTestResults.summary.overallStats.totalTests;
+    const frontendFailedTests = frontendTestResults.summary.overallStats.failures + frontendTestResults.summary.overallStats.errors;
+
+    const totalTests = javaTests + frontendTests;
+    const failedTests = javaFailedTests + frontendFailedTests;
+    const testSuccessRate = totalTests > 0
+      ? Math.round(((totalTests - failedTests) / totalTests) * 10000) / 100
+      : 100;
 
     // Calculate coverage health
     const javaCoveragePercent = javaCoverage.summary.overallCoverage.line;
@@ -275,7 +309,7 @@ export class ReportAggregator {
    * @returns {Array} Module data
    */
   buildModuleData(data) {
-    const { javaTestResults, javaCoverage, qualityViolations, frontendCoverage } = data;
+    const { javaTestResults, frontendTestResults, javaCoverage, qualityViolations, frontendCoverage } = data;
 
     // Get list of all unique modules
     const moduleNames = new Set();
@@ -316,11 +350,19 @@ export class ReportAggregator {
       };
     });
 
-    // Add web-frontend module if coverage data exists
+    // Add web-frontend module if coverage or test data exists
     if (frontendCoverage.coverage && frontendCoverage.coverage.summary.totalFiles > 0) {
+      const frontendTestData = frontendTestResults.summary.overallStats.totalTests > 0 ? {
+        total: frontendTestResults.summary.overallStats.totalTests,
+        passed: frontendTestResults.summary.overallStats.passed,
+        failures: frontendTestResults.summary.overallStats.failures,
+        errors: frontendTestResults.summary.overallStats.errors,
+        successRate: frontendTestResults.summary.overallStats.successRate
+      } : null;
+
       modules.push({
         name: 'web-frontend',
-        tests: null, // Frontend tests handled separately (Playwright, etc.)
+        tests: frontendTestData,
         coverage: {
           line: frontendCoverage.coverage.summary.lines.percentage,
           branch: frontendCoverage.coverage.summary.branches.percentage,
@@ -328,7 +370,10 @@ export class ReportAggregator {
         },
         quality: null, // No Checkstyle for frontend
         status: this.determineModuleStatus({
-          tests: null,
+          tests: frontendTestData ? {
+            successRate: frontendTestData.successRate,
+            totalTests: frontendTestData.total
+          } : null,
           coverage: {
             line: { percentage: frontendCoverage.coverage.summary.lines.percentage }
           },
@@ -463,6 +508,26 @@ export class ReportAggregator {
 
   // Empty data structure creators
   createEmptyJavaTestResults() {
+    return {
+      reports: [],
+      summary: {
+        totalModules: 0,
+        overallStats: {
+          totalTests: 0,
+          passed: 0,
+          failures: 0,
+          errors: 0,
+          skipped: 0,
+          totalTime: 0,
+          successRate: 100
+        },
+        modules: [],
+        failedTests: []
+      }
+    };
+  }
+
+  createEmptyFrontendTestResults() {
     return {
       reports: [],
       summary: {

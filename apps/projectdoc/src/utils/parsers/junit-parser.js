@@ -102,8 +102,8 @@ export class JUnitParser {
       const failure = testcase.failure[0];
       tc.status = 'failed';
       tc.failure = {
-        message: failure.$.message || '',
-        type: failure.$.type || '',
+        message: failure.$?.message || '',
+        type: failure.$?.type || '',
         details: failure._ || failure
       };
     }
@@ -113,8 +113,8 @@ export class JUnitParser {
       const error = testcase.error[0];
       tc.status = 'error';
       tc.error = {
-        message: error.$.message || '',
-        type: error.$.type || '',
+        message: error.$?.message || '',
+        type: error.$?.type || '',
         details: error._ || error
       };
     }
@@ -123,7 +123,7 @@ export class JUnitParser {
     if (testcase.skipped && testcase.skipped.length > 0) {
       tc.status = 'skipped';
       tc.skipped = {
-        message: testcase.skipped[0].$.message || 'Test skipped'
+        message: testcase.skipped[0].$?.message || 'Test skipped'
       };
     }
 
