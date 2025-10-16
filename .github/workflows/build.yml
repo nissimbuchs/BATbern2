@@ -123,12 +123,12 @@ jobs:
         run: |
           chmod +x gradlew
           # Build from root to resolve shared-kernel dependency
-          # TODO: Re-enable tests once H2/Hibernate DDL issues are resolved
-          # Temporarily skip tests with -x test flag
+          # Tests use Testcontainers PostgreSQL for production parity
+          # AWS services (EventBridge, S3) are mocked via TestAwsConfig
           if [ "${{ matrix.service }}" = "api-gateway" ]; then
-            ./gradlew :api-gateway:clean :api-gateway:build -x test --no-daemon
+            ./gradlew :api-gateway:clean :api-gateway:build :api-gateway:test --no-daemon
           else
-            ./gradlew :services:${{ matrix.service }}:clean :services:${{ matrix.service }}:build -x test --no-daemon
+            ./gradlew :services:${{ matrix.service }}:clean :services:${{ matrix.service }}:build :services:${{ matrix.service }}:test --no-daemon
           fi
 
       - name: Build Docker image

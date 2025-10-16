@@ -32,10 +32,11 @@ help: ## Show this help message
 	@echo "  make build-node       - Build Node.js projects only"
 	@echo ""
 	@echo "🧪 Testing:"
-	@echo "  make test             - Run all tests"
-	@echo "  make test-java        - Run Java tests only"
-	@echo "  make test-node        - Run Node.js tests only"
+	@echo "  make test             - Run all tests (unit + integration, requires Docker)"
+	@echo "  make test-java        - Run Java tests (unit + integration)"
+	@echo "  make test-node        - Run Node.js tests (unit tests only)"
 	@echo "  make test-coverage    - Run tests with coverage reports"
+	@echo "  Note: Integration tests use Testcontainers (requires Docker) but AWS credentials NOT needed"
 	@echo ""
 	@echo "✨ Code Quality:"
 	@echo "  make lint             - Run all linters"
@@ -112,20 +113,24 @@ build-node: ## Build all Node.js projects
 # TESTING
 # ═══════════════════════════════════════════════════════════
 
-test: test-java test-node ## Run all tests
+test: test-java test-node ## Run all tests (unit + integration)
 
-test-java: ## Run Java tests
+test-java: ## Run Java tests (unit + integration, requires Docker)
 	@echo "🧪 Running Java tests..."
+	@echo "  → Running unit + integration tests (Testcontainers PostgreSQL)"
+	@echo "  → AWS services are mocked (no credentials needed)"
 	@./gradlew test --parallel
 	@echo "✓ Java tests complete"
 
-test-node: ## Run Node.js tests
+test-node: ## Run Node.js unit tests
 	@echo "🧪 Running Node.js tests..."
 	@echo "→ Testing infrastructure..."
 	@cd infrastructure && npm test
-	@echo "→ Testing web-frontend..."
-	@cd web-frontend && npm run test:run
+	@echo "→ Testing web-frontend (unit tests)..."
+	@cd web-frontend && npm run test:unit
 	@echo "✓ Node.js tests complete"
+	@echo ""
+	@echo "💡 To run E2E tests: cd web-frontend && npm run test:e2e"
 
 test-coverage: ## Run tests with coverage reports
 	@echo "🧪 Running tests with coverage..."
