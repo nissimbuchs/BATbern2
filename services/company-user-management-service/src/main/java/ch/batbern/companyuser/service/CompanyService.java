@@ -224,6 +224,7 @@ public class CompanyService {
                 .isVerified(company.isVerified())
                 .createdAt(company.getCreatedAt())
                 .updatedAt(company.getUpdatedAt())
+                .createdBy(company.getCreatedBy())
                 .build();
     }
 }

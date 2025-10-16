@@ -17,6 +17,7 @@ import { userEvent } from '@testing-library/user-event';
 import { CompanyForm } from '@/components/shared/Company/CompanyForm';
 import type { Company, CreateCompanyRequest } from '@/types/company.types';
 
+// Updated to match backend CompanyResponse schema
 const mockCompany: Company = {
   id: 'company-123',
   name: 'Acme Corporation',
@@ -24,19 +25,12 @@ const mockCompany: Company = {
   swissUID: 'CHE-123.456.789',
   website: 'https://acme.com',
   industry: 'Technology',
-  sector: 'Private',
-  location: {
-    city: 'Bern',
-    canton: 'BE',
-    country: 'Switzerland',
-  },
   description: 'A leading tech company',
-  logoUrl: 'https://cdn.batbern.ch/logos/acme.png',
   isVerified: true,
-  verificationStatus: 'Verified',
   createdAt: '2024-01-01T00:00:00Z',
   updatedAt: '2024-01-01T00:00:00Z',
   createdBy: 'user-123',
+  // Removed: sector, location, logoUrl (logoUrl is now nested in logo object), verificationStatus
 };
 
 describe('CompanyForm Component - AC3 Create Company Form', () => {
@@ -57,7 +51,7 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
     });
 
     it('should_displayAllFormFields_when_modalOpened', () => {
-      // Test that all required form fields are present
+      // Test that all form fields are present (updated to match backend schema)
       render(
         <CompanyForm
           open={true}
@@ -67,19 +61,17 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
         />
       );
 
-      // Required fields - use getAllByLabelText for MUI Select fields that render multiple labels
+      // Required field
       expect(screen.getByLabelText(/company name/i)).toBeInTheDocument();
-      expect(screen.getAllByLabelText(/industry/i)[0]).toBeInTheDocument();
-      expect(screen.getByLabelText(/city/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/canton/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/country/i)).toBeInTheDocument();
 
       // Optional fields
       expect(screen.getByLabelText(/display name/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/swiss uid/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/website/i)).toBeInTheDocument();
-      expect(screen.getAllByLabelText(/sector/i)[0]).toBeInTheDocument();
+      expect(screen.getAllByLabelText(/industry/i)[0]).toBeInTheDocument();
       expect(screen.getByLabelText(/description/i)).toBeInTheDocument();
+
+      // Removed: city, canton, country, sector (not in backend schema)
     });
 
     it('should_displayCreateButtons_when_createMode', () => {
@@ -102,7 +94,7 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
 
   describe('Required Field Validation', () => {
     it('should_validateRequiredFields_when_formSubmitted', async () => {
-      // AC3 Test 3.2: Required field validation
+      // AC3 Test 3.2: Required field validation (only name is required now)
       const user = userEvent.setup();
       const onSubmit = vi.fn();
 
@@ -119,13 +111,9 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
       const submitButton = screen.getByRole('button', { name: /save & create/i });
       await user.click(submitButton);
 
-      // Should show validation errors for required fields
+      // Should show validation error for company name only (all other fields are optional)
       await waitFor(() => {
         expect(screen.getByText(/company name is required/i)).toBeInTheDocument();
-        expect(screen.getByText(/industry is required/i)).toBeInTheDocument();
-        expect(screen.getByText(/city is required/i)).toBeInTheDocument();
-        expect(screen.getByText(/canton is required/i)).toBeInTheDocument();
-        expect(screen.getByText(/country is required/i)).toBeInTheDocument();
       });
 
       // onSubmit should not be called
@@ -222,18 +210,10 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
         />
       );
 
-      // Fill only required fields (without Swiss UID)
+      // Fill only required field (name only, all others optional)
       await user.type(screen.getByLabelText(/company name/i), 'Test Company');
-      await user.type(screen.getByLabelText(/city/i), 'Zurich');
-      await user.type(screen.getByLabelText(/canton/i), 'ZH');
-      await user.type(screen.getByLabelText(/country/i), 'Switzerland');
 
-      // Select industry from dropdown - use getAllByLabelText[0] for MUI Select
-      const industrySelect = screen.getAllByLabelText(/industry/i)[0];
-      await user.click(industrySelect);
-      await user.click(screen.getByRole('option', { name: /technology/i }));
-
-      // Submit should succeed without Swiss UID
+      // Submit should succeed without Swiss UID (and without any other fields)
       await user.click(screen.getByRole('button', { name: /save & create/i }));
 
       await waitFor(() => {
@@ -267,13 +247,6 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
 
       // Fill form with duplicate company name
       await user.type(screen.getByLabelText(/company name/i), 'Existing Company');
-      await user.type(screen.getByLabelText(/city/i), 'Bern');
-      await user.type(screen.getByLabelText(/canton/i), 'BE');
-      await user.type(screen.getByLabelText(/country/i), 'Switzerland');
-
-      const industrySelect = screen.getAllByLabelText(/industry/i)[0];
-      await user.click(industrySelect);
-      await user.click(screen.getByRole('option', { name: /technology/i }));
 
       // Submit form
       await user.click(screen.getByRole('button', { name: /save & create/i }));
@@ -362,30 +335,24 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
         />
       );
 
-      // Fill all required fields
+      // Fill all fields (name is required, others optional)
       await user.type(screen.getByLabelText(/company name/i), 'New Company');
       await user.type(screen.getByLabelText(/display name/i), 'NewCo');
       await user.type(screen.getByLabelText(/swiss uid/i), 'CHE-987.654.321');
       await user.type(screen.getByLabelText(/website/i), 'https://newco.com');
-      await user.type(screen.getByLabelText(/city/i), 'Geneva');
-      await user.type(screen.getByLabelText(/canton/i), 'GE');
-      await user.type(screen.getByLabelText(/country/i), 'Switzerland');
       await user.type(screen.getByLabelText(/description/i), 'A new company');
 
-      // Select industry
+      // Select industry (optional field)
       const industrySelect = screen.getAllByLabelText(/industry/i)[0];
       await user.click(industrySelect);
       await user.click(screen.getByRole('option', { name: /technology/i }));
 
-      // Select sector
-      const sectorSelect = screen.getAllByLabelText(/sector/i)[0];
-      await user.click(sectorSelect);
-      await user.click(screen.getByRole('option', { name: /private/i }));
+      // Sector and location removed - no longer in backend schema
 
       // Submit form
       await user.click(screen.getByRole('button', { name: /save & create/i }));
 
-      // Should call onSubmit with form data
+      // Should call onSubmit with form data (updated to match backend schema)
       await waitFor(() => {
         expect(onSubmit).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -394,13 +361,8 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
             swissUID: 'CHE-987.654.321',
             website: 'https://newco.com',
             industry: 'Technology',
-            sector: 'Private',
-            location: {
-              city: 'Geneva',
-              canton: 'GE',
-              country: 'Switzerland',
-            },
             description: 'A new company',
+            // Removed: sector, location (not in backend schema)
           }),
           { isDraft: false }
         );
@@ -426,15 +388,13 @@ describe('CompanyForm Component - AC4 Edit Company Form', () => {
       expect(screen.getByRole('dialog')).toBeInTheDocument();
       expect(screen.getByText('Edit Company')).toBeInTheDocument();
 
-      // Verify fields are pre-filled
+      // Verify fields are pre-filled (only fields that exist in backend schema)
       expect(screen.getByDisplayValue('Acme Corporation')).toBeInTheDocument();
       expect(screen.getByDisplayValue('ACME Corp')).toBeInTheDocument();
       expect(screen.getByDisplayValue('CHE-123.456.789')).toBeInTheDocument();
       expect(screen.getByDisplayValue('https://acme.com')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('Bern')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('BE')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('Switzerland')).toBeInTheDocument();
       expect(screen.getByDisplayValue('A leading tech company')).toBeInTheDocument();
+      // Removed: Bern, BE, Switzerland (location removed from schema)
     });
 
     it('should_displayEditButtons_when_editMode', () => {

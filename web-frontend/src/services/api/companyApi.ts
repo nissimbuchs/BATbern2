@@ -41,6 +41,7 @@ const ALLOWED_LOGO_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'
 class CompanyApiClient {
   /**
    * Get paginated list of companies with optional filters
+   * Uses MongoDB-style JSON filter syntax as per backend API
    */
   async getCompanies(
     pagination: PaginationParams = { page: 1, limit: 20 },
@@ -51,17 +52,18 @@ class CompanyApiClient {
       params.append('page', pagination.page.toString());
       params.append('limit', pagination.limit.toString());
 
-      if (filters?.isPartner !== undefined) {
-        params.append('isPartner', filters.isPartner.toString());
-      }
+      // Build MongoDB-style JSON filter object
+      const filterObj: Record<string, any> = {};
       if (filters?.isVerified !== undefined) {
-        params.append('isVerified', filters.isVerified.toString());
+        filterObj.isVerified = filters.isVerified;
       }
       if (filters?.industry) {
-        params.append('industry', filters.industry);
+        filterObj.industry = filters.industry;
       }
-      if (filters?.searchQuery) {
-        params.append('search', filters.searchQuery);
+
+      // Only add filter parameter if we have filters
+      if (Object.keys(filterObj).length > 0) {
+        params.append('filter', JSON.stringify(filterObj));
       }
 
       const response = await apiClient.get<CompanyListResponse>(
@@ -99,19 +101,18 @@ class CompanyApiClient {
   }
 
   /**
-   * Search companies by query string
+   * Search companies by query string (returns simple array, not paginated)
    */
   async searchCompanies(
     query: string,
-    pagination: PaginationParams = { page: 1, limit: 20 }
-  ): Promise<CompanyListResponse> {
+    limit: number = 20
+  ): Promise<Company[]> {
     try {
       const params = new URLSearchParams();
-      params.append('q', query);
-      params.append('page', pagination.page.toString());
-      params.append('limit', pagination.limit.toString());
+      params.append('query', query);
+      params.append('limit', limit.toString());
 
-      const response = await apiClient.get<CompanyListResponse>(
+      const response = await apiClient.get<Company[]>(
         `${COMPANY_API_PATH}/search?${params.toString()}`
       );
 

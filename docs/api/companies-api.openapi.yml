@@ -358,6 +358,59 @@ paths:
       security:
         - BearerAuth: []
 
+    patch:
+      tags:
+        - Companies
+      summary: Partially update company
+      description: |
+        Update specific fields of an existing company.
+
+        **Acceptance Criteria**: AC4
+
+        **Validation Rules**:
+        - Company name must be unique
+        - Swiss UID format (if provided): CHE-XXX.XXX.XXX
+
+        **Events Published**: CompanyUpdatedEvent to EventBridge
+
+        **Cache Invalidation**: All company caches cleared on update
+
+      operationId: patchCompany
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCompanyRequest'
+      responses:
+        '200':
+          description: Company updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
     delete:
       tags:
         - Companies
@@ -624,6 +677,10 @@ components:
           type: string
           format: date-time
           example: 2025-01-15T10:00:00Z
+        createdBy:
+          type: string
+          description: User ID who created this company
+          example: auth0|user_abc123
         statistics:
           $ref: '#/components/schemas/CompanyStatistics'
         logo:

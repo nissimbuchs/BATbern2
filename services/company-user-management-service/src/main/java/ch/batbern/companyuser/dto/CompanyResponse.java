@@ -55,6 +55,9 @@ public class CompanyResponse {
     @Schema(description = "Timestamp when the company was last updated", example = "2024-01-15T10:30:00Z")
     private Instant updatedAt;
 
+    @Schema(description = "User ID who created this company", example = "auth0|user_abc123")
+    private String createdBy;
+
     // Resource expansion fields (AC15)
 
     @Schema(description = "Company statistics (only included when ?include=statistics)", example = "{\"totalEvents\": 5, \"totalSpeakers\": 12, \"totalPartners\": 3}")

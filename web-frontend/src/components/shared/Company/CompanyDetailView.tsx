@@ -129,7 +129,6 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
     );
   }
 
-  const isPartner = 'isPartner' in company && company.isPartner;
   const isMobile = window.innerWidth < 600;
 
   return (
@@ -162,7 +161,7 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
             <Grid size={{ xs: 12, sm: 3 }}>
               <Box sx={{ display: 'flex', justifyContent: 'center' }}>
                 <Avatar
-                  src={company.logoUrl}
+                  src={company.logo?.url}
                   alt={`${company.name} logo`}
                   sx={{ width: 120, height: 120 }}
                 >
@@ -186,15 +185,6 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
                       size="small"
                     />
                   )}
-                  {isPartner && (
-                    <Chip
-                      data-testid="partner-badge"
-                      icon={<StarIcon />}
-                      label={t('company.badges.partner')}
-                      color="primary"
-                      size="small"
-                    />
-                  )}
                 </Box>
 
                 {company.displayName && company.displayName !== company.name && (
@@ -213,30 +203,16 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
                       <Typography variant="body1">{company.swissUID}</Typography>
                     </Grid>
                   )}
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      Industry
-                    </Typography>
-                    <Typography variant="body1">{company.industry}</Typography>
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      Location
-                    </Typography>
-                    <Typography variant="body1">
-                      {company.location.city}, {company.location.canton}, {company.location.country}
-                    </Typography>
-                  </Grid>
-                  {company.sector && (
+                  {company.industry && (
                     <Grid size={{ xs: 12, sm: 6 }}>
                       <Typography variant="body2" color="text.secondary">
-                        Sector
+                        Industry
                       </Typography>
-                      <Typography variant="body1">{company.sector}</Typography>
+                      <Typography variant="body1">{company.industry}</Typography>
                     </Grid>
                   )}
                   {company.website && (
-                    <Grid size={{ xs: 12 }}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <Typography variant="body2" color="text.secondary">
                         Website
                       </Typography>
@@ -247,6 +223,14 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
                       </Typography>
                     </Grid>
                   )}
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Created By
+                    </Typography>
+                    <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
+                      {company.createdBy}
+                    </Typography>
+                  </Grid>
                 </Grid>
 
                 {company.description && (
@@ -263,12 +247,6 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
         </CardContent>
       </Card>
 
-      {/* Partner Info Panel (only if partner) */}
-      {isPartner && (
-        <Box sx={{ mb: 3 }}>
-          <PartnerInfoPanel companyId={company.id} />
-        </Box>
-      )}
 
       {/* Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>

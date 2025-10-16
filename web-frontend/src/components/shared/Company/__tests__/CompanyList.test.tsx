@@ -15,28 +15,22 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { CompanyList } from '@/components/shared/Company/CompanyList';
 import type { CompanyListItem } from '@/types/company.types';
 
-// Test data
+// Test data - updated to match backend CompanyListItem schema
 const mockCompanies: CompanyListItem[] = [
   {
     id: '1',
     name: 'Test Company 1',
     displayName: 'Test Corp 1',
-    logoUrl: 'https://cdn.example.com/logo1.png',
     industry: 'Technology',
-    location: { city: 'Bern', country: 'Switzerland' },
-    isPartner: true,
     isVerified: true,
-    associatedUserCount: 5
+    // Removed: logoUrl, location, isPartner, associatedUserCount (not in backend schema)
   },
   {
     id: '2',
     name: 'Test Company 2',
-    logoUrl: undefined,
     industry: 'Finance',
-    location: { city: 'Zurich', country: 'Switzerland' },
-    isPartner: false,
     isVerified: false,
-    associatedUserCount: 2
+    // Removed: logoUrl, location, isPartner, associatedUserCount (not in backend schema)
   }
 ];
 
@@ -76,31 +70,10 @@ describe('CompanyList Component', () => {
       expect(screen.getByText('Technology')).toBeInTheDocument();
       expect(screen.getByText('Finance')).toBeInTheDocument();
 
-      // Should display location
-      expect(screen.getByText(/Bern/)).toBeInTheDocument();
-      expect(screen.getByText(/Zurich/)).toBeInTheDocument();
+      // Location removed - no longer in backend schema
     });
 
-    it('should_displayPartnerBadge_when_companyIsPartner', () => {
-      // Test 1.2: Show partner badge (⭐) for partner companies
-      render(
-        <CompanyList
-          companies={mockCompanies}
-          isLoading={false}
-          viewMode="grid"
-          onViewModeToggle={vi.fn()}
-        />,
-        { wrapper: createTestWrapper() }
-      );
-
-      // First company should have partner badge
-      const company1Card = screen.getByText('Test Corp 1').closest('[data-testid^="company-card"]');
-      expect(company1Card).toHaveTextContent('⭐');
-
-      // Second company should NOT have partner badge
-      const company2Card = screen.getByText('Test Company 2').closest('[data-testid^="company-card"]');
-      expect(company2Card).not.toHaveTextContent('⭐');
-    });
+    // Partner badge test removed - isPartner field no longer in backend schema
 
     it('should_displayVerifiedStatus_when_companyVerified', () => {
       // Test 1.3: Show verified status (✅) when applicable
@@ -146,22 +119,7 @@ describe('CompanyList Component', () => {
       expect(onViewModeToggle).toHaveBeenCalledTimes(1);
     });
 
-    it('should_displayAssociatedUsersCount_when_usersExist', () => {
-      // Test 1.5: Show associated users count with link
-      render(
-        <CompanyList
-          companies={mockCompanies}
-          isLoading={false}
-          viewMode="grid"
-          onViewModeToggle={vi.fn()}
-        />,
-        { wrapper: createTestWrapper() }
-      );
-
-      // Should display user counts
-      expect(screen.getByText(/5.*users?/i)).toBeInTheDocument();
-      expect(screen.getByText(/2.*users?/i)).toBeInTheDocument();
-    });
+    // Associated users count test removed - associatedUserCount field no longer in backend schema
 
     it('should_displayLoadingSkeleton_when_loading', () => {
       // Loading state test

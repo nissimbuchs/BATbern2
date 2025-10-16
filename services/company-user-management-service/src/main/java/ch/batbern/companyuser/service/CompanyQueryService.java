@@ -121,7 +121,8 @@ public class CompanyQueryService {
                 .description(company.getDescription())
                 .isVerified(company.isVerified())
                 .createdAt(company.getCreatedAt())
-                .updatedAt(company.getUpdatedAt());
+                .updatedAt(company.getUpdatedAt())
+                .createdBy(company.getCreatedBy());
 
         // Apply field selection if specified
         if (selectedFields != null) {
@@ -161,6 +162,7 @@ public class CompanyQueryService {
         if (selectedFields.contains("isVerified")) filteredBuilder.isVerified(tempResponse.isVerified());
         if (selectedFields.contains("createdAt")) filteredBuilder.createdAt(tempResponse.getCreatedAt());
         if (selectedFields.contains("updatedAt")) filteredBuilder.updatedAt(tempResponse.getUpdatedAt());
+        if (selectedFields.contains("createdBy")) filteredBuilder.createdBy(tempResponse.getCreatedBy());
 
         return filteredBuilder;
     }

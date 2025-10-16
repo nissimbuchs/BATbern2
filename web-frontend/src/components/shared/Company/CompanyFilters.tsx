@@ -2,7 +2,6 @@
  * CompanyFilters - Filter panel for company list
  *
  * Features:
- * - Partner status filter (checkbox)
  * - Verification status filter (checkbox)
  * - Industry filter (select)
  * - Clear all filters button
@@ -58,18 +57,15 @@ const CompanyFilters: React.FC<CompanyFiltersProps> = ({ onFilterChange, initial
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [isPartner, setIsPartner] = useState(initialFilters?.isPartner || false);
   const [isVerified, setIsVerified] = useState(initialFilters?.isVerified || false);
   const [industry, setIndustry] = useState(initialFilters?.industry || '');
   const [isExpanded, setIsExpanded] = useState(!isMobile);
 
   // Load filters from URL on mount
   useEffect(() => {
-    const partnerParam = searchParams.get('isPartner');
     const verifiedParam = searchParams.get('isVerified');
     const industryParam = searchParams.get('industry');
 
-    if (partnerParam) setIsPartner(partnerParam === 'true');
     if (verifiedParam) setIsVerified(verifiedParam === 'true');
     if (industryParam) setIndustry(industryParam);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -79,13 +75,11 @@ const CompanyFilters: React.FC<CompanyFiltersProps> = ({ onFilterChange, initial
   useEffect(() => {
     const filters: CompanyFiltersType = {};
 
-    if (isPartner) filters.isPartner = true;
     if (isVerified) filters.isVerified = true;
     if (industry) filters.industry = industry;
 
     // Update URL
     const newParams = new URLSearchParams();
-    if (isPartner) newParams.set('isPartner', 'true');
     if (isVerified) newParams.set('isVerified', 'true');
     if (industry) newParams.set('industry', industry);
     setSearchParams(newParams);
@@ -93,33 +87,20 @@ const CompanyFilters: React.FC<CompanyFiltersProps> = ({ onFilterChange, initial
     // Notify parent
     onFilterChange(filters);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPartner, isVerified, industry]);
+  }, [isVerified, industry]);
 
   const handleClearFilters = () => {
-    setIsPartner(false);
     setIsVerified(false);
     setIndustry('');
     setSearchParams(new URLSearchParams());
     onFilterChange({});
   };
 
-  const activeFilterCount = [isPartner, isVerified, industry].filter(Boolean).length;
+  const activeFilterCount = [isVerified, industry].filter(Boolean).length;
   const hasActiveFilters = activeFilterCount > 0;
 
   const filterContent = (
     <Stack direction="row" spacing={2} flexWrap="wrap" alignItems="center">
-      {/* Partner Filter */}
-      <FormControlLabel
-        control={
-          <Checkbox
-            checked={isPartner}
-            onChange={(e) => setIsPartner(e.target.checked)}
-            aria-label={t('company.filters.partnerOnly')}
-          />
-        }
-        label={t('company.filters.partnerOnly')}
-      />
-
       {/* Verification Filter */}
       <FormControlLabel
         control={

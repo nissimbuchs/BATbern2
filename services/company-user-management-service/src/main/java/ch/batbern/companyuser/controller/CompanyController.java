@@ -202,15 +202,15 @@ public class CompanyController {
     }
 
     /**
-     * Update company
+     * Update company (full replacement)
      * Requires ORGANIZER role
      * AC4: Company update endpoint
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ORGANIZER')")
     @Operation(
-            summary = "Update company",
-            description = "Updates an existing company. Requires ORGANIZER role. Publishes CompanyUpdated event."
+            summary = "Update company (full replacement)",
+            description = "Fully replaces an existing company. Requires ORGANIZER role. Publishes CompanyUpdated event."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -244,6 +244,53 @@ public class CompanyController {
             @PathVariable UUID id,
             @Valid @RequestBody UpdateCompanyRequest request) {
         log.info("Updating company: {}", id);
+        CompanyResponse response = companyService.updateCompany(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Partially update company
+     * Requires ORGANIZER role
+     * AC4: Company partial update endpoint
+     */
+    @PatchMapping("/{id}")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    @Operation(
+            summary = "Partially update company",
+            description = "Updates specific fields of an existing company. Requires ORGANIZER role. Publishes CompanyUpdated event."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Company updated successfully",
+                    content = @Content(schema = @Schema(implementation = CompanyResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid request data (validation failed)"
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Unauthorized - missing or invalid JWT token"
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Forbidden - requires ORGANIZER role"
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Company not found"
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "Conflict - company name already exists"
+            )
+    })
+    public ResponseEntity<CompanyResponse> patchCompany(
+            @Parameter(description = "Company UUID", required = true)
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateCompanyRequest request) {
+        log.info("Patching company: {}", id);
         CompanyResponse response = companyService.updateCompany(id, request);
         return ResponseEntity.ok(response);
     }

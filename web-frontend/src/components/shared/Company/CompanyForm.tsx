@@ -35,14 +35,14 @@ import {
 import { useTranslation } from 'react-i18next';
 import type { Company, CreateCompanyRequest, UpdateCompanyRequest } from '@/types/company.types';
 
-// Validation schema with Zod
+// Validation schema with Zod (matches backend CreateCompanyRequest)
 const companySchema = z.object({
   name: z
     .string()
     .min(1, 'Company name is required')
     .min(2, 'Name must be at least 2 characters')
-    .max(200, 'Name must be at most 200 characters'),
-  displayName: z.string().max(200, 'Display name must be at most 200 characters').optional().or(z.literal('')),
+    .max(255, 'Name must be at most 255 characters'),
+  displayName: z.string().max(255, 'Display name must be at most 255 characters').optional().or(z.literal('')),
   swissUID: z
     .string()
     .optional()
@@ -57,14 +57,8 @@ const companySchema = z.object({
     .refine((val) => !val || z.string().url().safeParse(val).success, {
       message: 'Invalid website URL',
     }),
-  industry: z.string().min(1, 'Industry is required'),
-  sector: z.enum(['Public', 'Private', 'Non-profit', 'Government', '']).optional(),
-  location: z.object({
-    city: z.string().min(1, 'City is required'),
-    canton: z.string().min(1, 'Canton is required'),
-    country: z.string().min(1, 'Country is required'),
-  }),
-  description: z.string().max(500, 'Description must be at most 500 characters').optional().or(z.literal('')),
+  industry: z.string().max(100, 'Industry must be at most 100 characters').optional().or(z.literal('')),
+  description: z.string().max(5000, 'Description must be at most 5000 characters').optional().or(z.literal('')),
 });
 
 // Draft schema (relaxed validation)
@@ -119,13 +113,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
           displayName: initialData.displayName || '',
           swissUID: initialData.swissUID || '',
           website: initialData.website || '',
-          industry: initialData.industry,
-          sector: initialData.sector || '',
-          location: {
-            city: initialData.location.city,
-            canton: initialData.location.canton,
-            country: initialData.location.country,
-          },
+          industry: initialData.industry || '',
           description: initialData.description || '',
         }
       : {
@@ -134,12 +122,6 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
           swissUID: '',
           website: '',
           industry: '',
-          sector: '',
-          location: {
-            city: '',
-            canton: '',
-            country: '',
-          },
           description: '',
         },
   });
@@ -152,13 +134,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
         displayName: initialData.displayName || '',
         swissUID: initialData.swissUID || '',
         website: initialData.website || '',
-        industry: initialData.industry,
-        sector: initialData.sector || '',
-        location: {
-          city: initialData.location.city,
-          canton: initialData.location.canton,
-          country: initialData.location.country,
-        },
+        industry: initialData.industry || '',
         description: initialData.description || '',
       });
     }
@@ -180,13 +156,12 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
 
     try {
       // Clean up empty strings for optional fields
-      const validSectors: Array<'Public' | 'Private' | 'Non-profit' | 'Government'> = ['Public', 'Private', 'Non-profit', 'Government'];
       const cleanedData = {
         ...data,
         displayName: data.displayName || undefined,
         swissUID: data.swissUID || undefined,
         website: data.website || undefined,
-        sector: (data.sector && validSectors.includes(data.sector as any)) ? data.sector as 'Public' | 'Private' | 'Non-profit' | 'Government' : undefined,
+        industry: data.industry || undefined,
         description: data.description || undefined,
       };
 
@@ -195,11 +170,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
         const changedFields: string[] = [];
         Object.keys(cleanedData).forEach((key) => {
           const typedKey = key as keyof typeof cleanedData;
-          if (key === 'location') {
-            if (JSON.stringify(cleanedData.location) !== JSON.stringify(initialData.location)) {
-              changedFields.push('location');
-            }
-          } else if (cleanedData[typedKey] !== initialData[typedKey as keyof Company]) {
+          if (cleanedData[typedKey] !== initialData[typedKey as keyof Company]) {
             changedFields.push(key);
           }
         });
@@ -207,11 +178,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
         // Only send changed fields
         const partialUpdate: Partial<CreateCompanyRequest> = {};
         changedFields.forEach((field) => {
-          if (field === 'location') {
-            partialUpdate.location = cleanedData.location;
-          } else {
-            partialUpdate[field as keyof CreateCompanyRequest] = cleanedData[field as keyof typeof cleanedData] as any;
-          }
+          partialUpdate[field as keyof CreateCompanyRequest] = cleanedData[field as keyof typeof cleanedData] as any;
         });
 
         await onSubmit(partialUpdate as UpdateCompanyRequest, {
@@ -243,13 +210,12 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
     setApiError(null);
 
     try {
-      const validSectors: Array<'Public' | 'Private' | 'Non-profit' | 'Government'> = ['Public', 'Private', 'Non-profit', 'Government'];
       const cleanedData = {
         ...formData,
         displayName: formData.displayName || undefined,
         swissUID: formData.swissUID || undefined,
         website: formData.website || undefined,
-        sector: (formData.sector && validSectors.includes(formData.sector as any)) ? formData.sector as 'Public' | 'Private' | 'Non-profit' | 'Government' : undefined,
+        industry: formData.industry || undefined,
         description: formData.description || undefined,
       };
 
@@ -377,17 +343,17 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
             )}
           />
 
-          {/* Industry - Required */}
+          {/* Industry - Optional */}
           <Controller
             name="industry"
             control={control}
             render={({ field }) => (
               <FormControl fullWidth margin="normal" error={!!errors.industry} disabled={!hasEditPermission}>
-                <InputLabel id="industry-label">{t('company.fields.industry')} *</InputLabel>
+                <InputLabel id="industry-label">{t('company.fields.industry')}</InputLabel>
                 <Select
                   {...field}
                   labelId="industry-label"
-                  label={`${t('company.fields.industry')} *`}
+                  label={t('company.fields.industry')}
                   aria-label={t('company.fields.industry')}
                 >
                   <MenuItem value="">
@@ -408,86 +374,6 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
             )}
           />
 
-          {/* Sector - Optional */}
-          <Controller
-            name="sector"
-            control={control}
-            render={({ field }) => (
-              <FormControl fullWidth margin="normal" disabled={!hasEditPermission}>
-                <InputLabel id="sector-label">{t('company.fields.sector')}</InputLabel>
-                <Select
-                  {...field}
-                  labelId="sector-label"
-                  label={t('company.fields.sector')}
-                  aria-label={t('company.fields.sector')}
-                >
-                  <MenuItem value="">
-                    <em>{t('company.sectors.selectSector')}</em>
-                  </MenuItem>
-                  <MenuItem value="Public">{t('company.sectors.public')}</MenuItem>
-                  <MenuItem value="Private">{t('company.sectors.private')}</MenuItem>
-                  <MenuItem value="Non-profit">{t('company.sectors.nonprofit')}</MenuItem>
-                  <MenuItem value="Government">{t('company.sectors.government')}</MenuItem>
-                </Select>
-              </FormControl>
-            )}
-          />
-
-          {/* Location - City (Required) */}
-          <Controller
-            name="location.city"
-            control={control}
-            render={({ field }) => (
-              <TextField
-                {...field}
-                label={`${t('company.fields.city')} *`}
-                fullWidth
-                margin="normal"
-                error={!!errors.location?.city}
-                helperText={errors.location?.city?.message}
-                disabled={!hasEditPermission}
-                inputProps={{ 'aria-label': t('company.fields.city') }}
-              />
-            )}
-          />
-
-          {/* Location - Canton (Required) */}
-          <Controller
-            name="location.canton"
-            control={control}
-            render={({ field }) => (
-              <TextField
-                {...field}
-                label={`${t('company.fields.canton')} *`}
-                fullWidth
-                margin="normal"
-                error={!!errors.location?.canton}
-                helperText={errors.location?.canton?.message}
-                disabled={!hasEditPermission}
-                placeholder={t('company.placeholders.canton')}
-                inputProps={{ 'aria-label': t('company.fields.canton') }}
-              />
-            )}
-          />
-
-          {/* Location - Country (Required) */}
-          <Controller
-            name="location.country"
-            control={control}
-            render={({ field }) => (
-              <TextField
-                {...field}
-                label={`${t('company.fields.country')} *`}
-                fullWidth
-                margin="normal"
-                error={!!errors.location?.country}
-                helperText={errors.location?.country?.message}
-                disabled={!hasEditPermission}
-                inputProps={{ 'aria-label': t('company.fields.country') }}
-              />
-            )}
-          />
-
           {/* Description - Optional */}
           <Controller
             name="description"
@@ -502,7 +388,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
                 rows={4}
                 error={!!errors.description}
                 helperText={
-                  errors.description?.message || t('company.form.characterCount', { count: description.length, max: 500 })
+                  errors.description?.message || t('company.form.characterCount', { count: description.length, max: 5000 })
                 }
                 disabled={!hasEditPermission}
                 inputProps={{ 'aria-label': t('company.fields.description') }}

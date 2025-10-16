@@ -2,10 +2,9 @@
  * CompanyCard Component
  *
  * Individual company card display with:
- * - Company logo (CloudFront CDN)
- * - Partner badge (⭐) and verified status (✅)
- * - Company details (name, industry, location)
- * - Associated users count
+ * - Company logo (CloudFront CDN via ?include=logo)
+ * - Verified status (✅)
+ * - Company details (name, industry)
  *
  * Story: 2.5.1 - Company Management Frontend
  */
@@ -18,11 +17,9 @@ import {
   Typography,
   Box,
   Chip,
-  Avatar,
-  Stack
+  Avatar
 } from '@mui/material';
 import BusinessIcon from '@mui/icons-material/Business';
-import PeopleIcon from '@mui/icons-material/People';
 import { useTranslation } from 'react-i18next';
 import type { CompanyListItem } from '@/types/company.types';
 
@@ -82,54 +79,33 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({
             minHeight: viewMode === 'grid' ? 120 : 80
           }}
         >
-          {company.logoUrl ? (
-            <Avatar
-              src={company.logoUrl}
-              alt={`${company.displayName || company.name} logo`}
-              sx={{
-                width: viewMode === 'grid' ? 80 : 60,
-                height: viewMode === 'grid' ? 80 : 60,
-                borderRadius: 1
-              }}
-              variant="square"
-            />
-          ) : (
-            <Avatar
-              data-testid="company-logo-fallback"
-              sx={{
-                width: viewMode === 'grid' ? 80 : 60,
-                height: viewMode === 'grid' ? 80 : 60,
-                bgcolor: 'grey.200',
-                borderRadius: 1
-              }}
-              variant="square"
-            >
-              <BusinessIcon sx={{ fontSize: 40, color: 'grey.500' }} />
-            </Avatar>
-          )}
+          <Avatar
+            data-testid="company-logo-fallback"
+            sx={{
+              width: viewMode === 'grid' ? 80 : 60,
+              height: viewMode === 'grid' ? 80 : 60,
+              bgcolor: 'grey.200',
+              borderRadius: 1
+            }}
+            variant="square"
+          >
+            <BusinessIcon sx={{ fontSize: 40, color: 'grey.500' }} />
+          </Avatar>
         </Box>
 
         {/* Content Section */}
         <CardContent sx={{ flexGrow: 1, width: '100%' }}>
           {/* Badges Row */}
-          <Stack direction="row" spacing={0.5} sx={{ mb: 1 }}>
-            {company.isPartner && (
-              <Chip
-                label={`⭐ ${t('company.badges.partner')}`}
-                size="small"
-                aria-label={t('company.badges.partner')}
-                sx={{ height: 20, fontSize: '0.75rem' }}
-              />
-            )}
-            {company.isVerified && (
+          {company.isVerified && (
+            <Box sx={{ mb: 1 }}>
               <Chip
                 label={`✅ ${t('company.badges.verified')}`}
                 size="small"
                 aria-label={t('company.badges.verified')}
                 sx={{ height: 20, fontSize: '0.75rem' }}
               />
-            )}
-          </Stack>
+            </Box>
+          )}
 
           {/* Company Name (display name preferred) */}
           <Typography
@@ -165,30 +141,15 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({
           )}
 
           {/* Industry */}
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ mb: 0.5 }}
-          >
-            {company.industry}
-          </Typography>
-
-          {/* Location */}
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ mb: 1 }}
-          >
-            {company.location.city}, {company.location.country}
-          </Typography>
-
-          {/* Associated Users */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <PeopleIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-            <Typography variant="body2" color="text.secondary">
-              {t('company.stats.userCount', { count: company.associatedUserCount })}
+          {company.industry && (
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ mb: 0.5 }}
+            >
+              {company.industry}
             </Typography>
-          </Box>
+          )}
         </CardContent>
       </CardActionArea>
     </Card>

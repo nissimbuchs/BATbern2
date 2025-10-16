@@ -11,11 +11,7 @@ vi.mock('../AssociatedUsersPanel', () => ({
   ),
 }));
 
-vi.mock('../PartnerInfoPanel', () => ({
-  PartnerInfoPanel: ({ companyId }: { companyId: string }) => (
-    <div data-testid="partner-info-panel">PartnerInfoPanel-{companyId}</div>
-  ),
-}));
+// PartnerInfoPanel removed - isPartner field no longer supported by backend
 
 vi.mock('../CompanyStatistics', () => ({
   CompanyStatistics: ({ statistics }: { statistics: any }) => (
@@ -29,7 +25,7 @@ vi.mock('../ActivityTimeline', () => ({
   ),
 }));
 
-// Mock company data
+// Mock company data - aligned with backend CompanyResponse
 const mockCompany = {
   id: 'company-123',
   name: 'Test Company AG',
@@ -37,35 +33,21 @@ const mockCompany = {
   swissUID: 'CHE-123.456.789',
   website: 'https://test-company.ch',
   industry: 'Cloud Computing',
-  sector: 'Private' as const,
-  location: {
-    city: 'Bern',
-    canton: 'BE',
-    country: 'Switzerland',
-  },
   description: 'A test company for unit testing',
-  logoUrl: 'https://cdn.example.com/logos/test-company.png',
   isVerified: true,
-  verificationStatus: 'Verified' as const,
   createdAt: '2024-01-15T10:00:00Z',
   updatedAt: '2024-10-14T15:30:00Z',
-  createdBy: 'user-456',
+  createdBy: 'auth0|user_456',
+  logo: {
+    url: 'https://cdn.example.com/logos/test-company.png',
+    s3Key: 'logos/test-company.png',
+    fileId: 'file-123',
+  },
   statistics: {
     totalEvents: 5,
-    totalPresentations: 12,
-    totalAttendees: 250,
-    firstEvent: '2024-02-01',
-    mostRecentEvent: '2024-10-01',
-    topicExpertise: [
-      { topic: 'Cloud Security', count: 8 },
-      { topic: 'DevOps', count: 4 },
-    ],
+    totalSpeakers: 12,
+    totalPartners: 3,
   },
-};
-
-const mockCompanyWithPartnership = {
-  ...mockCompany,
-  isPartner: true,
 };
 
 const renderWithRouter = (component: React.ReactElement) => {
@@ -96,7 +78,7 @@ describe('CompanyDetailView Component', () => {
       // Verify company details are displayed
       expect(screen.getByText(/CHE-123.456.789/)).toBeInTheDocument();
       expect(screen.getByText(/Cloud Computing/)).toBeInTheDocument();
-      expect(screen.getByText(/Bern/)).toBeInTheDocument();
+      // Location removed - no longer supported by backend
 
       // Verify description is displayed
       expect(screen.getByText(/A test company for unit testing/)).toBeInTheDocument();
@@ -144,37 +126,7 @@ describe('CompanyDetailView Component', () => {
     });
   });
 
-  describe('AC8.2: Display partner info when company is partner', () => {
-    it('should_displayPartnerInfo_when_companyIsPartner', () => {
-      renderWithRouter(
-        <CompanyDetailView
-          company={mockCompanyWithPartnership}
-          onEdit={mockOnEdit}
-          onBack={mockOnBack}
-        />
-      );
-
-      // Verify partner badge is displayed
-      expect(screen.getByTestId('partner-badge')).toBeInTheDocument();
-
-      // Verify PartnerInfoPanel is rendered
-      expect(screen.getByTestId('partner-info-panel')).toBeInTheDocument();
-      expect(screen.getByText(/PartnerInfoPanel-company-123/)).toBeInTheDocument();
-    });
-
-    it('should_hidePartnerInfo_when_companyNotPartner', () => {
-      renderWithRouter(
-        <CompanyDetailView
-          company={mockCompany}
-          onEdit={mockOnEdit}
-          onBack={mockOnBack}
-        />
-      );
-
-      // Verify PartnerInfoPanel is not rendered
-      expect(screen.queryByTestId('partner-info-panel')).not.toBeInTheDocument();
-    });
-  });
+  // AC8.2 removed: isPartner field no longer supported by backend
 
   describe('AC8.3: Display associated users when users exist', () => {
     it('should_displayAssociatedUsers_when_usersExist', () => {

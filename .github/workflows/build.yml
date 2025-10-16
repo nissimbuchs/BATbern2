@@ -217,6 +217,28 @@ jobs:
         working-directory: ./web-frontend
         run: npm ci
 
+      - name: Verify API types are up-to-date
+        if: steps.check-frontend.outputs.exists == 'true'
+        working-directory: ./web-frontend
+        run: |
+          # Generate types in a temp location
+          npm run generate:api-types
+          # Check if generated types differ from committed types
+          if ! git diff --quiet src/types/generated/; then
+            echo "❌ ERROR: Generated API types are out of date!"
+            echo "The OpenAPI spec was changed but types were not regenerated."
+            echo ""
+            echo "To fix this, run locally:"
+            echo "  cd web-frontend"
+            echo "  npm run generate:api-types"
+            echo "  git add src/types/generated/"
+            echo "  git commit -m 'chore: regenerate API types from OpenAPI spec'"
+            echo ""
+            git diff src/types/generated/
+            exit 1
+          fi
+          echo "✅ API types are up-to-date"
+
       - name: Run linter
         if: steps.check-frontend.outputs.exists == 'true'
         working-directory: ./web-frontend

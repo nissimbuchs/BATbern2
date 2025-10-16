@@ -39,8 +39,7 @@ describe('CompanyFilters Component', () => {
     it('should_renderAllFilterOptions_when_componentMounted', () => {
       render(<CompanyFilters onFilterChange={mockOnFilterChange} />);
 
-      // Should have partner filter
-      expect(screen.getByRole('checkbox', { name: /partner companies only/i })).toBeInTheDocument();
+      // Partner filter removed - no longer supported by backend
 
       // Should have verification filter
       expect(screen.getByRole('checkbox', { name: /verified companies only/i })).toBeInTheDocument();
@@ -59,46 +58,16 @@ describe('CompanyFilters Component', () => {
       render(
         <CompanyFilters
           onFilterChange={mockOnFilterChange}
-          initialFilters={{ isPartner: true, isVerified: true }}
+          initialFilters={{ isVerified: true }}
         />
       );
 
-      // Should show badge with count of active filters
-      expect(screen.getByText('2')).toBeInTheDocument();
+      // Should show badge with count of active filters (only 1 since isPartner removed)
+      expect(screen.getByText('1')).toBeInTheDocument();
     });
   });
 
-  describe('Partner Filter', () => {
-    it('should_callOnFilterChange_when_partnerCheckboxClicked', async () => {
-      const user = userEvent.setup();
-      render(<CompanyFilters onFilterChange={mockOnFilterChange} />);
-
-      const partnerCheckbox = screen.getByRole('checkbox', { name: /partner companies only/i });
-      await user.click(partnerCheckbox);
-
-      expect(mockOnFilterChange).toHaveBeenCalledWith(expect.objectContaining({
-        isPartner: true
-      }));
-    });
-
-    it('should_uncheckPartner_when_clickedWhileChecked', async () => {
-      const user = userEvent.setup();
-      render(
-        <CompanyFilters
-          onFilterChange={mockOnFilterChange}
-          initialFilters={{ isPartner: true }}
-        />
-      );
-
-      const partnerCheckbox = screen.getByRole('checkbox', { name: /partner companies only/i });
-      expect(partnerCheckbox).toBeChecked();
-
-      await user.click(partnerCheckbox);
-
-      // When unchecked, the filter should not be included in the object (only truthy filters are sent)
-      expect(mockOnFilterChange).toHaveBeenCalledWith({});
-    });
-  });
+  // Partner Filter removed - no longer supported by backend
 
   describe('Verification Filter', () => {
     it('should_callOnFilterChange_when_verifiedCheckboxClicked', async () => {
@@ -152,7 +121,7 @@ describe('CompanyFilters Component', () => {
       render(
         <CompanyFilters
           onFilterChange={mockOnFilterChange}
-          initialFilters={{ isPartner: true, isVerified: true, industry: 'Cloud Computing' }}
+          initialFilters={{ isVerified: true, industry: 'Cloud Computing' }}
         />
       );
 
@@ -173,7 +142,7 @@ describe('CompanyFilters Component', () => {
       render(
         <CompanyFilters
           onFilterChange={mockOnFilterChange}
-          initialFilters={{ isPartner: true }}
+          initialFilters={{ isVerified: true }}
         />
       );
 
@@ -190,8 +159,8 @@ describe('CompanyFilters Component', () => {
       const user = userEvent.setup();
       render(<CompanyFilters onFilterChange={mockOnFilterChange} />);
 
-      const partnerCheckbox = screen.getByRole('checkbox', { name: /partner companies only/i });
-      await user.click(partnerCheckbox);
+      const verifiedCheckbox = screen.getByRole('checkbox', { name: /verified companies only/i });
+      await user.click(verifiedCheckbox);
 
       await waitFor(() => {
         expect(mockSetSearchParams).toHaveBeenCalledWith(expect.any(URLSearchParams));
@@ -200,27 +169,27 @@ describe('CompanyFilters Component', () => {
 
     it('should_loadFiltersFromURL_when_componentMounted', () => {
       const searchParams = new URLSearchParams();
-      searchParams.set('isPartner', 'true');
+      searchParams.set('isVerified', 'true');
       searchParams.set('industry', 'Cloud Computing');
 
       vi.mocked(useSearchParams).mockReturnValue([searchParams, vi.fn()]);
 
       render(<CompanyFilters onFilterChange={mockOnFilterChange} />);
 
-      // Should check partner filter from URL
-      const partnerCheckbox = screen.getByRole('checkbox', { name: /partner companies only/i });
-      expect(partnerCheckbox).toBeChecked();
+      // Should check verified filter from URL
+      const verifiedCheckbox = screen.getByRole('checkbox', { name: /verified companies only/i });
+      expect(verifiedCheckbox).toBeChecked();
     });
 
     it('should_updateURL_when_filtersCleared', async () => {
       const mockSetSearchParams = vi.fn();
       const searchParams = new URLSearchParams();
-      searchParams.set('isPartner', 'true');
+      searchParams.set('isVerified', 'true');
 
       vi.mocked(useSearchParams).mockReturnValue([searchParams, mockSetSearchParams]);
 
       const user = userEvent.setup();
-      render(<CompanyFilters onFilterChange={mockOnFilterChange} initialFilters={{ isPartner: true }} />);
+      render(<CompanyFilters onFilterChange={mockOnFilterChange} initialFilters={{ isVerified: true }} />);
 
       const clearButton = screen.getByRole('button', { name: /clear all filters/i });
       await user.click(clearButton);

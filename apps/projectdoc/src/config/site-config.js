@@ -3,15 +3,6 @@ const fs = require('fs');
 const yaml = require('js-yaml');
 const path = require('path');
 
-let coreConfig = {};
-try {
-  const coreConfigPath = path.resolve(__dirname, '../../../.bmad-core/core-config.yaml');
-  const coreConfigFile = fs.readFileSync(coreConfigPath, 'utf8');
-  coreConfig = yaml.load(coreConfigFile);
-} catch (error) {
-  console.warn('Could not load core config:', error.message);
-}
-
 module.exports = {
   siteName: 'BATbern Platform Rewriting with Claude Code',
   siteDescription: 'Comprehensive documentation for the BATbern event management platform development',
@@ -23,7 +14,7 @@ module.exports = {
   outputPath: './dist',
 
   // Core configuration settings
-  markdownExploder: coreConfig.markdownExploder || false,
+  markdownExploder: true,
 
   // Document categories and their configurations
   categories: {
