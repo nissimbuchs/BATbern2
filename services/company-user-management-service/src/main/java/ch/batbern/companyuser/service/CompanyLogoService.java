@@ -52,7 +52,7 @@ public class CompanyLogoService {
         this.cloudFrontDomain = cloudFrontDomain;
     }
 
-    private static final long MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+    private static final long MAX_FILE_SIZE_BYTES = 5L * 1024 * 1024; // 5 MB
     private static final int PRESIGNED_URL_EXPIRATION_MINUTES = 15;
     private static final Set<String> ALLOWED_FILE_EXTENSIONS = Set.of("png", "jpg", "jpeg", "svg");
 
