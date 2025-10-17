@@ -32,10 +32,11 @@ help: ## Show this help message
 	@echo "  make build-node       - Build Node.js projects only"
 	@echo ""
 	@echo "🧪 Testing:"
-	@echo "  make test             - Run all tests"
-	@echo "  make test-java        - Run Java tests only"
-	@echo "  make test-node        - Run Node.js tests only"
+	@echo "  make test             - Run all tests (unit + integration, requires Docker)"
+	@echo "  make test-java        - Run Java tests (unit + integration)"
+	@echo "  make test-node        - Run Node.js tests (unit tests only)"
 	@echo "  make test-coverage    - Run tests with coverage reports"
+	@echo "  Note: Integration tests use Testcontainers (requires Docker) but AWS credentials NOT needed"
 	@echo ""
 	@echo "✨ Code Quality:"
 	@echo "  make lint             - Run all linters"
@@ -112,20 +113,24 @@ build-node: ## Build all Node.js projects
 # TESTING
 # ═══════════════════════════════════════════════════════════
 
-test: test-java test-node ## Run all tests
+test: test-java test-node ## Run all tests (unit + integration)
 
-test-java: ## Run Java tests
+test-java: ## Run Java tests (unit + integration, requires Docker)
 	@echo "🧪 Running Java tests..."
+	@echo "  → Running unit + integration tests (Testcontainers PostgreSQL)"
+	@echo "  → AWS services are mocked (no credentials needed)"
 	@./gradlew test --parallel
 	@echo "✓ Java tests complete"
 
-test-node: ## Run Node.js tests
+test-node: ## Run Node.js unit tests
 	@echo "🧪 Running Node.js tests..."
 	@echo "→ Testing infrastructure..."
 	@cd infrastructure && npm test
-	@echo "→ Testing web-frontend..."
-	@cd web-frontend && npm run test:run
+	@echo "→ Testing web-frontend (unit tests)..."
+	@cd web-frontend && npm run test:unit
 	@echo "✓ Node.js tests complete"
+	@echo ""
+	@echo "💡 To run E2E tests: cd web-frontend && npm run test:e2e"
 
 test-coverage: ## Run tests with coverage reports
 	@echo "🧪 Running tests with coverage..."
@@ -191,19 +196,62 @@ clean-node: ## Clean Node.js build artifacts
 # DOCKER
 # ═══════════════════════════════════════════════════════════
 
-docker-up: ## Start all services with Docker Compose
+docker-up: ## Start all services with Docker Compose (includes DB tunnel)
 	@echo "🐳 Starting Docker services..."
+	@echo ""
+	@echo "→ Step 1: Starting database tunnel..."
+	@if pgrep -f "start-db-tunnel.sh" > /dev/null; then \
+		echo "  ⚠️  Tunnel already running (PID: $$(pgrep -f 'start-db-tunnel.sh'))"; \
+	else \
+		./scripts/dev/start-db-tunnel.sh > /tmp/db-tunnel.log 2>&1 & \
+		echo $$! > /tmp/db-tunnel.pid; \
+		echo "  ✓ Tunnel started (PID: $$!)"; \
+		echo "  📝 Logs: /tmp/db-tunnel.log"; \
+		sleep 5; \
+	fi
+	@echo ""
+	@echo "→ Step 2: Starting Docker containers..."
 	@docker-compose up -d
-	@echo "✓ Docker services started"
+	@echo ""
+	@echo "✓ All services started"
 	@echo ""
 	@echo "Services running at:"
 	@echo "  API Gateway:   http://localhost:8080"
 	@echo "  Web Frontend:  http://localhost:3000"
+	@echo ""
+	@echo "💡 Database tunnel: localhost:5432 → AWS RDS"
+	@echo "   View tunnel logs: tail -f /tmp/db-tunnel.log"
 
-docker-down: ## Stop Docker services
+docker-down: ## Stop Docker services (keeps DB tunnel running)
 	@echo "🐳 Stopping Docker services..."
 	@docker-compose down
 	@echo "✓ Docker services stopped"
+	@echo ""
+	@echo "💡 Database tunnel still running"
+	@echo "   To stop tunnel: make docker-tunnel-stop"
+
+docker-tunnel-stop: ## Stop database tunnel
+	@echo "🔒 Stopping database tunnel..."
+	@if [ -f /tmp/db-tunnel.pid ]; then \
+		PID=$$(cat /tmp/db-tunnel.pid); \
+		if ps -p $$PID > /dev/null 2>&1; then \
+			kill $$PID && echo "  ✓ Tunnel stopped (PID: $$PID)"; \
+		else \
+			echo "  ⚠️  Tunnel process not found"; \
+		fi; \
+		rm -f /tmp/db-tunnel.pid; \
+	elif pgrep -f "start-db-tunnel.sh" > /dev/null; then \
+		pkill -f "start-db-tunnel.sh" && echo "  ✓ Tunnel stopped"; \
+	else \
+		echo "  ⚠️  No tunnel running"; \
+	fi
+
+docker-tunnel-logs: ## Show database tunnel logs
+	@echo "📝 Database tunnel logs:"
+	@echo ""
+	@tail -50 /tmp/db-tunnel.log 2>/dev/null || echo "No logs found. Start tunnel with 'make docker-up'"
+
+docker-restart: docker-down docker-up ## Restart all Docker services
 
 docker-build: ## Build Docker images for all services
 	@echo "🐳 Building Docker images..."

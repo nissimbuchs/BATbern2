@@ -1,0 +1,21 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Check if OpenAPI spec changed
+OPENAPI_SPEC="docs/api/companies-api.openapi.yml"
+
+if git diff --cached --name-only | grep -q "$OPENAPI_SPEC"; then
+  echo "🔄 OpenAPI spec changed, regenerating TypeScript types..."
+
+  cd web-frontend
+  npm run generate:api-types
+
+  # Stage the generated types
+  git add src/types/generated/
+
+  echo "✅ API types regenerated and staged"
+  cd ..
+fi
+
+# Run lint-staged for other checks
+npx lint-staged

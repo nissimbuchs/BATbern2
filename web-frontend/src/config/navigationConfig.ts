@@ -13,6 +13,7 @@ import {
   Person,
   ContentPaste,
   EventAvailable,
+  Business,
 } from '@mui/icons-material';
 
 export interface NavigationItem {
@@ -51,6 +52,13 @@ export const navigationConfig: NavigationItem[] = [
     description: 'Manage partners',
   },
   {
+    labelKey: 'navigation.companies',
+    path: '/organizer/companies',
+    icon: Business,
+    roles: ['organizer'],
+    description: 'Manage companies',
+  },
+  {
     labelKey: 'navigation.analytics',
     path: '/organizer/analytics',
     icon: BarChart,
@@ -79,6 +87,13 @@ export const navigationConfig: NavigationItem[] = [
     icon: ContentPaste,
     roles: ['speaker'],
     description: 'Manage your content',
+  },
+  {
+    labelKey: 'navigation.myCompany',
+    path: '/speaker/company',
+    icon: Business,
+    roles: ['speaker'],
+    description: 'Your company profile',
   },
   {
     labelKey: 'navigation.profile',

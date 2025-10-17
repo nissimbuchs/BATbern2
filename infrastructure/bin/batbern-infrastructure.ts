@@ -7,6 +7,7 @@ import { DatabaseStack } from '../lib/stacks/database-stack';
 import { StorageStack } from '../lib/stacks/storage-stack';
 import { SecretsStack } from '../lib/stacks/secrets-stack';
 import { MonitoringStack } from '../lib/stacks/monitoring-stack';
+import { EventBusStack } from '../lib/stacks/event-bus-stack';
 import { CICDStack } from '../lib/stacks/cicd-stack';
 import { CognitoStack } from '../lib/stacks/cognito-stack';
 import { SesStack } from '../lib/stacks/ses-stack';
@@ -19,6 +20,7 @@ import { SpeakerCoordinationStack } from '../lib/stacks/speaker-coordination-sta
 import { PartnerCoordinationStack } from '../lib/stacks/partner-coordination-stack';
 import { AttendeeExperienceStack } from '../lib/stacks/attendee-experience-stack';
 import { CompanyManagementStack } from '../lib/stacks/company-management-stack';
+import { BastionStack } from '../lib/stacks/bastion-stack';
 import { devConfig } from '../lib/config/dev-config';
 import { stagingConfig } from '../lib/config/staging-config';
 import { prodConfig } from '../lib/config/prod-config';
@@ -120,11 +122,37 @@ const databaseStack = new DatabaseStack(app, `${stackPrefix}-Database`, {
 databaseStack.addDependency(networkStack);
 databaseStack.addDependency(secretsStack);
 
+// 4a. Bastion Stack (SSM-based secure access to database)
+// NOTE: Only deploy for development environment
+// Staging/Production use VPN or AWS PrivateLink
+let bastionStack: BastionStack | undefined;
+if (config.envName === 'development') {
+  bastionStack = new BastionStack(app, `${stackPrefix}-Bastion`, {
+    config,
+    vpc: networkStack.vpc,
+    databaseSecurityGroup: networkStack.databaseSecurityGroup,
+    env,
+    description: `BATbern Bastion Host for Database Access - ${config.envName}`,
+    tags: config.tags,
+  });
+  bastionStack.addDependency(networkStack);
+  // Note: Don't add database dependency to avoid circular reference
+  // Bastion only needs network + security group which comes from network stack
+}
+
 // 5. Storage Stack (S3, CloudFront)
 const storageStack = new StorageStack(app, `${stackPrefix}-Storage`, {
   config,
   env,
   description: `BATbern Storage Infrastructure - ${config.envName}`,
+  tags: config.tags,
+});
+
+// 5a. EventBus Stack (EventBridge for Domain Events)
+const eventBusStack = new EventBusStack(app, `${stackPrefix}-EventBus`, {
+  config,
+  env,
+  description: `BATbern EventBridge Event Bus - ${config.envName}`,
   tags: config.tags,
 });
 
@@ -272,6 +300,8 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     databaseSecret: databaseStack.databaseSecret,
     userPool: cognitoStack.userPool,
     userPoolClient: cognitoStack.userPoolClient,
+    contentBucket: storageStack.contentBucket,
+    eventBus: eventBusStack.eventBus,
     env,
     description: `BATbern Company & User Management Service (Consolidated) - ${config.envName}`,
     tags: config.tags,
@@ -280,6 +310,8 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   companyManagementStack.addDependency(databaseStack);
   companyManagementStack.addDependency(cicdStack);
   companyManagementStack.addDependency(cognitoStack);
+  companyManagementStack.addDependency(storageStack);
+  companyManagementStack.addDependency(eventBusStack);
 
   // 10f. API Gateway Service (Spring Boot)
   apiGatewayServiceStack = new ApiGatewayServiceStack(app, `${stackPrefix}-ApiGatewayService`, {
