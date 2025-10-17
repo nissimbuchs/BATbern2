@@ -239,7 +239,7 @@ describe('AppHeader Component', () => {
     });
 
     test('should_showUnreadBadge_when_unreadNotificationsExist', () => {
-      renderWithProviders(<AppHeader />);
+      renderWithProviders(<AppHeader notifications={{ notifications: [], unreadCount: 3 }} />);
 
       // Should show badge with unread count
       const badge = screen.getByText('3');

@@ -318,9 +318,8 @@ describe('AssociatedUsersPanel Component', () => {
       const unlinkButtons = screen.getAllByRole('button', { name: /unlink/i });
       await user.click(unlinkButtons[0]);
 
-      // Verify confirmation dialog appears
-      expect(screen.getByText(/are you sure/i)).toBeInTheDocument();
-      expect(screen.getByText(/john doe/i)).toBeInTheDocument();
+      // Verify confirmation dialog appears with user name
+      expect(screen.getByText(/are you sure you want to unlink john doe/i)).toBeInTheDocument();
     });
 
     it('should_callOnUnlinkUser_when_confirmationAccepted', async () => {

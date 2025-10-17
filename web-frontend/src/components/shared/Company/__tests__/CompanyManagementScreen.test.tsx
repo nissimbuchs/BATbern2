@@ -17,13 +17,13 @@ vi.mock('../CompanyFilters', () => ({
 }));
 
 vi.mock('../CompanySearch', () => ({
-  default: () => (
+  CompanySearch: () => (
     <input role="combobox" aria-label="search companies" placeholder="Search companies" />
   )
 }));
 
 vi.mock('../CompanyList', () => ({
-  default: () => <div data-testid="company-list">Company List Mock</div>
+  CompanyList: () => <div data-testid="company-list">Company List Mock</div>
 }));
 
 const createTestQueryClient = () => new QueryClient({

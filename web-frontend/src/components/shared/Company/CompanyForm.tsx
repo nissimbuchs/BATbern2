@@ -41,7 +41,7 @@ const companySchema = z.object({
     .string()
     .min(1, 'Company name is required')
     .min(2, 'Name must be at least 2 characters')
-    .max(255, 'Name must be at most 255 characters'),
+    .max(200, 'Name must be at most 200 characters'),
   displayName: z.string().max(255, 'Display name must be at most 255 characters').optional().or(z.literal('')),
   swissUID: z
     .string()
@@ -58,7 +58,7 @@ const companySchema = z.object({
       message: 'Invalid website URL',
     }),
   industry: z.string().max(100, 'Industry must be at most 100 characters').optional().or(z.literal('')),
-  description: z.string().max(5000, 'Description must be at most 5000 characters').optional().or(z.literal('')),
+  description: z.string().max(500, 'Description must be at most 500 characters').optional().or(z.literal('')),
 });
 
 // Draft schema (relaxed validation)
@@ -390,7 +390,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
                 rows={4}
                 error={!!errors.description}
                 helperText={
-                  errors.description?.message || t('company.form.characterCount', { count: description.length, max: 5000 })
+                  errors.description?.message || t('company.form.characterCount', { count: description.length, max: 500 })
                 }
                 disabled={!hasEditPermission}
                 inputProps={{ 'aria-label': t('company.fields.description') }}

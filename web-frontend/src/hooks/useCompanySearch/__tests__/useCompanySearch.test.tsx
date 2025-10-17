@@ -11,10 +11,10 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useCompanySearch } from '@/hooks/useCompanySearch/useCompanySearch';
 import { companyApiClient } from '@/services/api/companyApi';
-import type { CompanyListResponse } from '@/types/company.types';
+import type { Company } from '@/types/company.types';
 
 // Mock the API client
-vi.mock('../../services/companyApiClient', () => ({
+vi.mock('@/services/api/companyApi', () => ({
   companyApiClient: {
     searchCompanies: vi.fn(),
   },
@@ -49,36 +49,30 @@ describe('useCompanySearch Hook', () => {
   describe('Basic Search Functionality (AC 2)', () => {
     it('should_searchCompanies_when_queryProvided', async () => {
       // Arrange
-      const mockResults: CompanyListResponse = {
-        data: [
-          {
-            id: '1',
-            name: 'Tech Company AG',
-            industry: 'Technology',
-            location: { city: 'Zurich', country: 'Switzerland' },
-            isPartner: false,
-            isVerified: true,
-            associatedUserCount: 3,
-          },
-          {
-            id: '2',
-            name: 'Tech Solutions GmbH',
-            industry: 'Technology',
-            location: { city: 'Bern', country: 'Switzerland' },
-            isPartner: true,
-            isVerified: true,
-            associatedUserCount: 7,
-          },
-        ],
-        pagination: {
-          currentPage: 1,
-          totalPages: 1,
-          totalItems: 2,
-          itemsPerPage: 20,
-          hasNextPage: false,
-          hasPreviousPage: false,
+      const mockResults: Company[] = [
+        {
+          id: '1',
+          name: 'Tech Company AG',
+          industry: 'Technology',
+          location: { city: 'Zurich', country: 'Switzerland' },
+          isVerified: true,
+          verificationStatus: 'Verified',
+          createdAt: '2024-01-01T00:00:00Z',
+          updatedAt: '2024-01-01T00:00:00Z',
+          createdBy: 'user-1',
         },
-      };
+        {
+          id: '2',
+          name: 'Tech Solutions GmbH',
+          industry: 'Technology',
+          location: { city: 'Bern', country: 'Switzerland' },
+          isVerified: true,
+          verificationStatus: 'Verified',
+          createdAt: '2024-01-01T00:00:00Z',
+          updatedAt: '2024-01-01T00:00:00Z',
+          createdBy: 'user-1',
+        },
+      ];
 
       vi.mocked(companyApiClient.searchCompanies).mockResolvedValue(mockResults);
 
@@ -92,27 +86,14 @@ describe('useCompanySearch Hook', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(companyApiClient.searchCompanies).toHaveBeenCalledWith('Tech', {
-        page: 1,
-        limit: 10,
-      });
+      expect(companyApiClient.searchCompanies).toHaveBeenCalledWith('Tech', 10);
       expect(result.current.data).toEqual(mockResults);
-      expect(result.current.data?.data).toHaveLength(2);
+      expect(result.current.data).toHaveLength(2);
     });
 
     it('should_notSearch_when_queryTooShort', () => {
       // Arrange
-      vi.mocked(companyApiClient.searchCompanies).mockResolvedValue({
-        data: [],
-        pagination: {
-          currentPage: 1,
-          totalPages: 1,
-          totalItems: 0,
-          itemsPerPage: 20,
-          hasNextPage: false,
-          hasPreviousPage: false,
-        },
-      });
+      vi.mocked(companyApiClient.searchCompanies).mockResolvedValue([]);
 
       // Act
       const { result } = renderHook(() => useCompanySearch('Te'), {
@@ -127,17 +108,7 @@ describe('useCompanySearch Hook', () => {
 
     it('should_notSearch_when_queryEmpty', () => {
       // Arrange
-      vi.mocked(companyApiClient.searchCompanies).mockResolvedValue({
-        data: [],
-        pagination: {
-          currentPage: 1,
-          totalPages: 1,
-          totalItems: 0,
-          itemsPerPage: 20,
-          hasNextPage: false,
-          hasPreviousPage: false,
-        },
-      });
+      vi.mocked(companyApiClient.searchCompanies).mockResolvedValue([]);
 
       // Act
       const { result } = renderHook(() => useCompanySearch(''), {
@@ -151,27 +122,19 @@ describe('useCompanySearch Hook', () => {
 
     it('should_search_when_queryExactly3Characters', async () => {
       // Arrange
-      const mockResults: CompanyListResponse = {
-        data: [
-          {
-            id: '1',
-            name: 'IBM Switzerland',
-            industry: 'Technology',
-            location: { city: 'Zurich', country: 'Switzerland' },
-            isPartner: false,
-            isVerified: true,
-            associatedUserCount: 15,
-          },
-        ],
-        pagination: {
-          currentPage: 1,
-          totalPages: 1,
-          totalItems: 1,
-          itemsPerPage: 20,
-          hasNextPage: false,
-          hasPreviousPage: false,
+      const mockResults: Company[] = [
+        {
+          id: '1',
+          name: 'IBM Switzerland',
+          industry: 'Technology',
+          location: { city: 'Zurich', country: 'Switzerland' },
+          isVerified: true,
+          verificationStatus: 'Verified',
+          createdAt: '2024-01-01T00:00:00Z',
+          updatedAt: '2024-01-01T00:00:00Z',
+          createdBy: 'user-1',
         },
-      };
+      ];
 
       vi.mocked(companyApiClient.searchCompanies).mockResolvedValue(mockResults);
 
@@ -185,33 +148,20 @@ describe('useCompanySearch Hook', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(companyApiClient.searchCompanies).toHaveBeenCalledWith('IBM', {
-        page: 1,
-        limit: 10,
-      });
+      expect(companyApiClient.searchCompanies).toHaveBeenCalledWith('IBM', 10);
     });
   });
 
   describe('Custom Pagination', () => {
     it('should_useCustomLimit_when_limitProvided', async () => {
       // Arrange
-      const mockResults: CompanyListResponse = {
-        data: [],
-        pagination: {
-          currentPage: 1,
-          totalPages: 1,
-          totalItems: 0,
-          itemsPerPage: 5,
-          hasNextPage: false,
-          hasPreviousPage: false,
-        },
-      };
+      const mockResults: Company[] = [];
 
       vi.mocked(companyApiClient.searchCompanies).mockResolvedValue(mockResults);
 
       // Act
       const { result } = renderHook(
-        () => useCompanySearch('Test', { page: 1, limit: 5 }),
+        () => useCompanySearch('Test', 5),
         { wrapper: createWrapper() }
       );
 
@@ -220,25 +170,12 @@ describe('useCompanySearch Hook', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(companyApiClient.searchCompanies).toHaveBeenCalledWith('Test', {
-        page: 1,
-        limit: 5,
-      });
+      expect(companyApiClient.searchCompanies).toHaveBeenCalledWith('Test', 5);
     });
 
     it('should_useDefaultLimit_when_noLimitProvided', async () => {
       // Arrange
-      const mockResults: CompanyListResponse = {
-        data: [],
-        pagination: {
-          currentPage: 1,
-          totalPages: 1,
-          totalItems: 0,
-          itemsPerPage: 10,
-          hasNextPage: false,
-          hasPreviousPage: false,
-        },
-      };
+      const mockResults: Company[] = [];
 
       vi.mocked(companyApiClient.searchCompanies).mockResolvedValue(mockResults);
 
@@ -252,37 +189,26 @@ describe('useCompanySearch Hook', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(companyApiClient.searchCompanies).toHaveBeenCalledWith('Query', {
-        page: 1,
-        limit: 10,
-      });
+      expect(companyApiClient.searchCompanies).toHaveBeenCalledWith('Query', 10);
     });
   });
 
   describe('Caching Behavior (AC 10 - Performance)', () => {
     it('should_cacheSearchResults_when_queryRepeated', async () => {
       // Arrange
-      const mockResults: CompanyListResponse = {
-        data: [
-          {
-            id: '1',
-            name: 'Cached Company',
-            industry: 'Finance',
-            location: { city: 'Geneva', country: 'Switzerland' },
-            isPartner: false,
-            isVerified: true,
-            associatedUserCount: 8,
-          },
-        ],
-        pagination: {
-          currentPage: 1,
-          totalPages: 1,
-          totalItems: 1,
-          itemsPerPage: 10,
-          hasNextPage: false,
-          hasPreviousPage: false,
+      const mockResults: Company[] = [
+        {
+          id: '1',
+          name: 'Cached Company',
+          industry: 'Finance',
+          location: { city: 'Geneva', country: 'Switzerland' },
+          isVerified: true,
+          verificationStatus: 'Verified',
+          createdAt: '2024-01-01T00:00:00Z',
+          updatedAt: '2024-01-01T00:00:00Z',
+          createdBy: 'user-1',
         },
-      };
+      ];
 
       // Enable caching for this test
       queryClient = new QueryClient({
@@ -322,49 +248,33 @@ describe('useCompanySearch Hook', () => {
 
     it('should_haveDifferentCacheKeys_when_queryDiffers', async () => {
       // Arrange
-      const mockResults1: CompanyListResponse = {
-        data: [
-          {
-            id: '1',
-            name: 'Tech Company',
-            industry: 'Technology',
-            location: { city: 'Zurich', country: 'Switzerland' },
-            isPartner: false,
-            isVerified: true,
-            associatedUserCount: 5,
-          },
-        ],
-        pagination: {
-          currentPage: 1,
-          totalPages: 1,
-          totalItems: 1,
-          itemsPerPage: 10,
-          hasNextPage: false,
-          hasPreviousPage: false,
+      const mockResults1: Company[] = [
+        {
+          id: '1',
+          name: 'Tech Company',
+          industry: 'Technology',
+          location: { city: 'Zurich', country: 'Switzerland' },
+          isVerified: true,
+          verificationStatus: 'Verified',
+          createdAt: '2024-01-01T00:00:00Z',
+          updatedAt: '2024-01-01T00:00:00Z',
+          createdBy: 'user-1',
         },
-      };
+      ];
 
-      const mockResults2: CompanyListResponse = {
-        data: [
-          {
-            id: '2',
-            name: 'Finance Corp',
-            industry: 'Finance',
-            location: { city: 'Geneva', country: 'Switzerland' },
-            isPartner: true,
-            isVerified: true,
-            associatedUserCount: 12,
-          },
-        ],
-        pagination: {
-          currentPage: 1,
-          totalPages: 1,
-          totalItems: 1,
-          itemsPerPage: 10,
-          hasNextPage: false,
-          hasPreviousPage: false,
+      const mockResults2: Company[] = [
+        {
+          id: '2',
+          name: 'Finance Corp',
+          industry: 'Finance',
+          location: { city: 'Geneva', country: 'Switzerland' },
+          isVerified: true,
+          verificationStatus: 'Verified',
+          createdAt: '2024-01-01T00:00:00Z',
+          updatedAt: '2024-01-01T00:00:00Z',
+          createdBy: 'user-1',
         },
-      };
+      ];
 
       vi.mocked(companyApiClient.searchCompanies)
         .mockResolvedValueOnce(mockResults1)
@@ -385,25 +295,15 @@ describe('useCompanySearch Hook', () => {
 
       // Assert - Different queries should trigger separate API calls
       expect(companyApiClient.searchCompanies).toHaveBeenCalledTimes(2);
-      expect(result1.current.data?.data[0].industry).toBe('Technology');
-      expect(result2.current.data?.data[0].industry).toBe('Finance');
+      expect(result1.current.data?.[0].industry).toBe('Technology');
+      expect(result2.current.data?.[0].industry).toBe('Finance');
     });
   });
 
   describe('Query Key Generation', () => {
     it('should_includeQueryInKey_when_searchExecuted', async () => {
       // Arrange
-      const mockResults: CompanyListResponse = {
-        data: [],
-        pagination: {
-          currentPage: 1,
-          totalPages: 1,
-          totalItems: 0,
-          itemsPerPage: 10,
-          hasNextPage: false,
-          hasPreviousPage: false,
-        },
-      };
+      const mockResults: Company[] = [];
 
       vi.mocked(companyApiClient.searchCompanies).mockResolvedValue(mockResults);
 
@@ -415,37 +315,27 @@ describe('useCompanySearch Hook', () => {
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
       // Assert - Query key should include search query
-      const queryKey = ['companySearch', 'TestQuery', { page: 1, limit: 10 }];
+      const queryKey = ['companySearch', 'TestQuery', 10];
       const cachedData = queryClient.getQueryData(queryKey);
       expect(cachedData).toBeDefined();
     });
 
-    it('should_includePaginationInKey_when_paginationProvided', async () => {
+    it('should_includeLimitInKey_when_limitProvided', async () => {
       // Arrange
-      const mockResults: CompanyListResponse = {
-        data: [],
-        pagination: {
-          currentPage: 2,
-          totalPages: 3,
-          totalItems: 25,
-          itemsPerPage: 10,
-          hasNextPage: true,
-          hasPreviousPage: true,
-        },
-      };
+      const mockResults: Company[] = [];
 
       vi.mocked(companyApiClient.searchCompanies).mockResolvedValue(mockResults);
 
       // Act
       const { result } = renderHook(
-        () => useCompanySearch('Query', { page: 2, limit: 10 }),
+        () => useCompanySearch('Query', 5),
         { wrapper: createWrapper() }
       );
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
       // Assert
-      const queryKey = ['companySearch', 'Query', { page: 2, limit: 10 }];
+      const queryKey = ['companySearch', 'Query', 5];
       const cachedData = queryClient.getQueryData(queryKey);
       expect(cachedData).toBeDefined();
     });
@@ -530,27 +420,19 @@ describe('useCompanySearch Hook', () => {
 
     it('should_clearLoadingState_when_searchComplete', async () => {
       // Arrange
-      const mockResults: CompanyListResponse = {
-        data: [
-          {
-            id: '1',
-            name: 'Complete Company',
-            industry: 'Healthcare',
-            location: { city: 'Basel', country: 'Switzerland' },
-            isPartner: false,
-            isVerified: false,
-            associatedUserCount: 2,
-          },
-        ],
-        pagination: {
-          currentPage: 1,
-          totalPages: 1,
-          totalItems: 1,
-          itemsPerPage: 10,
-          hasNextPage: false,
-          hasPreviousPage: false,
+      const mockResults: Company[] = [
+        {
+          id: '1',
+          name: 'Complete Company',
+          industry: 'Healthcare',
+          location: { city: 'Basel', country: 'Switzerland' },
+          isVerified: false,
+          verificationStatus: 'Pending',
+          createdAt: '2024-01-01T00:00:00Z',
+          updatedAt: '2024-01-01T00:00:00Z',
+          createdBy: 'user-1',
         },
-      };
+      ];
 
       vi.mocked(companyApiClient.searchCompanies).mockResolvedValue(mockResults);
 
@@ -572,17 +454,7 @@ describe('useCompanySearch Hook', () => {
   describe('Empty Results', () => {
     it('should_returnEmptyArray_when_noMatches', async () => {
       // Arrange
-      const emptyResults: CompanyListResponse = {
-        data: [],
-        pagination: {
-          currentPage: 1,
-          totalPages: 1,
-          totalItems: 0,
-          itemsPerPage: 10,
-          hasNextPage: false,
-          hasPreviousPage: false,
-        },
-      };
+      const emptyResults: Company[] = [];
 
       vi.mocked(companyApiClient.searchCompanies).mockResolvedValue(emptyResults);
 
@@ -596,8 +468,8 @@ describe('useCompanySearch Hook', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(result.current.data?.data).toEqual([]);
-      expect(result.current.data?.pagination.totalItems).toBe(0);
+      expect(result.current.data).toEqual([]);
+      expect(result.current.data).toHaveLength(0);
     });
   });
 });

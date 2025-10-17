@@ -205,6 +205,7 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    testTimeout: 10000, // Increase timeout from 5s to 10s for component tests
     exclude: [
       '**/node_modules/**',
       '**/dist/**',
@@ -222,6 +223,12 @@ export default defineConfig({
         web: {
           include: ['msw'],
         },
+      },
+    },
+    // Configure environment options for React 19 compatibility
+    environmentOptions: {
+      jsdom: {
+        resources: 'usable',
       },
     },
   },

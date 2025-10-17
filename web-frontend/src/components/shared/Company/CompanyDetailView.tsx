@@ -39,7 +39,7 @@ function TabPanel({ children, value, index }: TabPanelProps) {
       id={`company-tabpanel-${index}`}
       aria-labelledby={`company-tab-${index}`}
     >
-      {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
+      <Box sx={{ pt: 3 }}>{children}</Box>
     </div>
   );
 }

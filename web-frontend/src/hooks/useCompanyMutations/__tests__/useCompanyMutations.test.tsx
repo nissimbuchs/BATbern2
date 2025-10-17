@@ -18,7 +18,7 @@ import { companyApiClient } from '@/services/api/companyApi';
 import type { Company, CreateCompanyRequest, UpdateCompanyRequest } from '@/types/company.types';
 
 // Mock the API client
-vi.mock('../../services/companyApiClient', () => ({
+vi.mock('@/services/api/companyApi', () => ({
   companyApiClient: {
     createCompany: vi.fn(),
     updateCompany: vi.fn(),

@@ -40,13 +40,11 @@ const AppHeader = React.memo(function AppHeader({
   // Use props if provided, otherwise fall back to stores/hooks
   const { user: storeUser, signOut } = useAuth();
   const { setNotificationDrawerOpen, setUserMenuOpen: setUserMenuOpenState } = useUIStore();
-  // TEMPORARY: Notifications disabled until backend endpoint is implemented
-  // const { data: hookNotificationsData } = useNotifications();
   const navigate = useNavigate();
 
   const user = userProp || storeUser;
-  // TEMPORARY: Notifications disabled until backend endpoint is implemented
-  const notificationsData = notificationsProp; // || hookNotificationsData;
+  // Use prop if provided (for testing), otherwise would use hook data when backend is ready
+  const notificationsData = notificationsProp;
   const unreadCount = notificationsData?.unreadCount ?? 0;
 
   // Extract current role - handle both UserContext (role) and UserProfile (currentRole)

@@ -1,5 +1,13 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
+import i18n from '../i18n/config'; // Initialize i18n for all tests
+
+// Set test language to English for consistent test assertions
+i18n.changeLanguage('en');
+
+// Configure React 19 test environment to support act()
+// This tells React that we're in a testing environment that supports act() wrapping
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 // Mock AWS Amplify for tests (keeping existing global fetch as fallback for non-MSW requests)
 global.fetch =
@@ -34,6 +42,34 @@ global.ResizeObserver = class ResizeObserver {
   unobserve() {}
   disconnect() {}
 };
+
+// Mock HTMLCanvasElement for axe-core accessibility tests
+HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
+  measureText: vi.fn(() => ({ width: 0 })),
+  fillText: vi.fn(),
+  clearRect: vi.fn(),
+  getImageData: vi.fn(),
+  putImageData: vi.fn(),
+  createImageData: vi.fn(),
+  setTransform: vi.fn(),
+  drawImage: vi.fn(),
+  save: vi.fn(),
+  fillRect: vi.fn(),
+  restore: vi.fn(),
+  beginPath: vi.fn(),
+  moveTo: vi.fn(),
+  lineTo: vi.fn(),
+  closePath: vi.fn(),
+  stroke: vi.fn(),
+  translate: vi.fn(),
+  scale: vi.fn(),
+  rotate: vi.fn(),
+  arc: vi.fn(),
+  fill: vi.fn(),
+  transform: vi.fn(),
+  rect: vi.fn(),
+  clip: vi.fn(),
+})) as any;
 
 // Mock AWS Amplify v6
 vi.mock('aws-amplify', () => ({
