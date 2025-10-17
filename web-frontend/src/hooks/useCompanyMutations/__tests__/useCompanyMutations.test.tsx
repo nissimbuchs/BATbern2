@@ -293,7 +293,9 @@ describe('useCompanyMutations Hooks', () => {
       });
 
       // Pre-populate cache AFTER wrapper created
-      queryClient.setQueryData(['company', 'company-123', undefined], existingCompany);
+      act(() => {
+        queryClient.setQueryData(['company', 'company-123', undefined], existingCompany);
+      });
 
       // Verify cache was set correctly
       const verifyCache = queryClient.getQueryData(['company', 'company-123', undefined]) as Company;
