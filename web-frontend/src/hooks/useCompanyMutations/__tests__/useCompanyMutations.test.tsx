@@ -287,20 +287,16 @@ describe('useCompanyMutations Hooks', () => {
         () => new Promise((resolve) => setTimeout(() => resolve(updatedCompany), 100))
       );
 
-      // Act - Create wrapper first to initialize queryClient
+      // Act - Create wrapper and initialize queryClient
+      createWrapper();
+
+      // Pre-populate cache BEFORE creating hook
+      queryClient.setQueryData(['company', 'company-123', undefined], existingCompany);
+
+      // Now create the hook
       const { result } = renderHook(() => useUpdateCompany(), {
-        wrapper: createWrapper(),
+        wrapper,
       });
-
-      // Pre-populate cache AFTER wrapper created
-      act(() => {
-        queryClient.setQueryData(['company', 'company-123', undefined], existingCompany);
-      });
-
-      // Verify cache was set correctly
-      const verifyCache = queryClient.getQueryData(['company', 'company-123', undefined]) as Company;
-      expect(verifyCache).toBeDefined();
-      expect(verifyCache.name).toBe('Original Name');
 
       // Trigger mutation
       await act(async () => {
