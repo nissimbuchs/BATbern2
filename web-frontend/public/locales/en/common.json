@@ -9,6 +9,8 @@
     "events": "Events",
     "speakers": "Speakers",
     "partners": "Partners",
+    "companies": "Companies",
+    "myCompany": "My Company",
     "analytics": "Analytics",
     "content": "Content Search",
     "profile": "Profile",
@@ -52,6 +54,116 @@
     "speaker": "Speaker",
     "partner": "Partner",
     "attendee": "Attendee"
+  },
+  "company": {
+    "title": "Company Management",
+    "createCompany": "Create Company",
+    "editCompany": "Edit Company",
+    "viewDetails": "View details for {{name}}",
+    "noCompaniesFound": "No companies found",
+    "adjustFilters": "Try adjusting your search or filters",
+    "backToList": "Back",
+    "viewMode": {
+      "grid": "Grid view",
+      "list": "List view",
+      "toggleCurrent": "Toggle view mode. Current: {{mode}}"
+    },
+    "fields": {
+      "name": "Company Name",
+      "displayName": "Display Name (if different from legal name)",
+      "swissUID": "Swiss UID (CHE-XXX.XXX.XXX)",
+      "website": "Website",
+      "industry": "Industry",
+      "sector": "Sector (Optional)",
+      "city": "City",
+      "canton": "Canton",
+      "country": "Country",
+      "description": "Description",
+      "legalName": "Legal: {{name}}"
+    },
+    "placeholders": {
+      "swissUID": "CHE-123.456.789",
+      "website": "https://example.com",
+      "canton": "BE, ZH, GE, etc."
+    },
+    "industries": {
+      "selectIndustry": "Select Industry",
+      "technology": "Technology",
+      "cloudComputing": "Cloud Computing",
+      "devOps": "DevOps",
+      "financialServices": "Financial Services",
+      "healthcare": "Healthcare",
+      "manufacturing": "Manufacturing",
+      "consulting": "Consulting",
+      "education": "Education",
+      "other": "Other"
+    },
+    "sectors": {
+      "selectSector": "Select Sector",
+      "public": "Public",
+      "private": "Private",
+      "nonprofit": "Non-profit",
+      "government": "Government"
+    },
+    "badges": {
+      "partner": "Partner",
+      "verified": "Verified"
+    },
+    "stats": {
+      "userCount": "{{count}} user",
+      "userCount_one": "{{count}} user",
+      "userCount_other": "{{count}} users"
+    },
+    "filters": {
+      "partnerOnly": "Partner Companies Only",
+      "verifiedOnly": "Verified Companies Only",
+      "industry": "Industry",
+      "allIndustries": "All Industries",
+      "clearAll": "Clear All Filters",
+      "filters": "Filters"
+    },
+    "form": {
+      "createTitle": "Create New Company",
+      "editTitle": "Edit Company",
+      "required": "Required",
+      "saveDraft": "Save Draft",
+      "saveCreate": "Save & Create",
+      "saveChanges": "Save Changes",
+      "unsavedChanges": "You have unsaved changes. Are you sure you want to close?",
+      "characterCount": "{{count}}/{{max}} characters",
+      "helpText": {
+        "swissUID": "Optional - for automatic verification"
+      },
+      "errors": {
+        "nameRequired": "Company name is required",
+        "nameMinLength": "Name must be at least {{min}} characters",
+        "nameMaxLength": "Name must be at most {{max}} characters",
+        "displayNameMaxLength": "Display name must be at most {{max}} characters",
+        "invalidSwissUID": "Invalid Swiss UID format (CHE-XXX.XXX.XXX)",
+        "invalidWebsite": "Invalid website URL",
+        "industryRequired": "Industry is required",
+        "cityRequired": "City is required",
+        "cantonRequired": "Canton is required",
+        "countryRequired": "Country is required",
+        "descriptionMaxLength": "Description must be at most {{max}} characters",
+        "noPermission": "You don't have permission to edit this company. Speakers can only edit their own company."
+      }
+    },
+    "detail": {
+      "tabs": {
+        "overview": "Overview",
+        "users": "Users",
+        "statistics": "Statistics",
+        "activity": "Activity"
+      },
+      "overviewText": "This overview section can display additional company information, recent updates, or highlights.",
+      "noData": "No company data available"
+    },
+    "errors": {
+      "loadFailed": "Failed to load company",
+      "saveFailed": "An error occurred while saving the company",
+      "retry": "Retry"
+    }
   },
   "app": {
     "title": "BATbern Event Management Platform",

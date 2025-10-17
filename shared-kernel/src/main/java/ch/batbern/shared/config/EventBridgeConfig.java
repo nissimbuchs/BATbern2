@@ -15,7 +15,14 @@ import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClientBuilder
 
 import java.net.URI;
 
+/**
+ * EventBridge configuration for AWS event publishing
+ *
+ * Note: This configuration is NOT active for 'local' or 'test' profiles.
+ * Those profiles use mock EventBridge clients for development/testing.
+ */
 @Configuration
+@org.springframework.context.annotation.Profile("!local & !test")
 public class EventBridgeConfig {
 
     @Value("${aws.region:eu-central-1}")

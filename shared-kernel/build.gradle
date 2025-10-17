@@ -1,5 +1,6 @@
 plugins {
     id 'java-library'
+    id 'java-test-fixtures'
     id 'org.springframework.boot' version '3.5.6'
     id 'io.spring.dependency-management' version '1.1.6'
     id 'maven-publish'
@@ -64,6 +65,13 @@ dependencies {
     testImplementation 'org.testcontainers:testcontainers'
     testImplementation 'org.testcontainers:localstack'
     testImplementation 'org.testcontainers:junit-jupiter'
+
+    // Test Fixtures dependencies (exposed to consuming projects)
+    testFixturesImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testFixturesImplementation 'org.springframework.boot:spring-boot-starter-web'
+    testFixturesImplementation 'org.testcontainers:testcontainers:1.20.4'
+    testFixturesImplementation 'org.testcontainers:postgresql:1.20.4'
+    testFixturesImplementation 'org.testcontainers:junit-jupiter:1.20.4'
 }
 
 // Configure JaCoCo for code coverage

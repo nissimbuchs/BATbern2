@@ -1,42 +1,49 @@
 package ch.batbern.shared.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Value;
+import org.mockito.Mockito;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient;
+import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
+import software.amazon.awssdk.services.eventbridge.model.PutEventsResponse;
 
-import java.net.URI;
+import java.util.concurrent.CompletableFuture;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
+/**
+ * Test configuration for EventBridge
+ * Provides mocked EventBridgeAsyncClient for fast, reliable tests without AWS dependencies
+ */
 @TestConfiguration
 public class TestEventBridgeConfig {
-
-    @Value("${aws.eventbridge.endpoint:http://localhost:4566}")
-    private String eventBridgeEndpoint;
-
-    @Value("${aws.region:us-east-1}")
-    private String awsRegion;
-
-    @Value("${aws.access-key:test}")
-    private String accessKey;
-
-    @Value("${aws.secret-key:test}")
-    private String secretKey;
 
     @Bean
     @Primary
     public EventBridgeAsyncClient testEventBridgeAsyncClient() {
-        return EventBridgeAsyncClient.builder()
-            .endpointOverride(URI.create(eventBridgeEndpoint))
-            .region(Region.of(awsRegion))
-            .credentialsProvider(StaticCredentialsProvider.create(
-                AwsBasicCredentials.create(accessKey, secretKey)
-            ))
-            .build();
+        EventBridgeAsyncClient mockClient = Mockito.mock(EventBridgeAsyncClient.class);
+
+        // Configure mock to return successful response for putEvents
+        PutEventsResponse successResponse = PutEventsResponse.builder()
+                .failedEntryCount(0)
+                .build();
+
+        when(mockClient.putEvents(any(PutEventsRequest.class)))
+                .thenReturn(CompletableFuture.completedFuture(successResponse));
+
+        // Configure mock for createEventBus (used in ensureEventBusExists)
+        software.amazon.awssdk.services.eventbridge.model.CreateEventBusResponse createBusResponse =
+                software.amazon.awssdk.services.eventbridge.model.CreateEventBusResponse.builder()
+                        .eventBusArn("arn:aws:events:us-east-1:123456789012:event-bus/batbern-test-events")
+                        .build();
+
+        when(mockClient.createEventBus(any(software.amazon.awssdk.services.eventbridge.model.CreateEventBusRequest.class)))
+                .thenReturn(CompletableFuture.completedFuture(createBusResponse));
+
+        return mockClient;
     }
 
     @Bean(name = "eventBridgeObjectMapper")

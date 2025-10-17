@@ -27,7 +27,9 @@ public class CorsHandler {
         "Content-Type",
         "X-Requested-With",
         "X-Request-Id",
+        "X-Correlation-ID",
         "Accept",
+        "Accept-Language",
         "Origin",
         "Access-Control-Request-Method",
         "Access-Control-Request-Headers"
@@ -35,6 +37,7 @@ public class CorsHandler {
 
     private static final Set<String> EXPOSED_HEADERS = Set.of(
         "X-Request-Id",
+        "X-Correlation-ID",
         "X-Rate-Limit-Remaining",
         "X-Rate-Limit-Reset"
     );

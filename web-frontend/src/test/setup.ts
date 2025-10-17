@@ -1,7 +1,15 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
+import i18n from '../i18n/config'; // Initialize i18n for all tests
 
-// Mock AWS Amplify for tests
+// Set test language to English for consistent test assertions
+i18n.changeLanguage('en');
+
+// Configure React 19 test environment to support act()
+// This tells React that we're in a testing environment that supports act() wrapping
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+
+// Mock AWS Amplify for tests (keeping existing global fetch as fallback for non-MSW requests)
 global.fetch =
   global.fetch ||
   (() =>
@@ -35,6 +43,34 @@ global.ResizeObserver = class ResizeObserver {
   disconnect() {}
 };
 
+// Mock HTMLCanvasElement for axe-core accessibility tests
+HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
+  measureText: vi.fn(() => ({ width: 0 })),
+  fillText: vi.fn(),
+  clearRect: vi.fn(),
+  getImageData: vi.fn(),
+  putImageData: vi.fn(),
+  createImageData: vi.fn(),
+  setTransform: vi.fn(),
+  drawImage: vi.fn(),
+  save: vi.fn(),
+  fillRect: vi.fn(),
+  restore: vi.fn(),
+  beginPath: vi.fn(),
+  moveTo: vi.fn(),
+  lineTo: vi.fn(),
+  closePath: vi.fn(),
+  stroke: vi.fn(),
+  translate: vi.fn(),
+  scale: vi.fn(),
+  rotate: vi.fn(),
+  arc: vi.fn(),
+  fill: vi.fn(),
+  transform: vi.fn(),
+  rect: vi.fn(),
+  clip: vi.fn(),
+})) as any;
+
 // Mock AWS Amplify v6
 vi.mock('aws-amplify', () => ({
   Amplify: {
@@ -56,3 +92,23 @@ vi.mock('aws-amplify/auth', () => ({
 vi.mock('@aws-amplify/ui-react', () => ({
   Authenticator: ({ children }: { children: React.ReactNode }) => children,
 }));
+
+// Suppress JSDOM errors for CORS preflight requests to S3 and Network errors
+// These are expected in test environment where we mock XHR/fetch
+vi.spyOn(console, 'error').mockImplementation((...args: any[]) => {
+  if (
+    typeof args[0] === 'string' &&
+    (args[0].includes('Response for preflight has invalid HTTP status code') ||
+      args[0].includes('CORS') ||
+      args[0].includes('Cross-Origin') ||
+      args[0].includes('Network error') ||
+      args[0].includes('Unauthorized') ||
+      args[0].includes('Forbidden') ||
+      args[0].includes('Server error') ||
+      args[0].includes('API error'))
+  ) {
+    return; // Suppress expected API and network errors in tests
+  }
+  // For other errors, log them (important for debugging)
+  console.warn(...args);
+});

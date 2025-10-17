@@ -8,21 +8,15 @@ import ch.batbern.shared.types.EventId;
 import ch.batbern.shared.types.SpeakerId;
 import ch.batbern.shared.types.UserId;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.testcontainers.containers.localstack.LocalStackContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient;
-import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
-import software.amazon.awssdk.services.eventbridge.model.PutEventsResponse;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 
 import java.time.Instant;
@@ -36,19 +30,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@Testcontainers
-@SpringBootTest(classes = {ch.batbern.shared.TestApplication.class,
-                          ch.batbern.shared.config.TestEventBridgeConfig.class,
-                          ch.batbern.shared.config.EventBridgeConfig.class,
-                          ch.batbern.shared.events.EventBridgeEventPublisher.class})
+/**
+ * Integration tests for EventBridge publisher
+ * Uses mocked EventBridgeAsyncClient for fast, reliable tests without AWS dependencies
+ */
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration(classes = {
+    ch.batbern.shared.config.EventBridgeConfig.class,
+    ch.batbern.shared.events.EventBridgeEventPublisher.class,
+    ch.batbern.shared.config.TestEventBridgeConfig.class
+})
+@TestPropertySource(properties = {
+    "aws.eventbridge.bus-name=batbern-test-events",
+    "aws.eventbridge.event-source=batbern.test"
+})
 class EventBridgePublisherTest {
-
-    @Container
-    static LocalStackContainer localStack = new LocalStackContainer(
-            DockerImageName.parse("localstack/localstack:3.0.0"))
-            .withEnv("DEBUG", "1")
-            .withEnv("LS_LOG", "debug")
-            .withEnv("SERVICES", "events,eventbridge");
 
     @Autowired
     private DomainEventPublisher eventPublisher;
@@ -58,15 +54,6 @@ class EventBridgePublisherTest {
 
     @Autowired
     private ObjectMapper objectMapper;
-
-    @DynamicPropertySource
-    static void overrideProperties(DynamicPropertyRegistry registry) {
-        String endpoint = "http://" + localStack.getHost() + ":" + localStack.getMappedPort(4566);
-        registry.add("aws.eventbridge.endpoint", () -> endpoint);
-        registry.add("aws.region", localStack::getRegion);
-        registry.add("aws.access-key", () -> "test");
-        registry.add("aws.secret-key", () -> "test");
-    }
 
     @Nested
     @DisplayName("Event Publishing")
