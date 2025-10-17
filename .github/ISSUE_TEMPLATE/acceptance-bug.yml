@@ -1,0 +1,73 @@
+name: Acceptance Testing Bug
+description: Quick bug report during acceptance testing (streamlined)
+title: "[ACCEPTANCE] "
+labels: ["bug", "acceptance-testing"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        🧪 **Quick bug report for acceptance testing**
+
+        This template is optimized for fast bug reporting during acceptance testing sessions.
+
+  - type: input
+    id: story_id
+    attributes:
+      label: Story ID
+      description: Enter the story ID (e.g., 1.14, 2.5.1)
+      placeholder: "1.14"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - Critical
+        - High
+        - Medium
+        - Low
+    validations:
+      required: true
+
+  - type: textarea
+    id: quick_description
+    attributes:
+      label: What's broken?
+      description: Brief description of the issue
+      placeholder: "Company search cache not working - always queries DB"
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: Quick steps
+      placeholder: |
+        1. Search "Test"
+        2. Search "Test" again
+        3. Still takes 500ms (should be <100ms cached)
+    validations:
+      required: true
+
+  - type: input
+    id: acceptance_criteria
+    attributes:
+      label: AC Violated
+      description: Which acceptance criteria? (e.g., AC9)
+      placeholder: "AC9"
+
+  - type: input
+    id: test_file
+    attributes:
+      label: Test File Reference
+      description: E2E test file where this should be caught (optional)
+      placeholder: "company-search.spec.ts:45"
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional Notes
+      description: Screenshots, logs, or other context (optional)

@@ -46,11 +46,16 @@ public class SecurityConfig {
             "Content-Type",
             "X-Requested-With",
             "X-Request-Id",
+            "X-Correlation-ID",
             "Accept",
-            "Origin"
+            "Accept-Language",
+            "Origin",
+            "Access-Control-Request-Method",
+            "Access-Control-Request-Headers"
         ));
         configuration.setExposedHeaders(java.util.Arrays.asList(
             "X-Request-Id",
+            "X-Correlation-ID",
             "X-Rate-Limit-Remaining",
             "X-Rate-Limit-Reset"
         ));

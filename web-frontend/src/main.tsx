@@ -11,6 +11,7 @@ import { registerSW } from 'virtual:pwa-register'; // Vite PWA plugin (Task 14b)
 import { loadRuntimeConfig } from './config/runtime-config';
 import { ConfigProvider } from './contexts/ConfigContext';
 import { configureAmplify } from './config/amplify';
+import { updateApiClientConfig } from './services/api/apiClient';
 
 /**
  * Loading Screen Component
@@ -116,6 +117,9 @@ async function bootstrap() {
     const config = await loadRuntimeConfig();
 
     console.log('[Bootstrap] Configuration loaded successfully');
+
+    // Update API client with runtime config base URL
+    updateApiClientConfig(config.apiBaseUrl);
 
     // Configure Amplify with runtime config (before rendering app)
     try {

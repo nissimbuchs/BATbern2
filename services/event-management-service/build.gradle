@@ -3,6 +3,7 @@ plugins {
     id 'org.springframework.boot' version '3.5.6'
     id 'io.spring.dependency-management' version '1.1.6'
     id 'jacoco'
+    id 'org.flywaydb.flyway' version '10.10.0'
 }
 
 group = 'ch.batbern'
@@ -36,6 +37,10 @@ dependencies {
 
     // Shared kernel (API utilities from Story 1.15a)
     implementation project(':shared-kernel')
+
+    // AWS SDK for EventBridge
+    implementation platform('software.amazon.awssdk:bom:2.29.45')
+    implementation 'software.amazon.awssdk:eventbridge'
 
     // OpenAPI documentation
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
@@ -91,3 +96,13 @@ jacocoTestCoverageVerification {
 }
 
 check.dependsOn jacocoTestCoverageVerification
+
+// Flyway configuration for database migrations
+flyway {
+    url = System.getProperty('flyway.url', 'jdbc:postgresql://localhost:5432/batbern')
+    user = System.getProperty('flyway.user', 'batbern_user')
+    password = System.getProperty('flyway.password', 'batbern-dev-password')
+    locations = ['classpath:db/migration']
+    baselineOnMigrate = true
+    baselineVersion = '0'
+}

@@ -1,0 +1,1000 @@
+openapi: 3.1.0
+info:
+  title: BATbern Companies API
+  version: 1.0.0
+  description: |
+    Consolidated Companies API for BATbern Event Management Platform.
+
+    This API provides comprehensive company management capabilities with:
+    - **Resource Expansion**: `?include=` parameter for statistics and logos
+    - **Advanced Filtering**: MongoDB-style JSON filter syntax for complex queries
+    - **Field Selection**: Sparse fieldsets to reduce payload size
+    - **Pagination**: Standard page/limit parameters
+    - **Caching**: Caffeine in-memory cache (15min TTL)
+    - **Swiss UID Validation**: Validates Swiss company registration numbers
+
+    **Story**: 1.14 - Company Management Service Foundation
+
+    **Performance Targets**:
+    - Company list (no includes): <100ms (P95)
+    - Company detail (basic): <150ms (P95)
+    - Company detail (all includes): <200ms (P95)
+    - Cached search response: <50ms (P95)
+    - Advanced query with all parameters: <200ms (P95)
+
+  contact:
+    name: BATbern Platform Team
+    email: platform@batbern.ch
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://api.batbern.ch/api/v1
+    description: Production
+  - url: https://api.staging.batbern.ch/api/v1
+    description: Staging
+  - url: http://localhost:8080/api/v1
+    description: Development
+
+tags:
+  - name: Companies
+    description: Company CRUD and listing operations
+  - name: Company Search
+    description: Company search and autocomplete with caching
+  - name: Company Verification
+    description: Company verification and UID validation
+
+paths:
+  /companies:
+    get:
+      tags:
+        - Companies
+      summary: List and search companies with advanced query support
+      description: |
+        Retrieve a paginated list of companies with optional filtering, sorting, field selection, and resource expansion.
+
+        **Acceptance Criteria**: AC1, AC14, AC15
+
+        **Filter Syntax Examples**:
+        - Single filter: `{"industry":"Technology"}`
+        - Multiple fields: `{"industry":"Technology","isVerified":true}`
+        - Logical operators: `{"$or":[{"industry":"Technology"},{"industry":"Finance"}]}`
+        - Comparison: `{"createdAt":{"$gte":"2025-01-01T00:00:00Z"}}`
+        - Contains: `{"name":{"$contains":"Bern"}}`
+
+        **Sort Syntax**:
+        - Ascending: `name` or `+name`
+        - Descending: `-name`
+        - Multiple fields: `industry,-createdAt`
+
+        **Field Selection**:
+        - Specific fields: `?fields=id,name,industry`
+        - All fields: omit `fields` parameter
+
+        **Resource Expansion**:
+        - Statistics: `?include=statistics` (totalEvents, totalSpeakers, totalPartners)
+        - Logo: `?include=logo` (url, s3Key, fileId)
+        - Multiple: `?include=statistics,logo`
+
+        **Performance**:
+        - Basic query: <100ms (P95)
+        - With all includes: <200ms (P95)
+
+      operationId: listCompanies
+      parameters:
+        - name: filter
+          in: query
+          description: MongoDB-style JSON filter criteria
+          required: false
+          schema:
+            type: string
+            example: '{"industry":"Technology","isVerified":true}'
+        - name: sort
+          in: query
+          description: Sort fields (comma-separated, prefix with - for descending)
+          required: false
+          schema:
+            type: string
+            example: '-createdAt,name'
+        - name: page
+          in: query
+          description: Page number (1-indexed)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Items per page (max 100)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: fields
+          in: query
+          description: Comma-separated field names for sparse fieldsets
+          required: false
+          schema:
+            type: string
+            example: 'id,name,industry,isVerified'
+        - name: include
+          in: query
+          description: Comma-separated list of resources to include
+          required: false
+          schema:
+            type: string
+            example: 'statistics,logo'
+      responses:
+        '200':
+          description: Successful response with paginated companies
+          headers:
+            X-Cache-Status:
+              description: Cache hit status (HIT or MISS)
+              schema:
+                type: string
+                enum: [HIT, MISS]
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCompanyResponse'
+              examples:
+                basicList:
+                  summary: Basic company list
+                  value:
+                    data:
+                      - id: 550e8400-e29b-41d4-a716-446655440000
+                        name: Swiss IT Solutions AG
+                        displayName: Swiss IT Solutions
+                        industry: Technology
+                        isVerified: true
+                        createdAt: 2025-01-15T10:00:00Z
+                        updatedAt: 2025-01-15T10:00:00Z
+                    pagination:
+                      page: 1
+                      limit: 20
+                      totalItems: 1
+                      totalPages: 1
+                      hasNext: false
+                      hasPrev: false
+                expandedList:
+                  summary: Company list with statistics and logo
+                  value:
+                    data:
+                      - id: 550e8400-e29b-41d4-a716-446655440000
+                        name: Swiss IT Solutions AG
+                        displayName: Swiss IT Solutions
+                        industry: Technology
+                        isVerified: true
+                        createdAt: 2025-01-15T10:00:00Z
+                        updatedAt: 2025-01-15T10:00:00Z
+                        statistics:
+                          totalEvents: 12
+                          totalSpeakers: 8
+                          totalPartners: 5
+                        logo:
+                          url: https://cdn.batbern.ch/logos/2025/550e8400-e29b-41d4-a716-446655440000/logo.png
+                          s3Key: logos/2025/550e8400-e29b-41d4-a716-446655440000/logo.png
+                          fileId: file-123
+                    pagination:
+                      page: 1
+                      limit: 20
+                      totalItems: 1
+                      totalPages: 1
+                      hasNext: false
+                      hasPrev: false
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - Companies
+      summary: Create a new company
+      description: |
+        Create a new company with complete company data.
+
+        **Acceptance Criteria**: AC1, AC3
+
+        **Validation Rules**:
+        - Company name must be unique
+        - Swiss UID format (if provided): CHE-XXX.XXX.XXX
+        - Website must be valid URL (if provided)
+
+        **Events Published**: CompanyCreatedEvent to EventBridge
+
+        **Performance**: <200ms (P95)
+
+      operationId: createCompany
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCompanyRequest'
+            examples:
+              basicCompany:
+                summary: Basic company creation
+                value:
+                  name: Swiss IT Solutions AG
+                  displayName: Swiss IT Solutions
+                  industry: Technology
+                  website: https://swiss-it.ch
+                  description: Leading Swiss IT consulting firm
+              withSwissUID:
+                summary: Company with Swiss UID
+                value:
+                  name: Bern Tech GmbH
+                  swissUID: CHE-123.456.789
+                  industry: Technology
+                  website: https://berntech.ch
+      responses:
+        '201':
+          description: Company created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /companies/{id}:
+    get:
+      tags:
+        - Companies
+      summary: Get company details
+      description: |
+        Retrieve detailed information about a specific company.
+
+        **Acceptance Criteria**: AC2
+
+        **Performance**: <150ms (P95)
+
+      operationId: getCompany
+      parameters:
+        - name: id
+          in: path
+          description: Company UUID
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '200':
+          description: Company details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyResponse'
+              examples:
+                basicCompany:
+                  summary: Basic company details
+                  value:
+                    id: 550e8400-e29b-41d4-a716-446655440000
+                    name: Swiss IT Solutions AG
+                    displayName: Swiss IT Solutions
+                    swissUID: CHE-123.456.789
+                    industry: Technology
+                    website: https://swiss-it.ch
+                    description: Leading Swiss IT consulting firm
+                    isVerified: true
+                    createdAt: 2025-01-15T10:00:00Z
+                    updatedAt: 2025-01-15T10:00:00Z
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+    put:
+      tags:
+        - Companies
+      summary: Update company (full replacement)
+      description: |
+        Replace all company data with new data.
+
+        **Acceptance Criteria**: AC4
+
+        **Validation Rules**:
+        - Company name must be unique
+        - Swiss UID format (if provided): CHE-XXX.XXX.XXX
+
+        **Events Published**: CompanyUpdatedEvent to EventBridge
+
+        **Cache Invalidation**: All company caches cleared on update
+
+      operationId: updateCompany
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCompanyRequest'
+      responses:
+        '200':
+          description: Company updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+    patch:
+      tags:
+        - Companies
+      summary: Partially update company
+      description: |
+        Update specific fields of an existing company.
+
+        **Acceptance Criteria**: AC4
+
+        **Validation Rules**:
+        - Company name must be unique
+        - Swiss UID format (if provided): CHE-XXX.XXX.XXX
+
+        **Events Published**: CompanyUpdatedEvent to EventBridge
+
+        **Cache Invalidation**: All company caches cleared on update
+
+      operationId: patchCompany
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCompanyRequest'
+      responses:
+        '200':
+          description: Company updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+    delete:
+      tags:
+        - Companies
+      summary: Delete company
+      description: |
+        Delete a company and all associated data.
+
+        **Acceptance Criteria**: AC4
+
+        **Events Published**: CompanyDeletedEvent to EventBridge
+
+        **Cache Invalidation**: All company caches cleared on deletion
+
+      operationId: deleteCompany
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Company deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /companies/search:
+    get:
+      tags:
+        - Company Search
+      summary: Search companies with autocomplete
+      description: |
+        Search companies by name with autocomplete functionality.
+
+        **Acceptance Criteria**: AC5, AC11
+
+        **Caching**:
+        - Caffeine in-memory cache with 15-minute TTL
+        - Cache key includes both query and limit
+        - Automatic cache invalidation on company updates
+
+        **Performance**:
+        - Cached response: <50ms (P95)
+        - Cache miss: <100ms (P95)
+
+        **Default Results**: 20 companies (configurable via limit parameter)
+
+      operationId: searchCompanies
+      parameters:
+        - name: query
+          in: query
+          description: Search query (minimum 1 character)
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 'Swiss'
+        - name: limit
+          in: query
+          description: Maximum number of results (default 20)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Search results returned successfully
+          headers:
+            X-Cache-Status:
+              description: Cache hit status (HIT or MISS)
+              schema:
+                type: string
+                enum: [HIT, MISS]
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CompanySearchResponse'
+              examples:
+                searchResults:
+                  summary: Search results for "Swiss"
+                  value:
+                    - id: 550e8400-e29b-41d4-a716-446655440000
+                      name: Swiss IT Solutions AG
+                      displayName: Swiss IT Solutions
+                      swissUID: CHE-123.456.789
+                      industry: Technology
+                      isVerified: true
+                    - id: 550e8400-e29b-41d4-a716-446655440001
+                      name: Swiss Bank Corp
+                      displayName: Swiss Bank
+                      swissUID: CHE-987.654.321
+                      industry: Finance
+                      isVerified: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /companies/validate-uid:
+    get:
+      tags:
+        - Company Verification
+      summary: Validate Swiss UID format
+      description: |
+        Validates Swiss company UID (Unternehmens-Identifikationsnummer) format.
+
+        **Acceptance Criteria**: AC12
+
+        **Expected Format**: CHE-XXX.XXX.XXX
+
+        **Validation Rules**:
+        - Must start with "CHE-"
+        - Followed by 9 digits in XXX.XXX.XXX format
+        - Total length: 15 characters
+
+        **Future Enhancement**: Integration with Swiss Business Registry for real-time validation
+
+      operationId: validateUID
+      parameters:
+        - name: uid
+          in: query
+          description: Swiss UID to validate
+          required: true
+          schema:
+            type: string
+            pattern: '^CHE-\d{3}\.\d{3}\.\d{3}$'
+            example: 'CHE-123.456.789'
+      responses:
+        '200':
+          description: Validation result returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UIDValidationResponse'
+              examples:
+                validUID:
+                  summary: Valid Swiss UID
+                  value:
+                    valid: true
+                    uid: CHE-123.456.789
+                    message: Valid Swiss UID format
+                invalidUID:
+                  summary: Invalid Swiss UID
+                  value:
+                    valid: false
+                    uid: CHE-123456789
+                    message: 'Invalid Swiss UID format. Expected: CHE-XXX.XXX.XXX'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /companies/{id}/verify:
+    post:
+      tags:
+        - Company Verification
+      summary: Verify company
+      description: |
+        Marks a company as verified by an ORGANIZER.
+
+        **Acceptance Criteria**: AC13
+
+        **Authorization**: ORGANIZER role required
+
+        **Events Published**: CompanyVerifiedEvent to EventBridge
+
+        **Idempotency**: Safe to call multiple times (no error if already verified)
+
+      operationId: verifyCompany
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Company verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+components:
+  schemas:
+    CompanyResponse:
+      type: object
+      required:
+        - id
+        - name
+        - isVerified
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+        name:
+          type: string
+          maxLength: 255
+          example: Swiss IT Solutions AG
+        displayName:
+          type: string
+          maxLength: 255
+          example: Swiss IT Solutions
+        swissUID:
+          type: string
+          pattern: '^CHE-\d{3}\.\d{3}\.\d{3}$'
+          example: CHE-123.456.789
+        website:
+          type: string
+          format: uri
+          maxLength: 500
+          example: https://swiss-it.ch
+        industry:
+          type: string
+          maxLength: 100
+          example: Technology
+        description:
+          type: string
+          maxLength: 5000
+          example: Leading Swiss IT consulting firm specializing in cloud-native architectures
+        isVerified:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          example: 2025-01-15T10:00:00Z
+        updatedAt:
+          type: string
+          format: date-time
+          example: 2025-01-15T10:00:00Z
+        createdBy:
+          type: string
+          description: User ID who created this company
+          example: auth0|user_abc123
+        statistics:
+          $ref: '#/components/schemas/CompanyStatistics'
+        logo:
+          $ref: '#/components/schemas/CompanyLogo'
+
+    CompanyStatistics:
+      type: object
+      description: Company statistics (included when ?include=statistics)
+      properties:
+        totalEvents:
+          type: integer
+          description: Total number of events the company participated in
+          example: 12
+        totalSpeakers:
+          type: integer
+          description: Total number of speakers from this company
+          example: 8
+        totalPartners:
+          type: integer
+          description: Total number of partnership engagements
+          example: 5
+
+    CompanyLogo:
+      type: object
+      description: Company logo details (included when ?include=logo)
+      properties:
+        url:
+          type: string
+          format: uri
+          description: CloudFront CDN URL for logo
+          example: https://cdn.batbern.ch/logos/2025/550e8400-e29b-41d4-a716-446655440000/logo.png
+        s3Key:
+          type: string
+          description: S3 object key
+          example: logos/2025/550e8400-e29b-41d4-a716-446655440000/logo.png
+        fileId:
+          type: string
+          description: Internal file identifier
+          example: file-123
+
+    CompanySearchResponse:
+      type: object
+      required:
+        - id
+        - name
+        - isVerified
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+        name:
+          type: string
+          example: Swiss IT Solutions AG
+        displayName:
+          type: string
+          example: Swiss IT Solutions
+        swissUID:
+          type: string
+          example: CHE-123.456.789
+        industry:
+          type: string
+          example: Technology
+        isVerified:
+          type: boolean
+          example: true
+
+    CreateCompanyRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 255
+          example: Swiss IT Solutions AG
+        displayName:
+          type: string
+          maxLength: 255
+          example: Swiss IT Solutions
+        swissUID:
+          type: string
+          pattern: '^CHE-\d{3}\.\d{3}\.\d{3}$'
+          example: CHE-123.456.789
+        website:
+          type: string
+          format: uri
+          maxLength: 500
+          example: https://swiss-it.ch
+        industry:
+          type: string
+          maxLength: 100
+          example: Technology
+        description:
+          type: string
+          maxLength: 5000
+          example: Leading Swiss IT consulting firm
+
+    UpdateCompanyRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 255
+          example: Swiss IT Solutions AG
+        displayName:
+          type: string
+          maxLength: 255
+          example: Swiss IT Solutions
+        swissUID:
+          type: string
+          pattern: '^CHE-\d{3}\.\d{3}\.\d{3}$'
+          example: CHE-123.456.789
+        website:
+          type: string
+          format: uri
+          maxLength: 500
+          example: https://swiss-it.ch
+        industry:
+          type: string
+          maxLength: 100
+          example: Technology
+        description:
+          type: string
+          maxLength: 5000
+          example: Leading Swiss IT consulting firm
+
+    UIDValidationResponse:
+      type: object
+      required:
+        - valid
+        - uid
+        - message
+      properties:
+        valid:
+          type: boolean
+          example: true
+        uid:
+          type: string
+          example: CHE-123.456.789
+        message:
+          type: string
+          example: Valid Swiss UID format
+
+    PaginatedCompanyResponse:
+      type: object
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompanyResponse'
+        pagination:
+          $ref: '#/components/schemas/PaginationMetadata'
+
+    PaginationMetadata:
+      type: object
+      required:
+        - page
+        - limit
+        - totalItems
+        - totalPages
+        - hasNext
+        - hasPrev
+      properties:
+        page:
+          type: integer
+          description: Current page (1-indexed)
+          example: 1
+        limit:
+          type: integer
+          description: Items per page
+          example: 20
+        totalItems:
+          type: integer
+          description: Total number of items
+          example: 100
+        totalPages:
+          type: integer
+          description: Total number of pages
+          example: 5
+        hasNext:
+          type: boolean
+          description: Whether there is a next page
+          example: true
+        hasPrev:
+          type: boolean
+          description: Whether there is a previous page
+          example: false
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+        - timestamp
+      properties:
+        error:
+          type: string
+          example: VALIDATION_ERROR
+        errorCode:
+          type: string
+          example: BAD_REQUEST
+        message:
+          type: string
+          example: Invalid filter syntax
+        timestamp:
+          type: string
+          format: date-time
+          example: 2025-01-15T10:30:00Z
+        details:
+          type: object
+          description: Additional error details
+
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            validationError:
+              value:
+                error: VALIDATION_ERROR
+                errorCode: BAD_REQUEST
+                message: Invalid filter syntax
+                timestamp: 2025-01-15T10:30:00Z
+            invalidUID:
+              value:
+                error: VALIDATION_ERROR
+                errorCode: BAD_REQUEST
+                message: Invalid Swiss UID format
+                timestamp: 2025-01-15T10:30:00Z
+
+    Unauthorized:
+      description: Unauthorized - missing or invalid JWT token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            missingToken:
+              value:
+                error: UNAUTHORIZED
+                errorCode: UNAUTHORIZED
+                message: Missing or invalid authentication token
+                timestamp: 2025-01-15T10:30:00Z
+
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            insufficientPermissions:
+              value:
+                error: FORBIDDEN
+                errorCode: FORBIDDEN
+                message: Insufficient permissions. Requires ORGANIZER role.
+                timestamp: 2025-01-15T10:30:00Z
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            companyNotFound:
+              value:
+                error: RESOURCE_NOT_FOUND
+                errorCode: NOT_FOUND
+                message: Company not found with id 550e8400-e29b-41d4-a716-446655440000
+                timestamp: 2025-01-15T10:30:00Z
+
+    Conflict:
+      description: Conflict - resource already exists
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            duplicateName:
+              value:
+                error: CONFLICT
+                errorCode: CONFLICT
+                message: Company with name 'Swiss IT Solutions AG' already exists
+                timestamp: 2025-01-15T10:30:00Z
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            serverError:
+              value:
+                error: INTERNAL_SERVER_ERROR
+                errorCode: INTERNAL_ERROR
+                message: An unexpected error occurred
+                timestamp: 2025-01-15T10:30:00Z
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: AWS Cognito JWT token
+
+security:
+  - BearerAuth: []

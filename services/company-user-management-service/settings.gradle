@@ -1,1 +1,8 @@
 rootProject.name = 'company-user-management-service'
+
+// Include shared-kernel project from parent directory
+includeBuild('../../shared-kernel') {
+    dependencySubstitution {
+        substitute(module('ch.batbern:shared-kernel')).using(project(':'))
+    }
+}

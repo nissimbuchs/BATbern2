@@ -136,12 +136,13 @@ export const NotificationDropdown = React.memo<NotificationDropdownProps>(
             <ListItemText
               secondary={
                 <>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" color="text.secondary" component="span">
                     {notification.message}
                   </Typography>
                   <Typography
                     variant="caption"
                     color="text.disabled"
+                    component="span"
                     sx={{ display: 'block', mt: 0.5 }}
                   >
                     {formatDateTime(new Date(notification.timestamp), i18n.language)}

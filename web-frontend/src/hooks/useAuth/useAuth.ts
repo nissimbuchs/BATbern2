@@ -280,10 +280,10 @@ export function useAuth(): UseAuthReturn {
 
       // Role-based path access
       const pathAccess: Record<UserRole, string[]> = {
-        organizer: ['/dashboard', '/events', '/speakers', '/partners', '/analytics'],
-        speaker: ['/dashboard', '/profile', '/events', '/materials'],
-        partner: ['/dashboard', '/profile', '/analytics', '/events'],
-        attendee: ['/dashboard', '/events', '/content', '/search'],
+        organizer: ['/dashboard', '/events', '/speakers', '/partners', '/analytics', '/organizer'],
+        speaker: ['/dashboard', '/profile', '/events', '/materials', '/speaker'],
+        partner: ['/dashboard', '/profile', '/analytics', '/events', '/partner'],
+        attendee: ['/dashboard', '/events', '/content', '/search', '/attendee'],
       };
 
       const allowedPaths = pathAccess[role] || [];

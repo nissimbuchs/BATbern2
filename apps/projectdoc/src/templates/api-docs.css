@@ -1,0 +1,79 @@
+/* API Documentation Specific Styles */
+
+/* Additional styling for API documentation pages */
+/* Main styles are inline in openapi-page.html to reduce file dependencies */
+
+.redoc-wrap {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Override Redoc default styles with BATbern branding */
+.redoc-wrap .api-info h1 {
+  color: #1565C0;
+}
+
+.redoc-wrap .operation-type {
+  font-weight: 600;
+}
+
+/* HTTP method badges */
+.http-verb.get {
+  background-color: #4CAF50;
+}
+
+.http-verb.post {
+  background-color: #1565C0;
+}
+
+.http-verb.put {
+  background-color: #FF9800;
+}
+
+.http-verb.patch {
+  background-color: #FFB74D;
+}
+
+.http-verb.delete {
+  background-color: #F44336;
+}
+
+/* Code blocks in API docs */
+.redoc-wrap pre {
+  background: #263238;
+  border-radius: 4px;
+  padding: 1rem;
+}
+
+.redoc-wrap code {
+  font-family: 'JetBrains Mono', Monaco, Consolas, monospace;
+}
+
+/* API Documentation Index Helpers */
+.api-method-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.api-method-badge.get {
+  background-color: #E8F5E9;
+  color: #2E7D32;
+}
+
+.api-method-badge.post {
+  background-color: #E3F2FD;
+  color: #1565C0;
+}
+
+.api-method-badge.put {
+  background-color: #FFF3E0;
+  color: #E65100;
+}
+
+.api-method-badge.delete {
+  background-color: #FFEBEE;
+  color: #C62828;
+}

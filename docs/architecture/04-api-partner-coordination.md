@@ -277,14 +277,15 @@ responses:
 ```yaml
 PartnerAnalytics:
   type: object
+  description: Partner analytics calculated from cross-service queries (User Service + Event Registration Service)
   properties:
     totalEmployeeAttendance:
       type: integer
-      description: Total number of partner employees who attended events
+      description: Total number of partner employees who attended events (queried via User Service)
     averageAttendancePerEvent:
       type: number
       format: double
-      description: Average employee attendance per event
+      description: Average employee attendance per event (aggregated from Event Registration Service)
     contentEngagementScore:
       type: number
       format: double
@@ -710,10 +711,15 @@ Partner meetings are coordinated through:
 ### Partnership Analytics
 
 Partners receive comprehensive analytics including:
-- **Attendance Metrics**: Employee attendance across all events
+- **Attendance Metrics**: Employee attendance across all events (cross-service query: User Service for employee list + Event Registration Service for attendance data)
 - **Engagement Tracking**: Content downloads and interaction metrics
 - **Brand Exposure**: Logo displays, mentions, and promotional reach
 - **ROI Calculations**: Estimated value vs. partnership investment
+
+**Note on Employee Attendance:** Partner employee attendance metrics are calculated by:
+1. Querying User Service: `GET /api/v1/users?company={companyId}` to get list of employees
+2. Querying Event Registration Service for attendance records of those users
+3. Aggregating attendance data across all events for analytics
 
 ### Notification System
 

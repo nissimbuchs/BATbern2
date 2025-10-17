@@ -8,6 +8,9 @@ services:
       - "${API_GATEWAY_PORT:-8080}:8080"
     working_dir: /workspace
     environment:
+      # Gradle Configuration - Override to use service-specific cache
+      - GRADLE_USER_HOME=/gradle-cache
+
       # Spring Configuration
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-local}
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
@@ -29,12 +32,21 @@ services:
       # Cognito Configuration (AWS)
       - COGNITO_USER_POOL_ID=${COGNITO_USER_POOL_ID}
       - COGNITO_CLIENT_ID=${COGNITO_CLIENT_ID}
+      - COGNITO_ISSUER_URI=https://cognito-idp.${AWS_REGION:-eu-central-1}.amazonaws.com/${COGNITO_USER_POOL_ID}
+      - COGNITO_JWK_SET_URI=https://cognito-idp.${AWS_REGION:-eu-central-1}.amazonaws.com/${COGNITO_USER_POOL_ID}/.well-known/jwks.json
 
       # Feature Flags
       - ENABLE_COGNITO_AUTH=${ENABLE_COGNITO_AUTH:-true}
+
+      # Microservice URLs (Docker internal network)
+      - COMPANY_USER_MANAGEMENT_SERVICE_URL=http://batbern-company-user-management:8080
+      - EVENT_MANAGEMENT_SERVICE_URL=http://batbern-event-management:8080
+      - SPEAKER_COORDINATION_SERVICE_URL=http://batbern-speaker-coordination:8080
+      - PARTNER_COORDINATION_SERVICE_URL=http://batbern-partner-coordination:8080
+      - ATTENDEE_EXPERIENCE_SERVICE_URL=http://batbern-attendee-experience:8080
     volumes:
       - .:/workspace
-      - gradle-cache:/root/.gradle
+      - api-gateway-gradle-cache:/gradle-cache
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 30s
@@ -52,9 +64,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      # NO VITE_ variables needed!
-      # Frontend loads runtime config from http://localhost:8080/api/v1/config
-      # This enables "build once, deploy everywhere"
+      # Vite dev server proxies /api requests to API Gateway (see vite.config.ts)
+      # In production, runtime config is loaded from the backend
       - NODE_ENV=development
     volumes:
       - ./web-frontend:/app
@@ -65,8 +76,234 @@ services:
     networks:
       - batbern-network
 
+  company-user-management-service:
+    build:
+      context: .
+      dockerfile: ./services/company-user-management-service/Dockerfile.dev
+    container_name: batbern-company-user-management
+    ports:
+      - "8081:8080"
+    working_dir: /workspace
+    environment:
+      # Gradle Configuration - Override to use service-specific cache
+      - GRADLE_USER_HOME=/gradle-cache
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-local}
+      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+      - APP_ENVIRONMENT=development
+
+      # AWS Configuration
+      - AWS_REGION=${AWS_REGION:-eu-central-1}
+      - AWS_PROFILE=${AWS_PROFILE:-batbern-dev}
+
+      # Database Configuration
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DATABASE_URL=${DATABASE_URL}
+
+      # EventBridge Configuration
+      - EVENT_BUS_NAME=${EVENT_BUS_NAME:-batbern-development}
+
+      # Cognito Configuration (AWS)
+      - COGNITO_USER_POOL_ID=${COGNITO_USER_POOL_ID}
+      - COGNITO_CLIENT_ID=${COGNITO_CLIENT_ID}
+      - COGNITO_ISSUER_URI=https://cognito-idp.${AWS_REGION:-eu-central-1}.amazonaws.com/${COGNITO_USER_POOL_ID}
+      - COGNITO_JWK_SET_URI=https://cognito-idp.${AWS_REGION:-eu-central-1}.amazonaws.com/${COGNITO_USER_POOL_ID}/.well-known/jwks.json
+    volumes:
+      - .:/workspace
+      - company-user-management-gradle-cache:/gradle-cache
+      - ~/.aws:/root/.aws:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - batbern-network
+
+  event-management-service:
+    build:
+      context: .
+      dockerfile: ./services/event-management-service/Dockerfile.dev
+    container_name: batbern-event-management
+    ports:
+      - "8082:8080"
+    working_dir: /workspace
+    environment:
+      # Gradle Configuration - Override to use service-specific cache
+      - GRADLE_USER_HOME=/gradle-cache
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-local}
+      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+      - APP_ENVIRONMENT=development
+
+      # AWS Configuration
+      - AWS_REGION=${AWS_REGION:-eu-central-1}
+      - AWS_PROFILE=${AWS_PROFILE:-batbern-dev}
+
+      # Database Configuration
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DATABASE_URL=${DATABASE_URL}
+
+      # EventBridge Configuration
+      - EVENT_BUS_NAME=${EVENT_BUS_NAME:-batbern-development}
+    volumes:
+      - .:/workspace
+      - event-management-gradle-cache:/gradle-cache
+      - ~/.aws:/root/.aws:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - batbern-network
+
+  speaker-coordination-service:
+    build:
+      context: .
+      dockerfile: ./services/speaker-coordination-service/Dockerfile.dev
+    container_name: batbern-speaker-coordination
+    ports:
+      - "8083:8080"
+    working_dir: /workspace
+    environment:
+      # Gradle Configuration - Override to use service-specific cache
+      - GRADLE_USER_HOME=/gradle-cache
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-local}
+      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+      - APP_ENVIRONMENT=development
+
+      # AWS Configuration
+      - AWS_REGION=${AWS_REGION:-eu-central-1}
+      - AWS_PROFILE=${AWS_PROFILE:-batbern-dev}
+
+      # Database Configuration
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DATABASE_URL=${DATABASE_URL}
+
+      # EventBridge Configuration
+      - EVENT_BUS_NAME=${EVENT_BUS_NAME:-batbern-development}
+    volumes:
+      - .:/workspace
+      - speaker-coordination-gradle-cache:/gradle-cache
+      - ~/.aws:/root/.aws:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - batbern-network
+
+  partner-coordination-service:
+    build:
+      context: .
+      dockerfile: ./services/partner-coordination-service/Dockerfile.dev
+    container_name: batbern-partner-coordination
+    ports:
+      - "8084:8080"
+    working_dir: /workspace
+    environment:
+      # Gradle Configuration - Override to use service-specific cache
+      - GRADLE_USER_HOME=/gradle-cache
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-local}
+      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+      - APP_ENVIRONMENT=development
+
+      # AWS Configuration
+      - AWS_REGION=${AWS_REGION:-eu-central-1}
+      - AWS_PROFILE=${AWS_PROFILE:-batbern-dev}
+
+      # Database Configuration
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DATABASE_URL=${DATABASE_URL}
+
+      # EventBridge Configuration
+      - EVENT_BUS_NAME=${EVENT_BUS_NAME:-batbern-development}
+    volumes:
+      - .:/workspace
+      - partner-coordination-gradle-cache:/gradle-cache
+      - ~/.aws:/root/.aws:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - batbern-network
+
+  attendee-experience-service:
+    build:
+      context: .
+      dockerfile: ./services/attendee-experience-service/Dockerfile.dev
+    container_name: batbern-attendee-experience
+    ports:
+      - "8085:8080"
+    working_dir: /workspace
+    environment:
+      # Gradle Configuration - Override to use service-specific cache
+      - GRADLE_USER_HOME=/gradle-cache
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-local}
+      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+      - APP_ENVIRONMENT=development
+
+      # AWS Configuration
+      - AWS_REGION=${AWS_REGION:-eu-central-1}
+      - AWS_PROFILE=${AWS_PROFILE:-batbern-dev}
+
+      # Database Configuration
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DATABASE_URL=${DATABASE_URL}
+
+      # EventBridge Configuration
+      - EVENT_BUS_NAME=${EVENT_BUS_NAME:-batbern-development}
+    volumes:
+      - .:/workspace
+      - attendee-experience-gradle-cache:/gradle-cache
+      - ~/.aws:/root/.aws:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - batbern-network
+
 volumes:
-  gradle-cache:
+  api-gateway-gradle-cache:
+    driver: local
+  company-user-management-gradle-cache:
+    driver: local
+  event-management-gradle-cache:
+    driver: local
+  speaker-coordination-gradle-cache:
+    driver: local
+  partner-coordination-gradle-cache:
+    driver: local
+  attendee-experience-gradle-cache:
     driver: local
 
 networks:
