@@ -92,3 +92,24 @@ vi.mock('aws-amplify/auth', () => ({
 vi.mock('@aws-amplify/ui-react', () => ({
   Authenticator: ({ children }: { children: React.ReactNode }) => children,
 }));
+
+// Suppress JSDOM errors for CORS preflight requests to S3
+// These are expected in test environment where we mock XHR/fetch
+const originalError = console.error;
+beforeAll(() => {
+  console.error = (...args: any[]) => {
+    if (
+      typeof args[0] === 'string' &&
+      (args[0].includes('Response for preflight has invalid HTTP status code') ||
+        args[0].includes('CORS') ||
+        args[0].includes('Cross-Origin'))
+    ) {
+      return; // Suppress CORS-related errors
+    }
+    originalError.call(console, ...args);
+  };
+});
+
+afterAll(() => {
+  console.error = originalError; // Restore original console.error
+});

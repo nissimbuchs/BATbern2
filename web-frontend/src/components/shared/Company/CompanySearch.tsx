@@ -137,13 +137,16 @@ export const CompanySearch: React.FC<CompanySearchProps> = ({
       getOptionLabel={(option) => (typeof option === 'string' ? option : option.name)}
       filterOptions={(x) => x} // Disable built-in filtering, we handle it via API
       noOptionsText="No companies found"
-      renderOption={(props, option) => (
-        <Box component="li" {...props}>
-          <Typography variant="body2">
-            {highlightMatch(option.name, inputValue)}
-          </Typography>
-        </Box>
-      )}
+      renderOption={(props, option) => {
+        const { key, ...otherProps } = props;
+        return (
+          <Box component="li" key={key} {...otherProps}>
+            <Typography variant="body2">
+              {highlightMatch(option.name, inputValue)}
+            </Typography>
+          </Box>
+        );
+      }}
       renderInput={(params) => (
         <TextField
           {...params}

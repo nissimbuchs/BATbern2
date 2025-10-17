@@ -1,6 +1,7 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.events.AbstractIntegrationTest;
+import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.repository.EventRepository;
@@ -39,7 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Uses Testcontainers PostgreSQL for production parity.
  */
 @Transactional
-@Import(TestSecurityConfig.class)
+@Import({TestSecurityConfig.class, TestAwsConfig.class})
 public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired

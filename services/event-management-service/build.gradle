@@ -38,6 +38,10 @@ dependencies {
     // Shared kernel (API utilities from Story 1.15a)
     implementation project(':shared-kernel')
 
+    // AWS SDK for EventBridge
+    implementation platform('software.amazon.awssdk:bom:2.29.45')
+    implementation 'software.amazon.awssdk:eventbridge'
+
     // OpenAPI documentation
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
 
