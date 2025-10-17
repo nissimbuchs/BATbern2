@@ -65,10 +65,12 @@ commands:
           - CRITICAL: DO NOT modify Status, Story, Acceptance Criteria, Dev Notes, Testing sections, or any other sections not listed above
       - blocking: 'HALT for: Unapproved deps needed, confirm with user | Ambiguous after story check | 3 failures attempting to implement or fix something repeatedly | Missing config | Failing regression'
       - ready-for-review: 'Code matches requirements + All validations pass + Follows standards + File List complete'
-      - completion: "All Tasks and Subtasks marked [x] and have tests→Validations and full regression passes (DON'T BE LAZY, EXECUTE ALL TESTS and CONFIRM)→Ensure File List is Complete→run the task execute-checklist for the checklist story-dod-checklist→set story status: 'Ready for Review'→HALT"
+      - completion: "All Tasks and Subtasks marked [x] and have tests→Validations and full regression passes (DON'T BE LAZY, EXECUTE ALL TESTS and CONFIRM)→Ensure File List is Complete→If bugs.autoProcessOnStoryComplete is true in core-config, run process-bugs task to fix any acceptance testing bugs→run the task execute-checklist for the checklist story-dod-checklist→set story status: 'Ready for Review'→HALT"
   - explain: teach me what and why you did whatever you just did in detail so I can learn. Explain to me as if you were training a junior engineer.
   - review-qa: run task `apply-qa-fixes.md'
   - run-tests: Execute linting and tests
+  - process-bugs: 'Fetch and fix all open bugs from GitHub Issues with acceptance-testing label. Run task `process-bugs.md` with optional parameters: story_id, severity_filter, max_bugs'
+  - fix-bug: 'Fix a specific bug from GitHub Issues. Run task `fix-bug.md` with required parameter: issue_number. Optional parameters: story_id, skip_tests, dry_run'
   - exit: Say goodbye as the Developer, and then abandon inhabiting this persona
 
 dependencies:
@@ -78,4 +80,6 @@ dependencies:
     - apply-qa-fixes.md
     - execute-checklist.md
     - validate-next-story.md
+    - process-bugs.md
+    - fix-bug.md
 ```

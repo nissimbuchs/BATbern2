@@ -20,3 +20,15 @@ devLoadAlwaysFiles:
 devDebugLog: .ai/debug-log.md
 devStoryLocation: docs/stories
 slashPrefix: BMad
+bugs:
+  system: github-issues
+  labels:
+    bug: bug
+    acceptanceTesting: acceptance-testing
+    severityCritical: severity:critical
+    severityHigh: severity:high
+    severityMedium: severity:medium
+    severityLow: severity:low
+  autoProcessOnStoryComplete: true
+  autoCloseIssues: true
+  maxAutoFixAttempts: 3
