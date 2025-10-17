@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Report - Test & Quality Dashboard</title>
+    <link rel="stylesheet" href="styles/reports.css">
+    <link rel="icon" href="../assets/favicon.ico">
+</head>
+<body class="reports-page security-page">
+    <header class="site-header">
+        <div class="header-container">
+            <div class="header-brand">
+                <a href="../index.html" class="brand-link">
+                    <img src="../assets/BATbern_color_logo_transparent.png" alt="BATbern Logo" class="brand-logo">
+                    <span class="brand-text">BPlatform Rewriting with ClaudeCode</span>
+                </a>
+            </div>
+            <nav class="header-nav">
+                <a href="../index.html" class="nav-link">📚 Documentation</a>
+                <a href="index.html" class="nav-link">📊 Reports</a>
+                <a href="../api/index.html" class="nav-link">🔌 APIs</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="breadcrumbs">
+        <a href="../index.html">Home</a>
+        <span>›</span>
+        <a href="index.html">Reports</a>
+        <span>›</span>
+        <span>Security</span>
+    </div>
+
+    <main class="security-container">
+        <header class="page-header">
+            <h1>Security Dashboard</h1>
+            <p>Vulnerability findings and security scan results</p>
+        </header>
+
+        <!-- Security Summary -->
+        <section class="security-summary">
+            <div class="summary-card severity-critical">
+                <div class="severity-icon">🔴</div>
+                <div class="severity-count">{{security.summary.bySeverity.critical}}</div>
+                <div class="severity-label">Critical</div>
+            </div>
+            <div class="summary-card severity-high">
+                <div class="severity-icon">🟠</div>
+                <div class="severity-count">{{security.summary.bySeverity.high}}</div>
+                <div class="severity-label">High</div>
+            </div>
+            <div class="summary-card severity-medium">
+                <div class="severity-icon">🟡</div>
+                <div class="severity-count">{{security.summary.bySeverity.medium}}</div>
+                <div class="severity-label">Medium</div>
+            </div>
+            <div class="summary-card severity-low">
+                <div class="severity-icon">🔵</div>
+                <div class="severity-count">{{security.summary.bySeverity.low}}</div>
+                <div class="severity-label">Low</div>
+            </div>
+            <div class="summary-card severity-info">
+                <div class="severity-icon">⚪</div>
+                <div class="severity-count">{{security.summary.bySeverity.info}}</div>
+                <div class="severity-label">Info</div>
+            </div>
+        </section>
+
+        <!-- Security Overview -->
+        <section class="security-overview">
+            <div class="overview-card">
+                <h3>Total Findings</h3>
+                <div class="overview-value">{{security.summary.totalFindings}}</div>
+            </div>
+            <div class="overview-card">
+                <h3>Affected Files</h3>
+                <div class="overview-value">{{security.summary.affectedFiles}}</div>
+            </div>
+            <div class="overview-card">
+                <h3>Unique Rules</h3>
+                <div class="overview-value">{{security.summary.uniqueRules}}</div>
+            </div>
+            <div class="overview-card">
+                <h3>Scan Tools</h3>
+                <div class="overview-value">{{security.summary.totalRuns}}</div>
+            </div>
+        </section>
+
+        <!-- Scanning Tools Used -->
+        {{#if security.summary.byTool}}
+        <section class="tools-section">
+            <h2>Security Scanning Tools</h2>
+            <div class="tools-grid">
+                {{#each security.summary.byTool}}
+                <div class="tool-card">
+                    <h4>{{@key}}</h4>
+                    <div class="tool-version">Version: {{this.version}}</div>
+                    <div class="tool-findings">{{this.findings}} findings</div>
+                </div>
+                {{/each}}
+            </div>
+        </section>
+        {{/if}}
+
+        <!-- Top Vulnerabilities -->
+        {{#if security.topVulnerabilities}}
+        {{#if (gt security.topVulnerabilities.length 0)}}
+        <section class="vulnerabilities-section">
+            <h2>Top Vulnerabilities</h2>
+            <div class="vulnerabilities-list">
+                {{#each security.topVulnerabilities}}
+                <div class="vulnerability-card severity-{{this.severity}}">
+                    <div class="vuln-header">
+                        <span class="vuln-severity severity-{{this.severity}}">
+                            {{this.severity}}
+                        </span>
+                        <span class="vuln-rule">{{this.ruleId}}</span>
+                        <span class="vuln-tool">{{this.tool}}</span>
+                    </div>
+                    <div class="vuln-message">{{this.message}}</div>
+                    {{#if this.locations}}
+                    <div class="vuln-locations">
+                        {{#each this.locations}}
+                        <div class="location-item">
+                            <span class="location-file">{{this.uri}}</span>
+                            {{#if this.startLine}}
+                            <span class="location-line">Line {{this.startLine}}</span>
+                            {{/if}}
+                        </div>
+                        {{/each}}
+                    </div>
+                    {{/if}}
+                    {{#if this.rule}}
+                    {{#if this.rule.helpUri}}
+                    <div class="vuln-link">
+                        <a href="{{this.rule.helpUri}}" target="_blank" rel="noopener">Learn more →</a>
+                    </div>
+                    {{/if}}
+                    {{/if}}
+                </div>
+                {{/each}}
+            </div>
+        </section>
+        {{/if}}
+        {{/if}}
+
+        <!-- Findings by File -->
+        {{#if security.byFile}}
+        {{#if (gt security.byFile.length 0)}}
+        <section class="by-file-section">
+            <h2>Findings by File</h2>
+            <table class="by-file-table">
+                <thead>
+                    <tr>
+                        <th>File</th>
+                        <th>Total</th>
+                        <th>Critical</th>
+                        <th>High</th>
+                        <th>Medium</th>
+                        <th>Low</th>
+                        <th>Info</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each security.byFile}}
+                    <tr>
+                        <td class="file-path">{{this.path}}</td>
+                        <td class="text-center"><strong>{{this.findings.length}}</strong></td>
+                        <td class="text-center {{#if (gt this.severityCounts.critical 0)}}text-critical{{/if}}">
+                            {{this.severityCounts.critical}}
+                        </td>
+                        <td class="text-center {{#if (gt this.severityCounts.high 0)}}text-error{{/if}}">
+                            {{this.severityCounts.high}}
+                        </td>
+                        <td class="text-center {{#if (gt this.severityCounts.medium 0)}}text-warning{{/if}}">
+                            {{this.severityCounts.medium}}
+                        </td>
+                        <td class="text-center">{{this.severityCounts.low}}</td>
+                        <td class="text-center">{{this.severityCounts.info}}</td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </section>
+        {{/if}}
+        {{else}}
+        <section class="no-findings-section">
+            <div class="success-message">
+                <div class="success-icon">✅</div>
+                <h2>No Security Issues Found</h2>
+                <p>All security scans completed successfully with no vulnerabilities detected.</p>
+            </div>
+        </section>
+        {{/if}}
+
+        <!-- Security Best Practices -->
+        <section class="best-practices-section">
+            <h2>Security Best Practices</h2>
+            <div class="practices-grid">
+                <div class="practice-card">
+                    <h4>✅ Regular Scans</h4>
+                    <p>Security scans run automatically on every build in CI/CD pipeline.</p>
+                </div>
+                <div class="practice-card">
+                    <h4>✅ Dependency Updates</h4>
+                    <p>Keep dependencies up-to-date to patch known vulnerabilities.</p>
+                </div>
+                <div class="practice-card">
+                    <h4>✅ Code Review</h4>
+                    <p>All code changes undergo security-focused code review.</p>
+                </div>
+                <div class="practice-card">
+                    <h4>✅ SARIF Integration</h4>
+                    <p>Security findings automatically uploaded to GitHub Security tab.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="main-footer">
+        <div class="footer-content">
+            <p><a href="index.html">← Back to Dashboard</a></p>
+            <p>BATbern Platform © 2025</p>
+        </div>
+    </footer>
+</body>
+</html>

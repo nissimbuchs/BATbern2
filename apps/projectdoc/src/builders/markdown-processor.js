@@ -1,16 +1,20 @@
-const MarkdownIt = require('markdown-it');
-const hljs = require('highlight.js');
-const fs = require('fs-extra');
-const path = require('path');
-const cheerio = require('cheerio');
+import MarkdownIt from 'markdown-it';
+import hljs from 'highlight.js';
+import fs from 'fs-extra';
+import path from 'path';
+import * as cheerio from 'cheerio';
+import { fileURLToPath } from 'url';
 
 // Markdown-it plugins
-const markdownItMermaid = require('markdown-it-mermaid').default;
-const markdownItAnchor = require('markdown-it-anchor');
-const markdownItToc = require('markdown-it-table-of-contents');
-const markdownItContainer = require('markdown-it-container');
-const markdownItFootnote = require('markdown-it-footnote');
-const markdownItTaskLists = require('markdown-it-task-lists');
+import markdownItMermaid from 'markdown-it-mermaid';
+import markdownItAnchor from 'markdown-it-anchor';
+import markdownItToc from 'markdown-it-table-of-contents';
+import markdownItContainer from 'markdown-it-container';
+import markdownItFootnote from 'markdown-it-footnote';
+import markdownItTaskLists from 'markdown-it-task-lists';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 class MarkdownProcessor {
   constructor(config) {
@@ -39,7 +43,7 @@ class MarkdownProcessor {
 
     // Add plugins
     this.md
-      .use(markdownItMermaid)
+      .use(markdownItMermaid.default || markdownItMermaid)
       .use(markdownItAnchor, {
         level: [1, 2, 3, 4, 5, 6],
         permalink: markdownItAnchor.permalink.ariaHidden({
@@ -403,4 +407,4 @@ class MarkdownProcessor {
   }
 }
 
-module.exports = MarkdownProcessor;
+export default MarkdownProcessor;

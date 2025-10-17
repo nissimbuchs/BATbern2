@@ -31,6 +31,66 @@ web-frontend/src/
 └── utils/                         # Utility functions
 ```
 
+## Type Safety & API Contract
+
+### OpenAPI Type Generation
+
+**Library**: `openapi-typescript` v7.10.1
+
+**Rationale**: Ensures frontend types stay synchronized with backend OpenAPI specifications, preventing type drift and runtime errors. Generated types serve as the single source of truth derived from API contracts.
+
+**Workflow**:
+
+1. **OpenAPI Spec** (single source of truth):
+   - Located at: `/docs/api/companies-api.openapi.yml`
+   - Maintained by backend team
+   - Versioned in Git
+
+2. **Type Generation**:
+   ```bash
+   npm run generate:api-types
+   ```
+   - Generates: `src/types/generated/company-api.types.ts`
+   - Types are **committed to repository**
+
+3. **Git Hook Integration** (Husky pre-commit):
+   - Detects when OpenAPI spec changes
+   - Auto-regenerates TypeScript types
+   - Auto-stages generated files
+   - Ensures types are always in sync
+
+4. **CI/CD Validation** (GitHub Actions):
+   - Verifies committed types match OpenAPI spec
+   - Fails build if types are out of date
+   - Provides clear instructions for fixing drift
+
+**Usage in Frontend**:
+
+```typescript
+// src/types/company.types.ts
+import type { components } from './generated/company-api.types';
+
+// Derive application types from OpenAPI-generated types
+export type Company = components['schemas']['CompanyResponse'];
+export type CompanyStatistics = components['schemas']['CompanyStatistics'];
+export type CreateCompanyRequest = components['schemas']['CreateCompanyRequest'];
+export type UpdateCompanyRequest = components['schemas']['UpdateCompanyRequest'];
+export type PaginatedCompanyResponse = components['schemas']['PaginatedCompanyResponse'];
+
+// Frontend-specific types (not in OpenAPI)
+export interface CompanyFilters {
+  isVerified?: boolean;
+  industry?: string;
+}
+```
+
+**Benefits**:
+- ✅ Compile-time type safety between frontend and backend
+- ✅ Automatic type updates when API changes
+- ✅ Prevents field name mismatches and data model drift
+- ✅ IDE autocomplete for all API response fields
+- ✅ CI validation prevents merging unsynchronized types
+
 ## State Management Architecture
 
 ### State Structure
@@ -76,6 +136,8 @@ interface AppState {
   companies: {
     companyList: Company[];
     selectedCompany: Company | null;
+    filters: CompanyFilters;
+    searchQuery: string;
   };
 }
 ```
@@ -159,37 +221,52 @@ interface FormFieldProps<T> {
   disabled?: boolean;
 }
 
-// AutoComplete Company Selector
+// AutoComplete Company Selector (AC2 - Search & Autocomplete)
 interface CompanySelectorProps {
   value: Company | null;
   onChange: (company: Company | null) => void;
   allowCreate?: boolean;
-  roleFilter?: UserRole;
 }
 
 const CompanySelector: React.FC<CompanySelectorProps> = ({
   value,
   onChange,
   allowCreate = false,
-  roleFilter
 }) => {
-  const { companies, searchCompanies, createCompany } = useCompanies();
+  const { data: companies, isLoading } = useCompanySearch(searchQuery, 10);
 
   return (
     <Autocomplete
-      options={companies}
+      options={companies || []}
       value={value}
       onChange={(_, newValue) => onChange(newValue)}
-      getOptionLabel={(option) => option.name}
+      getOptionLabel={(option) => option.displayName || option.name}
       renderInput={(params) => (
         <TextField {...params} label="Company" />
       )}
+      loading={isLoading}
       freeSolo={allowCreate}
       onInputChange={async (_, inputValue) => {
-        if (inputValue.length > 2) {
-          await searchCompanies(inputValue);
+        // Search triggered with 3+ characters (AC2 requirement)
+        if (inputValue.length >= 3) {
+          setSearchQuery(inputValue);
         }
       }}
+      renderOption={(props, option) => (
+        <Box component="li" {...props}>
+          <Box>
+            <Typography variant="body1">
+              {option.displayName || option.name}
+              {option.isVerified && ' ✅'}
+            </Typography>
+            {option.industry && (
+              <Typography variant="caption" color="text.secondary">
+                {option.industry}
+              </Typography>
+            )}
+          </Box>
+        </Box>
+      )}
     />
   );
 };

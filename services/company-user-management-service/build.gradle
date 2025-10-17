@@ -3,6 +3,7 @@ plugins {
     id 'org.springframework.boot' version '3.5.6'
     id 'io.spring.dependency-management' version '1.1.6'
     id 'jacoco'
+    id 'org.flywaydb.flyway' version '10.10.0'
 }
 
 group = 'ch.batbern'
@@ -18,9 +19,51 @@ repositories {
 }
 
 dependencies {
+    // Shared Kernel - Common types and utilities (multi-project dependency)
+    implementation project(':shared-kernel')
+
+    // Shared Kernel - Test fixtures for integration testing (Testcontainers PostgreSQL)
+    testImplementation testFixtures(project(':shared-kernel'))
+
+    // Spring Boot Core
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+
+    // Database
+    runtimeOnly 'org.postgresql:postgresql'
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-database-postgresql'
+
+    // AWS SDK
+    implementation platform('software.amazon.awssdk:bom:2.20.26')
+    implementation 'software.amazon.awssdk:s3'
+    implementation 'software.amazon.awssdk:url-connection-client'
+    implementation 'software.amazon.awssdk:eventbridge'
+
+    // Caching - Caffeine (application-level in-memory cache)
+    implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    // OpenAPI/Swagger
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0'
+
+    // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'org.testcontainers:testcontainers:1.20.4'
+    testImplementation 'org.testcontainers:postgresql:1.20.4'
+    testImplementation 'org.testcontainers:junit-jupiter:1.20.4'
+    testImplementation 'io.rest-assured:rest-assured:5.3.2'
+    testImplementation 'org.awaitility:awaitility:4.2.0'
+    // Note: H2 removed - all integration tests use Testcontainers PostgreSQL for production parity
 }
 
 test {
@@ -59,3 +102,13 @@ jacocoTestCoverageVerification {
 }
 
 check.dependsOn jacocoTestCoverageVerification
+
+// Flyway configuration for database migrations
+flyway {
+    url = System.getProperty('flyway.url', 'jdbc:postgresql://localhost:5432/batbern')
+    user = System.getProperty('flyway.user', 'batbern_user')
+    password = System.getProperty('flyway.password', 'batbern-dev-password')
+    locations = ['classpath:db/migration']
+    baselineOnMigrate = true
+    baselineVersion = '0'
+}

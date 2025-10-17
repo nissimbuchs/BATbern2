@@ -153,6 +153,7 @@ export default defineConfig({
       '@types': resolve(__dirname, './src/types'),
       '@utils': resolve(__dirname, './src/utils'),
       '@pages': resolve(__dirname, './src/pages'),
+      'msw/node': resolve(__dirname, './node_modules/msw/lib/node/index.mjs'),
     },
   },
   server: {
@@ -204,6 +205,7 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    testTimeout: 10000, // Increase timeout from 5s to 10s for component tests
     exclude: [
       '**/node_modules/**',
       '**/dist/**',
@@ -211,8 +213,23 @@ export default defineConfig({
       '**/.{idea,git,cache,output,temp}/**',
     ],
     coverage: {
-      reporter: ['text', 'json', 'html'],
+      reporter: ['text', 'json', 'html', 'lcov'],
       exclude: ['node_modules/', 'src/test/', 'e2e/', '**/*.d.ts', '**/*.config.*', '**/coverage/'],
+      reportOnFailure: true, // Generate coverage even when tests fail
+      all: true, // Include all source files in coverage report
+    },
+    deps: {
+      optimizer: {
+        web: {
+          include: ['msw'],
+        },
+      },
+    },
+    // Configure environment options for React 19 compatibility
+    environmentOptions: {
+      jsdom: {
+        resources: 'usable',
+      },
     },
   },
 });

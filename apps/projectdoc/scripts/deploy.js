@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
-const fs = require('fs-extra');
-const path = require('path');
-const glob = require('glob');
-const mimeTypes = require('mime-types');
-const {
+import fs from 'fs-extra';
+import path from 'path';
+import { glob } from 'glob';
+import mimeTypes from 'mime-types';
+import { fromIni } from '@aws-sdk/credential-providers';
+import {
   S3Client,
   CreateBucketCommand,
   PutBucketWebsiteCommand,
@@ -14,45 +15,65 @@ const {
   PutObjectCommand,
   HeadBucketCommand,
   GetBucketLocationCommand
-} = require('@aws-sdk/client-s3');
-const {
+} from '@aws-sdk/client-s3';
+import {
   CloudFrontClient,
   CreateDistributionCommand,
   CreateInvalidationCommand,
   GetDistributionCommand,
   ListDistributionsCommand,
   UpdateDistributionCommand
-} = require('@aws-sdk/client-cloudfront');
-const {
+} from '@aws-sdk/client-cloudfront';
+import {
   Route53Client,
   ChangeResourceRecordSetsCommand,
   ListHostedZonesCommand,
   ListResourceRecordSetsCommand
-} = require('@aws-sdk/client-route-53');
-const {
+} from '@aws-sdk/client-route-53';
+import {
   ACMClient,
   RequestCertificateCommand,
   DescribeCertificateCommand,
   ListCertificatesCommand
-} = require('@aws-sdk/client-acm');
+} from '@aws-sdk/client-acm';
 
-const config = require('../src/config/site-config');
-const awsConfig = require('../src/config/aws-config');
+import config from '../src/config/site-config.js';
+import awsConfig from '../src/config/aws-config.js';
+
+// Set AWS profile for deployment
+const AWS_PROFILE = process.env.AWS_PROFILE || 'batbern-mgmt';
 
 class DocumentationDeployer {
   constructor() {
     this.config = config;
     this.awsConfig = awsConfig;
-    this.s3Client = new S3Client({ region: awsConfig.region });
-    this.cloudFrontClient = new CloudFrontClient({ region: 'us-east-1' }); // CloudFront is global
-    this.route53Client = new Route53Client({ region: 'us-east-1' }); // Route53 is global
-    this.acmClient = new ACMClient({ region: 'us-east-1' }); // ACM for CloudFront must be in us-east-1
+
+    // Configure AWS credentials from profile
+    const credentials = fromIni({ profile: AWS_PROFILE });
+
+    this.s3Client = new S3Client({
+      region: awsConfig.region,
+      credentials
+    });
+    this.cloudFrontClient = new CloudFrontClient({
+      region: 'us-east-1', // CloudFront is global
+      credentials
+    });
+    this.route53Client = new Route53Client({
+      region: 'us-east-1', // Route53 is global
+      credentials
+    });
+    this.acmClient = new ACMClient({
+      region: 'us-east-1', // ACM for CloudFront must be in us-east-1
+      credentials
+    });
     this.deploymentInfo = {};
   }
 
   async deploy() {
     console.log('☁️  BATbern Documentation Deployer');
     console.log('==================================\n');
+    console.log(`🔑 Using AWS Profile: ${AWS_PROFILE}\n`);
 
     try {
       // Validate configuration
@@ -863,7 +884,7 @@ async function promptForConfiguration() {
 }
 
 // Run the deployer if called directly
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   const deployer = new DocumentationDeployer();
 
   // Check for required configuration
@@ -874,4 +895,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = DocumentationDeployer;
+export default DocumentationDeployer;
