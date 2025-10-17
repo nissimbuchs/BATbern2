@@ -1,19 +1,5 @@
-// Load core config
-const fs = require('fs');
-const yaml = require('js-yaml');
-const path = require('path');
-
-let coreConfig = {};
-try {
-  const coreConfigPath = path.resolve(__dirname, '../../../.bmad-core/core-config.yaml');
-  const coreConfigFile = fs.readFileSync(coreConfigPath, 'utf8');
-  coreConfig = yaml.load(coreConfigFile);
-} catch (error) {
-  console.warn('Could not load core config:', error.message);
-}
-
-module.exports = {
-  siteName: 'BATbern Platform Rewriting with Claude Code',
+export default {
+  siteName: 'Platform Rewriting with ClaudeCode',
   siteDescription: 'Comprehensive documentation for the BATbern event management platform development',
   baseUrl: 'https://project.batbern.ch',
   author: 'BATbern Development Team',
@@ -23,7 +9,7 @@ module.exports = {
   outputPath: './dist',
 
   // Core configuration settings
-  markdownExploder: coreConfig.markdownExploder || false,
+  markdownExploder: true,
 
   // Document categories and their configurations
   categories: {
@@ -76,6 +62,22 @@ module.exports = {
         'test-enhanced-markdown.md',
         'brainstorming-session-results.md'
       ]
+    },
+    'api': {
+      title: 'API Documentation',
+      description: 'OpenAPI specifications for all BATbern platform APIs',
+      icon: '🔌',
+      order: 7,
+      folder: 'api',
+      pattern: '*.openapi.yml'
+    },
+    'reports': {
+      title: 'Test & Quality Reports',
+      description: 'Comprehensive test results, coverage, security, and quality metrics dashboard',
+      icon: '📊',
+      order: 8,
+      externalLink: '/reports/index.html',
+      isExternal: true
     }
   },
 

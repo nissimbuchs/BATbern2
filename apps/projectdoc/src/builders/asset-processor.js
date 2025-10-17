@@ -1,6 +1,10 @@
-const fs = require('fs-extra');
-const path = require('path');
-const glob = require('glob');
+import fs from 'fs-extra';
+import path from 'path';
+import { glob } from 'glob';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 class AssetProcessor {
   constructor(config) {
@@ -28,7 +32,7 @@ class AssetProcessor {
       const allAssets = [];
 
       for (const pattern of assetPatterns) {
-        const files = await glob.glob(pattern, {
+        const files = await glob(pattern, {
           cwd: docsPath,
           absolute: false
         });
@@ -174,4 +178,4 @@ class AssetProcessor {
   }
 }
 
-module.exports = AssetProcessor;
+export default AssetProcessor;

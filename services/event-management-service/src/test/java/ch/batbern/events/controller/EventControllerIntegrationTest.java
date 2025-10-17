@@ -1,6 +1,7 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.events.AbstractIntegrationTest;
+import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.repository.EventRepository;
@@ -39,7 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Uses Testcontainers PostgreSQL for production parity.
  */
 @Transactional
-@Import(TestSecurityConfig.class)
+@Import({TestSecurityConfig.class, TestAwsConfig.class})
 public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -199,7 +200,9 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     void should_paginateResults_when_pageParamProvided() throws Exception {
         // Create additional events for pagination test
         for (int i = 1; i <= 25; i++) {
-            createTestEvent("Event " + i, "2025-0" + (i % 9 + 1) + "-01T09:00:00Z", "planning");
+            int month = (i % 12) + 1; // Cycle through months 1-12
+            String monthStr = String.format("%02d", month); // Format as 01, 02, ..., 12
+            createTestEvent("Event " + i, "2025-" + monthStr + "-01T09:00:00Z", "planning");
         }
 
         // Test first page

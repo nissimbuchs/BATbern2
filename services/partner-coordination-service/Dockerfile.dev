@@ -1,0 +1,42 @@
+# Development Dockerfile with hot reload support for partner-coordination-service
+FROM gradle:8.5-jdk21
+
+WORKDIR /workspace
+
+# Install curl for health checks
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+# Copy Gradle wrapper and settings
+COPY settings.gradle ./
+COPY gradle ./gradle
+COPY gradlew ./
+
+# Copy shared-kernel dependency
+COPY shared-kernel/build.gradle ./shared-kernel/
+COPY shared-kernel/src ./shared-kernel/src
+
+# Copy service build file
+COPY services/partner-coordination-service/build.gradle ./services/partner-coordination-service/
+
+# Download dependencies (cached layer)
+RUN gradle :services:partner-coordination-service:dependencies --no-daemon || true
+
+# Copy source code
+COPY services/partner-coordination-service/src ./services/partner-coordination-service/src
+
+WORKDIR /workspace/services/partner-coordination-service
+
+# Set unique Gradle user home to avoid cache conflicts
+ENV GRADLE_USER_HOME=/gradle-cache
+
+# Expose application port and debug port
+EXPOSE 8080
+EXPOSE 5005
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8080/actuator/health || exit 1
+
+# Run with Gradle bootRun for hot reload
+# Use project-specific task to avoid multi-project conflicts
+ENTRYPOINT ["gradle", ":services:partner-coordination-service:bootRun", "--no-daemon", "--project-cache-dir=/gradle-cache/project-cache"]

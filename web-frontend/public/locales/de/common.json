@@ -9,6 +9,8 @@
     "events": "Veranstaltungen",
     "speakers": "Sprecher",
     "partners": "Partner",
+    "companies": "Unternehmen",
+    "myCompany": "Mein Unternehmen",
     "analytics": "Analytik",
     "content": "Inhaltssuche",
     "profile": "Profil",
@@ -52,6 +54,116 @@
     "speaker": "Sprecher",
     "partner": "Partner",
     "attendee": "Teilnehmer"
+  },
+  "company": {
+    "title": "Unternehmensverwaltung",
+    "createCompany": "Unternehmen erstellen",
+    "editCompany": "Unternehmen bearbeiten",
+    "viewDetails": "Details anzeigen für {{name}}",
+    "noCompaniesFound": "Keine Unternehmen gefunden",
+    "adjustFilters": "Versuchen Sie, Ihre Such- oder Filterkriterien anzupassen",
+    "backToList": "Zurück",
+    "viewMode": {
+      "grid": "Rasteransicht",
+      "list": "Listenansicht",
+      "toggleCurrent": "Ansichtsmodus umschalten. Aktuell: {{mode}}"
+    },
+    "fields": {
+      "name": "Unternehmensname",
+      "displayName": "Anzeigename (falls abweichend vom gesetzlichen Namen)",
+      "swissUID": "Schweizer UID (CHE-XXX.XXX.XXX)",
+      "website": "Website",
+      "industry": "Branche",
+      "sector": "Sektor (Optional)",
+      "city": "Stadt",
+      "canton": "Kanton",
+      "country": "Land",
+      "description": "Beschreibung",
+      "legalName": "Gesetzlich: {{name}}"
+    },
+    "placeholders": {
+      "swissUID": "CHE-123.456.789",
+      "website": "https://beispiel.ch",
+      "canton": "BE, ZH, GE, etc."
+    },
+    "industries": {
+      "selectIndustry": "Branche auswählen",
+      "technology": "Technologie",
+      "cloudComputing": "Cloud Computing",
+      "devOps": "DevOps",
+      "financialServices": "Finanzdienstleistungen",
+      "healthcare": "Gesundheitswesen",
+      "manufacturing": "Fertigung",
+      "consulting": "Beratung",
+      "education": "Bildung",
+      "other": "Andere"
+    },
+    "sectors": {
+      "selectSector": "Sektor auswählen",
+      "public": "Öffentlich",
+      "private": "Privat",
+      "nonprofit": "Gemeinnützig",
+      "government": "Regierung"
+    },
+    "badges": {
+      "partner": "Partner",
+      "verified": "Verifiziert"
+    },
+    "stats": {
+      "userCount": "{{count}} Benutzer",
+      "userCount_one": "{{count}} Benutzer",
+      "userCount_other": "{{count}} Benutzer"
+    },
+    "filters": {
+      "partnerOnly": "Nur Partner-Unternehmen",
+      "verifiedOnly": "Nur verifizierte Unternehmen",
+      "industry": "Branche",
+      "allIndustries": "Alle Branchen",
+      "clearAll": "Alle Filter löschen",
+      "filters": "Filter"
+    },
+    "form": {
+      "createTitle": "Neues Unternehmen erstellen",
+      "editTitle": "Unternehmen bearbeiten",
+      "required": "Erforderlich",
+      "saveDraft": "Entwurf speichern",
+      "saveCreate": "Speichern & Erstellen",
+      "saveChanges": "Änderungen speichern",
+      "unsavedChanges": "Sie haben ungespeicherte Änderungen. Sind Sie sicher, dass Sie schliessen möchten?",
+      "characterCount": "{{count}}/{{max}} Zeichen",
+      "helpText": {
+        "swissUID": "Optional - für automatische Verifizierung"
+      },
+      "errors": {
+        "nameRequired": "Unternehmensname ist erforderlich",
+        "nameMinLength": "Name muss mindestens {{min}} Zeichen lang sein",
+        "nameMaxLength": "Name darf höchstens {{max}} Zeichen lang sein",
+        "displayNameMaxLength": "Anzeigename darf höchstens {{max}} Zeichen lang sein",
+        "invalidSwissUID": "Ungültiges Schweizer UID-Format (CHE-XXX.XXX.XXX)",
+        "invalidWebsite": "Ungültige Website-URL",
+        "industryRequired": "Branche ist erforderlich",
+        "cityRequired": "Stadt ist erforderlich",
+        "cantonRequired": "Kanton ist erforderlich",
+        "countryRequired": "Land ist erforderlich",
+        "descriptionMaxLength": "Beschreibung darf höchstens {{max}} Zeichen lang sein",
+        "noPermission": "Sie haben keine Berechtigung, dieses Unternehmen zu bearbeiten. Sprecher können nur ihr eigenes Unternehmen bearbeiten."
+      }
+    },
+    "detail": {
+      "tabs": {
+        "overview": "Übersicht",
+        "users": "Benutzer",
+        "statistics": "Statistiken",
+        "activity": "Aktivität"
+      },
+      "overviewText": "Dieser Übersichtsbereich kann zusätzliche Unternehmensinformationen, aktuelle Updates oder Highlights anzeigen.",
+      "noData": "Keine Unternehmensdaten verfügbar"
+    },
+    "errors": {
+      "loadFailed": "Fehler beim Laden des Unternehmens",
+      "saveFailed": "Fehler beim Speichern des Unternehmens",
+      "retry": "Wiederholen"
+    }
   },
   "app": {
     "title": "BATbern Event Management Platform",

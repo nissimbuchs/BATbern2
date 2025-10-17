@@ -28,10 +28,10 @@ info:
 servers:
   - url: https://api.batbern.ch/api/v1
     description: Production
-  - url: https://dev.api.batbern.ch/api/v1
-    description: Development
+  - url: https://api.staging.batbern.ch/api/v1
+    description: Staging
   - url: http://localhost:8080/api/v1
-    description: Local Development
+    description: Development
 
 tags:
   - name: Events

@@ -1,0 +1,133 @@
+name: Bug Report
+description: Report a bug found during development or testing
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug! Please fill out the information below to help us fix it quickly.
+
+  - type: dropdown
+    id: story
+    attributes:
+      label: Related Story
+      description: Which story is this bug related to?
+      options:
+        - "1.1 - Shared Kernel Infrastructure"
+        - "1.2 - API Gateway Authentication"
+        - "1.14 - Company Management Service"
+        - "1.14-2 - User Management Service"
+        - "1.15a - API Consolidation Foundation"
+        - "1.17 - React Frontend Foundation"
+        - "2.5 - Company Management Frontend"
+        - "Other (specify in description)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: How severe is this bug?
+      options:
+        - Critical (System unusable, data loss, security issue)
+        - High (Major feature broken, no workaround)
+        - Medium (Feature impaired, workaround exists)
+        - Low (Minor issue, cosmetic)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: bug_type
+    attributes:
+      label: Bug Type
+      description: What type of bug is this?
+      options:
+        - Functional (Feature doesn't work as expected)
+        - Performance (Slow response, timeout)
+        - Security (Vulnerability, authorization issue)
+        - UI/UX (Layout, styling, usability)
+        - Data (Data corruption, validation failure)
+        - Integration (Service communication failure)
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: Clear description of what's wrong
+      placeholder: "Example: Company search doesn't return cached results on second query"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Detailed steps to reproduce the bug
+      placeholder: |
+        1. Go to company search page
+        2. Search for "Test Company"
+        3. Clear database cache
+        4. Search for "Test Company" again
+        5. Notice results take 500ms instead of <100ms (not cached)
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What should happen?
+      placeholder: "Second search should return cached results in <100ms per AC9"
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happens?
+      placeholder: "Second search queries database again, takes 500ms"
+    validations:
+      required: true
+
+  - type: input
+    id: acceptance_criteria
+    attributes:
+      label: Related Acceptance Criteria
+      description: Which AC is violated? (e.g., AC9, AC14)
+      placeholder: "AC9"
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      description: Where was this bug found?
+      options:
+        - Local Development (Docker Compose)
+        - Staging (AWS)
+        - E2E Tests
+        - Unit Tests
+        - Integration Tests
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error Logs / Screenshots
+      description: Paste relevant logs, error messages, or attach screenshots
+      placeholder: |
+        ```
+        2025-10-17 10:30:45 ERROR [CompanySearchService] Cache miss for query: Test Company
+        ```
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Any other relevant information
+      placeholder: "This only happens when using PostgreSQL, not H2 test database"

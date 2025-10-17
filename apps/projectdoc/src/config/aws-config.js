@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   // AWS Configuration
   region: process.env.AWS_REGION || 'eu-central-1',
 

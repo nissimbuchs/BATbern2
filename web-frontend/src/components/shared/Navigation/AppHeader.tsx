@@ -15,7 +15,6 @@ import { NavigationMenu } from './NavigationMenu';
 import { MobileDrawer } from './MobileDrawer';
 import UserMenuDropdown from './UserMenuDropdown';
 import { useUIStore } from '@/stores/uiStore';
-import { useNotifications } from '@/hooks/useNotifications';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -41,11 +40,11 @@ const AppHeader = React.memo(function AppHeader({
   // Use props if provided, otherwise fall back to stores/hooks
   const { user: storeUser, signOut } = useAuth();
   const { setNotificationDrawerOpen, setUserMenuOpen: setUserMenuOpenState } = useUIStore();
-  const { data: hookNotificationsData } = useNotifications();
   const navigate = useNavigate();
 
   const user = userProp || storeUser;
-  const notificationsData = notificationsProp || hookNotificationsData;
+  // Use prop if provided (for testing), otherwise would use hook data when backend is ready
+  const notificationsData = notificationsProp;
   const unreadCount = notificationsData?.unreadCount ?? 0;
 
   // Extract current role - handle both UserContext (role) and UserProfile (currentRole)

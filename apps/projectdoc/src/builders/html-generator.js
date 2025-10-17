@@ -1,6 +1,10 @@
-const handlebars = require('handlebars');
-const fs = require('fs-extra');
-const path = require('path');
+import handlebars from 'handlebars';
+import fs from 'fs-extra';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 class HtmlGenerator {
   constructor(config) {
@@ -22,6 +26,12 @@ class HtmlGenerator {
 
       const navigationContent = await fs.readFile(path.join(templateDir, 'navigation.html'), 'utf-8');
       this.templates.navigation = handlebars.compile(navigationContent);
+
+      const openApiContent = await fs.readFile(path.join(templateDir, 'openapi-page.html'), 'utf-8');
+      this.templates.openapi = handlebars.compile(openApiContent);
+
+      const apiIndexContent = await fs.readFile(path.join(templateDir, 'api-index.html'), 'utf-8');
+      this.templates.apiIndex = handlebars.compile(apiIndexContent);
 
       console.log('Templates loaded successfully');
     } catch (error) {
@@ -211,6 +221,16 @@ class HtmlGenerator {
     const navigation = {};
 
     Object.entries(this.config.categories).forEach(([key, categoryConfig]) => {
+      // Handle external links (like Reports dashboard)
+      if (categoryConfig.isExternal) {
+        navigation[key] = {
+          ...categoryConfig,
+          isExternalLink: true,
+          externalUrl: categoryConfig.externalLink
+        };
+        return;
+      }
+
       const docs = allDocuments.filter(doc => doc.category === key);
 
       // Special handling for epics - group stories under them
@@ -388,6 +408,61 @@ class HtmlGenerator {
       return !latest || docDate > latest ? docDate : latest;
     }, null);
   }
+
+  /**
+   * Generate OpenAPI documentation page
+   * @param {object} apiDoc - Processed OpenAPI document data
+   * @returns {string} Generated HTML
+   */
+  async generateOpenApiPage(apiDoc) {
+    try {
+      const { metadata, stats, spec, relativePath } = apiDoc;
+
+      // Convert spec to JSON string for embedding
+      const specJson = JSON.stringify(spec, null, 2);
+
+      // Generate download URL
+      const downloadUrl = `/${relativePath}`;
+
+      const pageHtml = this.templates.openapi({
+        title: metadata.title,
+        description: metadata.description,
+        metadata,
+        stats,
+        specJson,
+        downloadUrl,
+        siteConfig: this.config,
+        buildTime: new Date().toISOString()
+      });
+
+      return pageHtml;
+    } catch (error) {
+      console.error('Error generating OpenAPI page:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate API index page with all APIs
+   * @param {array} apiDocuments - Array of processed API documents
+   * @returns {string} Generated HTML
+   */
+  async generateApiIndexPage(apiDocuments) {
+    try {
+      const pageHtml = this.templates.apiIndex({
+        title: 'API Documentation',
+        description: 'BATbern Platform API Documentation',
+        apis: apiDocuments,
+        siteConfig: this.config,
+        buildTime: new Date().toISOString()
+      });
+
+      return pageHtml;
+    } catch (error) {
+      console.error('Error generating API index page:', error);
+      throw error;
+    }
+  }
 }
 
-module.exports = HtmlGenerator;
+export default HtmlGenerator;
