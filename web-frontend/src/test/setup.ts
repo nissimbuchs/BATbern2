@@ -93,23 +93,22 @@ vi.mock('@aws-amplify/ui-react', () => ({
   Authenticator: ({ children }: { children: React.ReactNode }) => children,
 }));
 
-// Suppress JSDOM errors for CORS preflight requests to S3
+// Suppress JSDOM errors for CORS preflight requests to S3 and Network errors
 // These are expected in test environment where we mock XHR/fetch
-const originalError = console.error;
-beforeAll(() => {
-  console.error = (...args: any[]) => {
-    if (
-      typeof args[0] === 'string' &&
-      (args[0].includes('Response for preflight has invalid HTTP status code') ||
-        args[0].includes('CORS') ||
-        args[0].includes('Cross-Origin'))
-    ) {
-      return; // Suppress CORS-related errors
-    }
-    originalError.call(console, ...args);
-  };
-});
-
-afterAll(() => {
-  console.error = originalError; // Restore original console.error
+vi.spyOn(console, 'error').mockImplementation((...args: any[]) => {
+  if (
+    typeof args[0] === 'string' &&
+    (args[0].includes('Response for preflight has invalid HTTP status code') ||
+      args[0].includes('CORS') ||
+      args[0].includes('Cross-Origin') ||
+      args[0].includes('Network error') ||
+      args[0].includes('Unauthorized') ||
+      args[0].includes('Forbidden') ||
+      args[0].includes('Server error') ||
+      args[0].includes('API error'))
+  ) {
+    return; // Suppress expected API and network errors in tests
+  }
+  // For other errors, log them (important for debugging)
+  console.warn(...args);
 });
