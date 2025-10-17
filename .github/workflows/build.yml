@@ -405,21 +405,17 @@ jobs:
 
       - name: Build services and generate coverage
         run: |
-          REPO_ROOT=$(pwd)
-          # Build each service that exists
+          chmod +x gradlew
+          # Build each service that exists (from root to resolve shared-kernel dependency)
           for service in event-management-service attendee-experience-service company-user-management-service partner-coordination-service speaker-coordination-service; do
-            cd "$REPO_ROOT"  # Return to repo root before checking
             if [ -d "services/$service" ]; then
               echo "Building services/$service..."
-              cd "$REPO_ROOT/services/$service"
-              chmod +x gradlew
-              # Always compile main classes (required for SonarCloud), then run tests if they exist
-              ./gradlew clean compileJava test jacocoTestReport --no-daemon
+              # Build from root using gradle task path to resolve shared-kernel dependency
+              ./gradlew :services:$service:clean :services:$service:compileJava :services:$service:test :services:$service:jacocoTestReport --no-daemon
             else
               echo "::warning::Service $service does not exist yet, skipping coverage generation"
             fi
           done
-          cd "$REPO_ROOT"
 
       # ─────────────────────────────────────────────────────────
       # Frontend Setup & Coverage Generation
