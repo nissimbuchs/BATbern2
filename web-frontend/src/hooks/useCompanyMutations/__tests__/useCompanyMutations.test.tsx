@@ -276,8 +276,15 @@ describe('useCompanyMutations Hooks', () => {
         name: 'Optimistic Name',
       };
 
+      const updatedCompany: Company = {
+        ...existingCompany,
+        name: 'Optimistic Name',
+        updatedAt: '2024-01-02T00:00:00Z',
+      };
+
+      // Mock returns updated company after a delay to test optimistic update
       vi.mocked(companyApiClient.updateCompany).mockImplementation(
-        () => new Promise((resolve) => setTimeout(resolve, 100))
+        () => new Promise((resolve) => setTimeout(() => resolve(updatedCompany), 100))
       );
 
       // Act - Create wrapper first to initialize queryClient
