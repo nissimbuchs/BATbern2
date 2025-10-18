@@ -360,6 +360,16 @@ docs(api): update OpenAPI spec
 test(integration): add contract tests
 ```
 
+## 4-Layer E2E Testing Framework:
+  - Layer 1: Shell scripts (scripts/ci/*.sh)
+  - Layer 2: Bruno tests (bruno-tests/companies-api/*.bru)
+  - Layer 3: Playwright tests (web-frontend/e2e/*.spec.ts)
+  - Layer 4: Infrastructure tests (infrastructure/test/e2e/*.test.ts)
+  - Documentation: docs/testing/e2e-testing-guide.md
+
+## Local Authentication System:
+  - scripts/auth/get-token.sh - Token retrieval
+
 ## License
 
 Copyright © 2025 Berner Architekten Treffen (BATbern). All rights reserved.
