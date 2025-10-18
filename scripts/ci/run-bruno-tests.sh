@@ -77,7 +77,7 @@ skipped=0
 
 # Test collection directories
 collections=(
-    #"event-management-service"
+    #"events-api"
     "companies-api"
 )
 
