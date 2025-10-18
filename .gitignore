@@ -115,6 +115,7 @@ web-frontend/.storybook-out/
 web-frontend/test-results/
 web-frontend/playwright-report/
 web-frontend/test-results.xml
+web-frontend/.playwright-auth-state.json
 test-results/
 playwright-report/
 playwright/.cache/
