@@ -176,3 +176,23 @@ logging:
     ch.batbern: INFO
     org.springframework.security: INFO
     org.hibernate.SQL: INFO
+
+---
+# Local Profile Configuration (for native development with MinIO)
+spring:
+  config:
+    activate:
+      on-profile: local
+
+aws:
+  s3:
+    bucket-name: ${AWS_S3_BUCKET_NAME:batbern-development-company-logos}
+    cloudfront:
+      domain: ${CLOUDFRONT_DOMAIN:http://localhost:9000/batbern-development-company-logos}
+  cloudfront:
+    domain: ${CLOUDFRONT_DOMAIN:http://localhost:9000/batbern-development-company-logos}
+
+logging:
+  level:
+    root: INFO
+    ch.batbern: DEBUG

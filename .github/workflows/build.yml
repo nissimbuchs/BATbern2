@@ -120,12 +120,13 @@ jobs:
     needs: [detect-changes, build-shared-kernel]
     runs-on: ubuntu-latest
     # Only run if services, shared-kernel, or workflows changed, or on push to main/develop
-    # Note: build-shared-kernel dependency ensures it runs if kernel changed
+    # Run even if build-shared-kernel was skipped (when no kernel changes on PRs)
     if: |
-      needs.detect-changes.outputs.services == 'true' ||
-      needs.detect-changes.outputs.shared-kernel == 'true' ||
-      needs.detect-changes.outputs.workflows == 'true' ||
-      github.event_name == 'push'
+      (success() || needs.build-shared-kernel.result == 'skipped') &&
+      (needs.detect-changes.outputs.services == 'true' ||
+       needs.detect-changes.outputs.shared-kernel == 'true' ||
+       needs.detect-changes.outputs.workflows == 'true' ||
+       github.event_name == 'push')
     permissions:
       id-token: write  # Required for OIDC authentication
       contents: read   # Required for checkout
