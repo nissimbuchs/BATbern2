@@ -129,7 +129,7 @@ The BATbern Event Management Platform follows a comprehensive **Domain-Driven De
 
 ### Technology Stack
 - **Frontend**: React 18.2+ with TypeScript, Material-UI, Zustand + React Query
-- **Backend**: Java 21 LTS with Spring Boot 3.2+, PostgreSQL, Redis
+- **Backend**: Java 21 LTS with Spring Boot 3.2+, PostgreSQL, Caffeine
 - **Infrastructure**: AWS (ECS Fargate, Cognito, S3, CloudFront)
 - **Development**: Gradle, Vite, GitHub Actions, AWS CDK
 

@@ -94,7 +94,7 @@ The BATbern API is organized by domain-driven design principles. Each domain has
 - **Data Validation:** Schema validation at API gateway level
 
 ### Performance Optimization
-- **Response Caching:** Redis caching for frequently accessed data
+- **Response Caching:** Caffeine in-memory caching for frequently accessed data
 - **Pagination:** Consistent pagination patterns across all list endpoints
 - **Field Selection:** GraphQL-style field selection for large objects
 - **Bulk Operations:** Batch endpoints for high-volume operations
@@ -340,7 +340,7 @@ Rate limit exceeded returns `429 Too Many Requests` with retry-after header.
 - **GET endpoints:** Support `ETag` and `If-None-Match` headers
 - **Cache-Control headers:** Set appropriately per endpoint
 - **CDN caching:** Static content (logos, archived materials) cached at edge
-- **API caching:** Redis-backed for frequently accessed data (15-minute TTL)
+- **API caching:** Caffeine-backed for frequently accessed data (15-minute TTL)
 
 ### Pagination
 

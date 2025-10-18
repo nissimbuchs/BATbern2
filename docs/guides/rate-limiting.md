@@ -400,30 +400,17 @@ Rate limit check adds **< 1ms** overhead:
 
 ## Future Enhancements
 
-### 1. Distributed Rate Limiting (Redis)
+### 1. Caffeine Cache-based Rate Limiting
 
-**Current:** In-memory (single instance)
-**Problem:** Doesn't scale across multiple API Gateway instances
+**Current:** In-memory ConcurrentHashMap (single instance)
+**Enhancement:** Migrate to Caffeine cache with automatic TTL expiration
 
-**Solution:** Use Redis
-```java
-@Service
-public class RedisRateLimitService {
-    @Autowired
-    private RedisTemplate<String, String> redisTemplate;
+**Benefits:**
+- Automatic cleanup of expired entries
+- Better memory management
+- Configurable eviction policies
 
-    public boolean allowPasswordReset(String email) {
-        String key = "rate-limit:password-reset:" + email;
-        Long count = redisTemplate.opsForValue().increment(key);
-
-        if (count == 1) {
-            redisTemplate.expire(key, 1, TimeUnit.HOURS);
-        }
-
-        return count <= MAX_REQUESTS;
-    }
-}
-```
+**Note:** For multi-instance deployments, consider database-backed rate limiting for cross-instance coordination.
 
 ### 2. User-based Rate Limiting
 
