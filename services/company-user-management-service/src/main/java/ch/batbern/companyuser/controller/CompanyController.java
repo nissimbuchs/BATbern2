@@ -480,7 +480,7 @@ public class CompanyController {
             @ApiResponse(
                     responseCode = "200",
                     description = "Logo upload confirmed and company updated",
-                    content = @Content(schema = @Schema(implementation = CompanyResponse.class))
+                    content = @Content(schema = @Schema(implementation = LogoUploadConfirmResponse.class))
             ),
             @ApiResponse(
                     responseCode = "400",
@@ -495,14 +495,21 @@ public class CompanyController {
                     description = "Company not found"
             )
     })
-    public ResponseEntity<CompanyResponse> confirmLogoUpload(
+    public ResponseEntity<LogoUploadConfirmResponse> confirmLogoUpload(
             @Parameter(description = "Company UUID", required = true)
             @PathVariable UUID id,
             @Valid @RequestBody LogoUploadConfirmRequest request) {
         log.info("Confirming logo upload for company: {}, file ID: {}", id, request.getFileId());
 
         logoService.confirmLogoUpload(id, request.getFileId(), request.getChecksum());
-        CompanyResponse response = companyService.getCompanyById(id);
+        CompanyResponse companyResponse = companyService.getCompanyById(id);
+
+        // Extract logo URL from company response
+        String logoUrl = companyResponse.getLogo() != null ? companyResponse.getLogo().getUrl() : null;
+
+        LogoUploadConfirmResponse response = LogoUploadConfirmResponse.builder()
+                .logoUrl(logoUrl)
+                .build();
 
         return ResponseEntity.ok(response);
     }
