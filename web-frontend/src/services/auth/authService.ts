@@ -333,11 +333,14 @@ class AuthService {
   private extractUserContextFromToken(tokenPayload: CognitoTokenClaims): UserContext {
     const preferences: UserPreferences = JSON.parse(tokenPayload['custom:preferences'] || '{}');
 
+    // Extract primary role from cognito:groups (first group)
+    const role = (tokenPayload['cognito:groups']?.[0] as UserRole) || undefined;
+
     return {
       userId: tokenPayload.sub,
       email: tokenPayload.email,
       emailVerified: tokenPayload.email_verified,
-      role: tokenPayload['custom:role'] as UserRole,
+      role: role!,
       companyId: tokenPayload['custom:companyId'],
       preferences,
       issuedAt: tokenPayload.iat,

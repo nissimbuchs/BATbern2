@@ -51,12 +51,7 @@ export class CognitoStack extends cdk.Stack {
             throw new Error('Invalid company ID format. Must be a valid UUID.');
           }
 
-          // Validate role
-          const role = event.request.userAttributes['custom:role'];
-          const validRoles = ['organizer', 'speaker', 'partner', 'attendee'];
-          if (role && !validRoles.includes(role)) {
-            throw new Error('Invalid role. Must be one of: ' + validRoles.join(', '));
-          }
+          // Role validation removed - roles are now managed via Cognito groups
 
           // Auto-verify email for development
           if (process.env.ENVIRONMENT === 'development') {
@@ -91,10 +86,6 @@ export class CognitoStack extends cdk.Stack {
         },
       },
       customAttributes: {
-        role: new cognito.StringAttribute({
-          mutable: true,
-          maxLen: 20,
-        }),
         companyId: new cognito.StringAttribute({
           mutable: true,
           maxLen: 36,
@@ -147,9 +138,9 @@ export class CognitoStack extends cdk.Stack {
         userSrp: true, // Enable SRP authentication for secure password flow
       },
       generateSecret: false,
-      refreshTokenValidity: cdk.Duration.days(30),
-      accessTokenValidity: cdk.Duration.minutes(60),
-      idTokenValidity: cdk.Duration.minutes(60),
+      refreshTokenValidity: cdk.Duration.days(3650), // 10 years for long-lived test tokens
+      accessTokenValidity: cdk.Duration.hours(24), // Max allowed
+      idTokenValidity: cdk.Duration.hours(24), // Max allowed
       oAuth: {
         flows: {
           authorizationCodeGrant: true,
@@ -167,10 +158,10 @@ export class CognitoStack extends cdk.Stack {
       ],
       readAttributes: new cognito.ClientAttributes()
         .withStandardAttributes({ email: true, emailVerified: true })
-        .withCustomAttributes('role', 'companyId', 'preferences'),
+        .withCustomAttributes('companyId', 'preferences'),
       writeAttributes: new cognito.ClientAttributes()
         .withStandardAttributes({ email: true })
-        .withCustomAttributes('role', 'companyId', 'preferences'),
+        .withCustomAttributes('companyId', 'preferences'),
     });
 
     // Create User Pool Domain
@@ -197,7 +188,7 @@ export class CognitoStack extends cdk.Stack {
     new BootstrapOrganizer(this, 'BootstrapOrganizer', {
       userPool: this.userPool,
       email: 'nissim@buchs.be',
-      password: 'Ur@batbern01',
+      password: 'TempPass123!',
     });
 
     // Apply tags
