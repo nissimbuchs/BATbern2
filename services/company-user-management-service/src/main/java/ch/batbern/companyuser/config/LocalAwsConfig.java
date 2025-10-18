@@ -66,57 +66,46 @@ public class LocalAwsConfig {
     }
 
     /**
-     * Mock S3 Presigner for local development
-     * S3 operations will be logged but not executed
+     * S3 Presigner configured for MinIO (local S3-compatible storage)
+     * Generates real presigned URLs that work with MinIO running on localhost:9000
      */
     @Bean
     @Primary
     public S3Presigner s3Presigner() {
-        log.info("🪣 [LOCAL] Using mock S3Presigner - presigned URLs will not work");
+        log.info("🪣 [LOCAL] Using S3Presigner configured for MinIO (http://localhost:9000)");
 
-        return new S3Presigner() {
-            @Override
-            public void close() {
-                // No-op for mock
-            }
+        // Configure S3 client to use MinIO endpoint
+        software.amazon.awssdk.regions.Region region = software.amazon.awssdk.regions.Region.EU_CENTRAL_1;
 
-            @Override
-            public PresignedPutObjectRequest presignPutObject(PutObjectPresignRequest request) {
-                log.debug("🪣 [LOCAL] Mock presignPutObject");
-                return null; // Not implemented for local
-            }
+        // Create S3 client configuration for MinIO
+        software.amazon.awssdk.services.s3.S3Configuration s3Config =
+            software.amazon.awssdk.services.s3.S3Configuration.builder()
+                .pathStyleAccessEnabled(true)  // MinIO requires path-style access
+                .build();
 
-            @Override
-            public PresignedGetObjectRequest presignGetObject(GetObjectPresignRequest request) {
-                log.debug("🪣 [LOCAL] Mock presignGetObject");
-                return null; // Not implemented for local
-            }
+        // Create credentials provider for MinIO (minioadmin/minioadmin)
+        software.amazon.awssdk.auth.credentials.AwsBasicCredentials credentials =
+            software.amazon.awssdk.auth.credentials.AwsBasicCredentials.create("minioadmin", "minioadmin");
 
+        software.amazon.awssdk.auth.credentials.StaticCredentialsProvider credentialsProvider =
+            software.amazon.awssdk.auth.credentials.StaticCredentialsProvider.create(credentials);
 
-            @Override
-            public PresignedCreateMultipartUploadRequest presignCreateMultipartUpload(CreateMultipartUploadPresignRequest request) {
-                log.debug("🪣 [LOCAL] Mock presignCreateMultipartUpload");
-                return null; // Not implemented for local
-            }
+        // Create endpoint override for MinIO
+        java.net.URI minioEndpoint = java.net.URI.create("http://localhost:9000");
 
-            @Override
-            public PresignedUploadPartRequest presignUploadPart(UploadPartPresignRequest request) {
-                log.debug("🪣 [LOCAL] Mock presignUploadPart");
-                return null; // Not implemented for local
-            }
+        // Build the S3Presigner
+        S3Presigner presigner = S3Presigner.builder()
+            .region(region)
+            .credentialsProvider(credentialsProvider)
+            .endpointOverride(minioEndpoint)
+            .serviceConfiguration(s3Config)
+            .build();
 
-            @Override
-            public PresignedCompleteMultipartUploadRequest presignCompleteMultipartUpload(CompleteMultipartUploadPresignRequest request) {
-                log.debug("🪣 [LOCAL] Mock presignCompleteMultipartUpload");
-                return null; // Not implemented for local
-            }
+        log.info("🪣 [LOCAL] S3Presigner configured successfully for MinIO");
+        log.info("🪣 [LOCAL] Endpoint: http://localhost:9000");
+        log.info("🪣 [LOCAL] Bucket: batbern-development-company-logos");
 
-            @Override
-            public PresignedAbortMultipartUploadRequest presignAbortMultipartUpload(AbortMultipartUploadPresignRequest request) {
-                log.debug("🪣 [LOCAL] Mock presignAbortMultipartUpload");
-                return null; // Not implemented for local
-            }
-        };
+        return presigner;
     }
 
     /**

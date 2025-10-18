@@ -31,9 +31,12 @@ import {
   FormHelperText,
   Alert,
   Box,
+  Typography,
+  Divider,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import type { Company, CreateCompanyRequest, UpdateCompanyRequest } from '@/types/company.types';
+import { LogoUpload } from '@/components/shared/Company/LogoUpload';
 
 // Validation schema with Zod (matches backend CreateCompanyRequest)
 const companySchema = z.object({
@@ -42,7 +45,11 @@ const companySchema = z.object({
     .min(1, 'Company name is required')
     .min(2, 'Name must be at least 2 characters')
     .max(200, 'Name must be at most 200 characters'),
-  displayName: z.string().max(255, 'Display name must be at most 255 characters').optional().or(z.literal('')),
+  displayName: z
+    .string()
+    .max(255, 'Display name must be at most 255 characters')
+    .optional()
+    .or(z.literal('')),
   swissUID: z
     .string()
     .optional()
@@ -57,8 +64,16 @@ const companySchema = z.object({
     .refine((val) => !val || z.string().url().safeParse(val).success, {
       message: 'Invalid website URL',
     }),
-  industry: z.string().max(100, 'Industry must be at most 100 characters').optional().or(z.literal('')),
-  description: z.string().max(500, 'Description must be at most 500 characters').optional().or(z.literal('')),
+  industry: z
+    .string()
+    .max(100, 'Industry must be at most 100 characters')
+    .optional()
+    .or(z.literal('')),
+  description: z
+    .string()
+    .max(500, 'Description must be at most 500 characters')
+    .optional()
+    .or(z.literal('')),
 });
 
 // Draft schema (relaxed validation)
@@ -91,6 +106,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
 }) => {
   const { t } = useTranslation('common');
   const [apiError, setApiError] = useState<string | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | undefined>(initialData?.logo?.url);
 
   // Check role-based access control
   const hasEditPermission =
@@ -137,14 +153,13 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
         industry: initialData.industry || '',
         description: initialData.description || '',
       });
+      setLogoUrl(initialData.logo?.url);
     }
   }, [initialData, reset]);
 
   const handleClose = () => {
     if (isDirty) {
-      const confirmed = window.confirm(
-        t('company.form.unsavedChanges')
-      );
+      const confirmed = window.confirm(t('company.form.unsavedChanges'));
       if (!confirmed) return;
     }
     setApiError(null);
@@ -178,7 +193,8 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
         // Only send changed fields
         const partialUpdate: Partial<CreateCompanyRequest> = {};
         changedFields.forEach((field) => {
-          partialUpdate[field as keyof CreateCompanyRequest] = cleanedData[field as keyof typeof cleanedData];
+          partialUpdate[field as keyof CreateCompanyRequest] =
+            cleanedData[field as keyof typeof cleanedData];
         });
 
         await onSubmit(partialUpdate as UpdateCompanyRequest, {
@@ -243,6 +259,21 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
 
   // Watch description for character count
   const description = watch('description') || '';
+
+  const handleLogoUploadSuccess = (data: { logoUrl: string }) => {
+    setLogoUrl(data.logoUrl);
+    // Optionally show success message
+    console.log('[CompanyForm] Logo uploaded successfully:', data.logoUrl);
+  };
+
+  const handleLogoUploadError = (error: { type: string; message: string }) => {
+    setApiError(`Logo upload failed: ${error.message}`);
+  };
+
+  // Generate a temporary company ID for create mode
+  // In create mode, we'll use a placeholder ID that will be replaced by the backend
+  const companyIdForUpload =
+    mode === 'edit' && initialData?.id ? initialData.id : 'temp-company-id';
 
   return (
     <Dialog
@@ -350,7 +381,12 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
             name="industry"
             control={control}
             render={({ field }) => (
-              <FormControl fullWidth margin="normal" error={!!errors.industry} disabled={!hasEditPermission}>
+              <FormControl
+                fullWidth
+                margin="normal"
+                error={!!errors.industry}
+                disabled={!hasEditPermission}
+              >
                 <InputLabel id="industry-label">{t('company.fields.industry')}</InputLabel>
                 <Select
                   {...field}
@@ -362,9 +398,13 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
                     <em>{t('company.industries.selectIndustry')}</em>
                   </MenuItem>
                   <MenuItem value="Technology">{t('company.industries.technology')}</MenuItem>
-                  <MenuItem value="Cloud Computing">{t('company.industries.cloudComputing')}</MenuItem>
+                  <MenuItem value="Cloud Computing">
+                    {t('company.industries.cloudComputing')}
+                  </MenuItem>
                   <MenuItem value="DevOps">{t('company.industries.devOps')}</MenuItem>
-                  <MenuItem value="Financial Services">{t('company.industries.financialServices')}</MenuItem>
+                  <MenuItem value="Financial Services">
+                    {t('company.industries.financialServices')}
+                  </MenuItem>
                   <MenuItem value="Healthcare">{t('company.industries.healthcare')}</MenuItem>
                   <MenuItem value="Manufacturing">{t('company.industries.manufacturing')}</MenuItem>
                   <MenuItem value="Consulting">{t('company.industries.consulting')}</MenuItem>
@@ -390,13 +430,28 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
                 rows={4}
                 error={!!errors.description}
                 helperText={
-                  errors.description?.message || t('company.form.characterCount', { count: description.length, max: 500 })
+                  errors.description?.message ||
+                  t('company.form.characterCount', { count: description.length, max: 500 })
                 }
                 disabled={!hasEditPermission}
                 inputProps={{ 'aria-label': t('company.fields.description') }}
               />
             )}
           />
+
+          {/* Logo Upload Section */}
+          <Box sx={{ mt: 3, mb: 2 }}>
+            <Divider sx={{ mb: 2 }} />
+            <Typography variant="h6" gutterBottom>
+              {t('company.fields.logo')}
+            </Typography>
+            <LogoUpload
+              companyId={companyIdForUpload}
+              currentLogoUrl={logoUrl}
+              onUploadSuccess={handleLogoUploadSuccess}
+              onUploadError={handleLogoUploadError}
+            />
+          </Box>
         </Box>
       </DialogContent>
 
@@ -406,7 +461,11 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
         </Button>
 
         {mode === 'create' && allowDraft && hasEditPermission && (
-          <Button onClick={handleSaveDraft} color="secondary" aria-label={t('company.form.saveDraft')}>
+          <Button
+            onClick={handleSaveDraft}
+            color="secondary"
+            aria-label={t('company.form.saveDraft')}
+          >
             {t('company.form.saveDraft')}
           </Button>
         )}
@@ -416,7 +475,9 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
           variant="contained"
           color="primary"
           disabled={!hasEditPermission}
-          aria-label={mode === 'create' ? t('company.form.saveCreate') : t('company.form.saveChanges')}
+          aria-label={
+            mode === 'create' ? t('company.form.saveCreate') : t('company.form.saveChanges')
+          }
         >
           {mode === 'create' ? t('company.form.saveCreate') : t('company.form.saveChanges')}
         </Button>

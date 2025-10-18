@@ -37,14 +37,7 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
   describe('Modal Display', () => {
     it('should_openModal_when_createCompanyButtonClicked', () => {
       // AC3 Test 3.1: Modal opens for company creation
-      render(
-        <CompanyForm
-          open={true}
-          mode="create"
-          onClose={vi.fn()}
-          onSubmit={vi.fn()}
-        />
-      );
+      render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={vi.fn()} />);
 
       expect(screen.getByRole('dialog')).toBeInTheDocument();
       expect(screen.getByText('Create New Company')).toBeInTheDocument();
@@ -52,14 +45,7 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
 
     it('should_displayAllFormFields_when_modalOpened', () => {
       // Test that all form fields are present (updated to match backend schema)
-      render(
-        <CompanyForm
-          open={true}
-          mode="create"
-          onClose={vi.fn()}
-          onSubmit={vi.fn()}
-        />
-      );
+      render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={vi.fn()} />);
 
       // Required field
       expect(screen.getByLabelText(/company name/i)).toBeInTheDocument();
@@ -98,14 +84,7 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
       const user = userEvent.setup();
       const onSubmit = vi.fn();
 
-      render(
-        <CompanyForm
-          open={true}
-          mode="create"
-          onClose={vi.fn()}
-          onSubmit={onSubmit}
-        />
-      );
+      render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={onSubmit} />);
 
       // Try to submit without filling required fields
       const submitButton = screen.getByRole('button', { name: /save & create/i });
@@ -124,14 +103,7 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
       // Test that inline error messages appear below each field
       const user = userEvent.setup();
 
-      render(
-        <CompanyForm
-          open={true}
-          mode="create"
-          onClose={vi.fn()}
-          onSubmit={vi.fn()}
-        />
-      );
+      render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={vi.fn()} />);
 
       // Submit form without filling required fields
       const submitButton = screen.getByRole('button', { name: /save & create/i });
@@ -140,7 +112,9 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
       // Error messages should be in helper text below each field
       await waitFor(() => {
         const nameField = screen.getByLabelText(/company name/i);
-        const nameError = nameField.closest('.MuiFormControl-root')?.querySelector('.MuiFormHelperText-root');
+        const nameError = nameField
+          .closest('.MuiFormControl-root')
+          ?.querySelector('.MuiFormHelperText-root');
         expect(nameError).toHaveTextContent(/required/i);
       });
     });
@@ -151,14 +125,7 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
       // AC3 Test 3.3: Swiss UID format validation (CHE-XXX.XXX.XXX)
       const user = userEvent.setup();
 
-      render(
-        <CompanyForm
-          open={true}
-          mode="create"
-          onClose={vi.fn()}
-          onSubmit={vi.fn()}
-        />
-      );
+      render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={vi.fn()} />);
 
       const uidField = screen.getByLabelText(/swiss uid/i);
 
@@ -175,14 +142,7 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
       // Test valid Swiss UID format
       const user = userEvent.setup();
 
-      render(
-        <CompanyForm
-          open={true}
-          mode="create"
-          onClose={vi.fn()}
-          onSubmit={vi.fn()}
-        />
-      );
+      render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={vi.fn()} />);
 
       const uidField = screen.getByLabelText(/swiss uid/i);
 
@@ -201,14 +161,7 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
       const user = userEvent.setup();
       const onSubmit = vi.fn();
 
-      render(
-        <CompanyForm
-          open={true}
-          mode="create"
-          onClose={vi.fn()}
-          onSubmit={onSubmit}
-        />
-      );
+      render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={onSubmit} />);
 
       // Fill only required field (name only, all others optional)
       await user.type(screen.getByLabelText(/company name/i), 'Test Company');
@@ -236,14 +189,7 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
         },
       });
 
-      render(
-        <CompanyForm
-          open={true}
-          mode="create"
-          onClose={vi.fn()}
-          onSubmit={onSubmit}
-        />
-      );
+      render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={onSubmit} />);
 
       // Fill form with duplicate company name
       await user.type(screen.getByLabelText(/company name/i), 'Existing Company');
@@ -281,15 +227,20 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
       await user.click(screen.getByRole('button', { name: /save draft/i }));
 
       // Should call onSubmit with draft flag (wait for async setTimeout in component)
-      await waitFor(() => {
-        expect(onSubmit).toHaveBeenCalled();
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          expect(onSubmit).toHaveBeenCalled();
+        },
+        { timeout: 3000 }
+      );
 
       // Verify draft flag was passed
       const callArgs = onSubmit.mock.calls[0];
-      expect(callArgs[0]).toEqual(expect.objectContaining({
-        name: 'Draft Company',
-      }));
+      expect(callArgs[0]).toEqual(
+        expect.objectContaining({
+          name: 'Draft Company',
+        })
+      );
       expect(callArgs[1]).toEqual(expect.objectContaining({ isDraft: true }));
     });
 
@@ -326,14 +277,7 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
       const user = userEvent.setup();
       const onSubmit = vi.fn();
 
-      render(
-        <CompanyForm
-          open={true}
-          mode="create"
-          onClose={vi.fn()}
-          onSubmit={onSubmit}
-        />
-      );
+      render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={onSubmit} />);
 
       // Fill all fields (name is required, others optional)
       await user.type(screen.getByLabelText(/company name/i), 'New Company');
@@ -519,9 +463,7 @@ describe('CompanyForm Component - AC4 Edit Company Form', () => {
 
       // Should show confirmation dialog
       await waitFor(() => {
-        expect(confirmSpy).toHaveBeenCalledWith(
-          expect.stringContaining('unsaved changes')
-        );
+        expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining('unsaved changes'));
       });
 
       // Should not close if user cancels
@@ -593,10 +535,8 @@ describe('CompanyForm Component - AC4 Edit Company Form', () => {
   });
 
   describe('Role-Based Access Control', () => {
-    it('should_restrictAccess_when_speakerEditsOtherCompany', async () => {
+    it('should_restrictAccess_when_speakerEditsOtherCompany', () => {
       // AC4 Test 4.4: Speakers can only edit their own company
-      const user = userEvent.setup();
-
       render(
         <CompanyForm
           open={true}
@@ -719,14 +659,7 @@ describe('CompanyForm Component - AC4 Edit Company Form', () => {
 describe('CompanyForm Component - Accessibility', () => {
   it('should_haveProperAriaLabels_when_rendered', () => {
     // Test ARIA labels for accessibility
-    render(
-      <CompanyForm
-        open={true}
-        mode="create"
-        onClose={vi.fn()}
-        onSubmit={vi.fn()}
-      />
-    );
+    render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={vi.fn()} />);
 
     const dialog = screen.getByRole('dialog');
     expect(dialog).toHaveAttribute('aria-labelledby');
@@ -735,14 +668,7 @@ describe('CompanyForm Component - Accessibility', () => {
 
   it('should_trapFocus_when_modalOpen', () => {
     // Modal should trap focus within dialog
-    render(
-      <CompanyForm
-        open={true}
-        mode="create"
-        onClose={vi.fn()}
-        onSubmit={vi.fn()}
-      />
-    );
+    render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={vi.fn()} />);
 
     const dialog = screen.getByRole('dialog');
     expect(dialog).toHaveAttribute('role', 'dialog');
@@ -752,14 +678,7 @@ describe('CompanyForm Component - Accessibility', () => {
     // Screen readers should announce validation errors via helper text
     const user = userEvent.setup();
 
-    render(
-      <CompanyForm
-        open={true}
-        mode="create"
-        onClose={vi.fn()}
-        onSubmit={vi.fn()}
-      />
-    );
+    render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={vi.fn()} />);
 
     // Submit without filling fields
     await user.click(screen.getByRole('button', { name: /save & create/i }));
@@ -777,14 +696,7 @@ describe('CompanyForm Component - Website Validation', () => {
     // Test website URL validation
     const user = userEvent.setup();
 
-    render(
-      <CompanyForm
-        open={true}
-        mode="create"
-        onClose={vi.fn()}
-        onSubmit={vi.fn()}
-      />
-    );
+    render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={vi.fn()} />);
 
     const websiteField = screen.getByLabelText(/website/i);
 
@@ -801,14 +713,7 @@ describe('CompanyForm Component - Website Validation', () => {
     // Test valid website URL
     const user = userEvent.setup();
 
-    render(
-      <CompanyForm
-        open={true}
-        mode="create"
-        onClose={vi.fn()}
-        onSubmit={vi.fn()}
-      />
-    );
+    render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={vi.fn()} />);
 
     const websiteField = screen.getByLabelText(/website/i);
 
@@ -828,14 +733,7 @@ describe('CompanyForm Component - Character Limits', () => {
     // Test max length for company name (200 characters)
     const user = userEvent.setup();
 
-    render(
-      <CompanyForm
-        open={true}
-        mode="create"
-        onClose={vi.fn()}
-        onSubmit={vi.fn()}
-      />
-    );
+    render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={vi.fn()} />);
 
     const nameField = screen.getByLabelText(/company name/i);
     const longName = 'A'.repeat(201);
@@ -852,14 +750,7 @@ describe('CompanyForm Component - Character Limits', () => {
     // Test character counter for description (500 max)
     const user = userEvent.setup();
 
-    render(
-      <CompanyForm
-        open={true}
-        mode="create"
-        onClose={vi.fn()}
-        onSubmit={vi.fn()}
-      />
-    );
+    render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={vi.fn()} />);
 
     const descriptionField = screen.getByLabelText(/description/i);
 
@@ -873,14 +764,7 @@ describe('CompanyForm Component - Character Limits', () => {
     // Test max length for description
     const user = userEvent.setup();
 
-    render(
-      <CompanyForm
-        open={true}
-        mode="create"
-        onClose={vi.fn()}
-        onSubmit={vi.fn()}
-      />
-    );
+    render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={vi.fn()} />);
 
     const descriptionField = screen.getByLabelText(/description/i) as HTMLTextAreaElement;
     const longDescription = 'A'.repeat(501);
@@ -890,8 +774,99 @@ describe('CompanyForm Component - Character Limits', () => {
     await user.paste(longDescription);
     await user.tab(); // Trigger blur to run validation
 
-    await waitFor(() => {
-      expect(screen.getByText(/description must be at most 500 characters/i)).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText(/description must be at most 500 characters/i)).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
+  });
+});
+
+describe('CompanyForm Component - AC5 Logo Upload', () => {
+  describe('Logo Upload Component Integration', () => {
+    it('should_displayLogoUpload_when_formRendered', () => {
+      // AC5 Test 5.1: Logo upload component should be present in form
+      // Bug #141: Logo upload missing in CompanyDetailView/CompanyForm
+      render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={vi.fn()} />);
+
+      // LogoUpload component should be rendered
+      expect(screen.getByTestId('logo-dropzone')).toBeInTheDocument();
+      expect(screen.getByText(/drag and drop a logo here/i)).toBeInTheDocument();
+    });
+
+    it('should_passCompanyId_when_editMode', () => {
+      // AC5: Logo upload should use company ID in edit mode
+      render(
+        <CompanyForm
+          open={true}
+          mode="edit"
+          initialData={mockCompany}
+          onClose={vi.fn()}
+          onSubmit={vi.fn()}
+        />
+      );
+
+      // LogoUpload should be rendered with company ID
+      expect(screen.getByTestId('logo-dropzone')).toBeInTheDocument();
+
+      // In edit mode, if logo exists, it should show preview instead of dropzone
+      // LogoUpload component shows preview if currentLogoUrl is provided
+    });
+
+    it('should_showLogoPreview_when_companyHasLogo', () => {
+      // AC5: If company has logo, show preview with remove button
+      const companyWithLogo = {
+        ...mockCompany,
+        logo: {
+          url: 'https://example.com/logo.png',
+          s3Key: 'logos/company-123.png',
+          fileId: 'file-123',
+        },
+      };
+
+      render(
+        <CompanyForm
+          open={true}
+          mode="edit"
+          initialData={companyWithLogo}
+          onClose={vi.fn()}
+          onSubmit={vi.fn()}
+        />
+      );
+
+      // Should show logo preview instead of dropzone
+      expect(screen.getByAltText(/company logo preview/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/remove logo/i)).toBeInTheDocument();
+    });
+
+    it('should_displayLogoSection_when_createMode', () => {
+      // AC5: Logo upload should be available in create mode
+      render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={vi.fn()} />);
+
+      // Should have a logo upload section with dropzone
+      expect(screen.getByTestId('logo-dropzone')).toBeInTheDocument();
+      expect(screen.getByText(/drag and drop a logo here/i)).toBeInTheDocument();
+    });
+  });
+
+  describe('Logo Upload Label and Instructions', () => {
+    it('should_showLogoSectionLabel_when_rendered', () => {
+      // Logo section should have a clear label
+      render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={vi.fn()} />);
+
+      // Should have "Logo" heading (use role heading to be specific)
+      const logoHeading = screen.getAllByText(/logo/i).find((el) => el.tagName === 'H6');
+      expect(logoHeading).toBeDefined();
+    });
+
+    it('should_showUploadInstructions_when_noLogo', () => {
+      // Should show file format and size requirements
+      render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={vi.fn()} />);
+
+      // LogoUpload component shows instructions
+      expect(screen.getByText(/accepted formats.*png.*jpeg.*svg/i)).toBeInTheDocument();
+      expect(screen.getByText(/max 5mb/i)).toBeInTheDocument();
+    });
   });
 });

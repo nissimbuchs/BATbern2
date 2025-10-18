@@ -129,6 +129,31 @@ ${description_of_fix}
 - Output fix plan to user
 - HALT (do not implement)
 
+### 3.5) Create Bugfix Branch
+
+**CRITICAL:** Always create a dedicated bugfix branch before making any code changes.
+
+```bash
+# Create and checkout bugfix branch
+git checkout -b bugfix/${issue_number}-${bug_slug}
+
+# Example: git checkout -b bugfix/141-company-logo-upload
+```
+
+**Branch naming convention:**
+- Format: `bugfix/{issue_number}-{brief-description}`
+- Use kebab-case for description
+- Keep description under 50 chars
+- Examples:
+  - `bugfix/123-fix-cache-invalidation`
+  - `bugfix/456-user-search-timeout`
+  - `bugfix/789-logo-upload-validation`
+
+**Verify branch creation:**
+```bash
+git branch --show-current
+```
+
 ### 4) Implement Fix (TDD RED Phase)
 
 **Write/Update Test First:**
@@ -203,6 +228,72 @@ ${build_command}
 
 HALT if any quality gate fails after 3 attempts → mark as "needs-manual-fix"
 
+### 6.5) Commit Changes to Git
+
+**CRITICAL:** Commit all changes with proper commit message format.
+
+**Stage changes:**
+```bash
+# Review changes before staging
+git status
+git diff
+
+# Stage all modified files
+git add <file1> <file2> <test-file1> <test-file2>
+
+# Or stage all changes (use with caution)
+git add .
+```
+
+**Commit with proper format:**
+```bash
+git commit -m "fix(issue-${issue_number}): ${brief_description}
+
+${detailed_description}
+
+- Root cause: ${root_cause_summary}
+- Fix applied: ${fix_summary}
+- Tests added: ${test_files}
+- All tests passing: ✅
+
+Fixes #${issue_number}
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+```
+
+**Commit message format:**
+- **First line:** `fix(issue-{number}): {brief description}` (max 72 chars)
+- **Body:** Detailed explanation of root cause and fix
+- **Footer:** `Fixes #{issue_number}` to auto-link and close issue
+- **Attribution:** Claude Code attribution and co-author
+
+**Example commit message:**
+```
+fix(issue-141): integrate LogoUpload component into CompanyForm
+
+Users were unable to upload company logos when creating or editing
+companies because the LogoUpload component was not integrated into
+the CompanyForm modal.
+
+- Root cause: LogoUpload existed but wasn't added to CompanyForm
+- Fix applied: Added LogoUpload section with state management
+- Tests added: 6 new AC5 Logo Upload integration tests
+- All tests passing: ✅ 38/38
+
+Fixes #141
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
+
+**Verify commit:**
+```bash
+git log -1 --stat
+```
+
 ### 7) Update Story File (Dev Agent Record ONLY)
 
 **CRITICAL:** Only update these story file sections:
@@ -228,6 +319,80 @@ HALT if any quality gate fails after 3 attempts → mark as "needs-manual-fix"
 - Fix applied: ${fix_description}
 - Tests added: ${test_files}
 - All tests passing: ✅
+```
+
+### 7.5) Update GitHub Issue
+
+**CRITICAL:** Post fix details to GitHub issue and close it.
+
+**Post fix details:**
+```bash
+gh issue comment ${issue_number} --body "✅ Bug Fixed
+
+**Fix implemented and all tests passing.**
+
+**Root Cause:**
+${root_cause_description}
+
+**Fix Applied:**
+${fix_implementation_details}
+
+**Test Results:**
+- ✅ ${test_count} tests added/modified
+- ✅ All ${total_test_count} tests passing (100% pass rate)
+- ✅ Tests verify: ${what_tests_verify}
+
+**Files Changed:**
+- \`${source_file_1}\` - ${what_changed}
+- \`${test_file_1}\` - ${tests_added}
+
+**Story:** ${story_id}
+**AC Violated:** ${ac_number}
+
+Closing issue."
+```
+
+**Close issue:**
+```bash
+gh issue close ${issue_number}
+```
+
+**Verify issue updated:**
+```bash
+gh issue view ${issue_number} --json state,comments --jq '.'
+```
+
+**Example GitHub comment:**
+```markdown
+✅ Bug Fixed
+
+**Fix implemented and all tests passing.**
+
+**Root Cause:**
+The LogoUpload component existed but was NOT integrated into the CompanyForm modal. Users could not edit or upload company logos when creating or editing companies.
+
+**Fix Applied:**
+1. Integrated LogoUpload component into CompanyForm.tsx (lines 420-432)
+2. Added logo section with clear label and divider
+3. Implemented state management for logo URL
+4. Added success/error callbacks for upload handling
+5. Support for both create and edit modes
+
+**Test Results:**
+- ✅ 6 new AC5 Logo Upload tests added and passing
+- ✅ All 38 CompanyForm tests passing (100% pass rate)
+- ✅ Tests verify logo upload appears in create mode
+- ✅ Tests verify logo upload appears in edit mode with company ID
+- ✅ Tests verify logo preview display when logo exists
+
+**Files Changed:**
+- `web-frontend/src/components/shared/Company/CompanyForm.tsx` - Added LogoUpload integration
+- `web-frontend/src/components/shared/Company/__tests__/CompanyForm.test.tsx` - Added 6 tests for AC5
+
+**Story:** 2.5.1 - Company Management Frontend
+**AC Violated:** AC1 (display), AC5 (logo upload)
+
+Closing issue.
 ```
 
 ### 8) Return Status
@@ -270,13 +435,17 @@ Return structured status for automation:
 
 ## Success Criteria
 
+- Bugfix branch created before implementation
 - Bug reproduced in test (test fails before fix)
 - Test passes after fix implementation
 - Full test suite passing (no regressions)
 - Linting passes
 - Build successful (if applicable)
+- Changes committed to git with proper message format
+- GitHub issue updated with fix details
+- GitHub issue closed
 - Story file updated (allowed sections only)
-- Clear traceability from issue to fix
+- Clear traceability from issue → branch → commit → fix → test → story
 
 ## Configuration
 
