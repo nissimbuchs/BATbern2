@@ -52,23 +52,27 @@ echo ""
 
 # Set environment-specific URLs
 if [ "$ENVIRONMENT" = "staging" ]; then
+    export TEST_ENV="staging"
     export E2E_BASE_URL="https://staging.batbern.ch"
     export E2E_API_URL="https://api.staging.batbern.ch"
     export E2E_AWS_REGION="eu-central-1"
 elif [ "$ENVIRONMENT" = "production" ]; then
+    export TEST_ENV="production"
     export E2E_BASE_URL="https://www.batbern.ch"
     export E2E_API_URL="https://api.batbern.ch"
     export E2E_AWS_REGION="eu-central-1"
 else
+    export TEST_ENV="development"
     export E2E_BASE_URL="http://localhost:3000"
     export E2E_API_URL="http://localhost:8080"
     export E2E_AWS_REGION="eu-central-1"
 fi
 
 echo -e "${BLUE}Test Configuration:${NC}"
-echo "  Base URL: $E2E_BASE_URL"
-echo "  API URL:  $E2E_API_URL"
-echo "  Region:   $E2E_AWS_REGION"
+echo "  Environment: $TEST_ENV"
+echo "  Base URL:    $E2E_BASE_URL"
+echo "  API URL:     $E2E_API_URL"
+echo "  Region:      $E2E_AWS_REGION"
 echo ""
 
 # Check if we're in the correct directory
