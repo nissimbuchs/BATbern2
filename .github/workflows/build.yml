@@ -33,55 +33,10 @@ env:
 
 jobs:
   # ═══════════════════════════════════════════════════════════
-  # CHANGE DETECTION: Determine which parts of codebase changed
-  # ═══════════════════════════════════════════════════════════
-  detect-changes:
-    runs-on: ubuntu-latest
-    # Always run on push to main/develop, or on PRs
-    outputs:
-      shared-kernel: ${{ steps.filter.outputs.shared-kernel }}
-      services: ${{ steps.filter.outputs.services }}
-      frontend: ${{ steps.filter.outputs.frontend }}
-      workflows: ${{ steps.filter.outputs.workflows }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Detect changed paths
-        uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            shared-kernel:
-              - 'shared-kernel/**'
-              - 'gradle/**'
-              - 'gradlew*'
-              - 'settings.gradle'
-              - 'build.gradle'
-            services:
-              - 'services/**'
-              - 'api-gateway/**'
-              - 'shared-kernel/**'
-              - 'gradle/**'
-              - 'gradlew*'
-              - 'settings.gradle'
-            frontend:
-              - 'web-frontend/**'
-              - 'docs/api/**'
-            workflows:
-              - '.github/workflows/**'
-
-  # ═══════════════════════════════════════════════════════════
   # BUILD PHASE: Shared Kernel (Foundation)
   # ═══════════════════════════════════════════════════════════
   build-shared-kernel:
-    needs: detect-changes
     runs-on: ubuntu-latest
-    # Only run if shared-kernel or workflows changed, or on push to main/develop
-    if: |
-      needs.detect-changes.outputs.shared-kernel == 'true' ||
-      needs.detect-changes.outputs.workflows == 'true' ||
-      github.event_name == 'push'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -117,16 +72,8 @@ jobs:
   # BUILD PHASE: Domain Services (Parallel)
   # ═══════════════════════════════════════════════════════════
   build-services:
-    needs: [detect-changes, build-shared-kernel]
+    needs: build-shared-kernel
     runs-on: ubuntu-latest
-    # Only run if services, shared-kernel, or workflows changed, or on push to main/develop
-    # Run even if build-shared-kernel was skipped (when no kernel changes on PRs)
-    if: |
-      (success() || needs.build-shared-kernel.result == 'skipped') &&
-      (needs.detect-changes.outputs.services == 'true' ||
-       needs.detect-changes.outputs.shared-kernel == 'true' ||
-       needs.detect-changes.outputs.workflows == 'true' ||
-       github.event_name == 'push')
     permissions:
       id-token: write  # Required for OIDC authentication
       contents: read   # Required for checkout
@@ -242,13 +189,7 @@ jobs:
   # BUILD PHASE: Frontend Application
   # ═══════════════════════════════════════════════════════════
   build-frontend:
-    needs: detect-changes
     runs-on: ubuntu-latest
-    # Only run if frontend, API docs, or workflows changed, or on push to main/develop
-    if: |
-      needs.detect-changes.outputs.frontend == 'true' ||
-      needs.detect-changes.outputs.workflows == 'true' ||
-      github.event_name == 'push'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -346,18 +287,8 @@ jobs:
   # INTEGRATION TESTS
   # ═══════════════════════════════════════════════════════════
   integration-tests:
-    needs: [detect-changes, build-services, build-frontend]
+    needs: [build-services, build-frontend]
     runs-on: ubuntu-latest
-    # Run if services or frontend changed, or on push to main/develop
-    # Use 'always()' to run even if build jobs were skipped, but check if they didn't fail
-    if: |
-      always() &&
-      !contains(needs.*.result, 'failure') &&
-      !contains(needs.*.result, 'cancelled') &&
-      (needs.detect-changes.outputs.services == 'true' ||
-       needs.detect-changes.outputs.frontend == 'true' ||
-       needs.detect-changes.outputs.workflows == 'true' ||
-       github.event_name == 'push')
     services:
       postgres:
         image: postgres:15
@@ -437,20 +368,10 @@ jobs:
   # ═══════════════════════════════════════════════════════════
   sonarcloud:
     name: SonarCloud Analysis
-    needs: [detect-changes, build-shared-kernel, build-services, build-frontend]
+    needs: [build-shared-kernel, build-services, build-frontend]
     runs-on: ubuntu-latest
     # Skip SonarCloud for Dependabot PRs (they don't have access to secrets)
-    # Run if any code changed (use always() to run even if build jobs were skipped)
-    if: |
-      always() &&
-      !contains(needs.*.result, 'failure') &&
-      !contains(needs.*.result, 'cancelled') &&
-      github.actor != 'dependabot[bot]' &&
-      (needs.detect-changes.outputs.shared-kernel == 'true' ||
-       needs.detect-changes.outputs.services == 'true' ||
-       needs.detect-changes.outputs.frontend == 'true' ||
-       needs.detect-changes.outputs.workflows == 'true' ||
-       github.event_name == 'push')
+    if: github.actor != 'dependabot[bot]'
 
     steps:
       - name: Checkout code
@@ -469,26 +390,26 @@ jobs:
           cache: 'gradle'
 
       - name: Build shared-kernel and generate coverage
-        if: needs.detect-changes.outputs.shared-kernel == 'true' || needs.detect-changes.outputs.services == 'true'
         working-directory: ./shared-kernel
         run: |
           chmod +x gradlew
-          # Compile and test to ensure classes exist for SonarCloud
+          # Always compile and test to ensure classes exist for SonarCloud
+          # (GitHub Actions jobs are isolated - build artifacts from build-shared-kernel job aren't available here)
           ./gradlew clean compileJava test jacocoTestReport --no-daemon
 
       - name: Build api-gateway and generate coverage
-        if: needs.detect-changes.outputs.services == 'true'
         working-directory: ./api-gateway
         run: |
           chmod +x gradlew
-          # Compile and test to ensure classes exist for SonarCloud
+          # Always compile and test to ensure classes exist for SonarCloud
+          # (GitHub Actions jobs are isolated - build artifacts from build-services job aren't available here)
           ./gradlew clean compileJava test jacocoTestReport --no-daemon
 
       - name: Build services and generate coverage
-        if: needs.detect-changes.outputs.services == 'true'
         run: |
           chmod +x gradlew
-          # Build each service that exists (from root to resolve shared-kernel dependency)
+          # Always build all services to ensure .class files exist for SonarCloud analysis
+          # (GitHub Actions jobs are isolated - build artifacts from build-services job aren't available here)
           for service in event-management-service attendee-experience-service company-user-management-service partner-coordination-service speaker-coordination-service; do
             if [ -d "services/$service" ]; then
               echo "Building services/$service..."
@@ -510,7 +431,7 @@ jobs:
           cache-dependency-path: web-frontend/package-lock.json
 
       - name: Install frontend dependencies and generate coverage
-        if: needs.detect-changes.outputs.frontend == 'true' && hashFiles('web-frontend/package.json') != ''
+        if: hashFiles('web-frontend/package.json') != ''
         working-directory: ./web-frontend
         run: |
           npm ci
