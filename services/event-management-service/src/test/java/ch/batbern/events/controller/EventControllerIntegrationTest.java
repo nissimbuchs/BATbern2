@@ -205,6 +205,10 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
             createTestEvent("Event " + i, "2025-" + monthStr + "-01T09:00:00Z", "planning");
         }
 
+        // Flush changes to ensure all events are persisted before pagination tests
+        // This is critical for CI environments where database operations may be slower
+        eventRepository.flush();
+
         // Test first page
         mockMvc.perform(get("/api/v1/events")
                         .param("page", "1")

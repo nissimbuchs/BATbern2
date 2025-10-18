@@ -62,10 +62,18 @@ dependencies {
 
 test {
     useJUnitPlatform()
-    testLogging {
+   testLogging {
         events "passed", "skipped", "failed"
         exceptionFormat = 'full'
     }
+
+    // Increase timeout for CI environments with Testcontainers
+    // Individual test timeout: 5 minutes (handles slow Testcontainers startup in CI)
+    timeout = java.time.Duration.ofMinutes(5)
+
+    // System properties for test execution
+    systemProperty 'junit.jupiter.execution.timeout.default', '5m'
+    systemProperty 'junit.jupiter.execution.timeout.testable.method.default', '5m'
 }
 
 jacoco {
