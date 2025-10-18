@@ -82,13 +82,13 @@ fi
 echo -e "${CYAN}→ Configuring MinIO client...${NC}"
 mc alias set local http://localhost:9000 minioadmin minioadmin > /dev/null 2>&1 || true
 
-# Create company-logos bucket if it doesn't exist
-echo -e "${CYAN}→ Creating company-logos bucket...${NC}"
-if mc ls local/company-logos > /dev/null 2>&1; then
-    echo -e "${YELLOW}  ⚠ Bucket 'company-logos' already exists${NC}"
+# Create batbern-development-company-logos bucket if it doesn't exist
+echo -e "${CYAN}→ Creating batbern-development-company-logos bucket...${NC}"
+if mc ls local/batbern-development-company-logos > /dev/null 2>&1; then
+    echo -e "${YELLOW}  ⚠ Bucket 'batbern-development-company-logos' already exists${NC}"
 else
-    mc mb local/company-logos > /dev/null 2>&1
-    echo -e "${GREEN}  ✓ Created bucket 'company-logos'${NC}"
+    mc mb local/batbern-development-company-logos > /dev/null 2>&1
+    echo -e "${GREEN}  ✓ Created bucket 'batbern-development-company-logos'${NC}"
 fi
 
 # Set bucket policy to allow public read (for logo access)
@@ -101,12 +101,12 @@ cat > /tmp/minio-policy.json << 'EOF'
       "Effect": "Allow",
       "Principal": {"AWS": ["*"]},
       "Action": ["s3:GetObject"],
-      "Resource": ["arn:aws:s3:::company-logos/*"]
+      "Resource": ["arn:aws:s3:::batbern-development-company-logos/*"]
     }
   ]
 }
 EOF
-mc anonymous set-json /tmp/minio-policy.json local/company-logos > /dev/null 2>&1
+mc anonymous set-json /tmp/minio-policy.json local/batbern-development-company-logos > /dev/null 2>&1
 rm -f /tmp/minio-policy.json
 echo -e "${GREEN}  ✓ Bucket policy configured${NC}"
 

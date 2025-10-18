@@ -192,10 +192,11 @@ EVENT_BUS_NAME=${EVENT_BUS_NAME:-batbern-development}
 MINIO_ENDPOINT=http://localhost:9000
 MINIO_ACCESS_KEY=minioadmin
 MINIO_SECRET_KEY=minioadmin
-MINIO_BUCKET=company-logos
+MINIO_BUCKET=batbern-development-company-logos
 # Override S3 configuration for local development
 AWS_S3_ENDPOINT=http://localhost:9000
 AWS_S3_PATH_STYLE_ACCESS=true
+AWS_S3_BUCKET_NAME=batbern-development-company-logos
 EOF
 
     echo -e "${GREEN}  ✓ Created ${ENV_NATIVE_FILE}${NC}"

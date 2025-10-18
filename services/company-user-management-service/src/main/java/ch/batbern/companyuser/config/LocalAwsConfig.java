@@ -103,7 +103,7 @@ public class LocalAwsConfig {
 
         log.info("🪣 [LOCAL] S3Presigner configured successfully for MinIO");
         log.info("🪣 [LOCAL] Endpoint: http://localhost:9000");
-        log.info("🪣 [LOCAL] Bucket: company-logos");
+        log.info("🪣 [LOCAL] Bucket: batbern-development-company-logos");
 
         return presigner;
     }

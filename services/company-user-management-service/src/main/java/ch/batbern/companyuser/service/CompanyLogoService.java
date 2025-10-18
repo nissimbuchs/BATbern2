@@ -44,7 +44,7 @@ public class CompanyLogoService {
     public CompanyLogoService(
             S3Presigner s3Presigner,
             CompanyRepository companyRepository,
-            @Value("${aws.s3.bucket-name:batbern-test-company-logos}") String bucketName,
+            @Value("${aws.s3.bucket-name:batbern-development-company-logos}") String bucketName,
             @Value("${aws.cloudfront.domain:https://cdn.batbern.ch}") String cloudFrontDomain) {
         this.s3Presigner = s3Presigner;
         this.companyRepository = companyRepository;
