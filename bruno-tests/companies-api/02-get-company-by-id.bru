@@ -1,0 +1,51 @@
+meta {
+  name: Get Company by ID
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/companies/{{testCompanyId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: en-US
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.id: eq {{testCompanyId}}
+}
+
+tests {
+  test("should return 200 status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return the correct company", function() {
+    const body = res.getBody();
+    const expectedId = bru.getEnvVar("testCompanyId");
+    expect(body.id).to.equal(expectedId);
+  });
+
+  test("should have company name", function() {
+    const body = res.getBody();
+    const expectedName = bru.getEnvVar("testCompanyName");
+    expect(body.name).to.equal(expectedName);
+  });
+
+  test("should have all company fields", function() {
+    const body = res.getBody();
+    expect(body.displayName).to.exist;
+    expect(body.industry).to.exist;
+    expect(body.website).to.exist;
+  });
+}

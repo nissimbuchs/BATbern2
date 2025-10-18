@@ -1,0 +1,36 @@
+meta {
+  name: Delete Company
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{baseUrl}}/companies/{{testCompanyId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: en-US
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 204
+}
+
+tests {
+  test("should delete company successfully", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+
+  test("should have CORS headers", function() {
+    const corsHeader = res.getHeader('Access-Control-Allow-Origin');
+    expect(corsHeader).to.exist;
+  });
+}

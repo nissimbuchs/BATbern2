@@ -13,6 +13,9 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.client.HttpStatusCodeException;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.util.StreamUtils;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.concurrent.CompletableFuture;
@@ -94,6 +97,21 @@ public class DomainRouter {
 
         log.info("Routing {} request to service: {} for path: {}", method, targetService, requestUri);
 
+        // Read request body BEFORE async execution (input stream can only be read once)
+        String requestBody = null;
+        try {
+            if (request.getContentLength() > 0) {
+                requestBody = StreamUtils.copyToString(request.getInputStream(), StandardCharsets.UTF_8);
+                log.debug("Read request body: {} bytes", requestBody.length());
+            }
+        } catch (IOException e) {
+            log.error("Failed to read request body: {}", e.getMessage());
+            throw new RoutingException("Failed to read request body: " + e.getMessage(), e);
+        }
+
+        // Capture body in final variable for use in lambda
+        final String finalRequestBody = requestBody;
+
         return CompletableFuture.supplyAsync(() -> {
             try {
                 // Get target service URL
@@ -115,22 +133,12 @@ public class DomainRouter {
                     }
                 }
 
-                // Read request body if present
-                String requestBody = null;
-                if (request.getContentLength() > 0) {
-                    try {
-                        requestBody = request.getReader().lines()
-                            .reduce("", (accumulator, actual) -> accumulator + actual);
-                    } catch (Exception e) {
-                        log.warn("Failed to read request body: {}", e.getMessage());
-                    }
-                }
-
                 // Create HTTP entity with headers and body
-                HttpEntity<String> entity = new HttpEntity<>(requestBody, headers);
+                HttpEntity<String> entity = new HttpEntity<>(finalRequestBody, headers);
 
                 // Forward request to target service
-                log.debug("Forwarding {} request to: {}", method, targetUrl);
+                log.debug("Forwarding {} request to: {} (body: {} bytes)",
+                    method, targetUrl, finalRequestBody != null ? finalRequestBody.length() : 0);
                 ResponseEntity<String> response = restTemplate.exchange(
                     targetUrl,
                     HttpMethod.valueOf(method),

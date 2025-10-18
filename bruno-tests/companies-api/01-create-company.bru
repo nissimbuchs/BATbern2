@@ -1,0 +1,79 @@
+meta {
+  name: Create Company
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/companies
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: en-US
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "Bruno Test Company {{$timestamp}}",
+    "displayName": "Bruno Test Co",
+    "industry": "Technology",
+    "website": "https://bruno-test.example.com",
+    "description": "Test company created by Bruno API tests - can be safely deleted"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.id: isDefined
+  res.body.name: isDefined
+}
+
+script:post-response {
+  // Store the created company ID for use in subsequent tests
+  if (res.getStatus() === 201) {
+    const company = res.getBody();
+    bru.setEnvVar("testCompanyId", company.id);
+    bru.setEnvVar("testCompanyName", company.name);
+    console.log("Created company with ID:", company.id);
+  }
+}
+
+tests {
+  test("should create company successfully", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("should return created company with ID", function() {
+    const body = res.getBody();
+    expect(body).to.be.an('object');
+    expect(body.id).to.exist;
+    expect(body.id).to.be.a('string');
+  });
+
+  test("should return company with correct name", function() {
+    const body = res.getBody();
+    expect(body.name).to.include('Bruno Test Company');
+  });
+
+  test("should return company with all fields", function() {
+    const body = res.getBody();
+    expect(body.displayName).to.equal('Bruno Test Co');
+    expect(body.industry).to.equal('Technology');
+    expect(body.website).to.equal('https://bruno-test.example.com');
+    expect(body.description).to.exist;
+  });
+
+  test("should have CORS headers", function() {
+    const corsHeader = res.getHeader('Access-Control-Allow-Origin');
+    expect(corsHeader).to.exist;
+  });
+}

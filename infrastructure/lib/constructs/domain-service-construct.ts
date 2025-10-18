@@ -6,9 +6,9 @@ import * as logs from 'aws-cdk-lib/aws-logs';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
-import * as path from 'path';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
+import { createContainerImage } from '../utils/container-image-helper';
 
 export interface DomainServiceConfig {
   serviceName: string;
@@ -100,9 +100,13 @@ export function createDomainService(
 
     // Add container
     const container = taskDefinition.addContainer('Container', {
-      image: ecs.ContainerImage.fromAsset(path.join(__dirname, '../../..'), {
-        file: `services/${serviceName}-service/Dockerfile`,
-      }),
+      image: createContainerImage(
+        scope,
+        'ServiceRepository',
+        `${serviceName}-service`,
+        envName,
+        `services/${serviceName}-service/Dockerfile`
+      ),
       logging: ecs.LogDrivers.awsLogs({
         logGroup,
         streamPrefix: serviceName,
@@ -146,7 +150,7 @@ export function createDomainService(
       taskDefinition,
       publicLoadBalancer: false, // Internal ALB only
       desiredCount: isProd ? 2 : 1,
-      healthCheckGracePeriod: cdk.Duration.seconds(60),
+      healthCheckGracePeriod: cdk.Duration.seconds(180), // Services take ~105s to start
       assignPublicIp: false,
       taskSubnets: {
         subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
