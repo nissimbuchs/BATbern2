@@ -184,6 +184,18 @@ ATTENDEE_EXPERIENCE_SERVICE_URL="http://localhost:8085"
 # EventBridge Configuration
 # ==============================================
 EVENT_BUS_NAME=${EVENT_BUS_NAME:-batbern-development}
+
+# ==============================================
+# MinIO Configuration (Local S3-compatible storage)
+# ==============================================
+# MinIO provides S3-compatible API for local development
+MINIO_ENDPOINT=http://localhost:9000
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin
+MINIO_BUCKET=company-logos
+# Override S3 configuration for local development
+AWS_S3_ENDPOINT=http://localhost:9000
+AWS_S3_PATH_STYLE_ACCESS=true
 EOF
 
     echo -e "${GREEN}  ✓ Created ${ENV_NATIVE_FILE}${NC}"
@@ -217,6 +229,24 @@ check_db_tunnel() {
             echo "    Check logs: cat ${LOG_DIR}/batbern-dev-db-tunnel.log"
             exit 1
         fi
+        echo ""
+    fi
+}
+
+# Check if MinIO is running
+check_minio() {
+    echo -e "${CYAN}→ Checking MinIO (local S3)...${NC}"
+
+    if pgrep -f "minio server" > /dev/null; then
+        echo -e "${GREEN}  ✓ MinIO is running${NC}"
+        echo ""
+        return 0
+    else
+        echo -e "${YELLOW}  ⚠ MinIO not running${NC}"
+        echo -e "${CYAN}  → Starting MinIO...${NC}"
+
+        "${PROJECT_ROOT}/scripts/dev/start-minio.sh"
+
         echo ""
     fi
 }
@@ -358,6 +388,7 @@ main() {
     check_prerequisites
     create_env_native
     check_db_tunnel
+    check_minio
 
     echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${BLUE}║              Starting BATbern Services                     ║${NC}"
