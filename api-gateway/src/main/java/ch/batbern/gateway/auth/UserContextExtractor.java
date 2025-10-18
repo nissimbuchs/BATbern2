@@ -38,9 +38,16 @@ public class UserContextExtractor {
             builder.emailVerified(false);
         }
 
-        // Extract custom claims
-        if (jwt.getClaim("custom:role") != null && !jwt.getClaim("custom:role").isNull()) {
-            builder.role(jwt.getClaim("custom:role").asString());
+        // Extract role from cognito:groups (first group is primary role)
+        if (jwt.getClaim("cognito:groups") != null && !jwt.getClaim("cognito:groups").isNull()) {
+            try {
+                String[] groups = jwt.getClaim("cognito:groups").asArray(String.class);
+                if (groups != null && groups.length > 0) {
+                    builder.role(groups[0]);
+                }
+            } catch (Exception e) {
+                log.warn("Failed to extract cognito:groups: {}", e.getMessage());
+            }
         }
 
         if (jwt.getClaim("custom:companyId") != null && !jwt.getClaim("custom:companyId").isNull()) {

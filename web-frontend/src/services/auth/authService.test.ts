@@ -56,7 +56,7 @@ describe('AuthService', () => {
               sub: 'user-123',
               email: 'organizer@batbern.ch',
               email_verified: true,
-              'custom:role': 'organizer',
+              'cognito:groups': ['organizer'],
               'custom:companyId': 'company-123',
               'custom:preferences': JSON.stringify({
                 language: 'en',
@@ -133,7 +133,7 @@ describe('AuthService', () => {
               sub: 'speaker-user-123',
               email: 'speaker@company.com',
               email_verified: true,
-              'custom:role': 'speaker',
+              'cognito:groups': ['speaker'],
               'custom:companyId': 'speaker-company-123',
               'custom:preferences': JSON.stringify({
                 language: 'en',
@@ -199,7 +199,7 @@ describe('AuthService', () => {
               sub: 'user-123',
               email: 'organizer@batbern.ch',
               email_verified: true,
-              'custom:role': 'organizer',
+              'cognito:groups': ['organizer'],
               'custom:companyId': 'company-123',
               'custom:preferences': JSON.stringify({
                 language: 'en',
@@ -255,7 +255,7 @@ describe('AuthService', () => {
               sub: 'user-456',
               email: 'speaker@company.com',
               email_verified: true,
-              'custom:role': 'speaker',
+              'cognito:groups': ['speaker'],
               'custom:companyId': 'company-456',
               'custom:preferences': JSON.stringify({
                 language: 'en',
@@ -333,7 +333,6 @@ describe('AuthService', () => {
         options: {
           userAttributes: {
             email: signUpData.email,
-            'custom:role': signUpData.role,
             'custom:companyId': '',
             'custom:preferences': JSON.stringify({
               language: 'en',
@@ -382,7 +381,7 @@ describe('AuthService', () => {
               sub: 'user-123',
               email: 'test@batbern.ch',
               email_verified: true,
-              'custom:role': 'organizer',
+              'cognito:groups': ['organizer'],
               'custom:companyId': 'company-123',
               'custom:preferences': JSON.stringify({
                 language: 'en',
