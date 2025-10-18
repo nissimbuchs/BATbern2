@@ -52,10 +52,16 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    // Counter for generating unique event numbers in tests
+    private int eventNumberCounter = 1000;
+
     @BeforeEach
     void setUp() {
         // Clean database before each test
         eventRepository.deleteAll();
+
+        // Reset counter for each test
+        eventNumberCounter = 1000;
 
         // Create test data
         createTestEvent("BATbern 2025", "2025-05-15T09:00:00Z", "published");
@@ -66,7 +72,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     private Event createTestEvent(String title, String dateStr, String status) {
         Event event = Event.builder()
                 .title(title)
-                .eventNumber(100 + (int)(Math.random() * 1000))  // Generate random event number
+                .eventNumber(eventNumberCounter++)  // Generate sequential unique event number
                 .date(Instant.parse(dateStr))
                 .registrationDeadline(Instant.parse(dateStr).minusSeconds(86400 * 7)) // 7 days before event
                 .venueName("Test Venue")
