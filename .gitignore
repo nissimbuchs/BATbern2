@@ -114,3 +114,4 @@ web-frontend/test-results.xml
 test-results/
 playwright-report/
 playwright/.cache/
+.env.native
