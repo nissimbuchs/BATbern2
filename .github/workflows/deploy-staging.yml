@@ -214,6 +214,14 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
           AWS_SESSION_TOKEN: ${{ env.AWS_SESSION_TOKEN }}
 
+      - name: Get auth token for tests
+        id: get-auth-token
+        run: |
+          # Use STAGING_AUTH_TOKEN secret (set in repo settings)
+          # To refresh token: ./scripts/auth/get-token.sh staging <email> <password>
+          # Then update the secret in GitHub repo settings
+          echo "AUTH_TOKEN=${{ secrets.STAGING_AUTH_TOKEN }}" >> $GITHUB_OUTPUT
+
       - name: Run frontend E2E tests (Playwright)
         working-directory: ./web-frontend
         run: |
@@ -232,6 +240,7 @@ jobs:
           E2E_BASE_URL: https://staging.batbern.ch
           E2E_API_URL: https://api.staging.batbern.ch
           E2E_AWS_REGION: ${{ env.AWS_REGION }}
+          AUTH_TOKEN: ${{ steps.get-auth-token.outputs.AUTH_TOKEN }}
 
       - name: Upload Playwright test results
         if: always()

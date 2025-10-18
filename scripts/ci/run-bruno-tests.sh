@@ -21,6 +21,11 @@ echo "Environment: $ENVIRONMENT"
 
 # Try to load token from local config if not provided
 if [ -z "$AUTH_TOKEN" ]; then
+    # Auto-refresh token if expired
+    if [ -f "./scripts/auth/refresh-token.sh" ]; then
+        ./scripts/auth/refresh-token.sh "$ENVIRONMENT" || true
+    fi
+
     local_config=~/.batbern/${ENVIRONMENT}.json
     if [ -f "$local_config" ]; then
         echo -e "${BLUE}Loading auth token from local config: $local_config${NC}"
@@ -87,8 +92,8 @@ for collection in "${collections[@]}"; do
     echo -e "\n${BLUE}Running tests:${NC} $collection"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-    # Set environment variables for Bruno
-    export BATBERN_AUTH_TOKEN="$AUTH_TOKEN"
+    # Set environment variable for Bruno
+    export AUTH_TOKEN="$AUTH_TOKEN"
 
     # Use shared environments directory (relative to collection directory)
     env_file="../environments/${ENVIRONMENT}.bru"

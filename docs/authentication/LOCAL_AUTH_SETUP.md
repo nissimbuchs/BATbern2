@@ -65,16 +65,18 @@ Tokens are stored in JSON format in `~/.batbern/<environment>.json`:
 
 ## How It Works
 
-1. **Bruno environments** use environment variables:
-   ```
-   authToken: {{process.env.BATBERN_AUTH_TOKEN}}
-   ```
+1. **Test environments** use a single environment variable `AUTH_TOKEN`:
+   - Bruno: `authToken: {{process.env.AUTH_TOKEN}}`
+   - Playwright: `process.env.AUTH_TOKEN`
 
-2. **Test script** (`scripts/ci/run-bruno-tests.sh`) automatically:
-   - Checks `~/.batbern/staging.json` for a token
-   - Loads the `idToken` value
-   - Sets `BATBERN_AUTH_TOKEN` environment variable
-   - Bruno tests use this token
+2. **Test scripts** automatically load tokens:
+   - `scripts/ci/run-bruno-tests.sh` - Bruno API tests
+   - `scripts/ci/run-playwright-tests.sh` - Playwright E2E tests
+
+   Both scripts:
+   - Check `~/.batbern/<environment>.json` for a token
+   - Load the `idToken` value
+   - Export `AUTH_TOKEN` environment variable
 
 3. **Manual override** is still possible:
    ```bash
@@ -83,7 +85,7 @@ Tokens are stored in JSON format in `~/.batbern/<environment>.json`:
 
 ## Usage Examples
 
-### Running Bruno Tests
+### Running Bruno API Tests
 
 The test script will automatically use the local token:
 
@@ -91,7 +93,15 @@ The test script will automatically use the local token:
 ./scripts/ci/run-bruno-tests.sh staging
 ```
 
-Output will show:
+### Running Playwright E2E Tests
+
+The test script will automatically use the same local token:
+
+```bash
+./scripts/ci/run-playwright-tests.sh staging
+```
+
+Both scripts output:
 ```
 Loading auth token from local config: ~/.batbern/staging.json
 ✓ Token loaded successfully
@@ -187,7 +197,8 @@ chmod 700 ~/.batbern
 ## Related Files
 
 - `scripts/auth/get-token.sh` - Token retrieval script
-- `scripts/ci/run-bruno-tests.sh` - Test runner with auto-loading
+- `scripts/ci/run-bruno-tests.sh` - Bruno API test runner with auto-loading
+- `scripts/ci/run-playwright-tests.sh` - Playwright E2E test runner with auto-loading
 - `bruno-tests/environments/staging.bru` - Bruno environment config
 - `~/.batbern/staging.json` - Local token storage
 

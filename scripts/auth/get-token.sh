@@ -36,6 +36,11 @@ if [ "$ENVIRONMENT" = "staging" ]; then
     REGION="eu-central-1"
     USER_POOL_ID="eu-central-1_FtgfxgQRF"
     CLIENT_ID="1b53lci6qpqsmdn0u3e8s4knvv"
+elif [ "$ENVIRONMENT" = "development" ]; then
+    AWS_PROFILE="batbern-dev"
+    REGION="eu-central-1"
+    USER_POOL_ID="eu-central-1_camJHQhZ8"
+    CLIENT_ID="5h9421vo002bi7udjdu5orp7u3"
 elif [ "$ENVIRONMENT" = "production" ]; then
     AWS_PROFILE="batbern-prod"
     REGION="eu-central-1"
@@ -44,7 +49,7 @@ elif [ "$ENVIRONMENT" = "production" ]; then
     exit 1
 else
     echo -e "${RED}ERROR: Unknown environment: $ENVIRONMENT${NC}"
-    echo "Supported environments: staging, production"
+    echo "Supported environments: development, staging, production"
     exit 1
 fi
 

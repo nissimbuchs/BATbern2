@@ -147,9 +147,9 @@ export class CognitoStack extends cdk.Stack {
         userSrp: true, // Enable SRP authentication for secure password flow
       },
       generateSecret: false,
-      refreshTokenValidity: cdk.Duration.days(30),
-      accessTokenValidity: cdk.Duration.minutes(60),
-      idTokenValidity: cdk.Duration.minutes(60),
+      refreshTokenValidity: cdk.Duration.days(3650), // 10 years for long-lived test tokens
+      accessTokenValidity: cdk.Duration.hours(24), // Max allowed
+      idTokenValidity: cdk.Duration.hours(24), // Max allowed
       oAuth: {
         flows: {
           authorizationCodeGrant: true,
@@ -197,7 +197,7 @@ export class CognitoStack extends cdk.Stack {
     new BootstrapOrganizer(this, 'BootstrapOrganizer', {
       userPool: this.userPool,
       email: 'nissim@buchs.be',
-      password: 'Ur@batbern01',
+      password: 'TempPass123!',
     });
 
     // Apply tags

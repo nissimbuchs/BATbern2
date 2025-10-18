@@ -11,7 +11,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Companies API Integration', () => {
   const apiBaseUrl = process.env.E2E_API_URL || 'https://api.staging.batbern.ch';
-  const authToken = process.env.E2E_AUTH_TOKEN;
+  const authToken = process.env.AUTH_TOKEN;
 
   test.describe('Unauthenticated Requests', () => {
     test('should return 401 for unauthenticated list companies request', async ({ page }) => {
