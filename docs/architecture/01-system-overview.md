@@ -242,7 +242,7 @@ graph TB
 
         subgraph "Infrastructure"
             L[PostgreSQL Database<br/>Event data persistence]
-            M[Redis Cache<br/>Event state caching]
+            M[Caffeine Cache<br/>In-memory event state caching]
             N[S3 Storage<br/>Event documents & media]
             O[EventBridge<br/>Domain event publishing]
         end
