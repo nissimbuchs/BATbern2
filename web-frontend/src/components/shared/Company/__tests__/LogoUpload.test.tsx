@@ -22,7 +22,7 @@ const createFile = (name: string, size: number, type: string): File => {
 // Helper to setup API mocks
 const setupApiMocks = () => {
   vi.mocked(apiClient.post).mockImplementation((url: string) => {
-    if (url.includes('/presigned-url')) {
+    if (url.includes('/logo/presigned-url')) {
       return Promise.resolve({
         data: {
           uploadUrl: 'https://s3.amazonaws.com/test-bucket/upload',
@@ -30,14 +30,14 @@ const setupApiMocks = () => {
         },
       }) as any;
     }
-    if (url.includes('/confirm')) {
+    if (url.includes('/logo/confirm')) {
       return Promise.resolve({
         data: {
           logoUrl: 'https://cdn.example.com/logos/company-logo.png',
         },
       }) as any;
     }
-    return Promise.resolve({ data: {} }) as any;
+    return Promise.reject(new Error(`Unexpected API call: ${url}`)) as any;
   });
 };
 
