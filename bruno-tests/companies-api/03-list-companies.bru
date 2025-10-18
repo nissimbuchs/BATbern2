@@ -1,0 +1,67 @@
+meta {
+  name: List Companies
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/companies?page=1&limit=20
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: de-CH
+  Accept: application/json
+}
+
+params:query {
+  page: 1
+  limit: 20
+}
+
+assert {
+  res.status: eq 200
+  res.body.pagination: isDefined
+  res.body.data: isArray
+}
+
+tests {
+  test("should return 200 status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should have pagination metadata", function() {
+    const body = res.getBody();
+    expect(body.pagination).to.be.an('object');
+    expect(body.pagination.page).to.equal(1);
+    expect(body.pagination.limit).to.equal(20);
+    expect(body.pagination.total).to.be.a('number');
+  });
+
+  test("should return array of companies", function() {
+    const body = res.getBody();
+    expect(body.data).to.be.an('array');
+  });
+
+  test("should include our test company", function() {
+    const body = res.getBody();
+    const testCompanyId = bru.getEnvVar("testCompanyId");
+    const foundCompany = body.data.find(c => c.id === testCompanyId);
+    expect(foundCompany).to.exist;
+  });
+
+  test("should accept X-Correlation-ID header", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should have CORS headers", function() {
+    const corsHeader = res.getHeader('Access-Control-Allow-Origin');
+    expect(corsHeader).to.exist;
+  });
+}

@@ -1,0 +1,53 @@
+meta {
+  name: Search Companies
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/companies/search?query=Bruno&limit=10
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: en-US
+  Accept: application/json
+}
+
+params:query {
+  query: Bruno
+  limit: 10
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("should return 200 status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return search results", function() {
+    const body = res.getBody();
+    expect(body).to.be.an('array');
+  });
+
+  test("should find our test company", function() {
+    const body = res.getBody();
+    const testCompanyId = bru.getEnvVar("testCompanyId");
+    const foundCompany = body.find(c => c.id === testCompanyId);
+    expect(foundCompany).to.exist;
+    expect(foundCompany.name).to.include('Bruno');
+  });
+
+  test("should accept custom headers without CORS error", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

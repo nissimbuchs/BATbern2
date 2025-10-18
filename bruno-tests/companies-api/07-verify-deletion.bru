@@ -1,0 +1,36 @@
+meta {
+  name: Verify Company Deletion
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/companies/{{testCompanyId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: en-US
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 404
+}
+
+tests {
+  test("should return 404 for deleted company", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+
+  test("should have error message", function() {
+    const body = res.getBody();
+    expect(body.error).to.exist;
+  });
+}
