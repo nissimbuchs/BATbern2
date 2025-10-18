@@ -406,4 +406,135 @@ class CompanyServiceTest {
         // Then
         verify(eventPublisher).publishCompanyUpdatedEvent(any(Company.class));
     }
+
+    @Test
+    @DisplayName("Test 4.19: should_verifyCompany_when_validIdProvided")
+    void should_verifyCompany_when_validIdProvided() {
+        // Given
+        when(companyRepository.findById(companyId)).thenReturn(Optional.of(existingCompany));
+        when(companyRepository.save(any(Company.class))).thenReturn(existingCompany);
+
+        // When
+        CompanyResponse response = companyService.verifyCompany(companyId);
+
+        // Then
+        assertThat(response).isNotNull();
+        verify(companyRepository).save(argThat(company -> company.isVerified()));
+        verify(eventPublisher).publishCompanyVerifiedEvent(any(Company.class));
+    }
+
+    @Test
+    @DisplayName("Test 4.20: should_throwCompanyNotFoundException_when_verifyNonExistentCompany")
+    void should_throwCompanyNotFoundException_when_verifyNonExistentCompany() {
+        // Given
+        when(companyRepository.findById(companyId)).thenReturn(Optional.empty());
+
+        // When / Then
+        assertThatThrownBy(() -> companyService.verifyCompany(companyId))
+                .isInstanceOf(CompanyNotFoundException.class)
+                .hasMessageContaining(companyId.toString());
+
+        verify(companyRepository, never()).save(any(Company.class));
+        verify(eventPublisher, never()).publishCompanyVerifiedEvent(any(Company.class));
+    }
+
+    @Test
+    @DisplayName("Test 4.21: should_includeLogoInResponse_when_companyHasLogo")
+    void should_includeLogoInResponse_when_companyHasLogo() {
+        // Given
+        Company companyWithLogo = Company.builder()
+                .id(companyId)
+                .name("Test Company AG")
+                .displayName("Test Company")
+                .logoUrl("https://cdn.example.com/logo.png")
+                .logoS3Key("logos/file-123.png")
+                .logoFileId("file-123")
+                .isVerified(false)
+                .createdBy("test-user")
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+
+        when(companyRepository.findById(companyId)).thenReturn(Optional.of(companyWithLogo));
+
+        // When
+        CompanyResponse response = companyService.getCompanyById(companyId);
+
+        // Then
+        assertThat(response).isNotNull();
+        assertThat(response.getLogo()).isNotNull();
+        assertThat(response.getLogo().getUrl()).isEqualTo("https://cdn.example.com/logo.png");
+        assertThat(response.getLogo().getS3Key()).isEqualTo("logos/file-123.png");
+        assertThat(response.getLogo().getFileId()).isEqualTo("file-123");
+    }
+
+    @Test
+    @DisplayName("Test 4.22: should_returnNullLogo_when_companyHasNoLogo")
+    void should_returnNullLogo_when_companyHasNoLogo() {
+        // Given
+        Company companyWithoutLogo = Company.builder()
+                .id(companyId)
+                .name("Test Company AG")
+                .displayName("Test Company")
+                .logoUrl(null)
+                .logoS3Key(null)
+                .logoFileId(null)
+                .isVerified(false)
+                .createdBy("test-user")
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+
+        when(companyRepository.findById(companyId)).thenReturn(Optional.of(companyWithoutLogo));
+
+        // When
+        CompanyResponse response = companyService.getCompanyById(companyId);
+
+        // Then
+        assertThat(response).isNotNull();
+        assertThat(response.getLogo()).isNull();
+    }
+
+    @Test
+    @DisplayName("Test 4.23: should_throwCompanyValidationException_when_updateWithDuplicateName")
+    void should_throwCompanyValidationException_when_updateWithDuplicateName() {
+        // Given
+        UpdateCompanyRequest updateWithNewName = UpdateCompanyRequest.builder()
+                .name("Another Company Name")
+                .build();
+
+        when(companyRepository.findById(companyId)).thenReturn(Optional.of(existingCompany));
+        when(companyRepository.existsByName("Another Company Name")).thenReturn(true);
+
+        // When / Then
+        assertThatThrownBy(() -> companyService.updateCompany(companyId, updateWithNewName))
+                .isInstanceOf(CompanyValidationException.class)
+                .hasMessageContaining("already exists");
+
+        verify(companyRepository, never()).save(any(Company.class));
+        verify(searchService, never()).invalidateCache();
+    }
+
+    @Test
+    @DisplayName("Test 4.24: should_allowSameName_when_updateWithoutChangingName")
+    void should_allowSameName_when_updateWithoutChangingName() {
+        // Given
+        UpdateCompanyRequest updateWithSameName = UpdateCompanyRequest.builder()
+                .name("Test Company AG") // Same as existing
+                .displayName("Updated Display")
+                .build();
+
+        when(companyRepository.findById(companyId)).thenReturn(Optional.of(existingCompany));
+        when(companyRepository.save(any(Company.class))).thenReturn(existingCompany);
+
+        // When
+        CompanyResponse response = companyService.updateCompany(companyId, updateWithSameName);
+
+        // Then
+        assertThat(response).isNotNull();
+        verify(companyRepository).save(any(Company.class));
+        verify(searchService).invalidateCache();
+        // Should NOT check existsByName when name hasn't changed
+        verify(companyRepository, never()).existsByName(anyString());
+    }
 }
