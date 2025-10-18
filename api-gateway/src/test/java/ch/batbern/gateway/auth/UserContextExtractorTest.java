@@ -35,7 +35,7 @@ class UserContextExtractorTest {
             .withSubject("user-123")
             .withClaim("email", "user@example.com")
             .withClaim("email_verified", true)
-            .withClaim("custom:role", "organizer")
+            .withArrayClaim("cognito:groups", new String[]{"organizer"})
             .withClaim("custom:companyId", "company-456")
             .withClaim("custom:preferences", "{\"language\":\"en\",\"theme\":\"light\"}")
             .withExpiresAt(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
@@ -131,11 +131,11 @@ class UserContextExtractorTest {
     @Test
     @DisplayName("should_extractAllRoles_when_multipleRolesProvided")
     void should_extractAllRoles_when_multipleRolesProvided() {
-        // Given - Simulating a user with multiple roles (edge case)
+        // Given - Simulating a user with multiple groups (primary role is first)
         String token = JWT.create()
             .withSubject("user-123")
             .withClaim("email", "user@example.com")
-            .withClaim("custom:role", "organizer")
+            .withArrayClaim("cognito:groups", new String[]{"organizer", "speaker", "partner"})
             .withArrayClaim("custom:additionalRoles", new String[]{"speaker", "partner"})
             .withExpiresAt(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
             .sign(testKeyPair.getAlgorithm());
