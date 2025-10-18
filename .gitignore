@@ -97,6 +97,10 @@ shared-kernel/out/
 .aws/
 aws-exports.js
 
+# Local authentication tokens (stored in ~/.batbern/)
+# Note: Tokens are stored outside the project directory
+# but documenting here for awareness
+
 # Web frontend build artifacts
 web-frontend/node_modules/
 web-frontend/dist/
