@@ -16,7 +16,7 @@ import type {
   CompanyFilters,
   PaginationParams,
   PresignedUrlResponse,
-  LogoUploadConfirmation
+  LogoUploadConfirmation,
 } from '@/types/company.types';
 
 // API base path for company endpoints
@@ -45,7 +45,8 @@ class CompanyApiClient {
    */
   async getCompanies(
     pagination: PaginationParams = { page: 1, limit: 20 },
-    filters?: CompanyFilters
+    filters?: CompanyFilters,
+    options?: { expand?: string[] }
   ): Promise<CompanyListResponse> {
     try {
       const params = new URLSearchParams();
@@ -53,7 +54,7 @@ class CompanyApiClient {
       params.append('limit', pagination.limit.toString());
 
       // Build MongoDB-style JSON filter object
-      const filterObj: Record<string, any> = {};
+      const filterObj: Record<string, boolean | string> = {};
       if (filters?.isVerified !== undefined) {
         filterObj.isVerified = filters.isVerified;
       }
@@ -64,6 +65,12 @@ class CompanyApiClient {
       // Only add filter parameter if we have filters
       if (Object.keys(filterObj).length > 0) {
         params.append('filter', JSON.stringify(filterObj));
+      }
+
+      // Add include parameter for resource expansion (e.g., ?include=logo,statistics)
+      // Backend uses 'include' not 'expand' for resource expansion
+      if (options?.expand && options.expand.length > 0) {
+        params.append('include', options.expand.join(','));
       }
 
       const response = await apiClient.get<CompanyListResponse>(
@@ -79,10 +86,7 @@ class CompanyApiClient {
   /**
    * Get single company by ID with optional resource expansion
    */
-  async getCompany(
-    id: string,
-    options?: { expand?: string[] }
-  ): Promise<Company> {
+  async getCompany(id: string, options?: { expand?: string[] }): Promise<Company> {
     try {
       const params = new URLSearchParams();
       if (options?.expand && options.expand.length > 0) {
@@ -103,10 +107,7 @@ class CompanyApiClient {
   /**
    * Search companies by query string (returns simple array, not paginated)
    */
-  async searchCompanies(
-    query: string,
-    limit: number = 20
-  ): Promise<Company[]> {
+  async searchCompanies(query: string, limit: number = 20): Promise<Company[]> {
     try {
       const params = new URLSearchParams();
       params.append('query', query);
@@ -194,7 +195,7 @@ class CompanyApiClient {
         {
           fileName,
           contentType,
-          fileSize
+          fileSize,
         }
       );
 
@@ -207,10 +208,7 @@ class CompanyApiClient {
   /**
    * Confirm logo upload completion
    */
-  async confirmLogoUpload(
-    companyId: string,
-    fileId: string
-  ): Promise<LogoUploadConfirmation> {
+  async confirmLogoUpload(companyId: string, fileId: string): Promise<LogoUploadConfirmation> {
     try {
       const response = await apiClient.post<LogoUploadConfirmation>(
         `${COMPANY_API_PATH}/${companyId}/logo/confirm`,

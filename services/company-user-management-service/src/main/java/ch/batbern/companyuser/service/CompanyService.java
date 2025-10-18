@@ -1,6 +1,7 @@
 package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.Company;
+import ch.batbern.companyuser.dto.CompanyLogo;
 import ch.batbern.companyuser.dto.CompanyResponse;
 import ch.batbern.companyuser.dto.CreateCompanyRequest;
 import ch.batbern.companyuser.dto.UpdateCompanyRequest;
@@ -213,6 +214,16 @@ public class CompanyService {
      * Maps Company entity to CompanyResponse DTO
      */
     private CompanyResponse mapToResponse(Company company) {
+        // Build CompanyLogo if logo URL is present
+        CompanyLogo logo = null;
+        if (company.getLogoUrl() != null) {
+            logo = CompanyLogo.builder()
+                    .url(company.getLogoUrl())
+                    .s3Key(company.getLogoS3Key())
+                    .fileId(company.getLogoFileId())
+                    .build();
+        }
+
         return CompanyResponse.builder()
                 .id(company.getId())
                 .name(company.getName())
@@ -225,6 +236,7 @@ public class CompanyService {
                 .createdAt(company.getCreatedAt())
                 .updatedAt(company.getUpdatedAt())
                 .createdBy(company.getCreatedBy())
+                .logo(logo)
                 .build();
     }
 }

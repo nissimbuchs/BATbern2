@@ -26,6 +26,9 @@ MINIO_LOG_FILE="/tmp/batbern-dev-minio.log"
 export MINIO_ROOT_USER="minioadmin"
 export MINIO_ROOT_PASSWORD="minioadmin"
 
+# Enable CORS for browser access
+export MINIO_API_CORS_ALLOW_ORIGIN="http://localhost:3000,http://localhost:3001"
+
 # Check if MinIO is already running
 if [ -f "$MINIO_PID_FILE" ]; then
     PID=$(cat "$MINIO_PID_FILE")
@@ -108,7 +111,8 @@ cat > /tmp/minio-policy.json << 'EOF'
 EOF
 mc anonymous set-json /tmp/minio-policy.json local/batbern-development-company-logos > /dev/null 2>&1
 rm -f /tmp/minio-policy.json
-echo -e "${GREEN}  ✓ Bucket policy configured${NC}"
+echo -e "${GREEN}  ✓ Bucket policy configured (public read)${NC}"
+echo -e "${GREEN}  ✓ CORS enabled via environment variable (MINIO_API_CORS_ALLOW_ORIGIN)${NC}"
 
 echo ""
 echo -e "${GREEN}╔════════════════════════════════════════════════════════════╗${NC}"

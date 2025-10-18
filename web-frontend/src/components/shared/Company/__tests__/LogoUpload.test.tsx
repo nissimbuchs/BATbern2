@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
@@ -13,11 +14,7 @@ vi.mock('@/services/api/apiClient', () => ({
 import apiClient from '@/services/api/apiClient';
 
 // Mock file creation helper
-const createFile = (
-  name: string,
-  size: number,
-  type: string
-): File => {
+const createFile = (name: string, size: number, type: string): File => {
   const file = new File(['a'.repeat(size)], name, { type });
   return file;
 };
@@ -67,7 +64,9 @@ describe('LogoUpload Component', () => {
       render(<LogoUpload {...defaultProps} />);
 
       // Find the hidden input element inside the dropzone
-      const input = screen.getByTestId('logo-dropzone').querySelector('input[type="file"]') as HTMLInputElement;
+      const input = screen
+        .getByTestId('logo-dropzone')
+        .querySelector('input[type="file"]') as HTMLInputElement;
       const file = createFile('company-logo.png', 1024, 'image/png');
 
       // Upload file via input
@@ -98,7 +97,9 @@ describe('LogoUpload Component', () => {
     it('should_validateFileType_when_invalidFileUploaded', async () => {
       render(<LogoUpload {...defaultProps} />);
 
-      const input = screen.getByTestId('logo-dropzone').querySelector('input[type="file"]') as HTMLInputElement;
+      const input = screen
+        .getByTestId('logo-dropzone')
+        .querySelector('input[type="file"]') as HTMLInputElement;
       const invalidFile = createFile('document.pdf', 1024, 'application/pdf');
 
       await userEvent.upload(input, invalidFile);
@@ -107,9 +108,12 @@ describe('LogoUpload Component', () => {
       // This is expected behavior and provides better UX by preventing invalid files entirely
       // The file will be rejected and not reach our validation logic
       // Verify no upload was attempted (no progress indicator)
-      await waitFor(() => {
-        expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
-      }, { timeout: 500 });
+      await waitFor(
+        () => {
+          expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+        },
+        { timeout: 500 }
+      );
 
       // Verify no success callback
       expect(mockOnUploadSuccess).not.toHaveBeenCalled();
@@ -118,7 +122,9 @@ describe('LogoUpload Component', () => {
     it('should_acceptPNG_when_validPNGFileUploaded', async () => {
       render(<LogoUpload {...defaultProps} />);
 
-      const input = screen.getByTestId('logo-dropzone').querySelector('input[type="file"]') as HTMLInputElement;
+      const input = screen
+        .getByTestId('logo-dropzone')
+        .querySelector('input[type="file"]') as HTMLInputElement;
       const pngFile = createFile('logo.png', 1024, 'image/png');
 
       await userEvent.upload(input, pngFile);
@@ -132,7 +138,9 @@ describe('LogoUpload Component', () => {
     it('should_acceptJPEG_when_validJPEGFileUploaded', async () => {
       render(<LogoUpload {...defaultProps} />);
 
-      const input = screen.getByTestId('logo-dropzone').querySelector('input[type="file"]') as HTMLInputElement;
+      const input = screen
+        .getByTestId('logo-dropzone')
+        .querySelector('input[type="file"]') as HTMLInputElement;
       const jpegFile = createFile('logo.jpg', 1024, 'image/jpeg');
 
       await userEvent.upload(input, jpegFile);
@@ -146,7 +154,9 @@ describe('LogoUpload Component', () => {
     it('should_acceptSVG_when_validSVGFileUploaded', async () => {
       render(<LogoUpload {...defaultProps} />);
 
-      const input = screen.getByTestId('logo-dropzone').querySelector('input[type="file"]') as HTMLInputElement;
+      const input = screen
+        .getByTestId('logo-dropzone')
+        .querySelector('input[type="file"]') as HTMLInputElement;
       const svgFile = createFile('logo.svg', 1024, 'image/svg+xml');
 
       await userEvent.upload(input, svgFile);
@@ -162,7 +172,9 @@ describe('LogoUpload Component', () => {
     it('should_validateFileSize_when_fileTooLarge', async () => {
       render(<LogoUpload {...defaultProps} />);
 
-      const input = screen.getByTestId('logo-dropzone').querySelector('input[type="file"]') as HTMLInputElement;
+      const input = screen
+        .getByTestId('logo-dropzone')
+        .querySelector('input[type="file"]') as HTMLInputElement;
       const largeFile = createFile(
         'large-logo.png',
         6 * 1024 * 1024, // 6MB (exceeds 5MB limit)
@@ -173,9 +185,7 @@ describe('LogoUpload Component', () => {
 
       // Verify error message
       await waitFor(() => {
-        expect(
-          screen.getByText(/file size must be less than 5mb/i)
-        ).toBeInTheDocument();
+        expect(screen.getByText(/file size must be less than 5mb/i)).toBeInTheDocument();
       });
 
       // Verify error callback
@@ -190,7 +200,9 @@ describe('LogoUpload Component', () => {
     it('should_acceptFile_when_fileSizeValid', async () => {
       render(<LogoUpload {...defaultProps} />);
 
-      const input = screen.getByTestId('logo-dropzone').querySelector('input[type="file"]') as HTMLInputElement;
+      const input = screen
+        .getByTestId('logo-dropzone')
+        .querySelector('input[type="file"]') as HTMLInputElement;
       const validFile = createFile(
         'valid-logo.png',
         4 * 1024 * 1024, // 4MB (within 5MB limit)
@@ -200,9 +212,7 @@ describe('LogoUpload Component', () => {
       await userEvent.upload(input, validFile);
 
       // Verify no error
-      expect(
-        screen.queryByText(/file size must be less than 5mb/i)
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText(/file size must be less than 5mb/i)).not.toBeInTheDocument();
     });
   });
 
@@ -213,7 +223,9 @@ describe('LogoUpload Component', () => {
 
       render(<LogoUpload {...defaultProps} />);
 
-      const input = screen.getByTestId('logo-dropzone').querySelector('input[type="file"]') as HTMLInputElement;
+      const input = screen
+        .getByTestId('logo-dropzone')
+        .querySelector('input[type="file"]') as HTMLInputElement;
       const file = createFile('logo.png', 1024 * 1024, 'image/png');
 
       await userEvent.upload(input, file);
@@ -238,8 +250,18 @@ describe('LogoUpload Component', () => {
         open: vi.fn(),
         send: vi.fn(() => {
           // Trigger progress events after send
-          setTimeout(() => progressHandler && progressHandler({ loaded: 50, total: 100, lengthComputable: true }), 50);
-          setTimeout(() => progressHandler && progressHandler({ loaded: 100, total: 100, lengthComputable: true }), 100);
+          setTimeout(
+            () =>
+              progressHandler &&
+              progressHandler({ loaded: 50, total: 100, lengthComputable: true }),
+            50
+          );
+          setTimeout(
+            () =>
+              progressHandler &&
+              progressHandler({ loaded: 100, total: 100, lengthComputable: true }),
+            100
+          );
           setTimeout(() => loadHandler && loadHandler(), 150);
         }),
         setRequestHeader: vi.fn(),
@@ -262,19 +284,27 @@ describe('LogoUpload Component', () => {
 
       render(<LogoUpload {...defaultProps} />);
 
-      const input = screen.getByTestId('logo-dropzone').querySelector('input[type="file"]') as HTMLInputElement;
+      const input = screen
+        .getByTestId('logo-dropzone')
+        .querySelector('input[type="file"]') as HTMLInputElement;
       const file = createFile('logo.png', 1024, 'image/png');
 
       await userEvent.upload(input, file);
 
       // Verify progress percentage updates
-      await waitFor(() => {
-        expect(screen.getByText(/50%/)).toBeInTheDocument();
-      }, { timeout: 2000 });
+      await waitFor(
+        () => {
+          expect(screen.getByText(/50%/)).toBeInTheDocument();
+        },
+        { timeout: 2000 }
+      );
 
-      await waitFor(() => {
-        expect(screen.getByText(/100%/)).toBeInTheDocument();
-      }, { timeout: 2000 });
+      await waitFor(
+        () => {
+          expect(screen.getByText(/100%/)).toBeInTheDocument();
+        },
+        { timeout: 2000 }
+      );
     });
   });
 
@@ -305,20 +335,25 @@ describe('LogoUpload Component', () => {
 
       render(<LogoUpload {...defaultProps} />);
 
-      const input = screen.getByTestId('logo-dropzone').querySelector('input[type="file"]') as HTMLInputElement;
+      const input = screen
+        .getByTestId('logo-dropzone')
+        .querySelector('input[type="file"]') as HTMLInputElement;
       const file = createFile('logo.png', 1024, 'image/png');
 
       await userEvent.upload(input, file);
 
       // Wait for upload to complete
-      await waitFor(() => {
-        const previewImage = screen.getByAltText(/company logo preview/i);
-        expect(previewImage).toBeInTheDocument();
-        expect(previewImage).toHaveAttribute(
-          'src',
-          'https://cdn.example.com/logos/company-logo.png'
-        );
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          const previewImage = screen.getByAltText(/company logo preview/i);
+          expect(previewImage).toBeInTheDocument();
+          expect(previewImage).toHaveAttribute(
+            'src',
+            'https://cdn.example.com/logos/company-logo.png'
+          );
+        },
+        { timeout: 3000 }
+      );
 
       // Verify success callback
       expect(mockOnUploadSuccess).toHaveBeenCalledWith({
@@ -327,14 +362,24 @@ describe('LogoUpload Component', () => {
     });
 
     it('should_showRemoveButton_when_logoPreviewDisplayed', async () => {
-      render(<LogoUpload {...defaultProps} currentLogoUrl="https://cdn.example.com/logos/existing-logo.png" />);
+      render(
+        <LogoUpload
+          {...defaultProps}
+          currentLogoUrl="https://cdn.example.com/logos/existing-logo.png"
+        />
+      );
 
       // Verify remove button is present
       expect(screen.getByRole('button', { name: /remove logo/i })).toBeInTheDocument();
     });
 
     it('should_clearPreview_when_removeButtonClicked', async () => {
-      render(<LogoUpload {...defaultProps} currentLogoUrl="https://cdn.example.com/logos/existing-logo.png" />);
+      render(
+        <LogoUpload
+          {...defaultProps}
+          currentLogoUrl="https://cdn.example.com/logos/existing-logo.png"
+        />
+      );
 
       const removeButton = screen.getByRole('button', { name: /remove logo/i });
 
@@ -355,13 +400,15 @@ describe('LogoUpload Component', () => {
       // Mock XMLHttpRequest for S3 upload (Step 2 uses XHR, not fetch)
       const mockXHR = {
         open: vi.fn(),
-        send: vi.fn(function(this: any) {
+        send: vi.fn(function (this: any) {
           // Trigger load event immediately to simulate successful upload
           setTimeout(() => {
             const loadEvent = { target: this };
-            this.addEventListener.mock.calls.forEach(([event, handler]: [string, (e: unknown) => void]) => {
-              if (event === 'load') handler(loadEvent);
-            });
+            this.addEventListener.mock.calls.forEach(
+              ([event, handler]: [string, (e: unknown) => void]) => {
+                if (event === 'load') handler(loadEvent);
+              }
+            );
           }, 10);
         }),
         setRequestHeader: vi.fn(),
@@ -375,15 +422,20 @@ describe('LogoUpload Component', () => {
 
       render(<LogoUpload {...defaultProps} />);
 
-      const input = screen.getByTestId('logo-dropzone').querySelector('input[type="file"]') as HTMLInputElement;
+      const input = screen
+        .getByTestId('logo-dropzone')
+        .querySelector('input[type="file"]') as HTMLInputElement;
       const file = createFile('logo.png', 1024, 'image/png');
 
       await userEvent.upload(input, file);
 
       // Wait for all API calls to complete (2 apiClient.post calls + 1 XHR)
-      await waitFor(() => {
-        expect(apiClient.post).toHaveBeenCalledTimes(2);
-      }, { timeout: 2000 });
+      await waitFor(
+        () => {
+          expect(apiClient.post).toHaveBeenCalledTimes(2);
+        },
+        { timeout: 2000 }
+      );
 
       // Verify Step 1: Request presigned URL
       expect(apiClient.post).toHaveBeenNthCalledWith(
@@ -397,7 +449,10 @@ describe('LogoUpload Component', () => {
       );
 
       // Verify Step 2: Upload to S3 via XHR (not apiClient)
-      expect(mockXHR.open).toHaveBeenCalledWith('PUT', 'https://s3.amazonaws.com/test-bucket/upload');
+      expect(mockXHR.open).toHaveBeenCalledWith(
+        'PUT',
+        'https://s3.amazonaws.com/test-bucket/upload'
+      );
       expect(mockXHR.setRequestHeader).toHaveBeenCalledWith('Content-Type', 'image/png');
       expect(mockXHR.send).toHaveBeenCalledWith(file);
 
@@ -417,20 +472,25 @@ describe('LogoUpload Component', () => {
 
       render(<LogoUpload {...defaultProps} />);
 
-      const input = screen.getByTestId('logo-dropzone').querySelector('input[type="file"]') as HTMLInputElement;
+      const input = screen
+        .getByTestId('logo-dropzone')
+        .querySelector('input[type="file"]') as HTMLInputElement;
       const file = createFile('logo.png', 1024, 'image/png');
 
       await userEvent.upload(input, file);
 
       // Verify error callback was called with network error
-      await waitFor(() => {
-        expect(mockOnUploadError).toHaveBeenCalledWith(
-          expect.objectContaining({
-            type: 'UPLOAD_FAILED',
-            message: expect.stringContaining('Network error'),
-          })
-        );
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          expect(mockOnUploadError).toHaveBeenCalledWith(
+            expect.objectContaining({
+              type: 'UPLOAD_FAILED',
+              message: expect.stringContaining('Network error'),
+            })
+          );
+        },
+        { timeout: 1000 }
+      );
     });
 
     it('should_disableUpload_when_uploadInProgress', async () => {
@@ -443,7 +503,12 @@ describe('LogoUpload Component', () => {
         open: vi.fn(),
         send: vi.fn(() => {
           // Trigger initial progress event
-          setTimeout(() => progressHandler && progressHandler({ loaded: 10, total: 100, lengthComputable: true }), 100);
+          setTimeout(
+            () =>
+              progressHandler &&
+              progressHandler({ loaded: 10, total: 100, lengthComputable: true }),
+            100
+          );
           // Don't complete - keep it in progress
         }),
         setRequestHeader: vi.fn(),
@@ -460,15 +525,20 @@ describe('LogoUpload Component', () => {
 
       render(<LogoUpload {...defaultProps} />);
 
-      const input = screen.getByTestId('logo-dropzone').querySelector('input[type="file"]') as HTMLInputElement;
+      const input = screen
+        .getByTestId('logo-dropzone')
+        .querySelector('input[type="file"]') as HTMLInputElement;
       const file = createFile('logo.png', 1024, 'image/png');
 
       await userEvent.upload(input, file);
 
       // Wait for upload to start
-      await waitFor(() => {
-        expect(screen.getByRole('progressbar')).toBeInTheDocument();
-      }, { timeout: 2000 });
+      await waitFor(
+        () => {
+          expect(screen.getByRole('progressbar')).toBeInTheDocument();
+        },
+        { timeout: 2000 }
+      );
 
       // Verify dropzone is disabled
       const dropzone = screen.getByTestId('logo-dropzone');
@@ -476,7 +546,12 @@ describe('LogoUpload Component', () => {
     });
 
     it('should_showCurrentLogo_when_currentLogoUrlProvided', () => {
-      render(<LogoUpload {...defaultProps} currentLogoUrl="https://cdn.example.com/logos/current-logo.png" />);
+      render(
+        <LogoUpload
+          {...defaultProps}
+          currentLogoUrl="https://cdn.example.com/logos/current-logo.png"
+        />
+      );
 
       const currentLogo = screen.getByAltText(/company logo preview/i);
       expect(currentLogo).toBeInTheDocument();

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Box, Typography, IconButton, LinearProgress, Alert } from '@mui/material';
 import { CloudUpload as CloudUploadIcon, Delete as DeleteIcon } from '@mui/icons-material';
@@ -24,6 +24,11 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Sync logoUrl state with currentLogoUrl prop
+  useEffect(() => {
+    setLogoUrl(currentLogoUrl);
+  }, [currentLogoUrl]);
 
   const handleError = useCallback(
     (errorType: string, errorMessage: string) => {
@@ -184,6 +189,7 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
             component="img"
             src={logoUrl}
             alt="Company logo preview"
+            crossOrigin="anonymous"
             sx={{
               maxWidth: '200px',
               maxHeight: '200px',
