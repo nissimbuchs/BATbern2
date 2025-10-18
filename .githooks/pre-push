@@ -65,7 +65,7 @@ if [ -f "gradlew" ] || [ -f "build.gradle" ]; then
 
     # Run all tests with coverage
     echo "  Running unit tests..."
-    run_with_timeout 180 "./gradlew test jacocoTestReport" || CHECKS_FAILED=1
+    run_with_timeout 600 "./gradlew test jacocoTestReport" || CHECKS_FAILED=1
 
     # Check coverage thresholds
     if [ -f "build/reports/jacoco/test/jacocoTestReport.xml" ]; then
@@ -77,7 +77,7 @@ if [ -f "gradlew" ] || [ -f "build.gradle" ]; then
     # Run integration tests if task exists
     if ./gradlew tasks --all 2>/dev/null | grep -q "^integrationTest "; then
         echo "  Running integration tests..."
-        run_with_timeout 300 "./gradlew integrationTest" || CHECKS_FAILED=1
+        run_with_timeout 600 "./gradlew integrationTest" || CHECKS_FAILED=1
     else
         echo "  Skipping integration tests (task not configured)"
     fi

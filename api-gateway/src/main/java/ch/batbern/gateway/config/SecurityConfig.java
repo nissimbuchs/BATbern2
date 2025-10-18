@@ -40,7 +40,9 @@ public class SecurityConfig {
             "https://www.batbern.ch"
         ));
 
-        configuration.setAllowedMethods(java.util.Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));
+        configuration.setAllowedMethods(java.util.Arrays.asList(
+            "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"
+        ));
         configuration.setAllowedHeaders(java.util.Arrays.asList(
             "Authorization",
             "Content-Type",

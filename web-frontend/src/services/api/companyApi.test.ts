@@ -21,8 +21,8 @@ describe('Company API Client', () => {
           location: {
             city: 'Bern',
             canton: 'BE',
-            country: 'Switzerland'
-          }
+            country: 'Switzerland',
+          },
         };
 
         await expect(companyApiClient.createCompany(invalidCompany)).rejects.toThrow(
@@ -30,7 +30,7 @@ describe('Company API Client', () => {
         );
       });
 
-      it('should accept valid Swiss UID format', () => {
+      it('should accept valid Swiss UID format', async () => {
         const validCompany: CreateCompanyRequest = {
           name: 'Valid Corp',
           swissUID: 'CHE-123.456.789',
@@ -38,21 +38,21 @@ describe('Company API Client', () => {
           location: {
             city: 'Bern',
             canton: 'BE',
-            country: 'Switzerland'
-          }
+            country: 'Switzerland',
+          },
         };
 
         // If validation passes, the function should attempt to make the API call
         // In test environment without backend, this will fail with network error
-        // but the validation should pass
-        expect(() => companyApiClient.createCompany(validCompany)).not.toThrow(/Invalid Swiss UID format/);
+        // We expect network error (not validation error)
+        await expect(companyApiClient.createCompany(validCompany)).rejects.toThrow(/Network Error/);
       });
     });
 
     describe('updateCompany', () => {
       it('should reject invalid Swiss UID format in update', async () => {
         const updates: UpdateCompanyRequest = {
-          swissUID: 'INVALID-UID'
+          swissUID: 'INVALID-UID',
         };
 
         await expect(companyApiClient.updateCompany('test-id', updates)).rejects.toThrow(
@@ -60,12 +60,15 @@ describe('Company API Client', () => {
         );
       });
 
-      it('should accept valid Swiss UID format in update', () => {
+      it('should accept valid Swiss UID format in update', async () => {
         const updates: UpdateCompanyRequest = {
-          swissUID: 'CHE-999.888.777'
+          swissUID: 'CHE-999.888.777',
         };
 
-        expect(() => companyApiClient.updateCompany('test-id', updates)).not.toThrow(/Invalid Swiss UID format/);
+        // Expect network error (not validation error)
+        await expect(companyApiClient.updateCompany('test-id', updates)).rejects.toThrow(
+          /Network Error/
+        );
       });
     });
 
@@ -80,26 +83,34 @@ describe('Company API Client', () => {
         const fileSizeTooLarge = 10 * 1024 * 1024; // 10MB
 
         await expect(
-          companyApiClient.requestLogoUploadUrl('test-id', 'huge.png', 'image/png', fileSizeTooLarge)
+          companyApiClient.requestLogoUploadUrl(
+            'test-id',
+            'huge.png',
+            'image/png',
+            fileSizeTooLarge
+          )
         ).rejects.toThrow(/File size exceeds maximum/);
       });
 
-      it('should accept valid image types', () => {
+      it('should accept valid image types', async () => {
         const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
 
-        validTypes.forEach(contentType => {
-          expect(() =>
+        // Test each type sequentially to avoid unhandled promises
+        for (const contentType of validTypes) {
+          // Expect network error (not validation error)
+          await expect(
             companyApiClient.requestLogoUploadUrl('test-id', 'logo.png', contentType, 1024)
-          ).not.toThrow(/Unsupported file type/);
-        });
+          ).rejects.toThrow(/Network Error/);
+        }
       });
 
-      it('should accept files within size limit', () => {
+      it('should accept files within size limit', async () => {
         const validSize = 2 * 1024 * 1024; // 2MB
 
-        expect(() =>
+        // Expect network error (not validation error)
+        await expect(
           companyApiClient.requestLogoUploadUrl('test-id', 'logo.png', 'image/png', validSize)
-        ).not.toThrow(/File size exceeds maximum/);
+        ).rejects.toThrow(/Network Error/);
       });
     });
   });

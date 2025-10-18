@@ -188,7 +188,7 @@ class CognitoJWTValidatorTest {
             .withKeyId(TEST_KEY_ID)
             .withSubject("attacker-id")
             .withClaim("email", "attacker@example.com")
-            .withClaim("custom:role", "organizer")  // Attacker claims admin role
+            .withArrayClaim("cognito:groups", new String[]{"organizer"})  // Attacker claims admin role
             .withAudience(APP_CLIENT_ID)
             .withIssuer("https://cognito-idp." + REGION + ".amazonaws.com/" + USER_POOL_ID)
             .withExpiresAt(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
@@ -210,7 +210,7 @@ class CognitoJWTValidatorTest {
             .withSubject("test-user-id")
             .withClaim("email", "test@example.com")
             .withClaim("email_verified", true)
-            .withClaim("custom:role", "organizer")
+            .withArrayClaim("cognito:groups", new String[]{"organizer"})
             .withClaim("custom:companyId", "company-123")
             .withClaim("custom:preferences", "{\"language\":\"en\",\"theme\":\"light\"}")
             .withAudience(APP_CLIENT_ID)
@@ -280,7 +280,7 @@ class CognitoJWTValidatorTest {
             .withSubject("test-user-id")
             .withClaim("email", "partner@example.com")
             .withClaim("email_verified", true)
-            .withClaim("custom:role", "partner")
+            .withArrayClaim("cognito:groups", new String[]{"partner"})
             .withClaim("custom:companyId", "partner-company-456")
             .withClaim("custom:preferences", "{\"language\":\"de\",\"theme\":\"dark\",\"notifications\":\"enabled\"}")
             .withAudience(APP_CLIENT_ID)

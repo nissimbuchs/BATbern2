@@ -61,9 +61,11 @@ export type CompanySearchResponse = components['schemas']['CompanySearchResponse
 
 /**
  * CompanyListItem - Simplified type for list views
- * Uses the search response type which has the same fields
+ * Extends search response with optional logo for display
  */
-export type CompanyListItem = CompanySearchResponse;
+export type CompanyListItem = CompanySearchResponse & {
+  logo?: CompanyLogo;
+};
 
 /**
  * CompanyDetail - Alias for full company data

@@ -20,7 +20,7 @@ import {
   ToggleButtonGroup,
   ToggleButton,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
 } from '@mui/material';
 import { Add as AddIcon, ViewModule as GridIcon, ViewList as ListIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
@@ -29,15 +29,31 @@ import { CompanySearch } from '@/components/shared/Company/CompanySearch';
 import CompanyFilters from '@/components/shared/Company/CompanyFilters';
 import { CompanyForm } from '@/components/shared/Company/CompanyForm';
 import { CompanyDetailView } from '@/components/shared/Company/CompanyDetailView';
-import { useCreateCompany, useUpdateCompany } from '@/hooks/useCompanyMutations/useCompanyMutations';
+import {
+  useCreateCompany,
+  useUpdateCompany,
+} from '@/hooks/useCompanyMutations/useCompanyMutations';
 import { useCompanies } from '@/hooks/useCompanies/useCompanies';
 import { useCompany } from '@/hooks/useCompany/useCompany';
-import type { CompanyFilters as CompanyFiltersType, CreateCompanyRequest, UpdateCompanyRequest, Company } from '@/types/company.types';
+import type {
+  CompanyFilters as CompanyFiltersType,
+  CreateCompanyRequest,
+  UpdateCompanyRequest,
+  Company,
+} from '@/types/company.types';
 
 // Wrapper component for detail view to access useParams
-const CompanyDetailWrapper: React.FC<{ onBack: () => void; onEdit: (company: Company) => void }> = ({ onBack, onEdit }) => {
+const CompanyDetailWrapper: React.FC<{
+  onBack: () => void;
+  onEdit: (company: Company) => void;
+}> = ({ onBack, onEdit }) => {
   const { id } = useParams<{ id: string }>();
-  const { data: company, isLoading, error, refetch } = useCompany(id || '', { expand: ['statistics'] });
+  const {
+    data: company,
+    isLoading,
+    error,
+    refetch,
+  } = useCompany(id || '', { expand: ['statistics'] });
 
   return (
     <CompanyDetailView
@@ -67,17 +83,22 @@ const CompanyManagementScreen: React.FC = () => {
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [pagination] = useState({ page: 1, limit: 20 });
 
-  // Fetch companies list with filters
-  const { data: companiesData, isLoading: isLoadingCompanies } = useCompanies(pagination, filters);
+  // Fetch companies list with filters and logo expansion
+  const { data: companiesData, isLoading: isLoadingCompanies } = useCompanies(pagination, filters, {
+    expand: ['logo'],
+  });
 
-  const handleViewModeChange = (_: React.MouseEvent<HTMLElement>, newMode: 'grid' | 'list' | null) => {
+  const handleViewModeChange = (
+    _: React.MouseEvent<HTMLElement>,
+    newMode: 'grid' | 'list' | null
+  ) => {
     if (newMode !== null) {
       setViewMode(newMode);
     }
   };
 
   const handleViewModeToggle = () => {
-    setViewMode(prev => prev === 'grid' ? 'list' : 'grid');
+    setViewMode((prev) => (prev === 'grid' ? 'list' : 'grid'));
   };
 
   const handleFilterChange = useCallback((newFilters: CompanyFiltersType) => {
@@ -96,23 +117,29 @@ const CompanyManagementScreen: React.FC = () => {
     setIsCreateModalOpen(false);
   }, []);
 
-  const handleSubmitCompany = useCallback(async (data: CreateCompanyRequest | UpdateCompanyRequest) => {
-    try {
-      if (editingCompany) {
-        // Update existing company
-        await updateCompanyMutation.mutateAsync({ id: editingCompany.id, data: data as UpdateCompanyRequest });
-        setEditingCompany(null);
-      } else {
-        // Create new company
-        await createCompanyMutation.mutateAsync(data as CreateCompanyRequest);
-        setIsCreateModalOpen(false);
+  const handleSubmitCompany = useCallback(
+    async (data: CreateCompanyRequest | UpdateCompanyRequest) => {
+      try {
+        if (editingCompany) {
+          // Update existing company
+          await updateCompanyMutation.mutateAsync({
+            id: editingCompany.id,
+            data: data as UpdateCompanyRequest,
+          });
+          setEditingCompany(null);
+        } else {
+          // Create new company
+          await createCompanyMutation.mutateAsync(data as CreateCompanyRequest);
+          setIsCreateModalOpen(false);
+        }
+        // Success notification could be added here
+      } catch (error) {
+        // Error is handled by the mutation and will be shown in the form
+        console.error('Failed to save company:', error);
       }
-      // Success notification could be added here
-    } catch (error) {
-      // Error is handled by the mutation and will be shown in the form
-      console.error('Failed to save company:', error);
-    }
-  }, [createCompanyMutation, updateCompanyMutation, editingCompany]);
+    },
+    [createCompanyMutation, updateCompanyMutation, editingCompany]
+  );
 
   const handleEditCompany = useCallback((company: Company) => {
     setEditingCompany(company);
@@ -170,19 +197,13 @@ const CompanyManagementScreen: React.FC = () => {
         <Stack direction={isMobile ? 'column' : 'row'} spacing={2} mb={3}>
           {/* Search Bar */}
           <Box flex={1}>
-            <CompanySearch
-              onSelect={handleSearchSelect}
-              onSearchChange={setSearchQuery}
-            />
+            <CompanySearch onSelect={handleSearchSelect} onSearchChange={setSearchQuery} />
           </Box>
         </Stack>
 
         {/* Filters */}
         <Box mb={3}>
-          <CompanyFilters
-            onFilterChange={handleFilterChange}
-            initialFilters={filters}
-          />
+          <CompanyFilters onFilterChange={handleFilterChange} initialFilters={filters} />
         </Box>
 
         {/* Content Area with Routing */}
@@ -202,10 +223,7 @@ const CompanyManagementScreen: React.FC = () => {
           <Route
             path="/:id"
             element={
-              <CompanyDetailWrapper
-                onBack={() => navigate('..')}
-                onEdit={handleEditCompany}
-              />
+              <CompanyDetailWrapper onBack={() => navigate('..')} onEdit={handleEditCompany} />
             }
           />
         </Routes>

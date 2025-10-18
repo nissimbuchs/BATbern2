@@ -215,7 +215,6 @@ class AuthService {
         options: {
           userAttributes: {
             email: signUpData.email,
-            'custom:role': signUpData.role,
             'custom:companyId': signUpData.companyId || '',
             'custom:preferences': JSON.stringify({
               language: 'en',

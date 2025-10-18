@@ -60,6 +60,9 @@ class CompanyControllerTest {
     @MockBean
     private ch.batbern.companyuser.service.CompanyQueryService queryService;
 
+    @MockBean
+    private ch.batbern.companyuser.service.CompanyLogoService logoService;
+
     private UUID testCompanyId;
     private CreateCompanyRequest createRequest;
     private UpdateCompanyRequest updateRequest;

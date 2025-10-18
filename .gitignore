@@ -118,3 +118,7 @@ web-frontend/test-results.xml
 test-results/
 playwright-report/
 playwright/.cache/
+.env.native
+
+# MinIO local storage
+.minio/

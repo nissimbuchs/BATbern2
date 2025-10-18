@@ -86,6 +86,7 @@ describe('useCompanies Hook', () => {
 
       expect(companyApiClient.getCompanies).toHaveBeenCalledWith(
         { page: 1, limit: 20 },
+        undefined,
         undefined
       );
       expect(result.current.data).toEqual(mockResponse);
@@ -150,10 +151,9 @@ describe('useCompanies Hook', () => {
       };
 
       // Act
-      const { result } = renderHook(
-        () => useCompanies({ page: 1, limit: 20 }, filters),
-        { wrapper: createWrapper() }
-      );
+      const { result } = renderHook(() => useCompanies({ page: 1, limit: 20 }, filters), {
+        wrapper: createWrapper(),
+      });
 
       // Assert
       await waitFor(() => {
@@ -162,7 +162,8 @@ describe('useCompanies Hook', () => {
 
       expect(companyApiClient.getCompanies).toHaveBeenCalledWith(
         { page: 1, limit: 20 },
-        filters
+        filters,
+        undefined
       );
     });
 
@@ -276,6 +277,7 @@ describe('useCompanies Hook', () => {
 
       expect(companyApiClient.getCompanies).toHaveBeenCalledWith(
         { page: 2, limit: 20 },
+        undefined,
         undefined
       );
       expect(result.current.data?.pagination.currentPage).toBe(2);
@@ -309,6 +311,7 @@ describe('useCompanies Hook', () => {
 
       expect(companyApiClient.getCompanies).toHaveBeenCalledWith(
         { page: 1, limit: 50 },
+        undefined,
         undefined
       );
       expect(result.current.data?.pagination.itemsPerPage).toBe(50);
@@ -319,7 +322,17 @@ describe('useCompanies Hook', () => {
     it('should_useCachedData_when_sameQueryRepeated', async () => {
       // Arrange
       const mockResponse: CompanyListResponse = {
-        data: [{ id: '1', name: 'Cached Company', industry: 'Tech', location: { city: 'Bern', country: 'Switzerland' }, isPartner: false, isVerified: true, associatedUserCount: 2 }],
+        data: [
+          {
+            id: '1',
+            name: 'Cached Company',
+            industry: 'Tech',
+            location: { city: 'Bern', country: 'Switzerland' },
+            isPartner: false,
+            isVerified: true,
+            associatedUserCount: 2,
+          },
+        ],
         pagination: {
           currentPage: 1,
           totalPages: 1,
@@ -348,20 +361,18 @@ describe('useCompanies Hook', () => {
       vi.mocked(companyApiClient.getCompanies).mockResolvedValue(mockResponse);
 
       // Act - First call
-      const { result: result1 } = renderHook(
-        () => useCompanies({ page: 1, limit: 20 }),
-        { wrapper }
-      );
+      const { result: result1 } = renderHook(() => useCompanies({ page: 1, limit: 20 }), {
+        wrapper,
+      });
 
       await waitFor(() => {
         expect(result1.current.isSuccess).toBe(true);
       });
 
       // Act - Second call with same params
-      const { result: result2 } = renderHook(
-        () => useCompanies({ page: 1, limit: 20 }),
-        { wrapper }
-      );
+      const { result: result2 } = renderHook(() => useCompanies({ page: 1, limit: 20 }), {
+        wrapper,
+      });
 
       // Assert - Should use cached data, API called only once
       expect(result2.current.data).toEqual(mockResponse);
@@ -371,13 +382,47 @@ describe('useCompanies Hook', () => {
     it('should_haveDifferentCacheKeys_when_filtersChange', async () => {
       // Arrange
       const mockResponse1: CompanyListResponse = {
-        data: [{ id: '1', name: 'Company 1', industry: 'Tech', location: { city: 'Zurich', country: 'Switzerland' }, isPartner: false, isVerified: true, associatedUserCount: 1 }],
-        pagination: { currentPage: 1, totalPages: 1, totalItems: 1, itemsPerPage: 20, hasNextPage: false, hasPreviousPage: false },
+        data: [
+          {
+            id: '1',
+            name: 'Company 1',
+            industry: 'Tech',
+            location: { city: 'Zurich', country: 'Switzerland' },
+            isPartner: false,
+            isVerified: true,
+            associatedUserCount: 1,
+          },
+        ],
+        pagination: {
+          currentPage: 1,
+          totalPages: 1,
+          totalItems: 1,
+          itemsPerPage: 20,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
       };
 
       const mockResponse2: CompanyListResponse = {
-        data: [{ id: '2', name: 'Partner Company', industry: 'Finance', location: { city: 'Geneva', country: 'Switzerland' }, isPartner: true, isVerified: true, associatedUserCount: 5 }],
-        pagination: { currentPage: 1, totalPages: 1, totalItems: 1, itemsPerPage: 20, hasNextPage: false, hasPreviousPage: false },
+        data: [
+          {
+            id: '2',
+            name: 'Partner Company',
+            industry: 'Finance',
+            location: { city: 'Geneva', country: 'Switzerland' },
+            isPartner: true,
+            isVerified: true,
+            associatedUserCount: 5,
+          },
+        ],
+        pagination: {
+          currentPage: 1,
+          totalPages: 1,
+          totalItems: 1,
+          itemsPerPage: 20,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
       };
 
       vi.mocked(companyApiClient.getCompanies)
@@ -385,10 +430,9 @@ describe('useCompanies Hook', () => {
         .mockResolvedValueOnce(mockResponse2);
 
       // Act - First query without filters
-      const { result: result1 } = renderHook(
-        () => useCompanies({ page: 1, limit: 20 }),
-        { wrapper: createWrapper() }
-      );
+      const { result: result1 } = renderHook(() => useCompanies({ page: 1, limit: 20 }), {
+        wrapper: createWrapper(),
+      });
 
       await waitFor(() => {
         expect(result1.current.isSuccess).toBe(true);
@@ -416,23 +460,28 @@ describe('useCompanies Hook', () => {
       // Arrange
       const mockResponse: CompanyListResponse = {
         data: [],
-        pagination: { currentPage: 1, totalPages: 1, totalItems: 0, itemsPerPage: 20, hasNextPage: false, hasPreviousPage: false },
+        pagination: {
+          currentPage: 1,
+          totalPages: 1,
+          totalItems: 0,
+          itemsPerPage: 20,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
       };
 
       vi.mocked(companyApiClient.getCompanies).mockResolvedValue(mockResponse);
 
       // Act
-      const { result: result1 } = renderHook(
-        () => useCompanies({ page: 1, limit: 20 }),
-        { wrapper: createWrapper() }
-      );
+      const { result: result1 } = renderHook(() => useCompanies({ page: 1, limit: 20 }), {
+        wrapper: createWrapper(),
+      });
 
       await waitFor(() => expect(result1.current.isSuccess).toBe(true));
 
-      const { result: result2 } = renderHook(
-        () => useCompanies({ page: 2, limit: 20 }),
-        { wrapper: createWrapper() }
-      );
+      const { result: result2 } = renderHook(() => useCompanies({ page: 2, limit: 20 }), {
+        wrapper: createWrapper(),
+      });
 
       await waitFor(() => expect(result2.current.isSuccess).toBe(true));
 
@@ -444,7 +493,14 @@ describe('useCompanies Hook', () => {
       // Arrange
       const mockResponse: CompanyListResponse = {
         data: [],
-        pagination: { currentPage: 1, totalPages: 1, totalItems: 0, itemsPerPage: 20, hasNextPage: false, hasPreviousPage: false },
+        pagination: {
+          currentPage: 1,
+          totalPages: 1,
+          totalItems: 0,
+          itemsPerPage: 20,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
       };
 
       vi.mocked(companyApiClient.getCompanies).mockResolvedValue(mockResponse);
@@ -457,8 +513,8 @@ describe('useCompanies Hook', () => {
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-      // Assert - Query key should include filters
-      const queryKey = ['companies', { page: 1, limit: 20 }, { industry: 'Technology' }];
+      // Assert - Query key should include filters and expand parameter
+      const queryKey = ['companies', { page: 1, limit: 20 }, { industry: 'Technology' }, undefined];
       const cachedData = queryClient.getQueryData(queryKey);
       expect(cachedData).toBeDefined();
     });

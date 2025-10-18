@@ -159,6 +159,13 @@ export default defineConfig({
   server: {
     port: 3000,
     host: true,
+    proxy: {
+      '/api': {
+        target: 'http://batbern-api-gateway:8080',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
   build: {
     target: 'esnext',

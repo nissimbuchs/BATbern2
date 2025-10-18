@@ -80,14 +80,18 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
     console.log(`[CompanyDetailView] Linking user ${userId} to company ${companyId}`);
     // TODO: Implement user linking via User Service API when user service is available
     // This would call: POST /api/v1/users/{userId}/company with companyId in body
-    alert(`User linking functionality will be implemented in User Management Service story. CompanyId: ${companyId}, UserId: ${userId}`);
+    alert(
+      `User linking functionality will be implemented in User Management Service story. CompanyId: ${companyId}, UserId: ${userId}`
+    );
   };
 
   const handleUnlinkUser = (companyId: string, userId: string) => {
     console.log(`[CompanyDetailView] Unlinking user ${userId} from company ${companyId}`);
     // TODO: Implement user unlinking via User Service API when user service is available
     // This would call: DELETE /api/v1/users/{userId}/company
-    alert(`User unlinking functionality will be implemented in User Management Service story. CompanyId: ${companyId}, UserId: ${userId}`);
+    alert(
+      `User unlinking functionality will be implemented in User Management Service story. CompanyId: ${companyId}, UserId: ${userId}`
+    );
   };
 
   // Loading state
@@ -161,6 +165,11 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
                   src={company.logo?.url}
                   alt={`${company.name} logo`}
                   sx={{ width: 120, height: 120 }}
+                  slotProps={{
+                    img: {
+                      crossOrigin: 'anonymous',
+                    },
+                  }}
                 >
                   {company.name.charAt(0)}
                 </Avatar>
@@ -244,14 +253,29 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
         </CardContent>
       </Card>
 
-
       {/* Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
         <Tabs value={activeTab} onChange={handleTabChange} aria-label="company detail tabs">
-          <Tab label={t('company.detail.tabs.overview')} id="company-tab-0" aria-controls="company-tabpanel-0" />
-          <Tab label={t('company.detail.tabs.users')} id="company-tab-1" aria-controls="company-tabpanel-1" />
-          <Tab label={t('company.detail.tabs.statistics')} id="company-tab-2" aria-controls="company-tabpanel-2" />
-          <Tab label={t('company.detail.tabs.activity')} id="company-tab-3" aria-controls="company-tabpanel-3" />
+          <Tab
+            label={t('company.detail.tabs.overview')}
+            id="company-tab-0"
+            aria-controls="company-tabpanel-0"
+          />
+          <Tab
+            label={t('company.detail.tabs.users')}
+            id="company-tab-1"
+            aria-controls="company-tabpanel-1"
+          />
+          <Tab
+            label={t('company.detail.tabs.statistics')}
+            id="company-tab-2"
+            aria-controls="company-tabpanel-2"
+          />
+          <Tab
+            label={t('company.detail.tabs.activity')}
+            id="company-tab-3"
+            aria-controls="company-tabpanel-3"
+          />
         </Tabs>
       </Box>
 
