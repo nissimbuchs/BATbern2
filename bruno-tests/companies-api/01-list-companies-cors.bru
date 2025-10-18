@@ -1,0 +1,67 @@
+meta {
+  name: List Companies (CORS Headers Test)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/companies?page=1&limit=20
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: de-CH
+  Accept: application/json
+}
+
+params:query {
+  page: 1
+  limit: 20
+}
+
+assert {
+  res.status: eq 200
+  res.body.pagination: isDefined
+  res.body.data: isArray
+}
+
+tests {
+  test("should return 200 status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should accept X-Correlation-ID header", function() {
+    // If we get here with 200, header was accepted
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should accept Accept-Language header", function() {
+    // Header acceptance validated by successful response
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should have pagination metadata", function() {
+    const body = res.getBody();
+    expect(body.pagination).to.be.an('object');
+    expect(body.pagination.page).to.be.a('number');
+    expect(body.pagination.limit).to.be.a('number');
+    expect(body.pagination.totalItems).to.be.a('number');
+    expect(body.pagination.totalPages).to.be.a('number');
+  });
+
+  test("should return array of companies", function() {
+    expect(res.getBody().data).to.be.an('array');
+  });
+
+  test("should have CORS headers in response", function() {
+    // Check for Access-Control-Allow-Origin header
+    const corsHeader = res.getHeader('Access-Control-Allow-Origin');
+    expect(corsHeader).to.exist;
+  });
+}

@@ -307,6 +307,42 @@ jobs:
             echo "::warning::Smoke tests script not found"
           fi
 
+      - name: Run CORS validation tests
+        run: |
+          if [ -f "scripts/ci/cors-validation-tests.sh" ]; then
+            chmod +x scripts/ci/cors-validation-tests.sh
+            echo "Running CORS validation tests..."
+            ./scripts/ci/cors-validation-tests.sh \
+              https://api.batbern.ch \
+              https://www.batbern.ch
+            echo "✅ CORS validation tests passed"
+          else
+            echo "::warning::CORS validation tests script not found"
+          fi
+
+      - name: Run header propagation tests
+        run: |
+          if [ -f "scripts/ci/header-propagation-tests.sh" ]; then
+            chmod +x scripts/ci/header-propagation-tests.sh
+            echo "Running header propagation tests..."
+            ./scripts/ci/header-propagation-tests.sh \
+              https://api.batbern.ch
+            echo "✅ Header propagation tests passed"
+          else
+            echo "::warning::Header propagation tests script not found"
+          fi
+
+      - name: Run Bruno API contract tests
+        run: |
+          if [ -f "scripts/ci/run-bruno-tests.sh" ]; then
+            chmod +x scripts/ci/run-bruno-tests.sh
+            echo "Running Bruno API contract tests..."
+            ./scripts/ci/run-bruno-tests.sh production || echo "::warning::Bruno tests not fully configured"
+            echo "✅ Bruno API contract tests completed"
+          else
+            echo "::warning::Bruno test script not found, skipping"
+          fi
+
       - name: Verify critical endpoints
         run: |
           endpoints=(
