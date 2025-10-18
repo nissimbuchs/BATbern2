@@ -62,10 +62,6 @@ export class BootstrapOrganizer extends Construct {
                 Name: 'email_verified',
                 Value: 'true',
               },
-              {
-                Name: 'custom:role',
-                Value: 'organizer',
-              },
             ],
           },
           physicalResourceId: customResources.PhysicalResourceId.of(
@@ -120,5 +116,38 @@ export class BootstrapOrganizer extends Construct {
 
     // Ensure password is set after user creation
     setPermanentPassword.node.addDependency(createUserCustomResource);
+
+    // Add user to organizer group
+    const addToGroupLogGroup = new logs.LogGroup(this, 'AddToGroupLogGroup', {
+      logGroupName: `/aws/lambda/bootstrap-organizer-add-to-group`,
+      retention: logs.RetentionDays.ONE_WEEK,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    const addUserToGroup = new customResources.AwsCustomResource(
+      this,
+      'AddUserToGroup',
+      {
+        onCreate: {
+          service: 'CognitoIdentityServiceProvider',
+          action: 'adminAddUserToGroup',
+          parameters: {
+            UserPoolId: props.userPool.userPoolId,
+            Username: props.email,
+            GroupName: 'organizer',
+          },
+          physicalResourceId: customResources.PhysicalResourceId.of(
+            `bootstrap-group-${props.email}`
+          ),
+        },
+        policy: customResources.AwsCustomResourcePolicy.fromSdkCalls({
+          resources: customResources.AwsCustomResourcePolicy.ANY_RESOURCE,
+        }),
+        logGroup: addToGroupLogGroup,
+      }
+    );
+
+    // Ensure user is added to group after password is set
+    addUserToGroup.node.addDependency(setPermanentPassword);
   }
 }

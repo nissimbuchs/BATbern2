@@ -107,7 +107,6 @@ export interface CognitoUserAttributes {
   sub: string;
   email: string;
   email_verified: boolean;
-  'custom:role': UserRole;
   'custom:companyId'?: string;
   'custom:preferences': string; // JSON string
 }
@@ -125,7 +124,6 @@ export interface CognitoTokenClaims {
   'cognito:groups'?: string[];
   email: string;
   email_verified: boolean;
-  'custom:role': UserRole;
   'custom:companyId'?: string;
   'custom:preferences': string;
 }
