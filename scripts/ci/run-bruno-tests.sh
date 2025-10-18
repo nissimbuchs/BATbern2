@@ -29,7 +29,9 @@ if [ -z "$AUTH_TOKEN" ]; then
     local_config=~/.batbern/${ENVIRONMENT}.json
     if [ -f "$local_config" ]; then
         echo -e "${BLUE}Loading auth token from local config: $local_config${NC}"
-        AUTH_TOKEN=$(jq -r '.idToken' "$local_config" 2>/dev/null)
+        # Use ACCESS token for HTTP API with JWT Authorizer (OAuth2 best practice)
+        # HTTP API validates access tokens with client_id claim, not ID tokens
+        AUTH_TOKEN=$(jq -r '.accessToken' "$local_config" 2>/dev/null)
 
         if [ "$AUTH_TOKEN" = "null" ] || [ -z "$AUTH_TOKEN" ]; then
             echo -e "${YELLOW}WARNING: Failed to load token from local config${NC}"

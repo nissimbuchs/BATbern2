@@ -40,8 +40,8 @@ public class CompanyEventPublisher {
 
     public CompanyEventPublisher(
             EventBridgeAsyncClient eventBridgeAsyncClient,
-            @Value("${aws.eventbridge.bus-name:batbern-default-event-bus}") String eventBusName,
-            @Value("${aws.eventbridge.source:ch.batbern.company}") String eventSource) {
+            @Value("${aws.eventbridge.bus.name:batbern-default-event-bus}") String eventBusName,
+            @Value("${aws.eventbridge.event-source:ch.batbern.company}") String eventSource) {
         this.eventBridgeAsyncClient = eventBridgeAsyncClient;
         this.eventBusName = eventBusName;
         this.eventSource = eventSource;
