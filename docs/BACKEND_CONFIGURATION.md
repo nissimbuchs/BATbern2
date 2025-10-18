@@ -206,7 +206,7 @@ Configuration Summary:
 ### Development
 
 **Characteristics:**
-- Local Redis (Docker container)
+- Caffeine in-memory caching (application-level)
 - AWS RDS database (shared dev)
 - AWS Cognito (dev user pool)
 - Spring Profile: `local`
@@ -216,13 +216,12 @@ Configuration Summary:
 APP_ENVIRONMENT=development
 SPRING_PROFILES_ACTIVE=local
 LOG_LEVEL=DEBUG
-REDIS_HOST=redis  # Local Docker container
 ```
 
 ### Staging
 
 **Characteristics:**
-- AWS ElastiCache (Redis)
+- Caffeine in-memory caching (application-level)
 - AWS RDS database (staging)
 - AWS Cognito (staging user pool)
 - Spring Profile: `staging`
@@ -232,14 +231,13 @@ REDIS_HOST=redis  # Local Docker container
 APP_ENVIRONMENT=staging
 SPRING_PROFILES_ACTIVE=staging
 LOG_LEVEL=INFO
-REDIS_HOST=batbern-staging-cache.xxxxx.cache.amazonaws.com
 ```
 
 ### Production
 
 **Characteristics:**
-- AWS ElastiCache (Redis) with multi-AZ
-- AWS RDS database (production, multi-AZ)
+- Caffeine in-memory caching (application-level)
+- AWS RDS database (production, single-AZ)
 - AWS Cognito (production user pool)
 - Spring Profile: `production`
 - Log Level: `WARN`
@@ -248,7 +246,6 @@ REDIS_HOST=batbern-staging-cache.xxxxx.cache.amazonaws.com
 APP_ENVIRONMENT=production
 SPRING_PROFILES_ACTIVE=production
 LOG_LEVEL=WARN
-REDIS_HOST=batbern-prod-cache.xxxxx.cache.amazonaws.com
 ```
 
 ---
@@ -422,8 +419,6 @@ Both frontend and backend use runtime configuration, but with different mechanis
 | `DB_NAME` | Database name | `batbern` |
 | `DB_USER` | Database username | `postgres` |
 | `DB_PASSWORD` | Database password | (from Secrets Manager) |
-| `REDIS_HOST` | Redis/ElastiCache endpoint | `redis` or AWS endpoint |
-| `REDIS_PORT` | Redis port | `6379` |
 | `COGNITO_USER_POOL_ID` | Cognito User Pool ID | `eu-central-1_xxxxx` |
 | `COGNITO_CLIENT_ID` | Cognito App Client ID | `xxxxx` |
 
