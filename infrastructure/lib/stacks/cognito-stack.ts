@@ -51,12 +51,7 @@ export class CognitoStack extends cdk.Stack {
             throw new Error('Invalid company ID format. Must be a valid UUID.');
           }
 
-          // Validate role
-          const role = event.request.userAttributes['custom:role'];
-          const validRoles = ['organizer', 'speaker', 'partner', 'attendee'];
-          if (role && !validRoles.includes(role)) {
-            throw new Error('Invalid role. Must be one of: ' + validRoles.join(', '));
-          }
+          // Role validation removed - roles are now managed via Cognito groups
 
           // Auto-verify email for development
           if (process.env.ENVIRONMENT === 'development') {
@@ -91,10 +86,6 @@ export class CognitoStack extends cdk.Stack {
         },
       },
       customAttributes: {
-        role: new cognito.StringAttribute({
-          mutable: true,
-          maxLen: 20,
-        }),
         companyId: new cognito.StringAttribute({
           mutable: true,
           maxLen: 36,
@@ -167,10 +158,10 @@ export class CognitoStack extends cdk.Stack {
       ],
       readAttributes: new cognito.ClientAttributes()
         .withStandardAttributes({ email: true, emailVerified: true })
-        .withCustomAttributes('role', 'companyId', 'preferences'),
+        .withCustomAttributes('companyId', 'preferences'),
       writeAttributes: new cognito.ClientAttributes()
         .withStandardAttributes({ email: true })
-        .withCustomAttributes('role', 'companyId', 'preferences'),
+        .withCustomAttributes('companyId', 'preferences'),
     });
 
     // Create User Pool Domain
