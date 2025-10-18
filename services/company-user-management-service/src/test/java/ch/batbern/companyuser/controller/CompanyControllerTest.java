@@ -328,4 +328,206 @@ class CompanyControllerTest {
                         .with(csrf()))
                 .andExpect(status().isForbidden());
     }
+
+    /**
+     * Test 4.13: should_validateUID_when_validUIDProvided
+     * Verifies that GET /api/v1/companies/validate-uid validates Swiss UID format
+     */
+    @Test
+    @WithMockUser
+    void should_validateUID_when_validUIDProvided() throws Exception {
+        String validUID = "CHE-123.456.789";
+        when(uidValidationService.isValidUID(validUID)).thenReturn(true);
+
+        mockMvc.perform(get("/api/v1/companies/validate-uid")
+                        .param("uid", validUID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.valid").value(true))
+                .andExpect(jsonPath("$.uid").value(validUID))
+                .andExpect(jsonPath("$.message").value("Valid Swiss UID format"));
+    }
+
+    /**
+     * Test 4.14: should_returnInvalid_when_invalidUIDProvided
+     * Verifies that validation correctly identifies invalid UIDs
+     */
+    @Test
+    @WithMockUser
+    void should_returnInvalid_when_invalidUIDProvided() throws Exception {
+        String invalidUID = "INVALID-UID";
+        when(uidValidationService.isValidUID(invalidUID)).thenReturn(false);
+
+        mockMvc.perform(get("/api/v1/companies/validate-uid")
+                        .param("uid", invalidUID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.valid").value(false))
+                .andExpect(jsonPath("$.uid").value(invalidUID))
+                .andExpect(jsonPath("$.message").value("Invalid Swiss UID format. Expected: CHE-XXX.XXX.XXX"));
+    }
+
+    /**
+     * Test 4.15: should_verifyCompany_when_validIdProvided
+     * Verifies that POST /api/v1/companies/{id}/verify marks company as verified
+     */
+    @Test
+    @WithMockUser(roles = {"ORGANIZER"})
+    void should_verifyCompany_when_validIdProvided() throws Exception {
+        CompanyResponse verifiedResponse = CompanyResponse.builder()
+                .id(testCompanyId)
+                .name("Test Company AG")
+                .displayName("Test Company")
+                .isVerified(true)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+
+        when(companyService.verifyCompany(testCompanyId)).thenReturn(verifiedResponse);
+
+        mockMvc.perform(post("/api/v1/companies/{id}/verify", testCompanyId)
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(testCompanyId.toString()))
+                .andExpect(jsonPath("$.isVerified").value(true));
+    }
+
+    /**
+     * Test 4.16: should_patchCompany_when_validPatchRequest
+     * Verifies that PATCH /api/v1/companies/{id} partially updates company
+     */
+    @Test
+    @WithMockUser(roles = {"ORGANIZER"})
+    void should_patchCompany_when_validPatchRequest() throws Exception {
+        UpdateCompanyRequest patchRequest = UpdateCompanyRequest.builder()
+                .name("Patched Name")
+                .build();
+
+        CompanyResponse patchedResponse = CompanyResponse.builder()
+                .id(testCompanyId)
+                .name("Patched Name")
+                .displayName("Test Company")
+                .swissUID("CHE-123.456.789")
+                .website("https://testcompany.ch")
+                .industry("Technology")
+                .isVerified(false)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+
+        when(companyService.updateCompany(eq(testCompanyId), any(UpdateCompanyRequest.class)))
+                .thenReturn(patchedResponse);
+
+        mockMvc.perform(patch("/api/v1/companies/{id}", testCompanyId)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(patchRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(testCompanyId.toString()))
+                .andExpect(jsonPath("$.name").value("Patched Name"));
+    }
+
+    /**
+     * Test 4.17: should_requestPresignedUrl_when_validLogoUploadRequest
+     * Verifies that POST /api/v1/companies/{id}/logo/presigned-url generates presigned URL
+     */
+    @Test
+    @WithMockUser
+    void should_requestPresignedUrl_when_validLogoUploadRequest() throws Exception {
+        ch.batbern.companyuser.dto.LogoUploadRequest uploadRequest =
+                ch.batbern.companyuser.dto.LogoUploadRequest.builder()
+                .fileName("company-logo.png")
+                .fileSize(1024000L) // 1MB
+                .mimeType("image/png")
+                .build();
+
+        ch.batbern.companyuser.dto.PresignedUploadUrl presignedUrl =
+                ch.batbern.companyuser.dto.PresignedUploadUrl.builder()
+                .uploadUrl("https://s3.amazonaws.com/bucket/logo.png?signature=...")
+                .fileId("file-123")
+                .expiresInMinutes(15)
+                .build();
+
+        when(logoService.generateLogoUploadUrl(
+                eq(testCompanyId.toString()),
+                eq("company-logo.png"),
+                eq(1024000L)))
+                .thenReturn(presignedUrl);
+
+        mockMvc.perform(post("/api/v1/companies/{id}/logo/presigned-url", testCompanyId)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(uploadRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.uploadUrl").value(containsString("s3.amazonaws.com")))
+                .andExpect(jsonPath("$.fileId").value("file-123"));
+    }
+
+    /**
+     * Test 4.18: should_confirmLogoUpload_when_validConfirmRequest
+     * Verifies that POST /api/v1/companies/{id}/logo/confirm confirms upload
+     */
+    @Test
+    @WithMockUser
+    void should_confirmLogoUpload_when_validConfirmRequest() throws Exception {
+        ch.batbern.companyuser.dto.LogoUploadConfirmRequest confirmRequest =
+                ch.batbern.companyuser.dto.LogoUploadConfirmRequest.builder()
+                .fileId("file-123")
+                .checksum("abc123")
+                .build();
+
+        CompanyResponse companyWithLogo = CompanyResponse.builder()
+                .id(testCompanyId)
+                .name("Test Company AG")
+                .displayName("Test Company")
+                .logo(ch.batbern.companyuser.dto.CompanyLogo.builder()
+                        .url("https://cdn.example.com/logo.png")
+                        .fileId("file-123")
+                        .s3Key("logos/file-123.png")
+                        .build())
+                .isVerified(false)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+
+        when(companyService.getCompanyById(testCompanyId)).thenReturn(companyWithLogo);
+
+        mockMvc.perform(post("/api/v1/companies/{id}/logo/confirm", testCompanyId)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(confirmRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.logoUrl").value("https://cdn.example.com/logo.png"));
+    }
+
+    /**
+     * Test 4.19: should_returnNullLogoUrl_when_confirmUploadButNoLogo
+     * Verifies that confirm endpoint handles companies without logos
+     */
+    @Test
+    @WithMockUser
+    void should_returnNullLogoUrl_when_confirmUploadButNoLogo() throws Exception {
+        ch.batbern.companyuser.dto.LogoUploadConfirmRequest confirmRequest =
+                ch.batbern.companyuser.dto.LogoUploadConfirmRequest.builder()
+                .fileId("file-123")
+                .checksum("abc123")
+                .build();
+
+        CompanyResponse companyWithoutLogo = CompanyResponse.builder()
+                .id(testCompanyId)
+                .name("Test Company AG")
+                .displayName("Test Company")
+                .logo(null)
+                .isVerified(false)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+
+        when(companyService.getCompanyById(testCompanyId)).thenReturn(companyWithoutLogo);
+
+        mockMvc.perform(post("/api/v1/companies/{id}/logo/confirm", testCompanyId)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(confirmRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.logoUrl").isEmpty());
+    }
 }
