@@ -1,6 +1,7 @@
 package ch.batbern.companyuser.controller;
 
 import ch.batbern.companyuser.dto.*;
+import ch.batbern.companyuser.service.CompanyLogoService;
 import ch.batbern.companyuser.service.CompanyQueryService;
 import ch.batbern.companyuser.service.CompanySearchService;
 import ch.batbern.companyuser.service.CompanyService;
@@ -41,6 +42,7 @@ public class CompanyController {
     private final CompanySearchService searchService;
     private final SwissUIDValidationService uidValidationService;
     private final CompanyQueryService queryService;
+    private final CompanyLogoService logoService;
 
     /**
      * Create a new company
@@ -412,6 +414,96 @@ public class CompanyController {
             @PathVariable UUID id) {
         log.info("Verifying company: {}", id);
         CompanyResponse response = companyService.verifyCompany(id);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Request presigned URL for logo upload
+     * Requires authentication
+     * AC5: Logo upload with S3 presigned URLs
+     */
+    @PostMapping("/{id}/logo/presigned-url")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Request presigned URL for company logo upload",
+            description = "Generates a presigned S3 URL for uploading a company logo. " +
+                    "The URL expires after 15 minutes. Supports PNG, JPEG, and SVG files up to 5MB. " +
+                    "After uploading to S3, call the confirm endpoint to save the logo URL."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Presigned URL generated successfully",
+                    content = @Content(schema = @Schema(implementation = PresignedUploadUrl.class))
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid file type or size exceeds limit (5MB)"
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Unauthorized - missing or invalid JWT token"
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Company not found"
+            )
+    })
+    public ResponseEntity<PresignedUploadUrl> requestLogoUploadUrl(
+            @Parameter(description = "Company UUID", required = true)
+            @PathVariable UUID id,
+            @Valid @RequestBody LogoUploadRequest request) {
+        log.info("Requesting presigned URL for company: {}, file: {}", id, request.getFileName());
+
+        // Generate presigned URL using company ID as user ID for S3 key partitioning
+        PresignedUploadUrl response = logoService.generateLogoUploadUrl(
+                id.toString(),
+                request.getFileName(),
+                request.getFileSize()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Confirm logo upload completion
+     * Requires authentication
+     * AC5: Store logo URL in company entity after upload
+     */
+    @PostMapping("/{id}/logo/confirm")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(
+            summary = "Confirm logo upload completion",
+            description = "Confirms that the logo has been successfully uploaded to S3 and stores the CloudFront URL in the company record."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Logo upload confirmed and company updated",
+                    content = @Content(schema = @Schema(implementation = CompanyResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid file ID"
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Unauthorized - missing or invalid JWT token"
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Company not found"
+            )
+    })
+    public ResponseEntity<CompanyResponse> confirmLogoUpload(
+            @Parameter(description = "Company UUID", required = true)
+            @PathVariable UUID id,
+            @Valid @RequestBody LogoUploadConfirmRequest request) {
+        log.info("Confirming logo upload for company: {}, file ID: {}", id, request.getFileId());
+
+        logoService.confirmLogoUpload(id, request.getFileId(), request.getChecksum());
+        CompanyResponse response = companyService.getCompanyById(id);
+
         return ResponseEntity.ok(response);
     }
 }

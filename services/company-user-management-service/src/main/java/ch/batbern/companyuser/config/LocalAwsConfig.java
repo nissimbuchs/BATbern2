@@ -82,8 +82,51 @@ public class LocalAwsConfig {
 
             @Override
             public PresignedPutObjectRequest presignPutObject(PutObjectPresignRequest request) {
-                log.debug("🪣 [LOCAL] Mock presignPutObject");
-                return null; // Not implemented for local
+                log.debug("🪣 [LOCAL] Mock presignPutObject for key: {}", request.putObjectRequest().key());
+
+                try {
+                    // Return mock presigned URL for local development
+                    // In local mode, we'll simulate the upload process without actually uploading to S3
+                    String mockUrl = "http://localhost:9000/mock-bucket/" + request.putObjectRequest().key();
+                    java.net.URL url = java.net.URI.create(mockUrl).toURL();
+                    java.time.Instant expiration = java.time.Instant.now().plusSeconds(900);
+
+                    log.info("🪣 [LOCAL] Generated mock presigned URL: {}", mockUrl);
+
+                    // Create proxy implementation using reflection
+                    java.lang.reflect.InvocationHandler handler = (proxy, method, args) -> {
+                        String methodName = method.getName();
+                        if ("url".equals(methodName)) {
+                            return url;
+                        } else if ("expiration".equals(methodName)) {
+                            return expiration;
+                        } else if ("signedHeaders".equals(methodName)) {
+                            return java.util.Collections.emptyMap();
+                        } else if ("isBrowserExecutable".equals(methodName)) {
+                            return true;
+                        } else if ("httpRequest".equals(methodName)) {
+                            return null;
+                        } else if ("signedPayload".equals(methodName)) {
+                            return java.util.Optional.empty();
+                        } else if ("toString".equals(methodName)) {
+                            return "MockPresignedPutObjectRequest{url=" + mockUrl + "}";
+                        } else if ("hashCode".equals(methodName)) {
+                            return url.hashCode();
+                        } else if ("equals".equals(methodName)) {
+                            return proxy == args[0];
+                        }
+                        return null;
+                    };
+
+                    return (PresignedPutObjectRequest) java.lang.reflect.Proxy.newProxyInstance(
+                            PresignedPutObjectRequest.class.getClassLoader(),
+                            new Class<?>[] { PresignedPutObjectRequest.class },
+                            handler
+                    );
+                } catch (Exception e) {
+                    log.error("Failed to create mock presigned URL", e);
+                    throw new RuntimeException("Failed to create mock presigned URL", e);
+                }
             }
 
             @Override
