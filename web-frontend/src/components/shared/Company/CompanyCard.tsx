@@ -10,15 +10,7 @@
  */
 
 import React from 'react';
-import {
-  Card,
-  CardContent,
-  CardActionArea,
-  Typography,
-  Box,
-  Chip,
-  Avatar
-} from '@mui/material';
+import { Card, CardContent, CardActionArea, Typography, Box, Chip, Avatar } from '@mui/material';
 import BusinessIcon from '@mui/icons-material/Business';
 import { useTranslation } from 'react-i18next';
 import type { CompanyListItem } from '@/types/company.types';
@@ -32,7 +24,7 @@ export interface CompanyCardProps {
 export const CompanyCard: React.FC<CompanyCardProps> = ({
   company,
   onClick,
-  viewMode = 'grid'
+  viewMode = 'grid',
 }) => {
   const { t } = useTranslation('common');
 
@@ -53,7 +45,7 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({
       sx={{
         height: '100%',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
       }}
     >
       <CardActionArea
@@ -66,7 +58,7 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({
           height: '100%',
           display: 'flex',
           flexDirection: viewMode === 'grid' ? 'column' : 'row',
-          alignItems: 'flex-start'
+          alignItems: 'flex-start',
         }}
       >
         {/* Logo Section */}
@@ -76,18 +68,25 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            minHeight: viewMode === 'grid' ? 120 : 80
+            minHeight: viewMode === 'grid' ? 120 : 80,
           }}
         >
           <Avatar
+            src={company.logo?.url}
+            alt={`${company.name} logo`}
             data-testid="company-logo-fallback"
             sx={{
               width: viewMode === 'grid' ? 80 : 60,
               height: viewMode === 'grid' ? 80 : 60,
               bgcolor: 'grey.200',
-              borderRadius: 1
+              borderRadius: 1,
             }}
             variant="square"
+            slotProps={{
+              img: {
+                crossOrigin: 'anonymous',
+              },
+            }}
           >
             <BusinessIcon sx={{ fontSize: 40, color: 'grey.500' }} />
           </Avatar>
@@ -117,7 +116,7 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({
               fontWeight: 600,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap'
+              whiteSpace: 'nowrap',
             }}
           >
             {company.displayName || company.name}
@@ -133,7 +132,7 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
-                mb: 1
+                mb: 1,
               }}
             >
               {t('company.fields.legalName', { name: company.name })}
@@ -142,11 +141,7 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({
 
           {/* Industry */}
           {company.industry && (
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ mb: 0.5 }}
-            >
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
               {company.industry}
             </Typography>
           )}

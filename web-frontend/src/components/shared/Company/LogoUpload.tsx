@@ -1,16 +1,8 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
-import {
-  Box,
-  Typography,
-  IconButton,
-  LinearProgress,
-  Alert,
-} from '@mui/material';
-import {
-  CloudUpload as CloudUploadIcon,
-  Delete as DeleteIcon,
-} from '@mui/icons-material';
+import { Box, Typography, IconButton, LinearProgress, Alert } from '@mui/material';
+import { CloudUpload as CloudUploadIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import apiClient from '@/services/api/apiClient';
 
 interface LogoUploadProps {
   companyId: string;
@@ -33,6 +25,11 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Sync logoUrl state with currentLogoUrl prop
+  useEffect(() => {
+    setLogoUrl(currentLogoUrl);
+  }, [currentLogoUrl]);
+
   const handleError = useCallback(
     (errorType: string, errorMessage: string) => {
       setError(errorMessage);
@@ -47,19 +44,13 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
     (file: File): boolean => {
       // Validate file type
       if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
-        handleError(
-          'INVALID_FILE_TYPE',
-          'Only PNG, JPEG, and SVG files are allowed'
-        );
+        handleError('INVALID_FILE_TYPE', 'Only PNG, JPEG, and SVG files are allowed');
         return false;
       }
 
       // Validate file size
       if (file.size > MAX_FILE_SIZE) {
-        handleError(
-          'FILE_TOO_LARGE',
-          'File size must be less than 5MB'
-        );
+        handleError('FILE_TOO_LARGE', 'File size must be less than 5MB');
         return false;
       }
 
@@ -76,26 +67,16 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
 
       try {
         // Step 1: Request presigned URL from backend
-        const presignedResponse = await fetch(
-          `/api/v1/companies/${companyId}/logo/presigned-url`,
+        const presignedResponse = await apiClient.post(
+          `/companies/${companyId}/logo/presigned-url`,
           {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              fileName: file.name,
-              fileSize: file.size,
-              mimeType: file.type,
-            }),
+            fileName: file.name,
+            fileSize: file.size,
+            mimeType: file.type,
           }
         );
 
-        if (!presignedResponse.ok) {
-          throw new Error('Failed to get presigned URL');
-        }
-
-        const { presignedUrl, fileId } = await presignedResponse.json();
+        const { uploadUrl: presignedUrl, fileId } = presignedResponse.data;
 
         // Step 2: Upload to S3 with progress tracking
         await new Promise<void>((resolve, reject) => {
@@ -103,9 +84,7 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
 
           xhr.upload.addEventListener('progress', (event) => {
             if (event.lengthComputable) {
-              const percentComplete = Math.round(
-                (event.loaded / event.total) * 100
-              );
+              const percentComplete = Math.round((event.loaded / event.total) * 100);
               setUploadProgress(percentComplete);
             }
           });
@@ -128,22 +107,11 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
         });
 
         // Step 3: Confirm upload with backend
-        const confirmResponse = await fetch(
-          `/api/v1/companies/${companyId}/logo/confirm`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ fileId }),
-          }
-        );
+        const confirmResponse = await apiClient.post(`/companies/${companyId}/logo/confirm`, {
+          fileId,
+        });
 
-        if (!confirmResponse.ok) {
-          throw new Error('Failed to confirm logo upload');
-        }
-
-        const { logoUrl: newLogoUrl } = await confirmResponse.json();
+        const { logoUrl: newLogoUrl } = confirmResponse.data;
 
         setLogoUrl(newLogoUrl);
         setUploadProgress(100);
@@ -152,8 +120,7 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
           onUploadSuccess({ logoUrl: newLogoUrl });
         }
       } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : 'Failed to upload logo';
+        const errorMessage = err instanceof Error ? err.message : 'Failed to upload logo';
         handleError('UPLOAD_FAILED', errorMessage);
       } finally {
         setIsUploading(false);
@@ -163,25 +130,22 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
   );
 
   const onDrop = useCallback(
-    <T extends File>(acceptedFiles: T[], fileRejections: import('react-dropzone').FileRejection[]) => {
+    <T extends File>(
+      acceptedFiles: T[],
+      fileRejections: import('react-dropzone').FileRejection[]
+    ) => {
       // Reset error state
       setError(null);
 
       // Check for multiple files
       if (acceptedFiles.length > 1) {
-        handleError(
-          'MULTIPLE_FILES',
-          'Only one file can be uploaded at a time'
-        );
+        handleError('MULTIPLE_FILES', 'Only one file can be uploaded at a time');
         return;
       }
 
       // Check for rejected files
       if (fileRejections.length > 0) {
-        handleError(
-          'INVALID_FILE',
-          'File was rejected. Please check file type and size.'
-        );
+        handleError('INVALID_FILE', 'File was rejected. Please check file type and size.');
         return;
       }
 
@@ -193,11 +157,7 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
     [handleError, validateFile, uploadToS3]
   );
 
-  const {
-    getRootProps,
-    getInputProps,
-    isDragActive,
-  } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
       'image/png': ['.png'],
@@ -229,6 +189,7 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
             component="img"
             src={logoUrl}
             alt="Company logo preview"
+            crossOrigin="anonymous"
             sx={{
               maxWidth: '200px',
               maxHeight: '200px',
@@ -238,11 +199,7 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
               padding: 2,
             }}
           />
-          <IconButton
-            onClick={handleRemoveLogo}
-            color="error"
-            aria-label="Remove logo"
-          >
+          <IconButton onClick={handleRemoveLogo} color="error" aria-label="Remove logo">
             <DeleteIcon />
           </IconButton>
         </Box>
@@ -270,9 +227,7 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
           <input {...getInputProps()} />
           <CloudUploadIcon sx={{ fontSize: 48, color: 'grey.500', mb: 2 }} />
           <Typography variant="body1" color="textSecondary">
-            {isDragActive
-              ? 'Drop the file here'
-              : 'Drag and drop a logo here, or click to select'}
+            {isDragActive ? 'Drop the file here' : 'Drag and drop a logo here, or click to select'}
           </Typography>
           <Typography variant="caption" color="textSecondary" sx={{ mt: 1 }}>
             Accepted formats: PNG, JPEG, SVG (max 5MB)
@@ -285,11 +240,7 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
           <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
             Uploading... {uploadProgress}%
           </Typography>
-          <LinearProgress
-            variant="determinate"
-            value={uploadProgress}
-            role="progressbar"
-          />
+          <LinearProgress variant="determinate" value={uploadProgress} role="progressbar" />
         </Box>
       )}
 

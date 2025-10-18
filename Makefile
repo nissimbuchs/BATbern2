@@ -55,6 +55,13 @@ help: ## Show this help message
 	@echo "  make docker-down      - Stop all Docker services"
 	@echo "  make docker-build     - Build Docker images for all services"
 	@echo ""
+	@echo "⚡ Native Development (No Docker - 60-70% less resources):"
+	@echo "  make dev-native-up            - Start all services natively"
+	@echo "  make dev-native-down          - Stop all native services"
+	@echo "  make dev-native-status        - Show service status"
+	@echo "  make dev-native-logs          - Tail all service logs"
+	@echo "  make dev-native-restart       - Restart all services"
+	@echo ""
 	@echo "🚀 CI/CD:"
 	@echo "  make ci-build         - Full CI build (clean + build + test)"
 	@echo "  make ci-test          - Run all CI tests"
@@ -257,6 +264,33 @@ docker-build: ## Build Docker images for all services
 	@echo "🐳 Building Docker images..."
 	@./scripts/build-and-push-services.sh local
 	@echo "✓ Docker images built"
+
+# ═══════════════════════════════════════════════════════════
+# NATIVE DEVELOPMENT (No Docker)
+# ═══════════════════════════════════════════════════════════
+
+dev-native-up: ## Start all services natively (without Docker) - 60-70% less resources
+	@echo "🚀 Starting services natively (no Docker)..."
+	@./scripts/dev/start-all-native.sh
+
+dev-native-down: ## Stop all native services
+	@echo "🛑 Stopping native services..."
+	@./scripts/dev/stop-all-native.sh
+
+dev-native-status: ## Show status of native services
+	@./scripts/dev/status-native.sh
+
+dev-native-logs: ## Tail logs from all native services
+	@./scripts/dev/logs-native.sh
+
+dev-native-logs-service: ## Tail logs from specific service (use SERVICE=name)
+	@./scripts/dev/logs-native.sh $(SERVICE)
+
+dev-native-restart: ## Restart all native services
+	@./scripts/dev/restart-native.sh
+
+dev-native-restart-service: ## Restart specific native service (use SERVICE=name)
+	@./scripts/dev/restart-native.sh $(SERVICE)
 
 # ═══════════════════════════════════════════════════════════
 # CI/CD
