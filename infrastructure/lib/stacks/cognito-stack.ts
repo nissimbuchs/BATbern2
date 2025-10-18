@@ -86,6 +86,10 @@ export class CognitoStack extends cdk.Stack {
         },
       },
       customAttributes: {
+        role: new cognito.StringAttribute({
+          mutable: true,
+          maxLen: 20,
+        }),
         companyId: new cognito.StringAttribute({
           mutable: true,
           maxLen: 36,

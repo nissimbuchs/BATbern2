@@ -1,0 +1,61 @@
+meta {
+  name: Update Company
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/companies/{{testCompanyId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: en-US
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "{{testCompanyName}}",
+    "displayName": "Bruno Test Co (Updated)",
+    "industry": "Software",
+    "website": "https://bruno-test-updated.example.com",
+    "description": "Updated test company - Bruno API tests"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.id: eq {{testCompanyId}}
+}
+
+tests {
+  test("should update company successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return updated company", function() {
+    const body = res.getBody();
+    expect(body.displayName).to.equal('Bruno Test Co (Updated)');
+    expect(body.industry).to.equal('Software');
+    expect(body.website).to.equal('https://bruno-test-updated.example.com');
+  });
+
+  test("should preserve company ID", function() {
+    const body = res.getBody();
+    const expectedId = bru.getEnvVar("testCompanyId");
+    expect(body.id).to.equal(expectedId);
+  });
+
+  test("should have CORS headers", function() {
+    const corsHeader = res.getHeader('Access-Control-Allow-Origin');
+    expect(corsHeader).to.exist;
+  });
+}

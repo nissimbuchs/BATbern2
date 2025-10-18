@@ -6,9 +6,9 @@ import * as logs from 'aws-cdk-lib/aws-logs';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
-import * as path from 'path';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
+import { createContainerImage } from '../utils/container-image-helper';
 
 export interface ApiGatewayServiceStackProps extends cdk.StackProps {
   config: EnvironmentConfig;
@@ -82,9 +82,13 @@ export class ApiGatewayServiceStack extends cdk.Stack {
 
     // Add container
     const container = taskDefinition.addContainer('Container', {
-      image: ecs.ContainerImage.fromAsset(path.join(__dirname, '../../..'), {
-        file: 'api-gateway/Dockerfile',
-      }),
+      image: createContainerImage(
+        this,
+        'ApiGatewayRepository',
+        'api-gateway',
+        envName,
+        'api-gateway/Dockerfile'
+      ),
       logging: ecs.LogDrivers.awsLogs({
         logGroup,
         streamPrefix: 'api-gateway',
