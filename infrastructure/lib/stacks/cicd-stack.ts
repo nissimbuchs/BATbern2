@@ -197,6 +197,8 @@ export class CICDStack extends cdk.Stack {
       ],
       resources: [
         `arn:aws:secretsmanager:${this.region}:${this.account}:secret:batbern/${config.envName}/*`,
+        // Allow access to RDS-generated secrets (created by CDK with auto-generated names)
+        `arn:aws:secretsmanager:${this.region}:${this.account}:secret:RdsClusterInstanceSecret*`,
       ],
     }));
 
