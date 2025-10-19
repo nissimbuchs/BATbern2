@@ -389,7 +389,7 @@ jobs:
     # This allows testing PRs in staging environment before merge
     if: |
       (github.event_name == 'push' && github.ref == 'refs/heads/develop') ||
-      (github.event_name == 'pull_request' && github.base_ref == 'develop')
+      (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'develop')
     uses: ./.github/workflows/deploy-staging.yml
     secrets: inherit
     permissions:
