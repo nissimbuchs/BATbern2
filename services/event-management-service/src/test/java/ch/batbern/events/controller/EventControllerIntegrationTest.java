@@ -314,7 +314,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                         .param("filter", invalidFilter)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"));
+                .andExpect(jsonPath("$.error").value("Bad Request"));
     }
 
     @Test
@@ -364,7 +364,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(get("/api/v1/events/999999")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error").value("NOT_FOUND"));
+                .andExpect(jsonPath("$.error").value("Not Found"));
     }
 
     @Test
@@ -571,7 +571,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/v1/events/" + savedInvalidEvent.getId() + "/publish")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error").value("Unprocessable Entity"))
                 .andExpect(jsonPath("$.message").exists());
     }
 
@@ -602,7 +602,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/v1/events/" + archivedEvent.getId() + "/workflow/advance")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.error").value("WORKFLOW_ERROR"))
+                .andExpect(jsonPath("$.error").value("Unprocessable Entity"))
                 .andExpect(jsonPath("$.message").exists());
     }
 
