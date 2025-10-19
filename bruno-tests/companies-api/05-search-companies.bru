@@ -40,12 +40,19 @@ tests {
     expect(body).to.be.an('array');
   });
 
-  test("should find our test company", function() {
+  test("should find our test company (Story 1.16.2: lookup by name)", function() {
     const body = res.getBody();
-    const testCompanyId = bru.getEnvVar("testCompanyId");
-    const foundCompany = body.find(c => c.id === testCompanyId);
+    const testCompanyName = bru.getEnvVar("testCompanyName");
+    const foundCompany = body.find(c => c.name === testCompanyName);
     expect(foundCompany).to.exist;
     expect(foundCompany.name).to.include('Bruno');
+  });
+
+  test("companies should NOT have id field (Story 1.16.2: removed redundant id)", function() {
+    const body = res.getBody();
+    if (body && body.length > 0) {
+      expect(body[0].id).to.be.undefined;
+    }
   });
 
   test("should accept custom headers without CORS error", function() {

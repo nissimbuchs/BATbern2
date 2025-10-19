@@ -9,12 +9,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
-import java.util.UUID;
 
 /**
  * Response DTO for company data
  * AC4: REST API response format
  * AC15: Support resource expansion (statistics, logo)
+ *
+ * Story 1.16.2: Eliminate UUIDs from API
+ * Uses company name as the unique identifier (no separate id field)
  */
 @Data
 @Builder
@@ -24,10 +26,7 @@ import java.util.UUID;
 @Schema(description = "Company response payload with all company details")
 public class CompanyResponse {
 
-    @Schema(description = "Unique company identifier (UUID)", example = "550e8400-e29b-41d4-a716-446655440000")
-    private UUID id;
-
-    @Schema(description = "Unique company name", example = "Swisscom AG")
+    @Schema(description = "Unique company name (identifier)", example = "Swisscom AG")
     private String name;
 
     @Schema(description = "Display-friendly company name", example = "Swisscom")

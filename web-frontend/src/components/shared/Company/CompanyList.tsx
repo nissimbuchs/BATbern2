@@ -101,11 +101,11 @@ export const CompanyList: React.FC<CompanyListProps> = ({
         {companies.map((company) => (
           <Grid
             size={{ xs: 12, sm: viewMode === 'grid' ? 6 : 12, md: viewMode === 'grid' ? 4 : 12 }}
-            key={company.id}
+            key={company.name}
           >
             <CompanyCard
               company={company}
-              onClick={(id) => onCompanyClick?.(id)}
+              onClick={(name) => onCompanyClick?.(name)}
               viewMode={viewMode}
             />
           </Grid>

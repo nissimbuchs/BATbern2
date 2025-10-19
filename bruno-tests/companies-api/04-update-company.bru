@@ -5,7 +5,7 @@ meta {
 }
 
 put {
-  url: {{baseUrl}}/companies/{{testCompanyId}}
+  url: {{baseUrl}}/companies/{{testCompanyName}}
   body: json
   auth: bearer
 }
@@ -34,7 +34,7 @@ body:json {
 
 assert {
   res.status: eq 200
-  res.body.id: eq {{testCompanyId}}
+  res.body.name: isDefined
 }
 
 tests {
@@ -49,10 +49,15 @@ tests {
     expect(body.website).to.equal('https://bruno-test-updated.example.com');
   });
 
-  test("should preserve company ID", function() {
+  test("should preserve company name (Story 1.16.2: name is identifier)", function() {
     const body = res.getBody();
-    const expectedId = bru.getEnvVar("testCompanyId");
-    expect(body.id).to.equal(expectedId);
+    const expectedName = bru.getEnvVar("testCompanyName");
+    expect(body.name).to.equal(expectedName);
+  });
+
+  test("should NOT have id field (Story 1.16.2: removed redundant id)", function() {
+    const body = res.getBody();
+    expect(body.id).to.be.undefined;
   });
 
   test("should have CORS headers", function() {

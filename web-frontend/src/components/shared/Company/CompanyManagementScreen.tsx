@@ -121,9 +121,9 @@ const CompanyManagementScreen: React.FC = () => {
     async (data: CreateCompanyRequest | UpdateCompanyRequest) => {
       try {
         if (editingCompany) {
-          // Update existing company
+          // Update existing company (Story 1.16.2: uses company name as identifier)
           await updateCompanyMutation.mutateAsync({
-            id: editingCompany.id,
+            name: editingCompany.name,
             data: data as UpdateCompanyRequest,
           });
           setEditingCompany(null);

@@ -83,19 +83,20 @@ export interface CompanyFilters {
 
 /**
  * CompanyStore - Zustand store interface
+ * Story 1.16.2: Uses company name as identifier instead of UUID
  */
 export interface CompanyStore {
   filters: CompanyFilters;
   viewMode: 'grid' | 'list';
-  selectedCompanyId?: string;
+  selectedCompanyName?: string;
   isCreateModalOpen: boolean;
   isEditModalOpen: boolean;
   setFilters: (filters: CompanyFilters) => void;
   toggleViewMode: () => void;
-  setSelectedCompanyId: (id?: string) => void;
+  setSelectedCompanyName: (name?: string) => void;
   openCreateModal: () => void;
   closeCreateModal: () => void;
-  openEditModal: (id: string) => void;
+  openEditModal: (name: string) => void;
   closeEditModal: () => void;
 }
 

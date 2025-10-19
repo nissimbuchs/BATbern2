@@ -15,6 +15,7 @@ info:
     - **GDPR Compliance**: Cascade deletion and audit logging
 
     **Story**: 1.14-2 - User Management Service Foundation
+    **Story 1.16.2**: Eliminate UUIDs from API - Use username as identifier
 
     **Performance Targets**:
     - Current user (GET /users/me): <100ms (P95)
@@ -99,7 +100,7 @@ paths:
                 basicUser:
                   summary: Basic user profile
                   value:
-                    id: 550e8400-e29b-41d4-a716-446655440000
+                    id: john.doe
                     email: john.doe@example.com
                     firstName: John
                     lastName: Doe
@@ -110,17 +111,17 @@ paths:
                 expandedUser:
                   summary: User with all expansions
                   value:
-                    id: 550e8400-e29b-41d4-a716-446655440000
+                    id: john.doe
                     email: john.doe@example.com
                     firstName: John
                     lastName: Doe
                     roles: [SPEAKER, ATTENDEE]
-                    companyId: 550e8400-e29b-41d4-a716-446655440001
+                    companyId: Swiss IT Solutions AG
                     isActive: true
                     createdAt: 2025-01-15T10:00:00Z
                     updatedAt: 2025-01-15T10:00:00Z
                     company:
-                      id: 550e8400-e29b-41d4-a716-446655440001
+                      id: Swiss IT Solutions AG
                       name: Swiss IT Solutions AG
                       industry: Technology
                     preferences:
@@ -318,11 +319,11 @@ paths:
             enum: [ORGANIZER, SPEAKER, PARTNER, ATTENDEE]
         - name: company
           in: query
-          description: Filter by company ID (deprecated, use filter parameter)
+          description: Filter by company name (deprecated, use filter parameter)
           required: false
           schema:
             type: string
-            format: uuid
+            example: Swiss IT Solutions AG
       responses:
         '200':
           description: Successful response with paginated users
@@ -347,30 +348,32 @@ paths:
       security:
         - BearerAuth: []
 
-  /users/{id}:
+  /users/{username}:
     get:
       tags:
         - User Management
-      summary: Get user details
+      summary: Get user details by username
       description: |
         Retrieve detailed information about a specific user.
 
         **Acceptance Criteria**: AC5
 
+        **Story 1.16.2**: Uses username as identifier instead of UUID
+
         **Resource Expansion**: Supports ?include parameter
 
         **Performance**: <150ms (P95)
 
-      operationId: getUserById
+      operationId: getUserByUsername
       parameters:
-        - name: id
+        - name: username
           in: path
-          description: User UUID
+          description: Username (unique identifier)
           required: true
           schema:
             type: string
-            format: uuid
-            example: 550e8400-e29b-41d4-a716-446655440000
+            pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+            example: john.doe
         - name: include
           in: query
           description: Comma-separated list of resources to include
@@ -403,6 +406,8 @@ paths:
 
         **Acceptance Criteria**: AC11
 
+        **Story 1.16.2**: Uses username as identifier instead of UUID
+
         **Authorization**: ADMIN role or self-deletion
 
         **Business Rules**:
@@ -415,12 +420,14 @@ paths:
 
       operationId: deleteUser
       parameters:
-        - name: id
+        - name: username
           in: path
+          description: Username (unique identifier)
           required: true
           schema:
             type: string
-            format: uuid
+            pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+            example: john.doe
       responses:
         '204':
           description: User deleted successfully
@@ -639,7 +646,7 @@ paths:
       security:
         - BearerAuth: []
 
-  /users/{id}/roles:
+  /users/{username}/roles:
     get:
       tags:
         - Role Management
@@ -649,16 +656,20 @@ paths:
 
         **Acceptance Criteria**: AC8
 
+        **Story 1.16.2**: Uses username as identifier instead of UUID
+
         **Authorization**: ADMIN or ORGANIZER role required
 
       operationId: getUserRoles
       parameters:
-        - name: id
+        - name: username
           in: path
+          description: Username (unique identifier)
           required: true
           schema:
             type: string
-            format: uuid
+            pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+            example: john.doe
       responses:
         '200':
           description: Roles retrieved successfully
@@ -667,9 +678,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  userId:
+                  username:
                     type: string
-                    format: uuid
+                    description: Username (unique identifier) - Story 1.16.2
+                    example: john.doe
                   roles:
                     type: array
                     items:
@@ -695,6 +707,8 @@ paths:
 
         **Acceptance Criteria**: AC8
 
+        **Story 1.16.2**: Uses username as identifier instead of UUID
+
         **Authorization**: ADMIN or ORGANIZER role required
 
         **Business Rules**:
@@ -707,12 +721,14 @@ paths:
 
       operationId: updateUserRoles
       parameters:
-        - name: id
+        - name: username
           in: path
+          description: Username (unique identifier)
           required: true
           schema:
             type: string
-            format: uuid
+            pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+            example: john.doe
       requestBody:
         required: true
         content:
@@ -736,9 +752,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  userId:
+                  username:
                     type: string
-                    format: uuid
+                    description: Username (unique identifier) - Story 1.16.2
+                    example: john.doe
                   roles:
                     type: array
                     items:
@@ -758,7 +775,7 @@ paths:
       security:
         - BearerAuth: []
 
-  /users/{id}/activity:
+  /users/{username}/activity:
     get:
       tags:
         - Activity History
@@ -768,18 +785,22 @@ paths:
 
         **Acceptance Criteria**: AC9
 
+        **Story 1.16.2**: Uses username as identifier instead of UUID
+
         **Activity Types**: event_registered, session_attended, topic_voted, content_viewed
 
         **Timeframe Filtering**: Support for date range queries
 
       operationId: getUserActivity
       parameters:
-        - name: id
+        - name: username
           in: path
+          description: Username (unique identifier)
           required: true
           schema:
             type: string
-            format: uuid
+            pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+            example: john.doe
         - name: timeframe
           in: query
           description: Filter by timeframe
@@ -961,6 +982,9 @@ components:
   schemas:
     UserResponse:
       type: object
+      description: |
+        User response with meaningful IDs.
+        Story 1.16.2: id field contains username, not UUID.
       required:
         - id
         - email
@@ -973,8 +997,9 @@ components:
       properties:
         id:
           type: string
-          format: uuid
-          example: 550e8400-e29b-41d4-a716-446655440000
+          description: Username (unique identifier) - Story 1.16.2
+          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          example: john.doe
         cognitoUserId:
           type: string
           example: cognito-user-123
@@ -993,8 +1018,8 @@ components:
           example: Software engineer passionate about cloud architecture
         companyId:
           type: string
-          format: uuid
-          example: 550e8400-e29b-41d4-a716-446655440001
+          description: Company name (unique identifier) - Story 1.16.2
+          example: Swiss IT Solutions AG
         roles:
           type: array
           items:
@@ -1108,6 +1133,9 @@ components:
 
     UserSearchResponse:
       type: object
+      description: |
+        User search result with meaningful IDs.
+        Story 1.16.2: id field contains username, not UUID.
       required:
         - id
         - email
@@ -1116,7 +1144,9 @@ components:
       properties:
         id:
           type: string
-          format: uuid
+          description: Username (unique identifier) - Story 1.16.2
+          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          example: john.doe
         email:
           type: string
         firstName:
@@ -1125,7 +1155,8 @@ components:
           type: string
         companyId:
           type: string
-          format: uuid
+          description: Company name (unique identifier) - Story 1.16.2
+          example: Swiss IT Solutions AG
         roles:
           type: array
           items:
@@ -1150,7 +1181,8 @@ components:
           type: string
         companyId:
           type: string
-          format: uuid
+          description: Company name (unique identifier) - Story 1.16.2
+          example: Swiss IT Solutions AG
         createIfMissing:
           type: boolean
           default: true
@@ -1161,13 +1193,15 @@ components:
     GetOrCreateUserResponse:
       type: object
       required:
-        - userId
+        - username
         - created
         - user
       properties:
-        userId:
+        username:
           type: string
-          format: uuid
+          description: Username (unique identifier) - Story 1.16.2
+          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          example: john.doe
         created:
           type: boolean
           description: True if user was created, false if existing
@@ -1182,10 +1216,13 @@ components:
       properties:
         id:
           type: string
+          description: Activity ID (internal UUID preserved for activity history)
           format: uuid
-        userId:
+        username:
           type: string
-          format: uuid
+          description: Username (unique identifier) - Story 1.16.2
+          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          example: john.doe
         activityType:
           type: string
           example: event_registered
@@ -1207,12 +1244,18 @@ components:
 
     Company:
       type: object
+      description: |
+        Company details with meaningful IDs.
+        Story 1.16.2: id field contains company name, not UUID.
       properties:
         id:
           type: string
-          format: uuid
+          description: Company name (unique identifier) - Story 1.16.2
+          example: Swiss IT Solutions AG
         name:
           type: string
+          description: Company name (same as id)
+          example: Swiss IT Solutions AG
         displayName:
           type: string
         industry:
@@ -1347,7 +1390,7 @@ components:
               value:
                 error: RESOURCE_NOT_FOUND
                 errorCode: NOT_FOUND
-                message: User not found with id 550e8400-e29b-41d4-a716-446655440000
+                message: User not found with username 'john.doe'
                 timestamp: 2025-01-15T10:30:00Z
 
     Conflict:

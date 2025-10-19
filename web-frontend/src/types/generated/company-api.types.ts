@@ -66,7 +66,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/companies/{id}": {
+    "/companies/{name}": {
         parameters: {
             query?: never;
             header?: never;
@@ -74,10 +74,12 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get company details
+         * Get company details by name
          * @description Retrieve detailed information about a specific company.
          *
          *     **Acceptance Criteria**: AC2
+         *
+         *     **Story 1.16.2**: Uses company name as identifier instead of UUID
          *
          *     **Performance**: <150ms (P95)
          */
@@ -87,6 +89,8 @@ export interface paths {
          * @description Replace all company data with new data.
          *
          *     **Acceptance Criteria**: AC4
+         *
+         *     **Story 1.16.2**: Uses company name as identifier instead of UUID
          *
          *     **Validation Rules**:
          *     - Company name must be unique
@@ -104,6 +108,8 @@ export interface paths {
          *
          *     **Acceptance Criteria**: AC4
          *
+         *     **Story 1.16.2**: Uses company name as identifier instead of UUID
+         *
          *     **Events Published**: CompanyDeletedEvent to EventBridge
          *
          *     **Cache Invalidation**: All company caches cleared on deletion
@@ -116,6 +122,8 @@ export interface paths {
          * @description Update specific fields of an existing company.
          *
          *     **Acceptance Criteria**: AC4
+         *
+         *     **Story 1.16.2**: Uses company name as identifier instead of UUID
          *
          *     **Validation Rules**:
          *     - Company name must be unique
@@ -192,7 +200,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/companies/{id}/verify": {
+    "/companies/{name}/verify": {
         parameters: {
             query?: never;
             header?: never;
@@ -206,6 +214,8 @@ export interface paths {
          * @description Marks a company as verified by an ORGANIZER.
          *
          *     **Acceptance Criteria**: AC13
+         *
+         *     **Story 1.16.2**: Uses company name as identifier instead of UUID
          *
          *     **Authorization**: ORGANIZER role required
          *
@@ -224,13 +234,15 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * @description Company response with meaningful IDs.
+         *     Story 1.16.2: name field is the unique identifier (no separate id field).
+         */
         CompanyResponse: {
             /**
-             * Format: uuid
-             * @example 550e8400-e29b-41d4-a716-446655440000
+             * @description Company name (unique identifier) - Story 1.16.2
+             * @example Swiss IT Solutions AG
              */
-            id: string;
-            /** @example Swiss IT Solutions AG */
             name: string;
             /** @example Swiss IT Solutions */
             displayName?: string;
@@ -288,12 +300,12 @@ export interface components {
             /**
              * Format: uri
              * @description CloudFront CDN URL for logo
-             * @example https://cdn.batbern.ch/logos/2025/550e8400-e29b-41d4-a716-446655440000/logo.png
+             * @example https://cdn.batbern.ch/logos/swiss-it-solutions-ag/logo.png
              */
             url?: string;
             /**
              * @description S3 object key
-             * @example logos/2025/550e8400-e29b-41d4-a716-446655440000/logo.png
+             * @example logos/swiss-it-solutions-ag/logo.png
              */
             s3Key?: string;
             /**
@@ -302,13 +314,15 @@ export interface components {
              */
             fileId?: string;
         };
+        /**
+         * @description Company search result with meaningful IDs.
+         *     Story 1.16.2: name field is the unique identifier (no separate id field).
+         */
         CompanySearchResponse: {
             /**
-             * Format: uuid
-             * @example 550e8400-e29b-41d4-a716-446655440000
+             * @description Company name (unique identifier) - Story 1.16.2
+             * @example Swiss IT Solutions AG
              */
-            id: string;
-            /** @example Swiss IT Solutions AG */
             name: string;
             /** @example Swiss IT Solutions */
             displayName?: string;
@@ -548,8 +562,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Company UUID */
-                id: string;
+                /** @description Company name (unique identifier) */
+                name: string;
             };
             cookie?: never;
         };
@@ -574,7 +588,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                id: string;
+                /** @description Company name (unique identifier) */
+                name: string;
             };
             cookie?: never;
         };
@@ -606,7 +621,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                id: string;
+                /** @description Company name (unique identifier) */
+                name: string;
             };
             cookie?: never;
         };
@@ -630,7 +646,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                id: string;
+                /** @description Company name (unique identifier) */
+                name: string;
             };
             cookie?: never;
         };
@@ -718,7 +735,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                id: string;
+                /** @description Company name (unique identifier) */
+                name: string;
             };
             cookie?: never;
         };

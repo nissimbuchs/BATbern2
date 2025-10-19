@@ -5,7 +5,7 @@ import { CloudUpload as CloudUploadIcon, Delete as DeleteIcon } from '@mui/icons
 import apiClient from '@/services/api/apiClient';
 
 interface LogoUploadProps {
-  companyId: string;
+  companyName: string; // Story 1.16.2: uses company name as identifier
   currentLogoUrl?: string;
   onUploadSuccess?: (data: { logoUrl: string }) => void;
   onUploadError?: (error: { type: string; message: string }) => void;
@@ -15,7 +15,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_FILE_TYPES = ['image/png', 'image/jpeg', 'image/svg+xml'];
 
 export const LogoUpload: React.FC<LogoUploadProps> = ({
-  companyId,
+  companyName,
   currentLogoUrl,
   onUploadSuccess,
   onUploadError,
@@ -66,9 +66,9 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
       setUploadProgress(0);
 
       try {
-        // Step 1: Request presigned URL from backend
+        // Step 1: Request presigned URL from backend (Story 1.16.2: uses company name in URL)
         const presignedResponse = await apiClient.post(
-          `/companies/${companyId}/logo/presigned-url`,
+          `/companies/${companyName}/logo/presigned-url`,
           {
             fileName: file.name,
             fileSize: file.size,
@@ -106,8 +106,8 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
           xhr.send(file);
         });
 
-        // Step 3: Confirm upload with backend
-        const confirmResponse = await apiClient.post(`/companies/${companyId}/logo/confirm`, {
+        // Step 3: Confirm upload with backend (Story 1.16.2: uses company name in URL)
+        const confirmResponse = await apiClient.post(`/companies/${companyName}/logo/confirm`, {
           fileId,
         });
 
@@ -126,7 +126,7 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
         setIsUploading(false);
       }
     },
-    [companyId, handleError, onUploadSuccess]
+    [companyName, handleError, onUploadSuccess]
   );
 
   const onDrop = useCallback(

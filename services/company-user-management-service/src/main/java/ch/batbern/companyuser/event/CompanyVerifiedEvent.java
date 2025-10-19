@@ -1,24 +1,25 @@
 package ch.batbern.companyuser.event;
 
 import ch.batbern.shared.events.DomainEvent;
-import ch.batbern.shared.types.UserId;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 
 import java.time.Instant;
-import java.util.UUID;
 
 /**
  * Domain event published when a company is verified
  * Published to EventBridge for downstream services to consume
  *
  * Extends shared-kernel DomainEvent for consistent event handling
+ *
+ * Story 1.16.2: Eliminate UUIDs from API
+ * Uses String companyName instead of UUID as aggregate ID
  */
 @Getter
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
-public class CompanyVerifiedEvent extends DomainEvent<UUID> {
+public class CompanyVerifiedEvent extends DomainEvent<String> {
 
     private final String name;
     private final String swissUID;
@@ -26,13 +27,13 @@ public class CompanyVerifiedEvent extends DomainEvent<UUID> {
     private final Instant verifiedAt;
 
     public CompanyVerifiedEvent(
-            UUID companyId,
+            String companyName,
             String name,
             String swissUID,
             boolean isVerified,
             Instant verifiedAt,
-            UserId userId) {
-        super(companyId, "CompanyVerified", userId);
+            String username) {
+        super(companyName, "CompanyVerified", username);
         this.name = name;
         this.swissUID = swissUID;
         this.isVerified = isVerified;

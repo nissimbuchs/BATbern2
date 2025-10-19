@@ -59,11 +59,13 @@ class CompanyServiceTest {
     private CreateCompanyRequest createRequest;
     private UpdateCompanyRequest updateRequest;
     private Company existingCompany;
-    private UUID companyId;
+    // Story 1.16.2: use company name instead of UUID
+    private String companyName;
 
     @BeforeEach
     void setUp() {
-        companyId = UUID.randomUUID();
+        // Story 1.16.2: use company name instead of UUID
+        companyName = "Test Company AG";
 
         createRequest = CreateCompanyRequest.builder()
                 .name("Test Company AG")
@@ -83,7 +85,7 @@ class CompanyServiceTest {
                 .build();
 
         existingCompany = Company.builder()
-                .id(companyId)
+                .id(UUID.randomUUID())  // Internal DB uses UUID
                 .name("Test Company AG")
                 .displayName("Test Company")
                 .swissUID("CHE-123.456.789")
@@ -164,7 +166,7 @@ class CompanyServiceTest {
                 .build();
 
         Company companyWithoutUID = Company.builder()
-                .id(companyId)
+                .id(UUID.randomUUID())  // Internal DB uses UUID
                 .name("Test Company AG")
                 .displayName("Test Company")
                 .isVerified(false)
@@ -217,34 +219,35 @@ class CompanyServiceTest {
     // ==================== GET COMPANY TESTS ====================
 
     @Test
-    @DisplayName("Test 4.6: should_getCompanyById_when_companyExists")
+    @DisplayName("Test 4.6: should_getCompanyByName_when_companyExists")
     void should_getCompanyById_when_companyExists() {
         // Given
-        when(companyRepository.findById(companyId)).thenReturn(Optional.of(existingCompany));
+        // Story 1.16.2: use company name instead of UUID
+        when(companyRepository.findByName(companyName)).thenReturn(Optional.of(existingCompany));
 
         // When
-        CompanyResponse response = companyService.getCompanyById(companyId);
+        CompanyResponse response = companyService.getCompanyByName(companyName);
 
         // Then
         assertThat(response).isNotNull();
-        assertThat(response.getId()).isEqualTo(companyId);
         assertThat(response.getName()).isEqualTo("Test Company AG");
 
-        verify(companyRepository).findById(companyId);
+        verify(companyRepository).findByName(companyName);
     }
 
     @Test
     @DisplayName("Test 4.7: should_throwCompanyNotFoundException_when_companyDoesNotExist")
     void should_throwCompanyNotFoundException_when_companyDoesNotExist() {
         // Given
-        when(companyRepository.findById(companyId)).thenReturn(Optional.empty());
+        // Story 1.16.2: use company name instead of UUID
+        when(companyRepository.findByName(companyName)).thenReturn(Optional.empty());
 
         // When / Then
-        assertThatThrownBy(() -> companyService.getCompanyById(companyId))
+        assertThatThrownBy(() -> companyService.getCompanyByName(companyName))
                 .isInstanceOf(CompanyNotFoundException.class)
-                .hasMessageContaining(companyId.toString());
+                .hasMessageContaining(companyName);
 
-        verify(companyRepository).findById(companyId);
+        verify(companyRepository).findByName(companyName);
     }
 
     @Test
@@ -294,16 +297,17 @@ class CompanyServiceTest {
     @DisplayName("Test 4.10: should_updateCompany_when_validUpdateRequest")
     void should_updateCompany_when_validUpdateRequest() {
         // Given
+        // Story 1.16.2: use company name instead of UUID
         when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
-        when(companyRepository.findById(companyId)).thenReturn(Optional.of(existingCompany));
+        when(companyRepository.findByName(companyName)).thenReturn(Optional.of(existingCompany));
         when(companyRepository.save(any(Company.class))).thenReturn(existingCompany);
 
         // When
-        CompanyResponse response = companyService.updateCompany(companyId, updateRequest);
+        CompanyResponse response = companyService.updateCompany(companyName, updateRequest);
 
         // Then
         assertThat(response).isNotNull();
-        verify(companyRepository).findById(companyId);
+        verify(companyRepository).findByName(companyName);
         verify(companyRepository).save(any(Company.class));
         verify(searchService).invalidateCache();
     }
@@ -312,12 +316,13 @@ class CompanyServiceTest {
     @DisplayName("Test 4.11: should_throwCompanyNotFoundException_when_updateNonExistentCompany")
     void should_throwCompanyNotFoundException_when_updateNonExistentCompany() {
         // Given
-        when(companyRepository.findById(companyId)).thenReturn(Optional.empty());
+        // Story 1.16.2: use company name instead of UUID
+        when(companyRepository.findByName(companyName)).thenReturn(Optional.empty());
 
         // When / Then
-        assertThatThrownBy(() -> companyService.updateCompany(companyId, updateRequest))
+        assertThatThrownBy(() -> companyService.updateCompany(companyName, updateRequest))
                 .isInstanceOf(CompanyNotFoundException.class)
-                .hasMessageContaining(companyId.toString());
+                .hasMessageContaining(companyName);
 
         verify(companyRepository, never()).save(any(Company.class));
         verify(searchService, never()).invalidateCache();
@@ -331,12 +336,13 @@ class CompanyServiceTest {
                 .name("New Name Only")
                 .build();
 
+        // Story 1.16.2: use company name instead of UUID
         when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
-        when(companyRepository.findById(companyId)).thenReturn(Optional.of(existingCompany));
+        when(companyRepository.findByName(companyName)).thenReturn(Optional.of(existingCompany));
         when(companyRepository.save(any(Company.class))).thenReturn(existingCompany);
 
         // When
-        companyService.updateCompany(companyId, partialUpdate);
+        companyService.updateCompany(companyName, partialUpdate);
 
         // Then
         verify(companyRepository).save(argThat(company ->
@@ -351,15 +357,16 @@ class CompanyServiceTest {
     @DisplayName("Test 4.13: should_deleteCompany_when_companyExists")
     void should_deleteCompany_when_companyExists() {
         // Given
+        // Story 1.16.2: use company name instead of UUID
         when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
-        when(companyRepository.findById(companyId)).thenReturn(Optional.of(existingCompany));
+        when(companyRepository.findByName(companyName)).thenReturn(Optional.of(existingCompany));
         doNothing().when(companyRepository).delete(existingCompany);
 
         // When
-        companyService.deleteCompany(companyId);
+        companyService.deleteCompany(companyName);
 
         // Then
-        verify(companyRepository).findById(companyId);
+        verify(companyRepository).findByName(companyName);
         verify(companyRepository).delete(existingCompany);
         verify(searchService).invalidateCache();
     }
@@ -368,12 +375,13 @@ class CompanyServiceTest {
     @DisplayName("Test 4.14: should_throwCompanyNotFoundException_when_deleteNonExistentCompany")
     void should_throwCompanyNotFoundException_when_deleteNonExistentCompany() {
         // Given
-        when(companyRepository.findById(companyId)).thenReturn(Optional.empty());
+        // Story 1.16.2: use company name instead of UUID
+        when(companyRepository.findByName(companyName)).thenReturn(Optional.empty());
 
         // When / Then
-        assertThatThrownBy(() -> companyService.deleteCompany(companyId))
+        assertThatThrownBy(() -> companyService.deleteCompany(companyName))
                 .isInstanceOf(CompanyNotFoundException.class)
-                .hasMessageContaining(companyId.toString());
+                .hasMessageContaining(companyName);
 
         verify(companyRepository, never()).delete(any(Company.class));
         verify(searchService, never()).invalidateCache();
@@ -385,12 +393,13 @@ class CompanyServiceTest {
     @DisplayName("Test 4.17: should_markAsVerified_when_validCompanyProvided")
     void should_markAsVerified_when_validCompanyProvided() {
         // Given
+        // Story 1.16.2: use company name instead of UUID
         when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
-        when(companyRepository.findById(companyId)).thenReturn(Optional.of(existingCompany));
+        when(companyRepository.findByName(companyName)).thenReturn(Optional.of(existingCompany));
         when(companyRepository.save(any(Company.class))).thenReturn(existingCompany);
 
         // When
-        CompanyResponse response = companyService.markAsVerified(companyId);
+        CompanyResponse response = companyService.markAsVerified(companyName);
 
         // Then
         assertThat(response).isNotNull();
@@ -402,27 +411,29 @@ class CompanyServiceTest {
     @DisplayName("Test 4.18: should_publishCompanyUpdatedEvent_when_companyUpdated")
     void should_publishCompanyUpdatedEvent_when_companyUpdated() {
         // Given
+        // Story 1.16.2: use company name instead of UUID
         when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
-        when(companyRepository.findById(companyId)).thenReturn(Optional.of(existingCompany));
+        when(companyRepository.findByName(companyName)).thenReturn(Optional.of(existingCompany));
         when(companyRepository.save(any(Company.class))).thenReturn(existingCompany);
 
         // When
-        companyService.updateCompany(companyId, updateRequest);
+        companyService.updateCompany(companyName, updateRequest);
 
         // Then
         verify(eventPublisher).publish(any());
     }
 
     @Test
-    @DisplayName("Test 4.19: should_verifyCompany_when_validIdProvided")
+    @DisplayName("Test 4.19: should_verifyCompany_when_validNameProvided")
     void should_verifyCompany_when_validIdProvided() {
         // Given
+        // Story 1.16.2: use company name instead of UUID
         when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
-        when(companyRepository.findById(companyId)).thenReturn(Optional.of(existingCompany));
+        when(companyRepository.findByName(companyName)).thenReturn(Optional.of(existingCompany));
         when(companyRepository.save(any(Company.class))).thenReturn(existingCompany);
 
         // When
-        CompanyResponse response = companyService.verifyCompany(companyId);
+        CompanyResponse response = companyService.verifyCompany(companyName);
 
         // Then
         assertThat(response).isNotNull();
@@ -434,12 +445,13 @@ class CompanyServiceTest {
     @DisplayName("Test 4.20: should_throwCompanyNotFoundException_when_verifyNonExistentCompany")
     void should_throwCompanyNotFoundException_when_verifyNonExistentCompany() {
         // Given
-        when(companyRepository.findById(companyId)).thenReturn(Optional.empty());
+        // Story 1.16.2: use company name instead of UUID
+        when(companyRepository.findByName(companyName)).thenReturn(Optional.empty());
 
         // When / Then
-        assertThatThrownBy(() -> companyService.verifyCompany(companyId))
+        assertThatThrownBy(() -> companyService.verifyCompany(companyName))
                 .isInstanceOf(CompanyNotFoundException.class)
-                .hasMessageContaining(companyId.toString());
+                .hasMessageContaining(companyName);
 
         verify(companyRepository, never()).save(any(Company.class));
         verify(eventPublisher, never()).publish(any());
@@ -450,7 +462,7 @@ class CompanyServiceTest {
     void should_includeLogoInResponse_when_companyHasLogo() {
         // Given
         Company companyWithLogo = Company.builder()
-                .id(companyId)
+                .id(UUID.randomUUID())  // Internal DB uses UUID
                 .name("Test Company AG")
                 .displayName("Test Company")
                 .logoUrl("https://cdn.example.com/logo.png")
@@ -462,10 +474,11 @@ class CompanyServiceTest {
                 .updatedAt(Instant.now())
                 .build();
 
-        when(companyRepository.findById(companyId)).thenReturn(Optional.of(companyWithLogo));
+        // Story 1.16.2: use company name instead of UUID
+        when(companyRepository.findByName(companyName)).thenReturn(Optional.of(companyWithLogo));
 
         // When
-        CompanyResponse response = companyService.getCompanyById(companyId);
+        CompanyResponse response = companyService.getCompanyByName(companyName);
 
         // Then
         assertThat(response).isNotNull();
@@ -480,7 +493,7 @@ class CompanyServiceTest {
     void should_returnNullLogo_when_companyHasNoLogo() {
         // Given
         Company companyWithoutLogo = Company.builder()
-                .id(companyId)
+                .id(UUID.randomUUID())  // Internal DB uses UUID
                 .name("Test Company AG")
                 .displayName("Test Company")
                 .logoUrl(null)
@@ -492,10 +505,11 @@ class CompanyServiceTest {
                 .updatedAt(Instant.now())
                 .build();
 
-        when(companyRepository.findById(companyId)).thenReturn(Optional.of(companyWithoutLogo));
+        // Story 1.16.2: use company name instead of UUID
+        when(companyRepository.findByName(companyName)).thenReturn(Optional.of(companyWithoutLogo));
 
         // When
-        CompanyResponse response = companyService.getCompanyById(companyId);
+        CompanyResponse response = companyService.getCompanyByName(companyName);
 
         // Then
         assertThat(response).isNotNull();
@@ -510,11 +524,12 @@ class CompanyServiceTest {
                 .name("Another Company Name")
                 .build();
 
-        when(companyRepository.findById(companyId)).thenReturn(Optional.of(existingCompany));
+        // Story 1.16.2: use company name instead of UUID
+        when(companyRepository.findByName(companyName)).thenReturn(Optional.of(existingCompany));
         when(companyRepository.existsByName("Another Company Name")).thenReturn(true);
 
         // When / Then
-        assertThatThrownBy(() -> companyService.updateCompany(companyId, updateWithNewName))
+        assertThatThrownBy(() -> companyService.updateCompany(companyName, updateWithNewName))
                 .isInstanceOf(CompanyValidationException.class)
                 .hasMessageContaining("already exists");
 
@@ -531,12 +546,13 @@ class CompanyServiceTest {
                 .displayName("Updated Display")
                 .build();
 
+        // Story 1.16.2: use company name instead of UUID
         when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
-        when(companyRepository.findById(companyId)).thenReturn(Optional.of(existingCompany));
+        when(companyRepository.findByName(companyName)).thenReturn(Optional.of(existingCompany));
         when(companyRepository.save(any(Company.class))).thenReturn(existingCompany);
 
         // When
-        CompanyResponse response = companyService.updateCompany(companyId, updateWithSameName);
+        CompanyResponse response = companyService.updateCompany(companyName, updateWithSameName);
 
         // Then
         assertThat(response).isNotNull();

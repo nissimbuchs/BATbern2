@@ -81,13 +81,14 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
 
         // Then
         assertThat(response).isNotNull();
-        assertThat(response.getId()).isNotNull();
+        // Story 1.16.2: use company name instead of UUID
+        assertThat(response.getName()).isNotNull();
         assertThat(response.getName()).isEqualTo("New Company");
 
         // In test profile, EventBridge client is mocked or disabled
         // In integration environment, you would verify the event was published
         // For now, we verify the company was created successfully
-        var savedCompany = companyRepository.findById(response.getId());
+        var savedCompany = companyRepository.findByName(response.getName());
         assertThat(savedCompany).isPresent();
     }
 
@@ -103,7 +104,8 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
                 .build();
 
         // When
-        var response = companyService.updateCompany(testCompany.getId(), request);
+        // Story 1.16.2: use company name instead of UUID
+        var response = companyService.updateCompany(testCompany.getName(), request);
 
         // Then
         assertThat(response).isNotNull();
@@ -111,7 +113,7 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
         assertThat(response.getWebsite()).isEqualTo("https://updated.example.com");
 
         // Verify the update was persisted
-        var updatedCompany = companyRepository.findById(testCompany.getId()).orElseThrow();
+        var updatedCompany = companyRepository.findByName(testCompany.getName()).orElseThrow();
         assertThat(updatedCompany.getDisplayName()).isEqualTo("Updated Display Name");
     }
 
@@ -121,14 +123,15 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
     void shouldPublishCompanyDeletedEvent_whenCompanyDeleted() {
         // Given
         testCompany = companyRepository.save(testCompany);
-        UUID companyId = testCompany.getId();
+        // Story 1.16.2: use company name instead of UUID
+        String companyName = testCompany.getName();
 
         // When
-        companyService.deleteCompany(companyId);
+        companyService.deleteCompany(companyName);
 
         // Then
         // Verify the company was deleted
-        assertThat(companyRepository.findById(companyId)).isEmpty();
+        assertThat(companyRepository.findByName(companyName)).isEmpty();
     }
 
     // EVENT CONTENT VERIFICATION TESTS
@@ -152,7 +155,8 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
 
         // Then
         // Verify all fields are present in the response (which would be in the event)
-        assertThat(response.getId()).isNotNull();
+        // Story 1.16.2: use company name instead of UUID
+        assertThat(response.getName()).isNotNull();
         assertThat(response.getName()).isEqualTo("Event Test Company");
         assertThat(response.getDisplayName()).isEqualTo("Event Test Co");
         assertThat(response.getSwissUID()).isEqualTo("CHE-111.222.333");
@@ -178,7 +182,8 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
                 .build();
 
         // When
-        var response = companyService.updateCompany(testCompany.getId(), request);
+        // Story 1.16.2: use company name instead of UUID
+        var response = companyService.updateCompany(testCompany.getName(), request);
 
         // Then
         assertThat(response.getName()).isEqualTo(originalName); // Name unchanged
@@ -206,7 +211,8 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
         var response2 = companyService.createCompany(request2);
 
         // Then
-        assertThat(response1.getId()).isNotEqualTo(response2.getId());
+        // Story 1.16.2: use company name instead of UUID
+        assertThat(response1.getName()).isNotEqualTo(response2.getName());
         assertThat(companyRepository.count()).isEqualTo(2);
     }
 
@@ -225,8 +231,9 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
                 .build();
 
         // When
-        companyService.updateCompany(testCompany.getId(), request1);
-        var finalResponse = companyService.updateCompany(testCompany.getId(), request2);
+        // Story 1.16.2: use company name instead of UUID
+        companyService.updateCompany(testCompany.getName(), request1);
+        var finalResponse = companyService.updateCompany(testCompany.getName(), request2);
 
         // Then
         assertThat(finalResponse.getDisplayName()).isEqualTo("Second Update");
@@ -284,14 +291,15 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
 
         // When & Then
         try {
-            companyService.updateCompany(company2.getId(), request);
+            // Story 1.16.2: use company name instead of UUID
+            companyService.updateCompany(company2.getName(), request);
         } catch (Exception e) {
             // Expected to fail
             assertThat(e).isNotNull();
         }
 
         // Verify company2 was not updated
-        var unchangedCompany = companyRepository.findById(company2.getId()).orElseThrow();
+        var unchangedCompany = companyRepository.findByName(company2.getName()).orElseThrow();
         assertThat(unchangedCompany.getName()).isEqualTo("Another Company");
     }
 }

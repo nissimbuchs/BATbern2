@@ -1,6 +1,7 @@
 package ch.batbern.companyuser.controller;
 
 import ch.batbern.companyuser.dto.*;
+import ch.batbern.companyuser.repository.CompanyRepository;
 import ch.batbern.companyuser.service.CompanyLogoService;
 import ch.batbern.companyuser.service.CompanyQueryService;
 import ch.batbern.companyuser.service.CompanySearchService;
@@ -23,7 +24,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * REST API controller for company management operations
@@ -43,6 +43,7 @@ public class CompanyController {
     private final SwissUIDValidationService uidValidationService;
     private final CompanyQueryService queryService;
     private final CompanyLogoService logoService;
+    private final CompanyRepository companyRepository;  // Story 1.16.2: For looking up companies by name
 
     /**
      * Create a new company
@@ -86,15 +87,16 @@ public class CompanyController {
     }
 
     /**
-     * Get company by ID
+     * Get company by name
      * Requires authentication
      * AC4: Company retrieval endpoint
+     * Story 1.16.2: Use company name as identifier instead of UUID
      */
-    @GetMapping("/{id}")
+    @GetMapping("/{name}")
     @PreAuthorize("isAuthenticated()")
     @Operation(
-            summary = "Get company by ID",
-            description = "Retrieves a company by its unique identifier. Requires authentication."
+            summary = "Get company by name",
+            description = "Retrieves a company by its unique name. Requires authentication. Story 1.16.2: Uses company name instead of UUID."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -112,10 +114,10 @@ public class CompanyController {
             )
     })
     public ResponseEntity<CompanyResponse> getCompany(
-            @Parameter(description = "Company UUID", required = true)
-            @PathVariable UUID id) {
-        log.debug("Fetching company: {}", id);
-        CompanyResponse response = companyService.getCompanyById(id);
+            @Parameter(description = "Company name (unique identifier)", required = true, example = "Swisscom AG")
+            @PathVariable String name) {
+        log.debug("Fetching company: {}", name);
+        CompanyResponse response = companyService.getCompanyByName(name);
         return ResponseEntity.ok(response);
     }
 
@@ -207,12 +209,13 @@ public class CompanyController {
      * Update company (full replacement)
      * Requires ORGANIZER role
      * AC4: Company update endpoint
+     * Story 1.16.2: Use company name as identifier instead of UUID
      */
-    @PutMapping("/{id}")
+    @PutMapping("/{name}")
     @PreAuthorize("hasRole('ORGANIZER')")
     @Operation(
             summary = "Update company (full replacement)",
-            description = "Fully replaces an existing company. Requires ORGANIZER role. Publishes CompanyUpdated event."
+            description = "Fully replaces an existing company. Requires ORGANIZER role. Publishes CompanyUpdated event. Story 1.16.2: Uses company name instead of UUID."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -242,11 +245,11 @@ public class CompanyController {
             )
     })
     public ResponseEntity<CompanyResponse> updateCompany(
-            @Parameter(description = "Company UUID", required = true)
-            @PathVariable UUID id,
+            @Parameter(description = "Company name (unique identifier)", required = true, example = "Swisscom AG")
+            @PathVariable String name,
             @Valid @RequestBody UpdateCompanyRequest request) {
-        log.info("Updating company: {}", id);
-        CompanyResponse response = companyService.updateCompany(id, request);
+        log.info("Updating company: {}", name);
+        CompanyResponse response = companyService.updateCompany(name, request);
         return ResponseEntity.ok(response);
     }
 
@@ -254,12 +257,13 @@ public class CompanyController {
      * Partially update company
      * Requires ORGANIZER role
      * AC4: Company partial update endpoint
+     * Story 1.16.2: Use company name as identifier instead of UUID
      */
-    @PatchMapping("/{id}")
+    @PatchMapping("/{name}")
     @PreAuthorize("hasRole('ORGANIZER')")
     @Operation(
             summary = "Partially update company",
-            description = "Updates specific fields of an existing company. Requires ORGANIZER role. Publishes CompanyUpdated event."
+            description = "Updates specific fields of an existing company. Requires ORGANIZER role. Publishes CompanyUpdated event. Story 1.16.2: Uses company name instead of UUID."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -289,11 +293,11 @@ public class CompanyController {
             )
     })
     public ResponseEntity<CompanyResponse> patchCompany(
-            @Parameter(description = "Company UUID", required = true)
-            @PathVariable UUID id,
+            @Parameter(description = "Company name (unique identifier)", required = true, example = "Swisscom AG")
+            @PathVariable String name,
             @Valid @RequestBody UpdateCompanyRequest request) {
-        log.info("Patching company: {}", id);
-        CompanyResponse response = companyService.updateCompany(id, request);
+        log.info("Patching company: {}", name);
+        CompanyResponse response = companyService.updateCompany(name, request);
         return ResponseEntity.ok(response);
     }
 
@@ -301,12 +305,13 @@ public class CompanyController {
      * Delete company
      * Requires ORGANIZER role
      * AC4: Company deletion endpoint
+     * Story 1.16.2: Use company name as identifier instead of UUID
      */
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{name}")
     @PreAuthorize("hasRole('ORGANIZER')")
     @Operation(
             summary = "Delete company",
-            description = "Deletes a company from the system. Requires ORGANIZER role. Publishes CompanyDeleted event."
+            description = "Deletes a company from the system. Requires ORGANIZER role. Publishes CompanyDeleted event. Story 1.16.2: Uses company name instead of UUID."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -327,10 +332,10 @@ public class CompanyController {
             )
     })
     public ResponseEntity<Void> deleteCompany(
-            @Parameter(description = "Company UUID", required = true)
-            @PathVariable UUID id) {
-        log.info("Deleting company: {}", id);
-        companyService.deleteCompany(id);
+            @Parameter(description = "Company name (unique identifier)", required = true, example = "Swisscom AG")
+            @PathVariable String name) {
+        log.info("Deleting company: {}", name);
+        companyService.deleteCompany(name);
         return ResponseEntity.noContent().build();
     }
 
@@ -383,12 +388,13 @@ public class CompanyController {
      * Verify company
      * Requires ORGANIZER role
      * AC13: Company verification workflow
+     * Story 1.16.2: Use company name as identifier instead of UUID
      */
-    @PostMapping("/{id}/verify")
+    @PostMapping("/{name}/verify")
     @PreAuthorize("hasRole('ORGANIZER')")
     @Operation(
             summary = "Verify company",
-            description = "Marks a company as verified by an ORGANIZER. Publishes CompanyVerified event. Idempotent operation."
+            description = "Marks a company as verified by an ORGANIZER. Publishes CompanyVerified event. Idempotent operation. Story 1.16.2: Uses company name instead of UUID."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -410,10 +416,10 @@ public class CompanyController {
             )
     })
     public ResponseEntity<CompanyResponse> verifyCompany(
-            @Parameter(description = "Company UUID", required = true)
-            @PathVariable UUID id) {
-        log.info("Verifying company: {}", id);
-        CompanyResponse response = companyService.verifyCompany(id);
+            @Parameter(description = "Company name (unique identifier)", required = true, example = "Swisscom AG")
+            @PathVariable String name) {
+        log.info("Verifying company: {}", name);
+        CompanyResponse response = companyService.verifyCompany(name);
         return ResponseEntity.ok(response);
     }
 
@@ -421,14 +427,15 @@ public class CompanyController {
      * Request presigned URL for logo upload
      * Requires authentication
      * AC5: Logo upload with S3 presigned URLs
+     * Story 1.16.2: Use company name as identifier instead of UUID
      */
-    @PostMapping("/{id}/logo/presigned-url")
+    @PostMapping("/{name}/logo/presigned-url")
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "Request presigned URL for company logo upload",
             description = "Generates a presigned S3 URL for uploading a company logo. " +
                     "The URL expires after 15 minutes. Supports PNG, JPEG, and SVG files up to 5MB. " +
-                    "After uploading to S3, call the confirm endpoint to save the logo URL."
+                    "After uploading to S3, call the confirm endpoint to save the logo URL. Story 1.16.2: Uses company name instead of UUID."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -450,14 +457,15 @@ public class CompanyController {
             )
     })
     public ResponseEntity<PresignedUploadUrl> requestLogoUploadUrl(
-            @Parameter(description = "Company UUID", required = true)
-            @PathVariable UUID id,
+            @Parameter(description = "Company name (unique identifier)", required = true, example = "Swisscom AG")
+            @PathVariable String name,
             @Valid @RequestBody LogoUploadRequest request) {
-        log.info("Requesting presigned URL for company: {}, file: {}", id, request.getFileName());
+        log.info("Requesting presigned URL for company: {}, file: {}", name, request.getFileName());
 
-        // Generate presigned URL using company ID as user ID for S3 key partitioning
+        // Story 1.16.2: Use company name to get company, then use UUID for S3 key partitioning
+        // (S3 keys use UUID internally for stability, but public API uses company name)
         PresignedUploadUrl response = logoService.generateLogoUploadUrl(
-                id.toString(),
+                name,  // Use company name for S3 partitioning
                 request.getFileName(),
                 request.getFileSize()
         );
@@ -469,12 +477,13 @@ public class CompanyController {
      * Confirm logo upload completion
      * Requires authentication
      * AC5: Store logo URL in company entity after upload
+     * Story 1.16.2: Use company name as identifier instead of UUID
      */
-    @PostMapping("/{id}/logo/confirm")
+    @PostMapping("/{name}/logo/confirm")
     @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "Confirm logo upload completion",
-            description = "Confirms that the logo has been successfully uploaded to S3 and stores the CloudFront URL in the company record."
+            description = "Confirms that the logo has been successfully uploaded to S3 and stores the CloudFront URL in the company record. Story 1.16.2: Uses company name instead of UUID."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -496,13 +505,18 @@ public class CompanyController {
             )
     })
     public ResponseEntity<LogoUploadConfirmResponse> confirmLogoUpload(
-            @Parameter(description = "Company UUID", required = true)
-            @PathVariable UUID id,
+            @Parameter(description = "Company name (unique identifier)", required = true, example = "Swisscom AG")
+            @PathVariable String name,
             @Valid @RequestBody LogoUploadConfirmRequest request) {
-        log.info("Confirming logo upload for company: {}, file ID: {}", id, request.getFileId());
+        log.info("Confirming logo upload for company: {}, file ID: {}", name, request.getFileId());
 
-        logoService.confirmLogoUpload(id, request.getFileId(), request.getChecksum());
-        CompanyResponse companyResponse = companyService.getCompanyById(id);
+        // Story 1.16.2: Look up company by name to get UUID for logo service
+        // Find company by name first
+        ch.batbern.companyuser.domain.Company company = companyRepository.findByName(name)
+                .orElseThrow(() -> new ch.batbern.companyuser.exception.CompanyNotFoundException(name));
+
+        logoService.confirmLogoUpload(company.getId(), request.getFileId(), request.getChecksum());
+        CompanyResponse companyResponse = companyService.getCompanyByName(name);
 
         // Extract logo URL from company response
         String logoUrl = companyResponse.getLogo() != null ? companyResponse.getLogo().getUrl() : null;

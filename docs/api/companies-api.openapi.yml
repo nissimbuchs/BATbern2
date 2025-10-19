@@ -14,6 +14,7 @@ info:
     - **Swiss UID Validation**: Validates Swiss company registration numbers
 
     **Story**: 1.14 - Company Management Service Foundation
+    **Story 1.16.2**: Eliminate UUIDs from API - Use company name as identifier
 
     **Performance Targets**:
     - Company list (no includes): <100ms (P95)
@@ -146,8 +147,7 @@ paths:
                   summary: Basic company list
                   value:
                     data:
-                      - id: 550e8400-e29b-41d4-a716-446655440000
-                        name: Swiss IT Solutions AG
+                      - name: Swiss IT Solutions AG
                         displayName: Swiss IT Solutions
                         industry: Technology
                         isVerified: true
@@ -164,8 +164,7 @@ paths:
                   summary: Company list with statistics and logo
                   value:
                     data:
-                      - id: 550e8400-e29b-41d4-a716-446655440000
-                        name: Swiss IT Solutions AG
+                      - name: Swiss IT Solutions AG
                         displayName: Swiss IT Solutions
                         industry: Technology
                         isVerified: true
@@ -176,8 +175,8 @@ paths:
                           totalSpeakers: 8
                           totalPartners: 5
                         logo:
-                          url: https://cdn.batbern.ch/logos/2025/550e8400-e29b-41d4-a716-446655440000/logo.png
-                          s3Key: logos/2025/550e8400-e29b-41d4-a716-446655440000/logo.png
+                          url: https://cdn.batbern.ch/logos/swiss-it-solutions-ag/logo.png
+                          s3Key: logos/swiss-it-solutions-ag/logo.png
                           fileId: file-123
                     pagination:
                       page: 1
@@ -254,28 +253,29 @@ paths:
       security:
         - BearerAuth: []
 
-  /companies/{id}:
+  /companies/{name}:
     get:
       tags:
         - Companies
-      summary: Get company details
+      summary: Get company details by name
       description: |
         Retrieve detailed information about a specific company.
 
         **Acceptance Criteria**: AC2
 
+        **Story 1.16.2**: Uses company name as identifier instead of UUID
+
         **Performance**: <150ms (P95)
 
       operationId: getCompany
       parameters:
-        - name: id
+        - name: name
           in: path
-          description: Company UUID
+          description: Company name (unique identifier)
           required: true
           schema:
             type: string
-            format: uuid
-            example: 550e8400-e29b-41d4-a716-446655440000
+            example: Swiss IT Solutions AG
       responses:
         '200':
           description: Company details retrieved successfully
@@ -287,7 +287,6 @@ paths:
                 basicCompany:
                   summary: Basic company details
                   value:
-                    id: 550e8400-e29b-41d4-a716-446655440000
                     name: Swiss IT Solutions AG
                     displayName: Swiss IT Solutions
                     swissUID: CHE-123.456.789
@@ -315,6 +314,8 @@ paths:
 
         **Acceptance Criteria**: AC4
 
+        **Story 1.16.2**: Uses company name as identifier instead of UUID
+
         **Validation Rules**:
         - Company name must be unique
         - Swiss UID format (if provided): CHE-XXX.XXX.XXX
@@ -325,12 +326,13 @@ paths:
 
       operationId: updateCompany
       parameters:
-        - name: id
+        - name: name
           in: path
+          description: Company name (unique identifier)
           required: true
           schema:
             type: string
-            format: uuid
+            example: Swiss IT Solutions AG
       requestBody:
         required: true
         content:
@@ -368,6 +370,8 @@ paths:
 
         **Acceptance Criteria**: AC4
 
+        **Story 1.16.2**: Uses company name as identifier instead of UUID
+
         **Validation Rules**:
         - Company name must be unique
         - Swiss UID format (if provided): CHE-XXX.XXX.XXX
@@ -378,12 +382,13 @@ paths:
 
       operationId: patchCompany
       parameters:
-        - name: id
+        - name: name
           in: path
+          description: Company name (unique identifier)
           required: true
           schema:
             type: string
-            format: uuid
+            example: Swiss IT Solutions AG
       requestBody:
         required: true
         content:
@@ -421,18 +426,21 @@ paths:
 
         **Acceptance Criteria**: AC4
 
+        **Story 1.16.2**: Uses company name as identifier instead of UUID
+
         **Events Published**: CompanyDeletedEvent to EventBridge
 
         **Cache Invalidation**: All company caches cleared on deletion
 
       operationId: deleteCompany
       parameters:
-        - name: id
+        - name: name
           in: path
+          description: Company name (unique identifier)
           required: true
           schema:
             type: string
-            format: uuid
+            example: Swiss IT Solutions AG
       responses:
         '204':
           description: Company deleted successfully
@@ -506,14 +514,12 @@ paths:
                 searchResults:
                   summary: Search results for "Swiss"
                   value:
-                    - id: 550e8400-e29b-41d4-a716-446655440000
-                      name: Swiss IT Solutions AG
+                    - name: Swiss IT Solutions AG
                       displayName: Swiss IT Solutions
                       swissUID: CHE-123.456.789
                       industry: Technology
                       isVerified: true
-                    - id: 550e8400-e29b-41d4-a716-446655440001
-                      name: Swiss Bank Corp
+                    - name: Swiss Bank Corp
                       displayName: Swiss Bank
                       swissUID: CHE-987.654.321
                       industry: Finance
@@ -585,7 +591,7 @@ paths:
       security:
         - BearerAuth: []
 
-  /companies/{id}/verify:
+  /companies/{name}/verify:
     post:
       tags:
         - Company Verification
@@ -595,6 +601,8 @@ paths:
 
         **Acceptance Criteria**: AC13
 
+        **Story 1.16.2**: Uses company name as identifier instead of UUID
+
         **Authorization**: ORGANIZER role required
 
         **Events Published**: CompanyVerifiedEvent to EventBridge
@@ -603,12 +611,13 @@ paths:
 
       operationId: verifyCompany
       parameters:
-        - name: id
+        - name: name
           in: path
+          description: Company name (unique identifier)
           required: true
           schema:
             type: string
-            format: uuid
+            example: Swiss IT Solutions AG
       responses:
         '200':
           description: Company verified successfully
@@ -631,19 +640,18 @@ components:
   schemas:
     CompanyResponse:
       type: object
+      description: |
+        Company response with meaningful IDs.
+        Story 1.16.2: name field is the unique identifier (no separate id field).
       required:
-        - id
         - name
         - isVerified
         - createdAt
         - updatedAt
       properties:
-        id:
-          type: string
-          format: uuid
-          example: 550e8400-e29b-41d4-a716-446655440000
         name:
           type: string
+          description: Company name (unique identifier) - Story 1.16.2
           maxLength: 255
           example: Swiss IT Solutions AG
         displayName:
@@ -712,11 +720,11 @@ components:
           type: string
           format: uri
           description: CloudFront CDN URL for logo
-          example: https://cdn.batbern.ch/logos/2025/550e8400-e29b-41d4-a716-446655440000/logo.png
+          example: https://cdn.batbern.ch/logos/swiss-it-solutions-ag/logo.png
         s3Key:
           type: string
           description: S3 object key
-          example: logos/2025/550e8400-e29b-41d4-a716-446655440000/logo.png
+          example: logos/swiss-it-solutions-ag/logo.png
         fileId:
           type: string
           description: Internal file identifier
@@ -724,17 +732,16 @@ components:
 
     CompanySearchResponse:
       type: object
+      description: |
+        Company search result with meaningful IDs.
+        Story 1.16.2: name field is the unique identifier (no separate id field).
       required:
-        - id
         - name
         - isVerified
       properties:
-        id:
-          type: string
-          format: uuid
-          example: 550e8400-e29b-41d4-a716-446655440000
         name:
           type: string
+          description: Company name (unique identifier) - Story 1.16.2
           example: Swiss IT Solutions AG
         displayName:
           type: string
@@ -959,7 +966,7 @@ components:
               value:
                 error: RESOURCE_NOT_FOUND
                 errorCode: NOT_FOUND
-                message: Company not found with id 550e8400-e29b-41d4-a716-446655440000
+                message: Company not found with name 'Swiss IT Solutions AG'
                 timestamp: 2025-01-15T10:30:00Z
 
     Conflict:

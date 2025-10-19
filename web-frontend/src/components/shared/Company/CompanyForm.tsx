@@ -108,11 +108,11 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
   const [apiError, setApiError] = useState<string | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | undefined>(initialData?.logo?.url);
 
-  // Check role-based access control
+  // Check role-based access control (Story 1.16.2: uses company name as identifier)
   const hasEditPermission =
     mode === 'create' ||
     userRole === 'organizer' ||
-    (userRole === 'speaker' && initialData?.id === userCompanyId);
+    (userRole === 'speaker' && initialData?.name === userCompanyId);
 
   const {
     control,
@@ -270,10 +270,10 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
     setApiError(`Logo upload failed: ${error.message}`);
   };
 
-  // Generate a temporary company ID for create mode
-  // In create mode, we'll use a placeholder ID that will be replaced by the backend
-  const companyIdForUpload =
-    mode === 'edit' && initialData?.id ? initialData.id : 'temp-company-id';
+  // Use company name for upload (Story 1.16.2: uses company name as identifier)
+  // In create mode, we'll use a placeholder name that will be replaced by the backend
+  const companyNameForUpload =
+    mode === 'edit' && initialData?.name ? initialData.name : 'temp-company-name';
 
   return (
     <Dialog
@@ -446,7 +446,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
               {t('company.fields.logo')}
             </Typography>
             <LogoUpload
-              companyId={companyIdForUpload}
+              companyName={companyNameForUpload}
               currentLogoUrl={logoUrl}
               onUploadSuccess={handleLogoUploadSuccess}
               onUploadError={handleLogoUploadError}

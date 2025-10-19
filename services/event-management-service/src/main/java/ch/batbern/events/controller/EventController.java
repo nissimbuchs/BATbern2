@@ -109,32 +109,34 @@ public class EventController {
     /**
      * Get Event Detail (AC2 + AC15)
      *
-     * GET /api/v1/events/{id}?include=venue,speakers,sessions
+     * GET /api/v1/events/{eventCode}?include=venue,speakers,sessions
      *
      * Examples:
-     * - Basic: GET /api/v1/events/123
-     * - With venue: GET /api/v1/events/123?include=venue
-     * - Multiple: GET /api/v1/events/123?include=venue,speakers,sessions
+     * - Basic: GET /api/v1/events/BATbern56
+     * - With venue: GET /api/v1/events/BATbern56?include=venue
+     * - Multiple: GET /api/v1/events/BATbern56?include=venue,speakers,sessions
      *
      * Caching: Results with includes are cached for 15 minutes using Caffeine in-memory cache.
-     * Cache key includes both event ID and include parameters to ensure correct cache hits.
+     * Cache key includes both event code and include parameters to ensure correct cache hits.
+     *
+     * Story 1.16.2: Uses eventCode (String) instead of UUID
      */
-    @GetMapping("/{id}")
+    @GetMapping("/{eventCode}")
     @Operation(
             summary = "Get Event Detail",
-            description = "Retrieve a single event by ID with optional resource expansion using ?include parameter. Cached for 15 minutes."
+            description = "Retrieve a single event by event code with optional resource expansion using ?include parameter. Cached for 15 minutes."
     )
-    @Cacheable(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, key = "#id + '_' + (#include != null ? #include : 'none')")
+    @Cacheable(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, key = "#eventCode + '_' + (#include != null ? #include : 'none')")
     public ResponseEntity<Map<String, Object>> getEvent(
-            @PathVariable UUID id,
+            @PathVariable String eventCode,
             @Parameter(description = "Comma-separated list of resources to include (e.g., venue,speakers,sessions)")
             @RequestParam(required = false) String include
     ) {
-        log.debug("GET /api/v1/events/{} - include: {}", id, include);
+        log.debug("GET /api/v1/events/{} - include: {}", eventCode, include);
 
-        // Find event by ID
-        Event event = eventRepository.findById(id)
-                .orElseThrow(() -> new EventNotFoundException(id));
+        // Find event by event code
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
 
         // Build response with basic event data
         Map<String, Object> response = buildBasicEventResponse(event);
@@ -149,10 +151,11 @@ public class EventController {
 
     /**
      * Build basic event response without expanded resources
+     * Story 1.16.2: Uses eventCode and organizerUsername instead of UUIDs
      */
     private Map<String, Object> buildBasicEventResponse(Event event) {
         Map<String, Object> response = new java.util.HashMap<>();
-        response.put("id", event.getId());
+        response.put("eventCode", event.getEventCode());
         response.put("title", event.getTitle());
         response.put("eventNumber", event.getEventNumber());
         response.put("status", event.getStatus());
@@ -162,7 +165,7 @@ public class EventController {
         response.put("venueName", event.getVenueName());
         response.put("venueAddress", event.getVenueAddress());
         response.put("venueCapacity", event.getVenueCapacity());
-        response.put("organizerId", event.getOrganizerId());
+        response.put("organizerUsername", event.getOrganizerUsername());
         response.put("currentAttendeeCount", event.getCurrentAttendeeCount());
         response.put("publishedAt", event.getPublishedAt());
         response.put("metadata", event.getMetadata());
@@ -235,24 +238,40 @@ public class EventController {
      * POST /api/v1/events
      *
      * @param request Event creation data
-     * @return Created event with generated ID
+     * @return Created event with generated eventCode
+     *
+     * Story 1.16.2: Generates eventCode in format "BATbern{number}"
      */
     @PostMapping
     @Operation(summary = "Create Event", description = "Create a new event")
     public ResponseEntity<Map<String, Object>> createEvent(@Valid @RequestBody CreateEventRequest request) {
         log.debug("POST /api/v1/events - title: {}", request.getTitle());
 
+        // Generate eventCode from event number (format: "BATbern{number}")
+        Integer eventNumber = request.getEventNumber();
+        if (eventNumber == null) {
+            // Auto-generate event number if not provided
+            eventNumber = generateNextEventNumber();
+        }
+        String eventCode = "BATbern" + eventNumber;
+
+        // Validate eventCode is unique
+        if (eventRepository.existsByEventCode(eventCode)) {
+            throw new BusinessValidationException("eventCode", "Event code already exists: " + eventCode);
+        }
+
         // Create new event entity
         Event event = Event.builder()
+                .eventCode(eventCode)
                 .title(request.getTitle())
-                .eventNumber(request.getEventNumber())
+                .eventNumber(eventNumber)
                 .date(parseDate(request.getDate()))
                 .registrationDeadline(request.getRegistrationDeadline() != null ? parseDate(request.getRegistrationDeadline()) : null)
                 .venueName(request.getVenueName())
                 .venueAddress(request.getVenueAddress())
                 .venueCapacity(request.getVenueCapacity())
                 .status(request.getStatus() != null ? request.getStatus() : "planning")
-                .organizerId(request.getOrganizerId())
+                .organizerUsername(request.getOrganizerUsername())
                 .currentAttendeeCount(request.getCurrentAttendeeCount() != null ? request.getCurrentAttendeeCount() : 0)
                 .publishedAt(request.getPublishedAt() != null ? parseDate(request.getPublishedAt()) : null)
                 .metadata(request.getMetadata())
@@ -269,25 +288,40 @@ public class EventController {
     }
 
     /**
+     * Generate the next event number
+     * Finds the maximum existing event number and adds 1
+     */
+    private Integer generateNextEventNumber() {
+        return eventRepository.findAll().stream()
+                .map(Event::getEventNumber)
+                .filter(java.util.Objects::nonNull)
+                .max(Integer::compareTo)
+                .map(max -> max + 1)
+                .orElse(1); // Start with 1 if no events exist
+    }
+
+    /**
      * Update Event - Full Replacement (AC4 + AC15 cache invalidation)
      *
-     * PUT /api/v1/events/{id}
+     * PUT /api/v1/events/{eventCode}
      *
-     * @param id Event ID
+     * @param eventCode Event code
      * @param request Complete event data for replacement
      * @return Updated event
+     *
+     * Story 1.16.2: Uses eventCode instead of UUID
      */
-    @PutMapping("/{id}")
+    @PutMapping("/{eventCode}")
     @Operation(summary = "Update Event", description = "Fully replace an existing event")
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     public ResponseEntity<Map<String, Object>> updateEvent(
-            @PathVariable UUID id,
+            @PathVariable String eventCode,
             @Valid @RequestBody UpdateEventRequest request) {
-        log.debug("PUT /api/v1/events/{} - title: {}", id, request.getTitle());
+        log.debug("PUT /api/v1/events/{} - title: {}", eventCode, request.getTitle());
 
-        // Find existing event
-        Event event = eventRepository.findById(id)
-                .orElseThrow(() -> new EventNotFoundException(id));
+        // Find existing event by event code
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
 
         // Replace all fields
         event.setTitle(request.getTitle());
@@ -298,7 +332,7 @@ public class EventController {
         event.setVenueAddress(request.getVenueAddress());
         event.setVenueCapacity(request.getVenueCapacity());
         event.setStatus(request.getStatus());
-        event.setOrganizerId(request.getOrganizerId());
+        event.setOrganizerUsername(request.getOrganizerUsername());
         event.setCurrentAttendeeCount(request.getCurrentAttendeeCount());
         event.setPublishedAt(request.getPublishedAt() != null ? parseDate(request.getPublishedAt()) : null);
         event.setMetadata(request.getMetadata());
@@ -316,23 +350,25 @@ public class EventController {
     /**
      * Partial Update Event (AC5 + AC15 cache invalidation)
      *
-     * PATCH /api/v1/events/{id}
+     * PATCH /api/v1/events/{eventCode}
      *
-     * @param id Event ID
+     * @param eventCode Event code
      * @param request Partial event data (only provided fields will be updated)
      * @return Partially updated event
+     *
+     * Story 1.16.2: Uses eventCode instead of UUID
      */
-    @PatchMapping("/{id}")
+    @PatchMapping("/{eventCode}")
     @Operation(summary = "Patch Event", description = "Partially update an existing event")
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     public ResponseEntity<Map<String, Object>> patchEvent(
-            @PathVariable UUID id,
+            @PathVariable String eventCode,
             @Valid @RequestBody PatchEventRequest request) {
-        log.debug("PATCH /api/v1/events/{}", id);
+        log.debug("PATCH /api/v1/events/{}", eventCode);
 
-        // Find existing event
-        Event event = eventRepository.findById(id)
-                .orElseThrow(() -> new EventNotFoundException(id));
+        // Find existing event by event code
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
 
         // Update only provided fields
         applyPatchUpdates(event, request);
@@ -619,8 +655,8 @@ public class EventController {
         if (request.getStatus() != null) {
             event.setStatus(request.getStatus());
         }
-        if (request.getOrganizerId() != null) {
-            event.setOrganizerId(request.getOrganizerId());
+        if (request.getOrganizerUsername() != null) {
+            event.setOrganizerUsername(request.getOrganizerUsername());
         }
         if (request.getCurrentAttendeeCount() != null) {
             event.setCurrentAttendeeCount(request.getCurrentAttendeeCount());

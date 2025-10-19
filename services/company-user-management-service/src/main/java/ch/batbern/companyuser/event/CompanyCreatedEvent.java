@@ -1,27 +1,28 @@
 package ch.batbern.companyuser.event;
 
 import ch.batbern.shared.events.DomainEvent;
-import ch.batbern.shared.types.UserId;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 
 import java.time.Instant;
-import java.util.UUID;
 
 /**
  * Domain event published when a new company is created
  * Published to EventBridge for downstream services to consume
  *
  * Extends shared-kernel DomainEvent for consistent event handling
+ *
+ * Story 1.16.2: Eliminate UUIDs from API
+ * Uses String companyName instead of UUID as aggregate ID
  */
 @Getter
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
-public class CompanyCreatedEvent extends DomainEvent<UUID> {
+public class CompanyCreatedEvent extends DomainEvent<String> {
 
     /**
-     * Company name
+     * Company name (public identifier)
      */
     private final String name;
 
@@ -51,7 +52,7 @@ public class CompanyCreatedEvent extends DomainEvent<UUID> {
     private final String description;
 
     /**
-     * User ID who created the company
+     * Username who created the company
      */
     private final String createdBy;
 
@@ -61,7 +62,7 @@ public class CompanyCreatedEvent extends DomainEvent<UUID> {
     private final Instant createdAt;
 
     public CompanyCreatedEvent(
-            UUID companyId,
+            String companyName,
             String name,
             String displayName,
             String swissUID,
@@ -70,8 +71,8 @@ public class CompanyCreatedEvent extends DomainEvent<UUID> {
             String description,
             String createdBy,
             Instant createdAt,
-            UserId userId) {
-        super(companyId, "CompanyCreated", userId);
+            String username) {
+        super(companyName, "CompanyCreated", username);
         this.name = name;
         this.displayName = displayName;
         this.swissUID = swissUID;

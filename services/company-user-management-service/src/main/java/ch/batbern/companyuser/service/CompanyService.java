@@ -12,7 +12,6 @@ import ch.batbern.companyuser.exception.InvalidUIDException;
 import ch.batbern.companyuser.repository.CompanyRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
 import ch.batbern.shared.events.DomainEventPublisher;
-import ch.batbern.shared.types.UserId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -84,9 +83,9 @@ public class CompanyService {
         searchService.invalidateCache();
 
         // Publish domain event (AC7) using shared-kernel DomainEventPublisher
-        UserId userId = UserId.from(currentUserId);
+        // Story 1.16.2: Use company.name as aggregate ID, username as String
         CompanyCreatedEvent event = new CompanyCreatedEvent(
-            savedCompany.getId(),
+            savedCompany.getName(),  // companyName as aggregate ID
             savedCompany.getName(),
             savedCompany.getDisplayName(),
             savedCompany.getSwissUID(),
@@ -95,7 +94,7 @@ public class CompanyService {
             savedCompany.getDescription(),
             savedCompany.getCreatedBy(),
             savedCompany.getCreatedAt(),
-            userId
+            currentUserId  // username as String
         );
         eventPublisher.publish(event);
 
@@ -104,13 +103,14 @@ public class CompanyService {
     }
 
     /**
-     * Retrieves company by ID
+     * Retrieves company by name
      * AC4: Company retrieval
+     * Story 1.16.2: Use company name as identifier instead of UUID
      */
     @Transactional(readOnly = true)
-    public CompanyResponse getCompanyById(UUID id) {
-        Company company = companyRepository.findById(id)
-                .orElseThrow(() -> new CompanyNotFoundException(id.toString()));
+    public CompanyResponse getCompanyByName(String name) {
+        Company company = companyRepository.findByName(name)
+                .orElseThrow(() -> new CompanyNotFoundException(name));
         return mapToResponse(company);
     }
 
@@ -130,12 +130,13 @@ public class CompanyService {
      * AC4: Company update
      * AC7: Publishes CompanyUpdatedEvent
      * AC8: Invalidates search cache
+     * Story 1.16.2: Use company name as identifier instead of UUID
      */
-    public CompanyResponse updateCompany(UUID id, UpdateCompanyRequest request) {
-        log.info("Updating company: {}", id);
+    public CompanyResponse updateCompany(String name, UpdateCompanyRequest request) {
+        log.info("Updating company: {}", name);
 
-        Company company = companyRepository.findById(id)
-                .orElseThrow(() -> new CompanyNotFoundException(id.toString()));
+        Company company = companyRepository.findByName(name)
+                .orElseThrow(() -> new CompanyNotFoundException(name));
 
         // Update only provided fields
         if (request.getName() != null) {
@@ -166,9 +167,9 @@ public class CompanyService {
         searchService.invalidateCache();
 
         // Publish domain event (AC7) using shared-kernel DomainEventPublisher
-        UserId userId = UserId.from(securityContextHelper.getCurrentUserId());
+        // Story 1.16.2: Use company.name as aggregate ID, username as String
         CompanyUpdatedEvent event = new CompanyUpdatedEvent(
-            updatedCompany.getId(),
+            updatedCompany.getName(),  // companyName as aggregate ID
             updatedCompany.getName(),
             updatedCompany.getDisplayName(),
             updatedCompany.getSwissUID(),
@@ -176,11 +177,11 @@ public class CompanyService {
             updatedCompany.getIndustry(),
             updatedCompany.getDescription(),
             updatedCompany.getUpdatedAt(),
-            userId
+            securityContextHelper.getCurrentUserId()  // username as String
         );
         eventPublisher.publish(event);
 
-        log.info("Company updated successfully: {}", id);
+        log.info("Company updated successfully: {}", name);
         return mapToResponse(updatedCompany);
     }
 
@@ -189,12 +190,13 @@ public class CompanyService {
      * AC4: Company deletion
      * AC7: Publishes CompanyDeletedEvent
      * AC8: Invalidates search cache
+     * Story 1.16.2: Use company name as identifier instead of UUID
      */
-    public void deleteCompany(UUID id) {
-        log.info("Deleting company: {}", id);
+    public void deleteCompany(String name) {
+        log.info("Deleting company: {}", name);
 
-        Company company = companyRepository.findById(id)
-                .orElseThrow(() -> new CompanyNotFoundException(id.toString()));
+        Company company = companyRepository.findByName(name)
+                .orElseThrow(() -> new CompanyNotFoundException(name));
 
         companyRepository.delete(company);
 
@@ -202,45 +204,46 @@ public class CompanyService {
         searchService.invalidateCache();
 
         // Publish domain event (AC7) using shared-kernel DomainEventPublisher
-        UserId userId = UserId.from(securityContextHelper.getCurrentUserId());
+        // Story 1.16.2: Use company.name as aggregate ID, username as String
         CompanyDeletedEvent event = new CompanyDeletedEvent(
-            company.getId(),
+            company.getName(),  // companyName as aggregate ID
             company.getName(),
             Instant.now(),
-            userId
+            securityContextHelper.getCurrentUserId()  // username as String
         );
         eventPublisher.publish(event);
 
-        log.info("Company deleted successfully: {}", id);
+        log.info("Company deleted successfully: {}", name);
     }
 
     /**
      * Marks company as verified
      * AC6: Company verification workflow
      * AC7: Publishes CompanyVerifiedEvent
+     * Story 1.16.2: Use company name as identifier instead of UUID
      */
-    public CompanyResponse markAsVerified(UUID id) {
-        log.info("Marking company as verified: {}", id);
+    public CompanyResponse markAsVerified(String name) {
+        log.info("Marking company as verified: {}", name);
 
-        Company company = companyRepository.findById(id)
-                .orElseThrow(() -> new CompanyNotFoundException(id.toString()));
+        Company company = companyRepository.findByName(name)
+                .orElseThrow(() -> new CompanyNotFoundException(name));
 
         company.markAsVerified();
         Company verifiedCompany = companyRepository.save(company);
 
         // Publish domain event (AC7) using shared-kernel DomainEventPublisher
-        UserId userId = UserId.from(securityContextHelper.getCurrentUserId());
+        // Story 1.16.2: Use company.name as aggregate ID, username as String
         CompanyVerifiedEvent event = new CompanyVerifiedEvent(
-            verifiedCompany.getId(),
+            verifiedCompany.getName(),  // companyName as aggregate ID
             verifiedCompany.getName(),
             verifiedCompany.getSwissUID(),
             verifiedCompany.isVerified(),
             verifiedCompany.getUpdatedAt(),
-            userId
+            securityContextHelper.getCurrentUserId()  // username as String
         );
         eventPublisher.publish(event);
 
-        log.info("Company marked as verified: {}", id);
+        log.info("Company marked as verified: {}", name);
         return mapToResponse(verifiedCompany);
     }
 
@@ -249,13 +252,15 @@ public class CompanyService {
      * AC13: Company verification workflow endpoint
      * AC7: Publishes CompanyVerifiedEvent
      * Idempotent operation - can be called multiple times safely
+     * Story 1.16.2: Use company name as identifier instead of UUID
      */
-    public CompanyResponse verifyCompany(UUID id) {
-        return markAsVerified(id);
+    public CompanyResponse verifyCompany(String name) {
+        return markAsVerified(name);
     }
 
     /**
      * Maps Company entity to CompanyResponse DTO
+     * Story 1.16.2: Use company name as unique identifier (no separate id field)
      */
     private CompanyResponse mapToResponse(Company company) {
         // Build CompanyLogo if logo URL is present
@@ -269,8 +274,7 @@ public class CompanyService {
         }
 
         return CompanyResponse.builder()
-                .id(company.getId())
-                .name(company.getName())
+                .name(company.getName())  // Story 1.16.2: name is the unique identifier
                 .displayName(company.getDisplayName())
                 .swissUID(company.getSwissUID())
                 .website(company.getWebsite())

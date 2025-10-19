@@ -24,17 +24,17 @@ class SpeakerInvitedEventTest {
     @Test
     @DisplayName("should_createSpeakerInvitedEvent_when_speakerInvited")
     void should_createSpeakerInvitedEvent_when_speakerInvited() {
-        EventId eventId = EventId.generate();
-        SpeakerId speakerId = SpeakerId.generate();
+        String eventCode = "BATbern56";
+        String speakerUsername = "jane.smith";
         String speakerName = "Dr. Jane Smith";
         String speakerEmail = "jane.smith@example.com";
         String sessionTitle = "Future of AI in Business";
         LocalDateTime sessionTime = LocalDateTime.of(2024, 11, 15, 14, 0);
-        UserId invitedBy = UserId.from("organizer-123");
+        String invitedBy = "organizer.user";
 
         SpeakerInvitedEvent event = SpeakerInvitedEvent.builder()
-            .eventId(eventId)
-            .speakerId(speakerId)
+            .eventCode(eventCode)
+            .speakerUsername(speakerUsername)
             .speakerName(speakerName)
             .speakerEmail(speakerEmail)
             .sessionTitle(sessionTitle)
@@ -43,14 +43,14 @@ class SpeakerInvitedEventTest {
             .build();
 
         assertThat(event).isNotNull();
-        assertThat(event.getTargetEventId()).isEqualTo(eventId);
-        assertThat(event.getSpeakerId()).isEqualTo(speakerId);
+        assertThat(event.getTargetEventCode()).isEqualTo(eventCode);
+        assertThat(event.getSpeakerUsername()).isEqualTo(speakerUsername);
         assertThat(event.getSpeakerName()).isEqualTo(speakerName);
         assertThat(event.getSpeakerEmail()).isEqualTo(speakerEmail);
         assertThat(event.getSessionTitle()).isEqualTo(sessionTitle);
         assertThat(event.getSessionTime()).isEqualTo(sessionTime);
         assertThat(event.getInvitedBy()).isEqualTo(invitedBy);
-        assertThat(event.getAggregateId()).isEqualTo(speakerId);
+        assertThat(event.getAggregateId()).isEqualTo(speakerUsername);
         assertThat(event.getEventName()).isEqualTo("SpeakerInvitedEvent");
     }
 
@@ -58,13 +58,13 @@ class SpeakerInvitedEventTest {
     @DisplayName("should_serializeToJSON_when_publishingEvent")
     void should_serializeToJSON_when_publishingEvent() throws Exception {
         SpeakerInvitedEvent event = SpeakerInvitedEvent.builder()
-            .eventId(EventId.generate())
-            .speakerId(SpeakerId.generate())
+            .eventCode("BATbern56")
+            .speakerUsername("jane.smith")
             .speakerName("Dr. Jane Smith")
             .speakerEmail("jane.smith@example.com")
             .sessionTitle("Future of AI in Business")
             .sessionTime(LocalDateTime.of(2024, 11, 15, 14, 0))
-            .invitedBy(UserId.from("organizer-123"))
+            .invitedBy("organizer.user")
             .build();
 
         String json = objectMapper.writeValueAsString(event);
@@ -81,13 +81,13 @@ class SpeakerInvitedEventTest {
     @DisplayName("should_deserializeFromJSON_when_receivingEvent")
     void should_deserializeFromJSON_when_receivingEvent() throws Exception {
         SpeakerInvitedEvent originalEvent = SpeakerInvitedEvent.builder()
-            .eventId(EventId.generate())
-            .speakerId(SpeakerId.generate())
+            .eventCode("BATbern56")
+            .speakerUsername("jane.smith")
             .speakerName("Dr. Jane Smith")
             .speakerEmail("jane.smith@example.com")
             .sessionTitle("Future of AI in Business")
             .sessionTime(LocalDateTime.of(2024, 11, 15, 14, 0))
-            .invitedBy(UserId.from("organizer-123"))
+            .invitedBy("organizer.user")
             .build();
 
         String json = objectMapper.writeValueAsString(originalEvent);
@@ -104,13 +104,13 @@ class SpeakerInvitedEventTest {
     @DisplayName("should_includeInvitationStatus_when_eventCreated")
     void should_includeInvitationStatus_when_eventCreated() {
         SpeakerInvitedEvent event = SpeakerInvitedEvent.builder()
-            .eventId(EventId.generate())
-            .speakerId(SpeakerId.generate())
+            .eventCode("BATbern56")
+            .speakerUsername("jane.smith")
             .speakerName("Dr. Jane Smith")
             .speakerEmail("jane.smith@example.com")
             .sessionTitle("Future of AI in Business")
             .sessionTime(LocalDateTime.of(2024, 11, 15, 14, 0))
-            .invitedBy(UserId.from("organizer-123"))
+            .invitedBy("organizer.user")
             .invitationStatus("PENDING")
             .build();
 
@@ -121,13 +121,13 @@ class SpeakerInvitedEventTest {
     @DisplayName("should_defaultToPendingStatus_when_statusNotProvided")
     void should_defaultToPendingStatus_when_statusNotProvided() {
         SpeakerInvitedEvent event = SpeakerInvitedEvent.builder()
-            .eventId(EventId.generate())
-            .speakerId(SpeakerId.generate())
+            .eventCode("BATbern56")
+            .speakerUsername("jane.smith")
             .speakerName("Dr. Jane Smith")
             .speakerEmail("jane.smith@example.com")
             .sessionTitle("Future of AI in Business")
             .sessionTime(LocalDateTime.of(2024, 11, 15, 14, 0))
-            .invitedBy(UserId.from("organizer-123"))
+            .invitedBy("organizer.user")
             .build();
 
         assertThat(event.getInvitationStatus()).isEqualTo("PENDING");
@@ -137,13 +137,13 @@ class SpeakerInvitedEventTest {
     @DisplayName("should_includeEventMetadata_when_eventCreated")
     void should_includeEventMetadata_when_eventCreated() {
         SpeakerInvitedEvent event = SpeakerInvitedEvent.builder()
-            .eventId(EventId.generate())
-            .speakerId(SpeakerId.generate())
+            .eventCode("BATbern56")
+            .speakerUsername("jane.smith")
             .speakerName("Dr. Jane Smith")
             .speakerEmail("jane.smith@example.com")
             .sessionTitle("Future of AI in Business")
             .sessionTime(LocalDateTime.of(2024, 11, 15, 14, 0))
-            .invitedBy(UserId.from("organizer-123"))
+            .invitedBy("organizer.user")
             .build();
 
         assertThat(event.getOccurredAt()).isNotNull();
@@ -155,24 +155,24 @@ class SpeakerInvitedEventTest {
     @DisplayName("should_validateRequiredFields_when_eventCreated")
     void should_validateRequiredFields_when_eventCreated() {
         assertThatThrownBy(() -> SpeakerInvitedEvent.builder()
-            .eventId(null)
-            .speakerId(SpeakerId.generate())
+            .eventCode(null)
+            .speakerUsername("jane.smith")
             .speakerName("Dr. Jane Smith")
             .speakerEmail("jane.smith@example.com")
             .sessionTitle("Future of AI")
             .sessionTime(LocalDateTime.now())
-            .invitedBy(UserId.from("organizer"))
+            .invitedBy("organizer.user")
             .build())
             .isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> SpeakerInvitedEvent.builder()
-            .eventId(EventId.generate())
-            .speakerId(null)
+            .eventCode("BATbern56")
+            .speakerUsername(null)
             .speakerName("Dr. Jane Smith")
             .speakerEmail("jane.smith@example.com")
             .sessionTitle("Future of AI")
             .sessionTime(LocalDateTime.now())
-            .invitedBy(UserId.from("organizer"))
+            .invitedBy("organizer.user")
             .build())
             .isInstanceOf(NullPointerException.class);
     }
