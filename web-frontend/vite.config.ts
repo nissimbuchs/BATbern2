@@ -222,7 +222,15 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
-      exclude: ['node_modules/', 'src/test/', 'e2e/', '**/*.d.ts', '**/*.config.*', '**/coverage/'],
+      exclude: [
+        'node_modules/',
+        'src/test/',
+        'e2e/',
+        '**/*.d.ts',
+        '**/*.config.*',
+        '**/coverage/',
+        'src/utils/performance/**', // Exclude performance monitoring utilities (browser-specific APIs)
+      ],
       reportOnFailure: true, // Generate coverage even when tests fail
       all: true, // Include all source files in coverage report
       thresholds: {
