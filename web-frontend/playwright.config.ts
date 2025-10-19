@@ -42,6 +42,9 @@ console.log(`Running Playwright tests against: ${testEnv} (${envConfig.baseURL})
 export default defineConfig({
   testDir: './e2e',
 
+  /* Global setup to handle authentication */
+  globalSetup: './e2e/global-setup.ts',
+
   /* Run tests in files in parallel */
   fullyParallel: true,
 
@@ -62,6 +65,9 @@ export default defineConfig({
     /* Base URL for the environment being tested */
     baseURL: envConfig.baseURL,
 
+    /* Use saved authenticated state (if available) */
+    storageState: process.env.AUTH_TOKEN ? '.playwright-auth-state.json' : undefined,
+
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
 
@@ -74,6 +80,7 @@ export default defineConfig({
     /* Extra HTTP headers for all requests */
     extraHTTPHeaders: {
       'X-Test-Environment': testEnv,
+      ...(process.env.AUTH_TOKEN ? { 'Authorization': `Bearer ${process.env.AUTH_TOKEN}` } : {}),
     },
   },
 
@@ -105,11 +112,11 @@ export default defineConfig({
     },
   ],
 
-  /* Run your local dev server before starting the tests */
-  webServer: {
+  /* Run your local dev server before starting the tests (development only) */
+  webServer: testEnv === 'development' ? {
     command: 'npm run dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
-  },
+  } : undefined,
 });

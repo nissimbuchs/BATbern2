@@ -127,9 +127,6 @@ aws rds modify-db-instance \
   --db-instance-identifier batbern-production \
   --db-instance-class db.t4g.small \
   --apply-immediately
-
-# Temporarily enable Redis (optional, if high concurrency expected)
-# Update prod-config.ts: numNodes: 1, nodeType: 'cache.t3.micro'
 ```
 
 **Post-Event Scaling:**

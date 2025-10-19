@@ -10,7 +10,7 @@
 - **Backend Services**: Company Management, Event Management, Speaker Coordination (Java 21 + Spring Boot 3.2)
 - **Database**: PostgreSQL with proper domain models and indexes
 - **Frontend**: React components with role-adaptive CRUD forms
-- **Cache**: Redis for entity search and performance
+- **Cache**: Caffeine for entity search and performance
 - **Storage**: AWS S3 for logos, photos, and documents
 
 **Duration**: 9 weeks (Weeks 10-18) - includes API consolidation for production-ready RESTful APIs
@@ -47,14 +47,14 @@ As a **user of any role**, I want my company affiliation to be properly managed 
 - **Service**: `company-user-management-service/` (Java 21 + Spring Boot 3.2)
 - **Database**: PostgreSQL with company profiles, employee relationships
 - **Storage**: AWS S3 for company logos
-- **Cache**: Redis for company search
+- **Cache**: Caffeine for company search
 - **API Foundation**: Uses Story 1.15a utilities (FilterParser, SortParser, PaginationUtils)
 
 **Key Functionality:**
 1. Company CRUD operations with Swiss UID validation
 2. Employee-company relationship management
 3. Logo upload to S3 with CDN integration
-4. Company search with Redis-backed autocomplete
+4. Company search with Caffeine-backed autocomplete
 5. **Consolidated API**: `GET /api/v1/companies?filter={}&include=employees&fields=id,name,uid`
 6. **Resource Expansion**: Include employees, statistics, logo in single API call
 7. **Performance**: <200ms response time with caching, reduce multiple API calls to 1-2 calls
@@ -80,7 +80,7 @@ As a **user of any role**, I want my company affiliation to be properly managed 
 - [ ] **Consolidated REST API** implementing Story 1.15a.6 patterns
 - [ ] OpenAPI documentation for all endpoints (basic + consolidated)
 - [ ] Swiss UID validation integrated
-- [ ] Company search with Redis caching
+- [ ] Company search with Caffeine caching
 - [ ] S3 logo storage with CDN
 - [ ] Domain events published to EventBridge
 - [ ] **API Consolidation**: Support `?include=employees,statistics,logo` for resource expansion
@@ -107,7 +107,7 @@ As a **user of any role**, I want my user profile, preferences, and settings man
 - **Service**: `user-management-service/` (Java 21 + Spring Boot 3.2)
 - **Database**: PostgreSQL with user profiles, preferences, roles, activity history
 - **Storage**: AWS S3 for profile pictures with CloudFront
-- **Cache**: Redis for user search and session caching (10min TTL)
+- **Cache**: Caffeine for user search and session caching (10min TTL)
 - **Integration**: AWS Cognito for authentication sync
 - **API Foundation**: Uses Story 1.15a utilities (FilterParser, SortParser, PaginationUtils, FieldSelector, IncludeParser)
 
@@ -157,7 +157,7 @@ As an **organizer**, I want to access and manage events through consolidated RES
 **Architecture Integration:**
 - **Service**: `event-management-service/` (Java 21 + Spring Boot 3.2)
 - **Database**: PostgreSQL with event aggregates
-- **Cache**: Redis for event data caching (15min TTL for expanded resources)
+- **Cache**: Caffeine for event data caching (15min TTL for expanded resources)
 - **Events**: Domain events published to EventBridge
 - **API Foundation**: Uses Story 1.15a utilities for filtering, sorting, pagination, field selection
 
@@ -206,7 +206,7 @@ As an **organizer**, I want to access and manage events through consolidated RES
 - [ ] OpenAPI documentation for all consolidated endpoints
 - [ ] Event types configuration
 - [ ] PostgreSQL schema with indexes
-- [ ] Redis caching for performance (15min TTL)
+- [ ] Caffeine caching for performance (15min TTL)
 - [ ] **API Consolidation**: Support `?include=venue,speakers,sessions,topics,registrations` for resource expansion
 - [ ] **Advanced Search**: Filter by status, date, topic with JSON filter syntax
 - [ ] **Performance**: List <100ms, detail <150ms, detail+includes <500ms (all P95)
@@ -233,7 +233,7 @@ As an **organizer**, I want the foundational Speaker Coordination Service with c
 - **Service**: `speaker-coordination-service/` (Java 21 + Spring Boot 3.2)
 - **Database**: PostgreSQL with speaker domain schema
 - **Storage**: S3 for speaker photos and CVs
-- **Cache**: Redis for speaker session data (10min TTL for expanded resources)
+- **Cache**: Caffeine for speaker session data (10min TTL for expanded resources)
 - **API Foundation**: Uses Story 1.15a utilities for filtering, sorting, pagination
 
 **Key Functionality:**
@@ -278,7 +278,7 @@ As an **organizer**, I want to manage user roles through consolidated RESTful AP
 - **Service**: User Management Service or API Gateway authentication layer extension
 - **Database**: PostgreSQL with role management tables
 - **Integration**: AWS Cognito for role attribute updates
-- **Cache**: Redis for user search and role lookups
+- **Cache**: Caffeine for user search and role lookups
 - **API Foundation**: Uses Story 1.15a utilities for filtering, sorting, pagination
 - **Frontend**: React role management interface
 
@@ -431,7 +431,7 @@ This story implements the frontend consuming all entity CRUD APIs. Wireframes ar
 - ✅ Epic 1 Stories 1.9, 1.11 complete (error handling, security)
 - ✅ API Gateway operational with authentication
 - ✅ PostgreSQL databases provisioned for all services
-- ✅ Redis clusters operational
+- ✅ Caffeine clusters operational
 - ✅ S3 buckets configured with CDN
 
 **Enables Following Epics:**
@@ -474,7 +474,7 @@ This story implements the frontend consuming all entity CRUD APIs. Wireframes ar
 - **Risk**: Swiss UID API integration may have rate limits or downtime
   - **Mitigation**: Implement caching and fallback validation logic
 - **Risk**: Performance issues with complex entity relationships
-  - **Mitigation**: Database query optimization, proper indexing, Redis caching
+  - **Mitigation**: Database query optimization, proper indexing, Caffeine caching
 - **Risk**: Frontend state management complexity with multiple entities
   - **Mitigation**: Use React Query for server state, Zustand for client state with clear boundaries
 

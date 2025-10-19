@@ -244,7 +244,7 @@
 ## Key Interactive Elements
 
 ### Company List View
-- **Search Bar**: Real-time autocomplete search with Redis-backed suggestions
+- **Search Bar**: Real-time autocomplete search with Caffeine-backed suggestions
 - **Filter Controls**: Partner status, verification status, industry
 - **View Toggle**: Switch between grid and list view
 - **Sort Dropdown**: Sort by name, industry, number of speakers, partnership status
@@ -276,7 +276,7 @@
 - **FR3**: Core company management with CRUD operations and Swiss UID validation
 - **FR12**: Partner company management (via Partner Coordination Service) with special status indicators, partnership levels, and benefit tracking
 - **Logo Management**: S3-based logo upload with CDN integration for fast delivery
-- **Search & Discovery**: Redis-backed autocomplete search for efficient company lookup
+- **Search & Discovery**: Caffeine-backed autocomplete search for efficient company lookup
 - **Data Integrity**: Duplicate detection, UID verification, and data validation
 - **User-Company Associations**: User-company relationships managed via User Management Service
 
@@ -318,7 +318,7 @@
 - **CompanyForm.tsx**: Create/edit form with validation
 - **CompanyDetailView.tsx**: Detailed company profile display
 - **LogoUpload.tsx**: Drag-and-drop logo upload component
-- **CompanySearch.tsx**: Autocomplete search with Redis backend
+- **CompanySearch.tsx**: Autocomplete search with Caffeine cache backend
 - **PartnerManagementPanel.tsx**: Partner status and benefits configuration
 
 ### State Management
@@ -379,7 +379,7 @@
 - **Description**: Max 500 characters
 
 ### Caching Strategy
-- **Redis Autocomplete**: Company name suggestions cached with 15-minute TTL
+- **Caffeine Autocomplete**: Company name suggestions cached with 15-minute TTL
 - **React Query**: Company details cached for 10 minutes
 - **CDN**: Logo files cached with CloudFront (1-year max-age)
 - **Search Results**: Cached for 5 minutes, invalidated on company updates
@@ -411,10 +411,10 @@ When the Company Management Screen loads, the following APIs are called:
 
 2. **GET /api/v1/companies/search?query={}&limit=20**
    - Triggered by: User typing in search bar (debounced)
-   - Returns: Autocomplete suggestions from Redis cache
+   - Returns: Autocomplete suggestions from Caffeine cache
    - Response: `{ suggestions: [{ id, name, displayName, logo }] }`
    - Used for: Autocomplete dropdown
-   - **Performance**: <100ms (P95) with Redis caching
+   - **Performance**: <100ms (P95) with Caffeine caching
 
 ### Action APIs
 
@@ -431,10 +431,10 @@ APIs called by user interactions:
 
 4. **GET /api/v1/companies/search?query={}&limit=10**
    - Triggered by: Search input (autocomplete, debounced)
-   - Returns: Autocomplete suggestions from Redis cache
+   - Returns: Autocomplete suggestions from Caffeine cache
    - Response: `{ suggestions: [{ id, name, displayName, logo }] }`
    - Used for: Autocomplete dropdown
-   - **Performance**: <100ms (P95) with Redis caching
+   - **Performance**: <100ms (P95) with Caffeine caching
 
 #### CRUD Operations (Consolidated)
 

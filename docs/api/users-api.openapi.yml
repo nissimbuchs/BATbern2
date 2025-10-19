@@ -1,0 +1,1394 @@
+openapi: 3.1.0
+info:
+  title: BATbern Users API
+  version: 1.0.0
+  description: |
+    Consolidated Users API for BATbern Event Management Platform.
+
+    This API provides comprehensive user management capabilities with:
+    - **Resource Expansion**: `?include=` parameter for company, roles, preferences, settings, activity
+    - **Advanced Filtering**: MongoDB-style JSON filter syntax for complex queries
+    - **Field Selection**: Sparse fieldsets to reduce payload size
+    - **Pagination**: Standard page/limit parameters
+    - **Caching**: Caffeine in-memory cache (10min TTL)
+    - **Role Management**: Business rules enforcement (minimum 2 organizers)
+    - **GDPR Compliance**: Cascade deletion and audit logging
+
+    **Story**: 1.14-2 - User Management Service Foundation
+
+    **Performance Targets**:
+    - Current user (GET /users/me): <100ms (P95)
+    - User list (no includes): <100ms (P95)
+    - User detail (basic): <150ms (P95)
+    - User detail (all includes): <150ms (P95)
+    - Cached search response: <50ms (P95)
+    - Get-or-create user: <200ms (P95)
+
+  contact:
+    name: BATbern Platform Team
+    email: platform@batbern.ch
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://api.batbern.ch/api/v1
+    description: Production
+  - url: https://api.staging.batbern.ch/api/v1
+    description: Staging
+  - url: http://localhost:8080/api/v1
+    description: Development
+
+tags:
+  - name: User Management
+    description: User profile CRUD and management operations
+  - name: User Search
+    description: User search and autocomplete with caching
+  - name: User Preferences
+    description: User preference management
+  - name: User Settings
+    description: User account settings management
+  - name: Role Management
+    description: User role management with business rules
+  - name: Activity History
+    description: User activity tracking and history
+  - name: Profile Picture
+    description: Profile picture upload and management
+  - name: GDPR Compliance
+    description: GDPR-compliant data export and deletion
+  - name: Domain Integration
+    description: Domain service integration endpoints
+
+paths:
+  /users/me:
+    get:
+      tags:
+        - User Management
+      summary: Get current authenticated user
+      description: |
+        Retrieve the profile of the currently authenticated user with optional resource expansion.
+
+        **Acceptance Criteria**: AC1
+
+        **Resource Expansion**:
+        - company: Expands company details
+        - preferences: Includes user preferences
+        - settings: Includes account settings
+        - roles: Includes full role information
+        - activity: Includes recent activity history
+
+        **Performance**: <100ms (P95)
+
+      operationId: getCurrentUser
+      parameters:
+        - name: include
+          in: query
+          description: Comma-separated list of resources to include
+          required: false
+          schema:
+            type: string
+            example: 'company,preferences,settings'
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+              examples:
+                basicUser:
+                  summary: Basic user profile
+                  value:
+                    id: 550e8400-e29b-41d4-a716-446655440000
+                    email: john.doe@example.com
+                    firstName: John
+                    lastName: Doe
+                    roles: [SPEAKER, ATTENDEE]
+                    isActive: true
+                    createdAt: 2025-01-15T10:00:00Z
+                    updatedAt: 2025-01-15T10:00:00Z
+                expandedUser:
+                  summary: User with all expansions
+                  value:
+                    id: 550e8400-e29b-41d4-a716-446655440000
+                    email: john.doe@example.com
+                    firstName: John
+                    lastName: Doe
+                    roles: [SPEAKER, ATTENDEE]
+                    companyId: 550e8400-e29b-41d4-a716-446655440001
+                    isActive: true
+                    createdAt: 2025-01-15T10:00:00Z
+                    updatedAt: 2025-01-15T10:00:00Z
+                    company:
+                      id: 550e8400-e29b-41d4-a716-446655440001
+                      name: Swiss IT Solutions AG
+                      industry: Technology
+                    preferences:
+                      theme: dark
+                      language: de
+                      emailNotifications: true
+                    settings:
+                      profileVisibility: members_only
+                      showEmail: false
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+    put:
+      tags:
+        - User Management
+      summary: Update current user profile
+      description: |
+        Update the profile of the currently authenticated user.
+
+        **Acceptance Criteria**: AC2
+
+        **Validation Rules**:
+        - Email must be valid and unique
+        - Names: 2-100 characters
+        - Bio: max 2000 characters
+
+        **Cognito Sync**: Updates synchronize with AWS Cognito
+
+        **Events Published**: UserUpdatedEvent to EventBridge
+
+        **Cache Invalidation**: All user caches cleared on update
+
+      operationId: updateCurrentUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+            examples:
+              basicUpdate:
+                summary: Update basic profile
+                value:
+                  firstName: Jonathan
+                  lastName: Doe
+                  bio: Software engineer specializing in cloud architecture
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+    patch:
+      tags:
+        - User Management
+      summary: Partially update current user profile
+      description: |
+        Partially update the profile of the currently authenticated user.
+
+        **Acceptance Criteria**: AC2
+
+        Similar to PUT but allows partial updates.
+
+      operationId: patchCurrentUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /users:
+    get:
+      tags:
+        - User Management
+      summary: List users with advanced query support
+      description: |
+        Retrieve a paginated list of users with optional filtering, sorting,
+        field selection, and resource expansion.
+
+        **Acceptance Criteria**: AC3, AC13, AC14
+
+        **Authorization**: ADMIN or ORGANIZER role required
+
+        **Filter Syntax Examples**:
+        - Single filter: {"role":"SPEAKER"}
+        - Multiple fields: {"role":"SPEAKER","isActive":true}
+        - Company filter: {"companyId":"550e8400-e29b-41d4-a716-446655440000"}
+        - Logical operators: {"$or":[{"role":"SPEAKER"},{"role":"PARTNER"}]}
+
+        **Sort Syntax**:
+        - Ascending: lastName or +lastName
+        - Descending: -createdAt
+        - Multiple fields: lastName,-createdAt
+
+        **Field Selection**:
+        - Specific fields: ?fields=id,email,firstName,lastName,roles
+        - All fields: omit fields parameter
+
+        **Resource Expansion**:
+        - ?include=company: Expands company details
+        - ?include=roles: Includes full role information
+        - ?include=preferences: Includes user preferences
+
+        **Performance**:
+        - Basic query: <100ms (P95)
+        - With all includes: <150ms (P95)
+
+      operationId: listUsers
+      parameters:
+        - name: filter
+          in: query
+          description: MongoDB-style JSON filter criteria
+          required: false
+          schema:
+            type: string
+            example: '{"role":"SPEAKER","isActive":true}'
+        - name: sort
+          in: query
+          description: Sort fields (comma-separated, prefix with - for descending)
+          required: false
+          schema:
+            type: string
+            example: '-createdAt,lastName'
+        - name: page
+          in: query
+          description: Page number (1-indexed)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Items per page (max 100)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: fields
+          in: query
+          description: Comma-separated field names for sparse fieldsets
+          required: false
+          schema:
+            type: string
+            example: 'id,email,firstName,lastName,roles'
+        - name: include
+          in: query
+          description: Comma-separated list of resources to include
+          required: false
+          schema:
+            type: string
+            example: 'company,roles,preferences'
+        - name: role
+          in: query
+          description: Filter by specific role (deprecated, use filter parameter)
+          required: false
+          schema:
+            type: string
+            enum: [ORGANIZER, SPEAKER, PARTNER, ATTENDEE]
+        - name: company
+          in: query
+          description: Filter by company ID (deprecated, use filter parameter)
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful response with paginated users
+          headers:
+            X-Cache-Status:
+              description: Cache hit status (HIT or MISS)
+              schema:
+                type: string
+                enum: [HIT, MISS]
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /users/{id}:
+    get:
+      tags:
+        - User Management
+      summary: Get user details
+      description: |
+        Retrieve detailed information about a specific user.
+
+        **Acceptance Criteria**: AC5
+
+        **Resource Expansion**: Supports ?include parameter
+
+        **Performance**: <150ms (P95)
+
+      operationId: getUserById
+      parameters:
+        - name: id
+          in: path
+          description: User UUID
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 550e8400-e29b-41d4-a716-446655440000
+        - name: include
+          in: query
+          description: Comma-separated list of resources to include
+          required: false
+          schema:
+            type: string
+            example: 'company,roles'
+      responses:
+        '200':
+          description: User details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+    delete:
+      tags:
+        - GDPR Compliance
+      summary: Delete user and all associated data
+      description: |
+        Delete a user and cascade deletion across all domain services.
+
+        **Acceptance Criteria**: AC11
+
+        **Authorization**: ADMIN role or self-deletion
+
+        **Business Rules**:
+        - Cannot delete last ORGANIZER user
+        - Cascade deletion across Event, Speaker, Partner, Attendee services
+
+        **Events Published**: UserDeletedEvent to EventBridge
+
+        **Audit Logging**: GDPR compliance logging
+
+      operationId: deleteUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: User deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /users/search:
+    get:
+      tags:
+        - User Search
+      summary: Search users with autocomplete
+      description: |
+        Search users by name or email with autocomplete functionality.
+
+        **Acceptance Criteria**: AC4, AC11
+
+        **Caching**:
+        - Caffeine in-memory cache with 10-minute TTL
+        - Cache key includes query, role filter, and limit
+        - Automatic cache invalidation on user updates
+
+        **Performance**:
+        - Cached response: <50ms (P95)
+        - Cache miss: <100ms (P95)
+
+        **Default Results**: 20 users (configurable via limit parameter)
+
+      operationId: searchUsers
+      parameters:
+        - name: query
+          in: query
+          description: Search query (minimum 1 character)
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: 'John'
+        - name: role
+          in: query
+          description: Filter by specific role
+          required: false
+          schema:
+            type: string
+            enum: [ORGANIZER, SPEAKER, PARTNER, ATTENDEE]
+        - name: limit
+          in: query
+          description: Maximum number of results (default 20)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Search results returned successfully
+          headers:
+            X-Cache-Status:
+              description: Cache hit status (HIT or MISS)
+              schema:
+                type: string
+                enum: [HIT, MISS]
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserSearchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /users/me/preferences:
+    get:
+      tags:
+        - User Preferences
+      summary: Get current user preferences
+      description: |
+        Retrieve preferences for the currently authenticated user.
+
+        **Acceptance Criteria**: AC6
+
+        Includes: theme, language, notification settings, quiet hours
+
+      operationId: getUserPreferences
+      responses:
+        '200':
+          description: Preferences retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPreferences'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+    put:
+      tags:
+        - User Preferences
+      summary: Update current user preferences
+      description: |
+        Update preferences for the currently authenticated user.
+
+        **Acceptance Criteria**: AC6
+
+        **Validation**: All preference values validated against allowed enums/formats
+
+      operationId: updateUserPreferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPreferences'
+            examples:
+              preferenceUpdate:
+                summary: Update preferences
+                value:
+                  theme: dark
+                  language: de
+                  emailNotifications: true
+                  notificationFrequency: daily_digest
+                  quietHoursStart: '22:00'
+                  quietHoursEnd: '07:00'
+      responses:
+        '200':
+          description: Preferences updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPreferences'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /users/me/settings:
+    get:
+      tags:
+        - User Settings
+      summary: Get current user settings
+      description: |
+        Retrieve account settings for the currently authenticated user.
+
+        **Acceptance Criteria**: AC7
+
+        Includes: privacy controls, account preferences, security settings
+
+      operationId: getUserSettings
+      responses:
+        '200':
+          description: Settings retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSettings'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+    put:
+      tags:
+        - User Settings
+      summary: Update current user settings
+      description: |
+        Update account settings for the currently authenticated user.
+
+        **Acceptance Criteria**: AC7
+
+        **Privacy Controls**: Profile visibility, contact information display
+        **Security Settings**: Two-factor authentication enablement
+
+      operationId: updateUserSettings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserSettings'
+      responses:
+        '200':
+          description: Settings updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSettings'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /users/{id}/roles:
+    get:
+      tags:
+        - Role Management
+      summary: Get user roles
+      description: |
+        Retrieve roles for a specific user.
+
+        **Acceptance Criteria**: AC8
+
+        **Authorization**: ADMIN or ORGANIZER role required
+
+      operationId: getUserRoles
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Roles retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: string
+                    format: uuid
+                  roles:
+                    type: array
+                    items:
+                      type: string
+                      enum: [ORGANIZER, SPEAKER, PARTNER, ATTENDEE]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+    put:
+      tags:
+        - Role Management
+      summary: Update user roles
+      description: |
+        Update roles for a specific user.
+
+        **Acceptance Criteria**: AC8
+
+        **Authorization**: ADMIN or ORGANIZER role required
+
+        **Business Rules**:
+        - System must maintain at least 2 active ORGANIZER role users
+        - Removing ORGANIZER role requires approval if only 2 remain
+
+        **Events Published**: UserRoleChangedEvent to EventBridge
+
+        **Cache Invalidation**: All user caches cleared on role update
+
+      operationId: updateUserRoles
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - roles
+              properties:
+                roles:
+                  type: array
+                  items:
+                    type: string
+                    enum: [ORGANIZER, SPEAKER, PARTNER, ATTENDEE]
+                  minItems: 1
+      responses:
+        '200':
+          description: Roles updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: string
+                    format: uuid
+                  roles:
+                    type: array
+                    items:
+                      type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /users/{id}/activity:
+    get:
+      tags:
+        - Activity History
+      summary: Get user activity history
+      description: |
+        Retrieve paginated activity history for a specific user.
+
+        **Acceptance Criteria**: AC9
+
+        **Activity Types**: event_registered, session_attended, topic_voted, content_viewed
+
+        **Timeframe Filtering**: Support for date range queries
+
+      operationId: getUserActivity
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: timeframe
+          in: query
+          description: Filter by timeframe
+          required: false
+          schema:
+            type: string
+            enum: [24h, 7d, 30d, 90d, all]
+            default: 30d
+        - name: activityType
+          in: query
+          description: Filter by activity type
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Activity history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ActivityHistory'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationMetadata'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /users/me/picture:
+    post:
+      tags:
+        - Profile Picture
+      summary: Upload profile picture
+      description: |
+        Generate presigned S3 upload URL for profile picture.
+
+        **Acceptance Criteria**: AC10
+
+        **File Constraints**:
+        - Max size: 5 MB
+        - Allowed formats: PNG, JPG, JPEG
+        - Recommended dimensions: 400x400 to 1000x1000 pixels
+
+        **Upload Process**:
+        1. Client calls this endpoint to get presigned URL
+        2. Client uploads directly to S3 using presigned URL
+        3. Client calls confirm endpoint with file ID
+
+      operationId: uploadProfilePicture
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - filename
+                - fileSizeBytes
+                - mimeType
+              properties:
+                filename:
+                  type: string
+                  maxLength: 255
+                fileSizeBytes:
+                  type: integer
+                  minimum: 1
+                  maximum: 5242880  # 5 MB
+                mimeType:
+                  type: string
+                  enum: [image/png, image/jpeg, image/jpg]
+      responses:
+        '200':
+          description: Presigned upload URL generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uploadUrl:
+                    type: string
+                    format: uri
+                    description: Presigned S3 upload URL (valid for 15 minutes)
+                  fileId:
+                    type: string
+                    description: File identifier for confirmation
+                  expiresIn:
+                    type: integer
+                    description: URL expiration time in seconds
+                    example: 900
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /users/get-or-create:
+    post:
+      tags:
+        - Domain Integration
+      summary: Get or create user (for domain services)
+      description: |
+        Idempotent endpoint for domain services to get existing user or create new user.
+
+        **Acceptance Criteria**: AC12
+
+        **Use Cases**:
+        - Speaker Service: Create user account when speaker registers
+        - Partner Service: Create user account for partner contact
+        - Attendee Service: Create user account during event registration
+
+        **Idempotency**: Safe to call multiple times with same email
+
+        **Cognito Sync**: Optionally creates Cognito user if createIfMissing=true
+
+        **Performance**: <200ms (P95)
+
+      operationId: getOrCreateUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetOrCreateUserRequest'
+            examples:
+              speakerRegistration:
+                summary: Speaker registration
+                value:
+                  email: jane.smith@example.com
+                  firstName: Jane
+                  lastName: Smith
+                  createIfMissing: true
+                  cognitoSync: true
+      responses:
+        '200':
+          description: User retrieved or created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetOrCreateUserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+components:
+  schemas:
+    UserResponse:
+      type: object
+      required:
+        - id
+        - email
+        - firstName
+        - lastName
+        - roles
+        - isActive
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+        cognitoUserId:
+          type: string
+          example: cognito-user-123
+        email:
+          type: string
+          format: email
+          example: john.doe@example.com
+        firstName:
+          type: string
+          example: John
+        lastName:
+          type: string
+          example: Doe
+        bio:
+          type: string
+          example: Software engineer passionate about cloud architecture
+        companyId:
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440001
+        roles:
+          type: array
+          items:
+            type: string
+            enum: [ORGANIZER, SPEAKER, PARTNER, ATTENDEE]
+        profilePictureUrl:
+          type: string
+          format: uri
+          example: https://cdn.batbern.ch/profile-pictures/550e8400.jpg
+        isActive:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          example: 2025-01-15T10:00:00Z
+        updatedAt:
+          type: string
+          format: date-time
+          example: 2025-01-15T10:00:00Z
+        lastLoginAt:
+          type: string
+          format: date-time
+          example: 2025-01-20T14:30:00Z
+        company:
+          $ref: '#/components/schemas/Company'
+        preferences:
+          $ref: '#/components/schemas/UserPreferences'
+        settings:
+          $ref: '#/components/schemas/UserSettings'
+
+    UserPreferences:
+      type: object
+      properties:
+        theme:
+          type: string
+          enum: [light, dark, auto]
+          default: auto
+        language:
+          type: string
+          enum: [de, en, fr, it]
+          default: de
+        emailNotifications:
+          type: boolean
+          default: true
+        inAppNotifications:
+          type: boolean
+          default: true
+        pushNotifications:
+          type: boolean
+          default: false
+        notificationFrequency:
+          type: string
+          enum: [immediate, daily_digest, weekly_digest]
+          default: immediate
+        quietHoursStart:
+          type: string
+          pattern: '^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$'
+          example: '22:00'
+        quietHoursEnd:
+          type: string
+          pattern: '^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$'
+          example: '07:00'
+
+    UserSettings:
+      type: object
+      properties:
+        profileVisibility:
+          type: string
+          enum: [public, members_only, private]
+          default: members_only
+        showEmail:
+          type: boolean
+          default: false
+        showCompany:
+          type: boolean
+          default: true
+        showActivityHistory:
+          type: boolean
+          default: false
+        allowMessaging:
+          type: boolean
+          default: true
+        allowCalendarSync:
+          type: boolean
+          default: false
+        timezone:
+          type: string
+          example: Europe/Zurich
+        twoFactorEnabled:
+          type: boolean
+          default: false
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+          minLength: 2
+          maxLength: 100
+        lastName:
+          type: string
+          minLength: 2
+          maxLength: 100
+        email:
+          type: string
+          format: email
+        bio:
+          type: string
+          maxLength: 2000
+
+    UserSearchResponse:
+      type: object
+      required:
+        - id
+        - email
+        - firstName
+        - lastName
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        companyId:
+          type: string
+          format: uuid
+        roles:
+          type: array
+          items:
+            type: string
+        profilePictureUrl:
+          type: string
+          format: uri
+
+    GetOrCreateUserRequest:
+      type: object
+      required:
+        - email
+        - firstName
+        - lastName
+      properties:
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        companyId:
+          type: string
+          format: uuid
+        createIfMissing:
+          type: boolean
+          default: true
+        cognitoSync:
+          type: boolean
+          default: true
+
+    GetOrCreateUserResponse:
+      type: object
+      required:
+        - userId
+        - created
+        - user
+      properties:
+        userId:
+          type: string
+          format: uuid
+        created:
+          type: boolean
+          description: True if user was created, false if existing
+        cognitoUserId:
+          type: string
+          description: Cognito user ID (only if created)
+        user:
+          $ref: '#/components/schemas/UserResponse'
+
+    ActivityHistory:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        activityType:
+          type: string
+          example: event_registered
+        entityType:
+          type: string
+          example: event
+        entityId:
+          type: string
+          example: evt-123
+        description:
+          type: string
+          example: Registered for BATbern Developer Meetup
+        metadata:
+          type: object
+          additionalProperties: true
+        timestamp:
+          type: string
+          format: date-time
+
+    Company:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        displayName:
+          type: string
+        industry:
+          type: string
+        website:
+          type: string
+          format: uri
+
+    PaginatedUserResponse:
+      type: object
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserResponse'
+        pagination:
+          $ref: '#/components/schemas/PaginationMetadata'
+
+    PaginationMetadata:
+      type: object
+      required:
+        - page
+        - limit
+        - totalItems
+        - totalPages
+        - hasNext
+        - hasPrev
+      properties:
+        page:
+          type: integer
+          description: Current page (1-indexed)
+          example: 1
+        limit:
+          type: integer
+          description: Items per page
+          example: 20
+        totalItems:
+          type: integer
+          description: Total number of items
+          example: 150
+        totalPages:
+          type: integer
+          description: Total number of pages
+          example: 8
+        hasNext:
+          type: boolean
+          description: Whether there is a next page
+          example: true
+        hasPrev:
+          type: boolean
+          description: Whether there is a previous page
+          example: false
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+        - timestamp
+      properties:
+        error:
+          type: string
+          example: VALIDATION_ERROR
+        errorCode:
+          type: string
+          example: BAD_REQUEST
+        message:
+          type: string
+          example: Invalid request data
+        timestamp:
+          type: string
+          format: date-time
+          example: 2025-01-15T10:30:00Z
+        details:
+          type: object
+          description: Additional error details
+
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            validationError:
+              value:
+                error: VALIDATION_ERROR
+                errorCode: BAD_REQUEST
+                message: Invalid request data
+                timestamp: 2025-01-15T10:30:00Z
+
+    Unauthorized:
+      description: Unauthorized - missing or invalid JWT token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            missingToken:
+              value:
+                error: UNAUTHORIZED
+                errorCode: UNAUTHORIZED
+                message: Missing or invalid authentication token
+                timestamp: 2025-01-15T10:30:00Z
+
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            insufficientPermissions:
+              value:
+                error: FORBIDDEN
+                errorCode: FORBIDDEN
+                message: Insufficient permissions. Requires ADMIN or ORGANIZER role.
+                timestamp: 2025-01-15T10:30:00Z
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            userNotFound:
+              value:
+                error: RESOURCE_NOT_FOUND
+                errorCode: NOT_FOUND
+                message: User not found with id 550e8400-e29b-41d4-a716-446655440000
+                timestamp: 2025-01-15T10:30:00Z
+
+    Conflict:
+      description: Conflict - resource already exists or business rule violation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            duplicateEmail:
+              value:
+                error: CONFLICT
+                errorCode: CONFLICT
+                message: User with email 'john.doe@example.com' already exists
+                timestamp: 2025-01-15T10:30:00Z
+            minimumOrganizers:
+              value:
+                error: BUSINESS_RULE_VIOLATION
+                errorCode: CONFLICT
+                message: Cannot remove ORGANIZER role - minimum 2 organizers required
+                timestamp: 2025-01-15T10:30:00Z
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            serverError:
+              value:
+                error: INTERNAL_SERVER_ERROR
+                errorCode: INTERNAL_ERROR
+                message: An unexpected error occurred
+                timestamp: 2025-01-15T10:30:00Z
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: AWS Cognito JWT token
+
+security:
+  - BearerAuth: []

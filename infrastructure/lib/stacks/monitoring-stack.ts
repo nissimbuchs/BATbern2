@@ -7,9 +7,13 @@ import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
 import { MonitoringWidgetsConstruct } from '../constructs/monitoring-widgets-construct';
 import { AlarmConstruct } from '../constructs/alarm-construct';
+import { GitHubIssuesConstruct } from '../constructs/github-issues-construct';
 
 export interface MonitoringStackProps extends cdk.StackProps {
   config: EnvironmentConfig;
+  enableGitHubIssues?: boolean;
+  githubOwner?: string;
+  githubRepo?: string;
 }
 
 /**
@@ -28,14 +32,24 @@ export class MonitoringStack extends cdk.Stack {
 
     const isProd = props.config.envName === 'production';
 
-    // Create SNS topic for alarm notifications (production only)
-    if (isProd) {
+    // Create SNS topic for alarm notifications (production and staging)
+    if (isProd || props.config.envName === 'staging') {
       this.alarmTopic = new sns.Topic(this, 'AlarmTopic', {
         topicName: `batbern-${props.config.envName}-alarms`,
         displayName: `BATbern ${props.config.envName} Alarms`,
       });
 
-      // TODO: Add email subscriptions via environment variables
+      // GitHub Issues integration - automatically create issues from alarms
+      if (props.enableGitHubIssues !== false) {
+        new GitHubIssuesConstruct(this, 'GitHubIssues', {
+          alarmTopic: this.alarmTopic,
+          environment: props.config.envName,
+          githubOwner: props.githubOwner,
+          githubRepo: props.githubRepo,
+        });
+      }
+
+      // Optional: Add email subscriptions via environment variables
       // this.alarmTopic.addSubscription(
       //   new subscriptions.EmailSubscription(process.env.ALARM_EMAIL!)
       // );

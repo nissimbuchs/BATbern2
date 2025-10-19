@@ -30,7 +30,8 @@ The BATbern API is organized by domain-driven design principles. Each domain has
 - **[Speaker Coordination API](04-api-speaker-coordination.md)** - Speaker management, preferences, quality review, and materials
 - **[Partner Coordination API](04-api-partner-coordination.md)** - Partner relationships, topic voting, and meeting coordination
 - **[Attendee Experience API](04-api-attendee-experience.md)** - Registration, content discovery, and attendee dashboard
-- **[Company Management API](04-api-company-management.md)** - Company profiles, logos, and file storage
+- **[Company Management API](04-api-company-management.md)** - Company profiles, Swiss UID validation, and verification workflows
+- **[User Management API](04-api-user-management.md)** - User profiles, preferences, settings, roles, and GDPR compliance
 
 ## External APIs
 
@@ -94,7 +95,7 @@ The BATbern API is organized by domain-driven design principles. Each domain has
 - **Data Validation:** Schema validation at API gateway level
 
 ### Performance Optimization
-- **Response Caching:** Redis caching for frequently accessed data
+- **Response Caching:** Caffeine in-memory caching for frequently accessed data
 - **Pagination:** Consistent pagination patterns across all list endpoints
 - **Field Selection:** GraphQL-style field selection for large objects
 - **Bulk Operations:** Batch endpoints for high-volume operations
@@ -340,7 +341,7 @@ Rate limit exceeded returns `429 Too Many Requests` with retry-after header.
 - **GET endpoints:** Support `ETag` and `If-None-Match` headers
 - **Cache-Control headers:** Set appropriately per endpoint
 - **CDN caching:** Static content (logos, archived materials) cached at edge
-- **API caching:** Redis-backed for frequently accessed data (15-minute TTL)
+- **API caching:** Caffeine-backed for frequently accessed data (15-minute TTL)
 
 ### Pagination
 
