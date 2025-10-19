@@ -30,7 +30,8 @@ The BATbern API is organized by domain-driven design principles. Each domain has
 - **[Speaker Coordination API](04-api-speaker-coordination.md)** - Speaker management, preferences, quality review, and materials
 - **[Partner Coordination API](04-api-partner-coordination.md)** - Partner relationships, topic voting, and meeting coordination
 - **[Attendee Experience API](04-api-attendee-experience.md)** - Registration, content discovery, and attendee dashboard
-- **[Company Management API](04-api-company-management.md)** - Company profiles, logos, and file storage
+- **[Company Management API](04-api-company-management.md)** - Company profiles, Swiss UID validation, and verification workflows
+- **[User Management API](04-api-user-management.md)** - User profiles, preferences, settings, roles, and GDPR compliance
 
 ## External APIs
 

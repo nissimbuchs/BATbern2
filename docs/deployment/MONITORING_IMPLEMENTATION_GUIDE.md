@@ -31,116 +31,96 @@ This guide provides comprehensive instructions for completing the monitoring and
 - **Cost Monitoring** (AC: 11): AWS cost visualization + budget alerts
 - **Security Dashboard** (AC: 12): Security events and unauthorized access monitoring
 
-### 4. Incident Management Framework (AC: 13, 14, 15, 16) ⚠️ Partial
-Framework created with Lambda function placeholders for:
-- **PagerDuty Integration** (AC: 13): Lambda subscribed to alarm topic
-- **Runbook Automation** (AC: 14): Lambda for automated remediation
-- **Post-Mortem Templates** (AC: 15): Lambda for incident documentation
-- **StatusPage Integration** (AC: 16): Lambda for public status updates
+### 4. Incident Management Framework (AC: 13, 14, 15, 16) ✓
+Incident management fully integrated with GitHub:
+- **GitHub Issues Integration** (AC: 13): Automatic issue creation from alarms
+- **Runbook Automation** (AC: 14): Lambda for automated remediation (optional)
+- **Post-Mortem Templates** (AC: 15): Tracked via GitHub Issues
+- **Public Status** (AC: 16): Communicated via GitHub Issues or external service (optional)
 
-## Pending Implementation
+## Setup Instructions
 
-### Task A: Complete PagerDuty Integration (AC: 13)
+### Task A: Configure GitHub Issues Integration (AC: 13)
+
+**What it does:**
+- Automatically creates GitHub Issues when CloudWatch alarms trigger
+- Closes issues when alarms return to OK state
+- Labels issues by severity, environment, and component
+- Includes alarm details, thresholds, and dashboard links
 
 **Prerequisites:**
-- PagerDuty account with API access
-- Service integration key
-- On-call schedule configured
+- GitHub repository (e.g., batbern/BATbern-develop)
+- GitHub Personal Access Token (PAT) with `repo` permissions
 
 **Implementation Steps:**
 
-1. **Store PagerDuty credentials in SSM Parameter Store:**
+1. **Create a GitHub Personal Access Token:**
+   - Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
+   - Click "Generate new token (classic)"
+   - Name: "CloudWatch Alarms Integration"
+   - Scopes: Select `repo` (full control of private repositories)
+   - Click "Generate token" and copy the token
+
+2. **Store GitHub token in SSM Parameter Store:**
 ```bash
-aws ssm put-parameter \
-  --name "/batbern/production/pagerduty/api-key" \
-  --value "YOUR_PAGERDUTY_API_KEY" \
-  --type "SecureString"
+# For staging
+AWS_PROFILE=batbern-staging aws ssm put-parameter \
+  --name "/batbern/staging/github/token" \
+  --value "ghp_YOUR_GITHUB_TOKEN_HERE" \
+  --type "SecureString" \
+  --description "GitHub PAT for CloudWatch alarm integration"
 
-aws ssm put-parameter \
-  --name "/batbern/production/pagerduty/routing-key" \
-  --value "YOUR_ROUTING_KEY" \
-  --type "SecureString"
+# For production
+AWS_PROFILE=batbern-prod aws ssm put-parameter \
+  --name "/batbern/production/github/token" \
+  --value "ghp_YOUR_GITHUB_TOKEN_HERE" \
+  --type "SecureString" \
+  --description "GitHub PAT for CloudWatch alarm integration"
 ```
 
-2. **Update Lambda function code:**
-
-File: `infrastructure/lambda/pagerduty-integration/index.ts`
-
-```typescript
-import { SNSEvent } from 'aws-lambda';
-import axios from 'axios';
-
-interface CloudWatchAlarm {
-  AlarmName: string;
-  NewStateValue: string;
-  NewStateReason: string;
-  StateChangeTime: string;
-}
-
-export const handler = async (event: SNSEvent) => {
-  const pagerDutyApiKey = process.env.PAGERDUTY_API_KEY!;
-  const routingKey = process.env.PAGERDUTY_ROUTING_KEY!;
-
-  for (const record of event.Records) {
-    const message: CloudWatchAlarm = JSON.parse(record.Sns.Message);
-
-    const pagerDutyEvent = {
-      routing_key: routingKey,
-      event_action: message.NewStateValue === 'ALARM' ? 'trigger' : 'resolve',
-      dedup_key: message.AlarmName,
-      payload: {
-        summary: `${message.AlarmName}: ${message.NewStateReason}`,
-        severity: getSeverity(message.AlarmName),
-        timestamp: message.StateChangeTime,
-        source: 'AWS CloudWatch',
-        component: getComponent(message.AlarmName),
-        custom_details: message,
-      },
-    };
-
-    await axios.post('https://events.pagerduty.com/v2/enqueue', pagerDutyEvent, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Token token=${pagerDutyApiKey}`,
-      },
-    });
-  }
-
-  return { statusCode: 200, body: 'Success' };
-};
-
-function getSeverity(alarmName: string): string {
-  if (alarmName.includes('availability') || alarmName.includes('error')) {
-    return 'critical';
-  }
-  if (alarmName.includes('latency') || alarmName.includes('cpu')) {
-    return 'warning';
-  }
-  return 'info';
-}
-
-function getComponent(alarmName: string): string {
-  if (alarmName.includes('database')) return 'database';
-  if (alarmName.includes('api')) return 'api-gateway';
-  return 'infrastructure';
-}
-```
-
-3. **Deploy with proper dependencies:**
+3. **Deploy the monitoring stack (GitHub integration is automatic):**
 ```bash
 cd infrastructure
-npm install axios @types/aws-lambda
-cdk deploy IncidentManagementStack-production
+npm install
+cdk deploy BATbern-staging-Monitoring
 ```
 
-4. **Test integration:**
+4. **Test the integration:**
 ```bash
-# Trigger test alarm
-aws cloudwatch set-alarm-state \
-  --alarm-name "batbern-production-high-cpu" \
+# Trigger a test alarm
+AWS_PROFILE=batbern-staging aws cloudwatch set-alarm-state \
+  --alarm-name "batbern-staging-high-cpu" \
   --state-value ALARM \
-  --state-reason "Testing PagerDuty integration"
+  --state-reason "Testing GitHub Issues integration"
+
+# Check GitHub Issues - should see a new issue created
+# https://github.com/batbern/BATbern-develop/issues
+
+# Resolve the alarm
+AWS_PROFILE=batbern-staging aws cloudwatch set-alarm-state \
+  --alarm-name "batbern-staging-high-cpu" \
+  --state-value OK \
+  --state-reason "Test resolved"
+
+# Check GitHub Issues - issue should be automatically closed
 ```
+
+5. **Verify Lambda function logs:**
+```bash
+AWS_PROFILE=batbern-staging aws logs tail \
+  /aws/lambda/batbern-staging-github-issues \
+  --follow
+```
+
+**Issue Format:**
+
+When an alarm triggers, a GitHub Issue is created with:
+- **Title**: `🚨 [alarm-name] CloudWatch Alarm Triggered`
+- **Labels**: `incident`, `monitoring`, `env:staging`, `severity:high`, `component:infrastructure`
+- **Body**: Alarm details, thresholds, links to CloudWatch dashboard and logs
+- **Checklist**: Investigation steps
+
+When the alarm resolves, the issue is automatically closed with a comment.
 
 ### Task B: Implement Runbook Automation (AC: 14)
 
