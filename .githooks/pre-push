@@ -1,94 +1,204 @@
 #!/bin/bash
 
-# BATbern Platform - Pre-push Hook
-# Runs full test suite before pushing to ensure code quality
+# BATbern Platform - Optimized Pre-push Hook
+# Runs tests only for changed components to speed up local workflow
+# CI/CD will run full test suite on PR
 
 set -e
 
-echo "🚀 Running pre-push validation..."
+echo "🚀 Running pre-push validation (optimized for changed components)..."
 
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Track if any checks failed
 CHECKS_FAILED=0
 
-# Function to run tests with timeout
-run_with_timeout() {
-    local TIMEOUT=$1
-    shift
-    local COMMAND="$@"
+# Get the remote branch we're pushing to
+REMOTE_BRANCH=$(git rev-parse --abbrev-ref @{push} 2>/dev/null || echo "origin/$(git rev-parse --abbrev-ref HEAD)")
 
-    # Use gtimeout if available (macOS with coreutils), otherwise use timeout (Linux),
-    # or just run without timeout if neither is available
-    if command -v gtimeout &> /dev/null; then
-        gtimeout $TIMEOUT bash -c "$COMMAND" || {
-            echo -e "${RED}❌ Command timed out or failed: $COMMAND${NC}"
-            return 1
-        }
-    elif command -v timeout &> /dev/null; then
-        timeout $TIMEOUT bash -c "$COMMAND" || {
-            echo -e "${RED}❌ Command timed out or failed: $COMMAND${NC}"
-            return 1
-        }
-    else
-        # No timeout command available, just run the command
-        bash -c "$COMMAND" || {
-            echo -e "${RED}❌ Command failed: $COMMAND${NC}"
-            return 1
-        }
-    fi
-}
+# Get list of changed files
+echo -e "${CYAN}🔍 Detecting changed files...${NC}"
+CHANGED_FILES=$(git diff --name-only $REMOTE_BRANCH...HEAD 2>/dev/null || git diff --name-only HEAD)
 
-echo -e "${BLUE}📊 Running full test suite...${NC}"
+if [ -z "$CHANGED_FILES" ]; then
+    echo -e "${YELLOW}⚠️  No changes detected. Running minimal validation...${NC}"
+    # If no changes detected, just validate the code compiles
+    CHANGED_FILES=$(git diff --name-only --cached)
+fi
+
+# Display changed files
+echo -e "${BLUE}Changed files:${NC}"
+echo "$CHANGED_FILES" | head -10
+if [ $(echo "$CHANGED_FILES" | wc -l) -gt 10 ]; then
+    echo "  ... and $(($(echo "$CHANGED_FILES" | wc -l) - 10)) more files"
+fi
+echo ""
+
+# Determine which components changed
+TEST_FRONTEND=false
+TEST_SHARED_KERNEL=false
+TEST_API_GATEWAY=false
+TEST_SERVICES="" # Space-separated list of services to test
+
+# Analyze changed files
+while IFS= read -r file; do
+    case "$file" in
+        web-frontend/*)
+            TEST_FRONTEND=true
+            ;;
+        shared-kernel/*)
+            TEST_SHARED_KERNEL=true
+            ;;
+        api-gateway/*)
+            TEST_API_GATEWAY=true
+            ;;
+        services/attendee-experience-service/*)
+            if ! echo "$TEST_SERVICES" | grep -q "attendee-experience-service"; then
+                TEST_SERVICES="$TEST_SERVICES attendee-experience-service"
+            fi
+            ;;
+        services/company-user-management-service/*)
+            if ! echo "$TEST_SERVICES" | grep -q "company-user-management-service"; then
+                TEST_SERVICES="$TEST_SERVICES company-user-management-service"
+            fi
+            ;;
+        services/event-management-service/*)
+            if ! echo "$TEST_SERVICES" | grep -q "event-management-service"; then
+                TEST_SERVICES="$TEST_SERVICES event-management-service"
+            fi
+            ;;
+        services/partner-coordination-service/*)
+            if ! echo "$TEST_SERVICES" | grep -q "partner-coordination-service"; then
+                TEST_SERVICES="$TEST_SERVICES partner-coordination-service"
+            fi
+            ;;
+        services/speaker-coordination-service/*)
+            if ! echo "$TEST_SERVICES" | grep -q "speaker-coordination-service"; then
+                TEST_SERVICES="$TEST_SERVICES speaker-coordination-service"
+            fi
+            ;;
+        infrastructure/*|.github/*|docs/*|*.md)
+            # Skip - these are tested in CI or don't need pre-push tests
+            ;;
+    esac
+done <<< "$CHANGED_FILES"
+
+# If shared-kernel changed, we need to test all backend components
+# since they all depend on shared-kernel
+if [ "$TEST_SHARED_KERNEL" = true ]; then
+    echo -e "${YELLOW}⚡ shared-kernel changed - testing all backend components${NC}"
+    TEST_API_GATEWAY=true
+    TEST_SERVICES="attendee-experience-service company-user-management-service event-management-service partner-coordination-service speaker-coordination-service"
+fi
+
+# Show what will be tested
+echo -e "${CYAN}📋 Components to test:${NC}"
+TESTING_ANYTHING=false
+
+if [ "$TEST_FRONTEND" = true ]; then
+    echo "  ✓ Frontend (web-frontend)"
+    TESTING_ANYTHING=true
+fi
+
+if [ "$TEST_SHARED_KERNEL" = true ]; then
+    echo "  ✓ Shared Kernel"
+    TESTING_ANYTHING=true
+fi
+
+if [ "$TEST_API_GATEWAY" = true ]; then
+    echo "  ✓ API Gateway"
+    TESTING_ANYTHING=true
+fi
+
+if [ -n "$TEST_SERVICES" ]; then
+    for service in $TEST_SERVICES; do
+        echo "  ✓ Service: $service"
+        TESTING_ANYTHING=true
+    done
+fi
+
+if [ "$TESTING_ANYTHING" = false ]; then
+    echo -e "${GREEN}  (No component tests needed - only infrastructure/docs changed)${NC}"
+    echo -e "${GREEN}✅ Pre-push validation passed (no tests required)${NC}"
+    exit 0
+fi
+
+echo ""
+echo -e "${BLUE}🧪 Running tests for changed components...${NC}"
+echo ""
 
 # Run frontend tests
-if [ -d "web-frontend" ]; then
-    echo -e "${YELLOW}🎨 Running frontend tests...${NC}"
+if [ "$TEST_FRONTEND" = true ]; then
+    echo -e "${YELLOW}🎨 Testing Frontend...${NC}"
 
-    cd web-frontend
-
-    # Run all tests
-    echo "  Running tests..."
-    npm run test:run || CHECKS_FAILED=1
-
-    cd ..
-fi
-
-# Run backend tests
-if [ -f "gradlew" ] || [ -f "build.gradle" ]; then
-    echo -e "${YELLOW}☕ Running backend tests...${NC}"
-
-    # Run all tests with coverage
-    echo "  Running unit tests..."
-    run_with_timeout 600 "./gradlew test jacocoTestReport" || CHECKS_FAILED=1
-
-    # Check coverage thresholds
-    if [ -f "build/reports/jacoco/test/jacocoTestReport.xml" ]; then
-        COVERAGE=$(grep -o 'missed="[0-9]*" covered="[0-9]*"' build/reports/jacoco/test/jacocoTestReport.xml | head -1)
-        # Parse and check coverage (simplified check)
-        echo "  Coverage report generated"
-    fi
-
-    # Run integration tests if task exists
-    if ./gradlew tasks --all 2>/dev/null | grep -q "^integrationTest "; then
-        echo "  Running integration tests..."
-        run_with_timeout 600 "./gradlew integrationTest" || CHECKS_FAILED=1
+    if [ -d "web-frontend" ]; then
+        cd web-frontend
+        npm run test:run || CHECKS_FAILED=1
+        cd ..
     else
-        echo "  Skipping integration tests (task not configured)"
+        echo -e "${RED}❌ web-frontend directory not found${NC}"
+        CHECKS_FAILED=1
     fi
+
+    echo ""
 fi
 
+# Run shared-kernel tests
+if [ "$TEST_SHARED_KERNEL" = true ]; then
+    echo -e "${YELLOW}☕ Testing Shared Kernel...${NC}"
+
+    if [ -f "gradlew" ]; then
+        ./gradlew :shared-kernel:test :shared-kernel:jacocoTestReport || CHECKS_FAILED=1
+    else
+        echo -e "${RED}❌ gradlew not found${NC}"
+        CHECKS_FAILED=1
+    fi
+
+    echo ""
+fi
+
+# Run API Gateway tests
+if [ "$TEST_API_GATEWAY" = true ]; then
+    echo -e "${YELLOW}🚪 Testing API Gateway...${NC}"
+
+    if [ -f "gradlew" ]; then
+        ./gradlew :api-gateway:test :api-gateway:jacocoTestReport || CHECKS_FAILED=1
+    else
+        echo -e "${RED}❌ gradlew not found${NC}"
+        CHECKS_FAILED=1
+    fi
+
+    echo ""
+fi
+
+# Run service tests
+if [ -n "$TEST_SERVICES" ]; then
+    for service in $TEST_SERVICES; do
+        echo -e "${YELLOW}⚙️  Testing Service: $service...${NC}"
+
+        if [ -f "gradlew" ]; then
+            ./gradlew :services:$service:test :services:$service:jacocoTestReport || CHECKS_FAILED=1
+        else
+            echo -e "${RED}❌ gradlew not found${NC}"
+            CHECKS_FAILED=1
+        fi
+
+        echo ""
+    done
+fi
 
 # Final summary
 echo ""
+echo "═══════════════════════════════════════════════"
 if [ $CHECKS_FAILED -ne 0 ]; then
     echo -e "${RED}❌ Pre-push validation failed!${NC}"
-    echo -e "${RED}Please fix the issues above before pushing.${NC}"
+    echo -e "${RED}Please fix the test failures above before pushing.${NC}"
     echo ""
     echo "To bypass this check (NOT recommended), use:"
     echo "  git push --no-verify"
@@ -97,4 +207,7 @@ fi
 
 echo -e "${GREEN}✅ All pre-push checks passed successfully!${NC}"
 echo -e "${GREEN}Ready to push to remote repository.${NC}"
+echo ""
+echo -e "${CYAN}💡 Note: Full test suite will run in CI/CD pipeline${NC}"
+echo "═══════════════════════════════════════════════"
 exit 0
