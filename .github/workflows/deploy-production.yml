@@ -184,19 +184,17 @@ jobs:
           java-version: '21'
 
       - name: Run Flyway migrations
-        env:
-          FLYWAY_URL: ${{ steps.db-creds.outputs.flyway_url }}
-          FLYWAY_USER: ${{ steps.db-creds.outputs.flyway_user }}
-          FLYWAY_PASSWORD: ${{ steps.db-creds.outputs.flyway_password }}
         run: |
           if [ -d "shared-kernel" ] && [ -f "shared-kernel/gradlew" ]; then
             cd shared-kernel
             chmod +x gradlew
-            # Use environment variables instead of CLI args to prevent password exposure
-            # Graceful degradation: flywayMigrate task may not be configured yet
-            # This allows deployment pipeline to work during initial infrastructure setup
-            # TODO: Remove '|| echo' once Flyway is fully configured in all services
-            ./gradlew flywayMigrate --no-daemon || echo "::warning::Flyway migrations not configured yet"
+            echo "Running Flyway migrations..."
+            ./gradlew flywayMigrate \
+              -Dflyway.url="${{ steps.db-creds.outputs.flyway_url }}" \
+              -Dflyway.user="${{ steps.db-creds.outputs.flyway_user }}" \
+              -Dflyway.password="${{ steps.db-creds.outputs.flyway_password }}" \
+              --no-daemon
+            echo "✅ Database migrations completed successfully"
           else
             echo "::warning::Shared kernel not found, skipping migrations"
           fi
