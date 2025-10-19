@@ -544,6 +544,8 @@ export class CICDStack extends cdk.Stack {
       ],
       resources: [
         `arn:aws:ssm:${this.region}:${this.account}:parameter/batbern/${config.envName}/*`,
+        // CDK bootstrap parameters - required for CDK deployments
+        `arn:aws:ssm:*:${this.account}:parameter/cdk-bootstrap/*`,
       ],
     }));
 
