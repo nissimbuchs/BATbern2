@@ -165,6 +165,7 @@ export class CICDStack extends cdk.Stack {
         'rds:DescribeDBInstances',
         'rds:DescribeDBSnapshots',
         'rds:ListTagsForResource',
+        'rds:AddTagsToResource',
       ],
       resources: [
         `arn:aws:rds:${this.region}:${this.account}:db:batbern-${config.envName}-*`,
