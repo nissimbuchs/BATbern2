@@ -230,6 +230,13 @@ export default defineConfig({
         '**/*.config.*',
         '**/coverage/',
         'src/utils/performance/**', // Exclude performance monitoring utilities (browser-specific APIs)
+        'src/main.tsx', // App entry point - tested via E2E
+        'src/pages/**', // Page components - tested via E2E
+        'src/config/**', // Configuration files
+        'src/theme/**', // Theme configuration
+        'src/types/**', // Type definitions
+        'src/**/index.ts', // Re-export files
+        'src/**/index.tsx', // Re-export files
       ],
       reportOnFailure: true, // Generate coverage even when tests fail
       all: true, // Include all source files in coverage report
