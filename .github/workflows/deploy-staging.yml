@@ -5,6 +5,8 @@ on:
     workflows: ["Build Pipeline"]
     types: [completed]
     branches: [develop]
+  workflow_call:
+    # Allow this workflow to be called from other workflows (like build.yml)
 
 env:
   AWS_REGION: eu-central-1
@@ -13,7 +15,10 @@ env:
 jobs:
   deploy-to-staging:
     runs-on: ubuntu-latest
-    if: github.event.workflow_run.conclusion == 'success'
+    # Run if: (1) called directly OR (2) triggered by workflow_run with success
+    if: |
+      github.event_name == 'workflow_call' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     permissions:
       id-token: write
       contents: read
@@ -21,9 +26,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
-          # Use the exact commit SHA from the triggering workflow run
-          # workflow_run doesn't automatically use the triggering commit without this
-          ref: ${{ github.event.workflow_run.head_sha }}
+          # Use workflow_run SHA if available, otherwise use current ref
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
