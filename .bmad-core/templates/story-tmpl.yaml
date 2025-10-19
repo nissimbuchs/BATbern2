@@ -102,30 +102,6 @@ sections:
         owner: scrum-master
         editors: [scrum-master]
 
-      - id: workflow-steps
-        title: Workflow Steps (if applicable)
-        instruction: |
-          For Event Management stories, specify which of the 16 workflow steps are involved:
-          1. Topic Selection & Event Type Definition
-          2. Speaker Brainstorming & Research
-          3. Speaker Assignment & Contact Strategy
-          4. Speaker Outreach & Initial Contact
-          5. Speaker Status Tracking
-          6. Speaker Content Collection
-          7. Content Quality Review
-          8. Minimum Threshold Check
-          9. Speaker Selection & Overflow Management
-          10. Speaker-to-Slot Assignment
-          11. Progressive Publishing Engine
-          12. Agenda Finalization
-          13. Newsletter Distribution
-          14. Moderation Assignment
-          15. Catering & Venue Coordination
-          16. Partner Meeting Coordination
-        elicit: true
-        owner: scrum-master
-        editors: [scrum-master]
-
       - id: acceptance-mapping
         title: Acceptance Criteria Source
         instruction: Reference the exact section in the epic file where ACs come from (e.g., Epic 2, Story 2.3, AC 5-8)
@@ -143,10 +119,10 @@ sections:
         title: Architecture Patterns
         instruction: |
           Reference specific patterns from architecture docs (SOURCE OF TRUTH):
+          - Data Models (03-data-architecture.md): Entities, aggregates, database schemas
           - API Design (04-api-design.md): RESTful patterns, OpenAPI specs, endpoint structure
           - Frontend (05-frontend-architecture.md): React components, state management, PWA
           - Backend (06-backend-architecture.md): Spring Boot services, DDD patterns, event sourcing
-          - Data Models (03-data-architecture.md): Entities, aggregates, database schemas
         elicit: true
         owner: scrum-master
         editors: [scrum-master]
@@ -345,7 +321,8 @@ sections:
 
       - [ ] Task xx: Infrastructure Setup
         - [ ] Check, all needed AWS resources are defined in CDK stacks
-        - [ ] Test correct wiring of frontend to backend via API-gateway
+        - [ ] Implement wiring of frontend components to real backend via API-gateway
+        - [ ] Integrate frontend components in top level navigation bar
 
       - [ ] Task xx: Backend and Fronend Refactoring (REFACTOR)
         - [ ] Verify all no mocks where used except in the tests
