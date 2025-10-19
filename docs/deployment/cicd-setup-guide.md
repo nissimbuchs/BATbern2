@@ -118,7 +118,7 @@ The pipeline expects these ECR repositories to exist:
 4. `speaker-coordination-service`
 5. `partner-coordination-service`
 6. `attendee-experience-service`
-7. `company-management-service`
+7. `company-user-management-service`
 
 ### Automated Setup Script
 
@@ -134,7 +134,7 @@ SERVICES=(
   "speaker-coordination-service"
   "partner-coordination-service"
   "attendee-experience-service"
-  "company-management-service"
+  "company-user-management-service"
 )
 
 for service in "${SERVICES[@]}"; do
