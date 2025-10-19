@@ -105,6 +105,111 @@ enum PartnershipTier {
 - **One-to-Many:** Partner → PartnerContacts (multiple contact persons)
 - **Cross-Service:** Partner analytics track employee attendance by querying User Service and Event Registration Service
 
+### User
+
+**Purpose:** Core user entity with role-based access control, company affiliations, and comprehensive profile management. Serves as the foundation for authentication and authorization across all platform features.
+
+**Key Attributes:**
+- id: UUID - Unique user identifier
+- cognitoUserId: string - AWS Cognito user ID for authentication sync
+- email: string - User email address (unique)
+- firstName: string - User's first name
+- lastName: string - User's last name
+- bio: string - User biography and professional summary
+- companyId: string - Reference to company entity (optional)
+- roles: Role[] - User roles (ORGANIZER, SPEAKER, PARTNER, ATTENDEE)
+- preferences: UserPreferences - User preferences (theme, language, notifications)
+- settings: UserSettings - Account settings and privacy controls
+- profilePictureUrl: string - CloudFront CDN URL for profile picture
+- activityHistory: ActivityHistory[] - User activity tracking
+- isActive: boolean - Account active status
+- lastLoginAt: Date - Last successful login timestamp
+
+**Note:** User entity owns the user-company relationship via `User.companyId` field. This is a one-way dependency from User Service → Company Service. To query users by company, use: `GET /api/v1/users?company={companyId}`
+
+#### TypeScript Interface
+```typescript
+interface User {
+  id: string;
+  cognitoUserId: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  bio?: string;
+  companyId?: string;
+  roles: Role[];
+  preferences: UserPreferences;
+  settings: UserSettings;
+  profilePictureUrl?: string;
+  profilePictureS3Key?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  lastLoginAt?: Date;
+}
+
+interface UserPreferences {
+  theme: 'light' | 'dark' | 'auto';
+  language: 'de' | 'en' | 'fr' | 'it';
+  emailNotifications: boolean;
+  inAppNotifications: boolean;
+  pushNotifications: boolean;
+  notificationFrequency: 'immediate' | 'daily_digest' | 'weekly_digest';
+  quietHoursStart?: string; // HH:mm format
+  quietHoursEnd?: string;   // HH:mm format
+}
+
+interface UserSettings {
+  profileVisibility: 'public' | 'members_only' | 'private';
+  showEmail: boolean;
+  showCompany: boolean;
+  showActivityHistory: boolean;
+  allowMessaging: boolean;
+  allowCalendarSync: boolean;
+  timezone: string;
+  twoFactorEnabled: boolean;
+}
+
+enum Role {
+  ORGANIZER = 'ORGANIZER',
+  SPEAKER = 'SPEAKER',
+  PARTNER = 'PARTNER',
+  ATTENDEE = 'ATTENDEE'
+}
+
+interface ActivityHistory {
+  id: string;
+  userId: string;
+  activityType: string; // event_registered, session_attended, topic_voted, etc.
+  entityType: string;   // event, session, topic, etc.
+  entityId: string;
+  description: string;
+  metadata: Record<string, any>;
+  timestamp: Date;
+}
+```
+
+#### Relationships
+- **Many-to-One:** User → Company (via `User.companyId`, managed by User Service)
+- **One-to-Many:** User → ActivityHistory (activity tracking)
+- **Cross-Service Integration:**
+  - Speaker Service: Associates speakers with user accounts
+  - Partner Service: Associates partner contacts with user accounts
+  - Event Service: Associates event registrations with users
+  - Attendee Service: Associates attendee profiles with users
+
+#### Business Rules
+- **Minimum Organizers:** System must maintain at least 2 active ORGANIZER role users
+- **Role Management:** ORGANIZER role required to modify user roles
+- **Email Uniqueness:** Email addresses must be unique across all users
+- **Cognito Sync:** User updates synchronize with AWS Cognito custom attributes
+- **GDPR Compliance:** User deletion cascades across all domain services with audit logging
+
+#### Caching Strategy
+- **User Search:** Caffeine in-memory cache, 10-minute TTL
+- **Current User Profile:** Session-based caching for fast authentication lookups
+- **Cache Invalidation:** Automatic on user create/update/delete operations
+
 ### Speaker
 
 **Purpose:** Individual speakers with company affiliations and session assignments across multiple events.
