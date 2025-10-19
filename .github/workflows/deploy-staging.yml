@@ -80,6 +80,46 @@ jobs:
             echo "::warning::Database instance not found, skipping backup"
           fi
 
+      - name: Get database credentials from AWS Secrets Manager
+        id: get-db-creds
+        run: |
+          echo "Retrieving database credentials from AWS Secrets Manager..."
+
+          # Get the secret ARN from CloudFormation stack outputs
+          SECRET_ARN=$(aws cloudformation describe-stacks \
+            --stack-name BATbern-staging-Database \
+            --region ${{ env.AWS_REGION }} \
+            --query 'Stacks[0].Outputs[?OutputKey==`DatabaseSecretArn`].OutputValue' \
+            --output text)
+
+          echo "Secret ARN: $SECRET_ARN"
+
+          # Retrieve database credentials from Secrets Manager
+          DB_SECRET=$(aws secretsmanager get-secret-value \
+            --secret-id "$SECRET_ARN" \
+            --region ${{ env.AWS_REGION }} \
+            --query 'SecretString' \
+            --output text)
+
+          # Parse credentials
+          DB_HOST=$(echo "$DB_SECRET" | jq -r '.host')
+          DB_PORT=$(echo "$DB_SECRET" | jq -r '.port')
+          DB_NAME=$(echo "$DB_SECRET" | jq -r '.dbname')
+          DB_USER=$(echo "$DB_SECRET" | jq -r '.username')
+          DB_PASSWORD=$(echo "$DB_SECRET" | jq -r '.password')
+
+          # Construct JDBC URL
+          DB_URL="jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}"
+
+          echo "Database URL: $DB_URL"
+          echo "Database User: $DB_USER"
+
+          # Export credentials as masked outputs (passwords are automatically masked)
+          echo "DB_URL=$DB_URL" >> $GITHUB_OUTPUT
+          echo "DB_USER=$DB_USER" >> $GITHUB_OUTPUT
+          echo "DB_PASSWORD=$DB_PASSWORD" >> $GITHUB_OUTPUT
+          echo "::add-mask::$DB_PASSWORD"
+
       - name: Run database migrations
         run: |
           if [ -d "shared-kernel" ] && [ -f "shared-kernel/gradlew" ]; then
@@ -87,9 +127,9 @@ jobs:
             chmod +x gradlew
             echo "Running Flyway migrations..."
             ./gradlew flywayMigrate \
-              -Dflyway.url=${{ secrets.STAGING_DB_URL }} \
-              -Dflyway.user=${{ secrets.STAGING_DB_USER }} \
-              -Dflyway.password=${{ secrets.STAGING_DB_PASSWORD }} \
+              -Dflyway.url="${{ steps.get-db-creds.outputs.DB_URL }}" \
+              -Dflyway.user="${{ steps.get-db-creds.outputs.DB_USER }}" \
+              -Dflyway.password="${{ steps.get-db-creds.outputs.DB_PASSWORD }}" \
               --no-daemon
             echo "✅ Database migrations completed successfully"
           else
