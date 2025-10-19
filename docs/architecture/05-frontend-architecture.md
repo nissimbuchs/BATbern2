@@ -12,6 +12,12 @@ web-frontend/src/
 │   ├── organizer/                 # Organizer-specific components
 │   │   ├── EventManagement/
 │   │   ├── SpeakerCoordination/
+│   │   ├── UserManagement/         # User Management (Organizer-only)
+│   │   │   ├── UserList.tsx        # User list table with filters
+│   │   │   ├── UserEditModal.tsx   # User detail edit modal
+│   │   │   ├── UserCreateModal.tsx # Create new user modal
+│   │   │   ├── UserFilters.tsx     # Search and filter controls
+│   │   │   └── RoleManager.tsx     # Role assignment component
 │   │   └── Analytics/
 │   ├── speaker/                   # Speaker-specific components
 │   │   ├── Dashboard/
