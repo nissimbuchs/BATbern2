@@ -24,6 +24,12 @@ on:
     branches: [develop, main]
   pull_request:
     branches: [develop, main]
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual build'
+        required: false
+        default: 'Manual trigger'
 
 env:
   AWS_REGION: eu-central-1
@@ -244,21 +250,12 @@ jobs:
         working-directory: ./web-frontend
         run: npm run lint:ci
 
-      - name: Run tests
+      - name: Run tests with coverage
         if: steps.check-frontend.outputs.exists == 'true'
         working-directory: ./web-frontend
         run: npm test -- --coverage --run
-
-      - name: Check coverage threshold
-        if: steps.check-frontend.outputs.exists == 'true'
-        working-directory: ./web-frontend
-        run: |
-          # Check if coverage meets 90% threshold
-          # This will fail if coverage is below threshold configured in vitest.config.ts
-          # Graceful degradation: test:coverage:check script may not exist yet during initial setup
-          # This allows pipeline to succeed while frontend is being developed
-          # TODO: Remove '|| true' once frontend coverage checking is fully configured
-          npm run test:coverage:check || true
+        # Coverage thresholds enforced: 80% for lines, functions, branches, and statements
+        # Configured in vite.config.ts - tests will fail if coverage drops below threshold
 
       - name: Build frontend
         if: steps.check-frontend.outputs.exists == 'true'
@@ -284,87 +281,10 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
 
   # ═══════════════════════════════════════════════════════════
-  # INTEGRATION TESTS
-  # ═══════════════════════════════════════════════════════════
-  integration-tests:
-    needs: [build-services, build-frontend]
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_DB: batbern_test
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test123
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-      redis:
-        image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-          cache: 'gradle'
-
-      - name: Check if integration tests exist
-        id: check-tests
-        run: |
-          if [ -d "shared-kernel" ]; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-            echo "::warning::No integration tests found yet"
-          fi
-
-      - name: Run integration tests
-        if: steps.check-tests.outputs.exists == 'true'
-        run: |
-          # Run integration tests if they exist
-          if [ -f "shared-kernel/gradlew" ]; then
-            cd shared-kernel
-            chmod +x gradlew
-            # Graceful degradation: integrationTest task may not exist yet during incremental development
-            # This allows pipeline to succeed while services are being built
-            # TODO: Remove '|| echo' once all services have integration tests configured
-            ./gradlew integrationTest --no-daemon || echo "::warning::No integration tests configured yet"
-          fi
-        env:
-          DB_HOST: localhost
-          DB_PORT: 5432
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
-
-      - name: Upload test reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: integration-test-reports
-          path: |
-            **/build/reports/tests/
-            **/build/test-results/
-          retention-days: 7
-
-  # ═══════════════════════════════════════════════════════════
   # CODE QUALITY ANALYSIS: SonarCloud Multi-Module Scan
+  # ═══════════════════════════════════════════════════════════
+  # Note: Integration tests are run as part of the build-services job above
+  # Each service runs './gradlew test' which includes both unit and integration tests
   # ═══════════════════════════════════════════════════════════
   sonarcloud:
     name: SonarCloud Analysis
@@ -459,3 +379,19 @@ jobs:
             -Dsonar.projectKey=nissimbuchs_BATbern2
             -Dsonar.organization=nissimbuchs
             -Dsonar.verbose=true
+
+  # ═══════════════════════════════════════════════════════════
+  # DEPLOYMENT: Trigger staging deployment after successful build
+  # ═══════════════════════════════════════════════════════════
+  deploy-to-staging:
+    needs: [build-shared-kernel, build-services, build-frontend, sonarcloud]
+    # Deploy to staging on: (1) push to develop OR (2) PR to develop
+    # This allows testing PRs in staging environment before merge
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/develop') ||
+      (github.event_name == 'pull_request' && github.base_ref == 'develop')
+    uses: ./.github/workflows/deploy-staging.yml
+    secrets: inherit
+    permissions:
+      id-token: write
+      contents: read
