@@ -44,7 +44,7 @@ This epic consolidates stories originally in Epic 1 (1.14-1.20, 1.17) that provi
 As a **user of any role**, I want my company affiliation to be properly managed and verified through consolidated RESTful APIs, so that domain services can access company data efficiently.
 
 **Architecture Integration:**
-- **Service**: `company-management-service/` (Java 21 + Spring Boot 3.2)
+- **Service**: `company-user-management-service/` (Java 21 + Spring Boot 3.2)
 - **Database**: PostgreSQL with company profiles, employee relationships
 - **Storage**: AWS S3 for company logos
 - **Cache**: Caffeine for company search
