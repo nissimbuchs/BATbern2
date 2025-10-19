@@ -1,0 +1,17 @@
+{
+  "name": "github-issues-integration",
+  "version": "1.0.0",
+  "description": "Lambda function to create GitHub Issues from CloudWatch alarms",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@aws-sdk/client-ssm": "^3.0.0",
+    "@octokit/rest": "^20.0.2",
+    "@types/aws-lambda": "^8.10.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

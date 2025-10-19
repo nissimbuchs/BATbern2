@@ -157,15 +157,21 @@ const eventBusStack = new EventBusStack(app, `${stackPrefix}-EventBus`, {
 });
 
 // 6. Monitoring Stack (CloudWatch, Alarms, Logs)
+// Extract GitHub owner and repo for issues integration
+const githubRepository = app.node.tryGetContext('githubRepository') || process.env.GITHUB_REPOSITORY || 'nissimbuchs/BATbern2';
+const [githubOwner, githubRepo] = githubRepository.split('/');
+
 const monitoringStack = new MonitoringStack(app, `${stackPrefix}-Monitoring`, {
   config,
+  githubOwner,
+  githubRepo,
   env,
   description: `BATbern Monitoring & Observability - ${config.envName}`,
   tags: config.tags,
 });
 
 // 7. CI/CD Stack (ECR, IAM roles for GitHub Actions)
-const githubRepository = app.node.tryGetContext('githubRepository') || process.env.GITHUB_REPOSITORY || 'nissimbuchs/BATbern2';
+// Use the same githubRepository variable from above
 const cicdStack = new CICDStack(app, `${stackPrefix}-CICD`, {
   config,
   githubRepository,

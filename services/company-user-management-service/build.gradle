@@ -48,6 +48,17 @@ dependencies {
     implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
     implementation 'org.springframework.boot:spring-boot-starter-cache'
 
+    // Monitoring - Micrometer for metrics collection
+    implementation 'io.micrometer:micrometer-core'
+    implementation 'io.micrometer:micrometer-registry-cloudwatch2'
+
+    // Monitoring - AWS X-Ray for distributed tracing
+    implementation 'com.amazonaws:aws-xray-recorder-sdk-spring:2.15.1'
+    implementation 'com.amazonaws:aws-xray-recorder-sdk-aws-sdk-v2:2.15.1'
+
+    // Monitoring - Structured JSON logging
+    implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
+
     // Lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
