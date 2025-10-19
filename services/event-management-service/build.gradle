@@ -4,6 +4,7 @@ plugins {
     id 'io.spring.dependency-management' version '1.1.6'
     id 'jacoco'
     id 'org.flywaydb.flyway' version '10.10.0'
+    id 'org.openapi.generator' version '7.2.0'
 }
 
 group = 'ch.batbern'
@@ -26,6 +27,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-cache'
     implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
 
     // Database
     implementation 'org.postgresql:postgresql:42.7.4'
@@ -44,6 +46,11 @@ dependencies {
 
     // OpenAPI documentation
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
+
+    // OpenAPI Generator - Required for generated code
+    implementation 'io.swagger.core.v3:swagger-annotations:2.2.20'
+    implementation 'jakarta.validation:jakarta.validation-api'
+    implementation 'jakarta.annotation:jakarta.annotation-api'
 
     // Lombok (reduce boilerplate)
     compileOnly 'org.projectlombok:lombok:1.18.36'
@@ -113,4 +120,74 @@ flyway {
     locations = ['classpath:db/migration']
     baselineOnMigrate = true
     baselineVersion = '0'
+}
+
+// OpenAPI Generator - Generate API interfaces and DTOs from OpenAPI spec
+openApiGenerate {
+    generatorName = 'spring'
+    inputSpec = "$rootDir/docs/api/events-api.openapi.yml".toString()
+    outputDir = "$buildDir/generated".toString()
+    apiPackage = 'ch.batbern.events.api.generated'
+    modelPackage = 'ch.batbern.events.dto.generated'
+    invokerPackage = 'ch.batbern.events.api.invoker'
+    validateSpec = false  // Skip validation for custom license fields
+
+    // Import mappings - use shared-kernel types instead of generating
+    importMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
+        'PaginatedResponse': 'ch.batbern.shared.dto.PaginatedResponse'
+    ]
+
+    // Type mappings - map OpenAPI schemas to shared-kernel classes
+    typeMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+
+    configOptions = [
+        dateLibrary: 'java8',
+        interfaceOnly: 'true',              // Only generate API interfaces
+        skipDefaultInterface: 'true',       // Don't generate default implementations
+        useTags: 'true',                    // Use OpenAPI tags to organize API interfaces
+        useSpringBoot3: 'true',             // Use Spring Boot 3 annotations
+        documentationProvider: 'none',      // Avoid conflicts with springdoc-openapi
+        openApiNullable: 'false',           // Don't use JsonNullable wrapper
+        hideGenerationTimestamp: 'true',    // Cleaner generated code
+        useBeanValidation: 'true',          // Include @Valid, @NotNull annotations
+        performBeanValidation: 'true',      // Enable bean validation
+        useOptional: 'false',               // Use standard types instead of Optional
+        delegatePattern: 'false',           // We implement interfaces directly
+        useJakartaEe: 'true'                // Use Jakarta EE (Spring Boot 3 requirement)
+    ]
+
+    // Generate only models and API interfaces (skip implementation)
+    globalProperties = [
+        models: '',
+        apis: '',
+        supportingFiles: 'ApiUtil.java'
+    ]
+
+    // Skip generation of shared-kernel types
+    schemaMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+}
+
+// Make compileJava depend on openApiGenerate
+compileJava.dependsOn tasks.openApiGenerate
+
+// Add generated sources to source sets
+sourceSets {
+    main {
+        java {
+            srcDir "$buildDir/generated/src/main/java"
+        }
+    }
+}
+
+// Clean generated sources when running clean
+clean {
+    delete "$buildDir/generated"
 }
