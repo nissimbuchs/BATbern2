@@ -5,11 +5,14 @@ import ch.batbern.companyuser.dto.CompanyLogo;
 import ch.batbern.companyuser.dto.CompanyResponse;
 import ch.batbern.companyuser.dto.CreateCompanyRequest;
 import ch.batbern.companyuser.dto.UpdateCompanyRequest;
+import ch.batbern.companyuser.event.*;
 import ch.batbern.companyuser.exception.CompanyNotFoundException;
 import ch.batbern.companyuser.exception.CompanyValidationException;
 import ch.batbern.companyuser.exception.InvalidUIDException;
 import ch.batbern.companyuser.repository.CompanyRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
+import ch.batbern.shared.events.DomainEventPublisher;
+import ch.batbern.shared.types.UserId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -36,7 +39,7 @@ public class CompanyService {
 
     private final CompanyRepository companyRepository;
     private final SwissUIDValidationService uidValidationService;
-    private final CompanyEventPublisher eventPublisher;
+    private final DomainEventPublisher eventPublisher;
     private final CompanySearchService searchService;
     private final SecurityContextHelper securityContextHelper;
 
@@ -80,8 +83,21 @@ public class CompanyService {
         // Invalidate search cache (AC8)
         searchService.invalidateCache();
 
-        // Publish domain event (AC7)
-        eventPublisher.publishCompanyCreatedEvent(savedCompany);
+        // Publish domain event (AC7) using shared-kernel DomainEventPublisher
+        UserId userId = UserId.from(currentUserId);
+        CompanyCreatedEvent event = new CompanyCreatedEvent(
+            savedCompany.getId(),
+            savedCompany.getName(),
+            savedCompany.getDisplayName(),
+            savedCompany.getSwissUID(),
+            savedCompany.getWebsite(),
+            savedCompany.getIndustry(),
+            savedCompany.getDescription(),
+            savedCompany.getCreatedBy(),
+            savedCompany.getCreatedAt(),
+            userId
+        );
+        eventPublisher.publish(event);
 
         log.info("Company created successfully: {}", savedCompany.getId());
         return mapToResponse(savedCompany);
@@ -149,8 +165,20 @@ public class CompanyService {
         // Invalidate search cache (AC8)
         searchService.invalidateCache();
 
-        // Publish domain event (AC7)
-        eventPublisher.publishCompanyUpdatedEvent(updatedCompany);
+        // Publish domain event (AC7) using shared-kernel DomainEventPublisher
+        UserId userId = UserId.from(securityContextHelper.getCurrentUserId());
+        CompanyUpdatedEvent event = new CompanyUpdatedEvent(
+            updatedCompany.getId(),
+            updatedCompany.getName(),
+            updatedCompany.getDisplayName(),
+            updatedCompany.getSwissUID(),
+            updatedCompany.getWebsite(),
+            updatedCompany.getIndustry(),
+            updatedCompany.getDescription(),
+            updatedCompany.getUpdatedAt(),
+            userId
+        );
+        eventPublisher.publish(event);
 
         log.info("Company updated successfully: {}", id);
         return mapToResponse(updatedCompany);
@@ -173,8 +201,15 @@ public class CompanyService {
         // Invalidate search cache (AC8)
         searchService.invalidateCache();
 
-        // Publish domain event (AC7)
-        eventPublisher.publishCompanyDeletedEvent(company);
+        // Publish domain event (AC7) using shared-kernel DomainEventPublisher
+        UserId userId = UserId.from(securityContextHelper.getCurrentUserId());
+        CompanyDeletedEvent event = new CompanyDeletedEvent(
+            company.getId(),
+            company.getName(),
+            Instant.now(),
+            userId
+        );
+        eventPublisher.publish(event);
 
         log.info("Company deleted successfully: {}", id);
     }
@@ -193,8 +228,17 @@ public class CompanyService {
         company.markAsVerified();
         Company verifiedCompany = companyRepository.save(company);
 
-        // Publish domain event (AC7)
-        eventPublisher.publishCompanyVerifiedEvent(verifiedCompany);
+        // Publish domain event (AC7) using shared-kernel DomainEventPublisher
+        UserId userId = UserId.from(securityContextHelper.getCurrentUserId());
+        CompanyVerifiedEvent event = new CompanyVerifiedEvent(
+            verifiedCompany.getId(),
+            verifiedCompany.getName(),
+            verifiedCompany.getSwissUID(),
+            verifiedCompany.isVerified(),
+            verifiedCompany.getUpdatedAt(),
+            userId
+        );
+        eventPublisher.publish(event);
 
         log.info("Company marked as verified: {}", id);
         return mapToResponse(verifiedCompany);

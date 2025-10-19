@@ -9,6 +9,7 @@ import ch.batbern.companyuser.exception.CompanyValidationException;
 import ch.batbern.companyuser.exception.InvalidUIDException;
 import ch.batbern.companyuser.repository.CompanyRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
+import ch.batbern.shared.events.DomainEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,7 +45,7 @@ class CompanyServiceTest {
     private SwissUIDValidationService uidValidationService;
 
     @Mock
-    private CompanyEventPublisher eventPublisher;
+    private DomainEventPublisher eventPublisher;
 
     @Mock
     private CompanySearchService searchService;
@@ -118,7 +119,7 @@ class CompanyServiceTest {
 
         verify(securityContextHelper).getCurrentUserId();
         verify(companyRepository).save(any(Company.class));
-        verify(eventPublisher).publishCompanyCreatedEvent(any(Company.class));
+        verify(eventPublisher).publish(any());
         verify(searchService).invalidateCache();
     }
 
@@ -134,7 +135,7 @@ class CompanyServiceTest {
                 .hasMessageContaining(createRequest.getSwissUID());
 
         verify(companyRepository, never()).save(any(Company.class));
-        verify(eventPublisher, never()).publishCompanyCreatedEvent(any(Company.class));
+        verify(eventPublisher, never()).publish(any());
     }
 
     @Test
@@ -150,7 +151,7 @@ class CompanyServiceTest {
                 .hasMessageContaining("already exists");
 
         verify(companyRepository, never()).save(any(Company.class));
-        verify(eventPublisher, never()).publishCompanyCreatedEvent(any(Company.class));
+        verify(eventPublisher, never()).publish(any());
     }
 
     @Test
@@ -293,6 +294,7 @@ class CompanyServiceTest {
     @DisplayName("Test 4.10: should_updateCompany_when_validUpdateRequest")
     void should_updateCompany_when_validUpdateRequest() {
         // Given
+        when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
         when(companyRepository.findById(companyId)).thenReturn(Optional.of(existingCompany));
         when(companyRepository.save(any(Company.class))).thenReturn(existingCompany);
 
@@ -329,6 +331,7 @@ class CompanyServiceTest {
                 .name("New Name Only")
                 .build();
 
+        when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
         when(companyRepository.findById(companyId)).thenReturn(Optional.of(existingCompany));
         when(companyRepository.save(any(Company.class))).thenReturn(existingCompany);
 
@@ -348,6 +351,7 @@ class CompanyServiceTest {
     @DisplayName("Test 4.13: should_deleteCompany_when_companyExists")
     void should_deleteCompany_when_companyExists() {
         // Given
+        when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
         when(companyRepository.findById(companyId)).thenReturn(Optional.of(existingCompany));
         doNothing().when(companyRepository).delete(existingCompany);
 
@@ -381,6 +385,7 @@ class CompanyServiceTest {
     @DisplayName("Test 4.17: should_markAsVerified_when_validCompanyProvided")
     void should_markAsVerified_when_validCompanyProvided() {
         // Given
+        when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
         when(companyRepository.findById(companyId)).thenReturn(Optional.of(existingCompany));
         when(companyRepository.save(any(Company.class))).thenReturn(existingCompany);
 
@@ -390,13 +395,14 @@ class CompanyServiceTest {
         // Then
         assertThat(response).isNotNull();
         verify(companyRepository).save(argThat(company -> company.isVerified()));
-        verify(eventPublisher).publishCompanyVerifiedEvent(any(Company.class));
+        verify(eventPublisher).publish(any());
     }
 
     @Test
     @DisplayName("Test 4.18: should_publishCompanyUpdatedEvent_when_companyUpdated")
     void should_publishCompanyUpdatedEvent_when_companyUpdated() {
         // Given
+        when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
         when(companyRepository.findById(companyId)).thenReturn(Optional.of(existingCompany));
         when(companyRepository.save(any(Company.class))).thenReturn(existingCompany);
 
@@ -404,13 +410,14 @@ class CompanyServiceTest {
         companyService.updateCompany(companyId, updateRequest);
 
         // Then
-        verify(eventPublisher).publishCompanyUpdatedEvent(any(Company.class));
+        verify(eventPublisher).publish(any());
     }
 
     @Test
     @DisplayName("Test 4.19: should_verifyCompany_when_validIdProvided")
     void should_verifyCompany_when_validIdProvided() {
         // Given
+        when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
         when(companyRepository.findById(companyId)).thenReturn(Optional.of(existingCompany));
         when(companyRepository.save(any(Company.class))).thenReturn(existingCompany);
 
@@ -420,7 +427,7 @@ class CompanyServiceTest {
         // Then
         assertThat(response).isNotNull();
         verify(companyRepository).save(argThat(company -> company.isVerified()));
-        verify(eventPublisher).publishCompanyVerifiedEvent(any(Company.class));
+        verify(eventPublisher).publish(any());
     }
 
     @Test
@@ -435,7 +442,7 @@ class CompanyServiceTest {
                 .hasMessageContaining(companyId.toString());
 
         verify(companyRepository, never()).save(any(Company.class));
-        verify(eventPublisher, never()).publishCompanyVerifiedEvent(any(Company.class));
+        verify(eventPublisher, never()).publish(any());
     }
 
     @Test
@@ -524,6 +531,7 @@ class CompanyServiceTest {
                 .displayName("Updated Display")
                 .build();
 
+        when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
         when(companyRepository.findById(companyId)).thenReturn(Optional.of(existingCompany));
         when(companyRepository.save(any(Company.class))).thenReturn(existingCompany);
 

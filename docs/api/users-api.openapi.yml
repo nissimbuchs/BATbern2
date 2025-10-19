@@ -29,6 +29,7 @@ info:
     email: platform@batbern.ch
   license:
     name: Proprietary
+    identifier: Proprietary
 
 servers:
   - url: https://api.batbern.ch/api/v1

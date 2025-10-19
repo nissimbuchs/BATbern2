@@ -92,6 +92,7 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @WithMockUser(username = "test-user", roles = {"ORGANIZER"})
     @DisplayName("should publish CompanyUpdated event when company is updated")
     void shouldPublishCompanyUpdatedEvent_whenCompanyUpdated() {
         // Given
@@ -115,6 +116,7 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @WithMockUser(username = "test-user", roles = {"ORGANIZER"})
     @DisplayName("should publish CompanyDeleted event when company is deleted")
     void shouldPublishCompanyDeletedEvent_whenCompanyDeleted() {
         // Given
@@ -163,6 +165,7 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @WithMockUser(username = "test-user", roles = {"ORGANIZER"})
     @DisplayName("CompanyUpdated event should reflect changes")
     void companyUpdatedEvent_shouldReflectChanges() {
         // Given
@@ -208,6 +211,7 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @WithMockUser(username = "test-user", roles = {"ORGANIZER"})
     @DisplayName("should handle multiple update operations on same company")
     void shouldHandleMultipleUpdateOperations() {
         // Given

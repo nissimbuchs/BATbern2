@@ -1,9 +1,10 @@
 package ch.batbern.companyuser.event;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import ch.batbern.shared.events.DomainEvent;
+import ch.batbern.shared.types.UserId;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.ToString;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -11,40 +12,30 @@ import java.util.UUID;
 /**
  * Domain event published when a company is verified
  * Published to EventBridge for downstream services to consume
+ *
+ * Extends shared-kernel DomainEvent for consistent event handling
  */
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class CompanyVerifiedEvent {
+@Getter
+@EqualsAndHashCode(callSuper = true)
+@ToString(callSuper = true)
+public class CompanyVerifiedEvent extends DomainEvent<UUID> {
 
-    /**
-     * Unique company identifier
-     */
-    private UUID companyId;
+    private final String name;
+    private final String swissUID;
+    private final boolean isVerified;
+    private final Instant verifiedAt;
 
-    /**
-     * Company name
-     */
-    private String name;
-
-    /**
-     * Swiss UID (if provided)
-     */
-    private String swissUID;
-
-    /**
-     * Verification status
-     */
-    private boolean isVerified;
-
-    /**
-     * Timestamp when the company was verified
-     */
-    private Instant verifiedAt;
-
-    /**
-     * Event timestamp
-     */
-    private Instant eventTimestamp;
+    public CompanyVerifiedEvent(
+            UUID companyId,
+            String name,
+            String swissUID,
+            boolean isVerified,
+            Instant verifiedAt,
+            UserId userId) {
+        super(companyId, "CompanyVerified", userId);
+        this.name = name;
+        this.swissUID = swissUID;
+        this.isVerified = isVerified;
+        this.verifiedAt = verifiedAt;
+    }
 }
