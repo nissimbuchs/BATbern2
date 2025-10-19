@@ -1,9 +1,6 @@
 package ch.batbern.shared.unit.events;
 
 import ch.batbern.shared.events.SpeakerInvitedEvent;
-import ch.batbern.shared.types.EventId;
-import ch.batbern.shared.types.SpeakerId;
-import ch.batbern.shared.types.UserId;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.Test;
