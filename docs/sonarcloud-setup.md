@@ -11,7 +11,7 @@ The BATbern platform uses a **multi-module SonarCloud configuration** that analy
 - **api-gateway** - API routing layer
 - **event-management-service** - Domain service
 - **attendee-experience-service** - Domain service
-- **company-management-service** - Domain service
+- **company-user-management-service** - Domain service
 - **partner-coordination-service** - Domain service
 - **speaker-coordination-service** - Domain service
 
