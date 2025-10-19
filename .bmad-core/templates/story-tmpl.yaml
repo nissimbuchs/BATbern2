@@ -76,6 +76,19 @@ sections:
           - Attendee Experience Service
           - Company Management Service
           - API Gateway
+
+          **Shared-Kernel Foundation** (automatically included in all backend services):
+          - Exception hierarchy (NotFoundException, ValidationException, BusinessException)
+          - ErrorResponse (standardized error format with correlationId, path, severity)
+          - DomainEvent & DomainEventPublisher (event-driven architecture)
+          - Value objects (UserId, EventId, etc.)
+          - Query utilities (FilterParser, SortParser, PaginationUtils, FieldSelector, IncludeParser)
+          - SecurityContextHelper (user context extraction)
+
+          **OpenAPI Code Generation** (for backend services):
+          - Generate API interfaces and DTOs from OpenAPI specs
+          - Import shared-kernel types via importMappings
+          - Hybrid approach: generate interfaces/DTOs, write controllers manually
         elicit: true
         owner: scrum-master
         editors: [scrum-master]
