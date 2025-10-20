@@ -32,7 +32,7 @@
   "devDependencies": {
     "@aws-sdk/client-cloudwatch": "^3.908.0",
     "@aws-sdk/client-lambda": "^3.908.0",
-    "@aws-sdk/client-sns": "^3.908.0",
+    "@aws-sdk/client-sns": "^3.913.0",
     "@aws-sdk/client-ssm": "^3.908.0",
     "@octokit/rest": "^20.0.2",
     "@types/aws-lambda": "^8.10.155",
