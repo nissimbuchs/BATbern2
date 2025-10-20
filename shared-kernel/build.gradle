@@ -76,9 +76,9 @@ dependencies {
     // Test Fixtures dependencies (exposed to consuming projects)
     testFixturesImplementation 'org.springframework.boot:spring-boot-starter-test'
     testFixturesImplementation 'org.springframework.boot:spring-boot-starter-web'
-    testFixturesImplementation 'org.testcontainers:testcontainers:1.20.4'
-    testFixturesImplementation 'org.testcontainers:postgresql:1.20.4'
-    testFixturesImplementation 'org.testcontainers:junit-jupiter:1.20.4'
+    testFixturesImplementation 'org.testcontainers:testcontainers:1.21.3'
+    testFixturesImplementation 'org.testcontainers:postgresql:1.21.3'
+    testFixturesImplementation 'org.testcontainers:junit-jupiter:1.21.3'
 }
 
 // Configure JaCoCo for code coverage
