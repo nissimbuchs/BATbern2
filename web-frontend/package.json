@@ -29,7 +29,7 @@
   },
   "dependencies": {
     "@aws-amplify/ui-react": "^6.0.0",
-    "@aws-sdk/client-cognito-identity-provider": "^3.908.0",
+    "@aws-sdk/client-cognito-identity-provider": "^3.913.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@hookform/resolvers": "^5.2.2",
