@@ -40,7 +40,10 @@ const Speakers = React.lazy(() => import('@pages/Speakers'));
 const Partners = React.lazy(() => import('@pages/Partners'));
 const Content = React.lazy(() => import('@pages/Content'));
 const Analytics = React.lazy(() => import('@pages/Analytics'));
-const CompanyManagement = React.lazy(() => import('@components/shared/Company/CompanyManagementScreen'));
+const CompanyManagement = React.lazy(
+  () => import('@components/shared/Company/CompanyManagementScreen')
+);
+const UserManagement = React.lazy(() => import('@components/organizer/UserManagement/UserList'));
 
 // Loading fallback component for Suspense
 const PageLoader = () => (
@@ -242,6 +245,18 @@ function App() {
                         <CompanyManagement />
                       </AuthLayout>
                     </SpeakerRoute>
+                  }
+                />
+
+                {/* User Management Routes - Story 2.5.2 */}
+                <Route
+                  path="/organizer/users"
+                  element={
+                    <ProtectedRoute>
+                      <AuthLayout>
+                        <UserManagement />
+                      </AuthLayout>
+                    </ProtectedRoute>
                   }
                 />
 
