@@ -89,6 +89,7 @@ describe('BootstrapOrganizer', () => {
     // Verify the template contains the expected configuration
     expect(templateJson).toContain('adminCreateUser');
     expect(templateJson).toContain('adminAddUserToGroup');
+    // Check for GroupName and organizer (they appear in escaped JSON strings)
     expect(templateJson).toContain('GroupName');
     expect(templateJson).toContain('organizer');
     expect(templateJson).toContain(email);

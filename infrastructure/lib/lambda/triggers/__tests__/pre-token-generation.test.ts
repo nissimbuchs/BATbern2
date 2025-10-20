@@ -4,11 +4,10 @@
  *
  * TEST NAMING CONVENTION: should_expectedBehavior_when_condition
  *
- * AC1: PreTokenGeneration enriches JWT with roles from database
+ * AC1: PreTokenGeneration syncs Cognito Groups with database roles
  * - When a user authenticates and token is generated
  * - Then roles are fetched from the database
- * - And JWT claims are enriched with user roles
- * - And event-specific roles are included in custom claims
+ * - And Cognito Groups are set via groupsToOverride to match database roles
  */
 
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
@@ -102,7 +101,7 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
 
   // ============================================================================
   // TEST GROUP 1: Role Fetching from Database
-  // AC1: Fetch active roles for user from database
+  // AC1: Fetch active global roles for user from database
   // ============================================================================
 
   describe('Role Fetching', () => {
@@ -114,8 +113,8 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
 
       mockDbClient.query.mockResolvedValueOnce({
         rows: [
-          { role: 'ORGANIZER', event_id: null },
-          { role: 'SPEAKER', event_id: 'evt-123' },
+          { role: 'ORGANIZER' },
+          { role: 'SPEAKER' },
         ],
         command: 'SELECT',
         rowCount: 2,
@@ -128,11 +127,11 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
 
       // Assert
       expect(mockDbClient.query).toHaveBeenCalledWith(
-        expect.stringContaining('SELECT ur.role, ur.event_id'),
+        expect.stringContaining('SELECT DISTINCT ur.role'),
         expect.arrayContaining(['a1b2c3d4-5678-90ab-cdef-EXAMPLE11111'])
       );
       expect(mockDbClient.release).toHaveBeenCalled();
-      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride).toBeDefined();
+      expect(result.response.claimsOverrideDetails?.groupsToOverride).toBeDefined();
     });
 
     it('should_fetchOnlyActiveRoles_when_queryingDatabase', async () => {
@@ -141,7 +140,7 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       const context = createLambdaContext();
 
       mockDbClient.query.mockResolvedValueOnce({
-        rows: [{ role: 'ORGANIZER', event_id: null }],
+        rows: [{ role: 'ORGANIZER' }],
         rowCount: 1,
       } as any);
 
@@ -155,7 +154,7 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       );
     });
 
-    it('should_returnEmptyRoles_when_userNotFoundInDatabase', async () => {
+    it('should_returnEmptyGroups_when_userNotFoundInDatabase', async () => {
       // Arrange
       const event = createPreTokenGenerationEvent();
       const context = createLambdaContext();
@@ -168,8 +167,8 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       // Act
       const result = await handler(event, context, () => {});
 
-      // Assert - Should handle gracefully with empty roles
-      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:batbern_roles']).toBe('[]');
+      // Assert - Should handle gracefully with empty groups
+      expect(result.response.claimsOverrideDetails?.groupsToOverride).toEqual([]);
     });
 
     it('should_joinWithUsers_when_fetchingRoles', async () => {
@@ -178,7 +177,7 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       const context = createLambdaContext();
 
       mockDbClient.query.mockResolvedValueOnce({
-        rows: [{ role: 'ORGANIZER', event_id: null }],
+        rows: [{ role: 'ORGANIZER' }],
         rowCount: 1,
       } as any);
 
@@ -192,48 +191,46 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       );
     });
 
-    it('should_fetchEventSpecificRoles_when_userHasEventRoles', async () => {
+    it('should_fetchOnlyGlobalRoles_when_filteringEventRoles', async () => {
       // Arrange
       const event = createPreTokenGenerationEvent();
       const context = createLambdaContext();
 
       mockDbClient.query.mockResolvedValueOnce({
         rows: [
-          { role: 'SPEAKER', event_id: 'evt-123' },
-          { role: 'SPEAKER', event_id: 'evt-456' },
+          { role: 'ORGANIZER' },
+          { role: 'SPEAKER' },
         ],
         rowCount: 2,
       } as any);
 
       // Act
-      const result = await handler(event, context, () => {});
+      await handler(event, context, () => {});
 
-      // Assert - Should fetch both event-specific roles
-      const eventRolesStr = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:batbern_event_roles'];
-      expect(eventRolesStr).toBeDefined();
-      const eventRoles = JSON.parse(eventRolesStr!);
-      expect(eventRoles).toHaveLength(2);
-      expect(eventRoles[0].eventId).toBe('evt-123');
-      expect(eventRoles[1].eventId).toBe('evt-456');
+      // Assert - Query should filter for event_id IS NULL (global roles only)
+      expect(mockDbClient.query).toHaveBeenCalledWith(
+        expect.stringContaining('event_id IS NULL'),
+        expect.anything()
+      );
     });
   });
 
   // ============================================================================
-  // TEST GROUP 2: JWT Claim Enrichment
-  // AC1: Enrich JWT with roles from database
+  // TEST GROUP 2: Cognito Groups Override
+  // AC1: Override Cognito Groups with database roles
   // ============================================================================
 
-  describe('JWT Claim Enrichment', () => {
+  describe('Cognito Groups Override', () => {
 
-    it('should_addRolesToClaims_when_rolesExist', async () => {
+    it('should_addGroupsToOverride_when_rolesExist', async () => {
       // Arrange
       const event = createPreTokenGenerationEvent();
       const context = createLambdaContext();
 
       mockDbClient.query.mockResolvedValueOnce({
         rows: [
-          { role: 'ORGANIZER', event_id: null },
-          { role: 'SPEAKER', event_id: null },
+          { role: 'ORGANIZER' },
+          { role: 'SPEAKER' },
         ],
         rowCount: 2,
       } as any);
@@ -241,70 +238,42 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       // Act
       const result = await handler(event, context, () => {});
 
-      // Assert
-      const rolesStr = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:batbern_roles'];
-      expect(rolesStr).toBeDefined();
-      const roles = JSON.parse(rolesStr!);
-      expect(roles).toContain('ORGANIZER');
-      expect(roles).toContain('SPEAKER');
+      // Assert - Groups should be lowercase versions of roles
+      const groups = result.response.claimsOverrideDetails?.groupsToOverride;
+      expect(groups).toBeDefined();
+      expect(groups).toContain('organizer');
+      expect(groups).toContain('speaker');
     });
 
-    it('should_addEventRolesToClaims_when_eventRolesExist', async () => {
+    it('should_convertToLowercase_when_settingGroups', async () => {
       // Arrange
       const event = createPreTokenGenerationEvent();
       const context = createLambdaContext();
 
       mockDbClient.query.mockResolvedValueOnce({
         rows: [
-          { role: 'ORGANIZER', event_id: null },
-          { role: 'SPEAKER', event_id: 'evt-123' },
+          { role: 'ORGANIZER' },
         ],
-        rowCount: 2,
-      } as any);
-
-      // Act
-      const result = await handler(event, context, () => {});
-
-      // Assert - Should add event-specific roles to custom claims
-      const globalRolesStr = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:batbern_roles'];
-      const eventRolesStr = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:batbern_event_roles'];
-
-      expect(globalRolesStr).toBeDefined();
-      expect(JSON.parse(globalRolesStr!)).toEqual(['ORGANIZER']);
-
-      expect(eventRolesStr).toBeDefined();
-      const eventRoles = JSON.parse(eventRolesStr!);
-      expect(eventRoles).toHaveLength(1);
-      expect(eventRoles[0]).toMatchObject({ eventId: 'evt-123', role: 'SPEAKER' });
-    });
-
-    it('should_addSyncTimestamp_when_enrichingClaims', async () => {
-      // Arrange
-      const event = createPreTokenGenerationEvent();
-      const context = createLambdaContext();
-
-      mockDbClient.query.mockResolvedValueOnce({
-        rows: [{ role: 'ATTENDEE', event_id: null }],
         rowCount: 1,
       } as any);
 
       // Act
       const result = await handler(event, context, () => {});
 
-      // Assert - Should add timestamp for cache invalidation
-      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride).toHaveProperty('custom:roles_synced_at');
-      const timestamp = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:roles_synced_at'];
-      expect(timestamp).toBeDefined();
-      expect(new Date(timestamp!).getTime()).toBeGreaterThan(0);
+      // Assert - Groups should be lowercase (ORGANIZER -> organizer)
+      const groups = result.response.claimsOverrideDetails?.groupsToOverride;
+      expect(groups).toBeDefined();
+      expect(groups).toContain('organizer');
+      expect(groups).not.toContain('ORGANIZER');
     });
 
-    it('should_returnEventUnchanged_when_claimsAdded', async () => {
+    it('should_returnEventUnchanged_when_groupsSet', async () => {
       // Arrange
       const event = createPreTokenGenerationEvent();
       const context = createLambdaContext();
 
       mockDbClient.query.mockResolvedValueOnce({
-        rows: [{ role: 'ATTENDEE', event_id: null }],
+        rows: [{ role: 'ATTENDEE' }],
         rowCount: 1,
       } as any);
 
@@ -317,20 +286,24 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       expect(result.userName).toBe(event.userName);
     });
 
-    it('should_overrideExistingClaims_when_dbRolesDiffer', async () => {
+    it('should_overrideExistingGroups_when_dbRolesDiffer', async () => {
       // Arrange
       const event = createPreTokenGenerationEvent({
         request: {
           userAttributes: {
             sub: 'a1b2c3d4-5678-90ab-cdef-EXAMPLE11111', // Need sub for lookup
-            'custom:batbern_role': 'ATTENDEE', // Old role in Cognito
+          },
+          groupConfiguration: {
+            groupsToOverride: ['attendee'], // Old group in Cognito
+            iamRolesToOverride: [],
+            preferredRole: undefined,
           },
         },
       } as any);
       const context = createLambdaContext();
 
       mockDbClient.query.mockResolvedValueOnce({
-        rows: [{ role: 'ORGANIZER', event_id: null }], // New role in DB
+        rows: [{ role: 'ORGANIZER' }], // New role in DB
         rowCount: 1,
       } as any);
 
@@ -338,20 +311,20 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       const result = await handler(event, context, () => {});
 
       // Assert - DB roles should take precedence
-      const rolesStr = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:batbern_roles'];
-      expect(rolesStr).toBeDefined();
-      expect(JSON.parse(rolesStr!)).toEqual(['ORGANIZER']);
+      const groups = result.response.claimsOverrideDetails?.groupsToOverride;
+      expect(groups).toBeDefined();
+      expect(groups).toEqual(['organizer']);
     });
 
-    it('should_serializeRolesAsJSON_when_addingToClaims', async () => {
+    it('should_returnGroupsArray_when_settingOverride', async () => {
       // Arrange
       const event = createPreTokenGenerationEvent();
       const context = createLambdaContext();
 
       mockDbClient.query.mockResolvedValueOnce({
         rows: [
-          { role: 'ORGANIZER', event_id: null },
-          { role: 'SPEAKER', event_id: null },
+          { role: 'ORGANIZER' },
+          { role: 'SPEAKER' },
         ],
         rowCount: 2,
       } as any);
@@ -359,12 +332,11 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       // Act
       const result = await handler(event, context, () => {});
 
-      // Assert - Roles should be JSON array string
-      const rolesStr = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:batbern_roles'];
-      const roles = JSON.parse(rolesStr!);
-      expect(Array.isArray(roles)).toBe(true);
-      expect(roles).toContain('ORGANIZER');
-      expect(roles).toContain('SPEAKER');
+      // Assert - Groups should be array of strings
+      const groups = result.response.claimsOverrideDetails?.groupsToOverride;
+      expect(Array.isArray(groups)).toBe(true);
+      expect(groups).toContain('organizer');
+      expect(groups).toContain('speaker');
     });
   });
 
@@ -375,7 +347,7 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
 
   describe('Error Handling and Fallback', () => {
 
-    it('should_fallbackToEmptyRoles_when_databaseUnavailable', async () => {
+    it('should_fallbackToEmptyGroups_when_databaseUnavailable', async () => {
       // Arrange
       const event = createPreTokenGenerationEvent();
       const context = createLambdaContext();
@@ -385,8 +357,8 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       // Act
       const result = await handler(event, context, () => {});
 
-      // Assert - Should not throw error, return empty roles
-      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:batbern_roles']).toBe('[]');
+      // Assert - Should not throw error, return empty groups
+      expect(result.response.claimsOverrideDetails?.groupsToOverride).toEqual([]);
     });
 
     it('should_logError_when_roleFetchFails', async () => {
@@ -450,8 +422,8 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
 
       mockDbClient.query.mockResolvedValueOnce({
         rows: [
-          { role: null, event_id: null }, // Malformed data
-          { role: 'ORGANIZER', event_id: null },
+          { role: null }, // Malformed data
+          { role: 'ORGANIZER' },
         ],
         rowCount: 2,
       } as any);
@@ -460,9 +432,8 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       const result = await handler(event, context, () => {});
 
       // Assert - Should filter out null/invalid roles
-      const rolesStr = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:batbern_roles'];
-      const roles = JSON.parse(rolesStr!);
-      expect(roles).toEqual(['ORGANIZER']);
+      const groups = result.response.claimsOverrideDetails?.groupsToOverride;
+      expect(groups).toEqual(['organizer']);
     });
 
     it('should_handleMissingSubAttribute_when_eventMalformed', async () => {
@@ -557,7 +528,7 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
 
   describe('Trigger Sources', () => {
 
-    it('should_enrichClaims_when_triggerSourceIsAuthentication', async () => {
+    it('should_setGroups_when_triggerSourceIsAuthentication', async () => {
       // Arrange
       const event = createPreTokenGenerationEvent({
         triggerSource: 'TokenGeneration_Authentication',
@@ -565,7 +536,7 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       const context = createLambdaContext();
 
       mockDbClient.query.mockResolvedValueOnce({
-        rows: [{ role: 'ORGANIZER', event_id: null }],
+        rows: [{ role: 'ORGANIZER' }],
         rowCount: 1,
       } as any);
 
@@ -573,10 +544,11 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       const result = await handler(event, context, () => {});
 
       // Assert
-      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:batbern_roles']).toBeDefined();
+      expect(result.response.claimsOverrideDetails?.groupsToOverride).toBeDefined();
+      expect(result.response.claimsOverrideDetails?.groupsToOverride).toContain('organizer');
     });
 
-    it('should_enrichClaims_when_triggerSourceIsNewPasswordChallenge', async () => {
+    it('should_setGroups_when_triggerSourceIsNewPasswordChallenge', async () => {
       // Arrange
       const event = createPreTokenGenerationEvent({
         triggerSource: 'TokenGeneration_NewPasswordChallenge',
@@ -584,7 +556,7 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       const context = createLambdaContext();
 
       mockDbClient.query.mockResolvedValueOnce({
-        rows: [{ role: 'ORGANIZER', event_id: null }],
+        rows: [{ role: 'ORGANIZER' }],
         rowCount: 1,
       } as any);
 
@@ -592,10 +564,11 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       const result = await handler(event, context, () => {});
 
       // Assert
-      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:batbern_roles']).toBeDefined();
+      expect(result.response.claimsOverrideDetails?.groupsToOverride).toBeDefined();
+      expect(result.response.claimsOverrideDetails?.groupsToOverride).toContain('organizer');
     });
 
-    it('should_enrichClaims_when_triggerSourceIsAuthenticationRefresh', async () => {
+    it('should_setGroups_when_triggerSourceIsAuthenticationRefresh', async () => {
       // Arrange
       const event = createPreTokenGenerationEvent({
         triggerSource: 'TokenGeneration_RefreshTokens',
@@ -603,17 +576,17 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       const context = createLambdaContext();
 
       mockDbClient.query.mockResolvedValueOnce({
-        rows: [{ role: 'ORGANIZER', event_id: null }],
+        rows: [{ role: 'ORGANIZER' }],
         rowCount: 1,
       } as any);
 
       // Act
       const result = await handler(event, context, () => {});
 
-      // Assert - Refresh should also get latest roles
-      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:batbern_roles']).toBeDefined();
-      const roles = JSON.parse(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:batbern_roles']!);
-      expect(roles).toContain('ORGANIZER');
+      // Assert - Refresh should also get latest groups
+      expect(result.response.claimsOverrideDetails?.groupsToOverride).toBeDefined();
+      const groups = result.response.claimsOverrideDetails?.groupsToOverride;
+      expect(groups).toContain('organizer');
     });
   });
 
@@ -655,15 +628,15 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       expect(mockDbClient.release).toHaveBeenCalled();
     });
 
-    it('should_recordRoleCount_when_rolesEnriched', async () => {
+    it('should_recordRoleCount_when_groupsSet', async () => {
       // Arrange
       const event = createPreTokenGenerationEvent();
       const context = createLambdaContext();
 
       mockDbClient.query.mockResolvedValueOnce({
         rows: [
-          { role: 'ORGANIZER', event_id: null },
-          { role: 'SPEAKER', event_id: null },
+          { role: 'ORGANIZER' },
+          { role: 'SPEAKER' },
         ],
         rowCount: 2,
       } as any);
@@ -671,9 +644,9 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       // Act
       const result = await handler(event, context, () => {});
 
-      // Assert - Both roles enriched (metric published internally)
-      const roles = JSON.parse(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:batbern_roles']!);
-      expect(roles).toHaveLength(2);
+      // Assert - Both groups set (metric published internally)
+      const groups = result.response.claimsOverrideDetails?.groupsToOverride;
+      expect(groups).toHaveLength(2);
     });
   });
 
@@ -690,9 +663,9 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
 
       mockDbClient.query.mockResolvedValueOnce({
         rows: [
-          { role: 'ORGANIZER', event_id: null },
-          { role: 'ORGANIZER', event_id: null }, // Duplicate
-          { role: 'SPEAKER', event_id: null },
+          { role: 'ORGANIZER' },
+          { role: 'ORGANIZER' }, // Duplicate (though DISTINCT should prevent this)
+          { role: 'SPEAKER' },
         ],
         rowCount: 3,
       } as any);
@@ -700,38 +673,33 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       // Act
       const result = await handler(event, context, () => {});
 
-      // Assert - Should return unique roles only
-      const rolesStr = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:batbern_roles'];
-      const roles = JSON.parse(rolesStr!);
-      expect(roles).toHaveLength(2);
-      expect(roles).toContain('ORGANIZER');
-      expect(roles).toContain('SPEAKER');
+      // Assert - Should return unique groups only (lowercase)
+      const groups = result.response.claimsOverrideDetails?.groupsToOverride;
+      expect(groups).toHaveLength(2);
+      expect(groups).toContain('organizer');
+      expect(groups).toContain('speaker');
     });
 
-    it('should_keepEventRolesSeparate_when_deduplicating', async () => {
+    it('should_onlyIncludeGlobalRoles_when_queryFiltersEventRoles', async () => {
       // Arrange
       const event = createPreTokenGenerationEvent();
       const context = createLambdaContext();
 
+      // Database query returns only global roles (event_id IS NULL filter)
       mockDbClient.query.mockResolvedValueOnce({
         rows: [
-          { role: 'SPEAKER', event_id: null }, // Global role
-          { role: 'SPEAKER', event_id: 'evt-123' }, // Event-specific role
+          { role: 'SPEAKER' }, // Global role only
         ],
-        rowCount: 2,
+        rowCount: 1,
       } as any);
 
       // Act
       const result = await handler(event, context, () => {});
 
-      // Assert - Both should be included (different scopes)
-      const globalRoles = JSON.parse(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:batbern_roles']!);
-      const eventRolesStr = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:batbern_event_roles'];
-      const eventRoles = eventRolesStr ? JSON.parse(eventRolesStr) : [];
-
-      expect(globalRoles).toContain('SPEAKER');
-      expect(eventRoles).toHaveLength(1);
-      expect(eventRoles[0].eventId).toBe('evt-123');
+      // Assert - Only global role included as group
+      const groups = result.response.claimsOverrideDetails?.groupsToOverride;
+      expect(groups).toContain('speaker');
+      expect(groups).toHaveLength(1);
     });
   });
 });

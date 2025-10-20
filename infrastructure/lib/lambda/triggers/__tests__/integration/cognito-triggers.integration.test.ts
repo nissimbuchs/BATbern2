@@ -7,7 +7,7 @@
  * TEST NAMING CONVENTION: should_expectedBehavior_when_condition
  *
  * AC1: PostConfirmation trigger creates database user within 1 second
- * AC1: PreTokenGeneration enriches JWT with roles from database
+ * AC1: PreTokenGeneration syncs Cognito Groups with database roles
  * AC6: PreAuthentication blocks inactive users
  */
 
@@ -128,7 +128,7 @@ describe('Cognito Triggers - Integration Tests', () => {
     `);
   }
 
-  function createPostConfirmationEvent(cognitoId: string, email: string, role?: string): PostConfirmationTriggerEvent {
+  function createPostConfirmationEvent(cognitoId: string, email: string, groups?: string[]): PostConfirmationTriggerEvent {
     return {
       version: '1',
       triggerSource: 'PostConfirmation_ConfirmSignUp',
@@ -145,7 +145,7 @@ describe('Cognito Triggers - Integration Tests', () => {
           email,
           email_verified: 'true',
           'cognito:user_status': 'CONFIRMED',
-          ...(role && { 'custom:batbern_role': role }),
+          ...(groups && { 'cognito:groups': groups.join(',') }),
         },
       },
       response: {},
@@ -238,7 +238,7 @@ describe('Cognito Triggers - Integration Tests', () => {
       // Arrange
       const cognitoId = 'test-cognito-id-123';
       const email = 'integration-test@batbern.ch';
-      const event = createPostConfirmationEvent(cognitoId, email, 'ORGANIZER');
+      const event = createPostConfirmationEvent(cognitoId, email, ['organizer']);
       const context = createLambdaContext();
 
       // Act - Will fail because handler not implemented yet
@@ -258,11 +258,11 @@ describe('Cognito Triggers - Integration Tests', () => {
       throw new Error('PostConfirmation handler not implemented - integration test fails with real database');
     });
 
-    it('should_assignRoleInDatabase_when_customAttributeProvided', async () => {
+    it('should_assignRoleInDatabase_when_cognitoGroupsProvided', async () => {
       // Arrange
       const cognitoId = 'test-cognito-id-456';
       const email = 'speaker@batbern.ch';
-      const event = createPostConfirmationEvent(cognitoId, email, 'SPEAKER');
+      const event = createPostConfirmationEvent(cognitoId, email, ['speaker']);
       const context = createLambdaContext();
 
       // Act - Will fail because handler not implemented yet
@@ -287,11 +287,11 @@ describe('Cognito Triggers - Integration Tests', () => {
       throw new Error('PostConfirmation handler not implemented - role assignment integration test fails');
     });
 
-    it('should_defaultToAttendeeRole_when_noCustomAttribute', async () => {
+    it('should_defaultToAttendeeRole_when_noCognitoGroups', async () => {
       // Arrange
       const cognitoId = 'test-cognito-id-789';
       const email = 'default@batbern.ch';
-      const event = createPostConfirmationEvent(cognitoId, email); // No role specified
+      const event = createPostConfirmationEvent(cognitoId, email); // No groups specified
       const context = createLambdaContext();
 
       // Act & Assert - Will fail because handler not implemented yet
@@ -302,7 +302,7 @@ describe('Cognito Triggers - Integration Tests', () => {
       // Arrange
       const cognitoId = 'test-cognito-id-idempotent';
       const email = 'idempotent@batbern.ch';
-      const event = createPostConfirmationEvent(cognitoId, email, 'PARTNER');
+      const event = createPostConfirmationEvent(cognitoId, email, ['partner']);
       const context = createLambdaContext();
 
       // Act - Call twice
@@ -324,7 +324,7 @@ describe('Cognito Triggers - Integration Tests', () => {
       // Arrange
       const cognitoId = 'test-cognito-id-perf';
       const email = 'performance@batbern.ch';
-      const event = createPostConfirmationEvent(cognitoId, email, 'ORGANIZER');
+      const event = createPostConfirmationEvent(cognitoId, email, ['organizer']);
       const context = createLambdaContext();
 
       // Act
@@ -363,18 +363,18 @@ describe('Cognito Triggers - Integration Tests', () => {
   });
 
   // ============================================================================
-  // TEST GROUP 2: PreTokenGeneration - JWT Enrichment with Real Database
-  // AC1: PreTokenGeneration enriches JWT with roles from database
+  // TEST GROUP 2: PreTokenGeneration - Cognito Groups Sync with Real Database
+  // AC1: PreTokenGeneration syncs Cognito Groups with database roles
   // ============================================================================
 
   describe('PreTokenGeneration Trigger - Database Integration', () => {
 
-    it('should_enrichJWTWithRoles_when_userExistsInDatabase', async () => {
+    it('should_setGroupsOverride_when_userExistsInDatabase', async () => {
       // Arrange
       const cognitoId = 'test-cognito-id-jwt';
       const email = 'jwt-test@batbern.ch';
 
-      // Pre-populate database with user and role
+      // Pre-populate database with user and global role
       const userResult = await dbClient.query(
         'INSERT INTO users (cognito_id, email, active) VALUES ($1, $2, true) RETURNING id',
         [cognitoId, email]
@@ -382,7 +382,7 @@ describe('Cognito Triggers - Integration Tests', () => {
       const userId = userResult.rows[0].id;
 
       await dbClient.query(
-        'INSERT INTO user_roles (user_id, role) VALUES ($1, $2)',
+        'INSERT INTO user_roles (user_id, role, event_id) VALUES ($1, $2, NULL)',
         [userId, 'ORGANIZER']
       );
 
@@ -392,19 +392,19 @@ describe('Cognito Triggers - Integration Tests', () => {
       // Act - Will fail because handler not implemented yet
       // const result = await preTokenGenerationHandler(event, context);
 
-      // Assert - JWT claims should include roles
-      // expect(result.response.claimsOverrideDetails.claimsToAddOrOverride).toBeDefined();
-      // expect(result.response.claimsOverrideDetails.claimsToAddOrOverride['custom:batbern_roles']).toContain('ORGANIZER');
+      // Assert - groupsToOverride should include organizer
+      // expect(result.response.claimsOverrideDetails.groupsToOverride).toBeDefined();
+      // expect(result.response.claimsOverrideDetails.groupsToOverride).toContain('organizer');
 
-      throw new Error('PreTokenGeneration handler not implemented - JWT enrichment integration test fails');
+      throw new Error('PreTokenGeneration handler not implemented - groups override integration test fails');
     });
 
-    it('should_includeEventRoles_when_userHasEventSpecificRoles', async () => {
+    it('should_onlyIncludeGlobalRoles_when_filteringEventRoles', async () => {
       // Arrange
       const cognitoId = 'test-cognito-id-event-roles';
       const email = 'event-roles@batbern.ch';
 
-      // Pre-populate database with event-specific role
+      // Pre-populate database with both global and event-specific roles
       const userResult = await dbClient.query(
         'INSERT INTO users (cognito_id, email, active) VALUES ($1, $2, true) RETURNING id',
         [cognitoId, email]
@@ -413,18 +413,24 @@ describe('Cognito Triggers - Integration Tests', () => {
 
       const eventId = '123e4567-e89b-12d3-a456-426614174000';
       await dbClient.query(
-        'INSERT INTO user_roles (user_id, role, event_id) VALUES ($1, $2, $3)',
-        [userId, 'SPEAKER', eventId]
+        'INSERT INTO user_roles (user_id, role, event_id) VALUES ($1, $2, NULL), ($3, $4, $5)',
+        [userId, 'ORGANIZER', userId, 'SPEAKER', eventId]
       );
 
       const event = createPreTokenGenerationEvent(cognitoId, email);
       const context = createLambdaContext();
 
-      // Act & Assert - Will fail because handler not implemented yet
-      throw new Error('PreTokenGeneration handler not implemented - event-specific roles integration test fails');
+      // Act - Will fail because handler not implemented yet
+      // const result = await preTokenGenerationHandler(event, context);
+
+      // Assert - Only global role should be in groupsToOverride (not event-specific)
+      // expect(result.response.claimsOverrideDetails.groupsToOverride).toContain('organizer');
+      // expect(result.response.claimsOverrideDetails.groupsToOverride).not.toContain('speaker');
+
+      throw new Error('PreTokenGeneration handler not implemented - event role filtering integration test fails');
     });
 
-    it('should_fallbackToEmptyRoles_when_databaseQueryFails', async () => {
+    it('should_fallbackToEmptyGroups_when_databaseQueryFails', async () => {
       // Arrange
       const cognitoId = 'test-cognito-id-fallback';
       const email = 'fallback@batbern.ch';
@@ -438,8 +444,9 @@ describe('Cognito Triggers - Integration Tests', () => {
       // Act - Should not throw error (graceful degradation)
       // const result = await preTokenGenerationHandler(event, context);
 
-      // Assert - Token still generated
+      // Assert - Token still generated with empty groups
       // expect(result).toBeDefined();
+      // expect(result.response.claimsOverrideDetails.groupsToOverride).toEqual([]);
 
       // Reconnect
       dbClient = new Client(dbConfig);

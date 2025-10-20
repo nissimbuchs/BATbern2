@@ -98,7 +98,9 @@ export const handler: PostConfirmationTriggerHandler = async (event) => {
 
   const { userPoolId, userName, request } = event;
   const email = request.userAttributes.email;
-  const cognitoRole = request.userAttributes['custom:batbern_role'] || 'ATTENDEE';
+  // Extract role from Cognito Groups (cognito:groups attribute)
+  const cognitoGroups = request.userAttributes['cognito:groups']?.split(',') || [];
+  const cognitoRole = cognitoGroups[0] || 'ATTENDEE';
 
   try {
     await dbClient.connect();
@@ -173,21 +175,21 @@ export const handler: PreTokenGenerationTriggerHandler = async (event) => {
       .filter(r => r.event_id)
       .map(r => ({ eventId: r.event_id, role: r.role }));
 
-    // Add custom claims to JWT
+    // Sync Cognito Groups with database roles (global roles only)
+    const globalRoles = userRoles
+      .filter(r => !r.event_id)
+      .map(r => r.role);
+
     event.response.claimsOverrideDetails = {
-      claimsToAddOrOverride: {
-        'custom:batbern_roles': JSON.stringify(roles),
-        'custom:batbern_event_roles': JSON.stringify(eventRoles),
-        'custom:roles_synced_at': new Date().toISOString()
-      }
+      groupsToOverride: globalRoles.map(r => r.toLowerCase())
     };
 
-    console.log('Token enriched with DB roles', { userName, roles });
+    console.log('Cognito Groups synced with DB roles', { userName, globalRoles });
 
   } catch (error) {
     console.error('Failed to enrich token', { error: error.message, userName });
 
-    // Fallback to Cognito custom attribute
+    // Fallback to Cognito Groups - token will use group membership
     // Don't block authentication
   } finally {
     await dbClient.end();
@@ -341,14 +343,36 @@ export class AuthStack extends cdk.Stack {
         requireDigits: true,
         requireSymbols: true,
       },
-      customAttributes: {
-        batbern_role: new cognito.StringAttribute({ minLen: 1, maxLen: 50 }),
-      },
       lambdaTriggers: {
         postConfirmation: postConfirmationFn,
         preTokenGeneration: preTokenFn,
         preAuthentication: preAuthFn,
       },
+    });
+
+    // Create Cognito Groups for role-based access
+    const organizerGroup = new cognito.CfnUserPoolGroup(this, 'OrganizerGroup', {
+      userPoolId: userPool.userPoolId,
+      groupName: 'organizer',
+      description: 'Event organizers with full administrative access',
+    });
+
+    const speakerGroup = new cognito.CfnUserPoolGroup(this, 'SpeakerGroup', {
+      userPoolId: userPool.userPoolId,
+      groupName: 'speaker',
+      description: 'Speakers who present at events',
+    });
+
+    const partnerGroup = new cognito.CfnUserPoolGroup(this, 'PartnerGroup', {
+      userPoolId: userPool.userPoolId,
+      groupName: 'partner',
+      description: 'Corporate partners and sponsors',
+    });
+
+    const attendeeGroup = new cognito.CfnUserPoolGroup(this, 'AttendeeGroup', {
+      userPoolId: userPool.userPoolId,
+      groupName: 'attendee',
+      description: 'Event attendees',
     });
 
     // CloudWatch Alarms for trigger failures
@@ -594,19 +618,26 @@ public class UserSyncSagaService {
         }
     }
 
-    private void updateCognitoUserAttribute(String cognitoId, UserRole role) {
-        AdminUpdateUserAttributesRequest request = AdminUpdateUserAttributesRequest.builder()
+    private void addUserToCognitoGroup(String cognitoId, UserRole role) {
+        // Add user to the Cognito Group corresponding to their role
+        AdminAddUserToGroupRequest request = AdminAddUserToGroupRequest.builder()
             .userPoolId(userPoolId)
             .username(cognitoId)
-            .userAttributes(
-                AttributeType.builder()
-                    .name("custom:batbern_role")
-                    .value(role.name())
-                    .build()
-            )
+            .groupName(role.name().toLowerCase()) // 'organizer', 'speaker', 'partner', 'attendee'
             .build();
 
-        cognitoClient.adminUpdateUserAttributes(request);
+        cognitoClient.adminAddUserToGroup(request);
+    }
+
+    private void removeUserFromCognitoGroup(String cognitoId, UserRole oldRole) {
+        // Remove user from their previous Cognito Group
+        AdminRemoveUserFromGroupRequest request = AdminRemoveUserFromGroupRequest.builder()
+            .userPoolId(userPoolId)
+            .username(cognitoId)
+            .groupName(oldRole.name().toLowerCase())
+            .build();
+
+        cognitoClient.adminRemoveUserFromGroup(request);
     }
 
     private void emitSyncFailureAlert(UUID userId, String cognitoId, UserRole role, Exception error) {
@@ -783,12 +814,17 @@ public class UserReconciliationService {
 
                     User savedUser = userRepository.save(newUser);
 
-                    // Create initial role from Cognito attribute
-                    String cognitoRole = cognitoUser.attributes().stream()
-                        .filter(a -> a.name().equals("custom:batbern_role"))
-                        .findFirst()
-                        .map(AttributeType::value)
-                        .orElse("ATTENDEE");
+                    // Create initial role from Cognito Groups
+                    List<String> groups = cognitoClient.adminListGroupsForUser(
+                        AdminListGroupsForUserRequest.builder()
+                            .userPoolId(userPoolId)
+                            .username(cognitoId)
+                            .build()
+                    ).groups().stream()
+                        .map(GroupType::groupName)
+                        .toList();
+
+                    String cognitoRole = groups.isEmpty() ? "ATTENDEE" : groups.get(0).toUpperCase();
 
                     UserRoleEntity role = UserRoleEntity.builder()
                         .userId(savedUser.getId())
@@ -796,7 +832,7 @@ public class UserReconciliationService {
                         .grantedBy(savedUser.getId())
                         .grantedAt(Instant.now())
                         .isActive(true)
-                        .reason("Created during reconciliation from Cognito")
+                        .reason("Created during reconciliation from Cognito Groups")
                         .build();
 
                     userRoleRepository.save(role);
@@ -828,16 +864,20 @@ public class UserReconciliationService {
                     .username(user.getCognitoId())
                     .build();
 
-                AdminGetUserResponse response = cognitoClient.adminGetUser(request);
+                // Get Cognito Groups for the user
+                AdminListGroupsForUserRequest groupsRequest = AdminListGroupsForUserRequest.builder()
+                    .userPoolId(userPoolId)
+                    .username(cognitoId)
+                    .build();
 
-                String cognitoRole = response.userAttributes().stream()
-                    .filter(a -> a.name().equals("custom:batbern_role"))
-                    .findFirst()
-                    .map(AttributeType::value)
-                    .orElse(null);
+                AdminListGroupsForUserResponse groupsResponse = cognitoClient.adminListGroupsForUser(groupsRequest);
 
-                if (cognitoRole == null) {
-                    continue; // No role in Cognito, skip
+                List<String> cognitoGroups = groupsResponse.groups().stream()
+                    .map(GroupType::groupName)
+                    .toList();
+
+                if (cognitoGroups.isEmpty()) {
+                    continue; // No groups in Cognito, skip
                 }
 
                 // Get active role from DB
@@ -893,7 +933,7 @@ public class UserReconciliationService {
 
                 // Retry the operation
                 if ("ROLE_SYNC".equals(op.getOperation())) {
-                    updateCognitoRole(op.getCognitoId(), op.getTargetRole());
+                    addUserToCognitoGroup(op.getCognitoId(), op.getTargetRole());
 
                     op.setStatus("COMPLETED");
                     op.setCompensationExecutedAt(Instant.now());
@@ -916,19 +956,24 @@ public class UserReconciliationService {
         log.info("Retried {} compensations, {} succeeded", retriedCount, successCount);
     }
 
-    private void updateCognitoRole(String cognitoId, UserRole role) {
-        AdminUpdateUserAttributesRequest request = AdminUpdateUserAttributesRequest.builder()
+    private void updateCognitoRole(String cognitoId, UserRole oldRole, UserRole newRole) {
+        // Remove from old group
+        if (oldRole != null) {
+            AdminRemoveUserFromGroupRequest removeRequest = AdminRemoveUserFromGroupRequest.builder()
+                .userPoolId(userPoolId)
+                .username(cognitoId)
+                .groupName(oldRole.name().toLowerCase())
+                .build();
+            cognitoClient.adminRemoveUserFromGroup(removeRequest);
+        }
+
+        // Add to new group
+        AdminAddUserToGroupRequest addRequest = AdminAddUserToGroupRequest.builder()
             .userPoolId(userPoolId)
             .username(cognitoId)
-            .userAttributes(
-                AttributeType.builder()
-                    .name("custom:batbern_role")
-                    .value(role.name())
-                    .build()
-            )
+            .groupName(newRole.name().toLowerCase())
             .build();
-
-        cognitoClient.adminUpdateUserAttributes(request);
+        cognitoClient.adminAddUserToGroup(addRequest);
     }
 
     private void publishReconciliationMetrics(ReconciliationReport report) {

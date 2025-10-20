@@ -8,7 +8,7 @@
  * AC1: PostConfirmation trigger creates database user within 1 second
  * - When a user completes email verification in Cognito
  * - Then a corresponding user record is created in the `users` table
- * - And an initial role is assigned based on Cognito custom attribute `custom:batbern_role`
+ * - And an initial role is assigned based on Cognito Groups membership (`cognito:groups`)
  * - And the operation completes within 1 second (p95 latency)
  */
 
@@ -32,7 +32,7 @@ interface UserAttributes {
   sub: string; // Cognito user ID
   email: string;
   email_verified?: string;
-  'custom:batbern_role'?: string;
+  'cognito:groups'?: string;
 }
 
 /**
@@ -54,16 +54,23 @@ function extractUserAttributes(event: PostConfirmationTriggerEvent): UserAttribu
     sub: attributes.sub,
     email: attributes.email,
     email_verified: attributes.email_verified,
-    'custom:batbern_role': attributes['custom:batbern_role'],
+    'cognito:groups': attributes['cognito:groups'],
   };
 }
 
 /**
- * Determine user role from custom attribute or default to ATTENDEE
+ * Determine user role from Cognito Groups or default to ATTENDEE
  */
-function determineUserRole(customRole?: string): UserRole {
-  if (customRole && VALID_ROLES.includes(customRole as UserRole)) {
-    return customRole as UserRole;
+function determineUserRole(cognitoGroups?: string): UserRole {
+  if (cognitoGroups) {
+    // cognito:groups is a comma-separated string
+    const groups = cognitoGroups.split(',').map(g => g.trim().toUpperCase());
+
+    // Find the first valid role from the groups
+    const role = groups.find(g => VALID_ROLES.includes(g as UserRole));
+    if (role) {
+      return role as UserRole;
+    }
   }
 
   // Default to ATTENDEE if no valid role specified
@@ -220,10 +227,10 @@ export const handler: PostConfirmationTriggerHandler = async (event) => {
   try {
     // Extract user attributes from event
     const attributes = extractUserAttributes(event);
-    const { sub: cognitoId, email, email_verified, 'custom:batbern_role': customRole } = attributes;
+    const { sub: cognitoId, email, email_verified, 'cognito:groups': cognitoGroups } = attributes;
 
-    // Determine initial role
-    const role = determineUserRole(customRole);
+    // Determine initial role from Cognito Groups
+    const role = determineUserRole(cognitoGroups);
 
     console.log('Processing user confirmation', {
       cognitoId,
