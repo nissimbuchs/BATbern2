@@ -55,9 +55,9 @@ test_cors_preflight() {
 
     local test_passed=true
 
-    # Validate status code
-    if [ "$status_code" != "200" ]; then
-        echo -e "  ${RED}✗ FAIL${NC}: Status code $status_code (expected 200)"
+    # Validate status code (200 OK or 204 No Content are both valid for OPTIONS)
+    if [ "$status_code" != "200" ] && [ "$status_code" != "204" ]; then
+        echo -e "  ${RED}✗ FAIL${NC}: Status code $status_code (expected 200 or 204)"
         test_passed=false
     else
         echo -e "  ${GREEN}✓${NC} Status code: $status_code"
@@ -152,11 +152,11 @@ response=$(curl -s -i -X OPTIONS "$API_URL/health" \
     2>&1)
 
 status_code=$(echo "$response" | grep "HTTP/" | tail -1 | awk '{print $2}')
-if [ "$status_code" = "200" ]; then
-    echo -e "${GREEN}✓ PASS${NC}: Health endpoint CORS check passed"
+if [ "$status_code" = "200" ] || [ "$status_code" = "204" ]; then
+    echo -e "${GREEN}✓ PASS${NC}: Health endpoint CORS check passed (status: $status_code)"
     ((passed++))
 else
-    echo -e "${YELLOW}⚠ WARNING${NC}: Health endpoint returned $status_code"
+    echo -e "${YELLOW}⚠ WARNING${NC}: Health endpoint returned $status_code (expected 200 or 204)"
     ((warnings++))
     ((passed++)) # Don't fail on health endpoint
 fi
