@@ -28,8 +28,8 @@ vi.mock('../ActivityTimeline', () => ({
 // Mock company data - aligned with backend CompanyResponse
 const mockCompany = {
   id: 'company-123',
-  name: 'Test Company AG',
-  displayName: 'Test Company',
+  name: 'TestCompanyAG',
+  displayName: 'Test Company AG',
   swissUID: 'CHE-123.456.789',
   website: 'https://test-company.ch',
   industry: 'Cloud Computing',
@@ -69,7 +69,7 @@ describe('CompanyDetailView Component', () => {
       );
 
       // Verify company name is displayed
-      expect(screen.getByText('Test Company AG')).toBeInTheDocument();
+      expect(screen.getByText('Test Company AG')).toBeInTheDocument(); // displayName
 
       // Verify company details are displayed
       expect(screen.getByText(/CHE-123.456.789/)).toBeInTheDocument();
@@ -124,7 +124,7 @@ describe('CompanyDetailView Component', () => {
 
       // Verify AssociatedUsersPanel is rendered
       expect(screen.getByTestId('associated-users-panel')).toBeInTheDocument();
-      expect(screen.getByText(/AssociatedUsersPanel-Test Company AG/)).toBeInTheDocument();
+      expect(screen.getByText(/AssociatedUsersPanel-TestCompanyAG/)).toBeInTheDocument();
     });
   });
 
@@ -255,7 +255,7 @@ describe('CompanyDetailView Component', () => {
       const editButton = screen.getByRole('button', { name: /edit/i });
       await user.click(editButton);
 
-      expect(mockOnEdit).toHaveBeenCalledWith('Test Company AG');
+      expect(mockOnEdit).toHaveBeenCalledWith('TestCompanyAG');
     });
   });
 

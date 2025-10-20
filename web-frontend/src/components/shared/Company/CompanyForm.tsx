@@ -44,7 +44,8 @@ const companySchema = z.object({
     .string()
     .min(1, 'Company name is required')
     .min(2, 'Name must be at least 2 characters')
-    .max(200, 'Name must be at most 200 characters'),
+    .max(200, 'Name must be at most 200 characters')
+    .regex(/^[A-Za-z0-9]+$/, 'Company name must be alphanumeric (no spaces or special characters)'),
   displayName: z
     .string()
     .max(255, 'Display name must be at most 255 characters')

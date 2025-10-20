@@ -147,8 +147,8 @@ paths:
                   summary: Basic company list
                   value:
                     data:
-                      - name: Swiss IT Solutions AG
-                        displayName: Swiss IT Solutions
+                      - name: SwissITSolutionsAG
+                        displayName: Swiss IT Solutions AG
                         industry: Technology
                         isVerified: true
                         createdAt: 2025-01-15T10:00:00Z
@@ -164,8 +164,8 @@ paths:
                   summary: Company list with statistics and logo
                   value:
                     data:
-                      - name: Swiss IT Solutions AG
-                        displayName: Swiss IT Solutions
+                      - name: SwissITSolutionsAG
+                        displayName: Swiss IT Solutions AG
                         industry: Technology
                         isVerified: true
                         createdAt: 2025-01-15T10:00:00Z
@@ -221,8 +221,8 @@ paths:
               basicCompany:
                 summary: Basic company creation
                 value:
-                  name: Swiss IT Solutions AG
-                  displayName: Swiss IT Solutions
+                  name: SwissITSolutionsAG
+                  displayName: Swiss IT Solutions AG
                   industry: Technology
                   website: https://swiss-it.ch
                   description: Leading Swiss IT consulting firm
@@ -275,7 +275,7 @@ paths:
           required: true
           schema:
             type: string
-            example: Swiss IT Solutions AG
+            example: SwissITSolutionsAG
       responses:
         '200':
           description: Company details retrieved successfully
@@ -287,8 +287,8 @@ paths:
                 basicCompany:
                   summary: Basic company details
                   value:
-                    name: Swiss IT Solutions AG
-                    displayName: Swiss IT Solutions
+                    name: SwissITSolutionsAG
+                    displayName: Swiss IT Solutions AG
                     swissUID: CHE-123.456.789
                     industry: Technology
                     website: https://swiss-it.ch
@@ -332,7 +332,7 @@ paths:
           required: true
           schema:
             type: string
-            example: Swiss IT Solutions AG
+            example: SwissITSolutionsAG
       requestBody:
         required: true
         content:
@@ -388,7 +388,7 @@ paths:
           required: true
           schema:
             type: string
-            example: Swiss IT Solutions AG
+            example: SwissITSolutionsAG
       requestBody:
         required: true
         content:
@@ -440,7 +440,7 @@ paths:
           required: true
           schema:
             type: string
-            example: Swiss IT Solutions AG
+            example: SwissITSolutionsAG
       responses:
         '204':
           description: Company deleted successfully
@@ -514,8 +514,8 @@ paths:
                 searchResults:
                   summary: Search results for "Swiss"
                   value:
-                    - name: Swiss IT Solutions AG
-                      displayName: Swiss IT Solutions
+                    - name: SwissITSolutionsAG
+                      displayName: Swiss IT Solutions AG
                       swissUID: CHE-123.456.789
                       industry: Technology
                       isVerified: true
@@ -617,7 +617,7 @@ paths:
           required: true
           schema:
             type: string
-            example: Swiss IT Solutions AG
+            example: SwissITSolutionsAG
       responses:
         '200':
           description: Company verified successfully
@@ -651,13 +651,14 @@ components:
       properties:
         name:
           type: string
-          description: Company name (unique identifier) - Story 1.16.2
+          description: Company name (unique identifier, alphanumeric only) - Story 1.16.2
+          pattern: '^[A-Za-z0-9]+$'
           maxLength: 255
-          example: Swiss IT Solutions AG
+          example: SwissITSolutionsAG
         displayName:
           type: string
           maxLength: 255
-          example: Swiss IT Solutions
+          example: Swiss IT Solutions AG
         swissUID:
           type: string
           pattern: '^CHE-\d{3}\.\d{3}\.\d{3}$'
@@ -741,11 +742,12 @@ components:
       properties:
         name:
           type: string
-          description: Company name (unique identifier) - Story 1.16.2
-          example: Swiss IT Solutions AG
+          description: Company name (unique identifier, alphanumeric only) - Story 1.16.2
+          pattern: '^[A-Za-z0-9]+$'
+          example: SwissITSolutionsAG
         displayName:
           type: string
-          example: Swiss IT Solutions
+          example: Swiss IT Solutions AG
         swissUID:
           type: string
           example: CHE-123.456.789
@@ -763,13 +765,15 @@ components:
       properties:
         name:
           type: string
+          description: Company name (unique identifier, alphanumeric only)
+          pattern: '^[A-Za-z0-9]+$'
           minLength: 2
           maxLength: 255
-          example: Swiss IT Solutions AG
+          example: SwissITSolutionsAG
         displayName:
           type: string
           maxLength: 255
-          example: Swiss IT Solutions
+          example: Swiss IT Solutions AG
         swissUID:
           type: string
           pattern: '^CHE-\d{3}\.\d{3}\.\d{3}$'
@@ -793,12 +797,14 @@ components:
       properties:
         name:
           type: string
+          description: Company name (unique identifier, alphanumeric only)
+          pattern: '^[A-Za-z0-9]+$'
           maxLength: 255
-          example: Swiss IT Solutions AG
+          example: SwissITSolutionsAG
         displayName:
           type: string
           maxLength: 255
-          example: Swiss IT Solutions
+          example: Swiss IT Solutions AG
         swissUID:
           type: string
           pattern: '^CHE-\d{3}\.\d{3}\.\d{3}$'
@@ -966,7 +972,7 @@ components:
               value:
                 error: RESOURCE_NOT_FOUND
                 errorCode: NOT_FOUND
-                message: Company not found with name 'Swiss IT Solutions AG'
+                message: Company not found with name 'SwissITSolutionsAG'
                 timestamp: 2025-01-15T10:30:00Z
 
     Conflict:
@@ -980,7 +986,7 @@ components:
               value:
                 error: CONFLICT
                 errorCode: CONFLICT
-                message: Company with name 'Swiss IT Solutions AG' already exists
+                message: Company with name 'SwissITSolutionsAG' already exists
                 timestamp: 2025-01-15T10:30:00Z
 
     InternalServerError:
