@@ -27,7 +27,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Set up Node.js 20
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
         with:
           node-version: '20'
 
@@ -80,62 +80,19 @@ jobs:
             echo "::warning::Database instance not found, skipping backup"
           fi
 
-      - name: Get database credentials from AWS Secrets Manager
-        id: get-db-creds
+      # Database migrations are handled automatically by each microservice on startup
+      # Each service has Flyway enabled (spring.flyway.enabled: true) and runs its own migrations
+      # This eliminates the need for:
+      # 1. GitHub Actions to access private RDS (security issue)
+      # 2. Centralized migration management (anti-pattern for microservices)
+      #
+      # Migrations run when ECS tasks start in the VPC with database access
+      - name: Database migrations info
         run: |
-          echo "Retrieving database credentials from AWS Secrets Manager..."
-
-          # Get the secret ARN from CloudFormation stack outputs
-          SECRET_ARN=$(aws cloudformation describe-stacks \
-            --stack-name BATbern-staging-Database \
-            --region ${{ env.AWS_REGION }} \
-            --query 'Stacks[0].Outputs[?OutputKey==`DatabaseSecretArn`].OutputValue' \
-            --output text)
-
-          echo "Secret ARN: $SECRET_ARN"
-
-          # Retrieve database credentials from Secrets Manager
-          DB_SECRET=$(aws secretsmanager get-secret-value \
-            --secret-id "$SECRET_ARN" \
-            --region ${{ env.AWS_REGION }} \
-            --query 'SecretString' \
-            --output text)
-
-          # Parse credentials
-          DB_HOST=$(echo "$DB_SECRET" | jq -r '.host')
-          DB_PORT=$(echo "$DB_SECRET" | jq -r '.port')
-          DB_NAME=$(echo "$DB_SECRET" | jq -r '.dbname')
-          DB_USER=$(echo "$DB_SECRET" | jq -r '.username')
-          DB_PASSWORD=$(echo "$DB_SECRET" | jq -r '.password')
-
-          # Construct JDBC URL
-          DB_URL="jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}"
-
-          echo "Database URL: $DB_URL"
-          echo "Database User: $DB_USER"
-
-          # Export credentials as masked outputs (passwords are automatically masked)
-          echo "DB_URL=$DB_URL" >> $GITHUB_OUTPUT
-          echo "DB_USER=$DB_USER" >> $GITHUB_OUTPUT
-          echo "DB_PASSWORD=$DB_PASSWORD" >> $GITHUB_OUTPUT
-          echo "::add-mask::$DB_PASSWORD"
-
-      - name: Run database migrations
-        run: |
-          if [ -d "shared-kernel" ] && [ -f "shared-kernel/gradlew" ]; then
-            cd shared-kernel
-            chmod +x gradlew
-            echo "Running Flyway migrations..."
-            ./gradlew flywayMigrate \
-              -Dflyway.url="${{ steps.get-db-creds.outputs.DB_URL }}" \
-              -Dflyway.user="${{ steps.get-db-creds.outputs.DB_USER }}" \
-              -Dflyway.password="${{ steps.get-db-creds.outputs.DB_PASSWORD }}" \
-              --no-daemon
-            echo "✅ Database migrations completed successfully"
-          else
-            echo "::error::Shared kernel or gradlew not found"
-            exit 1
-          fi
+          echo "ℹ️  Database migrations are handled automatically by microservices"
+          echo "   Each service runs Flyway migrations on startup (spring.flyway.enabled: true)"
+          echo "   Services have VPC access to RDS, GitHub Actions does not"
+          echo "   This is the standard pattern for microservices architecture"
 
       - name: Deploy infrastructure to staging
         working-directory: ./infrastructure

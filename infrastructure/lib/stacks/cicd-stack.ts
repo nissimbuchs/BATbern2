@@ -197,6 +197,8 @@ export class CICDStack extends cdk.Stack {
       ],
       resources: [
         `arn:aws:secretsmanager:${this.region}:${this.account}:secret:batbern/${config.envName}/*`,
+        // Allow access to RDS-generated secrets (created by CDK with auto-generated names)
+        `arn:aws:secretsmanager:${this.region}:${this.account}:secret:RdsClusterInstanceSecret*`,
       ],
     }));
 
@@ -219,6 +221,7 @@ export class CICDStack extends cdk.Stack {
     // ═══════════════════════════════════════════════════════════
 
     // CloudFormation - Deploy and manage CDK stacks
+    // Note: Stacks can be in multiple regions (eu-central-1 for main resources, us-east-1 for DNS/ACM)
     githubActionsRole.addToPolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
       actions: [
@@ -239,12 +242,14 @@ export class CICDStack extends cdk.Stack {
         'cloudformation:GetTemplateSummary',
       ],
       resources: [
-        `arn:aws:cloudformation:${this.region}:${this.account}:stack/BATbern-${config.envName}-*/*`,
-        `arn:aws:cloudformation:${this.region}:${this.account}:stack/CDKToolkit/*`,
+        // Support stacks in all regions (DNS/ACM must be in us-east-1, others in primary region)
+        `arn:aws:cloudformation:*:${this.account}:stack/BATbern-${config.envName}-*/*`,
+        `arn:aws:cloudformation:*:${this.account}:stack/CDKToolkit/*`,
       ],
     }));
 
     // S3 - CDK asset bucket and application buckets
+    // Note: CDK asset buckets exist in multiple regions (eu-central-1 for main resources, us-east-1 for CloudFront/ACM)
     githubActionsRole.addToPolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
       actions: [
@@ -267,8 +272,10 @@ export class CICDStack extends cdk.Stack {
         's3:PutLifecycleConfiguration',
       ],
       resources: [
-        `arn:aws:s3:::cdk-*-assets-${this.account}-${this.region}`,
-        `arn:aws:s3:::cdk-*-assets-${this.account}-${this.region}/*`,
+        // CDK asset buckets in all regions (wildcards because CDK creates buckets in multiple regions)
+        `arn:aws:s3:::cdk-*-assets-${this.account}-*`,
+        `arn:aws:s3:::cdk-*-assets-${this.account}-*/*`,
+        // Application buckets
         `arn:aws:s3:::batbern-${config.envName}-*`,
         `arn:aws:s3:::batbern-${config.envName}-*/*`,
       ],
@@ -542,6 +549,8 @@ export class CICDStack extends cdk.Stack {
       ],
       resources: [
         `arn:aws:ssm:${this.region}:${this.account}:parameter/batbern/${config.envName}/*`,
+        // CDK bootstrap parameters - required for CDK deployments
+        `arn:aws:ssm:*:${this.account}:parameter/cdk-bootstrap/*`,
       ],
     }));
 
@@ -621,6 +630,28 @@ export class CICDStack extends cdk.Stack {
           ],
         },
       },
+    }));
+
+    // Allow assuming CDK bootstrap roles (required for CDK deployments)
+    // CDK uses role assumption to deploy stacks and publish assets
+    githubActionsRole.addToPolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        'sts:AssumeRole',
+        'sts:TagSession',
+      ],
+      resources: [
+        // CDK deployment role - deploys CloudFormation stacks
+        `arn:aws:iam::${this.account}:role/cdk-hnb659fds-deploy-role-${this.account}-*`,
+        // CloudFormation execution role - used by CloudFormation to create resources
+        `arn:aws:iam::${this.account}:role/cdk-hnb659fds-cfn-exec-role-${this.account}-*`,
+        // File publishing role - uploads assets to S3
+        `arn:aws:iam::${this.account}:role/cdk-hnb659fds-file-publishing-role-${this.account}-*`,
+        // Image publishing role - pushes Docker images to ECR
+        `arn:aws:iam::${this.account}:role/cdk-hnb659fds-image-publishing-role-${this.account}-*`,
+        // Lookup role - reads existing resources for context
+        `arn:aws:iam::${this.account}:role/cdk-hnb659fds-lookup-role-${this.account}-*`,
+      ],
     }));
 
     // ECS Cluster management (expanded)

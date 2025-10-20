@@ -30,10 +30,15 @@
     "diff:prod": "AWS_PROFILE=batbern-prod cdk diff --all --context environment=production"
   },
   "devDependencies": {
-    "@types/aws-lambda": "^8.10.155",
+    "@aws-sdk/client-cloudwatch": "^3.913.0",
+    "@aws-sdk/client-lambda": "^3.913.0",
+    "@aws-sdk/client-sns": "^3.913.0",
+    "@aws-sdk/client-ssm": "^3.908.0",
+    "@octokit/rest": "^22.0.0",
+    "@types/aws-lambda": "^8.10.156",
     "@types/jest": "^29.5.11",
     "@types/js-yaml": "^4.0.9",
-    "@types/node": "^24.7.2",
+    "@types/node": "^24.8.1",
     "@types/pg": "^8.15.5",
     "aws-cdk": "^2.110.0",
     "jest": "^30.0.0",
@@ -43,12 +48,7 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "@aws-sdk/client-cloudwatch": "^3.908.0",
-    "@aws-sdk/client-lambda": "^3.908.0",
-    "@aws-sdk/client-sns": "^3.908.0",
-    "@aws-sdk/client-ssm": "^3.908.0",
-    "@octokit/rest": "^20.0.2",
-    "aws-cdk-lib": "^2.110.0",
+    "aws-cdk-lib": "^2.220.0",
     "constructs": "^10.3.0",
     "js-yaml": "^4.1.0",
     "pg": "^8.16.3",

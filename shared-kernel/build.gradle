@@ -1,3 +1,10 @@
+buildscript {
+    dependencies {
+        // Flyway PostgreSQL database plugin required for Flyway 11.x
+        classpath 'org.flywaydb:flyway-database-postgresql:11.14.1'
+    }
+}
+
 plugins {
     id 'java-library'
     id 'java-test-fixtures'
@@ -34,7 +41,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
 
     // AWS SDK for EventBridge
-    implementation platform('software.amazon.awssdk:bom:2.35.5')
+    implementation platform('software.amazon.awssdk:bom:2.35.10')
     implementation 'software.amazon.awssdk:eventbridge'
 
     // Lombok for boilerplate reduction
@@ -69,9 +76,9 @@ dependencies {
     // Test Fixtures dependencies (exposed to consuming projects)
     testFixturesImplementation 'org.springframework.boot:spring-boot-starter-test'
     testFixturesImplementation 'org.springframework.boot:spring-boot-starter-web'
-    testFixturesImplementation 'org.testcontainers:testcontainers:1.20.4'
-    testFixturesImplementation 'org.testcontainers:postgresql:1.20.4'
-    testFixturesImplementation 'org.testcontainers:junit-jupiter:1.20.4'
+    testFixturesImplementation 'org.testcontainers:testcontainers:1.21.3'
+    testFixturesImplementation 'org.testcontainers:postgresql:1.21.3'
+    testFixturesImplementation 'org.testcontainers:junit-jupiter:1.21.3'
 }
 
 // Configure JaCoCo for code coverage

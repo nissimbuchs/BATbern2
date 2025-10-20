@@ -115,93 +115,28 @@ jobs:
     outputs:
       snapshot_id: ${{ steps.backup.outputs.snapshot_id }}
 
-  database-migration:
+  database-migration-info:
     needs: backup-database
-    if: github.event.inputs.migrate_database == 'true'
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write  # Required for OIDC authentication
-      contents: read   # Required for checkout
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.inputs.version }}
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::422940799530:role/batbern-production-github-actions-role
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Retrieve database credentials from Secrets Manager
-        id: db-creds
+      # Database migrations are handled automatically by each microservice on startup
+      # Each service has Flyway enabled (spring.flyway.enabled: true) and runs its own migrations
+      # This eliminates the need for:
+      # 1. GitHub Actions to access private RDS (security issue - database is in private subnet)
+      # 2. Centralized migration management (anti-pattern for microservices)
+      #
+      # Migrations run when ECS tasks start in the VPC with database access
+      - name: Database migrations info
         run: |
-          # Get database endpoint and credentials from CDK-deployed infrastructure
-          DB_ENDPOINT=$(aws cloudformation describe-stacks \
-            --stack-name BATbern-production-Database \
-            --query 'Stacks[0].Outputs[?OutputKey==`DatabaseEndpoint`].OutputValue' \
-            --output text --region ${{ env.AWS_REGION }})
-
-          DB_PORT=$(aws cloudformation describe-stacks \
-            --stack-name BATbern-production-Database \
-            --query 'Stacks[0].Outputs[?OutputKey==`DatabasePort`].OutputValue' \
-            --output text --region ${{ env.AWS_REGION }})
-
-          DB_NAME=$(aws cloudformation describe-stacks \
-            --stack-name BATbern-production-Database \
-            --query 'Stacks[0].Outputs[?OutputKey==`DatabaseName`].OutputValue' \
-            --output text --region ${{ env.AWS_REGION }})
-
-          SECRET_ARN=$(aws cloudformation describe-stacks \
-            --stack-name BATbern-production-Database \
-            --query 'Stacks[0].Outputs[?OutputKey==`DatabaseSecretArn`].OutputValue' \
-            --output text --region ${{ env.AWS_REGION }})
-
-          # Retrieve credentials from Secrets Manager
-          SECRET_JSON=$(aws secretsmanager get-secret-value \
-            --secret-id "$SECRET_ARN" \
-            --query SecretString \
-            --output text --region ${{ env.AWS_REGION }})
-
-          DB_USERNAME=$(echo "$SECRET_JSON" | jq -r '.username')
-          DB_PASSWORD=$(echo "$SECRET_JSON" | jq -r '.password')
-
-          # Build JDBC URL
-          FLYWAY_URL="jdbc:postgresql://${DB_ENDPOINT}:${DB_PORT}/${DB_NAME}"
-
-          # Export for next steps (mask password)
-          echo "::add-mask::$DB_PASSWORD"
-          echo "flyway_url=$FLYWAY_URL" >> $GITHUB_OUTPUT
-          echo "flyway_user=$DB_USERNAME" >> $GITHUB_OUTPUT
-          echo "flyway_password=$DB_PASSWORD" >> $GITHUB_OUTPUT
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-
-      - name: Run Flyway migrations
-        run: |
-          if [ -d "shared-kernel" ] && [ -f "shared-kernel/gradlew" ]; then
-            cd shared-kernel
-            chmod +x gradlew
-            echo "Running Flyway migrations..."
-            ./gradlew flywayMigrate \
-              -Dflyway.url="${{ steps.db-creds.outputs.flyway_url }}" \
-              -Dflyway.user="${{ steps.db-creds.outputs.flyway_user }}" \
-              -Dflyway.password="${{ steps.db-creds.outputs.flyway_password }}" \
-              --no-daemon
-            echo "✅ Database migrations completed successfully"
-          else
-            echo "::warning::Shared kernel not found, skipping migrations"
-          fi
+          echo "ℹ️  Database migrations are handled automatically by microservices"
+          echo "   Each service runs Flyway migrations on startup (spring.flyway.enabled: true)"
+          echo "   Services have VPC access to RDS, GitHub Actions does not"
+          echo "   This is the standard pattern for microservices architecture"
+          echo "   Migration input parameter is deprecated and has no effect"
 
   blue-green-deployment:
-    needs: [backup-database, database-migration]
-    if: always() && (needs.database-migration.result == 'success' || needs.database-migration.result == 'skipped')
+    needs: [backup-database, database-migration-info]
+    if: always()
     runs-on: ubuntu-latest
     permissions:
       id-token: write  # Required for OIDC authentication
@@ -220,7 +155,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Set up Node.js 20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: 'npm'
@@ -371,7 +306,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Node.js 20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
 
@@ -404,7 +339,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Node.js 20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: 'npm'
