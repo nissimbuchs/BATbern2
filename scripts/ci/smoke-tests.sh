@@ -1,7 +1,8 @@
 #!/bin/bash
 # Smoke tests for post-deployment validation
 # Tests critical endpoints to ensure basic functionality
-set -e
+# Note: We don't use 'set -e' here because we want to run all tests
+# and report a summary at the end, not exit on first failure
 
 FRONTEND_URL=$1
 API_URL=$2
