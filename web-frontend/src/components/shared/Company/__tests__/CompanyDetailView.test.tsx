@@ -65,11 +65,7 @@ describe('CompanyDetailView Component', () => {
   describe('AC8.1: Load company detail when company card clicked', () => {
     it('should_loadCompanyDetail_when_companyCardClicked', async () => {
       renderWithRouter(
-        <CompanyDetailView
-          company={mockCompany}
-          onEdit={mockOnEdit}
-          onBack={mockOnBack}
-        />
+        <CompanyDetailView company={mockCompany} onEdit={mockOnEdit} onBack={mockOnBack} />
       );
 
       // Verify company name is displayed
@@ -86,11 +82,7 @@ describe('CompanyDetailView Component', () => {
 
     it('should_displayCompanyLogo_when_logoUrlProvided', () => {
       renderWithRouter(
-        <CompanyDetailView
-          company={mockCompany}
-          onEdit={mockOnEdit}
-          onBack={mockOnBack}
-        />
+        <CompanyDetailView company={mockCompany} onEdit={mockOnEdit} onBack={mockOnBack} />
       );
 
       const logo = screen.getByAltText(/Test Company AG logo/i);
@@ -100,11 +92,7 @@ describe('CompanyDetailView Component', () => {
 
     it('should_displayVerifiedBadge_when_companyVerified', () => {
       renderWithRouter(
-        <CompanyDetailView
-          company={mockCompany}
-          onEdit={mockOnEdit}
-          onBack={mockOnBack}
-        />
+        <CompanyDetailView company={mockCompany} onEdit={mockOnEdit} onBack={mockOnBack} />
       );
 
       // Verify verified badge/icon is shown
@@ -131,27 +119,19 @@ describe('CompanyDetailView Component', () => {
   describe('AC8.3: Display associated users when users exist', () => {
     it('should_displayAssociatedUsers_when_usersExist', () => {
       renderWithRouter(
-        <CompanyDetailView
-          company={mockCompany}
-          onEdit={mockOnEdit}
-          onBack={mockOnBack}
-        />
+        <CompanyDetailView company={mockCompany} onEdit={mockOnEdit} onBack={mockOnBack} />
       );
 
       // Verify AssociatedUsersPanel is rendered
       expect(screen.getByTestId('associated-users-panel')).toBeInTheDocument();
-      expect(screen.getByText(/AssociatedUsersPanel-company-123/)).toBeInTheDocument();
+      expect(screen.getByText(/AssociatedUsersPanel-Test Company AG/)).toBeInTheDocument();
     });
   });
 
   describe('AC8.4: Display statistics when statistics loaded', () => {
     it('should_displayStatistics_when_statisticsLoaded', () => {
       renderWithRouter(
-        <CompanyDetailView
-          company={mockCompany}
-          onEdit={mockOnEdit}
-          onBack={mockOnBack}
-        />
+        <CompanyDetailView company={mockCompany} onEdit={mockOnEdit} onBack={mockOnBack} />
       );
 
       // Verify CompanyStatistics component is rendered
@@ -163,11 +143,7 @@ describe('CompanyDetailView Component', () => {
       const companyWithoutStats = { ...mockCompany, statistics: undefined };
 
       renderWithRouter(
-        <CompanyDetailView
-          company={companyWithoutStats}
-          onEdit={mockOnEdit}
-          onBack={mockOnBack}
-        />
+        <CompanyDetailView company={companyWithoutStats} onEdit={mockOnEdit} onBack={mockOnBack} />
       );
 
       // Statistics component should still render but show empty state
@@ -178,11 +154,7 @@ describe('CompanyDetailView Component', () => {
   describe('Tab navigation and layout', () => {
     it('should_displayTabNavigation_when_detailViewLoaded', () => {
       renderWithRouter(
-        <CompanyDetailView
-          company={mockCompany}
-          onEdit={mockOnEdit}
-          onBack={mockOnBack}
-        />
+        <CompanyDetailView company={mockCompany} onEdit={mockOnEdit} onBack={mockOnBack} />
       );
 
       // Verify tabs are displayed
@@ -196,11 +168,7 @@ describe('CompanyDetailView Component', () => {
       const user = userEvent.setup();
 
       renderWithRouter(
-        <CompanyDetailView
-          company={mockCompany}
-          onEdit={mockOnEdit}
-          onBack={mockOnBack}
-        />
+        <CompanyDetailView company={mockCompany} onEdit={mockOnEdit} onBack={mockOnBack} />
       );
 
       const usersTab = screen.getByRole('tab', { name: /users/i });
@@ -216,11 +184,7 @@ describe('CompanyDetailView Component', () => {
       const user = userEvent.setup();
 
       renderWithRouter(
-        <CompanyDetailView
-          company={mockCompany}
-          onEdit={mockOnEdit}
-          onBack={mockOnBack}
-        />
+        <CompanyDetailView company={mockCompany} onEdit={mockOnEdit} onBack={mockOnBack} />
       );
 
       const statsTab = screen.getByRole('tab', { name: /statistics/i });
@@ -236,11 +200,7 @@ describe('CompanyDetailView Component', () => {
       const user = userEvent.setup();
 
       renderWithRouter(
-        <CompanyDetailView
-          company={mockCompany}
-          onEdit={mockOnEdit}
-          onBack={mockOnBack}
-        />
+        <CompanyDetailView company={mockCompany} onEdit={mockOnEdit} onBack={mockOnBack} />
       );
 
       const activityTab = screen.getByRole('tab', { name: /activity/i });
@@ -295,18 +255,14 @@ describe('CompanyDetailView Component', () => {
       const editButton = screen.getByRole('button', { name: /edit/i });
       await user.click(editButton);
 
-      expect(mockOnEdit).toHaveBeenCalledWith('company-123');
+      expect(mockOnEdit).toHaveBeenCalledWith('Test Company AG');
     });
   });
 
   describe('Back navigation', () => {
     it('should_displayBackButton_when_detailViewLoaded', () => {
       renderWithRouter(
-        <CompanyDetailView
-          company={mockCompany}
-          onEdit={mockOnEdit}
-          onBack={mockOnBack}
-        />
+        <CompanyDetailView company={mockCompany} onEdit={mockOnEdit} onBack={mockOnBack} />
       );
 
       expect(screen.getByRole('button', { name: /back/i })).toBeInTheDocument();
@@ -316,11 +272,7 @@ describe('CompanyDetailView Component', () => {
       const user = userEvent.setup();
 
       renderWithRouter(
-        <CompanyDetailView
-          company={mockCompany}
-          onEdit={mockOnEdit}
-          onBack={mockOnBack}
-        />
+        <CompanyDetailView company={mockCompany} onEdit={mockOnEdit} onBack={mockOnBack} />
       );
 
       const backButton = screen.getByRole('button', { name: /back/i });
@@ -373,11 +325,7 @@ describe('CompanyDetailView Component', () => {
       global.dispatchEvent(new Event('resize'));
 
       renderWithRouter(
-        <CompanyDetailView
-          company={mockCompany}
-          onEdit={mockOnEdit}
-          onBack={mockOnBack}
-        />
+        <CompanyDetailView company={mockCompany} onEdit={mockOnEdit} onBack={mockOnBack} />
       );
 
       const detailView = screen.getByTestId('company-detail-view');

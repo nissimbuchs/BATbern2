@@ -36,7 +36,7 @@ describe('CompanyCard Component', () => {
     // Test verified status (✅)
     render(<CompanyCard company={mockCompany} onClick={vi.fn()} />);
 
-    const card = screen.getByTestId(`company-card-${mockCompany.id}`);
+    const card = screen.getByTestId(`company-card-${mockCompany.name}`);
     expect(card).toHaveTextContent('✅');
     expect(screen.getByLabelText(/verified/i)).toBeInTheDocument();
   });
@@ -46,7 +46,7 @@ describe('CompanyCard Component', () => {
     const unverifiedCompany = { ...mockCompany, isVerified: false };
     render(<CompanyCard company={unverifiedCompany} onClick={vi.fn()} />);
 
-    const card = screen.getByTestId(`company-card-${mockCompany.id}`);
+    const card = screen.getByTestId(`company-card-${mockCompany.name}`);
     expect(card).not.toHaveTextContent('✅');
   });
 
@@ -83,7 +83,7 @@ describe('CompanyCard Component', () => {
     const button = screen.getByRole('button', { name: /view details/i });
     await user.click(button);
 
-    expect(onClick).toHaveBeenCalledWith(mockCompany.id);
+    expect(onClick).toHaveBeenCalledWith(mockCompany.name);
   });
 
   it('should_haveAccessibleLabels_when_rendered', () => {

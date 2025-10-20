@@ -567,7 +567,7 @@ describe('CompanyForm Component - AC4 Edit Company Form', () => {
           onClose={vi.fn()}
           onSubmit={vi.fn()}
           userRole="speaker"
-          userCompanyId="company-123"
+          userCompanyId="Acme Corporation"
         />
       );
 
