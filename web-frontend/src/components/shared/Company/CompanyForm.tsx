@@ -108,11 +108,11 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
   const [apiError, setApiError] = useState<string | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | undefined>(initialData?.logo?.url);
 
-  // Check role-based access control (Story 1.16.2: uses company id as identifier)
+  // Check role-based access control (Story 1.16.2: uses company name as identifier)
   const hasEditPermission =
     mode === 'create' ||
     userRole === 'organizer' ||
-    (userRole === 'speaker' && initialData?.id === userCompanyId);
+    (userRole === 'speaker' && initialData?.name === userCompanyId);
 
   const {
     control,

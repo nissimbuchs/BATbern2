@@ -155,7 +155,7 @@ describe('Performance Optimization - React.memo', () => {
     expect(typeof NavigationMenu).toBe('object');
     expect(NavigationMenu).toHaveProperty('$$typeof');
     expect(NavigationMenu).toHaveProperty('type');
-  }, 30000); // 30s timeout for slow imports
+  }, 10000); // 10s timeout for slow imports
 
   it('should_memoizeAppHeader_when_propsDoNotChange', async () => {
     const { default: AppHeader } = await import('./components/shared/Navigation/AppHeader');
