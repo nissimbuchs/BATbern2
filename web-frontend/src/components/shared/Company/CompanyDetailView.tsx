@@ -72,7 +72,7 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
 
   const handleEdit = () => {
     if (company) {
-      onEdit(company.name);
+      onEdit(company.id);
     }
   };
 
@@ -288,7 +288,7 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
 
       <TabPanel value={activeTab} index={1}>
         <AssociatedUsersPanel
-          companyId={company.name}
+          companyId={company.id}
           onLinkUser={handleLinkUser}
           onUnlinkUser={handleUnlinkUser}
         />
