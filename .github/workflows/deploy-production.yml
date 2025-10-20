@@ -171,6 +171,12 @@ jobs:
             exit 0
           fi
 
+      - name: Re-authenticate with AWS before deployment
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::422940799530:role/batbern-production-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
       - name: Deploy to production (Blue/Green)
         working-directory: ./infrastructure
         run: |
