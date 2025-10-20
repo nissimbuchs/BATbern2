@@ -94,6 +94,12 @@ jobs:
           echo "   Services have VPC access to RDS, GitHub Actions does not"
           echo "   This is the standard pattern for microservices architecture"
 
+      - name: Re-authenticate with AWS before deployment
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
       - name: Deploy infrastructure to staging
         working-directory: ./infrastructure
         run: |
