@@ -1,6 +1,6 @@
 {
   "version": "1",
-  "name": "Companies API Tests",
+  "name": "BATbern API Tests",
   "type": "collection",
   "ignore": [
     "node_modules",
