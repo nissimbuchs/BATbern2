@@ -15,8 +15,7 @@ headers {
 }
 
 script:post-response {
-  const responseTime = res.getResponseTime();
-  console.log(`Response time: ${responseTime}ms`);
+  // Response time logging handled by global post-response script
 }
 
 tests {

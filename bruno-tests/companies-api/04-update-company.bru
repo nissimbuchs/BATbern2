@@ -49,7 +49,9 @@ tests {
   });
 
   test("should have CORS headers", function() {
-    const corsHeader = res.getHeader('access-control-allow-origin');
+    // Access headers via res.headers object (lowercase keys)
+    const headers = res.getHeaders();
+    const corsHeader = headers['access-control-allow-origin'];
     expect(corsHeader).to.exist;
   });
 }

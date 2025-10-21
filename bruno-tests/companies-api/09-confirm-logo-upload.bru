@@ -25,18 +25,16 @@ body:json {
 
 script:pre-request {
   // This test requires presigned URL request to have run first
-  if (!bru.getVar("logoFileId")) {
+  const logoFileId = bru.getEnvVar("logoFileId");
+  if (!logoFileId) {
     throw new Error("logoFileId not set. Run 08-request-logo-presigned-url first.");
   }
 }
 
 script:post-response {
-  const responseTime = res.getResponseTime();
-  console.log(`Response time: ${responseTime}ms`);
-
   if (res.status === 200) {
     console.log(`Logo confirmed - URL: ${res.body.logoUrl}`);
-    bru.setVar("companyLogoUrl", res.body.logoUrl);
+    bru.setEnvVar("companyLogoUrl", res.body.logoUrl);
   }
 }
 
@@ -54,7 +52,9 @@ tests {
   });
 
   test("should have CORS headers", function() {
-    expect(res.headers['access-control-allow-origin']).to.exist;
+    const headers = res.getHeaders();
+    const corsHeader = headers['access-control-allow-origin'];
+    expect(corsHeader).to.exist;
   });
 }
 

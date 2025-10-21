@@ -26,21 +26,19 @@ body:json {
 script:pre-request {
   // This test requires a company to exist
   // Create company if testCompanyId is not set
-  if (!bru.getVar("testCompanyId")) {
+  const testCompanyId = bru.getEnvVar("testCompanyId");
+  if (!testCompanyId) {
     throw new Error("testCompanyId not set. Run 01-create-company first.");
   }
 }
 
 script:post-response {
-  const responseTime = res.getResponseTime();
-  console.log(`Response time: ${responseTime}ms`);
-
   if (res.status === 200) {
     // Save fileId and fileExtension for logo upload confirmation
-    bru.setVar("logoFileId", res.body.fileId);
-    bru.setVar("logoFileExtension", res.body.fileExtension);
-    bru.setVar("logoUploadUrl", res.body.uploadUrl);
-    bru.setVar("logoS3Key", res.body.s3Key);
+    bru.setEnvVar("logoFileId", res.body.fileId);
+    bru.setEnvVar("logoFileExtension", res.body.fileExtension);
+    bru.setEnvVar("logoUploadUrl", res.body.uploadUrl);
+    bru.setEnvVar("logoS3Key", res.body.s3Key);
 
     console.log(`Logo upload prepared - fileId: ${res.body.fileId}, extension: ${res.body.fileExtension}`);
   }
@@ -73,7 +71,9 @@ tests {
   });
 
   test("should have CORS headers", function() {
-    expect(res.headers['access-control-allow-origin']).to.exist;
+    const headers = res.getHeaders();
+    const corsHeader = headers['access-control-allow-origin'];
+    expect(corsHeader).to.exist;
   });
 }
 

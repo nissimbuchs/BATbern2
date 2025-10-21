@@ -15,8 +15,7 @@ headers {
 }
 
 script:post-response {
-  const responseTime = res.getResponseTime();
-  console.log(`Response time: ${responseTime}ms`);
+  // Response time logging handled by global post-response script
 }
 
 tests {
@@ -37,7 +36,9 @@ tests {
   });
 
   test("should have CORS headers", function() {
-    expect(res.headers['access-control-allow-origin']).to.exist;
+    const headers = res.getHeaders();
+    const corsHeader = headers['access-control-allow-origin'];
+    expect(corsHeader).to.exist;
   });
 }
 

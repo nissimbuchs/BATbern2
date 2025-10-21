@@ -15,7 +15,6 @@ auth:bearer {
 }
 
 headers {
-  Origin: https://staging.batbern.ch
   X-Correlation-ID: {{$guid}}
   Accept-Language: en-US
   Accept: application/json
@@ -74,7 +73,8 @@ tests {
   });
 
   test("should have CORS headers", function() {
-    const corsHeader = res.getHeader('access-control-allow-origin');
+    const headers = res.getHeaders();
+    const corsHeader = headers['access-control-allow-origin'];
     expect(corsHeader).to.exist;
   });
 }

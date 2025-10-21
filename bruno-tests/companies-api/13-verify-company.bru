@@ -16,15 +16,13 @@ headers {
 
 script:pre-request {
   // This test requires a company to exist
-  if (!bru.getVar("testCompanyId")) {
+  const testCompanyId = bru.getEnvVar("testCompanyId");
+  if (!testCompanyId) {
     throw new Error("testCompanyId not set. Run 01-create-company first.");
   }
 }
 
 script:post-response {
-  const responseTime = res.getResponseTime();
-  console.log(`Response time: ${responseTime}ms`);
-
   if (res.status === 200) {
     console.log(`Company verified: ${res.body.id}`);
   }
@@ -36,7 +34,7 @@ tests {
   });
 
   test("should return company data", function() {
-    expect(res.body.id).to.equal(bru.getVar("testCompanyId"));
+    expect(res.body.id).to.equal(bru.getEnvVar("testCompanyId"));
   });
 
   test("company should be marked as verified", function() {
@@ -44,7 +42,9 @@ tests {
   });
 
   test("should have CORS headers", function() {
-    expect(res.headers['access-control-allow-origin']).to.exist;
+    const headers = res.getHeaders();
+    const corsHeader = headers['access-control-allow-origin'];
+    expect(corsHeader).to.exist;
   });
 }
 
