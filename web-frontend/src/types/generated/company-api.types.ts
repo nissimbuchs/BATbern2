@@ -220,6 +220,76 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/companies/{id}/logo/presigned-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request presigned URL for company logo upload
+         * @description Generates a presigned S3 URL for uploading a company logo directly to S3.
+         *
+         *     **Acceptance Criteria**: AC5
+         *
+         *     **Upload Flow**:
+         *     1. Client requests presigned URL with file metadata
+         *     2. Backend generates S3 presigned URL (15-minute expiration)
+         *     3. Client uploads file directly to S3 using presigned URL
+         *     4. Client calls confirm endpoint to save logo reference in company
+         *
+         *     **File Validation**:
+         *     - Supported formats: PNG, JPEG, SVG
+         *     - Maximum size: 5 MB (5,242,880 bytes)
+         *     - MIME types: image/png, image/jpeg, image/svg+xml
+         *
+         *     **Performance**: <100ms (P95)
+         */
+        post: operations["requestLogoUploadUrl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{id}/logo/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm logo upload completion
+         * @description Confirms that the logo has been successfully uploaded to S3 and stores the CloudFront CDN URL in the company record.
+         *
+         *     **Acceptance Criteria**: AC5
+         *
+         *     **Workflow**:
+         *     1. Client uploads file to S3 using presigned URL
+         *     2. Client calls this endpoint with fileId and fileExtension
+         *     3. Backend verifies S3 object exists (optional checksum validation)
+         *     4. Backend stores CloudFront CDN URL in company.logo_url
+         *     5. Returns full company response with logo URL
+         *
+         *     **Cache Invalidation**: Company caches cleared on confirmation
+         *
+         *     **Events Published**: CompanyLogoUpdatedEvent to EventBridge
+         *
+         *     **Performance**: <150ms (P95)
+         */
+        post: operations["confirmLogoUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -301,6 +371,86 @@ export interface components {
              * @example file-123
              */
             fileId?: string;
+        };
+        LogoUploadRequest: {
+            /**
+             * @description Original filename with extension
+             * @example company-logo.png
+             */
+            fileName: string;
+            /**
+             * @description File size in bytes (max 5 MB)
+             * @example 102400
+             */
+            fileSize: number;
+            /**
+             * @description MIME type of the file
+             * @example image/png
+             * @enum {string}
+             */
+            mimeType: "image/png" | "image/jpeg" | "image/svg+xml";
+        };
+        PresignedUploadUrl: {
+            /**
+             * Format: uri
+             * @description Presigned S3 URL for uploading (expires in 15 minutes)
+             * @example https://batbern-content-staging.s3.eu-central-1.amazonaws.com/logos/2025/550e8400/logo-abc123.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=...
+             */
+            uploadUrl: string;
+            /**
+             * @description Unique file identifier for tracking
+             * @example abc123-def456-ghi789
+             */
+            fileId: string;
+            /**
+             * @description S3 object key where file will be stored
+             * @example logos/2025/550e8400-e29b-41d4-a716-446655440000/logo-abc123.png
+             */
+            s3Key: string;
+            /**
+             * @description File extension (png, jpg, svg)
+             * @example png
+             */
+            fileExtension: string;
+            /**
+             * @description URL expiration time in minutes
+             * @example 15
+             */
+            expiresInMinutes: number;
+            /**
+             * @description HTTP headers required for the upload request
+             * @example {
+             *       "Content-Type": "image/png"
+             *     }
+             */
+            requiredHeaders?: {
+                [key: string]: string;
+            };
+        };
+        LogoUploadConfirmRequest: {
+            /**
+             * @description File ID returned from presigned URL request
+             * @example abc123-def456-ghi789
+             */
+            fileId: string;
+            /**
+             * @description File extension (png, jpg, svg)
+             * @example png
+             */
+            fileExtension: string;
+            /**
+             * @description Optional SHA-256 checksum for integrity verification
+             * @example e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+             */
+            checksum?: string;
+        };
+        LogoUploadConfirmResponse: {
+            /**
+             * Format: uri
+             * @description CloudFront CDN URL for the uploaded logo
+             * @example https://dhndjchovz1zp.cloudfront.net/logos/2025/550e8400/logo-abc123.png
+             */
+            logoUrl: string;
         };
         CompanySearchResponse: {
             /**
@@ -733,6 +883,100 @@ export interface operations {
                     "application/json": components["schemas"]["CompanyResponse"];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    requestLogoUploadUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "fileName": "company-logo.png",
+                 *       "fileSize": 102400,
+                 *       "mimeType": "image/png"
+                 *     }
+                 */
+                "application/json": components["schemas"]["LogoUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description Presigned URL generated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "uploadUrl": "https://batbern-content-staging.s3.eu-central-1.amazonaws.com/logos/2025/550e8400/logo-abc123.png?X-Amz-Algorithm=AWS4-HMAC-SHA256...",
+                     *       "fileId": "abc123-def456-ghi789",
+                     *       "s3Key": "logos/2025/550e8400-e29b-41d4-a716-446655440000/logo-abc123.png",
+                     *       "fileExtension": "png",
+                     *       "expiresInMinutes": 15,
+                     *       "requiredHeaders": {
+                     *         "Content-Type": "image/png"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["PresignedUploadUrl"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    confirmLogoUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company UUID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "fileId": "abc123-def456-ghi789",
+                 *       "fileExtension": "png",
+                 *       "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                 *     }
+                 */
+                "application/json": components["schemas"]["LogoUploadConfirmRequest"];
+            };
+        };
+        responses: {
+            /** @description Logo upload confirmed and company updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "logoUrl": "https://dhndjchovz1zp.cloudfront.net/logos/2025/550e8400/logo-abc123.png"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["LogoUploadConfirmResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];

@@ -49,3 +49,48 @@ server:
     include-binding-errors: always
     include-stacktrace: on_param  # Only in dev/staging via profile
     include-exception: false      # Never expose internal exception classes
+
+# Management/Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
+  info:
+    env:
+      enabled: true
+    git:
+      mode: full
+    build:
+      enabled: true
+
+# Application Info (exposed via /actuator/info)
+info:
+  app:
+    name: ${spring.application.name}
+    description: API Gateway Service
+    version: ${build.version:1.0.0}
+  build:
+    artifact: ${build.artifact:api-gateway}
+    version: ${build.version:1.0.0}
+    time: ${build.time:unknown}
+  git:
+    commit:
+      id: ${git.commit.id.abbrev:unknown}
+      time: ${git.commit.time:unknown}
+    branch: ${git.branch:unknown}

@@ -1,0 +1,84 @@
+meta {
+  name: Request Logo Presigned URL
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/companies/{{testCompanyId}}/logo/presigned-url
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+  X-Correlation-ID: test-{{timestamp}}
+}
+
+body:json {
+  {
+    "fileName": "test-logo.png",
+    "fileSize": 102400,
+    "mimeType": "image/png"
+  }
+}
+
+script:pre-request {
+  // This test requires a company to exist
+  // Create company if testCompanyId is not set
+  const testCompanyId = bru.getEnvVar("testCompanyId");
+  if (!testCompanyId) {
+    throw new Error("testCompanyId not set. Run 01-create-company first.");
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    // Save fileId and fileExtension for logo upload confirmation
+    bru.setEnvVar("logoFileId", res.body.fileId);
+    bru.setEnvVar("logoFileExtension", res.body.fileExtension);
+    bru.setEnvVar("logoUploadUrl", res.body.uploadUrl);
+    bru.setEnvVar("logoS3Key", res.body.s3Key);
+
+    console.log(`Logo upload prepared - fileId: ${res.body.fileId}, extension: ${res.body.fileExtension}`);
+  }
+}
+
+tests {
+  test("should return presigned URL successfully", function() {
+    expect(res.status).to.equal(200);
+  });
+
+  test("should have uploadUrl", function() {
+    expect(res.body.uploadUrl).to.exist;
+  });
+
+  test("should have fileId", function() {
+    expect(res.body.fileId).to.exist;
+  });
+
+  test("should have fileExtension", function() {
+    expect(res.body.fileExtension).to.equal("png");
+  });
+
+  test("should have s3Key", function() {
+    expect(res.body.s3Key).to.exist;
+  });
+
+  test("should have expiresInMinutes", function() {
+    expect(res.body.expiresInMinutes).to.be.a('number');
+    expect(res.body.expiresInMinutes).to.be.greaterThan(0);
+  });
+
+  test("should have CORS headers", function() {
+    const headers = res.getHeaders();
+    const corsHeader = headers['access-control-allow-origin'];
+    expect(corsHeader).to.exist;
+  });
+}
+
+assert {
+  res.status: eq 200
+  res.body.fileId: isDefined
+  res.body.uploadUrl: isDefined
+}

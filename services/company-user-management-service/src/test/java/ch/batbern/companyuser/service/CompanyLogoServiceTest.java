@@ -315,7 +315,7 @@ class CompanyLogoServiceTest {
         when(companyRepository.save(any(Company.class))).thenReturn(testCompany);
 
         // When
-        companyLogoService.confirmLogoUpload(testCompanyId, fileId, checksum);
+        companyLogoService.confirmLogoUpload(testCompanyId, fileId, "png", checksum);
 
         // Then
         ArgumentCaptor<Company> companyCaptor = ArgumentCaptor.forClass(Company.class);
@@ -340,7 +340,7 @@ class CompanyLogoServiceTest {
 
         // When & Then
         assertThatThrownBy(() ->
-            companyLogoService.confirmLogoUpload(nonExistentCompanyId, fileId, checksum)
+            companyLogoService.confirmLogoUpload(nonExistentCompanyId, fileId, "png", checksum)
         )
         .isInstanceOf(CompanyNotFoundException.class);
     }
@@ -361,7 +361,7 @@ class CompanyLogoServiceTest {
         when(companyRepository.save(any(Company.class))).thenReturn(testCompany);
 
         // When
-        companyLogoService.confirmLogoUpload(testCompanyId, newFileId, newChecksum);
+        companyLogoService.confirmLogoUpload(testCompanyId, newFileId, "png", newChecksum);
 
         // Then
         ArgumentCaptor<Company> companyCaptor = ArgumentCaptor.forClass(Company.class);
@@ -385,7 +385,7 @@ class CompanyLogoServiceTest {
         when(companyRepository.save(any(Company.class))).thenReturn(testCompany);
 
         // When
-        companyLogoService.confirmLogoUpload(testCompanyId, fileId, checksum);
+        companyLogoService.confirmLogoUpload(testCompanyId, fileId, "png", checksum);
 
         // Then
         ArgumentCaptor<Company> companyCaptor = ArgumentCaptor.forClass(Company.class);

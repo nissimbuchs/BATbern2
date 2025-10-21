@@ -105,7 +105,7 @@ build: build-java build-node ## Build all projects
 build-java: ## Build all Java/Gradle projects
 	@echo "🔨 Building Java projects..."
 	@echo "→ Building with Gradle (shared-kernel, api-gateway, services)..."
-	@./gradlew build -x test --parallel
+	@./gradlew build compileTestJava -x test --parallel
 	@echo "✓ Java build complete"
 
 build-node: ## Build all Node.js projects
@@ -161,7 +161,7 @@ lint: lint-java lint-node ## Run all linters
 
 lint-java: ## Run Java linters
 	@echo "✨ Running Java linters..."
-	@./gradlew check -x test
+	@./gradlew check compileTestJava -x test
 	@echo "✓ Java linting complete"
 
 lint-node: ## Run Node.js linters

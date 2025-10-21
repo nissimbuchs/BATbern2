@@ -499,9 +499,10 @@ public class CompanyController {
             @Parameter(description = "Company UUID", required = true)
             @PathVariable UUID id,
             @Valid @RequestBody LogoUploadConfirmRequest request) {
-        log.info("Confirming logo upload for company: {}, file ID: {}", id, request.getFileId());
+        log.info("Confirming logo upload for company: {}, file ID: {}, extension: {}",
+                id, request.getFileId(), request.getFileExtension());
 
-        logoService.confirmLogoUpload(id, request.getFileId(), request.getChecksum());
+        logoService.confirmLogoUpload(id, request.getFileId(), request.getFileExtension(), request.getChecksum());
         CompanyResponse companyResponse = companyService.getCompanyById(id);
 
         // Extract logo URL from company response

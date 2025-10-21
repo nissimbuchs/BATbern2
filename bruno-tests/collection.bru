@@ -6,6 +6,10 @@ auth:bearer {
   token: {{authToken}}
 }
 
+headers {
+  Origin: https://staging.batbern.ch
+}
+
 script:pre-request {
   // Common pre-request script for all tests
   // Generates timestamp for unique test data

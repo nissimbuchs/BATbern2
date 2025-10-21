@@ -17,8 +17,8 @@ COPY api-gateway/build.gradle api-gateway/gradlew* ./api-gateway/
 COPY api-gateway/gradle ./api-gateway/gradle
 COPY api-gateway/src ./api-gateway/src
 
-# Build api-gateway subproject
-RUN gradle :api-gateway:build --no-daemon -x test
+# Build api-gateway subproject (compile tests but don't run them)
+RUN gradle :api-gateway:build :api-gateway:compileTestJava --no-daemon -x test
 
 # Runtime stage
 FROM eclipse-temurin:21-jre-alpine

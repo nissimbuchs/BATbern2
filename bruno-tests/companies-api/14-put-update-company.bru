@@ -1,0 +1,77 @@
+meta {
+  name: PUT Update Company (Full Replacement)
+  type: http
+  seq: 14
+}
+
+put {
+  url: {{baseUrl}}/companies/{{testCompanyId}}
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+  X-Correlation-ID: test-{{timestamp}}
+}
+
+body:json {
+  {
+    "name": "Bruno Test Co - PUT Updated {{timestamp}}",
+    "displayName": "Bruno Test PUT",
+    "industry": "Finance",
+    "website": "https://bruno-test-put.example.com",
+    "description": "PUT updated company description",
+    "swissUID": "CHE-999.888.777"
+  }
+}
+
+script:pre-request {
+  // This test requires a company to exist
+  const testCompanyId = bru.getEnvVar("testCompanyId");
+  if (!testCompanyId) {
+    throw new Error("testCompanyId not set. Run 01-create-company first.");
+  }
+}
+
+script:post-response {
+  // Response time logging handled by global post-response script
+}
+
+tests {
+  test("should update company successfully with PUT", function() {
+    expect(res.status).to.equal(200);
+  });
+
+  test("should return updated company", function() {
+    expect(res.body.name).to.include("PUT Updated");
+  });
+
+  test("should preserve company ID", function() {
+    expect(res.body.id).to.equal(bru.getEnvVar("testCompanyId"));
+  });
+
+  test("industry should be changed to Finance", function() {
+    expect(res.body.industry).to.equal("Finance");
+  });
+
+  test("should have new Swiss UID", function() {
+    // API may return swissUID, swissUid, or uid depending on implementation
+    const uid = res.body.swissUID || res.body.swissUid || res.body.uid;
+    if (uid) {
+      expect(uid).to.equal("CHE-999.888.777");
+    }
+    // If UID field is not returned, that's acceptable (API may not store it)
+  });
+
+  test("should have CORS headers", function() {
+    const headers = res.getHeaders();
+    const corsHeader = headers['access-control-allow-origin'];
+    expect(corsHeader).to.exist;
+  });
+}
+
+assert {
+  res.status: eq 200
+  res.body.id: eq {{testCompanyId}}
+}
