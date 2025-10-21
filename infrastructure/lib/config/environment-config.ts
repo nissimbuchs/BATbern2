@@ -63,6 +63,7 @@ export class EnvironmentHelper {
 export interface DomainConfig {
   frontendDomain: string;
   apiDomain: string;
+  cdnDomain: string; // CloudFront CDN domain (e.g., 'cdn.staging.batbern.ch' or 'cdn.batbern.ch')
   zoneName: string; // Route53 hosted zone name (e.g., 'staging.batbern.ch' or 'batbern.ch')
   hostedZoneId?: string;
   frontendCertificateArn?: string; // us-east-1 for CloudFront
