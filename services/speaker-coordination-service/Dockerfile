@@ -17,8 +17,8 @@ COPY services/speaker-coordination-service/build.gradle services/speaker-coordin
 COPY services/speaker-coordination-service/gradle ./services/speaker-coordination-service/gradle
 COPY services/speaker-coordination-service/src ./services/speaker-coordination-service/src
 
-# Build speaker-coordination-service subproject
-RUN gradle :services:speaker-coordination-service:build --no-daemon -x test
+# Build speaker-coordination-service subproject (compile tests but don't run them)
+RUN gradle :services:speaker-coordination-service:build :services:speaker-coordination-service:compileTestJava --no-daemon -x test
 
 # Runtime stage
 FROM eclipse-temurin:21-jre-alpine

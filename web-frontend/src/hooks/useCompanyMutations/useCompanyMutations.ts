@@ -7,11 +7,11 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { companyApiClient } from '@/services/api/companyApi';
-import type {
-  Company,
-  CreateCompanyRequest,
-  UpdateCompanyRequest,
-} from '@/types/company.types';
+import type { components } from '@/types/generated/company-api.types';
+
+type Company = components['schemas']['CompanyResponse'];
+type CreateCompanyRequest = components['schemas']['CreateCompanyRequest'];
+type UpdateCompanyRequest = components['schemas']['UpdateCompanyRequest'];
 
 /**
  * Create new company mutation

@@ -111,6 +111,7 @@ public class CompanyLogoService {
                 .uploadUrl(uploadUrl)
                 .fileId(fileId)
                 .s3Key(s3Key)
+                .fileExtension(fileExtension)
                 .expiresInMinutes(PRESIGNED_URL_EXPIRATION_MINUTES)
                 .requiredHeaders(Map.of("Content-Type", mimeType))
                 .build();
@@ -123,17 +124,18 @@ public class CompanyLogoService {
      *
      * @param companyId Company ID
      * @param fileId File ID from presigned URL generation
+     * @param fileExtension File extension (e.g., "png", "jpg", "svg")
      * @param checksum SHA-256 checksum for integrity verification
      * @throws CompanyNotFoundException if company not found
      */
-    public void confirmLogoUpload(UUID companyId, String fileId, String checksum) {
-        log.info("Confirming logo upload for company: {}, file ID: {}", companyId, fileId);
+    public void confirmLogoUpload(UUID companyId, String fileId, String fileExtension, String checksum) {
+        log.info("Confirming logo upload for company: {}, file ID: {}, extension: {}", companyId, fileId, fileExtension);
 
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new CompanyNotFoundException("Company not found: " + companyId));
 
         // Build CloudFront URL and S3 key
-        String s3Key = findS3KeyByFileId(companyId.toString(), fileId);
+        String s3Key = findS3KeyByFileId(companyId.toString(), fileId, fileExtension);
         String cloudFrontUrl = buildCloudFrontUrl(s3Key);
 
         // Update company with logo references
@@ -193,11 +195,14 @@ public class CompanyLogoService {
     /**
      * Find S3 key by file ID and company ID
      * Reconstructs the S3 key using the same pattern as generateS3Key
-     * In production, this would query a file metadata store
+     *
+     * @param companyId Company ID
+     * @param fileId File ID from presigned URL generation
+     * @param fileExtension File extension (e.g., "png", "jpg", "svg")
+     * @return S3 key for the uploaded file
      */
-    private String findS3KeyByFileId(String companyId, String fileId) {
+    private String findS3KeyByFileId(String companyId, String fileId, String fileExtension) {
         int currentYear = LocalDate.now().getYear();
-        // Extract extension from fileId if needed, defaulting to png
-        return String.format("/logos/%d/%s/logo-%s.png", currentYear, companyId, fileId);
+        return String.format("/logos/%d/%s/logo-%s.%s", currentYear, companyId, fileId, fileExtension);
     }
 }

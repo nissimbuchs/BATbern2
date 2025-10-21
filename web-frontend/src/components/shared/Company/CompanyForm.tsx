@@ -35,8 +35,12 @@ import {
   Divider,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import type { Company, CreateCompanyRequest, UpdateCompanyRequest } from '@/types/company.types';
+import type { components } from '@/types/generated/company-api.types';
 import { LogoUpload } from '@/components/shared/Company/LogoUpload';
+
+type Company = components['schemas']['CompanyResponse'];
+type CreateCompanyRequest = components['schemas']['CreateCompanyRequest'];
+type UpdateCompanyRequest = components['schemas']['UpdateCompanyRequest'];
 
 // Validation schema with Zod (matches backend CreateCompanyRequest)
 const companySchema = z.object({

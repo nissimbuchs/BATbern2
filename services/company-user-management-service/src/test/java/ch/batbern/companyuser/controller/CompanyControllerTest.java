@@ -488,6 +488,7 @@ class CompanyControllerTest {
         ch.batbern.companyuser.dto.LogoUploadConfirmRequest confirmRequest =
                 ch.batbern.companyuser.dto.LogoUploadConfirmRequest.builder()
                 .fileId("file-123")
+                .fileExtension("png")
                 .checksum("abc123")
                 .build();
 
@@ -534,6 +535,7 @@ class CompanyControllerTest {
         ch.batbern.companyuser.dto.LogoUploadConfirmRequest confirmRequest =
                 ch.batbern.companyuser.dto.LogoUploadConfirmRequest.builder()
                 .fileId("file-123")
+                .fileExtension("png")
                 .checksum("abc123")
                 .build();
 

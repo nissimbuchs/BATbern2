@@ -508,14 +508,15 @@ public class CompanyController {
             @Parameter(description = "Company name (unique identifier)", required = true, example = "Swisscom AG")
             @PathVariable String name,
             @Valid @RequestBody LogoUploadConfirmRequest request) {
-        log.info("Confirming logo upload for company: {}, file ID: {}", name, request.getFileId());
+        log.info("Confirming logo upload for company: {}, file ID: {}, extension: {}",
+                name, request.getFileId(), request.getFileExtension());
 
         // Story 1.16.2: Look up company by name to get UUID for logo service
         // Find company by name first
         ch.batbern.companyuser.domain.Company company = companyRepository.findByName(name)
                 .orElseThrow(() -> new ch.batbern.companyuser.exception.CompanyNotFoundException(name));
 
-        logoService.confirmLogoUpload(company.getId(), request.getFileId(), request.getChecksum());
+        logoService.confirmLogoUpload(company.getId(), request.getFileId(), request.getFileExtension(), request.getChecksum());
         CompanyResponse companyResponse = companyService.getCompanyByName(name);
 
         // Extract logo URL from company response

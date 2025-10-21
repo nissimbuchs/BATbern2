@@ -8,16 +8,18 @@
 
 import apiClient from '@/services/api/apiClient';
 import { AxiosError } from 'axios';
-import type {
-  Company,
-  CompanyListResponse,
-  CreateCompanyRequest,
-  UpdateCompanyRequest,
-  CompanyFilters,
-  PaginationParams,
-  PresignedUrlResponse,
-  LogoUploadConfirmation,
-} from '@/types/company.types';
+import type { components } from '@/types/generated/company-api.types';
+import type { CompanyFilters, PaginationParams } from '@/types/company.types';
+
+// Type aliases for cleaner code
+type Company = components['schemas']['CompanyResponse'];
+type CompanyListResponse = components['schemas']['PaginatedCompanyResponse'];
+type CreateCompanyRequest = components['schemas']['CreateCompanyRequest'];
+type UpdateCompanyRequest = components['schemas']['UpdateCompanyRequest'];
+type LogoUploadRequest = components['schemas']['LogoUploadRequest'];
+type PresignedUploadUrl = components['schemas']['PresignedUploadUrl'];
+type LogoUploadConfirmRequest = components['schemas']['LogoUploadConfirmRequest'];
+type LogoUploadConfirmResponse = components['schemas']['LogoUploadConfirmResponse'];
 
 // API base path for company endpoints
 // Note: apiClient baseURL is set from runtime config to 'http://localhost:8080/api/v1'
@@ -26,7 +28,6 @@ const COMPANY_API_PATH = '/companies';
 
 // File upload constraints
 const MAX_LOGO_SIZE_MB = 5;
-const ALLOWED_LOGO_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
 
 /**
  * Company API Client Class
@@ -178,29 +179,24 @@ class CompanyApiClient {
   async requestLogoUploadUrl(
     companyName: string,
     fileName: string,
-    contentType: string,
-    fileSize?: number
-  ): Promise<PresignedUrlResponse> {
+    mimeType: LogoUploadRequest['mimeType'],
+    fileSize: number
+  ): Promise<PresignedUploadUrl> {
     try {
-      // Validate file type
-      if (!ALLOWED_LOGO_TYPES.includes(contentType)) {
-        throw new Error(
-          `Unsupported file type: ${contentType}. Allowed types: ${ALLOWED_LOGO_TYPES.join(', ')}`
-        );
-      }
-
       // Validate file size
-      if (fileSize && fileSize > MAX_LOGO_SIZE_MB * 1024 * 1024) {
+      if (fileSize > MAX_LOGO_SIZE_MB * 1024 * 1024) {
         throw new Error(`File size exceeds maximum allowed size of ${MAX_LOGO_SIZE_MB}MB`);
       }
 
+      const requestBody: LogoUploadRequest = {
+        fileName,
+        mimeType,
+        fileSize,
+      };
+
       const response = await apiClient.post<PresignedUrlResponse>(
         `${COMPANY_API_PATH}/${companyName}/logo/upload-url`,
-        {
-          fileName,
-          contentType,
-          fileSize,
-        }
+        requestBody
       );
 
       return response.data;
@@ -213,11 +209,20 @@ class CompanyApiClient {
    * Confirm logo upload completion
    * Story 1.16.2: Uses company name as identifier instead of UUID
    */
-  async confirmLogoUpload(companyName: string, fileId: string): Promise<LogoUploadConfirmation> {
+  async confirmLogoUpload(
+    companyName: string,
+    fileId: string,
+    fileExtension: string
+  ): Promise<LogoUploadConfirmResponse> {
     try {
-      const response = await apiClient.post<LogoUploadConfirmation>(
+      const requestBody: LogoUploadConfirmRequest = {
+        fileId,
+        fileExtension,
+      };
+
+      const response = await apiClient.post<LogoUploadConfirmResponse>(
         `${COMPANY_API_PATH}/${companyName}/logo/confirm`,
-        { fileId }
+        requestBody
       );
 
       return response.data;

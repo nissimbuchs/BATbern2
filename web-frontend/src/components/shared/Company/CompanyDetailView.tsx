@@ -20,8 +20,10 @@ import {
   CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { CompanyDetail } from '@/types/company.types';
+import type { components } from '@/types/generated/company-api.types';
 import { AssociatedUsersPanel } from '@/components/shared/Company/AssociatedUsersPanel';
+
+type CompanyDetail = components['schemas']['CompanyResponse'];
 import { CompanyStatistics } from '@/components/shared/Company/CompanyStatistics';
 import { ActivityTimeline } from '@/components/shared/Company/ActivityTimeline';
 

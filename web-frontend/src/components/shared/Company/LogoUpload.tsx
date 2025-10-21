@@ -76,7 +76,7 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
           }
         );
 
-        const { uploadUrl: presignedUrl, fileId } = presignedResponse.data;
+        const { uploadUrl: presignedUrl, fileId, fileExtension } = presignedResponse.data;
 
         // Step 2: Upload to S3 with progress tracking
         await new Promise<void>((resolve, reject) => {
@@ -109,6 +109,7 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
         // Step 3: Confirm upload with backend (Story 1.16.2: uses company name in URL)
         const confirmResponse = await apiClient.post(`/companies/${companyName}/logo/confirm`, {
           fileId,
+          fileExtension,
         });
 
         const { logoUrl: newLogoUrl } = confirmResponse.data;

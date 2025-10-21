@@ -1,24 +1,17 @@
 meta {
   name: Delete Company
   type: http
-  seq: 6
+  seq: 15
 }
 
 delete {
   url: {{baseUrl}}/companies/{{testCompanyName}}
   body: none
-  auth: bearer
-}
-
-auth:bearer {
-  token: {{authToken}}
+  auth: inherit
 }
 
 headers {
-  Origin: https://staging.batbern.ch
-  X-Correlation-ID: {{$guid}}
-  Accept-Language: en-US
-  Accept: application/json
+  X-Correlation-ID: test-{{timestamp}}
 }
 
 assert {

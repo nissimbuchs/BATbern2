@@ -19,7 +19,42 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics,prometheus
+      base-path: /actuator
   endpoint:
     health:
-      show-details: always
+      show-details: when-authorized
+      probes:
+        enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
+  info:
+    env:
+      enabled: true
+    git:
+      mode: full
+    build:
+      enabled: true
+
+# Application Info (exposed via /actuator/info)
+info:
+  app:
+    name: ${spring.application.name}
+    description: Event Management Service
+    version: ${build.version:1.0.0}
+  build:
+    artifact: ${build.artifact:event-management-service}
+    version: ${build.version:1.0.0}
+    time: ${build.time:unknown}
+  git:
+    commit:
+      id: ${git.commit.id.abbrev:unknown}
+      time: ${git.commit.time:unknown}
+    branch: ${git.branch:unknown}
