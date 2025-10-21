@@ -449,7 +449,11 @@ document.addEventListener('DOMContentLoaded', function() {
       securityLevel: 'loose',
       flowchart: {
         useMaxWidth: true,
-        htmlLabels: true
+        htmlLabels: true,
+        padding: 8,
+        nodeSpacing: 40,
+        rankSpacing: 40,
+        curve: 'basis'
       },
       sequence: {
         useMaxWidth: true,
