@@ -44,6 +44,7 @@ export const prodConfig: EnvironmentConfig = {
   domain: {
     frontendDomain: 'www.batbern.ch',
     apiDomain: 'api.batbern.ch',
+    cdnDomain: 'cdn.batbern.ch', // CloudFront CDN for static assets
     zoneName: 'batbern.ch', // Root domain zone
     // Production account owns batbern.ch hosted zone
     hostedZoneId: 'Z003987919RPX23XXEU48',

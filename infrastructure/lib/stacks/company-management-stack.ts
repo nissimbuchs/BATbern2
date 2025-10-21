@@ -61,8 +61,11 @@ export class CompanyManagementStack extends cdk.Stack {
         S3_CONTENT_BUCKET_NAME: props.contentBucket.bucketName,
       }),
       // CloudFront distribution for serving uploaded content via CDN
+      // Use custom CDN domain if configured, otherwise fall back to CloudFront domain
       ...(props.cloudFrontDistribution && {
-        CLOUDFRONT_DOMAIN: `https://${props.cloudFrontDistribution.distributionDomainName}`,
+        CLOUDFRONT_DOMAIN: props.config.domain?.cdnDomain
+          ? `https://${props.config.domain.cdnDomain}`
+          : `https://${props.cloudFrontDistribution.distributionDomainName}`,
       }),
       // EventBridge for domain events
       ...(props.eventBus && {
