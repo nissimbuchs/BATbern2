@@ -1,0 +1,47 @@
+meta {
+  name: Validate Swiss UID - Valid
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/companies/validate-uid?uid=CHE-123.456.789
+  body: none
+  auth: inherit
+}
+
+headers {
+  X-Correlation-ID: test-{{timestamp}}
+}
+
+script:post-response {
+  const responseTime = res.getResponseTime();
+  console.log(`Response time: ${responseTime}ms`);
+}
+
+tests {
+  test("should return 200 status", function() {
+    expect(res.status).to.equal(200);
+  });
+
+  test("should indicate UID is valid", function() {
+    expect(res.body.valid).to.equal(true);
+  });
+
+  test("should return the UID", function() {
+    expect(res.body.uid).to.equal("CHE-123.456.789");
+  });
+
+  test("should have validation message", function() {
+    expect(res.body.message).to.exist;
+  });
+
+  test("should have CORS headers", function() {
+    expect(res.headers['access-control-allow-origin']).to.exist;
+  });
+}
+
+assert {
+  res.status: eq 200
+  res.body.valid: eq true
+}

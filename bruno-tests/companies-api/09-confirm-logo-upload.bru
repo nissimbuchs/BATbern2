@@ -1,0 +1,64 @@
+meta {
+  name: Confirm Logo Upload
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/companies/{{testCompanyId}}/logo/confirm
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+  X-Correlation-ID: test-{{timestamp}}
+}
+
+body:json {
+  {
+    "fileId": "{{logoFileId}}",
+    "fileExtension": "{{logoFileExtension}}",
+    "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}
+
+script:pre-request {
+  // This test requires presigned URL request to have run first
+  if (!bru.getVar("logoFileId")) {
+    throw new Error("logoFileId not set. Run 08-request-logo-presigned-url first.");
+  }
+}
+
+script:post-response {
+  const responseTime = res.getResponseTime();
+  console.log(`Response time: ${responseTime}ms`);
+
+  if (res.status === 200) {
+    console.log(`Logo confirmed - URL: ${res.body.logoUrl}`);
+    bru.setVar("companyLogoUrl", res.body.logoUrl);
+  }
+}
+
+tests {
+  test("should confirm logo upload successfully", function() {
+    expect(res.status).to.equal(200);
+  });
+
+  test("should return logo URL", function() {
+    expect(res.body.logoUrl).to.exist;
+  });
+
+  test("logo URL should be from CloudFront CDN", function() {
+    expect(res.body.logoUrl).to.include('cloudfront.net');
+  });
+
+  test("should have CORS headers", function() {
+    expect(res.headers['access-control-allow-origin']).to.exist;
+  });
+}
+
+assert {
+  res.status: eq 200
+  res.body.logoUrl: isDefined
+}

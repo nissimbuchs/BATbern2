@@ -1,0 +1,54 @@
+meta {
+  name: Verify Company
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/companies/{{testCompanyId}}/verify
+  body: none
+  auth: inherit
+}
+
+headers {
+  X-Correlation-ID: test-{{timestamp}}
+}
+
+script:pre-request {
+  // This test requires a company to exist
+  if (!bru.getVar("testCompanyId")) {
+    throw new Error("testCompanyId not set. Run 01-create-company first.");
+  }
+}
+
+script:post-response {
+  const responseTime = res.getResponseTime();
+  console.log(`Response time: ${responseTime}ms`);
+
+  if (res.status === 200) {
+    console.log(`Company verified: ${res.body.id}`);
+  }
+}
+
+tests {
+  test("should verify company successfully", function() {
+    expect(res.status).to.equal(200);
+  });
+
+  test("should return company data", function() {
+    expect(res.body.id).to.equal(bru.getVar("testCompanyId"));
+  });
+
+  test("company should be marked as verified", function() {
+    expect(res.body.isVerified).to.equal(true);
+  });
+
+  test("should have CORS headers", function() {
+    expect(res.headers['access-control-allow-origin']).to.exist;
+  });
+}
+
+assert {
+  res.status: eq 200
+  res.body.isVerified: eq true
+}
