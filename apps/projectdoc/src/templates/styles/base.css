@@ -75,7 +75,7 @@
   /* Layout */
   --header-height: 4rem;
   --sidebar-width: 280px;
-  --content-max-width: 1200px;
+  --content-max-width: 90vw; /* Dynamic width: 90% of viewport width */
 
   /* Z-index */
   --z-header: 1000;
