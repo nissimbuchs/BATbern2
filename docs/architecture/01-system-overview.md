@@ -118,28 +118,28 @@ graph TB
 
 ```mermaid
 architecture-beta
-    group edge(cloud)[Edge Layer - AWS CloudFront] in cloud
-    group api(cloud)[API Layer - Dual Gateway] in cloud
-    group services(server)[Domain Services - ECS Fargate ARM64] in cloud
-    group data(database)[Data & Infrastructure - AWS eu-central-1] in cloud
+    group edge(cloud)[Edge Layer]
+    group api(cloud)[API Layer]
+    group services(server)[Domain Services]
+    group data(database)[Data Layer]
 
-    service cloudfront(logos:aws)[Web Application<br/>React 18 SPA<br/>CloudFront] in edge
-    service cdn(logos:aws)[CDN Distribution<br/>cdn.batbern.ch] in edge
+    service cloudfront(logos:aws)[CloudFront] in edge
+    service cdn(logos:aws)[CDN] in edge
 
-    service apigw(logos:aws-lambda)[AWS HTTP API Gateway<br/>api.batbern.ch] in api
-    service springgw(logos:aws-ec2)[Spring Boot Gateway<br/>ECS Fargate] in api
+    service apigw(logos:aws-lambda)[HTTP API] in api
+    service springgw(logos:aws-ec2)[Spring Gateway] in api
 
-    service event(logos:aws-ec2)[Event Management<br/>512 CPU / 1024 MB] in services
-    service speaker(logos:aws-ec2)[Speaker Coordination<br/>256 CPU / 512 MB] in services
-    service partner(logos:aws-ec2)[Partner Coordination<br/>256 CPU / 512 MB] in services
-    service attendee(logos:aws-ec2)[Attendee Experience<br/>512 CPU / 1024 MB] in services
-    service company(logos:aws-ec2)[Company Management<br/>256 CPU / 512 MB] in services
+    service event(logos:aws-ec2)[Event Mgmt] in services
+    service speaker(logos:aws-ec2)[Speaker Coord] in services
+    service partner(logos:aws-ec2)[Partner Coord] in services
+    service attendee(logos:aws-ec2)[Attendee Exp] in services
+    service company(logos:aws-ec2)[Company Mgmt] in services
 
-    service cognito(logos:aws)[AWS Cognito<br/>User Pools] in data
-    service rds(logos:aws-aurora)[RDS PostgreSQL<br/>db.t4g.micro] in data
-    service s3(logos:aws-s3)[S3 Buckets<br/>File Storage] in data
-    service route53(logos:aws)[Route53<br/>DNS] in data
-    service eventbridge(logos:aws)[EventBridge<br/>Event Bus] in data
+    service cognito(logos:aws)[Cognito] in data
+    service rds(logos:aws-aurora)[PostgreSQL] in data
+    service s3(logos:aws-s3)[S3] in data
+    service route53(logos:aws)[Route53] in data
+    service eventbridge(logos:aws)[EventBridge] in data
 
     cloudfront:R --> L:apigw
     apigw:R --> L:springgw
