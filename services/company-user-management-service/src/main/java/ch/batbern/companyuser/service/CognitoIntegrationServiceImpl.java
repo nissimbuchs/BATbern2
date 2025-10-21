@@ -36,78 +36,17 @@ public class CognitoIntegrationServiceImpl implements CognitoIntegrationService 
 
     @Override
     public void syncUserAttributes(User user) {
-        log.debug("Syncing user attributes to Cognito: {}", user.getUsername());
-
-        try {
-            List<AttributeType> attributes = buildUserAttributes(
-                    user.getEmail(),
-                    user.getFirstName(),
-                    user.getLastName(),
-                    user.getCompanyId(),
-                    user.getRoles()
-            );
-
-            AdminUpdateUserAttributesRequest request = AdminUpdateUserAttributesRequest.builder()
-                    .userPoolId(userPoolId)
-                    .username(user.getCognitoUserId())
-                    .userAttributes(attributes)
-                    .build();
-
-            cognitoClient.adminUpdateUserAttributes(request);
-            log.info("Successfully synced user attributes to Cognito: {}", user.getUsername());
-
-        } catch (CognitoIdentityProviderException e) {
-            log.error("Failed to sync user attributes to Cognito: {}", user.getUsername(), e);
-            String errorMessage = e.awsErrorDetails() != null
-                    ? e.awsErrorDetails().errorMessage()
-                    : e.getMessage();
-            throw new RuntimeException("Failed to sync user attributes to Cognito: " + errorMessage, e);
-        }
+        // NO-OP: DB is source of truth for user attributes
+        // Cognito is only used for authentication (JWT tokens)
+        log.debug("Cognito sync disabled - DB is source of truth for user: {}", user.getUsername());
     }
 
     @Override
     public String createCognitoUser(GetOrCreateUserRequest request) {
-        log.debug("Creating user in Cognito: {}", request.getEmail());
-
-        try {
-            // Default to ATTENDEE role if no roles specified
-            Set<Role> roles = Set.of(Role.ATTENDEE);
-
-            List<AttributeType> attributes = buildUserAttributes(
-                    request.getEmail(),
-                    request.getFirstName(),
-                    request.getLastName(),
-                    request.getCompanyId(),
-                    roles
-            );
-
-            // Add email_verified attribute for new users
-            attributes.add(AttributeType.builder()
-                    .name("email_verified")
-                    .value("true")
-                    .build());
-
-            AdminCreateUserRequest createRequest = AdminCreateUserRequest.builder()
-                    .userPoolId(userPoolId)
-                    .username(request.getEmail())  // Use email as Cognito username
-                    .userAttributes(attributes)
-                    .desiredDeliveryMediums(DeliveryMediumType.EMAIL)
-                    .messageAction(MessageActionType.SUPPRESS)  // Don't send welcome email
-                    .build();
-
-            AdminCreateUserResponse response = cognitoClient.adminCreateUser(createRequest);
-            String cognitoUserId = response.user().username();
-
-            log.info("Successfully created user in Cognito: {}", cognitoUserId);
-            return cognitoUserId;
-
-        } catch (CognitoIdentityProviderException e) {
-            log.error("Failed to create user in Cognito: {}", request.getEmail(), e);
-            String errorMessage = e.awsErrorDetails() != null
-                    ? e.awsErrorDetails().errorMessage()
-                    : e.getMessage();
-            throw new RuntimeException("Failed to create user in Cognito: " + errorMessage, e);
-        }
+        // NO-OP: Invitation-based flow
+        // User will sign up via registration page, Cognito hook will populate cognitoUserId
+        log.debug("Cognito user creation disabled - invitation flow for user: {}", request.getEmail());
+        return null;  // cognitoUserId will be populated on first login
     }
 
     /**

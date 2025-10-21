@@ -45,8 +45,10 @@ public class User {
 
     /**
      * AWS Cognito user identifier for authentication
+     * Nullable until user completes registration (invitation flow)
+     * Populated by Cognito pre-token-generation hook on first login
      */
-    @Column(name = "cognito_user_id", nullable = false, unique = true, length = 255)
+    @Column(name = "cognito_user_id", nullable = true, unique = true, length = 255)
     private String cognitoUserId;
 
     /**

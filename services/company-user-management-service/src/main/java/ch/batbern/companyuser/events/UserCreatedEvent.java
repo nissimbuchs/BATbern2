@@ -37,8 +37,7 @@ public class UserCreatedEvent extends DomainEvent<String> {
     private String companyId;
 
     @JsonProperty("cognitoUserId")
-    @NonNull
-    private String cognitoUserId;
+    private String cognitoUserId;  // Nullable - populated on first login via Cognito hook
 
     public UserCreatedEvent(String username, String email, String firstName, String lastName,
                            String companyId, String cognitoUserId, String createdBy) {
@@ -47,7 +46,7 @@ public class UserCreatedEvent extends DomainEvent<String> {
         if (email == null) throw new NullPointerException("email is marked non-null but is null");
         if (firstName == null) throw new NullPointerException("firstName is marked non-null but is null");
         if (lastName == null) throw new NullPointerException("lastName is marked non-null but is null");
-        if (cognitoUserId == null) throw new NullPointerException("cognitoUserId is marked non-null but is null");
+        // cognitoUserId can be null - populated on first login via Cognito hook
 
         this.username = username;
         this.email = email;

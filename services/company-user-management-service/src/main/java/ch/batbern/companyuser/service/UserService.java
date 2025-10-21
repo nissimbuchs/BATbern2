@@ -97,8 +97,9 @@ public class UserService {
 
         User updatedUser = userRepository.save(user);
 
-        // Sync with Cognito (AC2)
-        cognitoService.syncUserAttributes(updatedUser);
+        // NOTE: Cognito sync removed - DB is source of truth for user data
+        // Cognito is only used for authentication (JWT tokens)
+        // TODO: If needed, user can update email via Cognito pre-token-generation hook
 
         // Invalidate search cache
         searchService.invalidateCache();
@@ -275,16 +276,10 @@ public class UserService {
             throw new UserValidationException("User with email " + request.getEmail() + " already exists");
         }
 
-        // Create user in Cognito (AC2)
-        GetOrCreateUserRequest cognitoRequest = new GetOrCreateUserRequest(
-            request.getEmail(),
-            request.getFirstName(),
-            request.getLastName(),
-            request.getCompanyId(),
-            true,  // createIfMissing
-            true   // cognitoSync
-        );
-        String cognitoUserId = cognitoService.createCognitoUser(cognitoRequest);
+        // NOTE: No longer creating user in Cognito - invitation-based flow
+        // Organizer creates DB record → Send invitation email → User signs up via registration page
+        // → Cognito pre-token-generation hook will populate cognitoUserId on first login
+        // TODO: Implement invitation system (generate token, send email, registration page validation)
 
         // Story 1.16.2: Generate username from first/last name
         String baseUsername = slugService.generateUsername(request.getFirstName(), request.getLastName());
@@ -298,7 +293,7 @@ public class UserService {
                 : Set.of(Role.ATTENDEE);
 
         User user = User.builder()
-                .cognitoUserId(cognitoUserId)
+                .cognitoUserId(null)  // Will be populated by Cognito hook on first login
                 .email(request.getEmail())
                 .username(username)  // Story 1.16.2: Generated username
                 .firstName(request.getFirstName())
