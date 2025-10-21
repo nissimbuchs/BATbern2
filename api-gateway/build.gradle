@@ -84,6 +84,9 @@ dependencyManagement {
 // Configure JaCoCo for code coverage
 apply plugin: 'jacoco'
 
+// Apply Trivy security scanning
+apply from: "${rootDir}/gradle/trivy-security.gradle"
+
 test {
     useJUnitPlatform()
     testLogging {

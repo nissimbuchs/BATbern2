@@ -62,6 +62,9 @@ jacocoTestCoverageVerification {
 
 check.dependsOn jacocoTestCoverageVerification
 
+// Apply Trivy security scanning
+apply from: "../../gradle/trivy-security.gradle"
+
 // Generate build-info.properties for Spring Boot Actuator
 springBoot {
     buildInfo()

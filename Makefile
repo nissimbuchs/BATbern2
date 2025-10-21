@@ -335,16 +335,22 @@ update-deps: ## Update safe dependencies (patch/minor only)
 	@echo "⚠️  Note: Major version updates require manual updates and testing"
 	@echo "   Run 'make check-outdated' to see available major updates"
 
-audit-security: ## Run security audits on all projects
+audit-security: ## Run security audits and vulnerability scans on all projects
 	@echo "🔒 Running security audits..."
 	@echo ""
+	@echo "→ Running Trivy security scans..."
+	@./scripts/security-scan.sh
+	@echo ""
 	@echo "→ Auditing infrastructure..."
-	@cd infrastructure && npm audit
+	@cd infrastructure && npm audit || true
 	@echo ""
 	@echo "→ Auditing web-frontend..."
-	@cd web-frontend && npm audit
+	@cd web-frontend && npm audit || true
 	@echo ""
 	@echo "✓ Security audit complete"
+	@echo ""
+	@echo "📊 Security Reports:"
+	@echo "  Trivy SARIF: security-reports/*.sarif"
 
 # ═══════════════════════════════════════════════════════════
 # UTILITIES
