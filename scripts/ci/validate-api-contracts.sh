@@ -61,7 +61,7 @@ extract_endpoints() {
 find_api_calls() {
     local api_service_dir=$1
 
-    echo -e "${BLUE}→ Scanning frontend API service files...${NC}"
+    echo -e "${BLUE}→ Scanning frontend API service files...${NC}" >&2
 
     # Find all axios/fetch calls in API service files
     # Look for patterns like: axios.get('/users'), apiClient.post('/companies'), etc.
