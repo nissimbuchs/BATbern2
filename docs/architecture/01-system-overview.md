@@ -102,19 +102,19 @@ graph TB
     J -.-> C
     J -.-> D
 
-    style J fill:#e1f5fe
-    style A fill:#c8e6c9
-    style B fill:#c8e6c9
-    style C fill:#c8e6c9
-    style D fill:#c8e6c9
-    style E fill:#fff3e0
-    style F fill:#fff3e0
-    style G fill:#fff3e0
-    style H fill:#fff3e0
-    style I fill:#fff3e0
+    style J fill:#e1f5fe,color:#000
+    style A fill:#c8e6c9,color:#000
+    style B fill:#c8e6c9,color:#000
+    style C fill:#c8e6c9,color:#000
+    style D fill:#c8e6c9,color:#000
+    style E fill:#fff3e0,color:#000
+    style F fill:#fff3e0,color:#000
+    style G fill:#fff3e0,color:#000
+    style H fill:#fff3e0,color:#000
+    style I fill:#fff3e0,color:#000
 ```
 
-### Level 2: Container Diagram
+### Level 2: Container Diagram (AWS-Optimized Architecture)
 
 ```mermaid
 graph TB
@@ -125,95 +125,87 @@ graph TB
         D[Attendees]
     end
 
-    subgraph "BATbern Platform - Frontend"
-        E[Web Application<br/>React 18 + TypeScript<br/>Role-adaptive UI]
-        F[Mobile PWA<br/>Progressive Web App<br/>Offline capabilities]
+    subgraph "Edge Layer - AWS CloudFront"
+        E[Web Application<br/>React 18 SPA<br/>S3 + CloudFront<br/>www.batbern.ch]
+        Q[CDN Distribution<br/>CloudFront<br/>cdn.batbern.ch<br/>Branded domain]
     end
 
-    subgraph "BATbern Platform - Backend"
-        G[API Gateway<br/>AWS API Gateway<br/>Authentication & Routing]
-
-        subgraph "Microservices"
-            H[Event Management Service<br/>Java 21 + Spring Boot<br/>Event workflows & coordination]
-            I[Speaker Coordination Service<br/>Java 21 + Spring Boot<br/>Speaker pipeline management]
-            J[Partner Coordination Service<br/>Java 21 + Spring Boot<br/>Topic voting & meeting coordination]
-            K[Attendee Experience Service<br/>Java 21 + Spring Boot<br/>Content discovery & search]
-            L[Company Management Service<br/>Java 21 + Spring Boot<br/>Organization data]
-        end
+    subgraph "API Layer - Dual Gateway"
+        G[AWS HTTP API Gateway<br/>Cognito JWT Auth<br/>api.batbern.ch<br/>TLS + Throttling]
+        GW[Spring Boot API Gateway<br/>ECS Fargate Service<br/>Path-based Routing<br/>Circuit Breaking]
     end
 
-    subgraph "Data & Infrastructure"
-        M[Authentication<br/>AWS Cognito<br/>User management & SSO]
-        N[Database<br/>PostgreSQL (Single-AZ)<br/>Cost-optimized db.t4g.micro]
-        O[In-Memory Cache<br/>Caffeine (Application-level)<br/>Replaces Redis for cost savings]
-        P[File Storage<br/>AWS S3<br/>Documents & media]
-        Q[CDN<br/>CloudFront<br/>cdn.batbern.ch / cdn.staging.batbern.ch]
+    subgraph "Domain Services - ECS Fargate on ARM64"
+        H[Event Management<br/>Java 21 + Spring Boot<br/>Internal ALB:80<br/>512 CPU / 1024 MB]
+        I[Speaker Coordination<br/>Java 21 + Spring Boot<br/>Internal ALB:80<br/>256 CPU / 512 MB]
+        J[Partner Coordination<br/>Java 21 + Spring Boot<br/>Internal ALB:80<br/>256 CPU / 512 MB]
+        K[Attendee Experience<br/>Java 21 + Spring Boot<br/>Internal ALB:80<br/>512 CPU / 1024 MB]
+        L[Company Management<br/>Java 21 + Spring Boot<br/>Internal ALB:80<br/>256 CPU / 512 MB]
     end
 
-    subgraph "External Services"
-        R[Email Provider<br/>SMTP Service<br/>Notifications]
-        S[DNS Service<br/>AWS Route53<br/>Domain management & health checks]
+    subgraph "Data & Infrastructure - AWS eu-central-1"
+        M[AWS Cognito<br/>User Pools<br/>OAuth2 + JWT]
+        N[RDS PostgreSQL<br/>db.t4g.micro Single-AZ<br/>ARM Graviton2<br/>Cost-optimized]
+        O[Application Cache<br/>Caffeine In-Memory<br/>Per-service instance<br/>No Redis]
+        P[S3 Buckets<br/>Presentations / Logos / Profiles<br/>Lifecycle policies<br/>Versioning enabled]
+        R[AWS SES<br/>Email delivery<br/>Bounce handling<br/>Template management]
+        S[Route53<br/>DNS + Health Checks<br/>Subdomain delegation<br/>batbern.ch zone]
+        EB[EventBridge<br/>Domain Events<br/>Event Bus]
     end
 
-    A --> E
-    B --> E
-    C --> E
-    D --> E
-    D --> F
+    A & B & C & D --> E
+    D --> Q
 
     E --> G
-    F --> G
+    G -->|JWT Validation| M
+    G --> GW
 
-    G --> H
-    G --> I
-    G --> J
-    G --> K
-    G --> L
+    GW -->|/api/v1/events/**| H
+    GW -->|/api/v1/speakers/**| I
+    GW -->|/api/v1/partners/**| J
+    GW -->|/api/v1/content/**| K
+    GW -->|/api/v1/companies/**<br/>/api/v1/users/**| L
 
-    G --> M
-    H --> N
-    I --> N
-    J --> N
-    K --> N
-    L --> N
+    H & I & J & K & L --> N
+    H & I & J & K & L --> O
+    H & I & J & K & L --> P
+    H & I & J --> R
+    H & I & J & K & L --> EB
 
-    H --> O
-    I --> O
-    J --> O
-    K --> O
-    L --> O
+    E & Q --> S
 
-    H --> P
-    I --> P
-    J --> P
-    K --> P
-    L --> P
-
-    E --> Q
-    F --> Q
-
-    H --> R
-    I --> R
-    J --> R
-
-    Q --> S
-
-    style E fill:#e3f2fd
-    style F fill:#e3f2fd
-    style G fill:#f3e5f5
-    style H fill:#e8f5e8
-    style I fill:#e8f5e8
-    style J fill:#e8f5e8
-    style K fill:#e8f5e8
-    style L fill:#e8f5e8
-    style M fill:#fff3e0
-    style N fill:#fff3e0
-    style O fill:#fff3e0
-    style P fill:#fff3e0
-    style Q fill:#fff3e0
-    style R fill:#ffebee
-    style S fill:#ffebee
+    style E fill:#FF9900,stroke:#FF6600,color:#000
+    style Q fill:#FF9900,stroke:#FF6600,color:#000
+    style G fill:#FF4F8B,stroke:#C7365F,color:#fff
+    style GW fill:#527FFF,stroke:#0066CC,color:#fff
+    style H fill:#527FFF,stroke:#0066CC,color:#fff
+    style I fill:#527FFF,stroke:#0066CC,color:#fff
+    style J fill:#527FFF,stroke:#0066CC,color:#fff
+    style K fill:#527FFF,stroke:#0066CC,color:#fff
+    style L fill:#527FFF,stroke:#0066CC,color:#fff
+    style M fill:#DD344C,stroke:#A21835,color:#fff
+    style N fill:#3F8624,stroke:#2D5016,color:#fff
+    style O fill:#C925D1,stroke:#8B1A8B,color:#fff
+    style P fill:#569A31,stroke:#3A6B1F,color:#fff
+    style R fill:#DD344C,stroke:#A21835,color:#fff
+    style S fill:#8C4FFF,stroke:#6B3ACC,color:#fff
+    style EB fill:#FF9900,stroke:#FF6600,color:#000
 ```
+
+**AWS Service Color Legend:**
+- 🟠 **Orange** (#FF9900): Compute/CDN (CloudFront, ECS, EventBridge)
+- 🔴 **Red/Pink** (#DD344C, #FF4F8B): Security/Messaging (Cognito, SES, API Gateway)
+- 🔵 **Blue** (#527FFF): Containers/Applications (ECS Fargate Services)
+- 🟢 **Green** (#3F8624, #569A31): Database & Storage (RDS, S3)
+- 🟣 **Purple** (#C925D1, #8C4FFF): Caching & DNS (Caffeine, Route53)
+
+**Key Architecture Decisions:**
+1. **Dual API Gateway**: AWS HTTP API for edge security + Spring Boot Gateway for routing
+2. **ECS Fargate ARM64**: 20% cost savings with Graviton2 processors
+3. **Single-AZ RDS**: Cost-optimized for 1000 users/month workload
+4. **Application-level Caching**: Caffeine replaces ElastiCache Redis ($149/month savings)
+5. **Branded CDN**: Custom CloudFront domains (cdn.batbern.ch) for professional appearance
+6. **Event-Driven Architecture**: EventBridge for loosely coupled domain events
 
 ### Level 3: Component Diagram - Event Management Service
 
@@ -276,21 +268,21 @@ graph TB
     E --> Q
     G --> R
 
-    style A fill:#e3f2fd
-    style B fill:#e3f2fd
-    style C fill:#e3f2fd
-    style D fill:#e8f5e8
-    style E fill:#e8f5e8
-    style F fill:#e8f5e8
-    style G fill:#e8f5e8
-    style H fill:#fff3e0
-    style I fill:#fff3e0
-    style J fill:#fff3e0
-    style K fill:#fff3e0
-    style L fill:#ffebee
-    style M fill:#ffebee
-    style N fill:#ffebee
-    style O fill:#ffebee
+    style A fill:#e3f2fd,color:#000
+    style B fill:#e3f2fd,color:#000
+    style C fill:#e3f2fd,color:#000
+    style D fill:#e8f5e8,color:#000
+    style E fill:#e8f5e8,color:#000
+    style F fill:#e8f5e8,color:#000
+    style G fill:#e8f5e8,color:#000
+    style H fill:#fff3e0,color:#000
+    style I fill:#fff3e0,color:#000
+    style J fill:#fff3e0,color:#000
+    style K fill:#fff3e0,color:#000
+    style L fill:#ffebee,color:#000
+    style M fill:#ffebee,color:#000
+    style N fill:#ffebee,color:#000
+    style O fill:#ffebee,color:#000
 ```
 
 ## Component Overview
