@@ -444,7 +444,9 @@ document.addEventListener('DOMContentLoaded', function() {
         altSectionBkgColor: '#FAFAFA',
         gridColor: '#E0E0E0',
         secondaryColor: '#FFB74D',
-        tertiaryColor: '#FFFFFF'
+        tertiaryColor: '#FFFFFF',
+        fontSize: '12px',
+        fontFamily: 'system-ui, -apple-system, sans-serif'
       },
       securityLevel: 'loose',
       flowchart: {
