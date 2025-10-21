@@ -2,11 +2,16 @@ import * as cdk from 'aws-cdk-lib';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
+import * as route53 from 'aws-cdk-lib/aws-route53';
+import * as targets from 'aws-cdk-lib/aws-route53-targets';
+import * as certificatemanager from 'aws-cdk-lib/aws-certificatemanager';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
 
 export interface StorageStackProps extends cdk.StackProps {
   config: EnvironmentConfig;
+  cdnCertificate?: certificatemanager.ICertificate; // us-east-1 certificate for CloudFront custom domain
+  hostedZone?: route53.IHostedZone; // Route53 hosted zone for CDN DNS record
 }
 
 /**
@@ -135,6 +140,9 @@ export class StorageStack extends cdk.Stack {
         compress: true,
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
       },
+      // Custom domain name for branded CDN URLs (e.g., cdn.staging.batbern.ch)
+      domainNames: props.config.domain?.cdnDomain ? [props.config.domain.cdnDomain] : undefined,
+      certificate: props.cdnCertificate,
       enableLogging: true,
       logBucket: this.logsBucket,
       logFilePrefix: 'cloudfront/',
@@ -144,6 +152,16 @@ export class StorageStack extends cdk.Stack {
       minimumProtocolVersion: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
       comment: `BATbern Content Distribution - ${props.config.envName}`,
     });
+
+    // Create Route53 A record pointing CDN domain to CloudFront distribution
+    if (props.hostedZone && props.config.domain?.cdnDomain) {
+      new route53.ARecord(this, 'CdnAliasRecord', {
+        zone: props.hostedZone,
+        recordName: props.config.domain.cdnDomain,
+        target: route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(this.distribution)),
+        comment: `CDN domain alias for ${props.config.envName}`,
+      });
+    }
 
     // Apply tags
     cdk.Tags.of(this).add('Environment', props.config.envName);
@@ -167,6 +185,13 @@ export class StorageStack extends cdk.Stack {
       value: this.logsBucket.bucketName,
       description: 'S3 bucket for logs',
       exportName: `${props.config.envName}-LogsBucket`,
+    });
+
+    // Output CDN domain (custom domain or CloudFront domain)
+    new cdk.CfnOutput(this, 'CdnDomain', {
+      value: props.config.domain?.cdnDomain || this.distribution.distributionDomainName,
+      description: 'CDN domain for static assets',
+      exportName: `${props.config.envName}-CdnDomain`,
     });
   }
 }

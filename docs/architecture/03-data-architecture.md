@@ -129,7 +129,7 @@ enum PartnershipTier {
 - roles: Role[] - User roles (ORGANIZER, SPEAKER, PARTNER, ATTENDEE)
 - preferences: UserPreferences - User preferences (theme, language, notifications)
 - settings: UserSettings - Account settings and privacy controls
-- profilePictureUrl: string - CloudFront CDN URL for profile picture
+- profilePictureUrl: string - CloudFront CDN URL for profile picture (cdn.batbern.ch or cdn.staging.batbern.ch)
 - activityHistory: ActivityHistory[] - User activity tracking
 - isActive: boolean - Account active status
 - lastLoginAt: Date - Last successful login timestamp
@@ -687,7 +687,7 @@ interface ContentMetadata {
   uploadStatus: UploadStatus;
   uploadedBy: string; // User ID
   uploadedAt?: Date;
-  cloudFrontUrl?: string; // CDN URL if published
+  cloudFrontUrl?: string; // CDN URL if published (cdn.batbern.ch or cdn.staging.batbern.ch)
   metadata: Record<string, string>; // Custom metadata
   createdAt: Date;
   updatedAt: Date;
@@ -734,7 +734,7 @@ interface PresentationFile {
   uploadedBy: string; // Speaker ID
   uploadedAt: Date;
   downloadCount: number;
-  fileUrl: string; // CloudFront CDN URL
+  fileUrl: string; // CloudFront CDN URL (cdn.batbern.ch or cdn.staging.batbern.ch)
   lastAccessedAt?: Date;
 }
 

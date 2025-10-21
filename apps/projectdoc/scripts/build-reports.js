@@ -153,15 +153,27 @@ class ReportsBuilder {
       // Get detailed module data
       const moduleData = await this.getModuleDetails(moduleName, reportData);
 
+      // Flatten module names for file paths: services/company-user-management-service -> company-user-management-service
+      const flatModuleName = moduleName.split('/').pop();
+
+      // All module pages are at /reports/modules/{flatModuleName}.html - single level, no nesting
+      const pathPrefix = '../';
+
       const moduleHtml = compileModule({
         moduleName,
         moduleData: module,
+        cssBasePath: `${pathPrefix}styles/base.css`,
+        cssReportsPath: `${pathPrefix}styles/reports.css`,
+        faviconPath: `../../assets/favicon.ico`,
+        logoPath: `../../assets/BATbern_color_logo_transparent.png`,
+        homeLink: `../../index.html`,
+        reportsLink: `${pathPrefix}index.html`,
+        apiLink: `../../api/index.html`,
         ...moduleData
       });
 
-      // Create file path - ensure subdirectories exist for nested modules
-      const modulePath = path.join(this.outputDir, 'modules', `${moduleName}.html`);
-      await fs.ensureDir(path.dirname(modulePath));
+      // Create file path - use flattened name so all modules are at /reports/modules/{flatName}.html
+      const modulePath = path.join(this.outputDir, 'modules', `${flatModuleName}.html`);
       await fs.writeFile(modulePath, moduleHtml);
     }
 
@@ -191,6 +203,7 @@ class ReportsBuilder {
     });
     await fs.writeFile(path.join(this.outputDir, 'quality.html'), qualityHtml);
   }
+
 
   /**
    * Get detailed module data including history
@@ -222,16 +235,19 @@ class ReportsBuilder {
       details.topViolations = qualityReport.violations.summary.topViolations;
     }
 
-    // Get HTML report links - different paths for frontend vs backend
+    // Get HTML report links - link directly to the actual reports
+    // Flatten module names: services/company-user-management-service -> company-user-management-service
+    const flatModuleName = moduleName.split('/').pop();
+
     if (moduleName === 'web-frontend') {
       details.htmlReports = {
         tests: null, // Vitest doesn't generate HTML test reports by default
-        coverage: `../../web-frontend/coverage/index.html`
+        coverage: `../${flatModuleName}/coverage/index.html`
       };
     } else {
       details.htmlReports = {
-        tests: `../../${moduleName}/build/reports/tests/test/index.html`,
-        coverage: `../../${moduleName}/build/reports/jacoco/test/html/index.html`
+        tests: `../${flatModuleName}/build/reports/tests/test/index.html`,
+        coverage: `../${flatModuleName}/build/reports/jacoco/test/html/index.html`
       };
     }
 
@@ -261,15 +277,31 @@ class ReportsBuilder {
   }
 
   /**
-   * Copy external HTML reports (e.g., web-frontend coverage)
+   * Copy external HTML reports (test and coverage reports for all modules)
+   * Flattens the structure - services/foo-service becomes foo-service
    */
   async copyExternalReports() {
-    // Copy web-frontend coverage report
-    const frontendCoverageSource = path.join(this.baseDir, 'web-frontend', 'coverage');
-    const frontendCoverageTarget = path.join(path.dirname(this.outputDir), 'web-frontend', 'coverage');
+    // Copy Java module HTML reports (test and coverage) to reports directory
+    const javaModules = this.config.sources?.java?.modules || [];
+    for (const moduleName of javaModules) {
+      const moduleSourceDir = path.join(this.baseDir, moduleName, 'build', 'reports');
 
-    console.log(`  - Source: ${frontendCoverageSource}`);
-    console.log(`  - Target: ${frontendCoverageTarget}`);
+      // Flatten the path: services/company-user-management-service -> company-user-management-service
+      const flatModuleName = moduleName.split('/').pop();
+      const moduleTargetDir = path.join(this.outputDir, flatModuleName, 'build', 'reports');
+
+      if (await fs.pathExists(moduleSourceDir)) {
+        await fs.ensureDir(path.dirname(moduleTargetDir));
+        await fs.copy(moduleSourceDir, moduleTargetDir);
+        console.log(`  - Copied ${moduleName} HTML reports to ${flatModuleName}/`);
+      } else {
+        console.warn(`  ⚠️  ${moduleName} HTML reports not found at: ${moduleSourceDir}`);
+      }
+    }
+
+    // Copy web-frontend coverage report to reports directory
+    const frontendCoverageSource = path.join(this.baseDir, 'web-frontend', 'coverage');
+    const frontendCoverageTarget = path.join(this.outputDir, 'web-frontend', 'coverage');
 
     if (await fs.pathExists(frontendCoverageSource)) {
       await fs.ensureDir(path.dirname(frontendCoverageTarget));
@@ -433,6 +465,18 @@ class ReportsBuilder {
       if (percentage >= 70) return 'coverage-ok';
       if (percentage >= 60) return 'coverage-low';
       return 'coverage-bad';
+    });
+
+    // Flatten module name: services/company-user-management-service -> company-user-management-service
+    Handlebars.registerHelper('flattenModuleName', (moduleName) => {
+      if (!moduleName) return '';
+      return moduleName.split('/').pop();
+    });
+
+    // Calculate skipped tests: total - passed - failures - errors
+    Handlebars.registerHelper('calculateSkipped', (tests) => {
+      if (!tests) return 0;
+      return tests.total - tests.passed - tests.failures - tests.errors;
     });
   }
 }

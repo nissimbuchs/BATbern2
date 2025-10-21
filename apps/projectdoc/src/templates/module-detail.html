@@ -4,31 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{moduleName}} - Module Report</title>
-    <link rel="stylesheet" href="../styles/reports.css">
-    <link rel="icon" href="../../assets/favicon.ico">
+    <link rel="stylesheet" href="{{cssBasePath}}">
+    <link rel="stylesheet" href="{{cssReportsPath}}">
+    <link rel="icon" href="{{faviconPath}}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body class="reports-page module-detail">
     <header class="site-header">
         <div class="header-container">
             <div class="header-brand">
-                <a href="../../index.html" class="brand-link">
-                    <img src="../../assets/BATbern_color_logo_transparent.png" alt="BATbern Logo" class="brand-logo">
+                <a href="{{homeLink}}" class="brand-link">
+                    <img src="{{logoPath}}" alt="BATbern Logo" class="brand-logo">
                     <span class="brand-text">Platform Rewriting with ClaudeCode</span>
                 </a>
             </div>
             <nav class="header-nav">
-                <a href="../../index.html" class="nav-link">📚 Documentation</a>
-                <a href="../index.html" class="nav-link">📊 Reports</a>
-                <a href="../../api/index.html" class="nav-link">🔌 APIs</a>
+                <a href="{{homeLink}}" class="nav-link">📚 Documentation</a>
+                <a href="{{reportsLink}}" class="nav-link">📊 Reports</a>
+                <a href="{{apiLink}}" class="nav-link">🔌 APIs</a>
             </nav>
         </div>
     </header>
 
     <div class="breadcrumbs">
-        <a href="../../index.html">Home</a>
+        <a href="{{homeLink}}">Home</a>
         <span>›</span>
-        <a href="../index.html">Reports</a>
+        <a href="{{reportsLink}}">Reports</a>
         <span>›</span>
         <span>{{moduleName}}</span>
     </div>
@@ -233,14 +234,14 @@
             <h2>Detailed Reports</h2>
             <div class="links-grid">
                 {{#if htmlReports.tests}}
-                <a href="{{htmlReports.tests}}" target="_blank" class="link-card">
+                <a href="{{htmlReports.tests}}" class="link-card" target="_blank">
                     <div class="link-icon">🧪</div>
                     <h3>Full Test Report</h3>
                     <p>View complete test execution results</p>
                 </a>
                 {{/if}}
                 {{#if htmlReports.coverage}}
-                <a href="{{htmlReports.coverage}}" target="_blank" class="link-card">
+                <a href="{{htmlReports.coverage}}" class="link-card" target="_blank">
                     <div class="link-icon">📊</div>
                     <h3>Full Coverage Report</h3>
                     <p>View detailed coverage by class and method</p>

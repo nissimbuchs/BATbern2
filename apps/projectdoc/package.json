@@ -8,7 +8,7 @@
     "build": "(npm run build:reports || true) && npm run build:doc",
     "build:doc": "node scripts/build.js",
     "build:reports": "node scripts/build-reports.js",
-    "deploy": "node scripts/deploy.js",
+    "deploy": "AWS_PROFILE=batbern-mgmt node scripts/deploy.js",
     "dev": "npm run build:dev && npx http-server dist -p 3099 -o",
     "clean": "rm -rf dist/*"
   },

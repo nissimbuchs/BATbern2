@@ -143,10 +143,16 @@ if (config.envName === 'development') {
 // 5. Storage Stack (S3, CloudFront)
 const storageStack = new StorageStack(app, `${stackPrefix}-Storage`, {
   config,
+  cdnCertificate: dnsStack?.cdnCertificate, // us-east-1 certificate for CloudFront custom domain
+  hostedZone: dnsStack?.hostedZone, // Route53 hosted zone for CDN DNS record
   env,
   description: `BATbern Storage Infrastructure - ${config.envName}`,
   tags: config.tags,
+  crossRegionReferences: true, // Required to reference us-east-1 certificate
 });
+if (dnsStack) {
+  storageStack.addDependency(dnsStack); // Depends on DNS stack for certificate and hosted zone
+}
 
 // 5a. EventBus Stack (EventBridge for Domain Events)
 const eventBusStack = new EventBusStack(app, `${stackPrefix}-EventBus`, {

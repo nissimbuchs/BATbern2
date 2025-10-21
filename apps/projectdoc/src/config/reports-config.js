@@ -31,6 +31,9 @@ export default {
     },
 
     frontend: {
+      // Vitest JUnit test results
+      testResultsPattern: 'web-frontend/test-results/junit.xml',
+
       // LCOV coverage reports
       coveragePattern: '**/coverage/lcov.info',
 
@@ -49,10 +52,10 @@ export default {
     },
 
     security: {
-      // SARIF security scan results
-      sarifPattern: '**/*.sarif',
+      // SARIF security scan results (Trivy generates these)
+      sarifPattern: 'security-reports/**/*.sarif',
 
-      // Trivy results
+      // Trivy results (fallback pattern)
       trivyPattern: 'trivy-results.sarif',
 
       // Snyk results (if available)

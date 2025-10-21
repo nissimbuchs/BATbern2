@@ -123,3 +123,4 @@ playwright/.cache/
 
 # MinIO local storage
 .minio/
+security-reports/

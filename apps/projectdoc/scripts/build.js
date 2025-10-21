@@ -406,6 +406,32 @@ ${await fs.readFile(hljsStylePath, 'utf8')}`;
 document.addEventListener('DOMContentLoaded', function() {
   // Initialize Mermaid diagrams
   if (typeof mermaid !== 'undefined') {
+    // Register AWS icon packs for architecture diagrams
+    try {
+      mermaid.registerIconPacks([
+        {
+          name: 'aws',
+          loader: () => fetch('https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/main/dist/aws-icons-mermaid.json')
+            .then((res) => res.json())
+            .catch(err => {
+              console.warn('Failed to load AWS icons:', err);
+              return { icons: {} }; // Fallback to empty icon set
+            }),
+        },
+        {
+          name: 'logos',
+          loader: () => fetch('https://unpkg.com/@iconify-json/logos@1/icons.json')
+            .then((res) => res.json())
+            .catch(err => {
+              console.warn('Failed to load logos icons:', err);
+              return { icons: {} }; // Fallback to empty icon set
+            }),
+        }
+      ]);
+    } catch (err) {
+      console.warn('Failed to register icon packs:', err);
+    }
+
     mermaid.initialize({
       startOnLoad: true,
       theme: 'default',
