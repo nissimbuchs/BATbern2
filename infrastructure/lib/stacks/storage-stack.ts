@@ -69,6 +69,18 @@ export class StorageStack extends cdk.Stack {
           allowedHeaders: ['*'],
           maxAge: 3000,
         },
+        {
+          // CORS for direct uploads (presigned URLs)
+          allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.POST],
+          allowedOrigins: [
+            'https://staging.batbern.ch',
+            'https://batbern.ch',
+            'http://localhost:3000', // For local development
+          ],
+          allowedHeaders: ['*'],
+          exposedHeaders: ['ETag'],
+          maxAge: 3000,
+        },
       ],
       lifecycleRules: [
         {

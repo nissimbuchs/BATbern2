@@ -91,6 +91,29 @@ management:
       enabled: true
     readinessState:
       enabled: true
+  info:
+    env:
+      enabled: true
+    git:
+      mode: full
+    build:
+      enabled: true
+
+# Application Info (exposed via /actuator/info)
+info:
+  app:
+    name: ${spring.application.name}
+    description: Company User Management Service
+    version: ${build.version:1.0.0}
+  build:
+    artifact: ${build.artifact:company-user-management-service}
+    version: ${build.version:1.0.0}
+    time: ${build.time:unknown}
+  git:
+    commit:
+      id: ${git.commit.id.abbrev:unknown}
+      time: ${git.commit.time:unknown}
+    branch: ${git.branch:unknown}
 
 # Logging Configuration
 logging:

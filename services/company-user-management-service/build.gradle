@@ -4,6 +4,7 @@ plugins {
     id 'io.spring.dependency-management' version '1.1.6'
     id 'jacoco'
     id 'org.flywaydb.flyway' version '10.10.0'
+    id 'com.gorylenko.gradle-git-properties' version '2.4.1'
 }
 
 group = 'ch.batbern'
@@ -39,7 +40,7 @@ dependencies {
     implementation 'org.flywaydb:flyway-database-postgresql'
 
     // AWS SDK
-    implementation platform('software.amazon.awssdk:bom:2.20.26')
+    implementation platform('software.amazon.awssdk:bom:2.29.30')  // Updated from 2.20.26 to fix S3Presigner NPE
     implementation 'software.amazon.awssdk:s3'
     implementation 'software.amazon.awssdk:url-connection-client'
     implementation 'software.amazon.awssdk:eventbridge'
@@ -113,6 +114,21 @@ jacocoTestCoverageVerification {
 }
 
 check.dependsOn jacocoTestCoverageVerification
+
+// Generate build-info.properties for Spring Boot Actuator
+springBoot {
+    buildInfo()
+}
+
+// Configure git.properties generation
+gitProperties {
+    keys = ['git.branch', 'git.commit.id', 'git.commit.id.abbrev', 'git.commit.time']
+    dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+    dateFormatTimeZone = "UTC"
+    // Allow build to continue if git directory is not available (e.g., in Docker)
+    failOnNoGitDirectory = false
+    extProperty = 'gitProps'
+}
 
 // Flyway configuration for database migrations
 flyway {
