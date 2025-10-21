@@ -9,20 +9,29 @@ This document outlines the comprehensive data model and database design for the 
 **Purpose:** Centralized company entity for speakers, partners, and attendees with logo management.
 
 **Key Attributes:**
-- id: UUID - Unique company identifier
-- name: string - Official company name
+- id: UUID - Internal database primary key (NOT exposed in API)
+- name: string - Meaningful public identifier (e.g., "GoogleZH") - Story 1.16.2: Used in URLs and API responses, max 12 chars, alphanumeric
+- displayName: string - Full official company name for UI display (e.g., "Google Zürich AG")
 - logo: CompanyLogo - Uploaded logo with metadata
 - website: string - Company website URL
 - industry: string - Industry sector classification
 - headquarters: Address - Primary company location
 
-**Note:** User-company relationships are managed by the User Management Service via `User.companyId` field. To query employees of a company, use the User Service endpoint: `GET /api/v1/users?company={companyId}`
+**Story 1.16.2 - Meaningful IDs:**
+- Database uses UUID as primary key (performance, immutability)
+- API exposes `name` as the public identifier (pattern: `^[a-zA-Z0-9]{1,12}$`)
+- Name is case-insensitive for lookups (LOWER(name) index)
+- URLs use company name: `/companies/GoogleZH` instead of `/companies/{uuid}`
+- displayName provides full company name for UI rendering
+
+**Note:** User-company relationships are managed by the User Management Service via `User.companyId` field (stores company name). To query employees of a company, use the User Service endpoint: `GET /api/v1/users?company={companyName}`
 
 #### TypeScript Interface
 ```typescript
+// Story 1.16.2: Company with meaningful ID (name)
 interface Company {
-  id: string;
-  name: string;
+  id: string;  // Story 1.16.2: company name (e.g., "GoogleZH"), not UUID
+  name: string;  // Same as id - kept for backwards compatibility
   displayName: string;
   logo?: CompanyLogo;
   website?: string;
@@ -110,13 +119,14 @@ enum PartnershipTier {
 **Purpose:** Core user entity with role-based access control, company affiliations, and comprehensive profile management. Serves as the foundation for authentication and authorization across all platform features.
 
 **Key Attributes:**
-- id: UUID - Unique user identifier
+- id: UUID - Internal database primary key (NOT exposed in API)
+- username: string - Meaningful public identifier (e.g., "john.doe") - Story 1.16.2: Used in URLs and API responses
 - cognitoUserId: string - AWS Cognito user ID for authentication sync
 - email: string - User email address (unique)
 - firstName: string - User's first name
 - lastName: string - User's last name
 - bio: string - User biography and professional summary
-- companyId: string - Reference to company entity (optional)
+- companyId: string - Reference to company name (e.g., "GoogleZH") - Story 1.16.2: Not UUID
 - roles: Role[] - User roles (ORGANIZER, SPEAKER, PARTNER, ATTENDEE)
 - preferences: UserPreferences - User preferences (theme, language, notifications)
 - settings: UserSettings - Account settings and privacy controls
@@ -125,18 +135,26 @@ enum PartnershipTier {
 - isActive: boolean - Account active status
 - lastLoginAt: Date - Last successful login timestamp
 
+**Story 1.16.2 - Meaningful IDs:**
+- Database uses UUID as primary key (performance, immutability)
+- API exposes `username` as the public identifier (pattern: `^[a-z]+\.[a-z]+(\.[0-9]+)?$`)
+- Username auto-generated from firstName.lastName with German character conversion (ä→ae, ö→oe, ü→ue)
+- Collision handling: appends .2, .3, etc. if username exists
+- URLs use username: `/users/john.doe` instead of `/users/{uuid}`
+
 **Note:** User entity owns the user-company relationship via `User.companyId` field. This is a one-way dependency from User Service → Company Service. To query users by company, use: `GET /api/v1/users?company={companyId}`
 
 #### TypeScript Interface
 ```typescript
+// Story 1.16.2: User with meaningful ID (username)
 interface User {
-  id: string;
+  id: string;  // Story 1.16.2: username (e.g., "john.doe"), not UUID
   cognitoUserId: string;
   email: string;
   firstName: string;
   lastName: string;
   bio?: string;
-  companyId?: string;
+  companyId?: string;  // Story 1.16.2: company name (e.g., "GoogleZH"), not UUID
   roles: Role[];
   preferences: UserPreferences;
   settings: UserSettings;
@@ -352,13 +370,22 @@ enum SpeakerRole {
 **Purpose:** Conference events with attendee registrations and session management, no direct speaker relationships.
 
 **Key Attributes:**
-- id: UUID - Unique session identifier
-- eventId: UUID - Parent event reference
+- id: UUID - Internal database primary key (NOT exposed in API)
+- eventCode: string - Meaningful public identifier (e.g., "BATbern56") - Story 1.16.2: Used in URLs and API responses
+- eventNumber: number - Sequential event number
+- organizerId: string - Organizer username (e.g., "john.doe") - Story 1.16.2: Not UUID
+
+**Story 1.16.2 - Meaningful IDs:**
+- Database uses UUID as primary key (performance, immutability)
+- API exposes `eventCode` as the public identifier (pattern: `^BATbern[0-9]+$`)
+- EventCode auto-generated from eventNumber: `BATbern{eventNumber}`
+- URLs use eventCode: `/events/BATbern56` instead of `/events/{uuid}`
 
 #### TypeScript Interface
 ```typescript
+// Story 1.16.2: Event with meaningful ID (eventCode)
 interface Event {
-  id: string;
+  id: string;  // Story 1.16.2: eventCode (e.g., "BATbern56"), not UUID
   eventNumber: number;
   title: string;
   description: string;
@@ -369,7 +396,7 @@ interface Event {
   venue: Venue;
   status: EventStatus;
   workflowState: EventWorkflowState;
-  organizerId: string;
+  organizerId: string;  // Story 1.16.2: organizer username (e.g., "john.doe"), not UUID
   capacity: number;
   currentAttendeeCount: number;
   topics: Topic[];

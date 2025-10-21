@@ -848,12 +848,13 @@ const RoleManagementPanel: React.FC<RoleManagementPanelProps> = ({ eventId }) =>
 };
 
 // API Hooks for Role Management
+// Story 1.16.2: Uses username in URL paths, not UUID
 export const usePromoteUser = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ userId, role, reason }: PromoteUserRequest) => {
-      return apiClient.post(`/api/v1/users/${userId}/roles`, { role, reason });
+    mutationFn: async ({ username, role, reason }: PromoteUserRequest) => {
+      return apiClient.post(`/api/v1/users/${username}/roles`, { role, reason });
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['users']);
@@ -869,8 +870,8 @@ export const useDemoteUser = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ userId, role, reason }: DemoteUserRequest) => {
-      return apiClient.delete(`/api/v1/users/${userId}/roles/${role}`, {
+    mutationFn: async ({ username, role, reason }: DemoteUserRequest) => {
+      return apiClient.delete(`/api/v1/users/${username}/roles/${role}`, {
         data: { reason }
       });
     },
@@ -892,9 +893,9 @@ export const useApproveRoleChange = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ userId, changeId, approved, comments }: ApprovalRequest) => {
+    mutationFn: async ({ username, changeId, approved, comments }: ApprovalRequest) => {
       return apiClient.post(
-        `/api/v1/users/${userId}/role-changes/${changeId}/approve`,
+        `/api/v1/users/${username}/role-changes/${changeId}/approve`,
         { approved, comments }
       );
     },
@@ -912,10 +913,10 @@ export const usePendingApprovals = () => {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ['role-change-requests', 'pending', user?.id],
+    queryKey: ['role-change-requests', 'pending', user?.id],  // id is username (Story 1.16.2)
     queryFn: async () => {
       const response = await apiClient.get(
-        `/api/v1/users/${user.id}/role-changes?status=PENDING`
+        `/api/v1/users/${user.id}/role-changes?status=PENDING`  // user.id is username (Story 1.16.2)
       );
       return response.data;
     },

@@ -454,17 +454,18 @@ public class RoleManagementService {
 
     /**
      * Promote user to a higher role
+     * Story 1.16.2: Uses String username instead of UUID
      */
     @Transactional
-    public RoleChange promoteUser(UUID userId, UserRole targetRole, UUID promotedBy, String reason) {
+    public RoleChange promoteUser(String username, UserRole targetRole, String promotedByUsername, String reason) {
         // Validate promotion eligibility
-        validatePromotion(userId, targetRole);
+        validatePromotion(username, targetRole);
 
         // Create role record
         UserRoleEntity roleEntity = UserRoleEntity.builder()
-            .userId(userId)
+            .username(username)  // Story 1.16.2: Store username, not UUID
             .role(targetRole)
-            .grantedBy(promotedBy)
+            .grantedBy(promotedByUsername)  // Story 1.16.2: Store username, not UUID
             .reason(reason)
             .isActive(true)
             .build();
@@ -472,9 +473,10 @@ public class RoleManagementService {
         userRoleRepository.save(roleEntity);
 
         // Sync to Cognito
-        syncRoleToCognito(userId, targetRole);
+        syncRoleToCognito(username, targetRole);
 
         // Publish domain event
+        // Story 1.16.2: Event uses String username as aggregateId
         RoleChange roleChange = mapToRoleChange(roleEntity);
         eventPublisher.publishEvent(new UserRolePromotedEvent(roleChange));
 
@@ -483,22 +485,23 @@ public class RoleManagementService {
 
     /**
      * Demote user from role - immediate for Speaker, requires approval for Organizer
+     * Story 1.16.2: Uses String username instead of UUID
      */
     @Transactional
-    public RoleChangeResult demoteUser(UUID userId, UserRole currentRole, UUID demotedBy, String reason) {
+    public RoleChangeResult demoteUser(String username, UserRole currentRole, String demotedByUsername, String reason) {
         if (currentRole == UserRole.ORGANIZER) {
             // Check minimum organizers rule
-            if (!canDemoteOrganizer(userId, null)) {
+            if (!canDemoteOrganizer(username, null)) {
                 throw new BusinessRuleException("Cannot demote: minimum 2 organizers required");
             }
 
             // Create approval request
             RoleChangeRequest request = RoleChangeRequest.builder()
-                .userId(userId)
+                .username(username)  // Story 1.16.2: Store username, not UUID
                 .currentRole(currentRole)
                 .requestedRole(UserRole.ATTENDEE)
-                .requestedBy(demotedBy)
-                .requiresApprovalFrom(userId)
+                .requestedBy(demotedByUsername)  // Story 1.16.2: Store username, not UUID
+                .requiresApprovalFrom(username)
                 .reason(reason)
                 .status(RequestStatus.PENDING)
                 .build();
@@ -509,7 +512,7 @@ public class RoleManagementService {
         } else {
             // Immediate demotion for non-organizers
             UserRoleEntity roleEntity = userRoleRepository
-                .findActiveRole(userId, currentRole)
+                .findActiveRole(username, currentRole)
                 .orElseThrow(() -> new NotFoundException("Active role not found"));
 
             roleEntity.setIsActive(false);
@@ -530,29 +533,31 @@ public class RoleManagementService {
 
     /**
      * Approve organizer demotion request
+     * Story 1.16.2: Uses String username instead of UUID
      */
     @Transactional
-    public RoleChange approveRoleChange(UUID requestId, UUID approverId, boolean approved, String comments) {
+    public RoleChange approveRoleChange(UUID requestId, String approverUsername, boolean approved, String comments) {
         // Implementation details - see source code
     }
 
     /**
      * Check if organizer can be demoted (minimum 2 organizers rule)
+     * Story 1.16.2: Uses String username instead of UUID
      */
-    public boolean canDemoteOrganizer(UUID userId, UUID eventId) {
-        long activeOrganizerCount = userRoleRepository.countActiveOrganizers(eventId);
+    public boolean canDemoteOrganizer(String username, String eventCode) {
+        long activeOrganizerCount = userRoleRepository.countActiveOrganizers(eventCode);
         return activeOrganizerCount > 2;
     }
 
-    private void syncRoleToCognito(UUID userId, UserRole newRole) {
+    private void syncRoleToCognito(String username, UserRole newRole) {
         // Implementation details - see source code
     }
 
-    private UserRole determineNewRole(UUID userId) {
+    private UserRole determineNewRole(String username) {
         // Implementation details - see source code
     }
 
-    private void validatePromotion(UUID userId, UserRole targetRole) {
+    private void validatePromotion(String username, UserRole targetRole) {
         // Implementation details - see source code
     }
 
