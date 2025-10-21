@@ -444,19 +444,12 @@ document.addEventListener('DOMContentLoaded', function() {
         altSectionBkgColor: '#FAFAFA',
         gridColor: '#E0E0E0',
         secondaryColor: '#FFB74D',
-        tertiaryColor: '#FFFFFF',
-        fontSize: '12px',
-        fontFamily: 'system-ui, -apple-system, sans-serif'
+        tertiaryColor: '#FFFFFF'
       },
       securityLevel: 'loose',
       flowchart: {
         useMaxWidth: true,
-        htmlLabels: true,
-        padding: 4,
-        nodeSpacing: 60,
-        rankSpacing: 60,
-        curve: 'basis',
-        wrappingWidth: 200
+        htmlLabels: true
       },
       sequence: {
         useMaxWidth: true,
