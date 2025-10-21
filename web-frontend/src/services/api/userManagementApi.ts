@@ -24,6 +24,11 @@ import type {
   Role,
 } from '@/types/user.types';
 
+// API base path for user endpoints
+// Note: apiClient baseURL is set from runtime config to 'http://localhost:8080/api/v1'
+// so we only need '/users' (the /api/v1 prefix is already in the baseURL)
+const USER_API_PATH = '/users';
+
 /**
  * List users with filters, pagination, and optional resource expansion
  * AC1: User Management Screen
@@ -63,7 +68,7 @@ export const listUsers = async (
     params.filter = JSON.stringify(filterObj);
   }
 
-  const response = await apiClient.get<PaginatedUserResponse>('/api/v1/users', { params });
+  const response = await apiClient.get<PaginatedUserResponse>(USER_API_PATH, { params });
   return response.data;
 };
 
@@ -75,7 +80,7 @@ export const searchUsers = async (
   query: string,
   limit: number = 10
 ): Promise<UserSearchResponse[]> => {
-  const response = await apiClient.get<UserSearchResponse[]>('/api/v1/users/search', {
+  const response = await apiClient.get<UserSearchResponse[]>(`${USER_API_PATH}/search`, {
     params: {
       query: encodeURIComponent(query),
       limit,
@@ -95,7 +100,7 @@ export const getUserById = async (id: string, includes?: string[]): Promise<User
     params.include = includes.join(',');
   }
 
-  const response = await apiClient.get<User>(`/api/v1/users/${id}`, { params });
+  const response = await apiClient.get<User>(`${USER_API_PATH}/${id}`, { params });
   return response.data;
 };
 
@@ -104,7 +109,7 @@ export const getUserById = async (id: string, includes?: string[]): Promise<User
  * AC4: User Creation
  */
 export const createUser = async (data: CreateUserFormData): Promise<User> => {
-  const response = await apiClient.post<User>('/api/v1/users', data);
+  const response = await apiClient.post<User>(USER_API_PATH, data);
   return response.data;
 };
 
@@ -113,7 +118,7 @@ export const createUser = async (data: CreateUserFormData): Promise<User> => {
  * AC3: Role Management
  */
 export const updateUserRoles = async (id: string, roles: Role[]): Promise<User> => {
-  const response = await apiClient.put<User>(`/api/v1/users/${id}/roles`, { roles });
+  const response = await apiClient.put<User>(`${USER_API_PATH}/${id}/roles`, { roles });
   return response.data;
 };
 
@@ -122,5 +127,5 @@ export const updateUserRoles = async (id: string, roles: Role[]): Promise<User> 
  * AC5: User Deletion (GDPR)
  */
 export const deleteUser = async (id: string): Promise<void> => {
-  await apiClient.delete(`/api/v1/users/${id}`);
+  await apiClient.delete(`${USER_API_PATH}/${id}`);
 };

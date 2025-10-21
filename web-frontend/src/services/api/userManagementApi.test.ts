@@ -61,7 +61,7 @@ describe('UserManagementApi', () => {
         },
       };
 
-      mock.onGet('/api/v1/users').reply(200, mockResponse);
+      mock.onGet('/users').reply(200, mockResponse);
 
       const filters: UserFilters = {};
       const pagination: UserPagination = { page: 1, limit: 20 };
@@ -104,7 +104,7 @@ describe('UserManagementApi', () => {
       };
 
       mock
-        .onGet('/api/v1/users', { params: { page: 1, limit: 20, include: 'company,roles' } })
+        .onGet('/users', { params: { page: 1, limit: 20, include: 'company,roles' } })
         .reply(200, mockResponse);
 
       const filters: UserFilters = {};
@@ -140,7 +140,7 @@ describe('UserManagementApi', () => {
         },
       };
 
-      mock.onGet('/api/v1/users').reply(200, mockResponse);
+      mock.onGet('/users').reply(200, mockResponse);
 
       const filters: UserFilters = { role: ['SPEAKER'] };
       const pagination: UserPagination = { page: 1, limit: 20 };
@@ -176,7 +176,7 @@ describe('UserManagementApi', () => {
         },
       };
 
-      mock.onGet('/api/v1/users').reply(200, mockResponse);
+      mock.onGet('/users').reply(200, mockResponse);
 
       const filters: UserFilters = { company: 'TechCorp AG' };
       const pagination: UserPagination = { page: 1, limit: 20 };
@@ -210,7 +210,7 @@ describe('UserManagementApi', () => {
         },
       };
 
-      mock.onGet('/api/v1/users').reply(200, mockResponse);
+      mock.onGet('/users').reply(200, mockResponse);
 
       const filters: UserFilters = { status: 'active' };
       const pagination: UserPagination = { page: 1, limit: 20 };
@@ -233,7 +233,7 @@ describe('UserManagementApi', () => {
         },
       };
 
-      mock.onGet('/api/v1/users', { params: { page: 2, limit: 20 } }).reply(200, mockResponse);
+      mock.onGet('/users', { params: { page: 2, limit: 20 } }).reply(200, mockResponse);
 
       const filters: UserFilters = {};
       const pagination: UserPagination = { page: 2, limit: 20 };
@@ -260,7 +260,7 @@ describe('UserManagementApi', () => {
       ];
 
       mock
-        .onGet('/api/v1/users/search', { params: { query: 'Anna', limit: 10 } })
+        .onGet('/users/search', { params: { query: 'Anna', limit: 10 } })
         .reply(200, mockResponse);
 
       const result = await searchUsers('Anna');
@@ -271,9 +271,7 @@ describe('UserManagementApi', () => {
     });
 
     it('should_returnEmptyArray_when_noResultsFound', async () => {
-      mock
-        .onGet('/api/v1/users/search', { params: { query: 'NonExistent', limit: 10 } })
-        .reply(200, []);
+      mock.onGet('/users/search', { params: { query: 'NonExistent', limit: 10 } }).reply(200, []);
 
       const result = await searchUsers('NonExistent');
 
@@ -294,7 +292,7 @@ describe('UserManagementApi', () => {
         updatedAt: '2025-01-15T10:00:00Z',
       };
 
-      mock.onGet('/api/v1/users/john.doe').reply(200, mockResponse);
+      mock.onGet('/users/john.doe').reply(200, mockResponse);
 
       const result = await getUserById('john.doe');
 
@@ -325,7 +323,7 @@ describe('UserManagementApi', () => {
       };
 
       mock
-        .onGet('/api/v1/users/john.doe', {
+        .onGet('/users/john.doe', {
           params: { include: 'company,preferences,activity' },
         })
         .reply(200, mockResponse);
@@ -355,7 +353,7 @@ describe('UserManagementApi', () => {
         updatedAt: '2025-01-20T10:00:00Z',
       };
 
-      mock.onPost('/api/v1/users', createData).reply(201, mockResponse);
+      mock.onPost('/users', createData).reply(201, mockResponse);
 
       const result = await createUser(createData);
 
@@ -372,7 +370,7 @@ describe('UserManagementApi', () => {
         roles: ['ATTENDEE'] as Role[],
       };
 
-      mock.onPost('/api/v1/users', createData).reply(409, {
+      mock.onPost('/users', createData).reply(409, {
         code: 'EMAIL_ALREADY_EXISTS',
         message: 'Email address already exists',
       });
@@ -397,7 +395,7 @@ describe('UserManagementApi', () => {
         updatedAt: '2025-01-20T10:00:00Z',
       };
 
-      mock.onPut(`/api/v1/users/${userId}/roles`, { roles: newRoles }).reply(200, mockResponse);
+      mock.onPut(`/users/${userId}/roles`, { roles: newRoles }).reply(200, mockResponse);
 
       const result = await updateUserRoles(userId, newRoles);
 
@@ -408,7 +406,7 @@ describe('UserManagementApi', () => {
       const userId = 'last.organizer';
       const newRoles: Role[] = ['SPEAKER']; // Removing ORGANIZER role
 
-      mock.onPut(`/api/v1/users/${userId}/roles`).reply(400, {
+      mock.onPut(`/users/${userId}/roles`).reply(400, {
         code: 'MINIMUM_ORGANIZERS_REQUIRED',
         message: 'There must be at least 2 organizers in the system',
       });
@@ -421,7 +419,7 @@ describe('UserManagementApi', () => {
     it('should_deleteUser_when_validIdProvided', async () => {
       const userId = 'user.to.delete';
 
-      mock.onDelete(`/api/v1/users/${userId}`).reply(204);
+      mock.onDelete(`/users/${userId}`).reply(204);
 
       await expect(deleteUser(userId)).resolves.not.toThrow();
     });
@@ -429,7 +427,7 @@ describe('UserManagementApi', () => {
     it('should_throwError_when_deletingLastOrganizer', async () => {
       const userId = 'last.organizer';
 
-      mock.onDelete(`/api/v1/users/${userId}`).reply(400, {
+      mock.onDelete(`/users/${userId}`).reply(400, {
         code: 'CANNOT_DELETE_LAST_ORGANIZER',
         message: 'Cannot delete the last organizer',
       });
@@ -440,7 +438,7 @@ describe('UserManagementApi', () => {
     it('should_throwError_when_userNotFound', async () => {
       const userId = 'nonexistent.user';
 
-      mock.onDelete(`/api/v1/users/${userId}`).reply(404, {
+      mock.onDelete(`/users/${userId}`).reply(404, {
         code: 'USER_NOT_FOUND',
         message: 'User not found',
       });
