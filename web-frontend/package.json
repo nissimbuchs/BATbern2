@@ -28,7 +28,10 @@
     "security:scan": "trivy fs --scanners vuln,secret,misconfig --format sarif --output ../security-reports/web-frontend-trivy.sarif --severity UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL .",
     "generate:api-types": "npm run generate:api-types:companies && npm run generate:api-types:users",
     "generate:api-types:companies": "openapi-typescript ../docs/api/companies-api.openapi.yml -o src/types/generated/company-api.types.ts",
-    "generate:api-types:users": "openapi-typescript ../docs/api/users-api.openapi.yml -o src/types/generated/user-api.types.ts"
+    "generate:api-types:users": "openapi-typescript ../docs/api/users-api.openapi.yml -o src/types/generated/user-api.types.ts",
+    "generate:api-clients": "npm run generate:api-clients:companies && npm run generate:api-clients:users",
+    "generate:api-clients:companies": "npx openapi-typescript-codegen --input ../docs/api/companies-api.openapi.yml --output src/services/api/generated/companies --client axios --useOptions --exportCore false --exportServices true --exportModels false",
+    "generate:api-clients:users": "npx openapi-typescript-codegen --input ../docs/api/users-api.openapi.yml --output src/services/api/generated/users --client axios --useOptions --exportCore false --exportServices true --exportModels false"
   },
   "dependencies": {
     "@aws-amplify/ui-react": "^6.0.0",
@@ -86,6 +89,7 @@
     "lint-staged": "^16.2.4",
     "msw": "^2.11.6",
     "openapi-typescript": "^7.10.1",
+    "openapi-typescript-codegen": "^0.29.0",
     "postcss": "^8.5.6",
     "prettier": "^3.6.2",
     "sharp": "^0.34.4",

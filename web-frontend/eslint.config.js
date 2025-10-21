@@ -16,6 +16,8 @@ export default tseslint.config(
       '*.config.ts',
       '*.html',
       'public/**',
+      'src/services/api/generated/**',
+      'src/types/generated/**',
     ],
   },
   {

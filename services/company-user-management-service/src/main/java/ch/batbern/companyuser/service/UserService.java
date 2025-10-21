@@ -260,6 +260,74 @@ public class UserService {
     }
 
     /**
+     * Create new user (for ORGANIZER/ADMIN via API)
+     * Story 2.5.2 AC4: User Creation
+     *
+     * @param request Create user request from frontend
+     * @return Created user response
+     */
+    @Transactional
+    public UserResponse createUser(ch.batbern.companyuser.dto.generated.CreateUserRequest request) {
+        log.info("Creating new user: {}", request.getEmail());
+
+        // Check if user already exists
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new UserValidationException("User with email " + request.getEmail() + " already exists");
+        }
+
+        // Create user in Cognito (AC2)
+        GetOrCreateUserRequest cognitoRequest = new GetOrCreateUserRequest(
+            request.getEmail(),
+            request.getFirstName(),
+            request.getLastName(),
+            request.getCompanyId(),
+            true,  // createIfMissing
+            true   // cognitoSync
+        );
+        String cognitoUserId = cognitoService.createCognitoUser(cognitoRequest);
+
+        // Story 1.16.2: Generate username from first/last name
+        String baseUsername = slugService.generateUsername(request.getFirstName(), request.getLastName());
+        String username = slugService.ensureUniqueUsername(baseUsername, userRepository::existsByUsername);
+
+        // Determine initial roles (default to ATTENDEE if not specified)
+        Set<Role> initialRoles = request.getInitialRoles() != null && !request.getInitialRoles().isEmpty()
+                ? request.getInitialRoles().stream()
+                    .map(roleEnum -> Role.valueOf(roleEnum.getValue()))
+                    .collect(java.util.stream.Collectors.toSet())
+                : Set.of(Role.ATTENDEE);
+
+        User user = User.builder()
+                .cognitoUserId(cognitoUserId)
+                .email(request.getEmail())
+                .username(username)  // Story 1.16.2: Generated username
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .companyId(request.getCompanyId())  // Story 1.16.2: company name
+                .bio(request.getBio())
+                .roles(initialRoles)
+                .build();
+
+        User savedUser = userRepository.save(user);
+
+        // Publish domain event (Story 1.16.2: String IDs)
+        String createdByUsername = getUsernameFromCurrentContext();
+        UserCreatedEvent event = new UserCreatedEvent(
+            savedUser.getUsername(),  // aggregateId = username
+            savedUser.getEmail(),
+            savedUser.getFirstName(),
+            savedUser.getLastName(),
+            savedUser.getCompanyId(),  // company name
+            savedUser.getCognitoUserId(),  // cognitoUserId
+            createdByUsername  // createdBy = username (who created this user)
+        );
+        eventPublisher.publish(event);
+
+        log.info("User created successfully: {}", savedUser.getUsername());
+        return mapToResponse(savedUser);
+    }
+
+    /**
      * Create new user with username generation
      * Story 1.16.2: Generate username using SlugGenerationService
      */

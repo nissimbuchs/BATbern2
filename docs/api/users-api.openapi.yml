@@ -348,6 +348,113 @@ paths:
       security:
         - BearerAuth: []
 
+    post:
+      tags:
+        - User Management
+      summary: Create new user (Organizer/Admin only)
+      description: |
+        Create a new user with Cognito integration and automatic username generation.
+
+        **Acceptance Criteria**: AC4 (Story 2.5.2 - User Management Frontend)
+
+        **Authorization**: ORGANIZER or ADMIN role required
+
+        **Business Rules**:
+        - Email must be unique
+        - Username auto-generated from first/last name (e.g., john.doe)
+        - User created in Cognito with email_verified=true
+        - Default role: ATTENDEE (unless initialRoles specified)
+        - Password set via Cognito welcome email
+
+        **Events Published**: UserCreatedEvent to EventBridge
+
+        **Performance**: <200ms (P95)
+
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+            examples:
+              basicUser:
+                summary: Basic user creation
+                value:
+                  email: anna.mueller@example.com
+                  firstName: Anna
+                  lastName: Müller
+                  companyId: Swiss IT Solutions AG
+                  initialRoles:
+                    - ATTENDEE
+              organizerUser:
+                summary: Create organizer
+                value:
+                  email: john.admin@batbern.ch
+                  firstName: John
+                  lastName: Admin
+                  companyId: BATbern GmbH
+                  initialRoles:
+                    - ORGANIZER
+                  bio: Senior event organizer
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+              examples:
+                createdUser:
+                  summary: Newly created user
+                  value:
+                    id: anna.mueller
+                    email: anna.mueller@example.com
+                    firstName: Anna
+                    lastName: Müller
+                    username: anna.mueller
+                    companyId: Swiss IT Solutions AG
+                    roles:
+                      - ATTENDEE
+                    isActive: true
+                    createdAt: '2025-10-21T20:00:00Z'
+                    updatedAt: '2025-10-21T20:00:00Z'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                duplicateEmail:
+                  summary: Email already exists
+                  value:
+                    timestamp: '2025-10-21T20:00:00Z'
+                    status: 400
+                    error: ERR_VALIDATION
+                    message: User with email anna.mueller@example.com already exists
+                    path: /api/v1/users
+                invalidEmail:
+                  summary: Invalid email format
+                  value:
+                    timestamp: '2025-10-21T20:00:00Z'
+                    status: 400
+                    error: ERR_VALIDATION
+                    message: Invalid email format
+                    path: /api/v1/users
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden - Requires ORGANIZER or ADMIN role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
   /users/{username}:
     get:
       tags:
@@ -1164,6 +1271,48 @@ components:
         profilePictureUrl:
           type: string
           format: uri
+
+    CreateUserRequest:
+      type: object
+      description: Request body for creating a new user (Story 2.5.2 AC4)
+      required:
+        - email
+        - firstName
+        - lastName
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email address (must be unique)
+          example: anna.mueller@example.com
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: User first name
+          example: Anna
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: User last name
+          example: Müller
+        companyId:
+          type: string
+          description: Company name (unique identifier) - Story 1.16.2
+          example: Swiss IT Solutions AG
+        initialRoles:
+          type: array
+          description: Initial roles for the user (defaults to [ATTENDEE] if not specified)
+          items:
+            type: string
+            enum: [ORGANIZER, SPEAKER, PARTNER, ATTENDEE]
+          example: [ATTENDEE]
+        bio:
+          type: string
+          maxLength: 500
+          description: User biography/description
+          example: Software engineer passionate about cloud architecture
 
     GetOrCreateUserRequest:
       type: object

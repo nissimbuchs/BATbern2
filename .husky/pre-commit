@@ -1,20 +1,36 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-# Check if OpenAPI spec changed
-OPENAPI_SPEC="docs/api/companies-api.openapi.yml"
+# Check if OpenAPI specs or API service files changed
+OPENAPI_CHANGED=$(git diff --cached --name-only | grep -E "docs/api/.*\.yml$|docs/api/.*\.yaml$")
+API_SERVICE_CHANGED=$(git diff --cached --name-only | grep -E "web-frontend/src/services/api/.*\.ts$")
 
-if git diff --cached --name-only | grep -q "$OPENAPI_SPEC"; then
-  echo "🔄 OpenAPI spec changed, regenerating TypeScript types..."
+if [ -n "$OPENAPI_CHANGED" ]; then
+  echo "🔄 OpenAPI spec changed, regenerating TypeScript types and clients..."
 
   cd web-frontend
   npm run generate:api-types
+  npm run generate:api-clients
 
-  # Stage the generated types
+  # Stage the generated types and clients
   git add src/types/generated/
+  git add src/services/api/generated/
 
-  echo "✅ API types regenerated and staged"
+  echo "✅ API types and clients regenerated and staged"
   cd ..
+fi
+
+# Validate API contracts if OpenAPI or API service files changed
+if [ -n "$OPENAPI_CHANGED" ] || [ -n "$API_SERVICE_CHANGED" ]; then
+  echo "🔍 Validating API contracts..."
+
+  if ! ./scripts/ci/validate-api-contracts.sh; then
+    echo "❌ API contract validation failed!"
+    echo "   Fix the violations and try again"
+    exit 1
+  fi
+
+  echo "✅ API contracts valid"
 fi
 
 # Run lint-staged for other checks

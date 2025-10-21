@@ -3,6 +3,7 @@ package ch.batbern.companyuser.controller;
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.dto.*;
+import ch.batbern.companyuser.dto.generated.CreateUserRequest;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
 import ch.batbern.companyuser.service.ProfilePictureService;
@@ -75,6 +76,25 @@ public class UserController {
         UserResponse response = userService.updateCurrentUser(request);
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * AC4: Create new user (Organizer/Admin only)
+     * POST /api/v1/users
+     * Story 2.5.2 - User Management Frontend
+     *
+     * @param request Create user request with validation
+     * @return Created user profile with 201 status
+     */
+    @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER')")
+    @Timed(value = "users.createUser", description = "Time to create new user (admin/organizer)", percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
+        log.info("Creating new user: {}", request.getEmail());
+
+        UserResponse response = userService.createUser(request);
+
+        return ResponseEntity.status(201).body(response);
     }
 
     /**
