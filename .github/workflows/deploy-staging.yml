@@ -224,6 +224,36 @@ jobs:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Determine Docker image tag
+        id: image-tag
+        run: |
+          # Use the same tag format as build.yml (short SHA + staging + run number)
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+
+          # Find the most recent build workflow run number for this commit
+          # Query GitHub API to get the latest successful build run
+          BUILD_RUN=$(gh api \
+            repos/${{ github.repository }}/actions/runs \
+            -f event=push \
+            -f status=completed \
+            -f branch=develop \
+            --jq ".workflow_runs[] | select(.head_sha == \"${{ github.sha }}\" and .name == \"Build Pipeline\") | .run_number" \
+            | head -n 1)
+
+          if [ -n "$BUILD_RUN" ]; then
+            IMAGE_TAG="${SHORT_SHA}-staging.${BUILD_RUN}"
+            echo "Found build run $BUILD_RUN for commit ${{ github.sha }}"
+          else
+            # Fallback: use 'latest' tag if we can't find the build run
+            echo "::warning::Could not find build run number, using 'latest' tag"
+            IMAGE_TAG="latest"
+          fi
+
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "Using Docker image tag: $IMAGE_TAG"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
       - name: Deploy infrastructure to staging
         working-directory: ./infrastructure
         run: |
@@ -307,7 +337,7 @@ jobs:
 
           echo "✅ CDK deployment completed successfully"
         env:
-          IMAGE_TAG: ${{ github.sha }}
+          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
 
       - name: Wait for ECS services to stabilize
         run: |
