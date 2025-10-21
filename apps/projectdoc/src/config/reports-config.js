@@ -52,10 +52,10 @@ export default {
     },
 
     security: {
-      // SARIF security scan results
-      sarifPattern: '**/*.sarif',
+      // SARIF security scan results (Trivy generates these)
+      sarifPattern: 'security-reports/**/*.sarif',
 
-      // Trivy results
+      // Trivy results (fallback pattern)
       trivyPattern: 'trivy-results.sarif',
 
       // Snyk results (if available)
