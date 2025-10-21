@@ -50,10 +50,9 @@ spring:
 aws:
   region: ${AWS_REGION:eu-central-1}
   s3:
-    bucket:
-      content: ${S3_CONTENT_BUCKET_NAME:batbern-content-staging}
-    cloudfront:
-      domain: ${CLOUDFRONT_DOMAIN:https://cdn.batbern.ch}
+    bucket-name: ${S3_CONTENT_BUCKET_NAME:batbern-content-staging}
+  cloudfront:
+    domain: ${CLOUDFRONT_DOMAIN:https://cdn.batbern.ch}
   eventbridge:
     bus:
       name: ${EVENT_BUS_NAME:batbern-staging}
@@ -187,8 +186,6 @@ spring:
 aws:
   s3:
     bucket-name: ${AWS_S3_BUCKET_NAME:batbern-development-company-logos}
-    cloudfront:
-      domain: ${CLOUDFRONT_DOMAIN:http://localhost:9000/batbern-development-company-logos}
   cloudfront:
     domain: ${CLOUDFRONT_DOMAIN:http://localhost:9000/batbern-development-company-logos}
 
