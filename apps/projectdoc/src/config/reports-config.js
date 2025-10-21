@@ -31,6 +31,9 @@ export default {
     },
 
     frontend: {
+      // Vitest JUnit test results
+      testResultsPattern: 'web-frontend/test-results/junit.xml',
+
       // LCOV coverage reports
       coveragePattern: '**/coverage/lcov.info',
 

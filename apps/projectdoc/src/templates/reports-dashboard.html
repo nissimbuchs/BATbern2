@@ -65,12 +65,9 @@
                 <div class="metric-icon">🧪</div>
                 <div class="metric-content">
                     <h3>Tests</h3>
-                    <div class="metric-value">{{summary.tests.passed}}/{{summary.tests.total}}</div>
+                    <div class="metric-value">{{summary.tests.passed}}/{{summary.tests.failed}}/{{summary.tests.skipped}}/{{summary.tests.total}}</div>
                     <div class="metric-label">
-                        {{summary.tests.successRate}}% Success Rate
-                        {{#if (lt summary.tests.successRate 100)}}
-                        <span class="badge badge-error">{{summary.tests.failed}} Failed</span>
-                        {{/if}}
+                        Pass/Fail/Skip/Total • {{summary.tests.successRate}}% Success
                     </div>
                 </div>
             </div>
@@ -188,7 +185,7 @@
                             <td class="module-tests">
                                 {{#if this.tests}}
                                 <div class="test-stats">
-                                    <span class="test-count">{{this.tests.passed}}/{{this.tests.total}}</span>
+                                    <span class="test-count">{{this.tests.passed}}/{{this.tests.failures}}/{{calculateSkipped this.tests}}</span>
                                     <span class="test-rate {{#if (lt this.tests.successRate 100)}}rate-bad{{else}}rate-good{{/if}}">
                                         {{this.tests.successRate}}%
                                     </span>
@@ -225,7 +222,7 @@
                                 {{/if}}
                             </td>
                             <td class="module-actions">
-                                <a href="modules/{{this.name}}.html" class="btn-small">Details</a>
+                                <a href="modules/{{flattenModuleName this.name}}.html" class="btn-small">Details</a>
                             </td>
                         </tr>
                         {{/each}}

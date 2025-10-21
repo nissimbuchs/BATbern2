@@ -337,6 +337,10 @@
 }
 
 /* Test Stats */
+.module-tests {
+  min-width: 140px;
+}
+
 .test-stats {
   display: flex;
   flex-direction: column;
@@ -345,6 +349,7 @@
 
 .test-count {
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .test-rate {
