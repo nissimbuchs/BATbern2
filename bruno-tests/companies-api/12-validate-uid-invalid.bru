@@ -1,0 +1,43 @@
+meta {
+  name: Validate Swiss UID - Invalid
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{baseUrl}}/companies/validate-uid?uid=CHE-123456789
+  body: none
+  auth: inherit
+}
+
+headers {
+  X-Correlation-ID: test-{{timestamp}}
+}
+
+script:post-response {
+  // Response time logging handled by global post-response script
+}
+
+tests {
+  test("should return 200 status", function() {
+    expect(res.status).to.equal(200);
+  });
+
+  test("should indicate UID is invalid", function() {
+    expect(res.body.valid).to.equal(false);
+  });
+
+  test("should return the UID", function() {
+    expect(res.body.uid).to.equal("CHE-123456789");
+  });
+
+  test("should have error message", function() {
+    expect(res.body.message).to.exist;
+    expect(res.body.message).to.include("Invalid");
+  });
+}
+
+assert {
+  res.status: eq 200
+  res.body.valid: eq false
+}

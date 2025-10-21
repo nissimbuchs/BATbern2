@@ -17,8 +17,8 @@ COPY services/company-user-management-service/build.gradle services/company-user
 COPY services/company-user-management-service/gradle ./services/company-user-management-service/gradle
 COPY services/company-user-management-service/src ./services/company-user-management-service/src
 
-# Build company-user-management-service subproject
-RUN gradle :services:company-user-management-service:build --no-daemon -x test
+# Build company-user-management-service subproject (compile tests but don't run them)
+RUN gradle :services:company-user-management-service:build :services:company-user-management-service:compileTestJava --no-daemon -x test
 
 # Runtime stage
 FROM eclipse-temurin:21-jre-alpine

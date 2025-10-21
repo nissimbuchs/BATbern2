@@ -1,7 +1,8 @@
 #!/bin/bash
 # CORS Validation Tests for Post-Deployment
 # Validates CORS headers and cross-origin request support
-set -e
+# Note: We don't use 'set -e' here because we want to run all tests
+# and report a summary at the end, not exit on first failure
 
 API_URL=${1:-"https://api.staging.batbern.ch"}
 FRONTEND_ORIGIN=${2:-"https://staging.batbern.ch"}
@@ -45,19 +46,19 @@ test_cors_preflight() {
         2>&1)
 
     # Extract HTTP status code
-    status_code=$(echo "$response" | grep "HTTP/" | tail -1 | awk '{print $2}')
+    status_code=$(echo "$response" | grep "HTTP/" | tail -1 | awk '{print $2}' || echo "000")
 
-    # Extract CORS headers
-    allow_origin=$(echo "$response" | grep -i "access-control-allow-origin:" | cut -d: -f2- | tr -d '\r' | xargs)
-    allow_methods=$(echo "$response" | grep -i "access-control-allow-methods:" | cut -d: -f2- | tr -d '\r' | xargs)
-    allow_headers=$(echo "$response" | grep -i "access-control-allow-headers:" | cut -d: -f2- | tr -d '\r' | xargs)
-    allow_credentials=$(echo "$response" | grep -i "access-control-allow-credentials:" | cut -d: -f2- | tr -d '\r' | xargs)
+    # Extract CORS headers (use || true to prevent grep from causing exit)
+    allow_origin=$(echo "$response" | grep -i "access-control-allow-origin:" | cut -d: -f2- | tr -d '\r' | xargs || true)
+    allow_methods=$(echo "$response" | grep -i "access-control-allow-methods:" | cut -d: -f2- | tr -d '\r' | xargs || true)
+    allow_headers=$(echo "$response" | grep -i "access-control-allow-headers:" | cut -d: -f2- | tr -d '\r' | xargs || true)
+    allow_credentials=$(echo "$response" | grep -i "access-control-allow-credentials:" | cut -d: -f2- | tr -d '\r' | xargs || true)
 
     local test_passed=true
 
-    # Validate status code
-    if [ "$status_code" != "200" ]; then
-        echo -e "  ${RED}✗ FAIL${NC}: Status code $status_code (expected 200)"
+    # Validate status code (200 OK or 204 No Content are both valid for OPTIONS)
+    if [ "$status_code" != "200" ] && [ "$status_code" != "204" ]; then
+        echo -e "  ${RED}✗ FAIL${NC}: Status code $status_code (expected 200 or 204)"
         test_passed=false
     else
         echo -e "  ${GREEN}✓${NC} Status code: $status_code"
@@ -151,12 +152,12 @@ response=$(curl -s -i -X OPTIONS "$API_URL/health" \
     -H "Access-Control-Request-Method: GET" \
     2>&1)
 
-status_code=$(echo "$response" | grep "HTTP/" | tail -1 | awk '{print $2}')
-if [ "$status_code" = "200" ]; then
-    echo -e "${GREEN}✓ PASS${NC}: Health endpoint CORS check passed"
+status_code=$(echo "$response" | grep "HTTP/" | tail -1 | awk '{print $2}' || echo "000")
+if [ "$status_code" = "200" ] || [ "$status_code" = "204" ]; then
+    echo -e "${GREEN}✓ PASS${NC}: Health endpoint CORS check passed (status: $status_code)"
     ((passed++))
 else
-    echo -e "${YELLOW}⚠ WARNING${NC}: Health endpoint returned $status_code"
+    echo -e "${YELLOW}⚠ WARNING${NC}: Health endpoint returned $status_code (expected 200 or 204)"
     ((warnings++))
     ((passed++)) # Don't fail on health endpoint
 fi
@@ -168,8 +169,8 @@ actual_response=$(curl -s -i -X GET "$API_URL/api/v1/companies/search?query=test
     -H "Content-Type: application/json" \
     2>&1)
 
-status_code=$(echo "$actual_response" | grep "HTTP/" | tail -1 | awk '{print $2}')
-cors_header=$(echo "$actual_response" | grep -i "access-control-allow-origin:" | cut -d: -f2- | tr -d '\r' | xargs)
+status_code=$(echo "$actual_response" | grep "HTTP/" | tail -1 | awk '{print $2}' || echo "000")
+cors_header=$(echo "$actual_response" | grep -i "access-control-allow-origin:" | cut -d: -f2- | tr -d '\r' | xargs || true)
 
 if [ "$status_code" = "401" ] || [ "$status_code" = "200" ]; then
     # 401 is acceptable - we're testing CORS, not auth

@@ -12,7 +12,9 @@ import {
   RecordVoiceOver as SpeakerIcon,
   Handshake as PartnerIcon,
 } from '@mui/icons-material';
-import { CompanyStatistics as CompanyStatisticsType } from '@/types/company.types';
+import type { components } from '@/types/generated/company-api.types';
+
+type CompanyStatisticsType = components['schemas']['CompanyStatistics'];
 
 interface CompanyStatisticsProps {
   statistics: CompanyStatisticsType | null | undefined;

@@ -17,8 +17,8 @@ COPY services/event-management-service/build.gradle services/event-management-se
 COPY services/event-management-service/gradle ./services/event-management-service/gradle
 COPY services/event-management-service/src ./services/event-management-service/src
 
-# Build event-management-service subproject
-RUN gradle :services:event-management-service:build --no-daemon -x test
+# Build event-management-service subproject (compile tests but don't run them)
+RUN gradle :services:event-management-service:build :services:event-management-service:compileTestJava --no-daemon -x test
 
 # Runtime stage
 FROM eclipse-temurin:21-jre-alpine
