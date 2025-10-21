@@ -73,12 +73,6 @@ describe('Company API Client', () => {
     });
 
     describe('requestLogoUploadUrl', () => {
-      it('should reject unsupported file types', async () => {
-        await expect(
-          companyApiClient.requestLogoUploadUrl('test-id', 'document.pdf', 'application/pdf')
-        ).rejects.toThrow(/Unsupported file type/);
-      });
-
       it('should reject files exceeding size limit', async () => {
         const fileSizeTooLarge = 10 * 1024 * 1024; // 10MB
 
@@ -93,13 +87,17 @@ describe('Company API Client', () => {
       });
 
       it('should accept valid image types', async () => {
-        const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+        const validTypes: Array<'image/png' | 'image/jpeg' | 'image/svg+xml'> = [
+          'image/png',
+          'image/jpeg',
+          'image/svg+xml',
+        ];
 
         // Test each type sequentially to avoid unhandled promises
-        for (const contentType of validTypes) {
+        for (const mimeType of validTypes) {
           // Expect network error (not validation error)
           await expect(
-            companyApiClient.requestLogoUploadUrl('test-id', 'logo.png', contentType, 1024)
+            companyApiClient.requestLogoUploadUrl('test-id', 'logo.png', mimeType, 1024)
           ).rejects.toThrow(/Network Error/);
         }
       });

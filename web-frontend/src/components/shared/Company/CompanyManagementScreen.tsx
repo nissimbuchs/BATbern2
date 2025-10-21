@@ -35,12 +35,12 @@ import {
 } from '@/hooks/useCompanyMutations/useCompanyMutations';
 import { useCompanies } from '@/hooks/useCompanies/useCompanies';
 import { useCompany } from '@/hooks/useCompany/useCompany';
-import type {
-  CompanyFilters as CompanyFiltersType,
-  CreateCompanyRequest,
-  UpdateCompanyRequest,
-  Company,
-} from '@/types/company.types';
+import type { components } from '@/types/generated/company-api.types';
+import type { CompanyFilters as CompanyFiltersType } from '@/types/company.types';
+
+type CreateCompanyRequest = components['schemas']['CreateCompanyRequest'];
+type UpdateCompanyRequest = components['schemas']['UpdateCompanyRequest'];
+type Company = components['schemas']['CompanyResponse'];
 
 // Wrapper component for detail view to access useParams
 const CompanyDetailWrapper: React.FC<{
