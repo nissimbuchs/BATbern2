@@ -117,95 +117,78 @@ graph TB
 ### Level 2: Container Diagram (AWS-Optimized Architecture)
 
 ```mermaid
-graph TB
-    subgraph "Users"
-        A[Event Organizers]
-        B[Speakers]
-        C[Partners]
-        D[Attendees]
-    end
+architecture-beta
+    group edge(cloud)[Edge Layer - AWS CloudFront] in cloud
+    group api(cloud)[API Layer - Dual Gateway] in cloud
+    group services(server)[Domain Services - ECS Fargate ARM64] in cloud
+    group data(database)[Data & Infrastructure - AWS eu-central-1] in cloud
 
-    subgraph "Edge Layer - AWS CloudFront"
-        E[Web Application<br/>React 18 SPA<br/>S3 + CloudFront<br/>www.batbern.ch]
-        Q[CDN Distribution<br/>CloudFront<br/>cdn.batbern.ch<br/>Branded domain]
-    end
+    service cloudfront(logos:aws)[Web Application<br/>React 18 SPA<br/>CloudFront] in edge
+    service cdn(logos:aws)[CDN Distribution<br/>cdn.batbern.ch] in edge
 
-    subgraph "API Layer - Dual Gateway"
-        G[AWS HTTP API Gateway<br/>Cognito JWT Auth<br/>api.batbern.ch<br/>TLS + Throttling]
-        GW[Spring Boot API Gateway<br/>ECS Fargate Service<br/>Path-based Routing<br/>Circuit Breaking]
-    end
+    service apigw(logos:aws-lambda)[AWS HTTP API Gateway<br/>api.batbern.ch] in api
+    service springgw(logos:aws-ec2)[Spring Boot Gateway<br/>ECS Fargate] in api
 
-    subgraph "Domain Services - ECS Fargate on ARM64"
-        H[Event Management<br/>Java 21 + Spring Boot<br/>Internal ALB:80<br/>512 CPU / 1024 MB]
-        I[Speaker Coordination<br/>Java 21 + Spring Boot<br/>Internal ALB:80<br/>256 CPU / 512 MB]
-        J[Partner Coordination<br/>Java 21 + Spring Boot<br/>Internal ALB:80<br/>256 CPU / 512 MB]
-        K[Attendee Experience<br/>Java 21 + Spring Boot<br/>Internal ALB:80<br/>512 CPU / 1024 MB]
-        L[Company Management<br/>Java 21 + Spring Boot<br/>Internal ALB:80<br/>256 CPU / 512 MB]
-    end
+    service event(logos:aws-ec2)[Event Management<br/>512 CPU / 1024 MB] in services
+    service speaker(logos:aws-ec2)[Speaker Coordination<br/>256 CPU / 512 MB] in services
+    service partner(logos:aws-ec2)[Partner Coordination<br/>256 CPU / 512 MB] in services
+    service attendee(logos:aws-ec2)[Attendee Experience<br/>512 CPU / 1024 MB] in services
+    service company(logos:aws-ec2)[Company Management<br/>256 CPU / 512 MB] in services
 
-    subgraph "Data & Infrastructure - AWS eu-central-1"
-        M[AWS Cognito<br/>User Pools<br/>OAuth2 + JWT]
-        N[RDS PostgreSQL<br/>db.t4g.micro Single-AZ<br/>ARM Graviton2<br/>Cost-optimized]
-        O[Application Cache<br/>Caffeine In-Memory<br/>Per-service instance<br/>No Redis]
-        P[S3 Buckets<br/>Presentations / Logos / Profiles<br/>Lifecycle policies<br/>Versioning enabled]
-        R[AWS SES<br/>Email delivery<br/>Bounce handling<br/>Template management]
-        S[Route53<br/>DNS + Health Checks<br/>Subdomain delegation<br/>batbern.ch zone]
-        EB[EventBridge<br/>Domain Events<br/>Event Bus]
-    end
+    service cognito(logos:aws)[AWS Cognito<br/>User Pools] in data
+    service rds(logos:aws-aurora)[RDS PostgreSQL<br/>db.t4g.micro] in data
+    service s3(logos:aws-s3)[S3 Buckets<br/>File Storage] in data
+    service route53(logos:aws)[Route53<br/>DNS] in data
+    service eventbridge(logos:aws)[EventBridge<br/>Event Bus] in data
 
-    A & B & C & D --> E
-    D --> Q
+    cloudfront:R --> L:apigw
+    apigw:R --> L:springgw
+    apigw:T --> B:cognito
 
-    E --> G
-    G -->|JWT Validation| M
-    G --> GW
+    springgw:R --> L:event
+    springgw:R --> L:speaker
+    springgw:R --> L:partner
+    springgw:R --> L:attendee
+    springgw:R --> L:company
 
-    GW -->|/api/v1/events/**| H
-    GW -->|/api/v1/speakers/**| I
-    GW -->|/api/v1/partners/**| J
-    GW -->|/api/v1/content/**| K
-    GW -->|/api/v1/companies/**<br/>/api/v1/users/**| L
+    event:R --> L:rds
+    speaker:R --> L:rds
+    partner:R --> L:rds
+    attendee:R --> L:rds
+    company:R --> L:rds
 
-    H & I & J & K & L --> N
-    H & I & J & K & L --> O
-    H & I & J & K & L --> P
-    H & I & J --> R
-    H & I & J & K & L --> EB
+    event:R --> L:s3
+    speaker:R --> L:s3
+    attendee:R --> L:s3
 
-    E & Q --> S
+    event:B --> T:eventbridge
+    speaker:B --> T:eventbridge
+    partner:B --> T:eventbridge
 
-    style E fill:#FF9900,stroke:#FF6600,color:#000
-    style Q fill:#FF9900,stroke:#FF6600,color:#000
-    style G fill:#FF4F8B,stroke:#C7365F,color:#fff
-    style GW fill:#527FFF,stroke:#0066CC,color:#fff
-    style H fill:#527FFF,stroke:#0066CC,color:#fff
-    style I fill:#527FFF,stroke:#0066CC,color:#fff
-    style J fill:#527FFF,stroke:#0066CC,color:#fff
-    style K fill:#527FFF,stroke:#0066CC,color:#fff
-    style L fill:#527FFF,stroke:#0066CC,color:#fff
-    style M fill:#DD344C,stroke:#A21835,color:#fff
-    style N fill:#3F8624,stroke:#2D5016,color:#fff
-    style O fill:#C925D1,stroke:#8B1A8B,color:#fff
-    style P fill:#569A31,stroke:#3A6B1F,color:#fff
-    style R fill:#DD344C,stroke:#A21835,color:#fff
-    style S fill:#8C4FFF,stroke:#6B3ACC,color:#fff
-    style EB fill:#FF9900,stroke:#FF6600,color:#000
+    cloudfront:B --> T:route53
+    cdn:B --> T:route53
 ```
 
-**AWS Service Color Legend:**
-- 🟠 **Orange** (#FF9900): Compute/CDN (CloudFront, ECS, EventBridge)
-- 🔴 **Red/Pink** (#DD344C, #FF4F8B): Security/Messaging (Cognito, SES, API Gateway)
-- 🔵 **Blue** (#527FFF): Containers/Applications (ECS Fargate Services)
-- 🟢 **Green** (#3F8624, #569A31): Database & Storage (RDS, S3)
-- 🟣 **Purple** (#C925D1, #8C4FFF): Caching & DNS (Caffeine, Route53)
+**Architecture Diagram Notes:**
+
+This diagram uses **AWS icon integration** via Mermaid's architecture-beta syntax. Icons are loaded from the Iconify logos pack.
 
 **Key Architecture Decisions:**
 1. **Dual API Gateway**: AWS HTTP API for edge security + Spring Boot Gateway for routing
 2. **ECS Fargate ARM64**: 20% cost savings with Graviton2 processors
 3. **Single-AZ RDS**: Cost-optimized for 1000 users/month workload
-4. **Application-level Caching**: Caffeine replaces ElastiCache Redis ($149/month savings)
+4. **Application-level Caching**: Caffeine in-memory (replaces ElastiCache Redis, $149/month savings)
 5. **Branded CDN**: Custom CloudFront domains (cdn.batbern.ch) for professional appearance
 6. **Event-Driven Architecture**: EventBridge for loosely coupled domain events
+
+**Technology Stack:**
+- **Frontend**: React 18 + TypeScript, deployed on S3 + CloudFront
+- **API Gateway**: Spring Boot 3 + Spring Cloud Gateway
+- **Microservices**: Java 21 + Spring Boot, running on ECS Fargate
+- **Database**: PostgreSQL 15 on RDS (ARM Graviton2)
+- **Authentication**: AWS Cognito with OAuth2/JWT
+- **Storage**: S3 with lifecycle policies
+- **Messaging**: EventBridge for domain events
 
 ### Level 3: Component Diagram - Event Management Service
 
