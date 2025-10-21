@@ -1,25 +1,18 @@
 meta {
-  name: Update Company
+  name: Update Company (PATCH)
   type: http
   seq: 4
 }
 
-put {
+patch {
   url: {{baseUrl}}/companies/{{testCompanyId}}
   body: json
-  auth: bearer
-}
-
-auth:bearer {
-  token: {{authToken}}
+  auth: inherit
 }
 
 headers {
-  Origin: https://staging.batbern.ch
-  X-Correlation-ID: {{$guid}}
-  Accept-Language: en-US
-  Accept: application/json
   Content-Type: application/json
+  X-Correlation-ID: test-{{timestamp}}
 }
 
 body:json {
