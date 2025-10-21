@@ -1,11 +1,11 @@
 meta {
-  name: Get User by Username
+  name: Get User by Username (Read Test User)
   type: http
-  seq: 9
+  seq: 5
 }
 
 get {
-  url: {{baseUrl}}/users/{{currentUsername}}
+  url: {{baseUrl}}/users/{{testUsername}}
   body: none
   auth: bearer
 }
@@ -21,7 +21,7 @@ headers {
 
 assert {
   res.status: eq 200
-  res.body.id: eq {{currentUsername}}
+  res.body.id: eq {{testUsername}}
 }
 
 tests {
@@ -31,8 +31,16 @@ tests {
 
   test("should return user with correct username", function() {
     const body = res.getBody();
-    const currentUsername = bru.getEnvVar("currentUsername");
-    expect(body.id).to.equal(currentUsername);
+    const testUsername = bru.getEnvVar("testUsername");
+    expect(body.id).to.equal(testUsername);
+  });
+
+  test("should return test user created in previous step", function() {
+    const body = res.getBody();
+    const testEmail = bru.getEnvVar("testUserEmail");
+    expect(body.email).to.equal(testEmail);
+    expect(body.firstName).to.equal("Bruno");
+    expect(body.lastName).to.equal("TestUser");
   });
 
   test("should complete within performance target (<150ms P95)", function() {

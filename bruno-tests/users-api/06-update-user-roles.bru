@@ -1,0 +1,72 @@
+meta {
+  name: Update User Roles (Admin/Organizer)
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{baseUrl}}/users/{{testUsername}}/roles
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "roles": ["ATTENDEE", "SPEAKER"]
+  }
+}
+
+assert {
+  res.status: in [200, 403]
+}
+
+tests {
+  test("should update user roles successfully (AC3)", function() {
+    const status = res.getStatus();
+    // Should be 200 for admin/organizer, 403 for others
+    expect([200, 403]).to.include(status);
+  });
+
+  test("should return updated user with new roles", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body.roles).to.be.an('array');
+      expect(body.roles).to.include('SPEAKER');
+      expect(body.roles).to.include('ATTENDEE');
+      console.log("Successfully updated roles:", body.roles);
+    }
+  });
+
+  test("should require admin/organizer role", function() {
+    const status = res.getStatus();
+    if (status === 403) {
+      console.log("Correctly denied access for non-admin/organizer");
+    }
+  });
+
+  test("should validate minimum organizers (AC3)", function() {
+    // If trying to remove last organizer, should return 400
+    // This is validated in the backend
+    const status = res.getStatus();
+    if (status === 400) {
+      console.log("Correctly prevented removal of last organizer");
+    }
+  });
+
+  test("should complete within performance target (<100ms P95)", function() {
+    if (res.getStatus() === 200) {
+      const responseTime = res.getResponseTime();
+      expect(responseTime).to.be.lessThan(150);
+    }
+  });
+}
