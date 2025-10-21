@@ -450,10 +450,11 @@ document.addEventListener('DOMContentLoaded', function() {
       flowchart: {
         useMaxWidth: true,
         htmlLabels: true,
-        padding: 8,
-        nodeSpacing: 40,
-        rankSpacing: 40,
-        curve: 'basis'
+        padding: 4,
+        nodeSpacing: 60,
+        rankSpacing: 60,
+        curve: 'basis',
+        wrappingWidth: 200
       },
       sequence: {
         useMaxWidth: true,
