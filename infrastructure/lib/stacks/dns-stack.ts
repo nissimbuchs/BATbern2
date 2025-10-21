@@ -22,6 +22,7 @@ export interface DnsStackProps extends cdk.StackProps {
 export class DnsStack extends cdk.Stack {
   public readonly hostedZone: route53.IHostedZone;
   public readonly certificate: certificatemanager.ICertificate;
+  public readonly cdnCertificate: certificatemanager.ICertificate;
 
   constructor(scope: Construct, id: string, props: DnsStackProps) {
     super(scope, id, props);
@@ -45,6 +46,13 @@ export class DnsStack extends cdk.Stack {
       validation: certificatemanager.CertificateValidation.fromDns(this.hostedZone),
     });
 
+    // Create ACM certificate for CDN domain (CloudFront for static assets)
+    // Must be in us-east-1 for CloudFront
+    this.cdnCertificate = new certificatemanager.Certificate(this, 'CdnCertificate', {
+      domainName: props.config.domain!.cdnDomain,
+      validation: certificatemanager.CertificateValidation.fromDns(this.hostedZone),
+    });
+
     // Outputs
     new cdk.CfnOutput(this, 'HostedZoneId', {
       value: this.hostedZone.hostedZoneId,
@@ -56,6 +64,12 @@ export class DnsStack extends cdk.Stack {
       value: this.certificate.certificateArn,
       description: `ACM Certificate ARN for ${props.config.domain!.frontendDomain} (us-east-1 for CloudFront)`,
       exportName: `${envName}-FrontendCertificateArn`,
+    });
+
+    new cdk.CfnOutput(this, 'CdnCertificateArn', {
+      value: this.cdnCertificate.certificateArn,
+      description: `ACM Certificate ARN for ${props.config.domain!.cdnDomain} (us-east-1 for CloudFront)`,
+      exportName: `${envName}-CdnCertificateArn`,
     });
 
     new cdk.CfnOutput(this, 'CertificateValidation', {
