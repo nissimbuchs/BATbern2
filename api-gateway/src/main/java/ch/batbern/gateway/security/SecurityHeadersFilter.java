@@ -93,8 +93,8 @@ public class SecurityHeadersFilter implements Filter {
         // Font sources - self and data URIs
         csp.append("font-src 'self' data:; ");
 
-        // Connect sources (for API calls) - self and AWS Cognito
-        csp.append("connect-src 'self' https://cognito-idp.eu-central-1.amazonaws.com; ");
+        // Connect sources (for API calls) - self, AWS Cognito, and CloudFront CDN
+        csp.append("connect-src 'self' https://cognito-idp.eu-central-1.amazonaws.com https://*.cloudfront.net https://cdn.batbern.ch https://cdn.staging.batbern.ch; ");
 
         // Object sources - none (prevent Flash/Java/ActiveX)
         csp.append("object-src 'none'; ");
