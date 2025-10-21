@@ -43,16 +43,16 @@ public class UserService {
 
     /**
      * Get current authenticated user
-     * Story 1.16.2: SecurityContext returns username (public ID)
+     * Story 1.16.2: SecurityContext returns Cognito user ID (sub claim from JWT)
      * AC1: Current user retrieval
      * AC14: Resource expansion support
      */
     @Transactional(readOnly = true)
     public UserResponse getCurrentUser() {
         log.debug("Fetching current authenticated user");
-        String username = securityContext.getCurrentUserId();  // Returns username in test, subject in prod
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException(username));
+        String cognitoUserId = securityContext.getCurrentUserId();  // Returns Cognito user ID (sub claim from JWT)
+        User user = userRepository.findByCognitoUserId(cognitoUserId)
+                .orElseThrow(() -> new UserNotFoundException(cognitoUserId));
         return mapToResponse(user);
     }
 
@@ -71,15 +71,15 @@ public class UserService {
 
     /**
      * Update current authenticated user
-     * Story 1.16.2: Uses username from SecurityContext for lookup
+     * Story 1.16.2: Uses Cognito user ID from SecurityContext for lookup
      * AC2: Cognito sync on update
      */
     public UserResponse updateCurrentUser(UpdateUserRequest request) {
         log.info("Updating current user profile");
-        String username = securityContext.getCurrentUserId();  // Returns username in test, subject in prod
+        String cognitoUserId = securityContext.getCurrentUserId();  // Returns Cognito user ID (sub claim from JWT)
 
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException(username));
+        User user = userRepository.findByCognitoUserId(cognitoUserId)
+                .orElseThrow(() -> new UserNotFoundException(cognitoUserId));
 
         // Update fields
         if (request.getFirstName() != null) {
@@ -115,7 +115,7 @@ public class UserService {
             updatedUser.getUsername(),  // aggregateId = username
             updatedFields,
             null,  // previousValues - TODO: implement in future
-            securityContext.getCurrentUserId()  // userId = username
+            updatedUser.getUsername()  // userId = username (who performed the update)
         );
         eventPublisher.publish(event);
 
@@ -212,11 +212,13 @@ public class UserService {
         userRepository.delete(user);
 
         // Publish domain event (Story 1.16.2: String IDs)
+        // Note: For delete, we need to get the current user performing the action
+        String deletedByUsername = getUsernameFromCurrentContext();
         UserDeletedEvent event = new UserDeletedEvent(
             user.getUsername(),  // aggregateId = username
             user.getEmail(),
             "GDPR compliance",  // reason
-            securityContext.getCurrentUserId()  // userId = username
+            deletedByUsername  // userId = username (who performed the deletion)
         );
         eventPublisher.publish(event);
 
@@ -284,6 +286,8 @@ public class UserService {
         User savedUser = userRepository.save(user);
 
         // Publish domain event (Story 1.16.2: String IDs)
+        // Note: For create, get the current user performing the action
+        String createdByUsername = getUsernameFromCurrentContext();
         UserCreatedEvent event = new UserCreatedEvent(
             savedUser.getUsername(),  // aggregateId = username
             savedUser.getEmail(),
@@ -291,7 +295,7 @@ public class UserService {
             savedUser.getLastName(),
             savedUser.getCompanyId(),  // company name
             savedUser.getCognitoUserId(),  // cognitoUserId
-            securityContext.getCurrentUserId()  // createdBy = username
+            createdByUsername  // createdBy = username (who created this user)
         );
         eventPublisher.publish(event);
 
@@ -342,6 +346,17 @@ public class UserService {
         }
 
         return response;
+    }
+
+    /**
+     * Helper method to get username from current security context
+     * Looks up user by Cognito User ID and returns their username
+     */
+    private String getUsernameFromCurrentContext() {
+        String cognitoUserId = securityContext.getCurrentUserId();
+        return userRepository.findByCognitoUserId(cognitoUserId)
+                .map(User::getUsername)
+                .orElse("system");  // Fallback for system operations
     }
 
     /**
