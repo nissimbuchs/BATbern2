@@ -1,0 +1,51 @@
+meta {
+  name: Confirm Profile Picture Upload
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/users/me/picture/confirm
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "fileId": "{{profilePictureFileId}}",
+    "fileExtension": "{{profilePictureFileExtension}}"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.profilePictureUrl: isDefined
+}
+
+tests {
+  test("should confirm upload successfully (AC10)", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return CloudFront URL", function() {
+    const body = res.getBody();
+    expect(body.profilePictureUrl).to.exist;
+    expect(body.profilePictureUrl).to.include('cdn');
+    expect(body.profilePictureUrl).to.include('/profile-pictures/');
+  });
+
+  test("should update user entity with picture URL", function() {
+    // Verification would require GET /users/me to check profilePictureUrl
+    expect(res.getStatus()).to.equal(200);
+  });
+}

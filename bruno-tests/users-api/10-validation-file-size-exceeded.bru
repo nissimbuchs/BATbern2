@@ -1,0 +1,50 @@
+meta {
+  name: Validation - File Size Exceeded
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/users/me/picture/presigned-url
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "fileName": "large-profile.png",
+    "fileSize": 6291456,
+    "mimeType": "image/png"
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("should reject file size > 5MB (AC10)", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("should return error message about file size limit", function() {
+    const body = res.getBody();
+    expect(body.message).to.exist;
+    expect(body.message).to.include('5MB');
+  });
+
+  test("should include correlation ID for troubleshooting", function() {
+    const body = res.getBody();
+    expect(body.correlationId).to.exist;
+  });
+}

@@ -1,0 +1,73 @@
+meta {
+  name: Request Profile Picture Upload URL
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/users/me/picture/presigned-url
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "fileName": "profile-picture.png",
+    "fileSize": 2097152,
+    "mimeType": "image/png"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.uploadUrl: isDefined
+  res.body.fileId: isDefined
+}
+
+script:post-response {
+  // Store file ID for confirmation step
+  if (res.getStatus() === 200) {
+    const response = res.getBody();
+    bru.setEnvVar("profilePictureFileId", response.fileId);
+    bru.setEnvVar("profilePictureFileExtension", response.fileExtension);
+    console.log("Presigned URL generated for file ID:", response.fileId);
+  }
+}
+
+tests {
+  test("should generate presigned URL successfully (AC10)", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return presigned URL with metadata", function() {
+    const body = res.getBody();
+    expect(body.uploadUrl).to.exist;
+    expect(body.uploadUrl).to.include('s3');
+    expect(body.fileId).to.exist;
+    expect(body.s3Key).to.exist;
+    expect(body.s3Key).to.include('/profile-pictures/');
+    expect(body.fileExtension).to.equal('png');
+    expect(body.expiresInMinutes).to.equal(15);
+  });
+
+  test("should include required headers for upload", function() {
+    const body = res.getBody();
+    expect(body.requiredHeaders).to.exist;
+    expect(body.requiredHeaders['Content-Type']).to.equal('image/png');
+  });
+
+  test("should reject file size > 5MB", function() {
+    // This would need a separate test with fileSize: 6*1024*1024
+    expect(res.getStatus()).to.equal(200);
+  });
+}

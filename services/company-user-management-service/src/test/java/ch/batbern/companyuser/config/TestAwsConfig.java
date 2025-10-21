@@ -1,5 +1,7 @@
 package ch.batbern.companyuser.config;
 
+import ch.batbern.companyuser.service.CognitoIntegrationService;
+import ch.batbern.companyuser.service.UserSearchService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -8,11 +10,16 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
+import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsResponse;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -45,7 +52,27 @@ public class TestAwsConfig {
     @Bean
     @Primary
     public S3Presigner s3Presigner() {
-        return Mockito.mock(S3Presigner.class);
+        S3Presigner mockPresigner = Mockito.mock(S3Presigner.class);
+
+        // Configure mock to return a presigned URL for profile picture uploads
+        try {
+            URL mockPresignedUrl = new URL("https://s3.amazonaws.com/test-bucket/presigned-url");
+            PresignedPutObjectRequest mockPresignedRequest = Mockito.mock(PresignedPutObjectRequest.class);
+            when(mockPresignedRequest.url()).thenReturn(mockPresignedUrl);
+            when(mockPresigner.presignPutObject(any(PutObjectPresignRequest.class)))
+                .thenReturn(mockPresignedRequest);
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("Failed to create mock presigned URL", e);
+        }
+
+        return mockPresigner;
+    }
+
+    @Bean
+    @Primary
+    public CognitoIdentityProviderClient cognitoIdentityProviderClient() {
+        // Mock Cognito client for tests (Story 1.14-2 Task 12)
+        return Mockito.mock(CognitoIdentityProviderClient.class);
     }
 
     @Bean
@@ -56,5 +83,29 @@ public class TestAwsConfig {
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
         return mapper;
+    }
+
+    @Bean
+    @Primary
+    public CognitoIntegrationService cognitoIntegrationService() {
+        CognitoIntegrationService mockService = Mockito.mock(CognitoIntegrationService.class);
+
+        // Mock createCognitoUser to return a test Cognito user ID
+        when(mockService.createCognitoUser(any()))
+                .thenReturn("cognito-test-user-id");
+
+        // syncUserAttributes is void, no need to configure
+
+        return mockService;
+    }
+
+    @Bean
+    @Primary
+    public UserSearchService userSearchService() {
+        UserSearchService mockService = Mockito.mock(UserSearchService.class);
+
+        // invalidateCache is void, no need to configure
+
+        return mockService;
     }
 }

@@ -30,7 +30,6 @@ This document outlines the comprehensive data model and database design for the 
 ```typescript
 // Story 1.16.2: Company with meaningful ID (name)
 interface Company {
-  id: string;  // Story 1.16.2: company name (e.g., "GoogleZH"), not UUID
   name: string;  // Same as id - kept for backwards compatibility
   displayName: string;
   logo?: CompanyLogo;

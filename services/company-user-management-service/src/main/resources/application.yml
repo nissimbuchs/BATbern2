@@ -38,6 +38,7 @@ spring:
       spec: maximumSize=1000,expireAfterWrite=15m
     cache-names:
       - companySearch
+      - userSearch
 
   security:
     oauth2:
@@ -51,12 +52,17 @@ aws:
   region: ${AWS_REGION:eu-central-1}
   s3:
     bucket-name: ${S3_CONTENT_BUCKET_NAME:batbern-content-staging}
+    profile-pictures-bucket: ${S3_PROFILE_PICTURES_BUCKET_NAME:batbern-profile-pictures-staging}
+    presigned-url-expiration-minutes: 15
   cloudfront:
     domain: ${CLOUDFRONT_DOMAIN:https://cdn.batbern.ch}
+  cognito:
+    user-pool-id: ${COGNITO_USER_POOL_ID:}
+    region: ${AWS_REGION:eu-central-1}
   eventbridge:
     bus:
       name: ${EVENT_BUS_NAME:batbern-staging}
-    event-source: ch.batbern.company
+    event-source: ch.batbern.companyuser
 
 # Server Configuration
 server:
@@ -140,24 +146,27 @@ springdoc:
 
 ---
 # Test Profile Configuration
+# CRITICAL: Uses PostgreSQL via Testcontainers for production parity (coding-standards.md)
+# Never use H2 for integration tests - causes database-specific issues
 spring:
   config:
     activate:
       on-profile: test
 
   datasource:
-    url: jdbc:h2:mem:testdb
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+    # Configured dynamically by AbstractIntegrationTest via @DynamicPropertySource
+    driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: validate
     show-sql: true
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
 
   flyway:
-    enabled: false
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
 
   security:
     oauth2:
@@ -167,11 +176,18 @@ spring:
 
   cache:
     type: caffeine
+    caffeine:
+      spec: maximumSize=100,expireAfterWrite=10m
+    cache-names:
+      - companySearch
+      - userSearch
 
 logging:
   level:
     root: INFO
     ch.batbern: DEBUG
+    org.testcontainers: INFO
+    com.github.dockerjava: WARN
 
 ---
 # Staging Profile Configuration
@@ -209,8 +225,9 @@ spring:
 aws:
   s3:
     bucket-name: ${AWS_S3_BUCKET_NAME:batbern-development-company-logos}
+    profile-pictures-bucket: ${S3_PROFILE_PICTURES_BUCKET_NAME:batbern-development-profile-pictures}
   cloudfront:
-    domain: ${CLOUDFRONT_DOMAIN:http://localhost:9000/batbern-development-company-logos}
+    domain: ${CLOUDFRONT_DOMAIN:http://localhost:9000}
 
 logging:
   level:

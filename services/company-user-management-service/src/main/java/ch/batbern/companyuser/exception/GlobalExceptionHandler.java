@@ -43,6 +43,59 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleUserNotFoundException(
+            UserNotFoundException ex,
+            HttpServletRequest request) {
+        log.warn("User not found: {}", ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("Not Found")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(UserValidationException.class)
+    public ResponseEntity<ErrorResponse> handleUserValidationException(
+            UserValidationException ex,
+            HttpServletRequest request) {
+        log.warn("User validation error: {}", ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Bad Request")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("MEDIUM")
+                .details(ex.getDetails())
+                .build();
+        return ResponseEntity.badRequest().body(error);
+    }
+
+    @ExceptionHandler(MinimumOrganizersException.class)
+    public ResponseEntity<ErrorResponse> handleMinimumOrganizersException(
+            MinimumOrganizersException ex,
+            HttpServletRequest request) {
+        log.warn("Business rule violation: {}", ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
+                .error("Business Rule Violation")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("HIGH")
+                .details(ex.getDetails())
+                .build();
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
+    }
+
     @ExceptionHandler(InvalidUIDException.class)
     public ResponseEntity<ErrorResponse> handleInvalidUIDException(
             InvalidUIDException ex,
@@ -84,18 +137,27 @@ public class GlobalExceptionHandler {
         log.error("Validation error: {}", ex.getMessage());
 
         Map<String, Object> validationErrors = new HashMap<>();
-        ex.getBindingResult().getAllErrors().forEach((error) -> {
-            String fieldName = ((FieldError) error).getField();
+        StringBuilder messageBuilder = new StringBuilder("Validation failed: ");
+        boolean first = true;
+
+        for (FieldError error : ex.getBindingResult().getFieldErrors()) {
+            String fieldName = error.getField();
             String errorMessage = error.getDefaultMessage();
             validationErrors.put(fieldName, errorMessage);
-        });
+
+            if (!first) {
+                messageBuilder.append(", ");
+            }
+            messageBuilder.append(fieldName).append(" - ").append(errorMessage);
+            first = false;
+        }
 
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .path(request.getRequestURI())
                 .status(HttpStatus.BAD_REQUEST.value())
                 .error("Validation Failed")
-                .message("Request validation failed")
+                .message(messageBuilder.toString())
                 .correlationId(CorrelationIdGenerator.generate())
                 .severity("WARNING")
                 .details(validationErrors)
@@ -210,6 +272,46 @@ public class GlobalExceptionHandler {
                 .severity("WARNING")
                 .build();
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
+    /**
+     * AC10: Handle file size exceeded exception
+     */
+    @ExceptionHandler(FileSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleFileSizeExceededException(
+            FileSizeExceededException ex,
+            HttpServletRequest request) {
+        log.warn("File size exceeded: {}", ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Bad Request")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+        return ResponseEntity.badRequest().body(error);
+    }
+
+    /**
+     * AC10: Handle invalid file type exception
+     */
+    @ExceptionHandler(InvalidFileTypeException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidFileTypeException(
+            InvalidFileTypeException ex,
+            HttpServletRequest request) {
+        log.warn("Invalid file type: {}", ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Bad Request")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+        return ResponseEntity.badRequest().body(error);
     }
 
     @ExceptionHandler(Exception.class)

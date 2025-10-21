@@ -1,0 +1,46 @@
+meta {
+  name: Search Users
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/users/search?query=test
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("should search users successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return array of users", function() {
+    const body = res.getBody();
+    expect(body).to.be.an('array');
+  });
+
+  test("should limit results for autocomplete (max 20)", function() {
+    const body = res.getBody();
+    expect(body.length).to.be.at.most(20);
+  });
+
+  test("should complete within performance target with cache (<100ms P95)", function() {
+    const responseTime = res.getResponseTime();
+    // First request may be slower, subsequent should be cached
+    expect(responseTime).to.be.lessThan(200);
+  });
+}

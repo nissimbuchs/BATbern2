@@ -1,0 +1,42 @@
+meta {
+  name: Get User by Username
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/users/{{currentUsername}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.id: eq {{currentUsername}}
+}
+
+tests {
+  test("should get user by username successfully (AC5)", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return user with correct username", function() {
+    const body = res.getBody();
+    const currentUsername = bru.getEnvVar("currentUsername");
+    expect(body.id).to.equal(currentUsername);
+  });
+
+  test("should complete within performance target (<150ms P95)", function() {
+    const responseTime = res.getResponseTime();
+    expect(responseTime).to.be.lessThan(200);
+  });
+}

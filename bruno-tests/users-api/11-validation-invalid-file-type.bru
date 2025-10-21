@@ -1,0 +1,50 @@
+meta {
+  name: Validation - Invalid File Type
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/users/me/picture/presigned-url
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "fileName": "document.pdf",
+    "fileSize": 1048576,
+    "mimeType": "application/pdf"
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("should reject invalid file type (AC10)", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("should return error message about allowed file types", function() {
+    const body = res.getBody();
+    expect(body.message).to.exist;
+    expect(body.message).to.match(/PNG|JPG|JPEG|SVG/i);
+  });
+
+  test("should include correlation ID for troubleshooting", function() {
+    const body = res.getBody();
+    expect(body.correlationId).to.exist;
+  });
+}

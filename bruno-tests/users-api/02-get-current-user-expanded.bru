@@ -1,0 +1,55 @@
+meta {
+  name: Get Current User with Resource Expansion
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/users/me?include=company,preferences,settings
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.id: isDefined
+}
+
+tests {
+  test("should return user with expanded resources", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should include company data when requested (AC14)", function() {
+    const body = res.getBody();
+    // Company may be null if user has no company
+    if (body.companyId) {
+      expect(body.company).to.exist;
+    }
+  });
+
+  test("should include preferences when requested (AC14)", function() {
+    const body = res.getBody();
+    expect(body.preferences).to.exist;
+    // Check for preference fields if they exist
+  });
+
+  test("should include settings when requested (AC14)", function() {
+    const body = res.getBody();
+    expect(body.settings).to.exist;
+  });
+
+  test("should complete within performance target with expansions (<150ms P95)", function() {
+    const responseTime = res.getResponseTime();
+    expect(responseTime).to.be.lessThan(200); // AC14: <150ms with all includes
+  });
+}

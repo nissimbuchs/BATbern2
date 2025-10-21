@@ -61,7 +61,8 @@ public class SecurityConfig {
     }
 
     /**
-     * Test security filter chain without JWT requirement
+     * Test security filter chain with authentication enforcement
+     * Uses @WithMockUser for testing authenticated endpoints
      */
     @Bean
     @Profile("test")
@@ -73,7 +74,17 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                .anyRequest().permitAll() // Allow all in tests
+                .anyRequest().authenticated() // Enforce authentication in tests
+            )
+            .exceptionHandling(exceptions -> exceptions
+                .authenticationEntryPoint((request, response, authException) -> {
+                    // Return 401 for unauthenticated requests
+                    response.sendError(401, "Unauthorized");
+                })
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    // Return 403 for authenticated but unauthorized requests
+                    response.sendError(403, "Forbidden");
+                })
             );
 
         return http.build();

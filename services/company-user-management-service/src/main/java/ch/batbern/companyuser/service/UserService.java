@@ -1,0 +1,367 @@
+package ch.batbern.companyuser.service;
+
+import ch.batbern.companyuser.domain.Role;
+import ch.batbern.companyuser.domain.User;
+import ch.batbern.companyuser.dto.GetOrCreateUserRequest;
+import ch.batbern.companyuser.dto.GetOrCreateUserResponse;
+import ch.batbern.companyuser.dto.UpdateUserRequest;
+import ch.batbern.companyuser.dto.UserResponse;
+import ch.batbern.companyuser.events.UserCreatedEvent;
+import ch.batbern.companyuser.events.UserDeletedEvent;
+import ch.batbern.companyuser.events.UserUpdatedEvent;
+import ch.batbern.companyuser.exception.UserNotFoundException;
+import ch.batbern.companyuser.exception.UserValidationException;
+import ch.batbern.companyuser.repository.UserRepository;
+import ch.batbern.companyuser.security.SecurityContextHelper;
+import ch.batbern.shared.events.DomainEventPublisher;
+import ch.batbern.shared.service.SlugGenerationService;
+import io.micrometer.core.annotation.Counted;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Set;
+import java.util.UUID;
+
+/**
+ * UserService - Core business logic for user management
+ * Story 1.16.2: Implements dual-identifier pattern (UUID internal, username public)
+ */
+@Service
+@Transactional
+@RequiredArgsConstructor
+@Slf4j
+public class UserService {
+
+    private final UserRepository userRepository;
+    private final CognitoIntegrationService cognitoService;
+    private final DomainEventPublisher eventPublisher;
+    private final UserSearchService searchService;
+    private final SecurityContextHelper securityContext;
+    private final SlugGenerationService slugService;
+
+    /**
+     * Get current authenticated user
+     * Story 1.16.2: SecurityContext returns username (public ID)
+     * AC1: Current user retrieval
+     * AC14: Resource expansion support
+     */
+    @Transactional(readOnly = true)
+    public UserResponse getCurrentUser() {
+        log.debug("Fetching current authenticated user");
+        String username = securityContext.getCurrentUserId();  // Returns username in test, subject in prod
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException(username));
+        return mapToResponse(user);
+    }
+
+    /**
+     * Get current authenticated user with resource expansion
+     * AC14: Resource expansion (?include=company,preferences,settings)
+     */
+    @Transactional(readOnly = true)
+    public UserResponse getCurrentUser(String include) {
+        UserResponse response = getCurrentUser();
+        if (include != null && !include.isEmpty()) {
+            response = expandResources(response, include);
+        }
+        return response;
+    }
+
+    /**
+     * Update current authenticated user
+     * Story 1.16.2: Uses username from SecurityContext for lookup
+     * AC2: Cognito sync on update
+     */
+    public UserResponse updateCurrentUser(UpdateUserRequest request) {
+        log.info("Updating current user profile");
+        String username = securityContext.getCurrentUserId();  // Returns username in test, subject in prod
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException(username));
+
+        // Update fields
+        if (request.getFirstName() != null) {
+            user.setFirstName(request.getFirstName());
+        }
+        if (request.getLastName() != null) {
+            user.setLastName(request.getLastName());
+        }
+        if (request.getEmail() != null) {
+            user.setEmail(request.getEmail());
+        }
+        if (request.getBio() != null) {
+            user.setBio(request.getBio());
+        }
+
+        User updatedUser = userRepository.save(user);
+
+        // Sync with Cognito (AC2)
+        cognitoService.syncUserAttributes(updatedUser);
+
+        // Invalidate search cache
+        searchService.invalidateCache();
+
+        // Publish domain event (Story 1.16.2: String IDs)
+        // TODO: Track updated fields and previous values for better event audit trail
+        java.util.Map<String, Object> updatedFields = new java.util.HashMap<>();
+        if (request.getFirstName() != null) updatedFields.put("firstName", request.getFirstName());
+        if (request.getLastName() != null) updatedFields.put("lastName", request.getLastName());
+        if (request.getEmail() != null) updatedFields.put("email", request.getEmail());
+        if (request.getBio() != null) updatedFields.put("bio", request.getBio());
+
+        UserUpdatedEvent event = new UserUpdatedEvent(
+            updatedUser.getUsername(),  // aggregateId = username
+            updatedFields,
+            null,  // previousValues - TODO: implement in future
+            securityContext.getCurrentUserId()  // userId = username
+        );
+        eventPublisher.publish(event);
+
+        log.info("User updated successfully: {}", updatedUser.getUsername());
+        return mapToResponse(updatedUser);
+    }
+
+    /**
+     * List users with filters (admin/organizer only)
+     * Story 1.16.2: Public API uses username
+     * AC3: List users with role and company filters
+     */
+    @Transactional(readOnly = true)
+    public java.util.List<UserResponse> listUsers(String roleFilter, String companyFilter) {
+        log.debug("Listing users with filters: role={}, company={}", roleFilter, companyFilter);
+
+        java.util.List<User> users;
+
+        if (roleFilter != null && companyFilter != null) {
+            // Both filters
+            Role role = parseRole(roleFilter);
+            users = userRepository.findByRolesContaining(role).stream()
+                    .filter(u -> companyFilter.equals(u.getCompanyId()))
+                    .toList();
+        } else if (roleFilter != null) {
+            // Role filter only
+            Role role = parseRole(roleFilter);
+            users = userRepository.findByRolesContaining(role);
+        } else if (companyFilter != null) {
+            // Company filter only
+            users = userRepository.findByCompanyId(companyFilter);
+        } else {
+            // No filters
+            users = userRepository.findAll();
+        }
+
+        return users.stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    /**
+     * Parse role string to Role enum with validation
+     */
+    private Role parseRole(String roleStr) {
+        try {
+            return Role.valueOf(roleStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new UserValidationException("role",
+                String.format("Invalid role: %s. Valid roles are: ORGANIZER, SPEAKER, PARTNER, ATTENDEE", roleStr));
+        }
+    }
+
+    /**
+     * Get user by username
+     * Story 1.16.2: Public API uses username for lookups
+     * AC5: Get user with resource expansion
+     */
+    @Transactional(readOnly = true)
+    public UserResponse getUserByUsername(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException(username));
+        return mapToResponse(user);
+    }
+
+    /**
+     * Get user by username with resource expansion
+     * AC14: Resource expansion (?include=company,preferences,settings)
+     */
+    @Transactional(readOnly = true)
+    public UserResponse getUserByUsername(String username, String include) {
+        UserResponse response = getUserByUsername(username);
+        if (include != null && !include.isEmpty()) {
+            response = expandResources(response, include);
+        }
+        return response;
+    }
+
+    /**
+     * Delete user (GDPR compliance)
+     * Story 1.16.2: Public API uses username
+     * AC11: GDPR delete user
+     */
+    @Counted(value = "users.gdprDeletions", description = "Count of GDPR user deletions")
+    public void deleteUser(String username) {
+        log.info("Deleting user (GDPR): {}", username);
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException(username));
+
+        // TODO: Check business rules (e.g., last organizer) in future task
+        // TODO: Cascade delete across domain services in future task
+        // TODO: Audit logging in future task
+
+        userRepository.delete(user);
+
+        // Publish domain event (Story 1.16.2: String IDs)
+        UserDeletedEvent event = new UserDeletedEvent(
+            user.getUsername(),  // aggregateId = username
+            user.getEmail(),
+            "GDPR compliance",  // reason
+            securityContext.getCurrentUserId()  // userId = username
+        );
+        eventPublisher.publish(event);
+
+        log.info("User deleted successfully: {}", username);
+    }
+
+    /**
+     * Get-or-create pattern for domain services
+     * Story 1.16.2: Returns username as userId (meaningful ID, not UUID)
+     * AC12: Get-or-create user with idempotency
+     */
+    public GetOrCreateUserResponse getOrCreateUser(GetOrCreateUserRequest request) {
+        log.info("Get-or-create user for email: {}", request.getEmail());
+
+        return userRepository.findByEmail(request.getEmail())
+                .map(existingUser -> {
+                    log.debug("User already exists: {}", existingUser.getUsername());
+                    return GetOrCreateUserResponse.builder()
+                            .userId(existingUser.getUsername())  // Story 1.16.2: username
+                            .created(false)
+                            .user(mapToResponse(existingUser))
+                            .build();
+                })
+                .orElseGet(() -> {
+                    if (request.isCreateIfMissing()) {
+                        log.info("Creating new user: {}", request.getEmail());
+                        User newUser = createNewUser(request);
+                        UserResponse response = mapToResponse(newUser);
+                        return GetOrCreateUserResponse.builder()
+                                .userId(newUser.getUsername())  // Story 1.16.2: username
+                                .created(true)
+                                .cognitoUserId(newUser.getCognitoUserId())
+                                .user(response)
+                                .build();
+                    } else {
+                        throw new UserNotFoundException("User not found: " + request.getEmail());
+                    }
+                });
+    }
+
+    /**
+     * Create new user with username generation
+     * Story 1.16.2: Generate username using SlugGenerationService
+     */
+    private User createNewUser(GetOrCreateUserRequest request) {
+        // Create user in Cognito if needed (AC2)
+        String cognitoUserId = request.isCognitoSync()
+                ? cognitoService.createCognitoUser(request)
+                : null;
+
+        // Story 1.16.2: Generate username from first/last name
+        String baseUsername = slugService.generateUsername(request.getFirstName(), request.getLastName());
+        String username = slugService.ensureUniqueUsername(baseUsername, userRepository::existsByUsername);
+
+        User user = User.builder()
+                .cognitoUserId(cognitoUserId)
+                .email(request.getEmail())
+                .username(username)  // Story 1.16.2: Generated username
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .companyId(request.getCompanyId())  // Story 1.16.2: company name
+                .roles(Set.of(Role.ATTENDEE))
+                .build();
+
+        User savedUser = userRepository.save(user);
+
+        // Publish domain event (Story 1.16.2: String IDs)
+        UserCreatedEvent event = new UserCreatedEvent(
+            savedUser.getUsername(),  // aggregateId = username
+            savedUser.getEmail(),
+            savedUser.getFirstName(),
+            savedUser.getLastName(),
+            savedUser.getCompanyId(),  // company name
+            savedUser.getCognitoUserId(),  // cognitoUserId
+            securityContext.getCurrentUserId()  // createdBy = username
+        );
+        eventPublisher.publish(event);
+
+        log.info("User created successfully: {}", savedUser.getUsername());
+        return savedUser;
+    }
+
+    /**
+     * Expand resources based on include parameter
+     * AC14: Resource expansion (?include=company,preferences,settings)
+     * @param response Base user response
+     * @param include Comma-separated list of resources to expand
+     * @return User response with expanded resources
+     */
+    private UserResponse expandResources(UserResponse response, String include) {
+        String[] resources = include.split(",");
+
+        for (String resource : resources) {
+            switch (resource.trim().toLowerCase()) {
+                case "company":
+                    if (response.getCompanyId() != null) {
+                        // TODO: Fetch company details from Company Management Service in Task 14
+                        // For now, return minimal company info
+                        response.setCompany(UserResponse.CompanyDTO.builder()
+                                .id(response.getCompanyId())
+                                .name(response.getCompanyId())  // Placeholder
+                                .build());
+                    }
+                    break;
+                case "preferences":
+                    // Fetch user with preferences
+                    User user = userRepository.findByUsername(response.getId())
+                            .orElseThrow(() -> new UserNotFoundException(response.getId()));
+                    response.setPreferences(user.getPreferences());
+                    break;
+                case "settings":
+                    // Fetch user with settings
+                    User userWithSettings = userRepository.findByUsername(response.getId())
+                            .orElseThrow(() -> new UserNotFoundException(response.getId()));
+                    response.setSettings(userWithSettings.getSettings());
+                    break;
+                case "roles":
+                    // Roles are already included in base response
+                    break;
+                default:
+                    log.warn("Unknown resource for expansion: {}", resource);
+            }
+        }
+
+        return response;
+    }
+
+    /**
+     * Map User entity to UserResponse DTO
+     * Story 1.16.2: Expose username as id, not UUID
+     */
+    private UserResponse mapToResponse(User user) {
+        return UserResponse.builder()
+                .id(user.getUsername())  // Story 1.16.2: username as id
+                .email(user.getEmail())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .bio(user.getBio())
+                .companyId(user.getCompanyId())  // Story 1.16.2: company name
+                .roles(user.getRoles())
+                .profilePictureUrl(user.getProfilePictureUrl())
+                .isActive(user.isActive())
+                .createdAt(user.getCreatedAt())
+                .updatedAt(user.getUpdatedAt())
+                .lastLoginAt(user.getLastLoginAt())
+                .build();
+    }
+}
