@@ -411,7 +411,7 @@ CompanyLogo:
     url:
       type: string
       format: uri
-      description: CloudFront CDN URL for logo
+      description: CloudFront CDN URL for logo (cdn.batbern.ch for production, cdn.staging.batbern.ch for staging)
       example: https://cdn.batbern.ch/logos/2025/550e8400-e29b-41d4-a716-446655440000/logo.png
     s3Key:
       type: string

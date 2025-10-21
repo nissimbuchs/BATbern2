@@ -1002,9 +1002,10 @@ export class ContentStorageStack extends cdk.Stack {
       case 'production':
         return ['cdn.batbern.ch'];
       case 'staging':
-        return ['cdn-staging.batbern.ch'];
+        return ['cdn.staging.batbern.ch'];
       case 'development':
-        return ['cdn-dev.batbern.ch'];
+        // Development uses CloudFront auto-generated domain (no custom domain)
+        return [];
       default:
         return [];
     }
@@ -1541,7 +1542,7 @@ The CloudFront distribution provides global content delivery with edge caching a
 - **Lambda@Edge**: Image optimization and resizing at edge locations
 - **HTTPS Only**: Automatic HTTP to HTTPS redirection
 - **Compression**: Automatic gzip/brotli compression
-- **Custom Domain**: `cdn.batbern.ch` with SSL certificate
+- **Custom Domain**: `cdn.batbern.ch` (production), `cdn.staging.batbern.ch` (staging) with SSL certificates
 - **Logging**: Comprehensive access logs for analytics
 
 **Performance Optimizations:**

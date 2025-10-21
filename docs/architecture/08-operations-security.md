@@ -5,7 +5,9 @@ This document consolidates security implementation, performance standards, acces
 ## Security Requirements
 
 ### Frontend Security
-- **CSP Headers**: Strict content security policy
+- **CSP Headers**: Strict content security policy with CloudFront CDN support
+  - `connect-src`: Allows connections to self, AWS Cognito, CloudFront CDN (`*.cloudfront.net`), and branded CDN domains (`cdn.batbern.ch`, `cdn.staging.batbern.ch`)
+  - Configured in `SecurityHeadersFilter.java` for API Gateway
 - **XSS Prevention**: Input sanitization and output encoding
 - **Secure Storage**: Encrypted localStorage for sensitive data
 
