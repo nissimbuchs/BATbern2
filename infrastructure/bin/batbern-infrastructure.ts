@@ -307,6 +307,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     userPool: cognitoStack.userPool,
     userPoolClient: cognitoStack.userPoolClient,
     contentBucket: storageStack.contentBucket,
+    cloudFrontDistribution: storageStack.distribution,
     eventBus: eventBusStack.eventBus,
     env,
     description: `BATbern Company & User Management Service (Consolidated) - ${config.envName}`,
