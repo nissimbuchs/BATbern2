@@ -219,6 +219,10 @@ export default defineConfig({
       '**/e2e/**', // E2E tests run with Playwright, not Vitest
       '**/.{idea,git,cache,output,temp}/**',
     ],
+    reporters: [
+      'default', // Console output
+      ['junit', { outputFile: 'test-results/junit.xml' }], // JUnit XML for CI/CD and report aggregation
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],

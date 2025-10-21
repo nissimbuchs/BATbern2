@@ -241,14 +241,24 @@ export class ReportAggregator {
 
     // Calculate test health (combine Java + frontend)
     const javaTests = javaTestResults.summary.overallStats.totalTests;
+    const javaPassed = javaTestResults.summary.overallStats.passed;
     const javaFailedTests = javaTestResults.summary.overallStats.failures + javaTestResults.summary.overallStats.errors;
+    const javaSkipped = javaTestResults.summary.overallStats.skipped;
+
     const frontendTests = frontendTestResults.summary.overallStats.totalTests;
+    const frontendPassed = frontendTestResults.summary.overallStats.passed;
     const frontendFailedTests = frontendTestResults.summary.overallStats.failures + frontendTestResults.summary.overallStats.errors;
+    const frontendSkipped = frontendTestResults.summary.overallStats.skipped;
 
     const totalTests = javaTests + frontendTests;
+    const totalPassed = javaPassed + frontendPassed;
     const failedTests = javaFailedTests + frontendFailedTests;
-    const testSuccessRate = totalTests > 0
-      ? Math.round(((totalTests - failedTests) / totalTests) * 10000) / 100
+    const totalSkipped = javaSkipped + frontendSkipped;
+
+    // Success rate = passed / (total - skipped) to exclude skipped tests
+    const executedTests = totalTests - totalSkipped;
+    const testSuccessRate = executedTests > 0
+      ? Math.round((totalPassed / executedTests) * 10000) / 100
       : 100;
 
     // Calculate coverage health
@@ -278,8 +288,9 @@ export class ReportAggregator {
       healthStatus: healthStatus,
       tests: {
         total: totalTests,
-        passed: totalTests - failedTests,
+        passed: totalPassed,
         failed: failedTests,
+        skipped: totalSkipped,
         successRate: testSuccessRate
       },
       coverage: {
@@ -319,19 +330,45 @@ export class ReportAggregator {
 
     // Build data for each Java module
     const modules = Array.from(moduleNames).map(moduleName => {
-      const testReport = javaTestResults.reports.find(r => r.module === moduleName);
+      // Aggregate ALL test reports for this module (not just the first one)
+      const testReports = javaTestResults.reports.filter(r => r.module === moduleName);
       const coverageReport = javaCoverage.reports.find(r => r.module === moduleName);
       const qualityReport = qualityViolations.reports.find(r => r.module === moduleName);
 
+      // Aggregate test data from all test report files for this module
+      let aggregatedTests = null;
+      if (testReports.length > 0) {
+        const totals = {
+          total: 0,
+          passed: 0,
+          failures: 0,
+          errors: 0,
+          skipped: 0
+        };
+
+        testReports.forEach(report => {
+          totals.total += report.results.summary.totalTests;
+          totals.passed += report.results.summary.passed;
+          totals.failures += report.results.summary.failures;
+          totals.errors += report.results.summary.errors;
+          totals.skipped += report.results.summary.skipped;
+        });
+
+        const executedTests = totals.total - totals.skipped;
+        aggregatedTests = {
+          total: totals.total,
+          passed: totals.passed,
+          failures: totals.failures,
+          errors: totals.errors,
+          successRate: executedTests > 0
+            ? Math.round((totals.passed / executedTests) * 10000) / 100
+            : 0
+        };
+      }
+
       return {
         name: moduleName,
-        tests: testReport ? {
-          total: testReport.results.summary.totalTests,
-          passed: testReport.results.summary.passed,
-          failures: testReport.results.summary.failures,
-          errors: testReport.results.summary.errors,
-          successRate: testReport.results.summary.successRate
-        } : null,
+        tests: aggregatedTests,
         coverage: coverageReport ? {
           line: coverageReport.coverage.overall.line.percentage,
           branch: coverageReport.coverage.overall.branch.percentage,
@@ -343,7 +380,7 @@ export class ReportAggregator {
           warnings: qualityReport.violations.summary.bySeverity.warning
         } : null,
         status: this.determineModuleStatus({
-          tests: testReport?.results.summary,
+          tests: aggregatedTests,
           coverage: coverageReport?.coverage.overall,
           quality: qualityReport?.violations.summary
         })
