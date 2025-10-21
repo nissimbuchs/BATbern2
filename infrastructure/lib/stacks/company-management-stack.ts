@@ -5,6 +5,7 @@ import * as ecsPatterns from 'aws-cdk-lib/aws-ecs-patterns';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
@@ -22,6 +23,7 @@ export interface CompanyManagementStackProps extends cdk.StackProps {
   userPool: cognito.IUserPool;
   userPoolClient: cognito.IUserPoolClient;
   contentBucket?: s3.IBucket;
+  cloudFrontDistribution?: cloudfront.IDistribution;
   eventBus?: events.IEventBus;
 }
 
@@ -57,6 +59,10 @@ export class CompanyManagementStack extends cdk.Stack {
       // S3 bucket for company logos and user profile pictures
       ...(props.contentBucket && {
         S3_CONTENT_BUCKET_NAME: props.contentBucket.bucketName,
+      }),
+      // CloudFront distribution for serving uploaded content via CDN
+      ...(props.cloudFrontDistribution && {
+        CLOUDFRONT_DOMAIN: `https://${props.cloudFrontDistribution.distributionDomainName}`,
       }),
       // EventBridge for domain events
       ...(props.eventBus && {

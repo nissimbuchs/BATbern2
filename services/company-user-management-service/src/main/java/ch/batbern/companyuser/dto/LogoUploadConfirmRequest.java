@@ -23,6 +23,13 @@ public class LogoUploadConfirmRequest {
     private String fileId;
 
     /**
+     * File extension (e.g., "png", "jpg", "svg")
+     * Required for reconstructing S3 key
+     */
+    @NotBlank(message = "File extension is required")
+    private String fileExtension;
+
+    /**
      * Optional SHA-256 checksum for integrity verification
      */
     private String checksum;

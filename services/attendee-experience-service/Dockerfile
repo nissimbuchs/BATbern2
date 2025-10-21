@@ -17,8 +17,8 @@ COPY services/attendee-experience-service/build.gradle services/attendee-experie
 COPY services/attendee-experience-service/gradle ./services/attendee-experience-service/gradle
 COPY services/attendee-experience-service/src ./services/attendee-experience-service/src
 
-# Build attendee-experience-service subproject
-RUN gradle :services:attendee-experience-service:build --no-daemon -x test
+# Build attendee-experience-service subproject (compile tests but don't run them)
+RUN gradle :services:attendee-experience-service:build :services:attendee-experience-service:compileTestJava --no-daemon -x test
 
 # Runtime stage
 FROM eclipse-temurin:21-jre-alpine

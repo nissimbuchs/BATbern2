@@ -17,8 +17,8 @@ COPY services/partner-coordination-service/build.gradle services/partner-coordin
 COPY services/partner-coordination-service/gradle ./services/partner-coordination-service/gradle
 COPY services/partner-coordination-service/src ./services/partner-coordination-service/src
 
-# Build partner-coordination-service subproject
-RUN gradle :services:partner-coordination-service:build --no-daemon -x test
+# Build partner-coordination-service subproject (compile tests but don't run them)
+RUN gradle :services:partner-coordination-service:build :services:partner-coordination-service:compileTestJava --no-daemon -x test
 
 # Runtime stage
 FROM eclipse-temurin:21-jre-alpine

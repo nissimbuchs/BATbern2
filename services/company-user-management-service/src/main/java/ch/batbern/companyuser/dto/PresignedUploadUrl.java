@@ -31,6 +31,12 @@ public class PresignedUploadUrl {
     private String s3Key;
 
     /**
+     * File extension (e.g., "png", "jpg", "svg")
+     * Required for reconstructing S3 key during upload confirmation
+     */
+    private String fileExtension;
+
+    /**
      * Expiration time in minutes (typically 15 minutes)
      */
     private int expiresInMinutes;

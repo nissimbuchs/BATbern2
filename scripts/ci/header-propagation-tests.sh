@@ -2,7 +2,8 @@
 # Header Propagation Tests
 # Validates that custom headers flow through the entire stack:
 # Frontend → AWS API Gateway → Spring Boot Gateway → Microservices
-set -e
+# Note: We don't use 'set -e' here because we want to run all tests
+# and report a summary at the end, not exit on first failure
 
 API_URL=${1:-"https://api.staging.batbern.ch"}
 TEST_TOKEN=${2:-""}
@@ -38,7 +39,7 @@ response=$(curl -s -i -X GET "$API_URL/health" \
     -H "X-Correlation-ID: $TEST_CORRELATION_ID" \
     2>&1)
 
-status_code=$(echo "$response" | grep "HTTP/" | tail -1 | awk '{print $2}')
+status_code=$(echo "$response" | grep "HTTP/" | tail -1 | awk '{print $2}' || echo "000")
 if [ "$status_code" = "200" ]; then
     echo -e "${GREEN}✓ PASS${NC}: Health endpoint accepts X-Correlation-ID header"
     ((passed++))
@@ -53,7 +54,7 @@ response=$(curl -s -i -X GET "$API_URL/health" \
     -H "Accept-Language: de-CH" \
     2>&1)
 
-status_code=$(echo "$response" | grep "HTTP/" | tail -1 | awk '{print $2}')
+status_code=$(echo "$response" | grep "HTTP/" | tail -1 | awk '{print $2}' || echo "000")
 if [ "$status_code" = "200" ]; then
     echo -e "${GREEN}✓ PASS${NC}: Health endpoint accepts Accept-Language header"
     ((passed++))
@@ -70,7 +71,7 @@ response=$(curl -s -i -X GET "$API_URL/health" \
     -H "Accept: application/json" \
     2>&1)
 
-status_code=$(echo "$response" | grep "HTTP/" | tail -1 | awk '{print $2}')
+status_code=$(echo "$response" | grep "HTTP/" | tail -1 | awk '{print $2}' || echo "000")
 if [ "$status_code" = "200" ]; then
     echo -e "${GREEN}✓ PASS${NC}: Health endpoint accepts multiple custom headers"
     ((passed++))
@@ -188,7 +189,7 @@ response=$(curl -s -i -X GET "$API_URL/health" \
     -H "accept-language: de-CH" \
     2>&1)
 
-status_code=$(echo "$response" | grep "HTTP/" | tail -1 | awk '{print $2}')
+status_code=$(echo "$response" | grep "HTTP/" | tail -1 | awk '{print $2}' || echo "000")
 if [ "$status_code" = "200" ]; then
     echo -e "${GREEN}✓ PASS${NC}: Headers are case-insensitive (lowercase accepted)"
     ((passed++))

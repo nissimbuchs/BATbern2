@@ -97,39 +97,39 @@ for collection in "${collections[@]}"; do
     # Set environment variable for Bruno
     export AUTH_TOKEN="$AUTH_TOKEN"
 
-    # Use shared environments directory (relative to collection directory)
-    env_file="../environments/${ENVIRONMENT}.bru"
-
-    # Run Bruno tests (must run from within the collection directory)
-    if (cd "$collection_path" && bru run --env-file "$env_file" --output results.json 2>&1); then
+    # Run Bruno tests from the bruno-tests root, targeting specific folder
+    # Use -r for recursive execution of all tests in the folder
+    if (cd bruno-tests && bru run "$collection" -r --env "$ENVIRONMENT" --output "../results-${collection}.json" 2>&1); then
         echo -e "${GREEN}✓ PASS${NC}: $collection tests passed"
         ((passed++))
 
         # Display summary if results file exists
-        if [ -f "$collection_path/results.json" ]; then
-            total=$(jq -r '.summary.totalTests // 0' "$collection_path/results.json" 2>/dev/null || echo "0")
-            passed_tests=$(jq -r '.summary.passedTests // 0' "$collection_path/results.json" 2>/dev/null || echo "0")
-            failed_tests=$(jq -r '.summary.failedTests // 0' "$collection_path/results.json" 2>/dev/null || echo "0")
+        results_file="results-${collection}.json"
+        if [ -f "$results_file" ]; then
+            total=$(jq -r '.summary.totalTests // 0' "$results_file" 2>/dev/null || echo "0")
+            passed_tests=$(jq -r '.summary.passedTests // 0' "$results_file" 2>/dev/null || echo "0")
+            failed_tests=$(jq -r '.summary.failedTests // 0' "$results_file" 2>/dev/null || echo "0")
 
             echo "  Total: $total | Passed: $passed_tests | Failed: $failed_tests"
 
             # Show failed test details
             if [ "$failed_tests" -gt 0 ]; then
                 echo -e "${RED}  Failed tests:${NC}"
-                jq -r '.tests[] | select(.status == "failed") | "    - \(.name): \(.error)"' "$collection_path/results.json" 2>/dev/null || true
+                jq -r '.tests[] | select(.status == "failed") | "    - \(.name): \(.error)"' "$results_file" 2>/dev/null || true
             fi
 
-            rm -f "$collection_path/results.json"
+            rm -f "$results_file"
         fi
     else
         echo -e "${RED}✗ FAIL${NC}: $collection tests failed"
         ((failed++))
 
         # Try to show error details
-        if [ -f "$collection_path/results.json" ]; then
+        results_file="results-${collection}.json"
+        if [ -f "$results_file" ]; then
             echo -e "${RED}  Error details:${NC}"
-            jq -r '.error // "Unknown error"' "$collection_path/results.json" 2>/dev/null || cat "$collection_path/results.json"
-            rm -f "$collection_path/results.json"
+            jq -r '.error // "Unknown error"' "$results_file" 2>/dev/null || cat "$results_file"
+            rm -f "$results_file"
         fi
     fi
 done
