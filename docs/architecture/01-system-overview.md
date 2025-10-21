@@ -147,7 +147,7 @@ graph TB
         N[Database<br/>PostgreSQL (Single-AZ)<br/>Cost-optimized db.t4g.micro]
         O[In-Memory Cache<br/>Caffeine (Application-level)<br/>Replaces Redis for cost savings]
         P[File Storage<br/>AWS S3<br/>Documents & media]
-        Q[CDN<br/>CloudFront<br/>Global content delivery]
+        Q[CDN<br/>CloudFront<br/>cdn.batbern.ch / cdn.staging.batbern.ch]
     end
 
     subgraph "External Services"
