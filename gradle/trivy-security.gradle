@@ -1,0 +1,44 @@
+// Trivy Security Scanning Configuration
+// Apply this to all Java modules to enable security vulnerability scanning
+
+/**
+ * Task to run Trivy security scanning on the current module
+ * Generates SARIF reports in the security-reports directory
+ */
+task trivyScan(type: Exec) {
+    group = 'verification'
+    description = 'Run Trivy security scan for vulnerabilities'
+
+    def projectName = project.name
+    def projectPath = project.projectDir
+    // For services, go up 2 levels (services/service-name -> root), otherwise use rootProject
+    def rootPath = projectPath.absolutePath.contains('/services/') ?
+        new File(projectPath, '../..').canonicalFile :
+        project.rootProject.projectDir
+    def reportsDir = new File(rootPath, 'security-reports')
+
+    doFirst {
+        // Create reports directory if it doesn't exist
+        reportsDir.mkdirs()
+        println "🔒 Running Trivy security scan for ${projectName}..."
+    }
+
+    commandLine 'trivy', 'fs',
+        '--scanners', 'vuln,secret,misconfig',
+        '--format', 'sarif',
+        '--output', "${reportsDir}/${projectName}-trivy.sarif",
+        '--severity', 'UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL',
+        projectPath.absolutePath
+
+    doLast {
+        println "✅ Security scan complete for ${projectName}"
+        println "   Report: security-reports/${projectName}-trivy.sarif"
+    }
+
+    // Ignore failures so build doesn't break on vulnerabilities
+    ignoreExitValue = true
+}
+
+// Optional: Add trivyScan to the check task
+// Uncomment the line below to run security scans as part of 'gradle check'
+// check.dependsOn trivyScan
