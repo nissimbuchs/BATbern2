@@ -1,0 +1,51 @@
+// Root build file for BATbern project
+
+plugins {
+    id 'base'
+}
+
+// Task to run security scanning with Trivy
+task securityScan(type: Exec) {
+    group = 'verification'
+    description = 'Run Trivy security scanning on all modules'
+
+    commandLine 'bash', "${rootDir}/scripts/security-scan.sh"
+
+    doLast {
+        println ""
+        println "================================================"
+        println "Security scanning complete!"
+        println "SARIF reports available in: security-reports/"
+        println "================================================"
+    }
+}
+
+// Task to build everything including tests and reports
+task buildAll {
+    group = 'build'
+    description = 'Build all modules, run tests, and generate reports'
+
+    dependsOn subprojects.collect { it.tasks.matching { task -> task.name == 'build' } }
+
+    doLast {
+        println ""
+        println "================================================"
+        println "All modules built successfully!"
+        println "================================================"
+    }
+}
+
+// Task to run all checks including security scan
+task checkAll {
+    group = 'verification'
+    description = 'Run all checks including tests, code quality, and security scan'
+
+    dependsOn 'buildAll', 'securityScan'
+
+    doLast {
+        println ""
+        println "================================================"
+        println "All checks passed!"
+        println "================================================"
+    }
+}
