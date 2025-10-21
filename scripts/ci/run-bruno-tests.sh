@@ -79,6 +79,7 @@ skipped=0
 collections=(
     #"events-api"
     "companies-api"
+    "users-api"
 )
 
 # Run tests for each collection
