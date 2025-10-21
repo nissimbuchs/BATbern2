@@ -1,5 +1,110 @@
 # Infrastructure & Deployment
 
+## Deployment Architecture Overview
+
+### Multi-Environment Strategy
+
+BATbern uses a **hybrid deployment model** optimized for cost and developer productivity:
+
+| Environment | Infrastructure | Services & Frontend | Rationale |
+|-------------|---------------|---------------------|-----------|
+| **Development** | AWS (RDS, Cognito, S3) | Docker Compose (local) | Cost optimization + fast iteration |
+| **Staging** | AWS (Full stack) | AWS ECS Fargate | Production-like testing |
+| **Production** | AWS (Full stack) | AWS ECS Fargate | Swiss hosting, GDPR compliance |
+
+### AWS Account Architecture
+
+- **Development**: 954163570305 (Infrastructure only - RDS, Cognito, S3, EventBridge)
+- **Staging**: 188701360969 (Full stack, delegated subdomain `staging.batbern.ch`)
+- **Production**: 422940799530 (Full stack, root domain `batbern.ch`)
+
+### CDK Stack Deployment Order
+
+The infrastructure is deployed as **14+ interconnected CDK stacks** with explicit dependencies:
+
+```
+1. DNS Stack (us-east-1) → Creates certificates for CloudFront
+2. Network Stack → VPC, security groups, regional API certificate
+3. Secrets Stack → AWS Secrets Manager, KMS keys
+4. Database Stack → RDS PostgreSQL, automated backups
+5. Storage Stack → S3 buckets, CloudFront CDN
+6. EventBus Stack → EventBridge for domain events
+7. Monitoring Stack → CloudWatch dashboards, alarms, GitHub issues integration
+8. CI/CD Stack → ECR repositories, GitHub Actions OIDC roles
+9. Cognito Stack → User pools, identity providers
+10. SES Stack → Email templates, bounce handling
+11. Cluster Stack → ECS Fargate cluster (staging/production only)
+12. Domain Service Stacks → Each microservice deployed separately
+    - Event Management Stack
+    - Speaker Coordination Stack
+    - Partner Coordination Stack
+    - Attendee Experience Stack
+    - Company Management Stack
+    - API Gateway Service Stack (Spring Boot)
+13. API Gateway Stack → AWS HTTP API (proxy to Spring Boot)
+14. Frontend Stack → React SPA on S3 + CloudFront
+```
+
+**Key Insights:**
+- Stacks have explicit dependencies (e.g., Database depends on Network + Secrets)
+- Staging/Production deploy all stacks; Development skips stacks 11-14
+- CI/CD supports **selective deployment** (only changed service stacks)
+- Average full deployment: ~15 minutes; selective deployment: ~5 minutes
+
+### Deployment Architecture Diagram
+
+```mermaid
+graph TB
+    subgraph "Development Environment"
+        DEV1[Docker Compose<br/>All Services Local]
+        DEV2[AWS Infrastructure<br/>RDS + Cognito + S3]
+        DEV1 -.->|Connects to| DEV2
+    end
+
+    subgraph "Staging/Production Environment"
+        DNS[DNS Stack<br/>Route53 + Certificates<br/>us-east-1]
+        NET[Network Stack<br/>VPC + Security Groups<br/>eu-central-1]
+        DB[Database Stack<br/>RDS PostgreSQL]
+        STOR[Storage Stack<br/>S3 + CloudFront CDN]
+
+        CLUST[Cluster Stack<br/>ECS Fargate]
+
+        subgraph "Microservices - ECS Fargate"
+            SVC1[Event Management]
+            SVC2[Speaker Coordination]
+            SVC3[Partner Coordination]
+            SVC4[Attendee Experience]
+            SVC5[Company Management]
+            APIGW[API Gateway Service<br/>Spring Boot]
+        end
+
+        API[API Gateway Stack<br/>AWS HTTP API]
+        FE[Frontend Stack<br/>React SPA]
+
+        DNS --> NET
+        NET --> DB
+        NET --> CLUST
+        STOR -.Certificate.-> DNS
+
+        CLUST --> SVC1 & SVC2 & SVC3 & SVC4 & SVC5 & APIGW
+        SVC1 & SVC2 & SVC3 & SVC4 & SVC5 --> DB
+
+        API --> APIGW
+        APIGW --> SVC1 & SVC2 & SVC3 & SVC4 & SVC5
+
+        FE -.CDN Certificate.-> DNS
+    end
+
+    style DEV1 fill:#E8F5E9,stroke:#4CAF50,color:#000
+    style DEV2 fill:#FFF3E0,stroke:#FF9800,color:#000
+    style DNS fill:#E3F2FD,stroke:#2196F3,color:#000
+    style NET fill:#E3F2FD,stroke:#2196F3,color:#000
+    style DB fill:#F3E5F5,stroke:#9C27B0,color:#000
+    style CLUST fill:#FFE0B2,stroke:#FF9800,color:#000
+    style API fill:#FCE4EC,stroke:#E91E63,color:#000
+    style FE fill:#F3E5F5,stroke:#9C27B0,color:#000
+```
+
 ## Cost-Optimized AWS Infrastructure
 
 ### Overview
@@ -49,6 +154,136 @@ The BATbern platform infrastructure has been optimized for cost-efficiency while
 | **ElastiCache Redis** | Removed | Services run in Docker Compose |
 | **Log Retention** | 30 days | Standard |
 | **Note** | Services, API Gateway, Frontend run locally in Docker Compose | Only infrastructure deployed to AWS |
+
+### Deployment Model Details
+
+#### Development Environment Architecture
+
+**What's Deployed to AWS:**
+- **RDS PostgreSQL** (db.t4g.micro) - Shared database for all services
+- **AWS Cognito** - User authentication and authorization
+- **S3 Buckets** - File storage (presentations, logos, profiles)
+- **EventBridge** - Event bus for domain events
+- **Bastion Host** - SSM-based secure database access for migrations
+
+**What Runs Locally:**
+```bash
+# Services run in Docker Compose on developer machines
+docker-compose up -d
+
+# Running services:
+# → api-gateway (Spring Boot) on http://localhost:8080
+# → event-management-service on http://localhost:8081
+# → speaker-coordination-service on http://localhost:8082
+# → partner-coordination-service on http://localhost:8083
+# → attendee-experience-service on http://localhost:8084
+# → company-user-management-service on http://localhost:8085
+# → React frontend on http://localhost:3000
+```
+
+**Benefits:**
+- ✅ Instant code changes (no deployment wait)
+- ✅ Uses real AWS RDS for data consistency testing
+- ✅ Cost savings: No ECS/ALB charges (~$75/month saved)
+- ✅ Full debugging capabilities (breakpoints, hot reload)
+- ✅ Isolated developer environments
+
+**Developer Workflow:**
+```bash
+# 1. Start local services
+docker-compose up -d
+
+# 2. Services connect to shared development RDS
+#    (credentials from AWS Secrets Manager)
+
+# 3. Make code changes, services auto-reload
+
+# 4. Test against real AWS Cognito authentication
+
+# 5. Upload files to real S3 buckets for testing
+```
+
+#### Staging/Production Architecture
+
+**Full AWS Deployment using ECS Fargate:**
+
+```mermaid
+graph TB
+    subgraph "Load Balancing Layer"
+        ALB_PUB[Public ALB<br/>API Gateway Service<br/>Port 80]
+        ALB_EM[Internal ALB<br/>Event Management<br/>Port 80]
+        ALB_SC[Internal ALB<br/>Speaker Coordination<br/>Port 80]
+        ALB_PC[Internal ALB<br/>Partner Coordination<br/>Port 80]
+        ALB_AE[Internal ALB<br/>Attendee Experience<br/>Port 80]
+        ALB_CM[Internal ALB<br/>Company Management<br/>Port 80]
+    end
+
+    subgraph "ECS Fargate Cluster"
+        TASK_GW[API Gateway Tasks<br/>Fargate ARM64<br/>512 CPU / 1024 MB]
+        TASK_EM[Event Mgmt Tasks<br/>Fargate ARM64<br/>512 CPU / 1024 MB]
+        TASK_SC[Speaker Tasks<br/>Fargate ARM64<br/>256 CPU / 512 MB]
+        TASK_PC[Partner Tasks<br/>Fargate ARM64<br/>256 CPU / 512 MB]
+        TASK_AE[Attendee Tasks<br/>Fargate ARM64<br/>512 CPU / 1024 MB]
+        TASK_CM[Company Tasks<br/>Fargate ARM64<br/>256 CPU / 512 MB]
+    end
+
+    subgraph "Data Layer"
+        RDS[(RDS PostgreSQL<br/>db.t4g.micro<br/>Single-AZ)]
+        CACHE[Caffeine Cache<br/>Application-level<br/>In-memory]
+    end
+
+    ALB_PUB --> TASK_GW
+    ALB_EM --> TASK_EM
+    ALB_SC --> TASK_SC
+    ALB_PC --> TASK_PC
+    ALB_AE --> TASK_AE
+    ALB_CM --> TASK_CM
+
+    TASK_GW -.Routes to.-> ALB_EM & ALB_SC & ALB_PC & ALB_AE & ALB_CM
+    TASK_EM & TASK_SC & TASK_PC & TASK_AE & TASK_CM --> RDS
+    TASK_EM & TASK_SC & TASK_PC & TASK_AE & TASK_CM --> CACHE
+
+    style ALB_PUB fill:#FF9900,stroke:#FF6600,color:#000
+    style ALB_EM fill:#527FFF,stroke:#0000FF,color:#fff
+    style ALB_SC fill:#527FFF,stroke:#0000FF,color:#fff
+    style ALB_PC fill:#527FFF,stroke:#0000FF,color:#fff
+    style ALB_AE fill:#527FFF,stroke:#0000FF,color:#fff
+    style ALB_CM fill:#527FFF,stroke:#0000FF,color:#fff
+    style TASK_GW fill:#FF9900,stroke:#FF6600,color:#000
+    style TASK_EM fill:#527FFF,stroke:#0000FF,color:#fff
+    style TASK_SC fill:#527FFF,stroke:#0000FF,color:#fff
+    style TASK_PC fill:#527FFF,stroke:#0000FF,color:#fff
+    style TASK_AE fill:#527FFF,stroke:#0000FF,color:#fff
+    style TASK_CM fill:#527FFF,stroke:#0000FF,color:#fff
+    style RDS fill:#3F8624,stroke:#2D5016,color:#fff
+    style CACHE fill:#C925D1,stroke:#8B1A8B,color:#fff
+```
+
+**ECS Configuration:**
+- **Container Platform**: AWS ECS Fargate (serverless containers)
+- **Architecture**: ARM64 (Graviton2) for 20% cost savings
+- **Networking**: Private subnets with NAT Gateway egress
+- **Service Discovery**: Internal ALB DNS names passed as environment variables
+- **Auto-scaling**: CPU-based (target 70% utilization)
+- **Health Checks**: Spring Boot Actuator `/actuator/health` endpoints
+
+**Production Service Sizing:**
+
+| Service | CPU | Memory | Desired Count | Max Count | Monthly Cost |
+|---------|-----|--------|---------------|-----------|--------------|
+| API Gateway Service | 512 | 1024 MB | 2 | 8 | ~$25 |
+| Event Management | 512 | 1024 MB | 2 | 8 | ~$25 |
+| Speaker Coordination | 256 | 512 MB | 2 | 8 | ~$12 |
+| Partner Coordination | 256 | 512 MB | 2 | 8 | ~$12 |
+| Attendee Experience | 512 | 1024 MB | 2 | 8 | ~$25 |
+| Company Management | 256 | 512 MB | 2 | 8 | ~$12 |
+| **Total ECS Costs** | | | | | **~$111/month** |
+
+**Staging Service Sizing (Cost-Optimized):**
+
+| Service | CPU | Memory | Desired Count | Max Count | Monthly Cost |
+|---------|-----|--------|---------------|-----------|--------------|
+| All Services | 256-512 | 512-1024 MB | 1 each | 2-4 each | ~$65/month |
 
 ### Architecture Decisions & Trade-offs
 
@@ -214,6 +449,265 @@ For detailed deployment instructions, rollback procedures, and performance consi
 - `infrastructure/lib/config/staging-config.ts` - Staging infrastructure configuration
 - `infrastructure/lib/config/dev-config.ts` - Development infrastructure configuration
 
+## API Gateway Architecture Pattern
+
+### Dual Gateway Pattern: AWS HTTP API + Spring Boot Gateway
+
+BATbern uses a **two-tier API Gateway** architecture that combines AWS-managed infrastructure with application-level routing:
+
+```mermaid
+graph LR
+    A[Client<br/>Web/Mobile] -->|HTTPS| B[AWS HTTP API Gateway<br/>api.batbern.ch<br/>Cognito JWT Validation]
+    B -->|"TLS Termination<br/>Request Throttling"| C[Spring Boot API Gateway<br/>ECS Fargate Service<br/>Internal ALB]
+
+    C -->|"/api/v1/events/*"| D1[Event Management<br/>Internal ALB:80]
+    C -->|"/api/v1/speakers/*"| D2[Speaker Coordination<br/>Internal ALB:80]
+    C -->|"/api/v1/partners/*"| D3[Partner Coordination<br/>Internal ALB:80]
+    C -->|"/api/v1/content/*"| D4[Attendee Experience<br/>Internal ALB:80]
+    C -->|"/api/v1/companies/*<br/>/api/v1/users/*"| D5[Company Management<br/>Internal ALB:80]
+
+    style A fill:#E0E0E0,stroke:#757575,color:#000
+    style B fill:#FF9900,stroke:#FF6600,color:#000
+    style C fill:#527FFF,stroke:#0066CC,color:#fff
+    style D1 fill:#527FFF,stroke:#0066CC,color:#fff
+    style D2 fill:#527FFF,stroke:#0066CC,color:#fff
+    style D3 fill:#527FFF,stroke:#0066CC,color:#fff
+    style D4 fill:#527FFF,stroke:#0066CC,color:#fff
+    style D5 fill:#527FFF,stroke:#0066CC,color:#fff
+```
+
+**Tier 1: AWS HTTP API Gateway (`api.batbern.ch` / `api.staging.batbern.ch`)**
+
+**Responsibilities:**
+- ✅ TLS termination with AWS Certificate Manager
+- ✅ DNS integration via Route53
+- ✅ AWS Cognito JWT validation
+- ✅ Request throttling (10,000 req/sec burst)
+- ✅ DDoS protection via AWS Shield
+- ✅ CloudWatch logging and metrics
+- ✅ CORS headers configuration
+
+**Technology:** AWS HTTP API (API Gateway v2)
+**Access:** Public internet via custom domain
+**Routing:** Simple proxy: `/{proxy+}` → Spring Boot API Gateway
+
+**Configuration:**
+```typescript
+// infrastructure/lib/stacks/api-gateway-stack.ts
+const httpApi = new HttpApi(this, 'BATbernHttpApi', {
+  defaultAuthorizer: new HttpJwtAuthorizer('CognitoAuthorizer',
+    cognitoIssuer, {
+      jwtAudience: [userPoolClient.userPoolClientId],
+    }
+  ),
+  defaultDomainMapping: {
+    domainName: apiDomain, // api.batbern.ch
+    certificate: apiCertificate,
+  },
+  corsPreflight: {
+    allowOrigins: ['https://www.batbern.ch', 'https://staging.batbern.ch'],
+    allowMethods: [CorsHttpMethod.GET, CorsHttpMethod.POST,
+                   CorsHttpMethod.PUT, CorsHttpMethod.DELETE],
+    allowHeaders: ['Authorization', 'Content-Type', 'X-Correlation-ID'],
+  },
+});
+
+// Proxy ALL requests to Spring Boot API Gateway
+httpApi.addRoutes({
+  path: '/{proxy+}',
+  methods: [HttpMethod.ANY],
+  integration: new HttpAlbIntegration('SpringGatewayIntegration',
+    springBootApiGatewayAlb.listener),
+});
+```
+
+---
+
+**Tier 2: Spring Boot API Gateway (ECS Fargate)**
+
+**Responsibilities:**
+- ✅ Path-based routing to domain microservices
+- ✅ Request/response transformation
+- ✅ Circuit breaking and retry logic (Resilience4j)
+- ✅ Distributed tracing correlation IDs
+- ✅ Business-level authorization checks
+- ✅ Request validation and sanitization
+- ✅ Rate limiting per user/organization
+
+**Technology:** Spring Cloud Gateway 4.x
+**Access:** Internal VPC only (private ALB)
+**Routing:** Dynamic path-based routing to internal ALBs
+
+**Route Configuration:**
+```yaml
+# api-gateway/src/main/resources/application.yml
+spring:
+  cloud:
+    gateway:
+      routes:
+        # Event Management Service
+        - id: event-management
+          uri: ${EVENT_MANAGEMENT_SERVICE_URL} # Internal ALB DNS
+          predicates:
+            - Path=/api/v1/events/**, /api/v1/organizers/**
+          filters:
+            - AddRequestHeader=X-Service-Name, event-management
+            - CircuitBreaker=eventManagementCircuitBreaker
+
+        # Speaker Coordination Service
+        - id: speaker-coordination
+          uri: ${SPEAKER_COORDINATION_SERVICE_URL}
+          predicates:
+            - Path=/api/v1/speakers/**, /api/v1/sessions/**, /api/v1/materials/**
+          filters:
+            - AddRequestHeader=X-Service-Name, speaker-coordination
+            - CircuitBreaker=speakerCircuitBreaker
+
+        # Partner Coordination Service
+        - id: partner-coordination
+          uri: ${PARTNER_COORDINATION_SERVICE_URL}
+          predicates:
+            - Path=/api/v1/partners/**, /api/v1/topics/**
+          filters:
+            - AddRequestHeader=X-Service-Name, partner-coordination
+
+        # Attendee Experience Service
+        - id: attendee-experience
+          uri: ${ATTENDEE_EXPERIENCE_SERVICE_URL}
+          predicates:
+            - Path=/api/v1/content/**, /api/v1/registrations/**
+          filters:
+            - AddRequestHeader=X-Service-Name, attendee-experience
+
+        # Company & User Management Service
+        - id: company-management
+          uri: ${COMPANY_USER_MANAGEMENT_SERVICE_URL}
+          predicates:
+            - Path=/api/v1/companies/**, /api/v1/users/**
+          filters:
+            - AddRequestHeader=X-Service-Name, company-management
+```
+
+**Environment Variables (passed from CDK):**
+```bash
+EVENT_MANAGEMENT_SERVICE_URL=http://internal-event-mgmt-alb-xxx.eu-central-1.elb.amazonaws.com
+SPEAKER_COORDINATION_SERVICE_URL=http://internal-speaker-alb-xxx.eu-central-1.elb.amazonaws.com
+PARTNER_COORDINATION_SERVICE_URL=http://internal-partner-alb-xxx.eu-central-1.elb.amazonaws.com
+ATTENDEE_EXPERIENCE_SERVICE_URL=http://internal-attendee-alb-xxx.eu-central-1.elb.amazonaws.com
+COMPANY_USER_MANAGEMENT_SERVICE_URL=http://internal-company-alb-xxx.eu-central-1.elb.amazonaws.com
+```
+
+---
+
+### Why Two Tiers?
+
+| Requirement | Solution | Benefit |
+|-------------|----------|---------|
+| **Swiss TLS Compliance** | AWS Certificate Manager | Auto-renewal, managed certificates |
+| **Complex Routing Logic** | Spring Cloud Gateway | Full control over routing rules |
+| **Vendor Independence** | Core routing in Spring Boot | Portable to any cloud/on-prem |
+| **AWS-Native Auth** | Cognito at HTTP API tier | Lightweight JWT validation at edge |
+| **Cost Optimization** | HTTP API (not REST API) | 70% cheaper than API Gateway v1 |
+| **Service Discovery** | Internal ALB DNS | No external dependencies (Consul/Eureka) |
+| **Circuit Breaking** | Resilience4j in Spring Boot | Application-level failure handling |
+| **Future Flexibility** | Swap AWS gateway layer | Can replace with Kong/Traefik/nginx |
+
+---
+
+### Request Flow Example
+
+**POST `/api/v1/events` - Create Event**
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant AWS as AWS HTTP API<br/>api.batbern.ch
+    participant GW as Spring Boot Gateway<br/>ECS Fargate
+    participant EM as Event Management<br/>Service
+
+    C->>AWS: POST /api/v1/events<br/>Authorization: Bearer {JWT}
+    AWS->>AWS: Validate JWT with Cognito
+    AWS->>AWS: Check throttling limits
+    AWS->>GW: Proxy to http://internal-gw-alb/api/v1/events
+    GW->>GW: Route matching: /api/v1/events/** → event-management
+    GW->>GW: Circuit breaker check
+    GW->>GW: Add correlation ID header
+    GW->>EM: Forward to http://internal-event-mgmt-alb/api/v1/events
+    EM->>EM: Process business logic
+    EM->>GW: Return 201 Created
+    GW->>AWS: Return response
+    AWS->>C: Return 201 Created
+```
+
+---
+
+### Network Architecture for API Gateway
+
+```mermaid
+graph TB
+    subgraph "Public Internet"
+        CLIENT[Client Applications]
+    end
+
+    subgraph "AWS Public Subnet"
+        ALB_PUBLIC[Public ALB<br/>api.batbern.ch<br/>Port 443]
+    end
+
+    subgraph "AWS Private Subnet - App Tier"
+        HTTPAPI[AWS HTTP API Gateway<br/>JWT Validation]
+        GW_TASKS[Spring Boot Gateway<br/>ECS Fargate Tasks<br/>Port 8080]
+    end
+
+    subgraph "AWS Private Subnet - Service Tier"
+        ALB_EM[Event Mgmt ALB<br/>Port 80]
+        ALB_SC[Speaker ALB<br/>Port 80]
+        ALB_PC[Partner ALB<br/>Port 80]
+        ALB_AE[Attendee ALB<br/>Port 80]
+        ALB_CM[Company ALB<br/>Port 80]
+
+        SVC_EM[Event Mgmt<br/>Fargate Tasks]
+        SVC_SC[Speaker<br/>Fargate Tasks]
+        SVC_PC[Partner<br/>Fargate Tasks]
+        SVC_AE[Attendee<br/>Fargate Tasks]
+        SVC_CM[Company<br/>Fargate Tasks]
+    end
+
+    CLIENT -->|HTTPS:443| HTTPAPI
+    HTTPAPI -->|HTTP:80| ALB_PUBLIC
+    ALB_PUBLIC -->|HTTP:8080| GW_TASKS
+
+    GW_TASKS -->|HTTP:80| ALB_EM & ALB_SC & ALB_PC & ALB_AE & ALB_CM
+
+    ALB_EM --> SVC_EM
+    ALB_SC --> SVC_SC
+    ALB_PC --> SVC_PC
+    ALB_AE --> SVC_AE
+    ALB_CM --> SVC_CM
+
+    style CLIENT fill:#E0E0E0,stroke:#757575,color:#000
+    style HTTPAPI fill:#FF9900,stroke:#FF6600,color:#000
+    style ALB_PUBLIC fill:#FF9900,stroke:#FF6600,color:#000
+    style GW_TASKS fill:#527FFF,stroke:#0066CC,color:#fff
+    style ALB_EM fill:#00A1C9,stroke:#007A99,color:#fff
+    style ALB_SC fill:#00A1C9,stroke:#007A99,color:#fff
+    style ALB_PC fill:#00A1C9,stroke:#007A99,color:#fff
+    style ALB_AE fill:#00A1C9,stroke:#007A99,color:#fff
+    style ALB_CM fill:#00A1C9,stroke:#007A99,color:#fff
+    style SVC_EM fill:#527FFF,stroke:#0066CC,color:#fff
+    style SVC_SC fill:#527FFF,stroke:#0066CC,color:#fff
+    style SVC_PC fill:#527FFF,stroke:#0066CC,color:#fff
+    style SVC_AE fill:#527FFF,stroke:#0066CC,color:#fff
+    style SVC_CM fill:#527FFF,stroke:#0066CC,color:#fff
+```
+
+**Security Groups:**
+- **HTTP API → Public ALB**: Allows HTTPS (443) from internet
+- **Public ALB → Spring Gateway**: Allows HTTP (80) from public ALB only
+- **Spring Gateway → Service ALBs**: Allows HTTP (80) from gateway security group only
+- **Service ALBs → Services**: Allows HTTP (8080) from service ALB security group only
+
+---
+
 ## Deployment Strategy
 
 **Frontend Deployment:**
@@ -229,18 +723,541 @@ For detailed deployment instructions, rollback procedures, and performance consi
 
 ## CI/CD Pipeline
 
-**Daily Build Pipeline:**
-- Shared kernel build and test
-- Domain services parallel build
-- Frontend build and test
-- Integration tests
-- Deployment to staging (on main branch)
+### Selective Deployment Strategy
 
-**Production Deployment:**
-- Manual approval required
-- Blue/Green deployment
-- Health checks and monitoring
-- Route53 DNS management with AWS integration
+The deployment pipeline uses **intelligent change detection** to deploy only affected stacks, significantly reducing deployment time and risk:
+
+```mermaid
+graph TD
+    START[Git Push to develop] --> DETECT[Change Detection<br/>Analyze modified files]
+
+    DETECT -->|shared-kernel/**| ALL[Deploy ALL service stacks<br/>~15 minutes]
+    DETECT -->|infrastructure/lib/stacks/**| ALL
+    DETECT -->|services/event-management/**| SVC1[Deploy Event Management stack<br/>~5 minutes]
+    DETECT -->|services/speaker-coordination/**| SVC2[Deploy Speaker Coordination stack<br/>~5 minutes]
+    DETECT -->|web-frontend/**| FE[Deploy Frontend stack<br/>~3 minutes]
+    DETECT -->|api-gateway/**| APIGW[Deploy API Gateway stacks<br/>~6 minutes]
+
+    ALL --> BACKUP[Database Backup<br/>if migrations detected]
+    SVC1 & SVC2 & FE & APIGW --> BACKUP
+    BACKUP --> DEPLOY[CDK Deploy]
+    DEPLOY --> WAIT[Wait for ECS stability]
+    WAIT --> TESTS[Smoke Tests + CORS + Contract Tests]
+    TESTS --> SUCCESS{All Passed?}
+    SUCCESS -->|Yes| DONE[✅ Deployment Complete]
+    SUCCESS -->|No| ROLLBACK[❌ Automatic Rollback]
+
+    style START fill:#4CAF50,stroke:#2E7D32,color:#fff
+    style DETECT fill:#2196F3,stroke:#1565C0,color:#fff
+    style ALL fill:#FF9800,stroke:#E65100,color:#fff
+    style SVC1 fill:#9C27B0,stroke:#6A1B9A,color:#fff
+    style SVC2 fill:#9C27B0,stroke:#6A1B9A,color:#fff
+    style FE fill:#00BCD4,stroke:#006064,color:#fff
+    style APIGW fill:#3F51B5,stroke:#1A237E,color:#fff
+    style BACKUP fill:#FFC107,stroke:#FF8F00,color:#000
+    style DEPLOY fill:#FF9800,stroke:#E65100,color:#fff
+    style TESTS fill:#2196F3,stroke:#1565C0,color:#fff
+    style DONE fill:#4CAF50,stroke:#2E7D32,color:#fff
+    style ROLLBACK fill:#F44336,stroke:#B71C1C,color:#fff
+```
+
+**Change Detection Logic:**
+
+| Changed Path | Deployed Stacks | Deployment Time | Reason |
+|-------------|-----------------|-----------------|--------|
+| `shared-kernel/**` | ALL service stacks | ~15 min | Shared code affects all services |
+| `infrastructure/lib/stacks/**` | ALL stacks | ~18 min | Infrastructure changes require full deployment |
+| `services/event-management-service/**` | `EventManagement` | ~5 min | Only this service affected |
+| `services/speaker-coordination-service/**` | `SpeakerCoordination` | ~5 min | Only this service affected |
+| `services/partner-coordination-service/**` | `PartnerCoordination` | ~5 min | Only this service affected |
+| `services/attendee-experience-service/**` | `AttendeeExperience` | ~5 min | Only this service affected |
+| `services/company-user-management-service/**` | `CompanyManagement` | ~5 min | Only this service affected |
+| `web-frontend/**` | `Frontend` | ~3 min | Only frontend stack |
+| `api-gateway/**` | `ApiGatewayService`, `ApiGateway` | ~6 min | Both gateway tiers |
+
+**Deployment Commands:**
+
+```bash
+# Full deployment (infrastructure changes or shared-kernel)
+npm run deploy:staging -- --all --context environment=staging
+
+# Selective deployment (specific service changes)
+# Automatically run by CI/CD based on changed files
+npm run deploy:staging:selective -- \
+  BATbern-staging-SpeakerCoordination \
+  --context environment=staging \
+  --require-approval never
+```
+
+**Safety Mechanisms:**
+- ✅ Database backup created before deployment if Dockerfile or migrations changed
+- ✅ ECS services wait for stability (health checks must pass)
+- ✅ Smoke tests validate critical endpoints after deployment
+- ✅ CORS validation ensures frontend can access API
+- ✅ Contract tests (Bruno) verify API behavior
+- ✅ Automatic rollback on failure (previous task definition restored)
+
+---
+
+### Daily Build Pipeline
+
+**Continuous Integration (Every Push to `develop`):**
+
+```yaml
+# .github/workflows/build.yml
+on:
+  push:
+    branches: [develop]
+
+jobs:
+  build-shared-kernel:
+    - Build shared-kernel JAR
+    - Run unit tests
+    - Publish to package registry
+
+  build-services:
+    needs: build-shared-kernel
+    strategy:
+      matrix:
+        service:
+          - event-management
+          - speaker-coordination
+          - partner-coordination
+          - attendee-experience
+          - company-user-management
+          - api-gateway
+    steps:
+      - Build Gradle project
+      - Run unit tests (parallel)
+      - Build Docker image (ARM64)
+      - Tag: {sha}-staging.{run-number}
+      - Push to Amazon ECR
+
+  build-frontend:
+    - Install dependencies (npm ci)
+    - Build with Vite
+    - Run unit tests (Vitest)
+    - Build artifacts for CDK
+```
+
+**Deployment Time Comparison:**
+
+| Scenario | Stacks Deployed | Time | Cost |
+|----------|----------------|------|------|
+| Full infrastructure change | All 14 stacks | ~18 min | $0.05 |
+| Shared kernel update | 6 service stacks | ~15 min | $0.04 |
+| Single service change | 1 service stack | ~5 min | $0.01 |
+| Frontend only change | 1 frontend stack | ~3 min | $0.01 |
+
+---
+
+### Staging Deployment (Automatic)
+
+**Trigger:** Successful build on `develop` branch
+
+```yaml
+# .github/workflows/deploy-staging.yml
+on:
+  workflow_call: # Called from build.yml
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  deploy-to-staging:
+    steps:
+      1. Detect changed components (Git diff analysis)
+      2. Create database backup (if needed)
+      3. Build frontend (Vite with staging env vars)
+      4. Deploy changed CDK stacks
+      5. Wait for ECS service stabilization
+      6. Run smoke tests
+      7. Run CORS validation tests
+      8. Run header propagation tests
+      9. Run Bruno API contract tests
+      10. Notify on success/failure
+```
+
+**Environment Variables:**
+```bash
+# Staging Frontend Build
+VITE_API_URL=https://api.staging.batbern.ch
+VITE_AWS_REGION=eu-central-1
+VITE_COGNITO_USER_POOL_ID=${STAGING_COGNITO_USER_POOL_ID}
+VITE_COGNITO_CLIENT_ID=${STAGING_COGNITO_CLIENT_ID}
+```
+
+**Docker Image Tagging:**
+```bash
+# Build workflow creates images with format:
+${SHORT_SHA}-staging.${BUILD_RUN_NUMBER}
+
+# Example:
+# a1b2c3d-staging.142
+# ↑       ↑        ↑
+# commit  env      build number
+```
+
+---
+
+### Production Deployment (Manual Approval)
+
+**Trigger:** Manual workflow dispatch with version tag
+
+```yaml
+# .github/workflows/deploy-production.yml
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to deploy (e.g., v1.2.3)'
+        required: true
+      migrate_database:
+        description: 'Run database migrations'
+        type: boolean
+        default: true
+
+jobs:
+  pre-deployment-checks:
+    - Verify version tag exists
+    - Check staging deployment status
+    - Validate version matches staging
+
+  backup-database:
+    - Create RDS snapshot
+    - Wait for snapshot completion
+    - Store snapshot ID for potential rollback
+
+  blue-green-deployment:
+    - Checkout version tag
+    - Deploy infrastructure (CDK)
+    - Wait for ECS service stabilization
+    - Run comprehensive E2E tests
+
+  smoke-tests:
+    - Run smoke tests
+    - Run CORS validation
+    - Run header propagation tests
+    - Run Bruno API contract tests
+    - Verify critical endpoints
+
+  rollback-on-failure:
+    if: failure()
+    - Restore previous ECS task definitions
+    - Restore database snapshot (if needed)
+    - Notify team of rollback
+```
+
+**Blue/Green Deployment Strategy:**
+
+```mermaid
+sequenceDiagram
+    participant CICD as GitHub Actions
+    participant ECS as ECS Fargate
+    participant ALB as Application Load Balancer
+    participant HEALTH as Health Checks
+
+    CICD->>ECS: Deploy new task definition (Green)
+    ECS->>ECS: Start new tasks (version v1.2.3)
+    ECS->>HEALTH: Register with target group
+    HEALTH->>HEALTH: Health checks (30s interval)
+    HEALTH-->>ALB: Tasks healthy
+    ALB->>ALB: Route traffic to Green tasks
+    ALB->>ECS: Drain Blue tasks (old version)
+    ECS->>ECS: Stop Blue tasks after 5 min
+    CICD->>CICD: Deployment complete ✅
+
+    Note over CICD,HEALTH: If health checks fail:<br/>- Rollback to Blue tasks<br/>- Keep old version running<br/>- Alert team
+```
+
+**Production Deployment Checklist:**
+
+- [ ] Version deployed and tested in staging
+- [ ] Database backup completed
+- [ ] All E2E tests passing
+- [ ] Monitoring dashboards ready
+- [ ] Team notified of deployment window
+- [ ] Rollback plan documented
+
+---
+
+### CI/CD Architecture Diagram
+
+```mermaid
+graph TB
+    subgraph "GitHub"
+        GH_CODE[Code Repository<br/>Main/Develop Branches]
+        GH_ACTIONS[GitHub Actions<br/>Workflows]
+    end
+
+    subgraph "Build Pipeline"
+        BUILD_SK[Build Shared Kernel]
+        BUILD_SVC[Build Services<br/>Parallel Matrix]
+        BUILD_FE[Build Frontend<br/>Vite]
+        BUILD_DOCKER[Docker Build<br/>ARM64 Images]
+    end
+
+    subgraph "AWS - Staging (188701360969)"
+        ECR_STG[Amazon ECR<br/>Container Registry]
+        CDK_STG[CDK Deploy<br/>Staging Stacks]
+        ECS_STG[ECS Fargate<br/>Staging Cluster]
+        TEST_STG[Automated Tests<br/>Smoke + E2E]
+    end
+
+    subgraph "AWS - Production (422940799530)"
+        ECR_PROD[Amazon ECR<br/>Container Registry]
+        CDK_PROD[CDK Deploy<br/>Production Stacks]
+        ECS_PROD[ECS Fargate<br/>Production Cluster]
+        TEST_PROD[Automated Tests<br/>Full Suite]
+    end
+
+    GH_CODE -->|Push to develop| GH_ACTIONS
+    GH_ACTIONS --> BUILD_SK
+    BUILD_SK --> BUILD_SVC
+    BUILD_SK --> BUILD_FE
+    BUILD_SVC --> BUILD_DOCKER
+    BUILD_DOCKER --> ECR_STG
+
+    ECR_STG --> CDK_STG
+    CDK_STG --> ECS_STG
+    ECS_STG --> TEST_STG
+
+    TEST_STG -->|Manual Approval| CDK_PROD
+    ECR_STG -.Copy Images.-> ECR_PROD
+    CDK_PROD --> ECS_PROD
+    ECS_PROD --> TEST_PROD
+
+    style GH_CODE fill:#24292E,stroke:#fff,color:#fff
+    style GH_ACTIONS fill:#2088FF,stroke:#0969DA,color:#fff
+    style BUILD_SK fill:#4CAF50,stroke:#2E7D32,color:#fff
+    style BUILD_SVC fill:#4CAF50,stroke:#2E7D32,color:#fff
+    style BUILD_FE fill:#00BCD4,stroke:#006064,color:#fff
+    style BUILD_DOCKER fill:#2196F3,stroke:#1565C0,color:#fff
+    style ECR_STG fill:#FF9900,stroke:#FF6600,color:#000
+    style CDK_STG fill:#527FFF,stroke:#0066CC,color:#fff
+    style ECS_STG fill:#FF9900,stroke:#FF6600,color:#000
+    style TEST_STG fill:#9C27B0,stroke:#6A1B9A,color:#fff
+    style ECR_PROD fill:#FF9900,stroke:#FF6600,color:#000
+    style CDK_PROD fill:#527FFF,stroke:#0066CC,color:#fff
+    style ECS_PROD fill:#FF9900,stroke:#FF6600,color:#000
+    style TEST_PROD fill:#9C27B0,stroke:#6A1B9A,color:#fff
+```
+
+**OIDC Authentication (No Long-Lived Credentials):**
+
+```yaml
+# GitHub Actions assumes AWS role via OIDC
+- name: Configure AWS credentials
+  uses: aws-actions/configure-aws-credentials@v4
+  with:
+    role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+    aws-region: eu-central-1
+
+# No AWS_ACCESS_KEY_ID or AWS_SECRET_ACCESS_KEY needed!
+# Short-lived credentials automatically refreshed
+```
+
+## Network Architecture
+
+### VPC and Subnet Design
+
+```mermaid
+graph TB
+    subgraph "Internet"
+        IGW[Internet Gateway]
+    end
+
+    subgraph "AWS VPC - 10.2.0.0/16 (Production) / 10.1.0.0/16 (Staging)"
+        subgraph "Public Subnet - eu-central-1a"
+            NAT1[NAT Gateway<br/>Elastic IP]
+            ALB_PUB[Public ALB<br/>API Gateway Service<br/>Security Group: ALB-Public]
+        end
+
+        subgraph "Private Subnet - App Tier - eu-central-1a"
+            ECS_GW[ECS Tasks<br/>Spring Boot Gateway<br/>Security Group: ECS-Gateway]
+        end
+
+        subgraph "Private Subnet - App Tier - eu-central-1b"
+            ECS_GW2[ECS Tasks<br/>Spring Boot Gateway<br/>Security Group: ECS-Gateway]
+        end
+
+        subgraph "Private Subnet - Service Tier - eu-central-1a"
+            ALB_INT1[Internal ALBs<br/>5x Domain Services<br/>Security Group: ALB-Internal]
+            ECS_SVC1[ECS Tasks<br/>5x Microservices<br/>Security Group: ECS-Services]
+        end
+
+        subgraph "Private Subnet - Service Tier - eu-central-1b"
+            ALB_INT2[Internal ALBs<br/>5x Domain Services<br/>Security Group: ALB-Internal]
+            ECS_SVC2[ECS Tasks<br/>5x Microservices<br/>Security Group: ECS-Services]
+        end
+
+        subgraph "Private Subnet - Data Tier - eu-central-1a"
+            RDS[(RDS PostgreSQL<br/>db.t4g.micro<br/>Security Group: RDS-SG)]
+        end
+
+        subgraph "AWS Managed Services"
+            COGNITO[AWS Cognito]
+            S3[S3 Buckets]
+            SES[AWS SES]
+            SECRETS[Secrets Manager]
+        end
+    end
+
+    IGW -->|HTTPS:443| ALB_PUB
+    ALB_PUB -->|HTTP:8080| ECS_GW & ECS_GW2
+
+    ECS_GW & ECS_GW2 -->|HTTP:80| ALB_INT1 & ALB_INT2
+    ALB_INT1 --> ECS_SVC1
+    ALB_INT2 --> ECS_SVC2
+
+    ECS_SVC1 & ECS_SVC2 -->|PostgreSQL:5432| RDS
+    ECS_SVC1 & ECS_SVC2 -.->|NAT| NAT1
+    NAT1 --> IGW
+
+    ECS_SVC1 & ECS_SVC2 -.->|HTTPS| COGNITO & S3 & SES & SECRETS
+
+    style IGW fill:#E0E0E0,stroke:#757575,color:#000
+    style NAT1 fill:#FF9900,stroke:#FF6600,color:#000
+    style ALB_PUB fill:#FF9900,stroke:#FF6600,color:#000
+    style ECS_GW fill:#527FFF,stroke:#0066CC,color:#fff
+    style ECS_GW2 fill:#527FFF,stroke:#0066CC,color:#fff
+    style ALB_INT1 fill:#00A1C9,stroke:#007A99,color:#fff
+    style ALB_INT2 fill:#00A1C9,stroke:#007A99,color:#fff
+    style ECS_SVC1 fill:#527FFF,stroke:#0066CC,color:#fff
+    style ECS_SVC2 fill:#527FFF,stroke:#0066CC,color:#fff
+    style RDS fill:#3F8624,stroke:#2D5016,color:#fff
+    style COGNITO fill:#DD344C,stroke:#A21835,color:#fff
+    style S3 fill:#569A31,stroke:#3A6B1F,color:#fff
+    style SES fill:#DD344C,stroke:#A21835,color:#fff
+    style SECRETS fill:#DD344C,stroke:#A21835,color:#fff
+```
+
+### Security Group Rules
+
+**ALB-Public (Public ALB for API Gateway Service)**
+```
+Inbound:
+  - 0.0.0.0/0 → 443 (HTTPS) - Public internet access
+
+Outbound:
+  - ECS-Gateway SG → 8080 (HTTP) - Forward to Spring Boot Gateway
+```
+
+**ECS-Gateway (Spring Boot API Gateway)**
+```
+Inbound:
+  - ALB-Public SG → 8080 (HTTP) - Receive from public ALB
+
+Outbound:
+  - ALB-Internal SG → 80 (HTTP) - Route to domain microservices
+  - 0.0.0.0/0 → 443 (HTTPS) - AWS services via NAT
+```
+
+**ALB-Internal (Internal ALBs for Domain Services)**
+```
+Inbound:
+  - ECS-Gateway SG → 80 (HTTP) - Receive from API Gateway
+
+Outbound:
+  - ECS-Services SG → 8080 (HTTP) - Forward to microservices
+```
+
+**ECS-Services (Domain Microservices)**
+```
+Inbound:
+  - ALB-Internal SG → 8080 (HTTP) - Receive from internal ALBs
+
+Outbound:
+  - RDS-SG → 5432 (PostgreSQL) - Database access
+  - 0.0.0.0/0 → 443 (HTTPS) - AWS services (S3, SES, Cognito) via NAT
+```
+
+**RDS-SG (PostgreSQL Database)**
+```
+Inbound:
+  - ECS-Services SG → 5432 (PostgreSQL) - Microservices access
+  - Bastion-SG → 5432 (PostgreSQL) - Development environment only
+
+Outbound:
+  - None (database doesn't initiate connections)
+```
+
+### DNS and Certificate Architecture
+
+**Subdomain Delegation Strategy:**
+
+```mermaid
+graph TB
+    subgraph "Production AWS Account (422940799530)"
+        PROD_ZONE[Route53 Hosted Zone<br/>batbern.ch<br/>Z003987919RPX23XXEU48]
+        PROD_CERT_US[ACM Certificate us-east-1<br/>*.batbern.ch<br/>CloudFront]
+        PROD_CERT_EU[ACM Certificate eu-central-1<br/>api.batbern.ch<br/>API Gateway]
+
+        PROD_ZONE -.Owns.-> PROD_CERT_US
+        PROD_ZONE -.Owns.-> PROD_CERT_EU
+
+        PROD_DNS_WWW[A Record: www.batbern.ch<br/>→ CloudFront]
+        PROD_DNS_API[A Record: api.batbern.ch<br/>→ HTTP API Gateway]
+        PROD_DNS_CDN[A Record: cdn.batbern.ch<br/>→ CloudFront CDN]
+    end
+
+    subgraph "Staging AWS Account (188701360969)"
+        STG_ZONE[Route53 Hosted Zone<br/>staging.batbern.ch<br/>Z00395322M4O1QCL0M7UA<br/>Delegated Subdomain]
+        STG_CERT_US[ACM Certificate us-east-1<br/>*.staging.batbern.ch<br/>CloudFront]
+        STG_CERT_EU[ACM Certificate eu-central-1<br/>api.staging.batbern.ch<br/>API Gateway]
+
+        STG_ZONE -.Owns.-> STG_CERT_US
+        STG_ZONE -.Owns.-> STG_CERT_EU
+
+        STG_DNS_WWW[A Record: staging.batbern.ch<br/>→ CloudFront]
+        STG_DNS_API[A Record: api.staging.batbern.ch<br/>→ HTTP API Gateway]
+        STG_DNS_CDN[A Record: cdn.staging.batbern.ch<br/>→ CloudFront CDN]
+    end
+
+    PROD_ZONE -->|NS Records| STG_ZONE
+
+    style PROD_ZONE fill:#FF9900,stroke:#FF6600,color:#000
+    style PROD_CERT_US fill:#8C4FFF,stroke:#6B3ACC,color:#fff
+    style PROD_CERT_EU fill:#8C4FFF,stroke:#6B3ACC,color:#fff
+    style PROD_DNS_WWW fill:#00BCD4,stroke:#006064,color:#fff
+    style PROD_DNS_API fill:#FF4F8B,stroke:#C7365F,color:#fff
+    style PROD_DNS_CDN fill:#FF9900,stroke:#FF6600,color:#000
+    style STG_ZONE fill:#FF9900,stroke:#FF6600,color:#000
+    style STG_CERT_US fill:#8C4FFF,stroke:#6B3ACC,color:#fff
+    style STG_CERT_EU fill:#8C4FFF,stroke:#6B3ACC,color:#fff
+    style STG_DNS_WWW fill:#00BCD4,stroke:#006064,color:#fff
+    style STG_DNS_API fill:#FF4F8B,stroke:#C7365F,color:#fff
+    style STG_DNS_CDN fill:#FF9900,stroke:#FF6600,color:#000
+```
+
+**Key DNS Features:**
+- **Automatic DNS Validation**: ACM certificates validated via Route53 CNAME records
+- **Health Checks**: Route53 monitors ALB health and fails over if needed
+- **TTL Strategy**: 60 seconds for API/frontend, 300 seconds for CDN
+- **Subdomain Delegation**: Staging account fully manages staging.batbern.ch subdomain
+- **Certificate Management**: Separate certificates per account, auto-renewal via ACM
+
+### Cost Optimization: Network Architecture
+
+**Single NAT Gateway Strategy:**
+
+| Component | Production | Staging | Development |
+|-----------|-----------|---------|-------------|
+| **NAT Gateways** | 1 | 1 | 1 |
+| **Monthly Cost** | $32 | $32 | $32 |
+| **Data Transfer** | ~$15/month | ~$5/month | ~$2/month |
+| **Total Network Cost** | $47/month | $37/month | $34/month |
+
+**Trade-offs:**
+- ✅ 66% cost reduction (vs 3 NAT Gateways in 3 AZs)
+- ⚠️ Single point of failure for outbound internet traffic
+- ✅ Acceptable for low-traffic workloads (1000 users/month)
+- ✅ Services continue running if NAT fails (only external calls affected)
+
+**Mitigation:**
+- All critical AWS services use VPC endpoints (no NAT required)
+- Monitoring alerts on NAT Gateway connection count
+- 15-minute manual recovery process if NAT fails
+
+---
 
 ## Environments
 
