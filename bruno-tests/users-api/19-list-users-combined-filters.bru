@@ -52,7 +52,7 @@ tests {
         expect(user.roles).to.include('ATTENDEE');
 
         // Must be active
-        expect(user.isActive).to.equal(true);
+        expect(user.active).to.equal(true);
 
         // Must match search term
         const searchTerm = 'bruno';

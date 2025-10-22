@@ -101,7 +101,7 @@ public class UserSearchServiceImpl implements UserSearchService {
                 .companyId(user.getCompanyId())  // Story 1.16.2: company name
                 .roles(user.getRoles())
                 .profilePictureUrl(user.getProfilePictureUrl())
-                .isActive(user.isActive())  // boolean getter is isActive() not getIsActive()
+                .active(user.isActive())  // Map isActive() to active field
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .lastLoginAt(user.getLastLoginAt())

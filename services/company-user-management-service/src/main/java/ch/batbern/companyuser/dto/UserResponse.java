@@ -31,7 +31,7 @@ public class UserResponse {
     private String companyId;  // Story 1.16.2: company name (e.g., "GoogleZH"), not UUID
     private Set<Role> roles;
     private String profilePictureUrl;
-    private boolean isActive;
+    private boolean active;  // Serialized as "active" (frontend adapted to use this name)
     private Instant createdAt;
     private Instant updatedAt;
     private Instant lastLoginAt;

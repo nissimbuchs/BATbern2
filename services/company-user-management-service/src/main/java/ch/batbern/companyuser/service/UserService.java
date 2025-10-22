@@ -139,13 +139,16 @@ public class UserService {
         if (roleFilter != null && companyFilter != null) {
             // Both filters
             Role role = parseRole(roleFilter);
+            log.debug("Filtering by role: {} and company: {}", role, companyFilter);
             users = userRepository.findByRolesContaining(role).stream()
                     .filter(u -> companyFilter.equals(u.getCompanyId()))
                     .toList();
         } else if (roleFilter != null) {
             // Role filter only
             Role role = parseRole(roleFilter);
+            log.debug("Filtering by role: {}", role);
             users = userRepository.findByRolesContaining(role);
+            log.debug("Found {} users with role {}", users.size(), role);
         } else if (companyFilter != null) {
             // Company filter only
             users = userRepository.findByCompanyId(companyFilter);
@@ -473,7 +476,7 @@ public class UserService {
                 .companyId(user.getCompanyId())  // Story 1.16.2: company name
                 .roles(user.getRoles())
                 .profilePictureUrl(user.getProfilePictureUrl())
-                .isActive(user.isActive())
+                .active(user.isActive())  // Map isActive() to active field
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .lastLoginAt(user.getLastLoginAt())

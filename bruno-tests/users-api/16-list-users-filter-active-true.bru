@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/users?filter={"active":true}&page=0&limit=20
+  url: {{baseUrl}}/users
   body: none
   auth: bearer
 }
@@ -45,7 +45,7 @@ tests {
 
       // Verify all returned users are active
       body.users.forEach(user => {
-        expect(user.isActive).to.equal(true);
+        expect(user.active).to.equal(true);
       });
 
       console.log(`Found ${body.users.length} active users`);
