@@ -185,12 +185,18 @@ public class UserService {
      */
     private java.util.List<User> applyJsonFilter(java.util.List<User> users, String jsonFilter) {
         try {
+            log.debug("Applying JSON filter: {}", jsonFilter);
             // Simple JSON parsing for active filter
             if (jsonFilter.contains("\"active\":true") || jsonFilter.contains("\"active\": true")) {
-                return users.stream().filter(User::isActive).toList();
+                java.util.List<User> filtered = users.stream().filter(User::isActive).toList();
+                log.debug("Active=true filter: {} -> {} users", users.size(), filtered.size());
+                return filtered;
             } else if (jsonFilter.contains("\"active\":false") || jsonFilter.contains("\"active\": false")) {
-                return users.stream().filter(u -> !u.isActive()).toList();
+                java.util.List<User> filtered = users.stream().filter(u -> !u.isActive()).toList();
+                log.debug("Active=false filter: {} -> {} users", users.size(), filtered.size());
+                return filtered;
             }
+            log.debug("No active filter matched, returning {} users", users.size());
             return users;
         } catch (Exception e) {
             log.warn("Failed to parse JSON filter: {}", jsonFilter, e);
