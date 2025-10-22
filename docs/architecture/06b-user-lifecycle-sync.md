@@ -1,1154 +1,652 @@
 # User Lifecycle and Sync Patterns
 
-This document outlines the comprehensive user lifecycle management and synchronization patterns between AWS Cognito and PostgreSQL for the BATbern Event Management Platform.
+This document outlines the user lifecycle management and synchronization patterns between AWS Cognito and PostgreSQL for the BATbern Event Management Platform.
+
+## Architecture Decision
+
+Per **[ADR-001: Invitation-Based User Registration Architecture](./ADR-001-invitation-based-user-registration.md)**, BATbern implements a **database-centric** user management architecture with the following principles:
+
+- **Database as Single Source of Truth**: All user data and roles stored in PostgreSQL
+- **Cognito for Authentication Only**: JWT generation and validation only
+- **NO Cognito Groups**: Roles managed exclusively via `role_assignments` table
+- **Unidirectional Sync**: Cognito → Database only (via Lambda triggers)
 
 ## Problem Statement
 
 The BATbern platform maintains user data in two distinct systems:
 
 1. **AWS Cognito User Pool** - Authentication, credentials, email verification, MFA
-2. **PostgreSQL Database** - Role history, business relationships, audit trails, event participation
+2. **PostgreSQL Database** - User profiles, roles, business relationships, audit trails, event participation
 
-**Challenges:**
-- **Data Consistency** - Changes in one system must reflect in the other
-- **Partial Failures** - Network issues, API throttling, database deadlocks
-- **Out-of-Band Changes** - Admin console modifications, manual database updates
-- **Bootstrap Problem** - Creating initial organizer users for new environments
-- **Eventual Consistency** - Accepting temporary drift with automatic reconciliation
+**Key Requirements:**
+- **Self-Registration**: Users can register directly via Cognito (Story 1.2.3)
+- **Automatic Database Creation**: Database user created automatically on Cognito signup
+- **Role-Based Authorization**: JWT contains roles from database for API authorization
+- **Single Source of Truth**: Database is authoritative for all user data and roles
 
 ## Sync Architecture Overview
 
-BATbern implements a **hybrid multi-pattern approach** for user lifecycle management:
+BATbern implements a **simplified unidirectional sync** from Cognito to Database:
 
 ```mermaid
 sequenceDiagram
     participant U as User
     participant C as AWS Cognito
-    participant L as Lambda Trigger
-    participant API as API Gateway
-    participant I as JIT Interceptor
+    participant PC as PostConfirmation Lambda
+    participant PT as PreTokenGeneration Lambda
     participant DB as PostgreSQL
-    participant R as Reconciliation Job
+    participant API as API Gateway
+    participant SS as Spring Security
 
-    Note over U,R: Pattern 1: Event-Driven Sync (Primary)
-    U->>C: Register/Verify Email
-    C->>L: PostConfirmation Trigger
-    L->>DB: Create User + Initial Role
-    L-->>C: Success
+    Note over U,SS: Self-Registration Flow (Story 1.2.3)
+    U->>C: signUp(email, password, name)
+    C-->>U: Verification Email
+    U->>C: Confirm Email (click link)
+    C->>PC: PostConfirmation Trigger
+    PC->>DB: INSERT INTO user_profiles
+    PC->>DB: INSERT INTO role_assignments (ATTENDEE)
+    PC-->>C: Success
+    C-->>U: Account Confirmed
 
-    Note over U,R: Pattern 2: JIT Provisioning (Self-Healing)
-    U->>C: Authenticate
-    C-->>U: JWT Token
+    Note over U,SS: Authentication & Authorization
+    U->>C: Login
+    C->>PT: PreTokenGeneration Trigger
+    PT->>DB: SELECT roles FROM role_assignments
+    PT-->>C: Add custom:roles claim
+    C-->>U: JWT with custom:roles
+
     U->>API: API Request + JWT
-    API->>I: Forward to Interceptor
-    I->>DB: Check User Exists
-    alt User Not Found
-        I->>DB: Create User (JIT)
-    end
-    I->>API: Continue Request
-
-    Note over U,R: Pattern 3: Bidirectional Sync (Role Changes)
-    API->>DB: Update User Role
-    DB-->>API: Success
-    API->>C: Sync Custom Attribute
-    alt Cognito Sync Fails
-        API->>DB: Log Compensation Required
-    end
-
-    Note over U,R: Pattern 4: Scheduled Reconciliation (Drift Detection)
-    R->>DB: Load All Users
-    R->>C: Load All Cognito Users
-    R->>R: Detect Drift
-    alt Drift Found
-        R->>DB: Fix DB Orphans
-        R->>C: Fix Cognito Orphans
-        R->>DB: Sync Role Mismatches
-    end
+    API->>SS: Validate JWT
+    SS->>SS: Extract custom:roles claim
+    SS->>SS: Map to ROLE_ATTENDEE authority
+    API->>API: @PreAuthorize("hasRole('ATTENDEE')")
+    API-->>U: Response
 ```
 
 **Design Principles:**
 - **Cognito as Auth Source of Truth** - Credentials, verification status, MFA settings
-- **Database as Business Source of Truth** - Role history, relationships, audit trails
-- **Eventual Consistency** - Accept temporary drift with monitoring and auto-fix
-- **Self-Healing** - Multiple fallback mechanisms prevent permanent inconsistency
-- **Comprehensive Monitoring** - Track sync lag, failures, and drift
+- **Database as Business Source of Truth** - User profiles, roles, relationships, audit trails
+- **Unidirectional Sync** - Cognito → Database only (no reverse sync)
+- **No Drift Possible** - Single direction eliminates consistency issues
+- **Simplified Operations** - No reconciliation jobs, no compensation logs
 
-## Pattern 1: Cognito Lambda Triggers (Event-Driven Sync)
+## Pattern 1: PostConfirmation Lambda - User Creation
 
-**How It Works:**
-AWS Cognito fires Lambda functions on user lifecycle events, providing real-time synchronization to the database.
+**Purpose**: Automatically create database user record when user completes email verification in Cognito.
 
-### PostConfirmation Trigger - Create DB User
+**Trigger**: AWS Cognito `PostConfirmation` event
+
+**Implementation**:
 
 ```typescript
 // infrastructure/lib/lambda/triggers/post-confirmation.ts
 import { PostConfirmationTriggerHandler } from 'aws-lambda';
-import { Client } from 'pg';
-
-const dbClient = new Client({
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  ssl: { rejectUnauthorized: true }
-});
+import { getDbClient } from './common/database';
 
 export const handler: PostConfirmationTriggerHandler = async (event) => {
-  console.log('PostConfirmation trigger invoked', { username: event.userName });
+  console.log('PostConfirmation trigger invoked', {
+    cognitoUserId: event.request.userAttributes.sub,
+    email: event.request.userAttributes.email
+  });
 
-  const { userPoolId, userName, request } = event;
-  const email = request.userAttributes.email;
-  // Extract role from Cognito Groups (cognito:groups attribute)
-  const cognitoGroups = request.userAttributes['cognito:groups']?.split(',') || [];
-  const cognitoRole = cognitoGroups[0] || 'ATTENDEE';
+  const { sub: cognitoUserId, email, given_name, family_name } = event.request.userAttributes;
+  const language = event.request.userAttributes['custom:language'] || 'de';
+
+  const client = await getDbClient();
 
   try {
-    await dbClient.connect();
+    // Generate username from name (e.g., john.doe)
+    const username = generateUsername(given_name, family_name);
 
-    // Create user record (idempotent with ON CONFLICT)
-    const userResult = await dbClient.query(
-      `INSERT INTO users (cognito_id, email, created_at, updated_at)
-       VALUES ($1, $2, NOW(), NOW())
-       ON CONFLICT (cognito_id) DO UPDATE SET
-         email = EXCLUDED.email,
-         updated_at = NOW()
-       RETURNING id`,
-      [userName, email]
+    // 1. Create user_profiles record
+    await client.query(
+      `INSERT INTO user_profiles (
+        cognito_user_id, email, first_name, last_name, username, pref_language
+      )
+      VALUES ($1, $2, $3, $4, $5, $6)
+      ON CONFLICT (cognito_user_id) DO NOTHING`,
+      [cognitoUserId, email, given_name, family_name, username, language]
     );
+
+    // 2. Get user ID
+    const userResult = await client.query(
+      `SELECT id FROM user_profiles WHERE cognito_user_id = $1`,
+      [cognitoUserId]
+    );
+
+    if (userResult.rows.length === 0) {
+      // User already existed (ON CONFLICT triggered)
+      console.log('User already exists in database', { cognitoUserId });
+      return event;
+    }
 
     const userId = userResult.rows[0].id;
 
-    // Create initial role (self-granted on registration)
-    await dbClient.query(
-      `INSERT INTO user_roles (user_id, role, granted_by, granted_at, is_active, reason)
-       VALUES ($1, $2, $1, NOW(), true, 'Initial registration')
-       ON CONFLICT (user_id, role) WHERE is_active = true DO NOTHING`,
-      [userId, cognitoRole]
+    // 3. Assign default ATTENDEE role (FR22)
+    await client.query(
+      `INSERT INTO role_assignments (user_id, role, granted_by)
+      VALUES ($1, 'ATTENDEE', NULL)
+      ON CONFLICT (user_id, role) DO NOTHING`,
+      [userId]
     );
 
-    console.log('User synced successfully', { userId, email, role: cognitoRole });
+    console.log('User created successfully', {
+      userId,
+      email,
+      role: 'ATTENDEE'
+    });
 
   } catch (error) {
-    console.error('Failed to sync user to database', {
+    console.error('Failed to create database user', {
       error: error.message,
       stack: error.stack,
-      userName,
+      cognitoUserId,
       email
     });
 
-    // Don't block Cognito confirmation - JIT will handle it
-    // Just log the error for monitoring
+    // Don't throw - allow Cognito confirmation to succeed
+    // User can still authenticate, and we can fix DB later
   } finally {
-    await dbClient.end();
+    client.release();
   }
 
   return event; // Must return event to Cognito
 };
+
+function generateUsername(firstName: string, lastName: string): string {
+  // Convert to lowercase, remove special chars
+  const first = firstName.toLowerCase().replace(/[^a-z]/g, '');
+  const last = lastName.toLowerCase().replace(/[^a-z]/g, '');
+  return `${first}.${last}`;
+  // Note: Duplicate username handling via suffix (e.g., john.doe.2)
+  // is done in the service layer when username conflicts occur
+}
 ```
 
-### PreTokenGeneration Trigger - Enrich JWT with DB Roles
+**Key Characteristics**:
+- **Idempotent**: `ON CONFLICT DO NOTHING` prevents duplicate creation
+- **Non-Blocking**: Errors logged but don't fail Cognito confirmation
+- **Performance**: Completes within 1 second (p95 latency requirement)
+- **Default Role**: Always assigns ATTENDEE role per FR22
+
+**Database Tables Modified**:
+- `user_profiles`: Creates user record with Cognito ID
+- `role_assignments`: Creates default ATTENDEE role assignment
+
+## Pattern 2: PreTokenGeneration Lambda - JWT Role Enrichment
+
+**Purpose**: Add user roles from database to JWT token as custom claims for API authorization.
+
+**Trigger**: AWS Cognito `PreTokenGeneration` event (on every login/token refresh)
+
+**Implementation**:
 
 ```typescript
 // infrastructure/lib/lambda/triggers/pre-token-generation.ts
 import { PreTokenGenerationTriggerHandler } from 'aws-lambda';
-import { Client } from 'pg';
+import { getDbClient } from './common/database';
 
 export const handler: PreTokenGenerationTriggerHandler = async (event) => {
-  const { userName } = event;
+  console.log('PreTokenGeneration trigger invoked', {
+    cognitoUserId: event.request.userAttributes.sub
+  });
 
-  const dbClient = new Client({ /* connection config */ });
+  const cognitoUserId = event.request.userAttributes.sub;
+  const client = await getDbClient();
 
   try {
-    await dbClient.connect();
-
-    // Fetch active roles from database
-    const result = await dbClient.query(
-      `SELECT ur.role, ur.event_id
-       FROM user_roles ur
-       JOIN users u ON u.id = ur.user_id
-       WHERE u.cognito_id = $1 AND ur.is_active = true`,
-      [userName]
+    // Fetch user roles from database
+    const result = await client.query(
+      `SELECT DISTINCT r.role
+       FROM role_assignments r
+       JOIN user_profiles u ON r.user_id = u.id
+       WHERE u.cognito_user_id = $1
+       ORDER BY r.role`,
+      [cognitoUserId]
     );
 
-    const roles = result.rows.map(r => r.role);
-    const eventRoles = result.rows
-      .filter(r => r.event_id)
-      .map(r => ({ eventId: r.event_id, role: r.role }));
+    const roles = result.rows.map(row => row.role);
 
-    // Sync Cognito Groups with database roles (global roles only)
-    const globalRoles = userRoles
-      .filter(r => !r.event_id)
-      .map(r => r.role);
-
-    event.response.claimsOverrideDetails = {
-      groupsToOverride: globalRoles.map(r => r.toLowerCase())
+    // Add roles to JWT as custom claim (comma-separated string)
+    event.response = {
+      claimsOverrideDetails: {
+        claimsToAddOrOverride: {
+          'custom:roles': roles.join(',') // e.g., "ATTENDEE,SPEAKER"
+        }
+      }
     };
 
-    console.log('Cognito Groups synced with DB roles', { userName, globalRoles });
+    console.log('Roles added to JWT', { cognitoUserId, roles });
 
   } catch (error) {
-    console.error('Failed to enrich token', { error: error.message, userName });
-
-    // Fallback to Cognito Groups - token will use group membership
-    // Don't block authentication
-  } finally {
-    await dbClient.end();
-  }
-
-  return event;
-};
-```
-
-### PreAuthentication Trigger - Validate User Active
-
-```typescript
-// infrastructure/lib/lambda/triggers/pre-authentication.ts
-import { PreAuthenticationTriggerHandler } from 'aws-lambda';
-import { Client } from 'pg';
-
-export const handler: PreAuthenticationTriggerHandler = async (event) => {
-  const { userName } = event;
-
-  const dbClient = new Client({ /* connection config */ });
-
-  try {
-    await dbClient.connect();
-
-    // Check if user is active in database
-    const result = await dbClient.query(
-      `SELECT is_active, deactivated_reason
-       FROM users
-       WHERE cognito_id = $1`,
-      [userName]
-    );
-
-    if (result.rows.length === 0) {
-      // User not in DB yet - allow login (JIT will create)
-      console.log('User not in DB, allowing login for JIT provisioning', { userName });
-      return event;
-    }
-
-    const user = result.rows[0];
-
-    if (!user.is_active) {
-      console.warn('Blocking login for deactivated user', {
-        userName,
-        reason: user.deactivated_reason
-      });
-
-      throw new Error(`Account deactivated: ${user.deactivated_reason || 'Contact support'}`);
-    }
-
-  } catch (error) {
-    console.error('PreAuthentication check failed', {
+    console.error('Failed to fetch roles from database', {
       error: error.message,
-      userName
+      stack: error.stack,
+      cognitoUserId
     });
 
-    // Re-throw to block authentication
-    throw error;
+    // Graceful degradation: Return empty roles instead of failing authentication
+    event.response = {
+      claimsOverrideDetails: {
+        claimsToAddOrOverride: {
+          'custom:roles': ''
+        }
+      }
+    };
 
+    console.warn('Returning empty roles due to database error', { cognitoUserId });
   } finally {
-    await dbClient.end();
+    client.release();
   }
 
   return event;
 };
 ```
 
-### CDK Configuration for Triggers
+**Key Characteristics**:
+- **Performance**: Completes within 500ms (p95 latency requirement)
+- **Graceful Degradation**: Returns empty roles on database errors (allows login)
+- **JWT Claim Format**: `custom:roles` with comma-separated values
+- **NO Cognito Groups**: Roles stored exclusively in database
 
-```typescript
-// infrastructure/lib/stacks/auth-stack.ts
-import * as cognito from 'aws-cdk-lib/aws-cognito';
-import * as lambda from 'aws-cdk-lib/aws-lambda';
-import * as lambdaNodejs from 'aws-cdk-lib/aws-lambda-nodejs';
+**JWT Token Example**:
 
-export class AuthStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props: StackProps) {
-    super(scope, id, props);
-
-    // Database connection secret
-    const dbSecret = secretsmanager.Secret.fromSecretNameV2(
-      this,
-      'DBSecret',
-      'batbern/database/credentials'
-    );
-
-    // PostConfirmation Lambda
-    const postConfirmationFn = new lambdaNodejs.NodejsFunction(
-      this,
-      'PostConfirmationTrigger',
-      {
-        entry: 'lib/lambda/triggers/post-confirmation.ts',
-        handler: 'handler',
-        runtime: lambda.Runtime.NODEJS_18_X,
-        timeout: cdk.Duration.seconds(10),
-        environment: {
-          DB_HOST: dbSecret.secretValueFromJson('host').unsafeUnwrap(),
-          DB_NAME: dbSecret.secretValueFromJson('dbname').unsafeUnwrap(),
-          DB_USER: dbSecret.secretValueFromJson('username').unsafeUnwrap(),
-          DB_PASSWORD: dbSecret.secretValueFromJson('password').unsafeUnwrap(),
-        },
-        vpc: props.vpc,
-        vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
-      }
-    );
-
-    // PreTokenGeneration Lambda
-    const preTokenFn = new lambdaNodejs.NodejsFunction(
-      this,
-      'PreTokenGenerationTrigger',
-      {
-        entry: 'lib/lambda/triggers/pre-token-generation.ts',
-        handler: 'handler',
-        runtime: lambda.Runtime.NODEJS_18_X,
-        timeout: cdk.Duration.seconds(5),
-        environment: { /* same as above */ },
-        vpc: props.vpc,
-        vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
-      }
-    );
-
-    // PreAuthentication Lambda
-    const preAuthFn = new lambdaNodejs.NodejsFunction(
-      this,
-      'PreAuthenticationTrigger',
-      {
-        entry: 'lib/lambda/triggers/pre-authentication.ts',
-        handler: 'handler',
-        runtime: lambda.Runtime.NODEJS_18_X,
-        timeout: cdk.Duration.seconds(5),
-        environment: { /* same as above */ },
-        vpc: props.vpc,
-        vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
-      }
-    );
-
-    // Grant database access
-    dbSecret.grantRead(postConfirmationFn);
-    dbSecret.grantRead(preTokenFn);
-    dbSecret.grantRead(preAuthFn);
-
-    // Create User Pool with triggers
-    const userPool = new cognito.UserPool(this, 'BATbernUserPool', {
-      userPoolName: `batbern-${props.environment}-users`,
-      selfSignUpEnabled: true,
-      signInAliases: { email: true },
-      autoVerify: { email: true },
-      passwordPolicy: {
-        minLength: 8,
-        requireLowercase: true,
-        requireUppercase: true,
-        requireDigits: true,
-        requireSymbols: true,
-      },
-      lambdaTriggers: {
-        postConfirmation: postConfirmationFn,
-        preTokenGeneration: preTokenFn,
-        preAuthentication: preAuthFn,
-      },
-    });
-
-    // Create Cognito Groups for role-based access
-    const organizerGroup = new cognito.CfnUserPoolGroup(this, 'OrganizerGroup', {
-      userPoolId: userPool.userPoolId,
-      groupName: 'organizer',
-      description: 'Event organizers with full administrative access',
-    });
-
-    const speakerGroup = new cognito.CfnUserPoolGroup(this, 'SpeakerGroup', {
-      userPoolId: userPool.userPoolId,
-      groupName: 'speaker',
-      description: 'Speakers who present at events',
-    });
-
-    const partnerGroup = new cognito.CfnUserPoolGroup(this, 'PartnerGroup', {
-      userPoolId: userPool.userPoolId,
-      groupName: 'partner',
-      description: 'Corporate partners and sponsors',
-    });
-
-    const attendeeGroup = new cognito.CfnUserPoolGroup(this, 'AttendeeGroup', {
-      userPoolId: userPool.userPoolId,
-      groupName: 'attendee',
-      description: 'Event attendees',
-    });
-
-    // CloudWatch Alarms for trigger failures
-    postConfirmationFn.metricErrors().createAlarm(this, 'PostConfirmationErrors', {
-      threshold: 5,
-      evaluationPeriods: 1,
-      alarmDescription: 'PostConfirmation trigger failing',
-    });
-  }
+```json
+{
+  "sub": "a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+  "cognito:username": "john.doe@example.com",
+  "email": "john.doe@example.com",
+  "custom:roles": "ATTENDEE,SPEAKER",
+  "custom:language": "de",
+  "iss": "https://cognito-idp.eu-central-1.amazonaws.com/eu-central-1_XXXXXXXXX",
+  "exp": 1698765432,
+  "iat": 1698761832
 }
 ```
 
-## Pattern 2: Just-In-Time (JIT) Provisioning (Self-Healing)
+## Pattern 3: Spring Security - Role Extraction from JWT
 
-**How It Works:**
-A Spring Boot interceptor checks for user existence on every authenticated request. If the user is missing from the database (trigger failed, manual Cognito creation), it creates the user automatically.
+**Purpose**: Extract roles from JWT `custom:roles` claim and map to Spring Security authorities.
 
-### JIT Provisioning Interceptor
-
-```java
-package ch.batbern.shared.interceptor;
-
-import ch.batbern.shared.domain.User;
-import ch.batbern.shared.domain.UserRole;
-import ch.batbern.shared.domain.UserRoleEntity;
-import ch.batbern.shared.repository.UserRepository;
-import ch.batbern.shared.repository.UserRoleRepository;
-import ch.batbern.shared.security.SecurityContextHelper;
-import ch.batbern.shared.security.UserContext;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.servlet.HandlerInterceptor;
-
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import java.time.Instant;
-import java.util.Optional;
-import java.util.UUID;
-
-@Component
-@Slf4j
-@RequiredArgsConstructor
-public class JITUserProvisioningInterceptor implements HandlerInterceptor {
-
-    private final UserRepository userRepository;
-    private final UserRoleRepository userRoleRepository;
-    private final SecurityContextHelper securityHelper;
-
-    @Override
-    @Transactional
-    public boolean preHandle(
-        HttpServletRequest request,
-        HttpServletResponse response,
-        Object handler
-    ) {
-        // Skip for health checks and public endpoints
-        if (request.getRequestURI().startsWith("/actuator")) {
-            return true;
-        }
-
-        try {
-            UserContext cognitoUser = securityHelper.getCurrentUser();
-            String cognitoId = cognitoUser.getUserId();
-
-            // Check if user exists in database
-            Optional<User> dbUser = userRepository.findByCognitoId(cognitoId);
-
-            if (dbUser.isEmpty()) {
-                log.info("User {} not found in database, performing JIT provisioning", cognitoId);
-
-                // Create user record
-                User newUser = User.builder()
-                    .cognitoId(cognitoId)
-                    .email(cognitoUser.getEmail())
-                    .isActive(true)
-                    .createdAt(Instant.now())
-                    .updatedAt(Instant.now())
-                    .build();
-
-                User savedUser = userRepository.save(newUser);
-
-                // Determine initial role from Cognito JWT claims
-                String initialRole = cognitoUser.getRoles().stream()
-                    .findFirst()
-                    .orElse("ATTENDEE");
-
-                // Create initial role
-                UserRoleEntity role = UserRoleEntity.builder()
-                    .userId(savedUser.getId())
-                    .role(UserRole.valueOf(initialRole))
-                    .grantedBy(savedUser.getId()) // Self-granted on JIT
-                    .grantedAt(Instant.now())
-                    .isActive(true)
-                    .reason("Just-in-time provisioning from Cognito")
-                    .build();
-
-                userRoleRepository.save(role);
-
-                log.info("JIT provisioning completed successfully for user {}",
-                    cognitoId,
-                    savedUser.getId(),
-                    initialRole);
-
-                // Emit domain event for observability
-                publishUserCreatedEvent(savedUser, initialRole);
-            }
-
-        } catch (Exception e) {
-            log.error("JIT provisioning failed", e);
-            // Don't block the request - allow it to proceed
-            // Service layer will handle missing user appropriately
-        }
-
-        return true;
-    }
-
-    private void publishUserCreatedEvent(User user, String role) {
-        // Publish to EventBridge for cross-service notification
-        // Implementation omitted for brevity
-    }
-}
-```
-
-### Web MVC Configuration
+**Implementation**:
 
 ```java
-package ch.batbern.shared.config;
+// api-gateway/src/main/java/ch/batbern/gateway/config/SecurityConfig.java
+package ch.batbern.gateway.config;
 
-import ch.batbern.shared.interceptor.JITUserProvisioningInterceptor;
-import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.web.SecurityFilterChain;
 
-@Configuration
-@RequiredArgsConstructor
-public class WebMvcConfiguration implements WebMvcConfigurer {
-
-    private final JITUserProvisioningInterceptor jitProvisioningInterceptor;
-
-    @Override
-    public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(jitProvisioningInterceptor)
-            .addPathPatterns("/api/**")
-            .excludePathPatterns(
-                "/api/v1/auth/**",  // Exclude auth endpoints
-                "/actuator/**"       // Exclude health checks
-            );
-    }
-}
-```
-
-## Pattern 3: Saga-Based Bidirectional Sync (Role Changes)
-
-**How It Works:**
-When roles change in the database, sync to Cognito using a saga pattern with compensation logic for failures.
-
-### Enhanced Role Sync with Saga Pattern
-
-```java
-package ch.batbern.shared.service;
-
-import com.amazonaws.services.cognitoidentityprovider.AWSCognitoIdentityProvider;
-import com.amazonaws.services.cognitoidentityprovider.model.*;
-import io.github.resilience4j.retry.Retry;
-import io.github.resilience4j.retry.RetryConfig;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Duration;
-import java.time.Instant;
-import java.util.UUID;
-
-@Service
-@Slf4j
-@RequiredArgsConstructor
-public class UserSyncSagaService {
-
-    private final UserRoleRepository userRoleRepository;
-    private final UserSyncCompensationLogRepository compensationLogRepository;
-    private final AWSCognitoIdentityProvider cognitoClient;
-
-    @Value("${aws.cognito.user-pool-id}")
-    private String userPoolId;
-
-    // Retry configuration with exponential backoff
-    private final RetryConfig retryConfig = RetryConfig.custom()
-        .maxAttempts(3)
-        .waitDuration(Duration.ofSeconds(2))
-        .retryExceptions(TooManyRequestsException.class, InternalErrorException.class)
-        .build();
-
-    @Transactional
-    public void syncRoleChangeToCognito(UUID userId, UserRole newRole, String cognitoId) {
-        UserSyncCompensationLog compensationLog = null;
-
-        try {
-            // Step 1: Record intent (for compensation if needed)
-            compensationLog = UserSyncCompensationLog.builder()
-                .userId(userId)
-                .cognitoId(cognitoId)
-                .operation("ROLE_SYNC")
-                .targetRole(newRole)
-                .status("PENDING")
-                .attemptedAt(Instant.now())
-                .build();
-
-            compensationLogRepository.save(compensationLog);
-
-            // Step 2: Sync to Cognito with retry
-            Retry retry = Retry.of("cognito-sync", retryConfig);
-            retry.executeRunnable(() -> updateCognitoUserAttribute(cognitoId, newRole));
-
-            // Step 3: Mark compensation as completed
-            compensationLog.setStatus("COMPLETED");
-            compensationLog.setCompletedAt(Instant.now());
-            compensationLogRepository.save(compensationLog);
-
-            log.info("Role sync to Cognito completed successfully",
-                userId, newRole, cognitoId);
-
-        } catch (Exception e) {
-            log.error("Failed to sync role to Cognito, compensation required",
-                e, userId, newRole, cognitoId);
-
-            if (compensationLog != null) {
-                compensationLog.setStatus("FAILED");
-                compensationLog.setErrorMessage(e.getMessage());
-                compensationLog.setCompensationRequired(true);
-                compensationLogRepository.save(compensationLog);
-            }
-
-            // Emit alert for manual intervention or automatic retry
-            emitSyncFailureAlert(userId, cognitoId, newRole, e);
-
-            // Don't throw - allow DB transaction to commit
-            // Reconciliation job will fix the drift
-        }
-    }
-
-    private void addUserToCognitoGroup(String cognitoId, UserRole role) {
-        // Add user to the Cognito Group corresponding to their role
-        AdminAddUserToGroupRequest request = AdminAddUserToGroupRequest.builder()
-            .userPoolId(userPoolId)
-            .username(cognitoId)
-            .groupName(role.name().toLowerCase()) // 'organizer', 'speaker', 'partner', 'attendee'
-            .build();
-
-        cognitoClient.adminAddUserToGroup(request);
-    }
-
-    private void removeUserFromCognitoGroup(String cognitoId, UserRole oldRole) {
-        // Remove user from their previous Cognito Group
-        AdminRemoveUserFromGroupRequest request = AdminRemoveUserFromGroupRequest.builder()
-            .userPoolId(userPoolId)
-            .username(cognitoId)
-            .groupName(oldRole.name().toLowerCase())
-            .build();
-
-        cognitoClient.adminRemoveUserFromGroup(request);
-    }
-
-    private void emitSyncFailureAlert(UUID userId, String cognitoId, UserRole role, Exception error) {
-        // Publish to SNS or CloudWatch for alerting
-        log.error("ALERT: Cognito sync failed for user {}", userId, error);
-    }
-}
-```
-
-### Compensation Log Schema
-
-```sql
-CREATE TABLE user_sync_compensation_log (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id),
-    cognito_id VARCHAR(255) NOT NULL,
-    operation VARCHAR(50) NOT NULL,
-    target_role VARCHAR(50),
-    status VARCHAR(20) NOT NULL,
-    attempted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    completed_at TIMESTAMP,
-    error_message TEXT,
-    compensation_required BOOLEAN DEFAULT false,
-    compensation_executed_at TIMESTAMP,
-    retry_count INTEGER DEFAULT 0
-);
-
-CREATE INDEX idx_compensation_status ON user_sync_compensation_log(status, compensation_required);
-CREATE INDEX idx_compensation_user ON user_sync_compensation_log(user_id);
-```
-
-## Pattern 4: Scheduled Reconciliation (Drift Detection & Auto-Fix)
-
-**How It Works:**
-A scheduled job runs daily to detect and automatically fix drift between Cognito and the database.
-
-### Reconciliation Service
-
-```java
-package ch.batbern.shared.service;
-
-import com.amazonaws.services.cognitoidentityprovider.AWSCognitoIdentityProvider;
-import com.amazonaws.services.cognitoidentityprovider.model.*;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Instant;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.stream.Collectors;
 
-@Service
-@Slf4j
-@RequiredArgsConstructor
-public class UserReconciliationService {
+@Configuration
+@EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
+public class SecurityConfig {
 
-    private final UserRepository userRepository;
-    private final UserRoleRepository userRoleRepository;
-    private final AWSCognitoIdentityProvider cognitoClient;
-    private final MetricsService metricsService;
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers("/api/v1/auth/register", "/api/v1/auth/login").permitAll()
+                .requestMatchers("/api/v1/admin/**").hasRole("ORGANIZER")
+                .anyRequest().authenticated()
+            )
+            .oauth2ResourceServer(oauth2 -> oauth2
+                .jwt(jwt -> jwt
+                    .jwtAuthenticationConverter(jwtAuthenticationConverter())
+                )
+            );
 
-    @Value("${aws.cognito.user-pool-id}")
-    private String userPoolId;
-
-    @Scheduled(cron = "0 0 2 * * *") // 2 AM daily
-    @Transactional
-    public void reconcileUsers() {
-        log.info("Starting user reconciliation job");
-
-        ReconciliationReport report = ReconciliationReport.builder()
-            .startedAt(Instant.now())
-            .build();
-
-        try {
-            // Step 1: Find DB users not in Cognito (orphaned)
-            reconcileOrphanedDbUsers(report);
-
-            // Step 2: Find Cognito users not in DB (missing)
-            reconcileMissingDbUsers(report);
-
-            // Step 3: Reconcile role mismatches
-            reconcileRoleMismatches(report);
-
-            // Step 4: Retry failed compensations
-            retryFailedCompensations(report);
-
-            report.setCompletedAt(Instant.now());
-            report.setStatus("COMPLETED");
-
-            log.info("User reconciliation completed successfully", report);
-
-        } catch (Exception e) {
-            log.error("User reconciliation failed", e);
-            report.setStatus("FAILED");
-            report.setErrorMessage(e.getMessage());
-        } finally {
-            // Publish metrics
-            publishReconciliationMetrics(report);
-
-            // Store report for audit
-            storeReconciliationReport(report);
-        }
+        return http.build();
     }
 
-    private void reconcileOrphanedDbUsers(ReconciliationReport report) {
-        log.info("Checking for orphaned database users");
+    @Bean
+    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+        converter.setJwtGrantedAuthoritiesConverter(this::extractAuthorities);
+        return converter;
+    }
 
-        List<User> dbUsers = userRepository.findAll();
-        int orphanedCount = 0;
+    private Collection<GrantedAuthority> extractAuthorities(Jwt jwt) {
+        // Extract custom:roles claim from JWT
+        String rolesString = jwt.getClaimAsString("custom:roles");
 
-        for (User user : dbUsers) {
-            try {
-                AdminGetUserRequest request = AdminGetUserRequest.builder()
-                    .userPoolId(userPoolId)
-                    .username(user.getCognitoId())
-                    .build();
-
-                cognitoClient.adminGetUser(request);
-
-            } catch (UserNotFoundException e) {
-                log.warn("User exists in DB but not in Cognito - marking inactive",
-                    user.getId(), user.getCognitoId());
-
-                user.setIsActive(false);
-                user.setDeactivatedReason("Cognito user not found during reconciliation");
-                user.setUpdatedAt(Instant.now());
-                userRepository.save(user);
-
-                orphanedCount++;
-            }
+        if (rolesString == null || rolesString.isEmpty()) {
+            return Collections.emptyList();
         }
 
-        report.setOrphanedDbUsers(orphanedCount);
-        log.info("Found and deactivated {} orphaned DB users", orphanedCount);
-    }
-
-    private void reconcileMissingDbUsers(ReconciliationReport report) {
-        log.info("Checking for Cognito users missing from DB");
-
-        int createdCount = 0;
-        String paginationToken = null;
-
-        do {
-            ListUsersRequest request = ListUsersRequest.builder()
-                .userPoolId(userPoolId)
-                .limit(60)
-                .paginationToken(paginationToken)
-                .build();
-
-            ListUsersResponse response = cognitoClient.listUsers(request);
-
-            for (UserType cognitoUser : response.users()) {
-                String cognitoId = cognitoUser.username();
-                String email = cognitoUser.attributes().stream()
-                    .filter(a -> a.name().equals("email"))
-                    .findFirst()
-                    .map(AttributeType::value)
-                    .orElse(null);
-
-                if (!userRepository.existsByCognitoId(cognitoId)) {
-                    log.warn("User exists in Cognito but not DB - creating",
-                        cognitoId, email);
-
-                    User newUser = User.builder()
-                        .cognitoId(cognitoId)
-                        .email(email)
-                        .isActive(true)
-                        .createdAt(Instant.now())
-                        .updatedAt(Instant.now())
-                        .build();
-
-                    User savedUser = userRepository.save(newUser);
-
-                    // Create initial role from Cognito Groups
-                    List<String> groups = cognitoClient.adminListGroupsForUser(
-                        AdminListGroupsForUserRequest.builder()
-                            .userPoolId(userPoolId)
-                            .username(cognitoId)
-                            .build()
-                    ).groups().stream()
-                        .map(GroupType::groupName)
-                        .toList();
-
-                    String cognitoRole = groups.isEmpty() ? "ATTENDEE" : groups.get(0).toUpperCase();
-
-                    UserRoleEntity role = UserRoleEntity.builder()
-                        .userId(savedUser.getId())
-                        .role(UserRole.valueOf(cognitoRole))
-                        .grantedBy(savedUser.getId())
-                        .grantedAt(Instant.now())
-                        .isActive(true)
-                        .reason("Created during reconciliation from Cognito Groups")
-                        .build();
-
-                    userRoleRepository.save(role);
-
-                    createdCount++;
-                }
-            }
-
-            paginationToken = response.paginationToken();
-
-        } while (paginationToken != null);
-
-        report.setMissingDbUsers(createdCount);
-        log.info("Created {} missing DB users from Cognito", createdCount);
-    }
-
-    private void reconcileRoleMismatches(ReconciliationReport report) {
-        log.info("Checking for role mismatches");
-
-        int mismatchCount = 0;
-
-        List<User> users = userRepository.findAllActive();
-
-        for (User user : users) {
-            try {
-                // Get role from Cognito
-                AdminGetUserRequest request = AdminGetUserRequest.builder()
-                    .userPoolId(userPoolId)
-                    .username(user.getCognitoId())
-                    .build();
-
-                // Get Cognito Groups for the user
-                AdminListGroupsForUserRequest groupsRequest = AdminListGroupsForUserRequest.builder()
-                    .userPoolId(userPoolId)
-                    .username(cognitoId)
-                    .build();
-
-                AdminListGroupsForUserResponse groupsResponse = cognitoClient.adminListGroupsForUser(groupsRequest);
-
-                List<String> cognitoGroups = groupsResponse.groups().stream()
-                    .map(GroupType::groupName)
-                    .toList();
-
-                if (cognitoGroups.isEmpty()) {
-                    continue; // No groups in Cognito, skip
-                }
-
-                // Get active role from DB
-                Optional<UserRoleEntity> dbRole = userRoleRepository
-                    .findActiveGlobalRole(user.getId());
-
-                if (dbRole.isEmpty()) {
-                    log.warn("User has Cognito role but no active DB role",
-                        user.getId(), cognitoRole);
-                    // TODO: Decide which is source of truth
-                    continue;
-                }
-
-                // Compare roles
-                if (!dbRole.get().getRole().name().equals(cognitoRole)) {
-                    log.warn("Role mismatch detected",
-                        user.getId(),
-                        "DB: " + dbRole.get().getRole(),
-                        "Cognito: " + cognitoRole);
-
-                    // Strategy: Database is source of truth for roles
-                    // Sync DB role to Cognito
-                    updateCognitoRole(user.getCognitoId(), dbRole.get().getRole());
-
-                    mismatchCount++;
-                }
-
-            } catch (Exception e) {
-                log.error("Failed to reconcile role for user", e, user.getId());
-            }
-        }
-
-        report.setRoleMismatches(mismatchCount);
-        log.info("Fixed {} role mismatches", mismatchCount);
-    }
-
-    private void retryFailedCompensations(ReconciliationReport report) {
-        log.info("Retrying failed compensation operations");
-
-        List<UserSyncCompensationLog> failedOps = compensationLogRepository
-            .findByStatusAndCompensationRequired("FAILED", true);
-
-        int retriedCount = 0;
-        int successCount = 0;
-
-        for (UserSyncCompensationLog op : failedOps) {
-            try {
-                if (op.getRetryCount() >= 5) {
-                    log.warn("Max retries exceeded for compensation",
-                        op.getId(), op.getUserId());
-                    continue;
-                }
-
-                // Retry the operation
-                if ("ROLE_SYNC".equals(op.getOperation())) {
-                    addUserToCognitoGroup(op.getCognitoId(), op.getTargetRole());
-
-                    op.setStatus("COMPLETED");
-                    op.setCompensationExecutedAt(Instant.now());
-                    compensationLogRepository.save(op);
-
-                    successCount++;
-                }
-
-                retriedCount++;
-
-            } catch (Exception e) {
-                log.error("Retry failed for compensation", e, op.getId());
-                op.setRetryCount(op.getRetryCount() + 1);
-                compensationLogRepository.save(op);
-            }
-        }
-
-        report.setCompensationsRetried(retriedCount);
-        report.setCompensationsSucceeded(successCount);
-        log.info("Retried {} compensations, {} succeeded", retriedCount, successCount);
-    }
-
-    private void updateCognitoRole(String cognitoId, UserRole oldRole, UserRole newRole) {
-        // Remove from old group
-        if (oldRole != null) {
-            AdminRemoveUserFromGroupRequest removeRequest = AdminRemoveUserFromGroupRequest.builder()
-                .userPoolId(userPoolId)
-                .username(cognitoId)
-                .groupName(oldRole.name().toLowerCase())
-                .build();
-            cognitoClient.adminRemoveUserFromGroup(removeRequest);
-        }
-
-        // Add to new group
-        AdminAddUserToGroupRequest addRequest = AdminAddUserToGroupRequest.builder()
-            .userPoolId(userPoolId)
-            .username(cognitoId)
-            .groupName(newRole.name().toLowerCase())
-            .build();
-        cognitoClient.adminAddUserToGroup(addRequest);
-    }
-
-    private void publishReconciliationMetrics(ReconciliationReport report) {
-        metricsService.recordMetric("user.reconciliation.orphaned_db_users",
-            report.getOrphanedDbUsers());
-        metricsService.recordMetric("user.reconciliation.missing_db_users",
-            report.getMissingDbUsers());
-        metricsService.recordMetric("user.reconciliation.role_mismatches",
-            report.getRoleMismatches());
-        metricsService.recordMetric("user.reconciliation.duration_ms",
-            Duration.between(report.getStartedAt(), report.getCompletedAt()).toMillis());
-    }
-
-    private void storeReconciliationReport(ReconciliationReport report) {
-        // Store in database or S3 for audit trail
+        // Split comma-separated roles and map to Spring Security authorities
+        // "ATTENDEE,SPEAKER" → [ROLE_ATTENDEE, ROLE_SPEAKER]
+        return Arrays.stream(rolesString.split(","))
+            .map(role -> new SimpleGrantedAuthority("ROLE_" + role.trim()))
+            .collect(Collectors.toList());
     }
 }
 ```
 
-### Reconciliation Report Model
+**Usage in Controllers**:
 
 ```java
-@Data
-@Builder
-public class ReconciliationReport {
-    private Instant startedAt;
-    private Instant completedAt;
-    private String status;
-    private String errorMessage;
-    private int orphanedDbUsers;
-    private int missingDbUsers;
-    private int roleMismatches;
-    private int compensationsRetried;
-    private int compensationsSucceeded;
+// Example controller with role-based authorization
+@RestController
+@RequestMapping("/api/v1/events")
+public class EventController {
+
+    // Only ORGANIZER can create events
+    @PostMapping
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<EventDTO> createEvent(@RequestBody EventDTO event) {
+        // ...
+    }
+
+    // ATTENDEE can view events
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ATTENDEE', 'SPEAKER', 'PARTNER', 'ORGANIZER')")
+    public ResponseEntity<List<EventDTO>> listEvents() {
+        // ...
+    }
+
+    // SPEAKER can update their own proposals
+    @PutMapping("/{eventId}/proposals/{proposalId}")
+    @PreAuthorize("hasRole('SPEAKER')")
+    public ResponseEntity<ProposalDTO> updateProposal(
+        @PathVariable UUID eventId,
+        @PathVariable UUID proposalId,
+        @RequestBody ProposalDTO proposal
+    ) {
+        // Additional check: proposal.speakerId == currentUser.id
+        // ...
+    }
 }
 ```
 
-## Monitoring and Alerting
+**Key Characteristics**:
+- **Standard Spring Security**: Uses `@PreAuthorize` annotations
+- **Role Mapping**: JWT claim "ATTENDEE" → Authority "ROLE_ATTENDEE"
+- **Empty Roles Handling**: Returns empty list if claim missing (user has no access)
+- **NO Database Queries**: Roles cached in JWT for request duration
+
+## What We DON'T Do
+
+### ❌ No Cognito Groups
+**Reason**: Roles stored exclusively in database `role_assignments` table. Cognito Groups are not used.
+
+**Alternative**: JWT `custom:roles` claim populated from database.
+
+### ❌ No Bidirectional Sync (Database → Cognito)
+**Reason**: Cognito is for authentication only. User data changes (roles, profiles) stay in database.
+
+**Alternative**: Roles updated in database only. Next login fetches updated roles via PreTokenGeneration.
+
+### ❌ No JIT (Just-In-Time) Provisioning
+**Reason**: PostConfirmation Lambda creates database users automatically. No users exist in Cognito without database records.
+
+**Alternative**: PostConfirmation handles all user creation.
+
+### ❌ No Reconciliation Jobs
+**Reason**: Unidirectional sync eliminates drift. Database never needs to sync back to Cognito.
+
+**Alternative**: None needed.
+
+### ❌ No Compensation Logs
+**Reason**: No bidirectional sync means no partial failure scenarios requiring compensation.
+
+**Alternative**: None needed.
+
+### ❌ No PreAuthentication Trigger
+**Reason**: No need to block inactive users at auth time. API Gateway handles authorization.
+
+**Alternative**: Application logic checks `is_active` flag in database.
+
+## Database Schema
+
+### user_profiles Table
+
+```sql
+-- From Story 1.14-2: services/company-user-management-service/src/main/resources/db/migration/V4__create_user_profiles_table.sql
+CREATE TABLE user_profiles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    username VARCHAR(100) NOT NULL UNIQUE,
+    cognito_user_id VARCHAR(255) NOT NULL UNIQUE,  -- Populated by PostConfirmation
+    email VARCHAR(255) NOT NULL UNIQUE,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    bio TEXT,
+    company_id VARCHAR(12),
+    profile_picture_url VARCHAR(2048),
+    profile_picture_s3_key VARCHAR(500),
+
+    -- Preferences (embedded)
+    pref_theme VARCHAR(10) DEFAULT 'auto',
+    pref_language VARCHAR(2) DEFAULT 'de',
+    pref_email_notifications BOOLEAN DEFAULT TRUE,
+
+    -- Settings (embedded)
+    settings_profile_visibility VARCHAR(20) DEFAULT 'public',
+    settings_timezone VARCHAR(50) DEFAULT 'Europe/Zurich',
+    settings_two_factor_enabled BOOLEAN DEFAULT FALSE,
+
+    -- Status
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_login_at TIMESTAMP WITH TIME ZONE
+);
+```
+
+### role_assignments Table
+
+```sql
+-- From Story 1.14-2: services/company-user-management-service/src/main/resources/db/migration/V5__create_role_assignments_table.sql
+CREATE TABLE role_assignments (
+    user_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+    role VARCHAR(50) NOT NULL CHECK (role IN ('ORGANIZER', 'SPEAKER', 'PARTNER', 'ATTENDEE')),
+    granted_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    granted_by UUID REFERENCES user_profiles(id),
+    PRIMARY KEY (user_id, role)
+);
+```
+
+**Key Points**:
+- `cognito_user_id` is `NOT NULL` for self-registered users (always populated by PostConfirmation)
+- `role_assignments` supports multiple roles per user
+- `granted_by` is `NULL` for system-assigned roles (e.g., ATTENDEE on registration)
+
+## Monitoring and Observability
 
 ### CloudWatch Metrics
 
-```java
-@Service
-@RequiredArgsConstructor
-public class UserSyncMetricsService {
+**Namespace**: `BATbern/UserSync`
 
-    private final CloudWatchAsyncClient cloudWatchClient;
+**Metrics**:
+- `PostConfirmationLatency` - Time to create database user (target: <1s p95)
+- `PostConfirmationFailures` - Count of database creation failures
+- `PreTokenGenerationLatency` - Time to fetch roles (target: <500ms p95)
+- `PreTokenGenerationFailures` - Count of role fetch failures
+- `EmptyRolesReturned` - Count of users with no roles in database
 
-    public void recordSyncLatency(String syncType, long latencyMs) {
-        PutMetricDataRequest request = PutMetricDataRequest.builder()
-            .namespace("BATbern/UserSync")
-            .metricData(MetricDatum.builder()
-                .metricName("SyncLatency")
-                .value((double) latencyMs)
-                .unit(StandardUnit.MILLISECONDS)
-                .timestamp(Instant.now())
-                .dimensions(
-                    Dimension.builder()
-                        .name("SyncType")
-                        .value(syncType)
-                        .build()
-                )
-                .build())
-            .build();
+**CloudWatch Alarms**:
+- `HighUserCreationFailureRate` - Triggers when failures exceed 5 per 5-minute window
+- `HighLambdaLatency` - Triggers when latency exceeds 2 seconds (average over 5 minutes)
 
-        cloudWatchClient.putMetricData(request);
-    }
+### CloudWatch Logs
 
-    public void recordSyncFailure(String syncType) {
-        PutMetricDataRequest request = PutMetricDataRequest.builder()
-            .namespace("BATbern/UserSync")
-            .metricData(MetricDatum.builder()
-                .metricName("SyncFailures")
-                .value(1.0)
-                .unit(StandardUnit.COUNT)
-                .timestamp(Instant.now())
-                .dimensions(
-                    Dimension.builder()
-                        .name("SyncType")
-                        .value(syncType)
-                        .build()
-                )
-                .build())
-            .build();
+**Log Groups**:
+- `/aws/lambda/cognito-post-confirmation` - User creation logs
+- `/aws/lambda/cognito-pre-token-generation` - Role fetch logs
 
-        cloudWatchClient.putMetricData(request);
-    }
-}
-```
-
-### CloudWatch Alarms
+**Structured Logging Example**:
 
 ```typescript
-// infrastructure/lib/monitoring/user-sync-alarms.ts
-import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
-import * as sns from 'aws-cdk-lib/aws-sns';
-import * as actions from 'aws-cdk-lib/aws-cloudwatch-actions';
+console.log(JSON.stringify({
+  level: 'INFO',
+  timestamp: new Date().toISOString(),
+  event: 'UserCreated',
+  cognitoUserId: sub,
+  email: email,
+  role: 'ATTENDEE',
+  latencyMs: Date.now() - startTime
+}));
+```
 
-export class UserSyncAlarms extends Construct {
-  constructor(scope: Construct, id: string) {
-    super(scope, id);
+## Error Handling
 
-    const alarmTopic = new sns.Topic(this, 'UserSyncAlarmTopic', {
-      displayName: 'BATbern User Sync Alerts',
-    });
+### PostConfirmation Lambda Errors
 
-    // High sync failure rate alarm
-    new cloudwatch.Alarm(this, 'HighSyncFailureRate', {
-      metric: new cloudwatch.Metric({
-        namespace: 'BATbern/UserSync',
-        metricName: 'SyncFailures',
-        statistic: 'Sum',
-        period: cdk.Duration.minutes(5),
-      }),
-      threshold: 10,
-      evaluationPeriods: 2,
-      alarmDescription: 'User sync failures exceed threshold',
-      actionsEnabled: true,
-    }).addAlarmAction(new actions.SnsAction(alarmTopic));
+**Strategy**: Non-blocking - log errors but allow Cognito confirmation to succeed.
 
-    // High sync latency alarm
-    new cloudwatch.Alarm(this, 'HighSyncLatency', {
-      metric: new cloudwatch.Metric({
-        namespace: 'BATbern/UserSync',
-        metricName: 'SyncLatency',
-        statistic: 'Average',
-        period: cdk.Duration.minutes(5),
-      }),
-      threshold: 5000, // 5 seconds
-      evaluationPeriods: 2,
-      alarmDescription: 'User sync latency is high',
-      actionsEnabled: true,
-    }).addAlarmAction(new actions.SnsAction(alarmTopic));
+**Rationale**:
+- User experience: Don't fail registration due to temporary database issues
+- Self-healing: User can still authenticate, database can be fixed later
+- Monitoring: Alarms notify team of database creation failures
 
-    // Reconciliation drift detected
-    new cloudwatch.Alarm(this, 'ReconciliationDriftDetected', {
-      metric: new cloudwatch.Metric({
-        namespace: 'BATbern/UserSync',
-        metricName: 'DriftDetected',
-        statistic: 'Sum',
-        period: cdk.Duration.days(1),
-      }),
-      threshold: 50,
-      evaluationPeriods: 1,
-      alarmDescription: 'High number of drifted users detected',
-      actionsEnabled: true,
-    }).addAlarmAction(new actions.SnsAction(alarmTopic));
-  }
+**Example**:
+```typescript
+try {
+  await createDatabaseUser(cognitoUserId, email, name);
+} catch (error) {
+  console.error('Database creation failed', { error, cognitoUserId });
+  // Don't throw - allow Cognito to continue
+}
+return event; // Success to Cognito
+```
+
+### PreTokenGeneration Lambda Errors
+
+**Strategy**: Graceful degradation - return empty roles instead of failing authentication.
+
+**Rationale**:
+- User experience: Allow login even if database is temporarily unavailable
+- Partial access: User can access public endpoints, blocked from role-required endpoints
+- Monitoring: Alarms notify team of role fetch failures
+
+**Example**:
+```typescript
+try {
+  const roles = await fetchRolesFromDatabase(cognitoUserId);
+  event.response.claimsOverrideDetails.claimsToAddOrOverride['custom:roles'] = roles.join(',');
+} catch (error) {
+  console.error('Role fetch failed', { error, cognitoUserId });
+  event.response.claimsOverrideDetails.claimsToAddOrOverride['custom:roles'] = '';
+  // Return empty roles - user can login but has no access
 }
 ```
 
-## Source of Truth Strategy
+## Performance Considerations
 
-| Data Type | Source of Truth | Sync Direction | Consistency Model |
-|-----------|----------------|----------------|-------------------|
-| **Email** | Cognito | Cognito → DB | Eventual (PostConfirmation trigger) |
-| **Email Verified** | Cognito | Cognito → DB | Eventual (PostConfirmation trigger) |
-| **Password** | Cognito | One-way (never synced) | N/A |
-| **MFA Settings** | Cognito | Cognito → DB (read-only) | Eventual |
-| **User Active Status** | Database | DB → Cognito (PreAuth check) | Strong (blocks login) |
-| **Role (Global)** | Database | DB ↔ Cognito | Eventual (saga pattern) |
-| **Role (Event-specific)** | Database | DB only | N/A |
-| **Role History** | Database | DB only | N/A |
-| **Role Approvals** | Database | DB only | N/A |
-| **User Relationships** | Database | DB only | N/A |
+### Lambda Cold Starts
 
-**Key Principles:**
-1. **Cognito** owns authentication credentials and email verification
-2. **Database** owns business logic, relationships, and audit trails
-3. **Bidirectional sync** for roles (with DB as primary source of truth)
-4. **Eventual consistency** accepted with monitoring and auto-reconciliation
-5. **Strong consistency** enforced for critical operations (PreAuth check)
+**Mitigation**:
+- Database connection pooling via persistent connections across invocations
+- Provisioned concurrency for PostConfirmation and PreTokenGeneration Lambdas
+- Lambda timeout: 10s for PostConfirmation, 5s for PreTokenGeneration
+
+### Database Connection Pooling
+
+```typescript
+// infrastructure/lib/lambda/triggers/common/database.ts
+import { Pool, PoolClient } from 'pg';
+
+let pool: Pool | null = null;
+
+export async function getDbClient(): Promise<PoolClient> {
+  if (!pool) {
+    pool = new Pool({
+      host: process.env.DB_HOST,
+      database: process.env.DB_NAME,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      port: 5432,
+      ssl: { rejectUnauthorized: true },
+      max: 2, // Low max for Lambda (one concurrent execution per container)
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 5000,
+    });
+  }
+
+  return pool.connect();
+}
+```
+
+**Key Points**:
+- Pool persists across Lambda invocations (warm starts)
+- Max 2 connections per Lambda container (low concurrency)
+- Connection timeout: 5 seconds to fail fast
+
+### Query Optimization
+
+**PostConfirmation**:
+- Two queries: INSERT user + INSERT role (within 1 second target)
+- `ON CONFLICT DO NOTHING` prevents duplicate errors
+
+**PreTokenGeneration**:
+- Single query with JOIN (within 500ms target)
+- `DISTINCT` to deduplicate roles (in case of data issues)
+- Index on `user_profiles.cognito_user_id` for fast lookups
+
+## Future Enhancements
+
+### Admin Invitation Flow (Future Story)
+
+Per ADR-001, a future invitation-based flow will allow admins to create users via API before they register in Cognito:
+
+1. **Admin creates user via POST /api/v1/users**:
+   - Creates `user_profiles` record with `cognito_user_id = NULL`
+   - Sends invitation email with token
+
+2. **User registers in Cognito with invitation token**:
+   - Frontend validates token, allows registration
+   - User completes Cognito signup
+
+3. **PreTokenGeneration links Cognito ID to existing user**:
+   - Check if user with same email exists with `cognito_user_id = NULL`
+   - Update `cognito_user_id` field to link accounts
+
+**Migration needed**: Change `cognito_user_id NOT NULL` to nullable for this flow.
+
+### EventBridge Integration (Optional)
+
+Publish user lifecycle events for cross-service notification:
+
+```typescript
+// Optional: Publish UserCreated event from PostConfirmation
+await eventBridgeClient.send(new PutEventsCommand({
+  Entries: [{
+    Source: 'ch.batbern.user-sync',
+    DetailType: 'UserCreated',
+    Detail: JSON.stringify({
+      userId: userId,
+      cognitoUserId: cognitoUserId,
+      email: email,
+      role: 'ATTENDEE',
+      createdAt: new Date().toISOString()
+    })
+  }]
+}));
+```
+
+**Use Cases**:
+- Cache invalidation in microservices
+- Welcome email sending
+- Analytics tracking
 
 ## Related Documentation
 
-- [Backend Architecture Overview](./06-backend-architecture.md)
-- [Role Management Service](./06-backend-architecture.md#role-management-service)
-- [Testing Strategy](./06c-testing-strategy.md)
+- **[ADR-001: Invitation-Based User Registration Architecture](./ADR-001-invitation-based-user-registration.md)** - Architectural decision for database-centric approach
+- **[Story 1.14-2: User Management Service Foundation](../stories/1.14-2.user-management-service-foundation.md)** - Database schema implementation
+- **[Story 1.2.5: User Sync Implementation](../stories/1.2.5-user-sync-reconciliation-implementation.md)** - Lambda trigger implementation
+- **[Story 1.2.3: Account Creation Flow](../stories/1.2.3-implement-account-creation-flow.md)** - Self-registration UI
+- **[Backend Architecture](./06-backend-architecture.md)** - Overall backend patterns
+- **[API Design](./04-api-design.md)** - REST API conventions and authorization patterns
