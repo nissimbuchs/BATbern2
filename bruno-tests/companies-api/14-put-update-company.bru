@@ -17,8 +17,8 @@ headers {
 
 body:json {
   {
-    "name": "Bruno Test Co - PUT Updated {{timestamp}}",
-    "displayName": "Bruno Test PUT",
+    "name": "{{testCompanyName}}",
+    "displayName": "Bruno Test PUT Updated",
     "industry": "Finance",
     "website": "https://bruno-test-put.example.com",
     "description": "PUT updated company description",
@@ -43,8 +43,8 @@ tests {
     expect(res.status).to.equal(200);
   });
 
-  test("should return updated company", function() {
-    expect(res.body.name).to.include("PUT Updated");
+  test("should return updated company with new displayName", function() {
+    expect(res.body.displayName).to.include("PUT Updated");
   });
 
   test("should preserve company name (Story 1.16.2: name is identifier)", function() {
