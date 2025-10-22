@@ -21,9 +21,10 @@ interface UserDetailModalProps {
   user: User | null;
   open: boolean;
   onClose: () => void;
+  onEdit?: (user: User) => void;
 }
 
-const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, open, onClose }) => {
+const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, open, onClose, onEdit }) => {
   const { t } = useTranslation('userManagement');
 
   if (!user) {
@@ -147,7 +148,11 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, open, onClose }
         <Button onClick={onClose} variant="outlined">
           {t('actions.close')}
         </Button>
-        <Button variant="contained" color="primary">
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => user && onEdit && onEdit(user)}
+        >
           {t('actions.edit')}
         </Button>
       </DialogActions>

@@ -52,6 +52,12 @@ const UserList: React.FC = () => {
     setSelectedUser(null);
   };
 
+  const handleEditUser = (user: User) => {
+    // Close detail modal and open role manager
+    setSelectedUser(null);
+    setRoleManagerUser(user);
+  };
+
   const handleOpenCreateModal = () => {
     setCreateModalOpen(true);
   };
@@ -155,6 +161,7 @@ const UserList: React.FC = () => {
           user={selectedUser}
           open={!!selectedUser}
           onClose={handleCloseDetailModal}
+          onEdit={handleEditUser}
         />
         <UserCreateModal
           open={createModalOpen}

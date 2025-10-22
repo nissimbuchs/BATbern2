@@ -60,7 +60,12 @@ export const listUsers = async (
   }
 
   if (filters.status && filters.status !== 'all') {
-    filterObj.isActive = filters.status === 'active';
+    filterObj.active = filters.status === 'active';
+  }
+
+  // Add search query parameter if provided (searches name and email)
+  if (filters.search && filters.search.trim()) {
+    params.search = filters.search;
   }
 
   // Add filter parameter if we have filters
