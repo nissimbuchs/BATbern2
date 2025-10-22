@@ -48,12 +48,15 @@ export const listUsers = async (
     params.include = includes.join(',');
   }
 
-  // Build filter object for JSON filter syntax
-  const filterObj: Record<string, string | string[] | boolean> = {};
-
+  // Add role as separate query parameter (not in filter object)
+  // Backend expects ?role=ATTENDEE, not filter={"role":["ATTENDEE"]}
   if (filters.role && filters.role.length > 0) {
-    filterObj.role = filters.role;
+    // Take the first role if multiple are selected (backend accepts single role)
+    params.role = filters.role[0];
   }
+
+  // Build filter object for JSON filter syntax (for active status only)
+  const filterObj: Record<string, string | boolean> = {};
 
   if (filters.company) {
     filterObj.company = filters.company;
@@ -64,8 +67,8 @@ export const listUsers = async (
   }
 
   // Add search query parameter if provided (searches name and email)
-  if (filters.search && filters.search.trim()) {
-    params.search = filters.search;
+  if (filters.searchQuery && filters.searchQuery.trim()) {
+    params.search = filters.searchQuery;
   }
 
   // Add filter parameter if we have filters
