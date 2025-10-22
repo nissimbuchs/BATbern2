@@ -1,9 +1,9 @@
-package ch.batbern.shared.interceptor;
+package ch.batbern.companyuser.interceptor;
 
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.repository.UserRepository;
-import ch.batbern.shared.events.UserCreatedEvent;
+import ch.batbern.companyuser.event.UserCreatedEvent;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -402,7 +402,20 @@ class JITUserProvisioningInterceptorTest {
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.existsByUsername(anyString())).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User user = invocation.getArgument(0);
+            // Set ID to simulate database save
+            return User.builder()
+                    .id(UUID.randomUUID())
+                    .cognitoUserId(user.getCognitoUserId())
+                    .username(user.getUsername())
+                    .email(user.getEmail())
+                    .firstName(user.getFirstName())
+                    .lastName(user.getLastName())
+                    .roles(user.getRoles())
+                    .isActive(user.isActive())
+                    .build();
+        });
 
         // When: Interceptor pre-handle is called
         interceptor.preHandle(request, response, new Object());

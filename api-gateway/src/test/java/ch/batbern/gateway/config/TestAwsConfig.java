@@ -1,6 +1,5 @@
 package ch.batbern.gateway.config;
 
-import ch.batbern.gateway.auth.service.EmailService;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
@@ -28,8 +27,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -119,21 +116,6 @@ public class TestAwsConfig {
                 });
 
         return mockClient;
-    }
-
-    /**
-     * Mock EmailService
-     * Prevents actual email sending during tests
-     */
-    @Bean
-    @Primary
-    public EmailService mockEmailService() {
-        EmailService mockService = mock(EmailService.class);
-
-        // Mock email sending to do nothing (successful)
-        doNothing().when(mockService).sendPasswordResetEmail(anyString(), anyString(), anyString());
-
-        return mockService;
     }
 
     /**

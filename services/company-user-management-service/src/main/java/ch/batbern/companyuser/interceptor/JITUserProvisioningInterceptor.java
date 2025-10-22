@@ -1,9 +1,9 @@
-package ch.batbern.shared.interceptor;
+package ch.batbern.companyuser.interceptor;
 
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.repository.UserRepository;
-import ch.batbern.shared.events.UserCreatedEvent;
+import ch.batbern.companyuser.event.UserCreatedEvent;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -91,7 +91,7 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
 
             // User doesn't exist - perform JIT provisioning
             log.info("User not found in database, performing JIT provisioning",
-                    Map.of("cognitoUserId", cognitoUserId));
+                    Map("cognitoUserId", cognitoUserId));
 
             // Extract user information from JWT
             String email = jwt.getClaimAsString("email");
@@ -116,10 +116,10 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
                     .build();
 
             // Save user to database
-            userRepository.save(newUser);
+            User savedUser = userRepository.save(newUser);
 
             log.info("JIT provisioning completed successfully",
-                    Map.of(
+                    Map(
                         "cognitoUserId", cognitoUserId,
                         "username", username,
                         "email", email,
@@ -127,7 +127,7 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
                     ));
 
             // Publish UserCreatedEvent for observability
-            publishUserCreatedEvent(newUser, "JIT_PROVISIONING");
+            publishUserCreatedEvent(savedUser, "JIT_PROVISIONING");
 
         } catch (Exception e) {
             // Log error but DON'T block request (non-blocking requirement)
@@ -220,7 +220,7 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
             eventPublisher.publishEvent(event);
 
             log.debug("Published UserCreatedEvent",
-                    Map.of(
+                    Map(
                         "userId", user.getId(),
                         "source", source
                     ));

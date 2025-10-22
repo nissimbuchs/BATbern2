@@ -1,6 +1,6 @@
-package ch.batbern.shared.repository;
+package ch.batbern.companyuser.repository;
 
-import ch.batbern.shared.domain.UserSyncCompensationLog;
+import ch.batbern.companyuser.domain.UserSyncCompensationLog;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;

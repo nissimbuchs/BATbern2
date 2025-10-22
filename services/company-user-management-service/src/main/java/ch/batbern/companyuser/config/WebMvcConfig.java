@@ -1,6 +1,6 @@
 package ch.batbern.companyuser.config;
 
-import ch.batbern.shared.interceptor.JITUserProvisioningInterceptor;
+import ch.batbern.companyuser.interceptor.JITUserProvisioningInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;

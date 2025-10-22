@@ -1,9 +1,9 @@
-package ch.batbern.shared.service;
+package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
-import ch.batbern.shared.domain.UserSyncCompensationLog;
-import ch.batbern.shared.repository.UserSyncCompensationLogRepository;
+import ch.batbern.companyuser.domain.UserSyncCompensationLog;
+import ch.batbern.companyuser.repository.UserSyncCompensationLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

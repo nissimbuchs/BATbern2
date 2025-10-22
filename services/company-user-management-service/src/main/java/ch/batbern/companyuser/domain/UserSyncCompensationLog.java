@@ -1,6 +1,4 @@
-package ch.batbern.shared.domain;
-
-import ch.batbern.companyuser.domain.Role;
+package ch.batbern.companyuser.domain;
 import jakarta.persistence.*;
 import lombok.*;
 
