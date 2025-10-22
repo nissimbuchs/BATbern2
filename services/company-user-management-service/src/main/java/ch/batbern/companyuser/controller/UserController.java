@@ -40,6 +40,7 @@ public class UserController {
     private final SecurityContextHelper securityContextHelper;
     private final UserRepository userRepository;
     private final ch.batbern.companyuser.service.UserReconciliationService reconciliationService;
+    private final ch.batbern.companyuser.service.RoleService roleService;
 
     /**
      * AC1: Get current authenticated user
@@ -216,6 +217,51 @@ public class UserController {
         userService.deleteUser(username);
 
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * AC8: Get user roles
+     * GET /api/v1/users/{username}/roles
+     *
+     * @param username User username
+     * @return User roles
+     */
+    @GetMapping("/{username}/roles")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER')")
+    @Timed(value = "users.getUserRoles", description = "Time to get user roles", percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<UserRolesResponse> getUserRoles(@PathVariable String username) {
+        log.info("Getting roles for user: {}", username);
+
+        var roles = roleService.getUserRoles(username);
+
+        return ResponseEntity.ok(UserRolesResponse.builder()
+                .username(username)
+                .roles(roles)
+                .build());
+    }
+
+    /**
+     * AC8: Update user roles
+     * PUT /api/v1/users/{username}/roles
+     *
+     * @param username User username
+     * @param request Role update request
+     * @return Updated user roles
+     */
+    @PutMapping("/{username}/roles")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER')")
+    @Timed(value = "users.updateUserRoles", description = "Time to update user roles", percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<UserRolesResponse> updateUserRoles(
+            @PathVariable String username,
+            @Valid @RequestBody UpdateUserRolesRequest request) {
+        log.info("Updating roles for user: {}", username);
+
+        var updatedRoles = roleService.setRoles(username, request.getRoles());
+
+        return ResponseEntity.ok(UserRolesResponse.builder()
+                .username(username)
+                .roles(updatedRoles)
+                .build());
     }
 
     /**
