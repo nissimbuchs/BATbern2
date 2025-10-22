@@ -32,7 +32,7 @@ public class UserContextExtractor {
 
         if (jwt.getClaim("email_verified") != null && !jwt.getClaim("email_verified").isNull()) {
             Boolean emailVerified = jwt.getClaim("email_verified").asBoolean();
-            builder.emailVerified(emailVerified != null ? emailVerified : false);
+            builder.emailVerified(emailVerified != null ? emailVerified : false); 
         } else {
             builder.emailVerified(false);
         }

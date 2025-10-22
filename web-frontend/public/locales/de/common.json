@@ -81,7 +81,7 @@
       "canton": "Kanton",
       "country": "Land",
       "description": "Beschreibung",
-      "legalName": "Gesetzlich: {{name}}"
+      "legalName": "Kurzform: {{name}}"
     },
     "placeholders": {
       "swissUID": "CHE-123.456.789",
