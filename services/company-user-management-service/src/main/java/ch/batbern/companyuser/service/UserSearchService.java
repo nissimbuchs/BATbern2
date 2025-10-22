@@ -1,7 +1,7 @@
 package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.Role;
-import ch.batbern.companyuser.dto.UserResponse;
+import ch.batbern.companyuser.dto.generated.UserResponse;
 
 import java.util.List;
 

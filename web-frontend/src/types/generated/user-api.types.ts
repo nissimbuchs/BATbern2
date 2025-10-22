@@ -102,7 +102,26 @@ export interface paths {
      */
     get: operations['listUsers'];
     put?: never;
-    post?: never;
+    /**
+     * Create new user (Organizer/Admin only)
+     * @description Create a new user with Cognito integration and automatic username generation.
+     *
+     *     **Acceptance Criteria**: AC4 (Story 2.5.2 - User Management Frontend)
+     *
+     *     **Authorization**: ORGANIZER or ADMIN role required
+     *
+     *     **Business Rules**:
+     *     - Email must be unique
+     *     - Username auto-generated from first/last name (e.g., john.doe)
+     *     - User created in Cognito with email_verified=true
+     *     - Default role: ATTENDEE (unless initialRoles specified)
+     *     - Password set via Cognito welcome email
+     *
+     *     **Events Published**: UserCreatedEvent to EventBridge
+     *
+     *     **Performance**: <200ms (P95)
+     */
+    post: operations['createUser'];
     delete?: never;
     options?: never;
     head?: never;
@@ -429,7 +448,7 @@ export interface components {
        */
       profilePictureUrl?: string;
       /** @example true */
-      isActive: boolean;
+      active?: boolean;
       /**
        * Format: date-time
        * @example 2025-01-15T10:00:00Z
@@ -525,6 +544,42 @@ export interface components {
       roles?: string[];
       /** Format: uri */
       profilePictureUrl?: string;
+    };
+    /** @description Request body for creating a new user (Story 2.5.2 AC4) */
+    CreateUserRequest: {
+      /**
+       * Format: email
+       * @description User email address (must be unique)
+       * @example anna.mueller@example.com
+       */
+      email: string;
+      /**
+       * @description User first name
+       * @example Anna
+       */
+      firstName: string;
+      /**
+       * @description User last name
+       * @example Müller
+       */
+      lastName: string;
+      /**
+       * @description Company name (unique identifier) - Story 1.16.2
+       * @example Swiss IT Solutions AG
+       */
+      companyId?: string;
+      /**
+       * @description Initial roles for the user (defaults to [ATTENDEE] if not specified)
+       * @example [
+       *       "ATTENDEE"
+       *     ]
+       */
+      initialRoles?: ('ORGANIZER' | 'SPEAKER' | 'PARTNER' | 'ATTENDEE')[];
+      /**
+       * @description User biography/description
+       * @example Software engineer passionate about cloud architecture
+       */
+      bio?: string;
     };
     GetOrCreateUserRequest: {
       /** Format: email */
@@ -834,6 +889,50 @@ export interface operations {
       400: components['responses']['BadRequest'];
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  createUser: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateUserRequest'];
+      };
+    };
+    responses: {
+      /** @description User created successfully */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UserResponse'];
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      /** @description Forbidden - Requires ORGANIZER or ADMIN role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
       500: components['responses']['InternalServerError'];
     };
   };

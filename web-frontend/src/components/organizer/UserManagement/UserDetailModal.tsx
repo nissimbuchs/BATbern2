@@ -64,7 +64,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, open, onClose, 
       <DialogContent dividers>
         <Grid container spacing={3}>
           {/* Profile Section */}
-          <Grid item xs={12}>
+          <Grid size={12}>
             <Box display="flex" alignItems="center" gap={2}>
               <Avatar src={user.profilePictureUrl} alt={fullName} sx={{ width: 80, height: 80 }}>
                 {user.firstName[0]}
@@ -77,9 +77,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, open, onClose, 
                 </Typography>
                 <Box mt={1}>
                   <Chip
-                    label={
-                      user.active ? t('filters.status.active') : t('filters.status.inactive')
-                    }
+                    label={user.active ? t('filters.status.active') : t('filters.status.inactive')}
                     color={user.active ? 'success' : 'default'}
                     size="small"
                   />
@@ -88,12 +86,12 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, open, onClose, 
             </Box>
           </Grid>
 
-          <Grid item xs={12}>
+          <Grid size={12}>
             <Divider />
           </Grid>
 
           {/* Roles Section */}
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
               {t('table.headers.roles')}
             </Typography>
@@ -110,7 +108,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, open, onClose, 
 
           {/* Company Section */}
           {user.company && (
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                 {t('table.headers.company')}
               </Typography>
@@ -124,18 +122,18 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, open, onClose, 
           )}
 
           {/* Additional Info Section */}
-          <Grid item xs={12}>
+          <Grid size={12}>
             <Divider />
           </Grid>
 
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
               {t('modal.userDetail.createdAt')}
             </Typography>
             <Typography variant="body2">{new Date(user.createdAt).toLocaleDateString()}</Typography>
           </Grid>
 
-          <Grid item xs={12} sm={6}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
               {t('modal.userDetail.updatedAt')}
             </Typography>
@@ -148,11 +146,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, open, onClose, 
         <Button onClick={onClose} variant="outlined">
           {t('actions.close')}
         </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => user && onEdit && onEdit(user)}
-        >
+        <Button variant="contained" color="primary" onClick={() => user && onEdit && onEdit(user)}>
           {t('actions.edit')}
         </Button>
       </DialogActions>

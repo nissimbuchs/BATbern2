@@ -1,7 +1,7 @@
 package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.User;
-import ch.batbern.companyuser.dto.GetOrCreateUserRequest;
+import ch.batbern.companyuser.dto.generated.GetOrCreateUserRequest;
 
 /**
  * Service for integrating with AWS Cognito

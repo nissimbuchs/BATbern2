@@ -102,7 +102,7 @@ const UserList: React.FC = () => {
     );
   }
 
-  const users = data?.users || [];
+  const users = data?.data || [];
   const paginationData = data?.pagination;
 
   return (

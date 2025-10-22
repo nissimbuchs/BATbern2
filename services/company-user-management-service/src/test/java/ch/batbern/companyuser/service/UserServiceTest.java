@@ -2,10 +2,10 @@ package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
-import ch.batbern.companyuser.dto.GetOrCreateUserRequest;
-import ch.batbern.companyuser.dto.GetOrCreateUserResponse;
-import ch.batbern.companyuser.dto.UpdateUserRequest;
-import ch.batbern.companyuser.dto.UserResponse;
+import ch.batbern.companyuser.dto.generated.GetOrCreateUserRequest;
+import ch.batbern.companyuser.dto.generated.GetOrCreateUserResponse;
+import ch.batbern.companyuser.dto.generated.UpdateUserRequest;
+import ch.batbern.companyuser.dto.generated.UserResponse;
 import ch.batbern.companyuser.events.UserCreatedEvent;
 import ch.batbern.companyuser.events.UserDeletedEvent;
 import ch.batbern.companyuser.events.UserUpdatedEvent;
@@ -88,10 +88,9 @@ class UserServiceTest {
         when(userRepository.findByUsername(username)).thenReturn(Optional.of(existingUser));  // Story 1.16.2: findByUsername
         when(userRepository.save(any(User.class))).thenReturn(existingUser);
 
-        UpdateUserRequest request = UpdateUserRequest.builder()
-                .firstName("Johnny")
-                .bio("Updated bio")
-                .build();
+        UpdateUserRequest request = new UpdateUserRequest();
+        request.setFirstName("Johnny");
+        request.setBio("Updated bio");
 
         // When
         UserResponse response = userService.updateCurrentUser(request);
@@ -125,9 +124,8 @@ class UserServiceTest {
         when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));  // Story 1.16.2: findByUsername
         when(userRepository.save(any(User.class))).thenReturn(user);
 
-        UpdateUserRequest request = UpdateUserRequest.builder()
-                .firstName("Johnny")
-                .build();
+        UpdateUserRequest request = new UpdateUserRequest();
+        request.setFirstName("Johnny");
 
         // When
         userService.updateCurrentUser(request);
@@ -153,13 +151,12 @@ class UserServiceTest {
     @Test
     void should_createUser_when_userNotExists() {
         // Given
-        GetOrCreateUserRequest request = GetOrCreateUserRequest.builder()
-                .email("new.user@example.com")
-                .firstName("New")
-                .lastName("User")
-                .companyId("TechCorp")
-                .createIfMissing(true)
-                .build();
+        GetOrCreateUserRequest request = new GetOrCreateUserRequest();
+        request.setEmail("new.user@example.com");
+        request.setFirstName("New");
+        request.setLastName("User");
+        request.setCompanyId("TechCorp");
+        request.setCreateIfMissing(true);
 
         when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.empty());
         when(cognitoService.createCognitoUser(request)).thenReturn("cognito-123");
@@ -185,8 +182,8 @@ class UserServiceTest {
 
         // Then
         assertThat(response).isNotNull();
-        assertThat(response.getUserId()).isEqualTo("new.user");  // Story 1.16.2: username
-        assertThat(response.isCreated()).isTrue();
+        assertThat(response.getUsername()).isEqualTo("new.user");  // Story 1.16.2: username
+        assertThat(response.getCreated()).isTrue();
         assertThat(response.getCognitoUserId()).isEqualTo("cognito-123");
         assertThat(response.getUser().getId()).isEqualTo("new.user");
         assertThat(response.getUser().getCompanyId()).isEqualTo("TechCorp");
@@ -202,11 +199,10 @@ class UserServiceTest {
     @Test
     void should_returnExistingUser_when_userExists() {
         // Given
-        GetOrCreateUserRequest request = GetOrCreateUserRequest.builder()
-                .email("existing@example.com")
-                .firstName("Existing")
-                .lastName("User")
-                .build();
+        GetOrCreateUserRequest request = new GetOrCreateUserRequest();
+        request.setEmail("existing@example.com");
+        request.setFirstName("Existing");
+        request.setLastName("User");
 
         User existingUser = User.builder()
                 .id(UUID.randomUUID())
@@ -224,8 +220,8 @@ class UserServiceTest {
 
         // Then
         assertThat(response).isNotNull();
-        assertThat(response.getUserId()).isEqualTo("existing.user");  // Story 1.16.2
-        assertThat(response.isCreated()).isFalse();
+        assertThat(response.getUsername()).isEqualTo("existing.user");  // Story 1.16.2
+        assertThat(response.getCreated()).isFalse();
         assertThat(response.getUser().getId()).isEqualTo("existing.user");
 
         verify(userRepository, never()).save(any());
@@ -237,13 +233,12 @@ class UserServiceTest {
     @Test
     void should_publishUserCreatedEvent_with_stringIDs() {
         // Given
-        GetOrCreateUserRequest request = GetOrCreateUserRequest.builder()
+        GetOrCreateUserRequest request = new GetOrCreateUserRequest()
                 .email("new@example.com")
                 .firstName("New")
                 .lastName("User")
                 .companyId("CompanyX")
-                .createIfMissing(true)
-                .build();
+                .createIfMissing(true);
 
         when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.empty());
         when(cognitoService.createCognitoUser(request)).thenReturn("cognito-123");

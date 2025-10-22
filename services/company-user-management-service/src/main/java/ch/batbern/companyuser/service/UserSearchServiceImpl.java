@@ -2,7 +2,7 @@ package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
-import ch.batbern.companyuser.dto.UserResponse;
+import ch.batbern.companyuser.dto.generated.UserResponse;
 import ch.batbern.companyuser.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +31,7 @@ public class UserSearchServiceImpl implements UserSearchService {
 
     private final UserRepository userRepository;
     private final CacheManager cacheManager;
+    private final UserService userService;
 
     private static final int MAX_AUTOCOMPLETE_RESULTS = 20;
 
@@ -65,9 +66,9 @@ public class UserSearchServiceImpl implements UserSearchService {
 
         log.debug("Found {} users (limited to {})", users.size(), limitedUsers.size());
 
-        // Map to response DTOs
+        // Map to response DTOs using UserService mapper
         return limitedUsers.stream()
-                .map(this::mapToResponse)
+                .map(userService::mapToResponse)
                 .collect(Collectors.toList());
     }
 
@@ -84,27 +85,4 @@ public class UserSearchServiceImpl implements UserSearchService {
         }
     }
 
-    /**
-     * Map User entity to UserResponse DTO
-     * Story 1.16.2: id field contains username (not UUID)
-     *
-     * @param user User entity
-     * @return UserResponse DTO
-     */
-    private UserResponse mapToResponse(User user) {
-        return UserResponse.builder()
-                .id(user.getUsername())  // Story 1.16.2: username as public ID
-                .email(user.getEmail())
-                .firstName(user.getFirstName())
-                .lastName(user.getLastName())
-                .bio(user.getBio())
-                .companyId(user.getCompanyId())  // Story 1.16.2: company name
-                .roles(user.getRoles())
-                .profilePictureUrl(user.getProfilePictureUrl())
-                .active(user.isActive())  // Map isActive() to active field
-                .createdAt(user.getCreatedAt())
-                .updatedAt(user.getUpdatedAt())
-                .lastLoginAt(user.getLastLoginAt())
-                .build();
-    }
 }

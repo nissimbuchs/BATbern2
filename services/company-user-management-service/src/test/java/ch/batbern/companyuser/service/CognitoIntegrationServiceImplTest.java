@@ -2,7 +2,7 @@ package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
-import ch.batbern.companyuser.dto.GetOrCreateUserRequest;
+import ch.batbern.companyuser.dto.generated.GetOrCreateUserRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -145,12 +145,11 @@ class CognitoIntegrationServiceImplTest {
     @DisplayName("should_createUserWithAllAttributes_when_createCognitoUserCalled")
     void should_createUserWithAllAttributes_when_createCognitoUserCalled() {
         // Given
-        GetOrCreateUserRequest request = GetOrCreateUserRequest.builder()
+        GetOrCreateUserRequest request = new GetOrCreateUserRequest()
                 .email("jane.smith@example.com")
                 .firstName("Jane")
                 .lastName("Smith")
-                .companyId("MicrosoftZH")
-                .build();
+                .companyId("MicrosoftZH");
 
         when(cognitoClient.adminCreateUser(any(AdminCreateUserRequest.class)))
                 .thenReturn(AdminCreateUserResponse.builder()
@@ -187,12 +186,11 @@ class CognitoIntegrationServiceImplTest {
     @DisplayName("should_handleNullCompanyId_when_creatingCognitoUser")
     void should_handleNullCompanyId_when_creatingCognitoUser() {
         // Given
-        GetOrCreateUserRequest request = GetOrCreateUserRequest.builder()
+        GetOrCreateUserRequest request = new GetOrCreateUserRequest()
                 .email("jane.smith@example.com")
                 .firstName("Jane")
                 .lastName("Smith")
-                .companyId(null)  // No company
-                .build();
+                .companyId(null);  // No company
 
         when(cognitoClient.adminCreateUser(any(AdminCreateUserRequest.class)))
                 .thenReturn(AdminCreateUserResponse.builder()
@@ -218,12 +216,11 @@ class CognitoIntegrationServiceImplTest {
     @DisplayName("should_throwException_when_cognitoCreateUserFails")
     void should_throwException_when_cognitoCreateUserFails() {
         // Given
-        GetOrCreateUserRequest request = GetOrCreateUserRequest.builder()
+        GetOrCreateUserRequest request = new GetOrCreateUserRequest()
                 .email("jane.smith@example.com")
                 .firstName("Jane")
                 .lastName("Smith")
-                .companyId("MicrosoftZH")
-                .build();
+                .companyId("MicrosoftZH");
 
         when(cognitoClient.adminCreateUser(any(AdminCreateUserRequest.class)))
                 .thenThrow(UsernameExistsException.builder().message("User already exists").build());

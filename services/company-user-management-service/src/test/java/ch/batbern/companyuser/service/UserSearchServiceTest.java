@@ -2,7 +2,7 @@ package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
-import ch.batbern.companyuser.dto.UserResponse;
+import ch.batbern.companyuser.dto.generated.UserResponse;
 import ch.batbern.companyuser.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -129,7 +129,7 @@ class UserSearchServiceTest {
 
         // Then
         assertThat(results).hasSize(1);
-        assertThat(results.get(0).getRoles()).contains(Role.ORGANIZER);
+        assertThat(results.get(0).getRoles()).contains(UserResponse.RolesEnum.ORGANIZER);
         verify(userRepository).findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(query, query);
     }
 
@@ -291,7 +291,7 @@ class UserSearchServiceTest {
         // Then - Verify correct filtering
         assertThat(results1).hasSize(1);
         assertThat(results2).hasSize(1);
-        assertThat(results1.get(0).getRoles()).contains(Role.SPEAKER);
+        assertThat(results1.get(0).getRoles()).contains(UserResponse.RolesEnum.SPEAKER);
         verify(userRepository, atLeastOnce()).findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(query, query);
     }
 

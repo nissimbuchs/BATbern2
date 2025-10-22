@@ -185,7 +185,8 @@ openApiGenerate {
         performBeanValidation: 'true',      // Enable bean validation
         useOptional: 'false',               // Use standard types instead of Optional
         delegatePattern: 'false',           // We implement interfaces directly
-        useJakartaEe: 'true'                // Use Jakarta EE (Spring Boot 3 requirement)
+        useJakartaEe: 'true',               // Use Jakarta EE (Spring Boot 3 requirement)
+        generateBuilders: 'true'            // Generate builder pattern for DTOs
     ]
 
     // Generate only models and API interfaces (skip implementation)

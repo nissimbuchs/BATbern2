@@ -2,10 +2,10 @@ package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
-import ch.batbern.companyuser.dto.GetOrCreateUserRequest;
-import ch.batbern.companyuser.dto.GetOrCreateUserResponse;
-import ch.batbern.companyuser.dto.UpdateUserRequest;
-import ch.batbern.companyuser.dto.UserResponse;
+import ch.batbern.companyuser.dto.generated.GetOrCreateUserRequest;
+import ch.batbern.companyuser.dto.generated.GetOrCreateUserResponse;
+import ch.batbern.companyuser.dto.generated.UpdateUserRequest;
+import ch.batbern.companyuser.dto.generated.UserResponse;
 import ch.batbern.companyuser.events.UserCreatedEvent;
 import ch.batbern.companyuser.events.UserDeletedEvent;
 import ch.batbern.companyuser.events.UserUpdatedEvent;
@@ -283,23 +283,20 @@ public class UserService {
         return userRepository.findByEmail(request.getEmail())
                 .map(existingUser -> {
                     log.debug("User already exists: {}", existingUser.getUsername());
-                    return GetOrCreateUserResponse.builder()
-                            .userId(existingUser.getUsername())  // Story 1.16.2: username
+                    return new GetOrCreateUserResponse()
+                            .username(existingUser.getUsername())  // Story 1.16.2: username
                             .created(false)
-                            .user(mapToResponse(existingUser))
-                            .build();
+                            .user(mapToResponse(existingUser));
                 })
                 .orElseGet(() -> {
-                    if (request.isCreateIfMissing()) {
+                    if (request.getCreateIfMissing() != null && request.getCreateIfMissing()) {
                         log.info("Creating new user: {}", request.getEmail());
                         User newUser = createNewUser(request);
-                        UserResponse response = mapToResponse(newUser);
-                        return GetOrCreateUserResponse.builder()
-                                .userId(newUser.getUsername())  // Story 1.16.2: username
+                        return new GetOrCreateUserResponse()
+                                .username(newUser.getUsername())  // Story 1.16.2: username
                                 .created(true)
                                 .cognitoUserId(newUser.getCognitoUserId())
-                                .user(response)
-                                .build();
+                                .user(mapToResponse(newUser));
                     } else {
                         throw new UserNotFoundException("User not found: " + request.getEmail());
                     }
@@ -374,7 +371,7 @@ public class UserService {
      */
     private User createNewUser(GetOrCreateUserRequest request) {
         // Create user in Cognito if needed (AC2)
-        String cognitoUserId = request.isCognitoSync()
+        String cognitoUserId = (request.getCognitoSync() != null && request.getCognitoSync())
                 ? cognitoService.createCognitoUser(request)
                 : null;
 
@@ -428,23 +425,28 @@ public class UserService {
                     if (response.getCompanyId() != null) {
                         // TODO: Fetch company details from Company Management Service in Task 14
                         // For now, return minimal company info
-                        response.setCompany(UserResponse.CompanyDTO.builder()
+                        ch.batbern.companyuser.dto.generated.Company company =
+                            new ch.batbern.companyuser.dto.generated.Company()
                                 .id(response.getCompanyId())
-                                .name(response.getCompanyId())  // Placeholder
-                                .build());
+                                .name(response.getCompanyId());  // Placeholder
+                        response.setCompany(company);
                     }
                     break;
                 case "preferences":
                     // Fetch user with preferences
                     User user = userRepository.findByUsername(response.getId())
                             .orElseThrow(() -> new UserNotFoundException(response.getId()));
-                    response.setPreferences(user.getPreferences());
+                    if (user.getPreferences() != null) {
+                        response.setPreferences(mapPreferencesToDTO(user.getPreferences()));
+                    }
                     break;
                 case "settings":
                     // Fetch user with settings
                     User userWithSettings = userRepository.findByUsername(response.getId())
                             .orElseThrow(() -> new UserNotFoundException(response.getId()));
-                    response.setSettings(userWithSettings.getSettings());
+                    if (userWithSettings.getSettings() != null) {
+                        response.setSettings(mapSettingsToDTO(userWithSettings.getSettings()));
+                    }
                     break;
                 case "roles":
                     // Roles are already included in base response
@@ -455,6 +457,30 @@ public class UserService {
         }
 
         return response;
+    }
+
+    /**
+     * Map domain UserPreferences to generated DTO
+     */
+    private ch.batbern.companyuser.dto.generated.UserPreferences mapPreferencesToDTO(
+            ch.batbern.companyuser.domain.UserPreferences domain) {
+        return new ch.batbern.companyuser.dto.generated.UserPreferences()
+                .theme(ch.batbern.companyuser.dto.generated.UserPreferences.ThemeEnum.valueOf(
+                    domain.getTheme().toUpperCase()))
+                .language(ch.batbern.companyuser.dto.generated.UserPreferences.LanguageEnum.valueOf(
+                    domain.getLanguage().toUpperCase()))
+                .emailNotifications(domain.isEmailNotifications());
+    }
+
+    /**
+     * Map domain UserSettings to generated DTO
+     */
+    private ch.batbern.companyuser.dto.generated.UserSettings mapSettingsToDTO(
+            ch.batbern.companyuser.domain.UserSettings domain) {
+        return new ch.batbern.companyuser.dto.generated.UserSettings()
+                .twoFactorEnabled(domain.isTwoFactorEnabled())
+                .profileVisibility(ch.batbern.companyuser.dto.generated.UserSettings.ProfileVisibilityEnum.valueOf(
+                    domain.getProfileVisibility().toUpperCase()));
     }
 
     /**
@@ -469,23 +495,38 @@ public class UserService {
     }
 
     /**
-     * Map User entity to UserResponse DTO
+     * Map User entity to UserResponse DTO (generated from OpenAPI with Lombok builder)
      * Story 1.16.2: Expose username as id, not UUID
+     * Package-private to allow reuse by other services
      */
-    private UserResponse mapToResponse(User user) {
-        return UserResponse.builder()
+    UserResponse mapToResponse(User user) {
+        // Convert String to URI for profilePictureUrl
+        java.net.URI profilePictureUri = null;
+        if (user.getProfilePictureUrl() != null) {
+            try {
+                profilePictureUri = java.net.URI.create(user.getProfilePictureUrl());
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid profile picture URL for user {}: {}", user.getUsername(), user.getProfilePictureUrl());
+            }
+        }
+
+        return new UserResponse()
                 .id(user.getUsername())  // Story 1.16.2: username as id
                 .email(user.getEmail())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .bio(user.getBio())
                 .companyId(user.getCompanyId())  // Story 1.16.2: company name
-                .roles(user.getRoles())
-                .profilePictureUrl(user.getProfilePictureUrl())
-                .active(user.isActive())  // Map isActive() to active field
-                .createdAt(user.getCreatedAt())
-                .updatedAt(user.getUpdatedAt())
-                .lastLoginAt(user.getLastLoginAt())
-                .build();
+                .roles(user.getRoles().stream()
+                        .map(role -> UserResponse.RolesEnum.valueOf(role.name()))
+                        .toList())
+                .profilePictureUrl(profilePictureUri)
+                .active(user.isActive())
+                .createdAt(user.getCreatedAt() != null ?
+                        user.getCreatedAt().atOffset(java.time.ZoneOffset.UTC) : null)
+                .updatedAt(user.getUpdatedAt() != null ?
+                        user.getUpdatedAt().atOffset(java.time.ZoneOffset.UTC) : null)
+                .lastLoginAt(user.getLastLoginAt() != null ?
+                        user.getLastLoginAt().atOffset(java.time.ZoneOffset.UTC) : null);
     }
 }

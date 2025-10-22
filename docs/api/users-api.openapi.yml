@@ -105,7 +105,7 @@ paths:
                     firstName: John
                     lastName: Doe
                     roles: [SPEAKER, ATTENDEE]
-                    isActive: true
+                    active: true
                     createdAt: 2025-01-15T10:00:00Z
                     updatedAt: 2025-01-15T10:00:00Z
                 expandedUser:
@@ -117,7 +117,7 @@ paths:
                     lastName: Doe
                     roles: [SPEAKER, ATTENDEE]
                     companyId: Swiss IT Solutions AG
-                    isActive: true
+                    active: true
                     createdAt: 2025-01-15T10:00:00Z
                     updatedAt: 2025-01-15T10:00:00Z
                     company:
@@ -416,7 +416,7 @@ paths:
                     companyId: Swiss IT Solutions AG
                     roles:
                       - ATTENDEE
-                    isActive: true
+                    active: true
                     createdAt: '2025-10-21T20:00:00Z'
                     updatedAt: '2025-10-21T20:00:00Z'
         '400':
@@ -783,17 +783,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  username:
-                    type: string
-                    description: Username (unique identifier) - Story 1.16.2
-                    example: john.doe
-                  roles:
-                    type: array
-                    items:
-                      type: string
-                      enum: [ORGANIZER, SPEAKER, PARTNER, ATTENDEE]
+                $ref: '#/components/schemas/UserRolesResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -841,32 +831,14 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - roles
-              properties:
-                roles:
-                  type: array
-                  items:
-                    type: string
-                    enum: [ORGANIZER, SPEAKER, PARTNER, ATTENDEE]
-                  minItems: 1
+              $ref: '#/components/schemas/UpdateUserRolesRequest'
       responses:
         '200':
           description: Roles updated successfully
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  username:
-                    type: string
-                    description: Username (unique identifier) - Story 1.16.2
-                    example: john.doe
-                  roles:
-                    type: array
-                    items:
-                      type: string
+                $ref: '#/components/schemas/UserRolesResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1136,7 +1108,7 @@ components:
           type: string
           format: uri
           example: https://cdn.batbern.ch/profile-pictures/550e8400.jpg
-        isActive:
+        active:
           type: boolean
           example: true
         createdAt:
@@ -1425,6 +1397,37 @@ components:
             $ref: '#/components/schemas/UserResponse'
         pagination:
           $ref: '#/components/schemas/PaginationMetadata'
+
+    UserRolesResponse:
+      type: object
+      description: User roles response
+      required:
+        - username
+        - roles
+      properties:
+        username:
+          type: string
+          description: Username (unique identifier) - Story 1.16.2
+          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          example: john.doe
+        roles:
+          type: array
+          items:
+            type: string
+            enum: [ORGANIZER, SPEAKER, PARTNER, ATTENDEE]
+
+    UpdateUserRolesRequest:
+      type: object
+      description: Request to update user roles
+      required:
+        - roles
+      properties:
+        roles:
+          type: array
+          items:
+            type: string
+            enum: [ORGANIZER, SPEAKER, PARTNER, ATTENDEE]
+          minItems: 1
 
     PaginationMetadata:
       type: object

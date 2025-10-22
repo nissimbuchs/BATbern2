@@ -4,6 +4,13 @@ import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.dto.*;
 import ch.batbern.companyuser.dto.generated.CreateUserRequest;
+import ch.batbern.companyuser.dto.generated.GetOrCreateUserRequest;
+import ch.batbern.companyuser.dto.generated.GetOrCreateUserResponse;
+import ch.batbern.companyuser.dto.generated.PaginatedUserResponse;
+import ch.batbern.companyuser.dto.generated.UpdateUserRequest;
+import ch.batbern.companyuser.dto.generated.UpdateUserRolesRequest;
+import ch.batbern.companyuser.dto.generated.UserResponse;
+import ch.batbern.companyuser.dto.generated.UserRolesResponse;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
 import ch.batbern.companyuser.service.ProfilePictureService;
@@ -113,7 +120,7 @@ public class UserController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER')")
     @Timed(value = "users.listUsers", description = "Time to list users (admin/organizer)", percentiles = {0.5, 0.95, 0.99})
-    public ResponseEntity<Map<String, Object>> listUsers(
+    public ResponseEntity<PaginatedUserResponse> listUsers(
             @RequestParam(required = false) String filter,
             @RequestParam(required = false) String role,
             @RequestParam(required = false) String company,
@@ -125,15 +132,20 @@ public class UserController {
 
         List<UserResponse> users = userService.listUsers(role, company, search, filter);
 
-        // TODO: Implement pagination (Task 14)
-        Map<String, Object> response = Map.of(
-                "users", users,
-                "pagination", Map.of(
-                        "page", page,
-                        "limit", limit,
-                        "total", users.size()
-                )
-        );
+        // Build pagination metadata
+        ch.batbern.shared.api.PaginationMetadata paginationMetadata =
+            new ch.batbern.shared.api.PaginationMetadata();
+        paginationMetadata.setPage(page);
+        paginationMetadata.setLimit(limit);
+        paginationMetadata.setTotal((long) users.size());
+        paginationMetadata.setTotalPages((int) Math.ceil((double) users.size() / limit));
+        paginationMetadata.setHasNext(page < paginationMetadata.getTotalPages() - 1);
+        paginationMetadata.setHasPrev(page > 0);
+
+        // Use generated PaginatedUserResponse
+        PaginatedUserResponse response = new PaginatedUserResponse();
+        response.setData(users);
+        response.setPagination(paginationMetadata);
 
         return ResponseEntity.ok(response);
     }
@@ -233,11 +245,13 @@ public class UserController {
         log.info("Getting roles for user: {}", username);
 
         var roles = roleService.getUserRoles(username);
+        var rolesDto = roles.stream()
+                .map(role -> UserRolesResponse.RolesEnum.valueOf(role.name()))
+                .toList();
 
-        return ResponseEntity.ok(UserRolesResponse.builder()
+        return ResponseEntity.ok(new UserRolesResponse()
                 .username(username)
-                .roles(roles)
-                .build());
+                .roles(rolesDto));
     }
 
     /**
@@ -256,12 +270,21 @@ public class UserController {
             @Valid @RequestBody UpdateUserRolesRequest request) {
         log.info("Updating roles for user: {}", username);
 
-        var updatedRoles = roleService.setRoles(username, request.getRoles());
+        // Convert from DTO enum to domain enum
+        var domainRoles = request.getRoles().stream()
+                .map(roleEnum -> Role.valueOf(roleEnum.name()))
+                .collect(java.util.stream.Collectors.toSet());
 
-        return ResponseEntity.ok(UserRolesResponse.builder()
+        var updatedRoles = roleService.setRoles(username, domainRoles);
+
+        // Convert back to DTO enum
+        var rolesDto = updatedRoles.stream()
+                .map(role -> UserRolesResponse.RolesEnum.valueOf(role.name()))
+                .toList();
+
+        return ResponseEntity.ok(new UserRolesResponse()
                 .username(username)
-                .roles(updatedRoles)
-                .build());
+                .roles(rolesDto));
     }
 
     /**
@@ -320,7 +343,8 @@ public class UserController {
         UserResponse updatedUser = userService.getCurrentUser();
 
         ProfilePictureUploadConfirmResponse response = ProfilePictureUploadConfirmResponse.builder()
-            .profilePictureUrl(updatedUser.getProfilePictureUrl())
+            .profilePictureUrl(updatedUser.getProfilePictureUrl() != null ?
+                updatedUser.getProfilePictureUrl().toString() : null)
             .build();
 
         return ResponseEntity.ok(response);
