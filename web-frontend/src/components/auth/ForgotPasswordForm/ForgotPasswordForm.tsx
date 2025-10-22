@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { Box, TextField, Button, Typography, Link, Alert, CircularProgress } from '@mui/material';
 import { ArrowBack, Refresh } from '@mui/icons-material';
-import { useForgotPassword, ExtendedError } from '@hooks/useForgotPassword';
+import { useForgotPassword, ForgotPasswordError } from '@hooks/useForgotPassword';
 import { ForgotPasswordConfirmation } from '../ForgotPasswordConfirmation/ForgotPasswordConfirmation';
 
 interface ForgotPasswordFormData {
@@ -43,9 +43,9 @@ export const ForgotPasswordForm: React.FC = () => {
 
   // Set countdown when rate limit error occurs
   useEffect(() => {
-    if (error && (error as ExtendedError).type === 'rateLimitExceeded') {
-      const retryAfter = (error as ExtendedError).retryAfter || 60;
-      setRateLimitCountdown(retryAfter);
+    if (error && (error as ForgotPasswordError).type === 'rateLimitExceeded') {
+      // Amplify doesn't provide retryAfter, default to 60 seconds
+      setRateLimitCountdown(60);
     }
   }, [error]);
 
@@ -72,8 +72,8 @@ export const ForgotPasswordForm: React.FC = () => {
   }
 
   // Get error info
-  const extendedError = error as ExtendedError | undefined;
-  const errorType = extendedError?.type;
+  const forgotPasswordError = error as ForgotPasswordError | undefined;
+  const errorType = forgotPasswordError?.type;
   const isRateLimitError = errorType === 'rateLimitExceeded';
   const isNetworkError = errorType === 'networkError';
 

@@ -33,16 +33,23 @@ repositories {
 }
 
 dependencies {
+    // Company User Management Service (for User, Role, UserRepository)
+    implementation project(':services:company-user-management-service')
+
     // Spring Boot dependencies
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-aop'
     implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
 
-    // AWS SDK for EventBridge
+    // AWS SDK for EventBridge, CloudWatch, and Cognito
     implementation platform('software.amazon.awssdk:bom:2.35.10')
     implementation 'software.amazon.awssdk:eventbridge'
+    implementation 'software.amazon.awssdk:cloudwatch'
+    implementation 'software.amazon.awssdk:cognitoidentityprovider'
 
     // Lombok for boilerplate reduction
     compileOnly 'org.projectlombok:lombok'
@@ -63,11 +70,13 @@ dependencies {
 
     // Testing dependencies
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'org.junit.jupiter:junit-jupiter-api'
     testImplementation 'org.junit.jupiter:junit-jupiter-engine'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation 'org.mockito:mockito-core'
+    testImplementation 'org.mockito:mockito-junit-jupiter'
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'org.testcontainers:testcontainers'
     testImplementation 'org.testcontainers:localstack'
