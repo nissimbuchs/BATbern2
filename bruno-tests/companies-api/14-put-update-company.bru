@@ -5,7 +5,7 @@ meta {
 }
 
 put {
-  url: {{baseUrl}}/companies/{{testCompanyId}}
+  url: {{baseUrl}}/companies/{{testCompanyName}}
   body: json
   auth: inherit
 }
@@ -28,9 +28,9 @@ body:json {
 
 script:pre-request {
   // This test requires a company to exist
-  const testCompanyId = bru.getEnvVar("testCompanyId");
-  if (!testCompanyId) {
-    throw new Error("testCompanyId not set. Run 01-create-company first.");
+  const testCompanyName = bru.getEnvVar("testCompanyName");
+  if (!testCompanyName) {
+    throw new Error("testCompanyName not set. Run 01-create-company first.");
   }
 }
 
@@ -47,8 +47,9 @@ tests {
     expect(res.body.name).to.include("PUT Updated");
   });
 
-  test("should preserve company ID", function() {
-    expect(res.body.id).to.equal(bru.getEnvVar("testCompanyId"));
+  test("should preserve company name (Story 1.16.2: name is identifier)", function() {
+    expect(res.body.name).to.equal(bru.getEnvVar("testCompanyName"));
+    expect(res.body.id).to.be.undefined; // Story 1.16.2: no id field
   });
 
   test("industry should be changed to Finance", function() {
@@ -73,5 +74,5 @@ tests {
 
 assert {
   res.status: eq 200
-  res.body.id: eq {{testCompanyId}}
+  res.body.name: eq {{testCompanyName}}
 }
