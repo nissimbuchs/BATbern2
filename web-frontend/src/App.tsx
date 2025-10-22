@@ -19,6 +19,7 @@ import {
 } from '@components/auth/ProtectedRoute';
 import { LoginForm } from '@components/auth/LoginForm';
 import { ForgotPasswordForm } from '@components/auth/ForgotPasswordForm';
+import { ResetPasswordForm } from '@components/auth/ResetPasswordForm';
 import { setNavigationCallback } from '@/services/api/apiClient';
 import LanguageSwitcher from '@components/shared/LanguageSwitcher/LanguageSwitcher';
 import theme from '@/theme';
@@ -106,6 +107,13 @@ const ForgotPasswordPage: React.FC = () => {
   return <ForgotPasswordForm />;
 };
 
+// Reset Password page component (Story 1.2.2a)
+const ResetPasswordPage: React.FC = () => {
+  // Renders the ResetPasswordForm which handles code verification and password reset
+  // Email is passed via URL parameter: /auth/reset-password?email=user@example.com
+  return <ResetPasswordForm />;
+};
+
 // Signup placeholder page (Story 1.2.3 not implemented yet)
 const SignupPage: React.FC = () => {
   const navigate = useNavigate();
@@ -156,6 +164,7 @@ function App() {
                 {/* Public routes */}
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/auth/signup" element={<SignupPage />} />
 
                 {/* Protected routes with lazy-loaded components */}

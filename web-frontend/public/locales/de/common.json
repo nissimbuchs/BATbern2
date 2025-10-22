@@ -31,7 +31,8 @@
     "reset": "Zurücksetzen",
     "submit": "Absenden",
     "close": "Schliessen",
-    "sending": "Wird gesendet..."
+    "sending": "Wird gesendet...",
+    "loading": "Wird geladen..."
   },
   "language": {
     "select": "Sprache wählen",

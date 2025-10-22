@@ -31,7 +31,8 @@
     "reset": "Reset",
     "submit": "Submit",
     "close": "Close",
-    "sending": "Sending..."
+    "sending": "Sending...",
+    "loading": "Loading..."
   },
   "language": {
     "select": "Select Language",
