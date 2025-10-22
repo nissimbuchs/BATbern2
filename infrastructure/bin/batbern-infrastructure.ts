@@ -123,10 +123,10 @@ databaseStack.addDependency(networkStack);
 databaseStack.addDependency(secretsStack);
 
 // 4a. Bastion Stack (SSM-based secure access to database)
-// NOTE: Only deploy for development environment
-// Staging/Production use VPN or AWS PrivateLink
+// NOTE: Deploy for development and staging for debugging
+// Production uses VPN or AWS PrivateLink
 let bastionStack: BastionStack | undefined;
-if (config.envName === 'development') {
+if (config.envName === 'development' || config.envName === 'staging') {
   bastionStack = new BastionStack(app, `${stackPrefix}-Bastion`, {
     config,
     vpc: networkStack.vpc,
