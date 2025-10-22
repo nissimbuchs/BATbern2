@@ -1,0 +1,70 @@
+meta {
+  name: List Users - Filter by Search (name)
+  type: http
+  seq: 18
+}
+
+get {
+  url: {{baseUrl}}/users?search=test&page=0&limit=20
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+params:query {
+  search: test
+  page: 0
+  limit: 20
+}
+
+assert {
+  res.status: in [200, 403]
+}
+
+tests {
+  test("should filter users by name search successfully", function() {
+    const status = res.getStatus();
+    expect([200, 403]).to.include(status);
+    if (status === 403) {
+      console.log("Non-admin/organizer - access denied (expected)");
+    }
+  });
+
+  test("should return users matching search query", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body.users).to.be.an('array');
+
+      // Verify returned users contain search term in name or email
+      if (body.users.length > 0) {
+        body.users.forEach(user => {
+          const searchTerm = 'test';
+          const matchesFirstName = user.firstName && user.firstName.toLowerCase().includes(searchTerm);
+          const matchesLastName = user.lastName && user.lastName.toLowerCase().includes(searchTerm);
+          const matchesEmail = user.email && user.email.toLowerCase().includes(searchTerm);
+          const matchesUsername = user.id && user.id.toLowerCase().includes(searchTerm);
+
+          const matches = matchesFirstName || matchesLastName || matchesEmail || matchesUsername;
+          expect(matches).to.be.true;
+        });
+
+        console.log(`Found ${body.users.length} users matching 'test'`);
+      }
+    }
+  });
+
+  test("should return pagination metadata", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body.pagination).to.exist;
+    }
+  });
+}
