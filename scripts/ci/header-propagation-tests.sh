@@ -48,6 +48,9 @@ else
     ((failed++))
 fi
 
+# Small delay to avoid rate limiting
+sleep 1
+
 # Test 2: Accept-Language header acceptance
 echo -e "\n${YELLOW}Test 2:${NC} Accept-Language header acceptance"
 response=$(curl -s -i -X GET "$API_URL/health" \
@@ -62,6 +65,9 @@ else
     echo -e "${RED}✗ FAIL${NC}: Health endpoint rejected request with Accept-Language (status: $status_code)"
     ((failed++))
 fi
+
+# Small delay to avoid rate limiting
+sleep 1
 
 # Test 3: Multiple custom headers together
 echo -e "\n${YELLOW}Test 3:${NC} Multiple custom headers together"
@@ -79,6 +85,9 @@ else
     echo -e "${RED}✗ FAIL${NC}: Health endpoint rejected request with multiple headers (status: $status_code)"
     ((failed++))
 fi
+
+# Small delay to avoid rate limiting
+sleep 1
 
 # Test 4: Companies API endpoint with all custom headers (if token provided)
 if [ -n "$TEST_TOKEN" ]; then
@@ -125,6 +134,9 @@ else
     ((warnings++))
 fi
 
+# Small delay to avoid rate limiting
+sleep 1
+
 # Test 5: Events API with custom headers (if token provided)
 if [ -n "$TEST_TOKEN" ]; then
     echo -e "\n${YELLOW}Test 5:${NC} Events API with custom headers"
@@ -154,6 +166,9 @@ else
     ((warnings++))
 fi
 
+# Small delay to avoid rate limiting
+sleep 1
+
 # Test 6: POST request with custom headers (if token provided)
 if [ -n "$TEST_TOKEN" ]; then
     echo -e "\n${YELLOW}Test 6:${NC} POST request with custom headers"
@@ -181,6 +196,9 @@ else
     echo -e "\n${YELLOW}Test 6:${NC} POST request (skipped - no auth token)"
     ((warnings++))
 fi
+
+# Small delay to avoid rate limiting
+sleep 1
 
 # Test 7: Test header case-insensitivity
 echo -e "\n${YELLOW}Test 7:${NC} Header case-insensitivity"
