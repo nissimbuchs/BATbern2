@@ -150,12 +150,12 @@ public class CompanyLogoService {
 
     /**
      * Generate S3 key with year-based partitioning
-     * Pattern: /logos/{year}/{company-id}/{filename-with-uuid}.{ext}
-     * Example: /logos/2024/company-789/logo-f3e8d1a4.png
+     * Pattern: logos/{year}/{company-id}/{filename-with-uuid}.{ext}
+     * Example: logos/2024/company-789/logo-f3e8d1a4.png
      */
     private String generateS3Key(String userId, String fileId, String extension) {
         int currentYear = LocalDate.now().getYear();
-        return String.format("/logos/%d/%s/logo-%s.%s",
+        return String.format("logos/%d/%s/logo-%s.%s",
                 currentYear,
                 userId,
                 fileId,
@@ -167,7 +167,7 @@ public class CompanyLogoService {
      * AC8.4: Serve logos through CloudFront
      */
     private String buildCloudFrontUrl(String s3Key) {
-        return cloudFrontDomain + s3Key;
+        return cloudFrontDomain + "/" + s3Key;
     }
 
     /**
@@ -203,6 +203,6 @@ public class CompanyLogoService {
      */
     private String findS3KeyByFileId(String companyId, String fileId, String fileExtension) {
         int currentYear = LocalDate.now().getYear();
-        return String.format("/logos/%d/%s/logo-%s.%s", currentYear, companyId, fileId, fileExtension);
+        return String.format("logos/%d/%s/logo-%s.%s", currentYear, companyId, fileId, fileExtension);
     }
 }
