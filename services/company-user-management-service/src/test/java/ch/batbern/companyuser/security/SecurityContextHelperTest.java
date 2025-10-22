@@ -77,13 +77,13 @@ class SecurityContextHelperTest {
 
     /**
      * Test 10.3: should_extractUserRoles_when_authenticated
-     * Story 1.2.6: Updated to use custom:roles claim
+     * Story 1.2.6: Updated to use custom:role claim
      */
     @Test
     void should_extractUserRoles_when_authenticated() {
         // Given
         Jwt jwt = mock(Jwt.class);
-        when(jwt.getClaim("custom:roles")).thenReturn("ORGANIZER,SPEAKER");
+        when(jwt.getClaim("custom:role")).thenReturn("ORGANIZER,SPEAKER");
 
         Authentication authentication = mock(Authentication.class);
         when(authentication.getPrincipal()).thenReturn(jwt);
@@ -138,13 +138,13 @@ class SecurityContextHelperTest {
 
     /**
      * Test 10.6: should_hasRole_when_roleInToken
-     * Story 1.2.6: Updated to use custom:roles claim
+     * Story 1.2.6: Updated to use custom:role claim
      */
     @Test
     void should_returnTrue_when_userHasRole() {
         // Given
         Jwt jwt = mock(Jwt.class);
-        when(jwt.getClaim("custom:roles")).thenReturn("ORGANIZER,SPEAKER");
+        when(jwt.getClaim("custom:role")).thenReturn("ORGANIZER,SPEAKER");
 
         Authentication authentication = mock(Authentication.class);
         when(authentication.getPrincipal()).thenReturn(jwt);
@@ -163,13 +163,13 @@ class SecurityContextHelperTest {
 
     /**
      * Test 10.7: should_returnFalse_when_userDoesNotHaveRole
-     * Story 1.2.6: Updated to use custom:roles claim
+     * Story 1.2.6: Updated to use custom:role claim
      */
     @Test
     void should_returnFalse_when_userDoesNotHaveRole() {
         // Given
         Jwt jwt = mock(Jwt.class);
-        when(jwt.getClaim("custom:roles")).thenReturn("SPEAKER");
+        when(jwt.getClaim("custom:role")).thenReturn("SPEAKER");
 
         Authentication authentication = mock(Authentication.class);
         when(authentication.getPrincipal()).thenReturn(jwt);

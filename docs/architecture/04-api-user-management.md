@@ -1276,7 +1276,7 @@ PaginationMetadata:
 **Authentication**:
 - JWT-based authentication via AWS Cognito
 - Bearer token required for all endpoints
-- Token claims: `sub` (Cognito user ID), `email`, `custom:roles` (roles from database)
+- Token claims: `sub` (Cognito user ID), `email`, `custom:role` (roles from database)
 
 **Authorization Levels**:
 - Public (authenticated): GET /users/me, PUT /users/me, preferences, settings
@@ -1286,7 +1286,7 @@ PaginationMetadata:
 
 **Role-Based Access Control**:
 - Implemented with Spring Security `@PreAuthorize` annotations
-- Role extraction from JWT `custom:roles` claim (populated by PreTokenGeneration Lambda from database)
+- Role extraction from JWT `custom:role` claim (populated by PreTokenGeneration Lambda from database)
 - Method-level security enforcement
 
 **Business Rules**:
@@ -1306,10 +1306,10 @@ Per **[ADR-001](./ADR-001-invitation-based-user-registration.md)**, Cognito inte
 
 **Cognito Operations** (automatic via Lambda triggers):
 - PostConfirmation Lambda → Creates database user on email verification
-- PreTokenGeneration Lambda → Adds `custom:roles` claim from database to JWT
+- PreTokenGeneration Lambda → Adds `custom:role` claim from database to JWT
 
 **JWT Custom Claims**:
-- `custom:roles`: Comma-separated list of roles from database (e.g., "ATTENDEE,SPEAKER")
+- `custom:role`: Comma-separated list of roles from database (e.g., "ATTENDEE,SPEAKER")
 - `custom:language`: User's preferred language
 - `custom:newsletter_optin`: Newsletter opt-in status
 

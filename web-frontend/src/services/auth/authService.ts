@@ -328,14 +328,14 @@ class AuthService {
 
   /**
    * Extract user context from Cognito ID token
-   * Story 1.2.6: Updated to read custom:roles claim (ADR-001 migration)
+   * Story 1.2.6: Updated to read custom:role claim (ADR-001 migration)
    */
   private extractUserContextFromToken(tokenPayload: CognitoTokenClaims): UserContext {
     const preferences: UserPreferences = JSON.parse(tokenPayload['custom:preferences'] || '{}');
 
-    // Extract roles from custom:roles claim (comma-separated string)
+    // Extract roles from custom:role claim (singular)
     // Format: "ORGANIZER,SPEAKER" -> ['organizer', 'speaker']
-    const rolesString = tokenPayload['custom:roles'];
+    const rolesString = tokenPayload['custom:role'];
     const roles: UserRole[] = rolesString
       ? rolesString.split(',').map((r) => r.trim().toLowerCase() as UserRole)
       : [];

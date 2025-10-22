@@ -104,9 +104,9 @@ public class SecurityConfig {
     }
 
     /**
-     * JWT Authentication Converter to extract roles from custom:roles claim
-     * Story 1.2.6: Migrated from cognito:groups to custom:roles (ADR-001)
-     * Maps custom:roles claim (comma-separated string) to Spring Security ROLE_ authorities
+     * JWT Authentication Converter to extract roles from custom:role claim
+     * Story 1.2.6: Migrated from cognito:groups to custom:role (ADR-001)
+     * Maps custom:role claim (comma-separated string) to Spring Security ROLE_ authorities
      */
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
@@ -116,18 +116,18 @@ public class SecurityConfig {
     }
 
     /**
-     * Converter to extract custom:roles claim and map to Spring Security authorities
+     * Converter to extract custom:role claim and map to Spring Security authorities
      * Story 1.2.6: ADR-001 Database-centric architecture
      *
-     * Roles are stored in PostgreSQL and added to JWT via PreTokenGeneration Lambda
+     * Roles are stored in PostgreSQL and synced to Cognito custom:role attribute
      * Format: comma-separated string (e.g., "ORGANIZER,SPEAKER")
      * Requires ROLE_ prefix for Spring Security @PreAuthorize annotations
      */
     private static class CustomRolesToAuthoritiesConverter implements Converter<Jwt, Collection<GrantedAuthority>> {
         @Override
         public Collection<GrantedAuthority> convert(Jwt jwt) {
-            // Extract roles from custom:roles claim (comma-separated string)
-            String rolesString = jwt.getClaimAsString("custom:roles");
+            // Extract roles from custom:role claim (comma-separated string)
+            String rolesString = jwt.getClaimAsString("custom:role");
 
             if (rolesString == null || rolesString.isEmpty()) {
                 return Collections.emptyList();

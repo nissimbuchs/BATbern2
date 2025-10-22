@@ -30,12 +30,12 @@ class UserContextExtractorTest {
     @Test
     @DisplayName("should_extractUserContext_when_tokenContainsAllRequiredClaims")
     void should_extractUserContext_when_tokenContainsAllRequiredClaims() {
-        // Given - Story 1.2.6: Using custom:roles instead of cognito:groups
+        // Given - Story 1.2.6: Using custom:role instead of cognito:groups
         String token = JWT.create()
             .withSubject("user-123")
             .withClaim("email", "user@example.com")
             .withClaim("email_verified", true)
-            .withClaim("custom:roles", "ORGANIZER")
+            .withClaim("custom:role", "ORGANIZER")
             .withClaim("custom:companyId", "company-456")
             .withClaim("custom:preferences", "{\"language\":\"en\",\"theme\":\"light\"}")
             .withExpiresAt(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
@@ -131,11 +131,11 @@ class UserContextExtractorTest {
     @Test
     @DisplayName("should_extractAllRoles_when_multipleRolesProvided")
     void should_extractAllRoles_when_multipleRolesProvided() {
-        // Given - Story 1.2.6: Multiple roles in custom:roles (comma-separated)
+        // Given - Story 1.2.6: Multiple roles in custom:role (comma-separated)
         String token = JWT.create()
             .withSubject("user-123")
             .withClaim("email", "user@example.com")
-            .withClaim("custom:roles", "ORGANIZER,SPEAKER,PARTNER")
+            .withClaim("custom:role", "ORGANIZER,SPEAKER,PARTNER")
             .withExpiresAt(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
             .sign(testKeyPair.getAlgorithm());
 

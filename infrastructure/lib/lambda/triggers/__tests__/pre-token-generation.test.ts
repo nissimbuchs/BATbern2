@@ -7,7 +7,7 @@
  * AC2: PreTokenGeneration enriches JWT with database roles (ADR-001)
  * - When a user authenticates and token is generated
  * - Then roles are fetched from the database
- * - And JWT custom claim 'custom:roles' is set with comma-separated role string
+ * - And JWT custom claim 'custom:role' is set with comma-separated role string
  */
 
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
@@ -131,7 +131,7 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
         expect.arrayContaining(['a1b2c3d4-5678-90ab-cdef-EXAMPLE11111'])
       );
       expect(mockDbClient.release).toHaveBeenCalled();
-      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:roles']).toBeDefined();
+      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role']).toBeDefined();
     });
 
     it('should_fetchOnlyActiveRoles_when_queryingDatabase', async () => {
@@ -168,7 +168,7 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       const result = await handler(event, context, () => {});
 
       // Assert - Should handle gracefully with empty roles string
-      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:roles']).toBe('');
+      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role']).toBe('');
     });
 
     it('should_joinWithUsers_when_fetchingRoles', async () => {
@@ -217,7 +217,7 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
 
   // ============================================================================
   // TEST GROUP 2: JWT Custom Claims (ADR-001)
-  // AC2: Add custom:roles claim with database roles
+  // AC2: Add custom:role claim with database roles
   // ============================================================================
 
   describe('JWT Custom Claims', () => {
@@ -238,8 +238,8 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       // Act
       const result = await handler(event, context, () => {});
 
-      // Assert - custom:roles should be comma-separated string
-      const roles = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:roles'];
+      // Assert - custom:role should be comma-separated string
+      const roles = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role'];
       expect(roles).toBeDefined();
       expect(roles).toBe('ORGANIZER,SPEAKER');
     });
@@ -260,7 +260,7 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       const result = await handler(event, context, () => {});
 
       // Assert - Roles should maintain case (ORGANIZER -> organizer)
-      const roles = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:roles'];
+      const roles = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role'];
       expect(roles).toBeDefined();
       expect(roles).toBe('ORGANIZER');
     });
@@ -309,7 +309,7 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       const result = await handler(event, context, () => {});
 
       // Assert - DB roles should take precedence
-      const roles = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:roles'];
+      const roles = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role'];
       expect(roles).toBeDefined();
       expect(roles).toBe('ORGANIZER');
     });
@@ -331,7 +331,7 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       const result = await handler(event, context, () => {});
 
       // Assert - Groups should be comma-separated string
-      const roles = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:roles'];
+      const roles = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role'];
       expect(typeof roles).toBe('string');
       expect(roles).toContain('ORGANIZER');
       expect(roles).toContain('SPEAKER');
@@ -356,7 +356,7 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       const result = await handler(event, context, () => {});
 
       // Assert - Should not throw error, return empty roles string
-      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:roles']).toBe('');
+      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role']).toBe('');
     });
 
     it('should_logError_when_roleFetchFails', async () => {
@@ -430,7 +430,7 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       const result = await handler(event, context, () => {});
 
       // Assert - Should filter out null/invalid roles
-      const roles = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:roles'];
+      const roles = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role'];
       expect(roles).toBe('ORGANIZER');
     });
 
@@ -542,8 +542,8 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       const result = await handler(event, context, () => {});
 
       // Assert
-      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:roles']).toBeDefined();
-      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:roles']).toContain('ORGANIZER');
+      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role']).toBeDefined();
+      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role']).toContain('ORGANIZER');
     });
 
     it('should_setGroups_when_triggerSourceIsNewPasswordChallenge', async () => {
@@ -562,8 +562,8 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       const result = await handler(event, context, () => {});
 
       // Assert
-      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:roles']).toBeDefined();
-      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:roles']).toContain('ORGANIZER');
+      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role']).toBeDefined();
+      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role']).toContain('ORGANIZER');
     });
 
     it('should_setGroups_when_triggerSourceIsAuthenticationRefresh', async () => {
@@ -582,8 +582,8 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       const result = await handler(event, context, () => {});
 
       // Assert - Refresh should also get latest groups
-      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:roles']).toBeDefined();
-      const roles = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:roles'];
+      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role']).toBeDefined();
+      const roles = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role'];
       expect(roles).toContain('ORGANIZER');
     });
   });
@@ -643,7 +643,7 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       const result = await handler(event, context, () => {});
 
       // Assert - Both groups set (metric published internally)
-      const roles = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:roles'];
+      const roles = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role'];
       expect(roles.split(',').length).toBe(2);
     });
   });
@@ -672,7 +672,7 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       const result = await handler(event, context, () => {});
 
       // Assert - Should return unique groups only (lowercase)
-      const roles = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:roles'];
+      const roles = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role'];
       expect(roles.split(',').length).toBe(2);
       expect(roles).toContain('ORGANIZER');
       expect(roles).toContain('SPEAKER');
@@ -695,7 +695,7 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       const result = await handler(event, context, () => {});
 
       // Assert - Only global role included as group
-      const roles = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:roles'];
+      const roles = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role'];
       expect(roles).toContain('SPEAKER');
       expect(roles).toBe('SPEAKER');
     });

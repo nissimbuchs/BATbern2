@@ -4,8 +4,8 @@ import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.repository.UserRepository;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,14 +34,24 @@ import java.util.stream.Collectors;
  * Schedule: Daily at 2:00 AM (cron: "0 0 2 * * *")
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class UserReconciliationService {
 
     private final UserRepository userRepository;
     private final CognitoIdentityProviderClient cognitoClient;
     private final UserSyncMetricsService metricsService;
-    private final String userPoolId; // Injected from configuration
+    private final String userPoolId;
+
+    public UserReconciliationService(
+            UserRepository userRepository,
+            CognitoIdentityProviderClient cognitoClient,
+            UserSyncMetricsService metricsService,
+            @Value("${aws.cognito.user-pool-id}") String userPoolId) {
+        this.userRepository = userRepository;
+        this.cognitoClient = cognitoClient;
+        this.metricsService = metricsService;
+        this.userPoolId = userPoolId;
+    }
 
     private static final int PAGE_SIZE = 60; // Cognito max
 

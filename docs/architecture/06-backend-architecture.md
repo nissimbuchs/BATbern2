@@ -93,8 +93,8 @@ public class SecurityConfiguration {
     }
 
     private Collection<GrantedAuthority> extractAuthorities(Jwt jwt) {
-        // Extract custom:roles claim from JWT (populated by PreTokenGeneration Lambda)
-        String rolesString = jwt.getClaimAsString("custom:roles");
+        // Extract custom:role claim from JWT (populated by PreTokenGeneration Lambda)
+        String rolesString = jwt.getClaimAsString("custom:role");
 
         if (rolesString == null || rolesString.isEmpty()) {
             return Collections.emptyList();
@@ -437,7 +437,7 @@ The BATbern platform implements sophisticated state machines to manage the compl
 The platform maintains user data across AWS Cognito (authentication) and PostgreSQL (business logic) using a **database-centric approach** per [ADR-001](./ADR-001-invitation-based-user-registration.md):
 
 1. **PostConfirmation Lambda** - Creates database user on Cognito email verification
-2. **PreTokenGeneration Lambda** - Adds `custom:roles` JWT claim from database
+2. **PreTokenGeneration Lambda** - Adds `custom:role` JWT claim from database
 3. **Spring Security** - Extracts roles from JWT for authorization
 4. **Unidirectional Sync** - Cognito → Database only (NO Cognito Groups, NO reverse sync)
 

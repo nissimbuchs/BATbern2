@@ -168,7 +168,7 @@ export class CognitoStack extends cdk.Stack {
       ],
       readAttributes: new cognito.ClientAttributes()
         .withStandardAttributes({ email: true, emailVerified: true })
-        .withCustomAttributes('companyId', 'preferences'),
+        .withCustomAttributes('companyId', 'preferences', 'role'),
       writeAttributes: new cognito.ClientAttributes()
         .withStandardAttributes({ email: true })
         .withCustomAttributes('companyId', 'preferences'),

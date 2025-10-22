@@ -83,7 +83,7 @@ class CognitoIntegrationServiceImplTest {
                 AttributeType.builder().name("given_name").value("John").build(),
                 AttributeType.builder().name("family_name").value("Doe").build(),
                 AttributeType.builder().name("custom:companyId").value("GoogleZH").build(),
-                AttributeType.builder().name("custom:roles").value("ATTENDEE,ORGANIZER").build()  // Sorted alphabetically
+                AttributeType.builder().name("custom:role").value("ATTENDEE,ORGANIZER").build()  // Sorted alphabetically
         );
     }
 
@@ -176,7 +176,7 @@ class CognitoIntegrationServiceImplTest {
                 AttributeType.builder().name("given_name").value("Jane").build(),
                 AttributeType.builder().name("family_name").value("Smith").build(),
                 AttributeType.builder().name("custom:companyId").value("MicrosoftZH").build(),
-                AttributeType.builder().name("custom:roles").value("ATTENDEE").build()  // Default role
+                AttributeType.builder().name("custom:role").value("ATTENDEE").build()  // Default role
         );
         assertThat(cognitoRequest.desiredDeliveryMediums()).containsExactly(DeliveryMediumType.EMAIL);
         assertThat(cognitoRequest.messageAction()).isEqualTo(MessageActionType.SUPPRESS);  // Don't send welcome email

@@ -68,8 +68,8 @@ public class SecurityContextHelper {
 
     /**
      * Gets the current authenticated user's roles from JWT token or mock user
-     * Story 1.2.6: Updated to read custom:roles claim (ADR-001 migration)
-     * @return List of role names (custom:roles claim from JWT or authorities from mock user)
+     * Story 1.2.6: Updated to read custom:role claim (ADR-001 migration)
+     * @return List of role names (custom:role claim from JWT or authorities from mock user)
      * @throws SecurityException if not authenticated
      */
     public List<String> getCurrentUserRoles() {
@@ -77,7 +77,7 @@ public class SecurityContextHelper {
 
         if (authentication.getPrincipal() instanceof Jwt) {
             Jwt jwt = (Jwt) authentication.getPrincipal();
-            String rolesString = jwt.getClaim("custom:roles");
+            String rolesString = jwt.getClaim("custom:role");
 
             if (rolesString != null && !rolesString.isEmpty()) {
                 // Split comma-separated roles (e.g., "ORGANIZER,SPEAKER")

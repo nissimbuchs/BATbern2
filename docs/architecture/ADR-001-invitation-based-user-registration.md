@@ -148,7 +148,7 @@ We have decided to implement a **database-centric user management architecture**
      event.response = {
        claimsOverrideDetails: {
          claimsToAddOrOverride: {
-           'custom:roles': roles.map(r => r.role).join(',')
+           'custom:role': roles.map(r => r.role).join(',')
          }
        }
      };
@@ -163,7 +163,7 @@ We have decided to implement a **database-centric user management architecture**
    public JwtAuthenticationConverter jwtAuthenticationConverter() {
        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
        converter.setJwtGrantedAuthoritiesConverter(jwt -> {
-           String rolesString = jwt.getClaimAsString("custom:roles");
+           String rolesString = jwt.getClaimAsString("custom:role");
            return Arrays.stream(rolesString.split(","))
                .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
                .collect(Collectors.toList());
@@ -235,8 +235,8 @@ We have decided to implement a **database-centric user management architecture**
 
 ### In Progress (Story 1.2.5)
 - ⏳ PostConfirmation Lambda: Create user in database on Cognito signup
-- ⏳ PreTokenGeneration Lambda: Add `custom:roles` claim from database
-- ⏳ Spring Security: JWT converter to extract roles from `custom:roles` claim
+- ⏳ PreTokenGeneration Lambda: Add `custom:role` claim from database
+- ⏳ Spring Security: JWT converter to extract roles from `custom:role` claim
 
 ### Planned (Story 1.2.3)
 - ⏳ Frontend registration wizard (Step 1: credentials, Step 2: review)

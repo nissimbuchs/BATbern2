@@ -9,7 +9,7 @@
  * AC2: PreTokenGeneration adds roles to JWT custom claims
  * - When a user authenticates and token is generated
  * - Then roles are fetched from the database
- * - And added to JWT as `custom:roles` claim (comma-separated)
+ * - And added to JWT as `custom:role` claim (comma-separated)
  * - NO Cognito Groups used (ADR-001: Database is source of truth)
  */
 
@@ -149,7 +149,7 @@ export const handler: PreTokenGenerationTriggerHandler = async (event) => {
       claimsOverrideDetails: {
         ...event.response.claimsOverrideDetails,
         claimsToAddOrOverride: {
-          'custom:roles': rolesString,
+          'custom:role': rolesString,
         },
       },
     };

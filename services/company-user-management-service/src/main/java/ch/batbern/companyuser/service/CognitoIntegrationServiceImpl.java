@@ -97,7 +97,7 @@ public class CognitoIntegrationServiceImpl implements CognitoIntegrationService 
                 .collect(Collectors.joining(","));
 
         attributes.add(AttributeType.builder()
-                .name("custom:roles")
+                .name("custom:role")
                 .value(rolesStr)
                 .build());
 

@@ -122,8 +122,8 @@ export interface CognitoTokenClaims {
   scope?: string;
   auth_time: number;
   'cognito:username': string;
-  'custom:roles'?: string; // Story 1.2.6: Comma-separated string (e.g., "ORGANIZER,SPEAKER")
-  'cognito:groups'?: string[]; // DEPRECATED: Legacy claim, use custom:roles instead
+  'custom:role'?: string; // Story 1.2.6: Comma-separated string (e.g., "ORGANIZER,SPEAKER")
+  'cognito:groups'?: string[]; // DEPRECATED: Legacy claim, use custom:role instead
   email: string;
   email_verified: boolean;
   'custom:companyId'?: string;

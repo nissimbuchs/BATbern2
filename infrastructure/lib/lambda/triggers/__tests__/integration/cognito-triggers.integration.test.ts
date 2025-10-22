@@ -424,8 +424,8 @@ describe('Cognito Triggers - Integration Tests', () => {
       const result = await preTokenGenerationHandler(event, context, () => {});
 
       // Assert - groupsToOverride should include organizer
-      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:roles']).toBeDefined();
-      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:roles']).toContain('ORGANIZER');
+      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role']).toBeDefined();
+      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role']).toContain('ORGANIZER');
 
     });
 
@@ -454,8 +454,8 @@ describe('Cognito Triggers - Integration Tests', () => {
       const result = await preTokenGenerationHandler(event, context, () => {});
 
       // Assert - Only global role should be in groupsToOverride (not event-specific)
-      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:roles']).toContain('ORGANIZER');
-      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:roles']).not.toContain('SPEAKER');
+      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role']).toContain('ORGANIZER');
+      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role']).not.toContain('SPEAKER');
 
     });
 
@@ -477,7 +477,7 @@ describe('Cognito Triggers - Integration Tests', () => {
 
       // Assert - Token still generated with empty roles
       expect(result).toBeDefined();
-      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:roles']).toBe('');
+      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role']).toBe('');
 
       // Restore DB config
       process.env.DB_HOST = originalHost;

@@ -37,13 +37,13 @@ public class UserContextExtractor {
             builder.emailVerified(false);
         }
 
-        // Extract role from custom:roles claim (Story 1.2.6: ADR-001 migration)
+        // Extract role from custom:role claim (Story 1.2.6: ADR-001 migration)
         // Format: comma-separated string from DB (e.g., "ORGANIZER,SPEAKER")
         // Convert to lowercase for consistency with application layer
         // First role is primary, remaining roles are additional roles
-        if (jwt.getClaim("custom:roles") != null && !jwt.getClaim("custom:roles").isNull()) {
+        if (jwt.getClaim("custom:role") != null && !jwt.getClaim("custom:role").isNull()) {
             try {
-                String rolesString = jwt.getClaim("custom:roles").asString();
+                String rolesString = jwt.getClaim("custom:role").asString();
                 if (rolesString != null && !rolesString.isEmpty()) {
                     String[] roles = rolesString.split(",");
                     if (roles.length > 0) {
@@ -61,7 +61,7 @@ public class UserContextExtractor {
                     }
                 }
             } catch (Exception e) {
-                log.warn("Failed to extract custom:roles: {}", e.getMessage());
+                log.warn("Failed to extract custom:role: {}", e.getMessage());
             }
         }
 
@@ -104,13 +104,13 @@ public class UserContextExtractor {
     }
 
     /**
-     * DEPRECATED: Additional roles are now extracted from custom:roles claim inline
+     * DEPRECATED: Additional roles are now extracted from custom:role claim inline
      * Story 1.2.6: Migrated to database-centric roles (ADR-001)
      * This method is kept for backward compatibility but is no longer used
      */
     @Deprecated
     private List<String> extractAdditionalRoles(DecodedJWT jwt) {
-        // All roles now come from custom:roles claim (comma-separated)
+        // All roles now come from custom:role claim (comma-separated)
         // This method is no longer called
         return new ArrayList<>();
     }

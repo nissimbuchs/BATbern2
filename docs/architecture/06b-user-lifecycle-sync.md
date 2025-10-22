@@ -52,12 +52,12 @@ sequenceDiagram
     U->>C: Login
     C->>PT: PreTokenGeneration Trigger
     PT->>DB: SELECT roles FROM role_assignments
-    PT-->>C: Add custom:roles claim
-    C-->>U: JWT with custom:roles
+    PT-->>C: Add custom:role claim
+    C-->>U: JWT with custom:role
 
     U->>API: API Request + JWT
     API->>SS: Validate JWT
-    SS->>SS: Extract custom:roles claim
+    SS->>SS: Extract custom:role claim
     SS->>SS: Map to ROLE_ATTENDEE authority
     API->>API: @PreAuthorize("hasRole('ATTENDEE')")
     API-->>U: Response
@@ -211,7 +211,7 @@ export const handler: PreTokenGenerationTriggerHandler = async (event) => {
     event.response = {
       claimsOverrideDetails: {
         claimsToAddOrOverride: {
-          'custom:roles': roles.join(',') // e.g., "ATTENDEE,SPEAKER"
+          'custom:role': roles.join(',') // e.g., "ATTENDEE,SPEAKER"
         }
       }
     };
@@ -229,7 +229,7 @@ export const handler: PreTokenGenerationTriggerHandler = async (event) => {
     event.response = {
       claimsOverrideDetails: {
         claimsToAddOrOverride: {
-          'custom:roles': ''
+          'custom:role': ''
         }
       }
     };
@@ -246,7 +246,7 @@ export const handler: PreTokenGenerationTriggerHandler = async (event) => {
 **Key Characteristics**:
 - **Performance**: Completes within 500ms (p95 latency requirement)
 - **Graceful Degradation**: Returns empty roles on database errors (allows login)
-- **JWT Claim Format**: `custom:roles` with comma-separated values
+- **JWT Claim Format**: `custom:role` with comma-separated values
 - **NO Cognito Groups**: Roles stored exclusively in database
 
 **JWT Token Example**:
@@ -256,7 +256,7 @@ export const handler: PreTokenGenerationTriggerHandler = async (event) => {
   "sub": "a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
   "cognito:username": "john.doe@example.com",
   "email": "john.doe@example.com",
-  "custom:roles": "ATTENDEE,SPEAKER",
+  "custom:role": "ATTENDEE,SPEAKER",
   "custom:language": "de",
   "iss": "https://cognito-idp.eu-central-1.amazonaws.com/eu-central-1_XXXXXXXXX",
   "exp": 1698765432,
@@ -266,7 +266,7 @@ export const handler: PreTokenGenerationTriggerHandler = async (event) => {
 
 ## Pattern 3: Spring Security - Role Extraction from JWT
 
-**Purpose**: Extract roles from JWT `custom:roles` claim and map to Spring Security authorities.
+**Purpose**: Extract roles from JWT `custom:role` claim and map to Spring Security authorities.
 
 **Implementation**:
 
@@ -320,8 +320,8 @@ public class SecurityConfig {
     }
 
     private Collection<GrantedAuthority> extractAuthorities(Jwt jwt) {
-        // Extract custom:roles claim from JWT
-        String rolesString = jwt.getClaimAsString("custom:roles");
+        // Extract custom:role claim from JWT
+        String rolesString = jwt.getClaimAsString("custom:role");
 
         if (rolesString == null || rolesString.isEmpty()) {
             return Collections.emptyList();
@@ -383,7 +383,7 @@ public class EventController {
 ### ❌ No Cognito Groups
 **Reason**: Roles stored exclusively in database `role_assignments` table. Cognito Groups are not used.
 
-**Alternative**: JWT `custom:roles` claim populated from database.
+**Alternative**: JWT `custom:role` claim populated from database.
 
 ### ❌ No Bidirectional Sync (Database → Cognito)
 **Reason**: Cognito is for authentication only. User data changes (roles, profiles) stay in database.
@@ -536,10 +536,10 @@ return event; // Success to Cognito
 ```typescript
 try {
   const roles = await fetchRolesFromDatabase(cognitoUserId);
-  event.response.claimsOverrideDetails.claimsToAddOrOverride['custom:roles'] = roles.join(',');
+  event.response.claimsOverrideDetails.claimsToAddOrOverride['custom:role'] = roles.join(',');
 } catch (error) {
   console.error('Role fetch failed', { error, cognitoUserId });
-  event.response.claimsOverrideDetails.claimsToAddOrOverride['custom:roles'] = '';
+  event.response.claimsOverrideDetails.claimsToAddOrOverride['custom:role'] = '';
   // Return empty roles - user can login but has no access
 }
 ```
