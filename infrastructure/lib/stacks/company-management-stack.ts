@@ -21,7 +21,7 @@ export interface CompanyManagementStackProps extends cdk.StackProps {
   databaseEndpoint?: string;
   databaseSecret?: secretsmanager.ISecret;
   cacheEndpoint?: string;
-  userPool: cognito.IUserPool;
+  userPool: cognito.UserPool; // TODO Story 1.2.5: Move triggers to CognitoStack (architectural issue)
   userPoolClient: cognito.IUserPoolClient;
   contentBucket?: s3.IBucket;
   cloudFrontDistribution?: cloudfront.IDistribution;

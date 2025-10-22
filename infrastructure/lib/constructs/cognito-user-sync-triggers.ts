@@ -10,7 +10,7 @@ import { Construct } from 'constructs';
 import * as path from 'path';
 
 export interface CognitoUserSyncTriggersProps {
-  userPool: cognito.UserPool;
+  userPool: cognito.UserPool; // Must be concrete type for addTrigger() method
   vpc: ec2.IVpc;
   databaseSecurityGroup: ec2.ISecurityGroup;
   databaseSecret: secretsmanager.ISecret;

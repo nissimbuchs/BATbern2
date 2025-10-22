@@ -1,14 +1,16 @@
 /**
  * PreTokenGeneration Lambda Trigger
  * Story 1.2.5: User Sync and Reconciliation Implementation
+ * ADR-001: Unidirectional Sync (Database → JWT custom claims)
  *
  * This Lambda function is triggered by AWS Cognito before token generation.
- * It ensures Cognito Groups are synced with user roles from the PostgreSQL database.
+ * It reads user roles from PostgreSQL and adds them to JWT as custom claims.
  *
- * AC1: PreTokenGeneration syncs Cognito Groups with database roles
+ * AC2: PreTokenGeneration adds roles to JWT custom claims
  * - When a user authenticates and token is generated
  * - Then roles are fetched from the database
- * - And Cognito Groups are set via groupsToOverride to match database roles
+ * - And added to JWT as `custom:roles` claim (comma-separated)
+ * - NO Cognito Groups used (ADR-001: Database is source of truth)
  */
 
 import { PreTokenGenerationTriggerEvent, PreTokenGenerationTriggerHandler } from 'aws-lambda';
@@ -61,8 +63,8 @@ async function fetchUserRoles(cognitoId: string): Promise<UserRole[]> {
     const result = await client.query(
       `
         SELECT DISTINCT ur.role
-        FROM user_roles ur
-        JOIN users u ON ur.user_id = u.id
+        FROM role_assignments ur
+        JOIN user_profiles u ON ur.user_id = u.id
         WHERE u.cognito_id = $1
           AND ur.end_date IS NULL
           AND ur.event_id IS NULL
@@ -138,27 +140,29 @@ export const handler: PreTokenGenerationTriggerHandler = async (event) => {
       await publishMetric('RoleFetchFailure', 1, 'Count');
     }
 
-    // Convert roles to Cognito Group names
-    const cognitoGroups = rolesToCognitoGroups(userRoles);
+    // ADR-001: Add roles as JWT custom claims (NO Cognito Groups)
+    // Database is source of truth for roles
+    const rolesString = userRoles.map(r => r.role).filter(Boolean).join(',');
 
-    // Override Cognito Groups with database roles
     event.response = {
       ...event.response,
       claimsOverrideDetails: {
         ...event.response.claimsOverrideDetails,
-        groupsToOverride: cognitoGroups,
+        claimsToAddOrOverride: {
+          'custom:roles': rolesString,
+        },
       },
     };
 
     // Record success metrics
     const duration = Date.now() - startTime;
     await publishMetric('RoleFetchLatency', duration, 'Milliseconds');
-    await publishMetric('RoleCount', cognitoGroups.length, 'Count');
+    await publishMetric('RoleCount', userRoles.length, 'Count');
 
-    console.log('PreTokenGeneration completed successfully', {
+    console.log('PreTokenGeneration completed successfully (ADR-001: DB → JWT)', {
       cognitoId,
-      groupCount: cognitoGroups.length,
-      groups: cognitoGroups,
+      roleCount: userRoles.length,
+      roles: rolesString,
       duration,
     });
   } catch (error) {

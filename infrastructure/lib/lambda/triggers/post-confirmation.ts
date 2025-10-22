@@ -114,7 +114,7 @@ async function createUser(
     // Insert user with ON CONFLICT DO NOTHING for idempotency
     {
       query: `
-        INSERT INTO users (cognito_id, email, email_verified, active, created_at, updated_at)
+        INSERT INTO user_profiles (cognito_id, email, email_verified, is_active, created_at, updated_at)
         VALUES ($1, $2, $3, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         ON CONFLICT (cognito_id) DO NOTHING
         RETURNING id
@@ -142,7 +142,7 @@ async function createUser(
       const client = await getDbClient();
       try {
         const existingUserResult = await client.query(
-          'SELECT id FROM users WHERE cognito_id = $1',
+          'SELECT id FROM user_profiles WHERE cognito_id = $1',
           [cognitoId]
         );
         if (existingUserResult.rows.length > 0) {
@@ -178,7 +178,7 @@ async function assignUserRole(userId: string, role: UserRole): Promise<void> {
   try {
     // Check if role already exists (idempotent)
     const existingRoleResult = await client.query(
-      'SELECT id FROM user_roles WHERE user_id = $1 AND role = $2 AND end_date IS NULL',
+      'SELECT id FROM role_assignments WHERE user_id = $1 AND role = $2 AND end_date IS NULL',
       [userId, role]
     );
 
@@ -190,7 +190,7 @@ async function assignUserRole(userId: string, role: UserRole): Promise<void> {
     // Insert role with start_date
     await client.query(
       `
-        INSERT INTO user_roles (user_id, role, start_date, created_at)
+        INSERT INTO role_assignments (user_id, role, start_date, created_at)
         VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       `,
       [userId, role]

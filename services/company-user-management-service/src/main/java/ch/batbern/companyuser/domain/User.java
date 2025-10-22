@@ -125,6 +125,13 @@ public class User {
     private boolean isActive = true;
 
     /**
+     * Reason why user account was deactivated
+     * Story 1.2.5: Used by reconciliation service when Cognito user is deleted
+     */
+    @Column(name = "deactivation_reason", columnDefinition = "TEXT")
+    private String deactivationReason;
+
+    /**
      * Timestamp when user was created
      */
     @Column(name = "created_at", nullable = false, updatable = false)

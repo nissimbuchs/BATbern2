@@ -3,8 +3,6 @@ package ch.batbern.companyuser.service;
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.repository.UserRepository;
-import ch.batbern.companyuser.domain.UserSyncCompensationLog;
-import ch.batbern.companyuser.repository.UserSyncCompensationLogRepository;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,14 +21,15 @@ import java.util.stream.Collectors;
  * User Reconciliation Service
  * <p>
  * Story 1.2.5: User Sync and Reconciliation Implementation
- * AC4, AC6: Reconciliation job for drift detection and compensation retry
+ * AC4, AC6: Reconciliation job for drift detection (Cognito → Database ONLY)
  * <p>
- * Purpose:
- * - Detect orphaned database users (Cognito user deleted)
- * - Detect missing database users (Cognito user exists but no DB record)
- * - Detect role mismatches between database and Cognito Groups
- * - Retry failed compensation logs
+ * Purpose (ADR-001: Unidirectional Sync):
+ * - Detect orphaned database users (Cognito user deleted → deactivate DB user)
+ * - Detect missing database users (Cognito user exists but no DB record → create DB user)
  * - Publish reconciliation metrics
+ * <p>
+ * IMPORTANT: NO reverse sync (Database → Cognito). Database is source of truth for roles.
+ * Roles are synced to JWT at login via PreTokenGeneration Lambda.
  * <p>
  * Schedule: Daily at 2:00 AM (cron: "0 0 2 * * *")
  */
@@ -40,48 +39,49 @@ import java.util.stream.Collectors;
 public class UserReconciliationService {
 
     private final UserRepository userRepository;
-    private final UserSyncCompensationLogRepository compensationLogRepository;
     private final CognitoIdentityProviderClient cognitoClient;
-    private final UserSyncSagaService syncSagaService;
+    private final UserSyncMetricsService metricsService;
     private final String userPoolId; // Injected from configuration
 
-    private static final int MAX_RETRIES = 5;
     private static final int PAGE_SIZE = 60; // Cognito max
 
     /**
      * Scheduled reconciliation job
      * Runs daily at 2:00 AM
+     * <p>
+     * ADR-001: Unidirectional sync (Cognito → Database only)
      */
     @Scheduled(cron = "0 0 2 * * *")
     @Transactional
     public void reconcileUsers() {
-        log.info("Starting user reconciliation job");
+        log.info("Starting user reconciliation job (Cognito → DB only, per ADR-001)");
         Instant startTime = Instant.now();
 
         ReconciliationReport report = new ReconciliationReport();
 
         try {
-            // 1. Retry failed compensations
-            retryFailedCompensations(report);
-
-            // 2. Reconcile orphaned DB users (Cognito user deleted)
+            // 1. Reconcile orphaned DB users (Cognito user deleted)
             reconcileOrphanedDbUsers(report);
 
-            // 3. Reconcile missing DB users (Cognito user exists but no DB record)
+            // 2. Reconcile missing DB users (Cognito user exists but no DB record)
             reconcileMissingDbUsers(report);
-
-            // 4. Reconcile role mismatches (DB vs Cognito Groups)
-            reconcileRoleMismatches(report);
 
             Instant endTime = Instant.now();
             long durationMs = endTime.toEpochMilli() - startTime.toEpochMilli();
+
+            // Publish metrics
+            metricsService.recordReconciliationJob(
+                    report.getOrphanedUsers(),
+                    report.getMissingUsers(),
+                    0, // No role mismatches (DB is source of truth)
+                    0, // No compensation retries (unidirectional sync)
+                    durationMs
+            );
 
             log.info("User reconciliation job completed",
                     Map("durationMs", durationMs,
                             "orphanedUsers", report.getOrphanedUsers(),
                             "missingUsers", report.getMissingUsers(),
-                            "roleMismatches", report.getRoleMismatches(),
-                            "compensationRetries", report.getCompensationRetries(),
                             "errors", report.getErrors()));
 
         } catch (Exception e) {
@@ -91,40 +91,13 @@ public class UserReconciliationService {
     }
 
     /**
-     * Retry failed compensation logs
-     * AC4: Retry failed compensations
-     */
-    private void retryFailedCompensations(ReconciliationReport report) {
-        log.info("Retrying failed compensations");
-
-        List<UserSyncCompensationLog> pendingCompensations =
-                compensationLogRepository.findPendingCompensations(MAX_RETRIES);
-
-        for (UserSyncCompensationLog compensation : pendingCompensations) {
-            try {
-                boolean success = syncSagaService.retryCompensation(compensation);
-                if (success) {
-                    report.incrementCompensationRetries();
-                } else {
-                    report.addError("Compensation retry failed: " + compensation.getId());
-                }
-            } catch (Exception e) {
-                log.error("Failed to retry compensation",
-                        Map("compensationId", compensation.getId(), "error", e.getMessage()));
-                report.addError("Compensation retry error: " + e.getMessage());
-            }
-        }
-
-        log.info("Compensation retries completed",
-                Map("retried", report.getCompensationRetries(), "total", pendingCompensations.size()));
-    }
-
-    /**
      * Reconcile orphaned DB users (Cognito user deleted)
      * AC6: Deactivate DB users when Cognito user deleted
+     * <p>
+     * ADR-001: Cognito → Database (detect deletions)
      */
     private void reconcileOrphanedDbUsers(ReconciliationReport report) {
-        log.info("Reconciling orphaned database users");
+        log.info("Reconciling orphaned database users (Cognito → DB)");
 
         List<User> activeUsers = userRepository.findByIsActive(true);
 
@@ -149,8 +122,11 @@ public class UserReconciliationService {
                         Map("userId", user.getId(), "cognitoId", user.getCognitoUserId()));
 
                 user.setActive(false);
+                user.setDeactivationReason("Cognito user deleted");
                 userRepository.save(user);
                 report.incrementOrphanedUsers();
+
+                metricsService.recordDriftDetected(1);
 
             } catch (Exception e) {
                 log.error("Failed to check Cognito user",
@@ -166,9 +142,11 @@ public class UserReconciliationService {
     /**
      * Reconcile missing DB users (Cognito user exists but no DB record)
      * AC4: Create DB user when Cognito user exists
+     * <p>
+     * ADR-001: Cognito → Database (detect missing users)
      */
     private void reconcileMissingDbUsers(ReconciliationReport report) {
-        log.info("Reconciling missing database users");
+        log.info("Reconciling missing database users (Cognito → DB)");
 
         try {
             // Paginate through all Cognito users
@@ -192,6 +170,9 @@ public class UserReconciliationService {
 
                         createMissingUser(cognitoUser);
                         report.incrementMissingUsers();
+
+                        metricsService.recordUserCreated("RECONCILIATION");
+                        metricsService.recordDriftDetected(1);
                     }
                 }
             }
@@ -207,6 +188,9 @@ public class UserReconciliationService {
 
     /**
      * Create missing database user from Cognito user
+     * <p>
+     * ADR-001: Cognito → Database sync
+     * Roles will be synced to JWT at next login via PreTokenGeneration Lambda
      */
     @Transactional
     private void createMissingUser(UserType cognitoUser) {
@@ -218,8 +202,8 @@ public class UserReconciliationService {
         // Generate username from email
         String username = generateUsername(email);
 
-        // Extract roles from Cognito Groups
-        Set<Role> roles = extractRolesFromCognito(cognitoId);
+        // Assign default ATTENDEE role (per ADR-001: database is source of truth)
+        Set<Role> roles = Set.of(Role.ATTENDEE);
 
         User user = User.builder()
                 .cognitoUserId(cognitoId)
@@ -233,76 +217,8 @@ public class UserReconciliationService {
 
         userRepository.save(user);
 
-        log.info("Missing user created",
-                Map("cognitoId", cognitoId, "username", username));
-    }
-
-    /**
-     * Reconcile role mismatches (DB vs Cognito Groups)
-     * AC4: Sync role mismatches (database as source of truth)
-     */
-    private void reconcileRoleMismatches(ReconciliationReport report) {
-        log.info("Reconciling role mismatches");
-
-        List<User> activeUsers = userRepository.findByIsActive(true);
-
-        for (User user : activeUsers) {
-            if (user.getCognitoUserId() == null || user.getCognitoUserId().isEmpty()) {
-                continue;
-            }
-
-            try {
-                // Get Cognito Groups
-                Set<Role> cognitoRoles = extractRolesFromCognito(user.getCognitoUserId());
-                Set<Role> dbRoles = user.getRoles();
-
-                // Check for mismatch
-                if (!cognitoRoles.equals(dbRoles)) {
-                    log.warn("Role mismatch detected",
-                            Map("userId", user.getId(),
-                                    "cognitoId", user.getCognitoUserId(),
-                                    "dbRoles", dbRoles,
-                                    "cognitoRoles", cognitoRoles));
-
-                    // Sync roles (database as source of truth)
-                    syncSagaService.syncRolesToCognito(user);
-                    report.incrementRoleMismatches();
-                }
-
-            } catch (Exception e) {
-                log.error("Failed to reconcile role mismatch",
-                        Map("userId", user.getId(), "cognitoId", user.getCognitoUserId(), "error", e.getMessage()));
-                report.addError("Role mismatch reconciliation failed: " + e.getMessage());
-            }
-        }
-
-        log.info("Role mismatches reconciliation completed",
-                Map("synced", report.getRoleMismatches()));
-    }
-
-    /**
-     * Extract roles from Cognito Groups
-     */
-    private Set<Role> extractRolesFromCognito(String cognitoId) {
-        try {
-            AdminListGroupsForUserRequest request = AdminListGroupsForUserRequest.builder()
-                    .userPoolId(userPoolId)
-                    .username(cognitoId)
-                    .build();
-
-            AdminListGroupsForUserResponse response = cognitoClient.adminListGroupsForUser(request);
-
-            return response.groups().stream()
-                    .map(GroupType::groupName)
-                    .map(String::toUpperCase)
-                    .map(Role::valueOf)
-                    .collect(Collectors.toSet());
-
-        } catch (Exception e) {
-            log.warn("Failed to extract roles from Cognito",
-                    Map("cognitoId", cognitoId, "error", e.getMessage()));
-            return new HashSet<>();
-        }
+        log.info("Missing user created (roles will sync to JWT at next login)",
+                Map("cognitoId", cognitoId, "username", username, "roles", roles));
     }
 
     /**
@@ -353,8 +269,6 @@ public class UserReconciliationService {
     public static class ReconciliationReport {
         private int orphanedUsers = 0;
         private int missingUsers = 0;
-        private int roleMismatches = 0;
-        private int compensationRetries = 0;
         private List<String> errors = new ArrayList<>();
 
         public void incrementOrphanedUsers() {
@@ -363,14 +277,6 @@ public class UserReconciliationService {
 
         public void incrementMissingUsers() {
             missingUsers++;
-        }
-
-        public void incrementRoleMismatches() {
-            roleMismatches++;
-        }
-
-        public void incrementCompensationRetries() {
-            compensationRetries++;
         }
 
         public void addError(String error) {

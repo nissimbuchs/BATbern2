@@ -120,7 +120,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       expect(executeTransaction).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({
-            query: expect.stringContaining('INSERT INTO users'),
+            query: expect.stringContaining('INSERT INTO user_profiles'),
             params: expect.arrayContaining([
               'a1b2c3d4-5678-90ab-cdef-EXAMPLE11111',
               'user@example.com',
@@ -154,7 +154,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
 
       // Assert - Should extract and use the custom role
       expect(mockDbClient.query).toHaveBeenCalledWith(
-        expect.stringContaining('INSERT INTO user_roles'),
+        expect.stringContaining('INSERT INTO role_assignments'),
         expect.arrayContaining(['user-123', 'SPEAKER'])
       );
     });
@@ -217,7 +217,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
 
       // Assert
       expect(mockDbClient.query).toHaveBeenCalledWith(
-        expect.stringContaining('INSERT INTO user_roles'),
+        expect.stringContaining('INSERT INTO role_assignments'),
         expect.arrayContaining(['user-123', 'ORGANIZER'])
       );
     });
@@ -242,7 +242,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
 
       // Assert
       expect(mockDbClient.query).toHaveBeenCalledWith(
-        expect.stringContaining('INSERT INTO user_roles'),
+        expect.stringContaining('INSERT INTO role_assignments'),
         expect.arrayContaining(['user-123', 'ATTENDEE'])
       );
     });
@@ -259,7 +259,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
 
       // Assert
       expect(mockDbClient.query).toHaveBeenCalledWith(
-        expect.stringContaining('user_roles'),
+        expect.stringContaining('role_assignments'),
         expect.anything()
       );
       expect(mockDbClient.query).toHaveBeenCalledWith(
@@ -289,7 +289,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
 
       // Assert - Should default to ATTENDEE for invalid role
       expect(mockDbClient.query).toHaveBeenCalledWith(
-        expect.stringContaining('INSERT INTO user_roles'),
+        expect.stringContaining('INSERT INTO role_assignments'),
         expect.arrayContaining(['user-123', 'ATTENDEE'])
       );
     });
@@ -350,7 +350,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
 
       // Assert - Should not insert role again
       expect(mockDbClient.query).not.toHaveBeenCalledWith(
-        expect.stringContaining('INSERT INTO user_roles'),
+        expect.stringContaining('INSERT INTO role_assignments'),
         expect.anything()
       );
     });

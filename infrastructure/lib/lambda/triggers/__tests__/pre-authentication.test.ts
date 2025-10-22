@@ -160,9 +160,10 @@ describe('PreAuthentication Lambda Tests', () => {
       const event = createEvent();
 
       // When: PreAuthentication trigger fires
-      await handler(event, {} as any, mockCallback);
+      // Then: Should throw error to block authentication
+      await expect(handler(event, {} as any, mockCallback)).rejects.toThrow('inactive');
 
-      // Then: Authentication blocked with error message
+      // And: Callback should have been called with error message
       expect(mockCallback).toHaveBeenCalledWith(
         'User account is inactive. Reason: User violated terms of service',
         event
@@ -198,9 +199,10 @@ describe('PreAuthentication Lambda Tests', () => {
       const event = createEvent();
 
       // When: PreAuthentication trigger fires
-      await handler(event, {} as any, mockCallback);
+      // Then: Should throw error to block authentication
+      await expect(handler(event, {} as any, mockCallback)).rejects.toThrow('inactive');
 
-      // Then: Authentication blocked with default message
+      // And: Callback should have been called with default message
       expect(mockCallback).toHaveBeenCalledWith(
         'User account is inactive. Reason: Account deactivated',
         event
@@ -352,9 +354,10 @@ describe('PreAuthentication Lambda Tests', () => {
       const event = createEvent();
 
       // When: PreAuthentication trigger fires
-      await handler(event, {} as any, mockCallback);
+      // Then: Should throw error to block authentication
+      await expect(handler(event, {} as any, mockCallback)).rejects.toThrow('inactive');
 
-      // Then: InactiveUserBlocked metric published
+      // And: InactiveUserBlocked metric published
       expect(mockCloudWatchSend).toHaveBeenCalledWith(
         expect.objectContaining({
           MetricData: expect.arrayContaining([
@@ -441,9 +444,10 @@ describe('PreAuthentication Lambda Tests', () => {
       const event = createEvent();
 
       // When: PreAuthentication trigger fires
-      await handler(event, {} as any, mockCallback);
+      // Then: Should throw error to block authentication
+      await expect(handler(event, {} as any, mockCallback)).rejects.toThrow('inactive');
 
-      // Then: Database connection released even when blocking
+      // And: Database connection released even when blocking
       expect(mockDbClient.release).toHaveBeenCalledTimes(1);
     });
 

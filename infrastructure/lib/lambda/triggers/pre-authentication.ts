@@ -57,7 +57,7 @@ export const handler: PreAuthenticationTriggerHandler = async (
       await publishMetric('PreAuthLatency', Date.now() - startTime);
 
       callback(null, event);
-      return;
+      return event;
     }
 
     const user = result.rows[0];
@@ -72,10 +72,10 @@ export const handler: PreAuthenticationTriggerHandler = async (
       await publishMetric('InactiveUserBlocked', 1);
       await publishMetric('PreAuthLatency', Date.now() - startTime);
 
-      // Throw error to block authentication
-      throw new Error(
-        `User account is inactive. Reason: ${user.deactivation_reason || 'Account deactivated'}`
-      );
+      // Call callback with error AND throw to block authentication
+      const errorMessage = `User account is inactive. Reason: ${user.deactivation_reason || 'Account deactivated'}`;
+      callback(errorMessage, event);
+      throw new Error(errorMessage);
     }
 
     // User active - allow authentication
@@ -85,13 +85,13 @@ export const handler: PreAuthenticationTriggerHandler = async (
     await publishMetric('PreAuthLatency', Date.now() - startTime);
 
     callback(null, event);
+    return event;
   } catch (error) {
     const err = error as Error;
 
-    // If error is from inactive user check, re-throw to block auth
+    // If error is from inactive user check, re-throw (callback already called)
     if (err.message.includes('inactive')) {
-      callback(err.message, event);
-      return;
+      throw error;
     }
 
     // Database errors - allow with warning (graceful degradation)
@@ -105,6 +105,7 @@ export const handler: PreAuthenticationTriggerHandler = async (
 
     // Allow authentication even on error
     callback(null, event);
+    return event;
   } finally {
     if (client) {
       client.release();
