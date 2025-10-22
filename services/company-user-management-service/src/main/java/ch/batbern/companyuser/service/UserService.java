@@ -127,11 +127,12 @@ public class UserService {
     /**
      * List users with filters (admin/organizer only)
      * Story 1.16.2: Public API uses username
-     * AC3: List users with role and company filters
+     * AC3: List users with role, company, search, and JSON filters
      */
     @Transactional(readOnly = true)
-    public java.util.List<UserResponse> listUsers(String roleFilter, String companyFilter) {
-        log.debug("Listing users with filters: role={}, company={}", roleFilter, companyFilter);
+    public java.util.List<UserResponse> listUsers(String roleFilter, String companyFilter, String search, String jsonFilter) {
+        log.debug("Listing users with filters: role={}, company={}, search={}, filter={}",
+                roleFilter, companyFilter, search, jsonFilter);
 
         java.util.List<User> users;
 
@@ -153,9 +154,45 @@ public class UserService {
             users = userRepository.findAll();
         }
 
+        // Apply search filter (name or email)
+        if (search != null && !search.isBlank()) {
+            String searchLower = search.toLowerCase();
+            users = users.stream()
+                    .filter(u ->
+                            (u.getFirstName() != null && u.getFirstName().toLowerCase().contains(searchLower)) ||
+                            (u.getLastName() != null && u.getLastName().toLowerCase().contains(searchLower)) ||
+                            (u.getEmail() != null && u.getEmail().toLowerCase().contains(searchLower))
+                    )
+                    .toList();
+        }
+
+        // Apply JSON filter (active status, etc.)
+        if (jsonFilter != null && !jsonFilter.isBlank()) {
+            users = applyJsonFilter(users, jsonFilter);
+        }
+
         return users.stream()
                 .map(this::mapToResponse)
                 .toList();
+    }
+
+    /**
+     * Apply JSON filter to user list
+     * Supports: {"active": true/false}
+     */
+    private java.util.List<User> applyJsonFilter(java.util.List<User> users, String jsonFilter) {
+        try {
+            // Simple JSON parsing for active filter
+            if (jsonFilter.contains("\"active\":true") || jsonFilter.contains("\"active\": true")) {
+                return users.stream().filter(User::isActive).toList();
+            } else if (jsonFilter.contains("\"active\":false") || jsonFilter.contains("\"active\": false")) {
+                return users.stream().filter(u -> !u.isActive()).toList();
+            }
+            return users;
+        } catch (Exception e) {
+            log.warn("Failed to parse JSON filter: {}", jsonFilter, e);
+            return users;
+        }
     }
 
     /**

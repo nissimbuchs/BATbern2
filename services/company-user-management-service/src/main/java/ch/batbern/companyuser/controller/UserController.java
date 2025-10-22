@@ -116,12 +116,13 @@ public class UserController {
             @RequestParam(required = false) String filter,
             @RequestParam(required = false) String role,
             @RequestParam(required = false) String company,
+            @RequestParam(required = false) String search,
             @RequestParam(required = false, defaultValue = "0") int page,
             @RequestParam(required = false, defaultValue = "20") int limit) {
-        log.debug("Listing users with filters: role={}, company={}, page={}, limit={}",
-                role, company, page, limit);
+        log.debug("Listing users with filters: role={}, company={}, search={}, page={}, limit={}",
+                role, company, search, page, limit);
 
-        List<UserResponse> users = userService.listUsers(role, company);
+        List<UserResponse> users = userService.listUsers(role, company, search, filter);
 
         // TODO: Implement pagination (Task 14)
         Map<String, Object> response = Map.of(
