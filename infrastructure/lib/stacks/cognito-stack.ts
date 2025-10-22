@@ -15,7 +15,8 @@ export interface CognitoStackProps extends cdk.StackProps {
  *
  * Implements:
  * - AC16: AWS Cognito for authentication with role-based access
- * - AC4: Security Boundaries with user pool groups and custom attributes
+ * - AC4: Security Boundaries with custom attributes (Story 1.2.6: NO Cognito Groups)
+ * - ADR-001: Database-centric roles synced to JWT via PreTokenGeneration Lambda
  */
 export class CognitoStack extends cdk.Stack {
   public readonly userPool: cognito.UserPool;
@@ -51,7 +52,9 @@ export class CognitoStack extends cdk.Stack {
             throw new Error('Invalid company ID format. Must be a valid UUID.');
           }
 
-          // Role validation removed - roles are now managed via Cognito groups
+          // Role validation removed - Story 1.2.6: ADR-001 database-centric architecture
+          // Roles are managed in PostgreSQL and synced to JWT via PreTokenGeneration Lambda
+          // Self-registered users receive ATTENDEE role (assigned by PostConfirmation trigger)
 
           // Auto-verify email for development
           if (process.env.ENVIRONMENT === 'development') {
