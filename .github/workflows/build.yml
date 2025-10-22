@@ -199,6 +199,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history to enable git diff between commits
 
       - name: Check if frontend exists
         id: check-frontend
@@ -210,8 +212,43 @@ jobs:
             echo "::warning::Frontend directory does not exist yet"
           fi
 
+      - name: Detect frontend changes
+        id: frontend-changes
+        run: |
+          # For PR events, compare against base branch
+          # For push events, compare against previous commit
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          else
+            # For push events, compare with previous commit
+            BASE_SHA="${{ github.event.before }}"
+            HEAD_SHA="${{ github.sha }}"
+          fi
+
+          echo "Comparing $BASE_SHA...$HEAD_SHA"
+
+          # Get list of changed files
+          CHANGED_FILES=$(git diff --name-only $BASE_SHA $HEAD_SHA 2>/dev/null || echo "")
+
+          # If we can't get diff (e.g., first push), build everything
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "⚠️  Cannot determine changed files, will build frontend"
+            echo "changed=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Check if frontend files changed
+          if echo "$CHANGED_FILES" | grep -q "^web-frontend/"; then
+            echo "✓ Frontend changes detected"
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "ℹ️  No frontend changes detected, skipping build"
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Set up Node.js 20
-        if: steps.check-frontend.outputs.exists == 'true'
+        if: steps.check-frontend.outputs.exists == 'true' && steps.frontend-changes.outputs.changed == 'true'
         uses: actions/setup-node@v6
         with:
           node-version: '20'
@@ -219,12 +256,12 @@ jobs:
           cache-dependency-path: web-frontend/package-lock.json
 
       - name: Install dependencies
-        if: steps.check-frontend.outputs.exists == 'true'
+        if: steps.check-frontend.outputs.exists == 'true' && steps.frontend-changes.outputs.changed == 'true'
         working-directory: ./web-frontend
         run: npm ci
 
       - name: Verify API types are up-to-date
-        if: steps.check-frontend.outputs.exists == 'true'
+        if: steps.check-frontend.outputs.exists == 'true' && steps.frontend-changes.outputs.changed == 'true'
         working-directory: ./web-frontend
         run: |
           # Generate types in a temp location
@@ -246,26 +283,26 @@ jobs:
           echo "✅ API types are up-to-date"
 
       - name: Run linter
-        if: steps.check-frontend.outputs.exists == 'true'
+        if: steps.check-frontend.outputs.exists == 'true' && steps.frontend-changes.outputs.changed == 'true'
         working-directory: ./web-frontend
         run: npm run lint:ci
 
       - name: Run tests with coverage
-        if: steps.check-frontend.outputs.exists == 'true'
+        if: steps.check-frontend.outputs.exists == 'true' && steps.frontend-changes.outputs.changed == 'true'
         working-directory: ./web-frontend
         run: npm test -- --coverage --run
         # Coverage thresholds enforced: 80% for lines, functions, branches, and statements
         # Configured in vite.config.ts - tests will fail if coverage drops below threshold
 
       - name: Build frontend
-        if: steps.check-frontend.outputs.exists == 'true'
+        if: steps.check-frontend.outputs.exists == 'true' && steps.frontend-changes.outputs.changed == 'true'
         working-directory: ./web-frontend
         run: npm run build  # Run full build including TypeScript checking
         env:
           VITE_API_URL: https://api.batbern.ch
 
       - name: Upload build artifacts
-        if: steps.check-frontend.outputs.exists == 'true'
+        if: steps.check-frontend.outputs.exists == 'true' && steps.frontend-changes.outputs.changed == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: frontend-dist
@@ -273,7 +310,7 @@ jobs:
           retention-days: 7
 
       - name: Upload coverage reports
-        if: steps.check-frontend.outputs.exists == 'true' && always()
+        if: steps.check-frontend.outputs.exists == 'true' && steps.frontend-changes.outputs.changed == 'true' && always()
         uses: codecov/codecov-action@v4
         with:
           files: web-frontend/coverage/coverage-final.json
