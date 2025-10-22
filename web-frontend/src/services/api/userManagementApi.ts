@@ -129,3 +129,50 @@ export const updateUserRoles = async (id: string, roles: Role[]): Promise<User> 
 export const deleteUser = async (id: string): Promise<void> => {
   await apiClient.delete(`${USER_API_PATH}/${id}`);
 };
+
+/**
+ * Sync Status Response
+ * Story 1.2.5: User Reconciliation
+ */
+export interface SyncStatusResponse {
+  cognitoUserCount: number;
+  databaseUserCount: number;
+  missingInDatabase: number;
+  orphanedInDatabase: number;
+  missingCognitoIds: string[];
+  inSync: boolean;
+  message: string;
+}
+
+/**
+ * Reconciliation Report Response
+ * Story 1.2.5: User Reconciliation
+ */
+export interface ReconciliationReportResponse {
+  orphanedUsersDeactivated: number;
+  missingUsersCreated: number;
+  durationMs: number;
+  errors: string[];
+  success: boolean;
+  message: string;
+}
+
+/**
+ * Check sync status between Cognito and Database
+ * Story 1.2.5: User Reconciliation (Admin only)
+ */
+export const checkSyncStatus = async (): Promise<SyncStatusResponse> => {
+  const response = await apiClient.get<SyncStatusResponse>(`${USER_API_PATH}/admin/sync-status`);
+  return response.data;
+};
+
+/**
+ * Trigger manual user reconciliation from Cognito to Database
+ * Story 1.2.5: User Reconciliation (Admin only)
+ */
+export const reconcileUsers = async (): Promise<ReconciliationReportResponse> => {
+  const response = await apiClient.post<ReconciliationReportResponse>(
+    `${USER_API_PATH}/admin/reconcile`
+  );
+  return response.data;
+};

@@ -27,6 +27,7 @@ import UserCreateModal from './UserCreateModal';
 import RoleManagerModal from './RoleManagerModal';
 import DeleteUserDialog from './DeleteUserDialog';
 import UserPagination from './UserPagination';
+import UserSyncPanel from './UserSyncPanel';
 import type { User } from '@/types/user.types';
 
 const UserList: React.FC = () => {
@@ -115,6 +116,9 @@ const UserList: React.FC = () => {
             {t('addUser')}
           </Button>
         </Box>
+
+        {/* User Sync Panel - Story 1.2.5 */}
+        <UserSyncPanel />
 
         {/* Filters Panel */}
         <UserFilters />

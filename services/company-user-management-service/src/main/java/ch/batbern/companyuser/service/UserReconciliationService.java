@@ -52,9 +52,21 @@ public class UserReconciliationService {
      * ADR-001: Unidirectional sync (Cognito → Database only)
      */
     @Scheduled(cron = "0 0 2 * * *")
+    public void reconcileUsersScheduled() {
+        reconcileUsers();
+    }
+
+    /**
+     * Manual reconciliation trigger
+     * Can be called from admin API for on-demand sync
+     * <p>
+     * ADR-001: Unidirectional sync (Cognito → Database only)
+     *
+     * @return ReconciliationReport with sync statistics
+     */
     @Transactional
-    public void reconcileUsers() {
-        log.info("Starting user reconciliation job (Cognito → DB only, per ADR-001)");
+    public ReconciliationReport reconcileUsers() {
+        log.info("Starting user reconciliation (Cognito → DB only, per ADR-001)");
         Instant startTime = Instant.now();
 
         ReconciliationReport report = new ReconciliationReport();
@@ -78,16 +90,88 @@ public class UserReconciliationService {
                     durationMs
             );
 
-            log.info("User reconciliation job completed",
+            log.info("User reconciliation completed",
                     Map("durationMs", durationMs,
                             "orphanedUsers", report.getOrphanedUsers(),
                             "missingUsers", report.getMissingUsers(),
                             "errors", report.getErrors()));
 
+            report.setDurationMs(durationMs);
+
         } catch (Exception e) {
-            log.error("User reconciliation job failed", e);
+            log.error("User reconciliation failed", e);
             report.addError("Reconciliation failed: " + e.getMessage());
         }
+
+        return report;
+    }
+
+    /**
+     * Check sync status between Cognito and Database
+     * <p>
+     * ADR-001: Cognito → Database sync check
+     *
+     * @return SyncStatus with comparison statistics
+     */
+    public SyncStatus checkSyncStatus() {
+        log.info("Checking sync status (Cognito vs Database)");
+
+        SyncStatus status = new SyncStatus();
+
+        try {
+            // Count Cognito users
+            ListUsersRequest request = ListUsersRequest.builder()
+                    .userPoolId(userPoolId)
+                    .limit(PAGE_SIZE)
+                    .build();
+
+            ListUsersIterable paginator = cognitoClient.listUsersPaginator(request);
+            Set<String> cognitoUserIds = new HashSet<>();
+
+            for (ListUsersResponse page : paginator) {
+                for (UserType cognitoUser : page.users()) {
+                    cognitoUserIds.add(cognitoUser.username());
+                }
+            }
+
+            status.setCognitoUserCount(cognitoUserIds.size());
+
+            // Count DB users
+            List<User> dbUsers = userRepository.findByIsActive(true);
+            status.setDatabaseUserCount(dbUsers.size());
+
+            // Find missing in DB
+            List<String> missingCognitoIds = new ArrayList<>();
+            for (String cognitoId : cognitoUserIds) {
+                if (userRepository.findByCognitoUserId(cognitoId).isEmpty()) {
+                    missingCognitoIds.add(cognitoId);
+                }
+            }
+            status.setMissingInDatabase(missingCognitoIds.size());
+            status.setMissingCognitoIds(missingCognitoIds);
+
+            // Find orphaned in DB
+            int orphaned = 0;
+            for (User user : dbUsers) {
+                if (user.getCognitoUserId() != null &&
+                        !cognitoUserIds.contains(user.getCognitoUserId())) {
+                    orphaned++;
+                }
+            }
+            status.setOrphanedInDatabase(orphaned);
+
+            log.info("Sync status check completed",
+                    Map("cognitoUsers", cognitoUserIds.size(),
+                            "dbUsers", dbUsers.size(),
+                            "missing", missingCognitoIds.size(),
+                            "orphaned", orphaned));
+
+        } catch (Exception e) {
+            log.error("Failed to check sync status", e);
+            status.setMessage("Sync status check failed: " + e.getMessage());
+        }
+
+        return status;
     }
 
     /**
@@ -269,6 +353,7 @@ public class UserReconciliationService {
     public static class ReconciliationReport {
         private int orphanedUsers = 0;
         private int missingUsers = 0;
+        private long durationMs = 0;
         private List<String> errors = new ArrayList<>();
 
         public void incrementOrphanedUsers() {
@@ -279,8 +364,54 @@ public class UserReconciliationService {
             missingUsers++;
         }
 
+        public void setDurationMs(long durationMs) {
+            this.durationMs = durationMs;
+        }
+
         public void addError(String error) {
             errors.add(error);
+        }
+    }
+
+    /**
+     * Sync Status
+     * Comparison between Cognito and Database users
+     */
+    @Getter
+    public static class SyncStatus {
+        private int cognitoUserCount = 0;
+        private int databaseUserCount = 0;
+        private int missingInDatabase = 0;
+        private int orphanedInDatabase = 0;
+        private List<String> missingCognitoIds = new ArrayList<>();
+        private String message;
+
+        public void setCognitoUserCount(int count) {
+            this.cognitoUserCount = count;
+        }
+
+        public void setDatabaseUserCount(int count) {
+            this.databaseUserCount = count;
+        }
+
+        public void setMissingInDatabase(int count) {
+            this.missingInDatabase = count;
+        }
+
+        public void setOrphanedInDatabase(int count) {
+            this.orphanedInDatabase = count;
+        }
+
+        public void setMissingCognitoIds(List<String> ids) {
+            this.missingCognitoIds = ids;
+        }
+
+        public void setMessage(String message) {
+            this.message = message;
+        }
+
+        public boolean isInSync() {
+            return missingInDatabase == 0 && orphanedInDatabase == 0;
         }
     }
 }

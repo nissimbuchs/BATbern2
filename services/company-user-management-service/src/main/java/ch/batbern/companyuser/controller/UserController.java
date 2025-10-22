@@ -39,6 +39,7 @@ public class UserController {
     private final ProfilePictureService profilePictureService;
     private final SecurityContextHelper securityContextHelper;
     private final UserRepository userRepository;
+    private final ch.batbern.companyuser.service.UserReconciliationService reconciliationService;
 
     /**
      * AC1: Get current authenticated user
@@ -276,5 +277,109 @@ public class UserController {
             .build();
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Story 1.2.5: Manual user reconciliation (Admin only)
+     * POST /api/v1/users/admin/reconcile
+     *
+     * Triggers manual sync from Cognito to Database
+     * Creates missing database users for Cognito accounts
+     * Deactivates orphaned database users (deleted in Cognito)
+     *
+     * @return Reconciliation report with sync statistics
+     */
+    @PostMapping("/admin/reconcile")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    @Timed(value = "users.admin.reconcile", description = "Time to reconcile users (Cognito to DB)", percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<ReconciliationReportDTO> reconcileUsers() {
+        log.info("Manual user reconciliation triggered by admin");
+
+        ch.batbern.companyuser.service.UserReconciliationService.ReconciliationReport report =
+            reconciliationService.reconcileUsers();
+
+        ReconciliationReportDTO response = ReconciliationReportDTO.builder()
+            .orphanedUsersDeactivated(report.getOrphanedUsers())
+            .missingUsersCreated(report.getMissingUsers())
+            .durationMs(report.getDurationMs())
+            .errors(report.getErrors())
+            .success(report.getErrors().isEmpty())
+            .message(buildReconciliationMessage(report))
+            .build();
+
+        log.info("User reconciliation completed: created={}, deactivated={}, duration={}ms",
+            report.getMissingUsers(), report.getOrphanedUsers(), report.getDurationMs());
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Story 1.2.5: Check sync status (Admin only)
+     * GET /api/v1/users/admin/sync-status
+     *
+     * Checks synchronization status between Cognito and Database
+     * Returns counts and list of users out of sync
+     *
+     * @return Sync status with comparison statistics
+     */
+    @GetMapping("/admin/sync-status")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    @Timed(value = "users.admin.syncStatus", description = "Time to check sync status", percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<SyncStatusDTO> getSyncStatus() {
+        log.debug("Checking Cognito-Database sync status");
+
+        ch.batbern.companyuser.service.UserReconciliationService.SyncStatus status =
+            reconciliationService.checkSyncStatus();
+
+        SyncStatusDTO response = SyncStatusDTO.builder()
+            .cognitoUserCount(status.getCognitoUserCount())
+            .databaseUserCount(status.getDatabaseUserCount())
+            .missingInDatabase(status.getMissingInDatabase())
+            .orphanedInDatabase(status.getOrphanedInDatabase())
+            .missingCognitoIds(status.getMissingCognitoIds())
+            .inSync(status.isInSync())
+            .message(buildSyncStatusMessage(status))
+            .build();
+
+        log.debug("Sync status: cognito={}, db={}, missing={}, orphaned={}, inSync={}",
+            status.getCognitoUserCount(), status.getDatabaseUserCount(),
+            status.getMissingInDatabase(), status.getOrphanedInDatabase(), status.isInSync());
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Build human-readable reconciliation message
+     */
+    private String buildReconciliationMessage(ch.batbern.companyuser.service.UserReconciliationService.ReconciliationReport report) {
+        if (!report.getErrors().isEmpty()) {
+            return String.format("Reconciliation completed with %d error(s)", report.getErrors().size());
+        }
+
+        if (report.getMissingUsers() == 0 && report.getOrphanedUsers() == 0) {
+            return "All users are in sync";
+        }
+
+        return String.format("Synchronized %d user(s): %d created, %d deactivated",
+            report.getMissingUsers() + report.getOrphanedUsers(),
+            report.getMissingUsers(),
+            report.getOrphanedUsers());
+    }
+
+    /**
+     * Build human-readable sync status message
+     */
+    private String buildSyncStatusMessage(ch.batbern.companyuser.service.UserReconciliationService.SyncStatus status) {
+        if (status.getMessage() != null) {
+            return status.getMessage();
+        }
+
+        if (status.isInSync()) {
+            return String.format("All %d user(s) are in sync", status.getCognitoUserCount());
+        }
+
+        return String.format("Out of sync: %d missing in database, %d orphaned in database",
+            status.getMissingInDatabase(),
+            status.getOrphanedInDatabase());
     }
 }
