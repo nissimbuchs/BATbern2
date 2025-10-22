@@ -77,9 +77,9 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, open, onClose }
                 <Box mt={1}>
                   <Chip
                     label={
-                      user.isActive ? t('filters.status.active') : t('filters.status.inactive')
+                      user.active ? t('filters.status.active') : t('filters.status.inactive')
                     }
-                    color={user.isActive ? 'success' : 'default'}
+                    color={user.active ? 'success' : 'default'}
                     size="small"
                   />
                 </Box>

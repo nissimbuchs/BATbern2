@@ -205,9 +205,9 @@ const UserTable: React.FC<UserTableProps> = ({ users, onRowClick, onAction }) =>
               </TableCell>
               <TableCell>
                 <Chip
-                  label={user.isActive ? t('status.active') : t('status.inactive')}
+                  label={user.active ? t('status.active') : t('status.inactive')}
                   size="small"
-                  color={user.isActive ? 'success' : 'default'}
+                  color={user.active ? 'success' : 'default'}
                 />
               </TableCell>
               <TableCell align="right">
