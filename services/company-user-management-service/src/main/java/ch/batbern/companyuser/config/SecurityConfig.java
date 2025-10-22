@@ -17,6 +17,7 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -103,33 +104,38 @@ public class SecurityConfig {
     }
 
     /**
-     * JWT Authentication Converter to extract roles from Cognito groups
-     * Maps cognito:groups claim to Spring Security ROLE_ authorities
+     * JWT Authentication Converter to extract roles from custom:roles claim
+     * Story 1.2.6: Migrated from cognito:groups to custom:roles (ADR-001)
+     * Maps custom:roles claim (comma-separated string) to Spring Security ROLE_ authorities
      */
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(new CognitoGroupsToAuthoritiesConverter());
+        converter.setJwtGrantedAuthoritiesConverter(new CustomRolesToAuthoritiesConverter());
         return converter;
     }
 
     /**
-     * Converter to extract Cognito groups and map them to Spring Security authorities
-     * Cognito groups are in the "cognito:groups" claim and need ROLE_ prefix for @PreAuthorize
+     * Converter to extract custom:roles claim and map to Spring Security authorities
+     * Story 1.2.6: ADR-001 Database-centric architecture
+     *
+     * Roles are stored in PostgreSQL and added to JWT via PreTokenGeneration Lambda
+     * Format: comma-separated string (e.g., "ORGANIZER,SPEAKER")
+     * Requires ROLE_ prefix for Spring Security @PreAuthorize annotations
      */
-    private static class CognitoGroupsToAuthoritiesConverter implements Converter<Jwt, Collection<GrantedAuthority>> {
+    private static class CustomRolesToAuthoritiesConverter implements Converter<Jwt, Collection<GrantedAuthority>> {
         @Override
         public Collection<GrantedAuthority> convert(Jwt jwt) {
-            // Extract groups from cognito:groups claim
-            List<String> groups = jwt.getClaimAsStringList("cognito:groups");
+            // Extract roles from custom:roles claim (comma-separated string)
+            String rolesString = jwt.getClaimAsString("custom:roles");
 
-            if (groups == null || groups.isEmpty()) {
+            if (rolesString == null || rolesString.isEmpty()) {
                 return Collections.emptyList();
             }
 
-            // Convert groups to ROLE_ authorities (Spring Security convention)
-            return groups.stream()
-                .map(group -> new SimpleGrantedAuthority("ROLE_" + group.toUpperCase()))
+            // Split comma-separated roles and map to ROLE_ authorities
+            return Arrays.stream(rolesString.split(","))
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.trim().toUpperCase()))
                 .collect(Collectors.toList());
         }
     }

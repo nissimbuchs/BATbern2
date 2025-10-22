@@ -86,6 +86,9 @@ export class CognitoStack extends cdk.Stack {
         },
       },
       customAttributes: {
+        // DEPRECATED: Legacy role attribute - not used per ADR-001 (Story 1.2.6)
+        // Roles are managed in database and added to JWT via PreTokenGeneration Lambda
+        // Cannot be removed due to AWS Cognito limitation (custom attributes are permanent)
         role: new cognito.StringAttribute({
           mutable: true,
           maxLen: 20,
@@ -176,16 +179,9 @@ export class CognitoStack extends cdk.Stack {
       },
     });
 
-    // Create User Groups
-    const groups = ['organizer', 'speaker', 'partner', 'attendee'];
-    groups.forEach(groupName => {
-      new cognito.CfnUserPoolGroup(this, `${groupName}Group`, {
-        userPoolId: this.userPool.userPoolId,
-        groupName,
-        description: `Group for ${groupName} users`,
-        precedence: groups.indexOf(groupName),
-      });
-    });
+    // REMOVED: Cognito Groups (Story 1.2.6: ADR-001 Database-centric architecture)
+    // Roles are now managed exclusively in PostgreSQL and synced to JWT via PreTokenGeneration Lambda
+    // NO Cognito Groups - eliminates dual storage and sync complexity
 
     // Create bootstrap organizer user for environment setup
     // This user is created automatically on stack deployment

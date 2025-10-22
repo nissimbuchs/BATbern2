@@ -68,19 +68,23 @@ public class SecurityContextHelper {
 
     /**
      * Gets the current authenticated user's roles from JWT token or mock user
-     * @return List of role names (cognito:groups claim from JWT or authorities from mock user)
+     * Story 1.2.6: Updated to read custom:roles claim (ADR-001 migration)
+     * @return List of role names (custom:roles claim from JWT or authorities from mock user)
      * @throws SecurityException if not authenticated
      */
-    @SuppressWarnings("unchecked")
     public List<String> getCurrentUserRoles() {
         Authentication authentication = getAuthentication();
 
         if (authentication.getPrincipal() instanceof Jwt) {
             Jwt jwt = (Jwt) authentication.getPrincipal();
-            Object groups = jwt.getClaim("cognito:groups");
+            String rolesString = jwt.getClaim("custom:roles");
 
-            if (groups instanceof List) {
-                return (List<String>) groups;
+            if (rolesString != null && !rolesString.isEmpty()) {
+                // Split comma-separated roles (e.g., "ORGANIZER,SPEAKER")
+                return List.of(rolesString.split(","))
+                        .stream()
+                        .map(String::trim)
+                        .collect(Collectors.toList());
             }
 
             return Collections.emptyList();

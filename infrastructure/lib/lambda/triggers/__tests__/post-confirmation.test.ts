@@ -141,7 +141,6 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
             email: 'test@batbern.ch',
             email_verified: 'true',
             'cognito:user_status': 'CONFIRMED',
-            'cognito:groups': 'speaker',
           },
         },
       } as any);
@@ -152,10 +151,10 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       // Act
       await handler(event, context, {} as any);
 
-      // Assert - Should extract and use the custom role
+      // Assert - Story 1.2.6: ADR-001 always assigns ATTENDEE for self-registered users
       expect(mockDbClient.query).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO role_assignments'),
-        expect.arrayContaining(['user-123', 'SPEAKER'])
+        expect.arrayContaining(['user-123', 'ATTENDEE'])
       );
     });
 
@@ -205,7 +204,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
   // ============================================================================
 
   describe('Role Assignment', () => {
-    it('should_assignInitialRole_when_customAttributePresent', async () => {
+    it('should_assignAttendeeRole_when_userConfirmed_ADR001', async () => {
       // Arrange
       const event = createPostConfirmationEvent();
       const context = createLambdaContext();
@@ -215,10 +214,11 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       // Act
       await handler(event, context, {} as any);
 
-      // Assert
+      // Assert - Story 1.2.6: ADR-001 database-centric architecture
+      // All self-registered users receive ATTENDEE role
       expect(mockDbClient.query).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO role_assignments'),
-        expect.arrayContaining(['user-123', 'ORGANIZER'])
+        expect.arrayContaining(['user-123', 'ATTENDEE'])
       );
     });
 

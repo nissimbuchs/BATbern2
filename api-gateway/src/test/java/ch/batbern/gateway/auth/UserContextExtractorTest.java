@@ -30,12 +30,12 @@ class UserContextExtractorTest {
     @Test
     @DisplayName("should_extractUserContext_when_tokenContainsAllRequiredClaims")
     void should_extractUserContext_when_tokenContainsAllRequiredClaims() {
-        // Given
+        // Given - Story 1.2.6: Using custom:roles instead of cognito:groups
         String token = JWT.create()
             .withSubject("user-123")
             .withClaim("email", "user@example.com")
             .withClaim("email_verified", true)
-            .withArrayClaim("cognito:groups", new String[]{"organizer"})
+            .withClaim("custom:roles", "ORGANIZER")
             .withClaim("custom:companyId", "company-456")
             .withClaim("custom:preferences", "{\"language\":\"en\",\"theme\":\"light\"}")
             .withExpiresAt(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
@@ -131,12 +131,11 @@ class UserContextExtractorTest {
     @Test
     @DisplayName("should_extractAllRoles_when_multipleRolesProvided")
     void should_extractAllRoles_when_multipleRolesProvided() {
-        // Given - Simulating a user with multiple groups (primary role is first)
+        // Given - Story 1.2.6: Multiple roles in custom:roles (comma-separated)
         String token = JWT.create()
             .withSubject("user-123")
             .withClaim("email", "user@example.com")
-            .withArrayClaim("cognito:groups", new String[]{"organizer", "speaker", "partner"})
-            .withArrayClaim("custom:additionalRoles", new String[]{"speaker", "partner"})
+            .withClaim("custom:roles", "ORGANIZER,SPEAKER,PARTNER")
             .withExpiresAt(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
             .sign(testKeyPair.getAlgorithm());
 
@@ -145,7 +144,7 @@ class UserContextExtractorTest {
         // When
         UserContext userContext = extractor.extractUserContext(decodedJWT);
 
-        // Then
+        // Then - First role is primary, rest are additional (lowercase)
         assertThat(userContext.getRole()).isEqualTo("organizer");
         assertThat(userContext.getAdditionalRoles()).containsExactly("speaker", "partner");
     }

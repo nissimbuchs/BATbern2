@@ -292,17 +292,17 @@ describe('Cognito Triggers - Integration Tests', () => {
 
     });
 
-    it('should_assignRoleInDatabase_when_cognitoGroupsProvided', async () => {
+    it('should_assignAttendeeRoleInDatabase_when_userConfirmed_ADR001', async () => {
       // Arrange
       const cognitoId = 'test-cognito-id-456';
       const email = 'speaker@batbern.ch';
       const event = createPostConfirmationEvent(cognitoId, email, ['speaker']);
       const context = createLambdaContext();
 
-      // Act - Will fail because handler not implemented yet
+      // Act - Story 1.2.6: ADR-001 always assigns ATTENDEE for self-registered users
       await postConfirmationHandler(event, context, () => {});
 
-      // Assert - Check role assigned
+      // Assert - Check role assigned (always ATTENDEE per ADR-001)
       const userResult = await dbClient.query(
       'SELECT id FROM user_profiles WHERE cognito_id = $1',
         [cognitoId]
@@ -315,7 +315,7 @@ describe('Cognito Triggers - Integration Tests', () => {
       );
 
       expect(roleResult.rows.length).toBe(1);
-      expect(roleResult.rows[0].role).toBe('SPEAKER');
+      expect(roleResult.rows[0].role).toBe('ATTENDEE');
       expect(roleResult.rows[0].end_date).toBeNull();
 
     });

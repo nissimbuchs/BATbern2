@@ -1,14 +1,15 @@
 /**
  * PostConfirmation Lambda Trigger
  * Story 1.2.5: User Sync and Reconciliation Implementation
+ * Story 1.2.6: Updated for ADR-001 Database-centric architecture
  *
  * This Lambda function is triggered by AWS Cognito after a user confirms their email address.
  * It syncs the user to the PostgreSQL database and assigns an initial role.
  *
  * AC1: PostConfirmation trigger creates database user within 1 second
  * - When a user completes email verification in Cognito
- * - Then a corresponding user record is created in the `users` table
- * - And an initial role is assigned based on Cognito Groups membership (`cognito:groups`)
+ * - Then a corresponding user record is created in the `user_profiles` table
+ * - And default ATTENDEE role is assigned (ADR-001: All self-registered users get ATTENDEE)
  * - And the operation completes within 1 second (p95 latency)
  */
 
@@ -54,26 +55,19 @@ function extractUserAttributes(event: PostConfirmationTriggerEvent): UserAttribu
     sub: attributes.sub,
     email: attributes.email,
     email_verified: attributes.email_verified,
-    'cognito:groups': attributes['cognito:groups'],
+    'cognito:groups': attributes['cognito:groups'], // Legacy field, no longer used
   };
 }
 
 /**
- * Determine user role from Cognito Groups or default to ATTENDEE
+ * Get default role for self-registered users
+ * Story 1.2.6: ADR-001 Database-centric architecture
+ * All self-registered users receive ATTENDEE role
+ * Admin-invited users will have roles assigned via database
  */
-function determineUserRole(cognitoGroups?: string): UserRole {
-  if (cognitoGroups) {
-    // cognito:groups is a comma-separated string
-    const groups = cognitoGroups.split(',').map(g => g.trim().toUpperCase());
-
-    // Find the first valid role from the groups
-    const role = groups.find(g => VALID_ROLES.includes(g as UserRole));
-    if (role) {
-      return role as UserRole;
-    }
-  }
-
-  // Default to ATTENDEE if no valid role specified
+function getDefaultRole(): UserRole {
+  // ADR-001: Default to ATTENDEE for all self-registration
+  // NO Cognito Groups usage - roles managed exclusively in database
   return 'ATTENDEE';
 }
 
@@ -227,10 +221,10 @@ export const handler: PostConfirmationTriggerHandler = async (event) => {
   try {
     // Extract user attributes from event
     const attributes = extractUserAttributes(event);
-    const { sub: cognitoId, email, email_verified, 'cognito:groups': cognitoGroups } = attributes;
+    const { sub: cognitoId, email, email_verified } = attributes;
 
-    // Determine initial role from Cognito Groups
-    const role = determineUserRole(cognitoGroups);
+    // Get default role for self-registered users (ADR-001)
+    const role = getDefaultRole();
 
     console.log('Processing user confirmation', {
       cognitoId,
