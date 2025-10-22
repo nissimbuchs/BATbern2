@@ -55,7 +55,7 @@ tests {
     expect(body).to.be.an('object');
     expect(body.name).to.exist;
     expect(body.name).to.be.a('string');
-    expect(body.name).to.include('Bruno Test Company');
+    expect(body.name).to.include('bruno-test-company');
   });
 
   test("should NOT have id field (Story 1.16.2: removed redundant id)", function() {
