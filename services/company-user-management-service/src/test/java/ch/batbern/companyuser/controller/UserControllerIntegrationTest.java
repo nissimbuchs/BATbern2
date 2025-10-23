@@ -256,6 +256,102 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @DisplayName("should_respectLimitParameter_when_paginationRequested")
+    void should_respectLimitParameter_when_paginationRequested() throws Exception {
+        // Create 30 users
+        for (int i = 1; i <= 30; i++) {
+            User user = User.builder()
+                    .username("user" + i)
+                    .email("user" + i + "@example.com")
+                    .firstName("User")
+                    .lastName("" + i)
+                    .cognitoUserId("cognito-" + i)
+                    .companyId("GoogleZH")
+                    .roles(new HashSet<>(Set.of(Role.ATTENDEE)))
+                    .build();
+            userRepository.save(user);
+        }
+
+        // Request page 1 (first page) with limit=10
+        mockMvc.perform(get("/api/v1/users")
+                        .param("page", "1")
+                        .param("limit", "10")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data", hasSize(10)))  // CRITICAL: Must respect limit
+                .andExpect(jsonPath("$.pagination.page").value(1))
+                .andExpect(jsonPath("$.pagination.limit").value(10))
+                .andExpect(jsonPath("$.pagination.total").value(31))  // 30 + testUser from setUp
+                .andExpect(jsonPath("$.pagination.totalPages").value(4))
+                .andExpect(jsonPath("$.pagination.hasNext").value(true))
+                .andExpect(jsonPath("$.pagination.hasPrev").value(false));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @DisplayName("should_returnCorrectPage_when_pageParameterProvided")
+    void should_returnCorrectPage_when_pageParameterProvided() throws Exception {
+        // Create 25 users
+        for (int i = 1; i <= 25; i++) {
+            User user = User.builder()
+                    .username("user" + i)
+                    .email("user" + i + "@example.com")
+                    .firstName("User")
+                    .lastName("" + i)
+                    .cognitoUserId("cognito-" + i)
+                    .companyId("GoogleZH")
+                    .roles(new HashSet<>(Set.of(Role.ATTENDEE)))
+                    .build();
+            userRepository.save(user);
+        }
+
+        // Request page 2 (second page) with limit=10 (should get 10 users)
+        mockMvc.perform(get("/api/v1/users")
+                        .param("page", "2")
+                        .param("limit", "10")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data", hasSize(10)))  // CRITICAL: Page 2 should have 10 items
+                .andExpect(jsonPath("$.pagination.page").value(2))
+                .andExpect(jsonPath("$.pagination.limit").value(10))
+                .andExpect(jsonPath("$.pagination.total").value(26))  // 25 + testUser
+                .andExpect(jsonPath("$.pagination.hasNext").value(true))
+                .andExpect(jsonPath("$.pagination.hasPrev").value(true));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @DisplayName("should_returnDefaultPageSize_when_limitNotProvided")
+    void should_returnDefaultPageSize_when_limitNotProvided() throws Exception {
+        // Create 25 users
+        for (int i = 1; i <= 25; i++) {
+            User user = User.builder()
+                    .username("user" + i)
+                    .email("user" + i + "@example.com")
+                    .firstName("User")
+                    .lastName("" + i)
+                    .cognitoUserId("cognito-" + i)
+                    .companyId("GoogleZH")
+                    .roles(new HashSet<>(Set.of(Role.ATTENDEE)))
+                    .build();
+            userRepository.save(user);
+        }
+
+        // Request page 1 without limit (should default to 20)
+        mockMvc.perform(get("/api/v1/users")
+                        .param("page", "1")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data", hasSize(20)))  // Default limit=20
+                .andExpect(jsonPath("$.pagination.page").value(1))
+                .andExpect(jsonPath("$.pagination.limit").value(20));
+    }
+
+    @Test
     @WithMockUser(username = "john.doe", roles = {"ATTENDEE"})
     @DisplayName("should_return403_when_nonAdminRequestsUserList")
     void should_return403_when_nonAdminRequestsUserList() throws Exception {

@@ -113,7 +113,7 @@ public class UserController {
      * @param filter Advanced JSON filter (Task 14)
      * @param role Filter by role
      * @param company Filter by company ID
-     * @param page Page number (default 0)
+     * @param page Page number - 1-based (default 1, first page)
      * @param limit Page size (default 20)
      * @return Paginated list of users
      */
@@ -125,26 +125,40 @@ public class UserController {
             @RequestParam(required = false) String role,
             @RequestParam(required = false) String company,
             @RequestParam(required = false) String search,
-            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "1") int page,
             @RequestParam(required = false, defaultValue = "20") int limit) {
         log.debug("Listing users with filters: role={}, company={}, search={}, page={}, limit={}",
                 role, company, search, page, limit);
 
-        List<UserResponse> users = userService.listUsers(role, company, search, filter);
+        List<UserResponse> allUsers = userService.listUsers(role, company, search, filter);
 
-        // Build pagination metadata
+        // Convert 1-based page to 0-based index for calculation
+        int pageIndex = Math.max(0, page - 1);
+
+        // Calculate pagination
+        int total = allUsers.size();
+        int totalPages = (int) Math.ceil((double) total / limit);
+        int startIndex = pageIndex * limit;
+        int endIndex = Math.min(startIndex + limit, total);
+
+        // Slice the data to the requested page
+        List<UserResponse> pageData = (startIndex < total)
+            ? allUsers.subList(startIndex, endIndex)
+            : List.of();
+
+        // Build pagination metadata (using 1-based page numbers)
         ch.batbern.shared.api.PaginationMetadata paginationMetadata =
             new ch.batbern.shared.api.PaginationMetadata();
         paginationMetadata.setPage(page);
         paginationMetadata.setLimit(limit);
-        paginationMetadata.setTotal((long) users.size());
-        paginationMetadata.setTotalPages((int) Math.ceil((double) users.size() / limit));
-        paginationMetadata.setHasNext(page < paginationMetadata.getTotalPages() - 1);
-        paginationMetadata.setHasPrev(page > 0);
+        paginationMetadata.setTotal((long) total);
+        paginationMetadata.setTotalPages(totalPages);
+        paginationMetadata.setHasNext(page < totalPages);
+        paginationMetadata.setHasPrev(page > 1);
 
         // Use generated PaginatedUserResponse
         PaginatedUserResponse response = new PaginatedUserResponse();
-        response.setData(users);
+        response.setData(pageData);  // CRITICAL: Return paginated data, not all users
         response.setPagination(paginationMetadata);
 
         return ResponseEntity.ok(response);

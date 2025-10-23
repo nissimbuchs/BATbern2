@@ -56,6 +56,9 @@ class UserServiceTest {
     @Mock
     private SlugGenerationService slugService;
 
+    @Mock
+    private ch.batbern.companyuser.service.UserResponseMapper responseMapper;
+
     private UserService userService;
 
     @BeforeEach
@@ -66,7 +69,8 @@ class UserServiceTest {
             eventPublisher,
             searchService,
             securityContext,
-            slugService
+            slugService,
+            responseMapper
         );
     }
 
