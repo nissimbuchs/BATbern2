@@ -31,7 +31,7 @@ public class UserSearchServiceImpl implements UserSearchService {
 
     private final UserRepository userRepository;
     private final CacheManager cacheManager;
-    private final UserService userService;
+    private final UserResponseMapper responseMapper;
 
     private static final int MAX_AUTOCOMPLETE_RESULTS = 20;
 
@@ -66,9 +66,9 @@ public class UserSearchServiceImpl implements UserSearchService {
 
         log.debug("Found {} users (limited to {})", users.size(), limitedUsers.size());
 
-        // Map to response DTOs using UserService mapper
+        // Map to response DTOs using UserResponseMapper
         return limitedUsers.stream()
-                .map(userService::mapToResponse)
+                .map(responseMapper::mapToResponse)
                 .collect(Collectors.toList());
     }
 

@@ -40,6 +40,7 @@ public class UserService {
     private final UserSearchService searchService;
     private final SecurityContextHelper securityContext;
     private final SlugGenerationService slugService;
+    private final UserResponseMapper responseMapper;
 
     /**
      * Get current authenticated user
@@ -53,7 +54,7 @@ public class UserService {
         String cognitoUserId = securityContext.getCurrentUserId();  // Returns Cognito user ID (sub claim from JWT)
         User user = userRepository.findByCognitoUserId(cognitoUserId)
                 .orElseThrow(() -> new UserNotFoundException(cognitoUserId));
-        return mapToResponse(user);
+        return responseMapper.mapToResponse(user);
     }
 
     /**
@@ -121,7 +122,7 @@ public class UserService {
         eventPublisher.publish(event);
 
         log.info("User updated successfully: {}", updatedUser.getUsername());
-        return mapToResponse(updatedUser);
+        return responseMapper.mapToResponse(updatedUser);
     }
 
     /**
@@ -175,7 +176,7 @@ public class UserService {
         }
 
         return users.stream()
-                .map(this::mapToResponse)
+                .map(responseMapper::mapToResponse)
                 .toList();
     }
 
@@ -225,7 +226,7 @@ public class UserService {
     public UserResponse getUserByUsername(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException(username));
-        return mapToResponse(user);
+        return responseMapper.mapToResponse(user);
     }
 
     /**
@@ -286,7 +287,7 @@ public class UserService {
                     return new GetOrCreateUserResponse()
                             .username(existingUser.getUsername())  // Story 1.16.2: username
                             .created(false)
-                            .user(mapToResponse(existingUser));
+                            .user(responseMapper.mapToResponse(existingUser));
                 })
                 .orElseGet(() -> {
                     if (request.getCreateIfMissing() != null && request.getCreateIfMissing()) {
@@ -296,7 +297,7 @@ public class UserService {
                                 .username(newUser.getUsername())  // Story 1.16.2: username
                                 .created(true)
                                 .cognitoUserId(newUser.getCognitoUserId())
-                                .user(mapToResponse(newUser));
+                                .user(responseMapper.mapToResponse(newUser));
                     } else {
                         throw new UserNotFoundException("User not found: " + request.getEmail());
                     }
@@ -362,7 +363,7 @@ public class UserService {
         eventPublisher.publish(event);
 
         log.info("User created successfully: {}", savedUser.getUsername());
-        return mapToResponse(savedUser);
+        return responseMapper.mapToResponse(savedUser);
     }
 
     /**
@@ -494,39 +495,4 @@ public class UserService {
                 .orElse("system");  // Fallback for system operations
     }
 
-    /**
-     * Map User entity to UserResponse DTO (generated from OpenAPI with Lombok builder)
-     * Story 1.16.2: Expose username as id, not UUID
-     * Package-private to allow reuse by other services
-     */
-    UserResponse mapToResponse(User user) {
-        // Convert String to URI for profilePictureUrl
-        java.net.URI profilePictureUri = null;
-        if (user.getProfilePictureUrl() != null) {
-            try {
-                profilePictureUri = java.net.URI.create(user.getProfilePictureUrl());
-            } catch (IllegalArgumentException e) {
-                log.warn("Invalid profile picture URL for user {}: {}", user.getUsername(), user.getProfilePictureUrl());
-            }
-        }
-
-        return new UserResponse()
-                .id(user.getUsername())  // Story 1.16.2: username as id
-                .email(user.getEmail())
-                .firstName(user.getFirstName())
-                .lastName(user.getLastName())
-                .bio(user.getBio())
-                .companyId(user.getCompanyId())  // Story 1.16.2: company name
-                .roles(user.getRoles().stream()
-                        .map(role -> UserResponse.RolesEnum.valueOf(role.name()))
-                        .toList())
-                .profilePictureUrl(profilePictureUri)
-                .active(user.isActive())
-                .createdAt(user.getCreatedAt() != null ?
-                        user.getCreatedAt().atOffset(java.time.ZoneOffset.UTC) : null)
-                .updatedAt(user.getUpdatedAt() != null ?
-                        user.getUpdatedAt().atOffset(java.time.ZoneOffset.UTC) : null)
-                .lastLoginAt(user.getLastLoginAt() != null ?
-                        user.getLastLoginAt().atOffset(java.time.ZoneOffset.UTC) : null);
-    }
 }

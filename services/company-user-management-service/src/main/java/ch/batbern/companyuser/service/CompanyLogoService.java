@@ -134,8 +134,8 @@ public class CompanyLogoService {
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new CompanyNotFoundException("Company not found: " + companyId));
 
-        // Build CloudFront URL and S3 key
-        String s3Key = findS3KeyByFileId(companyId.toString(), fileId, fileExtension);
+        // Build CloudFront URL and S3 key using company name (not UUID)
+        String s3Key = findS3KeyByFileId(company.getName(), fileId, fileExtension);
         String cloudFrontUrl = buildCloudFrontUrl(s3Key);
 
         // Update company with logo references
@@ -150,14 +150,15 @@ public class CompanyLogoService {
 
     /**
      * Generate S3 key with year-based partitioning
-     * Pattern: /logos/{year}/{company-id}/{filename-with-uuid}.{ext}
-     * Example: /logos/2024/company-789/logo-f3e8d1a4.png
+     * Pattern: logos/{year}/{company-name}/{filename-with-uuid}.{ext}
+     * Example: logos/2024/Swisscom-AG/logo-f3e8d1a4.png
+     * Note: No leading slash - S3 keys should not start with /
      */
-    private String generateS3Key(String userId, String fileId, String extension) {
+    private String generateS3Key(String companyName, String fileId, String extension) {
         int currentYear = LocalDate.now().getYear();
-        return String.format("/logos/%d/%s/logo-%s.%s",
+        return String.format("logos/%d/%s/logo-%s.%s",
                 currentYear,
-                userId,
+                companyName,
                 fileId,
                 extension);
     }
@@ -165,9 +166,17 @@ public class CompanyLogoService {
     /**
      * Build CloudFront CDN URL from S3 key
      * AC8.4: Serve logos through CloudFront
+     *
+     * For MinIO (local development): http://localhost:9000/{bucket-name}/{s3Key}
+     * For CloudFront (staging/prod): https://cdn.batbern.ch/{s3Key}
      */
     private String buildCloudFrontUrl(String s3Key) {
-        return cloudFrontDomain + s3Key;
+        // For local MinIO, include bucket name in URL
+        if (cloudFrontDomain.contains("localhost")) {
+            return cloudFrontDomain + "/" + bucketName + "/" + s3Key;
+        }
+        // For CloudFront, bucket name is not needed (configured in CloudFront origin)
+        return cloudFrontDomain + "/" + s3Key;
     }
 
     /**
@@ -193,16 +202,16 @@ public class CompanyLogoService {
     }
 
     /**
-     * Find S3 key by file ID and company ID
+     * Find S3 key by file ID and company name
      * Reconstructs the S3 key using the same pattern as generateS3Key
      *
-     * @param companyId Company ID
+     * @param companyName Company name (used for S3 key partitioning)
      * @param fileId File ID from presigned URL generation
      * @param fileExtension File extension (e.g., "png", "jpg", "svg")
      * @return S3 key for the uploaded file
      */
-    private String findS3KeyByFileId(String companyId, String fileId, String fileExtension) {
+    private String findS3KeyByFileId(String companyName, String fileId, String fileExtension) {
         int currentYear = LocalDate.now().getYear();
-        return String.format("/logos/%d/%s/logo-%s.%s", currentYear, companyId, fileId, fileExtension);
+        return String.format("logos/%d/%s/logo-%s.%s", currentYear, companyName, fileId, fileExtension);
     }
 }
