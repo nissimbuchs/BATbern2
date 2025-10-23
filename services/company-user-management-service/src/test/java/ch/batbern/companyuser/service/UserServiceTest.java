@@ -93,6 +93,12 @@ class UserServiceTest {
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.of(existingUser));
         when(userRepository.save(any(User.class))).thenReturn(existingUser);
 
+        UserResponse mockResponse = new UserResponse();
+        mockResponse.setId(username);
+        mockResponse.setFirstName("Johnny");
+        mockResponse.setBio("Updated bio");
+        when(responseMapper.mapToResponse(any(User.class))).thenReturn(mockResponse);
+
         UpdateUserRequest request = new UpdateUserRequest();
         request.setFirstName("Johnny");
         request.setBio("Updated bio");
@@ -183,6 +189,14 @@ class UserServiceTest {
         when(userRepository.save(any(User.class))).thenReturn(createdUser);
         when(securityContext.getCurrentUserId()).thenReturn("admin.user");
 
+        UserResponse userResponse = new UserResponse();
+        userResponse.setId("new.user");
+        userResponse.setEmail("new.user@example.com");
+        userResponse.setFirstName("New");
+        userResponse.setLastName("User");
+        userResponse.setCompanyId("TechCorp");
+        when(responseMapper.mapToResponse(any(User.class))).thenReturn(userResponse);
+
         // When
         GetOrCreateUserResponse response = userService.getOrCreateUser(request);
 
@@ -220,6 +234,14 @@ class UserServiceTest {
                 .build();
 
         when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.of(existingUser));
+
+        UserResponse userResponse = new UserResponse();
+        userResponse.setId("existing.user");
+        userResponse.setEmail("existing@example.com");
+        userResponse.setFirstName("Existing");
+        userResponse.setLastName("User");
+        userResponse.setCompanyId("TechCorp");
+        when(responseMapper.mapToResponse(any(User.class))).thenReturn(userResponse);
 
         // When
         GetOrCreateUserResponse response = userService.getOrCreateUser(request);
