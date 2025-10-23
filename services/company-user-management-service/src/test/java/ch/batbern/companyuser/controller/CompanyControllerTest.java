@@ -14,7 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -48,25 +48,25 @@ class CompanyControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private CompanyService companyService;
 
-    @MockBean
+    @MockitoBean
     private ch.batbern.companyuser.service.CompanySearchService searchService;
 
-    @MockBean
+    @MockitoBean
     private ch.batbern.companyuser.service.SwissUIDValidationService uidValidationService;
 
-    @MockBean
+    @MockitoBean
     private ch.batbern.companyuser.service.CompanyQueryService queryService;
 
-    @MockBean
+    @MockitoBean
     private ch.batbern.companyuser.service.CompanyLogoService logoService;
 
-    @MockBean
+    @MockitoBean
     private ch.batbern.companyuser.repository.CompanyRepository companyRepository;
 
-    @MockBean
+    @MockitoBean
     private ch.batbern.companyuser.repository.UserRepository userRepository;
 
     // Story 1.16.2: use company name instead of UUID
