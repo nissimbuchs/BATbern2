@@ -262,7 +262,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         // Create 30 users
         for (int i = 1; i <= 30; i++) {
             User user = User.builder()
-                    .username("user" + i)
+                    .username("test.user." + i)  // Fixed: username must match format ^[a-z]+\.[a-z]+(\.[0-9]+)?$
                     .email("user" + i + "@example.com")
                     .firstName("User")
                     .lastName("" + i)
@@ -296,7 +296,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         // Create 25 users
         for (int i = 1; i <= 25; i++) {
             User user = User.builder()
-                    .username("user" + i)
+                    .username("test.user." + i)  // Fixed: username must match format ^[a-z]+\.[a-z]+(\.[0-9]+)?$
                     .email("user" + i + "@example.com")
                     .firstName("User")
                     .lastName("" + i)
@@ -329,7 +329,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         // Create 25 users
         for (int i = 1; i <= 25; i++) {
             User user = User.builder()
-                    .username("user" + i)
+                    .username("test.user." + i)  // Fixed: username must match format ^[a-z]+\.[a-z]+(\.[0-9]+)?$
                     .email("user" + i + "@example.com")
                     .firstName("User")
                     .lastName("" + i)
