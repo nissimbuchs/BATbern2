@@ -29,6 +29,7 @@ import {
   ListItemText,
   Divider,
   Stack,
+  Snackbar,
 } from '@mui/material';
 import {
   Sync as SyncIcon,
@@ -38,12 +39,12 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useUserSync } from '@/hooks/useUserSync';
-import { useNotifications } from '@/hooks/useNotifications';
 
 const UserSyncPanel: React.FC = () => {
   const { t } = useTranslation(['admin', 'common']);
-  const { showSuccess, showError } = useNotifications();
   const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const {
     syncStatus,
@@ -62,7 +63,7 @@ const UserSyncPanel: React.FC = () => {
   const handleSyncClick = () => {
     reconcile(undefined, {
       onSuccess: (data) => {
-        showSuccess(
+        setSuccessMessage(
           t('admin:userSync.reconciliation.success', {
             created: data.missingUsersCreated,
             deactivated: data.orphanedUsersDeactivated,
@@ -71,7 +72,7 @@ const UserSyncPanel: React.FC = () => {
         setReportModalOpen(true);
       },
       onError: (error: Error) => {
-        showError(
+        setErrorMessage(
           t('admin:userSync.reconciliation.error', {
             message: error.message,
           })
@@ -230,6 +231,30 @@ const UserSyncPanel: React.FC = () => {
           <Button onClick={handleCloseReportModal}>{t('common:close')}</Button>
         </DialogActions>
       </Dialog>
+
+      {/* Success Snackbar */}
+      <Snackbar
+        open={!!successMessage}
+        autoHideDuration={6000}
+        onClose={() => setSuccessMessage(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setSuccessMessage(null)} severity="success" sx={{ width: '100%' }}>
+          {successMessage}
+        </Alert>
+      </Snackbar>
+
+      {/* Error Snackbar */}
+      <Snackbar
+        open={!!errorMessage}
+        autoHideDuration={6000}
+        onClose={() => setErrorMessage(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setErrorMessage(null)} severity="error" sx={{ width: '100%' }}>
+          {errorMessage}
+        </Alert>
+      </Snackbar>
     </>
   );
 };

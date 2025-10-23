@@ -194,7 +194,7 @@ class CompanyApiClient {
         fileSize,
       };
 
-      const response = await apiClient.post<PresignedUrlResponse>(
+      const response = await apiClient.post<PresignedUploadUrl>(
         `${COMPANY_API_PATH}/${companyName}/logo/upload-url`,
         requestBody
       );

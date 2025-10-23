@@ -18,8 +18,11 @@ interface UseUserListOptions {
 export const useUserList = ({ filters, pagination, enabled = true }: UseUserListOptions) => {
   const queryClient = useQueryClient();
 
+  // Extract only the properties that affect the API call for the query key
+  const { page, limit } = pagination;
+
   const query = useQuery({
-    queryKey: ['users', 'list', { filters, pagination }],
+    queryKey: ['users', 'list', { filters, page, limit }],
     queryFn: () => listUsers(filters, pagination),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes (formerly cacheTime)
@@ -33,7 +36,7 @@ export const useUserList = ({ filters, pagination, enabled = true }: UseUserList
         queryKey: [
           'users',
           'list',
-          { filters, pagination: { ...pagination, page: pagination.page + 1 } },
+          { filters, page: pagination.page + 1, limit: pagination.limit },
         ],
         queryFn: () => listUsers(filters, { ...pagination, page: pagination.page! + 1 }),
         staleTime: 5 * 60 * 1000,

@@ -16,9 +16,13 @@ export type GetOrCreateUserResponse = components['schemas']['GetOrCreateUserResp
 export type PaginatedUserResponse = components['schemas']['PaginatedUserResponse'];
 export type UserPreferences = components['schemas']['UserPreferences'];
 export type UserSettings = components['schemas']['UserSettings'];
-export type UpdateRolesRequest = components['schemas']['UpdateRolesRequest'];
-export type ActivityEntry = components['schemas']['ActivityEntry'];
+export type UpdateUserRolesRequest = components['schemas']['UpdateUserRolesRequest'];
+export type ActivityHistory = components['schemas']['ActivityHistory'];
 export type Company = components['schemas']['Company'];
+
+// Alias for backward compatibility
+export type UpdateRolesRequest = UpdateUserRolesRequest;
+export type ActivityEntry = ActivityHistory;
 
 // Simplified User type for most use cases
 export type User = UserResponse;

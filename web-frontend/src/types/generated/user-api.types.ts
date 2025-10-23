@@ -657,6 +657,19 @@ export interface components {
       data: components['schemas']['UserResponse'][];
       pagination: components['schemas']['PaginationMetadata'];
     };
+    /** @description User roles response */
+    UserRolesResponse: {
+      /**
+       * @description Username (unique identifier) - Story 1.16.2
+       * @example john.doe
+       */
+      username: string;
+      roles: ('ORGANIZER' | 'SPEAKER' | 'PARTNER' | 'ATTENDEE')[];
+    };
+    /** @description Request to update user roles */
+    UpdateUserRolesRequest: {
+      roles: ('ORGANIZER' | 'SPEAKER' | 'PARTNER' | 'ATTENDEE')[];
+    };
     PaginationMetadata: {
       /**
        * @description Current page (1-indexed)
@@ -1138,14 +1151,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': {
-            /**
-             * @description Username (unique identifier) - Story 1.16.2
-             * @example john.doe
-             */
-            username?: string;
-            roles?: ('ORGANIZER' | 'SPEAKER' | 'PARTNER' | 'ATTENDEE')[];
-          };
+          'application/json': components['schemas']['UserRolesResponse'];
         };
       };
       401: components['responses']['Unauthorized'];
@@ -1166,9 +1172,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        'application/json': {
-          roles: ('ORGANIZER' | 'SPEAKER' | 'PARTNER' | 'ATTENDEE')[];
-        };
+        'application/json': components['schemas']['UpdateUserRolesRequest'];
       };
     };
     responses: {
@@ -1178,14 +1182,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': {
-            /**
-             * @description Username (unique identifier) - Story 1.16.2
-             * @example john.doe
-             */
-            username?: string;
-            roles?: string[];
-          };
+          'application/json': components['schemas']['UserRolesResponse'];
         };
       };
       400: components['responses']['BadRequest'];

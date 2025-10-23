@@ -17,7 +17,7 @@ interface UseForgotPasswordOptions {
 
 // Extended Error type to include rate limit info
 export interface ForgotPasswordError extends Error {
-  type: 'rateLimitExceeded' | 'userNotFound' | 'invalidParameter' | 'unknownError';
+  type: 'rateLimitExceeded' | 'userNotFound' | 'invalidParameter' | 'unknownError' | 'networkError';
   statusCode?: number;
 }
 
