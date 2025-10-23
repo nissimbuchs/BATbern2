@@ -103,11 +103,11 @@ class UserServiceTest {
         assertThat(response.getBio()).isEqualTo("Updated bio");
 
         verify(userRepository).save(any(User.class));
-        verify(cognitoService).syncUserAttributes(any(User.class));
+        verify(cognitoService, never()).syncUserAttributes(any(User.class));  // NO-OP: DB is source of truth
         verify(searchService).invalidateCache();
     }
 
-    // Test 2.2: should_syncCognito_when_userUpdated (Story 1.16.2: cognito-based)
+    // Test 2.2: NO-OP Cognito sync - DB is source of truth
     @Test
     void should_syncCognito_when_userUpdated() {
         // Given
@@ -132,8 +132,8 @@ class UserServiceTest {
         // When
         userService.updateCurrentUser(request);
 
-        // Then
-        verify(cognitoService, times(1)).syncUserAttributes(any(User.class));
+        // Then - NO-OP: DB is source of truth, Cognito not synced
+        verify(cognitoService, never()).syncUserAttributes(any(User.class));
     }
 
     // Test 5.3: should_return404_when_userNotFound

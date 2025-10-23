@@ -98,8 +98,8 @@ class UserSearchServiceTest {
         testUser3.setCreatedAt(Instant.now());
         testUser3.setUpdatedAt(Instant.now());
 
-        // Mock userService.mapToResponse() for all test users
-        when(userService.mapToResponse(any(User.class))).thenAnswer(invocation -> {
+        // Mock userService.mapToResponse() for all test users (lenient to avoid unnecessary stubbing warnings)
+        lenient().when(userService.mapToResponse(any(User.class))).thenAnswer(invocation -> {
             User user = invocation.getArgument(0);
             UserResponse response = new UserResponse();
             response.setId(user.getUsername());  // Story 1.16.2: id contains username

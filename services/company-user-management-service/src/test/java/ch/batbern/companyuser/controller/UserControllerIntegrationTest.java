@@ -52,12 +52,14 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         userRepository.deleteAll();
 
         // Create test user
+        // Note: @WithMockUser(username = "john.doe") returns "john.doe" from SecurityContextHelper.getCurrentUserId()
+        // So we set cognitoUserId to "john.doe" to match
         testUser = User.builder()
                 .username("john.doe")
                 .email("john.doe@example.com")
                 .firstName("John")
                 .lastName("Doe")
-                .cognitoUserId("cognito-123")
+                .cognitoUserId("john.doe")  // Match @WithMockUser username
                 .companyId("GoogleZH")
                 .bio("Test bio")
                 .roles(new HashSet<>(Set.of(Role.ATTENDEE)))
@@ -199,8 +201,8 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(get("/api/v1/users")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.users").isArray())
-                .andExpect(jsonPath("$.users", hasSize(greaterThanOrEqualTo(2))))
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data", hasSize(greaterThanOrEqualTo(2))))
                 .andExpect(jsonPath("$.pagination").exists());
     }
 
@@ -224,9 +226,9 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                         .param("role", "ORGANIZER")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.users").isArray())
-                .andExpect(jsonPath("$.users", hasSize(1)))
-                .andExpect(jsonPath("$.users[0].roles", hasItem("ORGANIZER")));
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].roles", hasItem("ORGANIZER")));
     }
 
     @Test
@@ -249,8 +251,8 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                         .param("company", "GoogleZH")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.users").isArray())
-                .andExpect(jsonPath("$.users[*].companyId", everyItem(is("GoogleZH"))));
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data[*].companyId", everyItem(is("GoogleZH"))));
     }
 
     @Test
