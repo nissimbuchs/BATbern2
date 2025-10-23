@@ -51,10 +51,10 @@ describe('CompanyCard Component', () => {
   });
 
   it('should_displayCompanyName_when_rendered', () => {
-    // Test company name display (legal name shown with "Legal:" prefix when different)
+    // Test company name display (legal name shown with "Short name:" prefix when different)
     render(<CompanyCard company={mockCompany} onClick={vi.fn()} />);
 
-    expect(screen.getByText(/Legal:.*Acme Corporation/i)).toBeInTheDocument();
+    expect(screen.getByText(/Short name:.*Acme Corporation/i)).toBeInTheDocument();
   });
 
   it('should_displayDisplayName_when_different', () => {
