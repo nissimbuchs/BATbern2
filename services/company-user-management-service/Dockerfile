@@ -8,6 +8,9 @@ COPY settings.gradle ./
 # Copy checkstyle configuration
 COPY config ./config
 
+# Copy gradle scripts for security scanning
+COPY gradle ./gradle
+
 # Copy shared-kernel module (dependency)
 COPY shared-kernel/build.gradle ./shared-kernel/
 COPY shared-kernel/src ./shared-kernel/src
