@@ -122,13 +122,17 @@ describe('useCompanyMutations Hooks', () => {
       vi.mocked(companyApiClient.createCompany).mockResolvedValue(createdCompany);
 
       // Pre-populate cache with companies list
-      queryClient.setQueryData(
-        ['companies', { page: 1, limit: 20 }, undefined],
-        {
-          data: [],
-          pagination: { currentPage: 1, totalPages: 1, totalItems: 0, itemsPerPage: 20, hasNextPage: false, hasPreviousPage: false },
-        }
-      );
+      queryClient.setQueryData(['companies', { page: 1, limit: 20 }, undefined], {
+        data: [],
+        pagination: {
+          currentPage: 1,
+          totalPages: 1,
+          totalItems: 0,
+          itemsPerPage: 20,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
+      });
 
       // Act
       const { result } = renderHook(() => useCreateCompany(), {
@@ -246,7 +250,7 @@ describe('useCompanyMutations Hooks', () => {
       });
 
       await act(async () => {
-        result.current.mutate({ id: 'company-123', data: updateRequest });
+        result.current.mutate({ name: 'company-123', data: updateRequest });
       });
 
       // Assert
@@ -302,12 +306,16 @@ describe('useCompanyMutations Hooks', () => {
 
       // Trigger mutation
       await act(async () => {
-        result.current.mutate({ id: 'company-123', data: updateRequest });
+        result.current.mutate({ name: 'company-123', data: updateRequest });
       });
 
       // Assert - Check optimistic update applied immediately (synchronously after onMutate runs)
       await waitFor(() => {
-        const cachedData = queryClient.getQueryData(['company', 'company-123', undefined]) as Company;
+        const cachedData = queryClient.getQueryData([
+          'company',
+          'company-123',
+          undefined,
+        ]) as Company;
         expect(cachedData).toBeDefined();
         expect(cachedData.name).toBe('Optimistic Name');
       });
@@ -345,7 +353,11 @@ describe('useCompanyMutations Hooks', () => {
       });
 
       // Verify cache was set correctly
-      const verifyCache = queryClient.getQueryData(['company', 'company-123', undefined]) as Company;
+      const verifyCache = queryClient.getQueryData([
+        'company',
+        'company-123',
+        undefined,
+      ]) as Company;
       expect(verifyCache).toBeDefined();
       expect(verifyCache.name).toBe('Original Name');
 
@@ -353,7 +365,7 @@ describe('useCompanyMutations Hooks', () => {
       const setQueryDataSpy = vi.spyOn(queryClient, 'setQueryData');
 
       await act(async () => {
-        result.current.mutate({ id: 'company-123', data: updateRequest });
+        result.current.mutate({ name: 'company-123', data: updateRequest });
       });
 
       // Assert - Wait for error
@@ -363,7 +375,7 @@ describe('useCompanyMutations Hooks', () => {
 
       // Verify rollback was attempted by checking setQueryData was called with original data
       // The rollback happens in onError handler
-      const rollbackCalls = setQueryDataSpy.mock.calls.filter(call => {
+      const rollbackCalls = setQueryDataSpy.mock.calls.filter((call) => {
         const data = call[1];
         return data && typeof data === 'object' && 'name' in data && data.name === 'Original Name';
       });
@@ -398,7 +410,7 @@ describe('useCompanyMutations Hooks', () => {
       const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
       await act(async () => {
-        result.current.mutate({ id: 'company-123', data: updateRequest });
+        result.current.mutate({ name: 'company-123', data: updateRequest });
       });
 
       // Assert
@@ -436,7 +448,7 @@ describe('useCompanyMutations Hooks', () => {
       });
 
       await act(async () => {
-        result.current.mutate({ id: 'company-123', data: partialUpdate });
+        result.current.mutate({ name: 'company-123', data: partialUpdate });
       });
 
       // Assert
@@ -613,7 +625,7 @@ describe('useCompanyMutations Hooks', () => {
       });
 
       act(() => {
-        result.current.mutate({ id: 'company-123', data: { name: 'Updated' } });
+        result.current.mutate({ name: 'company-123', data: { name: 'Updated' } });
       });
 
       // Assert - Wait for mutation to start

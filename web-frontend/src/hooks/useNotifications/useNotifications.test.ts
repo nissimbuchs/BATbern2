@@ -65,7 +65,7 @@ describe('useNotifications Hook', () => {
 
       vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockNotifications });
 
-      const { result } = renderHook(() => useNotifications(), { wrapper });
+      const { result } = renderHook(() => useNotifications({ enabled: true }), { wrapper });
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -85,7 +85,7 @@ describe('useNotifications Hook', () => {
 
       vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockNotifications });
 
-      const { result } = renderHook(() => useNotifications(), { wrapper });
+      const { result } = renderHook(() => useNotifications({ enabled: true }), { wrapper });
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -106,7 +106,7 @@ describe('useNotifications Hook', () => {
 
       vi.mocked(apiClient.get).mockResolvedValue({ data: mockNotifications });
 
-      const { result } = renderHook(() => useNotifications(), { wrapper });
+      const { result } = renderHook(() => useNotifications({ enabled: true }), { wrapper });
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -126,7 +126,7 @@ describe('useNotifications Hook', () => {
 
       vi.mocked(apiClient.get).mockResolvedValue({ data: mockNotifications });
 
-      const { result } = renderHook(() => useNotifications(), { wrapper });
+      const { result } = renderHook(() => useNotifications({ enabled: true }), { wrapper });
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -168,7 +168,7 @@ describe('useNotifications Hook', () => {
         data: { success: true, markedCount: 1 },
       });
 
-      const { result } = renderHook(() => useNotifications(), { wrapper });
+      const { result } = renderHook(() => useNotifications({ enabled: true }), { wrapper });
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -196,7 +196,7 @@ describe('useNotifications Hook', () => {
         data: { success: true, markedCount: 3 },
       });
 
-      const { result } = renderHook(() => useNotifications(), { wrapper });
+      const { result } = renderHook(() => useNotifications({ enabled: true }), { wrapper });
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -237,7 +237,7 @@ describe('useNotifications Hook', () => {
         data: { success: true },
       });
 
-      const { result } = renderHook(() => useNotifications(), { wrapper });
+      const { result } = renderHook(() => useNotifications({ enabled: true }), { wrapper });
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -256,7 +256,7 @@ describe('useNotifications Hook', () => {
       const mockError = new Error('Failed to fetch notifications');
       vi.mocked(apiClient.get).mockRejectedValueOnce(mockError);
 
-      const { result } = renderHook(() => useNotifications(), { wrapper });
+      const { result } = renderHook(() => useNotifications({ enabled: true }), { wrapper });
 
       await waitFor(() => {
         expect(result.current.isError).toBe(true);
@@ -277,7 +277,7 @@ describe('useNotifications Hook', () => {
 
       vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockNotifications });
 
-      const { result } = renderHook(() => useNotifications(), { wrapper });
+      const { result } = renderHook(() => useNotifications({ enabled: true }), { wrapper });
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);

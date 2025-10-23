@@ -70,16 +70,20 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     private Event createTestEvent(String title, String dateStr, String status) {
+        int eventNumber = eventNumberCounter++;
+        String eventCode = "BATbern" + eventNumber;
+
         Event event = Event.builder()
+                .eventCode(eventCode)
                 .title(title)
-                .eventNumber(eventNumberCounter++)  // Generate sequential unique event number
+                .eventNumber(eventNumber)  // Generate sequential unique event number
                 .date(Instant.parse(dateStr))
                 .registrationDeadline(Instant.parse(dateStr).minusSeconds(86400 * 7)) // 7 days before event
                 .venueName("Test Venue")
                 .venueAddress("Test Address 123, Bern")
                 .venueCapacity(100)
                 .status(status)
-                .organizerId(UUID.randomUUID())
+                .organizerUsername("test.organizer")
                 .currentAttendeeCount(0)
                 .description("Test event for " + title)
                 .build();
@@ -314,7 +318,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                         .param("filter", invalidFilter)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"));
+                .andExpect(jsonPath("$.error").value("Bad Request"));
     }
 
     @Test
@@ -345,10 +349,12 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         // Get the first event created in setUp
         Event savedEvent = eventRepository.findAll().get(0);
 
-        mockMvc.perform(get("/api/v1/events/" + savedEvent.getId())
+        // Story 1.16.2: Use eventCode in URL instead of UUID
+        mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(savedEvent.getId().toString()))
+                // Story 1.16.2: Event responses use eventCode, not id
+                .andExpect(jsonPath("$.eventCode").value(savedEvent.getEventCode()))
                 .andExpect(jsonPath("$.title").value(savedEvent.getTitle()))
                 .andExpect(jsonPath("$.status").value(savedEvent.getStatus()))
                 .andExpect(jsonPath("$.description").value(savedEvent.getDescription()))
@@ -364,7 +370,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(get("/api/v1/events/999999")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error").value("NOT_FOUND"));
+                .andExpect(jsonPath("$.error").value("Not Found"));
     }
 
     @Test
@@ -372,11 +378,13 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     void should_includeVenue_when_includeVenueRequested() throws Exception {
         Event savedEvent = eventRepository.findAll().get(0);
 
-        mockMvc.perform(get("/api/v1/events/" + savedEvent.getId())
+        // Story 1.16.2: Use eventCode in URL instead of UUID
+        mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode())
                         .param("include", "venue")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(savedEvent.getId().toString()))
+                // Story 1.16.2: Event responses use eventCode, not id
+                .andExpect(jsonPath("$.eventCode").value(savedEvent.getEventCode()))
                 .andExpect(jsonPath("$.title").value(savedEvent.getTitle()))
                 // Should include venue object
                 .andExpect(jsonPath("$.venue").exists())
@@ -389,11 +397,13 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     void should_includeSpeakers_when_includeSpeakersRequested() throws Exception {
         Event savedEvent = eventRepository.findAll().get(0);
 
-        mockMvc.perform(get("/api/v1/events/" + savedEvent.getId())
+        // Story 1.16.2: Use eventCode in URL instead of UUID
+        mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode())
                         .param("include", "speakers")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(savedEvent.getId().toString()))
+                // Story 1.16.2: Event responses use eventCode, not id
+                .andExpect(jsonPath("$.eventCode").value(savedEvent.getEventCode()))
                 .andExpect(jsonPath("$.title").value(savedEvent.getTitle()))
                 // Should include speakers array
                 .andExpect(jsonPath("$.speakers").isArray());
@@ -404,11 +414,13 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     void should_includeMultiple_when_multipleIncludesRequested() throws Exception {
         Event savedEvent = eventRepository.findAll().get(0);
 
-        mockMvc.perform(get("/api/v1/events/" + savedEvent.getId())
+        // Story 1.16.2: Use eventCode in URL instead of UUID
+        mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode())
                         .param("include", "venue,speakers,sessions")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(savedEvent.getId().toString()))
+                // Story 1.16.2: Event responses use eventCode, not id
+                .andExpect(jsonPath("$.eventCode").value(savedEvent.getEventCode()))
                 .andExpect(jsonPath("$.title").value(savedEvent.getTitle()))
                 // Should include all requested resources
                 .andExpect(jsonPath("$.venue").exists())
@@ -436,7 +448,8 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(newEvent))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").exists())
+                // Story 1.16.2: Event responses use eventCode, not id
+                .andExpect(jsonPath("$.eventCode").exists())
                 .andExpect(jsonPath("$.title").value("BATbern 2027"))
                 .andExpect(jsonPath("$.status").value("planning"))
                 .andExpect(jsonPath("$.description").value("Annual tech conference 2027"));
@@ -476,11 +489,13 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(put("/api/v1/events/" + savedEvent.getId())
+        // Story 1.16.2: Use eventCode in URL instead of UUID
+        mockMvc.perform(put("/api/v1/events/" + savedEvent.getEventCode())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(updatedEvent))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(savedEvent.getId().toString()))
+                // Story 1.16.2: Event responses use eventCode, not id
+                .andExpect(jsonPath("$.eventCode").value(savedEvent.getEventCode()))
                 .andExpect(jsonPath("$.title").value("BATbern 2025 Updated"))
                 .andExpect(jsonPath("$.status").value("published"))
                 .andExpect(jsonPath("$.description").value("Updated description"));
@@ -502,11 +517,13 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(patch("/api/v1/events/" + savedEvent.getId())
+        // Story 1.16.2: Use eventCode in URL instead of UUID
+        mockMvc.perform(patch("/api/v1/events/" + savedEvent.getEventCode())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(patchData))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(savedEvent.getId().toString()))
+                // Story 1.16.2: Event responses use eventCode, not id
+                .andExpect(jsonPath("$.eventCode").value(savedEvent.getEventCode()))
                 .andExpect(jsonPath("$.title").value(originalTitle)) // Title should remain unchanged
                 .andExpect(jsonPath("$.status").value("published")); // Status updated
     }
@@ -552,7 +569,8 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/v1/events/" + draftEvent.getId() + "/publish")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(draftEvent.getId().toString()))
+                // Story 1.16.2: Event responses use eventCode, not id
+                .andExpect(jsonPath("$.eventCode").value(draftEvent.getEventCode()))
                 .andExpect(jsonPath("$.status").value("published"))
                 .andExpect(jsonPath("$.title").value("BATbern 2028"));
     }
@@ -571,7 +589,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/v1/events/" + savedInvalidEvent.getId() + "/publish")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error").value("Unprocessable Entity"))
                 .andExpect(jsonPath("$.message").exists());
     }
 
@@ -588,7 +606,8 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/v1/events/" + draftEvent.getId() + "/workflow/advance")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(draftEvent.getId().toString()))
+                // Story 1.16.2: Event responses use eventCode, not id
+                .andExpect(jsonPath("$.eventCode").value(draftEvent.getEventCode()))
                 .andExpect(jsonPath("$.workflowState").exists())
                 .andExpect(jsonPath("$.workflowState").isNotEmpty());
     }
@@ -602,7 +621,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/v1/events/" + archivedEvent.getId() + "/workflow/advance")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.error").value("WORKFLOW_ERROR"))
+                .andExpect(jsonPath("$.error").value("Unprocessable Entity"))
                 .andExpect(jsonPath("$.message").exists());
     }
 
@@ -1139,8 +1158,9 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         Event savedEvent = eventRepository.findAll().get(0);
 
         // Make 3 requests to warm up and stabilize performance
+        // Story 1.16.2: Use eventCode in URL instead of UUID
         for (int i = 0; i < 3; i++) {
-            mockMvc.perform(get("/api/v1/events/" + savedEvent.getId())
+            mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode())
                             .param("include", "venue,speakers,sessions")
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk());
@@ -1148,11 +1168,13 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
         // Measure cached response time (should be fast)
         long startTime = System.currentTimeMillis();
-        mockMvc.perform(get("/api/v1/events/" + savedEvent.getId())
+        // Story 1.16.2: Use eventCode in URL instead of UUID
+        mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode())
                         .param("include", "venue,speakers,sessions")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(savedEvent.getId().toString()))
+                // Story 1.16.2: Event responses use eventCode, not id
+                .andExpect(jsonPath("$.eventCode").value(savedEvent.getEventCode()))
                 .andExpect(jsonPath("$.venue").exists())
                 .andExpect(jsonPath("$.speakers").isArray())
                 .andExpect(jsonPath("$.sessions").isArray());
@@ -1170,7 +1192,8 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         String originalDescription = savedEvent.getDescription(); // Store original before any updates
 
         // First request - populate cache
-        mockMvc.perform(get("/api/v1/events/" + savedEvent.getId())
+        // Story 1.16.2: Use eventCode in URL instead of UUID
+        mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode())
                         .param("include", "venue,speakers")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
@@ -1181,11 +1204,13 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         eventRepository.save(eventFromDb);
 
         // Second request within TTL - should still return cached (old) data
-        mockMvc.perform(get("/api/v1/events/" + savedEvent.getId())
+        // Story 1.16.2: Use eventCode in URL instead of UUID
+        mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode())
                         .param("include", "venue,speakers")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(savedEvent.getId().toString()))
+                // Story 1.16.2: Event responses use eventCode, not id
+                .andExpect(jsonPath("$.eventCode").value(savedEvent.getEventCode()))
                 // Should return cached description (not the updated one)
                 .andExpect(jsonPath("$.description").value(originalDescription));
     }
@@ -1197,7 +1222,8 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         String originalDescription = savedEvent.getDescription();
 
         // First request - populate cache
-        mockMvc.perform(get("/api/v1/events/" + savedEvent.getId())
+        // Story 1.16.2: Use eventCode in URL instead of UUID
+        mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode())
                         .param("include", "venue,speakers")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -1210,17 +1236,20 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(patch("/api/v1/events/" + savedEvent.getId())
+        // Story 1.16.2: Use eventCode in URL instead of UUID
+        mockMvc.perform(patch("/api/v1/events/" + savedEvent.getEventCode())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(patchData))
                 .andExpect(status().isOk());
 
         // Next request should return fresh data (not cached)
-        mockMvc.perform(get("/api/v1/events/" + savedEvent.getId())
+        // Story 1.16.2: Use eventCode in URL instead of UUID
+        mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode())
                         .param("include", "venue,speakers")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(savedEvent.getId().toString()))
+                // Story 1.16.2: Event responses use eventCode, not id
+                .andExpect(jsonPath("$.eventCode").value(savedEvent.getEventCode()))
                 // Should return updated description (cache was invalidated)
                 .andExpect(jsonPath("$.description").value("Cache should be invalidated"));
     }
@@ -1274,14 +1303,199 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
         // Measure response time with all includes
         long startTime = System.currentTimeMillis();
-        mockMvc.perform(get("/api/v1/events/" + savedEvent.getId())
+        mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode())
                         .param("include", "venue,speakers,sessions,topics,workflow,registrations,catering,team,publishing,notifications,analytics")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(savedEvent.getId().toString()));
+                .andExpect(jsonPath("$.eventCode").value(savedEvent.getEventCode()));
         long duration = System.currentTimeMillis() - startTime;
 
         // AC16: Event detail with all includes must respond in <500ms (P95)
         assertThat(duration).isLessThan(500L);
+    }
+
+    // ============================================================================
+    // Story 1.16.2: EventCode-Based Endpoints
+    // ============================================================================
+
+    @Test
+    @DisplayName("should_getEventByCode_when_validEventCodeProvided")
+    void should_getEventByCode_when_validEventCodeProvided() throws Exception {
+        // Given - create test event
+        Event event = createTestEvent("Test Event for GET", "2025-06-15T09:00:00Z", "published");
+
+        // When/Then - retrieve by eventCode
+        mockMvc.perform(get("/api/v1/events/" + event.getEventCode())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.eventCode").value(event.getEventCode()))
+                .andExpect(jsonPath("$.title").value("Test Event for GET"))
+                .andExpect(jsonPath("$.organizerUsername").value("test.organizer"))
+                .andExpect(jsonPath("$.status").value("published"))
+                // Verify no UUID fields in response
+                .andExpect(jsonPath("$.id").doesNotExist())
+                .andExpect(jsonPath("$.organizerId").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("should_return404_when_eventCodeNotFound")
+    void should_return404_when_eventCodeNotFound() throws Exception {
+        mockMvc.perform(get("/api/v1/events/BATbern99999")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("should_createEvent_when_validRequestProvided")
+    void should_createEvent_when_validRequestProvided() throws Exception {
+        // Given
+        String requestBody = """
+                {
+                    "title": "New BATbern Event",
+                    "eventNumber": 2000,
+                    "date": "2025-09-15T09:00:00Z",
+                    "registrationDeadline": "2025-09-08T23:59:59Z",
+                    "venueName": "Bern Convention Center",
+                    "venueAddress": "Mingerstrasse 6, 3014 Bern",
+                    "venueCapacity": 500,
+                    "status": "planning",
+                    "organizerUsername": "john.doe",
+                    "description": "Annual BATbern conference"
+                }
+                """;
+
+        // When/Then
+        mockMvc.perform(post("/api/v1/events")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.eventCode").value("BATbern2000"))
+                .andExpect(jsonPath("$.title").value("New BATbern Event"))
+                .andExpect(jsonPath("$.organizerUsername").value("john.doe"))
+                // Verify no UUID in response
+                .andExpect(jsonPath("$.id").doesNotExist())
+                .andExpect(jsonPath("$.organizerId").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("should_updateEvent_when_validPutRequestProvided")
+    void should_updateEvent_when_validPutRequestProvided() throws Exception {
+        // Given - create event
+        Event event = createTestEvent("Original Title", "2025-06-15T09:00:00Z", "planning");
+
+        String updateRequest = """
+                {
+                    "title": "Updated Title",
+                    "eventNumber": %d,
+                    "date": "2025-06-20T09:00:00Z",
+                    "registrationDeadline": "2025-06-13T23:59:59Z",
+                    "venueName": "Updated Venue",
+                    "venueAddress": "Updated Address",
+                    "venueCapacity": 200,
+                    "status": "published",
+                    "organizerUsername": "jane.smith"
+                }
+                """.formatted(event.getEventNumber());
+
+        // When/Then
+        mockMvc.perform(put("/api/v1/events/" + event.getEventCode())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateRequest))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.eventCode").value(event.getEventCode()))
+                .andExpect(jsonPath("$.title").value("Updated Title"))
+                .andExpect(jsonPath("$.organizerUsername").value("jane.smith"))
+                .andExpect(jsonPath("$.status").value("published"));
+
+        // Verify persistence
+        Event updated = eventRepository.findByEventCode(event.getEventCode()).orElseThrow();
+        assertThat(updated.getTitle()).isEqualTo("Updated Title");
+        assertThat(updated.getOrganizerUsername()).isEqualTo("jane.smith");
+    }
+
+    @Test
+    @DisplayName("should_patchEvent_when_validPatchRequestProvided")
+    void should_patchEvent_when_validPatchRequestProvided() throws Exception {
+        // Given - create event
+        Event event = createTestEvent("Original Title", "2025-06-15T09:00:00Z", "planning");
+
+        String patchRequest = """
+                {
+                    "title": "Patched Title",
+                    "status": "published"
+                }
+                """;
+
+        // When/Then
+        mockMvc.perform(patch("/api/v1/events/" + event.getEventCode())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(patchRequest))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.eventCode").value(event.getEventCode()))
+                .andExpect(jsonPath("$.title").value("Patched Title"))
+                .andExpect(jsonPath("$.status").value("published"))
+                // Verify unchanged fields remain
+                .andExpect(jsonPath("$.organizerUsername").value("test.organizer"));
+
+        // Verify persistence
+        Event patched = eventRepository.findByEventCode(event.getEventCode()).orElseThrow();
+        assertThat(patched.getTitle()).isEqualTo("Patched Title");
+        assertThat(patched.getStatus()).isEqualTo("published");
+        assertThat(patched.getOrganizerUsername()).isEqualTo("test.organizer");
+    }
+
+    @Test
+    @DisplayName("should_autoGenerateEventCode_when_eventNumberNotProvided")
+    void should_autoGenerateEventCode_when_eventNumberNotProvided() throws Exception {
+        // Given
+        String requestBody = """
+                {
+                    "title": "Auto-numbered Event",
+                    "date": "2025-09-15T09:00:00Z",
+                    "venueName": "Test Venue",
+                    "venueAddress": "Test Address",
+                    "venueCapacity": 100,
+                    "organizerUsername": "test.user"
+                }
+                """;
+
+        // When/Then
+        String response = mockMvc.perform(post("/api/v1/events")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.eventCode").isNotEmpty())
+                .andExpect(jsonPath("$.eventCode").value(startsWith("BATbern")))
+                .andReturn().getResponse().getContentAsString();
+
+        // Verify eventCode format
+        JsonNode jsonNode = objectMapper.readTree(response);
+        String eventCode = jsonNode.get("eventCode").asText();
+        assertThat(eventCode).matches("BATbern\\d+");
+    }
+
+    @Test
+    @DisplayName("should_rejectDuplicateEventCode_when_creatingEvent")
+    void should_rejectDuplicateEventCode_when_creatingEvent() throws Exception {
+        // Given - create an event with eventNumber 3000
+        createTestEvent("Existing Event", "2025-06-15T09:00:00Z", "planning");
+
+        // When/Then - try to create another event with same number
+        String requestBody = """
+                {
+                    "title": "Duplicate Event",
+                    "eventNumber": 1000,
+                    "date": "2025-09-15T09:00:00Z",
+                    "venueName": "Test Venue",
+                    "venueAddress": "Test Address",
+                    "venueCapacity": 100,
+                    "organizerUsername": "test.user"
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/events")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isUnprocessableEntity());
     }
 }

@@ -23,6 +23,28 @@ export class LcovParser {
   }
 
   /**
+   * Check if a file should be excluded from coverage statistics
+   * @param {string} filePath - File path to check
+   * @returns {boolean} True if file should be excluded
+   */
+  static shouldExcludeFile(filePath) {
+    const excludePatterns = [
+      /node_modules/,
+      /\/dist\//,
+      /\/generated\//,
+      /\.generated\./,
+      /types\/generated/,
+      /\.d\.ts$/,
+      /\.config\./,
+      /\/test\//,
+      /\/e2e\//,
+      /\/coverage\//,
+    ];
+
+    return excludePatterns.some(pattern => pattern.test(filePath));
+  }
+
+  /**
    * Parse LCOV format content
    * @param {string} content - LCOV file content
    * @returns {Object} Parsed coverage data
@@ -44,11 +66,11 @@ export class LcovParser {
           branches: { found: 0, hit: 0, details: [] }
         };
       } else if (trimmed === 'end_of_record') {
-        // End of current file
-        if (currentFile) {
+        // End of current file - only include if not excluded
+        if (currentFile && !this.shouldExcludeFile(currentFile.path)) {
           files.push(currentFile);
-          currentFile = null;
         }
+        currentFile = null;
       } else if (currentFile) {
         // Parse coverage data
         if (trimmed.startsWith('FN:')) {

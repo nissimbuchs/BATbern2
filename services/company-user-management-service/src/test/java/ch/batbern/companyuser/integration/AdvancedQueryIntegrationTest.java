@@ -283,8 +283,9 @@ class AdvancedQueryIntegrationTest extends AbstractIntegrationTest {
     @Test
     @WithMockUser(roles = "ORGANIZER")
     void should_returnOnlySelectedFields_when_fieldsParameterProvided() throws Exception {
+        // Story 1.16.2: use company name instead of UUID - removed id field
         MvcResult result = mockMvc.perform(get("/api/v1/companies")
-                        .param("fields", "id,name,industry"))
+                        .param("fields", "name,industry"))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -295,7 +296,6 @@ class AdvancedQueryIntegrationTest extends AbstractIntegrationTest {
         assertThat(data.size()).isEqualTo(5);
 
         JsonNode firstCompany = data.get(0);
-        assertThat(firstCompany.has("id")).isTrue();
         assertThat(firstCompany.has("name")).isTrue();
         assertThat(firstCompany.has("industry")).isTrue();
         assertThat(firstCompany.has("swissUID")).isFalse(); // Not selected
@@ -313,7 +313,7 @@ class AdvancedQueryIntegrationTest extends AbstractIntegrationTest {
         JsonNode data = response.get("data");
 
         JsonNode firstCompany = data.get(0);
-        assertThat(firstCompany.has("id")).isTrue();
+        // Story 1.16.2: use company name instead of UUID - removed id field
         assertThat(firstCompany.has("name")).isTrue();
         assertThat(firstCompany.has("swissUID")).isTrue();
         assertThat(firstCompany.has("industry")).isTrue();

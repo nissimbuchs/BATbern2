@@ -1,0 +1,178 @@
+package ch.batbern.shared.service;
+
+import org.springframework.stereotype.Service;
+
+import java.text.Normalizer;
+import java.util.function.Function;
+import java.util.regex.Pattern;
+
+/**
+ * Service for generating URL-friendly slugs and usernames.
+ *
+ * Handles:
+ * - Username generation from first/last names
+ * - German character conversion (ä→ae, ö→oe, ü→ue, ß→ss)
+ * - Collision detection and resolution with numeric suffixes
+ * - Session title slugification
+ */
+@Service
+public class SlugGenerationService {
+
+    private static final Pattern MULTIPLE_HYPHENS = Pattern.compile("-+");
+    private static final Pattern NON_ALPHANUMERIC = Pattern.compile("[^a-z0-9\\s-]");
+    private static final Pattern WHITESPACE = Pattern.compile("\\s+");
+
+    /**
+     * Generates a username from first and last names.
+     *
+     * Rules:
+     * - Converts to lowercase
+     * - Replaces spaces with dots
+     * - Converts German characters: ä→ae, ö→oe, ü→ue, ß→ss
+     * - Removes special characters
+     *
+     * Example: "Müller" + "Özdemir" → "mueller.oezdemir"
+     *
+     * @param firstName The user's first name
+     * @param lastName The user's last name
+     * @return A username string
+     * @throws IllegalArgumentException if firstName or lastName is null/empty
+     */
+    public String generateUsername(String firstName, String lastName) {
+        if (firstName == null || firstName.trim().isEmpty()) {
+            throw new IllegalArgumentException("First name cannot be null or empty");
+        }
+        if (lastName == null || lastName.trim().isEmpty()) {
+            throw new IllegalArgumentException("Last name cannot be null or empty");
+        }
+
+        String slugifiedFirst = slugifyName(firstName);
+        String slugifiedLast = slugifyName(lastName);
+
+        return slugifiedFirst + "." + slugifiedLast;
+    }
+
+    /**
+     * Ensures a username is unique by appending numeric suffixes if needed.
+     *
+     * If baseUsername exists, tries baseUsername.2, baseUsername.3, etc.
+     *
+     * @param baseUsername The base username to check
+     * @param existsChecker Function that returns true if a username exists
+     * @return A unique username
+     * @throws IllegalArgumentException if baseUsername or existsChecker is null
+     */
+    public String ensureUniqueUsername(String baseUsername, Function<String, Boolean> existsChecker) {
+        if (baseUsername == null || baseUsername.trim().isEmpty()) {
+            throw new IllegalArgumentException("Base username cannot be null or empty");
+        }
+        if (existsChecker == null) {
+            throw new IllegalArgumentException("Exists checker function cannot be null");
+        }
+
+        if (!existsChecker.apply(baseUsername)) {
+            return baseUsername;
+        }
+
+        int suffix = 2;
+        String candidate;
+        do {
+            candidate = baseUsername + "." + suffix;
+            suffix++;
+        } while (existsChecker.apply(candidate));
+
+        return candidate;
+    }
+
+    /**
+     * Generates a URL-friendly slug from a session title.
+     *
+     * Rules:
+     * - Converts to lowercase
+     * - Replaces spaces with hyphens
+     * - Converts German characters
+     * - Removes special characters
+     * - Removes leading/trailing hyphens
+     * - Collapses multiple hyphens to single
+     *
+     * Example: "Introduction to Spring Boot & Microservices" → "introduction-to-spring-boot-microservices"
+     *
+     * @param title The session title
+     * @return A URL-friendly slug
+     * @throws IllegalArgumentException if title is null/empty
+     */
+    public String generateSessionSlug(String title) {
+        if (title == null || title.trim().isEmpty()) {
+            throw new IllegalArgumentException("Session title cannot be null or empty");
+        }
+
+        // Convert to lowercase
+        String slug = title.toLowerCase().trim();
+
+        // Replace German characters
+        slug = replaceGermanCharacters(slug);
+
+        // Normalize to remove accents (backup for any remaining diacritics)
+        slug = Normalizer.normalize(slug, Normalizer.Form.NFD);
+        slug = slug.replaceAll("\\p{M}", "");
+
+        // Replace whitespace with hyphens
+        slug = WHITESPACE.matcher(slug).replaceAll("-");
+
+        // Remove non-alphanumeric characters (except hyphens)
+        slug = NON_ALPHANUMERIC.matcher(slug).replaceAll("");
+
+        // Collapse multiple hyphens
+        slug = MULTIPLE_HYPHENS.matcher(slug).replaceAll("-");
+
+        // Remove leading/trailing hyphens
+        slug = slug.replaceAll("^-+|-+$", "");
+
+        return slug;
+    }
+
+    /**
+     * Slugifies a name part (first or last name).
+     *
+     * Handles German characters and converts spaces to dots.
+     *
+     * @param name The name to slugify
+     * @return Slugified name
+     */
+    private String slugifyName(String name) {
+        // Convert to lowercase
+        String slug = name.toLowerCase().trim();
+
+        // Replace German characters
+        slug = replaceGermanCharacters(slug);
+
+        // Normalize to remove remaining accents
+        slug = Normalizer.normalize(slug, Normalizer.Form.NFD);
+        slug = slug.replaceAll("\\p{M}", "");
+
+        // Replace whitespace with dots
+        slug = WHITESPACE.matcher(slug).replaceAll(".");
+
+        // Remove any remaining special characters except dots
+        slug = slug.replaceAll("[^a-z0-9.]", "");
+
+        return slug;
+    }
+
+    /**
+     * Replaces German special characters with their ASCII equivalents.
+     *
+     * @param text The text to process
+     * @return Text with German characters replaced
+     */
+    private String replaceGermanCharacters(String text) {
+        return text
+            .replace("ä", "ae")
+            .replace("ö", "oe")
+            .replace("ü", "ue")
+            .replace("ß", "ss")
+            .replace("Ä", "ae")
+            .replace("Ö", "oe")
+            .replace("Ü", "ue");
+    }
+}

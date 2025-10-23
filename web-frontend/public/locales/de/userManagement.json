@@ -1,0 +1,183 @@
+{
+  "title": "Benutzerverwaltung",
+  "addUser": "Benutzer hinzufügen",
+  "back": "Zurück",
+  "search": {
+    "placeholder": "Nach Name oder E-Mail suchen...",
+    "noResults": "Keine Benutzer gefunden",
+    "clearFilters": "Filter löschen"
+  },
+  "filters": {
+    "title": "Filter",
+    "clearAll": "Alle Filter löschen",
+    "role": {
+      "label": "Rolle",
+      "all": "Alle Rollen",
+      "organizer": "Organisator",
+      "speaker": "Referent",
+      "partner": "Partner",
+      "attendee": "Teilnehmer"
+    },
+    "company": {
+      "label": "Firma",
+      "all": "Alle Firmen",
+      "placeholder": "Firma auswählen..."
+    },
+    "status": {
+      "label": "Status",
+      "active": "Aktiv",
+      "inactive": "Inaktiv",
+      "all": "Alle"
+    }
+  },
+  "table": {
+    "headers": {
+      "name": "Name",
+      "email": "E-Mail",
+      "company": "Firma",
+      "roles": "Rollen",
+      "status": "Status",
+      "actions": "Aktionen"
+    },
+    "showing": "{{count}} Benutzer anzeigen",
+    "showingRange": "{{from}}-{{to}} von {{total}} Benutzern",
+    "perPage": "pro Seite",
+    "empty": "Keine Benutzer gefunden",
+    "emptySearch": "Keine Benutzer entsprechen Ihrer Suche. Versuchen Sie, die Filter zu löschen.",
+    "sortBy": "Sortieren nach",
+    "ascending": "Aufsteigend",
+    "descending": "Absteigend"
+  },
+  "actions": {
+    "view": "Anzeigen",
+    "editRoles": "Rollen bearbeiten",
+    "delete": "Löschen",
+    "retry": "Wiederholen",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "close": "Schließen",
+    "edit": "Bearbeiten",
+    "confirm": "Bestätigen"
+  },
+  "roles": {
+    "organizer": "Organisator",
+    "speaker": "Referent",
+    "partner": "Partner",
+    "attendee": "Teilnehmer",
+    "multiple": "{{count}} Rollen"
+  },
+  "status": {
+    "active": "Aktiv",
+    "inactive": "Inaktiv"
+  },
+  "modal": {
+    "userDetail": {
+      "title": "Benutzerdetails",
+      "profile": "Profil",
+      "contactInfo": "Kontaktinformationen",
+      "rolesAssigned": "Zugewiesene Rollen",
+      "companyAffiliation": "Firmenzugehörigkeit",
+      "activityHistory": "Aktivitätsverlauf",
+      "accountCreated": "Konto erstellt",
+      "createdAt": "Erstellt am",
+      "updatedAt": "Zuletzt aktualisiert",
+      "lastLogin": "Letzte Anmeldung",
+      "noCompany": "Keine Firma zugewiesen",
+      "noActivity": "Keine Aktivitäten vorhanden"
+    },
+    "createUser": {
+      "title": "Neuen Benutzer erstellen",
+      "firstName": "Vorname",
+      "lastName": "Nachname",
+      "email": "E-Mail",
+      "company": "Firma (optional)",
+      "roles": "Rollen",
+      "selectRoles": "Wählen Sie mindestens eine Rolle",
+      "creating": "Wird erstellt..."
+    },
+    "editRoles": {
+      "title": "Rollen bearbeiten",
+      "subtitle": "Rollen für {{name}} verwalten",
+      "user": "Benutzer",
+      "selectRoles": "Rollen auswählen",
+      "minimumOrganizers": "Es müssen mindestens {{count}} Organisatoren im System vorhanden sein",
+      "cannotRemove": "Diese Rolle kann nicht entfernt werden",
+      "updating": "Wird aktualisiert...",
+      "saving": "Wird gespeichert..."
+    },
+    "deleteConfirm": {
+      "title": "Benutzer löschen",
+      "message": "Möchten Sie diesen Benutzer wirklich löschen?",
+      "userName": "Benutzer: {{name}}",
+      "gdprWarning": "DSGVO-Hinweis: Diese Aktion löscht alle Benutzerdaten dauerhaft und kann nicht rückgängig gemacht werden.",
+      "cascadeWarning": "Alle zugehörigen Daten werden ebenfalls gelöscht.",
+      "cannotDelete": "Dieser Benutzer kann nicht gelöscht werden",
+      "lastOrganizerWarning": "Sie können den letzten Organisator nicht löschen. Es müssen mindestens {{count}} Organisatoren im System vorhanden sein.",
+      "deleting": "Wird gelöscht..."
+    }
+  },
+  "pagination": {
+    "previous": "Zurück",
+    "next": "Weiter",
+    "page": "Seite {{page}} von {{total}}",
+    "itemsPerPage": "Elemente pro Seite",
+    "goToPage": "Gehe zu Seite"
+  },
+  "loading": {
+    "users": "Benutzer werden geladen...",
+    "search": "Suchen...",
+    "delete": "Löschen...",
+    "save": "Speichern...",
+    "updating": "Wird aktualisiert..."
+  },
+  "error": {
+    "required": "Dieses Feld ist erforderlich",
+    "email": {
+      "invalid": "Ungültige E-Mail-Adresse",
+      "exists": "E-Mail-Adresse existiert bereits",
+      "required": "E-Mail ist erforderlich"
+    },
+    "name": {
+      "tooShort": "Name muss mindestens {{min}} Zeichen lang sein",
+      "tooLong": "Name darf maximal {{max}} Zeichen lang sein"
+    },
+    "roles": {
+      "required": "Mindestens eine Rolle ist erforderlich",
+      "minOrganizers": "Es müssen mindestens {{count}} Organisatoren im System vorhanden sein"
+    },
+    "minOneRole": "Mindestens eine Rolle muss ausgewählt werden",
+    "loadFailed": "Fehler beim Laden der Benutzer",
+    "createFailed": "Fehler beim Erstellen des Benutzers",
+    "updateFailed": "Fehler beim Aktualisieren des Benutzers",
+    "deleteFailed": "Fehler beim Löschen des Benutzers",
+    "deleteLastOrganizer": "Sie können den letzten Organisator nicht löschen",
+    "networkError": "Netzwerkfehler. Bitte überprüfen Sie Ihre Verbindung.",
+    "unauthorized": "Sie sind nicht berechtigt, diese Aktion durchzuführen",
+    "notFound": "Benutzer nicht gefunden"
+  },
+  "success": {
+    "userCreated": "Benutzer erfolgreich erstellt",
+    "userUpdated": "Benutzer erfolgreich aktualisiert",
+    "userDeleted": "Benutzer erfolgreich gelöscht",
+    "rolesUpdated": "Rollen erfolgreich aktualisiert"
+  },
+  "emptyState": {
+    "title": "Keine Benutzer",
+    "description": "Es wurden noch keine Benutzer hinzugefügt.",
+    "action": "Ersten Benutzer hinzufügen"
+  },
+  "accessibility": {
+    "filterPanel": "Filter-Panel",
+    "userTable": "Benutzertabelle",
+    "sortAscending": "Aufsteigend sortieren",
+    "sortDescending": "Absteigend sortieren",
+    "openMenu": "Menü öffnen",
+    "closeModal": "Modal schließen",
+    "rowCount": "{{count}} Benutzer in der Tabelle"
+  },
+  "offline": {
+    "indicator": "Offline",
+    "message": "Sie sind offline. Einige Funktionen sind möglicherweise nicht verfügbar.",
+    "viewingCache": "Zwischengespeicherte Daten werden angezeigt"
+  }
+}

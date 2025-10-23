@@ -5,7 +5,7 @@ meta {
 }
 
 patch {
-  url: {{baseUrl}}/events/{{createdEventId}}
+  url: {{baseUrl}}/events/{{createdEventCode}}
   body: json
   auth: bearer
 }
@@ -23,7 +23,7 @@ body:json {
 
 assert {
   res.status: eq 200
-  res.body.id: eq {{createdEventId}}
+  res.body.eventCode: isDefined
 }
 
 tests {
@@ -31,10 +31,14 @@ tests {
     expect(res.getStatus()).to.equal(200);
   });
 
-  test("should update event fields", function() {
+  test("should update event fields (Story 1.16.2: use eventCode)", function() {
     const event = res.getBody();
-    expect(event.id).to.equal(bru.getVar("createdEventId"));
+    expect(event.eventCode).to.equal(bru.getVar("createdEventCode"));
     expect(event.title).to.equal('Bruno Test Event - Updated');
     expect(event.description).to.equal('Updated description via patch');
+  });
+
+  test("should NOT have id field (Story 1.16.2: removed redundant id)", function() {
+    expect(res.getBody().id).to.be.undefined;
   });
 }

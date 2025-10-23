@@ -1,6 +1,9 @@
 package ch.batbern.events.exception;
 
+import ch.batbern.shared.dto.ErrorResponse;
 import ch.batbern.shared.exception.ValidationException;
+import ch.batbern.shared.util.CorrelationIdGenerator;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
@@ -11,6 +14,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -29,15 +34,23 @@ public class GlobalExceptionHandler {
      * Returns HTTP 400 Bad Request
      */
     @ExceptionHandler(ValidationException.class)
-    public ResponseEntity<Map<String, Object>> handleValidationException(ValidationException ex) {
+    public ResponseEntity<ErrorResponse> handleValidationException(
+            ValidationException ex,
+            HttpServletRequest request) {
         log.warn("Validation error: {}", ex.getMessage());
 
-        return ResponseEntity
-                .badRequest()
-                .body(Map.of(
-                        "error", "VALIDATION_ERROR",
-                        "message", ex.getMessage()
-                ));
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Bad Request")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("MEDIUM")
+                .details(ex.getDetails())
+                .build();
+
+        return ResponseEntity.badRequest().body(error);
     }
 
     /**
@@ -45,15 +58,26 @@ public class GlobalExceptionHandler {
      * Returns HTTP 400 Bad Request
      */
     @ExceptionHandler(PropertyReferenceException.class)
-    public ResponseEntity<Map<String, Object>> handlePropertyReferenceException(PropertyReferenceException ex) {
+    public ResponseEntity<ErrorResponse> handlePropertyReferenceException(
+            PropertyReferenceException ex,
+            HttpServletRequest request) {
         log.warn("Invalid property reference: {}", ex.getMessage());
 
-        return ResponseEntity
-                .badRequest()
-                .body(Map.of(
-                        "error", "VALIDATION_ERROR",
-                        "message", "Invalid field name in sort or filter: " + ex.getPropertyName()
-                ));
+        Map<String, Object> details = new HashMap<>();
+        details.put("propertyName", ex.getPropertyName());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Bad Request")
+                .message("Invalid field name in sort or filter: " + ex.getPropertyName())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("MEDIUM")
+                .details(details)
+                .build();
+
+        return ResponseEntity.badRequest().body(error);
     }
 
     /**
@@ -61,19 +85,33 @@ public class GlobalExceptionHandler {
      * Returns HTTP 400 Bad Request
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(
+            MethodArgumentNotValidException ex,
+            HttpServletRequest request) {
+
+        Map<String, Object> details = new HashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(error ->
+            details.put(error.getField(), error.getDefaultMessage())
+        );
+
         String errors = ex.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .collect(Collectors.joining(", "));
 
         log.warn("Validation error: {}", errors);
 
-        return ResponseEntity
-                .badRequest()
-                .body(Map.of(
-                        "error", "VALIDATION_ERROR",
-                        "message", "Validation failed: " + errors
-                ));
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Bad Request")
+                .message("Validation failed: " + errors)
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("MEDIUM")
+                .details(details)
+                .build();
+
+        return ResponseEntity.badRequest().body(error);
     }
 
     /**
@@ -81,15 +119,22 @@ public class GlobalExceptionHandler {
      * Returns HTTP 404 Not Found
      */
     @ExceptionHandler(EventNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleEventNotFoundException(EventNotFoundException ex) {
+    public ResponseEntity<ErrorResponse> handleEventNotFoundException(
+            EventNotFoundException ex,
+            HttpServletRequest request) {
         log.warn("Event not found: {}", ex.getMessage());
 
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(Map.of(
-                        "error", "NOT_FOUND",
-                        "message", ex.getMessage()
-                ));
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("Not Found")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     /**
@@ -97,15 +142,22 @@ public class GlobalExceptionHandler {
      * Returns HTTP 422 Unprocessable Entity with VALIDATION_ERROR code
      */
     @ExceptionHandler(BusinessValidationException.class)
-    public ResponseEntity<Map<String, Object>> handleBusinessValidationException(BusinessValidationException ex) {
+    public ResponseEntity<ErrorResponse> handleBusinessValidationException(
+            BusinessValidationException ex,
+            HttpServletRequest request) {
         log.warn("Business validation error: {}", ex.getMessage());
 
-        return ResponseEntity
-                .status(HttpStatus.UNPROCESSABLE_ENTITY)
-                .body(Map.of(
-                        "error", "VALIDATION_ERROR",
-                        "message", ex.getMessage()
-                ));
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
+                .error("Unprocessable Entity")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("MEDIUM")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
     }
 
     /**
@@ -113,15 +165,22 @@ public class GlobalExceptionHandler {
      * Returns HTTP 422 Unprocessable Entity with WORKFLOW_ERROR code
      */
     @ExceptionHandler(WorkflowException.class)
-    public ResponseEntity<Map<String, Object>> handleWorkflowException(WorkflowException ex) {
+    public ResponseEntity<ErrorResponse> handleWorkflowException(
+            WorkflowException ex,
+            HttpServletRequest request) {
         log.warn("Workflow error: {}", ex.getMessage());
 
-        return ResponseEntity
-                .status(HttpStatus.UNPROCESSABLE_ENTITY)
-                .body(Map.of(
-                        "error", "WORKFLOW_ERROR",
-                        "message", ex.getMessage()
-                ));
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
+                .error("Unprocessable Entity")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("HIGH")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
     }
 
     /**
@@ -129,15 +188,27 @@ public class GlobalExceptionHandler {
      * Returns HTTP 404 Not Found
      */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<Map<String, Object>> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException ex) {
+    public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatchException(
+            MethodArgumentTypeMismatchException ex,
+            HttpServletRequest request) {
         log.warn("Invalid argument type: {}", ex.getMessage());
 
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(Map.of(
-                        "error", "NOT_FOUND",
-                        "message", "Invalid ID format"
-                ));
+        Map<String, Object> details = new HashMap<>();
+        details.put("parameterName", ex.getName());
+        details.put("requiredType", ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "unknown");
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("Not Found")
+                .message("Invalid ID format")
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .details(details)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     /**
@@ -145,7 +216,9 @@ public class GlobalExceptionHandler {
      * Returns HTTP 400 Bad Request
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<Map<String, Object>> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
+    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadableException(
+            HttpMessageNotReadableException ex,
+            HttpServletRequest request) {
         log.warn("Invalid request body: {}", ex.getMessage());
 
         String message = "Invalid request format";
@@ -157,12 +230,17 @@ public class GlobalExceptionHandler {
             }
         }
 
-        return ResponseEntity
-                .badRequest()
-                .body(Map.of(
-                        "error", "VALIDATION_ERROR",
-                        "message", message
-                ));
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Bad Request")
+                .message(message)
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("MEDIUM")
+                .build();
+
+        return ResponseEntity.badRequest().body(error);
     }
 
     /**
@@ -170,14 +248,21 @@ public class GlobalExceptionHandler {
      * Returns HTTP 500 Internal Server Error
      */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex) {
+    public ResponseEntity<ErrorResponse> handleGenericException(
+            Exception ex,
+            HttpServletRequest request) {
         log.error("Unexpected error", ex);
 
-        return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of(
-                        "error", "INTERNAL_ERROR",
-                        "message", "An unexpected error occurred"
-                ));
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .error("Internal Server Error")
+                .message("An unexpected error occurred")
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("CRITICAL")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 }

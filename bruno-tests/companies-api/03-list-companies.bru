@@ -50,11 +50,18 @@ tests {
     expect(body.data).to.be.an('array');
   });
 
-  test("should include our test company", function() {
+  test("should include our test company (Story 1.16.2: lookup by name)", function() {
     const body = res.getBody();
-    const testCompanyId = bru.getEnvVar("testCompanyId");
-    const foundCompany = body.data.find(c => c.id === testCompanyId);
+    const testCompanyName = bru.getEnvVar("testCompanyName");
+    const foundCompany = body.data.find(c => c.name === testCompanyName);
     expect(foundCompany).to.exist;
+  });
+
+  test("companies should NOT have id field (Story 1.16.2: removed redundant id)", function() {
+    const body = res.getBody();
+    if (body.data && body.data.length > 0) {
+      expect(body.data[0].id).to.be.undefined;
+    }
   });
 
   test("should accept X-Correlation-ID header", function() {

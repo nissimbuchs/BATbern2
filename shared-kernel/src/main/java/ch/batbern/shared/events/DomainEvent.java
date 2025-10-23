@@ -1,7 +1,5 @@
 package ch.batbern.shared.events;
 
-import ch.batbern.shared.types.EventId;
-import ch.batbern.shared.types.UserId;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
@@ -25,7 +23,7 @@ public abstract class DomainEvent<T> {
     private final String eventType;
 
     @JsonProperty("userId")
-    private final UserId userId;
+    private final String userId;
 
     @JsonProperty("occurredAt")
     private final Instant occurredAt;
@@ -44,7 +42,7 @@ public abstract class DomainEvent<T> {
     @JsonProperty("causationId")
     private String causationId;
 
-    protected DomainEvent(T aggregateId, String eventType, UserId userId) {
+    protected DomainEvent(T aggregateId, String eventType, String userId) {
         this.eventId = UUID.randomUUID().toString();
         this.aggregateId = aggregateId;
         this.eventType = eventType;

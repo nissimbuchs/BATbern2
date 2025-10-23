@@ -328,18 +328,27 @@ class AuthService {
 
   /**
    * Extract user context from Cognito ID token
+   * Story 1.2.6: Updated to read custom:role claim (ADR-001 migration)
    */
   private extractUserContextFromToken(tokenPayload: CognitoTokenClaims): UserContext {
     const preferences: UserPreferences = JSON.parse(tokenPayload['custom:preferences'] || '{}');
 
-    // Extract primary role from cognito:groups (first group)
-    const role = (tokenPayload['cognito:groups']?.[0] as UserRole) || undefined;
+    // Extract roles from custom:role claim (singular)
+    // Format: "ORGANIZER,SPEAKER" -> ['organizer', 'speaker']
+    const rolesString = tokenPayload['custom:role'];
+    const roles: UserRole[] = rolesString
+      ? rolesString.split(',').map((r) => r.trim().toLowerCase() as UserRole)
+      : [];
+
+    // Primary role is first in list, fallback to 'attendee' if empty
+    const primaryRole: UserRole = roles[0] || 'attendee';
 
     return {
       userId: tokenPayload.sub,
       email: tokenPayload.email,
       emailVerified: tokenPayload.email_verified,
-      role: role!,
+      role: primaryRole,
+      roles: roles,
       companyId: tokenPayload['custom:companyId'],
       preferences,
       issuedAt: tokenPayload.iat,

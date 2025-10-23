@@ -1,0 +1,61 @@
+meta {
+  name: List Users - Filter Inactive Users (false)
+  type: http
+  seq: 17
+}
+
+get {
+  url: {{baseUrl}}/users
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+params:query {
+  filter: {"active":false}
+  page: 0
+  limit: 20
+}
+
+assert {
+  res.status: in [200, 403]
+}
+
+tests {
+  test("should filter inactive users successfully", function() {
+    const status = res.getStatus();
+    expect([200, 403]).to.include(status);
+    if (status === 403) {
+      console.log("Non-admin/organizer - access denied (expected)");
+    }
+  });
+
+  test("should return only inactive users", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body.users).to.be.an('array');
+
+      // Verify all returned users are inactive
+      body.users.forEach(user => {
+        expect(user.active).to.equal(false);
+      });
+
+      console.log(`Found ${body.users.length} inactive users`);
+    }
+  });
+
+  test("should return pagination metadata", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body.pagination).to.exist;
+    }
+  });
+}

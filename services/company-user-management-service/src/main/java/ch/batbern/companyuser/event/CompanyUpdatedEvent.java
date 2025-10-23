@@ -1,65 +1,51 @@
 package ch.batbern.companyuser.event;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import ch.batbern.shared.events.DomainEvent;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.ToString;
 
 import java.time.Instant;
-import java.util.UUID;
 
 /**
  * Domain event published when a company is updated
  * Published to EventBridge for downstream services to consume
+ *
+ * Extends shared-kernel DomainEvent for consistent event handling
+ *
+ * Story 1.16.2: Eliminate UUIDs from API
+ * Uses String companyName instead of UUID as aggregate ID
  */
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class CompanyUpdatedEvent {
+@Getter
+@EqualsAndHashCode(callSuper = true)
+@ToString(callSuper = true)
+public class CompanyUpdatedEvent extends DomainEvent<String> {
 
-    /**
-     * Unique company identifier
-     */
-    private UUID companyId;
+    private final String name;
+    private final String displayName;
+    private final String swissUID;
+    private final String website;
+    private final String industry;
+    private final String description;
+    private final Instant updatedAt;
 
-    /**
-     * Company name
-     */
-    private String name;
-
-    /**
-     * Company display name
-     */
-    private String displayName;
-
-    /**
-     * Swiss UID (optional)
-     */
-    private String swissUID;
-
-    /**
-     * Company website (optional)
-     */
-    private String website;
-
-    /**
-     * Company industry (optional)
-     */
-    private String industry;
-
-    /**
-     * Company description (optional)
-     */
-    private String description;
-
-    /**
-     * Timestamp when the company was last updated
-     */
-    private Instant updatedAt;
-
-    /**
-     * Event timestamp
-     */
-    private Instant eventTimestamp;
+    public CompanyUpdatedEvent(
+            String companyName,
+            String name,
+            String displayName,
+            String swissUID,
+            String website,
+            String industry,
+            String description,
+            Instant updatedAt,
+            String username) {
+        super(companyName, "CompanyUpdated", username);
+        this.name = name;
+        this.displayName = displayName;
+        this.swissUID = swissUID;
+        this.website = website;
+        this.industry = industry;
+        this.description = description;
+        this.updatedAt = updatedAt;
+    }
 }

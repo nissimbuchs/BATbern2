@@ -1,0 +1,28 @@
+{
+  "userSync": {
+    "title": "Benutzer-Synchronisation",
+    "status": {
+      "checking": "Wird überprüft...",
+      "error": "Fehler",
+      "inSync": "Synchronisiert",
+      "outOfSync": "Nicht synchronisiert"
+    },
+    "counts": "Cognito: {{cognito}} | Datenbank: {{database}}",
+    "button": {
+      "sync": "Von Cognito synchronisieren",
+      "syncing": "Synchronisiert..."
+    },
+    "warning": "{{missing}} Benutzer fehlen in der Datenbank, {{orphaned}} verwaiste Benutzer",
+    "reconciliation": {
+      "success": "Synchronisation abgeschlossen! {{created}} Benutzer erstellt, {{deactivated}} Benutzer deaktiviert",
+      "error": "Synchronisation fehlgeschlagen: {{message}}"
+    },
+    "report": {
+      "title": "Synchronisationsbericht",
+      "created": "Erstellte Benutzer",
+      "deactivated": "Deaktivierte Benutzer",
+      "duration": "Dauer",
+      "errors": "Fehler"
+    }
+  }
+}

@@ -345,35 +345,56 @@ This story implements the frontend consuming all entity CRUD APIs. Wireframes ar
 1. **Company Management**: `docs/wireframes/story-1.14-company-management-screen.md` ✅
    - Company list, search, and filters
    - Company create/edit forms
-   - Swiss UID validation UI
-   - Employee affiliation interface
+   - Full i18n support (German/English)
 
-2. **Event Management**: `docs/wireframes/story-1.16-*.md` ✅
+2. **User Management**: `docs/wireframes/story-2.4b-user-management-screen.md` ✅
+   - User list table with search and autocomplete
+   - Advanced filtering by role, company, and status
+   - User detail modal with full profile information
+   - User create modal with role assignment
+   - Role management with business rules enforcement
+   - GDPR-compliant user deletion workflow
+   - Full i18n support (German/English)
+
+3. **Event Management**: `docs/wireframes/story-1.16-*.md` ✅
    - Event Management Dashboard
    - Event Detail/Edit screen
    - Event Settings panel
    - Workflow Visualization (read-only in this story)
+   - Full i18n support (German/English)
 
-3. **Main Navigation**: `docs/wireframes/story-1.17-main-navigation.md` ✅
-   - Role-adaptive navigation bar
-   - User menu and profile access
-   - Breadcrumb navigation
-   - Mobile responsive menu
-
-**Note**: Speaker and User wireframes exist in Epic 1 but are simpler CRUD forms without dedicated wireframe files for this story.
+**Note**: Speaker wireframes exist in Epic 1 but are simpler CRUD forms without dedicated wireframe files for this story.
 
 ---
 
 **Acceptance Criteria Summary:**
 - [ ] Role-adaptive navigation operational
 - [ ] CRUD forms for Company, Event, Speaker, User
+- [ ] **User Management Screen (Organizer-only):**
+  - [ ] User list table with columns: Name, Email, Company, Roles, Status, Actions
+  - [ ] Search bar with autocomplete (using `GET /api/v1/users/search`)
+  - [ ] Filters: Role (ORGANIZER/SPEAKER/PARTNER/ATTENDEE), Company, Status
+  - [ ] Click row → User Detail Modal with full user information
+  - [ ] "Add User" button → User Create Modal
+  - [ ] Actions per row: View, Edit Roles, Delete (with confirmation)
+  - [ ] Advanced filtering using JSON filter syntax from API
+  - [ ] Resource expansion `?include=company,roles` for efficient data loading
+  - [ ] Pagination with 20 users per page (configurable)
+  - [ ] Performance: List load <150ms P95, search <100ms P95
+- [ ] **Internationalization (i18n):**
+  - [ ] All UI components fully translated (German primary, English secondary)
+  - [ ] Translation namespace: `userManagement` (i18next + react-i18next)
+  - [ ] All text (buttons, labels, messages, errors, tooltips) uses translation keys
+  - [ ] Language switcher in global navigation
+  - [ ] Translation validation in CI/CD (keys must exist in both de and en)
+  - [ ] Component tests verify translations in both languages
 - [ ] Authentication integration with auto token refresh
 - [ ] API client layer for all microservices
 - [ ] Responsive design (mobile/tablet/desktop)
 - [ ] Component test coverage >80%
 - [ ] Performance meets Core Web Vitals
 
-**Estimated Duration:** 2.5 weeks
+**Estimated Duration:** 3 weeks (expanded from 2.5 weeks to include User Management screen)
 
 **Reference:** See `docs/prd/epic-1-foundation-stories.md` Story 1.17 for full details
 
@@ -446,7 +467,7 @@ This story implements the frontend consuming all entity CRUD APIs. Wireframes ar
 
 **Week 10-12: Backend Services (Parallel with User Management)**
 - Story 2.1: Company Management Service + API Consolidation (2.5 weeks)
-- **Story 2.1b: User Management Service + API Consolidation (2 weeks) - parallel**
+- Story 2.1b: User Management Service + API Consolidation (2 weeks) - start parallel
 - Story 2.2: Event Management Service + API Consolidation (3 weeks) - start parallel
 - Story 2.3: Speaker Coordination Service + API Consolidation (2.5 weeks) - start parallel
 

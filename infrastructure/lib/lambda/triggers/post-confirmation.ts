@@ -1,14 +1,15 @@
 /**
  * PostConfirmation Lambda Trigger
  * Story 1.2.5: User Sync and Reconciliation Implementation
+ * Story 1.2.6: Updated for ADR-001 Database-centric architecture
  *
  * This Lambda function is triggered by AWS Cognito after a user confirms their email address.
  * It syncs the user to the PostgreSQL database and assigns an initial role.
  *
  * AC1: PostConfirmation trigger creates database user within 1 second
  * - When a user completes email verification in Cognito
- * - Then a corresponding user record is created in the `users` table
- * - And an initial role is assigned based on Cognito custom attribute `custom:batbern_role`
+ * - Then a corresponding user record is created in the `user_profiles` table
+ * - And default ATTENDEE role is assigned (ADR-001: All self-registered users get ATTENDEE)
  * - And the operation completes within 1 second (p95 latency)
  */
 
@@ -32,7 +33,7 @@ interface UserAttributes {
   sub: string; // Cognito user ID
   email: string;
   email_verified?: string;
-  'custom:batbern_role'?: string;
+  'cognito:groups'?: string;
 }
 
 /**
@@ -54,19 +55,19 @@ function extractUserAttributes(event: PostConfirmationTriggerEvent): UserAttribu
     sub: attributes.sub,
     email: attributes.email,
     email_verified: attributes.email_verified,
-    'custom:batbern_role': attributes['custom:batbern_role'],
+    'cognito:groups': attributes['cognito:groups'], // Legacy field, no longer used
   };
 }
 
 /**
- * Determine user role from custom attribute or default to ATTENDEE
+ * Get default role for self-registered users
+ * Story 1.2.6: ADR-001 Database-centric architecture
+ * All self-registered users receive ATTENDEE role
+ * Admin-invited users will have roles assigned via database
  */
-function determineUserRole(customRole?: string): UserRole {
-  if (customRole && VALID_ROLES.includes(customRole as UserRole)) {
-    return customRole as UserRole;
-  }
-
-  // Default to ATTENDEE if no valid role specified
+function getDefaultRole(): UserRole {
+  // ADR-001: Default to ATTENDEE for all self-registration
+  // NO Cognito Groups usage - roles managed exclusively in database
   return 'ATTENDEE';
 }
 
@@ -107,7 +108,7 @@ async function createUser(
     // Insert user with ON CONFLICT DO NOTHING for idempotency
     {
       query: `
-        INSERT INTO users (cognito_id, email, email_verified, active, created_at, updated_at)
+        INSERT INTO user_profiles (cognito_id, email, email_verified, is_active, created_at, updated_at)
         VALUES ($1, $2, $3, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         ON CONFLICT (cognito_id) DO NOTHING
         RETURNING id
@@ -135,7 +136,7 @@ async function createUser(
       const client = await getDbClient();
       try {
         const existingUserResult = await client.query(
-          'SELECT id FROM users WHERE cognito_id = $1',
+          'SELECT id FROM user_profiles WHERE cognito_id = $1',
           [cognitoId]
         );
         if (existingUserResult.rows.length > 0) {
@@ -171,7 +172,7 @@ async function assignUserRole(userId: string, role: UserRole): Promise<void> {
   try {
     // Check if role already exists (idempotent)
     const existingRoleResult = await client.query(
-      'SELECT id FROM user_roles WHERE user_id = $1 AND role = $2 AND end_date IS NULL',
+      'SELECT id FROM role_assignments WHERE user_id = $1 AND role = $2 AND end_date IS NULL',
       [userId, role]
     );
 
@@ -183,7 +184,7 @@ async function assignUserRole(userId: string, role: UserRole): Promise<void> {
     // Insert role with start_date
     await client.query(
       `
-        INSERT INTO user_roles (user_id, role, start_date, created_at)
+        INSERT INTO role_assignments (user_id, role, start_date, created_at)
         VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       `,
       [userId, role]
@@ -220,10 +221,10 @@ export const handler: PostConfirmationTriggerHandler = async (event) => {
   try {
     // Extract user attributes from event
     const attributes = extractUserAttributes(event);
-    const { sub: cognitoId, email, email_verified, 'custom:batbern_role': customRole } = attributes;
+    const { sub: cognitoId, email, email_verified } = attributes;
 
-    // Determine initial role
-    const role = determineUserRole(customRole);
+    // Get default role for self-registered users (ADR-001)
+    const role = getDefaultRole();
 
     console.log('Processing user confirmation', {
       cognitoId,

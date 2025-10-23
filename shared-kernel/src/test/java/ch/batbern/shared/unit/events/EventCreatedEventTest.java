@@ -1,8 +1,6 @@
 package ch.batbern.shared.unit.events;
 
 import ch.batbern.shared.events.EventCreatedEvent;
-import ch.batbern.shared.types.EventId;
-import ch.batbern.shared.types.UserId;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.Test;
@@ -26,15 +24,15 @@ class EventCreatedEventTest {
     @Test
     @DisplayName("should_publishEventCreatedEvent_when_eventEstablished")
     void should_publishEventCreatedEvent_when_eventEstablished() {
-        EventId eventId = EventId.generate();
+        String eventCode = "BATbern56";
         String title = "BATbern 2024";
         String eventType = "CONFERENCE";
         LocalDate eventDate = LocalDate.of(2024, 11, 15);
         String venue = "Kursaal Bern";
-        UserId organizerId = UserId.from("organizer-123");
+        String organizerId = "john.doe";
 
         EventCreatedEvent event = EventCreatedEvent.builder()
-            .eventId(eventId)
+            .eventCode(eventCode)
             .title(title)
             .eventType(eventType)
             .eventDate(eventDate)
@@ -43,13 +41,13 @@ class EventCreatedEventTest {
             .build();
 
         assertThat(event).isNotNull();
-        assertThat(event.getCreatedEventId()).isEqualTo(eventId);
+        assertThat(event.getCreatedEventCode()).isEqualTo(eventCode);
         assertThat(event.getTitle()).isEqualTo(title);
         assertThat(event.getEventType()).isEqualTo(eventType);
         assertThat(event.getEventDate()).isEqualTo(eventDate);
         assertThat(event.getVenue()).isEqualTo(venue);
         assertThat(event.getOrganizerId()).isEqualTo(organizerId);
-        assertThat(event.getAggregateId()).isEqualTo(eventId);
+        assertThat(event.getAggregateId()).isEqualTo(eventCode);
         assertThat(event.getEventName()).isEqualTo("EventCreatedEvent");
     }
 
@@ -57,12 +55,12 @@ class EventCreatedEventTest {
     @DisplayName("should_serializeEventToJSON_when_publishingToEventBridge")
     void should_serializeEventToJSON_when_publishingToEventBridge() throws Exception {
         EventCreatedEvent event = EventCreatedEvent.builder()
-            .eventId(EventId.generate())
+            .eventCode("BATbern56")
             .title("BATbern 2024")
             .eventType("CONFERENCE")
             .eventDate(LocalDate.of(2024, 11, 15))
             .venue("Kursaal Bern")
-            .organizerId(UserId.from("organizer-123"))
+            .organizerId("john.doe")
             .build();
 
         String json = objectMapper.writeValueAsString(event);
@@ -79,12 +77,12 @@ class EventCreatedEventTest {
     @DisplayName("should_deserializeEventFromJSON_when_receivedFromEventBridge")
     void should_deserializeEventFromJSON_when_receivedFromEventBridge() throws Exception {
         EventCreatedEvent originalEvent = EventCreatedEvent.builder()
-            .eventId(EventId.generate())
+            .eventCode("BATbern56")
             .title("BATbern 2024")
             .eventType("CONFERENCE")
             .eventDate(LocalDate.of(2024, 11, 15))
             .venue("Kursaal Bern")
-            .organizerId(UserId.from("organizer-123"))
+            .organizerId("john.doe")
             .build();
 
         String json = objectMapper.writeValueAsString(originalEvent);
@@ -101,12 +99,12 @@ class EventCreatedEventTest {
     @DisplayName("should_includeEventMetadata_when_eventCreated")
     void should_includeEventMetadata_when_eventCreated() {
         EventCreatedEvent event = EventCreatedEvent.builder()
-            .eventId(EventId.generate())
+            .eventCode("BATbern56")
             .title("BATbern 2024")
             .eventType("CONFERENCE")
             .eventDate(LocalDate.of(2024, 11, 15))
             .venue("Kursaal Bern")
-            .organizerId(UserId.from("organizer-123"))
+            .organizerId("john.doe")
             .build();
 
         assertThat(event.getOccurredAt()).isNotNull();
@@ -122,12 +120,12 @@ class EventCreatedEventTest {
 
         for (String type : eventTypes) {
             EventCreatedEvent event = EventCreatedEvent.builder()
-                .eventId(EventId.generate())
+                .eventCode("BATbern56")
                 .title("Test Event")
                 .eventType(type)
                 .eventDate(LocalDate.now())
                 .venue("Test Venue")
-                .organizerId(UserId.from("organizer-123"))
+                .organizerId("john.doe")
                 .build();
 
             assertThat(event.getEventType()).isEqualTo(type);
@@ -138,22 +136,22 @@ class EventCreatedEventTest {
     @DisplayName("should_validateRequiredFields_when_eventCreated")
     void should_validateRequiredFields_when_eventCreated() {
         assertThatThrownBy(() -> EventCreatedEvent.builder()
-            .eventId(null)
+            .eventCode(null)
             .title("BATbern 2024")
             .eventType("CONFERENCE")
             .eventDate(LocalDate.of(2024, 11, 15))
             .venue("Kursaal Bern")
-            .organizerId(UserId.from("organizer-123"))
+            .organizerId("john.doe")
             .build())
             .isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> EventCreatedEvent.builder()
-            .eventId(EventId.generate())
+            .eventCode("BATbern56")
             .title(null)
             .eventType("CONFERENCE")
             .eventDate(LocalDate.of(2024, 11, 15))
             .venue("Kursaal Bern")
-            .organizerId(UserId.from("organizer-123"))
+            .organizerId("john.doe")
             .build())
             .isInstanceOf(NullPointerException.class);
     }
