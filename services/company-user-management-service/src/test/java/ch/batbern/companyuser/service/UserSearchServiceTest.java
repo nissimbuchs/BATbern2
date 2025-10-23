@@ -47,6 +47,9 @@ class UserSearchServiceTest {
     @Mock
     private Cache cache;
 
+    @Mock
+    private UserService userService;
+
     @InjectMocks
     private UserSearchServiceImpl userSearchService;
 
@@ -59,6 +62,7 @@ class UserSearchServiceTest {
         testUser1 = new User();
         testUser1.setId(UUID.randomUUID());
         testUser1.setUsername("john.doe");
+        testUser1.setCognitoUserId("cognito-user-1");
         testUser1.setEmail("john.doe@example.com");
         testUser1.setFirstName("John");
         testUser1.setLastName("Doe");
@@ -71,6 +75,7 @@ class UserSearchServiceTest {
         testUser2 = new User();
         testUser2.setId(UUID.randomUUID());
         testUser2.setUsername("jane.doe");
+        testUser2.setCognitoUserId("cognito-user-2");
         testUser2.setEmail("jane.doe@example.com");
         testUser2.setFirstName("Jane");
         testUser2.setLastName("Doe");
@@ -83,6 +88,7 @@ class UserSearchServiceTest {
         testUser3 = new User();
         testUser3.setId(UUID.randomUUID());
         testUser3.setUsername("alice.smith");
+        testUser3.setCognitoUserId("cognito-user-3");
         testUser3.setEmail("alice.smith@example.com");
         testUser3.setFirstName("Alice");
         testUser3.setLastName("Smith");
@@ -91,6 +97,25 @@ class UserSearchServiceTest {
         testUser3.setActive(true);
         testUser3.setCreatedAt(Instant.now());
         testUser3.setUpdatedAt(Instant.now());
+
+        // Mock userService.mapToResponse() for all test users
+        when(userService.mapToResponse(any(User.class))).thenAnswer(invocation -> {
+            User user = invocation.getArgument(0);
+            UserResponse response = new UserResponse();
+            response.setId(user.getUsername());  // Story 1.16.2: id contains username
+            response.setCognitoUserId(user.getCognitoUserId());
+            response.setEmail(user.getEmail());
+            response.setFirstName(user.getFirstName());
+            response.setLastName(user.getLastName());
+            response.setCompanyId(user.getCompanyId());
+            response.setRoles(user.getRoles().stream()
+                    .map(role -> UserResponse.RolesEnum.valueOf(role.name()))
+                    .toList());
+            response.setActive(user.isActive());
+            response.setCreatedAt(java.time.OffsetDateTime.ofInstant(user.getCreatedAt(), java.time.ZoneOffset.UTC));
+            response.setUpdatedAt(java.time.OffsetDateTime.ofInstant(user.getUpdatedAt(), java.time.ZoneOffset.UTC));
+            return response;
+        });
     }
 
     // AC4 Tests: Search Functionality

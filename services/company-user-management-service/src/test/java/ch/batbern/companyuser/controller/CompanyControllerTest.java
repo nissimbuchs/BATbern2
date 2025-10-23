@@ -66,6 +66,9 @@ class CompanyControllerTest {
     @MockBean
     private ch.batbern.companyuser.repository.CompanyRepository companyRepository;
 
+    @MockBean
+    private ch.batbern.companyuser.repository.UserRepository userRepository;
+
     // Story 1.16.2: use company name instead of UUID
     private String testCompanyName;
     private CreateCompanyRequest createRequest;

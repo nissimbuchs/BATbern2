@@ -70,22 +70,23 @@ class UserServiceTest {
         );
     }
 
-    // Test 2.1: should_updateUserProfile_when_validDataProvided (Story 1.16.2: username-based)
+    // Test 2.1: should_updateUserProfile_when_validDataProvided (Story 1.16.2: cognito-based)
     @Test
     void should_updateUserProfile_when_validDataProvided() {
         // Given
+        String cognitoUserId = "cognito-123";
         String username = "john.doe";
-        when(securityContext.getCurrentUserId()).thenReturn(username);  // Story 1.16.2: returns username
+        when(securityContext.getCurrentUserId()).thenReturn(cognitoUserId);  // Returns Cognito user ID
 
         User existingUser = User.builder()
                 .username(username)
                 .email("john.doe@example.com")
                 .firstName("John")
                 .lastName("Doe")
-                .cognitoUserId("cognito-123")
+                .cognitoUserId(cognitoUserId)
                 .build();
 
-        when(userRepository.findByUsername(username)).thenReturn(Optional.of(existingUser));  // Story 1.16.2: findByUsername
+        when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.of(existingUser));
         when(userRepository.save(any(User.class))).thenReturn(existingUser);
 
         UpdateUserRequest request = new UpdateUserRequest();
@@ -106,22 +107,23 @@ class UserServiceTest {
         verify(searchService).invalidateCache();
     }
 
-    // Test 2.2: should_syncCognito_when_userUpdated (Story 1.16.2: username-based)
+    // Test 2.2: should_syncCognito_when_userUpdated (Story 1.16.2: cognito-based)
     @Test
     void should_syncCognito_when_userUpdated() {
         // Given
+        String cognitoUserId = "cognito-123";
         String username = "john.doe";
-        when(securityContext.getCurrentUserId()).thenReturn(username);  // Story 1.16.2: returns username
+        when(securityContext.getCurrentUserId()).thenReturn(cognitoUserId);  // Returns Cognito user ID
 
         User user = User.builder()
                 .username(username)
                 .email("john@example.com")
                 .firstName("John")
                 .lastName("Doe")
-                .cognitoUserId("cognito-123")
+                .cognitoUserId(cognitoUserId)
                 .build();
 
-        when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));  // Story 1.16.2: findByUsername
+        when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenReturn(user);
 
         UpdateUserRequest request = new UpdateUserRequest();
