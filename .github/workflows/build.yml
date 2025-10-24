@@ -137,6 +137,10 @@ jobs:
             ./gradlew :services:${{ matrix.service }}:clean :services:${{ matrix.service }}:build :services:${{ matrix.service }}:test --no-daemon
           fi
 
+      - name: Set up Docker Buildx
+        if: steps.check-service.outputs.exists == 'true'
+        uses: docker/setup-buildx-action@v3
+
       - name: Build Docker image
         if: steps.check-service.outputs.exists == 'true'
         run: |
@@ -150,12 +154,20 @@ jobs:
           ECR_REPO="${{ env.ECR_REGISTRY }}/batbern/${{ env.ENVIRONMENT }}/${{ matrix.service }}"
           echo "Building image: ${ECR_REPO}:${VERSION}"
 
-          # Build from root with proper module path
+          # Use Docker build with Dockerfile (supports ARM64 via buildx)
+          # Build for linux/arm64 to match ECS Fargate ARM64 architecture
           if [ "${{ matrix.service }}" = "api-gateway" ]; then
-            ./gradlew :api-gateway:bootBuildImage --imageName=${ECR_REPO}:${VERSION}
+            DOCKERFILE_PATH="api-gateway/Dockerfile"
           else
-            ./gradlew :services:${{ matrix.service }}:bootBuildImage --imageName=${ECR_REPO}:${VERSION}
+            DOCKERFILE_PATH="services/${{ matrix.service }}/Dockerfile"
           fi
+
+          docker buildx build \
+            --platform linux/arm64 \
+            --tag ${ECR_REPO}:${VERSION} \
+            --file ${DOCKERFILE_PATH} \
+            --load \
+            .
 
       - name: Configure AWS credentials
         if: steps.check-service.outputs.exists == 'true' && github.event_name == 'push'
