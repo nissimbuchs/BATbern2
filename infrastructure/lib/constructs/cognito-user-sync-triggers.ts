@@ -49,11 +49,11 @@ export class CognitoUserSyncTriggers extends Construct {
 
     // Common Lambda environment variables
     // Secrets are read dynamically at runtime, not at CDK synth time
+    // Note: AWS_REGION is automatically provided by Lambda runtime and cannot be set manually
     const commonEnv = {
       DB_HOST: props.databaseEndpoint,
       DB_NAME: 'batbern',
       DB_SECRET_ARN: props.databaseSecret.secretArn,
-      AWS_REGION: cdk.Stack.of(this).region,
       LOG_LEVEL: isProd ? 'INFO' : 'DEBUG',
     };
 
