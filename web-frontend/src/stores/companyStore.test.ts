@@ -13,7 +13,7 @@
  * - State persistence (via zustand persist middleware)
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useCompanyStore } from '@/stores/companyStore';
 import { CompanyFilters } from '@/types/company.types';

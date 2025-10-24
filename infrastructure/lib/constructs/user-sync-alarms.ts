@@ -72,7 +72,7 @@ export class UserSyncAlarms extends Construct {
       this,
       'PostConfirmationLatencyAlarm',
       {
-        alarmName: `${props.environment}-PostConfirmation-High-Latency`,
+        alarmName: `batbern-${props.environment}-PostConfirmation-High-Latency`,
         alarmDescription:
           'PostConfirmation Lambda latency exceeds 2 seconds (average over 5 minutes)',
         metric: new cloudwatch.Metric({
@@ -98,7 +98,7 @@ export class UserSyncAlarms extends Construct {
       this,
       'PreTokenGenerationLatencyAlarm',
       {
-        alarmName: `${props.environment}-PreTokenGeneration-High-Latency`,
+        alarmName: `batbern-${props.environment}-PreTokenGeneration-High-Latency`,
         alarmDescription:
           'PreTokenGeneration Lambda latency exceeds 500ms (average over 5 minutes)',
         metric: new cloudwatch.Metric({
@@ -124,7 +124,7 @@ export class UserSyncAlarms extends Construct {
       this,
       'UserCreationFailuresAlarm',
       {
-        alarmName: `${props.environment}-User-Creation-High-Failures`,
+        alarmName: `batbern-${props.environment}-User-Creation-High-Failures`,
         alarmDescription:
           'User creation failures exceed 5 per 5-minute window',
         metric: new cloudwatch.Metric({
@@ -150,7 +150,7 @@ export class UserSyncAlarms extends Construct {
       this,
       'JITProvisioningFailuresAlarm',
       {
-        alarmName: `${props.environment}-JIT-Provisioning-High-Failures`,
+        alarmName: `batbern-${props.environment}-JIT-Provisioning-High-Failures`,
         alarmDescription:
           'JIT provisioning failures exceed 5 per 5-minute window',
         metric: new cloudwatch.Metric({
@@ -176,7 +176,7 @@ export class UserSyncAlarms extends Construct {
       this,
       'DriftDetectionAlarm',
       {
-        alarmName: `${props.environment}-User-Sync-High-Drift`,
+        alarmName: `batbern-${props.environment}-User-Sync-High-Drift`,
         alarmDescription:
           'User sync drift detected (Cognito vs Database mismatch)',
         metric: new cloudwatch.Metric({
@@ -199,7 +199,7 @@ export class UserSyncAlarms extends Construct {
       this,
       'ReconciliationFailuresAlarm',
       {
-        alarmName: `${props.environment}-Reconciliation-Orphaned-Users`,
+        alarmName: `batbern-${props.environment}-Reconciliation-Orphaned-Users`,
         alarmDescription:
           'High number of orphaned users detected (Cognito users deleted)',
         metric: new cloudwatch.Metric({
