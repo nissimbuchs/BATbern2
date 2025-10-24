@@ -174,7 +174,7 @@ export const RegistrationStep2: React.FC<RegistrationStep2Props> = ({
           disabled={isLoading}
           size="large"
         >
-          {isLoading ? 'Creating Account...' : t('register.step2.submitButton')}
+          {isLoading ? t('register.step2.submittingButton') : t('register.step2.submitButton')}
         </Button>
       </Box>
     </Box>

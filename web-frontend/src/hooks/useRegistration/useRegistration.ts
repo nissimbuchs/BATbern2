@@ -39,7 +39,7 @@ export const useRegistration = () => {
         confirmPassword: data.password, // Already validated in form
         firstName,
         lastName,
-        role: 'ATTENDEE', // FR22: All self-registered users are ATTENDEE
+        role: 'attendee', // FR22: All self-registered users are ATTENDEE (lowercase per UserRole type)
         companyId: '', // Not needed for self-registration
         acceptTerms: data.agreedToTerms,
         language: i18n.language, // User's selected language

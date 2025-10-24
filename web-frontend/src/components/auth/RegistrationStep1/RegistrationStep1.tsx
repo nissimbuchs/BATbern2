@@ -95,7 +95,7 @@ export const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onContinue
           },
           maxLength: {
             value: 100,
-            message: 'Name must be at most 100 characters long',
+            message: t('register.errors.fullNameTooLong'),
           },
           pattern: {
             value: /^[a-zA-ZÄäÖöÜüß\s-]+$/,
@@ -119,7 +119,7 @@ export const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onContinue
           },
           maxLength: {
             value: 255,
-            message: 'Email too long',
+            message: t('register.errors.emailTooLong'),
           },
         })}
         label={t('register.step1.emailLabel')}
@@ -140,7 +140,7 @@ export const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onContinue
           },
           maxLength: {
             value: 128,
-            message: 'Password must be at most 128 characters long',
+            message: t('register.errors.passwordTooLong'),
           },
         })}
         label={t('register.step1.passwordLabel')}

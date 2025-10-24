@@ -10,7 +10,7 @@ import userEvent from '@testing-library/user-event';
 import { RegistrationWizard } from './RegistrationWizard';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { I18nextProvider } from 'react-i18next';
-import { BrowserRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import i18n from '@/i18n/config';
 
@@ -38,7 +38,10 @@ vi.mock('@/hooks/useRegistration', () => ({
 }));
 
 // Wrapper component with all required providers
-const AllProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const AllProviders: React.FC<{ children: React.ReactNode; initialEntries?: string[] }> = ({
+  children,
+  initialEntries = ['/auth/register'],
+}) => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -48,11 +51,11 @@ const AllProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <MemoryRouter initialEntries={initialEntries}>
         <I18nextProvider i18n={i18n}>
           <ThemeProvider theme={theme}>{children}</ThemeProvider>
         </I18nextProvider>
-      </BrowserRouter>
+      </MemoryRouter>
     </QueryClientProvider>
   );
 };
@@ -131,12 +134,8 @@ describe('RegistrationWizard Component', () => {
       </AllProviders>
     );
 
-    // Wait for form to be rendered
-    await waitFor(() => {
-      expect(screen.getByLabelText(/full name/i)).toBeInTheDocument();
-    });
-
-    const nameInput = screen.getByLabelText(/full name/i);
+    // Wait for form to be rendered with i18n translations loaded
+    const nameInput = await screen.findByLabelText(/full name/i);
     const emailInput = screen.getByLabelText(/^email/i);
     const passwordInput = screen.getByLabelText(/^password$/i);
     const confirmInput = screen.getByLabelText(/confirm password/i);
@@ -148,8 +147,9 @@ describe('RegistrationWizard Component', () => {
     await user.type(confirmInput, 'Password123');
     await user.click(continueButton);
 
+    // Wait for Step 2 to render
     await waitFor(() => {
-      expect(window.location.search).toContain('step=2');
+      expect(screen.getByText(/step 2 of 2/i)).toBeInTheDocument();
     });
   });
 
@@ -168,7 +168,6 @@ describe('RegistrationWizard Component', () => {
       expect(screen.getByLabelText(/full name/i)).toBeInTheDocument();
     });
 
-    // Fill Step 1
     const nameInput = screen.getByLabelText(/full name/i);
     const emailInput = screen.getByLabelText(/^email/i);
     const passwordInput = screen.getByLabelText(/^password$/i);
@@ -180,6 +179,11 @@ describe('RegistrationWizard Component', () => {
     await user.type(passwordInput, 'Password123');
     await user.type(confirmInput, 'Password123');
     await user.click(continueButton);
+
+    // Wait for Step 2 to render
+    await waitFor(() => {
+      expect(screen.getByText(/step 2 of 2/i)).toBeInTheDocument();
+    });
 
     // Now on Step 2, click Back
     const backButton = screen.getByRole('button', { name: /back/i });
@@ -207,7 +211,6 @@ describe('RegistrationWizard Component', () => {
       expect(screen.getByLabelText(/full name/i)).toBeInTheDocument();
     });
 
-    // Fill Step 1
     const nameInput = screen.getByLabelText(/full name/i);
     const emailInput = screen.getByLabelText(/^email/i);
     const passwordInput = screen.getByLabelText(/^password$/i);
@@ -219,6 +222,11 @@ describe('RegistrationWizard Component', () => {
     await user.type(passwordInput, 'Password123');
     await user.type(confirmInput, 'Password123');
     await user.click(continueButton);
+
+    // Wait for Step 2 to render
+    await waitFor(() => {
+      expect(screen.getByText(/step 2 of 2/i)).toBeInTheDocument();
+    });
 
     // On Step 2, accept terms and submit
     const termsCheckbox = screen.getByRole('checkbox', {
@@ -256,7 +264,6 @@ describe('RegistrationWizard Component', () => {
       expect(screen.getByLabelText(/full name/i)).toBeInTheDocument();
     });
 
-    // Fill Step 1
     const nameInput = screen.getByLabelText(/full name/i);
     const emailInput = screen.getByLabelText(/^email/i);
     const passwordInput = screen.getByLabelText(/^password$/i);
@@ -268,6 +275,11 @@ describe('RegistrationWizard Component', () => {
     await user.type(passwordInput, 'Password123');
     await user.type(confirmInput, 'Password123');
     await user.click(continueButton);
+
+    // Wait for Step 2 to render
+    await waitFor(() => {
+      expect(screen.getByText(/step 2 of 2/i)).toBeInTheDocument();
+    });
 
     // On Step 2, accept terms and submit
     const termsCheckbox = screen.getByRole('checkbox', {

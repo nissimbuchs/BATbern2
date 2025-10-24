@@ -60,7 +60,7 @@ export const RegistrationWizard: React.FC = () => {
       </Typography>
 
       <Stepper activeStep={currentStep - 1} sx={{ my: 4 }}>
-        {steps.map((label, index) => (
+        {steps.map((_, index) => (
           <Step key={index}>
             <StepLabel>{`Step ${index + 1}`}</StepLabel>
           </Step>

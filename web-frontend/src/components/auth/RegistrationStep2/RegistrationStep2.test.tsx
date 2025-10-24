@@ -21,7 +21,7 @@ const FormWrapper: React.FC<{
   children: React.ReactNode;
   onBack: () => void;
   onSubmit: () => void;
-}> = ({ children, onBack, onSubmit }) => {
+}> = ({ children }) => {
   const methods = useForm({
     defaultValues: {
       fullName: 'John Doe',
@@ -319,7 +319,8 @@ describe('RegistrationStep2 Component', () => {
 
   // Test 2.11: should_displayError_when_errorPropProvided
   it('should_showErrorMessage_when_registrationFails', async () => {
-    const errorMessage = 'Email already exists';
+    // Use Cognito error code that gets mapped to localized message
+    const cognitoError = new Error('UsernameExistsException');
 
     await act(async () => {
       render(
@@ -328,14 +329,15 @@ describe('RegistrationStep2 Component', () => {
             onBack={mockOnBack}
             onSubmit={mockOnSubmit}
             isLoading={false}
-            error={new Error(errorMessage)}
+            error={cognitoError}
           />
         </FormWrapper>
       );
     });
 
     await waitFor(() => {
-      expect(screen.getByText(/email already exists/i)).toBeInTheDocument();
+      // Check for the translated error message
+      expect(screen.getByText(/an account with this email already exists/i)).toBeInTheDocument();
     });
   });
 
