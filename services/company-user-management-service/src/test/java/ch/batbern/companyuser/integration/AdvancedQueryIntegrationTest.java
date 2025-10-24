@@ -228,7 +228,7 @@ class AdvancedQueryIntegrationTest extends AbstractIntegrationTest {
         assertThat(data.size()).isEqualTo(2); // First 2 companies
         assertThat(pagination.get("page").asInt()).isEqualTo(1);
         assertThat(pagination.get("limit").asInt()).isEqualTo(2);
-        assertThat(pagination.get("total").asLong()).isEqualTo(5);
+        assertThat(pagination.get("totalItems").asLong()).isEqualTo(5);
         assertThat(pagination.get("totalPages").asInt()).isEqualTo(3);
         assertThat(pagination.get("hasNext").asBoolean()).isTrue();
         assertThat(pagination.get("hasPrev").asBoolean()).isFalse();
@@ -344,7 +344,7 @@ class AdvancedQueryIntegrationTest extends AbstractIntegrationTest {
         assertThat(data.size()).isEqualTo(2);
         assertThat(data.get(0).get("name").asText()).isEqualTo("Gamma GmbH");
         assertThat(data.get(1).get("name").asText()).isEqualTo("Epsilon LLC");
-        assertThat(pagination.get("total").asLong()).isEqualTo(3); // 3 Technology companies
+        assertThat(pagination.get("totalItems").asLong()).isEqualTo(3); // 3 Technology companies
     }
 
     // ========== AC15: Resource Expansion Tests ==========
