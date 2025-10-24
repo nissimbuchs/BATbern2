@@ -42,7 +42,7 @@ tests {
     expect(body.pagination).to.be.an('object');
     expect(body.pagination.page).to.equal(1);
     expect(body.pagination.limit).to.equal(20);
-    expect(body.pagination.total).to.be.a('number');
+    expect(body.pagination.totalItems).to.be.a('number');
   });
 
   test("should return array of companies", function() {

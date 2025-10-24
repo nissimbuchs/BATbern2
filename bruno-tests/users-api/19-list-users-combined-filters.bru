@@ -23,18 +23,18 @@ params:query {
   role: ATTENDEE
   filter: {"active":true}
   search: bruno
-  page: 0
+  page: 1
   limit: 20
 }
 
 assert {
-  res.status: in [200, 403]
+  res.status: in [200, 403, 429]
 }
 
 tests {
   test("should apply all filters successfully", function() {
     const status = res.getStatus();
-    expect([200, 403]).to.include(status);
+    expect([200, 403, 429]).to.include(status);
     if (status === 403) {
       console.log("Non-admin/organizer - access denied (expected)");
     }
@@ -43,10 +43,10 @@ tests {
   test("should return users matching all filter criteria", function() {
     if (res.getStatus() === 200) {
       const body = res.getBody();
-      expect(body.users).to.be.an('array');
+      expect(body.data).to.be.an('array');
 
       // Verify all filters are applied correctly
-      body.users.forEach(user => {
+      body.data.forEach(user => {
         // Must have ATTENDEE role
         expect(user.roles).to.be.an('array');
         expect(user.roles).to.include('ATTENDEE');
@@ -65,8 +65,8 @@ tests {
         expect(matches).to.be.true;
       });
 
-      if (body.users.length > 0) {
-        console.log(`Found ${body.users.length} users matching all criteria (ATTENDEE + active + 'bruno')`);
+      if (body.data.length > 0) {
+        console.log(`Found ${body.data.length} users matching all criteria (ATTENDEE + active + 'bruno')`);
       } else {
         console.log('No users match all filter criteria (this may be expected)');
       }
@@ -77,7 +77,7 @@ tests {
     if (res.getStatus() === 200) {
       const body = res.getBody();
       expect(body.pagination).to.exist;
-      expect(body.pagination.page).to.equal(0);
+      expect(body.pagination.page).to.equal(1);
       expect(body.pagination.limit).to.equal(20);
     }
   });

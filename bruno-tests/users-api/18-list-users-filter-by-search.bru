@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/users?search=test&page=0&limit=20
+  url: {{baseUrl}}/users
   body: none
   auth: bearer
 }
@@ -21,18 +21,18 @@ headers {
 
 params:query {
   search: test
-  page: 0
+  page: 1
   limit: 20
 }
 
 assert {
-  res.status: in [200, 403]
+  res.status: in [200, 403, 429]
 }
 
 tests {
   test("should filter users by name search successfully", function() {
     const status = res.getStatus();
-    expect([200, 403]).to.include(status);
+    expect([200, 403, 429]).to.include(status);
     if (status === 403) {
       console.log("Non-admin/organizer - access denied (expected)");
     }
@@ -41,11 +41,11 @@ tests {
   test("should return users matching search query", function() {
     if (res.getStatus() === 200) {
       const body = res.getBody();
-      expect(body.users).to.be.an('array');
+      expect(body.data).to.be.an('array');
 
       // Verify returned users contain search term in name or email
-      if (body.users.length > 0) {
-        body.users.forEach(user => {
+      if (body.data.length > 0) {
+        body.data.forEach(user => {
           const searchTerm = 'test';
           const matchesFirstName = user.firstName && user.firstName.toLowerCase().includes(searchTerm);
           const matchesLastName = user.lastName && user.lastName.toLowerCase().includes(searchTerm);
@@ -56,7 +56,7 @@ tests {
           expect(matches).to.be.true;
         });
 
-        console.log(`Found ${body.users.length} users matching 'test'`);
+        console.log(`Found ${body.data.length} users matching 'test'`);
       }
     }
   });

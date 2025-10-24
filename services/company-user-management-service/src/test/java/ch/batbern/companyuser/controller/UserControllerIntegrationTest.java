@@ -283,7 +283,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.data", hasSize(10)))  // CRITICAL: Must respect limit
                 .andExpect(jsonPath("$.pagination.page").value(1))
                 .andExpect(jsonPath("$.pagination.limit").value(10))
-                .andExpect(jsonPath("$.pagination.total").value(31))  // 30 + testUser from setUp
+                .andExpect(jsonPath("$.pagination.totalItems").value(31))  // 30 + testUser from setUp
                 .andExpect(jsonPath("$.pagination.totalPages").value(4))
                 .andExpect(jsonPath("$.pagination.hasNext").value(true))
                 .andExpect(jsonPath("$.pagination.hasPrev").value(false));
@@ -317,7 +317,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.data", hasSize(10)))  // CRITICAL: Page 2 should have 10 items
                 .andExpect(jsonPath("$.pagination.page").value(2))
                 .andExpect(jsonPath("$.pagination.limit").value(10))
-                .andExpect(jsonPath("$.pagination.total").value(26))  // 25 + testUser
+                .andExpect(jsonPath("$.pagination.totalItems").value(26))  // 25 + testUser
                 .andExpect(jsonPath("$.pagination.hasNext").value(true))
                 .andExpect(jsonPath("$.pagination.hasPrev").value(true));
     }

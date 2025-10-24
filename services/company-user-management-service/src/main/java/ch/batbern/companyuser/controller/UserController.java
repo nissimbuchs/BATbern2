@@ -151,7 +151,7 @@ public class UserController {
             new ch.batbern.shared.api.PaginationMetadata();
         paginationMetadata.setPage(page);
         paginationMetadata.setLimit(limit);
-        paginationMetadata.setTotal((long) total);
+        paginationMetadata.setTotalItems((long) total);
         paginationMetadata.setTotalPages(totalPages);
         paginationMetadata.setHasNext(page < totalPages);
         paginationMetadata.setHasPrev(page > 1);

@@ -247,7 +247,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(2)))
                 .andExpect(jsonPath("$.data[*].name", containsInAnyOrder("Test Company", "Another Company")))
-                .andExpect(jsonPath("$.pagination.total").value(2));
+                .andExpect(jsonPath("$.pagination.totalItems").value(2));
     }
 
     @Test

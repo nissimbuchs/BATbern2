@@ -158,14 +158,15 @@ public class UserService {
             users = userRepository.findAll();
         }
 
-        // Apply search filter (name or email)
+        // Apply search filter (name, email, or username)
         if (search != null && !search.isBlank()) {
             String searchLower = search.toLowerCase();
             users = users.stream()
                     .filter(u ->
                             (u.getFirstName() != null && u.getFirstName().toLowerCase().contains(searchLower)) ||
                             (u.getLastName() != null && u.getLastName().toLowerCase().contains(searchLower)) ||
-                            (u.getEmail() != null && u.getEmail().toLowerCase().contains(searchLower))
+                            (u.getEmail() != null && u.getEmail().toLowerCase().contains(searchLower)) ||
+                            (u.getUsername() != null && u.getUsername().toLowerCase().contains(searchLower))
                     )
                     .toList();
         }

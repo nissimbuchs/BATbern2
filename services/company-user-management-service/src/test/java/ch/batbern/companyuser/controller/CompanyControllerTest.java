@@ -239,7 +239,7 @@ class CompanyControllerTest {
                 .pagination(PaginationMetadata.builder()
                     .page(1)
                     .limit(20)
-                    .total(2L)
+                    .totalItems(2L)
                     .totalPages(1)
                     .hasNext(false)
                     .hasPrev(false)
@@ -255,7 +255,7 @@ class CompanyControllerTest {
                 .andExpect(jsonPath("$.data[0].name").value("Test Company AG"))
                 .andExpect(jsonPath("$.data[1].name").value("Second Company AG"))
                 .andExpect(jsonPath("$.pagination.page").value(1))
-                .andExpect(jsonPath("$.pagination.total").value(2));
+                .andExpect(jsonPath("$.pagination.totalItems").value(2));
     }
 
     /**

@@ -105,7 +105,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.pagination").exists())
                 .andExpect(jsonPath("$.pagination.page").value(1))
                 .andExpect(jsonPath("$.pagination.limit").value(20))
-                .andExpect(jsonPath("$.pagination.total").value(3));
+                .andExpect(jsonPath("$.pagination.totalItems").value(3));
     }
 
     // ============================================================================
@@ -229,7 +229,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.data", hasSize(10)))
                 .andExpect(jsonPath("$.pagination.page").value(1))
                 .andExpect(jsonPath("$.pagination.limit").value(10))
-                .andExpect(jsonPath("$.pagination.total").value(28)) // 3 initial + 25 new
+                .andExpect(jsonPath("$.pagination.totalItems").value(28)) // 3 initial + 25 new
                 .andExpect(jsonPath("$.pagination.totalPages").value(3))
                 .andExpect(jsonPath("$.pagination.hasNext").value(true))
                 .andExpect(jsonPath("$.pagination.hasPrev").value(false));
@@ -302,7 +302,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.data[0].status").value("published"))
                 .andExpect(jsonPath("$.data[0].title").value("BATbern 2025")) // Most recent published
                 .andExpect(jsonPath("$.pagination.page").value(1))
-                .andExpect(jsonPath("$.pagination.total").value(3)); // 3 published events total
+                .andExpect(jsonPath("$.pagination.totalItems").value(3)); // 3 published events total
     }
 
     // ============================================================================
