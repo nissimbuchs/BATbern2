@@ -20,6 +20,7 @@ import { LoginForm } from '@components/auth/LoginForm';
 import { ForgotPasswordForm } from '@components/auth/ForgotPasswordForm';
 import { ResetPasswordForm } from '@components/auth/ResetPasswordForm';
 import { RegistrationWizard } from '@components/auth/RegistrationWizard';
+import { EmailVerification } from '@components/auth/EmailVerification';
 import { setNavigationCallback } from '@/services/api/apiClient';
 import LanguageSwitcher from '@components/shared/LanguageSwitcher/LanguageSwitcher';
 import theme from '@/theme';
@@ -153,6 +154,7 @@ function App() {
                 <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/auth/register" element={<RegistrationPage />} />
+                <Route path="/auth/verify-email" element={<EmailVerification />} />
 
                 {/* Protected routes with lazy-loaded components */}
                 <Route
