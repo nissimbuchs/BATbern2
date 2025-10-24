@@ -4,7 +4,10 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as kms from 'aws-cdk-lib/aws-kms';
 import { Construct } from 'constructs';
+import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
+import * as path from 'path';
 import { EnvironmentConfig } from '../config/environment-config';
 import { BootstrapOrganizer } from '../constructs/bootstrap-organizer';
 import { CognitoUserSyncTriggers } from '../constructs/cognito-user-sync-triggers';
@@ -63,11 +66,8 @@ export class CognitoStack extends cdk.Stack {
           // Roles are managed in PostgreSQL and synced to JWT via PreTokenGeneration Lambda
           // Self-registered users receive ATTENDEE role (assigned by PostConfirmation trigger)
 
-          // Auto-verify email for development
-          if (process.env.ENVIRONMENT === 'development') {
-            event.response.autoConfirmUser = true;
-            event.response.autoVerifyEmail = true;
-          }
+          // Auto-verification disabled to test email verification flow
+          // Users must verify their email via CustomEmailSender Lambda
 
           return event;
         };
@@ -77,6 +77,73 @@ export class CognitoStack extends cdk.Stack {
       },
       timeout: cdk.Duration.seconds(5),
     });
+
+    // Create KMS key for Cognito code encryption (CustomEmailSender trigger)
+    // Story 1.2.2: Implement Forgot Password Flow - Task 1a
+    const cognitoEmailKmsKey = new kms.Key(this, 'CognitoEmailKmsKey', {
+      description: `BATbern ${envName} - Cognito CustomEmailSender code encryption`,
+      enableKeyRotation: true,
+      removalPolicy: isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
+    });
+
+    // Allow Cognito to use this KMS key for encrypting codes
+    cognitoEmailKmsKey.addToResourcePolicy(
+      new cdk.aws_iam.PolicyStatement({
+        sid: 'Allow Cognito to use the key',
+        effect: cdk.aws_iam.Effect.ALLOW,
+        principals: [new cdk.aws_iam.ServicePrincipal('cognito-idp.amazonaws.com')],
+        actions: ['kms:Encrypt', 'kms:Decrypt', 'kms:CreateGrant'],
+        resources: ['*'],
+      })
+    );
+
+    // Create Custom Email Sender Lambda Trigger for branded password reset emails
+    // Story 1.2.2: Implement Forgot Password Flow - Task 1a (updated to CustomEmailSender)
+    const customEmailSenderLogGroup = new logs.LogGroup(this, 'CustomEmailSenderLogGroup', {
+      logGroupName: `/aws/lambda/BATbern-${envName}/custom-email-sender-trigger`,
+      retention: isProd ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    // Determine frontend domain based on environment
+    const frontendDomain =
+      envName === 'production'
+        ? 'https://www.batbern.ch'
+        : envName === 'staging'
+        ? 'https://staging.batbern.ch'
+        : 'http://localhost:3000';
+
+    const customEmailSenderLambda = new NodejsFunction(this, 'CustomEmailSenderTrigger', {
+      functionName: `batbern-${envName}-custom-email-sender-trigger`,
+      runtime: lambda.Runtime.NODEJS_20_X,
+      entry: path.join(__dirname, '../lambda/triggers/custom-email-sender.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(10),
+      logGroup: customEmailSenderLogGroup,
+      environment: {
+        FRONTEND_DOMAIN: frontendDomain,
+        KEY_ID: cognitoEmailKmsKey.keyId,
+        KEY_ARN: cognitoEmailKmsKey.keyArn,
+        // AWS_REGION is automatically provided by Lambda runtime
+      },
+      bundling: {
+        externalModules: ['@aws-sdk/*'], // Use AWS SDK from Lambda runtime
+        minify: true,
+        sourceMap: false,
+      },
+    });
+
+    // Grant SES permissions to send emails
+    customEmailSenderLambda.addToRolePolicy(
+      new cdk.aws_iam.PolicyStatement({
+        effect: cdk.aws_iam.Effect.ALLOW,
+        actions: ['ses:SendEmail', 'ses:SendRawEmail'],
+        resources: ['*'],
+      })
+    );
+
+    // Grant KMS decrypt permissions
+    cognitoEmailKmsKey.grantDecrypt(customEmailSenderLambda);
 
     // Create Cognito User Pool
     this.userPool = new cognito.UserPool(this, 'UserPool', {
@@ -89,6 +156,8 @@ export class CognitoStack extends cdk.Stack {
       autoVerify: {
         email: true,
       },
+      // CustomEmailSender Lambda handles all email delivery
+      // No need for Cognito's SES configuration
       standardAttributes: {
         email: {
           required: true,
@@ -128,7 +197,9 @@ export class CognitoStack extends cdk.Stack {
       },
       lambdaTriggers: {
         preSignUp: preSignupLambda,
+        customEmailSender: customEmailSenderLambda,
       },
+      customSenderKmsKey: cognitoEmailKmsKey,
       removalPolicy: isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
     });
 

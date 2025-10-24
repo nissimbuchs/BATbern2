@@ -34,6 +34,7 @@
     "@aws-sdk/client-cloudwatch": "^3.913.0",
     "@aws-sdk/client-lambda": "^3.913.0",
     "@aws-sdk/client-secrets-manager": "^3.914.0",
+    "@aws-sdk/client-ses": "^3.916.0",
     "@aws-sdk/client-sns": "^3.913.0",
     "@aws-sdk/client-ssm": "^3.908.0",
     "@octokit/rest": "^22.0.0",
@@ -43,6 +44,7 @@
     "@types/node": "^24.8.1",
     "@types/pg": "^8.15.5",
     "aws-cdk": "^2.110.0",
+    "aws-sdk-client-mock": "^4.1.0",
     "jest": "^30.0.0",
     "testcontainers": "^11.7.1",
     "ts-jest": "^29.1.1",
@@ -50,6 +52,7 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
+    "@aws-crypto/client-node": "^4.2.1",
     "aws-cdk-lib": "^2.220.0",
     "constructs": "^10.3.0",
     "js-yaml": "^4.1.0",

@@ -43,6 +43,7 @@ export const ResetPasswordForm: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const email = searchParams.get('email') || '';
+  const codeFromUrl = searchParams.get('code') || '';
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -58,6 +59,9 @@ export const ResetPasswordForm: React.FC = () => {
     formState: { errors, isValid },
   } = useForm<ResetPasswordFormData>({
     mode: 'onChange',
+    defaultValues: {
+      code: codeFromUrl,
+    },
   });
 
   const newPassword = watch('newPassword');

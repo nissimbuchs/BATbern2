@@ -11,11 +11,16 @@ import {
   VerifyEmailInput,
 } from '@/services/auth/emailVerificationService';
 
+interface UseEmailVerificationOptions {
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}
+
 /**
  * Hook for email verification mutation
  * Returns React Query mutation with success/error handling
  */
-export const useEmailVerification = () => {
+export const useEmailVerification = (options?: UseEmailVerificationOptions) => {
   return useMutation({
     mutationFn: async (input: VerifyEmailInput) => {
       const result = await verifyEmail(input);
@@ -37,9 +42,11 @@ export const useEmailVerification = () => {
 
       return result;
     },
+    onSuccess: () => {
+      options?.onSuccess?.();
+    },
     onError: (error: Error) => {
-      // Error is already mapped to user-friendly key
-      console.error('[useEmailVerification] Verification failed:', error.message);
+      options?.onError?.(error);
     },
   });
 };

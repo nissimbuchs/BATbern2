@@ -7,7 +7,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { fetchAuthSession } from 'aws-amplify/auth';
 import { Box, Typography, Button, Alert, CircularProgress } from '@mui/material';
 import { CheckCircle } from '@mui/icons-material';
 import { CodeInput } from '../CodeInput/CodeInput';
@@ -22,52 +21,46 @@ export const EmailVerification: React.FC = () => {
   const [isVerified, setIsVerified] = useState(false);
   const [redirectCountdown, setRedirectCountdown] = useState(3);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const hasAutoVerifiedRef = React.useRef(false);
 
   const email = searchParams.get('email') || '';
   const autoCode = searchParams.get('code');
 
-  const { mutate: verify, isPending: isLoading, error } = useEmailVerification();
+  const {
+    mutate: verify,
+    isPending: isLoading,
+    error,
+  } = useEmailVerification({
+    onSuccess: () => {
+      setIsVerified(true);
+      sessionStorage.setItem('userRole', 'ATTENDEE');
+    },
+  });
   const { mutate: resend } = useResendVerification();
 
   const handleVerification = useCallback(
-    async (verificationCode: string) => {
-      verify(
-        { email, code: verificationCode },
-        {
-          onSuccess: async () => {
-            setIsVerified(true);
-
-            try {
-              const session = await fetchAuthSession({ forceRefresh: true });
-              const role =
-                (session.tokens?.idToken?.payload['cognito:groups'] as string[])?.[0] || 'ATTENDEE';
-              sessionStorage.setItem('userRole', role);
-            } catch (err) {
-              console.error('[EmailVerification] Failed to fetch role:', err);
-              sessionStorage.setItem('userRole', 'ATTENDEE');
-            }
-          },
-        }
-      );
+    (verificationCode: string) => {
+      verify({ email, code: verificationCode });
     },
     [email, verify]
   );
 
-  // Auto-verification from email link
+  // Auto-verification from email link (prevent double execution)
   useEffect(() => {
-    if (autoCode && email) {
+    if (autoCode && email && !hasAutoVerifiedRef.current) {
+      hasAutoVerifiedRef.current = true;
       handleVerification(autoCode);
     }
   }, [autoCode, email, handleVerification]);
 
-  // Redirect countdown
+  // Redirect countdown - redirect to login after verification
   useEffect(() => {
     if (isVerified && redirectCountdown > 0) {
       const timer = setTimeout(() => setRedirectCountdown(redirectCountdown - 1), 1000);
       return () => clearTimeout(timer);
     } else if (isVerified && redirectCountdown === 0) {
-      const role = sessionStorage.getItem('userRole') || 'ATTENDEE';
-      navigate(`/${role.toLowerCase()}/dashboard`);
+      // Redirect to login page after email verification
+      navigate('/auth/login');
     }
   }, [isVerified, redirectCountdown, navigate]);
 
@@ -111,13 +104,10 @@ export const EmailVerification: React.FC = () => {
         <Button
           variant="contained"
           fullWidth
-          onClick={() => {
-            const role = sessionStorage.getItem('userRole') || 'ATTENDEE';
-            navigate(`/${role.toLowerCase()}/dashboard`);
-          }}
+          onClick={() => navigate('/auth/login')}
           sx={{ mb: 2 }}
         >
-          {t('verify.goToDashboard')}
+          {t('verify.goToLogin')}
         </Button>
         <Typography variant="body2" color="text.secondary">
           {t('verify.redirecting', { seconds: redirectCountdown })}

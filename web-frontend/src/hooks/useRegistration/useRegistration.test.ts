@@ -73,7 +73,7 @@ describe('useRegistration', () => {
         confirmPassword: 'Password123',
         firstName: 'John',
         lastName: 'Doe',
-        role: 'ATTENDEE',
+        role: 'attendee', // lowercase per UserRole type
         companyId: '',
         acceptTerms: true,
         language: 'en',
@@ -141,7 +141,7 @@ describe('useRegistration', () => {
     await waitFor(() => {
       expect(mockSignUp).toHaveBeenCalledWith(
         expect.objectContaining({
-          role: 'ATTENDEE', // FR22: Always ATTENDEE for self-registration
+          role: 'attendee', // FR22: Always attendee for self-registration (lowercase per UserRole type)
         })
       );
     });

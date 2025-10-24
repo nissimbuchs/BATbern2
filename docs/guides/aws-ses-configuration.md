@@ -33,7 +33,7 @@ aws ses verify-domain-identity \
 
 # Or verify specific email address
 aws ses verify-email-identity \
-  --email-address noreply@batbern.ch \
+  --email-address noreply@berner-architekten-treffen.ch \
   --region eu-central-1 \
   --profile batbern-mgmt
 ```
@@ -161,7 +161,7 @@ aws ses get-template \
 
 ```bash
 aws ses send-templated-email \
-  --source "BATbern <noreply@batbern.ch>" \
+  --source "BATbern <noreply@berner-architekten-treffen.ch>" \
   --destination "ToAddresses=test@example.com" \
   --template PasswordResetDE \
   --template-data '{
@@ -175,7 +175,7 @@ aws ses send-templated-email \
 
 ```bash
 aws ses send-templated-email \
-  --source "BATbern <noreply@batbern.ch>" \
+  --source "BATbern <noreply@berner-architekten-treffen.ch>" \
   --destination "ToAddresses=test@example.com" \
   --template PasswordResetEN \
   --template-data '{
@@ -318,7 +318,7 @@ npx cdk deploy SESStack --profile batbern-mgmt
 aws:
   ses:
     region: eu-central-1
-    sender-email: noreply@batbern.ch
+    sender-email: noreply@berner-architekten-treffen.ch
     sender-name: BATbern
     templates:
       password-reset-de: PasswordResetDE
@@ -330,7 +330,7 @@ aws:
 ```bash
 # Set in deployment environment
 AWS_REGION=eu-central-1
-SES_SENDER_EMAIL=noreply@batbern.ch
+SES_SENDER_EMAIL=noreply@berner-architekten-treffen.ch
 SES_SENDER_NAME=BATbern
 ```
 
@@ -348,7 +348,7 @@ SES_SENDER_NAME=BATbern
 3. **Verify sender email:**
    ```bash
    aws ses get-identity-verification-attributes \
-     --identities noreply@batbern.ch \
+     --identities noreply@berner-architekten-treffen.ch \
      --region eu-central-1 \
      --profile batbern-mgmt
    ```
