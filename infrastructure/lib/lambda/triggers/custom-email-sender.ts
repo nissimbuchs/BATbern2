@@ -121,7 +121,11 @@ function buildResetLink(
 /**
  * Generate signup verification HTML email content
  */
-function getSignupEmailHtml(language: SupportedLanguage, verificationLink: string): string {
+function getSignupEmailHtml(
+  language: SupportedLanguage,
+  verificationLink: string,
+  logoUrl: string
+): string {
   if (language === 'de') {
     return `<!DOCTYPE html>
 <html lang="de">
@@ -131,7 +135,8 @@ function getSignupEmailHtml(language: SupportedLanguage, verificationLink: strin
   <style>
     body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
     .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background-color: #1976d2; color: white; padding: 20px; text-align: center; }
+    .header { background-color: #1976d2; color: white; padding: 30px 20px; text-align: center; }
+    .logo { max-width: 200px; height: auto; margin-bottom: 10px; }
     .content { padding: 30px 20px; background-color: #f9f9f9; }
     .button {
       display: inline-block;
@@ -154,6 +159,7 @@ function getSignupEmailHtml(language: SupportedLanguage, verificationLink: strin
 <body>
   <div class="container">
     <div class="header">
+      <img src="${logoUrl}" alt="BATbern Logo" class="logo" />
       <h1>Willkommen bei BATbern!</h1>
     </div>
     <div class="content">
@@ -187,7 +193,8 @@ function getSignupEmailHtml(language: SupportedLanguage, verificationLink: strin
   <style>
     body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
     .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background-color: #1976d2; color: white; padding: 20px; text-align: center; }
+    .header { background-color: #1976d2; color: white; padding: 30px 20px; text-align: center; }
+    .logo { max-width: 200px; height: auto; margin-bottom: 10px; }
     .content { padding: 30px 20px; background-color: #f9f9f9; }
     .button {
       display: inline-block;
@@ -210,6 +217,7 @@ function getSignupEmailHtml(language: SupportedLanguage, verificationLink: strin
 <body>
   <div class="container">
     <div class="header">
+      <img src="${logoUrl}" alt="BATbern Logo" class="logo" />
       <h1>Welcome to BATbern!</h1>
     </div>
     <div class="content">
@@ -240,7 +248,11 @@ function getSignupEmailHtml(language: SupportedLanguage, verificationLink: strin
 /**
  * Generate password reset HTML email content
  */
-function getPasswordResetEmailHtml(language: SupportedLanguage, resetLink: string): string {
+function getPasswordResetEmailHtml(
+  language: SupportedLanguage,
+  resetLink: string,
+  logoUrl: string
+): string {
   if (language === 'de') {
     return `<!DOCTYPE html>
 <html lang="de">
@@ -250,7 +262,8 @@ function getPasswordResetEmailHtml(language: SupportedLanguage, resetLink: strin
   <style>
     body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
     .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background-color: #1976d2; color: white; padding: 20px; text-align: center; }
+    .header { background-color: #1976d2; color: white; padding: 30px 20px; text-align: center; }
+    .logo { max-width: 200px; height: auto; margin-bottom: 10px; }
     .content { padding: 30px 20px; background-color: #f9f9f9; }
     .button {
       display: inline-block;
@@ -273,7 +286,7 @@ function getPasswordResetEmailHtml(language: SupportedLanguage, resetLink: strin
 <body>
   <div class="container">
     <div class="header">
-      <h1>BATbern</h1>
+      <img src="${logoUrl}" alt="BATbern Logo" class="logo" />
     </div>
     <div class="content">
       <h2>Passwort zurücksetzen</h2>
@@ -307,7 +320,8 @@ function getPasswordResetEmailHtml(language: SupportedLanguage, resetLink: strin
   <style>
     body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
     .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background-color: #1976d2; color: white; padding: 20px; text-align: center; }
+    .header { background-color: #1976d2; color: white; padding: 30px 20px; text-align: center; }
+    .logo { max-width: 200px; height: auto; margin-bottom: 10px; }
     .content { padding: 30px 20px; background-color: #f9f9f9; }
     .button {
       display: inline-block;
@@ -330,7 +344,7 @@ function getPasswordResetEmailHtml(language: SupportedLanguage, resetLink: strin
 <body>
   <div class="container">
     <div class="header">
-      <h1>BATbern</h1>
+      <img src="${logoUrl}" alt="BATbern Logo" class="logo" />
     </div>
     <div class="content">
       <h2>Reset Your Password</h2>
@@ -411,6 +425,9 @@ export const handler: Handler<CustomEmailSenderEvent, CustomEmailSenderEvent> = 
       codeLength: verificationCode.length,
     });
 
+    // Build logo URL from frontend domain
+    const logoUrl = `${config.FRONTEND_DOMAIN}/BATbern_color_logo.svg`;
+
     // Build appropriate link and email content based on trigger source
     let link: string;
     let htmlContent: string;
@@ -420,7 +437,7 @@ export const handler: Handler<CustomEmailSenderEvent, CustomEmailSenderEvent> = 
     if (event.triggerSource === 'CustomEmailSender_SignUp') {
       // Signup verification link
       link = `${config.FRONTEND_DOMAIN}/auth/verify-email?code=${verificationCode}&email=${encodeURIComponent(email)}&lang=${language}`;
-      htmlContent = getSignupEmailHtml(language, link);
+      htmlContent = getSignupEmailHtml(language, link, logoUrl);
       subject = language === 'de' ? 'Willkommen bei BATbern - E-Mail bestätigen' : 'Welcome to BATbern - Verify Email';
       plainText = `Verify your email: ${link}`;
 
@@ -432,7 +449,7 @@ export const handler: Handler<CustomEmailSenderEvent, CustomEmailSenderEvent> = 
     } else {
       // Password reset link
       link = buildResetLink(config.FRONTEND_DOMAIN, verificationCode, email, language);
-      htmlContent = getPasswordResetEmailHtml(language, link);
+      htmlContent = getPasswordResetEmailHtml(language, link, logoUrl);
       subject = language === 'de' ? 'BATbern Passwort zurücksetzen' : 'Reset Your BATbern Password';
       plainText = `Reset your password: ${link}`;
 
