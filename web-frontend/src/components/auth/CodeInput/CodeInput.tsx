@@ -88,15 +88,6 @@ export const CodeInput: React.FC<CodeInputProps> = ({
     }
   };
 
-  // Clear all inputs (exposed for error handling)
-  React.useImperativeHandle(React.useRef<{ clearInputs: () => void }>(), () => ({
-    clearInputs: () => {
-      setCode(Array(length).fill(''));
-      onCodeChange?.('');
-      inputRefs.current[0]?.focus();
-    },
-  }));
-
   return (
     <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
       {code.map((digit, index) => (
