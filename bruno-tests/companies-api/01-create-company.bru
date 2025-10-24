@@ -23,7 +23,7 @@ headers {
 
 body:json {
   {
-    "name": "Bruno Test Company {{$timestamp}}",
+    "name": "bruno-test-company-{{$timestamp}}",
     "displayName": "Bruno Test Co",
     "industry": "Technology",
     "website": "https://bruno-test.example.com",
@@ -33,17 +33,15 @@ body:json {
 
 assert {
   res.status: eq 201
-  res.body.id: isDefined
   res.body.name: isDefined
 }
 
 script:post-response {
-  // Store the created company ID for use in subsequent tests
+  // Story 1.16.2: Store company name (not ID) for use in subsequent tests
   if (res.getStatus() === 201) {
     const company = res.getBody();
-    bru.setEnvVar("testCompanyId", company.id);
     bru.setEnvVar("testCompanyName", company.name);
-    console.log("Created company with ID:", company.id);
+    console.log("Created company with name:", company.name);
   }
 }
 
@@ -52,16 +50,17 @@ tests {
     expect(res.getStatus()).to.equal(201);
   });
 
-  test("should return created company with ID", function() {
+  test("should return created company with name (Story 1.16.2: no id field)", function() {
     const body = res.getBody();
     expect(body).to.be.an('object');
-    expect(body.id).to.exist;
-    expect(body.id).to.be.a('string');
+    expect(body.name).to.exist;
+    expect(body.name).to.be.a('string');
+    expect(body.name).to.include('bruno-test-company');
   });
 
-  test("should return company with correct name", function() {
+  test("should NOT have id field (Story 1.16.2: removed redundant id)", function() {
     const body = res.getBody();
-    expect(body.name).to.include('Bruno Test Company');
+    expect(body.id).to.be.undefined;
   });
 
   test("should return company with all fields", function() {

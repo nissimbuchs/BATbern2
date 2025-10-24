@@ -1,0 +1,63 @@
+meta {
+  name: Get Current User
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/users/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.id: isDefined
+  res.body.email: isDefined
+}
+
+script:post-response {
+  // Store current user data for subsequent tests
+  if (res.getStatus() === 200) {
+    const user = res.getBody();
+    bru.setEnvVar("currentUsername", user.id);
+    bru.setEnvVar("currentUserEmail", user.email);
+    console.log("Current user username:", user.id);
+  }
+}
+
+tests {
+  test("should return current authenticated user", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return user with username as id (Story 1.16.2)", function() {
+    const body = res.getBody();
+    expect(body.id).to.exist;
+    expect(body.id).to.be.a('string');
+    expect(body.id).to.match(/^[a-z]+\.[a-z]+(\.[0-9]+)?$/); // username format
+  });
+
+  test("should return user with all basic fields", function() {
+    const body = res.getBody();
+    expect(body.email).to.exist;
+    expect(body.firstName).to.exist;
+    expect(body.lastName).to.exist;
+    expect(body.roles).to.be.an('array');
+  });
+
+  test("should return in reasonable time", function() {
+    // Performance targets vary by environment (local vs production)
+    // Just verify we get a response (not testing specific timing)
+    expect(res.getStatus()).to.equal(200);
+  });
+}

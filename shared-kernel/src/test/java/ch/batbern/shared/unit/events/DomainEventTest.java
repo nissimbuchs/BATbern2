@@ -1,8 +1,6 @@
 package ch.batbern.shared.unit.events;
 
 import ch.batbern.shared.events.DomainEvent;
-import ch.batbern.shared.types.EventId;
-import ch.batbern.shared.types.UserId;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.Test;
@@ -18,9 +16,9 @@ class DomainEventTest {
     @Test
     @DisplayName("should_createDomainEvent_when_validDataProvided")
     void should_createDomainEvent_when_validDataProvided() {
-        EventId aggregateId = EventId.generate();
+        String aggregateId = "BATbern56";
         String eventType = "EventCreated";
-        UserId userId = UserId.from("test-user");
+        String userId = "john.doe";
 
         TestDomainEvent event = new TestDomainEvent(aggregateId, eventType, userId);
 
@@ -37,9 +35,9 @@ class DomainEventTest {
     void should_includeTimestamp_when_eventCreated() {
         Instant before = Instant.now();
         TestDomainEvent event = new TestDomainEvent(
-            EventId.generate(),
+            "BATbern56",
             "EventCreated",
-            UserId.from("test-user")
+            "john.doe"
         );
         Instant after = Instant.now();
 
@@ -52,14 +50,14 @@ class DomainEventTest {
     @DisplayName("should_generateUniqueEventId_when_eventCreated")
     void should_generateUniqueEventId_when_eventCreated() {
         TestDomainEvent event1 = new TestDomainEvent(
-            EventId.generate(),
+            "BATbern56",
             "EventCreated",
-            UserId.from("test-user")
+            "john.doe"
         );
         TestDomainEvent event2 = new TestDomainEvent(
-            EventId.generate(),
+            "BATbern57",
             "EventCreated",
-            UserId.from("test-user")
+            "john.doe"
         );
 
         assertThat(event1.getEventId()).isNotEqualTo(event2.getEventId());
@@ -69,9 +67,9 @@ class DomainEventTest {
     @DisplayName("should_includeMetadata_when_eventCreated")
     void should_includeMetadata_when_eventCreated() {
         TestDomainEvent event = new TestDomainEvent(
-            EventId.generate(),
+            "BATbern56",
             "EventCreated",
-            UserId.from("test-user")
+            "john.doe"
         );
 
         assertThat(event.getMetadata()).isNotNull();
@@ -84,9 +82,9 @@ class DomainEventTest {
     void should_setCorrelationId_when_provided() {
         String correlationId = UUID.randomUUID().toString();
         TestDomainEvent event = new TestDomainEvent(
-            EventId.generate(),
+            "BATbern56",
             "EventCreated",
-            UserId.from("test-user")
+            "john.doe"
         );
         event.setCorrelationId(correlationId);
 
@@ -98,9 +96,9 @@ class DomainEventTest {
     void should_setCausationId_when_provided() {
         String causationId = UUID.randomUUID().toString();
         TestDomainEvent event = new TestDomainEvent(
-            EventId.generate(),
+            "BATbern56",
             "EventCreated",
-            UserId.from("test-user")
+            "john.doe"
         );
         event.setCausationId(causationId);
 
@@ -114,9 +112,9 @@ class DomainEventTest {
         mapper.registerModule(new JavaTimeModule());
 
         TestDomainEvent event = new TestDomainEvent(
-            EventId.generate(),
+            "BATbern56",
             "EventCreated",
-            UserId.from("test-user")
+            "john.doe"
         );
 
         String json = mapper.writeValueAsString(event);
@@ -136,9 +134,9 @@ class DomainEventTest {
         mapper.registerModule(new JavaTimeModule());
 
         TestDomainEvent originalEvent = new TestDomainEvent(
-            EventId.generate(),
+            "BATbern56",
             "EventCreated",
-            UserId.from("test-user")
+            "john.doe"
         );
 
         String json = mapper.writeValueAsString(originalEvent);
@@ -150,8 +148,8 @@ class DomainEventTest {
         assertThat(deserializedEvent.getEventType()).isEqualTo(originalEvent.getEventType());
     }
 
-    static class TestDomainEvent extends DomainEvent<EventId> {
-        public TestDomainEvent(EventId aggregateId, String eventType, UserId userId) {
+    static class TestDomainEvent extends DomainEvent<String> {
+        public TestDomainEvent(String aggregateId, String eventType, String userId) {
             super(aggregateId, eventType, userId);
         }
 
@@ -160,7 +158,7 @@ class DomainEventTest {
         }
 
         @Override
-        public EventId getAggregateId() {
+        public String getAggregateId() {
             return super.getAggregateId();
         }
     }

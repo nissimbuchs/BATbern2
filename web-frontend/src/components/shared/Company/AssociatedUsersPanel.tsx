@@ -20,13 +20,8 @@ import {
   Alert,
   Snackbar,
   Skeleton,
-  
 } from '@mui/material';
-import {
-  Add as AddIcon,
-  LinkOff as UnlinkIcon,
-  Person as PersonIcon,
-} from '@mui/icons-material';
+import { Add as AddIcon, LinkOff as UnlinkIcon, Person as PersonIcon } from '@mui/icons-material';
 
 interface User {
   id: string;
@@ -285,8 +280,8 @@ export const AssociatedUsersPanel: React.FC<AssociatedUsersPanelProps> = ({
         <DialogTitle>Confirm Unlink User</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to unlink{' '}
-            {getUserToUnlink()?.firstName} {getUserToUnlink()?.lastName} from this company?
+            Are you sure you want to unlink {getUserToUnlink()?.firstName}{' '}
+            {getUserToUnlink()?.lastName} from this company?
           </Typography>
         </DialogContent>
         <DialogActions>

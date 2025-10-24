@@ -10,6 +10,7 @@
     "speakers": "Sprecher",
     "partners": "Partner",
     "companies": "Unternehmen",
+    "users": "Benutzer",
     "myCompany": "Mein Unternehmen",
     "analytics": "Analytik",
     "content": "Inhaltssuche",
@@ -30,7 +31,8 @@
     "reset": "Zurücksetzen",
     "submit": "Absenden",
     "close": "Schliessen",
-    "sending": "Wird gesendet..."
+    "sending": "Wird gesendet...",
+    "loading": "Wird geladen..."
   },
   "language": {
     "select": "Sprache wählen",
@@ -79,7 +81,7 @@
       "canton": "Kanton",
       "country": "Land",
       "description": "Beschreibung",
-      "legalName": "Gesetzlich: {{name}}"
+      "legalName": "Kurzform: {{name}}"
     },
     "placeholders": {
       "swissUID": "CHE-123.456.789",

@@ -85,9 +85,10 @@ class CompanyApiClient {
   }
 
   /**
-   * Get single company by ID with optional resource expansion
+   * Get single company by name with optional resource expansion
+   * Story 1.16.2: Uses company name as identifier instead of UUID
    */
-  async getCompany(id: string, options?: { expand?: string[] }): Promise<Company> {
+  async getCompany(name: string, options?: { expand?: string[] }): Promise<Company> {
     try {
       const params = new URLSearchParams();
       if (options?.expand && options.expand.length > 0) {
@@ -95,8 +96,8 @@ class CompanyApiClient {
       }
 
       const url = params.toString()
-        ? `${COMPANY_API_PATH}/${id}?${params.toString()}`
-        : `${COMPANY_API_PATH}/${id}`;
+        ? `${COMPANY_API_PATH}/${name}?${params.toString()}`
+        : `${COMPANY_API_PATH}/${name}`;
 
       const response = await apiClient.get<Company>(url);
       return response.data;
@@ -143,15 +144,16 @@ class CompanyApiClient {
 
   /**
    * Update existing company
+   * Story 1.16.2: Uses company name as identifier instead of UUID
    */
-  async updateCompany(id: string, data: UpdateCompanyRequest): Promise<Company> {
+  async updateCompany(name: string, data: UpdateCompanyRequest): Promise<Company> {
     try {
       // Client-side validation for Swiss UID format
       if (data.swissUID && !this.isValidSwissUID(data.swissUID)) {
         throw new Error('Invalid Swiss UID format. Expected format: CHE-XXX.XXX.XXX');
       }
 
-      const response = await apiClient.patch<Company>(`${COMPANY_API_PATH}/${id}`, data);
+      const response = await apiClient.patch<Company>(`${COMPANY_API_PATH}/${name}`, data);
       return response.data;
     } catch (error) {
       throw this.transformError(error);
@@ -160,10 +162,11 @@ class CompanyApiClient {
 
   /**
    * Delete company (soft delete)
+   * Story 1.16.2: Uses company name as identifier instead of UUID
    */
-  async deleteCompany(id: string): Promise<void> {
+  async deleteCompany(name: string): Promise<void> {
     try {
-      await apiClient.delete(`${COMPANY_API_PATH}/${id}`);
+      await apiClient.delete(`${COMPANY_API_PATH}/${name}`);
     } catch (error) {
       throw this.transformError(error);
     }
@@ -171,9 +174,10 @@ class CompanyApiClient {
 
   /**
    * Request presigned URL for logo upload
+   * Story 1.16.2: Uses company name as identifier instead of UUID
    */
   async requestLogoUploadUrl(
-    companyId: string,
+    companyName: string,
     fileName: string,
     mimeType: LogoUploadRequest['mimeType'],
     fileSize: number
@@ -191,7 +195,7 @@ class CompanyApiClient {
       };
 
       const response = await apiClient.post<PresignedUploadUrl>(
-        `${COMPANY_API_PATH}/${companyId}/logo/presigned-url`,
+        `${COMPANY_API_PATH}/${companyName}/logo/upload-url`,
         requestBody
       );
 
@@ -203,9 +207,10 @@ class CompanyApiClient {
 
   /**
    * Confirm logo upload completion
+   * Story 1.16.2: Uses company name as identifier instead of UUID
    */
   async confirmLogoUpload(
-    companyId: string,
+    companyName: string,
     fileId: string,
     fileExtension: string
   ): Promise<LogoUploadConfirmResponse> {
@@ -216,7 +221,7 @@ class CompanyApiClient {
       };
 
       const response = await apiClient.post<LogoUploadConfirmResponse>(
-        `${COMPANY_API_PATH}/${companyId}/logo/confirm`,
+        `${COMPANY_API_PATH}/${companyName}/logo/confirm`,
         requestBody
       );
 

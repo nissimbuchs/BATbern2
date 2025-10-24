@@ -111,7 +111,7 @@ class ResponseFormattingMiddlewareTest {
         PaginationMetadata pagination = paginatedResponse.getPagination();
         assertThat(pagination.getPage()).isEqualTo(2);
         assertThat(pagination.getLimit()).isEqualTo(2);
-        assertThat(pagination.getTotal()).isEqualTo(10L);
+        assertThat(pagination.getTotalItems()).isEqualTo(10L);
         assertThat(pagination.getTotalPages()).isEqualTo(5);
         assertThat(pagination.isHasNext()).isTrue();
         assertThat(pagination.isHasPrev()).isTrue();
@@ -166,7 +166,7 @@ class ResponseFormattingMiddlewareTest {
         PaginationMetadata pagination = paginatedResponse.getPagination();
         assertThat(pagination.getPage()).isEqualTo(1); // default page
         assertThat(pagination.getLimit()).isEqualTo(20); // default limit
-        assertThat(pagination.getTotal()).isEqualTo(1L); // size of list when totalCount not set
+        assertThat(pagination.getTotalItems()).isEqualTo(1L); // size of list when totalCount not set
     }
 
     @Test
@@ -199,7 +199,7 @@ class ResponseFormattingMiddlewareTest {
         PaginationMetadata pagination = paginatedResponse.getPagination();
         assertThat(pagination.getPage()).isEqualTo(1); // default
         assertThat(pagination.getLimit()).isEqualTo(20); // default
-        assertThat(pagination.getTotal()).isEqualTo(1L); // from totalCount attribute
+        assertThat(pagination.getTotalItems()).isEqualTo(1L); // from totalCount attribute
     }
 
     @Test

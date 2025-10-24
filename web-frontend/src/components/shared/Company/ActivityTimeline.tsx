@@ -153,8 +153,7 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                 }}
               >
                 {/* Timeline connector line */}
-                {(index < dateActivities.length - 1 ||
-                  groupIndex < groupedActivities.size - 1) && (
+                {(index < dateActivities.length - 1 || groupIndex < groupedActivities.size - 1) && (
                   <Box
                     data-testid="timeline-connector"
                     sx={{

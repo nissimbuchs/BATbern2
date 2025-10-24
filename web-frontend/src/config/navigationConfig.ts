@@ -14,6 +14,7 @@ import {
   ContentPaste,
   EventAvailable,
   Business,
+  ManageAccounts,
 } from '@mui/icons-material';
 
 export interface NavigationItem {
@@ -57,6 +58,13 @@ export const navigationConfig: NavigationItem[] = [
     icon: Business,
     roles: ['organizer'],
     description: 'Manage companies',
+  },
+  {
+    labelKey: 'navigation.users',
+    path: '/organizer/users',
+    icon: ManageAccounts,
+    roles: ['organizer'],
+    description: 'Manage platform users',
   },
   {
     labelKey: 'navigation.analytics',

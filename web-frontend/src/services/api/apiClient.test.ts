@@ -74,10 +74,11 @@ describe('API Client', () => {
     });
 
     it('should_addAuthorizationHeader_when_amplifySessionHasToken', async () => {
-      // Mock AWS Amplify fetchAuthSession to return a token
+      // Mock AWS Amplify fetchAuthSession to return an ID token (not access token)
+      // Implementation uses idToken to include custom Cognito attributes (custom:role)
       vi.mocked(fetchAuthSession).mockResolvedValue({
         tokens: {
-          accessToken: {
+          idToken: {
             toString: () => 'amplify-token-123',
           },
         },
