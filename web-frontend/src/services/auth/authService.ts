@@ -215,9 +215,13 @@ class AuthService {
         options: {
           userAttributes: {
             email: signUpData.email,
+            given_name: signUpData.firstName,
+            family_name: signUpData.lastName,
             'custom:companyId': signUpData.companyId || '',
+            'custom:language': signUpData.language || 'en',
+            'custom:newsletter_optin': signUpData.newsletterOptIn?.toString() || 'false',
             'custom:preferences': JSON.stringify({
-              language: 'en',
+              language: signUpData.language || 'en',
               theme: 'light',
               notifications: {
                 email: true,
