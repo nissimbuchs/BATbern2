@@ -243,4 +243,35 @@ describe('API Client', () => {
       expect(apiClient.defaults.headers['Content-Type']).toBe('application/json');
     });
   });
+
+  describe('Configuration Functions', () => {
+    it('should_updateBaseURL_when_updateApiClientConfigCalled', async () => {
+      const { updateApiClientConfig } = await import('./apiClient');
+      const newBaseUrl = 'https://api.example.com/v1';
+
+      updateApiClientConfig(newBaseUrl);
+
+      expect(apiClient.defaults.baseURL).toBe(newBaseUrl);
+    });
+
+    it('should_setNavigationCallback_when_callbackProvided', async () => {
+      const { setNavigationCallback } = await import('./apiClient');
+      const mockNavigate = vi.fn();
+
+      setNavigationCallback(mockNavigate);
+
+      // Trigger a 401 error to test the callback is used
+      vi.mocked(fetchAuthSession).mockResolvedValue({
+        tokens: undefined,
+      } as AuthSession);
+
+      mockAxios.onGet('/test').reply(401);
+
+      await apiClient.get('/test').catch(() => {
+        // Expected to fail
+      });
+
+      expect(mockNavigate).toHaveBeenCalledWith('/login');
+    });
+  });
 });
