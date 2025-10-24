@@ -12,7 +12,7 @@ import * as path from 'path';
 export interface CognitoUserSyncTriggersProps {
   userPool: cognito.UserPool; // Must be concrete type for addTrigger() method
   vpc: ec2.IVpc;
-  databaseSecurityGroup: ec2.ISecurityGroup;
+  lambdaSecurityGroup: ec2.ISecurityGroup; // Pre-created in NetworkStack to avoid cyclic dependency
   databaseSecret: secretsmanager.ISecret;
   databaseEndpoint: string;
   envName: string;
@@ -33,19 +33,11 @@ export class CognitoUserSyncTriggers extends Construct {
   public readonly postConfirmationTrigger: lambda.Function;
   public readonly preTokenGenerationTrigger: lambda.Function;
   public readonly preAuthenticationTrigger: lambda.Function;
-  public readonly lambdaSecurityGroup: ec2.ISecurityGroup;
 
   constructor(scope: Construct, id: string, props: CognitoUserSyncTriggersProps) {
     super(scope, id);
 
     const isProd = props.envName === 'production';
-
-    // Create security group for Lambda functions
-    this.lambdaSecurityGroup = new ec2.SecurityGroup(this, 'LambdaSecurityGroup', {
-      vpc: props.vpc,
-      description: 'Security group for Cognito trigger Lambda functions',
-      allowAllOutbound: true,
-    });
 
     // Common Lambda environment variables
     // Secrets are read dynamically at runtime, not at CDK synth time
@@ -63,7 +55,7 @@ export class CognitoUserSyncTriggers extends Construct {
       memorySize: 512,
       vpc: props.vpc,
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
-      securityGroups: [this.lambdaSecurityGroup],
+      securityGroups: [props.lambdaSecurityGroup], // Use pre-created SG from NetworkStack
       environment: commonEnv,
       bundling: {
         externalModules: ['@aws-sdk/*'], // Use AWS SDK from Lambda runtime
@@ -135,6 +127,9 @@ export class CognitoUserSyncTriggers extends Construct {
     this.postConfirmationTrigger.addToRolePolicy(cloudWatchPolicy);
     this.preTokenGenerationTrigger.addToRolePolicy(cloudWatchPolicy);
     this.preAuthenticationTrigger.addToRolePolicy(cloudWatchPolicy);
+
+    // Note: Database security group ingress rule is configured in VpcConstruct
+    // to avoid cyclic dependency (Network -> CompanyManagement -> Network)
 
     // Grant Cognito invoke permissions
     props.userPool.addTrigger(

@@ -2,12 +2,19 @@ import * as cdk from 'aws-cdk-lib';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
 import { BootstrapOrganizer } from '../constructs/bootstrap-organizer';
+import { CognitoUserSyncTriggers } from '../constructs/cognito-user-sync-triggers';
 
 export interface CognitoStackProps extends cdk.StackProps {
   config: EnvironmentConfig;
+  vpc?: ec2.IVpc; // For Lambda triggers in VPC
+  lambdaTriggersSecurityGroup?: ec2.ISecurityGroup; // For Lambda triggers
+  databaseSecret?: secretsmanager.ISecret; // For Lambda triggers to access database
+  databaseEndpoint?: string; // For Lambda triggers to access database
 }
 
 /**
@@ -193,6 +200,22 @@ export class CognitoStack extends cdk.Stack {
       email: 'nissim@buchs.be',
       password: 'TempPass123!',
     });
+
+    // Story 1.2.5: Add Cognito user sync triggers
+    // These triggers sync user creation/authentication between Cognito and PostgreSQL
+    // Only deploy if VPC and database are configured (not available in local development)
+    if (props.vpc && props.lambdaTriggersSecurityGroup && props.databaseSecret && props.databaseEndpoint) {
+      new CognitoUserSyncTriggers(this, 'UserSyncTriggers', {
+        userPool: this.userPool,
+        vpc: props.vpc,
+        lambdaSecurityGroup: props.lambdaTriggersSecurityGroup,
+        databaseSecret: props.databaseSecret,
+        databaseEndpoint: props.databaseEndpoint,
+        envName: props.config.envName,
+      });
+      // Note: Lambda security group and database ingress rule are created in NetworkStack
+      // Tables are created by CompanyManagementStack Flyway migrations at runtime
+    }
 
     // Apply tags
     cdk.Tags.of(this).add('Environment', envName);

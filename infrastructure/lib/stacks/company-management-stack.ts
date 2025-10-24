@@ -11,7 +11,6 @@ import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
 import { createDomainService } from '../constructs/domain-service-construct';
-import { CognitoUserSyncTriggers } from '../constructs/cognito-user-sync-triggers';
 
 export interface CompanyManagementStackProps extends cdk.StackProps {
   config: EnvironmentConfig;
@@ -21,7 +20,7 @@ export interface CompanyManagementStackProps extends cdk.StackProps {
   databaseEndpoint?: string;
   databaseSecret?: secretsmanager.ISecret;
   cacheEndpoint?: string;
-  userPool: cognito.UserPool; // TODO Story 1.2.5: Move triggers to CognitoStack (architectural issue)
+  userPool: cognito.UserPool;
   userPoolClient: cognito.IUserPoolClient;
   contentBucket?: s3.IBucket;
   cloudFrontDistribution?: cloudfront.IDistribution;
@@ -123,26 +122,9 @@ export class CompanyManagementStack extends cdk.Stack {
       }));
     }
 
-    // Story 1.2.5: Add Cognito user sync triggers
-    // These triggers sync user creation/authentication between Cognito and PostgreSQL
-    // Only deploy if database is configured (not available in local development)
-    if (props.databaseEndpoint && props.databaseSecret) {
-      const userSyncTriggers = new CognitoUserSyncTriggers(this, 'UserSyncTriggers', {
-        userPool: props.userPool,
-        vpc: props.vpc,
-        databaseSecurityGroup: props.databaseSecurityGroup,
-        databaseSecret: props.databaseSecret,
-        databaseEndpoint: props.databaseEndpoint,
-        envName: props.config.envName,
-      });
-
-      // Grant database access from Lambda triggers
-      props.databaseSecurityGroup.addIngressRule(
-        userSyncTriggers.lambdaSecurityGroup,
-        ec2.Port.tcp(5432),
-        'Allow Cognito triggers to access PostgreSQL database for user sync'
-      );
-    }
+    // Note: Cognito Lambda triggers (Story 1.2.5) are now created in CognitoStack
+    // to avoid cyclic dependencies. Database tables are created by Flyway migrations
+    // when this service starts, and triggers work when users sign up at runtime.
 
     // Apply additional tags specific to this service
     cdk.Tags.of(this).add('Consolidation', 'Companies+Users');
