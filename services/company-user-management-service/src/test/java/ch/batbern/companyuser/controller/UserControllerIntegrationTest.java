@@ -183,7 +183,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     // AC3: GET /api/v1/users lists users (admin/organizer only)
 
     @Test
-    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
     @DisplayName("should_listUsers_when_adminRequests")
     void should_listUsers_when_adminRequests() throws Exception {
         // Create additional test users
@@ -207,7 +207,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
     @DisplayName("should_filterByRole_when_roleFilterProvided")
     void should_filterByRole_when_roleFilterProvided() throws Exception {
         // Create organizer
@@ -232,7 +232,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
     @DisplayName("should_filterByCompany_when_companyFilterProvided")
     void should_filterByCompany_when_companyFilterProvided() throws Exception {
         // Create user with different company
@@ -256,7 +256,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
     @DisplayName("should_respectLimitParameter_when_paginationRequested")
     void should_respectLimitParameter_when_paginationRequested() throws Exception {
         // Create 30 users
@@ -290,7 +290,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
     @DisplayName("should_returnCorrectPage_when_pageParameterProvided")
     void should_returnCorrectPage_when_pageParameterProvided() throws Exception {
         // Create 25 users
@@ -323,7 +323,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
     @DisplayName("should_returnDefaultPageSize_when_limitNotProvided")
     void should_returnDefaultPageSize_when_limitNotProvided() throws Exception {
         // Create 25 users
