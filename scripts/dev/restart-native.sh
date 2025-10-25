@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Restart BATbern services running natively
 #
 # Usage:
@@ -29,25 +29,31 @@ PID_DIR="/tmp"
 LOG_DIR="/tmp"
 ENV_NATIVE_FILE="${PROJECT_ROOT}/.env.native"
 
-# Service configuration
-declare -A SERVICE_GRADLE_TASKS=(
-    ["api-gateway"]=":api-gateway:bootRun"
-    ["company-user-management"]=":services:company-user-management-service:bootRun"
-    ["event-management"]=":services:event-management-service:bootRun"
-    ["speaker-coordination"]=":services:speaker-coordination-service:bootRun"
-    ["partner-coordination"]=":services:partner-coordination-service:bootRun"
-    ["attendee-experience"]=":services:attendee-experience-service:bootRun"
-)
+# Helper functions to get service config (bash 3.2 compatible)
+get_gradle_task() {
+    case "$1" in
+        api-gateway) echo ":api-gateway:bootRun" ;;
+        company-user-management) echo ":services:company-user-management-service:bootRun" ;;
+        event-management) echo ":services:event-management-service:bootRun" ;;
+        speaker-coordination) echo ":services:speaker-coordination-service:bootRun" ;;
+        partner-coordination) echo ":services:partner-coordination-service:bootRun" ;;
+        attendee-experience) echo ":services:attendee-experience-service:bootRun" ;;
+        *) echo "" ;;
+    esac
+}
 
-declare -A SERVICE_PORTS=(
-    ["api-gateway"]=8080
-    ["company-user-management"]=8081
-    ["event-management"]=8082
-    ["speaker-coordination"]=8083
-    ["partner-coordination"]=8084
-    ["attendee-experience"]=8085
-    ["web-frontend"]=3000
-)
+get_service_port() {
+    case "$1" in
+        api-gateway) echo "8080" ;;
+        company-user-management) echo "8081" ;;
+        event-management) echo "8082" ;;
+        speaker-coordination) echo "8083" ;;
+        partner-coordination) echo "8084" ;;
+        attendee-experience) echo "8085" ;;
+        web-frontend) echo "3000" ;;
+        *) echo "" ;;
+    esac
+}
 
 # Show usage
 show_usage() {
@@ -125,8 +131,8 @@ wait_for_health() {
 # Start a Spring Boot service
 start_spring_service() {
     local service_name=$1
-    local gradle_task="${SERVICE_GRADLE_TASKS[$service_name]}"
-    local port="${SERVICE_PORTS[$service_name]}"
+    local gradle_task=$(get_gradle_task "$service_name")
+    local port=$(get_service_port "$service_name")
     local pid_file="${PID_DIR}/batbern-dev-${service_name}.pid"
     local log_file="${LOG_DIR}/batbern-dev-${service_name}.log"
 
@@ -291,7 +297,8 @@ main() {
         restart_all
     else
         # Validate service name
-        if [ -z "${SERVICE_PORTS[$service_name]}" ]; then
+        local port=$(get_service_port "$service_name")
+        if [ -z "$port" ]; then
             echo -e "${RED}Error: Unknown service '${service_name}'${NC}"
             echo ""
             show_usage

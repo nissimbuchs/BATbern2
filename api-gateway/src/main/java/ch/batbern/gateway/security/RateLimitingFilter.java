@@ -31,7 +31,7 @@ import java.io.IOException;
  * Implements AC6: Rate Limiting from Story 1.11
  */
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE + 1) // After CorrelationIdFilter, before SecurityHeadersFilter
+@Order(Ordered.LOWEST_PRECEDENCE) // After Spring Security authentication
 @Slf4j
 @RequiredArgsConstructor
 public class RateLimitingFilter implements Filter {
@@ -45,6 +45,12 @@ public class RateLimitingFilter implements Filter {
 
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
+
+        // Skip rate limiting for OPTIONS requests (CORS preflight)
+        if ("OPTIONS".equalsIgnoreCase(httpRequest.getMethod())) {
+            chain.doFilter(request, response);
+            return;
+        }
 
         try {
             // Get user context (or anonymous if not authenticated)
@@ -72,6 +78,9 @@ public class RateLimitingFilter implements Filter {
                     LogSanitizer.sanitize(userId), LogSanitizer.sanitize(role),
                     LogSanitizer.sanitize(endpoint), currentCount, rateLimit);
 
+                // Add CORS headers to 429 response
+                addCorsHeaders(httpRequest, httpResponse);
+
                 httpResponse.setStatus(429); // HTTP 429 Too Many Requests
                 httpResponse.setContentType("application/json");
                 httpResponse.getWriter().write(String.format(
@@ -92,12 +101,51 @@ public class RateLimitingFilter implements Filter {
 
         } catch (RateLimitExceededException e) {
             log.warn("Rate limit exception: {}", e.getMessage());
+
+            // Add CORS headers to exception response
+            addCorsHeaders(httpRequest, httpResponse);
+
             httpResponse.setStatus(429); // HTTP 429 Too Many Requests
             httpResponse.setContentType("application/json");
             httpResponse.getWriter().write(
                 "{\"error\":\"Rate limit exceeded\",\"message\":\"" + e.getMessage() + "\"}"
             );
         }
+    }
+
+    /**
+     * Adds CORS headers to allow cross-origin requests
+     */
+    private void addCorsHeaders(HttpServletRequest request, HttpServletResponse response) {
+        String origin = request.getHeader("Origin");
+        if (origin != null && isOriginAllowed(origin)) {
+            response.setHeader("Access-Control-Allow-Origin", origin);
+            response.setHeader("Access-Control-Allow-Credentials", "true");
+            response.setHeader("Access-Control-Allow-Methods",
+                "GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD");
+            response.setHeader("Access-Control-Allow-Headers",
+                "Authorization, Content-Type, X-Requested-With, X-Request-Id, "
+                + "X-Correlation-ID, Accept, Accept-Language");
+            response.setHeader("Access-Control-Expose-Headers",
+                "X-Request-Id, X-Correlation-ID, X-RateLimit-Limit, "
+                + "X-RateLimit-Remaining, X-RateLimit-Reset");
+            response.setHeader("Vary", "Origin");
+        }
+    }
+
+    /**
+     * Checks if the origin is allowed for CORS
+     */
+    private boolean isOriginAllowed(String origin) {
+        if (origin == null) {
+            return false;
+        }
+        // Allow localhost for development
+        if (origin.startsWith("http://localhost:") || origin.startsWith("https://localhost:")) {
+            return true;
+        }
+        // Allow staging and production
+        return origin.equals("https://staging.batbern.ch") || origin.equals("https://www.batbern.ch");
     }
 
     /**
@@ -119,15 +167,56 @@ public class RateLimitingFilter implements Filter {
 
     /**
      * Gets the user context from the request (or null if anonymous)
-     *
-     * For now, treats all requests as anonymous. In production, this should
-     * integrate with Spring Security to extract authenticated user context.
+     * Extracts authenticated user from Spring Security JWT authentication
      */
     private UserContext getUserContext(HttpServletRequest request) {
-        // TODO: Integrate with Spring Security OAuth2 to extract authenticated user
-        // For now, return null to treat all requests as anonymous (10 req/min limit)
-        // The request parameter will be used when implementing OAuth2 integration
-        return null;
+        org.springframework.security.core.Authentication auth =
+            org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+
+        log.debug("Getting user context - auth: {}, authenticated: {}, principal type: {}",
+            auth != null ? auth.getClass().getSimpleName() : "null",
+            auth != null ? auth.isAuthenticated() : false,
+            auth != null && auth.getPrincipal() != null ? auth.getPrincipal().getClass().getSimpleName() : "null");
+
+        if (auth != null && auth.isAuthenticated()
+            && !"anonymousUser".equals(auth.getPrincipal())) {
+
+            // Extract user details from JWT
+            if (auth.getPrincipal() instanceof org.springframework.security.oauth2.jwt.Jwt) {
+                org.springframework.security.oauth2.jwt.Jwt jwt =
+                    (org.springframework.security.oauth2.jwt.Jwt) auth.getPrincipal();
+
+                String userId = jwt.getSubject(); // Cognito sub claim
+                String email = jwt.getClaimAsString("email");
+                String rolesString = jwt.getClaimAsString("custom:role");
+
+                // Extract first role (highest priority)
+                String role = "attendee"; // default
+                if (rolesString != null && !rolesString.isEmpty()) {
+                    String[] roles = rolesString.split(",");
+                    role = roles[0].trim().toLowerCase();
+                }
+
+                log.info("Extracted user context from JWT - userId: {}, email: {}, role: {}, rolesString: {}",
+                    userId, email, role, rolesString);
+
+                return UserContext.builder()
+                    .userId(userId)
+                    .email(email)
+                    .emailVerified(true)
+                    .role(role)
+                    .issuedAt(jwt.getIssuedAt())
+                    .expiresAt(jwt.getExpiresAt())
+                    .build();
+            } else {
+                log.warn("Principal is not a JWT but: {}", auth.getPrincipal().getClass().getName());
+            }
+        } else {
+            log.debug("No authenticated user - treating as anonymous");
+        }
+
+        return null; // Anonymous user
     }
 
     @Override

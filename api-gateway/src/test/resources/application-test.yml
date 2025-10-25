@@ -34,7 +34,7 @@ aws:
     userPoolClientId: test-client-id
     region: eu-central-1
   ses:
-    from-email: noreply@batbern.ch
+    from-email: noreply@berner-architekten-treffen.ch
     template:
       password-reset-de: BATbern-test-PasswordReset-DE
       password-reset-en: BATbern-test-PasswordReset-EN

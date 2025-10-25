@@ -27,6 +27,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@hooks/useAuth';
 import { LoginCredentials } from '@/types/auth';
 import LanguageSwitcher from '@components/shared/LanguageSwitcher/LanguageSwitcher';
+import { ReleaseNotesInfoBox } from '@components/auth/ReleaseNotesInfoBox';
 
 type LoginFormData = {
   email: string;
@@ -147,6 +148,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPasswor
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
         <LanguageSwitcher />
       </Box>
+      <ReleaseNotesInfoBox />
       <Paper elevation={3} sx={{ p: 4, mt: 2 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <Typography component="h1" variant="h4" gutterBottom>

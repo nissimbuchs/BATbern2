@@ -1,0 +1,183 @@
+{
+  "title": "User Management",
+  "addUser": "Add User",
+  "back": "Back",
+  "search": {
+    "placeholder": "Search by name or email...",
+    "noResults": "No users found",
+    "clearFilters": "Clear filters"
+  },
+  "filters": {
+    "title": "Filters",
+    "clearAll": "Clear all filters",
+    "role": {
+      "label": "Role",
+      "all": "All Roles",
+      "organizer": "Organizer",
+      "speaker": "Speaker",
+      "partner": "Partner",
+      "attendee": "Attendee"
+    },
+    "company": {
+      "label": "Company",
+      "all": "All Companies",
+      "placeholder": "Select company..."
+    },
+    "status": {
+      "label": "Status",
+      "active": "Active",
+      "inactive": "Inactive",
+      "all": "All"
+    }
+  },
+  "table": {
+    "headers": {
+      "name": "Name",
+      "email": "Email",
+      "company": "Company",
+      "roles": "Roles",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "showing": "Showing {{count}} users",
+    "showingRange": "{{from}}-{{to}} of {{total}} users",
+    "perPage": "per page",
+    "empty": "No users found",
+    "emptySearch": "No users match your search. Try clearing the filters.",
+    "sortBy": "Sort by",
+    "ascending": "Ascending",
+    "descending": "Descending"
+  },
+  "actions": {
+    "view": "View",
+    "editRoles": "Edit Roles",
+    "delete": "Delete",
+    "retry": "Retry",
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "edit": "Edit",
+    "confirm": "Confirm"
+  },
+  "roles": {
+    "organizer": "Organizer",
+    "speaker": "Speaker",
+    "partner": "Partner",
+    "attendee": "Attendee",
+    "multiple": "{{count}} roles"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "modal": {
+    "userDetail": {
+      "title": "User Details",
+      "profile": "Profile",
+      "contactInfo": "Contact Information",
+      "rolesAssigned": "Assigned Roles",
+      "companyAffiliation": "Company Affiliation",
+      "activityHistory": "Activity History",
+      "accountCreated": "Account Created",
+      "createdAt": "Created At",
+      "updatedAt": "Last Updated",
+      "lastLogin": "Last Login",
+      "noCompany": "No company assigned",
+      "noActivity": "No activity available"
+    },
+    "createUser": {
+      "title": "Create New User",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "email": "Email",
+      "company": "Company (optional)",
+      "roles": "Roles",
+      "selectRoles": "Select at least one role",
+      "creating": "Creating..."
+    },
+    "editRoles": {
+      "title": "Edit Roles",
+      "subtitle": "Manage roles for {{name}}",
+      "user": "User",
+      "selectRoles": "Select roles",
+      "minimumOrganizers": "There must be at least {{count}} organizers in the system",
+      "cannotRemove": "This role cannot be removed",
+      "updating": "Updating...",
+      "saving": "Saving..."
+    },
+    "deleteConfirm": {
+      "title": "Delete User",
+      "message": "Are you sure you want to delete this user?",
+      "userName": "User: {{name}}",
+      "gdprWarning": "GDPR Notice: This action will permanently delete all user data and cannot be undone.",
+      "cascadeWarning": "All associated data will also be deleted.",
+      "cannotDelete": "This user cannot be deleted",
+      "lastOrganizerWarning": "You cannot delete the last organizer. There must be at least {{count}} organizers in the system.",
+      "deleting": "Deleting..."
+    }
+  },
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {{page}} of {{total}}",
+    "itemsPerPage": "Items per page",
+    "goToPage": "Go to page"
+  },
+  "loading": {
+    "users": "Loading users...",
+    "search": "Searching...",
+    "delete": "Deleting...",
+    "save": "Saving...",
+    "updating": "Updating..."
+  },
+  "error": {
+    "required": "This field is required",
+    "email": {
+      "invalid": "Invalid email address",
+      "exists": "Email address already exists",
+      "required": "Email is required"
+    },
+    "name": {
+      "tooShort": "Name must be at least {{min}} characters",
+      "tooLong": "Name must not exceed {{max}} characters"
+    },
+    "roles": {
+      "required": "At least one role is required",
+      "minOrganizers": "There must be at least {{count}} organizers in the system"
+    },
+    "minOneRole": "At least one role must be selected",
+    "loadFailed": "Failed to load users",
+    "createFailed": "Failed to create user",
+    "updateFailed": "Failed to update user",
+    "deleteFailed": "Failed to delete user",
+    "deleteLastOrganizer": "Cannot delete the last organizer",
+    "networkError": "Network error. Please check your connection.",
+    "unauthorized": "You are not authorized to perform this action",
+    "notFound": "User not found"
+  },
+  "success": {
+    "userCreated": "User created successfully",
+    "userUpdated": "User updated successfully",
+    "userDeleted": "User deleted successfully",
+    "rolesUpdated": "Roles updated successfully"
+  },
+  "emptyState": {
+    "title": "No Users",
+    "description": "No users have been added yet.",
+    "action": "Add First User"
+  },
+  "accessibility": {
+    "filterPanel": "Filter panel",
+    "userTable": "User table",
+    "sortAscending": "Sort ascending",
+    "sortDescending": "Sort descending",
+    "openMenu": "Open menu",
+    "closeModal": "Close modal",
+    "rowCount": "{{count}} users in table"
+  },
+  "offline": {
+    "indicator": "Offline",
+    "message": "You are offline. Some features may not be available.",
+    "viewingCache": "Viewing cached data"
+  }
+}

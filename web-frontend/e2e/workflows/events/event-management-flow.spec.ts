@@ -198,7 +198,7 @@ test.describe('Events API Consolidation - Event Dashboard (AC1)', () => {
     expect(response.status).toBe(200);
     expect(data.pagination.page).toBe(1);
     expect(data.pagination.limit).toBe(10);
-    expect(data.pagination.total).toBeGreaterThanOrEqual(0);
+    expect(data.pagination.totalItems).toBeGreaterThanOrEqual(0);
     expect(data.pagination.hasNext).toBeDefined();
     expect(data.pagination.hasPrev).toBe(false);
     expect(data.data.length).toBeLessThanOrEqual(10);

@@ -3,11 +3,10 @@ package ch.batbern.events.dto;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
-import java.util.UUID;
-
 /**
  * Request DTO for partially updating an event (PATCH)
- * Story 1.15a.1: Events API Consolidation - AC5
+ * Story 1.16.2: Eliminate UUIDs from API
+ * Uses String username instead of UUID for organizer
  *
  * All fields are optional - only provided fields will be updated
  */
@@ -36,7 +35,7 @@ public class PatchEventRequest {
              message = "Status must be a valid workflow state")
     private String status;
 
-    private UUID organizerId;
+    private String organizerUsername;
 
     private Integer currentAttendeeCount;
 

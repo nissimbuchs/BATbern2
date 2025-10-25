@@ -15,6 +15,9 @@ COPY gradle ./gradle
 COPY shared-kernel/build.gradle ./shared-kernel/
 COPY shared-kernel/src ./shared-kernel/src
 
+# Copy OpenAPI specifications (required for openApiGenerate task)
+COPY docs/api ./docs/api
+
 # Copy event-management-service module
 COPY services/event-management-service/build.gradle services/event-management-service/gradlew* ./services/event-management-service/
 COPY services/event-management-service/gradle ./services/event-management-service/gradle

@@ -108,12 +108,12 @@ public class CompanyQueryService {
 
     /**
      * Map Company entity to response DTO with field selection and resource expansion
+     * Story 1.16.2: Use company name as unique identifier (no separate id field)
      */
     private CompanyResponse mapToResponse(Company company, Set<String> selectedFields, Set<String> includes) {
         // Build base response
         CompanyResponse.CompanyResponseBuilder builder = CompanyResponse.builder()
-                .id(company.getId())
-                .name(company.getName())
+                .name(company.getName())  // Story 1.16.2: name is the unique identifier
                 .displayName(company.getDisplayName())
                 .swissUID(company.getSwissUID())
                 .website(company.getWebsite())
@@ -150,10 +150,13 @@ public class CompanyQueryService {
         CompanyResponse tempResponse = builder.build();
 
         // Manually build new response with only selected fields
+        // Story 1.16.2: id field removed, name is the unique identifier
         CompanyResponse.CompanyResponseBuilder filteredBuilder = CompanyResponse.builder();
 
-        if (selectedFields.contains("id")) filteredBuilder.id(tempResponse.getId());
-        if (selectedFields.contains("name")) filteredBuilder.name(tempResponse.getName());
+        // Story 1.16.2: Treat "id" field selector as "name" for backward compatibility
+        if (selectedFields.contains("id") || selectedFields.contains("name")) {
+            filteredBuilder.name(tempResponse.getName());
+        }
         if (selectedFields.contains("displayName")) filteredBuilder.displayName(tempResponse.getDisplayName());
         if (selectedFields.contains("swissUID")) filteredBuilder.swissUID(tempResponse.getSwissUID());
         if (selectedFields.contains("website")) filteredBuilder.website(tempResponse.getWebsite());

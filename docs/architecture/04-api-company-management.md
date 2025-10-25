@@ -691,7 +691,7 @@ PaginationMetadata:
 **Authentication**:
 - JWT-based authentication via AWS Cognito
 - Bearer token required for all endpoints
-- Token claims: `sub` (user ID), `email`, `cognito:groups` (roles)
+- Token claims: `sub` (Cognito user ID), `email`, `custom:role` (roles from database)
 
 **Authorization Levels**:
 - Public (authenticated): GET endpoints for listing/searching companies
@@ -700,7 +700,7 @@ PaginationMetadata:
 
 **Role-Based Access Control**:
 - Implemented with Spring Security `@PreAuthorize` annotations
-- Role extraction from JWT `cognito:groups` claim
+- Role extraction from JWT `custom:role` claim (populated by PreTokenGeneration Lambda from database)
 - Method-level security enforcement
 
 ### Database Design

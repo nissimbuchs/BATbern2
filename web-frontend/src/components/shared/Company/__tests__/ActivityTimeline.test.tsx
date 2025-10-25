@@ -127,11 +127,7 @@ describe('ActivityTimeline Component', () => {
   describe('Pagination', () => {
     it('should_displayLoadMoreButton_when_moreActivitiesAvailable', () => {
       render(
-        <ActivityTimeline
-          companyId="company-123"
-          activities={mockActivities}
-          hasMore={true}
-        />
+        <ActivityTimeline companyId="company-123" activities={mockActivities} hasMore={true} />
       );
 
       // Verify "Load More" button is displayed
@@ -140,11 +136,7 @@ describe('ActivityTimeline Component', () => {
 
     it('should_hideLoadMoreButton_when_allActivitiesLoaded', () => {
       render(
-        <ActivityTimeline
-          companyId="company-123"
-          activities={mockActivities}
-          hasMore={false}
-        />
+        <ActivityTimeline companyId="company-123" activities={mockActivities} hasMore={false} />
       );
 
       // Verify "Load More" button is not displayed

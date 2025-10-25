@@ -6,9 +6,8 @@
 import React, { useEffect, Suspense, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
-import { CssBaseline, Box, CircularProgress, Typography, Button, Container } from '@mui/material';
+import { CssBaseline, Box, CircularProgress } from '@mui/material';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
 import { useAuth } from '@hooks/useAuth';
 import { BaseLayout } from '@components/shared/Layout/BaseLayout';
 import {
@@ -19,6 +18,9 @@ import {
 } from '@components/auth/ProtectedRoute';
 import { LoginForm } from '@components/auth/LoginForm';
 import { ForgotPasswordForm } from '@components/auth/ForgotPasswordForm';
+import { ResetPasswordForm } from '@components/auth/ResetPasswordForm';
+import { RegistrationWizard } from '@components/auth/RegistrationWizard';
+import { EmailVerification } from '@components/auth/EmailVerification';
 import { setNavigationCallback } from '@/services/api/apiClient';
 import LanguageSwitcher from '@components/shared/LanguageSwitcher/LanguageSwitcher';
 import theme from '@/theme';
@@ -40,7 +42,10 @@ const Speakers = React.lazy(() => import('@pages/Speakers'));
 const Partners = React.lazy(() => import('@pages/Partners'));
 const Content = React.lazy(() => import('@pages/Content'));
 const Analytics = React.lazy(() => import('@pages/Analytics'));
-const CompanyManagement = React.lazy(() => import('@components/shared/Company/CompanyManagementScreen'));
+const CompanyManagement = React.lazy(
+  () => import('@components/shared/Company/CompanyManagementScreen')
+);
+const UserManagement = React.lazy(() => import('@components/organizer/UserManagement/UserList'));
 
 // Loading fallback component for Suspense
 const PageLoader = () => (
@@ -83,7 +88,7 @@ const LoginPage: React.FC = () => {
   }, [navigate]);
 
   const handleSignUp = useCallback(() => {
-    navigate('/auth/signup');
+    navigate('/auth/register');
   }, [navigate]);
 
   return (
@@ -103,28 +108,22 @@ const ForgotPasswordPage: React.FC = () => {
   return <ForgotPasswordForm />;
 };
 
-// Signup placeholder page (Story 1.2.3 not implemented yet)
-const SignupPage: React.FC = () => {
-  const navigate = useNavigate();
-  const { t } = useTranslation('auth');
+// Reset Password page component (Story 1.2.2a)
+const ResetPasswordPage: React.FC = () => {
+  // Renders the ResetPasswordForm which handles code verification and password reset
+  // Email is passed via URL parameter: /auth/reset-password?email=user@example.com
+  return <ResetPasswordForm />;
+};
 
+// Registration page (Story 1.2.3)
+const RegistrationPage: React.FC = () => {
   return (
-    <Container maxWidth="sm">
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 2 }}>
         <LanguageSwitcher />
       </Box>
-      <Box sx={{ maxWidth: 400, mx: 'auto', mt: 6, textAlign: 'center' }}>
-        <Typography variant="h4" gutterBottom>
-          {t('signup.title')}
-        </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-          {t('signup.notAvailable')}
-        </Typography>
-        <Button variant="outlined" onClick={() => navigate('/login')}>
-          {t('signup.backToLogin')}
-        </Button>
-      </Box>
-    </Container>
+      <RegistrationWizard />
+    </Box>
   );
 };
 
@@ -153,7 +152,9 @@ function App() {
                 {/* Public routes */}
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
-                <Route path="/auth/signup" element={<SignupPage />} />
+                <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+                <Route path="/auth/register" element={<RegistrationPage />} />
+                <Route path="/auth/verify-email" element={<EmailVerification />} />
 
                 {/* Protected routes with lazy-loaded components */}
                 <Route
@@ -242,6 +243,18 @@ function App() {
                         <CompanyManagement />
                       </AuthLayout>
                     </SpeakerRoute>
+                  }
+                />
+
+                {/* User Management Routes - Story 2.5.2 */}
+                <Route
+                  path="/organizer/users/*"
+                  element={
+                    <ProtectedRoute>
+                      <AuthLayout>
+                        <UserManagement />
+                      </AuthLayout>
+                    </ProtectedRoute>
                   }
                 />
 

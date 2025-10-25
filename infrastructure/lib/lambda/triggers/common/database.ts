@@ -7,21 +7,60 @@
  */
 
 import { Client, Pool, PoolClient } from 'pg';
+import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
 
 // Connection pool persists across Lambda invocations (warm start optimization)
 let pool: Pool | null = null;
+let secretsCache: { username: string; password: string } | null = null;
 
 /**
- * Get database configuration from environment variables
+ * Get database credentials from Secrets Manager
+ * Credentials are cached across Lambda invocations for performance
  */
-function getDatabaseConfig() {
+async function getDbCredentials(): Promise<{ username: string; password: string }> {
+  // Return cached credentials if available
+  if (secretsCache) {
+    return secretsCache;
+  }
+
+  // Check if using Secrets Manager (CDK-deployed) or environment variables (local dev)
+  if (process.env.DB_SECRET_ARN) {
+    const secretsManager = new SecretsManagerClient({ region: process.env.AWS_REGION });
+    const response = await secretsManager.send(
+      new GetSecretValueCommand({ SecretId: process.env.DB_SECRET_ARN })
+    );
+
+    if (!response.SecretString) {
+      throw new Error('Database secret not found or empty');
+    }
+
+    secretsCache = JSON.parse(response.SecretString);
+    if (!secretsCache) {
+      throw new Error('Failed to parse database credentials from Secrets Manager');
+    }
+    return secretsCache;
+  }
+
+  // Fallback to environment variables (local development)
+  return {
+    username: process.env.DB_USER || 'batbern_app',
+    password: process.env.DB_PASSWORD || '',
+  };
+}
+
+/**
+ * Get database configuration from environment variables and Secrets Manager
+ */
+async function getDatabaseConfig() {
+  const credentials = await getDbCredentials();
+
   return {
     host: process.env.DB_HOST || 'localhost',
     database: process.env.DB_NAME || 'batbern',
-    user: process.env.DB_USER || 'batbern_app',
-    password: process.env.DB_PASSWORD || '',
+    user: credentials.username,
+    password: credentials.password,
     port: parseInt(process.env.DB_PORT || '5432', 10),
-    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: true } : false,
+    ssl: process.env.DB_SSL === 'false' ? false : { rejectUnauthorized: false }, // RDS uses Amazon CA, accept without verification
     // Connection pool settings optimized for Lambda
     max: 2, // Low max for Lambda (one concurrent execution per container)
     idleTimeoutMillis: 30000, // 30 seconds
@@ -39,7 +78,8 @@ export async function getDbClient(): Promise<PoolClient> {
   // Create pool if it doesn't exist (cold start)
   if (!pool) {
     console.log('Creating new database connection pool');
-    pool = new Pool(getDatabaseConfig());
+    const config = await getDatabaseConfig();
+    pool = new Pool(config);
 
     // Handle pool errors
     pool.on('error', (err) => {

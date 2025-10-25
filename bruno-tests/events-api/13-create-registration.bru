@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{baseUrl}}/events/{{createdEventId}}/registrations
+  url: {{baseUrl}}/events/{{createdEventCode}}/registrations
   body: json
   auth: bearer
 }
@@ -31,12 +31,12 @@ tests {
     expect(res.getStatus()).to.equal(201);
   });
 
-  test("should return created registration", function() {
+  test("should return created registration (Story 1.16.2: registrations still use ID, but eventCode for event reference)", function() {
     const registration = res.getBody();
     expect(registration.id).to.be.a('string');
     expect(registration.attendeeEmail).to.equal('test.attendee@example.com');
     expect(registration.attendeeName).to.equal('Test Attendee');
-    expect(registration.eventId).to.equal(bru.getVar("createdEventId"));
+    expect(registration.eventCode).to.equal(bru.getVar("createdEventCode"));
   });
 
   test("should save registration id", function() {

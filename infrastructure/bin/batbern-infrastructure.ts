@@ -187,12 +187,20 @@ const cicdStack = new CICDStack(app, `${stackPrefix}-CICD`, {
 });
 
 // 8. Cognito Stack (User authentication)
+// Story 1.2.5: Cognito now includes Lambda triggers that access database
+// Triggers require VPC, database secret, and security group from NetworkStack
 const cognitoStack = new CognitoStack(app, `${stackPrefix}-Cognito`, {
   config,
+  vpc: networkStack.vpc,
+  lambdaTriggersSecurityGroup: networkStack.lambdaTriggersSecurityGroup,
+  databaseSecret: databaseStack.databaseSecret,
+  databaseEndpoint: databaseStack.databaseEndpoint,
   env,
   description: `BATbern User Authentication - ${config.envName}`,
   tags: config.tags,
 });
+cognitoStack.addDependency(networkStack); // For VPC and security group
+cognitoStack.addDependency(databaseStack); // For database secret and endpoint
 
 // 9. SES Stack (Email templates for authentication workflows)
 const sesStack = new SesStack(app, `${stackPrefix}-SES`, {

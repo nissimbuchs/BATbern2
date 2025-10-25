@@ -9,6 +9,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
+import software.amazon.awssdk.services.cloudwatch.CloudWatchClient;
+import software.amazon.awssdk.services.cloudwatch.model.*;
 import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient;
 import software.amazon.awssdk.services.eventbridge.model.*;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
@@ -106,6 +108,39 @@ public class LocalAwsConfig {
         log.info("🪣 [LOCAL] Bucket: batbern-development-company-logos");
 
         return presigner;
+    }
+
+    /**
+     * Mock CloudWatch client for local development
+     * Logs metrics instead of publishing to AWS CloudWatch
+     */
+    @Bean
+    @Primary
+    public CloudWatchClient cloudWatchClient() {
+        log.info("📊 [LOCAL] Using mock CloudWatchClient - metrics will be logged but not published");
+
+        return new CloudWatchClient() {
+            @Override
+            public String serviceName() {
+                return "cloudwatch";
+            }
+
+            @Override
+            public void close() {
+                // No-op for mock
+            }
+
+            @Override
+            public PutMetricDataResponse putMetricData(PutMetricDataRequest request) {
+                log.info("📊 [LOCAL] Mock CloudWatch - Would publish {} metrics to namespace: {}",
+                    request.metricData().size(), request.namespace());
+                request.metricData().forEach(metric ->
+                    log.debug("📊 [LOCAL] Metric: name={}, value={}, unit={}, dimensions={}",
+                        metric.metricName(), metric.value(), metric.unit(), metric.dimensions())
+                );
+                return PutMetricDataResponse.builder().build();
+            }
+        };
     }
 
     /**

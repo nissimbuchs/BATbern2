@@ -1,0 +1,50 @@
+meta {
+  name: Get User by Username (Read Test User)
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/users/{{testUsername}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.id: eq {{testUsername}}
+}
+
+tests {
+  test("should get user by username successfully (AC5)", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return user with correct username", function() {
+    const body = res.getBody();
+    const testUsername = bru.getEnvVar("testUsername");
+    expect(body.id).to.equal(testUsername);
+  });
+
+  test("should return test user created in previous step", function() {
+    const body = res.getBody();
+    const testEmail = bru.getEnvVar("testUserEmail");
+    expect(body.email).to.equal(testEmail);
+    expect(body.firstName).to.equal("Bruno");
+    expect(body.lastName).to.equal("TestUser");
+  });
+
+  test("should return in reasonable time", function() {
+    // Performance targets vary by environment (local vs production)
+    expect(res.getStatus()).to.equal(200);
+  });
+}

@@ -8,17 +8,21 @@ import authDe from '../../public/locales/de/auth.json';
 import authEn from '../../public/locales/en/auth.json';
 import validationDe from '../../public/locales/de/validation.json';
 import validationEn from '../../public/locales/en/validation.json';
+import userManagementDe from '../../public/locales/de/userManagement.json';
+import userManagementEn from '../../public/locales/en/userManagement.json';
 
 const resources = {
   de: {
     common: commonDe,
     auth: authDe,
     validation: validationDe,
+    userManagement: userManagementDe,
   },
   en: {
     common: commonEn,
     auth: authEn,
     validation: validationEn,
+    userManagement: userManagementEn,
   },
 } as const;
 
@@ -30,7 +34,7 @@ i18n
     lng: 'de', // Default language for first access
     fallbackLng: 'de', // Fallback if language not found
     defaultNS: 'common',
-    ns: ['common', 'auth', 'validation'],
+    ns: ['common', 'auth', 'validation', 'userManagement'],
     detection: {
       order: ['localStorage', 'navigator', 'htmlTag'],
       caches: ['localStorage'],

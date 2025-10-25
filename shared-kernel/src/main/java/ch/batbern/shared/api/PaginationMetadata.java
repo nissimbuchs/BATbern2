@@ -38,7 +38,7 @@ public class PaginationMetadata {
     /**
      * Total number of items across all pages.
      */
-    private long total;
+    private long totalItems;
 
     /**
      * Total number of pages.

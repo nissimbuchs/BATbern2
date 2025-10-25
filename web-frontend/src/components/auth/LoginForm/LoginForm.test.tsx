@@ -10,6 +10,8 @@ import { LoginForm } from './LoginForm';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/i18n/config';
+import { ConfigProvider } from '@/contexts/ConfigContext';
+import type { AppConfig } from '@/config/runtime-config';
 
 // Mock useAuth hook
 const mockSignIn = vi.fn();
@@ -29,12 +31,30 @@ vi.mock('@hooks/useAuth', () => ({
 // Create theme for MUI components
 const theme = createTheme();
 
-// Helper function to render with theme and i18n
+// Mock config for testing
+const mockConfig: AppConfig = {
+  environment: 'development',
+  apiBaseUrl: 'http://localhost:8080/api/v1',
+  cognito: {
+    userPoolId: 'eu-central-1_XXXXXXXXX',
+    clientId: 'XXXXXXXXXXXXXXXXXXXXXXXXXX',
+    region: 'eu-central-1',
+  },
+  features: {
+    notifications: true,
+    analytics: false,
+    pwa: false,
+  },
+};
+
+// Helper function to render with theme, i18n, and config
 const renderWithTheme = (component: React.ReactElement) => {
   return render(
-    <I18nextProvider i18n={i18n}>
-      <ThemeProvider theme={theme}>{component}</ThemeProvider>
-    </I18nextProvider>
+    <ConfigProvider config={mockConfig}>
+      <I18nextProvider i18n={i18n}>
+        <ThemeProvider theme={theme}>{component}</ThemeProvider>
+      </I18nextProvider>
+    </ConfigProvider>
   );
 };
 

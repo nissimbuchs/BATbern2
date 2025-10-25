@@ -160,10 +160,9 @@ describe('useCompanySearch Hook', () => {
       vi.mocked(companyApiClient.searchCompanies).mockResolvedValue(mockResults);
 
       // Act
-      const { result } = renderHook(
-        () => useCompanySearch('Test', 5),
-        { wrapper: createWrapper() }
-      );
+      const { result } = renderHook(() => useCompanySearch('Test', 5), {
+        wrapper: createWrapper(),
+      });
 
       // Assert
       await waitFor(() => {
@@ -327,10 +326,9 @@ describe('useCompanySearch Hook', () => {
       vi.mocked(companyApiClient.searchCompanies).mockResolvedValue(mockResults);
 
       // Act
-      const { result } = renderHook(
-        () => useCompanySearch('Query', 5),
-        { wrapper: createWrapper() }
-      );
+      const { result } = renderHook(() => useCompanySearch('Query', 5), {
+        wrapper: createWrapper(),
+      });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 

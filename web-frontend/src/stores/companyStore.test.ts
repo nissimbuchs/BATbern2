@@ -8,12 +8,12 @@
  * - Initial state
  * - Filter state management
  * - View mode toggle (grid/list)
- * - Selected company ID management
+ * - Selected company name management (Story 1.16.2: uses company name as identifier)
  * - Modal state management (create/edit)
  * - State persistence (via zustand persist middleware)
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useCompanyStore } from '@/stores/companyStore';
 import { CompanyFilters } from '@/types/company.types';
@@ -30,7 +30,7 @@ describe('companyStore', () => {
       result.current.setFilters({});
       result.current.closeCreateModal();
       result.current.closeEditModal();
-      result.current.setSelectedCompanyId(undefined);
+      result.current.setSelectedCompanyName(undefined);
       // Ensure viewMode is reset to grid
       if (result.current.viewMode === 'list') {
         result.current.toggleViewMode();
@@ -59,7 +59,7 @@ describe('companyStore', () => {
     it('should_haveNoSelectedCompany_when_storeInitialized', () => {
       const { result } = renderHook(() => useCompanyStore());
 
-      expect(result.current.selectedCompanyId).toBeUndefined();
+      expect(result.current.selectedCompanyName).toBeUndefined();
     });
 
     it('should_haveModalsClosedByDefault_when_storeInitialized', () => {
@@ -188,48 +188,48 @@ describe('companyStore', () => {
   });
 
   describe('Selected Company Management', () => {
-    it('should_setSelectedCompanyId_when_idProvided', () => {
+    it('should_setSelectedCompanyName_when_nameProvided', () => {
       const { result } = renderHook(() => useCompanyStore());
 
-      const companyId = 'company-123';
+      const companyName = 'Swiss IT Solutions AG';
 
       act(() => {
-        result.current.setSelectedCompanyId(companyId);
+        result.current.setSelectedCompanyName(companyName);
       });
 
-      expect(result.current.selectedCompanyId).toBe(companyId);
+      expect(result.current.selectedCompanyName).toBe(companyName);
     });
 
-    it('should_clearSelectedCompanyId_when_undefinedProvided', () => {
+    it('should_clearSelectedCompanyName_when_undefinedProvided', () => {
       const { result } = renderHook(() => useCompanyStore());
 
       act(() => {
-        result.current.setSelectedCompanyId('company-123');
+        result.current.setSelectedCompanyName('Swiss IT Solutions AG');
       });
 
-      expect(result.current.selectedCompanyId).toBe('company-123');
+      expect(result.current.selectedCompanyName).toBe('Swiss IT Solutions AG');
 
       act(() => {
-        result.current.setSelectedCompanyId(undefined);
+        result.current.setSelectedCompanyName(undefined);
       });
 
-      expect(result.current.selectedCompanyId).toBeUndefined();
+      expect(result.current.selectedCompanyName).toBeUndefined();
     });
 
-    it('should_replaceSelectedCompanyId_when_differentIdProvided', () => {
+    it('should_replaceSelectedCompanyName_when_differentNameProvided', () => {
       const { result } = renderHook(() => useCompanyStore());
 
       act(() => {
-        result.current.setSelectedCompanyId('company-123');
+        result.current.setSelectedCompanyName('Swiss IT Solutions AG');
       });
 
-      expect(result.current.selectedCompanyId).toBe('company-123');
+      expect(result.current.selectedCompanyName).toBe('Swiss IT Solutions AG');
 
       act(() => {
-        result.current.setSelectedCompanyId('company-456');
+        result.current.setSelectedCompanyName('Swisscom AG');
       });
 
-      expect(result.current.selectedCompanyId).toBe('company-456');
+      expect(result.current.selectedCompanyName).toBe('Swisscom AG');
     });
   });
 
@@ -267,7 +267,7 @@ describe('companyStore', () => {
 
       act(() => {
         result.current.setFilters({ isPartner: true });
-        result.current.setSelectedCompanyId('company-123');
+        result.current.setSelectedCompanyName('Swiss IT Solutions AG');
       });
 
       act(() => {
@@ -275,56 +275,56 @@ describe('companyStore', () => {
       });
 
       expect(result.current.filters).toEqual({ isPartner: true });
-      expect(result.current.selectedCompanyId).toBe('company-123');
+      expect(result.current.selectedCompanyName).toBe('Swiss IT Solutions AG');
     });
   });
 
   describe('Edit Modal Management', () => {
-    it('should_openEditModal_when_openEditModalCalledWithId', () => {
+    it('should_openEditModal_when_openEditModalCalledWithName', () => {
       const { result } = renderHook(() => useCompanyStore());
 
-      const companyId = 'company-123';
+      const companyName = 'Swiss IT Solutions AG';
 
       act(() => {
-        result.current.openEditModal(companyId);
+        result.current.openEditModal(companyName);
       });
 
       expect(result.current.isEditModalOpen).toBe(true);
-      expect(result.current.selectedCompanyId).toBe(companyId);
+      expect(result.current.selectedCompanyName).toBe(companyName);
     });
 
     it('should_closeEditModalAndClearSelection_when_closeEditModalCalled', () => {
       const { result } = renderHook(() => useCompanyStore());
 
       act(() => {
-        result.current.openEditModal('company-123');
+        result.current.openEditModal('Swiss IT Solutions AG');
       });
 
       expect(result.current.isEditModalOpen).toBe(true);
-      expect(result.current.selectedCompanyId).toBe('company-123');
+      expect(result.current.selectedCompanyName).toBe('Swiss IT Solutions AG');
 
       act(() => {
         result.current.closeEditModal();
       });
 
       expect(result.current.isEditModalOpen).toBe(false);
-      expect(result.current.selectedCompanyId).toBeUndefined();
+      expect(result.current.selectedCompanyName).toBeUndefined();
     });
 
-    it('should_replaceSelectedCompany_when_openEditModalCalledWithDifferentId', () => {
+    it('should_replaceSelectedCompany_when_openEditModalCalledWithDifferentName', () => {
       const { result } = renderHook(() => useCompanyStore());
 
       act(() => {
-        result.current.openEditModal('company-123');
+        result.current.openEditModal('Swiss IT Solutions AG');
       });
 
-      expect(result.current.selectedCompanyId).toBe('company-123');
+      expect(result.current.selectedCompanyName).toBe('Swiss IT Solutions AG');
 
       act(() => {
-        result.current.openEditModal('company-456');
+        result.current.openEditModal('Swisscom AG');
       });
 
-      expect(result.current.selectedCompanyId).toBe('company-456');
+      expect(result.current.selectedCompanyName).toBe('Swisscom AG');
     });
   });
 
@@ -402,18 +402,18 @@ describe('companyStore', () => {
       expect(parsedState.state.isEditModalOpen).toBeUndefined();
     });
 
-    it('should_notPersistSelectedCompanyId_when_storeRemounted', () => {
+    it('should_notPersistSelectedCompanyName_when_storeRemounted', () => {
       const { result } = renderHook(() => useCompanyStore());
 
       act(() => {
-        result.current.setSelectedCompanyId('company-123');
+        result.current.setSelectedCompanyName('Swiss IT Solutions AG');
       });
 
-      // Check localStorage directly - selectedCompanyId should not be in storage
+      // Check localStorage directly - selectedCompanyName should not be in storage
       const stored = localStorage.getItem('company-store');
       expect(stored).toBeTruthy();
       const parsedState = JSON.parse(stored!);
-      expect(parsedState.state.selectedCompanyId).toBeUndefined();
+      expect(parsedState.state.selectedCompanyName).toBeUndefined();
     });
   });
 
@@ -428,12 +428,12 @@ describe('companyStore', () => {
 
       // Select company and open edit modal
       act(() => {
-        result.current.openEditModal('company-123');
+        result.current.openEditModal('Swiss IT Solutions AG');
       });
 
       expect(result.current.filters).toEqual({ isPartner: true, industry: 'DevOps' });
       expect(result.current.isEditModalOpen).toBe(true);
-      expect(result.current.selectedCompanyId).toBe('company-123');
+      expect(result.current.selectedCompanyName).toBe('Swiss IT Solutions AG');
 
       // Close edit and open create
       act(() => {
@@ -446,7 +446,7 @@ describe('companyStore', () => {
 
       expect(result.current.isEditModalOpen).toBe(false);
       expect(result.current.isCreateModalOpen).toBe(true);
-      expect(result.current.selectedCompanyId).toBeUndefined();
+      expect(result.current.selectedCompanyName).toBeUndefined();
       expect(result.current.filters).toEqual({ isPartner: true, industry: 'DevOps' });
     });
 
@@ -456,7 +456,7 @@ describe('companyStore', () => {
       act(() => {
         result.current.setFilters({ isPartner: true });
         result.current.toggleViewMode();
-        result.current.setSelectedCompanyId('company-123');
+        result.current.setSelectedCompanyName('Swiss IT Solutions AG');
         result.current.openCreateModal();
         result.current.setFilters({ industry: 'Cloud Computing' });
         result.current.toggleViewMode();
@@ -465,7 +465,7 @@ describe('companyStore', () => {
 
       expect(result.current.filters).toEqual({ industry: 'Cloud Computing' });
       expect(result.current.viewMode).toBe('grid'); // Toggled twice
-      expect(result.current.selectedCompanyId).toBe('company-123');
+      expect(result.current.selectedCompanyName).toBe('Swiss IT Solutions AG');
       expect(result.current.isCreateModalOpen).toBe(false);
     });
   });

@@ -4,983 +4,1007 @@
  */
 
 export interface paths {
-    "/companies": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List and search companies with advanced query support
-         * @description Retrieve a paginated list of companies with optional filtering, sorting, field selection, and resource expansion.
-         *
-         *     **Acceptance Criteria**: AC1, AC14, AC15
-         *
-         *     **Filter Syntax Examples**:
-         *     - Single filter: `{"industry":"Technology"}`
-         *     - Multiple fields: `{"industry":"Technology","isVerified":true}`
-         *     - Logical operators: `{"$or":[{"industry":"Technology"},{"industry":"Finance"}]}`
-         *     - Comparison: `{"createdAt":{"$gte":"2025-01-01T00:00:00Z"}}`
-         *     - Contains: `{"name":{"$contains":"Bern"}}`
-         *
-         *     **Sort Syntax**:
-         *     - Ascending: `name` or `+name`
-         *     - Descending: `-name`
-         *     - Multiple fields: `industry,-createdAt`
-         *
-         *     **Field Selection**:
-         *     - Specific fields: `?fields=id,name,industry`
-         *     - All fields: omit `fields` parameter
-         *
-         *     **Resource Expansion**:
-         *     - Statistics: `?include=statistics` (totalEvents, totalSpeakers, totalPartners)
-         *     - Logo: `?include=logo` (url, s3Key, fileId)
-         *     - Multiple: `?include=statistics,logo`
-         *
-         *     **Performance**:
-         *     - Basic query: <100ms (P95)
-         *     - With all includes: <200ms (P95)
-         */
-        get: operations["listCompanies"];
-        put?: never;
-        /**
-         * Create a new company
-         * @description Create a new company with complete company data.
-         *
-         *     **Acceptance Criteria**: AC1, AC3
-         *
-         *     **Validation Rules**:
-         *     - Company name must be unique
-         *     - Swiss UID format (if provided): CHE-XXX.XXX.XXX
-         *     - Website must be valid URL (if provided)
-         *
-         *     **Events Published**: CompanyCreatedEvent to EventBridge
-         *
-         *     **Performance**: <200ms (P95)
-         */
-        post: operations["createCompany"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+  '/companies': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/companies/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get company details
-         * @description Retrieve detailed information about a specific company.
-         *
-         *     **Acceptance Criteria**: AC2
-         *
-         *     **Performance**: <150ms (P95)
-         */
-        get: operations["getCompany"];
-        /**
-         * Update company (full replacement)
-         * @description Replace all company data with new data.
-         *
-         *     **Acceptance Criteria**: AC4
-         *
-         *     **Validation Rules**:
-         *     - Company name must be unique
-         *     - Swiss UID format (if provided): CHE-XXX.XXX.XXX
-         *
-         *     **Events Published**: CompanyUpdatedEvent to EventBridge
-         *
-         *     **Cache Invalidation**: All company caches cleared on update
-         */
-        put: operations["updateCompany"];
-        post?: never;
-        /**
-         * Delete company
-         * @description Delete a company and all associated data.
-         *
-         *     **Acceptance Criteria**: AC4
-         *
-         *     **Events Published**: CompanyDeletedEvent to EventBridge
-         *
-         *     **Cache Invalidation**: All company caches cleared on deletion
-         */
-        delete: operations["deleteCompany"];
-        options?: never;
-        head?: never;
-        /**
-         * Partially update company
-         * @description Update specific fields of an existing company.
-         *
-         *     **Acceptance Criteria**: AC4
-         *
-         *     **Validation Rules**:
-         *     - Company name must be unique
-         *     - Swiss UID format (if provided): CHE-XXX.XXX.XXX
-         *
-         *     **Events Published**: CompanyUpdatedEvent to EventBridge
-         *
-         *     **Cache Invalidation**: All company caches cleared on update
-         */
-        patch: operations["patchCompany"];
-        trace?: never;
+    /**
+     * List and search companies with advanced query support
+     * @description Retrieve a paginated list of companies with optional filtering, sorting, field selection, and resource expansion.
+     *
+     *     **Acceptance Criteria**: AC1, AC14, AC15
+     *
+     *     **Filter Syntax Examples**:
+     *     - Single filter: `{"industry":"Technology"}`
+     *     - Multiple fields: `{"industry":"Technology","isVerified":true}`
+     *     - Logical operators: `{"$or":[{"industry":"Technology"},{"industry":"Finance"}]}`
+     *     - Comparison: `{"createdAt":{"$gte":"2025-01-01T00:00:00Z"}}`
+     *     - Contains: `{"name":{"$contains":"Bern"}}`
+     *
+     *     **Sort Syntax**:
+     *     - Ascending: `name` or `+name`
+     *     - Descending: `-name`
+     *     - Multiple fields: `industry,-createdAt`
+     *
+     *     **Field Selection**:
+     *     - Specific fields: `?fields=id,name,industry`
+     *     - All fields: omit `fields` parameter
+     *
+     *     **Resource Expansion**:
+     *     - Statistics: `?include=statistics` (totalEvents, totalSpeakers, totalPartners)
+     *     - Logo: `?include=logo` (url, s3Key, fileId)
+     *     - Multiple: `?include=statistics,logo`
+     *
+     *     **Performance**:
+     *     - Basic query: <100ms (P95)
+     *     - With all includes: <200ms (P95)
+     */
+    get: operations['listCompanies'];
+    put?: never;
+    /**
+     * Create a new company
+     * @description Create a new company with complete company data.
+     *
+     *     **Acceptance Criteria**: AC1, AC3
+     *
+     *     **Validation Rules**:
+     *     - Company name must be unique
+     *     - Swiss UID format (if provided): CHE-XXX.XXX.XXX
+     *     - Website must be valid URL (if provided)
+     *
+     *     **Events Published**: CompanyCreatedEvent to EventBridge
+     *
+     *     **Performance**: <200ms (P95)
+     */
+    post: operations['createCompany'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/companies/{name}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/companies/search": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Search companies with autocomplete
-         * @description Search companies by name with autocomplete functionality.
-         *
-         *     **Acceptance Criteria**: AC5, AC11
-         *
-         *     **Caching**:
-         *     - Caffeine in-memory cache with 15-minute TTL
-         *     - Cache key includes both query and limit
-         *     - Automatic cache invalidation on company updates
-         *
-         *     **Performance**:
-         *     - Cached response: <50ms (P95)
-         *     - Cache miss: <100ms (P95)
-         *
-         *     **Default Results**: 20 companies (configurable via limit parameter)
-         */
-        get: operations["searchCompanies"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Get company details by name
+     * @description Retrieve detailed information about a specific company.
+     *
+     *     **Acceptance Criteria**: AC2
+     *
+     *     **Story 1.16.2**: Uses company name as identifier instead of UUID
+     *
+     *     **Performance**: <150ms (P95)
+     */
+    get: operations['getCompany'];
+    /**
+     * Update company (full replacement)
+     * @description Replace all company data with new data.
+     *
+     *     **Acceptance Criteria**: AC4
+     *
+     *     **Story 1.16.2**: Uses company name as identifier instead of UUID
+     *
+     *     **Validation Rules**:
+     *     - Company name must be unique
+     *     - Swiss UID format (if provided): CHE-XXX.XXX.XXX
+     *
+     *     **Events Published**: CompanyUpdatedEvent to EventBridge
+     *
+     *     **Cache Invalidation**: All company caches cleared on update
+     */
+    put: operations['updateCompany'];
+    post?: never;
+    /**
+     * Delete company
+     * @description Delete a company and all associated data.
+     *
+     *     **Acceptance Criteria**: AC4
+     *
+     *     **Story 1.16.2**: Uses company name as identifier instead of UUID
+     *
+     *     **Events Published**: CompanyDeletedEvent to EventBridge
+     *
+     *     **Cache Invalidation**: All company caches cleared on deletion
+     */
+    delete: operations['deleteCompany'];
+    options?: never;
+    head?: never;
+    /**
+     * Partially update company
+     * @description Update specific fields of an existing company.
+     *
+     *     **Acceptance Criteria**: AC4
+     *
+     *     **Story 1.16.2**: Uses company name as identifier instead of UUID
+     *
+     *     **Validation Rules**:
+     *     - Company name must be unique
+     *     - Swiss UID format (if provided): CHE-XXX.XXX.XXX
+     *
+     *     **Events Published**: CompanyUpdatedEvent to EventBridge
+     *
+     *     **Cache Invalidation**: All company caches cleared on update
+     */
+    patch: operations['patchCompany'];
+    trace?: never;
+  };
+  '/companies/search': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/companies/validate-uid": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Validate Swiss UID format
-         * @description Validates Swiss company UID (Unternehmens-Identifikationsnummer) format.
-         *
-         *     **Acceptance Criteria**: AC12
-         *
-         *     **Expected Format**: CHE-XXX.XXX.XXX
-         *
-         *     **Validation Rules**:
-         *     - Must start with "CHE-"
-         *     - Followed by 9 digits in XXX.XXX.XXX format
-         *     - Total length: 15 characters
-         *
-         *     **Future Enhancement**: Integration with Swiss Business Registry for real-time validation
-         */
-        get: operations["validateUID"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Search companies with autocomplete
+     * @description Search companies by name with autocomplete functionality.
+     *
+     *     **Acceptance Criteria**: AC5, AC11
+     *
+     *     **Caching**:
+     *     - Caffeine in-memory cache with 15-minute TTL
+     *     - Cache key includes both query and limit
+     *     - Automatic cache invalidation on company updates
+     *
+     *     **Performance**:
+     *     - Cached response: <50ms (P95)
+     *     - Cache miss: <100ms (P95)
+     *
+     *     **Default Results**: 20 companies (configurable via limit parameter)
+     */
+    get: operations['searchCompanies'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/companies/validate-uid': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/companies/{id}/verify": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Verify company
-         * @description Marks a company as verified by an ORGANIZER.
-         *
-         *     **Acceptance Criteria**: AC13
-         *
-         *     **Authorization**: ORGANIZER role required
-         *
-         *     **Events Published**: CompanyVerifiedEvent to EventBridge
-         *
-         *     **Idempotency**: Safe to call multiple times (no error if already verified)
-         */
-        post: operations["verifyCompany"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Validate Swiss UID format
+     * @description Validates Swiss company UID (Unternehmens-Identifikationsnummer) format.
+     *
+     *     **Acceptance Criteria**: AC12
+     *
+     *     **Expected Format**: CHE-XXX.XXX.XXX
+     *
+     *     **Validation Rules**:
+     *     - Must start with "CHE-"
+     *     - Followed by 9 digits in XXX.XXX.XXX format
+     *     - Total length: 15 characters
+     *
+     *     **Future Enhancement**: Integration with Swiss Business Registry for real-time validation
+     */
+    get: operations['validateUID'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/companies/{name}/verify': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/companies/{id}/logo/presigned-url": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Request presigned URL for company logo upload
-         * @description Generates a presigned S3 URL for uploading a company logo directly to S3.
-         *
-         *     **Acceptance Criteria**: AC5
-         *
-         *     **Upload Flow**:
-         *     1. Client requests presigned URL with file metadata
-         *     2. Backend generates S3 presigned URL (15-minute expiration)
-         *     3. Client uploads file directly to S3 using presigned URL
-         *     4. Client calls confirm endpoint to save logo reference in company
-         *
-         *     **File Validation**:
-         *     - Supported formats: PNG, JPEG, SVG
-         *     - Maximum size: 5 MB (5,242,880 bytes)
-         *     - MIME types: image/png, image/jpeg, image/svg+xml
-         *
-         *     **Performance**: <100ms (P95)
-         */
-        post: operations["requestLogoUploadUrl"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /**
+     * Verify company
+     * @description Marks a company as verified by an ORGANIZER.
+     *
+     *     **Acceptance Criteria**: AC13
+     *
+     *     **Story 1.16.2**: Uses company name as identifier instead of UUID
+     *
+     *     **Authorization**: ORGANIZER role required
+     *
+     *     **Events Published**: CompanyVerifiedEvent to EventBridge
+     *
+     *     **Idempotency**: Safe to call multiple times (no error if already verified)
+     */
+    post: operations['verifyCompany'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/companies/{id}/logo/presigned-url': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/companies/{id}/logo/confirm": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Confirm logo upload completion
-         * @description Confirms that the logo has been successfully uploaded to S3 and stores the CloudFront CDN URL in the company record.
-         *
-         *     **Acceptance Criteria**: AC5
-         *
-         *     **Workflow**:
-         *     1. Client uploads file to S3 using presigned URL
-         *     2. Client calls this endpoint with fileId and fileExtension
-         *     3. Backend verifies S3 object exists (optional checksum validation)
-         *     4. Backend stores CloudFront CDN URL in company.logo_url
-         *     5. Returns full company response with logo URL
-         *
-         *     **Cache Invalidation**: Company caches cleared on confirmation
-         *
-         *     **Events Published**: CompanyLogoUpdatedEvent to EventBridge
-         *
-         *     **Performance**: <150ms (P95)
-         */
-        post: operations["confirmLogoUpload"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /**
+     * Request presigned URL for company logo upload
+     * @description Generates a presigned S3 URL for uploading a company logo directly to S3.
+     *
+     *     **Acceptance Criteria**: AC5
+     *
+     *     **Upload Flow**:
+     *     1. Client requests presigned URL with file metadata
+     *     2. Backend generates S3 presigned URL (15-minute expiration)
+     *     3. Client uploads file directly to S3 using presigned URL
+     *     4. Client calls confirm endpoint to save logo reference in company
+     *
+     *     **File Validation**:
+     *     - Supported formats: PNG, JPEG, SVG
+     *     - Maximum size: 5 MB (5,242,880 bytes)
+     *     - MIME types: image/png, image/jpeg, image/svg+xml
+     *
+     *     **Performance**: <100ms (P95)
+     */
+    post: operations['requestLogoUploadUrl'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/companies/{id}/logo/confirm': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    get?: never;
+    put?: never;
+    /**
+     * Confirm logo upload completion
+     * @description Confirms that the logo has been successfully uploaded to S3 and stores the CloudFront CDN URL in the company record.
+     *
+     *     **Acceptance Criteria**: AC5
+     *
+     *     **Workflow**:
+     *     1. Client uploads file to S3 using presigned URL
+     *     2. Client calls this endpoint with fileId and fileExtension
+     *     3. Backend verifies S3 object exists (optional checksum validation)
+     *     4. Backend stores CloudFront CDN URL in company.logo_url
+     *     5. Returns full company response with logo URL
+     *
+     *     **Cache Invalidation**: Company caches cleared on confirmation
+     *
+     *     **Events Published**: CompanyLogoUpdatedEvent to EventBridge
+     *
+     *     **Performance**: <150ms (P95)
+     */
+    post: operations['confirmLogoUpload'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: {
-        CompanyResponse: {
-            /**
-             * Format: uuid
-             * @example 550e8400-e29b-41d4-a716-446655440000
-             */
-            id: string;
-            /** @example Swiss IT Solutions AG */
-            name: string;
-            /** @example Swiss IT Solutions */
-            displayName?: string;
-            /** @example CHE-123.456.789 */
-            swissUID?: string;
-            /**
-             * Format: uri
-             * @example https://swiss-it.ch
-             */
-            website?: string;
-            /** @example Technology */
-            industry?: string;
-            /** @example Leading Swiss IT consulting firm specializing in cloud-native architectures */
-            description?: string;
-            /** @example true */
-            isVerified: boolean;
-            /**
-             * Format: date-time
-             * @example 2025-01-15T10:00:00Z
-             */
-            createdAt: string;
-            /**
-             * Format: date-time
-             * @example 2025-01-15T10:00:00Z
-             */
-            updatedAt: string;
-            /**
-             * @description User ID who created this company
-             * @example auth0|user_abc123
-             */
-            createdBy?: string;
-            statistics?: components["schemas"]["CompanyStatistics"];
-            logo?: components["schemas"]["CompanyLogo"];
-        };
-        /** @description Company statistics (included when ?include=statistics) */
-        CompanyStatistics: {
-            /**
-             * @description Total number of events the company participated in
-             * @example 12
-             */
-            totalEvents?: number;
-            /**
-             * @description Total number of speakers from this company
-             * @example 8
-             */
-            totalSpeakers?: number;
-            /**
-             * @description Total number of partnership engagements
-             * @example 5
-             */
-            totalPartners?: number;
-        };
-        /** @description Company logo details (included when ?include=logo) */
-        CompanyLogo: {
-            /**
-             * Format: uri
-             * @description CloudFront CDN URL for logo
-             * @example https://cdn.batbern.ch/logos/2025/550e8400-e29b-41d4-a716-446655440000/logo.png
-             */
-            url?: string;
-            /**
-             * @description S3 object key
-             * @example logos/2025/550e8400-e29b-41d4-a716-446655440000/logo.png
-             */
-            s3Key?: string;
-            /**
-             * @description Internal file identifier
-             * @example file-123
-             */
-            fileId?: string;
-        };
-        LogoUploadRequest: {
-            /**
-             * @description Original filename with extension
-             * @example company-logo.png
-             */
-            fileName: string;
-            /**
-             * @description File size in bytes (max 5 MB)
-             * @example 102400
-             */
-            fileSize: number;
-            /**
-             * @description MIME type of the file
-             * @example image/png
-             * @enum {string}
-             */
-            mimeType: "image/png" | "image/jpeg" | "image/svg+xml";
-        };
-        PresignedUploadUrl: {
-            /**
-             * Format: uri
-             * @description Presigned S3 URL for uploading (expires in 15 minutes)
-             * @example https://batbern-content-staging.s3.eu-central-1.amazonaws.com/logos/2025/550e8400/logo-abc123.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=...
-             */
-            uploadUrl: string;
-            /**
-             * @description Unique file identifier for tracking
-             * @example abc123-def456-ghi789
-             */
-            fileId: string;
-            /**
-             * @description S3 object key where file will be stored
-             * @example logos/2025/550e8400-e29b-41d4-a716-446655440000/logo-abc123.png
-             */
-            s3Key: string;
-            /**
-             * @description File extension (png, jpg, svg)
-             * @example png
-             */
-            fileExtension: string;
-            /**
-             * @description URL expiration time in minutes
-             * @example 15
-             */
-            expiresInMinutes: number;
-            /**
-             * @description HTTP headers required for the upload request
-             * @example {
-             *       "Content-Type": "image/png"
-             *     }
-             */
-            requiredHeaders?: {
-                [key: string]: string;
-            };
-        };
-        LogoUploadConfirmRequest: {
-            /**
-             * @description File ID returned from presigned URL request
-             * @example abc123-def456-ghi789
-             */
-            fileId: string;
-            /**
-             * @description File extension (png, jpg, svg)
-             * @example png
-             */
-            fileExtension: string;
-            /**
-             * @description Optional SHA-256 checksum for integrity verification
-             * @example e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-             */
-            checksum?: string;
-        };
-        LogoUploadConfirmResponse: {
-            /**
-             * Format: uri
-             * @description CloudFront CDN URL for the uploaded logo
-             * @example https://dhndjchovz1zp.cloudfront.net/logos/2025/550e8400/logo-abc123.png
-             */
-            logoUrl: string;
-        };
-        CompanySearchResponse: {
-            /**
-             * Format: uuid
-             * @example 550e8400-e29b-41d4-a716-446655440000
-             */
-            id: string;
-            /** @example Swiss IT Solutions AG */
-            name: string;
-            /** @example Swiss IT Solutions */
-            displayName?: string;
-            /** @example CHE-123.456.789 */
-            swissUID?: string;
-            /** @example Technology */
-            industry?: string;
-            /** @example true */
-            isVerified: boolean;
-        };
-        CreateCompanyRequest: {
-            /** @example Swiss IT Solutions AG */
-            name: string;
-            /** @example Swiss IT Solutions */
-            displayName?: string;
-            /** @example CHE-123.456.789 */
-            swissUID?: string;
-            /**
-             * Format: uri
-             * @example https://swiss-it.ch
-             */
-            website?: string;
-            /** @example Technology */
-            industry?: string;
-            /** @example Leading Swiss IT consulting firm */
-            description?: string;
-        };
-        UpdateCompanyRequest: {
-            /** @example Swiss IT Solutions AG */
-            name?: string;
-            /** @example Swiss IT Solutions */
-            displayName?: string;
-            /** @example CHE-123.456.789 */
-            swissUID?: string;
-            /**
-             * Format: uri
-             * @example https://swiss-it.ch
-             */
-            website?: string;
-            /** @example Technology */
-            industry?: string;
-            /** @example Leading Swiss IT consulting firm */
-            description?: string;
-        };
-        UIDValidationResponse: {
-            /** @example true */
-            valid: boolean;
-            /** @example CHE-123.456.789 */
-            uid: string;
-            /** @example Valid Swiss UID format */
-            message: string;
-        };
-        PaginatedCompanyResponse: {
-            data: components["schemas"]["CompanyResponse"][];
-            pagination: components["schemas"]["PaginationMetadata"];
-        };
-        PaginationMetadata: {
-            /**
-             * @description Current page (1-indexed)
-             * @example 1
-             */
-            page: number;
-            /**
-             * @description Items per page
-             * @example 20
-             */
-            limit: number;
-            /**
-             * @description Total number of items
-             * @example 100
-             */
-            totalItems: number;
-            /**
-             * @description Total number of pages
-             * @example 5
-             */
-            totalPages: number;
-            /**
-             * @description Whether there is a next page
-             * @example true
-             */
-            hasNext: boolean;
-            /**
-             * @description Whether there is a previous page
-             * @example false
-             */
-            hasPrev: boolean;
-        };
-        ErrorResponse: {
-            /** @example VALIDATION_ERROR */
-            error: string;
-            /** @example BAD_REQUEST */
-            errorCode?: string;
-            /** @example Invalid filter syntax */
-            message: string;
-            /**
-             * Format: date-time
-             * @example 2025-01-15T10:30:00Z
-             */
-            timestamp: string;
-            /** @description Additional error details */
-            details?: Record<string, never>;
-        };
+  schemas: {
+    /**
+     * @description Company response with meaningful IDs.
+     *     Story 1.16.2: name field is the unique identifier (no separate id field).
+     */
+    CompanyResponse: {
+      /**
+       * @description Company name (unique identifier, alphanumeric only) - Story 1.16.2
+       * @example SwissITSolutionsAG
+       */
+      name: string;
+      /** @example Swiss IT Solutions AG */
+      displayName?: string;
+      /** @example CHE-123.456.789 */
+      swissUID?: string;
+      /**
+       * Format: uri
+       * @example https://swiss-it.ch
+       */
+      website?: string;
+      /** @example Technology */
+      industry?: string;
+      /** @example Leading Swiss IT consulting firm specializing in cloud-native architectures */
+      description?: string;
+      /** @example true */
+      isVerified: boolean;
+      /**
+       * Format: date-time
+       * @example 2025-01-15T10:00:00Z
+       */
+      createdAt: string;
+      /**
+       * Format: date-time
+       * @example 2025-01-15T10:00:00Z
+       */
+      updatedAt: string;
+      /**
+       * @description User ID who created this company
+       * @example auth0|user_abc123
+       */
+      createdBy?: string;
+      statistics?: components['schemas']['CompanyStatistics'];
+      logo?: components['schemas']['CompanyLogo'];
     };
-    responses: {
-        /** @description Bad request - validation error */
-        BadRequest: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["ErrorResponse"];
-            };
-        };
-        /** @description Unauthorized - missing or invalid JWT token */
-        Unauthorized: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["ErrorResponse"];
-            };
-        };
-        /** @description Forbidden - insufficient permissions */
-        Forbidden: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["ErrorResponse"];
-            };
-        };
-        /** @description Resource not found */
-        NotFound: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["ErrorResponse"];
-            };
-        };
-        /** @description Conflict - resource already exists */
-        Conflict: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["ErrorResponse"];
-            };
-        };
-        /** @description Internal server error */
-        InternalServerError: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["ErrorResponse"];
-            };
-        };
+    /** @description Company statistics (included when ?include=statistics) */
+    CompanyStatistics: {
+      /**
+       * @description Total number of events the company participated in
+       * @example 12
+       */
+      totalEvents?: number;
+      /**
+       * @description Total number of speakers from this company
+       * @example 8
+       */
+      totalSpeakers?: number;
+      /**
+       * @description Total number of partnership engagements
+       * @example 5
+       */
+      totalPartners?: number;
     };
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+    /** @description Company logo details (included when ?include=logo) */
+    CompanyLogo: {
+      /**
+       * Format: uri
+       * @description CloudFront CDN URL for logo
+       * @example https://cdn.batbern.ch/logos/swiss-it-solutions-ag/logo.png
+       */
+      url?: string;
+      /**
+       * @description S3 object key
+       * @example logos/swiss-it-solutions-ag/logo.png
+       */
+      s3Key?: string;
+      /**
+       * @description Internal file identifier
+       * @example file-123
+       */
+      fileId?: string;
+    };
+    LogoUploadRequest: {
+      /**
+       * @description Original filename with extension
+       * @example company-logo.png
+       */
+      fileName: string;
+      /**
+       * @description File size in bytes (max 5 MB)
+       * @example 102400
+       */
+      fileSize: number;
+      /**
+       * @description MIME type of the file
+       * @example image/png
+       * @enum {string}
+       */
+      mimeType: 'image/png' | 'image/jpeg' | 'image/svg+xml';
+    };
+    PresignedUploadUrl: {
+      /**
+       * Format: uri
+       * @description Presigned S3 URL for uploading (expires in 15 minutes)
+       * @example https://batbern-content-staging.s3.eu-central-1.amazonaws.com/logos/2025/550e8400/logo-abc123.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=...
+       */
+      uploadUrl: string;
+      /**
+       * @description Unique file identifier for tracking
+       * @example abc123-def456-ghi789
+       */
+      fileId: string;
+      /**
+       * @description S3 object key where file will be stored
+       * @example logos/2025/550e8400-e29b-41d4-a716-446655440000/logo-abc123.png
+       */
+      s3Key: string;
+      /**
+       * @description File extension (png, jpg, svg)
+       * @example png
+       */
+      fileExtension: string;
+      /**
+       * @description URL expiration time in minutes
+       * @example 15
+       */
+      expiresInMinutes: number;
+      /**
+       * @description HTTP headers required for the upload request
+       * @example {
+       *       "Content-Type": "image/png"
+       *     }
+       */
+      requiredHeaders?: {
+        [key: string]: string;
+      };
+    };
+    LogoUploadConfirmRequest: {
+      /**
+       * @description File ID returned from presigned URL request
+       * @example abc123-def456-ghi789
+       */
+      fileId: string;
+      /**
+       * @description File extension (png, jpg, svg)
+       * @example png
+       */
+      fileExtension: string;
+      /**
+       * @description Optional SHA-256 checksum for integrity verification
+       * @example e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+       */
+      checksum?: string;
+    };
+    LogoUploadConfirmResponse: {
+      /**
+       * Format: uri
+       * @description CloudFront CDN URL for the uploaded logo
+       * @example https://dhndjchovz1zp.cloudfront.net/logos/2025/550e8400/logo-abc123.png
+       */
+      logoUrl: string;
+    };
+    /**
+     * @description Company search result with meaningful IDs.
+     *     Story 1.16.2: name field is the unique identifier (no separate id field).
+     */
+    CompanySearchResponse: {
+      /**
+       * @description Company name (unique identifier, alphanumeric only) - Story 1.16.2
+       * @example SwissITSolutionsAG
+       */
+      name: string;
+      /** @example Swiss IT Solutions AG */
+      displayName?: string;
+      /** @example CHE-123.456.789 */
+      swissUID?: string;
+      /** @example Technology */
+      industry?: string;
+      /** @example true */
+      isVerified: boolean;
+    };
+    CreateCompanyRequest: {
+      /**
+       * @description Company name (unique identifier, alphanumeric only)
+       * @example SwissITSolutionsAG
+       */
+      name: string;
+      /** @example Swiss IT Solutions AG */
+      displayName?: string;
+      /** @example CHE-123.456.789 */
+      swissUID?: string;
+      /**
+       * Format: uri
+       * @example https://swiss-it.ch
+       */
+      website?: string;
+      /** @example Technology */
+      industry?: string;
+      /** @example Leading Swiss IT consulting firm */
+      description?: string;
+    };
+    UpdateCompanyRequest: {
+      /**
+       * @description Company name (unique identifier, alphanumeric only)
+       * @example SwissITSolutionsAG
+       */
+      name?: string;
+      /** @example Swiss IT Solutions AG */
+      displayName?: string;
+      /** @example CHE-123.456.789 */
+      swissUID?: string;
+      /**
+       * Format: uri
+       * @example https://swiss-it.ch
+       */
+      website?: string;
+      /** @example Technology */
+      industry?: string;
+      /** @example Leading Swiss IT consulting firm */
+      description?: string;
+    };
+    UIDValidationResponse: {
+      /** @example true */
+      valid: boolean;
+      /** @example CHE-123.456.789 */
+      uid: string;
+      /** @example Valid Swiss UID format */
+      message: string;
+    };
+    PaginatedCompanyResponse: {
+      data: components['schemas']['CompanyResponse'][];
+      pagination: components['schemas']['PaginationMetadata'];
+    };
+    PaginationMetadata: {
+      /**
+       * @description Current page (1-indexed)
+       * @example 1
+       */
+      page: number;
+      /**
+       * @description Items per page
+       * @example 20
+       */
+      limit: number;
+      /**
+       * @description Total number of items
+       * @example 100
+       */
+      totalItems: number;
+      /**
+       * @description Total number of pages
+       * @example 5
+       */
+      totalPages: number;
+      /**
+       * @description Whether there is a next page
+       * @example true
+       */
+      hasNext: boolean;
+      /**
+       * @description Whether there is a previous page
+       * @example false
+       */
+      hasPrev: boolean;
+    };
+    ErrorResponse: {
+      /** @example VALIDATION_ERROR */
+      error: string;
+      /** @example BAD_REQUEST */
+      errorCode?: string;
+      /** @example Invalid filter syntax */
+      message: string;
+      /**
+       * Format: date-time
+       * @example 2025-01-15T10:30:00Z
+       */
+      timestamp: string;
+      /** @description Additional error details */
+      details?: Record<string, never>;
+    };
+  };
+  responses: {
+    /** @description Bad request - validation error */
+    BadRequest: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': components['schemas']['ErrorResponse'];
+      };
+    };
+    /** @description Unauthorized - missing or invalid JWT token */
+    Unauthorized: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': components['schemas']['ErrorResponse'];
+      };
+    };
+    /** @description Forbidden - insufficient permissions */
+    Forbidden: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': components['schemas']['ErrorResponse'];
+      };
+    };
+    /** @description Resource not found */
+    NotFound: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': components['schemas']['ErrorResponse'];
+      };
+    };
+    /** @description Conflict - resource already exists */
+    Conflict: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': components['schemas']['ErrorResponse'];
+      };
+    };
+    /** @description Internal server error */
+    InternalServerError: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': components['schemas']['ErrorResponse'];
+      };
+    };
+  };
+  parameters: never;
+  requestBodies: never;
+  headers: never;
+  pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    listCompanies: {
-        parameters: {
-            query?: {
-                /** @description MongoDB-style JSON filter criteria */
-                filter?: string;
-                /** @description Sort fields (comma-separated, prefix with - for descending) */
-                sort?: string;
-                /** @description Page number (1-indexed) */
-                page?: number;
-                /** @description Items per page (max 100) */
-                limit?: number;
-                /** @description Comma-separated field names for sparse fieldsets */
-                fields?: string;
-                /** @description Comma-separated list of resources to include */
-                include?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response with paginated companies */
-            200: {
-                headers: {
-                    /** @description Cache hit status (HIT or MISS) */
-                    "X-Cache-Status"?: "HIT" | "MISS";
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PaginatedCompanyResponse"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            500: components["responses"]["InternalServerError"];
-        };
+  listCompanies: {
+    parameters: {
+      query?: {
+        /** @description MongoDB-style JSON filter criteria */
+        filter?: string;
+        /** @description Sort fields (comma-separated, prefix with - for descending) */
+        sort?: string;
+        /** @description Page number (1-indexed) */
+        page?: number;
+        /** @description Items per page (max 100) */
+        limit?: number;
+        /** @description Comma-separated field names for sparse fieldsets */
+        fields?: string;
+        /** @description Comma-separated list of resources to include */
+        include?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    createCompany: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful response with paginated companies */
+      200: {
+        headers: {
+          /** @description Cache hit status (HIT or MISS) */
+          'X-Cache-Status'?: 'HIT' | 'MISS';
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateCompanyRequest"];
-            };
+        content: {
+          'application/json': components['schemas']['PaginatedCompanyResponse'];
         };
-        responses: {
-            /** @description Company created successfully */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CompanyResponse"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            409: components["responses"]["Conflict"];
-            500: components["responses"]["InternalServerError"];
-        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      500: components['responses']['InternalServerError'];
     };
-    getCompany: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Company UUID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Company details retrieved successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CompanyResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-            500: components["responses"]["InternalServerError"];
-        };
+  };
+  createCompany: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    updateCompany: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateCompanyRequest"];
-            };
-        };
-        responses: {
-            /** @description Company updated successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CompanyResponse"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            500: components["responses"]["InternalServerError"];
-        };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateCompanyRequest'];
+      };
     };
-    deleteCompany: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
+    responses: {
+      /** @description Company created successfully */
+      201: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Company deleted successfully */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            500: components["responses"]["InternalServerError"];
+        content: {
+          'application/json': components['schemas']['CompanyResponse'];
         };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      409: components['responses']['Conflict'];
+      500: components['responses']['InternalServerError'];
     };
-    patchCompany: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateCompanyRequest"];
-            };
-        };
-        responses: {
-            /** @description Company updated successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CompanyResponse"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            500: components["responses"]["InternalServerError"];
-        };
+  };
+  getCompany: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Company name (unique identifier) */
+        name: string;
+      };
+      cookie?: never;
     };
-    searchCompanies: {
-        parameters: {
-            query: {
-                /** @description Search query (minimum 1 character) */
-                query: string;
-                /** @description Maximum number of results (default 20) */
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Company details retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Search results returned successfully */
-            200: {
-                headers: {
-                    /** @description Cache hit status (HIT or MISS) */
-                    "X-Cache-Status"?: "HIT" | "MISS";
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CompanySearchResponse"][];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            500: components["responses"]["InternalServerError"];
+        content: {
+          'application/json': components['schemas']['CompanyResponse'];
         };
+      };
+      401: components['responses']['Unauthorized'];
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
     };
-    validateUID: {
-        parameters: {
-            query: {
-                /** @description Swiss UID to validate */
-                uid: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Validation result returned */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UIDValidationResponse"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            500: components["responses"]["InternalServerError"];
-        };
+  };
+  updateCompany: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Company name (unique identifier) */
+        name: string;
+      };
+      cookie?: never;
     };
-    verifyCompany: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Company verified successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CompanyResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            500: components["responses"]["InternalServerError"];
-        };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateCompanyRequest'];
+      };
     };
-    requestLogoUploadUrl: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Company UUID */
-                id: string;
-            };
-            cookie?: never;
+    responses: {
+      /** @description Company updated successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                /**
-                 * @example {
-                 *       "fileName": "company-logo.png",
-                 *       "fileSize": 102400,
-                 *       "mimeType": "image/png"
-                 *     }
-                 */
-                "application/json": components["schemas"]["LogoUploadRequest"];
-            };
+        content: {
+          'application/json': components['schemas']['CompanyResponse'];
         };
-        responses: {
-            /** @description Presigned URL generated successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "uploadUrl": "https://batbern-content-staging.s3.eu-central-1.amazonaws.com/logos/2025/550e8400/logo-abc123.png?X-Amz-Algorithm=AWS4-HMAC-SHA256...",
-                     *       "fileId": "abc123-def456-ghi789",
-                     *       "s3Key": "logos/2025/550e8400-e29b-41d4-a716-446655440000/logo-abc123.png",
-                     *       "fileExtension": "png",
-                     *       "expiresInMinutes": 15,
-                     *       "requiredHeaders": {
-                     *         "Content-Type": "image/png"
-                     *       }
-                     *     }
-                     */
-                    "application/json": components["schemas"]["PresignedUploadUrl"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-            500: components["responses"]["InternalServerError"];
-        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      409: components['responses']['Conflict'];
+      500: components['responses']['InternalServerError'];
     };
-    confirmLogoUpload: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Company UUID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                /**
-                 * @example {
-                 *       "fileId": "abc123-def456-ghi789",
-                 *       "fileExtension": "png",
-                 *       "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-                 *     }
-                 */
-                "application/json": components["schemas"]["LogoUploadConfirmRequest"];
-            };
-        };
-        responses: {
-            /** @description Logo upload confirmed and company updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "logoUrl": "https://dhndjchovz1zp.cloudfront.net/logos/2025/550e8400/logo-abc123.png"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["LogoUploadConfirmResponse"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            500: components["responses"]["InternalServerError"];
-        };
+  };
+  deleteCompany: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Company name (unique identifier) */
+        name: string;
+      };
+      cookie?: never;
     };
+    requestBody?: never;
+    responses: {
+      /** @description Company deleted successfully */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  patchCompany: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Company name (unique identifier) */
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateCompanyRequest'];
+      };
+    };
+    responses: {
+      /** @description Company updated successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      409: components['responses']['Conflict'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  searchCompanies: {
+    parameters: {
+      query: {
+        /** @description Search query (minimum 1 character) */
+        query: string;
+        /** @description Maximum number of results (default 20) */
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Search results returned successfully */
+      200: {
+        headers: {
+          /** @description Cache hit status (HIT or MISS) */
+          'X-Cache-Status'?: 'HIT' | 'MISS';
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanySearchResponse'][];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  validateUID: {
+    parameters: {
+      query: {
+        /** @description Swiss UID to validate */
+        uid: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Validation result returned */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UIDValidationResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  verifyCompany: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Company name (unique identifier) */
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Company verified successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  requestLogoUploadUrl: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Company UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "fileName": "company-logo.png",
+         *       "fileSize": 102400,
+         *       "mimeType": "image/png"
+         *     }
+         */
+        'application/json': components['schemas']['LogoUploadRequest'];
+      };
+    };
+    responses: {
+      /** @description Presigned URL generated successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "uploadUrl": "https://batbern-content-staging.s3.eu-central-1.amazonaws.com/logos/2025/550e8400/logo-abc123.png?X-Amz-Algorithm=AWS4-HMAC-SHA256...",
+           *       "fileId": "abc123-def456-ghi789",
+           *       "s3Key": "logos/2025/550e8400-e29b-41d4-a716-446655440000/logo-abc123.png",
+           *       "fileExtension": "png",
+           *       "expiresInMinutes": 15,
+           *       "requiredHeaders": {
+           *         "Content-Type": "image/png"
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['PresignedUploadUrl'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  confirmLogoUpload: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Company UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "fileId": "abc123-def456-ghi789",
+         *       "fileExtension": "png",
+         *       "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+         *     }
+         */
+        'application/json': components['schemas']['LogoUploadConfirmRequest'];
+      };
+    };
+    responses: {
+      /** @description Logo upload confirmed and company updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "logoUrl": "https://dhndjchovz1zp.cloudfront.net/logos/2025/550e8400/logo-abc123.png"
+           *     }
+           */
+          'application/json': components['schemas']['LogoUploadConfirmResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
 }
