@@ -68,7 +68,7 @@ echo ""
 echo "✅ Configuration:"
 echo "   Bastion Instance: $BASTION_ID"
 echo "   RDS Endpoint: $RDS_ENDPOINT"
-echo "   Local Port: 5432"
+echo "   Local Port: 5433"
 echo "   Profile: $AWS_PROFILE"
 echo "   Region: $AWS_REGION"
 echo ""
@@ -78,15 +78,16 @@ echo "📝 IMPORTANT:"
 echo "   1. Keep this terminal open while working"
 echo "   2. In .env, set: DB_HOST=host.docker.internal (macOS/Windows)"
 echo "   3. In .env, set: DB_HOST=172.17.0.1 (Linux)"
-echo "   4. Press Ctrl+C to close tunnel when done"
+echo "   4. Use DB_PORT=5433 for staging database"
+echo "   5. Press Ctrl+C to close tunnel when done"
 echo ""
 echo "🚀 Tunnel active! You can now connect to staging database:"
-echo "   Connection available at localhost:5432"
+echo "   Connection available at localhost:5433"
 echo ""
 
 # Start the tunnel
 aws ssm start-session \
   --target $BASTION_ID \
   --document-name AWS-StartPortForwardingSessionToRemoteHost \
-  --parameters "{\"host\":[\"$RDS_ENDPOINT\"],\"portNumber\":[\"5432\"],\"localPortNumber\":[\"5432\"]}" \
+  --parameters "{\"host\":[\"$RDS_ENDPOINT\"],\"portNumber\":[\"5432\"],\"localPortNumber\":[\"5433\"]}" \
   --region $AWS_REGION
