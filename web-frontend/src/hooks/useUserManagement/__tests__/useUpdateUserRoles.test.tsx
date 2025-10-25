@@ -29,7 +29,7 @@ describe('useUpdateUserRoles', () => {
   const mockUpdatedUser = {
     id: 'user-123',
     email: 'test@example.com',
-    roles: ['USER', 'ADMIN'],
+    roles: ['USER', 'ORGANIZER'],
   };
 
   it('should_updateRoles_when_mutationCalled', async () => {
@@ -37,13 +37,13 @@ describe('useUpdateUserRoles', () => {
 
     const { result } = renderHook(() => useUpdateUserRoles(), { wrapper });
 
-    result.current.mutate({ id: 'user-123', roles: ['USER', 'ADMIN'] });
+    result.current.mutate({ id: 'user-123', roles: ['USER', 'ORGANIZER'] });
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    expect(updateUserRoles).toHaveBeenCalledWith('user-123', ['USER', 'ADMIN']);
+    expect(updateUserRoles).toHaveBeenCalledWith('user-123', ['USER', 'ORGANIZER']);
   });
 
   it('should_invalidateQueries_when_updateSucceeds', async () => {
@@ -53,7 +53,7 @@ describe('useUpdateUserRoles', () => {
 
     const { result } = renderHook(() => useUpdateUserRoles(), { wrapper });
 
-    result.current.mutate({ id: 'user-123', roles: ['USER', 'ADMIN'] });
+    result.current.mutate({ id: 'user-123', roles: ['USER', 'ORGANIZER'] });
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -78,14 +78,14 @@ describe('useUpdateUserRoles', () => {
 
     const { result } = renderHook(() => useUpdateUserRoles(), { wrapper });
 
-    result.current.mutate({ id: 'user-123', roles: ['USER', 'ADMIN'] });
+    result.current.mutate({ id: 'user-123', roles: ['USER', 'ORGANIZER'] });
 
     // Check optimistic update
     await waitFor(() => {
       const cachedData = queryClient.getQueryData<{ data: unknown[] }>(['users', 'list']);
       expect(cachedData?.data[0]).toMatchObject({
         id: 'user-123',
-        roles: ['USER', 'ADMIN'],
+        roles: ['USER', 'ORGANIZER'],
       });
     });
   });
@@ -102,7 +102,7 @@ describe('useUpdateUserRoles', () => {
 
     const { result } = renderHook(() => useUpdateUserRoles(), { wrapper });
 
-    result.current.mutate({ id: 'user-123', roles: ['USER', 'ADMIN'] });
+    result.current.mutate({ id: 'user-123', roles: ['USER', 'ORGANIZER'] });
 
     await waitFor(() => {
       expect(result.current.isError).toBe(true);

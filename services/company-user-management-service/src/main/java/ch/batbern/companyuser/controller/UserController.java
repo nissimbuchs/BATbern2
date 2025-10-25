@@ -96,7 +96,7 @@ public class UserController {
      * @return Created user profile with 201 status
      */
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER')")
+    @PreAuthorize("hasAnyRole('ORGANIZER')")
     @Timed(value = "users.createUser", description = "Time to create new user (admin/organizer)", percentiles = {0.5, 0.95, 0.99})
     public ResponseEntity<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
         log.info("Creating new user: {}", request.getEmail());
@@ -118,7 +118,7 @@ public class UserController {
      * @return Paginated list of users
      */
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER')")
+    @PreAuthorize("hasAnyRole('ORGANIZER')")
     @Timed(value = "users.listUsers", description = "Time to list users (admin/organizer)", percentiles = {0.5, 0.95, 0.99})
     public ResponseEntity<PaginatedUserResponse> listUsers(
             @RequestParam(required = false) String filter,
@@ -235,7 +235,7 @@ public class UserController {
      * @return No content
      */
     @DeleteMapping("/{username}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ORGANIZER')")
     @Timed(value = "users.deleteUser", description = "Time to delete user (GDPR compliance)", percentiles = {0.5, 0.95, 0.99})
     public ResponseEntity<Void> deleteUser(@PathVariable String username) {
         log.warn("Deleting user (GDPR): {}", username);
@@ -253,7 +253,7 @@ public class UserController {
      * @return User roles
      */
     @GetMapping("/{username}/roles")
-    @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER')")
+    @PreAuthorize("hasAnyRole('ORGANIZER')")
     @Timed(value = "users.getUserRoles", description = "Time to get user roles", percentiles = {0.5, 0.95, 0.99})
     public ResponseEntity<UserRolesResponse> getUserRoles(@PathVariable String username) {
         log.info("Getting roles for user: {}", username);
@@ -277,7 +277,7 @@ public class UserController {
      * @return Updated user roles
      */
     @PutMapping("/{username}/roles")
-    @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER')")
+    @PreAuthorize("hasAnyRole('ORGANIZER')")
     @Timed(value = "users.updateUserRoles", description = "Time to update user roles", percentiles = {0.5, 0.95, 0.99})
     public ResponseEntity<UserRolesResponse> updateUserRoles(
             @PathVariable String username,
