@@ -69,7 +69,7 @@ HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
   transform: vi.fn(),
   rect: vi.fn(),
   clip: vi.fn(),
-})) as any;
+})) as unknown as CanvasRenderingContext2D;
 
 // Mock AWS Amplify v6
 vi.mock('aws-amplify', () => ({
@@ -95,7 +95,7 @@ vi.mock('@aws-amplify/ui-react', () => ({
 
 // Suppress JSDOM errors for CORS preflight requests to S3 and Network errors
 // These are expected in test environment where we mock XHR/fetch
-vi.spyOn(console, 'error').mockImplementation((...args: any[]) => {
+vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
   if (
     typeof args[0] === 'string' &&
     (args[0].includes('Response for preflight has invalid HTTP status code') ||

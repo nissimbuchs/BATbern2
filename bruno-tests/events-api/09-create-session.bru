@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{baseUrl}}/events/{{createdEventId}}/sessions
+  url: {{baseUrl}}/events/{{createdEventCode}}/sessions
   body: json
   auth: bearer
 }
@@ -36,12 +36,12 @@ tests {
     expect(res.getStatus()).to.equal(201);
   });
 
-  test("should return created session", function() {
+  test("should return created session (Story 1.16.2: sessions still use ID, but eventCode for event reference)", function() {
     const session = res.getBody();
     expect(session.id).to.be.a('string');
     expect(session.title).to.equal('Opening Keynote');
     expect(session.sessionType).to.equal('keynote');
-    expect(session.eventId).to.equal(bru.getVar("createdEventId"));
+    expect(session.eventCode).to.equal(bru.getVar("createdEventCode"));
   });
 
   test("should save session id", function() {

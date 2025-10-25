@@ -24,6 +24,7 @@ export class VpcConstruct extends Construct {
   public readonly applicationSecurityGroup: ec2.SecurityGroup;
   public readonly databaseSecurityGroup: ec2.SecurityGroup;
   public readonly cacheSecurityGroup: ec2.SecurityGroup;
+  public readonly lambdaTriggersSecurityGroup: ec2.SecurityGroup;
 
   constructor(scope: Construct, id: string, props: VpcConstructProps) {
     super(scope, id);
@@ -82,6 +83,16 @@ export class VpcConstruct extends Construct {
       'Allow PostgreSQL access from application tier'
     );
 
+    // Allow PostgreSQL access from private subnets (for ECS services)
+    // This avoids cyclic dependencies when service stacks create their own security groups
+    this.vpc.privateSubnets.forEach((subnet, index) => {
+      this.databaseSecurityGroup.addIngressRule(
+        ec2.Peer.ipv4(subnet.ipv4CidrBlock),
+        ec2.Port.tcp(5432),
+        `Allow PostgreSQL access from private subnet ${index + 1}`
+      );
+    });
+
     // Cache tier security group
     this.cacheSecurityGroup = new ec2.SecurityGroup(this, 'CacheSG', {
       vpc: this.vpc,
@@ -94,6 +105,20 @@ export class VpcConstruct extends Construct {
       this.applicationSecurityGroup,
       ec2.Port.tcp(6379),
       'Allow Redis access from application tier'
+    );
+
+    // Lambda triggers security group (for Cognito triggers that access database)
+    this.lambdaTriggersSecurityGroup = new ec2.SecurityGroup(this, 'LambdaTriggersSG', {
+      vpc: this.vpc,
+      description: 'Security group for Cognito Lambda triggers',
+      allowAllOutbound: true, // Needs outbound for CloudWatch, Secrets Manager, etc.
+    });
+
+    // Allow database access from Lambda triggers
+    this.databaseSecurityGroup.addIngressRule(
+      this.lambdaTriggersSecurityGroup,
+      ec2.Port.tcp(5432),
+      'Allow Cognito trigger Lambda functions to access PostgreSQL database'
     );
 
     // Apply tags

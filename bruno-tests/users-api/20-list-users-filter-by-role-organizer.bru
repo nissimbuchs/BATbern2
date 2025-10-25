@@ -1,0 +1,69 @@
+meta {
+  name: List Users - Filter by Role ORGANIZER
+  type: http
+  seq: 20
+}
+
+get {
+  url: {{baseUrl}}/users
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+params:query {
+  role: ORGANIZER
+  page: 1
+  limit: 20
+}
+
+assert {
+  res.status: in [200, 403, 429]
+}
+
+tests {
+  test("should filter users by ORGANIZER role successfully", function() {
+    const status = res.getStatus();
+    expect([200, 403, 429]).to.include(status);
+    if (status === 403) {
+      console.log("Non-admin/organizer - access denied (expected)");
+    }
+    if (status === 429) {
+      console.log("Rate limited - too many requests");
+    }
+  });
+
+  test("should return only users with ORGANIZER role", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body.data).to.be.an('array');
+
+      // Verify all returned users have ORGANIZER role (if any are returned)
+      if (body.data.length > 0) {
+        body.data.forEach(user => {
+          expect(user.roles).to.be.an('array');
+          expect(user.roles).to.include('ORGANIZER');
+        });
+      }
+
+      console.log(`Found ${body.data.length} users with ORGANIZER role`);
+    }
+  });
+
+  test("should return pagination metadata", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body.pagination).to.exist;
+      expect(body.pagination.page).to.equal(1);
+      expect(body.pagination.limit).to.equal(20);
+    }
+  });
+}

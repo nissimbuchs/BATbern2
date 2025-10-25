@@ -26,3 +26,9 @@
 - [x] Fehlende Wireframes designen
 - [ ] API Architektur aktualisieren
 - [ ] Datenmodelle aktualisieren 
+
+
+
+Accessing the PostgeSQL through the tunnel:
+PGPASSWORD from /Users/nissim/dev/bat/BATbern-feature/.env.native
+export PGPASSWORD="***" && psql -h localhost -p 5432 -U postgres -d batbern -c "\d user_profiles"

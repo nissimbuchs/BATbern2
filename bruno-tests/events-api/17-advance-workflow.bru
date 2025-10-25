@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{baseUrl}}/events/{{createdEventId}}/workflow/advance
+  url: {{baseUrl}}/events/{{createdEventCode}}/workflow/advance
   body: none
   auth: bearer
 }
@@ -24,11 +24,17 @@ tests {
     expect([200, 422]).to.include(status);
   });
 
-  test("if successful, workflow should advance", function() {
+  test("if successful, workflow should advance (Story 1.16.2: use eventCode)", function() {
     if (res.getStatus() === 200) {
       const event = res.getBody();
-      expect(event.id).to.equal(bru.getVar("createdEventId"));
+      expect(event.eventCode).to.equal(bru.getVar("createdEventCode"));
       expect(event.status).to.be.a('string');
+    }
+  });
+
+  test("should NOT have id field (Story 1.16.2: removed redundant id)", function() {
+    if (res.getStatus() === 200) {
+      expect(res.getBody().id).to.be.undefined;
     }
   });
 }

@@ -27,7 +27,7 @@ import {
   useMediaQuery,
   Collapse,
   IconButton,
-  Typography
+  Typography,
 } from '@mui/material';
 import { FilterList as FilterIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
@@ -48,7 +48,7 @@ const INDUSTRIES = [
   'Education',
   'Government',
   'Technology',
-  'Consulting'
+  'Consulting',
 ];
 
 const CompanyFilters: React.FC<CompanyFiltersProps> = ({ onFilterChange, initialFilters = {} }) => {
@@ -146,12 +146,7 @@ const CompanyFilters: React.FC<CompanyFiltersProps> = ({ onFilterChange, initial
 
       {/* Active Filter Count Badge */}
       {hasActiveFilters && (
-        <Chip
-          label={activeFilterCount}
-          color="primary"
-          size="small"
-          sx={{ fontWeight: 'bold' }}
-        />
+        <Chip label={activeFilterCount} color="primary" size="small" sx={{ fontWeight: 'bold' }} />
       )}
     </Stack>
   );
@@ -169,13 +164,7 @@ const CompanyFilters: React.FC<CompanyFiltersProps> = ({ onFilterChange, initial
             <FilterIcon />
           </IconButton>
           <Typography variant="body2">{t('company.filters.filters')}</Typography>
-          {hasActiveFilters && (
-            <Chip
-              label={activeFilterCount}
-              color="primary"
-              size="small"
-            />
-          )}
+          {hasActiveFilters && <Chip label={activeFilterCount} color="primary" size="small" />}
           <IconButton
             onClick={() => setIsExpanded(!isExpanded)}
             size="small"
@@ -192,9 +181,7 @@ const CompanyFilters: React.FC<CompanyFiltersProps> = ({ onFilterChange, initial
 
         <Collapse in={isExpanded}>
           <Box p={2} border={1} borderColor="divider" borderRadius={1}>
-            <Stack spacing={2}>
-              {filterContent}
-            </Stack>
+            <Stack spacing={2}>{filterContent}</Stack>
           </Box>
         </Collapse>
       </Box>

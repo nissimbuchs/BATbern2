@@ -331,9 +331,11 @@ start_spring_service() {
     source "${ENV_NATIVE_FILE}"
     set +a
 
-    # Start the JAR with the correct port
+    # Start with gradlew bootRun for better hot-reload with DevTools
+    # Use absolute path from PROJECT_ROOT
+    local gradle_module=$(echo "$gradle_task" | sed 's/:bootRun$//')
     cd "${PROJECT_ROOT}"
-    nohup java -jar "$jar_path" --server.port=$port > "$log_file" 2>&1 &
+    nohup ./gradlew ${gradle_module}:bootRun --args="--server.port=$port" > "$log_file" 2>&1 &
     local pid=$!
     echo $pid > "$pid_file"
     disown  # Remove from job control so parent script can exit

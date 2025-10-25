@@ -7,7 +7,7 @@
  * Manages UI state for company management feature:
  * - Filter state (persisted in localStorage)
  * - View mode toggle (grid/list, persisted)
- * - Selected company ID (transient, not persisted)
+ * - Selected company name (transient, not persisted) - Story 1.16.2: uses company name as identifier
  * - Modal states (transient, not persisted)
  *
  * Uses Zustand with persist middleware for filter and view mode persistence
@@ -23,7 +23,7 @@ export const useCompanyStore = create<CompanyStore>()(
       // Initial state
       filters: {},
       viewMode: 'grid',
-      selectedCompanyId: undefined,
+      selectedCompanyName: undefined,
       isCreateModalOpen: false,
       isEditModalOpen: false,
 
@@ -36,23 +36,23 @@ export const useCompanyStore = create<CompanyStore>()(
           viewMode: state.viewMode === 'grid' ? 'list' : 'grid',
         })),
 
-      // Selected company management
-      setSelectedCompanyId: (id?: string) => set({ selectedCompanyId: id }),
+      // Selected company management (Story 1.16.2: uses company name as identifier)
+      setSelectedCompanyName: (name?: string) => set({ selectedCompanyName: name }),
 
       // Create modal management
       openCreateModal: () => set({ isCreateModalOpen: true }),
       closeCreateModal: () => set({ isCreateModalOpen: false }),
 
       // Edit modal management
-      openEditModal: (id: string) =>
+      openEditModal: (name: string) =>
         set({
-          selectedCompanyId: id,
+          selectedCompanyName: name,
           isEditModalOpen: true,
         }),
       closeEditModal: () =>
         set({
           isEditModalOpen: false,
-          selectedCompanyId: undefined,
+          selectedCompanyName: undefined,
         }),
     }),
     {

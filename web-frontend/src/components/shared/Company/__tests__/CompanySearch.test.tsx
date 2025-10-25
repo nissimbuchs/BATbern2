@@ -18,8 +18,8 @@ const createTestWrapper = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
-      mutations: { retry: false }
-    }
+      mutations: { retry: false },
+    },
   });
 
   return function Wrapper({ children }: { children: React.ReactNode }) {
@@ -36,11 +36,16 @@ describe('CompanySearch Component', () => {
   describe('AC2: Search & Autocomplete', () => {
     it('should_displaySearchInput_when_rendered', () => {
       // Test 2.1: Display search input (MUI Autocomplete uses combobox role)
-      render(<CompanySearch onSearch={vi.fn()} debounceMs={50} />, { wrapper: createTestWrapper() });
+      render(<CompanySearch onSearch={vi.fn()} debounceMs={50} />, {
+        wrapper: createTestWrapper(),
+      });
 
       const searchInput = screen.getByRole('combobox');
       expect(searchInput).toBeInTheDocument();
-      expect(searchInput).toHaveAttribute('placeholder', expect.stringMatching(/search.*companies/i));
+      expect(searchInput).toHaveAttribute(
+        'placeholder',
+        expect.stringMatching(/search.*companies/i)
+      );
     });
 
     it('should_debounceSearchInput_when_userTyping', async () => {
@@ -49,7 +54,7 @@ describe('CompanySearch Component', () => {
       const onSearch = vi.fn();
 
       render(<CompanySearch onSearch={onSearch} debounceMs={50} />, {
-        wrapper: createTestWrapper()
+        wrapper: createTestWrapper(),
       });
 
       const searchInput = screen.getByRole('combobox');
@@ -64,9 +69,12 @@ describe('CompanySearch Component', () => {
       expect(onSearch).not.toHaveBeenCalledWith('Test');
 
       // Wait for debounce delay (50ms + buffer)
-      await waitFor(() => {
-        expect(onSearch).toHaveBeenCalledWith('Test');
-      }, { timeout: 200 });
+      await waitFor(
+        () => {
+          expect(onSearch).toHaveBeenCalledWith('Test');
+        },
+        { timeout: 200 }
+      );
 
       // Verify it was only called once after debounce (not on every keystroke)
       expect(onSearch).toHaveBeenCalledTimes(1);
@@ -76,7 +84,9 @@ describe('CompanySearch Component', () => {
       // Test 2.1: Display autocomplete results
       const user = userEvent.setup();
 
-      render(<CompanySearch onSearch={vi.fn()} debounceMs={50} />, { wrapper: createTestWrapper() });
+      render(<CompanySearch onSearch={vi.fn()} debounceMs={50} />, {
+        wrapper: createTestWrapper(),
+      });
 
       const searchInput = screen.getByRole('combobox');
       await user.type(searchInput, 'Test');
@@ -85,9 +95,12 @@ describe('CompanySearch Component', () => {
       await user.click(searchInput);
 
       // Should show autocomplete dropdown after debounce + API response
-      await waitFor(() => {
-        expect(screen.getByRole('listbox')).toBeInTheDocument();
-      }, { timeout: 500 });
+      await waitFor(
+        () => {
+          expect(screen.getByRole('listbox')).toBeInTheDocument();
+        },
+        { timeout: 500 }
+      );
     });
 
     it('should_clearSearch_when_clearButtonClicked', async () => {
@@ -95,7 +108,9 @@ describe('CompanySearch Component', () => {
       const user = userEvent.setup();
       const onSearch = vi.fn();
 
-      render(<CompanySearch onSearch={onSearch} debounceMs={50} />, { wrapper: createTestWrapper() });
+      render(<CompanySearch onSearch={onSearch} debounceMs={50} />, {
+        wrapper: createTestWrapper(),
+      });
 
       const searchInput = screen.getByRole('combobox');
       await user.type(searchInput, 'Test Company');
@@ -119,11 +134,12 @@ describe('CompanySearch Component', () => {
       // Test highlighting of matching text in results
       const user = userEvent.setup();
 
-      render(<CompanySearch onSearch={vi.fn()} debounceMs={50} />, { wrapper: createTestWrapper() });
+      render(<CompanySearch onSearch={vi.fn()} debounceMs={50} />, {
+        wrapper: createTestWrapper(),
+      });
 
       const searchInput = screen.getByRole('combobox');
       await user.type(searchInput, 'Acme');
-
 
       await waitFor(() => {
         const highlighted = screen.getAllByTestId('highlighted-text');
@@ -137,21 +153,24 @@ describe('CompanySearch Component', () => {
       const onSelect = vi.fn();
 
       render(<CompanySearch onSearch={vi.fn()} onSelect={onSelect} debounceMs={50} />, {
-        wrapper: createTestWrapper()
+        wrapper: createTestWrapper(),
       });
 
       const searchInput = screen.getByRole('combobox');
       await user.type(searchInput, 'Test');
 
       // Wait for debounce (50ms) + API mock (100ms)
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       // Click input to open dropdown
       await user.click(searchInput);
 
-      await waitFor(() => {
-        expect(screen.getByRole('listbox')).toBeInTheDocument();
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          expect(screen.getByRole('listbox')).toBeInTheDocument();
+        },
+        { timeout: 1000 }
+      );
 
       // Click first result
       const firstResult = screen.getAllByRole('option')[0];
@@ -166,7 +185,9 @@ describe('CompanySearch Component', () => {
       // This behavior works correctly in the browser but can't be reliably tested in unit tests
       // Consider testing this in E2E tests instead (Task 1)
       const user = userEvent.setup();
-      const { container } = render(<CompanySearch onSearch={vi.fn()} debounceMs={50} />, { wrapper: createTestWrapper() });
+      render(<CompanySearch onSearch={vi.fn()} debounceMs={50} />, {
+        wrapper: createTestWrapper(),
+      });
 
       const searchInput = screen.getByRole('combobox');
 
@@ -175,37 +196,45 @@ describe('CompanySearch Component', () => {
       await user.type(searchInput, 'NonExistentCompany12345');
 
       // Wait for debounce (50ms) + API mock (100ms) + extra buffer
-      await new Promise(resolve => setTimeout(resolve, 250));
+      await new Promise((resolve) => setTimeout(resolve, 250));
 
       // Verify the input still has the value (component didn't crash)
       expect(searchInput).toHaveValue('NonExistentCompany12345');
 
       // MUI Autocomplete renders the popup in document.body, not in the component tree
       // Query from document.body to find the portal content
-      await waitFor(() => {
-        const noResultsMessage = document.body.querySelector('.MuiAutocomplete-noOptions');
-        expect(noResultsMessage).toBeInTheDocument();
-        expect(noResultsMessage).toHaveTextContent(/no companies found/i);
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          const noResultsMessage = document.body.querySelector('.MuiAutocomplete-noOptions');
+          expect(noResultsMessage).toBeInTheDocument();
+          expect(noResultsMessage).toHaveTextContent(/no companies found/i);
+        },
+        { timeout: 1000 }
+      );
     });
 
     it('should_navigateWithKeyboard_when_arrowKeysPressed', async () => {
       // Test keyboard navigation in autocomplete
       const user = userEvent.setup();
 
-      render(<CompanySearch onSearch={vi.fn()} debounceMs={50} />, { wrapper: createTestWrapper() });
+      render(<CompanySearch onSearch={vi.fn()} debounceMs={50} />, {
+        wrapper: createTestWrapper(),
+      });
 
       const searchInput = screen.getByRole('combobox');
       await user.click(searchInput);
       await user.type(searchInput, 'Test');
 
       // Wait for debounce (50ms) + API mock (100ms)
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       // Wait for listbox to appear
-      await waitFor(() => {
-        expect(screen.getByRole('listbox')).toBeInTheDocument();
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          expect(screen.getByRole('listbox')).toBeInTheDocument();
+        },
+        { timeout: 1000 }
+      );
 
       // Verify we have options
       const options = screen.getAllByRole('option');
@@ -219,14 +248,17 @@ describe('CompanySearch Component', () => {
 
       // MUI Autocomplete should update aria-activedescendant on keyboard navigation
       // to indicate which option has focus
-      await waitFor(() => {
-        const updatedInput = screen.getByRole('combobox');
-        const activeDescendant = updatedInput.getAttribute('aria-activedescendant');
+      await waitFor(
+        () => {
+          const updatedInput = screen.getByRole('combobox');
+          const activeDescendant = updatedInput.getAttribute('aria-activedescendant');
 
-        // Either aria-activedescendant should be set, or should have changed
-        expect(activeDescendant).toBeTruthy();
-        expect(activeDescendant).not.toBe(initialActiveDescendant);
-      }, { timeout: 1000 });
+          // Either aria-activedescendant should be set, or should have changed
+          expect(activeDescendant).toBeTruthy();
+          expect(activeDescendant).not.toBe(initialActiveDescendant);
+        },
+        { timeout: 1000 }
+      );
     });
 
     it('should_selectWithEnter_when_resultHighlighted', async () => {
@@ -235,12 +267,11 @@ describe('CompanySearch Component', () => {
       const onSelect = vi.fn();
 
       render(<CompanySearch onSearch={vi.fn()} onSelect={onSelect} />, {
-        wrapper: createTestWrapper()
+        wrapper: createTestWrapper(),
       });
 
       const searchInput = screen.getByRole('combobox');
       await user.type(searchInput, 'Test');
-
 
       await waitFor(() => {
         expect(screen.getByRole('listbox')).toBeInTheDocument();
@@ -256,11 +287,12 @@ describe('CompanySearch Component', () => {
       // Test closing dropdown with Escape
       const user = userEvent.setup();
 
-      render(<CompanySearch onSearch={vi.fn()} debounceMs={50} />, { wrapper: createTestWrapper() });
+      render(<CompanySearch onSearch={vi.fn()} debounceMs={50} />, {
+        wrapper: createTestWrapper(),
+      });
 
       const searchInput = screen.getByRole('combobox');
       await user.type(searchInput, 'Test');
-
 
       await waitFor(() => {
         expect(screen.getByRole('listbox')).toBeInTheDocument();
@@ -275,7 +307,9 @@ describe('CompanySearch Component', () => {
 
     it('should_haveAccessibleLabels_when_rendered', () => {
       // Test accessibility (TextField wrapper has aria-label, not the input itself)
-      render(<CompanySearch onSearch={vi.fn()} debounceMs={50} />, { wrapper: createTestWrapper() });
+      render(<CompanySearch onSearch={vi.fn()} debounceMs={50} />, {
+        wrapper: createTestWrapper(),
+      });
 
       const searchInput = screen.getByRole('combobox');
       expect(searchInput).toHaveAttribute('aria-autocomplete', 'list');

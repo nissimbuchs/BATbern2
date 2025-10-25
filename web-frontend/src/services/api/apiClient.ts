@@ -16,13 +16,14 @@ function generateCorrelationId(): string {
 }
 
 /**
- * Get access token from AWS Amplify (secure token management)
- * @returns Access token string or null if not authenticated
+ * Get ID token from AWS Amplify (secure token management)
+ * Uses ID token (not access token) to include custom Cognito attributes (custom:role)
+ * @returns ID token string or null if not authenticated
  */
-async function getAccessToken(): Promise<string | null> {
+async function getIdToken(): Promise<string | null> {
   try {
     const session = await fetchAuthSession();
-    return session.tokens?.accessToken?.toString() || null;
+    return session.tokens?.idToken?.toString() || null;
   } catch {
     return null;
   }
@@ -80,7 +81,7 @@ apiClient.interceptors.request.use(
 
     // Add authentication token from AWS Amplify (secure storage)
     // SEC-001 Fix: Use AWS Amplify's secure token management instead of localStorage
-    const token = await getAccessToken();
+    const token = await getIdToken();
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }

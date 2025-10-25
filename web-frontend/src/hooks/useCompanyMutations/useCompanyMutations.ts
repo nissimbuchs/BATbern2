@@ -44,26 +44,28 @@ export const useCreateCompany = () => {
  * - Cache invalidation of both list and detail
  * - Partial update support (only changed fields)
  *
+ * Story 1.16.2: Uses company name as identifier instead of UUID
+ *
  * @returns Mutation hook for updating companies
  */
 export const useUpdateCompany = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateCompanyRequest }) =>
-      companyApiClient.updateCompany(id, data),
+    mutationFn: ({ name, data }: { name: string; data: UpdateCompanyRequest }) =>
+      companyApiClient.updateCompany(name, data),
 
     // Optimistic update (AC 14 - State Management with immediate UI feedback)
-    onMutate: async ({ id, data }) => {
+    onMutate: async ({ name, data }) => {
       // Cancel any outgoing refetches to prevent overwriting optimistic update
-      await queryClient.cancelQueries({ queryKey: ['company', id] });
+      await queryClient.cancelQueries({ queryKey: ['company', name] });
 
       // Snapshot the previous value for rollback
-      const previousCompany = queryClient.getQueryData(['company', id, undefined]);
+      const previousCompany = queryClient.getQueryData(['company', name, undefined]);
 
       // Optimistically update to the new value
       if (previousCompany) {
-        queryClient.setQueryData(['company', id, undefined], (old: Company) => ({
+        queryClient.setQueryData(['company', name, undefined], (old: Company) => ({
           ...old,
           ...data,
         }));
@@ -74,15 +76,15 @@ export const useUpdateCompany = () => {
     },
 
     // On success, invalidate caches to refetch fresh data
-    onSuccess: (_, { id }) => {
+    onSuccess: (_, { name }) => {
       queryClient.invalidateQueries({ queryKey: ['companies'] });
-      queryClient.invalidateQueries({ queryKey: ['company', id] });
+      queryClient.invalidateQueries({ queryKey: ['company', name] });
     },
 
     // Rollback on error (AC 14 - Error handling with rollback)
-    onError: (_error, { id }, context) => {
+    onError: (_error, { name }, context) => {
       if (context?.previousCompany) {
-        queryClient.setQueryData(['company', id, undefined], context.previousCompany);
+        queryClient.setQueryData(['company', name, undefined], context.previousCompany);
       }
     },
   });
@@ -96,19 +98,21 @@ export const useUpdateCompany = () => {
  * - Removal of deleted company from detail cache
  * - Error handling for permission/dependency issues
  *
+ * Story 1.16.2: Uses company name as identifier instead of UUID
+ *
  * @returns Mutation hook for deleting companies
  */
 export const useDeleteCompany = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => companyApiClient.deleteCompany(id),
-    onSuccess: (_, id) => {
+    mutationFn: (name: string) => companyApiClient.deleteCompany(name),
+    onSuccess: (_, name) => {
       // Invalidate companies list
       queryClient.invalidateQueries({ queryKey: ['companies'] });
 
       // Remove deleted company from cache
-      queryClient.removeQueries({ queryKey: ['company', id] });
+      queryClient.removeQueries({ queryKey: ['company', name] });
     },
   });
 };

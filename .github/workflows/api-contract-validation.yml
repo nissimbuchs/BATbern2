@@ -1,0 +1,60 @@
+name: API Contract Validation
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'docs/api/**/*.yml'
+      - 'docs/api/**/*.yaml'
+      - 'web-frontend/src/services/api/**/*.ts'
+      - 'services/*/src/main/java/**/controller/**/*.java'
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'docs/api/**/*.yml'
+      - 'docs/api/**/*.yaml'
+
+jobs:
+  validate-contracts:
+    name: Validate API Contracts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: web-frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: web-frontend
+        run: npm ci
+
+      - name: Install validation tools
+        run: |
+          npm install -g yq
+          sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Run API contract validation
+        run: ./scripts/ci/validate-api-contracts.sh
+
+      - name: Comment PR with results
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ **API Contract Validation Failed**\n\nFrontend API calls do not match OpenAPI specifications.\n\nPlease:\n1. Update OpenAPI spec with missing endpoints\n2. Regenerate API clients: `npm run generate:api-clients`\n3. Use generated clients instead of manual API calls\n\nSee workflow logs for details.'
+            })

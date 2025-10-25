@@ -6,7 +6,7 @@ This document outlines the core backend architecture for the BATbern Event Manag
 
 For detailed information on specific subsystems, see:
 - **[Workflow State Machines](./06a-workflow-state-machines.md)** - Event workflow, speaker coordination, slot assignment, quality review, and overflow voting
-- **[User Lifecycle Sync Patterns](./06b-user-lifecycle-sync.md)** - Cognito-PostgreSQL synchronization, JIT provisioning, and reconciliation
+- **[User Lifecycle Sync Patterns](./06b-user-lifecycle-sync.md)** - Unidirectional Cognito → PostgreSQL sync with Lambda triggers
 - **[Testing Strategy](./06c-testing-strategy.md)** - Testcontainers PostgreSQL setup, integration and unit testing patterns
 - **[Notification System](./06d-notification-system.md)** - Real-time notifications, escalation rules, and multi-channel delivery
 
@@ -87,13 +87,24 @@ public class SecurityConfiguration {
 
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
-        authoritiesConverter.setAuthorityPrefix("ROLE_");
-        authoritiesConverter.setAuthoritiesClaimName("cognito:groups");
+        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+        converter.setJwtGrantedAuthoritiesConverter(this::extractAuthorities);
+        return converter;
+    }
 
-        JwtAuthenticationConverter authenticationConverter = new JwtAuthenticationConverter();
-        authenticationConverter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
-        return authenticationConverter;
+    private Collection<GrantedAuthority> extractAuthorities(Jwt jwt) {
+        // Extract custom:role claim from JWT (populated by PreTokenGeneration Lambda)
+        String rolesString = jwt.getClaimAsString("custom:role");
+
+        if (rolesString == null || rolesString.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Split comma-separated roles and map to Spring Security authorities
+        // "ATTENDEE,SPEAKER" → [ROLE_ATTENDEE, ROLE_SPEAKER]
+        return Arrays.stream(rolesString.split(","))
+            .map(role -> new SimpleGrantedAuthority("ROLE_" + role.trim()))
+            .collect(Collectors.toList());
     }
 }
 ```
@@ -423,12 +434,14 @@ The BATbern platform implements sophisticated state machines to manage the compl
 
 ## User Lifecycle and Synchronization
 
-The platform maintains user data across AWS Cognito (authentication) and PostgreSQL (business logic) using a hybrid multi-pattern approach:
+The platform maintains user data across AWS Cognito (authentication) and PostgreSQL (business logic) using a **database-centric approach** per [ADR-001](./ADR-001-invitation-based-user-registration.md):
 
-1. **Cognito Lambda Triggers** - Event-driven sync on user registration and authentication
-2. **JIT Provisioning** - Self-healing user creation on first API request
-3. **Saga-Based Bidirectional Sync** - Role changes with compensation logic
-4. **Scheduled Reconciliation** - Daily drift detection and auto-fix
+1. **PostConfirmation Lambda** - Creates database user on Cognito email verification
+2. **PreTokenGeneration Lambda** - Adds `custom:role` JWT claim from database
+3. **Spring Security** - Extracts roles from JWT for authorization
+4. **Unidirectional Sync** - Cognito → Database only (NO Cognito Groups, NO reverse sync)
+
+**Key Point**: Roles stored exclusively in PostgreSQL `role_assignments` table. Roles synced to JWT at login time, cached for request duration. Role updates take effect on next login.
 
 **See [User Lifecycle Sync Patterns](./06b-user-lifecycle-sync.md) for complete implementation details.**
 
@@ -454,27 +467,29 @@ public class RoleManagementService {
 
     /**
      * Promote user to a higher role
+     * Story 1.16.2: Uses String username instead of UUID
      */
     @Transactional
-    public RoleChange promoteUser(UUID userId, UserRole targetRole, UUID promotedBy, String reason) {
+    public RoleChange promoteUser(String username, UserRole targetRole, String promotedByUsername, String reason) {
         // Validate promotion eligibility
-        validatePromotion(userId, targetRole);
+        validatePromotion(username, targetRole);
 
         // Create role record
         UserRoleEntity roleEntity = UserRoleEntity.builder()
-            .userId(userId)
+            .username(username)  // Story 1.16.2: Store username, not UUID
             .role(targetRole)
-            .grantedBy(promotedBy)
+            .grantedBy(promotedByUsername)  // Story 1.16.2: Store username, not UUID
             .reason(reason)
             .isActive(true)
             .build();
 
         userRoleRepository.save(roleEntity);
 
-        // Sync to Cognito
-        syncRoleToCognito(userId, targetRole);
+        // NO Cognito sync - roles fetched from database on next login via PreTokenGeneration Lambda
+        // Per ADR-001: Database is single source of truth for roles
 
         // Publish domain event
+        // Story 1.16.2: Event uses String username as aggregateId
         RoleChange roleChange = mapToRoleChange(roleEntity);
         eventPublisher.publishEvent(new UserRolePromotedEvent(roleChange));
 
@@ -483,22 +498,23 @@ public class RoleManagementService {
 
     /**
      * Demote user from role - immediate for Speaker, requires approval for Organizer
+     * Story 1.16.2: Uses String username instead of UUID
      */
     @Transactional
-    public RoleChangeResult demoteUser(UUID userId, UserRole currentRole, UUID demotedBy, String reason) {
+    public RoleChangeResult demoteUser(String username, UserRole currentRole, String demotedByUsername, String reason) {
         if (currentRole == UserRole.ORGANIZER) {
             // Check minimum organizers rule
-            if (!canDemoteOrganizer(userId, null)) {
+            if (!canDemoteOrganizer(username, null)) {
                 throw new BusinessRuleException("Cannot demote: minimum 2 organizers required");
             }
 
             // Create approval request
             RoleChangeRequest request = RoleChangeRequest.builder()
-                .userId(userId)
+                .username(username)  // Story 1.16.2: Store username, not UUID
                 .currentRole(currentRole)
                 .requestedRole(UserRole.ATTENDEE)
-                .requestedBy(demotedBy)
-                .requiresApprovalFrom(userId)
+                .requestedBy(demotedByUsername)  // Story 1.16.2: Store username, not UUID
+                .requiresApprovalFrom(username)
                 .reason(reason)
                 .status(RequestStatus.PENDING)
                 .build();
@@ -509,7 +525,7 @@ public class RoleManagementService {
         } else {
             // Immediate demotion for non-organizers
             UserRoleEntity roleEntity = userRoleRepository
-                .findActiveRole(userId, currentRole)
+                .findActiveRole(username, currentRole)
                 .orElseThrow(() -> new NotFoundException("Active role not found"));
 
             roleEntity.setIsActive(false);
@@ -518,8 +534,8 @@ public class RoleManagementService {
 
             userRoleRepository.save(roleEntity);
 
-            // Sync to Cognito
-            syncRoleToCognito(userId, determineNewRole(userId));
+            // NO Cognito sync - roles fetched from database on next login
+            // Per ADR-001: Database is single source of truth for roles
 
             RoleChange roleChange = mapToRoleChange(roleEntity);
             eventPublisher.publishEvent(new UserRoleDemotedEvent(roleChange));
@@ -530,29 +546,30 @@ public class RoleManagementService {
 
     /**
      * Approve organizer demotion request
+     * Story 1.16.2: Uses String username instead of UUID
      */
     @Transactional
-    public RoleChange approveRoleChange(UUID requestId, UUID approverId, boolean approved, String comments) {
+    public RoleChange approveRoleChange(UUID requestId, String approverUsername, boolean approved, String comments) {
         // Implementation details - see source code
     }
 
     /**
      * Check if organizer can be demoted (minimum 2 organizers rule)
+     * Story 1.16.2: Uses String username instead of UUID
      */
-    public boolean canDemoteOrganizer(UUID userId, UUID eventId) {
-        long activeOrganizerCount = userRoleRepository.countActiveOrganizers(eventId);
+    public boolean canDemoteOrganizer(String username, String eventCode) {
+        long activeOrganizerCount = userRoleRepository.countActiveOrganizers(eventCode);
         return activeOrganizerCount > 2;
     }
 
-    private void syncRoleToCognito(UUID userId, UserRole newRole) {
+    // syncRoleToCognito removed - per ADR-001, roles NOT synced to Cognito
+    // Roles stored in database only, added to JWT via PreTokenGeneration Lambda
+
+    private UserRole determineNewRole(String username) {
         // Implementation details - see source code
     }
 
-    private UserRole determineNewRole(UUID userId) {
-        // Implementation details - see source code
-    }
-
-    private void validatePromotion(UUID userId, UserRole targetRole) {
+    private void validatePromotion(String username, UserRole targetRole) {
         // Implementation details - see source code
     }
 

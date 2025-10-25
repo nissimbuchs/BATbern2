@@ -1,11 +1,11 @@
 meta {
-  name: Get Company by ID
+  name: Get Company by Name
   type: http
   seq: 2
 }
 
 get {
-  url: {{baseUrl}}/companies/{{testCompanyId}}
+  url: {{baseUrl}}/companies/{{testCompanyName}}
   body: none
   auth: bearer
 }
@@ -23,7 +23,7 @@ headers {
 
 assert {
   res.status: eq 200
-  res.body.id: eq {{testCompanyId}}
+  res.body.name: isDefined
 }
 
 tests {
@@ -31,16 +31,15 @@ tests {
     expect(res.getStatus()).to.equal(200);
   });
 
-  test("should return the correct company", function() {
-    const body = res.getBody();
-    const expectedId = bru.getEnvVar("testCompanyId");
-    expect(body.id).to.equal(expectedId);
-  });
-
-  test("should have company name", function() {
+  test("should return the correct company (Story 1.16.2: use name as identifier)", function() {
     const body = res.getBody();
     const expectedName = bru.getEnvVar("testCompanyName");
     expect(body.name).to.equal(expectedName);
+  });
+
+  test("should NOT have id field (Story 1.16.2: removed redundant id)", function() {
+    const body = res.getBody();
+    expect(body.id).to.be.undefined;
   });
 
   test("should have all company fields", function() {

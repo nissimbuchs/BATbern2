@@ -25,6 +25,15 @@ export function createContainerImage(
   dockerfilePath: string
 ): ecs.ContainerImage {
   const imageTag = process.env.IMAGE_TAG;
+  const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+
+  // In CI/CD (staging/production), IMAGE_TAG MUST be set
+  if (isCI && !imageTag) {
+    throw new Error(
+      `IMAGE_TAG environment variable is required in CI/CD but not set for ${serviceName}. ` +
+      `This indicates the build pipeline did not run or the deployment workflow is misconfigured.`
+    );
+  }
 
   if (imageTag) {
     // CI/CD mode: Use pre-built image from ECR

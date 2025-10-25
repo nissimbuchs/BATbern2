@@ -237,15 +237,23 @@ jobs:
             -f status=completed \
             -f branch=develop \
             --jq ".workflow_runs[] | select(.head_sha == \"${{ github.sha }}\" and .name == \"Build Pipeline\") | .run_number" \
-            | head -n 1)
+            | head -n 1 | tr -d '[:space:]')
 
-          if [ -n "$BUILD_RUN" ]; then
+          # Validate BUILD_RUN is a number
+          if [ -n "$BUILD_RUN" ] && [[ "$BUILD_RUN" =~ ^[0-9]+$ ]]; then
             IMAGE_TAG="${SHORT_SHA}-staging.${BUILD_RUN}"
             echo "Found build run $BUILD_RUN for commit ${{ github.sha }}"
           else
             # Fallback: use 'latest' tag if we can't find the build run
-            echo "::warning::Could not find build run number, using 'latest' tag"
+            echo "::warning::Could not find valid build run number (got: '$BUILD_RUN'), using 'latest' tag"
             IMAGE_TAG="latest"
+          fi
+
+          # Validate IMAGE_TAG format (alphanumeric, dots, dashes only)
+          if [[ ! "$IMAGE_TAG" =~ ^[a-zA-Z0-9._-]+$ ]]; then
+            echo "::error::Invalid IMAGE_TAG format: $IMAGE_TAG"
+            echo "::error::IMAGE_TAG must contain only alphanumeric characters, dots, dashes, and underscores"
+            exit 1
           fi
 
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
@@ -262,6 +270,14 @@ jobs:
           fi
 
           echo "Deploying version: ${{ github.sha }}"
+          echo "IMAGE_TAG: $IMAGE_TAG"
+
+          # Verify IMAGE_TAG is set (critical for using pre-built images)
+          if [ -z "$IMAGE_TAG" ]; then
+            echo "::error::IMAGE_TAG environment variable is not set!"
+            echo "::error::This means Docker images will be built from source (slow and may fail)"
+            exit 1
+          fi
 
           # Determine which stacks to deploy
           STACKS_TO_DEPLOY=""

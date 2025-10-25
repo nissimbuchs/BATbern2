@@ -14,8 +14,9 @@ infrastructure/
 **/.vscode/
 **/*.iml
 
-# Docs and config
-docs/
+# Docs and config (except docs/api/ needed for OpenAPI generation)
+docs/*
+!docs/api/
 mockups/
 *.md
 !README.md
