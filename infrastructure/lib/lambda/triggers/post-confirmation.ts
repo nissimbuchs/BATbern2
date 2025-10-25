@@ -264,7 +264,7 @@ async function assignUserRole(userId: string, role: UserRole): Promise<void> {
   try {
     // Check if role already exists (idempotent)
     const existingRoleResult = await client.query(
-      'SELECT id FROM role_assignments WHERE user_id = $1 AND role = $2 AND end_date IS NULL',
+      'SELECT user_id FROM role_assignments WHERE user_id = $1 AND role = $2',
       [userId, role]
     );
 
@@ -273,11 +273,11 @@ async function assignUserRole(userId: string, role: UserRole): Promise<void> {
       return;
     }
 
-    // Insert role with start_date
+    // Insert role with granted_at (granted_by is NULL for system-assigned roles)
     await client.query(
       `
-        INSERT INTO role_assignments (user_id, role, start_date, created_at)
-        VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        INSERT INTO role_assignments (user_id, role, granted_at, granted_by)
+        VALUES ($1, $2, CURRENT_TIMESTAMP, NULL)
       `,
       [userId, role]
     );
