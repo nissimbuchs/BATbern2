@@ -184,7 +184,6 @@ async function createUser(
         INSERT INTO user_profiles (
           cognito_user_id,
           email,
-          email_verified,
           username,
           first_name,
           last_name,
@@ -194,14 +193,13 @@ async function createUser(
           created_at,
           updated_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         ON CONFLICT (cognito_user_id) DO NOTHING
         RETURNING id
       `,
       params: [
         cognitoId,
         email,
-        emailVerified,
         finalUsername,
         firstName,
         lastName,
