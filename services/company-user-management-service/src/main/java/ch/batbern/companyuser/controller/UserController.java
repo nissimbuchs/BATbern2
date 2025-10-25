@@ -127,7 +127,7 @@ public class UserController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false, defaultValue = "1") int page,
             @RequestParam(required = false, defaultValue = "20") int limit) {
-        log.debug("Listing users with filters: role={}, company={}, search={}, page={}, limit={}",
+        log.debug("UserController Listing users with filters: role={}, company={}, search={}, page={}, limit={}",
                 role, company, search, page, limit);
 
         List<UserResponse> allUsers = userService.listUsers(role, company, search, filter);

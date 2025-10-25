@@ -5,13 +5,15 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/users
+  url: {{baseUrl}}/users?role=ATTENDEE&page=1&limit=20
   body: none
   auth: bearer
 }
 
-auth:bearer {
-  token: {{authToken}}
+params:query {
+  role: ATTENDEE
+  page: 1
+  limit: 20
 }
 
 headers {
@@ -19,10 +21,8 @@ headers {
   Accept: application/json
 }
 
-params:query {
-  role: ATTENDEE
-  page: 1
-  limit: 20
+auth:bearer {
+  token: {{authToken}}
 }
 
 assert {
@@ -37,22 +37,22 @@ tests {
       console.log("Non-admin/organizer - access denied (expected)");
     }
   });
-
+  
   test("should return only users with ATTENDEE role", function() {
     if (res.getStatus() === 200) {
       const body = res.getBody();
       expect(body.data).to.be.an('array');
-
+  
       // Verify all returned users have ATTENDEE role
       body.data.forEach(user => {
         expect(user.roles).to.be.an('array');
         expect(user.roles).to.include('ATTENDEE');
       });
-
+  
       console.log(`Found ${body.data.length} users with ATTENDEE role`);
     }
   });
-
+  
   test("should return pagination metadata", function() {
     if (res.getStatus() === 200) {
       const body = res.getBody();
