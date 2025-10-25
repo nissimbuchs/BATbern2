@@ -132,7 +132,7 @@ public class UserService {
      */
     @Transactional(readOnly = true)
     public java.util.List<UserResponse> listUsers(String roleFilter, String companyFilter, String search, String jsonFilter) {
-        log.debug("Listing users with filters: role={}, company={}, search={}, filter={}",
+        log.debug("User Service Listing users with filters: role={}, company={}, search={}, filter={}",
                 roleFilter, companyFilter, search, jsonFilter);
 
         java.util.List<User> users;
@@ -187,15 +187,23 @@ public class UserService {
      */
     private java.util.List<User> applyJsonFilter(java.util.List<User> users, String jsonFilter) {
         try {
-            log.debug("Applying JSON filter: {}", jsonFilter);
+            // URL decode the filter if needed (frontend sends URL-encoded JSON)
+            String decodedFilter = jsonFilter;
+            try {
+                decodedFilter = java.net.URLDecoder.decode(jsonFilter, java.nio.charset.StandardCharsets.UTF_8);
+                log.debug("URL-decoded filter from '{}' to '{}'", jsonFilter, decodedFilter);
+            } catch (Exception e) {
+                log.debug("Filter does not need URL decoding, using as-is: {}", jsonFilter);
+            }
+
             // Simple JSON parsing for active filter
-            if (jsonFilter.contains("\"active\":true") || jsonFilter.contains("\"active\": true")) {
+            if (decodedFilter.contains("\"active\":true") || decodedFilter.contains("\"active\": true")) {
                 java.util.List<User> filtered = users.stream().filter(User::isActive).toList();
-                log.debug("Active=true filter: {} -> {} users", users.size(), filtered.size());
+                log.debug("Active=true filter applied: {} -> {} users", users.size(), filtered.size());
                 return filtered;
-            } else if (jsonFilter.contains("\"active\":false") || jsonFilter.contains("\"active\": false")) {
+            } else if (decodedFilter.contains("\"active\":false") || decodedFilter.contains("\"active\": false")) {
                 java.util.List<User> filtered = users.stream().filter(u -> !u.isActive()).toList();
-                log.debug("Active=false filter: {} -> {} users", users.size(), filtered.size());
+                log.debug("Active=false filter applied: {} -> {} users", users.size(), filtered.size());
                 return filtered;
             }
             log.debug("No active filter matched, returning {} users", users.size());

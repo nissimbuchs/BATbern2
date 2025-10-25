@@ -91,8 +91,8 @@ export const useUserManagementStore = create<UserManagementState>()(
         set(
           (state) => ({
             searchQuery: query,
-            // Also update filters.search so it gets passed to API
-            filters: { ...state.filters, search: query },
+            // Also update filters.searchQuery so it gets passed to API
+            filters: { ...state.filters, searchQuery: query },
             // Reset to page 1 when search query changes
             pagination: { ...state.pagination, page: 1 },
           }),
