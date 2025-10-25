@@ -4,6 +4,8 @@ import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -85,7 +87,8 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
      * @param role User role
      * @return List of users with the specified role
      */
-    List<User> findByRolesContaining(Role role);
+    @Query("SELECT u FROM User u JOIN u.roles r WHERE r = :role")
+    List<User> findByRolesContaining(@Param("role") Role role);
 
     /**
      * Find users by name (first or last name, case-insensitive)
