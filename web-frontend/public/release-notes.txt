@@ -1,0 +1,31 @@
+
+🚀 Next steps:
+- Either work on a simple event frontend for event-management and then move to migrate all old event data
+- Or start creating the public website and then migrate
+- Or work on some fancy stuff: 
+
+✨ New Features:
+* Epic 1 now fully implemented.
+- 1.2 Login/Password reset/Create account with eMail verification fully working
+- 1.1/1.3/1.4 AWS Infrastructure for dev/staging/prod, CI/CD with github-actions
+- 1.6 Local dev with make dev-nativ-up/down
+
+* Epic 2 on crud for main entities is in progress
+- 1.14/2.5.1 Company management fully working
+- 1.14-2/2.5.2 User management interface for organizers now fully working
+- 1.15.1a Event management backend exists, but not tested
+
+🐛 Bug Fixes:
+- Fixed login redirect issues
+- Fixed Cognito Registration hook to update user_profile db
+- Resolved CORS configuration problems
+
+⚡ Performance:
+- RateLimits are still set very narrow
+
+📝 Notes:
+- This is a development/staging environment
+- Test data may be reset periodically
+- Report issues to the development team
+
+Last updated: 2025-10-25
