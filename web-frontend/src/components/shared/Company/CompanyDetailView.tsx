@@ -74,7 +74,7 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
 
   const handleEdit = () => {
     if (company) {
-      onEdit(company.id);
+      onEdit(company.name);
     }
   };
 
@@ -165,7 +165,7 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
               <Box sx={{ display: 'flex', justifyContent: 'center' }}>
                 <Avatar
                   src={company.logo?.url}
-                  alt={`${company.name} logo`}
+                  alt={`${company.displayName || company.name} logo`}
                   sx={{ width: 120, height: 120 }}
                   slotProps={{
                     img: {
@@ -173,7 +173,7 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
                     },
                   }}
                 >
-                  {company.name.charAt(0)}
+                  {(company.displayName || company.name).charAt(0)}
                 </Avatar>
               </Box>
             </Grid>
@@ -182,7 +182,7 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
               <Stack spacing={2}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                   <Typography variant="h4" component="h1">
-                    {company.name}
+                    {company.displayName || company.name}
                   </Typography>
                   {company.isVerified && (
                     <Chip
@@ -197,7 +197,7 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
 
                 {company.displayName && company.displayName !== company.name && (
                   <Typography variant="subtitle1" color="text.secondary">
-                    Display Name: {company.displayName}
+                    {t('company.fields.legalName', { name: company.name })}
                   </Typography>
                 )}
 
@@ -290,7 +290,7 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
 
       <TabPanel value={activeTab} index={1}>
         <AssociatedUsersPanel
-          companyId={company.id}
+          companyId={company.name}
           onLinkUser={handleLinkUser}
           onUnlinkUser={handleUnlinkUser}
         />
@@ -301,7 +301,7 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
       </TabPanel>
 
       <TabPanel value={activeTab} index={3}>
-        <ActivityTimeline companyId={company.id} />
+        <ActivityTimeline companyId={company.name} />
       </TabPanel>
     </Box>
   );

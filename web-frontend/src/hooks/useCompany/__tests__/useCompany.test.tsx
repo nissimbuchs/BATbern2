@@ -135,10 +135,9 @@ describe('useCompany Hook', () => {
       vi.mocked(companyApiClient.getCompany).mockResolvedValue(mockCompany);
 
       // Act
-      const { result } = renderHook(
-        () => useCompany('company-123', { expand: ['statistics'] }),
-        { wrapper: createWrapper() }
-      );
+      const { result } = renderHook(() => useCompany('company-123', { expand: ['statistics'] }), {
+        wrapper: createWrapper(),
+      });
 
       // Assert
       await waitFor(() => {
@@ -363,9 +362,7 @@ describe('useCompany Hook', () => {
         expect(result.current.isError).toBe(true);
       });
 
-      expect((result.current.error as typeof apiError).correlationId).toBe(
-        'correlation-xyz-789'
-      );
+      expect((result.current.error as typeof apiError).correlationId).toBe('correlation-xyz-789');
     });
   });
 

@@ -12,6 +12,12 @@ web-frontend/src/
 │   ├── organizer/                 # Organizer-specific components
 │   │   ├── EventManagement/
 │   │   ├── SpeakerCoordination/
+│   │   ├── UserManagement/         # User Management (Organizer-only)
+│   │   │   ├── UserList.tsx        # User list table with filters
+│   │   │   ├── UserEditModal.tsx   # User detail edit modal
+│   │   │   ├── UserCreateModal.tsx # Create new user modal
+│   │   │   ├── UserFilters.tsx     # Search and filter controls
+│   │   │   └── RoleManager.tsx     # Role assignment component
 │   │   └── Analytics/
 │   ├── speaker/                   # Speaker-specific components
 │   │   ├── Dashboard/
@@ -90,6 +96,85 @@ export interface CompanyFilters {
 - ✅ Prevents field name mismatches and data model drift
 - ✅ IDE autocomplete for all API response fields
 - ✅ CI validation prevents merging unsynchronized types
+
+## HTTP Client Configuration
+
+### API Base URL Pattern
+
+**CRITICAL**: The runtime config sets `apiBaseURL` to include the `/api/v1` prefix (e.g., `http://localhost:8080/api/v1`).
+All API service paths must **exclude** the `/api/v1` prefix to avoid double concatenation errors.
+
+**Why This Matters**:
+- Runtime config (from backend `/api/v1/config`): `apiBaseUrl: "http://localhost:8080/api/v1"`
+- If frontend code uses `/api/v1/users`, result is: `http://localhost:8080/api/v1/api/v1/users` ❌
+- This causes 404/500 errors that are difficult to debug
+
+**Correct Pattern** (Reference Implementation: `src/services/api/companyApi.ts`):
+
+```typescript
+// src/services/api/userManagementApi.ts
+
+// Define API path constants WITHOUT /api/v1 prefix
+// Note: apiClient baseURL is set from runtime config to 'http://localhost:8080/api/v1'
+// so we only need '/users' (the /api/v1 prefix is already in the baseURL)
+const USER_API_PATH = '/users';
+
+export const listUsers = async (filters: UserFilters, pagination: UserPagination) => {
+  const response = await apiClient.get(USER_API_PATH, { params });
+  // ✅ Resolves to: http://localhost:8080/api/v1/users
+  return response.data;
+};
+
+export const searchUsers = async (query: string) => {
+  const response = await apiClient.get(`${USER_API_PATH}/search`, { params });
+  // ✅ Resolves to: http://localhost:8080/api/v1/users/search
+  return response.data;
+};
+
+export const getUserById = async (id: string) => {
+  const response = await apiClient.get(`${USER_API_PATH}/${id}`, { params });
+  // ✅ Resolves to: http://localhost:8080/api/v1/users/{id}
+  return response.data;
+};
+```
+
+**Incorrect Pattern** (DO NOT DO THIS):
+
+```typescript
+// ❌ WRONG - Includes /api/v1 prefix, causing double concatenation
+const response = await apiClient.get('/api/v1/users');
+// Result: http://localhost:8080/api/v1/api/v1/users ❌ 500 ERROR
+
+// ❌ WRONG - Direct path string without constant
+const response = await apiClient.post('/api/v1/users', data);
+// Result: http://localhost:8080/api/v1/api/v1/users ❌ 500 ERROR
+```
+
+**Standard Path Constants**:
+
+```typescript
+// Use these standard constants across all API services:
+const USER_API_PATH = '/users';
+const COMPANY_API_PATH = '/companies';
+const EVENT_API_PATH = '/events';
+const SPEAKER_API_PATH = '/speakers';
+const PARTNER_API_PATH = '/partners';
+const ATTENDEE_API_PATH = '/attendees';
+```
+
+**Testing Your API Paths**:
+
+When writing tests with `MockAdapter`, use the same path constants (WITHOUT `/api/v1`):
+
+```typescript
+// ✅ CORRECT - Test mocks match implementation
+import MockAdapter from 'axios-mock-adapter';
+import apiClient from './apiClient';
+
+const mock = new MockAdapter(apiClient);
+mock.onGet('/users').reply(200, mockResponse);  // ✅ Matches USER_API_PATH
+mock.onPost('/users').reply(201, mockResponse);  // ✅ Matches USER_API_PATH
+```
 
 ## State Management Architecture
 
@@ -842,12 +927,13 @@ const RoleManagementPanel: React.FC<RoleManagementPanelProps> = ({ eventId }) =>
 };
 
 // API Hooks for Role Management
+// Story 1.16.2: Uses username in URL paths, not UUID
 export const usePromoteUser = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ userId, role, reason }: PromoteUserRequest) => {
-      return apiClient.post(`/api/v1/users/${userId}/roles`, { role, reason });
+    mutationFn: async ({ username, role, reason }: PromoteUserRequest) => {
+      return apiClient.post(`/users/${username}/roles`, { role, reason });
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['users']);
@@ -863,8 +949,8 @@ export const useDemoteUser = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ userId, role, reason }: DemoteUserRequest) => {
-      return apiClient.delete(`/api/v1/users/${userId}/roles/${role}`, {
+    mutationFn: async ({ username, role, reason }: DemoteUserRequest) => {
+      return apiClient.delete(`/users/${username}/roles/${role}`, {
         data: { reason }
       });
     },
@@ -886,9 +972,9 @@ export const useApproveRoleChange = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ userId, changeId, approved, comments }: ApprovalRequest) => {
+    mutationFn: async ({ username, changeId, approved, comments }: ApprovalRequest) => {
       return apiClient.post(
-        `/api/v1/users/${userId}/role-changes/${changeId}/approve`,
+        `/api/v1/users/${username}/role-changes/${changeId}/approve`,
         { approved, comments }
       );
     },
@@ -906,10 +992,10 @@ export const usePendingApprovals = () => {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ['role-change-requests', 'pending', user?.id],
+    queryKey: ['role-change-requests', 'pending', user?.id],  // id is username (Story 1.16.2)
     queryFn: async () => {
       const response = await apiClient.get(
-        `/api/v1/users/${user.id}/role-changes?status=PENDING`
+        `/api/v1/users/${user.id}/role-changes?status=PENDING`  // user.id is username (Story 1.16.2)
       );
       return response.data;
     },

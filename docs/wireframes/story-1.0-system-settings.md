@@ -27,8 +27,8 @@
 │  │  General Settings                                             │         │
 │  │  ┌──────────────────────────────────────────────────────┐   │         │
 │  │  │ Platform Name: [BATbern Event Platform          ]    │   │         │
-│  │  │ Support Email: [support@batbern.ch              ]    │   │         │
-│  │  │ Admin Contact: [admin@batbern.ch                ]    │   │         │
+│  │  │ Support Email: [support@berner-architekten-treffen.ch              ]    │   │         │
+│  │  │ Admin Contact: [admin@berner-architekten-treffen.ch                ]    │   │         │
 │  │  └──────────────────────────────────────────────────────┘   │         │
 │  │                                                               │         │
 │  │  Internationalization                                         │         │
@@ -43,7 +43,7 @@
 │  │  ┌──────────────────────────────────────────────────────┐   │         │
 │  │  │ Email Provider:      AWS SES (Frankfurt)             │   │         │
 │  │  │ Sender Name:         [BATbern Events        ]        │   │         │
-│  │  │ Reply-to Address:    [noreply@batbern.ch    ]        │   │         │
+│  │  │ Reply-to Address:    [noreply@berner-architekten-treffen.ch    ]        │   │         │
 │  │  │ Daily Send Limit:    [50,000 emails         ]        │   │         │
 │  │  │                      [Test Email Configuration]       │   │         │
 │  │  └──────────────────────────────────────────────────────┘   │         │
@@ -377,8 +377,8 @@
      {
        "platform": {
          "name": "BATbern Event Platform",
-         "supportEmail": "support@batbern.ch",
-         "adminContact": "admin@batbern.ch"
+         "supportEmail": "info@berner-architekten-treffen.ch",
+         "adminContact": "info@berner-architekten-treffen.ch"
        },
        "i18n": {
          "defaultLanguage": "de-CH",

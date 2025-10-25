@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{baseUrl}}/companies/{{testCompanyId}}/logo/presigned-url
+  url: {{baseUrl}}/companies/{{testCompanyName}}/logo/presigned-url
   body: json
   auth: inherit
 }
@@ -25,10 +25,10 @@ body:json {
 
 script:pre-request {
   // This test requires a company to exist
-  // Create company if testCompanyId is not set
-  const testCompanyId = bru.getEnvVar("testCompanyId");
-  if (!testCompanyId) {
-    throw new Error("testCompanyId not set. Run 01-create-company first.");
+  // Create company if testCompanyName is not set
+  const testCompanyName = bru.getEnvVar("testCompanyName");
+  if (!testCompanyName) {
+    throw new Error("testCompanyName not set. Run 01-create-company first.");
   }
 }
 

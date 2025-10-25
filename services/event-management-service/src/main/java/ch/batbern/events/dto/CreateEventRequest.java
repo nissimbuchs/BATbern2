@@ -2,11 +2,11 @@ package ch.batbern.events.dto;
 
 import jakarta.validation.constraints.*;
 import lombok.*;
-import java.util.UUID;
 
 /**
  * Request DTO for creating a new event
- * Story 1.15a.1: Events API Consolidation - AC3
+ * Story 1.16.2: Eliminate UUIDs from API
+ * Uses String username instead of UUID for organizer
  */
 @Data
 @NoArgsConstructor
@@ -35,7 +35,7 @@ public class CreateEventRequest {
              message = "Status must be a valid workflow state")
     private String status;
 
-    private UUID organizerId;
+    private String organizerUsername;
 
     private Integer currentAttendeeCount;
 

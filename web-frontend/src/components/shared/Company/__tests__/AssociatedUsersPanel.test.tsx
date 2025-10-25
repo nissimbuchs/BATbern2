@@ -478,8 +478,6 @@ describe('AssociatedUsersPanel Component', () => {
 
   describe('Error handling', () => {
     it('should_displayErrorMessage_when_linkUserFails', async () => {
-      const user = userEvent.setup();
-
       render(
         <AssociatedUsersPanel
           companyId="company-123"

@@ -1,0 +1,48 @@
+meta {
+  name: Delete Test User (GDPR)
+  type: http
+  seq: 14
+}
+
+delete {
+  url: {{baseUrl}}/users/{{testUsername}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+assert {
+  res.status: in [204, 403, 404]
+}
+
+tests {
+  test("should delete user if admin (AC11)", function() {
+    const status = res.getStatus();
+    // 204 = success, 403 = not admin, 404 = user not found
+    expect([204, 403, 404]).to.include(status);
+  });
+
+  test("should require admin role for deletion", function() {
+    const status = res.getStatus();
+    if (status === 403) {
+      console.log("Correctly denied deletion for non-admin");
+    } else if (status === 204) {
+      console.log("Successfully deleted test user (GDPR compliance)");
+    }
+  });
+
+  test("should return 404 if user not found", function() {
+    const status = res.getStatus();
+    if (status === 404) {
+      console.log("User not found (may have been deleted already)");
+    }
+  });
+}

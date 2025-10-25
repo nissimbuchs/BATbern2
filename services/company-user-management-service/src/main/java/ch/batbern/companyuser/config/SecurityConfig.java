@@ -17,6 +17,7 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -61,7 +62,8 @@ public class SecurityConfig {
     }
 
     /**
-     * Test security filter chain without JWT requirement
+     * Test security filter chain with authentication enforcement
+     * Uses @WithMockUser for testing authenticated endpoints
      */
     @Bean
     @Profile("test")
@@ -73,7 +75,17 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                .anyRequest().permitAll() // Allow all in tests
+                .anyRequest().authenticated() // Enforce authentication in tests
+            )
+            .exceptionHandling(exceptions -> exceptions
+                .authenticationEntryPoint((request, response, authException) -> {
+                    // Return 401 for unauthenticated requests
+                    response.sendError(401, "Unauthorized");
+                })
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    // Return 403 for authenticated but unauthorized requests
+                    response.sendError(403, "Forbidden");
+                })
             );
 
         return http.build();
@@ -92,33 +104,38 @@ public class SecurityConfig {
     }
 
     /**
-     * JWT Authentication Converter to extract roles from Cognito groups
-     * Maps cognito:groups claim to Spring Security ROLE_ authorities
+     * JWT Authentication Converter to extract roles from custom:role claim
+     * Story 1.2.6: Migrated from cognito:groups to custom:role (ADR-001)
+     * Maps custom:role claim (comma-separated string) to Spring Security ROLE_ authorities
      */
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(new CognitoGroupsToAuthoritiesConverter());
+        converter.setJwtGrantedAuthoritiesConverter(new CustomRolesToAuthoritiesConverter());
         return converter;
     }
 
     /**
-     * Converter to extract Cognito groups and map them to Spring Security authorities
-     * Cognito groups are in the "cognito:groups" claim and need ROLE_ prefix for @PreAuthorize
+     * Converter to extract custom:role claim and map to Spring Security authorities
+     * Story 1.2.6: ADR-001 Database-centric architecture
+     *
+     * Roles are stored in PostgreSQL and synced to Cognito custom:role attribute
+     * Format: comma-separated string (e.g., "ORGANIZER,SPEAKER")
+     * Requires ROLE_ prefix for Spring Security @PreAuthorize annotations
      */
-    private static class CognitoGroupsToAuthoritiesConverter implements Converter<Jwt, Collection<GrantedAuthority>> {
+    private static class CustomRolesToAuthoritiesConverter implements Converter<Jwt, Collection<GrantedAuthority>> {
         @Override
         public Collection<GrantedAuthority> convert(Jwt jwt) {
-            // Extract groups from cognito:groups claim
-            List<String> groups = jwt.getClaimAsStringList("cognito:groups");
+            // Extract roles from custom:role claim (comma-separated string)
+            String rolesString = jwt.getClaimAsString("custom:role");
 
-            if (groups == null || groups.isEmpty()) {
+            if (rolesString == null || rolesString.isEmpty()) {
                 return Collections.emptyList();
             }
 
-            // Convert groups to ROLE_ authorities (Spring Security convention)
-            return groups.stream()
-                .map(group -> new SimpleGrantedAuthority("ROLE_" + group.toUpperCase()))
+            // Split comma-separated roles and map to ROLE_ authorities
+            return Arrays.stream(rolesString.split(","))
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.trim().toUpperCase()))
                 .collect(Collectors.toList());
         }
     }

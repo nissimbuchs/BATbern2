@@ -9,7 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,20 +32,36 @@ public class UserContextExtractor {
 
         if (jwt.getClaim("email_verified") != null && !jwt.getClaim("email_verified").isNull()) {
             Boolean emailVerified = jwt.getClaim("email_verified").asBoolean();
-            builder.emailVerified(emailVerified != null ? emailVerified : false);
+            builder.emailVerified(emailVerified != null ? emailVerified : false); 
         } else {
             builder.emailVerified(false);
         }
 
-        // Extract role from cognito:groups (first group is primary role)
-        if (jwt.getClaim("cognito:groups") != null && !jwt.getClaim("cognito:groups").isNull()) {
+        // Extract role from custom:role claim (Story 1.2.6: ADR-001 migration)
+        // Format: comma-separated string from DB (e.g., "ORGANIZER,SPEAKER")
+        // Convert to lowercase for consistency with application layer
+        // First role is primary, remaining roles are additional roles
+        if (jwt.getClaim("custom:role") != null && !jwt.getClaim("custom:role").isNull()) {
             try {
-                String[] groups = jwt.getClaim("cognito:groups").asArray(String.class);
-                if (groups != null && groups.length > 0) {
-                    builder.role(groups[0]);
+                String rolesString = jwt.getClaim("custom:role").asString();
+                if (rolesString != null && !rolesString.isEmpty()) {
+                    String[] roles = rolesString.split(",");
+                    if (roles.length > 0) {
+                        // Set primary role (first in list, converted to lowercase)
+                        builder.role(roles[0].trim().toLowerCase());
+
+                        // Set additional roles (if any, converted to lowercase)
+                        if (roles.length > 1) {
+                            List<String> additionalRoles = new ArrayList<>();
+                            for (int i = 1; i < roles.length; i++) {
+                                additionalRoles.add(roles[i].trim().toLowerCase());
+                            }
+                            builder.additionalRoles(additionalRoles);
+                        }
+                    }
                 }
             } catch (Exception e) {
-                log.warn("Failed to extract cognito:groups: {}", e.getMessage());
+                log.warn("Failed to extract custom:role: {}", e.getMessage());
             }
         }
 
@@ -57,10 +72,6 @@ public class UserContextExtractor {
         // Extract preferences as JSON
         Map<String, Object> preferences = extractPreferences(jwt);
         builder.preferences(preferences);
-
-        // Extract additional roles if present
-        List<String> additionalRoles = extractAdditionalRoles(jwt);
-        builder.additionalRoles(additionalRoles);
 
         // Extract token metadata
         if (jwt.getIssuedAt() != null) {
@@ -92,17 +103,15 @@ public class UserContextExtractor {
         }
     }
 
+    /**
+     * DEPRECATED: Additional roles are now extracted from custom:role claim inline
+     * Story 1.2.6: Migrated to database-centric roles (ADR-001)
+     * This method is kept for backward compatibility but is no longer used
+     */
+    @Deprecated
     private List<String> extractAdditionalRoles(DecodedJWT jwt) {
-        if (jwt.getClaim("custom:additionalRoles") == null || jwt.getClaim("custom:additionalRoles").isNull()) {
-            return new ArrayList<>();
-        }
-
-        try {
-            String[] roles = jwt.getClaim("custom:additionalRoles").asArray(String.class);
-            return roles != null ? Arrays.asList(roles) : new ArrayList<>();
-        } catch (Exception e) {
-            log.warn("Failed to extract additional roles: {}", e.getMessage());
-            return new ArrayList<>();
-        }
+        // All roles now come from custom:role claim (comma-separated)
+        // This method is no longer called
+        return new ArrayList<>();
     }
 }

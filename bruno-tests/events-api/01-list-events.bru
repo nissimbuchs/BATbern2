@@ -41,4 +41,12 @@ tests {
   test("should return array of events", function() {
     expect(res.getBody().data).to.be.an('array');
   });
+
+  test("events should NOT have id field (Story 1.16.2: removed redundant id)", function() {
+    const body = res.getBody();
+    if (body.data && body.data.length > 0) {
+      expect(body.data[0].id).to.be.undefined;
+      expect(body.data[0].eventCode).to.be.a('string');
+    }
+  });
 }

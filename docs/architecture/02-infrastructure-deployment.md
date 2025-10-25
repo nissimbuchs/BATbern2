@@ -1502,7 +1502,7 @@ public class SESTemplateService {
         String sesTemplateName = generateSESTemplateName(template);
 
         SendTemplatedEmailRequest request = new SendTemplatedEmailRequest()
-            .withSource("noreply@batbern.ch")
+            .withSource("noreply@berner-architekten-treffen.ch")
             .withDestination(new Destination().withToAddresses(recipient))
             .withTemplate(sesTemplateName)
             .withTemplateData(new ObjectMapper().writeValueAsString(templateData))
@@ -1593,8 +1593,8 @@ public class SESBounceHandler implements RequestHandler<SNSEvent, Void> {
 # SES Configuration
 AWS_SES_REGION=eu-central-1
 AWS_SES_CONFIGURATION_SET=batbern-notifications
-AWS_SES_FROM_ADDRESS=noreply@batbern.ch
-AWS_SES_REPLY_TO_ADDRESS=info@batbern.ch
+AWS_SES_FROM_ADDRESS=noreply@berner-architekten-treffen.ch
+AWS_SES_REPLY_TO_ADDRESS=info@berner-architekten-treffen.ch.ch
 AWS_SES_DAILY_QUOTA=50000
 AWS_SES_RATE_LIMIT=14  # emails per second
 

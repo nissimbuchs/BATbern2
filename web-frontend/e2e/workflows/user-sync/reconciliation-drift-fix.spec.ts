@@ -51,6 +51,7 @@ interface DbUser {
 
 interface CognitoUser {
   attributes: Record<string, string>;
+  groups?: string[];
 }
 
 interface CompensationLog {
@@ -347,9 +348,9 @@ test.describe('Reconciliation - Role Mismatch Sync', () => {
     // Trigger reconciliation
     await triggerReconciliationJob();
 
-    // Verify Cognito role updated to match database
+    // Verify Cognito Groups updated to match database
     const cognitoUser = await getCognitoUser(testEmail);
-    expect(cognitoUser.attributes['custom:batbern_role']).toBe('ORGANIZER');
+    expect(cognitoUser.groups).toContain('organizer');
   });
 
   test('should_useDatabaseAsTruth_when_roleMismatchDetected', async () => {
@@ -360,9 +361,9 @@ test.describe('Reconciliation - Role Mismatch Sync', () => {
 
     await triggerReconciliationJob();
 
-    // Cognito should be updated to match database (PARTNER)
+    // Cognito Groups should be updated to match database (PARTNER)
     const cognitoUser = await getCognitoUser(testEmail);
-    expect(cognitoUser.attributes['custom:batbern_role']).toBe('PARTNER');
+    expect(cognitoUser.groups).toContain('partner');
 
     // Database should remain unchanged
     const dbUser = await getUserByEmail(testEmail);
@@ -587,7 +588,7 @@ test.describe('Reconciliation - Complete Workflow', () => {
     expect(missingUser.roles).toContain('SPEAKER');
 
     const cognitoMismatch = await getCognitoUser(mismatchEmail);
-    expect(cognitoMismatch.attributes['custom:batbern_role']).toBe('PARTNER');
+    expect(cognitoMismatch.groups).toContain('partner');
 
     // Verify report
     const report = await getReconciliationReport();

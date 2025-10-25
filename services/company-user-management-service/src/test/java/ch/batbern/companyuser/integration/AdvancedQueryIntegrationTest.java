@@ -228,7 +228,7 @@ class AdvancedQueryIntegrationTest extends AbstractIntegrationTest {
         assertThat(data.size()).isEqualTo(2); // First 2 companies
         assertThat(pagination.get("page").asInt()).isEqualTo(1);
         assertThat(pagination.get("limit").asInt()).isEqualTo(2);
-        assertThat(pagination.get("total").asLong()).isEqualTo(5);
+        assertThat(pagination.get("totalItems").asLong()).isEqualTo(5);
         assertThat(pagination.get("totalPages").asInt()).isEqualTo(3);
         assertThat(pagination.get("hasNext").asBoolean()).isTrue();
         assertThat(pagination.get("hasPrev").asBoolean()).isFalse();
@@ -283,8 +283,9 @@ class AdvancedQueryIntegrationTest extends AbstractIntegrationTest {
     @Test
     @WithMockUser(roles = "ORGANIZER")
     void should_returnOnlySelectedFields_when_fieldsParameterProvided() throws Exception {
+        // Story 1.16.2: use company name instead of UUID - removed id field
         MvcResult result = mockMvc.perform(get("/api/v1/companies")
-                        .param("fields", "id,name,industry"))
+                        .param("fields", "name,industry"))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -295,7 +296,6 @@ class AdvancedQueryIntegrationTest extends AbstractIntegrationTest {
         assertThat(data.size()).isEqualTo(5);
 
         JsonNode firstCompany = data.get(0);
-        assertThat(firstCompany.has("id")).isTrue();
         assertThat(firstCompany.has("name")).isTrue();
         assertThat(firstCompany.has("industry")).isTrue();
         assertThat(firstCompany.has("swissUID")).isFalse(); // Not selected
@@ -313,7 +313,7 @@ class AdvancedQueryIntegrationTest extends AbstractIntegrationTest {
         JsonNode data = response.get("data");
 
         JsonNode firstCompany = data.get(0);
-        assertThat(firstCompany.has("id")).isTrue();
+        // Story 1.16.2: use company name instead of UUID - removed id field
         assertThat(firstCompany.has("name")).isTrue();
         assertThat(firstCompany.has("swissUID")).isTrue();
         assertThat(firstCompany.has("industry")).isTrue();
@@ -344,7 +344,7 @@ class AdvancedQueryIntegrationTest extends AbstractIntegrationTest {
         assertThat(data.size()).isEqualTo(2);
         assertThat(data.get(0).get("name").asText()).isEqualTo("Gamma GmbH");
         assertThat(data.get(1).get("name").asText()).isEqualTo("Epsilon LLC");
-        assertThat(pagination.get("total").asLong()).isEqualTo(3); // 3 Technology companies
+        assertThat(pagination.get("totalItems").asLong()).isEqualTo(3); // 3 Technology companies
     }
 
     // ========== AC15: Resource Expansion Tests ==========

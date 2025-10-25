@@ -228,6 +228,7 @@ export default defineConfig({
       reporter: ['text', 'json', 'html', 'lcov'],
       exclude: [
         'node_modules/',
+        'dist/',
         'src/test/',
         'e2e/',
         '**/*.d.ts',
@@ -238,9 +239,10 @@ export default defineConfig({
         'src/pages/**', // Page components - tested via E2E
         'src/config/**', // Configuration files
         'src/theme/**', // Theme configuration
-        'src/types/**', // Type definitions
+        'src/types/**', // Type definitions (includes generated types)
         'src/**/index.ts', // Re-export files
         'src/**/index.tsx', // Re-export files
+        '**/generated/**', // Exclude all generated code
       ],
       reportOnFailure: true, // Generate coverage even when tests fail
       all: true, // Include all source files in coverage report

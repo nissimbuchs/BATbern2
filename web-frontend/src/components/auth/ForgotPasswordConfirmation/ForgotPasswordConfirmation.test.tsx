@@ -12,10 +12,10 @@ import { I18nextProvider } from 'react-i18next';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import i18n from '@/i18n/config';
 
-// Mock useResendResetLink hook
+// Mock useForgotPassword hook (used for both initial forgot password and resend)
 const mockResendLink = vi.fn();
 
-const mockUseResendResetLink = {
+const mockUseForgotPassword = {
   mutate: mockResendLink,
   isPending: false,
   isSuccess: false,
@@ -24,8 +24,8 @@ const mockUseResendResetLink = {
   data: null,
 };
 
-vi.mock('@hooks/useResendResetLink', () => ({
-  useResendResetLink: () => mockUseResendResetLink,
+vi.mock('@hooks/useForgotPassword', () => ({
+  useForgotPassword: () => mockUseForgotPassword,
 }));
 
 // Create theme for MUI components
@@ -56,7 +56,7 @@ describe('ForgotPasswordConfirmation Component - Rendering Tests', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     await i18n.changeLanguage('en');
-    Object.assign(mockUseResendResetLink, {
+    Object.assign(mockUseForgotPassword, {
       mutate: mockResendLink,
       isPending: false,
       isSuccess: false,
@@ -127,7 +127,7 @@ describe('ForgotPasswordConfirmation Component - Email Display Tests', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     await i18n.changeLanguage('en');
-    Object.assign(mockUseResendResetLink, {
+    Object.assign(mockUseForgotPassword, {
       mutate: mockResendLink,
       isPending: false,
       isSuccess: false,
@@ -172,7 +172,7 @@ describe('ForgotPasswordConfirmation Component - Resend Functionality Tests', ()
   beforeEach(async () => {
     vi.clearAllMocks();
     await i18n.changeLanguage('en');
-    Object.assign(mockUseResendResetLink, {
+    Object.assign(mockUseForgotPassword, {
       mutate: mockResendLink,
       isPending: false,
       isSuccess: false,
@@ -281,7 +281,7 @@ describe('ForgotPasswordConfirmation Component - Navigation Tests', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     await i18n.changeLanguage('en');
-    Object.assign(mockUseResendResetLink, {
+    Object.assign(mockUseForgotPassword, {
       mutate: mockResendLink,
       isPending: false,
       isSuccess: false,
@@ -317,7 +317,7 @@ describe('ForgotPasswordConfirmation Component - Help Text Tests', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     await i18n.changeLanguage('en');
-    Object.assign(mockUseResendResetLink, {
+    Object.assign(mockUseForgotPassword, {
       mutate: mockResendLink,
       isPending: false,
       isSuccess: false,
@@ -356,7 +356,7 @@ describe('ForgotPasswordConfirmation Component - Loading State Tests', () => {
 
   it('should_showLoadingState_when_resendInProgress', async () => {
     // Test: should_showLoadingState_when_resendInProgress
-    Object.assign(mockUseResendResetLink, {
+    Object.assign(mockUseForgotPassword, {
       mutate: mockResendLink,
       isPending: true,
       isSuccess: false,
@@ -377,7 +377,7 @@ describe('ForgotPasswordConfirmation Component - Loading State Tests', () => {
 describe('ForgotPasswordConfirmation Component - Localization Tests', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
-    Object.assign(mockUseResendResetLink, {
+    Object.assign(mockUseForgotPassword, {
       mutate: mockResendLink,
       isPending: false,
       isSuccess: false,

@@ -15,6 +15,9 @@ COPY gradle ./gradle
 COPY shared-kernel/build.gradle ./shared-kernel/
 COPY shared-kernel/src ./shared-kernel/src
 
+# Copy OpenAPI specifications (required for openApiGenerate task)
+COPY docs/api ./docs/api
+
 # Copy company-user-management-service module
 COPY services/company-user-management-service/build.gradle services/company-user-management-service/gradlew* ./services/company-user-management-service/
 COPY services/company-user-management-service/gradle ./services/company-user-management-service/gradle

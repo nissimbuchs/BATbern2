@@ -2,12 +2,22 @@ import * as cdk from 'aws-cdk-lib';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as kms from 'aws-cdk-lib/aws-kms';
 import { Construct } from 'constructs';
+import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
+import * as path from 'path';
 import { EnvironmentConfig } from '../config/environment-config';
 import { BootstrapOrganizer } from '../constructs/bootstrap-organizer';
+import { CognitoUserSyncTriggers } from '../constructs/cognito-user-sync-triggers';
 
 export interface CognitoStackProps extends cdk.StackProps {
   config: EnvironmentConfig;
+  vpc?: ec2.IVpc; // For Lambda triggers in VPC
+  lambdaTriggersSecurityGroup?: ec2.ISecurityGroup; // For Lambda triggers
+  databaseSecret?: secretsmanager.ISecret; // For Lambda triggers to access database
+  databaseEndpoint?: string; // For Lambda triggers to access database
 }
 
 /**
@@ -15,7 +25,8 @@ export interface CognitoStackProps extends cdk.StackProps {
  *
  * Implements:
  * - AC16: AWS Cognito for authentication with role-based access
- * - AC4: Security Boundaries with user pool groups and custom attributes
+ * - AC4: Security Boundaries with custom attributes (Story 1.2.6: NO Cognito Groups)
+ * - ADR-001: Database-centric roles synced to JWT via PreTokenGeneration Lambda
  */
 export class CognitoStack extends cdk.Stack {
   public readonly userPool: cognito.UserPool;
@@ -51,13 +62,12 @@ export class CognitoStack extends cdk.Stack {
             throw new Error('Invalid company ID format. Must be a valid UUID.');
           }
 
-          // Role validation removed - roles are now managed via Cognito groups
+          // Role validation removed - Story 1.2.6: ADR-001 database-centric architecture
+          // Roles are managed in PostgreSQL and synced to JWT via PreTokenGeneration Lambda
+          // Self-registered users receive ATTENDEE role (assigned by PostConfirmation trigger)
 
-          // Auto-verify email for development
-          if (process.env.ENVIRONMENT === 'development') {
-            event.response.autoConfirmUser = true;
-            event.response.autoVerifyEmail = true;
-          }
+          // Auto-verification disabled to test email verification flow
+          // Users must verify their email via CustomEmailSender Lambda
 
           return event;
         };
@@ -67,6 +77,73 @@ export class CognitoStack extends cdk.Stack {
       },
       timeout: cdk.Duration.seconds(5),
     });
+
+    // Create KMS key for Cognito code encryption (CustomEmailSender trigger)
+    // Story 1.2.2: Implement Forgot Password Flow - Task 1a
+    const cognitoEmailKmsKey = new kms.Key(this, 'CognitoEmailKmsKey', {
+      description: `BATbern ${envName} - Cognito CustomEmailSender code encryption`,
+      enableKeyRotation: true,
+      removalPolicy: isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
+    });
+
+    // Allow Cognito to use this KMS key for encrypting codes
+    cognitoEmailKmsKey.addToResourcePolicy(
+      new cdk.aws_iam.PolicyStatement({
+        sid: 'Allow Cognito to use the key',
+        effect: cdk.aws_iam.Effect.ALLOW,
+        principals: [new cdk.aws_iam.ServicePrincipal('cognito-idp.amazonaws.com')],
+        actions: ['kms:Encrypt', 'kms:Decrypt', 'kms:CreateGrant'],
+        resources: ['*'],
+      })
+    );
+
+    // Create Custom Email Sender Lambda Trigger for branded password reset emails
+    // Story 1.2.2: Implement Forgot Password Flow - Task 1a (updated to CustomEmailSender)
+    const customEmailSenderLogGroup = new logs.LogGroup(this, 'CustomEmailSenderLogGroup', {
+      logGroupName: `/aws/lambda/BATbern-${envName}/custom-email-sender-trigger`,
+      retention: isProd ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    // Determine frontend domain based on environment
+    const frontendDomain =
+      envName === 'production'
+        ? 'https://www.batbern.ch'
+        : envName === 'staging'
+        ? 'https://staging.batbern.ch'
+        : 'http://localhost:3000';
+
+    const customEmailSenderLambda = new NodejsFunction(this, 'CustomEmailSenderTrigger', {
+      functionName: `batbern-${envName}-custom-email-sender-trigger`,
+      runtime: lambda.Runtime.NODEJS_20_X,
+      entry: path.join(__dirname, '../lambda/triggers/custom-email-sender.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(10),
+      logGroup: customEmailSenderLogGroup,
+      environment: {
+        FRONTEND_DOMAIN: frontendDomain,
+        KEY_ID: cognitoEmailKmsKey.keyId,
+        KEY_ARN: cognitoEmailKmsKey.keyArn,
+        // AWS_REGION is automatically provided by Lambda runtime
+      },
+      bundling: {
+        externalModules: ['@aws-sdk/*'], // Use AWS SDK from Lambda runtime
+        minify: true,
+        sourceMap: false,
+      },
+    });
+
+    // Grant SES permissions to send emails
+    customEmailSenderLambda.addToRolePolicy(
+      new cdk.aws_iam.PolicyStatement({
+        effect: cdk.aws_iam.Effect.ALLOW,
+        actions: ['ses:SendEmail', 'ses:SendRawEmail'],
+        resources: ['*'],
+      })
+    );
+
+    // Grant KMS decrypt permissions
+    cognitoEmailKmsKey.grantDecrypt(customEmailSenderLambda);
 
     // Create Cognito User Pool
     this.userPool = new cognito.UserPool(this, 'UserPool', {
@@ -79,6 +156,8 @@ export class CognitoStack extends cdk.Stack {
       autoVerify: {
         email: true,
       },
+      // CustomEmailSender Lambda handles all email delivery
+      // No need for Cognito's SES configuration
       standardAttributes: {
         email: {
           required: true,
@@ -86,6 +165,9 @@ export class CognitoStack extends cdk.Stack {
         },
       },
       customAttributes: {
+        // DEPRECATED: Legacy role attribute - not used per ADR-001 (Story 1.2.6)
+        // Roles are managed in database and added to JWT via PreTokenGeneration Lambda
+        // Cannot be removed due to AWS Cognito limitation (custom attributes are permanent)
         role: new cognito.StringAttribute({
           mutable: true,
           maxLen: 20,
@@ -115,7 +197,9 @@ export class CognitoStack extends cdk.Stack {
       },
       lambdaTriggers: {
         preSignUp: preSignupLambda,
+        customEmailSender: customEmailSenderLambda,
       },
+      customSenderKmsKey: cognitoEmailKmsKey,
       removalPolicy: isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
     });
 
@@ -162,7 +246,7 @@ export class CognitoStack extends cdk.Stack {
       ],
       readAttributes: new cognito.ClientAttributes()
         .withStandardAttributes({ email: true, emailVerified: true })
-        .withCustomAttributes('companyId', 'preferences'),
+        .withCustomAttributes('companyId', 'preferences', 'role'),
       writeAttributes: new cognito.ClientAttributes()
         .withStandardAttributes({ email: true })
         .withCustomAttributes('companyId', 'preferences'),
@@ -176,16 +260,9 @@ export class CognitoStack extends cdk.Stack {
       },
     });
 
-    // Create User Groups
-    const groups = ['organizer', 'speaker', 'partner', 'attendee'];
-    groups.forEach(groupName => {
-      new cognito.CfnUserPoolGroup(this, `${groupName}Group`, {
-        userPoolId: this.userPool.userPoolId,
-        groupName,
-        description: `Group for ${groupName} users`,
-        precedence: groups.indexOf(groupName),
-      });
-    });
+    // REMOVED: Cognito Groups (Story 1.2.6: ADR-001 Database-centric architecture)
+    // Roles are now managed exclusively in PostgreSQL and synced to JWT via PreTokenGeneration Lambda
+    // NO Cognito Groups - eliminates dual storage and sync complexity
 
     // Create bootstrap organizer user for environment setup
     // This user is created automatically on stack deployment
@@ -194,6 +271,22 @@ export class CognitoStack extends cdk.Stack {
       email: 'nissim@buchs.be',
       password: 'TempPass123!',
     });
+
+    // Story 1.2.5: Add Cognito user sync triggers
+    // These triggers sync user creation/authentication between Cognito and PostgreSQL
+    // Only deploy if VPC and database are configured (not available in local development)
+    if (props.vpc && props.lambdaTriggersSecurityGroup && props.databaseSecret && props.databaseEndpoint) {
+      new CognitoUserSyncTriggers(this, 'UserSyncTriggers', {
+        userPool: this.userPool,
+        vpc: props.vpc,
+        lambdaSecurityGroup: props.lambdaTriggersSecurityGroup,
+        databaseSecret: props.databaseSecret,
+        databaseEndpoint: props.databaseEndpoint,
+        envName: props.config.envName,
+      });
+      // Note: Lambda security group and database ingress rule are created in NetworkStack
+      // Tables are created by CompanyManagementStack Flyway migrations at runtime
+    }
 
     // Apply tags
     cdk.Tags.of(this).add('Environment', envName);

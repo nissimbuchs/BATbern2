@@ -27,6 +27,11 @@ public class Event {
     @Column(name = "id", updatable = false, nullable = false, columnDefinition = "UUID")
     private UUID id;
 
+    @NotBlank(message = "Event code is required")
+    @Size(max = 50, message = "Event code must not exceed 50 characters")
+    @Column(name = "event_code", nullable = false, unique = true, length = 50)
+    private String eventCode;
+
     @NotBlank(message = "Title is required")
     @Size(max = 200, message = "Title must not exceed 200 characters")
     @Column(name = "title", nullable = false, length = 200)
@@ -60,9 +65,9 @@ public class Event {
     @Column(name = "status", nullable = false, length = 50)
     private String status;
 
-    @NotNull(message = "Organizer ID is required")
-    @Column(name = "organizer_id", nullable = false, columnDefinition = "UUID")
-    private UUID organizerId;
+    @NotBlank(message = "Organizer username is required")
+    @Column(name = "organizer_username", nullable = false, length = 100)
+    private String organizerUsername;
 
     @Column(name = "current_attendee_count")
     private Integer currentAttendeeCount;

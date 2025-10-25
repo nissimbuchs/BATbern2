@@ -5,7 +5,7 @@ meta {
 }
 
 delete {
-  url: {{baseUrl}}/events/{{createdEventId}}
+  url: {{baseUrl}}/events/{{createdEventCode}}
   body: none
   auth: bearer
 }
@@ -23,7 +23,7 @@ tests {
     expect(res.getStatus()).to.equal(204);
   });
 
-  test("cleanup: clear event id", function() {
-    bru.setVar("createdEventId", null);
+  test("cleanup: clear event code (Story 1.16.2)", function() {
+    bru.setVar("createdEventCode", null);
   });
 }

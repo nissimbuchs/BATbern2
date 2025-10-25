@@ -225,77 +225,79 @@ class AdditionalEndpointsIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @WithMockUser(roles = {"ORGANIZER"})
-    @DisplayName("POST /api/v1/companies/{id}/verify - should verify company when requested by ORGANIZER")
+    @DisplayName("POST /api/v1/companies/{name}/verify - should verify company when requested by ORGANIZER")
     void shouldVerifyCompany_whenRequestedByOrganizer() throws Exception {
         // Given - Create unverified company
         var company = createTestCompany("Test Company", "CHE-123.456.789");
 
-        // When & Then
-        mockMvc.perform(post("/api/v1/companies/" + company.getId() + "/verify")
+        // When & Then - Story 1.16.2: use company name in path instead of UUID
+        mockMvc.perform(post("/api/v1/companies/" + company.getName() + "/verify")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is(company.getId().toString())))
+                .andExpect(jsonPath("$.name", is(company.getName())))
                 .andExpect(jsonPath("$.isVerified", is(true)));
     }
 
     @Test
     @WithMockUser(roles = {"SPEAKER"})
-    @DisplayName("POST /api/v1/companies/{id}/verify - should return 403 when SPEAKER attempts verification")
+    @DisplayName("POST /api/v1/companies/{name}/verify - should return 403 when SPEAKER attempts verification")
     void shouldReturn403_whenSpeakerAttemptsVerification() throws Exception {
         // Given
         var company = createTestCompany("Test Company", "CHE-123.456.789");
 
-        // When & Then
-        mockMvc.perform(post("/api/v1/companies/" + company.getId() + "/verify")
+        // When & Then - Story 1.16.2: use company name in path instead of UUID
+        mockMvc.perform(post("/api/v1/companies/" + company.getName() + "/verify")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     @WithMockUser(roles = {"PARTNER"})
-    @DisplayName("POST /api/v1/companies/{id}/verify - should return 403 when PARTNER attempts verification")
+    @DisplayName("POST /api/v1/companies/{name}/verify - should return 403 when PARTNER attempts verification")
     void shouldReturn403_whenPartnerAttemptsVerification() throws Exception {
         // Given
         var company = createTestCompany("Test Company", "CHE-123.456.789");
 
-        // When & Then
-        mockMvc.perform(post("/api/v1/companies/" + company.getId() + "/verify")
+        // When & Then - Story 1.16.2: use company name in path instead of UUID
+        mockMvc.perform(post("/api/v1/companies/" + company.getName() + "/verify")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     @WithMockUser(roles = {"ORGANIZER"})
-    @DisplayName("POST /api/v1/companies/{id}/verify - should return 404 when company does not exist")
+    @DisplayName("POST /api/v1/companies/{name}/verify - should return 404 when company does not exist")
     void shouldReturn404_whenCompanyDoesNotExist() throws Exception {
-        mockMvc.perform(post("/api/v1/companies/00000000-0000-0000-0000-000000000000/verify")
+        // Story 1.16.2: use non-existent company name instead of UUID
+        mockMvc.perform(post("/api/v1/companies/NonExistentCompany/verify")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    @DisplayName("POST /api/v1/companies/{id}/verify - should return 401 when unauthenticated")
+    @DisplayName("POST /api/v1/companies/{name}/verify - should return 401 when unauthenticated")
     void shouldReturn401_whenVerifyingUnauthenticated() throws Exception {
-        mockMvc.perform(post("/api/v1/companies/00000000-0000-0000-0000-000000000000/verify")
+        // Story 1.16.2: use company name instead of UUID
+        mockMvc.perform(post("/api/v1/companies/SomeCompany/verify")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     @WithMockUser(roles = {"ORGANIZER"})
-    @DisplayName("POST /api/v1/companies/{id}/verify - should be idempotent when verifying already verified company")
+    @DisplayName("POST /api/v1/companies/{name}/verify - should be idempotent when verifying already verified company")
     void shouldBeIdempotent_whenVerifyingAlreadyVerifiedCompany() throws Exception {
         // Given - Create and verify company
         var company = createTestCompany("Test Company", "CHE-123.456.789");
 
-        // First verification
-        mockMvc.perform(post("/api/v1/companies/" + company.getId() + "/verify")
+        // First verification - Story 1.16.2: use company name in path instead of UUID
+        mockMvc.perform(post("/api/v1/companies/" + company.getName() + "/verify")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isVerified", is(true)));
 
         // Second verification (should succeed without error)
-        mockMvc.perform(post("/api/v1/companies/" + company.getId() + "/verify")
+        mockMvc.perform(post("/api/v1/companies/" + company.getName() + "/verify")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isVerified", is(true)));
@@ -303,7 +305,7 @@ class AdditionalEndpointsIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @WithMockUser(roles = {"ORGANIZER"})
-    @DisplayName("POST /api/v1/companies/{id}/verify - should update updatedAt timestamp when verified")
+    @DisplayName("POST /api/v1/companies/{name}/verify - should update updatedAt timestamp when verified")
     void shouldUpdateTimestamp_whenCompanyVerified() throws Exception {
         // Given
         var company = createTestCompany("Test Company", "CHE-123.456.789");
@@ -312,13 +314,13 @@ class AdditionalEndpointsIntegrationTest extends AbstractIntegrationTest {
         // Wait a bit to ensure timestamp difference
         Thread.sleep(10);
 
-        // When
-        mockMvc.perform(post("/api/v1/companies/" + company.getId() + "/verify")
+        // When - Story 1.16.2: use company name in path instead of UUID
+        mockMvc.perform(post("/api/v1/companies/" + company.getName() + "/verify")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
 
-        // Then - Verify updatedAt changed
-        var updatedCompany = companyRepository.findById(company.getId()).orElseThrow();
+        // Then - Verify updatedAt changed (lookup by name, not ID)
+        var updatedCompany = companyRepository.findByName(company.getName()).orElseThrow();
         assert updatedCompany.getUpdatedAt().isAfter(originalUpdatedAt);
     }
 

@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/events/{{createdEventId}}/analytics?metrics=attendance,registrations,engagement&timeframe=all
+  url: {{baseUrl}}/events/{{createdEventCode}}/analytics?metrics=attendance,registrations,engagement&timeframe=all
   body: none
   auth: bearer
 }
@@ -28,9 +28,9 @@ tests {
     expect(res.getStatus()).to.equal(200);
   });
 
-  test("should return analytics data", function() {
+  test("should return analytics data (Story 1.16.2: use eventCode)", function() {
     const analytics = res.getBody();
-    expect(analytics.eventId).to.equal(bru.getVar("createdEventId"));
+    expect(analytics.eventCode).to.equal(bru.getVar("createdEventCode"));
     expect(analytics.totalRegistrations).to.be.a('number');
   });
 }

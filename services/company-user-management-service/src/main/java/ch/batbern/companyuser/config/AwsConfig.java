@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.cloudwatch.CloudWatchClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
@@ -52,5 +53,15 @@ public class AwsConfig {
 
         // Create the presigner using the same configuration as S3Client
         return S3Presigner.create();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public CloudWatchClient cloudWatchClient(AwsCredentialsProvider credentialsProvider) {
+        log.info("Creating CloudWatchClient for region: {}", awsRegion);
+        return CloudWatchClient.builder()
+                .region(Region.of(awsRegion))
+                .credentialsProvider(credentialsProvider)
+                .build();
     }
 }
