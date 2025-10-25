@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Box, Typography, Button, Alert, Snackbar } from '@mui/material';
 import { CheckCircle } from '@mui/icons-material';
-import { useResendResetLink } from '@hooks/useResendResetLink';
+import { useForgotPassword } from '@hooks/useForgotPassword';
 
 interface ForgotPasswordConfirmationProps {
   email: string;
@@ -19,7 +19,8 @@ export const ForgotPasswordConfirmation: React.FC<ForgotPasswordConfirmationProp
   const { t } = useTranslation(['auth', 'common']);
   const [cooldown, setCooldown] = useState(0);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
-  const { mutate: resendLink, isPending } = useResendResetLink();
+  // Reuse useForgotPassword for resending - Amplify allows multiple calls to resetPassword
+  const { mutate: resendCode, isPending } = useForgotPassword();
 
   useEffect(() => {
     if (cooldown > 0) {
@@ -29,7 +30,7 @@ export const ForgotPasswordConfirmation: React.FC<ForgotPasswordConfirmationProp
   }, [cooldown]);
 
   const handleResend = () => {
-    resendLink(email, {
+    resendCode(email, {
       onSuccess: () => {
         setCooldown(60); // 60-second cooldown
         setShowSuccessToast(true);

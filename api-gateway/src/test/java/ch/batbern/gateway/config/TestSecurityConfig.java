@@ -1,6 +1,5 @@
 package ch.batbern.gateway.config;
 
-import ch.batbern.gateway.auth.service.EmailService;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
@@ -120,22 +119,6 @@ public class TestSecurityConfig {
                 });
 
         return mockClient;
-    }
-
-    /**
-     * Mock Email Service for tests
-     * Prevents actual email sending during tests
-     */
-    @Bean
-    @Primary
-    public EmailService mockEmailService() {
-        EmailService mockService = org.mockito.Mockito.mock(EmailService.class);
-        org.mockito.Mockito.doNothing().when(mockService).sendPasswordResetEmail(
-                org.mockito.ArgumentMatchers.anyString(),
-                org.mockito.ArgumentMatchers.anyString(),
-                org.mockito.ArgumentMatchers.anyString()
-        );
-        return mockService;
     }
 
     /**

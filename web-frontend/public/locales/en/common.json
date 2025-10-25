@@ -10,6 +10,7 @@
     "speakers": "Speakers",
     "partners": "Partners",
     "companies": "Companies",
+    "users": "Users",
     "myCompany": "My Company",
     "analytics": "Analytics",
     "content": "Content Search",
@@ -30,7 +31,8 @@
     "reset": "Reset",
     "submit": "Submit",
     "close": "Close",
-    "sending": "Sending..."
+    "sending": "Sending...",
+    "loading": "Loading..."
   },
   "language": {
     "select": "Select Language",
@@ -79,7 +81,7 @@
       "canton": "Canton",
       "country": "Country",
       "description": "Description",
-      "legalName": "Legal: {{name}}"
+      "legalName": "Short name: {{name}}"
     },
     "placeholders": {
       "swissUID": "CHE-123.456.789",

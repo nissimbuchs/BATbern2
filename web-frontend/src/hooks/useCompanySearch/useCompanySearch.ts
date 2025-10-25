@@ -21,10 +21,7 @@ import { companyApiClient } from '@/services/api/companyApi';
  * @param limit - Maximum number of results (defaults to 10 for autocomplete)
  * @returns React Query result with search results
  */
-export const useCompanySearch = (
-  query: string,
-  limit: number = 10
-) => {
+export const useCompanySearch = (query: string, limit: number = 10) => {
   const trimmedQuery = query?.trim() || '';
   const isQueryValid = trimmedQuery.length >= 3;
 

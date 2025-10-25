@@ -10,12 +10,7 @@
  */
 
 import React from 'react';
-import {
-  Box,
-  IconButton,
-  Typography,
-  Skeleton,
-} from '@mui/material';
+import { Box, IconButton, Typography, Skeleton } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import ViewListIcon from '@mui/icons-material/ViewList';
@@ -38,7 +33,7 @@ export const CompanyList: React.FC<CompanyListProps> = ({
   isLoading,
   viewMode,
   onViewModeToggle,
-  onCompanyClick
+  onCompanyClick,
 }) => {
   const { t } = useTranslation('common');
 
@@ -48,7 +43,10 @@ export const CompanyList: React.FC<CompanyListProps> = ({
       <Box data-testid="company-list-container" data-view-mode={viewMode}>
         <Grid container spacing={2}>
           {[...Array(6)].map((_, index) => (
-            <Grid size={{ xs: 12, sm: viewMode === 'grid' ? 6 : 12, md: viewMode === 'grid' ? 4 : 12 }} key={index}>
+            <Grid
+              size={{ xs: 12, sm: viewMode === 'grid' ? 6 : 12, md: viewMode === 'grid' ? 4 : 12 }}
+              key={index}
+            >
               <Skeleton
                 variant="rectangular"
                 height={viewMode === 'grid' ? 200 : 120}
@@ -69,7 +67,7 @@ export const CompanyList: React.FC<CompanyListProps> = ({
         data-view-mode={viewMode}
         sx={{
           textAlign: 'center',
-          py: 8
+          py: 8,
         }}
       >
         <Typography variant="h6" color="text.secondary">
@@ -101,11 +99,11 @@ export const CompanyList: React.FC<CompanyListProps> = ({
         {companies.map((company) => (
           <Grid
             size={{ xs: 12, sm: viewMode === 'grid' ? 6 : 12, md: viewMode === 'grid' ? 4 : 12 }}
-            key={company.id}
+            key={company.name}
           >
             <CompanyCard
               company={company}
-              onClick={(id) => onCompanyClick?.(id)}
+              onClick={(name) => onCompanyClick?.(name)}
               viewMode={viewMode}
             />
           </Grid>

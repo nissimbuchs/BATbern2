@@ -78,7 +78,7 @@ description: |
   - Names: 2-100 characters
   - Bio: max 2000 characters
 
-  **Cognito Sync**: User updates synchronize with AWS Cognito custom attributes
+  **Database Only**: User updates stored in PostgreSQL only (per ADR-001, NO Cognito sync)
 
   **Events Published**: UserUpdatedEvent to EventBridge
 
@@ -818,7 +818,7 @@ description: |
 
   **Idempotency**: Safe to call multiple times with same email
 
-  **Cognito Sync**: Optionally creates Cognito user if createIfMissing=true
+  **Database Only**: Creates user_profiles record only (per ADR-001, users register in Cognito separately via Story 1.2.3)
 
   **Performance**: <200ms (P95)
 
@@ -1276,7 +1276,7 @@ PaginationMetadata:
 **Authentication**:
 - JWT-based authentication via AWS Cognito
 - Bearer token required for all endpoints
-- Token claims: `sub` (user ID), `email`, `cognito:groups` (roles)
+- Token claims: `sub` (Cognito user ID), `email`, `custom:role` (roles from database)
 
 **Authorization Levels**:
 - Public (authenticated): GET /users/me, PUT /users/me, preferences, settings
@@ -1286,7 +1286,7 @@ PaginationMetadata:
 
 **Role-Based Access Control**:
 - Implemented with Spring Security `@PreAuthorize` annotations
-- Role extraction from JWT `cognito:groups` claim
+- Role extraction from JWT `custom:role` claim (populated by PreTokenGeneration Lambda from database)
 - Method-level security enforcement
 
 **Business Rules**:
@@ -1296,16 +1296,22 @@ PaginationMetadata:
 
 ### Cognito Integration
 
-**Sync Operations**:
-- User creation → Create Cognito user with custom attributes
-- User update → Sync email, name to Cognito user pool
-- Role change → Update `custom:role` attribute in Cognito
-- User deletion → Soft delete in Cognito (disable account)
+Per **[ADR-001](./ADR-001-invitation-based-user-registration.md)**, Cognito integration is **unidirectional**: Cognito → Database only.
 
-**Custom Attributes**:
-- `custom:role`: Comma-separated list of roles
-- `custom:companyId`: Company affiliation reference
-- `custom:userId`: Internal user UUID
+**Database-Only Operations**:
+- User creation → Creates user_profiles record only (users register in Cognito via Story 1.2.3)
+- User update → Updates database only (NO Cognito sync)
+- Role change → Updates role_assignments table only (roles fetched by PreTokenGeneration Lambda on next login)
+- User deletion → Soft delete in database only (is_active = false)
+
+**Cognito Operations** (automatic via Lambda triggers):
+- PostConfirmation Lambda → Creates database user on email verification
+- PreTokenGeneration Lambda → Adds `custom:role` claim from database to JWT
+
+**JWT Custom Claims**:
+- `custom:role`: Comma-separated list of roles from database (e.g., "ATTENDEE,SPEAKER")
+- `custom:language`: User's preferred language
+- `custom:newsletter_optin`: Newsletter opt-in status
 
 ### GDPR Compliance
 
@@ -1321,8 +1327,8 @@ PaginationMetadata:
 3. Events published to all domain services
 4. Each service deletes associated data
 5. Audit log entry created
-6. Cognito user disabled
-7. User profile soft-deleted with deletion timestamp
+6. User profile soft-deleted with deletion timestamp (is_active = false)
+7. Note: Cognito user NOT automatically disabled (per ADR-001, database-only operations)
 
 **Audit Logging**:
 - All GDPR-related operations logged to CloudWatch

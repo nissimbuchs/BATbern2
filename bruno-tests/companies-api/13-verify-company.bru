@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{baseUrl}}/companies/{{testCompanyId}}/verify
+  url: {{baseUrl}}/companies/{{testCompanyName}}/verify
   body: none
   auth: inherit
 }
@@ -16,15 +16,15 @@ headers {
 
 script:pre-request {
   // This test requires a company to exist
-  const testCompanyId = bru.getEnvVar("testCompanyId");
-  if (!testCompanyId) {
-    throw new Error("testCompanyId not set. Run 01-create-company first.");
+  const testCompanyName = bru.getEnvVar("testCompanyName");
+  if (!testCompanyName) {
+    throw new Error("testCompanyName not set. Run 01-create-company first.");
   }
 }
 
 script:post-response {
   if (res.status === 200) {
-    console.log(`Company verified: ${res.body.id}`);
+    console.log(`Company verified: ${res.body.name}`);
   }
 }
 
@@ -33,8 +33,9 @@ tests {
     expect(res.status).to.equal(200);
   });
 
-  test("should return company data", function() {
-    expect(res.body.id).to.equal(bru.getEnvVar("testCompanyId"));
+  test("should return company data (Story 1.16.2: uses name as identifier)", function() {
+    expect(res.body.name).to.equal(bru.getEnvVar("testCompanyName"));
+    expect(res.body.id).to.be.undefined; // Story 1.16.2: no id field
   });
 
   test("company should be marked as verified", function() {

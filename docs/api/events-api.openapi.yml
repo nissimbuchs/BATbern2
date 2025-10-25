@@ -215,7 +215,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /events/{id}:
+  /events/{eventCode}:
     get:
       tags:
         - Events
@@ -224,6 +224,7 @@ paths:
         Retrieve detailed information about a specific event with optional resource expansion.
 
         **Acceptance Criteria**: AC2
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
 
         **Include Options**:
         - `venue`: Venue details with address and capacity
@@ -247,13 +248,14 @@ paths:
 
       operationId: getEvent
       parameters:
-        - name: id
+        - name: eventCode
           in: path
-          description: Event ID
+          description: Event code in format BATbern{number}
           required: true
           schema:
             type: string
-            example: evt-001
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
         - name: include
           in: query
           description: Comma-separated list of resources to include
@@ -317,16 +319,20 @@ paths:
         Replace all event data with new data.
 
         **Acceptance Criteria**: AC4
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
 
         **Cache Invalidation**: All event caches cleared on update
 
       operationId: updateEvent
       parameters:
-        - name: id
+        - name: eventCode
           in: path
+          description: Event code in format BATbern{number}
           required: true
           schema:
             type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
       requestBody:
         required: true
         content:
@@ -355,16 +361,20 @@ paths:
         Update specific fields of an event without replacing all data.
 
         **Acceptance Criteria**: AC5
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
 
         **Cache Invalidation**: All event caches cleared on update
 
       operationId: patchEvent
       parameters:
-        - name: id
+        - name: eventCode
           in: path
+          description: Event code in format BATbern{number}
           required: true
           schema:
             type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
       requestBody:
         required: true
         content:
@@ -398,17 +408,21 @@ paths:
         Delete an event and all associated data.
 
         **Acceptance Criteria**: AC6
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
 
         **Cascade Deletion**: Deletes all sessions, registrations, and related data
         **Cache Invalidation**: All event caches cleared on deletion
 
       operationId: deleteEvent
       parameters:
-        - name: id
+        - name: eventCode
           in: path
+          description: Event code in format BATbern{number}
           required: true
           schema:
             type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
       responses:
         '204':
           description: Event deleted successfully
@@ -417,7 +431,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /events/{id}/publish:
+  /events/{eventCode}/publish:
     post:
       tags:
         - Event Actions
@@ -426,6 +440,7 @@ paths:
         Publish an event after validation checks.
 
         **Acceptance Criteria**: AC7
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
 
         **Validation Rules**:
         - Event must have a date
@@ -436,11 +451,14 @@ paths:
 
       operationId: publishEvent
       parameters:
-        - name: id
+        - name: eventCode
           in: path
+          description: Event code in format BATbern{number}
           required: true
           schema:
             type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
       responses:
         '200':
           description: Event published successfully
@@ -455,7 +473,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /events/{id}/workflow/advance:
+  /events/{eventCode}/workflow/advance:
     post:
       tags:
         - Event Actions
@@ -464,6 +482,7 @@ paths:
         Advance event workflow to the next state in the state machine.
 
         **Acceptance Criteria**: AC8
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
 
         **Workflow States**:
         1. draft → planning
@@ -477,11 +496,14 @@ paths:
 
       operationId: advanceWorkflow
       parameters:
-        - name: id
+        - name: eventCode
           in: path
+          description: Event code in format BATbern{number}
           required: true
           schema:
             type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
       responses:
         '200':
           description: Workflow advanced successfully
@@ -496,7 +518,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /events/{id}/sessions:
+  /events/{eventCode}/sessions:
     get:
       tags:
         - Sessions
@@ -505,6 +527,7 @@ paths:
         Retrieve all sessions for a specific event with optional filtering.
 
         **Acceptance Criteria**: AC9
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
 
         **Filter Examples**:
         - By type: `{"type":"keynote"}`
@@ -512,12 +535,14 @@ paths:
 
       operationId: listSessions
       parameters:
-        - name: id
+        - name: eventCode
           in: path
-          description: Event ID
+          description: Event code in format BATbern{number}
           required: true
           schema:
             type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
         - name: filter
           in: query
           description: JSON filter criteria
@@ -562,14 +587,18 @@ paths:
         Create a new session for the event.
 
         **Acceptance Criteria**: AC10
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
 
       operationId: createSession
       parameters:
-        - name: id
+        - name: eventCode
           in: path
+          description: Event code in format BATbern{number}
           required: true
           schema:
             type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
       requestBody:
         required: true
         content:
@@ -590,7 +619,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /events/{id}/sessions/{sessionId}:
+  /events/{eventCode}/sessions/{sessionId}:
     put:
       tags:
         - Sessions
@@ -599,14 +628,18 @@ paths:
         Update an existing session.
 
         **Acceptance Criteria**: AC10
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
 
       operationId: updateSession
       parameters:
-        - name: id
+        - name: eventCode
           in: path
+          description: Event code in format BATbern{number}
           required: true
           schema:
             type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
         - name: sessionId
           in: path
           required: true
@@ -640,14 +673,18 @@ paths:
         Delete a session from the event.
 
         **Acceptance Criteria**: AC10
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
 
       operationId: deleteSession
       parameters:
-        - name: id
+        - name: eventCode
           in: path
+          description: Event code in format BATbern{number}
           required: true
           schema:
             type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
         - name: sessionId
           in: path
           required: true
@@ -661,7 +698,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /events/{id}/registrations:
+  /events/{eventCode}/registrations:
     get:
       tags:
         - Registrations
@@ -670,6 +707,7 @@ paths:
         Retrieve all registrations for a specific event with optional filtering.
 
         **Acceptance Criteria**: AC11
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
 
         **Filter Examples**:
         - By status: `{"status":"confirmed"}`
@@ -677,11 +715,14 @@ paths:
 
       operationId: listRegistrations
       parameters:
-        - name: id
+        - name: eventCode
           in: path
+          description: Event code in format BATbern{number}
           required: true
           schema:
             type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
         - name: filter
           in: query
           schema:
@@ -724,14 +765,18 @@ paths:
         Create a new registration for the event.
 
         **Acceptance Criteria**: AC12
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
 
       operationId: createRegistration
       parameters:
-        - name: id
+        - name: eventCode
           in: path
+          description: Event code in format BATbern{number}
           required: true
           schema:
             type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
       requestBody:
         required: true
         content:
@@ -752,7 +797,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /events/{id}/registrations/{registrationId}:
+  /events/{eventCode}/registrations/{registrationId}:
     patch:
       tags:
         - Registrations
@@ -761,14 +806,18 @@ paths:
         Partially update a registration.
 
         **Acceptance Criteria**: AC12
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
 
       operationId: updateRegistration
       parameters:
-        - name: id
+        - name: eventCode
           in: path
+          description: Event code in format BATbern{number}
           required: true
           schema:
             type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
         - name: registrationId
           in: path
           required: true
@@ -802,14 +851,18 @@ paths:
         Delete a registration from the event.
 
         **Acceptance Criteria**: AC12
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
 
       operationId: deleteRegistration
       parameters:
-        - name: id
+        - name: eventCode
           in: path
+          description: Event code in format BATbern{number}
           required: true
           schema:
             type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
         - name: registrationId
           in: path
           required: true
@@ -823,7 +876,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /events/{id}/analytics:
+  /events/{eventCode}/analytics:
     get:
       tags:
         - Analytics
@@ -832,6 +885,7 @@ paths:
         Retrieve analytics data for a specific event.
 
         **Acceptance Criteria**: AC13
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
 
         **Metrics Available**:
         - attendance: Attendance counts and trends
@@ -843,11 +897,14 @@ paths:
 
       operationId: getEventAnalytics
       parameters:
-        - name: id
+        - name: eventCode
           in: path
+          description: Event code in format BATbern{number}
           required: true
           schema:
             type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
         - name: metrics
           in: query
           description: Comma-separated list of metrics
@@ -880,7 +937,7 @@ components:
     Event:
       type: object
       required:
-        - id
+        - eventCode
         - title
         - eventNumber
         - date
@@ -889,12 +946,15 @@ components:
         - venueAddress
         - venueCapacity
         - status
-        - organizerId
+        - organizerUsername
       properties:
-        id:
+        eventCode:
           type: string
-          format: uuid
-          example: 550e8400-e29b-41d4-a716-446655440000
+          pattern: '^BATbern[0-9]+$'
+          example: BATbern142
+          description: |
+            Human-readable event identifier in format "BATbern{number}".
+            Story 1.16.2: Public API uses meaningful IDs, not UUIDs.
         title:
           type: string
           maxLength: 255
@@ -926,10 +986,13 @@ components:
           type: string
           enum: [planning, topic_defined, speakers_invited, agenda_draft, published, registration_open, registration_closed, in_progress, completed, archived]
           example: published
-        organizerId:
+        organizerUsername:
           type: string
-          format: uuid
-          example: 550e8400-e29b-41d4-a716-446655440001
+          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          example: john.doe
+          description: |
+            Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
+            Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.
         currentAttendeeCount:
           type: integer
           example: 0

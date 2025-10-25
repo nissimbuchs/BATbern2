@@ -122,7 +122,8 @@ export function formatErrorForDisplay(error: unknown): FormattedError {
     // HTTP error with response
     const statusCode = axiosError.response.status;
     const responseData = axiosError.response.data as Record<string, unknown>;
-    const customMessage = typeof responseData?.message === 'string' ? responseData.message : undefined;
+    const customMessage =
+      typeof responseData?.message === 'string' ? responseData.message : undefined;
     const correlationId = extractCorrelationId(axiosError);
 
     return {
@@ -134,7 +135,8 @@ export function formatErrorForDisplay(error: unknown): FormattedError {
   }
 
   // Handle generic Error
-  const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.';
+  const errorMessage =
+    error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.';
   return {
     message: errorMessage,
     originalError: error,

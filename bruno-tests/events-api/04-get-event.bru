@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/events/{{createdEventId}}
+  url: {{baseUrl}}/events/{{createdEventCode}}
   body: none
   auth: bearer
 }
@@ -16,7 +16,7 @@ auth:bearer {
 
 assert {
   res.status: eq 200
-  res.body.id: eq {{createdEventId}}
+  res.body.eventCode: isDefined
 }
 
 tests {
@@ -24,13 +24,18 @@ tests {
     expect(res.getStatus()).to.equal(200);
   });
 
-  test("should return event details", function() {
+  test("should return event details (Story 1.16.2: use eventCode)", function() {
     const event = res.getBody();
-    expect(event.id).to.equal(bru.getVar("createdEventId"));
+    expect(event.eventCode).to.equal(bru.getVar("createdEventCode"));
     expect(event.title).to.be.a('string');
     expect(event.status).to.be.a('string');
     expect(event.eventNumber).to.be.a('number');
     expect(event.date).to.be.a('string');
+  });
+
+  test("should NOT have id field (Story 1.16.2: removed redundant id)", function() {
+    const event = res.getBody();
+    expect(event.id).to.be.undefined;
   });
 
   test("should check cache header", function() {

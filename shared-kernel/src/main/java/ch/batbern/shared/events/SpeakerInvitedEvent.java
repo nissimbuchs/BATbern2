@@ -1,8 +1,5 @@
 package ch.batbern.shared.events;
 
-import ch.batbern.shared.types.EventId;
-import ch.batbern.shared.types.SpeakerId;
-import ch.batbern.shared.types.UserId;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
@@ -11,15 +8,15 @@ import java.time.LocalDateTime;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class SpeakerInvitedEvent extends DomainEvent<SpeakerId> {
+public class SpeakerInvitedEvent extends DomainEvent<String> {
 
-    @JsonProperty("targetEventId")
+    @JsonProperty("targetEventCode")
     @NonNull
-    private EventId targetEventId;
+    private String targetEventCode;
 
-    @JsonProperty("speakerId")
+    @JsonProperty("speakerUsername")
     @NonNull
-    private SpeakerId speakerId;
+    private String speakerUsername;
 
     @JsonProperty("speakerName")
     @NonNull
@@ -39,24 +36,24 @@ public class SpeakerInvitedEvent extends DomainEvent<SpeakerId> {
 
     @JsonProperty("invitedBy")
     @NonNull
-    private UserId invitedBy;
+    private String invitedBy;
 
     @JsonProperty("invitationStatus")
     private String invitationStatus = "PENDING";
 
-    public SpeakerInvitedEvent(EventId eventId, SpeakerId speakerId, String speakerName,
+    public SpeakerInvitedEvent(String eventCode, String speakerUsername, String speakerName,
                               String speakerEmail, String sessionTitle, LocalDateTime sessionTime,
-                              UserId invitedBy, String invitationStatus) {
-        super(speakerId, "SpeakerInvitedEvent", invitedBy);
-        if (eventId == null) throw new NullPointerException("eventId is marked non-null but is null");
-        if (speakerId == null) throw new NullPointerException("speakerId is marked non-null but is null");
+                              String invitedBy, String invitationStatus) {
+        super(speakerUsername, "SpeakerInvitedEvent", invitedBy);
+        if (eventCode == null) throw new NullPointerException("eventCode is marked non-null but is null");
+        if (speakerUsername == null) throw new NullPointerException("speakerUsername is marked non-null but is null");
         if (speakerName == null) throw new NullPointerException("speakerName is marked non-null but is null");
         if (speakerEmail == null) throw new NullPointerException("speakerEmail is marked non-null but is null");
         if (sessionTitle == null) throw new NullPointerException("sessionTitle is marked non-null but is null");
         if (sessionTime == null) throw new NullPointerException("sessionTime is marked non-null but is null");
         if (invitedBy == null) throw new NullPointerException("invitedBy is marked non-null but is null");
-        this.targetEventId = eventId;
-        this.speakerId = speakerId;
+        this.targetEventCode = eventCode;
+        this.speakerUsername = speakerUsername;
         this.speakerName = speakerName;
         this.speakerEmail = speakerEmail;
         this.sessionTitle = sessionTitle;
@@ -70,22 +67,22 @@ public class SpeakerInvitedEvent extends DomainEvent<SpeakerId> {
     }
 
     public static class SpeakerInvitedEventBuilder {
-        private EventId targetEventId;
-        private SpeakerId speakerId;
+        private String targetEventCode;
+        private String speakerUsername;
         private String speakerName;
         private String speakerEmail;
         private String sessionTitle;
         private LocalDateTime sessionTime;
-        private UserId invitedBy;
+        private String invitedBy;
         private String invitationStatus;
 
-        public SpeakerInvitedEventBuilder eventId(EventId eventId) {
-            this.targetEventId = eventId;
+        public SpeakerInvitedEventBuilder eventCode(String eventCode) {
+            this.targetEventCode = eventCode;
             return this;
         }
 
-        public SpeakerInvitedEventBuilder speakerId(SpeakerId speakerId) {
-            this.speakerId = speakerId;
+        public SpeakerInvitedEventBuilder speakerUsername(String speakerUsername) {
+            this.speakerUsername = speakerUsername;
             return this;
         }
 
@@ -109,7 +106,7 @@ public class SpeakerInvitedEvent extends DomainEvent<SpeakerId> {
             return this;
         }
 
-        public SpeakerInvitedEventBuilder invitedBy(UserId invitedBy) {
+        public SpeakerInvitedEventBuilder invitedBy(String invitedBy) {
             this.invitedBy = invitedBy;
             return this;
         }
@@ -120,14 +117,14 @@ public class SpeakerInvitedEvent extends DomainEvent<SpeakerId> {
         }
 
         public SpeakerInvitedEvent build() {
-            return new SpeakerInvitedEvent(targetEventId, speakerId, speakerName, speakerEmail,
+            return new SpeakerInvitedEvent(targetEventCode, speakerUsername, speakerName, speakerEmail,
                 sessionTitle, sessionTime, invitedBy, invitationStatus);
         }
     }
 
     @Override
-    public SpeakerId getAggregateId() {
-        return speakerId;
+    public String getAggregateId() {
+        return speakerUsername;
     }
 
     @Override

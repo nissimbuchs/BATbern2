@@ -29,19 +29,19 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({
   const { t } = useTranslation('common');
 
   const handleClick = () => {
-    onClick(company.id);
+    onClick(company.name);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      onClick(company.id);
+      onClick(company.name);
     }
   };
 
   return (
     <Card
-      data-testid={`company-card-${company.id}`}
+      data-testid={`company-card-${company.name}`}
       sx={{
         height: '100%',
         display: 'flex',

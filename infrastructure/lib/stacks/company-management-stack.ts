@@ -20,7 +20,7 @@ export interface CompanyManagementStackProps extends cdk.StackProps {
   databaseEndpoint?: string;
   databaseSecret?: secretsmanager.ISecret;
   cacheEndpoint?: string;
-  userPool: cognito.IUserPool;
+  userPool: cognito.UserPool;
   userPoolClient: cognito.IUserPoolClient;
   contentBucket?: s3.IBucket;
   cloudFrontDistribution?: cloudfront.IDistribution;
@@ -121,6 +121,10 @@ export class CompanyManagementStack extends cdk.Stack {
         resources: [props.eventBus.eventBusArn],
       }));
     }
+
+    // Note: Cognito Lambda triggers (Story 1.2.5) are now created in CognitoStack
+    // to avoid cyclic dependencies. Database tables are created by Flyway migrations
+    // when this service starts, and triggers work when users sign up at runtime.
 
     // Apply additional tags specific to this service
     cdk.Tags.of(this).add('Consolidation', 'Companies+Users');

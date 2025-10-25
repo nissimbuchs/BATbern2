@@ -3,18 +3,18 @@ package ch.batbern.events.dto;
 import ch.batbern.events.domain.Event;
 import lombok.*;
 import java.time.Instant;
-import java.util.UUID;
 
 /**
  * Event Response DTO
- * Story 1.15a.1: Events API Consolidation
+ * Story 1.16.2: Eliminate UUIDs from API
+ * Exposes eventCode (String) as API identifier instead of UUID
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class EventResponse {
-    private UUID id;
+    private String eventCode;
     private String title;
     private Integer eventNumber;
     private Instant date;
@@ -23,7 +23,7 @@ public class EventResponse {
     private String venueAddress;
     private Integer venueCapacity;
     private String status;
-    private UUID organizerId;
+    private String organizerUsername;
     private Integer currentAttendeeCount;
     private Instant publishedAt;
     private String metadata;
@@ -38,7 +38,7 @@ public class EventResponse {
      */
     public static EventResponse fromEntity(Event event) {
         return EventResponse.builder()
-                .id(event.getId())
+                .eventCode(event.getEventCode())
                 .title(event.getTitle())
                 .eventNumber(event.getEventNumber())
                 .date(event.getDate())
@@ -47,7 +47,7 @@ public class EventResponse {
                 .venueAddress(event.getVenueAddress())
                 .venueCapacity(event.getVenueCapacity())
                 .status(event.getStatus())
-                .organizerId(event.getOrganizerId())
+                .organizerUsername(event.getOrganizerUsername())
                 .currentAttendeeCount(event.getCurrentAttendeeCount())
                 .publishedAt(event.getPublishedAt())
                 .metadata(event.getMetadata())

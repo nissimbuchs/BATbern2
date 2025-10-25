@@ -1,0 +1,1 @@
+export { ReleaseNotesInfoBox } from './ReleaseNotesInfoBox';

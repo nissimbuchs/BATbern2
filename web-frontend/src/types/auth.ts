@@ -24,7 +24,8 @@ export interface UserContext {
   userId: string;
   email: string;
   emailVerified: boolean;
-  role: UserRole;
+  role: UserRole; // Primary role (first in roles array)
+  roles: UserRole[]; // All roles (Story 1.2.6: ADR-001 supports multiple roles)
   companyId?: string;
   preferences: UserPreferences;
   issuedAt: number;
@@ -63,6 +64,8 @@ export interface SignUpData {
   firstName: string;
   lastName: string;
   acceptTerms: boolean;
+  language?: string; // User's preferred language (de|en)
+  newsletterOptIn?: boolean; // Newsletter opt-in preference
 }
 
 export interface PasswordResetRequest {
@@ -121,7 +124,8 @@ export interface CognitoTokenClaims {
   scope?: string;
   auth_time: number;
   'cognito:username': string;
-  'cognito:groups'?: string[];
+  'custom:role'?: string; // Story 1.2.6: Comma-separated string (e.g., "ORGANIZER,SPEAKER")
+  'cognito:groups'?: string[]; // DEPRECATED: Legacy claim, use custom:role instead
   email: string;
   email_verified: boolean;
   'custom:companyId'?: string;
