@@ -178,11 +178,11 @@ async function createUser(
   const maxAttempts = 10;
 
   const queries = [
-    // Insert user with ON CONFLICT DO NOTHING for idempotency on cognito_id
+    // Insert user with ON CONFLICT DO NOTHING for idempotency on cognito_user_id
     {
       query: `
         INSERT INTO user_profiles (
-          cognito_id,
+          cognito_user_id,
           email,
           email_verified,
           username,
@@ -195,7 +195,7 @@ async function createUser(
           updated_at
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        ON CONFLICT (cognito_id) DO NOTHING
+        ON CONFLICT (cognito_user_id) DO NOTHING
         RETURNING id
       `,
       params: [
@@ -230,7 +230,7 @@ async function createUser(
       const client = await getDbClient();
       try {
         const existingUserResult = await client.query(
-          'SELECT id FROM user_profiles WHERE cognito_id = $1',
+          'SELECT id FROM user_profiles WHERE cognito_user_id = $1',
           [cognitoId]
         );
         if (existingUserResult.rows.length > 0) {

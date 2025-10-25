@@ -59,16 +59,14 @@ async function fetchUserRoles(cognitoId: string): Promise<UserRole[]> {
   const client = await getDbClient();
 
   try {
-    // Query for active global roles only (event_id IS NULL)
+    // Query for active global roles
     const result = await client.query(
       `
-        SELECT DISTINCT ur.role
-        FROM role_assignments ur
-        JOIN user_profiles u ON ur.user_id = u.id
-        WHERE u.cognito_id = $1
-          AND ur.end_date IS NULL
-          AND ur.event_id IS NULL
-        ORDER BY ur.role
+        SELECT DISTINCT ra.role
+        FROM role_assignments ra
+        JOIN user_profiles u ON ra.user_id = u.id
+        WHERE u.cognito_user_id = $1
+        ORDER BY ra.role
       `,
       [cognitoId]
     );

@@ -24,9 +24,12 @@ const cloudwatch = new CloudWatchClient({ region: process.env.AWS_REGION || 'eu-
  */
 export const handler: PreAuthenticationTriggerHandler = async (
   event: PreAuthenticationTriggerEvent,
-  _context,
+  context,
   callback
 ) => {
+  // Don't wait for event loop to be empty before finishing - return immediately after callback
+  context.callbackWaitsForEmptyEventLoop = false;
+
   const startTime = Date.now();
   const cognitoId = event.userName;
 
@@ -45,7 +48,7 @@ export const handler: PreAuthenticationTriggerHandler = async (
     const result = await client.query(
       `SELECT is_active, deactivation_reason
        FROM user_profiles
-       WHERE cognito_id = $1`,
+       WHERE cognito_user_id = $1`,
       [cognitoId]
     );
 
@@ -53,8 +56,9 @@ export const handler: PreAuthenticationTriggerHandler = async (
     if (result.rows.length === 0) {
       console.log('User not found in database, allowing JIT provisioning', { cognitoId });
 
-      await publishMetric('UserNotFoundAllowed', 1);
-      await publishMetric('PreAuthLatency', Date.now() - startTime);
+      // Publish metrics without awaiting (fire and forget - non-blocking)
+      publishMetric('UserNotFoundAllowed', 1).catch(err => console.error('Metric publish failed', err));
+      publishMetric('PreAuthLatency', Date.now() - startTime).catch(err => console.error('Metric publish failed', err));
 
       callback(null, event);
       return event;
@@ -69,8 +73,9 @@ export const handler: PreAuthenticationTriggerHandler = async (
         deactivationReason: user.deactivation_reason,
       });
 
-      await publishMetric('InactiveUserBlocked', 1);
-      await publishMetric('PreAuthLatency', Date.now() - startTime);
+      // Publish metrics without awaiting (fire and forget - non-blocking)
+      publishMetric('InactiveUserBlocked', 1).catch(err => console.error('Metric publish failed', err));
+      publishMetric('PreAuthLatency', Date.now() - startTime).catch(err => console.error('Metric publish failed', err));
 
       // Call callback with error AND throw to block authentication
       const errorMessage = `User account is inactive. Reason: ${user.deactivation_reason || 'Account deactivated'}`;
@@ -81,8 +86,9 @@ export const handler: PreAuthenticationTriggerHandler = async (
     // User active - allow authentication
     console.log('User active, allowing authentication', { cognitoId });
 
-    await publishMetric('ActiveUserAllowed', 1);
-    await publishMetric('PreAuthLatency', Date.now() - startTime);
+    // Publish metrics without awaiting (fire and forget - non-blocking)
+    publishMetric('ActiveUserAllowed', 1).catch(err => console.error('Metric publish failed', err));
+    publishMetric('PreAuthLatency', Date.now() - startTime).catch(err => console.error('Metric publish failed', err));
 
     callback(null, event);
     return event;
@@ -100,8 +106,9 @@ export const handler: PreAuthenticationTriggerHandler = async (
       error: err.message,
     });
 
-    await publishMetric('PreAuthFailure', 1);
-    await publishMetric('PreAuthLatency', Date.now() - startTime);
+    // Publish metrics without awaiting (fire and forget - non-blocking)
+    publishMetric('PreAuthFailure', 1).catch(err => console.error('Metric publish failed', err));
+    publishMetric('PreAuthLatency', Date.now() - startTime).catch(err => console.error('Metric publish failed', err));
 
     // Allow authentication even on error
     callback(null, event);

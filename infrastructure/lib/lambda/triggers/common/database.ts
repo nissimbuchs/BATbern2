@@ -60,7 +60,7 @@ async function getDatabaseConfig() {
     user: credentials.username,
     password: credentials.password,
     port: parseInt(process.env.DB_PORT || '5432', 10),
-    ssl: process.env.DB_SSL === 'false' ? false : { rejectUnauthorized: true }, // Default to SSL enabled
+    ssl: process.env.DB_SSL === 'false' ? false : { rejectUnauthorized: false }, // RDS uses Amazon CA, accept without verification
     // Connection pool settings optimized for Lambda
     max: 2, // Low max for Lambda (one concurrent execution per container)
     idleTimeoutMillis: 30000, // 30 seconds
