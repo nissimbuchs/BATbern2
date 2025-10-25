@@ -139,6 +139,15 @@ export function createDomainService(
       resources: ['*'],
     }));
 
+    // Grant CloudWatch Metrics permissions
+    taskDefinition.taskRole.addToPrincipalPolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        'cloudwatch:PutMetricData',
+      ],
+      resources: ['*'],
+    }));
+
     // Grant Secrets Manager permissions to task execution role
     if (props.databaseSecret) {
       props.databaseSecret.grantRead(taskDefinition.executionRole!);
