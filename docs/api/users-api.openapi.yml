@@ -15,6 +15,7 @@ info:
     - **GDPR Compliance**: Cascade deletion and audit logging
 
     **Story**: 1.14-2 - User Management Service Foundation
+    **Story 1.16.2**: Eliminate UUIDs from API - Use username as identifier
 
     **Performance Targets**:
     - Current user (GET /users/me): <100ms (P95)
@@ -29,6 +30,7 @@ info:
     email: platform@batbern.ch
   license:
     name: Proprietary
+    identifier: Proprietary
 
 servers:
   - url: https://api.batbern.ch/api/v1
@@ -98,28 +100,28 @@ paths:
                 basicUser:
                   summary: Basic user profile
                   value:
-                    id: 550e8400-e29b-41d4-a716-446655440000
+                    id: john.doe
                     email: john.doe@example.com
                     firstName: John
                     lastName: Doe
                     roles: [SPEAKER, ATTENDEE]
-                    isActive: true
+                    active: true
                     createdAt: 2025-01-15T10:00:00Z
                     updatedAt: 2025-01-15T10:00:00Z
                 expandedUser:
                   summary: User with all expansions
                   value:
-                    id: 550e8400-e29b-41d4-a716-446655440000
+                    id: john.doe
                     email: john.doe@example.com
                     firstName: John
                     lastName: Doe
                     roles: [SPEAKER, ATTENDEE]
-                    companyId: 550e8400-e29b-41d4-a716-446655440001
-                    isActive: true
+                    companyId: Swiss IT Solutions AG
+                    active: true
                     createdAt: 2025-01-15T10:00:00Z
                     updatedAt: 2025-01-15T10:00:00Z
                     company:
-                      id: 550e8400-e29b-41d4-a716-446655440001
+                      id: Swiss IT Solutions AG
                       name: Swiss IT Solutions AG
                       industry: Technology
                     preferences:
@@ -317,11 +319,11 @@ paths:
             enum: [ORGANIZER, SPEAKER, PARTNER, ATTENDEE]
         - name: company
           in: query
-          description: Filter by company ID (deprecated, use filter parameter)
+          description: Filter by company name (deprecated, use filter parameter)
           required: false
           schema:
             type: string
-            format: uuid
+            example: Swiss IT Solutions AG
       responses:
         '200':
           description: Successful response with paginated users
@@ -346,30 +348,139 @@ paths:
       security:
         - BearerAuth: []
 
-  /users/{id}:
+    post:
+      tags:
+        - User Management
+      summary: Create new user (Organizer/Admin only)
+      description: |
+        Create a new user with Cognito integration and automatic username generation.
+
+        **Acceptance Criteria**: AC4 (Story 2.5.2 - User Management Frontend)
+
+        **Authorization**: ORGANIZER or ADMIN role required
+
+        **Business Rules**:
+        - Email must be unique
+        - Username auto-generated from first/last name (e.g., john.doe)
+        - User created in Cognito with email_verified=true
+        - Default role: ATTENDEE (unless initialRoles specified)
+        - Password set via Cognito welcome email
+
+        **Events Published**: UserCreatedEvent to EventBridge
+
+        **Performance**: <200ms (P95)
+
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+            examples:
+              basicUser:
+                summary: Basic user creation
+                value:
+                  email: anna.mueller@example.com
+                  firstName: Anna
+                  lastName: Müller
+                  companyId: Swiss IT Solutions AG
+                  initialRoles:
+                    - ATTENDEE
+              organizerUser:
+                summary: Create organizer
+                value:
+                  email: john.admin@batbern.ch
+                  firstName: John
+                  lastName: Admin
+                  companyId: BATbern GmbH
+                  initialRoles:
+                    - ORGANIZER
+                  bio: Senior event organizer
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+              examples:
+                createdUser:
+                  summary: Newly created user
+                  value:
+                    id: anna.mueller
+                    email: anna.mueller@example.com
+                    firstName: Anna
+                    lastName: Müller
+                    username: anna.mueller
+                    companyId: Swiss IT Solutions AG
+                    roles:
+                      - ATTENDEE
+                    active: true
+                    createdAt: '2025-10-21T20:00:00Z'
+                    updatedAt: '2025-10-21T20:00:00Z'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                duplicateEmail:
+                  summary: Email already exists
+                  value:
+                    timestamp: '2025-10-21T20:00:00Z'
+                    status: 400
+                    error: ERR_VALIDATION
+                    message: User with email anna.mueller@example.com already exists
+                    path: /api/v1/users
+                invalidEmail:
+                  summary: Invalid email format
+                  value:
+                    timestamp: '2025-10-21T20:00:00Z'
+                    status: 400
+                    error: ERR_VALIDATION
+                    message: Invalid email format
+                    path: /api/v1/users
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden - Requires ORGANIZER or ADMIN role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /users/{username}:
     get:
       tags:
         - User Management
-      summary: Get user details
+      summary: Get user details by username
       description: |
         Retrieve detailed information about a specific user.
 
         **Acceptance Criteria**: AC5
 
+        **Story 1.16.2**: Uses username as identifier instead of UUID
+
         **Resource Expansion**: Supports ?include parameter
 
         **Performance**: <150ms (P95)
 
-      operationId: getUserById
+      operationId: getUserByUsername
       parameters:
-        - name: id
+        - name: username
           in: path
-          description: User UUID
+          description: Username (unique identifier)
           required: true
           schema:
             type: string
-            format: uuid
-            example: 550e8400-e29b-41d4-a716-446655440000
+            pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+            example: john.doe
         - name: include
           in: query
           description: Comma-separated list of resources to include
@@ -402,6 +513,8 @@ paths:
 
         **Acceptance Criteria**: AC11
 
+        **Story 1.16.2**: Uses username as identifier instead of UUID
+
         **Authorization**: ADMIN role or self-deletion
 
         **Business Rules**:
@@ -414,12 +527,14 @@ paths:
 
       operationId: deleteUser
       parameters:
-        - name: id
+        - name: username
           in: path
+          description: Username (unique identifier)
           required: true
           schema:
             type: string
-            format: uuid
+            pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+            example: john.doe
       responses:
         '204':
           description: User deleted successfully
@@ -638,7 +753,7 @@ paths:
       security:
         - BearerAuth: []
 
-  /users/{id}/roles:
+  /users/{username}/roles:
     get:
       tags:
         - Role Management
@@ -648,32 +763,27 @@ paths:
 
         **Acceptance Criteria**: AC8
 
+        **Story 1.16.2**: Uses username as identifier instead of UUID
+
         **Authorization**: ADMIN or ORGANIZER role required
 
       operationId: getUserRoles
       parameters:
-        - name: id
+        - name: username
           in: path
+          description: Username (unique identifier)
           required: true
           schema:
             type: string
-            format: uuid
+            pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+            example: john.doe
       responses:
         '200':
           description: Roles retrieved successfully
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  userId:
-                    type: string
-                    format: uuid
-                  roles:
-                    type: array
-                    items:
-                      type: string
-                      enum: [ORGANIZER, SPEAKER, PARTNER, ATTENDEE]
+                $ref: '#/components/schemas/UserRolesResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -694,6 +804,8 @@ paths:
 
         **Acceptance Criteria**: AC8
 
+        **Story 1.16.2**: Uses username as identifier instead of UUID
+
         **Authorization**: ADMIN or ORGANIZER role required
 
         **Business Rules**:
@@ -706,42 +818,27 @@ paths:
 
       operationId: updateUserRoles
       parameters:
-        - name: id
+        - name: username
           in: path
+          description: Username (unique identifier)
           required: true
           schema:
             type: string
-            format: uuid
+            pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+            example: john.doe
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - roles
-              properties:
-                roles:
-                  type: array
-                  items:
-                    type: string
-                    enum: [ORGANIZER, SPEAKER, PARTNER, ATTENDEE]
-                  minItems: 1
+              $ref: '#/components/schemas/UpdateUserRolesRequest'
       responses:
         '200':
           description: Roles updated successfully
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  userId:
-                    type: string
-                    format: uuid
-                  roles:
-                    type: array
-                    items:
-                      type: string
+                $ref: '#/components/schemas/UserRolesResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -757,7 +854,7 @@ paths:
       security:
         - BearerAuth: []
 
-  /users/{id}/activity:
+  /users/{username}/activity:
     get:
       tags:
         - Activity History
@@ -767,18 +864,22 @@ paths:
 
         **Acceptance Criteria**: AC9
 
+        **Story 1.16.2**: Uses username as identifier instead of UUID
+
         **Activity Types**: event_registered, session_attended, topic_voted, content_viewed
 
         **Timeframe Filtering**: Support for date range queries
 
       operationId: getUserActivity
       parameters:
-        - name: id
+        - name: username
           in: path
+          description: Username (unique identifier)
           required: true
           schema:
             type: string
-            format: uuid
+            pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+            example: john.doe
         - name: timeframe
           in: query
           description: Filter by timeframe
@@ -960,6 +1061,9 @@ components:
   schemas:
     UserResponse:
       type: object
+      description: |
+        User response with meaningful IDs.
+        Story 1.16.2: id field contains username, not UUID.
       required:
         - id
         - email
@@ -972,8 +1076,9 @@ components:
       properties:
         id:
           type: string
-          format: uuid
-          example: 550e8400-e29b-41d4-a716-446655440000
+          description: Username (unique identifier) - Story 1.16.2
+          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          example: john.doe
         cognitoUserId:
           type: string
           example: cognito-user-123
@@ -992,8 +1097,8 @@ components:
           example: Software engineer passionate about cloud architecture
         companyId:
           type: string
-          format: uuid
-          example: 550e8400-e29b-41d4-a716-446655440001
+          description: Company name (unique identifier) - Story 1.16.2
+          example: Swiss IT Solutions AG
         roles:
           type: array
           items:
@@ -1003,7 +1108,7 @@ components:
           type: string
           format: uri
           example: https://cdn.batbern.ch/profile-pictures/550e8400.jpg
-        isActive:
+        active:
           type: boolean
           example: true
         createdAt:
@@ -1107,6 +1212,9 @@ components:
 
     UserSearchResponse:
       type: object
+      description: |
+        User search result with meaningful IDs.
+        Story 1.16.2: id field contains username, not UUID.
       required:
         - id
         - email
@@ -1115,7 +1223,9 @@ components:
       properties:
         id:
           type: string
-          format: uuid
+          description: Username (unique identifier) - Story 1.16.2
+          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          example: john.doe
         email:
           type: string
         firstName:
@@ -1124,7 +1234,8 @@ components:
           type: string
         companyId:
           type: string
-          format: uuid
+          description: Company name (unique identifier) - Story 1.16.2
+          example: Swiss IT Solutions AG
         roles:
           type: array
           items:
@@ -1132,6 +1243,48 @@ components:
         profilePictureUrl:
           type: string
           format: uri
+
+    CreateUserRequest:
+      type: object
+      description: Request body for creating a new user (Story 2.5.2 AC4)
+      required:
+        - email
+        - firstName
+        - lastName
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email address (must be unique)
+          example: anna.mueller@example.com
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: User first name
+          example: Anna
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: User last name
+          example: Müller
+        companyId:
+          type: string
+          description: Company name (unique identifier) - Story 1.16.2
+          example: Swiss IT Solutions AG
+        initialRoles:
+          type: array
+          description: Initial roles for the user (defaults to [ATTENDEE] if not specified)
+          items:
+            type: string
+            enum: [ORGANIZER, SPEAKER, PARTNER, ATTENDEE]
+          example: [ATTENDEE]
+        bio:
+          type: string
+          maxLength: 500
+          description: User biography/description
+          example: Software engineer passionate about cloud architecture
 
     GetOrCreateUserRequest:
       type: object
@@ -1149,7 +1302,8 @@ components:
           type: string
         companyId:
           type: string
-          format: uuid
+          description: Company name (unique identifier) - Story 1.16.2
+          example: Swiss IT Solutions AG
         createIfMissing:
           type: boolean
           default: true
@@ -1160,13 +1314,15 @@ components:
     GetOrCreateUserResponse:
       type: object
       required:
-        - userId
+        - username
         - created
         - user
       properties:
-        userId:
+        username:
           type: string
-          format: uuid
+          description: Username (unique identifier) - Story 1.16.2
+          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          example: john.doe
         created:
           type: boolean
           description: True if user was created, false if existing
@@ -1181,10 +1337,13 @@ components:
       properties:
         id:
           type: string
+          description: Activity ID (internal UUID preserved for activity history)
           format: uuid
-        userId:
+        username:
           type: string
-          format: uuid
+          description: Username (unique identifier) - Story 1.16.2
+          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          example: john.doe
         activityType:
           type: string
           example: event_registered
@@ -1206,12 +1365,18 @@ components:
 
     Company:
       type: object
+      description: |
+        Company details with meaningful IDs.
+        Story 1.16.2: id field contains company name, not UUID.
       properties:
         id:
           type: string
-          format: uuid
+          description: Company name (unique identifier) - Story 1.16.2
+          example: Swiss IT Solutions AG
         name:
           type: string
+          description: Company name (same as id)
+          example: Swiss IT Solutions AG
         displayName:
           type: string
         industry:
@@ -1232,6 +1397,37 @@ components:
             $ref: '#/components/schemas/UserResponse'
         pagination:
           $ref: '#/components/schemas/PaginationMetadata'
+
+    UserRolesResponse:
+      type: object
+      description: User roles response
+      required:
+        - username
+        - roles
+      properties:
+        username:
+          type: string
+          description: Username (unique identifier) - Story 1.16.2
+          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          example: john.doe
+        roles:
+          type: array
+          items:
+            type: string
+            enum: [ORGANIZER, SPEAKER, PARTNER, ATTENDEE]
+
+    UpdateUserRolesRequest:
+      type: object
+      description: Request to update user roles
+      required:
+        - roles
+      properties:
+        roles:
+          type: array
+          items:
+            type: string
+            enum: [ORGANIZER, SPEAKER, PARTNER, ATTENDEE]
+          minItems: 1
 
     PaginationMetadata:
       type: object
@@ -1346,7 +1542,7 @@ components:
               value:
                 error: RESOURCE_NOT_FOUND
                 errorCode: NOT_FOUND
-                message: User not found with id 550e8400-e29b-41d4-a716-446655440000
+                message: User not found with username 'john.doe'
                 timestamp: 2025-01-15T10:30:00Z
 
     Conflict:

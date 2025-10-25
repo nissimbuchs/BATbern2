@@ -1,11 +1,5 @@
 import React from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Skeleton,
-} from '@mui/material';
+import { Box, Card, CardContent, Typography, Skeleton } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {
   Event as EventIcon,

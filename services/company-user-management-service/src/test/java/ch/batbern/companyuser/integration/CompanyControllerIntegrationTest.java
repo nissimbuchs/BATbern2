@@ -89,7 +89,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").exists())
+                // Story 1.16.2: use company name instead of UUID - removed id field
                 .andExpect(jsonPath("$.name").value("New Company"))
                 .andExpect(jsonPath("$.displayName").value("New Co"))
                 .andExpect(jsonPath("$.swissUID").value("CHE-987.654.321"))
@@ -187,13 +187,13 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
     // GET COMPANY BY ID TESTS (AC4)
 
     @Test
-    @DisplayName("GET /companies/{id} - should return company when authenticated")
+    @DisplayName("GET /companies/{name} - should return company when authenticated")
     @WithMockUser
     void shouldReturnCompany_whenAuthenticated() throws Exception {
         // When & Then
-        mockMvc.perform(get("/api/v1/companies/{id}", testCompany.getId()))
+        // Story 1.16.2: use company name instead of UUID
+        mockMvc.perform(get("/api/v1/companies/{name}", testCompany.getName()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(testCompany.getId().toString()))
                 .andExpect(jsonPath("$.name").value(testCompany.getName()))
                 .andExpect(jsonPath("$.displayName").value(testCompany.getDisplayName()))
                 .andExpect(jsonPath("$.swissUID").value(testCompany.getSwissUID()))
@@ -204,22 +204,24 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("GET /companies/{id} - should return 401 when not authenticated")
+    @DisplayName("GET /companies/{name} - should return 401 when not authenticated")
     void shouldReturn401_whenNotAuthenticatedForGet() throws Exception {
         // When & Then
-        mockMvc.perform(get("/api/v1/companies/{id}", testCompany.getId()))
+        // Story 1.16.2: use company name instead of UUID
+        mockMvc.perform(get("/api/v1/companies/{name}", testCompany.getName()))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
-    @DisplayName("GET /companies/{id} - should return 404 when company not found")
+    @DisplayName("GET /companies/{name} - should return 404 when company not found")
     @WithMockUser
     void shouldReturn404_whenCompanyNotFound() throws Exception {
         // Given
-        UUID nonExistentId = UUID.randomUUID();
+        // Story 1.16.2: use company name instead of UUID
+        String nonExistentName = "Non Existent Company";
 
         // When & Then
-        mockMvc.perform(get("/api/v1/companies/{id}", nonExistentId))
+        mockMvc.perform(get("/api/v1/companies/{name}", nonExistentName))
                 .andExpect(status().isNotFound());
     }
 
@@ -245,7 +247,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(2)))
                 .andExpect(jsonPath("$.data[*].name", containsInAnyOrder("Test Company", "Another Company")))
-                .andExpect(jsonPath("$.pagination.total").value(2));
+                .andExpect(jsonPath("$.pagination.totalItems").value(2));
     }
 
     @Test
@@ -282,7 +284,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
     // UPDATE COMPANY TESTS (AC4)
 
     @Test
-    @DisplayName("PUT /companies/{id} - should update company when authenticated with ORGANIZER role")
+    @DisplayName("PUT /companies/{name} - should update company when authenticated with ORGANIZER role")
     @WithMockUser(roles = {"ORGANIZER"})
     void shouldUpdateCompany_whenAuthenticatedWithOrganizerRole() throws Exception {
         // Given
@@ -294,11 +296,11 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
                 .build();
 
         // When & Then
-        mockMvc.perform(put("/api/v1/companies/{id}", testCompany.getId())
+        // Story 1.16.2: use company name instead of UUID
+        mockMvc.perform(put("/api/v1/companies/{name}", testCompany.getName())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(testCompany.getId().toString()))
                 .andExpect(jsonPath("$.name").value(testCompany.getName())) // Name unchanged
                 .andExpect(jsonPath("$.displayName").value("Updated Display Name"))
                 .andExpect(jsonPath("$.website").value("https://updated.example.com"))
@@ -306,12 +308,12 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.description").value("Updated description"));
 
         // Verify company was updated in database
-        Company updated = companyRepository.findById(testCompany.getId()).orElseThrow();
+        Company updated = companyRepository.findByName(testCompany.getName()).orElseThrow();
         assertThat(updated.getDisplayName()).isEqualTo("Updated Display Name");
     }
 
     @Test
-    @DisplayName("PUT /companies/{id} - should return 401 when not authenticated")
+    @DisplayName("PUT /companies/{name} - should return 401 when not authenticated")
     void shouldReturn401_whenNotAuthenticatedForUpdate() throws Exception {
         // Given
         UpdateCompanyRequest request = UpdateCompanyRequest.builder()
@@ -319,14 +321,15 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
                 .build();
 
         // When & Then
-        mockMvc.perform(put("/api/v1/companies/{id}", testCompany.getId())
+        // Story 1.16.2: use company name instead of UUID
+        mockMvc.perform(put("/api/v1/companies/{name}", testCompany.getName())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
-    @DisplayName("PUT /companies/{id} - should return 403 when authenticated without ORGANIZER role")
+    @DisplayName("PUT /companies/{name} - should return 403 when authenticated without ORGANIZER role")
     @WithMockUser(roles = {"SPEAKER"})
     void shouldReturn403_whenNotOrganizerForUpdate() throws Exception {
         // Given
@@ -335,24 +338,26 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
                 .build();
 
         // When & Then
-        mockMvc.perform(put("/api/v1/companies/{id}", testCompany.getId())
+        // Story 1.16.2: use company name instead of UUID
+        mockMvc.perform(put("/api/v1/companies/{name}", testCompany.getName())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    @DisplayName("PUT /companies/{id} - should return 404 when company not found")
+    @DisplayName("PUT /companies/{name} - should return 404 when company not found")
     @WithMockUser(roles = {"ORGANIZER"})
     void shouldReturn404_whenCompanyNotFoundForUpdate() throws Exception {
         // Given
-        UUID nonExistentId = UUID.randomUUID();
+        // Story 1.16.2: use company name instead of UUID
+        String nonExistentName = "Non Existent Company";
         UpdateCompanyRequest request = UpdateCompanyRequest.builder()
                 .displayName("Updated")
                 .build();
 
         // When & Then
-        mockMvc.perform(put("/api/v1/companies/{id}", nonExistentId)
+        mockMvc.perform(put("/api/v1/companies/{name}", nonExistentName)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound());
@@ -361,43 +366,47 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
     // DELETE COMPANY TESTS (AC4)
 
     @Test
-    @DisplayName("DELETE /companies/{id} - should delete company when authenticated with ORGANIZER role")
+    @DisplayName("DELETE /companies/{name} - should delete company when authenticated with ORGANIZER role")
     @WithMockUser(roles = {"ORGANIZER"})
     void shouldDeleteCompany_whenAuthenticatedWithOrganizerRole() throws Exception {
         // When & Then
-        mockMvc.perform(delete("/api/v1/companies/{id}", testCompany.getId()))
+        // Story 1.16.2: use company name instead of UUID
+        mockMvc.perform(delete("/api/v1/companies/{name}", testCompany.getName()))
                 .andExpect(status().isNoContent());
 
         // Verify company was deleted
-        assertThat(companyRepository.findById(testCompany.getId())).isEmpty();
+        assertThat(companyRepository.findByName(testCompany.getName())).isEmpty();
     }
 
     @Test
-    @DisplayName("DELETE /companies/{id} - should return 401 when not authenticated")
+    @DisplayName("DELETE /companies/{name} - should return 401 when not authenticated")
     void shouldReturn401_whenNotAuthenticatedForDelete() throws Exception {
         // When & Then
-        mockMvc.perform(delete("/api/v1/companies/{id}", testCompany.getId()))
+        // Story 1.16.2: use company name instead of UUID
+        mockMvc.perform(delete("/api/v1/companies/{name}", testCompany.getName()))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
-    @DisplayName("DELETE /companies/{id} - should return 403 when authenticated without ORGANIZER role")
+    @DisplayName("DELETE /companies/{name} - should return 403 when authenticated without ORGANIZER role")
     @WithMockUser(roles = {"SPEAKER"})
     void shouldReturn403_whenNotOrganizerForDelete() throws Exception {
         // When & Then
-        mockMvc.perform(delete("/api/v1/companies/{id}", testCompany.getId()))
+        // Story 1.16.2: use company name instead of UUID
+        mockMvc.perform(delete("/api/v1/companies/{name}", testCompany.getName()))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    @DisplayName("DELETE /companies/{id} - should return 404 when company not found")
+    @DisplayName("DELETE /companies/{name} - should return 404 when company not found")
     @WithMockUser(roles = {"ORGANIZER"})
     void shouldReturn404_whenCompanyNotFoundForDelete() throws Exception {
         // Given
-        UUID nonExistentId = UUID.randomUUID();
+        // Story 1.16.2: use company name instead of UUID
+        String nonExistentName = "Non Existent Company";
 
         // When & Then
-        mockMvc.perform(delete("/api/v1/companies/{id}", nonExistentId))
+        mockMvc.perform(delete("/api/v1/companies/{name}", nonExistentName))
                 .andExpect(status().isNotFound());
     }
 

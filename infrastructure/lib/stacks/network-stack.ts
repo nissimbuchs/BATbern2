@@ -28,6 +28,7 @@ export class NetworkStack extends cdk.Stack {
   public readonly applicationSecurityGroup: ec2.SecurityGroup;
   public readonly databaseSecurityGroup: ec2.SecurityGroup;
   public readonly cacheSecurityGroup: ec2.SecurityGroup;
+  public readonly lambdaTriggersSecurityGroup: ec2.SecurityGroup;
   public readonly apiCertificate?: certificatemanager.ICertificate;
 
   constructor(scope: Construct, id: string, props: NetworkStackProps) {
@@ -46,6 +47,7 @@ export class NetworkStack extends cdk.Stack {
     this.applicationSecurityGroup = vpcConstruct.applicationSecurityGroup;
     this.databaseSecurityGroup = vpcConstruct.databaseSecurityGroup;
     this.cacheSecurityGroup = vpcConstruct.cacheSecurityGroup;
+    this.lambdaTriggersSecurityGroup = vpcConstruct.lambdaTriggersSecurityGroup;
 
     // Apply tags to all resources
     cdk.Tags.of(this.vpc).add('Environment', props.config.envName);

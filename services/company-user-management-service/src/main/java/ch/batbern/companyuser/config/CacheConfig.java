@@ -37,7 +37,7 @@ public class CacheConfig {
      */
     @Bean
     public CacheManager cacheManager() {
-        CaffeineCacheManager cacheManager = new CaffeineCacheManager("companySearch");
+        CaffeineCacheManager cacheManager = new CaffeineCacheManager("companySearch", "userSearch");
         cacheManager.setCaffeine(caffeineCacheBuilder());
         return cacheManager;
     }

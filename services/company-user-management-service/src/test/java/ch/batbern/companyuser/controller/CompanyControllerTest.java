@@ -14,7 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -48,29 +48,37 @@ class CompanyControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private CompanyService companyService;
 
-    @MockBean
+    @MockitoBean
     private ch.batbern.companyuser.service.CompanySearchService searchService;
 
-    @MockBean
+    @MockitoBean
     private ch.batbern.companyuser.service.SwissUIDValidationService uidValidationService;
 
-    @MockBean
+    @MockitoBean
     private ch.batbern.companyuser.service.CompanyQueryService queryService;
 
-    @MockBean
+    @MockitoBean
     private ch.batbern.companyuser.service.CompanyLogoService logoService;
 
-    private UUID testCompanyId;
+    @MockitoBean
+    private ch.batbern.companyuser.repository.CompanyRepository companyRepository;
+
+    @MockitoBean
+    private ch.batbern.companyuser.repository.UserRepository userRepository;
+
+    // Story 1.16.2: use company name instead of UUID
+    private String testCompanyName;
     private CreateCompanyRequest createRequest;
     private UpdateCompanyRequest updateRequest;
     private CompanyResponse companyResponse;
 
     @BeforeEach
     void setUp() {
-        testCompanyId = UUID.randomUUID();
+        // Story 1.16.2: use company name instead of UUID
+        testCompanyName = "Test Company AG";
 
         createRequest = CreateCompanyRequest.builder()
                 .name("Test Company AG")
@@ -90,7 +98,6 @@ class CompanyControllerTest {
                 .build();
 
         companyResponse = CompanyResponse.builder()
-                .id(testCompanyId)
                 .name("Test Company AG")
                 .displayName("Test Company")
                 .swissUID("CHE-123.456.789")
@@ -118,7 +125,7 @@ class CompanyControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createRequest)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(testCompanyId.toString()))
+                // Story 1.16.2: use company name instead of UUID
                 .andExpect(jsonPath("$.name").value("Test Company AG"))
                 .andExpect(jsonPath("$.displayName").value("Test Company"))
                 .andExpect(jsonPath("$.swissUID").value("CHE-123.456.789"))
@@ -128,31 +135,32 @@ class CompanyControllerTest {
     }
 
     /**
-     * Test 4.2: should_getCompanyById_when_companyExists
-     * Verifies that GET /api/v1/companies/{id} returns company details
+     * Test 4.2: should_getCompanyByName_when_companyExists
+     * Verifies that GET /api/v1/companies/{name} returns company details
+     * Story 1.16.2: use company name instead of UUID
      */
     @Test
     @WithMockUser
     void should_getCompanyById_when_companyExists() throws Exception {
-        when(companyService.getCompanyById(testCompanyId))
+        // Story 1.16.2: use company name instead of UUID
+        when(companyService.getCompanyByName(testCompanyName))
                 .thenReturn(companyResponse);
 
-        mockMvc.perform(get("/api/v1/companies/{id}", testCompanyId))
+        mockMvc.perform(get("/api/v1/companies/{name}", testCompanyName))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(testCompanyId.toString()))
                 .andExpect(jsonPath("$.name").value("Test Company AG"))
                 .andExpect(jsonPath("$.swissUID").value("CHE-123.456.789"));
     }
 
     /**
      * Test 4.3: should_updateCompany_when_validUpdateRequest
-     * Verifies that PUT /api/v1/companies/{id} updates company successfully
+     * Verifies that PUT /api/v1/companies/{name} updates company successfully
+     * Story 1.16.2: use company name instead of UUID
      */
     @Test
     @WithMockUser(roles = {"ORGANIZER"})
     void should_updateCompany_when_validUpdateRequest() throws Exception {
         CompanyResponse updatedResponse = CompanyResponse.builder()
-                .id(testCompanyId)
                 .name("Updated Company AG")
                 .displayName("Updated Company")
                 .swissUID("CHE-123.456.789")
@@ -164,27 +172,29 @@ class CompanyControllerTest {
                 .updatedAt(Instant.now())
                 .build();
 
-        when(companyService.updateCompany(eq(testCompanyId), any(UpdateCompanyRequest.class)))
+        // Story 1.16.2: use company name instead of UUID
+        when(companyService.updateCompany(eq(testCompanyName), any(UpdateCompanyRequest.class)))
                 .thenReturn(updatedResponse);
 
-        mockMvc.perform(put("/api/v1/companies/{id}", testCompanyId)
+        mockMvc.perform(put("/api/v1/companies/{name}", testCompanyName)
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(testCompanyId.toString()))
                 .andExpect(jsonPath("$.name").value("Updated Company AG"))
                 .andExpect(jsonPath("$.industry").value("Finance"));
     }
 
     /**
      * Test 4.4: should_deleteCompany_when_requested
-     * Verifies that DELETE /api/v1/companies/{id} deletes company
+     * Verifies that DELETE /api/v1/companies/{name} deletes company
+     * Story 1.16.2: use company name instead of UUID
      */
     @Test
     @WithMockUser(roles = {"ORGANIZER"})
     void should_deleteCompany_when_requested() throws Exception {
-        mockMvc.perform(delete("/api/v1/companies/{id}", testCompanyId)
+        // Story 1.16.2: use company name instead of UUID
+        mockMvc.perform(delete("/api/v1/companies/{name}", testCompanyName)
                         .with(csrf()))
                 .andExpect(status().isNoContent());
     }
@@ -192,15 +202,17 @@ class CompanyControllerTest {
     /**
      * Test 4.5: should_return404_when_companyNotFound
      * Verifies that proper 404 response is returned when company doesn't exist
+     * Story 1.16.2: use company name instead of UUID
      */
     @Test
     @WithMockUser
     void should_return404_when_companyNotFound() throws Exception {
-        UUID nonExistentId = UUID.randomUUID();
-        when(companyService.getCompanyById(nonExistentId))
-                .thenThrow(new CompanyNotFoundException(nonExistentId.toString()));
+        // Story 1.16.2: use company name instead of UUID
+        String nonExistentName = "Non Existent Company";
+        when(companyService.getCompanyByName(nonExistentName))
+                .thenThrow(new CompanyNotFoundException(nonExistentName));
 
-        mockMvc.perform(get("/api/v1/companies/{id}", nonExistentId))
+        mockMvc.perform(get("/api/v1/companies/{name}", nonExistentName))
                 .andExpect(status().isNotFound());
     }
 
@@ -212,8 +224,8 @@ class CompanyControllerTest {
     @Test
     @WithMockUser
     void should_getAllCompanies_when_requested() throws Exception {
+        // Story 1.16.2: use company name instead of UUID
         CompanyResponse company2 = CompanyResponse.builder()
-                .id(UUID.randomUUID())
                 .name("Second Company AG")
                 .displayName("Second Company")
                 .isVerified(true)
@@ -227,7 +239,7 @@ class CompanyControllerTest {
                 .pagination(PaginationMetadata.builder()
                     .page(1)
                     .limit(20)
-                    .total(2L)
+                    .totalItems(2L)
                     .totalPages(1)
                     .hasNext(false)
                     .hasPrev(false)
@@ -243,7 +255,7 @@ class CompanyControllerTest {
                 .andExpect(jsonPath("$.data[0].name").value("Test Company AG"))
                 .andExpect(jsonPath("$.data[1].name").value("Second Company AG"))
                 .andExpect(jsonPath("$.pagination.page").value(1))
-                .andExpect(jsonPath("$.pagination.total").value(2));
+                .andExpect(jsonPath("$.pagination.totalItems").value(2));
     }
 
     /**
@@ -307,10 +319,12 @@ class CompanyControllerTest {
      * Test 4.11: should_returnUnauthorized_when_notAuthenticated
      * Verifies that unauthenticated requests are rejected
      * Returns 401 Unauthorized for anonymous/unauthenticated users
+     * Story 1.16.2: use company name instead of UUID
      */
     @Test
     void should_returnUnauthorized_when_notAuthenticated() throws Exception {
-        mockMvc.perform(get("/api/v1/companies/{id}", testCompanyId))
+        // Story 1.16.2: use company name instead of UUID
+        mockMvc.perform(get("/api/v1/companies/{name}", testCompanyName))
                 .andExpect(status().isUnauthorized()); // 401 for unauthenticated users
     }
 
@@ -319,12 +333,14 @@ class CompanyControllerTest {
      * Verifies that users without ORGANIZER role cannot delete companies
      * NOTE: Skipping in @WebMvcTest as method security requires full integration test context
      * This will be covered in CompanyControllerIntegrationTest instead
+     * Story 1.16.2: use company name instead of UUID
      */
     @Test
     @org.junit.jupiter.api.Disabled("Method security requires integration test - see CompanyControllerIntegrationTest")
     @WithMockUser(roles = {"SPEAKER"})
     void should_returnForbidden_when_insufficientPermissions() throws Exception {
-        mockMvc.perform(delete("/api/v1/companies/{id}", testCompanyId)
+        // Story 1.16.2: use company name instead of UUID
+        mockMvc.perform(delete("/api/v1/companies/{name}", testCompanyName)
                         .with(csrf()))
                 .andExpect(status().isForbidden());
     }
@@ -366,14 +382,14 @@ class CompanyControllerTest {
     }
 
     /**
-     * Test 4.15: should_verifyCompany_when_validIdProvided
-     * Verifies that POST /api/v1/companies/{id}/verify marks company as verified
+     * Test 4.15: should_verifyCompany_when_validNameProvided
+     * Verifies that POST /api/v1/companies/{name}/verify marks company as verified
+     * Story 1.16.2: use company name instead of UUID
      */
     @Test
     @WithMockUser(roles = {"ORGANIZER"})
     void should_verifyCompany_when_validIdProvided() throws Exception {
         CompanyResponse verifiedResponse = CompanyResponse.builder()
-                .id(testCompanyId)
                 .name("Test Company AG")
                 .displayName("Test Company")
                 .isVerified(true)
@@ -381,18 +397,20 @@ class CompanyControllerTest {
                 .updatedAt(Instant.now())
                 .build();
 
-        when(companyService.verifyCompany(testCompanyId)).thenReturn(verifiedResponse);
+        // Story 1.16.2: use company name instead of UUID
+        when(companyService.verifyCompany(testCompanyName)).thenReturn(verifiedResponse);
 
-        mockMvc.perform(post("/api/v1/companies/{id}/verify", testCompanyId)
+        mockMvc.perform(post("/api/v1/companies/{name}/verify", testCompanyName)
                         .with(csrf()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(testCompanyId.toString()))
+                .andExpect(jsonPath("$.name").value("Test Company AG"))
                 .andExpect(jsonPath("$.isVerified").value(true));
     }
 
     /**
      * Test 4.16: should_patchCompany_when_validPatchRequest
-     * Verifies that PATCH /api/v1/companies/{id} partially updates company
+     * Verifies that PATCH /api/v1/companies/{name} partially updates company
+     * Story 1.16.2: use company name instead of UUID
      */
     @Test
     @WithMockUser(roles = {"ORGANIZER"})
@@ -402,7 +420,6 @@ class CompanyControllerTest {
                 .build();
 
         CompanyResponse patchedResponse = CompanyResponse.builder()
-                .id(testCompanyId)
                 .name("Patched Name")
                 .displayName("Test Company")
                 .swissUID("CHE-123.456.789")
@@ -413,21 +430,22 @@ class CompanyControllerTest {
                 .updatedAt(Instant.now())
                 .build();
 
-        when(companyService.updateCompany(eq(testCompanyId), any(UpdateCompanyRequest.class)))
+        // Story 1.16.2: use company name instead of UUID
+        when(companyService.updateCompany(eq(testCompanyName), any(UpdateCompanyRequest.class)))
                 .thenReturn(patchedResponse);
 
-        mockMvc.perform(patch("/api/v1/companies/{id}", testCompanyId)
+        mockMvc.perform(patch("/api/v1/companies/{name}", testCompanyName)
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(patchRequest)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(testCompanyId.toString()))
                 .andExpect(jsonPath("$.name").value("Patched Name"));
     }
 
     /**
      * Test 4.17: should_requestPresignedUrl_when_validLogoUploadRequest
-     * Verifies that POST /api/v1/companies/{id}/logo/presigned-url generates presigned URL
+     * Verifies that POST /api/v1/companies/{name}/logo/presigned-url generates presigned URL
+     * Story 1.16.2: use company name instead of UUID
      */
     @Test
     @WithMockUser
@@ -446,13 +464,14 @@ class CompanyControllerTest {
                 .expiresInMinutes(15)
                 .build();
 
+        // Story 1.16.2: use company name instead of UUID
         when(logoService.generateLogoUploadUrl(
-                eq(testCompanyId.toString()),
+                eq(testCompanyName),
                 eq("company-logo.png"),
                 eq(1024000L)))
                 .thenReturn(presignedUrl);
 
-        mockMvc.perform(post("/api/v1/companies/{id}/logo/presigned-url", testCompanyId)
+        mockMvc.perform(post("/api/v1/companies/{name}/logo/presigned-url", testCompanyName)
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(uploadRequest)))
@@ -463,7 +482,8 @@ class CompanyControllerTest {
 
     /**
      * Test 4.18: should_confirmLogoUpload_when_validConfirmRequest
-     * Verifies that POST /api/v1/companies/{id}/logo/confirm confirms upload
+     * Verifies that POST /api/v1/companies/{name}/logo/confirm confirms upload
+     * Story 1.16.2: use company name instead of UUID
      */
     @Test
     @WithMockUser
@@ -475,8 +495,15 @@ class CompanyControllerTest {
                 .checksum("abc123")
                 .build();
 
+        // Story 1.16.2: Mock repository to return company entity
+        ch.batbern.companyuser.domain.Company company = ch.batbern.companyuser.domain.Company.builder()
+                .id(java.util.UUID.randomUUID())
+                .name("Test Company AG")
+                .displayName("Test Company")
+                .build();
+        when(companyRepository.findByName(testCompanyName)).thenReturn(java.util.Optional.of(company));
+
         CompanyResponse companyWithLogo = CompanyResponse.builder()
-                .id(testCompanyId)
                 .name("Test Company AG")
                 .displayName("Test Company")
                 .logo(ch.batbern.companyuser.dto.CompanyLogo.builder()
@@ -489,9 +516,10 @@ class CompanyControllerTest {
                 .updatedAt(Instant.now())
                 .build();
 
-        when(companyService.getCompanyById(testCompanyId)).thenReturn(companyWithLogo);
+        // Story 1.16.2: use company name instead of UUID
+        when(companyService.getCompanyByName(testCompanyName)).thenReturn(companyWithLogo);
 
-        mockMvc.perform(post("/api/v1/companies/{id}/logo/confirm", testCompanyId)
+        mockMvc.perform(post("/api/v1/companies/{name}/logo/confirm", testCompanyName)
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(confirmRequest)))
@@ -502,6 +530,7 @@ class CompanyControllerTest {
     /**
      * Test 4.19: should_returnNullLogoUrl_when_confirmUploadButNoLogo
      * Verifies that confirm endpoint handles companies without logos
+     * Story 1.16.2: use company name instead of UUID
      */
     @Test
     @WithMockUser
@@ -513,8 +542,15 @@ class CompanyControllerTest {
                 .checksum("abc123")
                 .build();
 
+        // Story 1.16.2: Mock repository to return company entity
+        ch.batbern.companyuser.domain.Company company = ch.batbern.companyuser.domain.Company.builder()
+                .id(java.util.UUID.randomUUID())
+                .name("Test Company AG")
+                .displayName("Test Company")
+                .build();
+        when(companyRepository.findByName(testCompanyName)).thenReturn(java.util.Optional.of(company));
+
         CompanyResponse companyWithoutLogo = CompanyResponse.builder()
-                .id(testCompanyId)
                 .name("Test Company AG")
                 .displayName("Test Company")
                 .logo(null)
@@ -523,9 +559,10 @@ class CompanyControllerTest {
                 .updatedAt(Instant.now())
                 .build();
 
-        when(companyService.getCompanyById(testCompanyId)).thenReturn(companyWithoutLogo);
+        // Story 1.16.2: use company name instead of UUID
+        when(companyService.getCompanyByName(testCompanyName)).thenReturn(companyWithoutLogo);
 
-        mockMvc.perform(post("/api/v1/companies/{id}/logo/confirm", testCompanyId)
+        mockMvc.perform(post("/api/v1/companies/{name}/logo/confirm", testCompanyName)
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(confirmRequest)))

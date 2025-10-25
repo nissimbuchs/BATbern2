@@ -56,7 +56,7 @@ describe('AuthService', () => {
               sub: 'user-123',
               email: 'organizer@batbern.ch',
               email_verified: true,
-              'cognito:groups': ['organizer'],
+              'custom:role': 'ORGANIZER',
               'custom:companyId': 'company-123',
               'custom:preferences': JSON.stringify({
                 language: 'en',
@@ -133,7 +133,7 @@ describe('AuthService', () => {
               sub: 'speaker-user-123',
               email: 'speaker@company.com',
               email_verified: true,
-              'cognito:groups': ['speaker'],
+              'custom:role': 'SPEAKER',
               'custom:companyId': 'speaker-company-123',
               'custom:preferences': JSON.stringify({
                 language: 'en',
@@ -199,7 +199,7 @@ describe('AuthService', () => {
               sub: 'user-123',
               email: 'organizer@batbern.ch',
               email_verified: true,
-              'cognito:groups': ['organizer'],
+              'custom:role': 'ORGANIZER',
               'custom:companyId': 'company-123',
               'custom:preferences': JSON.stringify({
                 language: 'en',
@@ -255,7 +255,7 @@ describe('AuthService', () => {
               sub: 'user-456',
               email: 'speaker@company.com',
               email_verified: true,
-              'cognito:groups': ['speaker'],
+              'custom:role': 'SPEAKER',
               'custom:companyId': 'company-456',
               'custom:preferences': JSON.stringify({
                 language: 'en',
@@ -333,9 +333,11 @@ describe('AuthService', () => {
         options: {
           userAttributes: {
             email: signUpData.email,
-            'custom:companyId': '',
             'custom:preferences': JSON.stringify({
+              firstName: 'John',
+              lastName: 'Doe',
               language: 'en',
+              newsletterOptIn: false,
               theme: 'light',
               notifications: {
                 email: true,
@@ -381,7 +383,7 @@ describe('AuthService', () => {
               sub: 'user-123',
               email: 'test@batbern.ch',
               email_verified: true,
-              'cognito:groups': ['organizer'],
+              'custom:role': 'ORGANIZER',
               'custom:companyId': 'company-123',
               'custom:preferences': JSON.stringify({
                 language: 'en',

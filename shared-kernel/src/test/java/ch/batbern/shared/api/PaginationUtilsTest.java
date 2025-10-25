@@ -186,7 +186,7 @@ class PaginationUtilsTest {
         // Then: Should generate complete metadata
         assertThat(metadata.getPage()).isEqualTo(2);
         assertThat(metadata.getLimit()).isEqualTo(10);
-        assertThat(metadata.getTotal()).isEqualTo(45);
+        assertThat(metadata.getTotalItems()).isEqualTo(45);
         assertThat(metadata.getTotalPages()).isEqualTo(5); // ceil(45/10) = 5
         assertThat(metadata.isHasNext()).isTrue(); // page 2 of 5
         assertThat(metadata.isHasPrev()).isTrue(); // page > 1

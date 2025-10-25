@@ -88,6 +88,8 @@ Complete rewrite of BATbern as a comprehensive event management platform using R
 
 **FR22**: Event organizers shall manage user roles with capabilities to promote users to speaker or organizer roles, demote users with approval workflows for organizer demotions, and enforce business rules requiring minimum 2 organizers per event, maintaining complete audit trails of all role changes
 
+**FR23**: Event organizers shall access a User Management interface displaying all platform users with comprehensive CRUD operations (create, read, update, delete), advanced filtering by role/company/status, search functionality with autocomplete, and the ability to view detailed user information and manage role assignments through an intuitive administrative interface, with all operations respecting business rules (minimum 2 organizers) and maintaining complete audit trails
+
 ### Non-Functional Requirements
 
 **NFR1**: Platform shall provide responsive design optimized for mobile, tablet, and desktop access

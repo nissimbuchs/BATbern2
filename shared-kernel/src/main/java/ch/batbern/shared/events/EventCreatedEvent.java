@@ -1,7 +1,5 @@
 package ch.batbern.shared.events;
 
-import ch.batbern.shared.types.EventId;
-import ch.batbern.shared.types.UserId;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
@@ -10,11 +8,11 @@ import java.time.LocalDate;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class EventCreatedEvent extends DomainEvent<EventId> {
+public class EventCreatedEvent extends DomainEvent<String> {
 
-    @JsonProperty("createdEventId")
+    @JsonProperty("createdEventCode")
     @NonNull
-    private EventId createdEventId;
+    private String createdEventCode;
 
     @JsonProperty("title")
     @NonNull
@@ -34,18 +32,18 @@ public class EventCreatedEvent extends DomainEvent<EventId> {
 
     @JsonProperty("organizerId")
     @NonNull
-    private UserId organizerId;
+    private String organizerId;
 
-    public EventCreatedEvent(EventId eventId, String title, String eventType,
-                           LocalDate eventDate, String venue, UserId organizerId) {
-        super(eventId, "EventCreatedEvent", organizerId);
-        if (eventId == null) throw new NullPointerException("eventId is marked non-null but is null");
+    public EventCreatedEvent(String eventCode, String title, String eventType,
+                           LocalDate eventDate, String venue, String organizerId) {
+        super(eventCode, "EventCreatedEvent", organizerId);
+        if (eventCode == null) throw new NullPointerException("eventCode is marked non-null but is null");
         if (title == null) throw new NullPointerException("title is marked non-null but is null");
         if (eventType == null) throw new NullPointerException("eventType is marked non-null but is null");
         if (eventDate == null) throw new NullPointerException("eventDate is marked non-null but is null");
         if (venue == null) throw new NullPointerException("venue is marked non-null but is null");
         if (organizerId == null) throw new NullPointerException("organizerId is marked non-null but is null");
-        this.createdEventId = eventId;
+        this.createdEventCode = eventCode;
         this.title = title;
         this.eventType = eventType;
         this.eventDate = eventDate;
@@ -58,15 +56,15 @@ public class EventCreatedEvent extends DomainEvent<EventId> {
     }
 
     public static class EventCreatedEventBuilder {
-        private EventId createdEventId;
+        private String createdEventCode;
         private String title;
         private String eventType;
         private LocalDate eventDate;
         private String venue;
-        private UserId organizerId;
+        private String organizerId;
 
-        public EventCreatedEventBuilder eventId(EventId eventId) {
-            this.createdEventId = eventId;
+        public EventCreatedEventBuilder eventCode(String eventCode) {
+            this.createdEventCode = eventCode;
             return this;
         }
 
@@ -90,19 +88,19 @@ public class EventCreatedEvent extends DomainEvent<EventId> {
             return this;
         }
 
-        public EventCreatedEventBuilder organizerId(UserId organizerId) {
+        public EventCreatedEventBuilder organizerId(String organizerId) {
             this.organizerId = organizerId;
             return this;
         }
 
         public EventCreatedEvent build() {
-            return new EventCreatedEvent(createdEventId, title, eventType, eventDate, venue, organizerId);
+            return new EventCreatedEvent(createdEventCode, title, eventType, eventDate, venue, organizerId);
         }
     }
 
     @Override
-    public EventId getAggregateId() {
-        return createdEventId;
+    public String getAggregateId() {
+        return createdEventCode;
     }
 
     @Override

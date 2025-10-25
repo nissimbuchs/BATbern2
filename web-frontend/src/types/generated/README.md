@@ -13,6 +13,7 @@ npm run generate:api-types
 ```
 
 This will generate TypeScript types from:
+
 - `docs/api/companies-api.openapi.yml` → `src/types/generated/company-api.types.ts`
 
 ### Usage
@@ -27,12 +28,14 @@ type Company = components['schemas']['CompanyResponse'];
 type CreateRequest = components['schemas']['CreateCompanyRequest'];
 
 // Use operation types
-type ListCompaniesResponse = operations['listCompanies']['responses']['200']['content']['application/json'];
+type ListCompaniesResponse =
+  operations['listCompanies']['responses']['200']['content']['application/json'];
 ```
 
 ### When to Regenerate
 
 Regenerate types whenever the OpenAPI specification changes:
+
 1. After updating `docs/api/companies-api.openapi.yml`
 2. Before committing API contract changes
 3. When adding new endpoints or modifying existing ones
@@ -40,6 +43,7 @@ Regenerate types whenever the OpenAPI specification changes:
 ### Type Safety
 
 These generated types ensure compile-time safety between frontend and backend:
+
 - Request/response payloads match backend DTOs
 - Parameter types are enforced
 - Schema validation aligns with backend validation

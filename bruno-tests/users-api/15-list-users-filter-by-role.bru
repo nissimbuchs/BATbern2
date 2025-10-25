@@ -1,0 +1,64 @@
+meta {
+  name: List Users - Filter by Role
+  type: http
+  seq: 15
+}
+
+get {
+  url: {{baseUrl}}/users
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+params:query {
+  role: ATTENDEE
+  page: 1
+  limit: 20
+}
+
+assert {
+  res.status: in [200, 403, 429]
+}
+
+tests {
+  test("should filter users by role successfully", function() {
+    const status = res.getStatus();
+    expect([200, 403, 429]).to.include(status);
+    if (status === 403) {
+      console.log("Non-admin/organizer - access denied (expected)");
+    }
+  });
+
+  test("should return only users with ATTENDEE role", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body.data).to.be.an('array');
+
+      // Verify all returned users have ATTENDEE role
+      body.data.forEach(user => {
+        expect(user.roles).to.be.an('array');
+        expect(user.roles).to.include('ATTENDEE');
+      });
+
+      console.log(`Found ${body.data.length} users with ATTENDEE role`);
+    }
+  });
+
+  test("should return pagination metadata", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body.pagination).to.exist;
+      expect(body.pagination.page).to.equal(1);
+      expect(body.pagination.limit).to.equal(20);
+    }
+  });
+}

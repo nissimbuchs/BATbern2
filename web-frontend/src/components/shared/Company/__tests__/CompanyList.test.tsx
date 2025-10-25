@@ -19,7 +19,7 @@ import type { CompanyListItem } from '@/types/company.types';
 const mockCompanies: CompanyListItem[] = [
   {
     id: '1',
-    name: 'Test Company 1',
+    name: 'TestCompany1',
     displayName: 'Test Corp 1',
     industry: 'Technology',
     isVerified: true,
@@ -27,11 +27,12 @@ const mockCompanies: CompanyListItem[] = [
   },
   {
     id: '2',
-    name: 'Test Company 2',
+    name: 'TestCompany2',
+    displayName: 'Test Company 2',
     industry: 'Finance',
     isVerified: false,
     // Removed: logoUrl, location, isPartner, associatedUserCount (not in backend schema)
-  }
+  },
 ];
 
 // Test wrapper with React Query
@@ -39,8 +40,8 @@ const createTestWrapper = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
-      mutations: { retry: false }
-    }
+      mutations: { retry: false },
+    },
   });
 
   return function Wrapper({ children }: { children: React.ReactNode }) {
@@ -91,8 +92,10 @@ describe('CompanyList Component', () => {
       const company1Card = screen.getByText('Test Corp 1').closest('[data-testid^="company-card"]');
       expect(company1Card).toHaveTextContent('✅');
 
-      // Second company should NOT have verified badge
-      const company2Card = screen.getByText('Test Company 2').closest('[data-testid^="company-card"]');
+      // Second company should NOT have verified badge (use displayName for text search)
+      const company2Card = screen
+        .getByText('Test Company 2')
+        .closest('[data-testid^="company-card"]');
       expect(company2Card).not.toHaveTextContent('✅');
     });
 
@@ -124,12 +127,7 @@ describe('CompanyList Component', () => {
     it('should_displayLoadingSkeleton_when_loading', () => {
       // Loading state test
       render(
-        <CompanyList
-          companies={[]}
-          isLoading={true}
-          viewMode="grid"
-          onViewModeToggle={vi.fn()}
-        />,
+        <CompanyList companies={[]} isLoading={true} viewMode="grid" onViewModeToggle={vi.fn()} />,
         { wrapper: createTestWrapper() }
       );
 
@@ -141,12 +139,7 @@ describe('CompanyList Component', () => {
     it('should_displayEmptyState_when_noCompanies', () => {
       // Empty state test
       render(
-        <CompanyList
-          companies={[]}
-          isLoading={false}
-          viewMode="grid"
-          onViewModeToggle={vi.fn()}
-        />,
+        <CompanyList companies={[]} isLoading={false} viewMode="grid" onViewModeToggle={vi.fn()} />,
         { wrapper: createTestWrapper() }
       );
 

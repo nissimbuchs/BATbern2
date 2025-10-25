@@ -24,7 +24,7 @@ body:json {
     "venueAddress": "Test Address 1, 3000 Bern",
     "venueCapacity": 100,
     "status": "planning",
-    "organizerId": "{{organizerId}}",
+    "organizerUsername": "{{organizerUsername}}",
     "description": "Test event created by Bruno API tests",
     "currentAttendeeCount": 0
   }
@@ -36,7 +36,7 @@ vars:pre-request {
 
 assert {
   res.status: eq 201
-  res.body.id: isDefined
+  res.body.eventCode: isDefined
   res.body.title: isDefined
 }
 
@@ -45,15 +45,20 @@ tests {
     expect(res.getStatus()).to.equal(201);
   });
 
-  test("should return created event with id", function() {
+  test("should return created event with eventCode (Story 1.16.2: use eventCode as identifier)", function() {
     const event = res.getBody();
-    expect(event.id).to.be.a('string');
+    expect(event.eventCode).to.be.a('string');
     expect(event.title).to.include('Bruno Test Event');
     expect(event.status).to.equal('planning');
     expect(event.eventNumber).to.equal(999);
   });
 
-  test("should save event id for later tests", function() {
-    bru.setVar("createdEventId", res.getBody().id);
+  test("should NOT have id field (Story 1.16.2: removed redundant id)", function() {
+    const event = res.getBody();
+    expect(event.id).to.be.undefined;
+  });
+
+  test("should save eventCode for later tests (Story 1.16.2)", function() {
+    bru.setVar("createdEventCode", res.getBody().eventCode);
   });
 }

@@ -1,5 +1,8 @@
 # Epic 2: Entity CRUD & Domain Services
 
+## Status
+In progress
+
 ## Epic Overview
 
 **Epic Goal**: Deliver end-to-end CRUD functionality for all main platform entities (Company, Event, Speaker, User) with REST APIs and React frontend, enabling complete entity management across all user roles.
@@ -19,15 +22,40 @@
 
 ---
 
+## 📋 Epic 2 Status Summary
+
+**✅ Completed Stories:**
+- ✅ **Story 2.1**: Company Management Service Foundation + API Consolidation (1.15a.6)
+- ✅ **Story 2.1b**: User Management Service Foundation + API Consolidation (1.15a.7, 1.15a.8)
+- ✅ **Story 1.15a.1**: Events API Consolidation
+
+- ✅ **Story 2.5**: React Frontend CRUD Foundation
+  - ✅ **Story 1.17**: React Frontend Foundation
+  - ✅ **Story 2.5.1**: Company Management Frontend
+  - ✅ **Story 2.5.3**: Event Management Frontend
+
+**🔍 Ready for Review:**
+- 🔍 **Story 2.5.2**: User Management Frontend (76/76 tests passing, all acceptance criteria met)
+
+**📝 Not Started:**
+- **Story 2.2**: Event Management Service Core + API Consolidation (1.15a.1)
+- **Story 2.3**: Speaker Coordination Service Foundation + API Consolidation (1.15a.3)
+- **Story 2.4**: User Role Management + API Consolidation
+
+**Progress:** 3/6 stories complete (50%), 1 in review
+
+---
+
 ## Story Overview
 
 This epic consolidates stories originally in Epic 1 (1.14-1.20, 1.17) that provide core entity CRUD functionality, **plus API consolidation stories (1.15a.x)** to ensure RESTful APIs are built correctly from the start:
 
-- **Story 2.1 (formerly 1.14)**: Company Management Service Foundation **+ API Consolidation (1.15a.6, 1.15a.2)**
-- **Story 2.2 (formerly 1.16)**: Event Management Service Core **+ API Consolidation (1.15a.1)**
-- **Story 2.3 (formerly 1.19)**: Speaker Coordination Service Foundation **+ API Consolidation (1.15a.3)**
-- **Story 2.4 (formerly 1.20)**: User Role Management **+ API Consolidation (1.15a.7, 1.15a.8)**
-- **Story 2.5 (formerly 1.17 partial)**: React Frontend CRUD Foundation (consuming consolidated APIs)
+- ✅ **Story 2.1 (formerly 1.14)**: Company Management Service Foundation **+ API Consolidation (1.15a.6, 1.15a.2)** - **Done**
+- ✅ **Story 2.1b (formerly 1.14-2)**: User Management Service Foundation **+ API Consolidation (1.15a.7, 1.15a.8)** - **Done**
+- **Story 2.2 (formerly 1.16)**: Event Management Service Core **+ API Consolidation (1.15a.1)** - **Not Started**
+- **Story 2.3 (formerly 1.19)**: Speaker Coordination Service Foundation **+ API Consolidation (1.15a.3)** - **Not Started**
+- **Story 2.4 (formerly 1.20)**: User Role Management **+ API Consolidation** - **Not Started**
+- ✅ **Story 2.5 (formerly 1.17 partial)**: React Frontend CRUD Foundation (consuming consolidated APIs) - **Done** (1 sub-story in review)
 
 **API Consolidation Integration:** Each microservice story includes its domain-specific API consolidation (1.15a.x), using the foundation from Story 1.15a (already complete in Epic 1). This ensures RESTful patterns are implemented from the start, avoiding technical debt and future refactoring.
 
@@ -35,8 +63,10 @@ This epic consolidates stories originally in Epic 1 (1.14-1.20, 1.17) that provi
 
 ---
 
-## Story 2.1: Company Management Service Foundation + API Consolidation
+## Story 2.1: Company Management Service Foundation + API Consolidation ✅
 **(Formerly Story 1.14, includes 1.15a.6 Companies API)**
+
+**Status:** Done
 
 **Note:** User Management extracted to Story 2.1b for separation of concerns. Partner-specific logic removed and deferred to Epic 8 (Partner Coordination).
 
@@ -97,8 +127,10 @@ As a **user of any role**, I want my company affiliation to be properly managed 
 
 ---
 
-## Story 2.1b: User Management Service Foundation + API Consolidation
+## Story 2.1b: User Management Service Foundation + API Consolidation ✅
 **(Story 1.14-2, includes 1.15a.7 Users API + 1.15a.8 Organizers API)**
+
+**Status:** Done
 
 **User Story:**
 As a **user of any role**, I want my user profile, preferences, and settings managed through consolidated RESTful APIs, so that I can efficiently manage my account and domain services can integrate with user data.
@@ -314,8 +346,16 @@ As an **organizer**, I want to manage user roles through consolidated RESTful AP
 
 ---
 
-## Story 2.5: React Frontend CRUD Foundation
+## Story 2.5: React Frontend CRUD Foundation ✅
 **(Formerly Story 1.17 partial)**
+
+**Status:** Done (Foundation Complete)
+
+**Implementation Status:**
+- ✅ **Story 1.17**: React Frontend Foundation - Done
+- ✅ **Story 2.5.1**: Company Management Frontend - Accepted
+- 🔍 **Story 2.5.2**: User Management Frontend - Ready for Review
+- ✅ **Story 2.5.3**: Event Management Frontend - Accepted
 
 **User Story:**
 As a **user of any role**, I want to access CRUD forms for all main entities through a role-adaptive React interface, so that I can efficiently manage companies, events, speakers, and users.
@@ -345,35 +385,56 @@ This story implements the frontend consuming all entity CRUD APIs. Wireframes ar
 1. **Company Management**: `docs/wireframes/story-1.14-company-management-screen.md` ✅
    - Company list, search, and filters
    - Company create/edit forms
-   - Swiss UID validation UI
-   - Employee affiliation interface
+   - Full i18n support (German/English)
 
-2. **Event Management**: `docs/wireframes/story-1.16-*.md` ✅
+2. **User Management**: `docs/wireframes/story-2.4b-user-management-screen.md` ✅
+   - User list table with search and autocomplete
+   - Advanced filtering by role, company, and status
+   - User detail modal with full profile information
+   - User create modal with role assignment
+   - Role management with business rules enforcement
+   - GDPR-compliant user deletion workflow
+   - Full i18n support (German/English)
+
+3. **Event Management**: `docs/wireframes/story-1.16-*.md` ✅
    - Event Management Dashboard
    - Event Detail/Edit screen
    - Event Settings panel
    - Workflow Visualization (read-only in this story)
+   - Full i18n support (German/English)
 
-3. **Main Navigation**: `docs/wireframes/story-1.17-main-navigation.md` ✅
-   - Role-adaptive navigation bar
-   - User menu and profile access
-   - Breadcrumb navigation
-   - Mobile responsive menu
-
-**Note**: Speaker and User wireframes exist in Epic 1 but are simpler CRUD forms without dedicated wireframe files for this story.
+**Note**: Speaker wireframes exist in Epic 1 but are simpler CRUD forms without dedicated wireframe files for this story.
 
 ---
 
 **Acceptance Criteria Summary:**
 - [ ] Role-adaptive navigation operational
 - [ ] CRUD forms for Company, Event, Speaker, User
+- [ ] **User Management Screen (Organizer-only):**
+  - [ ] User list table with columns: Name, Email, Company, Roles, Status, Actions
+  - [ ] Search bar with autocomplete (using `GET /api/v1/users/search`)
+  - [ ] Filters: Role (ORGANIZER/SPEAKER/PARTNER/ATTENDEE), Company, Status
+  - [ ] Click row → User Detail Modal with full user information
+  - [ ] "Add User" button → User Create Modal
+  - [ ] Actions per row: View, Edit Roles, Delete (with confirmation)
+  - [ ] Advanced filtering using JSON filter syntax from API
+  - [ ] Resource expansion `?include=company,roles` for efficient data loading
+  - [ ] Pagination with 20 users per page (configurable)
+  - [ ] Performance: List load <150ms P95, search <100ms P95
+- [ ] **Internationalization (i18n):**
+  - [ ] All UI components fully translated (German primary, English secondary)
+  - [ ] Translation namespace: `userManagement` (i18next + react-i18next)
+  - [ ] All text (buttons, labels, messages, errors, tooltips) uses translation keys
+  - [ ] Language switcher in global navigation
+  - [ ] Translation validation in CI/CD (keys must exist in both de and en)
+  - [ ] Component tests verify translations in both languages
 - [ ] Authentication integration with auto token refresh
 - [ ] API client layer for all microservices
 - [ ] Responsive design (mobile/tablet/desktop)
 - [ ] Component test coverage >80%
 - [ ] Performance meets Core Web Vitals
 
-**Estimated Duration:** 2.5 weeks
+**Estimated Duration:** 3 weeks (expanded from 2.5 weeks to include User Management screen)
 
 **Reference:** See `docs/prd/epic-1-foundation-stories.md` Story 1.17 for full details
 
@@ -446,7 +507,7 @@ This story implements the frontend consuming all entity CRUD APIs. Wireframes ar
 
 **Week 10-12: Backend Services (Parallel with User Management)**
 - Story 2.1: Company Management Service + API Consolidation (2.5 weeks)
-- **Story 2.1b: User Management Service + API Consolidation (2 weeks) - parallel**
+- Story 2.1b: User Management Service + API Consolidation (2 weeks) - start parallel
 - Story 2.2: Event Management Service + API Consolidation (3 weeks) - start parallel
 - Story 2.3: Speaker Coordination Service + API Consolidation (2.5 weeks) - start parallel
 

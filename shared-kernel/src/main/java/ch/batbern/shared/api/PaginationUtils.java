@@ -79,7 +79,7 @@ public class PaginationUtils {
         return PaginationMetadata.builder()
                 .page(page)
                 .limit(limit)
-                .total(total)
+                .totalItems(total)
                 .totalPages(totalPages)
                 .hasNext(hasNext)
                 .hasPrev(hasPrev)

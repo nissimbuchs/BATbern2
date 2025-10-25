@@ -68,7 +68,7 @@ describe('BootstrapOrganizer', () => {
   /**
    * Test 7.2: should_assignOrganizerRole_when_bootstrapUserCreated
    *
-   * Verifies that the bootstrap user is created with custom:batbern_role = ORGANIZER
+   * Verifies that the bootstrap user is added to the organizer Cognito group
    */
   test('should_assignOrganizerRole_when_bootstrapUserCreated', () => {
     // Given: Bootstrap organizer configuration
@@ -82,14 +82,16 @@ describe('BootstrapOrganizer', () => {
       password,
     });
 
-    // Then: Verify template contains the Create action with serialized parameters
+    // Then: Verify template contains the adminAddUserToGroup action
     const template = Template.fromStack(stack);
     const templateJson = JSON.stringify(template.toJSON());
 
     // Verify the template contains the expected configuration
     expect(templateJson).toContain('adminCreateUser');
-    expect(templateJson).toContain('custom:batbern_role');
-    expect(templateJson).toContain('ORGANIZER');
+    expect(templateJson).toContain('adminAddUserToGroup');
+    // Check for GroupName and organizer (they appear in escaped JSON strings)
+    expect(templateJson).toContain('GroupName');
+    expect(templateJson).toContain('organizer');
     expect(templateJson).toContain(email);
   });
 

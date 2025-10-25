@@ -164,7 +164,7 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
       render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={onSubmit} />);
 
       // Fill only required field (name only, all others optional)
-      await user.type(screen.getByLabelText(/company name/i), 'Test Company');
+      await user.type(screen.getByLabelText(/company name/i), 'TestCompany');
 
       // Submit should succeed without Swiss UID (and without any other fields)
       await user.click(screen.getByRole('button', { name: /save & create/i }));
@@ -192,7 +192,7 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
       render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={onSubmit} />);
 
       // Fill form with duplicate company name
-      await user.type(screen.getByLabelText(/company name/i), 'Existing Company');
+      await user.type(screen.getByLabelText(/company name/i), 'ExistingCompany');
 
       // Submit form
       await user.click(screen.getByRole('button', { name: /save & create/i }));
@@ -221,7 +221,7 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
       );
 
       // Fill only company name
-      await user.type(screen.getByLabelText(/company name/i), 'Draft Company');
+      await user.type(screen.getByLabelText(/company name/i), 'DraftCompany');
 
       // Click "Save Draft" button
       await user.click(screen.getByRole('button', { name: /save draft/i }));
@@ -238,7 +238,7 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
       const callArgs = onSubmit.mock.calls[0];
       expect(callArgs[0]).toEqual(
         expect.objectContaining({
-          name: 'Draft Company',
+          name: 'DraftCompany',
         })
       );
       expect(callArgs[1]).toEqual(expect.objectContaining({ isDraft: true }));
@@ -260,7 +260,7 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
       );
 
       // Only fill company name (missing required fields)
-      await user.type(screen.getByLabelText(/company name/i), 'Draft Company');
+      await user.type(screen.getByLabelText(/company name/i), 'DraftCompany');
 
       // Click "Save Draft"
       await user.click(screen.getByRole('button', { name: /save draft/i }));
@@ -280,8 +280,8 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
       render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={onSubmit} />);
 
       // Fill all fields (name is required, others optional)
-      await user.type(screen.getByLabelText(/company name/i), 'New Company');
-      await user.type(screen.getByLabelText(/display name/i), 'NewCo');
+      await user.type(screen.getByLabelText(/company name/i), 'NewCompany');
+      await user.type(screen.getByLabelText(/display name/i), 'New Company');
       await user.type(screen.getByLabelText(/swiss uid/i), 'CHE-987.654.321');
       await user.type(screen.getByLabelText(/website/i), 'https://newco.com');
       await user.type(screen.getByLabelText(/description/i), 'A new company');
@@ -300,8 +300,8 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
       await waitFor(() => {
         expect(onSubmit).toHaveBeenCalledWith(
           expect.objectContaining({
-            name: 'New Company',
-            displayName: 'NewCo',
+            name: 'NewCompany',
+            displayName: 'New Company',
             swissUID: 'CHE-987.654.321',
             website: 'https://newco.com',
             industry: 'Technology',
@@ -378,7 +378,7 @@ describe('CompanyForm Component - AC4 Edit Company Form', () => {
       // Change only the company name
       const nameField = screen.getByLabelText(/company name/i);
       await user.clear(nameField);
-      await user.type(nameField, 'Updated Acme Corporation');
+      await user.type(nameField, 'UpdatedAcmeCorporation');
 
       // Submit form
       await user.click(screen.getByRole('button', { name: /save changes/i }));
@@ -387,7 +387,7 @@ describe('CompanyForm Component - AC4 Edit Company Form', () => {
       await waitFor(() => {
         expect(onSubmit).toHaveBeenCalledWith(
           expect.objectContaining({
-            name: 'Updated Acme Corporation',
+            name: 'UpdatedAcmeCorporation',
           }),
           { isPartialUpdate: true, changedFields: ['name'] }
         );
@@ -412,7 +412,7 @@ describe('CompanyForm Component - AC4 Edit Company Form', () => {
       // Change name and website
       const nameField = screen.getByLabelText(/company name/i);
       await user.clear(nameField);
-      await user.type(nameField, 'Updated Name');
+      await user.type(nameField, 'UpdatedName');
 
       const websiteField = screen.getByLabelText(/website/i);
       await user.clear(websiteField);
@@ -425,7 +425,7 @@ describe('CompanyForm Component - AC4 Edit Company Form', () => {
       await waitFor(() => {
         expect(onSubmit).toHaveBeenCalledWith(
           expect.objectContaining({
-            name: 'Updated Name',
+            name: 'UpdatedName',
             website: 'https://updated-acme.com',
           }),
           { isPartialUpdate: true, changedFields: expect.arrayContaining(['name', 'website']) }
@@ -567,7 +567,7 @@ describe('CompanyForm Component - AC4 Edit Company Form', () => {
           onClose={vi.fn()}
           onSubmit={vi.fn()}
           userRole="speaker"
-          userCompanyId="company-123"
+          userCompanyId="Acme Corporation"
         />
       );
 

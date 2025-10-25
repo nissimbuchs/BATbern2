@@ -13,25 +13,26 @@ import CompanyManagementScreen from '@/components/shared/Company/CompanyManageme
 
 // Mock child components to isolate testing
 vi.mock('../CompanyFilters', () => ({
-  default: () => <div data-testid="company-filters">Filters Mock</div>
+  default: () => <div data-testid="company-filters">Filters Mock</div>,
 }));
 
 vi.mock('../CompanySearch', () => ({
   CompanySearch: () => (
     <input role="combobox" aria-label="search companies" placeholder="Search companies" />
-  )
+  ),
 }));
 
 vi.mock('../CompanyList', () => ({
-  CompanyList: () => <div data-testid="company-list">Company List Mock</div>
+  CompanyList: () => <div data-testid="company-list">Company List Mock</div>,
 }));
 
-const createTestQueryClient = () => new QueryClient({
-  defaultOptions: {
-    queries: { retry: false },
-    mutations: { retry: false },
-  },
-});
+const createTestQueryClient = () =>
+  new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
 
 const renderWithProviders = (ui: React.ReactElement, { route = '/companies' } = {}) => {
   const queryClient = createTestQueryClient();
@@ -39,9 +40,7 @@ const renderWithProviders = (ui: React.ReactElement, { route = '/companies' } = 
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        {ui}
-      </BrowserRouter>
+      <BrowserRouter>{ui}</BrowserRouter>
     </QueryClientProvider>
   );
 };

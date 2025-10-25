@@ -144,6 +144,31 @@ export function createDomainService(
       props.databaseSecret.grantRead(taskDefinition.executionRole!);
     }
 
+    // Create explicit security group with restricted egress
+    const serviceSecurityGroup = new ec2.SecurityGroup(scope, 'ServiceSecurityGroup', {
+      vpc: props.vpc,
+      description: `Security group for ${serviceName} ECS service`,
+      allowAllOutbound: false, // Explicitly disable to avoid CDK warning
+    });
+
+    // Add only necessary egress rules
+    serviceSecurityGroup.addEgressRule(
+      props.databaseSecurityGroup,
+      ec2.Port.tcp(5432),
+      'Allow outbound to PostgreSQL database'
+    );
+
+    // IMPORTANT: Database security group ingress is configured in VPC construct
+    // to allow connections from private subnets, avoiding cyclic dependencies
+    // between Network stack and service stacks
+
+    // Allow HTTPS outbound for AWS API calls (Secrets Manager, CloudWatch, etc.)
+    serviceSecurityGroup.addEgressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.tcp(443),
+      'Allow HTTPS outbound for AWS API calls'
+    );
+
     // Create service with INTERNAL ALB
     const service = new ecsPatterns.ApplicationLoadBalancedFargateService(scope, 'Service', {
       cluster: props.cluster,
@@ -158,6 +183,7 @@ export function createDomainService(
       listenerPort: 80,
       minHealthyPercent: 100, // Ensure zero-downtime deployments
       maxHealthyPercent: 200, // Allow temporary extra tasks during deployments
+      securityGroups: [serviceSecurityGroup], // Use explicit security group
     });
 
     // Configure health checks
@@ -182,13 +208,6 @@ export function createDomainService(
     });
 
     const serviceUrl = `http://${service.loadBalancer.loadBalancerDnsName}`;
-
-    // Allow service to connect to database
-    service.service.connections.allowTo(
-      props.databaseSecurityGroup,
-      ec2.Port.tcp(5432),
-      'Allow ECS tasks to connect to PostgreSQL database'
-    );
 
     // Apply tags
     cdk.Tags.of(scope).add('Environment', envName);

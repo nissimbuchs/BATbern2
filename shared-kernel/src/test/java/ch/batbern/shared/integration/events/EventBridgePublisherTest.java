@@ -4,9 +4,6 @@ import ch.batbern.shared.events.DomainEvent;
 import ch.batbern.shared.events.EventCreatedEvent;
 import ch.batbern.shared.events.SpeakerInvitedEvent;
 import ch.batbern.shared.events.DomainEventPublisher;
-import ch.batbern.shared.types.EventId;
-import ch.batbern.shared.types.SpeakerId;
-import ch.batbern.shared.types.UserId;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -62,14 +59,13 @@ class EventBridgePublisherTest {
         @Test
         void should_publishToEventBridge_when_domainEventTriggered() throws Exception {
             // Given
-            EventId eventId = EventId.generate();
             EventCreatedEvent event = new EventCreatedEvent(
-                eventId,
+                "BATbern56",
                 "BATbern 2024",
                 "CONFERENCE",
                 LocalDate.of(2024, 6, 15),
                 "Bern Convention Center",
-                UserId.from("user-123")
+                "john.doe"
             );
 
             // When
@@ -83,22 +79,22 @@ class EventBridgePublisherTest {
         @Test
         void should_publishMultipleEvents_when_batchPublishingCalled() {
             // Given
-            List<DomainEvent<EventId>> events = List.of(
+            List<DomainEvent<String>> events = List.of(
                 new EventCreatedEvent(
-                    EventId.generate(),
+                    "BATbern57",
                     "BATbern Q1 2024",
                     "CONFERENCE",
                     LocalDate.of(2024, 3, 15),
                     "Bern Convention Center",
-                    UserId.from("user-123")
+                    "john.doe"
                 ),
                 new EventCreatedEvent(
-                    EventId.generate(),
+                    "BATbern58",
                     "BATbern Workshop 2024",
                     "WORKSHOP",
                     LocalDate.of(2024, 4, 20),
                     "Bern Tech Hub",
-                    UserId.from("user-456")
+                    "jane.smith"
                 )
             );
 
@@ -111,13 +107,13 @@ class EventBridgePublisherTest {
         void should_publishAsynchronously_when_asyncPublishCalled() throws Exception {
             // Given
             SpeakerInvitedEvent event = new SpeakerInvitedEvent(
-                EventId.generate(),
-                SpeakerId.generate(),
+                "BATbern56",
+                "john.doe",
                 "John Doe",
                 "speaker@example.com",
                 "Cloud Architecture Best Practices",
                 LocalDateTime.of(2024, 6, 15, 14, 0),
-                UserId.from("organizer-123"),
+                "organizer.user",
                 "PENDING"
             );
 
@@ -138,12 +134,12 @@ class EventBridgePublisherTest {
         void should_serializeEventToJSON_when_publishingToEventBridge() throws Exception {
             // Given
             EventCreatedEvent event = new EventCreatedEvent(
-                EventId.generate(),
+                "BATbern56",
                 "BATbern 2024",
                 "CONFERENCE",
                 LocalDate.of(2024, 6, 15),
                 "Bern Convention Center",
-                UserId.from("user-123")
+                "john.doe"
             );
 
             // When
@@ -152,19 +148,19 @@ class EventBridgePublisherTest {
             // Then
             assertThat(json).contains("\"eventType\" : \"CONFERENCE\"");
             assertThat(json).contains("\"title\" : \"BATbern 2024\"");
-            assertThat(json).contains("\"createdEventId\"");  // Check for a field specific to EventCreatedEvent
+            assertThat(json).contains("\"createdEventCode\"");  // Check for a field specific to EventCreatedEvent
         }
 
         @Test
         void should_includeMetadata_when_serializingEvent() throws Exception {
             // Given
-            DomainEvent<EventId> event = new EventCreatedEvent(
-                EventId.generate(),
+            DomainEvent<String> event = new EventCreatedEvent(
+                "BATbern56",
                 "BATbern 2024",
                 "CONFERENCE",
                 LocalDate.of(2024, 6, 15),
                 "Bern Convention Center",
-                UserId.from("user-123")
+                "john.doe"
             );
 
             // When
@@ -180,12 +176,12 @@ class EventBridgePublisherTest {
         void should_formatEventBridgeEntry_when_publishingEvent() {
             // Given
             EventCreatedEvent event = new EventCreatedEvent(
-                EventId.generate(),
+                "BATbern56",
                 "BATbern 2024",
                 "CONFERENCE",
                 LocalDate.of(2024, 6, 15),
                 "Bern Convention Center",
-                UserId.from("user-123")
+                "john.doe"
             );
 
             // When
@@ -206,12 +202,12 @@ class EventBridgePublisherTest {
         void should_retryFailedPublishes_when_eventBridgeUnavailable() {
             // Given
             EventCreatedEvent event = new EventCreatedEvent(
-                EventId.generate(),
+                "BATbern56",
                 "BATbern 2024",
                 "CONFERENCE",
                 LocalDate.of(2024, 6, 15),
                 "Bern Convention Center",
-                UserId.from("user-123")
+                "john.doe"
             );
 
             // When simulating EventBridge unavailable
@@ -225,14 +221,14 @@ class EventBridgePublisherTest {
         @Test
         void should_handlePublishingErrors_when_malformedEvent() {
             // Given - a malformed event (null required fields)
-            DomainEvent<EventId> malformedEvent = new DomainEvent<EventId>() {
+            DomainEvent<String> malformedEvent = new DomainEvent<String>() {
                 @Override
                 public String getEventType() {
                     return null; // Invalid
                 }
 
                 @Override
-                public EventId getAggregateId() {
+                public String getAggregateId() {
                     return null; // Invalid
                 }
 
@@ -262,12 +258,12 @@ class EventBridgePublisherTest {
         void should_logFailedEvents_when_publishingFails() {
             // Given
             EventCreatedEvent event = new EventCreatedEvent(
-                EventId.generate(),
+                "BATbern56",
                 "BATbern 2024",
                 "CONFERENCE",
                 LocalDate.of(2024, 6, 15),
                 "Bern Convention Center",
-                UserId.from("user-123")
+                "john.doe"
             );
 
             // When publishing fails (simulated)
@@ -312,12 +308,12 @@ class EventBridgePublisherTest {
         void should_publishWithinTimeLimit_when_singleEvent() {
             // Given
             EventCreatedEvent event = new EventCreatedEvent(
-                EventId.generate(),
+                "BATbern56",
                 "BATbern 2024",
                 "CONFERENCE",
                 LocalDate.of(2024, 6, 15),
                 "Bern Convention Center",
-                UserId.from("user-123")
+                "john.doe"
             );
 
             // When
@@ -332,7 +328,7 @@ class EventBridgePublisherTest {
         @Test
         void should_handleHighVolume_when_batchPublishing() {
             // Given - 100 events
-            List<DomainEvent<EventId>> events = createManyEvents(100);
+            List<DomainEvent<String>> events = createManyEvents(100);
 
             // When
             long startTime = System.currentTimeMillis();
@@ -343,15 +339,15 @@ class EventBridgePublisherTest {
             assertThat(duration).isLessThan(1000); // Less than 1 second for 100 events
         }
 
-        private List<DomainEvent<EventId>> createManyEvents(int count) {
+        private List<DomainEvent<String>> createManyEvents(int count) {
             return java.util.stream.IntStream.range(0, count)
-                .mapToObj(i -> (DomainEvent<EventId>) new EventCreatedEvent(
-                    EventId.generate(),
+                .mapToObj(i -> (DomainEvent<String>) new EventCreatedEvent(
+                    "BATbern" + (56 + i),
                     "Event " + i,
                     "CONFERENCE",
                     LocalDate.of(2024, 6, 15),
                     "Venue " + i,
-                    UserId.from("user-" + i)
+                    "user-" + i
                 ))
                 .collect(java.util.stream.Collectors.toList());
         }

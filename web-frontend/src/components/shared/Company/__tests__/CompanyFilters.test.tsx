@@ -7,7 +7,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import CompanyFilters from '@/components/shared/Company/CompanyFilters';
 
@@ -20,13 +20,10 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
-const renderWithRouter = (ui: React.ReactElement, { route = '/' } = {}) => {
-  return render(
-    <MemoryRouter initialEntries={[route]}>
-      {ui}
-    </MemoryRouter>
-  );
-};
+// Helper function for future tests that need routing
+// const renderWithRouter = (ui: React.ReactElement, { route = '/' } = {}) => {
+//   return render(<MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>);
+// };
 
 describe('CompanyFilters Component', () => {
   const mockOnFilterChange = vi.fn();
@@ -42,7 +39,9 @@ describe('CompanyFilters Component', () => {
       // Partner filter removed - no longer supported by backend
 
       // Should have verification filter
-      expect(screen.getByRole('checkbox', { name: /verified companies only/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('checkbox', { name: /verified companies only/i })
+      ).toBeInTheDocument();
 
       // Should have industry select
       expect(screen.getByRole('combobox', { name: /industry/i })).toBeInTheDocument();
@@ -56,10 +55,7 @@ describe('CompanyFilters Component', () => {
 
     it('should_displayFilterCount_when_filtersApplied', () => {
       render(
-        <CompanyFilters
-          onFilterChange={mockOnFilterChange}
-          initialFilters={{ isVerified: true }}
-        />
+        <CompanyFilters onFilterChange={mockOnFilterChange} initialFilters={{ isVerified: true }} />
       );
 
       // Should show badge with count of active filters (only 1 since isPartner removed)
@@ -77,9 +73,11 @@ describe('CompanyFilters Component', () => {
       const verifiedCheckbox = screen.getByRole('checkbox', { name: /verified companies only/i });
       await user.click(verifiedCheckbox);
 
-      expect(mockOnFilterChange).toHaveBeenCalledWith(expect.objectContaining({
-        isVerified: true
-      }));
+      expect(mockOnFilterChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          isVerified: true,
+        })
+      );
     });
   });
 
@@ -109,9 +107,11 @@ describe('CompanyFilters Component', () => {
       const cloudOption = await screen.findByRole('option', { name: /cloud computing/i });
       await user.click(cloudOption);
 
-      expect(mockOnFilterChange).toHaveBeenCalledWith(expect.objectContaining({
-        industry: 'Cloud Computing'
-      }));
+      expect(mockOnFilterChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          industry: 'Cloud Computing',
+        })
+      );
     });
   });
 
@@ -140,10 +140,7 @@ describe('CompanyFilters Component', () => {
 
     it('should_enableClearButton_when_filtersActive', () => {
       render(
-        <CompanyFilters
-          onFilterChange={mockOnFilterChange}
-          initialFilters={{ isVerified: true }}
-        />
+        <CompanyFilters onFilterChange={mockOnFilterChange} initialFilters={{ isVerified: true }} />
       );
 
       const clearButton = screen.getByRole('button', { name: /clear all filters/i });
@@ -189,7 +186,9 @@ describe('CompanyFilters Component', () => {
       vi.mocked(useSearchParams).mockReturnValue([searchParams, mockSetSearchParams]);
 
       const user = userEvent.setup();
-      render(<CompanyFilters onFilterChange={mockOnFilterChange} initialFilters={{ isVerified: true }} />);
+      render(
+        <CompanyFilters onFilterChange={mockOnFilterChange} initialFilters={{ isVerified: true }} />
+      );
 
       const clearButton = screen.getByRole('button', { name: /clear all filters/i });
       await user.click(clearButton);

@@ -1,2 +1,2 @@
 export { useForgotPassword } from './useForgotPassword';
-export type { ExtendedError } from './useForgotPassword';
+export type { ForgotPasswordError } from './useForgotPassword';

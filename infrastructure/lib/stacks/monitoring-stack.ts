@@ -8,6 +8,8 @@ import { EnvironmentConfig } from '../config/environment-config';
 import { MonitoringWidgetsConstruct } from '../constructs/monitoring-widgets-construct';
 import { AlarmConstruct } from '../constructs/alarm-construct';
 import { GitHubIssuesConstruct } from '../constructs/github-issues-construct';
+import { UserSyncAlarms } from '../constructs/user-sync-alarms';
+import { UserSyncDashboard } from '../constructs/user-sync-dashboard';
 
 export interface MonitoringStackProps extends cdk.StackProps {
   config: EnvironmentConfig;
@@ -99,6 +101,32 @@ export class MonitoringStack extends cdk.Stack {
       environment: props.config.envName,
       alarmTopic: this.alarmTopic,
     });
+
+    // Story 1.2.5: User Sync Alarms and Dashboard (ADR-001: Unidirectional sync monitoring)
+    if (props.config.envName !== 'development') {
+      const alarmEmail = process.env.ALARM_EMAIL || `admin@batbern.ch`;
+
+      const userSyncAlarms = new UserSyncAlarms(this, 'UserSyncAlarms', {
+        alarmEmail,
+        environment: props.config.envName,
+        thresholds: {
+          userCreationFailures: props.config.envName === 'production' ? 5 : 10,
+          lambdaLatencyMs: props.config.envName === 'production' ? 2000 : 3000,
+          driftCount: props.config.envName === 'production' ? 10 : 20,
+        },
+      });
+
+      const userSyncDashboard = new UserSyncDashboard(this, 'UserSyncDashboard', {
+        environment: props.config.envName,
+      });
+
+      // Output user sync dashboard URL
+      new cdk.CfnOutput(this, 'UserSyncDashboardUrl', {
+        value: `https://console.aws.amazon.com/cloudwatch/home?region=${props.config.region}#dashboards:name=${userSyncDashboard.dashboard.dashboardName}`,
+        description: 'CloudWatch Dashboard URL for User Sync monitoring (ADR-001)',
+        exportName: `${props.config.envName}-UserSyncDashboardUrl`,
+      });
+    }
 
     // Apply tags
     cdk.Tags.of(this).add('Environment', props.config.envName);

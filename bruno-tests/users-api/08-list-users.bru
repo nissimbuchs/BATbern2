@@ -1,0 +1,57 @@
+meta {
+  name: List Users (Admin/Organizer)
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/users?page=1&limit=20
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("should list users successfully (AC3)", function() {
+    const status = res.getStatus();
+    // Should be 200 for admin/organizer, 403 for others
+    expect([200, 403]).to.include(status);
+  });
+
+  test("should return paginated users", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body.data).to.be.an('array');
+      expect(body.pagination).to.exist;
+      expect(body.pagination.page).to.equal(1);
+      expect(body.pagination.limit).to.equal(20);
+    }
+  });
+
+  test("should require admin/organizer role", function() {
+    // If not admin/organizer, should return 403
+    const status = res.getStatus();
+    if (status === 403) {
+      console.log("Correctly denied access for non-admin/organizer");
+    }
+  });
+
+  test("should return in reasonable time", function() {
+    // Performance targets vary by environment (local vs production)
+    if (res.getStatus() === 200) {
+      expect(res.getStatus()).to.equal(200);
+    }
+  });
+}

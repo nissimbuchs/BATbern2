@@ -25,6 +25,12 @@ spring:
     caffeine:
       spec: expireAfterWrite=15m,maximumSize=1000
 
+  cloud:
+    aws:
+      cloudwatch:
+        # Disable CloudWatch metrics in test profile to prevent AWS credential errors during test shutdown
+        enabled: false
+
 logging:
   level:
     ch.batbern: DEBUG

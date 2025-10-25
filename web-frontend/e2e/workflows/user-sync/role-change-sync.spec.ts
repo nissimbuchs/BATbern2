@@ -25,9 +25,7 @@ const API_URL = process.env.E2E_API_URL || 'http://localhost:8080';
 
 // Type definitions
 interface JwtPayload {
-  'custom:batbern_roles'?: string;
-  'custom:roles_synced_at'?: string;
-  'custom:batbern_event_roles'?: string;
+  'cognito:groups'?: string[];
   [key: string]: unknown;
 }
 
@@ -139,13 +137,13 @@ async function getCompensationLogs(userId: string): Promise<CompensationLog[]> {
 }
 
 // ============================================================================
-// TEST GROUP 1: PreTokenGeneration - JWT Enrichment with Database Roles
-// AC1: PreTokenGeneration enriches JWT with roles from database
+// TEST GROUP 1: PreTokenGeneration - Cognito Groups from Database Roles
+// AC1: PreTokenGeneration syncs Cognito Groups with database roles
 // ============================================================================
 
-test.describe('Role Change Sync - JWT Token Enrichment', () => {
-  test('should_enrichJWT_when_userLogsInWithDatabaseRoles', async ({ page }) => {
-    // AC1: PreTokenGeneration fetches roles from DB and adds to JWT claims
+test.describe('Role Change Sync - Cognito Groups Sync', () => {
+  test('should_setCognitoGroups_when_userLogsInWithDatabaseRoles', async ({ page }) => {
+    // AC1: PreTokenGeneration fetches roles from DB and sets Cognito Groups
     const testEmail = `jwt-test-${Date.now()}@batbern.ch`;
     const testPassword = 'TestPassword123!';
 
@@ -160,42 +158,36 @@ test.describe('Role Change Sync - JWT Token Enrichment', () => {
     const token = await loginAndGetToken(page, testEmail, testPassword);
     expect(token).toBeTruthy();
 
-    // Decode JWT and verify role claims
+    // Decode JWT and verify Cognito Groups
     const decoded = decodeToken(token);
     expect(decoded).toBeTruthy();
-    expect(decoded['custom:batbern_roles']).toBeDefined();
+    expect(decoded['cognito:groups']).toBeDefined();
 
-    const roles = JSON.parse(decoded['custom:batbern_roles']);
-    expect(roles).toContain('ORGANIZER');
-
-    // Verify roles_synced_at timestamp exists
-    expect(decoded['custom:roles_synced_at']).toBeDefined();
-    const syncedAt = new Date(decoded['custom:roles_synced_at']);
-    expect(syncedAt).toBeInstanceOf(Date);
+    const groups = decoded['cognito:groups'];
+    expect(groups).toContain('organizer');
   });
 
-  test('should_includeEventSpecificRoles_when_userHasEventRoles', async ({ page }) => {
-    // AC1: JWT includes event-specific roles for speakers/partners
+  test('should_onlyIncludeGlobalRoles_when_userHasEventSpecificRoles', async ({ page }) => {
+    // AC1: Cognito Groups only include global roles, not event-specific roles
     const testEmail = `speaker-event-${Date.now()}@batbern.ch`;
     const testPassword = 'TestPassword123!';
 
     const dbUser = await getUserByEmail(testEmail);
 
-    // Assign SPEAKER role for specific event
-    await changeUserRole(dbUser.id, 'SPEAKER');
+    // Assign global ORGANIZER role and event-specific SPEAKER role
+    await changeUserRole(dbUser.id, 'ORGANIZER');
 
     // Login and get token
     const token = await loginAndGetToken(page, testEmail, testPassword);
     const decoded = decodeToken(token);
 
-    // Verify event-specific roles in JWT
-    expect(decoded['custom:batbern_event_roles']).toBeDefined();
-    const eventRoles = JSON.parse(decoded['custom:batbern_event_roles']);
+    // Verify only global roles in Cognito Groups (event-specific roles not included)
+    expect(decoded['cognito:groups']).toBeDefined();
+    const groups = decoded['cognito:groups'];
 
-    expect(eventRoles).toBeInstanceOf(Array);
-    expect(eventRoles.length).toBeGreaterThan(0);
-    expect(eventRoles[0]).toHaveProperty('eventId');
-    expect(eventRoles[0]).toHaveProperty('role');
+    expect(groups).toBeInstanceOf(Array);
+    expect(groups).toContain('organizer');
+    // Event-specific roles are NOT in Cognito Groups
   });
 
   test('should_fallbackToEmptyRoles_when_databaseUnavailable', async ({ page }) => {
@@ -227,8 +219,8 @@ test.describe('Role Change Sync - JWT Token Enrichment', () => {
     // Initial login with ATTENDEE role
     const initialToken = await loginAndGetToken(page, testEmail, testPassword);
     const initialDecoded = decodeToken(initialToken);
-    const initialRoles = JSON.parse(initialDecoded['custom:batbern_roles']);
-    expect(initialRoles).toContain('ATTENDEE');
+    const initialGroups = initialDecoded['cognito:groups'];
+    expect(initialGroups).toContain('attendee');
 
     // Change role to SPEAKER in database
     await changeUserRole(dbUser.id, 'SPEAKER');
@@ -239,21 +231,21 @@ test.describe('Role Change Sync - JWT Token Enrichment', () => {
 
     const newToken = await loginAndGetToken(page, testEmail, testPassword);
     const newDecoded = decodeToken(newToken);
-    const newRoles = JSON.parse(newDecoded['custom:batbern_roles']);
+    const newGroups = newDecoded['cognito:groups'];
 
-    // New token should include SPEAKER role
-    expect(newRoles).toContain('SPEAKER');
+    // New token should include speaker group
+    expect(newGroups).toContain('speaker');
   });
 });
 
 // ============================================================================
 // TEST GROUP 2: Bidirectional Role Sync (Database → Cognito)
-// AC3: Role changes sync bidirectionally between database and Cognito
+// AC3: Role changes sync bidirectionally between database and Cognito Groups
 // ============================================================================
 
 test.describe('Role Change Sync - Bidirectional Sync', () => {
-  test('should_syncToCognito_when_roleChangedInDatabase', async ({ page }) => {
-    // AC3: When role changes in database, sync to Cognito custom attributes
+  test('should_syncToCognitoGroups_when_roleChangedInDatabase', async ({ page }) => {
+    // AC3: When role changes in database, sync to Cognito Groups
     const testEmail = `bidirectional-${Date.now()}@batbern.ch`;
     const dbUser = await getUserByEmail(testEmail);
 
@@ -263,9 +255,10 @@ test.describe('Role Change Sync - Bidirectional Sync', () => {
     // Wait for saga to complete sync (with retry logic)
     await page.waitForTimeout(3000);
 
-    // Verify Cognito attribute updated
+    // Verify Cognito Groups updated
     const cognitoAttrs = await getCognitoUserAttributes(testEmail);
-    expect(cognitoAttrs['custom:batbern_role']).toBe('PARTNER');
+    const groups = cognitoAttrs['cognito:groups']?.split(',') || [];
+    expect(groups).toContain('partner');
   });
 
   test('should_createCompensationLog_when_cognitoSyncFails', async ({ page }) => {
@@ -308,9 +301,10 @@ test.describe('Role Change Sync - Bidirectional Sync', () => {
     // Wait for potential retries (max 3 attempts with backoff: 2s, 4s, 8s)
     await page.waitForTimeout(15000);
 
-    // Verify Cognito eventually updated
+    // Verify Cognito Groups eventually updated
     const cognitoAttrs = await getCognitoUserAttributes(testEmail);
-    expect(cognitoAttrs['custom:batbern_role']).toBe('SPEAKER');
+    const groups = cognitoAttrs['cognito:groups']?.split(',') || [];
+    expect(groups).toContain('speaker');
 
     // Verify total time includes retry delays
     const totalTime = Date.now() - startTime;
@@ -364,7 +358,7 @@ test.describe('Role Change Sync - JIT Provisioning', () => {
   });
 
   test('should_assignRoleFromJWT_when_jitProvisioningUser', async ({ page }) => {
-    // AC2: JIT provisioning assigns role from JWT claims
+    // AC2: JIT provisioning assigns role from Cognito Groups
     const testEmail = `jit-role-${Date.now()}@batbern.ch`;
     const testPassword = 'TestPassword123!';
 
@@ -372,13 +366,14 @@ test.describe('Role Change Sync - JIT Provisioning', () => {
     const token = await loginAndGetToken(page, testEmail, testPassword);
     const decoded = decodeToken(token);
 
-    // Verify database user created with role from JWT
+    // Verify database user created with role from Cognito Groups
     const dbUser = await getUserByEmail(testEmail);
     expect(dbUser.roles).toBeDefined();
 
-    // Role should match JWT claim
-    const jwtRoles = JSON.parse(decoded['custom:batbern_roles'] || '[]');
-    expect(dbUser.roles[0]).toBe(jwtRoles[0] || 'ATTENDEE');
+    // Role should match Cognito Groups
+    const jwtGroups = decoded['cognito:groups'] || [];
+    const expectedRole = jwtGroups[0]?.toUpperCase() || 'ATTENDEE';
+    expect(dbUser.roles[0]).toBe(expectedRole);
   });
 
   test('should_continueRequest_when_jitProvisioningCompletes', async ({ page }) => {

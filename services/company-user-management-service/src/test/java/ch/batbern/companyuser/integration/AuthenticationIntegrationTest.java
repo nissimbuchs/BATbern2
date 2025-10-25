@@ -64,7 +64,8 @@ class AuthenticationIntegrationTest extends AbstractIntegrationTest {
             result.getResponse().getContentAsString(),
             CompanyResponse.class
         );
-        assertThat(response.getId()).isNotNull();
+        // Story 1.16.2: use company name instead of UUID
+        assertThat(response.getName()).isNotNull();
     }
 
     /**
@@ -121,10 +122,11 @@ class AuthenticationIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(username = "speaker@example.com", roles = {"SPEAKER"})
     void should_denyUpdate_when_notOrganizer() throws Exception {
         // Given
-        String companyId = "123e4567-e89b-12d3-a456-426614174000";
+        // Story 1.16.2: use company name instead of UUID
+        String companyName = "Test Company";
 
         // When/Then
-        mockMvc.perform(put("/api/v1/companies/" + companyId)
+        mockMvc.perform(put("/api/v1/companies/" + companyName)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{}"))
             .andExpect(status().isForbidden());
@@ -153,7 +155,8 @@ class AuthenticationIntegrationTest extends AbstractIntegrationTest {
         );
 
         // Then update it
-        mockMvc.perform(put("/api/v1/companies/" + created.getId())
+        // Story 1.16.2: use company name instead of UUID
+        mockMvc.perform(put("/api/v1/companies/" + created.getName())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"displayName\": \"Updated Display Name\"}"))
             .andExpect(status().isOk());
@@ -166,10 +169,11 @@ class AuthenticationIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(username = "partner@example.com", roles = {"PARTNER"})
     void should_denyDelete_when_notOrganizer() throws Exception {
         // Given
-        String companyId = "123e4567-e89b-12d3-a456-426614174000";
+        // Story 1.16.2: use company name instead of UUID
+        String companyName = "Test Company";
 
         // When/Then
-        mockMvc.perform(delete("/api/v1/companies/" + companyId))
+        mockMvc.perform(delete("/api/v1/companies/" + companyName))
             .andExpect(status().isForbidden());
     }
 

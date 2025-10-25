@@ -18,7 +18,7 @@ import {
   IconButton,
   Box,
   Typography,
-  CircularProgress
+  CircularProgress,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -36,7 +36,7 @@ export const CompanySearch: React.FC<CompanySearchProps> = ({
   onSelect,
   onSearchChange,
   debounceMs = 300,
-  placeholder = 'Search companies...'
+  placeholder = 'Search companies...',
 }) => {
   const [inputValue, setInputValue] = useState('');
   const [debouncedValue, setDebouncedValue] = useState('');
@@ -70,12 +70,10 @@ export const CompanySearch: React.FC<CompanySearchProps> = ({
         if (debouncedValue.toLowerCase().includes('test')) {
           setOptions([
             { id: '1', name: 'Test Company 1' },
-            { id: '2', name: 'Test Company 2' }
+            { id: '2', name: 'Test Company 2' },
           ]);
         } else if (debouncedValue.toLowerCase().includes('acme')) {
-          setOptions([
-            { id: '3', name: 'Acme Corporation' }
-          ]);
+          setOptions([{ id: '3', name: 'Acme Corporation' }]);
         } else {
           setOptions([]);
         }
@@ -90,7 +88,10 @@ export const CompanySearch: React.FC<CompanySearchProps> = ({
     setInputValue(newValue);
   };
 
-  const handleChange = (_event: React.SyntheticEvent, value: string | { id: string; name: string } | null) => {
+  const handleChange = (
+    _event: React.SyntheticEvent,
+    value: string | { id: string; name: string } | null
+  ) => {
     if (value && typeof value === 'object' && onSelect) {
       onSelect(value.id);
     }
@@ -141,9 +142,7 @@ export const CompanySearch: React.FC<CompanySearchProps> = ({
         const { key, ...otherProps } = props;
         return (
           <Box component="li" key={key} {...otherProps}>
-            <Typography variant="body2">
-              {highlightMatch(option.name, inputValue)}
-            </Typography>
+            <Typography variant="body2">{highlightMatch(option.name, inputValue)}</Typography>
           </Box>
         );
       }}
@@ -175,7 +174,7 @@ export const CompanySearch: React.FC<CompanySearchProps> = ({
                 )}
                 {params.InputProps.endAdornment}
               </>
-            )
+            ),
           }}
         />
       )}

@@ -138,6 +138,34 @@ export class ApiGatewayServiceStack extends cdk.Stack {
       props.databaseSecret.grantRead(taskDefinition.executionRole!);
     }
 
+    // Create explicit security group with restricted egress
+    const serviceSecurityGroup = new ec2.SecurityGroup(this, 'ServiceSecurityGroup', {
+      vpc: props.vpc,
+      description: 'Security group for API Gateway ECS service',
+      allowAllOutbound: false, // Explicitly disable to avoid CDK warning
+    });
+
+    // Add only necessary egress rules
+    serviceSecurityGroup.addEgressRule(
+      props.databaseSecurityGroup,
+      ec2.Port.tcp(5432),
+      'Allow outbound to PostgreSQL database'
+    );
+
+    // Allow HTTPS outbound for AWS API calls (Secrets Manager, CloudWatch, etc.)
+    serviceSecurityGroup.addEgressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.tcp(443),
+      'Allow HTTPS outbound for AWS API calls'
+    );
+
+    // Allow HTTP outbound to internal domain services
+    serviceSecurityGroup.addEgressRule(
+      ec2.Peer.ipv4(props.vpc.vpcCidrBlock),
+      ec2.Port.tcp(80),
+      'Allow HTTP outbound to internal domain services'
+    );
+
     // Create service with PUBLIC ALB
     this.service = new ecsPatterns.ApplicationLoadBalancedFargateService(this, 'Service', {
       cluster: props.cluster,
@@ -152,6 +180,7 @@ export class ApiGatewayServiceStack extends cdk.Stack {
       listenerPort: 80,
       minHealthyPercent: 100, // Ensure zero-downtime deployments
       maxHealthyPercent: 200, // Allow temporary extra tasks during deployments
+      securityGroups: [serviceSecurityGroup], // Use explicit security group
     });
 
     // Configure health checks
@@ -176,13 +205,6 @@ export class ApiGatewayServiceStack extends cdk.Stack {
     });
 
     this.apiGatewayUrl = `http://${this.service.loadBalancer.loadBalancerDnsName}`;
-
-    // Allow service to connect to database
-    this.service.service.connections.allowTo(
-      props.databaseSecurityGroup,
-      ec2.Port.tcp(5432),
-      'Allow ECS tasks to connect to PostgreSQL database'
-    );
 
     // Apply tags
     cdk.Tags.of(this).add('Environment', envName);
