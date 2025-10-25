@@ -2,7 +2,9 @@
 🚀 Next steps:
 - Either work on a simple event frontend for event-management and then move to migrate all old event data
 - Or start creating the public website and then migrate
-- Or work on some fancy stuff: 
+- Or work on some fancy stuff:
+-- implement one service with quarkus or kotlin
+-- build a frontend extension point to integrate the company web-component in user-detail view
 
 ✨ New Features:
 * Epic 1 now fully implemented.
@@ -20,12 +22,14 @@
 - Fixed Cognito Registration hook to update user_profile db
 - Resolved CORS configuration problems
 
-⚡ Performance:
+⚡ Open topics:
+- SES is currently separate for each environment. consolidate?
+- SES on is still in sandbox mode (can send registration eMails only to verifyed eMails).
+- We stil have not solved and implemented notifications. per service or one for all
+- Refactor so that Company and Event are using the generated types from openapi in the backend and frontend
 - RateLimits are still set very narrow
 
 📝 Notes:
-- This is a development/staging environment
-- Test data may be reset periodically
-- Report issues to the development team
+- Report issues on github https://github.com/nissimbuchs/BATbern2/issues
 
 Last updated: 2025-10-25
