@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Alert, AlertTitle, Box, CircularProgress, Collapse, IconButton } from '@mui/material';
+import { Alert, AlertTitle, Box, Collapse, IconButton } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { useEnvironment } from '@/contexts/useEnvironment';
 
