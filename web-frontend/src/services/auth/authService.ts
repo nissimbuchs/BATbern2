@@ -209,15 +209,21 @@ class AuthService {
         };
       }
 
+      // ADR-001: Only send attributes allowed by Cognito writeAttributes configuration
+      // Cognito = authentication only; Database = user profile data
+      // See cognito-stack.ts:212-214 for writeAttributes configuration
       const result = await amplifySignUp({
         username: signUpData.email,
         password: signUpData.password,
         options: {
           userAttributes: {
             email: signUpData.email,
-            'custom:companyId': signUpData.companyId || '',
+            // Store user profile data in preferences JSON (PostConfirmation Lambda will sync to DB)
             'custom:preferences': JSON.stringify({
-              language: 'en',
+              firstName: signUpData.firstName,
+              lastName: signUpData.lastName,
+              language: signUpData.language || 'en',
+              newsletterOptIn: signUpData.newsletterOptIn || false,
               theme: 'light',
               notifications: {
                 email: true,
@@ -229,6 +235,7 @@ class AuthService {
                 allowMessages: true,
               },
             }),
+            ...(signUpData.companyId && { 'custom:companyId': signUpData.companyId }),
           },
         },
       });

@@ -49,6 +49,15 @@ function createPostConfirmationEvent(overrides: Partial<PostConfirmationTriggerE
         'cognito:groups': 'organizer',
         email_verified: 'true',
         email: 'user@example.com',
+        'custom:preferences': JSON.stringify({
+          firstName: 'John',
+          lastName: 'Doe',
+          language: 'en',
+          newsletterOptIn: false,
+          theme: 'light',
+          notifications: { email: true, sms: false, push: true },
+          privacy: { showProfile: true, allowMessages: true },
+        }),
         ...overrides.request?.userAttributes,
       },
     },
@@ -116,15 +125,20 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       // Act
       const result = await handler(event, context, {} as any);
 
-      // Assert
+      // Assert - Story 1.2.3: Check new fields from custom:preferences
       expect(executeTransaction).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({
             query: expect.stringContaining('INSERT INTO user_profiles'),
             params: expect.arrayContaining([
-              'a1b2c3d4-5678-90ab-cdef-EXAMPLE11111',
-              'user@example.com',
-              true,
+              'a1b2c3d4-5678-90ab-cdef-EXAMPLE11111', // cognito_id
+              'user@example.com', // email
+              true, // email_verified
+              'john.doe', // username (generated from firstName.lastName)
+              'John', // first_name
+              'Doe', // last_name
+              'en', // pref_language
+              true, // pref_email_notifications
             ]),
           }),
         ])
@@ -141,6 +155,12 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
             email: 'test@batbern.ch',
             email_verified: 'true',
             'cognito:user_status': 'CONFIRMED',
+            'custom:preferences': JSON.stringify({
+              firstName: 'Test',
+              lastName: 'User',
+              language: 'de',
+              newsletterOptIn: true,
+            }),
           },
         },
       } as any);

@@ -322,8 +322,8 @@ This project is proprietary software owned by BATbern. All rights reserved.
 ## Support
 
 For questions and support:
-- Technical issues: tech@batbern.ch
-- Business inquiries: info@batbern.ch
+- Technical issues: info@berner-architekten-treffen.ch
+- Business inquiries: info@berner-architekten-treffen.ch
 
 ## Contributing
 

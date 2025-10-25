@@ -333,9 +333,11 @@ describe('AuthService', () => {
         options: {
           userAttributes: {
             email: signUpData.email,
-            'custom:companyId': '',
             'custom:preferences': JSON.stringify({
+              firstName: 'John',
+              lastName: 'Doe',
               language: 'en',
+              newsletterOptIn: false,
               theme: 'light',
               notifications: {
                 email: true,

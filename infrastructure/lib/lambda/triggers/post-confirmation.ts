@@ -34,6 +34,27 @@ interface UserAttributes {
   email: string;
   email_verified?: string;
   'cognito:groups'?: string;
+  'custom:preferences'?: string; // JSON string with user profile data
+}
+
+/**
+ * User preferences extracted from custom:preferences JSON
+ */
+interface UserPreferences {
+  firstName?: string;
+  lastName?: string;
+  language?: string;
+  newsletterOptIn?: boolean;
+  theme?: string;
+  notifications?: {
+    email?: boolean;
+    sms?: boolean;
+    push?: boolean;
+  };
+  privacy?: {
+    showProfile?: boolean;
+    allowMessages?: boolean;
+  };
 }
 
 /**
@@ -56,7 +77,46 @@ function extractUserAttributes(event: PostConfirmationTriggerEvent): UserAttribu
     email: attributes.email,
     email_verified: attributes.email_verified,
     'cognito:groups': attributes['cognito:groups'], // Legacy field, no longer used
+    'custom:preferences': attributes['custom:preferences'],
   };
+}
+
+/**
+ * Parse user preferences from custom:preferences JSON
+ * Story 1.2.3: User profile data stored in custom:preferences per ADR-001
+ */
+function parseUserPreferences(preferencesJson?: string): UserPreferences {
+  if (!preferencesJson) {
+    console.warn('No custom:preferences found, using defaults');
+    return {};
+  }
+
+  try {
+    return JSON.parse(preferencesJson);
+  } catch (error) {
+    console.error('Failed to parse custom:preferences JSON', { preferencesJson, error });
+    return {};
+  }
+}
+
+/**
+ * Generate unique username from first and last name
+ * Format: firstname.lastname or firstname.lastname.N for duplicates
+ * Story 1.16.2: Username is public meaningful identifier
+ */
+function generateUsername(firstName: string, lastName: string): string {
+  // Normalize to lowercase, remove special characters, replace spaces with nothing
+  const normalizeNamePart = (name: string) =>
+    name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+      .replace(/[^a-z]/g, ''); // Keep only letters
+
+  const first = normalizeNamePart(firstName || 'user');
+  const last = normalizeNamePart(lastName || 'user');
+
+  return `${first}.${last}`;
 }
 
 /**
@@ -97,23 +157,57 @@ async function publishMetric(metricName: string, value: number, unit: string = '
 
 /**
  * Create user in database with ON CONFLICT handling for idempotency
+ * Story 1.2.3: Extract user profile data from custom:preferences JSON per ADR-001
  */
 async function createUser(
   cognitoId: string,
   email: string,
   emailVerified: boolean,
+  preferences: UserPreferences,
   role: UserRole
 ): Promise<string | null> {
+  // Extract user profile data from preferences
+  const firstName = preferences.firstName || 'User';
+  const lastName = preferences.lastName || 'User';
+  const language = preferences.language || 'de';
+  const username = generateUsername(firstName, lastName);
+
+  // Handle username collision with retry mechanism
+  let finalUsername = username;
+  let attempt = 0;
+  const maxAttempts = 10;
+
   const queries = [
-    // Insert user with ON CONFLICT DO NOTHING for idempotency
+    // Insert user with ON CONFLICT DO NOTHING for idempotency on cognito_id
     {
       query: `
-        INSERT INTO user_profiles (cognito_id, email, email_verified, is_active, created_at, updated_at)
-        VALUES ($1, $2, $3, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        INSERT INTO user_profiles (
+          cognito_id,
+          email,
+          email_verified,
+          username,
+          first_name,
+          last_name,
+          pref_language,
+          pref_email_notifications,
+          is_active,
+          created_at,
+          updated_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         ON CONFLICT (cognito_id) DO NOTHING
         RETURNING id
       `,
-      params: [cognitoId, email, emailVerified],
+      params: [
+        cognitoId,
+        email,
+        emailVerified,
+        finalUsername,
+        firstName,
+        lastName,
+        language,
+        preferences.notifications?.email ?? true,
+      ],
     },
   ];
 
@@ -223,6 +317,9 @@ export const handler: PostConfirmationTriggerHandler = async (event) => {
     const attributes = extractUserAttributes(event);
     const { sub: cognitoId, email, email_verified } = attributes;
 
+    // Parse user preferences from custom:preferences JSON (Story 1.2.3, ADR-001)
+    const preferences = parseUserPreferences(attributes['custom:preferences']);
+
     // Get default role for self-registered users (ADR-001)
     const role = getDefaultRole();
 
@@ -230,11 +327,14 @@ export const handler: PostConfirmationTriggerHandler = async (event) => {
       cognitoId,
       email,
       emailVerified: email_verified === 'true',
+      firstName: preferences.firstName,
+      lastName: preferences.lastName,
+      language: preferences.language,
       role,
     });
 
     // Create user and assign role in database
-    await createUser(cognitoId, email, email_verified === 'true', role);
+    await createUser(cognitoId, email, email_verified === 'true', preferences, role);
 
     // Record success metrics
     const duration = Date.now() - startTime;

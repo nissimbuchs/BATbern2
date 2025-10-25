@@ -64,6 +64,8 @@ export interface SignUpData {
   firstName: string;
   lastName: string;
   acceptTerms: boolean;
+  language?: string; // User's preferred language (de|en)
+  newsletterOptIn?: boolean; // Newsletter opt-in preference
 }
 
 export interface PasswordResetRequest {
