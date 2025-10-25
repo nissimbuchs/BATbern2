@@ -128,6 +128,7 @@ export class CognitoStack extends cdk.Stack {
       },
       bundling: {
         externalModules: ['@aws-sdk/*'], // Use AWS SDK from Lambda runtime
+        nodeModules: ['@aws-crypto/client-node'], // Bundle this module with dependencies
         minify: true,
         sourceMap: false,
       },

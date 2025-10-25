@@ -83,6 +83,16 @@ export class VpcConstruct extends Construct {
       'Allow PostgreSQL access from application tier'
     );
 
+    // Allow PostgreSQL access from private subnets (for ECS services)
+    // This avoids cyclic dependencies when service stacks create their own security groups
+    this.vpc.privateSubnets.forEach((subnet, index) => {
+      this.databaseSecurityGroup.addIngressRule(
+        ec2.Peer.ipv4(subnet.ipv4CidrBlock),
+        ec2.Port.tcp(5432),
+        `Allow PostgreSQL access from private subnet ${index + 1}`
+      );
+    });
+
     // Cache tier security group
     this.cacheSecurityGroup = new ec2.SecurityGroup(this, 'CacheSG', {
       vpc: this.vpc,
