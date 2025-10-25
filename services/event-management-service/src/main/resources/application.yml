@@ -19,6 +19,7 @@ spring:
     validate-on-migrate: true
     clean-disabled: true
     locations: classpath:db/migration
+    table: flyway_schema_history_event_management
 
 management:
   endpoints:
