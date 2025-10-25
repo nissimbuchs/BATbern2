@@ -248,7 +248,7 @@ function App() {
 
                 {/* User Management Routes - Story 2.5.2 */}
                 <Route
-                  path="/organizer/users"
+                  path="/organizer/users/*"
                   element={
                     <ProtectedRoute>
                       <AuthLayout>

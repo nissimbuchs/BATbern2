@@ -27,11 +27,14 @@ const UserFilters: React.FC = () => {
   // Debounced search effect
   useEffect(() => {
     const timer = setTimeout(() => {
-      setSearchQuery(searchValue);
+      // Only update if the search value actually changed
+      if (searchValue !== searchQuery) {
+        setSearchQuery(searchValue);
+      }
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchValue, setSearchQuery]);
+  }, [searchValue, searchQuery, setSearchQuery]);
 
   // Role options
   const roleOptions: { value: Role; label: string }[] = [

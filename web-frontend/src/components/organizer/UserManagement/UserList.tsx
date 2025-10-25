@@ -148,9 +148,9 @@ const UserList: React.FC = () => {
         {/* Pagination */}
         {paginationData && (
           <UserPagination
-            page={pagination.page}
+            page={paginationData.page}
             totalPages={paginationData.totalPages}
-            limit={pagination.limit}
+            limit={paginationData.limit}
             onPageChange={(newPage) => setPage(newPage)}
             onLimitChange={(newLimit) => setLimit(newLimit)}
           />
