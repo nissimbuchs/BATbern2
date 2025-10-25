@@ -158,6 +158,13 @@ export function createDomainService(
       'Allow outbound to PostgreSQL database'
     );
 
+    // Add ingress rule to database security group to allow connections from this service
+    props.databaseSecurityGroup.addIngressRule(
+      serviceSecurityGroup,
+      ec2.Port.tcp(5432),
+      `Allow PostgreSQL access from ${serviceName} service`
+    );
+
     // Allow HTTPS outbound for AWS API calls (Secrets Manager, CloudWatch, etc.)
     serviceSecurityGroup.addEgressRule(
       ec2.Peer.anyIpv4(),
