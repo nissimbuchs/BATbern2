@@ -5,18 +5,18 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/events?page=0&limit=20
+  url: {{baseUrl}}/events?page=1&limit=20
   body: none
   auth: bearer
 }
 
-auth:bearer {
-  token: {{authToken}}
+params:query {
+  page: 1
+  limit: 20
 }
 
-params:query {
-  page: 0
-  limit: 20
+auth:bearer {
+  token: {{authToken}}
 }
 
 assert {
@@ -29,7 +29,7 @@ tests {
   test("should return 200 status", function() {
     expect(res.getStatus()).to.equal(200);
   });
-
+  
   test("should have pagination metadata", function() {
     expect(res.getBody().pagination).to.be.an('object');
     expect(res.getBody().pagination.page).to.be.a('number');
@@ -37,11 +37,11 @@ tests {
     expect(res.getBody().pagination.totalItems).to.be.a('number');
     expect(res.getBody().pagination.totalPages).to.be.a('number');
   });
-
+  
   test("should return array of events", function() {
     expect(res.getBody().data).to.be.an('array');
   });
-
+  
   test("events should NOT have id field (Story 1.16.2: removed redundant id)", function() {
     const body = res.getBody();
     if (body.data && body.data.length > 0) {

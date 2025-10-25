@@ -6,6 +6,11 @@ server:
 spring:
   application:
     name: event-management-service
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: https://cognito-idp.${AWS_REGION:eu-central-1}.amazonaws.com/${COGNITO_USER_POOL_ID}/.well-known/jwks.json
   flyway:
     enabled: true
     baseline-on-migrate: true
@@ -58,3 +63,17 @@ info:
       id: ${git.commit.id.abbrev:unknown}
       time: ${git.commit.time:unknown}
     branch: ${git.branch:unknown}
+
+---
+# Test Profile Configuration
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9999/oauth2/default
+          jwk-set-uri: http://localhost:9999/oauth2/default/v1/keys

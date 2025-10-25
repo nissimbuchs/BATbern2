@@ -5,13 +5,15 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/users?page=1&limit=20&filter={"active":true}
+  url: {{baseUrl}}/users?filter="active":true&page=1&limit=20
   body: none
   auth: bearer
 }
 
-auth:bearer {
-  token: {{authToken}}
+params:query {
+  filter: "active":true
+  page: 1
+  limit: 20
 }
 
 headers {
@@ -19,10 +21,8 @@ headers {
   Accept: application/json
 }
 
-params:query {
-  filter: {"active":true}
-  page: 1
-  limit: 20
+auth:bearer {
+  token: {{authToken}}
 }
 
 assert {
@@ -37,21 +37,21 @@ tests {
       console.log("Non-admin/organizer - access denied (expected)");
     }
   });
-
+  
   test("should return only active users", function() {
     if (res.getStatus() === 200) {
       const body = res.getBody();
       expect(body.data).to.be.an('array');
-
+  
       // Verify all returned users are active
       body.data.forEach(user => {
         expect(user.active).to.equal(true);
       });
-
+  
       console.log(`Found ${body.data.length} active users`);
     }
   });
-
+  
   test("should return pagination metadata", function() {
     if (res.getStatus() === 200) {
       const body = res.getBody();

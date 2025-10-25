@@ -5,13 +5,17 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/users
+  url: {{baseUrl}}/users?role=ATTENDEE&filter="active":true&search=bruno&page=1&limit=20
   body: none
   auth: bearer
 }
 
-auth:bearer {
-  token: {{authToken}}
+params:query {
+  role: ATTENDEE
+  filter: "active":true
+  search: bruno
+  page: 1
+  limit: 20
 }
 
 headers {
@@ -19,12 +23,8 @@ headers {
   Accept: application/json
 }
 
-params:query {
-  role: ATTENDEE
-  filter: {"active":true}
-  search: bruno
-  page: 1
-  limit: 20
+auth:bearer {
+  token: {{authToken}}
 }
 
 assert {
@@ -39,32 +39,32 @@ tests {
       console.log("Non-admin/organizer - access denied (expected)");
     }
   });
-
+  
   test("should return users matching all filter criteria", function() {
     if (res.getStatus() === 200) {
       const body = res.getBody();
       expect(body.data).to.be.an('array');
-
+  
       // Verify all filters are applied correctly
       body.data.forEach(user => {
         // Must have ATTENDEE role
         expect(user.roles).to.be.an('array');
         expect(user.roles).to.include('ATTENDEE');
-
+  
         // Must be active
         expect(user.active).to.equal(true);
-
+  
         // Must match search term
         const searchTerm = 'bruno';
         const matchesFirstName = user.firstName && user.firstName.toLowerCase().includes(searchTerm);
         const matchesLastName = user.lastName && user.lastName.toLowerCase().includes(searchTerm);
         const matchesEmail = user.email && user.email.toLowerCase().includes(searchTerm);
         const matchesUsername = user.id && user.id.toLowerCase().includes(searchTerm);
-
+  
         const matches = matchesFirstName || matchesLastName || matchesEmail || matchesUsername;
         expect(matches).to.be.true;
       });
-
+  
       if (body.data.length > 0) {
         console.log(`Found ${body.data.length} users matching all criteria (ATTENDEE + active + 'bruno')`);
       } else {
@@ -72,7 +72,7 @@ tests {
       }
     }
   });
-
+  
   test("should return pagination metadata", function() {
     if (res.getStatus() === 200) {
       const body = res.getBody();
