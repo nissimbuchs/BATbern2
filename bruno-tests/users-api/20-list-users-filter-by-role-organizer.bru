@@ -5,13 +5,15 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/users
+  url: {{baseUrl}}/users?role=ORGANIZER&page=1&limit=20
   body: none
   auth: bearer
 }
 
-auth:bearer {
-  token: {{authToken}}
+params:query {
+  role: ORGANIZER
+  page: 1
+  limit: 20
 }
 
 headers {
@@ -19,10 +21,8 @@ headers {
   Accept: application/json
 }
 
-params:query {
-  role: ORGANIZER
-  page: 1
-  limit: 20
+auth:bearer {
+  token: {{authToken}}
 }
 
 assert {
@@ -40,12 +40,12 @@ tests {
       console.log("Rate limited - too many requests");
     }
   });
-
+  
   test("should return only users with ORGANIZER role", function() {
     if (res.getStatus() === 200) {
       const body = res.getBody();
       expect(body.data).to.be.an('array');
-
+  
       // Verify all returned users have ORGANIZER role (if any are returned)
       if (body.data.length > 0) {
         body.data.forEach(user => {
@@ -53,11 +53,11 @@ tests {
           expect(user.roles).to.include('ORGANIZER');
         });
       }
-
+  
       console.log(`Found ${body.data.length} users with ORGANIZER role`);
     }
   });
-
+  
   test("should return pagination metadata", function() {
     if (res.getStatus() === 200) {
       const body = res.getBody();
