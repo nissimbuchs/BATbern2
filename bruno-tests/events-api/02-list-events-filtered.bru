@@ -5,18 +5,23 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/events
+  url: {{baseUrl}}/events?filter="status":"published"&sort=-date
   body: none
   auth: bearer
+}
+
+params:query {
+  filter: "status":"published"
+  sort: -date
 }
 
 auth:bearer {
   token: {{authToken}}
 }
 
-params:query {
-  filter: {"status":"published"}
-  sort: -date
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
 }
 
 assert {
@@ -27,7 +32,7 @@ tests {
   test("should return 200 status", function() {
     expect(res.getStatus()).to.equal(200);
   });
-
+  
   test("should filter events by status", function() {
     const events = res.getBody().data;
     if (events.length > 0) {
@@ -36,7 +41,7 @@ tests {
       });
     }
   });
-
+  
   test("events should NOT have id field (Story 1.16.2: removed redundant id)", function() {
     const body = res.getBody();
     if (body.data && body.data.length > 0) {
