@@ -10,8 +10,9 @@ get {
   auth: bearer
 }
 
-auth:bearer {
-  token: {{authToken}}
+params:query {
+  query: bruno
+  limit: 10
 }
 
 headers {
@@ -21,9 +22,8 @@ headers {
   Accept: application/json
 }
 
-params:query {
-  query: bruno
-  limit: 10
+auth:bearer {
+  token: {{authToken}}
 }
 
 assert {
@@ -34,12 +34,12 @@ tests {
   test("should return 200 status", function() {
     expect(res.getStatus()).to.equal(200);
   });
-
+  
   test("should return search results", function() {
     const body = res.getBody();
     expect(body).to.be.an('array');
   });
-
+  
   test("should find companies matching search query (Story 1.16.2: lookup by name)", function() {
     const body = res.getBody();
     // If testCompanyName is set and company exists, verify we can find it
@@ -56,7 +56,7 @@ tests {
     // Verify search API works (returns array, even if empty)
     expect(body).to.be.an('array');
   });
-
+  
   test("companies should have name field (Story 1.16.2: name is identifier)", function() {
     const body = res.getBody();
     if (body && body.length > 0) {
@@ -65,7 +65,7 @@ tests {
       // Note: Backend still returns id field - Story 1.16.2 implementation pending
     }
   });
-
+  
   test("should accept custom headers without CORS error", function() {
     expect(res.getStatus()).to.equal(200);
   });
