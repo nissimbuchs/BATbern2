@@ -56,14 +56,6 @@ cat "$RELEASE_NOTES_FILE"
 echo "---"
 echo ""
 
-# Confirm upload
-read -p "Upload this file to staging? (y/N) " -n 1 -r
-echo ""
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "Upload cancelled"
-    exit 0
-fi
-
 # Upload to S3
 echo -e "${YELLOW}Uploading to S3...${NC}"
 AWS_PROFILE=$AWS_PROFILE aws s3 cp \
