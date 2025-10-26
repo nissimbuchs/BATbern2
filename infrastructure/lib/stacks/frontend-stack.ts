@@ -132,7 +132,7 @@ function handler(event) {
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
             "img-src 'self' data: https:; " +
             "font-src 'self' data: https://fonts.gstatic.com; " +
-            "connect-src 'self' https://*.amazonaws.com https://*.amazoncognito.com https://cognito-idp.*.amazonaws.com https://fonts.googleapis.com https://fonts.gstatic.com https://api.staging.batbern.ch https://api.batbern.ch; " +
+            "connect-src 'self' https://*.amazonaws.com https://*.amazoncognito.com https://fonts.googleapis.com https://fonts.gstatic.com https://api.staging.batbern.ch https://api.batbern.ch; " +
             "object-src 'none'; " +
             "base-uri 'self'; " +
             "form-action 'self'; " +
