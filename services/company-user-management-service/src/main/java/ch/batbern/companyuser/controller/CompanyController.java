@@ -2,7 +2,6 @@ package ch.batbern.companyuser.controller;
 
 import ch.batbern.companyuser.dto.*;
 import ch.batbern.companyuser.repository.CompanyRepository;
-import ch.batbern.companyuser.service.CompanyLogoService;
 import ch.batbern.companyuser.service.CompanyQueryService;
 import ch.batbern.companyuser.service.CompanySearchService;
 import ch.batbern.companyuser.service.CompanyService;
@@ -42,7 +41,6 @@ public class CompanyController {
     private final CompanySearchService searchService;
     private final SwissUIDValidationService uidValidationService;
     private final CompanyQueryService queryService;
-    private final CompanyLogoService logoService;
     private final CompanyRepository companyRepository;  // Story 1.16.2: For looking up companies by name
 
     /**
@@ -423,109 +421,9 @@ public class CompanyController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Request presigned URL for logo upload
-     * Requires authentication
-     * AC5: Logo upload with S3 presigned URLs
-     * Story 1.16.2: Use company name as identifier instead of UUID
-     */
-    @PostMapping("/{name}/logo/presigned-url")
-    @PreAuthorize("isAuthenticated()")
-    @Operation(
-            summary = "Request presigned URL for company logo upload",
-            description = "Generates a presigned S3 URL for uploading a company logo. " +
-                    "The URL expires after 15 minutes. Supports PNG, JPEG, and SVG files up to 5MB. " +
-                    "After uploading to S3, call the confirm endpoint to save the logo URL. Story 1.16.2: Uses company name instead of UUID."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Presigned URL generated successfully",
-                    content = @Content(schema = @Schema(implementation = PresignedUploadUrl.class))
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Invalid file type or size exceeds limit (5MB)"
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Unauthorized - missing or invalid JWT token"
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Company not found"
-            )
-    })
-    public ResponseEntity<PresignedUploadUrl> requestLogoUploadUrl(
-            @Parameter(description = "Company name (unique identifier)", required = true, example = "Swisscom AG")
-            @PathVariable String name,
-            @Valid @RequestBody LogoUploadRequest request) {
-        log.info("Requesting presigned URL for company: {}, file: {}", name, request.getFileName());
-
-        // Story 1.16.2: Use company name to get company, then use UUID for S3 key partitioning
-        // (S3 keys use UUID internally for stability, but public API uses company name)
-        PresignedUploadUrl response = logoService.generateLogoUploadUrl(
-                name,  // Use company name for S3 partitioning
-                request.getFileName(),
-                request.getFileSize()
-        );
-
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * Confirm logo upload completion
-     * Requires authentication
-     * AC5: Store logo URL in company entity after upload
-     * Story 1.16.2: Use company name as identifier instead of UUID
-     */
-    @PostMapping("/{name}/logo/confirm")
-    @PreAuthorize("isAuthenticated()")
-    @Operation(
-            summary = "Confirm logo upload completion",
-            description = "Confirms that the logo has been successfully uploaded to S3 and stores the CloudFront URL in the company record. Story 1.16.2: Uses company name instead of UUID."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Logo upload confirmed and company updated",
-                    content = @Content(schema = @Schema(implementation = LogoUploadConfirmResponse.class))
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Invalid file ID"
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Unauthorized - missing or invalid JWT token"
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Company not found"
-            )
-    })
-    public ResponseEntity<LogoUploadConfirmResponse> confirmLogoUpload(
-            @Parameter(description = "Company name (unique identifier)", required = true, example = "Swisscom AG")
-            @PathVariable String name,
-            @Valid @RequestBody LogoUploadConfirmRequest request) {
-        log.info("Confirming logo upload for company: {}, file ID: {}, extension: {}",
-                name, request.getFileId(), request.getFileExtension());
-
-        // Story 1.16.2: Look up company by name to get UUID for logo service
-        // Find company by name first
-        ch.batbern.companyuser.domain.Company company = companyRepository.findByName(name)
-                .orElseThrow(() -> new ch.batbern.companyuser.exception.CompanyNotFoundException(name));
-
-        logoService.confirmLogoUpload(company.getId(), request.getFileId(), request.getFileExtension(), request.getChecksum());
-        CompanyResponse companyResponse = companyService.getCompanyByName(name);
-
-        // Extract logo URL from company response
-        String logoUrl = companyResponse.getLogo() != null ? companyResponse.getLogo().getUrl() : null;
-
-        LogoUploadConfirmResponse response = LogoUploadConfirmResponse.builder()
-                .logoUrl(logoUrl)
-                .build();
-
-        return ResponseEntity.ok(response);
-    }
+    // Story 1.16.3: Old company-specific logo endpoints removed
+    // Use generic endpoints instead:
+    // - POST /api/v1/logos/presigned-url (generate upload URL)
+    // - POST /api/v1/logos/{uploadId}/confirm (confirm upload)
+    // - POST /api/v1/companies with logoUploadId (associate during creation)
 }

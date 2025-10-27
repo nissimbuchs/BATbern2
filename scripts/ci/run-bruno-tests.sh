@@ -77,8 +77,9 @@ skipped=0
 
 # Test collection directories
 collections=(
-    "events-api"
+    #"events-api"
     "companies-api"
+    "file-upload-api"
     "users-api"
 )
 

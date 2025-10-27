@@ -1,0 +1,42 @@
+meta {
+  name: Delete Unused Logo
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{baseUrl}}/logos/{{testUploadId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: en-US
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 204
+}
+
+tests {
+  test("should return 204 No Content", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+
+  test("should delete logo successfully", function() {
+    // 204 indicates successful deletion
+    expect(res.getStatus()).to.equal(204);
+  });
+
+  test("should have CORS headers", function() {
+    const headers = res.getHeaders();
+    const corsHeader = headers['access-control-allow-origin'];
+    expect(corsHeader).to.exist;
+  });
+}
