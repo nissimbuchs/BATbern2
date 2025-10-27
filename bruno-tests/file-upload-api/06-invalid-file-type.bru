@@ -1,0 +1,52 @@
+meta {
+  name: Request Presigned URL - Invalid File Type
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/logos/presigned-url
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: en-US
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "fileName": "document.pdf",
+    "fileSize": 1024,
+    "mimeType": "application/pdf"
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("should return 400 Bad Request", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("should return error message about file type", function() {
+    const body = res.getBody();
+    expect(body.message).to.exist;
+    expect(body.message).to.include('file');
+  });
+
+  test("should have CORS headers", function() {
+    const headers = res.getHeaders();
+    const corsHeader = headers['access-control-allow-origin'];
+    expect(corsHeader).to.exist;
+  });
+}

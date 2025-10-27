@@ -44,4 +44,7 @@ public class CreateCompanyRequest {
     @Size(max = 2000, message = "Description must not exceed 2000 characters")
     @Schema(description = "Company description", example = "Leading telecommunications provider in Switzerland")
     private String description;
+
+    @Schema(description = "Upload ID from /api/v1/logos/presigned-url (optional)", example = "abc123-def456")
+    private String logoUploadId;
 }

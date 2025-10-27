@@ -36,7 +36,7 @@ import {
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import type { components } from '@/types/generated/company-api.types';
-import { LogoUpload } from '@/components/shared/Company/LogoUpload';
+import { FileUpload } from '@/components/shared/FileUpload/FileUpload';
 
 type Company = components['schemas']['CompanyResponse'];
 type CreateCompanyRequest = components['schemas']['CreateCompanyRequest'];
@@ -112,6 +112,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
   const { t } = useTranslation('common');
   const [apiError, setApiError] = useState<string | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | undefined>(initialData?.logo?.url);
+  const [logoUploadId, setLogoUploadId] = useState<string | undefined>();
 
   // Check role-based access control (Story 1.16.2: uses company name as identifier)
   const hasEditPermission =
@@ -207,8 +208,13 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
           changedFields,
         });
       } else {
-        // Create mode
-        await onSubmit(cleanedData as CreateCompanyRequest, {
+        // Create mode - include logoUploadId if logo was uploaded
+        const createRequest = {
+          ...cleanedData,
+          logoUploadId, // Story 1.16.3: Include upload ID for logo association
+        } as CreateCompanyRequest;
+
+        await onSubmit(createRequest, {
           isDraft: false,
         });
       }
@@ -265,20 +271,17 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
   // Watch description for character count
   const description = watch('description') || '';
 
-  const handleLogoUploadSuccess = (data: { logoUrl: string }) => {
-    setLogoUrl(data.logoUrl);
-    // Optionally show success message
-    console.log('[CompanyForm] Logo uploaded successfully:', data.logoUrl);
+  const handleLogoUploadSuccess = (data: { uploadId: string; tempFileUrl?: string }) => {
+    setLogoUploadId(data.uploadId); // Store uploadId for company creation
+    if (data.tempFileUrl) {
+      setLogoUrl(data.tempFileUrl); // Show preview
+    }
+    console.log('[CompanyForm] Logo uploaded successfully. UploadId:', data.uploadId);
   };
 
   const handleLogoUploadError = (error: { type: string; message: string }) => {
     setApiError(`Logo upload failed: ${error.message}`);
   };
-
-  // Use company name for upload (Story 1.16.2: uses company name as identifier)
-  // In create mode, we'll use a placeholder name that will be replaced by the backend
-  const companyNameForUpload =
-    mode === 'edit' && initialData?.name ? initialData.name : 'temp-company-name';
 
   return (
     <Dialog
@@ -450,9 +453,8 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
             <Typography variant="h6" gutterBottom>
               {t('company.fields.logo')}
             </Typography>
-            <LogoUpload
-              companyName={companyNameForUpload}
-              currentLogoUrl={logoUrl}
+            <FileUpload
+              currentFileUrl={logoUrl}
               onUploadSuccess={handleLogoUploadSuccess}
               onUploadError={handleLogoUploadError}
             />
