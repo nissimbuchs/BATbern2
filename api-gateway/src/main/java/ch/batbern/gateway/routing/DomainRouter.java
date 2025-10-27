@@ -65,7 +65,9 @@ public class DomainRouter {
             return "partner-coordination-service";
         } else if (cleanPath.startsWith("/api/v1/content")) {
             return "attendee-experience-service";
-        } else if (cleanPath.startsWith("/api/v1/companies") || cleanPath.startsWith("/api/v1/users")) {
+        } else if (cleanPath.startsWith("/api/v1/companies")
+                || cleanPath.startsWith("/api/v1/users")
+                || cleanPath.startsWith("/api/v1/logos")) {
             return "company-user-management-service";
         } else {
             throw new RoutingException("No route found for path: " + cleanPath);
@@ -84,6 +86,40 @@ public class DomainRouter {
             case "company-user-management-service" -> companyUserManagementUrl;
             default -> throw new RoutingException("Unknown target service: " + targetService);
         };
+    }
+
+    /**
+     * Removes security headers from backend response to prevent duplication.
+     * The API Gateway's SecurityHeadersFilter will add these headers.
+     */
+    private HttpHeaders removeSecurityHeaders(HttpHeaders headers) {
+        if (headers == null) {
+            return new HttpHeaders();
+        }
+
+        HttpHeaders cleaned = new HttpHeaders();
+        cleaned.putAll(headers);
+
+        // Remove security headers that will be added by SecurityHeadersFilter
+        cleaned.remove("Content-Security-Policy");
+        cleaned.remove("Strict-Transport-Security");
+        cleaned.remove("X-Frame-Options");
+        cleaned.remove("X-Content-Type-Options");
+        cleaned.remove("X-XSS-Protection");
+        cleaned.remove("Referrer-Policy");
+        cleaned.remove("Permissions-Policy");
+
+        // Remove cache control headers that will be added by SecurityHeadersFilter
+        cleaned.remove("Cache-Control");
+        cleaned.remove("Pragma");
+        cleaned.remove("Expires");
+
+        // Remove transfer-encoding to prevent chunked encoding issues
+        // Spring will set Content-Length automatically
+        cleaned.remove("Transfer-Encoding");
+        cleaned.remove("transfer-encoding");
+
+        return cleaned;
     }
 
     /**
@@ -147,15 +183,27 @@ public class DomainRouter {
                 );
 
                 log.info("Received response from {}: status={}", targetService, response.getStatusCode());
-                return response;
+
+                // Remove security headers from backend response to prevent duplication
+                // API Gateway's SecurityHeadersFilter will add these headers
+                HttpHeaders cleanedHeaders = removeSecurityHeaders(response.getHeaders());
+
+                return ResponseEntity
+                    .status(response.getStatusCode())
+                    .headers(cleanedHeaders)
+                    .body(response.getBody());
 
             } catch (HttpStatusCodeException e) {
                 // Forward error responses from downstream services
                 log.warn("Downstream service {} returned error: {} - {}",
                     targetService, e.getStatusCode(), e.getResponseBodyAsString());
+
+                // Remove security headers from error responses too
+                HttpHeaders cleanedHeaders = removeSecurityHeaders(e.getResponseHeaders());
+
                 return ResponseEntity
                     .status(e.getStatusCode())
-                    .headers(e.getResponseHeaders())
+                    .headers(cleanedHeaders)
                     .body(e.getResponseBodyAsString());
 
             } catch (Exception e) {

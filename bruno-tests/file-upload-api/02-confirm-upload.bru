@@ -1,0 +1,51 @@
+meta {
+  name: Confirm Logo Upload
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/logos/{{testUploadId}}/confirm
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: en-US
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "fileId": "{{testUploadId}}",
+    "fileExtension": "{{testFileExtension}}",
+    "checksum": "test-checksum-{{$timestamp}}"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("should return 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should confirm upload successfully", function() {
+    // Confirmation endpoint returns 200 with no body
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should have CORS headers", function() {
+    const headers = res.getHeaders();
+    const corsHeader = headers['access-control-allow-origin'];
+    expect(corsHeader).to.exist;
+  });
+}

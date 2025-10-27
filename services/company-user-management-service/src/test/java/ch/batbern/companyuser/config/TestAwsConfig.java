@@ -14,6 +14,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityPr
 import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsResponse;
+import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
@@ -47,6 +48,18 @@ public class TestAwsConfig {
                 .thenReturn(CompletableFuture.completedFuture(successResponse));
 
         return mockClient;
+    }
+
+    /**
+     * Mock S3Client for tests
+     * Story 1.16.3: Generic File Upload Service
+     * Required by GenericLogoService and LogoCleanupService
+     */
+    @Bean
+    @Primary
+    public S3Client s3Client() {
+        // Return mock S3Client - individual tests will configure specific behavior
+        return Mockito.mock(S3Client.class);
     }
 
     @Bean
