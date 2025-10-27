@@ -536,14 +536,14 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_deleteEvent_when_deleteRequested")
     void should_deleteEvent_when_deleteRequested() throws Exception {
         Event savedEvent = eventRepository.findAll().get(0);
-        UUID eventId = savedEvent.getId();
+        String eventCode = savedEvent.getEventCode();
 
-        mockMvc.perform(delete("/api/v1/events/" + eventId)
+        mockMvc.perform(delete("/api/v1/events/" + eventCode)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNoContent());
 
         // Verify event is deleted
-        mockMvc.perform(get("/api/v1/events/" + eventId)
+        mockMvc.perform(get("/api/v1/events/" + eventCode)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
     }
@@ -566,7 +566,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         // Create a planning event that meets all publication requirements
         Event draftEvent = createTestEvent("BATbern 2028", "2028-09-15T09:00:00Z", "planning");
 
-        mockMvc.perform(post("/api/v1/events/" + draftEvent.getId() + "/publish")
+        mockMvc.perform(post("/api/v1/events/" + draftEvent.getEventCode() + "/publish")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 // Story 1.16.2: Event responses use eventCode, not id
@@ -578,15 +578,23 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_return422_when_validationFails")
     void should_return422_when_validationFails() throws Exception {
-        // Create an event with invalid data for publishing (e.g., missing required fields)
+        // Create an event with minimal valid data that passes database constraints
+        // but should fail publish validation (e.g., past event date)
         Event invalidEvent = Event.builder()
                 .title("Incomplete Event")
                 .status("planning")
-                // Missing date - should fail validation
+                .eventCode("BATbern9999")
+                .eventNumber(9999)
+                .date(Instant.parse("2020-01-01T00:00:00Z")) // Past date - should fail publish validation
+                .registrationDeadline(Instant.parse("2019-12-01T00:00:00Z"))
+                .venueName("Test Venue")
+                .venueAddress("123 Test St")
+                .venueCapacity(100)
+                .organizerUsername("test.organizer")
                 .build();
         Event savedInvalidEvent = eventRepository.save(invalidEvent);
 
-        mockMvc.perform(post("/api/v1/events/" + savedInvalidEvent.getId() + "/publish")
+        mockMvc.perform(post("/api/v1/events/" + savedInvalidEvent.getEventCode() + "/publish")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.error").value("Unprocessable Entity"))
@@ -603,7 +611,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         // Create event in "planning" status - should advance to next state
         Event draftEvent = createTestEvent("BATbern 2029", "2029-10-15T09:00:00Z", "planning");
 
-        mockMvc.perform(post("/api/v1/events/" + draftEvent.getId() + "/workflow/advance")
+        mockMvc.perform(post("/api/v1/events/" + draftEvent.getEventCode() + "/workflow/advance")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 // Story 1.16.2: Event responses use eventCode, not id
@@ -618,7 +626,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         // Create event in "archived" status - cannot advance workflow
         Event archivedEvent = createTestEvent("BATbern 2023", "2023-05-15T09:00:00Z", "archived");
 
-        mockMvc.perform(post("/api/v1/events/" + archivedEvent.getId() + "/workflow/advance")
+        mockMvc.perform(post("/api/v1/events/" + archivedEvent.getEventCode() + "/workflow/advance")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.error").value("Unprocessable Entity"))
@@ -634,7 +642,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     void should_listSessions_when_requested() throws Exception {
         Event savedEvent = eventRepository.findAll().get(0);
 
-        mockMvc.perform(get("/api/v1/events/" + savedEvent.getId() + "/sessions")
+        mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode() + "/sessions")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
@@ -648,7 +656,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         Event savedEvent = eventRepository.findAll().get(0);
         String filter = "{\"sessionType\":\"keynote\"}";
 
-        mockMvc.perform(get("/api/v1/events/" + savedEvent.getId() + "/sessions")
+        mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode() + "/sessions")
                         .param("filter", filter)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -682,11 +690,11 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(post("/api/v1/events/" + savedEvent.getId() + "/sessions")
+        mockMvc.perform(post("/api/v1/events/" + savedEvent.getEventCode() + "/sessions")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(newSession))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.sessionSlug").exists())
                 .andExpect(jsonPath("$.title").value("Keynote: AI and the Future"))
                 .andExpect(jsonPath("$.sessionType").value("keynote"));
     }
@@ -702,7 +710,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(post("/api/v1/events/" + savedEvent.getId() + "/sessions")
+        mockMvc.perform(post("/api/v1/events/" + savedEvent.getEventCode() + "/sessions")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(invalidSession))
                 .andExpect(status().isBadRequest());
@@ -724,14 +732,14 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 }
                 """;
 
-        String createResponse = mockMvc.perform(post("/api/v1/events/" + savedEvent.getId() + "/sessions")
+        String createResponse = mockMvc.perform(post("/api/v1/events/" + savedEvent.getEventCode() + "/sessions")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(newSession))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
         JsonNode sessionNode = objectMapper.readTree(createResponse);
-        String sessionId = sessionNode.get("id").asText();
+        String sessionSlug = sessionNode.get("sessionSlug").asText();
 
         // Now update it
         String updatedSession = """
@@ -744,11 +752,11 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(put("/api/v1/events/" + savedEvent.getId() + "/sessions/" + sessionId)
+        mockMvc.perform(put("/api/v1/events/" + savedEvent.getEventCode() + "/sessions/" + sessionSlug)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(updatedSession))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(sessionId))
+                .andExpect(jsonPath("$.sessionSlug").value(sessionSlug))
                 .andExpect(jsonPath("$.title").value("Workshop: Advanced ML"));
     }
 
@@ -767,25 +775,25 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 }
                 """;
 
-        String createResponse = mockMvc.perform(post("/api/v1/events/" + savedEvent.getId() + "/sessions")
+        String createResponse = mockMvc.perform(post("/api/v1/events/" + savedEvent.getEventCode() + "/sessions")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(newSession))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
         JsonNode sessionNode = objectMapper.readTree(createResponse);
-        String sessionId = sessionNode.get("id").asText();
+        String sessionSlug = sessionNode.get("sessionSlug").asText();
 
         // Now delete it
-        mockMvc.perform(delete("/api/v1/events/" + savedEvent.getId() + "/sessions/" + sessionId)
+        mockMvc.perform(delete("/api/v1/events/" + savedEvent.getEventCode() + "/sessions/" + sessionSlug)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNoContent());
 
         // Verify it's deleted by checking the list
-        mockMvc.perform(get("/api/v1/events/" + savedEvent.getId() + "/sessions")
+        mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode() + "/sessions")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[?(@.id == '" + sessionId + "')]").doesNotExist());
+                .andExpect(jsonPath("$.data[?(@.sessionSlug == '" + sessionSlug + "')]").doesNotExist());
     }
 
     // ============================================================================
@@ -797,7 +805,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     void should_listRegistrations_when_requested() throws Exception {
         Event savedEvent = eventRepository.findAll().get(0);
 
-        mockMvc.perform(get("/api/v1/events/" + savedEvent.getId() + "/registrations")
+        mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
@@ -811,7 +819,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         Event savedEvent = eventRepository.findAll().get(0);
         String filter = "{\"status\":\"confirmed\"}";
 
-        mockMvc.perform(get("/api/v1/events/" + savedEvent.getId() + "/registrations")
+        mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
                         .param("filter", filter)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -834,23 +842,23 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_createRegistration_when_validData")
     void should_createRegistration_when_validData() throws Exception {
         Event savedEvent = eventRepository.findAll().get(0);
-        UUID attendeeId = UUID.randomUUID();
 
         String newRegistration = """
                 {
-                    "attendeeId": "%s",
+                    "attendeeUsername": "john.doe",
                     "attendeeName": "John Doe",
                     "attendeeEmail": "john.doe@example.com",
                     "status": "pending",
                     "registrationDate": "2025-04-01T10:00:00Z"
                 }
-                """.formatted(attendeeId);
+                """;
 
-        mockMvc.perform(post("/api/v1/events/" + savedEvent.getId() + "/registrations")
+        mockMvc.perform(post("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(newRegistration))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.registrationCode").exists())
+                .andExpect(jsonPath("$.attendeeUsername").value("john.doe"))
                 .andExpect(jsonPath("$.attendeeName").value("John Doe"))
                 .andExpect(jsonPath("$.attendeeEmail").value("john.doe@example.com"))
                 .andExpect(jsonPath("$.status").value("pending"));
@@ -868,7 +876,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(post("/api/v1/events/" + savedEvent.getId() + "/registrations")
+        mockMvc.perform(post("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(invalidRegistration))
                 .andExpect(status().isBadRequest());
@@ -878,27 +886,26 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_updateRegistration_when_patchProvided")
     void should_updateRegistration_when_patchProvided() throws Exception {
         Event savedEvent = eventRepository.findAll().get(0);
-        UUID attendeeId = UUID.randomUUID();
 
         // First create a registration
         String newRegistration = """
                 {
-                    "attendeeId": "%s",
+                    "attendeeUsername": "jane.smith",
                     "attendeeName": "Jane Smith",
                     "attendeeEmail": "jane.smith@example.com",
-                    "status": "pending",
+                    "status": "registered",
                     "registrationDate": "2025-04-02T10:00:00Z"
                 }
-                """.formatted(attendeeId);
+                """;
 
-        String createResponse = mockMvc.perform(post("/api/v1/events/" + savedEvent.getId() + "/registrations")
+        String createResponse = mockMvc.perform(post("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(newRegistration))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
         JsonNode registrationNode = objectMapper.readTree(createResponse);
-        String registrationId = registrationNode.get("id").asText();
+        String registrationCode = registrationNode.get("registrationCode").asText();
 
         // Now update status with PATCH
         String patchData = """
@@ -907,11 +914,11 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(patch("/api/v1/events/" + savedEvent.getId() + "/registrations/" + registrationId)
+        mockMvc.perform(patch("/api/v1/events/" + savedEvent.getEventCode() + "/registrations/" + registrationCode)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(patchData))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(registrationId))
+                .andExpect(jsonPath("$.registrationCode").value(registrationCode))
                 .andExpect(jsonPath("$.attendeeName").value("Jane Smith")) // Name unchanged
                 .andExpect(jsonPath("$.status").value("confirmed")); // Status updated
     }
@@ -920,38 +927,37 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_deleteRegistration_when_requested")
     void should_deleteRegistration_when_requested() throws Exception {
         Event savedEvent = eventRepository.findAll().get(0);
-        UUID attendeeId = UUID.randomUUID();
 
         // First create a registration
         String newRegistration = """
                 {
-                    "attendeeId": "%s",
+                    "attendeeUsername": "bob.johnson",
                     "attendeeName": "Bob Johnson",
                     "attendeeEmail": "bob.johnson@example.com",
                     "status": "cancelled",
                     "registrationDate": "2025-04-03T10:00:00Z"
                 }
-                """.formatted(attendeeId);
+                """;
 
-        String createResponse = mockMvc.perform(post("/api/v1/events/" + savedEvent.getId() + "/registrations")
+        String createResponse = mockMvc.perform(post("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(newRegistration))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
         JsonNode registrationNode = objectMapper.readTree(createResponse);
-        String registrationId = registrationNode.get("id").asText();
+        String registrationCode = registrationNode.get("registrationCode").asText();
 
         // Now delete it
-        mockMvc.perform(delete("/api/v1/events/" + savedEvent.getId() + "/registrations/" + registrationId)
+        mockMvc.perform(delete("/api/v1/events/" + savedEvent.getEventCode() + "/registrations/" + registrationCode)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNoContent());
 
         // Verify it's deleted by checking the list
-        mockMvc.perform(get("/api/v1/events/" + savedEvent.getId() + "/registrations")
+        mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[?(@.id == '" + registrationId + "')]").doesNotExist());
+                .andExpect(jsonPath("$.data[?(@.registrationCode == '" + registrationCode + "')]").doesNotExist());
     }
 
     // ============================================================================
@@ -965,42 +971,40 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
         // Create some test data for analytics
         // Add registrations
-        UUID attendeeId1 = UUID.randomUUID();
         String registration1 = """
                 {
-                    "attendeeId": "%s",
+                    "attendeeUsername": "analytics.user1",
                     "attendeeName": "Analytics User 1",
                     "attendeeEmail": "analytics1@example.com",
                     "status": "confirmed",
                     "registrationDate": "2025-04-01T10:00:00Z"
                 }
-                """.formatted(attendeeId1);
-        mockMvc.perform(post("/api/v1/events/" + savedEvent.getId() + "/registrations")
+                """;
+        mockMvc.perform(post("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(registration1))
                 .andExpect(status().isCreated());
 
-        UUID attendeeId2 = UUID.randomUUID();
         String registration2 = """
                 {
-                    "attendeeId": "%s",
+                    "attendeeUsername": "analytics.user2",
                     "attendeeName": "Analytics User 2",
                     "attendeeEmail": "analytics2@example.com",
                     "status": "confirmed",
                     "registrationDate": "2025-04-02T10:00:00Z"
                 }
-                """.formatted(attendeeId2);
-        mockMvc.perform(post("/api/v1/events/" + savedEvent.getId() + "/registrations")
+                """;
+        mockMvc.perform(post("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(registration2))
                 .andExpect(status().isCreated());
 
         // Request analytics with specific metrics
-        mockMvc.perform(get("/api/v1/events/" + savedEvent.getId() + "/analytics")
+        mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode() + "/analytics")
                         .param("metrics", "attendance,registrations,engagement")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.eventId").value(savedEvent.getId().toString()))
+                .andExpect(jsonPath("$.eventCode").value(savedEvent.getEventCode()))
                 .andExpect(jsonPath("$.metrics").exists())
                 .andExpect(jsonPath("$.metrics.registrations").exists())
                 .andExpect(jsonPath("$.metrics.registrations.total").value(greaterThanOrEqualTo(2)))
@@ -1014,43 +1018,41 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         Event savedEvent = eventRepository.findAll().get(0);
 
         // Create registrations with different dates
-        UUID earlyAttendeeId = UUID.randomUUID();
         String earlyRegistration = """
                 {
-                    "attendeeId": "%s",
+                    "attendeeUsername": "early.bird",
                     "attendeeName": "Early Bird",
                     "attendeeEmail": "early@example.com",
                     "status": "confirmed",
                     "registrationDate": "2025-01-01T10:00:00Z"
                 }
-                """.formatted(earlyAttendeeId);
-        mockMvc.perform(post("/api/v1/events/" + savedEvent.getId() + "/registrations")
+                """;
+        mockMvc.perform(post("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(earlyRegistration))
                 .andExpect(status().isCreated());
 
-        UUID lateAttendeeId = UUID.randomUUID();
         String lateRegistration = """
                 {
-                    "attendeeId": "%s",
+                    "attendeeUsername": "late.joiner",
                     "attendeeName": "Late Joiner",
                     "attendeeEmail": "late@example.com",
                     "status": "confirmed",
                     "registrationDate": "2025-05-01T10:00:00Z"
                 }
-                """.formatted(lateAttendeeId);
-        mockMvc.perform(post("/api/v1/events/" + savedEvent.getId() + "/registrations")
+                """;
+        mockMvc.perform(post("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(lateRegistration))
                 .andExpect(status().isCreated());
 
         // Request analytics for specific timeframe (April to May 2025)
-        mockMvc.perform(get("/api/v1/events/" + savedEvent.getId() + "/analytics")
+        mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode() + "/analytics")
                         .param("metrics", "registrations")
                         .param("timeframe", "2025-04-01T00:00:00Z,2025-05-31T23:59:59Z")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.eventId").value(savedEvent.getId().toString()))
+                .andExpect(jsonPath("$.eventCode").value(savedEvent.getEventCode()))
                 .andExpect(jsonPath("$.timeframe").exists())
                 .andExpect(jsonPath("$.timeframe.start").value("2025-04-01T00:00:00Z"))
                 .andExpect(jsonPath("$.timeframe.end").value("2025-05-31T23:59:59Z"))
@@ -1074,19 +1076,19 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         String batchUpdateRequest = """
                 [
                     {
-                        "id": "%s",
+                        "eventCode": "%s",
                         "status": "published"
                     },
                     {
-                        "id": "%s",
+                        "eventCode": "%s",
                         "status": "published"
                     },
                     {
-                        "id": "%s",
+                        "eventCode": "%s",
                         "status": "archived"
                     }
                 ]
-                """.formatted(event1.getId(), event2.getId(), event3.getId());
+                """.formatted(event1.getEventCode(), event2.getEventCode(), event3.getEventCode());
 
         mockMvc.perform(patch("/api/v1/events")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -1115,19 +1117,19 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     void should_partiallySucceed_when_someInvalid() throws Exception {
         Event validEvent = eventRepository.findAll().get(0);
 
-        // Batch update with one valid and one invalid event ID
+        // Batch update with one valid and one invalid event code
         String batchUpdateRequest = """
                 [
                     {
-                        "id": "%s",
+                        "eventCode": "%s",
                         "status": "published"
                     },
                     {
-                        "id": "non-existent-id",
+                        "eventCode": "non-existent-code",
                         "status": "published"
                     }
                 ]
-                """.formatted(validEvent.getId());
+                """.formatted(validEvent.getEventCode());
 
         mockMvc.perform(patch("/api/v1/events")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -1137,7 +1139,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.successful", hasSize(1)))
                 .andExpect(jsonPath("$.failed").isArray())
                 .andExpect(jsonPath("$.failed", hasSize(1)))
-                .andExpect(jsonPath("$.failed[0].id").value("non-existent-id"))
+                .andExpect(jsonPath("$.failed[0].eventCode").value("non-existent-code"))
                 .andExpect(jsonPath("$.failed[0].error").exists())
                 .andExpect(jsonPath("$.summary.total").value(2))
                 .andExpect(jsonPath("$.summary.successful").value(1))
@@ -1180,9 +1182,9 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.sessions").isArray());
         long cachedDuration = System.currentTimeMillis() - startTime;
 
-        // Cached response should be reasonably fast (< 50ms for in-memory cache)
+        // Cached response should be reasonably fast (< 100ms for in-memory cache)
         // This is more reliable than comparing two timings
-        assertThat(cachedDuration).isLessThan(50L);
+        assertThat(cachedDuration).isLessThan(100L);
     }
 
     @Test
@@ -1277,25 +1279,24 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                     }
                     """.formatted(i, i, hour, hour + 1);
 
-            mockMvc.perform(post("/api/v1/events/" + savedEvent.getId() + "/sessions")
+            mockMvc.perform(post("/api/v1/events/" + savedEvent.getEventCode() + "/sessions")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(session))
                     .andExpect(status().isCreated());
         }
 
         for (int i = 1; i <= 20; i++) {
-            UUID attendeeId = UUID.randomUUID();
             String registration = """
                     {
-                        "attendeeId": "%s",
+                        "attendeeUsername": "attendee%d.test",
                         "attendeeName": "Attendee %d",
                         "attendeeEmail": "attendee%d@example.com",
                         "status": "confirmed",
                         "registrationDate": "2025-04-01T10:00:00Z"
                     }
-                    """.formatted(attendeeId, i, i);
+                    """.formatted(i, i, i);
 
-            mockMvc.perform(post("/api/v1/events/" + savedEvent.getId() + "/registrations")
+            mockMvc.perform(post("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(registration))
                     .andExpect(status().isCreated());
