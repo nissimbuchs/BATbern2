@@ -9,7 +9,7 @@
     "tanstack-query": "5.x",
     "zustand": "5.x",
     "vite": "7.x",
-    "vitest": "3.x",
+    "vitest": "4.x",
     "react-testing-library": "16.x",
     "playwright": "1.x",
     "eslint": "9.x",
