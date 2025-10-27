@@ -1,0 +1,42 @@
+meta {
+  name: Trigger Manual Cleanup
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/logos/cleanup/trigger
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: en-US
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 202
+}
+
+tests {
+  test("should return 202 Accepted", function() {
+    expect(res.getStatus()).to.equal(202);
+  });
+
+  test("should trigger cleanup job successfully", function() {
+    // 202 indicates job was accepted
+    expect(res.getStatus()).to.equal(202);
+  });
+
+  test("should have CORS headers", function() {
+    const headers = res.getHeaders();
+    const corsHeader = headers['access-control-allow-origin'];
+    expect(corsHeader).to.exist;
+  });
+}

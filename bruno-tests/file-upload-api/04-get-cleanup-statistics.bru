@@ -1,0 +1,58 @@
+meta {
+  name: Get Cleanup Statistics
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/logos/cleanup/statistics
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: en-US
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.pendingCount: isDefined
+  res.body.confirmedCount: isDefined
+  res.body.associatedCount: isDefined
+}
+
+tests {
+  test("should return 200 OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return cleanup statistics", function() {
+    const body = res.getBody();
+    expect(body.pendingCount).to.exist;
+    expect(body.confirmedCount).to.exist;
+    expect(body.associatedCount).to.exist;
+    expect(body.expiredPendingCount).to.exist;
+    expect(body.expiredConfirmedCount).to.exist;
+  });
+
+  test("should return numeric counts", function() {
+    const body = res.getBody();
+    expect(body.pendingCount).to.be.a('number');
+    expect(body.confirmedCount).to.be.a('number');
+    expect(body.associatedCount).to.be.a('number');
+    expect(body.expiredPendingCount).to.be.a('number');
+    expect(body.expiredConfirmedCount).to.be.a('number');
+  });
+
+  test("should have CORS headers", function() {
+    const headers = res.getHeaders();
+    const corsHeader = headers['access-control-allow-origin'];
+    expect(corsHeader).to.exist;
+  });
+}
