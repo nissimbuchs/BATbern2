@@ -41,6 +41,7 @@ public class CompanyService {
     private final DomainEventPublisher eventPublisher;
     private final CompanySearchService searchService;
     private final SecurityContextHelper securityContextHelper;
+    private final GenericLogoService genericLogoService;
 
     /**
      * Creates a new company with validation
@@ -78,6 +79,30 @@ public class CompanyService {
                 .build();
 
         Company savedCompany = companyRepository.save(company);
+
+        // Associate logo if provided (Story 1.16.3: Generic File Upload Service)
+        if (request.getLogoUploadId() != null) {
+            try {
+                String finalS3Key = generateFinalS3Key(savedCompany.getName(), request.getLogoUploadId());
+                String logoUrl = genericLogoService.associateLogoWithEntity(
+                        request.getLogoUploadId(),
+                        "COMPANY",
+                        savedCompany.getName(),
+                        finalS3Key
+                );
+
+                savedCompany.setLogoUrl(logoUrl);
+                savedCompany.setLogoS3Key(finalS3Key);
+                savedCompany.setLogoFileId(request.getLogoUploadId());
+                companyRepository.save(savedCompany);
+
+                log.info("Logo associated with company: {}, logoUrl: {}", savedCompany.getName(), logoUrl);
+            } catch (Exception e) {
+                log.error("Failed to associate logo with company: {}", savedCompany.getName(), e);
+                // Don't fail company creation if logo association fails
+                // Logo can be added later via update
+            }
+        }
 
         // Invalidate search cache (AC8)
         searchService.invalidateCache();
@@ -286,5 +311,15 @@ public class CompanyService {
                 .createdBy(company.getCreatedBy())
                 .logo(logo)
                 .build();
+    }
+
+    /**
+     * Generate final S3 key for company logo
+     * Pattern: logos/{year}/companies/{company-name}/logo-{uploadId}.{ext}
+     * Story 1.16.3: Generic File Upload Service
+     */
+    private String generateFinalS3Key(String companyName, String uploadId) {
+        int year = java.time.LocalDate.now().getYear();
+        return String.format("logos/%d/companies/%s/logo-%s.png", year, companyName, uploadId);
     }
 }

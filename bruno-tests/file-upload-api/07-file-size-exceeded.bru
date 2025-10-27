@@ -1,0 +1,48 @@
+meta {
+  name: Request Presigned URL - File Size Exceeded
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/logos/presigned-url
+  body: json
+  auth: none
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: en-US
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "fileName": "huge-logo.png",
+    "fileSize": 10485760,
+    "mimeType": "image/png"
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("should return 400 Bad Request", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("should return error message about file size", function() {
+    const body = res.getBody();
+    expect(body.message).to.exist;
+    expect(body.message).to.include('size');
+  });
+
+  test("should have CORS headers", function() {
+    const headers = res.getHeaders();
+    const corsHeader = headers['access-control-allow-origin'];
+    expect(corsHeader).to.exist;
+  });
+}

@@ -79,6 +79,7 @@ skipped=0
 collections=(
     "events-api"
     "companies-api"
+    "file-upload-api"
     "users-api"
 )
 
