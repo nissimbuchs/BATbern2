@@ -44,7 +44,7 @@
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^24.9.1",
     "@types/pg": "^8.15.5",
-    "aws-cdk": "^2.110.0",
+    "aws-cdk": "^2.1031.0",
     "aws-sdk-client-mock": "^4.1.0",
     "jest": "^30.0.0",
     "testcontainers": "^11.7.2",
