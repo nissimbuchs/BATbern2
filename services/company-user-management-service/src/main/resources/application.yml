@@ -61,9 +61,8 @@ aws:
     user-pool-id: ${COGNITO_USER_POOL_ID:}
     region: ${AWS_REGION:eu-central-1}
   eventbridge:
-    bus:
-      name: ${EVENT_BUS_NAME:batbern-staging}
-    event-source: ch.batbern.companyuser
+    bus-name: ${EVENT_BUS_NAME:batbern-staging}
+    source: ch.batbern.companyuser
 
 # Server Configuration
 server:
