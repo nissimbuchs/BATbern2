@@ -44,7 +44,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   allowedTypes = ['image/png', 'image/jpeg', 'image/svg+xml'],
 }) => {
   const [fileUrl, setFileUrl] = useState<string | undefined>(currentFileUrl);
-  const [uploadId, setUploadId] = useState<string | undefined>();
+  const [_uploadId, setUploadId] = useState<string | undefined>();
 
   const { uploadFile, isUploading, uploadProgress, error, reset } = useFileUpload({
     maxFileSize,

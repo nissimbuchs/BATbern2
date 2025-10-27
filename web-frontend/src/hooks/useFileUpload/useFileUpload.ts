@@ -14,7 +14,6 @@
 
 import { useState, useCallback } from 'react';
 import apiClient from '@/services/api/apiClient';
-import axios from 'axios';
 
 interface UseFileUploadOptions {
   maxFileSize?: number; // in bytes, default 5MB
