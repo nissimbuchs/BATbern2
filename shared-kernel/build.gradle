@@ -1,7 +1,7 @@
 buildscript {
     dependencies {
         // Flyway PostgreSQL database plugin required for Flyway 11.x
-        classpath 'org.flywaydb:flyway-database-postgresql:11.14.1'
+        classpath 'org.flywaydb:flyway-database-postgresql:11.15.0'
     }
 }
 
