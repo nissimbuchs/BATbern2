@@ -7,7 +7,11 @@ meta {
 post {
   url: {{baseUrl}}/logos/{{testUploadId}}/confirm
   body: json
-  auth: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
 }
 
 headers {

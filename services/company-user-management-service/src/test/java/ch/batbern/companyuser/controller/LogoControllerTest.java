@@ -56,6 +56,7 @@ class LogoControllerTest {
     // ============ POST /presigned-url Tests ============
 
     @Test
+    @WithMockUser
     @DisplayName("AC1: Should generate presigned URL for valid request")
     void shouldGeneratePresignedUrl_whenValidRequest() throws Exception {
         // Arrange
@@ -93,6 +94,7 @@ class LogoControllerTest {
     }
 
     @Test
+    @WithMockUser
     @DisplayName("Should return 400 when file size exceeds limit")
     void shouldReturn400_whenFileSizeExceedsLimit() throws Exception {
         // Arrange
@@ -116,6 +118,7 @@ class LogoControllerTest {
     }
 
     @Test
+    @WithMockUser
     @DisplayName("Should return 400 when file type is invalid")
     void shouldReturn400_whenFileTypeInvalid() throws Exception {
         // Arrange
@@ -139,6 +142,7 @@ class LogoControllerTest {
     }
 
     @Test
+    @WithMockUser
     @DisplayName("Should return 400 when request body is invalid")
     void shouldReturn400_whenRequestBodyInvalid() throws Exception {
         // Arrange - Missing required fields
@@ -157,6 +161,7 @@ class LogoControllerTest {
     // ============ POST /{uploadId}/confirm Tests ============
 
     @Test
+    @WithMockUser
     @DisplayName("AC2: Should confirm upload for valid upload ID")
     void shouldConfirmUpload_whenValidUploadId() throws Exception {
         // Arrange
@@ -180,6 +185,7 @@ class LogoControllerTest {
     }
 
     @Test
+    @WithMockUser
     @DisplayName("Should return 404 when upload ID not found")
     void shouldReturn404_whenUploadIdNotFound() throws Exception {
         // Arrange
@@ -204,6 +210,7 @@ class LogoControllerTest {
     }
 
     @Test
+    @WithMockUser
     @DisplayName("Should return 400 when confirm request is invalid")
     void shouldReturn400_whenConfirmRequestInvalid() throws Exception {
         // Arrange - Missing required fields
