@@ -791,8 +791,8 @@ describe('CompanyForm Component - AC5 Logo Upload', () => {
       render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={vi.fn()} />);
 
       // LogoUpload component should be rendered
-      expect(screen.getByTestId('logo-dropzone')).toBeInTheDocument();
-      expect(screen.getByText(/drag and drop a logo here/i)).toBeInTheDocument();
+      expect(screen.getByTestId('file-dropzone')).toBeInTheDocument();
+      expect(screen.getByText(/drag and drop a file here/i)).toBeInTheDocument();
     });
 
     it('should_passCompanyId_when_editMode', () => {
@@ -808,7 +808,7 @@ describe('CompanyForm Component - AC5 Logo Upload', () => {
       );
 
       // LogoUpload should be rendered with company ID
-      expect(screen.getByTestId('logo-dropzone')).toBeInTheDocument();
+      expect(screen.getByTestId('file-dropzone')).toBeInTheDocument();
 
       // In edit mode, if logo exists, it should show preview instead of dropzone
       // LogoUpload component shows preview if currentLogoUrl is provided
@@ -845,8 +845,8 @@ describe('CompanyForm Component - AC5 Logo Upload', () => {
       render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={vi.fn()} />);
 
       // Should have a logo upload section with dropzone
-      expect(screen.getByTestId('logo-dropzone')).toBeInTheDocument();
-      expect(screen.getByText(/drag and drop a logo here/i)).toBeInTheDocument();
+      expect(screen.getByTestId('file-dropzone')).toBeInTheDocument();
+      expect(screen.getByText(/drag and drop a file here/i)).toBeInTheDocument();
     });
   });
 

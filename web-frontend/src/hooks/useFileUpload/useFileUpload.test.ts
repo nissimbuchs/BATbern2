@@ -288,7 +288,7 @@ describe('useFileUpload Hook', () => {
 
     // Assert
     await waitFor(() => {
-      expect(result.current.error).toContain('Failed to upload file');
+      expect(result.current.error).toContain('Backend error');
       expect(result.current.isUploading).toBe(false);
       expect(onUploadError).toHaveBeenCalledWith({
         type: 'UPLOAD_FAILED',
@@ -400,7 +400,7 @@ describe('useFileUpload Hook', () => {
 
     // Assert
     await waitFor(() => {
-      expect(result.current.error).toContain('Failed to upload file');
+      expect(result.current.error).toContain('Confirm failed');
       expect(result.current.isUploading).toBe(false);
       expect(onUploadError).toHaveBeenCalledWith({
         type: 'UPLOAD_FAILED',
