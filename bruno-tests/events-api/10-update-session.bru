@@ -5,7 +5,7 @@ meta {
 }
 
 put {
-  url: {{baseUrl}}/events/{{createdEventCode}}/sessions/{{createdSessionId}}
+  url: {{baseUrl}}/events/{{createdEventCode}}/sessions/{{createdSessionSlug}}
   body: json
   auth: bearer
 }
@@ -36,10 +36,15 @@ tests {
     expect(res.getStatus()).to.equal(200);
   });
 
-  test("should update session", function() {
+  test("should update session with sessionSlug (Story 1.16.2)", function() {
     const session = res.getBody();
-    expect(session.id).to.equal(bru.getVar("createdSessionId"));
+    expect(session.sessionSlug).to.equal(bru.getVar("createdSessionSlug"));
     expect(session.title).to.equal('Opening Keynote - Updated');
     expect(session.capacity).to.equal(150);
+  });
+
+  test("should verify no UUID id field (Story 1.16.2)", function() {
+    const session = res.getBody();
+    expect(session.id).to.be.undefined;
   });
 }

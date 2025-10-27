@@ -6,14 +6,28 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
  * Repository for Registration entities
  * Story 1.15a.1: Events API Consolidation - AC11-12
+ * Story 1.16.2: Uses registrationCode and attendeeUsername as public identifiers
  */
 @Repository
 public interface RegistrationRepository extends JpaRepository<Registration, UUID>, JpaSpecificationExecutor<Registration> {
+
+    /**
+     * Find a registration by its code (public identifier)
+     * Story 1.16.2: Public API uses registrationCode instead of UUID
+     */
+    Optional<Registration> findByRegistrationCode(String registrationCode);
+
+    /**
+     * Check if a registration code already exists
+     * Story 1.16.2: For collision detection during code generation
+     */
+    boolean existsByRegistrationCode(String registrationCode);
 
     /**
      * Find all registrations for a specific event

@@ -1,5 +1,6 @@
 package ch.batbern.events.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,6 +13,7 @@ import java.util.UUID;
 /**
  * Session entity representing event sessions (keynotes, workshops, talks, etc.)
  * Story 1.15a.1: Events API Consolidation - AC9-10
+ * Story 1.16.2: Uses sessionSlug as public identifier instead of UUID
  */
 @Entity
 @Table(name = "sessions")
@@ -24,10 +26,18 @@ public class Session {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(columnDefinition = "UUID")
+    @JsonIgnore // Story 1.16.2: Hide internal UUID from API responses
     private UUID id;
 
+    @Column(name = "session_slug", nullable = false, unique = true, length = 200)
+    private String sessionSlug; // Public identifier: URL-friendly slug from title
+
     @Column(nullable = false, columnDefinition = "UUID")
+    @JsonIgnore // Story 1.16.2: Hide internal UUID from API responses
     private UUID eventId;
+
+    @Transient
+    private String eventCode; // Not persisted - populated from path parameter for API responses
 
     @Column(nullable = false)
     private String title;

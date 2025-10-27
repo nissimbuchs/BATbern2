@@ -619,7 +619,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /events/{eventCode}/sessions/{sessionId}:
+  /events/{eventCode}/sessions/{sessionSlug}:
     put:
       tags:
         - Sessions
@@ -628,7 +628,7 @@ paths:
         Update an existing session.
 
         **Acceptance Criteria**: AC10
-        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
+        **Story**: 1.16.2 - Uses eventCode and sessionSlug (meaningful IDs) instead of UUIDs
 
       operationId: updateSession
       parameters:
@@ -640,11 +640,14 @@ paths:
             type: string
             pattern: '^BATbern[0-9]+$'
             example: BATbern142
-        - name: sessionId
+        - name: sessionSlug
           in: path
+          description: URL-friendly slug generated from session title
           required: true
           schema:
             type: string
+            pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+            example: keynote-opening-session
       requestBody:
         required: true
         content:
@@ -673,7 +676,7 @@ paths:
         Delete a session from the event.
 
         **Acceptance Criteria**: AC10
-        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
+        **Story**: 1.16.2 - Uses eventCode and sessionSlug (meaningful IDs) instead of UUIDs
 
       operationId: deleteSession
       parameters:
@@ -685,11 +688,14 @@ paths:
             type: string
             pattern: '^BATbern[0-9]+$'
             example: BATbern142
-        - name: sessionId
+        - name: sessionSlug
           in: path
+          description: URL-friendly slug generated from session title
           required: true
           schema:
             type: string
+            pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+            example: keynote-opening-session
       responses:
         '204':
           description: Session deleted successfully
@@ -797,7 +803,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /events/{eventCode}/registrations/{registrationId}:
+  /events/{eventCode}/registrations/{registrationCode}:
     patch:
       tags:
         - Registrations
@@ -806,7 +812,7 @@ paths:
         Partially update a registration.
 
         **Acceptance Criteria**: AC12
-        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
+        **Story**: 1.16.2 - Uses eventCode and registrationCode (meaningful IDs) instead of UUIDs
 
       operationId: updateRegistration
       parameters:
@@ -818,11 +824,14 @@ paths:
             type: string
             pattern: '^BATbern[0-9]+$'
             example: BATbern142
-        - name: registrationId
+        - name: registrationCode
           in: path
+          description: Unique registration code (eventCode-username format)
           required: true
           schema:
             type: string
+            pattern: '^BATbern[0-9]+-[a-z]+\.[a-z]+(-[0-9]+)?$'
+            example: BATbern142-john.doe
       requestBody:
         required: true
         content:
@@ -851,7 +860,7 @@ paths:
         Delete a registration from the event.
 
         **Acceptance Criteria**: AC12
-        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
+        **Story**: 1.16.2 - Uses eventCode and registrationCode (meaningful IDs) instead of UUIDs
 
       operationId: deleteRegistration
       parameters:
@@ -863,11 +872,14 @@ paths:
             type: string
             pattern: '^BATbern[0-9]+$'
             example: BATbern142
-        - name: registrationId
+        - name: registrationCode
           in: path
+          description: Unique registration code (eventCode-username format)
           required: true
           schema:
             type: string
+            pattern: '^BATbern[0-9]+-[a-z]+\.[a-z]+(-[0-9]+)?$'
+            example: BATbern142-john.doe
       responses:
         '204':
           description: Registration deleted successfully
@@ -1062,20 +1074,27 @@ components:
 
     Session:
       type: object
+      description: |
+        Story 1.16.2: Uses sessionSlug and eventCode as meaningful IDs
       required:
-        - id
-        - eventId
+        - sessionSlug
+        - eventCode
         - title
         - sessionType
         - startTime
         - endTime
       properties:
-        id:
+        sessionSlug:
           type: string
-          format: uuid
-        eventId:
+          description: URL-friendly slug generated from session title
+          pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+          example: keynote-opening-session
+          maxLength: 200
+        eventCode:
           type: string
-          format: uuid
+          description: Event code this session belongs to
+          pattern: '^BATbern[0-9]+$'
+          example: BATbern142
         title:
           type: string
           maxLength: 255
@@ -1112,23 +1131,32 @@ components:
 
     Registration:
       type: object
+      description: |
+        Story 1.16.2: Uses registrationCode and attendeeUsername as meaningful IDs
       required:
-        - id
-        - eventId
-        - attendeeId
+        - registrationCode
+        - eventCode
+        - attendeeUsername
         - attendeeEmail
         - attendeeName
         - status
       properties:
-        id:
+        registrationCode:
           type: string
-          format: uuid
-        eventId:
+          description: Unique registration code (eventCode-username format)
+          pattern: '^BATbern[0-9]+-[a-z]+\.[a-z]+(-[0-9]+)?$'
+          example: BATbern142-john.doe
+        eventCode:
           type: string
-          format: uuid
-        attendeeId:
+          description: Event code this registration belongs to
+          pattern: '^BATbern[0-9]+$'
+          example: BATbern142
+        attendeeUsername:
           type: string
-          format: uuid
+          description: Attendee username in firstname.lastname format
+          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          example: john.doe
+          maxLength: 100
         attendeeEmail:
           type: string
           format: email
@@ -1351,14 +1379,19 @@ components:
 
     CreateRegistrationRequest:
       type: object
+      description: |
+        Story 1.16.2: Uses attendeeUsername instead of UUID
       required:
-        - attendeeId
+        - attendeeUsername
         - attendeeEmail
         - attendeeName
       properties:
-        attendeeId:
+        attendeeUsername:
           type: string
-          format: uuid
+          description: Attendee username in firstname.lastname format
+          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          example: john.doe
+          maxLength: 100
         attendeeEmail:
           type: string
           format: email
