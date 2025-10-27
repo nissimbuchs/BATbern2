@@ -7,6 +7,9 @@ import ch.batbern.events.dto.CreateEventRequest;
 import ch.batbern.events.dto.EventResponse;
 import ch.batbern.events.dto.PatchEventRequest;
 import ch.batbern.events.dto.UpdateEventRequest;
+import ch.batbern.events.event.EventCreatedEvent;
+import ch.batbern.events.event.EventPublishedEvent;
+import ch.batbern.events.event.EventUpdatedEvent;
 import ch.batbern.events.exception.BusinessValidationException;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.exception.WorkflowException;
@@ -54,6 +57,8 @@ public class EventController {
     private final EventSearchService eventSearchService;
     private final EventRepository eventRepository;
     private final ch.batbern.events.service.EventAnalyticsService eventAnalyticsService;
+    private final ch.batbern.shared.events.DomainEventPublisher eventPublisher;
+    private final ch.batbern.events.security.SecurityContextHelper securityContextHelper;
 
     /**
      * List/Search Events (AC1)
@@ -281,6 +286,31 @@ public class EventController {
         // Save event
         Event savedEvent = eventRepository.save(event);
 
+        // Publish domain event (Story 2.2: Architecture Compliance)
+        try {
+            String userId = securityContextHelper.getCurrentUserId();
+            EventCreatedEvent domainEvent = new EventCreatedEvent(
+                    savedEvent.getId(),           // Internal UUID
+                    savedEvent.getEventCode(),    // Public business identifier
+                    savedEvent.getTitle(),
+                    savedEvent.getEventNumber(),
+                    savedEvent.getDate(),
+                    savedEvent.getRegistrationDeadline(),
+                    savedEvent.getVenueName(),
+                    savedEvent.getVenueAddress(),
+                    savedEvent.getVenueCapacity(),
+                    savedEvent.getStatus(),
+                    savedEvent.getOrganizerUsername(),
+                    savedEvent.getDescription(),
+                    userId
+            );
+            eventPublisher.publish(domainEvent);
+            log.info("Published EventCreatedEvent for event: {}", savedEvent.getEventCode());
+        } catch (Exception e) {
+            log.warn("Failed to publish EventCreatedEvent for event {}: {}", savedEvent.getEventCode(), e.getMessage());
+            // Continue - event creation succeeded, publishing failure is non-critical
+        }
+
         // Build response
         Map<String, Object> response = buildBasicEventResponse(savedEvent);
 
@@ -341,6 +371,32 @@ public class EventController {
         // Save updated event
         Event updatedEvent = eventRepository.save(event);
 
+        // Publish domain event (Story 2.2: Architecture Compliance)
+        try {
+            String userId = securityContextHelper.getCurrentUserId();
+            EventUpdatedEvent domainEvent = new EventUpdatedEvent(
+                    updatedEvent.getId(),           // Internal UUID
+                    updatedEvent.getEventCode(),    // Public business identifier
+                    updatedEvent.getTitle(),
+                    updatedEvent.getEventNumber(),
+                    updatedEvent.getDate(),
+                    updatedEvent.getRegistrationDeadline(),
+                    updatedEvent.getVenueName(),
+                    updatedEvent.getVenueAddress(),
+                    updatedEvent.getVenueCapacity(),
+                    updatedEvent.getStatus(),
+                    updatedEvent.getOrganizerUsername(),
+                    updatedEvent.getDescription(),
+                    updatedEvent.getCurrentAttendeeCount(),
+                    userId
+            );
+            eventPublisher.publish(domainEvent);
+            log.info("Published EventUpdatedEvent for event: {}", updatedEvent.getEventCode());
+        } catch (Exception e) {
+            log.warn("Failed to publish EventUpdatedEvent for event {}: {}", updatedEvent.getEventCode(), e.getMessage());
+            // Continue - event update succeeded, publishing failure is non-critical
+        }
+
         // Build response
         Map<String, Object> response = buildBasicEventResponse(updatedEvent);
 
@@ -375,6 +431,32 @@ public class EventController {
 
         // Save patched event
         Event patchedEvent = eventRepository.save(event);
+
+        // Publish domain event (Story 2.2: Architecture Compliance)
+        try {
+            String userId = securityContextHelper.getCurrentUserId();
+            EventUpdatedEvent domainEvent = new EventUpdatedEvent(
+                    patchedEvent.getId(),           // Internal UUID
+                    patchedEvent.getEventCode(),    // Public business identifier
+                    patchedEvent.getTitle(),
+                    patchedEvent.getEventNumber(),
+                    patchedEvent.getDate(),
+                    patchedEvent.getRegistrationDeadline(),
+                    patchedEvent.getVenueName(),
+                    patchedEvent.getVenueAddress(),
+                    patchedEvent.getVenueCapacity(),
+                    patchedEvent.getStatus(),
+                    patchedEvent.getOrganizerUsername(),
+                    patchedEvent.getDescription(),
+                    patchedEvent.getCurrentAttendeeCount(),
+                    userId
+            );
+            eventPublisher.publish(domainEvent);
+            log.info("Published EventUpdatedEvent (patch) for event: {}", patchedEvent.getEventCode());
+        } catch (Exception e) {
+            log.warn("Failed to publish EventUpdatedEvent (patch) for event {}: {}", patchedEvent.getEventCode(), e.getMessage());
+            // Continue - event patch succeeded, publishing failure is non-critical
+        }
 
         // Build response
         Map<String, Object> response = buildBasicEventResponse(patchedEvent);
@@ -519,11 +601,35 @@ public class EventController {
         // Validate event can be published
         validateForPublishing(event);
 
+        // Store previous status for domain event
+        String previousStatus = event.getStatus();
+
         // Change status to published
         event.setStatus("published");
+        event.setPublishedAt(Instant.now());
 
         // Save updated event
         Event publishedEvent = eventRepository.save(event);
+
+        // Publish domain event (Story 2.2: Architecture Compliance)
+        try {
+            String userId = securityContextHelper.getCurrentUserId();
+            EventPublishedEvent domainEvent = new EventPublishedEvent(
+                    publishedEvent.getId(),           // Internal UUID
+                    publishedEvent.getEventCode(),    // Public business identifier
+                    publishedEvent.getTitle(),
+                    publishedEvent.getEventNumber(),
+                    publishedEvent.getDate(),
+                    publishedEvent.getPublishedAt(),
+                    previousStatus,
+                    userId
+            );
+            eventPublisher.publish(domainEvent);
+            log.info("Published EventPublishedEvent for event: {}", publishedEvent.getEventCode());
+        } catch (Exception e) {
+            log.warn("Failed to publish EventPublishedEvent for event {}: {}", publishedEvent.getEventCode(), e.getMessage());
+            // Continue - event publishing succeeded, domain event publishing failure is non-critical
+        }
 
         // Build response
         Map<String, Object> response = buildBasicEventResponse(publishedEvent);

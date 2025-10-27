@@ -41,7 +41,7 @@ public class TestAwsConfig {
         return mockClient;
     }
 
-    @Bean
+    @Bean("eventBridgeObjectMapper")
     @Primary
     public ObjectMapper eventBridgeObjectMapper() {
         ObjectMapper mapper = new ObjectMapper();

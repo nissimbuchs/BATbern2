@@ -205,6 +205,39 @@ As an **organizer**, I want to access and manage events through consolidated RES
 
 ---
 
+### Architecture Compliance Requirements
+
+**OpenAPI Code Generation (Mandatory):**
+- [ ] OpenAPI spec imports shared-kernel types (NO local ErrorResponse/PaginationMetadata definitions)
+- [ ] Controllers implement generated API interfaces from openApiGenerate task
+- [ ] Use generated DTOs for all request/response models
+- [ ] Build fails if implementation doesn't match OpenAPI spec
+
+**Shared-Kernel Integration (Mandatory):**
+- [ ] Exceptions extend shared-kernel hierarchy (EventNotFoundException extends NotFoundException)
+- [ ] GlobalExceptionHandler uses ch.batbern.shared.dto.ErrorResponse
+- [ ] Domain events extend DomainEvent\<UUID\> with full metadata (eventId, correlationId, causationId, userId)
+- [ ] Inject DomainEventPublisher from shared-kernel (NO custom publisher classes)
+- [ ] Use FilterParser, SortParser, IncludeParser, FieldSelector, PaginationUtils from shared-kernel
+
+**Database-Centric Architecture (per ADR-001):**
+- [ ] PostgreSQL is single source of truth for all event data
+- [ ] NO AWS SDK calls for event CRUD operations
+- [ ] Service operates without AWS IAM credentials (beyond JWT validation)
+
+**DDD Layered Architecture:**
+- [ ] Service layer implements business logic (NO repository injection in controllers)
+- [ ] Repository pattern for data access
+- [ ] Domain entities separate from DTOs
+- [ ] Controllers delegate to service layer only
+
+**Implementation References:**
+- See `/services/company-user-management-service/OPENAPI-CODEGEN.md` for OpenAPI Generator patterns
+- See `/services/company-user-management-service/ARCHITECTURE-COMPLIANCE-FIXES.md` for compliance examples
+- See `/docs/architecture/ADR-001-invitation-based-user-registration.md` for database-centric principles
+
+---
+
 ### Wireframe References
 **From docs/wireframes/sitemap.md:**
 
@@ -244,6 +277,11 @@ As an **organizer**, I want to access and manage events through consolidated RES
 - [ ] **Performance**: List <100ms, detail <150ms, detail+includes <500ms (all P95)
 - [ ] Domain events publishing
 - [ ] Integration tests for all operations including consolidated APIs
+- [ ] **Architecture Compliance**: All items in "Architecture Compliance Requirements" section verified
+- [ ] **OpenAPI Spec**: ErrorResponse and PaginationMetadata imported from shared-kernel (NOT defined locally)
+- [ ] **Service Layer**: EventService implements all business logic (controllers delegate only)
+- [ ] **Event Publishing**: DomainEventPublisher from shared-kernel used for all domain events
+- [ ] **Testing**: Integration tests verify shared-kernel ErrorResponse structure and event metadata
 
 **Estimated Duration:** 3 weeks (includes API consolidation implementation)
 

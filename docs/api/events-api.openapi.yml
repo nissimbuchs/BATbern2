@@ -1437,32 +1437,15 @@ components:
 
     PaginationMetadata:
       type: object
-      properties:
-        page:
-          type: integer
-          example: 0
-        limit:
-          type: integer
-          example: 20
-        totalItems:
-          type: integer
-          example: 100
-        totalPages:
-          type: integer
-          example: 5
+      description: Pagination metadata from shared-kernel
+      x-java-type: ch.batbern.shared.api.PaginationMetadata
+      x-java-type-import: ch.batbern.shared.api.PaginationMetadata
 
     ErrorResponse:
       type: object
-      properties:
-        error:
-          type: string
-        errorCode:
-          type: string
-        message:
-          type: string
-        timestamp:
-          type: string
-          format: date-time
+      description: Standard error response from shared-kernel
+      x-java-type: ch.batbern.shared.dto.ErrorResponse
+      x-java-type-import: ch.batbern.shared.dto.ErrorResponse
 
   responses:
     BadRequest:
