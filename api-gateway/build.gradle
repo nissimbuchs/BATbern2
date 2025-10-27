@@ -1,9 +1,9 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.5.6'
+    id 'org.springframework.boot' version '3.5.7'
     id 'io.spring.dependency-management' version '1.1.6'
     id 'checkstyle'
-    id 'com.gorylenko.gradle-git-properties' version '2.4.1'
+    id 'com.gorylenko.gradle-git-properties' version '2.5.3'
 }
 
 group = 'ch.batbern'
@@ -33,7 +33,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
 
     // AWS SDK for Cognito and SES
-    implementation platform('software.amazon.awssdk:bom:2.35.10')
+    implementation platform('software.amazon.awssdk:bom:2.36.2')
     implementation 'software.amazon.awssdk:cognitoidentityprovider'
     implementation 'software.amazon.awssdk:ses'
     implementation 'software.amazon.awssdk:auth'
@@ -50,7 +50,7 @@ dependencies {
 
     // Monitoring & Logging
     implementation 'io.micrometer:micrometer-registry-prometheus'
-    implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
+    implementation 'net.logstash.logback:logstash-logback-encoder:9.0'
 
     // CloudWatch Logging
     implementation 'software.amazon.awssdk:cloudwatchlogs'

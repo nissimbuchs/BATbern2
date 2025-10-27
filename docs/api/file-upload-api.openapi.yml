@@ -1,0 +1,495 @@
+openapi: 3.1.0
+info:
+  title: BATbern File Upload API
+  version: 1.0.0
+  description: |
+    Generic File Upload API for BATbern Event Management Platform.
+
+    This API provides entity-agnostic file upload capabilities using a three-phase upload pattern:
+    1. **Phase 1**: Generate presigned S3 URL (no entity association required)
+    2. **Phase 2**: Upload file directly to S3 using presigned URL
+    3. **Phase 3**: Confirm upload completion
+    4. **Phase 4**: Associate with entity during entity creation (e.g., POST /companies with logoUploadId)
+
+    **Story**: 1.16.3 - Generic File Upload Service
+    **ADR**: ADR-002 - Generic File Upload Service Architecture
+
+    **Features**:
+    - Direct client-to-S3 uploads using presigned URLs
+    - Support for PNG, JPEG, and SVG files (max 5MB)
+    - Automatic cleanup of orphaned uploads (PENDING > 24h, CONFIRMED > 7 days)
+    - State machine: PENDING → CONFIRMED → ASSOCIATED
+    - CloudFront CDN delivery for associated files
+
+    **Performance Targets**:
+    - Presigned URL generation: <100ms (P95)
+    - Confirm upload: <150ms (P95)
+    - Cleanup job: Daily at 2 AM UTC
+
+  contact:
+    name: BATbern Platform Team
+    email: platform@batbern.ch
+  license:
+    name: Proprietary
+    identifier: Proprietary
+
+servers:
+  - url: https://api.batbern.ch/api/v1
+    description: Production
+  - url: https://api.staging.batbern.ch/api/v1
+    description: Staging
+  - url: http://localhost:8080/api/v1
+    description: Development
+
+tags:
+  - name: File Upload
+    description: Generic file upload operations (Phase 1 & 3)
+  - name: Admin
+    description: Administrative operations for monitoring and cleanup
+
+paths:
+  /logos/presigned-url:
+    post:
+      tags:
+        - File Upload
+      summary: Generate presigned URL for file upload (Phase 1)
+      description: |
+        Creates a presigned S3 URL for uploading a logo or image file.
+        The URL expires after 15 minutes.
+        No authentication required - anyone can request an upload URL.
+        No entity association required at this stage.
+
+        **Acceptance Criteria**: AC1 (Story 1.16.3)
+
+        **After receiving the presigned URL**:
+        1. Use the returned `uploadUrl` to upload the file directly to S3 via PUT request
+        2. Include all `requiredHeaders` in the S3 PUT request
+        3. Call POST /logos/{uploadId}/confirm after successful S3 upload
+
+        **Supported file types**: PNG, JPEG, SVG
+        **Max file size**: 5 MB (5,242,880 bytes)
+
+      operationId: generatePresignedUrl
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoUploadRequest'
+            examples:
+              pngLogo:
+                summary: PNG logo upload
+                value:
+                  fileName: "company-logo.png"
+                  fileSize: 1048576
+                  mimeType: "image/png"
+              svgLogo:
+                summary: SVG logo upload
+                value:
+                  fileName: "company-logo.svg"
+                  fileSize: 512000
+                  mimeType: "image/svg+xml"
+
+      responses:
+        '200':
+          description: Presigned URL generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresignedUploadUrl'
+              example:
+                uploadUrl: "https://s3.amazonaws.com/batbern-logos/temp/upload-abc123/logo-file-xyz.png?signature=..."
+                fileId: "upload-abc123"
+                fileExtension: "png"
+                expiresInMinutes: 15
+                requiredHeaders:
+                  Content-Type: "image/png"
+                  x-amz-acl: "private"
+
+        '400':
+          description: Invalid file type or size exceeds limit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                fileSizeExceeded:
+                  summary: File too large
+                  value:
+                    message: "File size exceeds 5MB limit"
+                    statusCode: 400
+                    timestamp: "2025-10-27T10:30:00Z"
+                invalidFileType:
+                  summary: Unsupported file type
+                  value:
+                    message: "Only PNG, JPEG, and SVG files are allowed"
+                    statusCode: 400
+                    timestamp: "2025-10-27T10:30:00Z"
+
+  /logos/{uploadId}/confirm:
+    post:
+      tags:
+        - File Upload
+      summary: Confirm file upload completion (Phase 3)
+      description: |
+        Confirms that the file has been successfully uploaded to S3.
+        Updates the logo status from PENDING to CONFIRMED.
+        Logo will expire after 7 days if not associated with an entity.
+
+        **Acceptance Criteria**: AC2 (Story 1.16.3)
+
+        **Call this endpoint after**:
+        - Successfully uploading the file to S3 using the presigned URL from Phase 1
+
+        **Next step**:
+        - Include the `uploadId` in entity creation request (e.g., POST /companies with `logoUploadId`)
+
+      operationId: confirmUpload
+      parameters:
+        - name: uploadId
+          in: path
+          required: true
+          description: Upload ID from presigned URL response
+          schema:
+            type: string
+          example: "upload-abc123"
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoUploadConfirmRequest'
+            example:
+              fileId: "upload-abc123"
+              fileExtension: "png"
+              checksum: "sha256-abc123def456..."
+
+      responses:
+        '200':
+          description: Upload confirmed successfully
+
+        '404':
+          description: Upload ID not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Upload ID not found: upload-abc123"
+                statusCode: 404
+                timestamp: "2025-10-27T10:30:00Z"
+
+        '400':
+          description: Invalid upload state (not PENDING)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Logo must be in PENDING state for confirmation"
+                statusCode: 400
+                timestamp: "2025-10-27T10:30:00Z"
+
+  /logos/{uploadId}:
+    delete:
+      tags:
+        - File Upload
+      summary: Delete unused logo
+      description: |
+        Deletes a logo that has not been associated with an entity.
+        Can only delete logos in PENDING or CONFIRMED status.
+        ASSOCIATED logos cannot be deleted directly (must delete entity first).
+
+        **Acceptance Criteria**: AC6 (Story 1.16.3)
+
+        **Requires authentication**: User must be logged in
+
+      operationId: deleteUnusedLogo
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uploadId
+          in: path
+          required: true
+          description: Upload ID to delete
+          schema:
+            type: string
+          example: "upload-abc123"
+
+      responses:
+        '204':
+          description: Logo deleted successfully
+
+        '401':
+          description: Unauthorized - missing or invalid JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+        '404':
+          description: Upload ID not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Logo not found: upload-abc123"
+                statusCode: 404
+                timestamp: "2025-10-27T10:30:00Z"
+
+        '400':
+          description: Cannot delete ASSOCIATED logo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Cannot delete ASSOCIATED logo. Delete the entity first."
+                statusCode: 400
+                timestamp: "2025-10-27T10:30:00Z"
+
+  /logos/cleanup/statistics:
+    get:
+      tags:
+        - Admin
+      summary: Get cleanup statistics
+      description: |
+        Returns statistics about logo uploads in various states.
+        Used for monitoring and identifying orphaned uploads.
+
+        **Acceptance Criteria**: AC7 (Story 1.16.3)
+
+        **Requires**: ORGANIZER role
+
+      operationId: getCleanupStatistics
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CleanupStatistics'
+              example:
+                pendingCount: 10
+                confirmedCount: 5
+                associatedCount: 100
+                expiredPendingCount: 2
+                expiredConfirmedCount: 1
+
+        '401':
+          description: Unauthorized - missing or invalid JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+        '403':
+          description: Forbidden - requires ORGANIZER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Access denied. ORGANIZER role required."
+                statusCode: 403
+                timestamp: "2025-10-27T10:30:00Z"
+
+  /logos/cleanup/trigger:
+    post:
+      tags:
+        - Admin
+      summary: Manually trigger cleanup job
+      description: |
+        Manually triggers the cleanup job to remove orphaned uploads.
+        Normally runs automatically at 2 AM UTC daily.
+        Use this endpoint for testing or emergency cleanup.
+
+        **Acceptance Criteria**: AC7 (Story 1.16.3)
+
+        **Requires**: ORGANIZER role
+
+        **Cleanup Rules**:
+        - PENDING uploads > 24 hours: Deleted
+        - CONFIRMED uploads > 7 days: Deleted
+        - ASSOCIATED uploads: Kept indefinitely
+
+      operationId: triggerManualCleanup
+      security:
+        - bearerAuth: []
+      responses:
+        '202':
+          description: Cleanup job triggered successfully
+
+        '401':
+          description: Unauthorized - missing or invalid JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+        '403':
+          description: Forbidden - requires ORGANIZER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Access denied. ORGANIZER role required."
+                statusCode: 403
+                timestamp: "2025-10-27T10:30:00Z"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from authentication endpoint
+
+  schemas:
+    LogoUploadRequest:
+      type: object
+      required:
+        - fileName
+        - fileSize
+        - mimeType
+      properties:
+        fileName:
+          type: string
+          description: Original filename with extension (e.g., "company-logo.png")
+          minLength: 1
+          maxLength: 255
+          example: "company-logo.png"
+        fileSize:
+          type: integer
+          format: int64
+          description: File size in bytes (max 5 MB = 5,242,880 bytes)
+          minimum: 1
+          maximum: 5242880
+          example: 1048576
+        mimeType:
+          type: string
+          description: MIME type (e.g., "image/png", "image/jpeg", "image/svg+xml")
+          enum:
+            - image/png
+            - image/jpeg
+            - image/svg+xml
+          example: "image/png"
+
+    PresignedUploadUrl:
+      type: object
+      required:
+        - uploadUrl
+        - fileId
+        - fileExtension
+        - expiresInMinutes
+        - requiredHeaders
+      properties:
+        uploadUrl:
+          type: string
+          format: uri
+          description: Presigned S3 URL for uploading the file (valid for 15 minutes)
+          example: "https://s3.amazonaws.com/batbern-logos/temp/upload-abc123/logo-file-xyz.png?signature=..."
+        fileId:
+          type: string
+          description: Unique upload identifier (use this for confirmation and association)
+          example: "upload-abc123"
+        fileExtension:
+          type: string
+          description: File extension extracted from filename
+          example: "png"
+        expiresInMinutes:
+          type: integer
+          description: Minutes until the presigned URL expires
+          example: 15
+        requiredHeaders:
+          type: object
+          description: HTTP headers required for the S3 PUT request
+          additionalProperties:
+            type: string
+          example:
+            Content-Type: "image/png"
+            x-amz-acl: "private"
+
+    LogoUploadConfirmRequest:
+      type: object
+      required:
+        - fileId
+        - fileExtension
+      properties:
+        fileId:
+          type: string
+          description: File ID returned from presigned URL request
+          example: "upload-abc123"
+        fileExtension:
+          type: string
+          description: File extension (e.g., "png", "jpg", "svg")
+          example: "png"
+        checksum:
+          type: string
+          description: Optional SHA-256 checksum for integrity verification
+          example: "sha256-abc123def456..."
+
+    CleanupStatistics:
+      type: object
+      required:
+        - pendingCount
+        - confirmedCount
+        - associatedCount
+        - expiredPendingCount
+        - expiredConfirmedCount
+      properties:
+        pendingCount:
+          type: integer
+          format: int64
+          description: Total number of PENDING uploads
+          example: 10
+        confirmedCount:
+          type: integer
+          format: int64
+          description: Total number of CONFIRMED uploads
+          example: 5
+        associatedCount:
+          type: integer
+          format: int64
+          description: Total number of ASSOCIATED uploads (in use)
+          example: 100
+        expiredPendingCount:
+          type: integer
+          format: int64
+          description: Number of PENDING uploads older than 24 hours (will be cleaned)
+          example: 2
+        expiredConfirmedCount:
+          type: integer
+          format: int64
+          description: Number of CONFIRMED uploads older than 7 days (will be cleaned)
+          example: 1
+
+    ErrorResponse:
+      type: object
+      required:
+        - message
+        - statusCode
+        - timestamp
+      properties:
+        message:
+          type: string
+          description: Error message
+          example: "File size exceeds 5MB limit"
+        statusCode:
+          type: integer
+          description: HTTP status code
+          example: 400
+        timestamp:
+          type: string
+          format: date-time
+          description: Error timestamp
+          example: "2025-10-27T10:30:00Z"
+        correlationId:
+          type: string
+          description: Optional correlation ID for tracing
+          example: "corr-abc-123"

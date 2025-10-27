@@ -13,6 +13,7 @@ import software.amazon.awssdk.services.cloudwatch.CloudWatchClient;
 import software.amazon.awssdk.services.cloudwatch.model.*;
 import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient;
 import software.amazon.awssdk.services.eventbridge.model.*;
+import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.*;
 
@@ -65,6 +66,50 @@ public class LocalAwsConfig {
                 return CompletableFuture.completedFuture(successResponse);
             }
         };
+    }
+
+    /**
+     * S3 Client configured for MinIO (local S3-compatible storage)
+     * Story 1.16.3: Generic File Upload Service
+     * Provides S3 operations for GenericLogoService and LogoCleanupService
+     */
+    @Bean
+    @Primary
+    public S3Client s3Client() {
+        log.info("🪣 [LOCAL] Creating S3Client configured for MinIO (http://localhost:9000)");
+
+        // Configure S3 client to use MinIO endpoint
+        software.amazon.awssdk.regions.Region region = software.amazon.awssdk.regions.Region.EU_CENTRAL_1;
+
+        // Create S3 client configuration for MinIO
+        software.amazon.awssdk.services.s3.S3Configuration s3Config =
+            software.amazon.awssdk.services.s3.S3Configuration.builder()
+                .pathStyleAccessEnabled(true)  // MinIO requires path-style access
+                .build();
+
+        // Create credentials provider for MinIO (minioadmin/minioadmin)
+        software.amazon.awssdk.auth.credentials.AwsBasicCredentials credentials =
+            software.amazon.awssdk.auth.credentials.AwsBasicCredentials.create("minioadmin", "minioadmin");
+
+        software.amazon.awssdk.auth.credentials.StaticCredentialsProvider credentialsProvider =
+            software.amazon.awssdk.auth.credentials.StaticCredentialsProvider.create(credentials);
+
+        // Create endpoint override for MinIO
+        java.net.URI minioEndpoint = java.net.URI.create("http://localhost:9000");
+
+        // Build the S3Client
+        S3Client s3Client = S3Client.builder()
+            .region(region)
+            .credentialsProvider(credentialsProvider)
+            .endpointOverride(minioEndpoint)
+            .serviceConfiguration(s3Config)
+            .build();
+
+        log.info("🪣 [LOCAL] S3Client configured successfully for MinIO");
+        log.info("🪣 [LOCAL] Endpoint: http://localhost:9000");
+        log.info("🪣 [LOCAL] Bucket: batbern-development-company-logos");
+
+        return s3Client;
     }
 
     /**
