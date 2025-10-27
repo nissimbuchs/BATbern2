@@ -188,7 +188,7 @@ class LogoCleanupServiceTest {
 
         // Simulate S3 deletion failure for first logo
         doThrow(S3Exception.builder().message("Access denied").build())
-                .doNothing()
+                .doReturn(software.amazon.awssdk.services.s3.model.DeleteObjectResponse.builder().build())
                 .when(s3Client).deleteObject(any(DeleteObjectRequest.class));
 
         // Act

@@ -6,6 +6,7 @@ import ch.batbern.companyuser.dto.PresignedUploadUrl;
 import ch.batbern.companyuser.exception.FileSizeExceededException;
 import ch.batbern.companyuser.exception.InvalidFileTypeException;
 import ch.batbern.companyuser.exception.LogoNotFoundException;
+import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.service.GenericLogoService;
 import ch.batbern.companyuser.service.LogoCleanupService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -48,6 +49,9 @@ class LogoControllerTest {
 
     @MockitoBean
     private LogoCleanupService cleanupService;
+
+    @MockitoBean
+    private UserRepository userRepository; // Required by WebMvcConfig -> JITUserProvisioningInterceptor
 
     // ============ POST /presigned-url Tests ============
 

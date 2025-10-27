@@ -49,6 +49,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                .requestMatchers("/api/v1/logos/presigned-url").permitAll() // Story 1.16.3: Public file upload
+                .requestMatchers("/api/v1/logos/*/confirm").permitAll() // Story 1.16.3: Public upload confirmation
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2
@@ -75,6 +77,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                .requestMatchers("/api/v1/logos/presigned-url").permitAll() // Story 1.16.3: Public file upload
+                .requestMatchers("/api/v1/logos/*/confirm").permitAll() // Story 1.16.3: Public upload confirmation
                 .anyRequest().authenticated() // Enforce authentication in tests
             )
             .exceptionHandling(exceptions -> exceptions
