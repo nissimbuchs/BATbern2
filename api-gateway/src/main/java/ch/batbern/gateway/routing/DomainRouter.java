@@ -65,7 +65,9 @@ public class DomainRouter {
             return "partner-coordination-service";
         } else if (cleanPath.startsWith("/api/v1/content")) {
             return "attendee-experience-service";
-        } else if (cleanPath.startsWith("/api/v1/companies") || cleanPath.startsWith("/api/v1/users")) {
+        } else if (cleanPath.startsWith("/api/v1/companies")
+                || cleanPath.startsWith("/api/v1/users")
+                || cleanPath.startsWith("/api/v1/logos")) {
             return "company-user-management-service";
         } else {
             throw new RoutingException("No route found for path: " + cleanPath);

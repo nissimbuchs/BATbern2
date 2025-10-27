@@ -56,7 +56,9 @@ tests {
     const body = res.getBody();
     expect(body.uploadUrl).to.exist;
     expect(body.uploadUrl).to.be.a('string');
-    expect(body.uploadUrl).to.include('s3.amazonaws.com');
+    // Accept both AWS S3 (production/staging) and MinIO (local development)
+    const isValidS3Url = body.uploadUrl.includes('s3.amazonaws.com') || body.uploadUrl.includes('localhost:9000');
+    expect(isValidS3Url).to.be.true;
   });
 
   test("should return file metadata", function() {
