@@ -1,7 +1,7 @@
 import { App } from 'aws-cdk-lib';
 import { Template, Match } from 'aws-cdk-lib/assertions';
-import { CognitoStack } from '../lib/stacks/cognito-stack';
-import { devConfig } from '../lib/config/dev-config';
+import { CognitoStack } from '../../lib/stacks/cognito-stack';
+import { devConfig } from '../../lib/config/dev-config';
 
 describe('CognitoStack Tests', () => {
   let app: App;
