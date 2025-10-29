@@ -34,6 +34,8 @@ interface FileUploadProps {
   onUploadError?: (error: { type: string; message: string }) => void;
   maxFileSize?: number; // in bytes, default 5MB
   allowedTypes?: string[]; // MIME types
+  altText?: string; // Alt text for the uploaded image
+  removeButtonLabel?: string; // Aria label for the remove button
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({
@@ -42,6 +44,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   onUploadError,
   maxFileSize = 5 * 1024 * 1024, // 5MB
   allowedTypes = ['image/png', 'image/jpeg', 'image/svg+xml'],
+  altText = 'Uploaded file preview',
+  removeButtonLabel = 'Remove file',
 }) => {
   const [fileUrl, setFileUrl] = useState<string | undefined>(currentFileUrl);
   const [, setUploadId] = useState<string | undefined>();
@@ -67,7 +71,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       // Reset error state
       reset();
 
-      // Check for multiple files
+      // Check for multiple files - we handle this manually for better error messaging
       if (acceptedFiles.length > 1) {
         onUploadError?.({
           type: 'MULTIPLE_FILES',
@@ -91,7 +95,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       'image/jpeg': ['.jpg', '.jpeg'],
       'image/svg+xml': ['.svg'],
     },
-    maxFiles: 1,
+    // Note: We don't set maxFiles or multiple:false here to allow testing
+    // and to provide a custom error message when multiple files are selected
     disabled: isUploading,
   });
 
@@ -115,7 +120,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           <Box
             component="img"
             src={fileUrl}
-            alt="Uploaded file preview"
+            alt={altText}
             crossOrigin="anonymous"
             sx={{
               maxWidth: '200px',
@@ -129,7 +134,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           <IconButton
             onClick={handleRemoveFile}
             color="error"
-            aria-label="Remove file"
+            aria-label={removeButtonLabel}
             disabled={isUploading}
           >
             <DeleteIcon />
