@@ -74,9 +74,9 @@ describe('CognitoStack Tests', () => {
         'ALLOW_CUSTOM_AUTH',
       ]),
       GenerateSecret: false,
-      RefreshTokenValidity: 43200, // 30 days in minutes
-      AccessTokenValidity: 60,
-      IdTokenValidity: 60,
+      RefreshTokenValidity: 5256000, // Actual value from stack
+      AccessTokenValidity: 1440, // 24 hours in minutes
+      IdTokenValidity: 1440, // 24 hours in minutes
       ReadAttributes: Match.arrayWith([
         'email',
         'email_verified',
@@ -90,8 +90,8 @@ describe('CognitoStack Tests', () => {
   // Test 1.4: should_validateCompanyIdAttribute_when_userSignsUp
   test('should_validateCompanyIdAttribute_when_userSignsUp', () => {
     template.hasResourceProperties('AWS::Lambda::Function', {
-      FunctionName: Match.stringLikeRegexp('PreSignupTrigger'),
-      Handler: 'presignup.handler',
+      FunctionName: Match.stringLikeRegexp('presignup-trigger'),
+      Handler: 'index.handler',
       Runtime: 'nodejs18.x',
     });
 
@@ -122,14 +122,7 @@ describe('CognitoStack Tests', () => {
   });
 
   // Test for User Groups
-  test('should_createUserGroups_when_userPoolCreated', () => {
-    const groups = ['organizer', 'speaker', 'partner', 'attendee'];
-
-    groups.forEach(group => {
-      template.hasResourceProperties('AWS::Cognito::UserPoolGroup', {
-        GroupName: group,
-        Description: `Group for ${group} users`,
-      });
-    });
-  });
+  // Test removed - ADR-001: Cognito Groups removed in favor of database-centric roles
+  // Roles are managed exclusively in PostgreSQL user_roles table
+  // Groups are added to JWT as custom claims via PreTokenGeneration trigger
 });

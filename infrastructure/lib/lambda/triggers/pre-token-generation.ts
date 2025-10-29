@@ -53,13 +53,15 @@ async function publishMetric(metricName: string, value: number, unit: string = '
 
 /**
  * Fetch user roles from database by Cognito ID
- * Returns global roles only (event-specific roles are not part of Cognito Groups)
+ * Returns all assigned roles from role_assignments table
  */
 async function fetchUserRoles(cognitoId: string): Promise<UserRole[]> {
   const client = await getDbClient();
 
   try {
-    // Query for active global roles
+    // Query for all assigned roles
+    // - Filter by cognito_user_id for performance (indexed column)
+    // - All roles in role_assignments are active global roles
     const result = await client.query(
       `
         SELECT DISTINCT ra.role

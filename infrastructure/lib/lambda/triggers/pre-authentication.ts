@@ -10,7 +10,7 @@ const cloudwatch = new CloudWatchClient({ region: process.env.AWS_REGION || 'eu-
  * Purpose: Check if user is active in database before allowing authentication
  *
  * Flow:
- * 1. Extract cognito_id from event
+ * 1. Extract cognito_user_id from event
  * 2. Query user_profiles table for user status
  * 3. If user not found, allow (JIT provisioning will handle on first API request)
  * 4. If user found but inactive, block authentication
