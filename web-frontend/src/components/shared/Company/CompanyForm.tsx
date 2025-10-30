@@ -163,6 +163,23 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
     }
   }, [initialData, reset]);
 
+  // Reset form when modal opens in create mode
+  useEffect(() => {
+    if (open && mode === 'create' && !initialData) {
+      reset({
+        name: '',
+        displayName: '',
+        swissUID: '',
+        website: '',
+        industry: '',
+        description: '',
+      });
+      setLogoUrl(undefined);
+      setLogoUploadId(undefined);
+      setApiError(null);
+    }
+  }, [open, mode, initialData, reset]);
+
   const handleClose = () => {
     if (isDirty) {
       const confirmed = window.confirm(t('company.form.unsavedChanges'));

@@ -114,7 +114,9 @@ describe('useFileUpload Hook', () => {
       expect(mockApiClient.post).toHaveBeenCalledWith(
         '/logos/upload-123/confirm',
         expect.objectContaining({
+          fileId: 'upload-123',
           fileExtension: 'png',
+          checksum: expect.any(String),
         })
       );
     });
