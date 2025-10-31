@@ -47,6 +47,12 @@ const CompanyManagement = React.lazy(
 );
 const UserManagement = React.lazy(() => import('@components/organizer/UserManagement/UserList'));
 
+// Event Management Pages - Story 2.5.3, Task 4
+const EventManagementDashboard = React.lazy(() => import('@pages/EventManagementDashboard'));
+const EventCreate = React.lazy(() => import('@pages/EventCreate'));
+const EventTimeline = React.lazy(() => import('@pages/EventTimeline'));
+const EventDetail = React.lazy(() => import('@pages/EventDetail'));
+
 // Loading fallback component for Suspense
 const PageLoader = () => (
   <Box
@@ -174,6 +180,48 @@ function App() {
                     <ProtectedRoute>
                       <AuthLayout>
                         <Events />
+                      </AuthLayout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Event Management Routes - Story 2.5.3, Task 4 */}
+                <Route
+                  path="/organizer/events"
+                  element={
+                    <ProtectedRoute>
+                      <AuthLayout>
+                        <EventManagementDashboard />
+                      </AuthLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/organizer/events/create"
+                  element={
+                    <ProtectedRoute>
+                      <AuthLayout>
+                        <EventCreate />
+                      </AuthLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/organizer/events/timeline"
+                  element={
+                    <ProtectedRoute>
+                      <AuthLayout>
+                        <EventTimeline />
+                      </AuthLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/organizer/events/:eventCode"
+                  element={
+                    <ProtectedRoute>
+                      <AuthLayout>
+                        <EventDetail />
                       </AuthLayout>
                     </ProtectedRoute>
                   }

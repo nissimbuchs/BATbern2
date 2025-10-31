@@ -129,12 +129,18 @@ paths:
                   summary: Basic event list
                   value:
                     data:
-                      - id: evt-001
+                      - eventCode: BATbern142
                         title: Spring Conference 2025
+                        eventNumber: 142
                         date: 2025-05-15T09:00:00Z
+                        registrationDeadline: 2025-05-01T23:59:59Z
+                        venueName: Kursaal Bern
+                        venueAddress: Kornhausstrasse 3, 3013 Bern
+                        venueCapacity: 200
                         status: published
+                        organizerUsername: john.doe
+                        currentAttendeeCount: 187
                         description: Cloud Native Architecture
-                        maxAttendees: 200
                     pagination:
                       page: 0
                       limit: 20
@@ -168,11 +174,16 @@ paths:
                 summary: Basic event creation
                 value:
                   title: Summer Workshop 2025
+                  eventNumber: 143
                   date: 2025-07-20T09:00:00Z
-                  status: draft
+                  registrationDeadline: 2025-07-10T23:59:59Z
+                  venueName: Kursaal Bern
+                  venueAddress: Kornhausstrasse 3, 3013 Bern
+                  venueCapacity: 150
+                  status: planning
+                  organizerUsername: john.doe
+                  currentAttendeeCount: 0
                   description: AI/ML in Production
-                  venueId: ven-001
-                  maxAttendees: 150
       responses:
         '201':
           description: Event created successfully
@@ -280,28 +291,40 @@ paths:
                 basicEvent:
                   summary: Basic event (no includes)
                   value:
-                    id: evt-001
+                    eventCode: BATbern142
                     title: Spring Conference 2025
+                    eventNumber: 142
                     date: 2025-05-15T09:00:00Z
+                    registrationDeadline: 2025-05-01T23:59:59Z
+                    venueName: Kursaal Bern
+                    venueAddress: Kornhausstrasse 3, 3013 Bern
+                    venueCapacity: 500
                     status: published
+                    organizerUsername: john.doe
+                    currentAttendeeCount: 187
                     description: Cloud Native Architecture
-                    workflowState: published
                 expandedEvent:
                   summary: Event with venue and speakers
                   value:
-                    id: evt-001
+                    eventCode: BATbern142
                     title: Spring Conference 2025
+                    eventNumber: 142
                     date: 2025-05-15T09:00:00Z
+                    registrationDeadline: 2025-05-01T23:59:59Z
+                    venueName: Kursaal Bern
+                    venueAddress: Kornhausstrasse 3, 3013 Bern
+                    venueCapacity: 500
                     status: published
+                    organizerUsername: john.doe
+                    currentAttendeeCount: 187
                     description: Cloud Native Architecture
-                    workflowState: published
                     venue:
                       id: ven-001
                       name: Kursaal Bern
                       address: Kornhausstrasse 3, 3013 Bern
                       capacity: 500
                     speakers:
-                      - id: spk-001
+                      - username: sara.kim
                         firstName: Sara
                         lastName: Kim
                         company: Docker Inc.
@@ -1057,9 +1080,14 @@ components:
 
     Speaker:
       type: object
+      description: |
+        Speaker information (speakers are users per Story 1.16.2)
       properties:
-        id:
+        username:
           type: string
+          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          example: john.doe
+          description: Speaker username in firstname.lastname format (Story 1.16.2)
         firstName:
           type: string
         lastName:
@@ -1188,7 +1216,7 @@ components:
         - venueAddress
         - venueCapacity
         - status
-        - organizerId
+        - organizerUsername
       properties:
         title:
           type: string
@@ -1213,9 +1241,13 @@ components:
         status:
           type: string
           enum: [planning, topic_defined, speakers_invited, agenda_draft, published, registration_open, registration_closed, in_progress, completed, archived]
-        organizerId:
+        organizerUsername:
           type: string
-          format: uuid
+          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          example: john.doe
+          description: |
+            Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
+            Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.
         currentAttendeeCount:
           type: integer
           default: 0
@@ -1239,7 +1271,7 @@ components:
         - venueAddress
         - venueCapacity
         - status
-        - organizerId
+        - organizerUsername
       properties:
         title:
           type: string
@@ -1262,9 +1294,13 @@ components:
         status:
           type: string
           enum: [planning, topic_defined, speakers_invited, agenda_draft, published, registration_open, registration_closed, in_progress, completed, archived]
-        organizerId:
+        organizerUsername:
           type: string
-          format: uuid
+          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          example: john.doe
+          description: |
+            Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
+            Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.
         currentAttendeeCount:
           type: integer
         publishedAt:
@@ -1300,9 +1336,13 @@ components:
         status:
           type: string
           enum: [planning, topic_defined, speakers_invited, agenda_draft, published, registration_open, registration_closed, in_progress, completed, archived]
-        organizerId:
+        organizerUsername:
           type: string
-          format: uuid
+          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          example: john.doe
+          description: |
+            Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
+            Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.
         currentAttendeeCount:
           type: integer
         publishedAt:
@@ -1447,8 +1487,11 @@ components:
     EventAnalytics:
       type: object
       properties:
-        eventId:
+        eventCode:
           type: string
+          pattern: '^BATbern[0-9]+$'
+          example: BATbern142
+          description: Event code in format BATbern{number} (Story 1.16.2)
         totalRegistrations:
           type: integer
         confirmedAttendees:
