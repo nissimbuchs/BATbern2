@@ -46,6 +46,33 @@ public class SecurityContextHelper {
     }
 
     /**
+     * Gets the current authenticated user's username from JWT token or mock user
+     * Story 1.16.2: Use username instead of UUID for public API
+     * @return Username (cognito:username claim from JWT or username from mock user)
+     * @throws SecurityException if not authenticated
+     */
+    public String getCurrentUsername() {
+        Authentication authentication = getAuthentication();
+
+        if (authentication.getPrincipal() instanceof Jwt) {
+            Jwt jwt = (Jwt) authentication.getPrincipal();
+            String username = jwt.getClaim("cognito:username");
+            if (username == null) {
+                log.warn("cognito:username claim not found in JWT, falling back to subject");
+                return jwt.getSubject(); // Fallback to subject for backward compatibility
+            }
+            return username;
+        } else if (authentication.getPrincipal() instanceof User) {
+            // In test environment with @WithMockUser, use username
+            User user = (User) authentication.getPrincipal();
+            return user.getUsername();
+        } else {
+            log.error("Unsupported principal type: {}", authentication.getPrincipal().getClass());
+            throw new SecurityException("Unsupported authentication principal type");
+        }
+    }
+
+    /**
      * Gets the current authenticated user's email from JWT token or mock user
      * @return User email (email claim from JWT or username from mock user)
      * @throws SecurityException if not authenticated
