@@ -474,8 +474,6 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
               currentFileUrl={logoUrl}
               onUploadSuccess={handleLogoUploadSuccess}
               onUploadError={handleLogoUploadError}
-              altText="Company logo preview"
-              removeButtonLabel="Remove logo"
             />
           </Box>
         </Box>

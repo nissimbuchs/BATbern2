@@ -26,6 +26,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Box, Typography, IconButton, LinearProgress, Alert } from '@mui/material';
 import { CloudUpload as CloudUploadIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { useFileUpload } from '@/hooks/useFileUpload/useFileUpload';
 
 interface FileUploadProps {
@@ -44,11 +45,16 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   onUploadError,
   maxFileSize = 5 * 1024 * 1024, // 5MB
   allowedTypes = ['image/png', 'image/jpeg', 'image/svg+xml'],
-  altText = 'Uploaded file preview',
-  removeButtonLabel = 'Remove file',
+  altText,
+  removeButtonLabel,
 }) => {
+  const { t } = useTranslation('common');
   const [fileUrl, setFileUrl] = useState<string | undefined>(currentFileUrl);
   const [, setUploadId] = useState<string | undefined>();
+
+  // Use i18n translations with fallback to props or default values
+  const translatedAltText = altText || t('fileUpload.altText');
+  const translatedRemoveButtonLabel = removeButtonLabel || t('fileUpload.removeFile');
 
   const { uploadFile, isUploading, uploadProgress, error, reset } = useFileUpload({
     maxFileSize,
@@ -75,7 +81,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       if (acceptedFiles.length > 1) {
         onUploadError?.({
           type: 'MULTIPLE_FILES',
-          message: 'Only one file can be uploaded at a time',
+          message: t('fileUpload.errors.multipleFiles'),
         });
         return;
       }
@@ -120,7 +126,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           <Box
             component="img"
             src={fileUrl}
-            alt={altText}
+            alt={translatedAltText}
             crossOrigin="anonymous"
             sx={{
               maxWidth: '200px',
@@ -134,7 +140,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           <IconButton
             onClick={handleRemoveFile}
             color="error"
-            aria-label={removeButtonLabel}
+            aria-label={translatedRemoveButtonLabel}
             disabled={isUploading}
           >
             <DeleteIcon />
@@ -164,10 +170,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           <input {...getInputProps()} />
           <CloudUploadIcon sx={{ fontSize: 48, color: 'grey.500', mb: 2 }} />
           <Typography variant="body1" color="textSecondary">
-            {isDragActive ? 'Drop the file here' : 'Drag and drop a file here, or click to select'}
+            {isDragActive ? t('fileUpload.dragActive') : t('fileUpload.dragDrop')}
           </Typography>
           <Typography variant="caption" color="textSecondary" sx={{ mt: 1 }}>
-            Accepted formats: PNG, JPEG, SVG (max {(maxFileSize / (1024 * 1024)).toFixed(0)}MB)
+            {t('fileUpload.acceptedFormats', {
+              maxSize: (maxFileSize / (1024 * 1024)).toFixed(0),
+            })}
           </Typography>
         </Box>
       )}
@@ -175,7 +183,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       {isUploading && (
         <Box sx={{ width: '100%', mt: 2 }}>
           <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
-            Uploading... {uploadProgress}%
+            {t('fileUpload.uploading', { progress: uploadProgress })}
           </Typography>
           <LinearProgress variant="determinate" value={uploadProgress} role="progressbar" />
         </Box>
