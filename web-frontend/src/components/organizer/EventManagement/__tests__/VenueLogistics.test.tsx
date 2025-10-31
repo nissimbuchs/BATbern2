@@ -144,13 +144,16 @@ describe('VenueLogistics Component (AC6 - SIMPLIFIED)', () => {
       await user.type(addressInput, 'Kornhausplatz 18, 3011 Bern');
 
       // Wait for debounce (1000ms) + buffer
-      await waitFor(() => {
-        expect(onUpdate).toHaveBeenCalledWith(
-          expect.objectContaining({
-            venueAddress: 'Kornhausplatz 18, 3011 Bern',
-          })
-        );
-      }, { timeout: 2500 });
+      await waitFor(
+        () => {
+          expect(onUpdate).toHaveBeenCalledWith(
+            expect.objectContaining({
+              venueAddress: 'Kornhausplatz 18, 3011 Bern',
+            })
+          );
+        },
+        { timeout: 2500 }
+      );
     });
 
     it('should_updateVenueCapacity_when_capacityChanged', async () => {
@@ -164,13 +167,16 @@ describe('VenueLogistics Component (AC6 - SIMPLIFIED)', () => {
       await user.type(capacityInput, '150');
 
       // Wait for debounce (1000ms) + buffer
-      await waitFor(() => {
-        expect(onUpdate).toHaveBeenCalledWith(
-          expect.objectContaining({
-            venueCapacity: 150,
-          })
-        );
-      }, { timeout: 2500 });
+      await waitFor(
+        () => {
+          expect(onUpdate).toHaveBeenCalledWith(
+            expect.objectContaining({
+              venueCapacity: 150,
+            })
+          );
+        },
+        { timeout: 2500 }
+      );
     });
 
     it('should_debounceUpdates_when_typingQuickly', async () => {
@@ -185,9 +191,12 @@ describe('VenueLogistics Component (AC6 - SIMPLIFIED)', () => {
       await user.type(venueNameInput, 'New Venue');
 
       // Should only call once after debounce (1000ms debounce + buffer)
-      await waitFor(() => {
-        expect(onUpdate).toHaveBeenCalled();
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          expect(onUpdate).toHaveBeenCalled();
+        },
+        { timeout: 3000 }
+      );
 
       // Verify only called once (debounced)
       expect(onUpdate).toHaveBeenCalledTimes(1);
@@ -206,9 +215,12 @@ describe('VenueLogistics Component (AC6 - SIMPLIFIED)', () => {
       await user.type(capacityInput, '0');
 
       // Should show validation error immediately
-      await waitFor(() => {
-        expect(screen.getByText(/Capacity must be a positive number/i)).toBeInTheDocument();
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          expect(screen.getByText(/Capacity must be a positive number/i)).toBeInTheDocument();
+        },
+        { timeout: 1000 }
+      );
     });
 
     it('should_validateVenueName_when_empty', async () => {
@@ -295,10 +307,13 @@ describe('VenueLogistics Component (AC6 - SIMPLIFIED)', () => {
       await user.clear(capacityInput);
       await user.type(capacityInput, '0');
 
-      await waitFor(() => {
-        const errorMessage = screen.getByText(/Capacity must be a positive number/i);
-        expect(errorMessage).toHaveAttribute('role', 'alert');
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          const errorMessage = screen.getByText(/Capacity must be a positive number/i);
+          expect(errorMessage).toHaveAttribute('role', 'alert');
+        },
+        { timeout: 1000 }
+      );
     });
   });
 
@@ -341,14 +356,20 @@ describe('VenueLogistics Component (AC6 - SIMPLIFIED)', () => {
       await user.type(venueNameInput, 'New Venue');
 
       // Wait for debounce (1000ms) + update to fail
-      await waitFor(() => {
-        expect(onUpdate).toHaveBeenCalled();
-      }, { timeout: 2000 });
+      await waitFor(
+        () => {
+          expect(onUpdate).toHaveBeenCalled();
+        },
+        { timeout: 2000 }
+      );
 
       // Error message should appear
-      await waitFor(() => {
-        expect(screen.getByText(/Failed to update venue/i)).toBeInTheDocument();
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          expect(screen.getByText(/Failed to update venue/i)).toBeInTheDocument();
+        },
+        { timeout: 1000 }
+      );
     });
 
     it('should_retainOldValue_when_updateFails', async () => {
@@ -363,19 +384,28 @@ describe('VenueLogistics Component (AC6 - SIMPLIFIED)', () => {
       await user.type(venueNameInput, 'New Venue');
 
       // Wait for debounce + update to fail
-      await waitFor(() => {
-        expect(onUpdate).toHaveBeenCalled();
-      }, { timeout: 2000 });
+      await waitFor(
+        () => {
+          expect(onUpdate).toHaveBeenCalled();
+        },
+        { timeout: 2000 }
+      );
 
       // Wait for error to appear
-      await waitFor(() => {
-        expect(screen.getByText(/Failed to update venue/i)).toBeInTheDocument();
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          expect(screen.getByText(/Failed to update venue/i)).toBeInTheDocument();
+        },
+        { timeout: 1000 }
+      );
 
       // Should revert to original value
-      await waitFor(() => {
-        expect(venueNameInput).toHaveValue(originalValue);
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          expect(venueNameInput).toHaveValue(originalValue);
+        },
+        { timeout: 1000 }
+      );
     });
   });
 
@@ -383,11 +413,12 @@ describe('VenueLogistics Component (AC6 - SIMPLIFIED)', () => {
     it('should_displayLoadingSpinner_when_updatingVenue', async () => {
       const user = userEvent.setup();
       let resolveUpdate: (() => void) | undefined;
-      const onUpdate = vi
-        .fn()
-        .mockImplementation(() => new Promise((resolve) => {
-          resolveUpdate = resolve as () => void;
-        }));
+      const onUpdate = vi.fn().mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolveUpdate = resolve as () => void;
+          })
+      );
       renderWithProviders(<VenueLogistics event={mockEvent} onUpdate={onUpdate} />);
 
       const venueNameInput = screen.getByLabelText(/Venue Name/i) as HTMLInputElement;
@@ -396,9 +427,12 @@ describe('VenueLogistics Component (AC6 - SIMPLIFIED)', () => {
       await user.type(venueNameInput, 'New Venue');
 
       // Wait for debounce to trigger update
-      await waitFor(() => {
-        expect(onUpdate).toHaveBeenCalled();
-      }, { timeout: 2000 });
+      await waitFor(
+        () => {
+          expect(onUpdate).toHaveBeenCalled();
+        },
+        { timeout: 2000 }
+      );
 
       // Should show loading state during update
       expect(screen.getByRole('progressbar')).toBeInTheDocument();
@@ -410,11 +444,12 @@ describe('VenueLogistics Component (AC6 - SIMPLIFIED)', () => {
     it('should_disableInputs_when_updating', async () => {
       const user = userEvent.setup();
       let resolveUpdate: (() => void) | undefined;
-      const onUpdate = vi
-        .fn()
-        .mockImplementation(() => new Promise((resolve) => {
-          resolveUpdate = resolve as () => void;
-        }));
+      const onUpdate = vi.fn().mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolveUpdate = resolve as () => void;
+          })
+      );
       renderWithProviders(<VenueLogistics event={mockEvent} onUpdate={onUpdate} />);
 
       const venueNameInput = screen.getByLabelText(/Venue Name/i) as HTMLInputElement;
@@ -423,9 +458,12 @@ describe('VenueLogistics Component (AC6 - SIMPLIFIED)', () => {
       await user.type(venueNameInput, 'New Venue');
 
       // Wait for debounce to trigger update
-      await waitFor(() => {
-        expect(onUpdate).toHaveBeenCalled();
-      }, { timeout: 2000 });
+      await waitFor(
+        () => {
+          expect(onUpdate).toHaveBeenCalled();
+        },
+        { timeout: 2000 }
+      );
 
       // Inputs should be disabled during update
       expect(venueNameInput).toBeDisabled();
