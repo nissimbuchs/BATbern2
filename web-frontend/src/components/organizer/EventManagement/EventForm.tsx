@@ -37,6 +37,7 @@ import {
   Chip,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { eventApiClient } from '@/services/eventApiClient';
 import type { Event, EventUI, CreateEventRequest, PatchEventRequest } from '@/types/event.types';
@@ -66,7 +67,7 @@ const createEventSchema = (t: (key: string) => string) =>
       registrationDeadline: z.string().optional().or(z.literal('')),
       venueName: z.string().min(1, t('validation.venueNameRequired')),
       venueAddress: z.string().min(1, t('validation.venueAddressRequired')),
-      venueCapacity: z.number().positive(t('validation.capacityPositive')),
+      venueCapacity: z.coerce.number().positive(t('validation.capacityPositive')),
       // UI-only fields (will be stored in metadata)
       theme: z.string().optional().or(z.literal('')),
       eventType: z.enum(['full_day', 'afternoon', 'evening']).optional(),
@@ -104,6 +105,7 @@ interface EventFormProps {
 export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose, onSuccess }) => {
   const { t } = useTranslation('events');
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [apiError, setApiError] = useState<string | null>(null);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>(
     'idle'
@@ -207,6 +209,8 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
     try {
       // Convert form data to API request format (PatchEventRequest)
       await eventApiClient.patchEvent(event.eventCode, changedFields as PatchEventRequest);
+      // Invalidate events cache to refresh all components showing events
+      await queryClient.invalidateQueries({ queryKey: ['events'] });
       setAutoSaveStatus('saved');
       setLastSavedAt(new Date());
       setInitialFormData(getValues()); // Update initial data after successful save
@@ -232,9 +236,10 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
     try {
       // IMPORTANT: Backend expects organizerUsername (String) per Story 1.16.2
       // OpenAPI spec updated to use username as public identifier
-      const createData: CreateEventRequest = {
+      // NOTE: Do NOT send eventNumber - backend will auto-generate both eventNumber and eventCode
+      const createData = {
         title: data.title,
-        eventNumber: 0, // Backend will auto-generate the event number
+        // eventNumber: REMOVED - backend auto-generates to avoid "BATbern0" collision
         date: new Date(data.date).toISOString(),
         registrationDeadline: data.registrationDeadline
           ? new Date(data.registrationDeadline).toISOString()
@@ -250,9 +255,11 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
           data.theme || data.eventType
             ? JSON.stringify({ theme: data.theme, eventType: data.eventType })
             : undefined,
-      };
+      } as CreateEventRequest;
 
       await eventApiClient.createEvent(createData);
+      // Invalidate events cache to refresh all components showing events
+      await queryClient.invalidateQueries({ queryKey: ['events'] });
       onSuccess?.();
       onClose();
     } catch (error: unknown) {
@@ -274,6 +281,8 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
       }
 
       await eventApiClient.patchEvent(event.eventCode, changedFields as PatchEventRequest);
+      // Invalidate events cache to refresh all components showing events
+      await queryClient.invalidateQueries({ queryKey: ['events'] });
       onSuccess?.();
       onClose();
     } catch (error: unknown) {

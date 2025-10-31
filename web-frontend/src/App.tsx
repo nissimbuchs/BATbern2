@@ -51,7 +51,7 @@ const UserManagement = React.lazy(() => import('@components/organizer/UserManage
 const EventManagementDashboard = React.lazy(() => import('@pages/EventManagementDashboard'));
 const EventCreate = React.lazy(() => import('@pages/EventCreate'));
 const EventTimeline = React.lazy(() => import('@pages/EventTimeline'));
-const EventDetail = React.lazy(() => import('@pages/EventDetail'));
+const EventDetailEdit = React.lazy(() => import('@pages/EventDetailEdit')); // Comprehensive edit page with Tasks 9-13
 
 // Loading fallback component for Suspense
 const PageLoader = () => (
@@ -221,7 +221,7 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <AuthLayout>
-                        <EventDetail />
+                        <EventDetailEdit />
                       </AuthLayout>
                     </ProtectedRoute>
                   }
