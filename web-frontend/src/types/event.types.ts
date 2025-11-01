@@ -32,6 +32,22 @@ export type PatchEventRequest = components['schemas']['PatchEventRequest'];
 // ============================================================================
 
 /**
+ * UI-Extended Session Type
+ * Adds frontend-specific fields to the base Session type from API
+ */
+export interface SessionUI extends Session {
+  // UI-only fields for session management (Phase 2 features)
+  slotNumber?: number; // Slot number in the agenda
+  speaker?: {
+    speakerSlug: string;
+    name: string;
+    company?: string; // Speaker's company name
+    email?: string;
+  };
+  materialsStatus?: 'pending' | 'submitted' | 'approved' | 'rejected';
+}
+
+/**
  * UI-Extended Event Type
  * Adds frontend-specific fields to the base Event type from API
  */
@@ -40,7 +56,7 @@ export interface EventUI extends Event {
   eventDate?: string; // Alias for 'date' field
   capacity?: number; // Alias for 'venueCapacity' field
 
-  // UI-only fields (not in backend API yet - future enhancement)
+  // UI-only fields (Phase 2 features - not in backend API yet)
   venueCode?: string; // Venue identifier for dropdown selection
   eventType?: 'full_day' | 'afternoon' | 'evening'; // Event duration type
   theme?: string; // Event theme/category
@@ -57,6 +73,21 @@ export interface EventUI extends Event {
 export interface EventDetailUI extends EventDetail {
   booking?: VenueBooking;
   catering?: CateringConfig;
+
+  // Additional UI-only fields for dashboard and detail view (Phase 2 features)
+  eventDate?: string; // Alias for 'date' field
+  eventType?: 'full_day' | 'afternoon' | 'evening'; // Event duration type
+  topics?: string[]; // List of topic IDs/names
+  workflowStep?: number; // Current workflow step number
+  workflowState?: string; // Current workflow state name
+  confirmedSpeakersCount?: number;
+  assignedTopicsCount?: number;
+  pendingMaterialsCount?: number;
+  budget?: {
+    allocated?: number;
+    spent?: number;
+    currency?: string;
+  };
 }
 
 // ============================================================================

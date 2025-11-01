@@ -52,10 +52,10 @@ import {
   AutoAwesome as AutoAssignIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import type { Session } from '@/types/event.types';
+import type { SessionUI } from '@/types/event.types';
 
 interface SpeakersSessionsTableProps {
-  sessions: Session[];
+  sessions: SessionUI[];
   eventCode: string;
   onViewDetails: (sessionId: string) => void;
   onEditSlot: (sessionId: string) => void;
@@ -85,28 +85,34 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
   const [autoAssignDialogOpen, setAutoAssignDialogOpen] = useState(false);
 
   // Materials status icon and color mapping
-  const getMaterialsStatusIcon = (status: 'complete' | 'pending' | 'missing') => {
-    switch (status) {
-      case 'complete':
+  const getMaterialsStatusIcon = (status?: 'pending' | 'submitted' | 'approved' | 'rejected') => {
+    // Default to 'pending' if status is not available (Phase 2 feature)
+    const effectiveStatus = status || 'pending';
+    switch (effectiveStatus) {
+      case 'approved':
         return (
           <CheckIcon color="success" fontSize="small" data-testid="materials-status-complete" />
         );
+      case 'submitted':
       case 'pending':
         return (
           <WarningIcon color="warning" fontSize="small" data-testid="materials-status-pending" />
         );
-      case 'missing':
+      case 'rejected':
         return <ErrorIcon color="error" fontSize="small" data-testid="materials-status-missing" />;
     }
   };
 
-  const getMaterialsStatusLabel = (status: 'complete' | 'pending' | 'missing') => {
-    switch (status) {
-      case 'complete':
+  const getMaterialsStatusLabel = (status?: 'pending' | 'submitted' | 'approved' | 'rejected') => {
+    // Default to 'pending' if status is not available (Phase 2 feature)
+    const effectiveStatus = status || 'pending';
+    switch (effectiveStatus) {
+      case 'approved':
         return t('speakers.materialsComplete');
+      case 'submitted':
       case 'pending':
         return t('speakers.materialsPending');
-      case 'missing':
+      case 'rejected':
         return t('speakers.materialsMissing');
     }
   };
@@ -191,12 +197,16 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
         </Typography>
 
         {sessions.map((session) => (
-          <Card key={session.id} sx={{ mb: 2 }} data-testid={`session-card-${session.slotNumber}`}>
+          <Card
+            key={session.sessionSlug}
+            sx={{ mb: 2 }}
+            data-testid={`session-card-${session.slotNumber || 0}`}
+          >
             <CardContent>
               <Stack spacing={1}>
                 <Typography variant="subtitle2" color="text.secondary">
-                  {t('speakers.slotLabel', { number: session.slotNumber })} | {session.startTime}-
-                  {session.endTime}
+                  {t('speakers.slotLabel', { number: session.slotNumber || 0 })} |{' '}
+                  {session.startTime}-{session.endTime}
                 </Typography>
 
                 {session.speaker ? (
@@ -224,18 +234,22 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
               <Button
                 size="small"
                 startIcon={<ViewIcon />}
-                onClick={() => onViewDetails(session.id)}
+                onClick={() => onViewDetails(session.sessionSlug)}
               >
                 {t('speakers.viewDetails')}
               </Button>
-              <Button size="small" startIcon={<EditIcon />} onClick={() => onEditSlot(session.id)}>
+              <Button
+                size="small"
+                startIcon={<EditIcon />}
+                onClick={() => onEditSlot(session.sessionSlug)}
+              >
                 {t('speakers.editSlot')}
               </Button>
               {session.speaker && (
                 <Button
                   size="small"
                   startIcon={<FolderIcon />}
-                  onClick={() => onViewMaterials(session.id)}
+                  onClick={() => onViewMaterials(session.sessionSlug)}
                 >
                   {t('speakers.materials')}
                 </Button>
@@ -317,10 +331,14 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
           </TableHead>
           <TableBody>
             {sessions.map((session) => (
-              <TableRow key={session.id} data-testid={`session-row-${session.slotNumber}`} hover>
+              <TableRow
+                key={session.sessionSlug}
+                data-testid={`session-row-${session.slotNumber || 0}`}
+                hover
+              >
                 <TableCell>
                   <Typography variant="body2" fontWeight="bold">
-                    {t('speakers.slotLabel', { number: session.slotNumber })}
+                    {t('speakers.slotLabel', { number: session.slotNumber || 0 })}
                   </Typography>
                 </TableCell>
 
@@ -371,14 +389,14 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
                     <Button
                       size="small"
                       startIcon={<ViewIcon />}
-                      onClick={() => onViewDetails(session.id)}
+                      onClick={() => onViewDetails(session.sessionSlug)}
                     >
                       {t('speakers.viewDetails')}
                     </Button>
                     <Button
                       size="small"
                       startIcon={<EditIcon />}
-                      onClick={() => onEditSlot(session.id)}
+                      onClick={() => onEditSlot(session.sessionSlug)}
                     >
                       {t('speakers.editSlot')}
                     </Button>
@@ -386,7 +404,7 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
                       <Button
                         size="small"
                         startIcon={<FolderIcon />}
-                        onClick={() => onViewMaterials(session.id)}
+                        onClick={() => onViewMaterials(session.sessionSlug)}
                       >
                         {t('speakers.materials')}
                       </Button>

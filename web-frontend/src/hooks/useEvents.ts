@@ -24,7 +24,7 @@ import {
 import { eventApiClient } from '@/services/eventApiClient';
 import type {
   Event,
-  EventDetail,
+  EventDetailUI,
   EventFilters,
   EventListResponse,
   WorkflowState,
@@ -64,7 +64,7 @@ export const useEvents = (
 export const useEvent = (
   eventCode: string | undefined,
   include?: string[]
-): UseQueryResult<EventDetail, Error> => {
+): UseQueryResult<EventDetailUI, Error> => {
   return useQuery({
     queryKey: ['event', eventCode, include],
     queryFn: () => eventApiClient.getEvent(eventCode!, include ? { expand: include } : undefined),

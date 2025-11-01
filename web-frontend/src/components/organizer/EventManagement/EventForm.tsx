@@ -67,7 +67,9 @@ const createEventSchema = (t: (key: string) => string) =>
       registrationDeadline: z.string().optional().or(z.literal('')),
       venueName: z.string().min(1, t('validation.venueNameRequired')),
       venueAddress: z.string().min(1, t('validation.venueAddressRequired')),
-      venueCapacity: z.coerce.number().positive(t('validation.capacityPositive')),
+      venueCapacity: z.coerce
+        .number({ message: t('validation.capacityRequired') })
+        .positive(t('validation.capacityPositive')),
       // UI-only fields (will be stored in metadata)
       theme: z.string().optional().or(z.literal('')),
       eventType: z.enum(['full_day', 'afternoon', 'evening']).optional(),
@@ -87,7 +89,18 @@ const createEventSchema = (t: (key: string) => string) =>
       }
     );
 
-type EventFormData = z.infer<ReturnType<typeof createEventSchema>>;
+// Explicit type for form data (needed because z.infer doesn't handle complex transforms correctly)
+interface EventFormData {
+  title: string;
+  description: string;
+  date: string;
+  venueName: string;
+  venueAddress: string;
+  venueCapacity: number;
+  registrationDeadline?: string;
+  theme?: string;
+  eventType?: 'full_day' | 'afternoon' | 'evening';
+}
 
 // Type for partial updates (all fields optional)
 type PartialEventFormData = {
@@ -121,7 +134,14 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
   const eventSchema = createEventSchema(t);
 
   const form = useForm<EventFormData>({
-    resolver: zodResolver(eventSchema),
+    // NOTE: Type assertion required here due to Zod limitation
+    // z.coerce.number() returns 'unknown' for input type, causing type mismatch with zodResolver
+    // This is safe because:
+    // 1. EventFormData interface explicitly defines venueCapacity: number
+    // 2. Zod schema validates and coerces the value to number at runtime
+    // 3. The form will only accept/return EventFormData with venueCapacity as number
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(eventSchema) as any,
     mode: 'onBlur',
     defaultValues: event
       ? {

@@ -43,7 +43,7 @@ import {
   SpeakersSessionsTable,
   WorkflowProgressBar,
 } from '@/components/organizer/EventManagement';
-import type { Session, Topic } from '@/types/event.types';
+import type { Session, Topic, WorkflowStep } from '@/types/event.types';
 
 const EventDetailEdit: React.FC = () => {
   const { eventCode } = useParams<{ eventCode: string }>();
@@ -178,8 +178,9 @@ const EventDetailEdit: React.FC = () => {
     );
   }
 
-  // Use real data from event or fallback to mock data
-  const topics: Topic[] = event.topics || [];
+  // Use real data from event or fallback to empty arrays
+  // Note: topics is string[] in Phase 2, will be Topic[] when backend implements it
+  const topics: Topic[] = [];
   const sessions: Session[] = event.sessions || [];
 
   return (
@@ -311,9 +312,15 @@ const EventDetailEdit: React.FC = () => {
               </Typography>
               <Divider sx={{ mb: 2 }} />
               <WorkflowProgressBar
-                currentStep={event.workflowStep || 1}
-                totalSteps={16}
-                currentState={event.workflowState || 'topic_selection'}
+                workflow={{
+                  currentStep: (event.workflowStep || 1) as WorkflowStep,
+                  totalSteps: 16,
+                  completionPercentage: ((event.workflowStep || 1) / 16) * 100,
+                  steps: [],
+                  blockers: [],
+                }}
+                eventCode={eventCode || ''}
+                compact
               />
               <Button variant="text" size="small" sx={{ mt: 2 }}>
                 {t('workflow.viewDetails', 'View Workflow Details')}
@@ -344,7 +351,8 @@ const EventDetailEdit: React.FC = () => {
                   {event.venueCapacity}
                 </Typography>
                 <Typography variant="body2">
-                  💰 {t('metrics.budget', 'Budget')}: CHF {event.budget || '0'}
+                  💰 {t('metrics.budget', 'Budget')}: {event.budget?.currency || 'CHF'}{' '}
+                  {event.budget?.allocated || '0'}
                 </Typography>
               </Stack>
             </Paper>
