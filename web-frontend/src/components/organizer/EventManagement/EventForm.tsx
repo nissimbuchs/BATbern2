@@ -174,7 +174,25 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
     formState: { errors, isDirty },
     watch,
     getValues,
+    reset,
   } = form;
+
+  // Reset form when modal opens in create mode
+  useEffect(() => {
+    if (open && mode === 'create') {
+      reset({
+        title: '',
+        description: '',
+        date: '',
+        registrationDeadline: '',
+        venueName: '',
+        venueAddress: '',
+        venueCapacity: 200,
+        theme: '',
+        eventType: 'full_day',
+      });
+    }
+  }, [open, mode, reset]);
 
   // Store initial form data for partial update comparison
   useEffect(() => {
