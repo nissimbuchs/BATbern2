@@ -29,12 +29,12 @@ import {
   useUpdateEvent,
   useDeleteEvent,
 } from '@/hooks/useEvents';
-import { EventApiClient } from '@/services/eventApiClient';
+import { eventApiClient } from '@/services/eventApiClient';
 import type { EventFilters, EventListResponse, EventDetail } from '@/types/event.types';
 
-// Mock the API client
+// Mock the API client - Vitest v4 syntax
 vi.mock('@/services/eventApiClient', () => ({
-  EventApiClient: {
+  eventApiClient: {
     getEvents: vi.fn(),
     getEvent: vi.fn(),
     getEventWorkflow: vi.fn(),
@@ -109,7 +109,7 @@ describe('Event Management React Query Hooks', () => {
     };
 
     it('should_fetchEvents_when_hookCalled', async () => {
-      vi.mocked(EventApiClient.getEvents).mockResolvedValue(mockEventsResponse);
+      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockEventsResponse);
 
       const { result } = renderHook(() => useEvents({ page: 1, limit: 20 }), {
         wrapper: createWrapper(),
@@ -119,12 +119,12 @@ describe('Event Management React Query Hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(EventApiClient.getEvents).toHaveBeenCalledWith({ page: 1, limit: 20 }, undefined);
+      expect(eventApiClient.getEvents).toHaveBeenCalledWith({ page: 1, limit: 20 }, undefined);
       expect(result.current.data).toEqual(mockEventsResponse);
     });
 
     it('should_returnLoadingState_when_queryPending', () => {
-      vi.mocked(EventApiClient.getEvents).mockReturnValue(
+      vi.mocked(eventApiClient.getEvents).mockReturnValue(
         new Promise(() => {}) // Never resolves
       );
 
@@ -138,7 +138,7 @@ describe('Event Management React Query Hooks', () => {
 
     it('should_returnError_when_apiFails', async () => {
       const mockError = new Error('Failed to fetch events');
-      vi.mocked(EventApiClient.getEvents).mockRejectedValue(mockError);
+      vi.mocked(eventApiClient.getEvents).mockRejectedValue(mockError);
 
       const { result } = renderHook(() => useEvents({ page: 1, limit: 20 }), {
         wrapper: createWrapper(),
@@ -152,7 +152,7 @@ describe('Event Management React Query Hooks', () => {
     });
 
     it('should_applyFilters_when_filtersProvided', async () => {
-      vi.mocked(EventApiClient.getEvents).mockResolvedValue(mockEventsResponse);
+      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockEventsResponse);
 
       const filters: EventFilters = {
         status: ['active', 'published'],
@@ -168,11 +168,11 @@ describe('Event Management React Query Hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(EventApiClient.getEvents).toHaveBeenCalledWith({ page: 1, limit: 20 }, filters);
+      expect(eventApiClient.getEvents).toHaveBeenCalledWith({ page: 1, limit: 20 }, filters);
     });
 
     it('should_refetchEvents_when_filtersChange', async () => {
-      vi.mocked(EventApiClient.getEvents).mockResolvedValue(mockEventsResponse);
+      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockEventsResponse);
 
       const { result, rerender } = renderHook(
         (filters: EventFilters = {}) => useEvents({ page: 1, limit: 20 }, filters),
@@ -183,23 +183,23 @@ describe('Event Management React Query Hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(EventApiClient.getEvents).toHaveBeenCalledTimes(1);
+      expect(eventApiClient.getEvents).toHaveBeenCalledTimes(1);
 
       // Change filters
       rerender({ status: ['active'] });
 
       await waitFor(() => {
-        expect(EventApiClient.getEvents).toHaveBeenCalledTimes(2);
+        expect(eventApiClient.getEvents).toHaveBeenCalledTimes(2);
       });
 
-      expect(EventApiClient.getEvents).toHaveBeenLastCalledWith(
+      expect(eventApiClient.getEvents).toHaveBeenLastCalledWith(
         { page: 1, limit: 20 },
         { status: ['active'] }
       );
     });
 
     it('should_cacheResultsFor5Minutes_when_staleTimeSet', async () => {
-      vi.mocked(EventApiClient.getEvents).mockResolvedValue(mockEventsResponse);
+      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockEventsResponse);
 
       const { result } = renderHook(() => useEvents({ page: 1, limit: 20 }), {
         wrapper: createWrapper(),
@@ -211,7 +211,7 @@ describe('Event Management React Query Hooks', () => {
 
       // Verify that the hook sets staleTime to 5 minutes (300000ms)
       // This is checked by verifying the query doesn't refetch immediately
-      expect(EventApiClient.getEvents).toHaveBeenCalledTimes(1);
+      expect(eventApiClient.getEvents).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -254,7 +254,7 @@ describe('Event Management React Query Hooks', () => {
     };
 
     it('should_fetchEventWithIncludes_when_includesProvided', async () => {
-      vi.mocked(EventApiClient.getEvent).mockResolvedValue(mockEventDetail);
+      vi.mocked(eventApiClient.getEvent).mockResolvedValue(mockEventDetail);
 
       const includes = ['workflow', 'speakers', 'sessions', 'venue', 'registrations'];
 
@@ -266,7 +266,7 @@ describe('Event Management React Query Hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(EventApiClient.getEvent).toHaveBeenCalledWith('BATbern56', includes);
+      expect(eventApiClient.getEvent).toHaveBeenCalledWith('BATbern56', includes);
       expect(result.current.data).toEqual(mockEventDetail);
     });
 
@@ -276,11 +276,11 @@ describe('Event Management React Query Hooks', () => {
       });
 
       expect(result.current.isLoading).toBe(false);
-      expect(EventApiClient.getEvent).not.toHaveBeenCalled();
+      expect(eventApiClient.getEvent).not.toHaveBeenCalled();
     });
 
     it('should_cacheResultsFor15Minutes_when_staleTimeSet', async () => {
-      vi.mocked(EventApiClient.getEvent).mockResolvedValue(mockEventDetail);
+      vi.mocked(eventApiClient.getEvent).mockResolvedValue(mockEventDetail);
 
       const { result } = renderHook(() => useEvent('BATbern56', ['workflow']), {
         wrapper: createWrapper(),
@@ -290,7 +290,7 @@ describe('Event Management React Query Hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(EventApiClient.getEvent).toHaveBeenCalledTimes(1);
+      expect(eventApiClient.getEvent).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -304,7 +304,7 @@ describe('Event Management React Query Hooks', () => {
     };
 
     it('should_fetchEventWorkflow_when_eventCodeProvided', async () => {
-      vi.mocked(EventApiClient.getEventWorkflow).mockResolvedValue(mockWorkflow);
+      vi.mocked(eventApiClient.getEventWorkflow).mockResolvedValue(mockWorkflow);
 
       const { result } = renderHook(() => useEventWorkflow('BATbern56'), {
         wrapper: createWrapper(),
@@ -314,7 +314,7 @@ describe('Event Management React Query Hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(EventApiClient.getEventWorkflow).toHaveBeenCalledWith('BATbern56');
+      expect(eventApiClient.getEventWorkflow).toHaveBeenCalledWith('BATbern56');
       expect(result.current.data).toEqual(mockWorkflow);
     });
 
@@ -324,11 +324,11 @@ describe('Event Management React Query Hooks', () => {
       });
 
       expect(result.current.isLoading).toBe(false);
-      expect(EventApiClient.getEventWorkflow).not.toHaveBeenCalled();
+      expect(eventApiClient.getEventWorkflow).not.toHaveBeenCalled();
     });
 
     it('should_cacheResultsFor10Minutes_when_staleTimeSet', async () => {
-      vi.mocked(EventApiClient.getEventWorkflow).mockResolvedValue(mockWorkflow);
+      vi.mocked(eventApiClient.getEventWorkflow).mockResolvedValue(mockWorkflow);
 
       const { result } = renderHook(() => useEventWorkflow('BATbern56'), {
         wrapper: createWrapper(),
@@ -338,7 +338,7 @@ describe('Event Management React Query Hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(EventApiClient.getEventWorkflow).toHaveBeenCalledTimes(1);
+      expect(eventApiClient.getEventWorkflow).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -362,7 +362,7 @@ describe('Event Management React Query Hooks', () => {
     };
 
     it('should_fetchCriticalTasks_when_organizerUsernameProvided', async () => {
-      vi.mocked(EventApiClient.getCriticalTasks).mockResolvedValue(mockTasks);
+      vi.mocked(eventApiClient.getCriticalTasks).mockResolvedValue(mockTasks);
 
       const { result } = renderHook(() => useCriticalTasks('john.doe'), {
         wrapper: createWrapper(),
@@ -372,7 +372,7 @@ describe('Event Management React Query Hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(EventApiClient.getCriticalTasks).toHaveBeenCalledWith('john.doe', 10);
+      expect(eventApiClient.getCriticalTasks).toHaveBeenCalledWith('john.doe', 10);
       expect(result.current.data).toEqual(mockTasks);
     });
 
@@ -382,11 +382,11 @@ describe('Event Management React Query Hooks', () => {
       });
 
       expect(result.current.isLoading).toBe(false);
-      expect(EventApiClient.getCriticalTasks).not.toHaveBeenCalled();
+      expect(eventApiClient.getCriticalTasks).not.toHaveBeenCalled();
     });
 
     it('should_cacheResultsFor3Minutes_when_staleTimeSet', async () => {
-      vi.mocked(EventApiClient.getCriticalTasks).mockResolvedValue(mockTasks);
+      vi.mocked(eventApiClient.getCriticalTasks).mockResolvedValue(mockTasks);
 
       const { result } = renderHook(() => useCriticalTasks('john.doe'), {
         wrapper: createWrapper(),
@@ -396,7 +396,7 @@ describe('Event Management React Query Hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(EventApiClient.getCriticalTasks).toHaveBeenCalledTimes(1);
+      expect(eventApiClient.getCriticalTasks).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -423,7 +423,7 @@ describe('Event Management React Query Hooks', () => {
     };
 
     it('should_fetchTeamActivity_when_organizerUsernameProvided', async () => {
-      vi.mocked(EventApiClient.getTeamActivity).mockResolvedValue(mockActivity);
+      vi.mocked(eventApiClient.getTeamActivity).mockResolvedValue(mockActivity);
 
       const { result } = renderHook(() => useTeamActivity('john.doe', 20), {
         wrapper: createWrapper(),
@@ -433,7 +433,7 @@ describe('Event Management React Query Hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(EventApiClient.getTeamActivity).toHaveBeenCalledWith('john.doe', 20);
+      expect(eventApiClient.getTeamActivity).toHaveBeenCalledWith('john.doe', 20);
       expect(result.current.data).toEqual(mockActivity);
     });
 
@@ -443,11 +443,11 @@ describe('Event Management React Query Hooks', () => {
       });
 
       expect(result.current.isLoading).toBe(false);
-      expect(EventApiClient.getTeamActivity).not.toHaveBeenCalled();
+      expect(eventApiClient.getTeamActivity).not.toHaveBeenCalled();
     });
 
     it('should_cacheResultsFor2Minutes_when_staleTimeSet', async () => {
-      vi.mocked(EventApiClient.getTeamActivity).mockResolvedValue(mockActivity);
+      vi.mocked(eventApiClient.getTeamActivity).mockResolvedValue(mockActivity);
 
       const { result } = renderHook(() => useTeamActivity('john.doe'), {
         wrapper: createWrapper(),
@@ -457,7 +457,7 @@ describe('Event Management React Query Hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(EventApiClient.getTeamActivity).toHaveBeenCalledTimes(1);
+      expect(eventApiClient.getTeamActivity).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -481,7 +481,7 @@ describe('Event Management React Query Hooks', () => {
     };
 
     it('should_createEvent_when_mutationCalled', async () => {
-      vi.mocked(EventApiClient.createEvent).mockResolvedValue(mockCreatedEvent);
+      vi.mocked(eventApiClient.createEvent).mockResolvedValue(mockCreatedEvent);
 
       const { result } = renderHook(() => useCreateEvent(), {
         wrapper: createWrapper(),
@@ -500,13 +500,13 @@ describe('Event Management React Query Hooks', () => {
         });
       });
 
-      expect(EventApiClient.createEvent).toHaveBeenCalled();
+      expect(eventApiClient.createEvent).toHaveBeenCalled();
       expect(result.current.isSuccess).toBe(true);
       expect(result.current.data).toEqual(mockCreatedEvent);
     });
 
     it('should_invalidateEventsQuery_when_createSucceeds', async () => {
-      vi.mocked(EventApiClient.createEvent).mockResolvedValue(mockCreatedEvent);
+      vi.mocked(eventApiClient.createEvent).mockResolvedValue(mockCreatedEvent);
 
       const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
@@ -553,7 +553,7 @@ describe('Event Management React Query Hooks', () => {
     };
 
     it('should_updateEvent_when_mutationCalled', async () => {
-      vi.mocked(EventApiClient.patchEvent).mockResolvedValue(mockUpdatedEvent);
+      vi.mocked(eventApiClient.patchEvent).mockResolvedValue(mockUpdatedEvent);
 
       const { result } = renderHook(() => useUpdateEvent(), {
         wrapper: createWrapper(),
@@ -569,7 +569,7 @@ describe('Event Management React Query Hooks', () => {
         });
       });
 
-      expect(EventApiClient.patchEvent).toHaveBeenCalledWith('BATbern56', {
+      expect(eventApiClient.patchEvent).toHaveBeenCalledWith('BATbern56', {
         title: 'Updated Event',
         version: 1,
       });
@@ -577,7 +577,7 @@ describe('Event Management React Query Hooks', () => {
     });
 
     it('should_invalidateEventQueries_when_updateSucceeds', async () => {
-      vi.mocked(EventApiClient.patchEvent).mockResolvedValue(mockUpdatedEvent);
+      vi.mocked(eventApiClient.patchEvent).mockResolvedValue(mockUpdatedEvent);
 
       const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
@@ -602,7 +602,7 @@ describe('Event Management React Query Hooks', () => {
     });
 
     it('should_performOptimisticUpdate_when_mutationCalled', async () => {
-      vi.mocked(EventApiClient.patchEvent).mockResolvedValue(mockUpdatedEvent);
+      vi.mocked(eventApiClient.patchEvent).mockResolvedValue(mockUpdatedEvent);
 
       // Pre-populate the cache with the event
       queryClient.setQueryData(['event', 'BATbern56'], {
@@ -630,7 +630,7 @@ describe('Event Management React Query Hooks', () => {
 
     it('should_rollbackOptimisticUpdate_when_mutationFails', async () => {
       const mockError = new Error('Update failed');
-      vi.mocked(EventApiClient.patchEvent).mockRejectedValue(mockError);
+      vi.mocked(eventApiClient.patchEvent).mockRejectedValue(mockError);
 
       // Pre-populate the cache
       const originalEvent = {
@@ -666,7 +666,7 @@ describe('Event Management React Query Hooks', () => {
 
   describe('useDeleteEvent Hook', () => {
     it('should_deleteEvent_when_mutationCalled', async () => {
-      vi.mocked(EventApiClient.deleteEvent).mockResolvedValue(undefined);
+      vi.mocked(eventApiClient.deleteEvent).mockResolvedValue(undefined);
 
       const { result } = renderHook(() => useDeleteEvent(), {
         wrapper: createWrapper(),
@@ -676,12 +676,12 @@ describe('Event Management React Query Hooks', () => {
         await result.current.mutateAsync('BATbern56');
       });
 
-      expect(EventApiClient.deleteEvent).toHaveBeenCalledWith('BATbern56');
+      expect(eventApiClient.deleteEvent).toHaveBeenCalledWith('BATbern56');
       expect(result.current.isSuccess).toBe(true);
     });
 
     it('should_invalidateEventsQuery_when_deleteSucceeds', async () => {
-      vi.mocked(EventApiClient.deleteEvent).mockResolvedValue(undefined);
+      vi.mocked(eventApiClient.deleteEvent).mockResolvedValue(undefined);
 
       const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
@@ -700,7 +700,7 @@ describe('Event Management React Query Hooks', () => {
 
     it('should_returnError_when_deleteFails', async () => {
       const mockError = new Error('Cannot delete event with registrations');
-      vi.mocked(EventApiClient.deleteEvent).mockRejectedValue(mockError);
+      vi.mocked(eventApiClient.deleteEvent).mockRejectedValue(mockError);
 
       const { result } = renderHook(() => useDeleteEvent(), {
         wrapper: createWrapper(),

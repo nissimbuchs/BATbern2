@@ -162,6 +162,7 @@ export const CriticalTasksList: React.FC<CriticalTasksListProps> = ({
 
               {/* Task Description */}
               <ListItemText
+                secondaryTypographyProps={{ component: 'div' }}
                 secondary={
                   <Stack spacing={0.5}>
                     <Typography variant="body2">{task.description}</Typography>

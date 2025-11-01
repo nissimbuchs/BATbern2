@@ -182,6 +182,8 @@ export const TeamActivityFeed: React.FC<TeamActivityFeedProps> = ({
               </ListItemAvatar>
 
               <ListItemText
+                primaryTypographyProps={{ component: 'div' }}
+                secondaryTypographyProps={{ component: 'div' }}
                 primary={
                   <Stack direction="row" spacing={1} alignItems="center">
                     <Typography variant="body2" fontWeight="bold">
