@@ -147,7 +147,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
       ? {
           title: event.title,
           description: event.description || '',
-          date: event.date.split('T')[0],
+          date: event.date ? event.date.split('T')[0] : '',
           registrationDeadline: event.registrationDeadline?.split('T')[0] || '',
           venueName: event.venueName || '',
           venueAddress: event.venueAddress || '',
@@ -200,7 +200,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
       setInitialFormData({
         title: event.title,
         description: event.description || '',
-        date: event.date.split('T')[0],
+        date: event.date ? event.date.split('T')[0] : '',
         registrationDeadline: event.registrationDeadline?.split('T')[0] || '',
         venueName: event.venueName || '',
         venueAddress: event.venueAddress || '',
