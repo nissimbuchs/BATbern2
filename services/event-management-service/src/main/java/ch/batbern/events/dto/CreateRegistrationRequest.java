@@ -8,11 +8,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.UUID;
-
 /**
  * Request DTO for creating a new registration
  * Story 1.15a.1: Events API Consolidation - AC12
+ * Story 1.16.2: Uses attendeeUsername (firstname.lastname) instead of UUID
  */
 @Data
 @Builder
@@ -20,8 +19,8 @@ import java.util.UUID;
 @AllArgsConstructor
 public class CreateRegistrationRequest {
 
-    @NotNull(message = "Attendee ID is required")
-    private UUID attendeeId;
+    @NotBlank(message = "Attendee username is required")
+    private String attendeeUsername; // Format: firstname.lastname
 
     @NotBlank(message = "Attendee name is required")
     private String attendeeName;

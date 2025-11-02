@@ -47,7 +47,7 @@ describe('NetworkStack', () => {
       const template = Template.fromStack(stack);
 
       // Verify subnets exist (count depends on maxAzs config)
-      template.resourcePropertiesCountIs('AWS::EC2::Subnet', {}, 3); // 1 AZ * 3 subnet types for cost-optimized prod
+      template.resourcePropertiesCountIs('AWS::EC2::Subnet', {}, 6); // 2 AZs * 3 subnet types (public, private, isolated)
     });
 
     test('should_createNATGateways_when_privateSubnetsNeedInternet', () => {
@@ -128,8 +128,8 @@ describe('NetworkStack', () => {
       // Assert
       const template = Template.fromStack(stack);
 
-      // Verify security groups for database, cache, and application tiers
-      template.resourceCountIs('AWS::EC2::SecurityGroup', 3);
+      // Verify security groups for database, cache, application, and lambda triggers tiers
+      template.resourceCountIs('AWS::EC2::SecurityGroup', 4);
     });
   });
 });

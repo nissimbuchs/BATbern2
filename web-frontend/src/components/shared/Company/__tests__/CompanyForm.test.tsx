@@ -791,8 +791,8 @@ describe('CompanyForm Component - AC5 Logo Upload', () => {
       render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={vi.fn()} />);
 
       // LogoUpload component should be rendered
-      expect(screen.getByTestId('logo-dropzone')).toBeInTheDocument();
-      expect(screen.getByText(/drag and drop a logo here/i)).toBeInTheDocument();
+      expect(screen.getByTestId('file-dropzone')).toBeInTheDocument();
+      expect(screen.getByText(/drag and drop a file here/i)).toBeInTheDocument();
     });
 
     it('should_passCompanyId_when_editMode', () => {
@@ -808,7 +808,7 @@ describe('CompanyForm Component - AC5 Logo Upload', () => {
       );
 
       // LogoUpload should be rendered with company ID
-      expect(screen.getByTestId('logo-dropzone')).toBeInTheDocument();
+      expect(screen.getByTestId('file-dropzone')).toBeInTheDocument();
 
       // In edit mode, if logo exists, it should show preview instead of dropzone
       // LogoUpload component shows preview if currentLogoUrl is provided
@@ -836,8 +836,10 @@ describe('CompanyForm Component - AC5 Logo Upload', () => {
       );
 
       // Should show logo preview instead of dropzone
-      expect(screen.getByAltText(/company logo preview/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/remove logo/i)).toBeInTheDocument();
+      // FileUpload uses i18n translation key 'fileUpload.altText' by default
+      expect(screen.getByAltText(/fileUpload.altText/i)).toBeInTheDocument();
+      // Remove button uses i18n translation key 'fileUpload.removeFile' by default
+      expect(screen.getByLabelText(/fileUpload.removeFile/i)).toBeInTheDocument();
     });
 
     it('should_displayLogoSection_when_createMode', () => {
@@ -845,8 +847,8 @@ describe('CompanyForm Component - AC5 Logo Upload', () => {
       render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={vi.fn()} />);
 
       // Should have a logo upload section with dropzone
-      expect(screen.getByTestId('logo-dropzone')).toBeInTheDocument();
-      expect(screen.getByText(/drag and drop a logo here/i)).toBeInTheDocument();
+      expect(screen.getByTestId('file-dropzone')).toBeInTheDocument();
+      expect(screen.getByText(/drag and drop a file here/i)).toBeInTheDocument();
     });
   });
 
@@ -867,6 +869,49 @@ describe('CompanyForm Component - AC5 Logo Upload', () => {
       // LogoUpload component shows instructions
       expect(screen.getByText(/accepted formats.*png.*jpeg.*svg/i)).toBeInTheDocument();
       expect(screen.getByText(/max 5mb/i)).toBeInTheDocument();
+    });
+  });
+
+  describe('Form State Reset', () => {
+    it('should_resetFormAndLogo_when_reopeningCreateModal', async () => {
+      // Bug fix: Form should reset when reopening create modal after successful creation
+      const user = userEvent.setup();
+      const onSubmit = vi.fn();
+      const onClose = vi.fn();
+
+      // Initial render with modal open
+      const { rerender } = render(
+        <CompanyForm open={true} mode="create" onClose={onClose} onSubmit={onSubmit} />
+      );
+
+      // Fill in the form
+      const nameField = screen.getByLabelText(/company name/i);
+      await user.type(nameField, 'Test Company');
+
+      const displayNameField = screen.getByLabelText(/display name/i);
+      await user.type(displayNameField, 'Test Display Name');
+
+      // Verify data was entered
+      expect(nameField).toHaveValue('Test Company');
+      expect(displayNameField).toHaveValue('Test Display Name');
+
+      // Close modal (simulate successful creation)
+      rerender(<CompanyForm open={false} mode="create" onClose={onClose} onSubmit={onSubmit} />);
+
+      // Reopen modal
+      rerender(<CompanyForm open={true} mode="create" onClose={onClose} onSubmit={onSubmit} />);
+
+      // Form should be reset
+      await waitFor(() => {
+        const resetNameField = screen.getByLabelText(/company name/i);
+        const resetDisplayNameField = screen.getByLabelText(/display name/i);
+        expect(resetNameField).toHaveValue('');
+        expect(resetDisplayNameField).toHaveValue('');
+      });
+
+      // Logo section should show empty dropzone (not preview)
+      expect(screen.getByTestId('file-dropzone')).toBeInTheDocument();
+      expect(screen.getByText(/drag and drop a file here/i)).toBeInTheDocument();
     });
   });
 });

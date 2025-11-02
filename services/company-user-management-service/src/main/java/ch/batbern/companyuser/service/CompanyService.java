@@ -64,8 +64,9 @@ public class CompanyService {
             throw new CompanyValidationException("Company with name '" + request.getName() + "' already exists");
         }
 
-        // Build company entity (AC10: Get userId from security context)
-        String currentUserId = securityContextHelper.getCurrentUserId();
+        // Build company entity (AC10: Get username from security context)
+        // Story 1.16.2: Use username instead of UUID for createdBy field
+        String currentUsername = securityContextHelper.getCurrentUsername();
 
         Company company = Company.builder()
                 .name(request.getName())
@@ -75,7 +76,7 @@ public class CompanyService {
                 .industry(request.getIndustry())
                 .description(request.getDescription())
                 .isVerified(false)
-                .createdBy(currentUserId)
+                .createdBy(currentUsername)
                 .build();
 
         Company savedCompany = companyRepository.save(company);
@@ -119,7 +120,7 @@ public class CompanyService {
             savedCompany.getDescription(),
             savedCompany.getCreatedBy(),
             savedCompany.getCreatedAt(),
-            currentUserId  // username as String
+            currentUsername  // username as String
         );
         eventPublisher.publish(event);
 

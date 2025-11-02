@@ -1,0 +1,467 @@
+/**
+ * SpeakersSessionsTable Component (Task 13b - GREEN Phase)
+ *
+ * Story 2.5.3 - AC8: Speakers & Sessions Display
+ * Wireframe: docs/wireframes/story-1.16-event-detail-edit.md v1.1 (lines 83-101)
+ *
+ * Features:
+ * - Display 12 session slots with time, speaker, company, session title
+ * - Materials status indicators (Complete ✓, Pending ⚠️, Missing ❌)
+ * - Session-level actions (View Details, Edit Slot, Materials)
+ * - Footer actions (View Full Agenda, Manage Speaker Assignments, Auto-Assign Speakers)
+ * - Empty/Loading/Error states
+ * - i18n support (German/English)
+ * - Responsive design (table on desktop, cards on mobile)
+ * - Accessibility (ARIA labels, keyboard navigation)
+ */
+
+import React, { useState } from 'react';
+import {
+  Box,
+  Typography,
+  Button,
+  Card,
+  CardContent,
+  CardActions,
+  Alert,
+  Skeleton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Stack,
+  useMediaQuery,
+  useTheme,
+} from '@mui/material';
+import {
+  Visibility as ViewIcon,
+  Edit as EditIcon,
+  Folder as FolderIcon,
+  CheckCircle as CheckIcon,
+  Warning as WarningIcon,
+  Error as ErrorIcon,
+  CalendarToday as CalendarIcon,
+  AutoAwesome as AutoAssignIcon,
+} from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
+import type { SessionUI } from '@/types/event.types';
+
+interface SpeakersSessionsTableProps {
+  sessions: SessionUI[];
+  eventCode: string;
+  onViewDetails: (sessionId: string) => void;
+  onEditSlot: (sessionId: string) => void;
+  onViewMaterials: (sessionId: string) => void;
+  onViewFullAgenda: (eventCode: string) => void;
+  onManageSpeakerAssignments: (eventCode: string) => void;
+  onAutoAssignSpeakers: (eventCode: string) => void;
+  isLoading?: boolean;
+  error?: string;
+}
+
+export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
+  sessions,
+  eventCode,
+  onViewDetails,
+  onEditSlot,
+  onViewMaterials,
+  onViewFullAgenda,
+  onManageSpeakerAssignments,
+  onAutoAssignSpeakers,
+  isLoading = false,
+  error,
+}) => {
+  const { t } = useTranslation('events');
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [autoAssignDialogOpen, setAutoAssignDialogOpen] = useState(false);
+
+  // Materials status icon and color mapping
+  const getMaterialsStatusIcon = (status?: 'pending' | 'submitted' | 'approved' | 'rejected') => {
+    // Default to 'pending' if status is not available (Phase 2 feature)
+    const effectiveStatus = status || 'pending';
+    switch (effectiveStatus) {
+      case 'approved':
+        return (
+          <CheckIcon color="success" fontSize="small" data-testid="materials-status-complete" />
+        );
+      case 'submitted':
+      case 'pending':
+        return (
+          <WarningIcon color="warning" fontSize="small" data-testid="materials-status-pending" />
+        );
+      case 'rejected':
+        return <ErrorIcon color="error" fontSize="small" data-testid="materials-status-missing" />;
+    }
+  };
+
+  const getMaterialsStatusLabel = (status?: 'pending' | 'submitted' | 'approved' | 'rejected') => {
+    // Default to 'pending' if status is not available (Phase 2 feature)
+    const effectiveStatus = status || 'pending';
+    switch (effectiveStatus) {
+      case 'approved':
+        return t('speakers.materialsComplete');
+      case 'submitted':
+      case 'pending':
+        return t('speakers.materialsPending');
+      case 'rejected':
+        return t('speakers.materialsMissing');
+    }
+  };
+
+  const handleAutoAssignClick = () => {
+    setAutoAssignDialogOpen(true);
+  };
+
+  const handleAutoAssignConfirm = () => {
+    setAutoAssignDialogOpen(false);
+    onAutoAssignSpeakers(eventCode);
+  };
+
+  const handleAutoAssignCancel = () => {
+    setAutoAssignDialogOpen(false);
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <Box data-testid="sessions-loading">
+        <Typography variant="h6" gutterBottom>
+          {t('speakers.sectionTitle', { count: 12 })}
+        </Typography>
+        {Array.from({ length: 12 }).map((_, index) => (
+          <Skeleton
+            key={index}
+            variant="rectangular"
+            height={80}
+            sx={{ mb: 1 }}
+            data-testid={`session-skeleton-${index}`}
+          />
+        ))}
+      </Box>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <Box>
+        <Typography variant="h6" gutterBottom>
+          {t('speakers.sectionTitle', { count: 12 })}
+        </Typography>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+          <Button size="small" onClick={() => window.location.reload()}>
+            {t('common.retry', 'Retry')}
+          </Button>
+        </Alert>
+      </Box>
+    );
+  }
+
+  // Empty state
+  if (sessions.length === 0) {
+    return (
+      <Box>
+        <Typography variant="h6" gutterBottom>
+          {t('speakers.sectionTitle', { count: 0 })}
+        </Typography>
+        <Alert severity="info" sx={{ mb: 2 }}>
+          {t('speakers.noSessionsScheduled')}
+        </Alert>
+        <Button
+          variant="contained"
+          startIcon={<EditIcon />}
+          onClick={() => onManageSpeakerAssignments(eventCode)}
+        >
+          {t('speakers.manageSpeakerAssignments')}
+        </Button>
+      </Box>
+    );
+  }
+
+  // Mobile card view
+  if (isMobile) {
+    return (
+      <Box>
+        <Typography variant="h6" gutterBottom>
+          {t('speakers.sectionTitle', { count: sessions.length })}
+        </Typography>
+
+        {sessions.map((session) => (
+          <Card
+            key={session.sessionSlug}
+            sx={{ mb: 2 }}
+            data-testid={`session-card-${session.slotNumber || 0}`}
+          >
+            <CardContent>
+              <Stack spacing={1}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  {t('speakers.slotLabel', { number: session.slotNumber || 0 })} |{' '}
+                  {session.startTime}-{session.endTime}
+                </Typography>
+
+                {session.speaker ? (
+                  <>
+                    <Typography variant="body1" fontWeight="bold">
+                      {session.speaker.name} ({session.speaker.company})
+                    </Typography>
+                    <Typography variant="body2">{session.title}</Typography>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      {getMaterialsStatusIcon(session.materialsStatus)}
+                      <Typography variant="caption">
+                        {getMaterialsStatusLabel(session.materialsStatus)}
+                      </Typography>
+                    </Stack>
+                  </>
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    {t('speakers.notAssigned')}
+                  </Typography>
+                )}
+              </Stack>
+            </CardContent>
+
+            <CardActions>
+              <Button
+                size="small"
+                startIcon={<ViewIcon />}
+                onClick={() => onViewDetails(session.sessionSlug)}
+              >
+                {t('speakers.viewDetails')}
+              </Button>
+              <Button
+                size="small"
+                startIcon={<EditIcon />}
+                onClick={() => onEditSlot(session.sessionSlug)}
+              >
+                {t('speakers.editSlot')}
+              </Button>
+              {session.speaker && (
+                <Button
+                  size="small"
+                  startIcon={<FolderIcon />}
+                  onClick={() => onViewMaterials(session.sessionSlug)}
+                >
+                  {t('speakers.materials')}
+                </Button>
+              )}
+            </CardActions>
+          </Card>
+        ))}
+
+        {/* Footer Actions */}
+        <Stack direction="column" spacing={1} sx={{ mt: 3 }}>
+          <Button
+            variant="outlined"
+            startIcon={<CalendarIcon />}
+            onClick={() => onViewFullAgenda(eventCode)}
+            fullWidth
+          >
+            {t('speakers.viewFullAgenda')}
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<EditIcon />}
+            onClick={() => onManageSpeakerAssignments(eventCode)}
+            fullWidth
+          >
+            {t('speakers.manageSpeakerAssignments')}
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<AutoAssignIcon />}
+            onClick={handleAutoAssignClick}
+            fullWidth
+          >
+            {t('speakers.autoAssignSpeakers')}
+          </Button>
+        </Stack>
+
+        {/* Auto-Assign Confirmation Dialog */}
+        <Dialog
+          open={autoAssignDialogOpen}
+          onClose={handleAutoAssignCancel}
+          aria-labelledby="auto-assign-dialog-title"
+        >
+          <DialogTitle id="auto-assign-dialog-title">
+            {t('speakers.autoAssignConfirmTitle')}
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText>{t('speakers.autoAssignConfirmMessage')}</DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleAutoAssignCancel}>{t('common.cancel', 'Cancel')}</Button>
+            <Button onClick={handleAutoAssignConfirm} variant="contained" autoFocus>
+              {t('common.confirm', 'Confirm')}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Box>
+    );
+  }
+
+  // Desktop table view
+  return (
+    <Box>
+      <Typography variant="h6" gutterBottom>
+        {t('speakers.sectionTitle', { count: sessions.length })}
+      </Typography>
+
+      <TableContainer component={Paper} sx={{ mb: 3 }}>
+        <Table aria-label="speakers and sessions table">
+          <TableHead>
+            <TableRow>
+              <TableCell>{t('speakers.slotLabel', { number: '' })}</TableCell>
+              <TableCell>{t('speakers.slotTime')}</TableCell>
+              <TableCell>{t('speakers.speakerName')}</TableCell>
+              <TableCell>{t('speakers.sessionTitle')}</TableCell>
+              <TableCell>{t('speakers.materials')}</TableCell>
+              <TableCell align="right">{t('common.actions', 'Actions')}</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {sessions.map((session) => (
+              <TableRow
+                key={session.sessionSlug}
+                data-testid={`session-row-${session.slotNumber || 0}`}
+                hover
+              >
+                <TableCell>
+                  <Typography variant="body2" fontWeight="bold">
+                    {t('speakers.slotLabel', { number: session.slotNumber || 0 })}
+                  </Typography>
+                </TableCell>
+
+                <TableCell>
+                  <Typography variant="body2">
+                    {session.startTime}-{session.endTime}
+                  </Typography>
+                </TableCell>
+
+                <TableCell>
+                  {session.speaker ? (
+                    <>
+                      <Typography variant="body2" fontWeight="medium">
+                        {session.speaker.name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {session.speaker.company}
+                      </Typography>
+                    </>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary" fontStyle="italic">
+                      {t('speakers.notAssigned')}
+                    </Typography>
+                  )}
+                </TableCell>
+
+                <TableCell>
+                  {session.title ? (
+                    <Typography variant="body2">{session.title}</Typography>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">
+                      -
+                    </Typography>
+                  )}
+                </TableCell>
+
+                <TableCell>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    {getMaterialsStatusIcon(session.materialsStatus)}
+                    <Typography variant="caption">
+                      {getMaterialsStatusLabel(session.materialsStatus)}
+                    </Typography>
+                  </Stack>
+                </TableCell>
+
+                <TableCell align="right">
+                  <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                    <Button
+                      size="small"
+                      startIcon={<ViewIcon />}
+                      onClick={() => onViewDetails(session.sessionSlug)}
+                    >
+                      {t('speakers.viewDetails')}
+                    </Button>
+                    <Button
+                      size="small"
+                      startIcon={<EditIcon />}
+                      onClick={() => onEditSlot(session.sessionSlug)}
+                    >
+                      {t('speakers.editSlot')}
+                    </Button>
+                    {session.speaker && (
+                      <Button
+                        size="small"
+                        startIcon={<FolderIcon />}
+                        onClick={() => onViewMaterials(session.sessionSlug)}
+                      >
+                        {t('speakers.materials')}
+                      </Button>
+                    )}
+                  </Stack>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {/* Footer Actions */}
+      <Stack direction="row" spacing={2} justifyContent="flex-start">
+        <Button
+          variant="outlined"
+          startIcon={<CalendarIcon />}
+          onClick={() => onViewFullAgenda(eventCode)}
+        >
+          {t('speakers.viewFullAgenda')}
+        </Button>
+        <Button
+          variant="outlined"
+          startIcon={<EditIcon />}
+          onClick={() => onManageSpeakerAssignments(eventCode)}
+        >
+          {t('speakers.manageSpeakerAssignments')}
+        </Button>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<AutoAssignIcon />}
+          onClick={handleAutoAssignClick}
+        >
+          {t('speakers.autoAssignSpeakers')}
+        </Button>
+      </Stack>
+
+      {/* Auto-Assign Confirmation Dialog */}
+      <Dialog
+        open={autoAssignDialogOpen}
+        onClose={handleAutoAssignCancel}
+        aria-labelledby="auto-assign-dialog-title"
+      >
+        <DialogTitle id="auto-assign-dialog-title">
+          {t('speakers.autoAssignConfirmTitle')}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>{t('speakers.autoAssignConfirmMessage')}</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleAutoAssignCancel}>{t('common.cancel', 'Cancel')}</Button>
+          <Button onClick={handleAutoAssignConfirm} variant="contained" autoFocus>
+            {t('common.confirm', 'Confirm')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
+};

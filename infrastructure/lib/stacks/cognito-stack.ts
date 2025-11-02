@@ -166,6 +166,12 @@ export class CognitoStack extends cdk.Stack {
         },
       },
       customAttributes: {
+        // Story 1.16.2: Public meaningful username (e.g., "john.doe")
+        // Set by PreTokenGeneration Lambda from database user_profiles.username
+        username: new cognito.StringAttribute({
+          mutable: true,
+          maxLen: 100,
+        }),
         // DEPRECATED: Legacy role attribute - not used per ADR-001 (Story 1.2.6)
         // Roles are managed in database and added to JWT via PreTokenGeneration Lambda
         // Cannot be removed due to AWS Cognito limitation (custom attributes are permanent)

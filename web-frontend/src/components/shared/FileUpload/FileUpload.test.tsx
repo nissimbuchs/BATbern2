@@ -4,7 +4,7 @@
  * Tests drag-and-drop, file validation, upload progress, and error handling
  */
 
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { FileUpload } from './FileUpload';
@@ -79,11 +79,9 @@ describe('FileUpload Component', () => {
 
     const file = new File(['test content'], 'test-logo.png', { type: 'image/png' });
     const dropzone = screen.getByTestId('file-dropzone');
-    const input = within(dropzone).getByRole('button', { hidden: true }).querySelector('input');
+    const input = dropzone.querySelector('input[type="file"]') as HTMLInputElement;
 
-    if (input) {
-      await user.upload(input as HTMLInputElement, file);
-    }
+    await user.upload(input, file);
 
     await waitFor(() => {
       expect(mockUploadFile).toHaveBeenCalledWith(file);
@@ -99,12 +97,7 @@ describe('FileUpload Component', () => {
       reset: mockReset,
     });
 
-    render(
-      <FileUpload
-        onUploadSuccess={mockOnUploadSuccess}
-        onUploadError={mockOnUploadError}
-      />
-    );
+    render(<FileUpload onUploadSuccess={mockOnUploadSuccess} onUploadError={mockOnUploadError} />);
 
     // Hook should have been called with callbacks
     expect(mockUseFileUpload).toHaveBeenCalledWith(
@@ -189,11 +182,9 @@ describe('FileUpload Component', () => {
     const file2 = new File(['content2'], 'logo2.png', { type: 'image/png' });
 
     const dropzone = screen.getByTestId('file-dropzone');
-    const input = within(dropzone).getByRole('button', { hidden: true }).querySelector('input');
+    const input = dropzone.querySelector('input[type="file"]') as HTMLInputElement;
 
-    if (input) {
-      await user.upload(input as HTMLInputElement, [file1, file2]);
-    }
+    await user.upload(input, [file1, file2]);
 
     await waitFor(() => {
       expect(mockOnUploadError).toHaveBeenCalledWith({
@@ -371,7 +362,7 @@ describe('FileUpload Component', () => {
     expect(dropzone).toHaveAttribute('aria-disabled', 'true');
 
     // Input should be disabled (tested through react-dropzone disabled prop)
-    const input = within(dropzone).getByRole('button', { hidden: true }).querySelector('input');
+    const input = dropzone.querySelector('input[type="file"]') as HTMLInputElement;
     expect(input).toBeInTheDocument();
   });
 });

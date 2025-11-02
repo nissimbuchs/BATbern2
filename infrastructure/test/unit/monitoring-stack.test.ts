@@ -55,8 +55,8 @@ describe('MonitoringStack', () => {
       // Assert
       const template = Template.fromStack(stack);
 
-      // Verify SNS topic for alarm notifications
-      template.resourceCountIs('AWS::SNS::Topic', 1);
+      // Verify SNS topics for alarm notifications (multiple topics for different alarm types)
+      template.resourceCountIs('AWS::SNS::Topic', 2);
     });
   });
 
@@ -112,11 +112,11 @@ describe('MonitoringStack', () => {
 
       // Verify service-specific log groups exist
       template.hasResourceProperties('AWS::Logs::LogGroup', {
-        LogGroupName: Match.stringLikeRegexp('/batbern/.*/application'),
+        LogGroupName: Match.stringLikeRegexp('/aws/logs/BATbern-.*/application'),
       });
 
       template.hasResourceProperties('AWS::Logs::LogGroup', {
-        LogGroupName: Match.stringLikeRegexp('/batbern/.*/infrastructure'),
+        LogGroupName: Match.stringLikeRegexp('/aws/logs/BATbern-.*/infrastructure'),
       });
     });
   });

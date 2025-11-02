@@ -6,11 +6,27 @@
  * These tests verify client-side validation and structure
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { companyApiClient } from '@/services/api/companyApi';
 import type { CreateCompanyRequest, UpdateCompanyRequest } from '@/types/company.types';
+import apiClient from '@/services/api/apiClient';
 
 describe('Company API Client', () => {
+  // Store original timeout to restore after tests
+  let originalTimeout: number;
+
+  beforeAll(() => {
+    // Save original timeout
+    originalTimeout = apiClient.defaults.timeout || 30000;
+    // Set short timeout for these tests to fail fast when backend unavailable
+    apiClient.defaults.timeout = 100;
+  });
+
+  afterAll(() => {
+    // Restore original timeout
+    apiClient.defaults.timeout = originalTimeout;
+  });
+
   describe('Client-side Validation', () => {
     describe('createCompany', () => {
       it('should reject invalid Swiss UID format', async () => {
@@ -43,10 +59,10 @@ describe('Company API Client', () => {
         };
 
         // If validation passes, the function should attempt to make the API call
-        // In test environment without backend, this will fail with network error or 500
-        // We expect network/server error (not validation error)
+        // In test environment without backend, this will fail with network/timeout error or 500
+        // We expect network/server/timeout error (not validation error)
         await expect(companyApiClient.createCompany(validCompany)).rejects.toThrow(
-          /(Network Error|status code 500)/
+          /(Network Error|status code 500|timeout)/
         );
       });
     });
@@ -67,9 +83,9 @@ describe('Company API Client', () => {
           swissUID: 'CHE-999.888.777',
         };
 
-        // Expect network/server error (not validation error)
+        // Expect network/server/timeout error (not validation error)
         await expect(companyApiClient.updateCompany('test-id', updates)).rejects.toThrow(
-          /(Network Error|status code 500)/
+          /(Network Error|status code 500|timeout)/
         );
       });
     });
@@ -97,20 +113,20 @@ describe('Company API Client', () => {
 
         // Test each type sequentially to avoid unhandled promises
         for (const mimeType of validTypes) {
-          // Expect network/server error (not validation error)
+          // Expect network/server/timeout error (not validation error)
           await expect(
             companyApiClient.requestLogoUploadUrl('test-id', 'logo.png', mimeType, 1024)
-          ).rejects.toThrow(/(Network Error|status code 500)/);
+          ).rejects.toThrow(/(Network Error|status code 500|timeout)/);
         }
       });
 
       it('should accept files within size limit', async () => {
         const validSize = 2 * 1024 * 1024; // 2MB
 
-        // Expect network/server error (not validation error)
+        // Expect network/server/timeout error (not validation error)
         await expect(
           companyApiClient.requestLogoUploadUrl('test-id', 'logo.png', 'image/png', validSize)
-        ).rejects.toThrow(/(Network Error|status code 500)/);
+        ).rejects.toThrow(/(Network Error|status code 500|timeout)/);
       });
     });
   });

@@ -273,7 +273,7 @@ async function assignUserRole(userId: string, role: UserRole): Promise<void> {
       return;
     }
 
-    // Insert role with granted_at (granted_by is NULL for system-assigned roles)
+    // Insert role (granted_by is NULL for system-assigned roles)
     await client.query(
       `
         INSERT INTO role_assignments (user_id, role, granted_at, granted_by)
