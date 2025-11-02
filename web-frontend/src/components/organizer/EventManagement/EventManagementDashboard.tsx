@@ -161,9 +161,13 @@ export const EventManagementDashboard: React.FC = () => {
         {/* Active Events (Main Column - 8/12) */}
         <Grid size={{ xs: 12, md: 8 }}>
           <Paper sx={{ p: 3 }}>
-            <Typography variant="h5" gutterBottom>
-              {t('dashboard.activeEvents')}
-            </Typography>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+              <Typography variant="h5">{t('dashboard.activeEvents')}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {eventsData?.data?.length || 0}{' '}
+                {t('dashboard.eventCount', { count: eventsData?.data?.length || 0 })}
+              </Typography>
+            </Stack>
             <EventList
               events={eventsData?.data || []}
               isLoading={isLoadingEvents}

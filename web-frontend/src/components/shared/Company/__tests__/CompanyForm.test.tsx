@@ -836,8 +836,10 @@ describe('CompanyForm Component - AC5 Logo Upload', () => {
       );
 
       // Should show logo preview instead of dropzone
-      expect(screen.getByAltText(/company logo preview/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/remove logo/i)).toBeInTheDocument();
+      // FileUpload uses i18n translation key 'fileUpload.altText' by default
+      expect(screen.getByAltText(/fileUpload.altText/i)).toBeInTheDocument();
+      // Remove button uses i18n translation key 'fileUpload.removeFile' by default
+      expect(screen.getByLabelText(/fileUpload.removeFile/i)).toBeInTheDocument();
     });
 
     it('should_displayLogoSection_when_createMode', () => {

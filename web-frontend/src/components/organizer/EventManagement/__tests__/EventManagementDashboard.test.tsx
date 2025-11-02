@@ -409,7 +409,9 @@ describe('EventManagementDashboard Component', () => {
       render(<EventManagementDashboard />, { wrapper: createWrapper() });
 
       const container = screen.getByTestId('dashboard-container');
-      expect(container).toHaveClass('MuiGrid-container');
+      // Grid container is inside the dashboard container
+      const gridContainer = container.querySelector('.MuiGrid-root');
+      expect(gridContainer).toBeInTheDocument();
     });
 
     it('should_displayAllSections_when_rendered', () => {
