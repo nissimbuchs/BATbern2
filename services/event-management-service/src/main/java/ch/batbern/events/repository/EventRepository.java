@@ -36,4 +36,14 @@ public interface EventRepository extends JpaRepository<Event, UUID>, JpaSpecific
      * @return true if an event with this code exists
      */
     boolean existsByEventCode(String eventCode);
+
+    /**
+     * Find the first published event ordered by date ascending
+     * Used for getting the current/next upcoming event for the public website
+     * Story 4.1.3: Public event landing page
+     *
+     * @param status The event status (e.g., "published")
+     * @return Optional containing the next published event if found
+     */
+    Optional<Event> findFirstByStatusOrderByDateAsc(String status);
 }

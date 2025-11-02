@@ -157,7 +157,9 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    // Support dynamic port configuration for parallel instances
+    // Instance 1: PORT=3000 (default), Instance 2: PORT=4000
+    port: process.env.PORT ? parseInt(process.env.PORT, 10) : 3000,
     host: true,
     proxy: {
       '/api': {

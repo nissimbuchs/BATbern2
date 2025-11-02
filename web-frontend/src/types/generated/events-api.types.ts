@@ -54,6 +54,34 @@ export interface paths {
     patch: operations['batchUpdateEvents'];
     trace?: never;
   };
+  '/events/current': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get current published event
+     * @description Retrieve the next upcoming published event for the public website.
+     *
+     *     **Story**: 4.1.3 - Public event landing page hero section
+     *     **Public Access**: No authentication required
+     *
+     *     Returns the earliest published event by date (next upcoming event).
+     *     If no published events exist, returns 404.
+     *
+     *     **Performance**: <150ms (P95)
+     */
+    get: operations['getCurrentEvent'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}': {
     parameters: {
       query?: never;
@@ -847,6 +875,88 @@ export interface operations {
         };
       };
       400: components['responses']['BadRequest'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  getCurrentEvent: {
+    parameters: {
+      query?: {
+        /** @description Comma-separated list of resources to expand (topics,venue,speakers,sessions) */
+        include?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Current event retrieved successfully */
+      200: {
+        headers: {
+          /** @description Cache hit/miss indicator */
+          'X-Cache-Status'?: 'HIT' | 'MISS';
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "eventCode": "BATbern57",
+           *       "title": "Cloud-Native Architecture in Practice",
+           *       "eventNumber": 57,
+           *       "status": "published",
+           *       "description": "Join us for an evening exploring modern cloud-native architecture patterns and best practices.",
+           *       "date": "2025-03-15T18:00:00Z",
+           *       "registrationDeadline": "2025-03-10T23:59:59Z",
+           *       "venueName": "Bern TechHub",
+           *       "venueAddress": "Waisenhausplatz 30, 3014 Bern",
+           *       "venueCapacity": 120,
+           *       "organizerUsername": "john.doe",
+           *       "currentAttendeeCount": 87,
+           *       "publishedAt": "2025-02-01T10:00:00Z",
+           *       "venue": {
+           *         "id": "venue-001",
+           *         "name": "Bern TechHub",
+           *         "capacity": 120,
+           *         "address": "Waisenhausplatz 30, 3014 Bern"
+           *       },
+           *       "topics": [
+           *         {
+           *           "id": "topic-1",
+           *           "name": "Microservices",
+           *           "color": "blue"
+           *         },
+           *         {
+           *           "id": "topic-2",
+           *           "name": "Kubernetes",
+           *           "color": "cyan"
+           *         }
+           *       ]
+           *     }
+           */
+          'application/json': components['schemas']['EventDetail'];
+        };
+      };
+      /** @description No current published event found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": "Not Found",
+           *       "message": "No current published event available",
+           *       "timestamp": "2025-03-15T12:00:00Z"
+           *     }
+           */
+          'application/json': {
+            error?: string;
+            message?: string;
+            /** Format: date-time */
+            timestamp?: string;
+          };
+        };
+      };
       500: components['responses']['InternalServerError'];
     };
   };
