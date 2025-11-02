@@ -120,7 +120,7 @@ export const useFileUpload = (options: UseFileUploadOptions = {}) => {
           }
         );
 
-        const { uploadUrl, fileId: uploadId, fileExtension, requiredHeaders } = presignedResponse.data;
+        const { uploadUrl, fileId, fileExtension, requiredHeaders } = presignedResponse.data;
 
         // Phase 2: Upload file directly to S3 using presigned URL
         await new Promise<void>((resolve, reject) => {
@@ -162,7 +162,8 @@ export const useFileUpload = (options: UseFileUploadOptions = {}) => {
 
         // Phase 3: Confirm upload with backend
         const checksum = await calculateChecksum(file);
-        await apiClient.post(`/logos/${uploadId}/confirm`, {
+        await apiClient.post(`/logos/${fileId}/confirm`, {
+          fileId,
           fileExtension,
           checksum,
         });
@@ -173,12 +174,12 @@ export const useFileUpload = (options: UseFileUploadOptions = {}) => {
         // Notify success
         if (onUploadSuccess) {
           onUploadSuccess({
-            uploadId,
+            uploadId: fileId,
             tempFileUrl: uploadUrl.split('?')[0], // Remove query params for display
           });
         }
 
-        return uploadId;
+        return fileId;
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to upload file';
         handleError('UPLOAD_FAILED', errorMessage);

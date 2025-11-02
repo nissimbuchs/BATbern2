@@ -5,7 +5,26 @@
  */
 
 import { Amplify, type ResourcesConfig } from 'aws-amplify';
+import { cognitoUserPoolsTokenProvider } from 'aws-amplify/auth/cognito';
 import type { AppConfig } from './runtime-config';
+
+// Storage adapter for Amplify token persistence
+function createStorageAdapter(storage: Storage) {
+  return {
+    setItem(key: string, value: string): Promise<void> {
+      return Promise.resolve(storage.setItem(key, value));
+    },
+    getItem(key: string): Promise<string | null> {
+      return Promise.resolve(storage.getItem(key));
+    },
+    removeItem(key: string): Promise<void> {
+      return Promise.resolve(storage.removeItem(key));
+    },
+    clear(): Promise<void> {
+      return Promise.resolve(storage.clear());
+    },
+  };
+}
 
 // Build Amplify config from runtime config
 const getAmplifyConfig = (runtimeConfig: AppConfig): ResourcesConfig => {
@@ -53,6 +72,12 @@ export const configureAmplify = (runtimeConfig: AppConfig) => {
 
   try {
     Amplify.configure(config);
+
+    // Configure default storage to use localStorage for persistent sessions
+    // This ensures tokens persist across page reloads (users stay logged in)
+    const storageAdapter = createStorageAdapter(localStorage);
+    cognitoUserPoolsTokenProvider.setKeyValueStorage(storageAdapter);
+
     console.log(
       '✅ AWS Amplify configured successfully for environment:',
       runtimeConfig.environment

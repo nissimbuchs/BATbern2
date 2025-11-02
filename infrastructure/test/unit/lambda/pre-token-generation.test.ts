@@ -15,14 +15,14 @@ import { PreTokenGenerationTriggerEvent, Context } from 'aws-lambda';
 import { Client } from 'pg';
 
 // Import the handler function
-import { handler } from '../pre-token-generation';
+import { handler } from '../../../lib/lambda/triggers/pre-token-generation';
 
 // Import mocked database module
-import { getDbClient } from '../common/database';
+import { getDbClient } from '../../../lib/lambda/triggers/common/database';
 
 // Mock database client
 jest.mock('pg');
-jest.mock('../common/database');
+jest.mock('../../../lib/lambda/triggers/common/database');
 
 // Test data builders
 function createPreTokenGenerationEvent(overrides: Partial<PreTokenGenerationTriggerEvent> = {}): PreTokenGenerationTriggerEvent {
@@ -127,14 +127,14 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
 
       // Assert
       expect(mockDbClient.query).toHaveBeenCalledWith(
-        expect.stringContaining('SELECT DISTINCT ur.role'),
+        expect.stringContaining('SELECT DISTINCT ra.role'),
         expect.arrayContaining(['a1b2c3d4-5678-90ab-cdef-EXAMPLE11111'])
       );
       expect(mockDbClient.release).toHaveBeenCalled();
       expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role']).toBeDefined();
     });
 
-    it('should_fetchOnlyActiveRoles_when_queryingDatabase', async () => {
+    it('should_fetchActiveRoles_when_queryingDatabase', async () => {
       // Arrange
       const event = createPreTokenGenerationEvent();
       const context = createLambdaContext();
@@ -147,9 +147,9 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       // Act
       await handler(event, context, () => {});
 
-      // Assert - Query should filter for end_date IS NULL (active roles)
+      // Assert - Query should fetch from role_assignments (all roles are active)
       expect(mockDbClient.query).toHaveBeenCalledWith(
-        expect.stringContaining('end_date IS NULL'),
+        expect.stringContaining('FROM role_assignments'),
         expect.anything()
       );
     });
@@ -184,14 +184,14 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       // Act
       await handler(event, context, () => {});
 
-      // Assert - Query should join user_profiles table by cognito_id
+      // Assert - Query should join user_profiles table by cognito_user_id
       expect(mockDbClient.query).toHaveBeenCalledWith(
         expect.stringContaining('JOIN user_profiles'),
         expect.arrayContaining(['a1b2c3d4-5678-90ab-cdef-EXAMPLE11111'])
       );
     });
 
-    it('should_fetchOnlyGlobalRoles_when_filteringEventRoles', async () => {
+    it('should_fetchGlobalRoles_when_queryingDatabase', async () => {
       // Arrange
       const event = createPreTokenGenerationEvent();
       const context = createLambdaContext();
@@ -207,9 +207,9 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       // Act
       await handler(event, context, () => {});
 
-      // Assert - Query should filter for event_id IS NULL (global roles only)
+      // Assert - Query should fetch from role_assignments (all roles are global)
       expect(mockDbClient.query).toHaveBeenCalledWith(
-        expect.stringContaining('event_id IS NULL'),
+        expect.stringContaining('FROM role_assignments'),
         expect.anything()
       );
     });
@@ -512,9 +512,9 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       // Act
       await handler(event, context, () => {});
 
-      // Assert - Query should use cognito_id index for performance
+      // Assert - Query should use cognito_user_id index for performance
       expect(mockDbClient.query).toHaveBeenCalledWith(
-        expect.stringContaining('WHERE u.cognito_id = $1'),
+        expect.stringContaining('WHERE u.cognito_user_id = $1'),
         expect.anything()
       );
     });

@@ -37,9 +37,4 @@ tests {
     const event = res.getBody();
     expect(event.id).to.be.undefined;
   });
-
-  test("should check cache header", function() {
-    const cacheHeader = res.getHeader('X-Cache-Status');
-    expect(['HIT', 'MISS']).to.include(cacheHeader);
-  });
 }

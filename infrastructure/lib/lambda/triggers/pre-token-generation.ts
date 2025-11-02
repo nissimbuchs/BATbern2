@@ -21,9 +21,10 @@ import { CloudWatchClient, PutMetricDataCommand } from '@aws-sdk/client-cloudwat
 const cloudWatchClient = new CloudWatchClient({ region: process.env.AWS_REGION || 'eu-central-1' });
 
 /**
- * User role from database
+ * User data from database
  */
-interface UserRole {
+interface UserData {
+  username: string;
   role: string;
 }
 
@@ -52,33 +53,38 @@ async function publishMetric(metricName: string, value: number, unit: string = '
 }
 
 /**
- * Fetch user roles from database by Cognito ID
- * Returns global roles only (event-specific roles are not part of Cognito Groups)
+ * Fetch user data (username and roles) from database by Cognito ID
+ * Returns username and all assigned roles from role_assignments table
+ * Story 1.16.2: Username is the public meaningful identifier
  */
-async function fetchUserRoles(cognitoId: string): Promise<UserRole[]> {
+async function fetchUserData(cognitoId: string): Promise<UserData[]> {
   const client = await getDbClient();
 
   try {
-    // Query for active global roles
+    // Query for username and all assigned roles
+    // - Filter by cognito_user_id for performance (indexed column)
+    // - Username from user_profiles (Story 1.16.2: meaningful ID)
+    // - All roles in role_assignments are active global roles
     const result = await client.query(
       `
-        SELECT DISTINCT ra.role
-        FROM role_assignments ra
-        JOIN user_profiles u ON ra.user_id = u.id
+        SELECT u.username, ra.role
+        FROM user_profiles u
+        LEFT JOIN role_assignments ra ON ra.user_id = u.id
         WHERE u.cognito_user_id = $1
         ORDER BY ra.role
       `,
       [cognitoId]
     );
 
-    console.log('Fetched user roles from database', {
+    console.log('Fetched user data from database', {
       cognitoId,
-      roleCount: result.rows.length,
+      rowCount: result.rows.length,
+      username: result.rows[0]?.username,
     });
 
     return result.rows;
   } catch (error) {
-    console.error('Failed to fetch user roles from database', {
+    console.error('Failed to fetch user data from database', {
       cognitoId,
       error: error instanceof Error ? error.message : 'Unknown error',
     });
@@ -88,17 +94,6 @@ async function fetchUserRoles(cognitoId: string): Promise<UserRole[]> {
   }
 }
 
-/**
- * Convert database roles to Cognito Group names
- * Maps uppercase role names (ORGANIZER, SPEAKER, PARTNER, ATTENDEE) to lowercase group names
- */
-function rolesToCognitoGroups(roles: UserRole[]): string[] {
-  // Filter out null/invalid roles
-  const validRoles = roles.filter((r) => r.role != null && r.role.trim() !== '');
-
-  // Convert to lowercase for Cognito Group names
-  return validRoles.map((r) => r.role.toLowerCase());
-}
 
 /**
  * Main Lambda handler for PreTokenGeneration trigger
@@ -125,28 +120,35 @@ export const handler: PreTokenGenerationTriggerHandler = async (event) => {
       return event;
     }
 
-    // Fetch user roles from database
-    let userRoles: UserRole[];
+    // Fetch user data (username + roles) from database
+    let userData: UserData[];
     try {
-      userRoles = await fetchUserRoles(cognitoId);
+      userData = await fetchUserData(cognitoId);
     } catch (error) {
-      // Fallback to empty roles on database error (graceful degradation)
-      console.error('Database fetch failed, falling back to empty roles', { error });
-      userRoles = [];
+      // Fallback to empty data on database error (graceful degradation)
+      console.error('Database fetch failed, falling back to empty data', { error });
+      userData = [];
 
       // Record failure metric
-      await publishMetric('RoleFetchFailure', 1, 'Count');
+      await publishMetric('UserDataFetchFailure', 1, 'Count');
     }
 
-    // ADR-001: Add roles as JWT custom claims (NO Cognito Groups)
-    // Database is source of truth for roles
-    const rolesString = userRoles.map(r => r.role).filter(Boolean).join(',');
+    // Extract username and roles from fetched data
+    // Username should be same for all rows (comes from user_profiles)
+    const username = userData[0]?.username || '';
+    const roles = userData.map(r => r.role).filter(Boolean);
+
+    // ADR-001: Add username and roles as JWT custom claims (NO Cognito Groups)
+    // Database is source of truth for user data
+    // Story 1.16.2: username is the public meaningful identifier
+    const rolesString = roles.join(',');
 
     event.response = {
       ...event.response,
       claimsOverrideDetails: {
         ...event.response.claimsOverrideDetails,
         claimsToAddOrOverride: {
+          'custom:username': username,
           'custom:role': rolesString,
         },
       },
@@ -154,12 +156,13 @@ export const handler: PreTokenGenerationTriggerHandler = async (event) => {
 
     // Record success metrics
     const duration = Date.now() - startTime;
-    await publishMetric('RoleFetchLatency', duration, 'Milliseconds');
-    await publishMetric('RoleCount', userRoles.length, 'Count');
+    await publishMetric('UserDataFetchLatency', duration, 'Milliseconds');
+    await publishMetric('RoleCount', roles.length, 'Count');
 
     console.log('PreTokenGeneration completed successfully (ADR-001: DB → JWT)', {
       cognitoId,
-      roleCount: userRoles.length,
+      username,
+      roleCount: roles.length,
       roles: rolesString,
       duration,
     });

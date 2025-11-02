@@ -8,6 +8,7 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.api.*;
 import ch.batbern.shared.exception.ValidationException;
+import ch.batbern.shared.service.SlugGenerationService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -28,15 +29,16 @@ import java.util.UUID;
 /**
  * REST Controller for Event Session sub-resources
  * Story 1.15a.1: Events API Consolidation - AC9-10
+ * Story 1.16.2: Updated to use eventCode and sessionSlug (meaningful IDs)
  *
  * Endpoints:
- * - GET    /api/v1/events/{eventId}/sessions
- * - POST   /api/v1/events/{eventId}/sessions
- * - PUT    /api/v1/events/{eventId}/sessions/{sessionId}
- * - DELETE /api/v1/events/{eventId}/sessions/{sessionId}
+ * - GET    /api/v1/events/{eventCode}/sessions
+ * - POST   /api/v1/events/{eventCode}/sessions
+ * - PUT    /api/v1/events/{eventCode}/sessions/{sessionSlug}
+ * - DELETE /api/v1/events/{eventCode}/sessions/{sessionSlug}
  */
 @RestController
-@RequestMapping("/api/v1/events/{eventId}/sessions")
+@RequestMapping("/api/v1/events/{eventCode}/sessions")
 public class SessionController {
 
     @Autowired
@@ -45,21 +47,25 @@ public class SessionController {
     @Autowired
     private EventRepository eventRepository;
 
+    @Autowired
+    private SlugGenerationService slugGenerationService;
+
     /**
      * AC9: List sessions for an event with optional filtering
-     * GET /api/v1/events/{eventId}/sessions?filter={}&page={}&limit={}
+     * Story 1.16.2: Updated to use eventCode instead of UUID
+     * GET /api/v1/events/{eventCode}/sessions?filter={}&page={}&limit={}
      */
     @GetMapping
     public ResponseEntity<Map<String, Object>> listSessions(
-            @PathVariable UUID eventId,
+            @PathVariable String eventCode,
             @RequestParam(required = false) String filter,
             @RequestParam(required = false, defaultValue = "1") int page,
             @RequestParam(required = false, defaultValue = "20") int limit) {
 
-        // Verify event exists
-        if (!eventRepository.existsById(eventId)) {
-            throw new EventNotFoundException(eventId);
-        }
+        // Find event by eventCode
+        UUID eventId = eventRepository.findByEventCode(eventCode)
+                .map(event -> event.getId())
+                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
 
         try {
             // Parse pagination parameters
@@ -82,6 +88,9 @@ public class SessionController {
             Pageable pageable = PageRequest.of(pageNum - 1, pageSize); // Convert to 0-indexed
             Page<Session> sessionsPage = sessionRepository.findAll(spec, pageable);
 
+            // Set eventCode on all sessions for API response
+            sessionsPage.getContent().forEach(session -> session.setEventCode(eventCode));
+
             // Generate pagination metadata
             PaginationMetadata metadata = PaginationUtils.generateMetadata(
                     pageNum,
@@ -103,20 +112,29 @@ public class SessionController {
 
     /**
      * AC10: Create a new session for an event
-     * POST /api/v1/events/{eventId}/sessions
+     * Story 1.16.2: Auto-generates sessionSlug from title
+     * POST /api/v1/events/{eventCode}/sessions
      */
     @PostMapping
     public ResponseEntity<Session> createSession(
-            @PathVariable UUID eventId,
+            @PathVariable String eventCode,
             @Valid @RequestBody CreateSessionRequest request) {
 
-        // Verify event exists
-        if (!eventRepository.existsById(eventId)) {
-            throw new EventNotFoundException(eventId);
-        }
+        // Find event by eventCode
+        UUID eventId = eventRepository.findByEventCode(eventCode)
+                .map(event -> event.getId())
+                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
+
+        // Generate unique session slug from title
+        String baseSlug = slugGenerationService.generateSessionSlug(request.getTitle());
+        String sessionSlug = slugGenerationService.ensureUniqueSlug(
+                baseSlug,
+                sessionRepository::existsBySessionSlug
+        );
 
         // Create session
         Session session = Session.builder()
+                .sessionSlug(sessionSlug)
                 .eventId(eventId)
                 .title(request.getTitle())
                 .description(request.getDescription())
@@ -129,38 +147,37 @@ public class SessionController {
                 .build();
 
         Session savedSession = sessionRepository.save(session);
+        savedSession.setEventCode(eventCode); // Set for API response
 
         return ResponseEntity.status(HttpStatus.CREATED).body(savedSession);
     }
 
     /**
      * AC10: Update an existing session (full replacement)
-     * PUT /api/v1/events/{eventId}/sessions/{sessionId}
+     * Story 1.16.2: Uses sessionSlug as path parameter
+     * PUT /api/v1/events/{eventCode}/sessions/{sessionSlug}
      */
-    @PutMapping("/{sessionId}")
+    @PutMapping("/{sessionSlug}")
     public ResponseEntity<Session> updateSession(
-            @PathVariable UUID eventId,
-            @PathVariable UUID sessionId,
+            @PathVariable String eventCode,
+            @PathVariable String sessionSlug,
             @Valid @RequestBody UpdateSessionRequest request) {
 
-        // Verify event exists
-        if (!eventRepository.existsById(eventId)) {
-            throw new EventNotFoundException(eventId);
-        }
+        // Find event by eventCode
+        UUID eventId = eventRepository.findByEventCode(eventCode)
+                .map(event -> event.getId())
+                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
 
-        // Find existing session
-        Optional<Session> existingSession = sessionRepository.findById(sessionId);
-        if (existingSession.isEmpty()) {
-            throw new ValidationException("Session not found: " + sessionId);
-        }
+        // Find existing session by sessionSlug
+        Session session = sessionRepository.findBySessionSlug(sessionSlug)
+                .orElseThrow(() -> new ValidationException("Session not found: " + sessionSlug));
 
         // Verify session belongs to the event
-        if (!existingSession.get().getEventId().equals(eventId)) {
+        if (!session.getEventId().equals(eventId)) {
             throw new ValidationException("Session does not belong to this event");
         }
 
         // Update session
-        Session session = existingSession.get();
         session.setTitle(request.getTitle());
         session.setDescription(request.getDescription());
         session.setSessionType(request.getSessionType());
@@ -171,37 +188,37 @@ public class SessionController {
         session.setLanguage(request.getLanguage());
 
         Session updatedSession = sessionRepository.save(session);
+        updatedSession.setEventCode(eventCode); // Set for API response
 
         return ResponseEntity.ok(updatedSession);
     }
 
     /**
      * AC10: Delete a session
-     * DELETE /api/v1/events/{eventId}/sessions/{sessionId}
+     * Story 1.16.2: Uses sessionSlug as path parameter
+     * DELETE /api/v1/events/{eventCode}/sessions/{sessionSlug}
      */
-    @DeleteMapping("/{sessionId}")
+    @DeleteMapping("/{sessionSlug}")
     public ResponseEntity<Void> deleteSession(
-            @PathVariable UUID eventId,
-            @PathVariable UUID sessionId) {
+            @PathVariable String eventCode,
+            @PathVariable String sessionSlug) {
 
-        // Verify event exists
-        if (!eventRepository.existsById(eventId)) {
-            throw new EventNotFoundException(eventId);
-        }
+        // Find event by eventCode
+        UUID eventId = eventRepository.findByEventCode(eventCode)
+                .map(event -> event.getId())
+                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
 
-        // Find existing session
-        Optional<Session> existingSession = sessionRepository.findById(sessionId);
-        if (existingSession.isEmpty()) {
-            throw new ValidationException("Session not found: " + sessionId);
-        }
+        // Find existing session by sessionSlug
+        Session session = sessionRepository.findBySessionSlug(sessionSlug)
+                .orElseThrow(() -> new ValidationException("Session not found: " + sessionSlug));
 
         // Verify session belongs to the event
-        if (!existingSession.get().getEventId().equals(eventId)) {
+        if (!session.getEventId().equals(eventId)) {
             throw new ValidationException("Session does not belong to this event");
         }
 
         // Delete session
-        sessionRepository.deleteById(sessionId);
+        sessionRepository.deleteById(session.getId());
 
         return ResponseEntity.noContent().build();
     }

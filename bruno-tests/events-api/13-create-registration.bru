@@ -16,9 +16,11 @@ auth:bearer {
 
 body:json {
   {
-    "attendeeId": "550e8400-e29b-41d4-a716-446655440099",
+    "attendeeUsername": "test.attendee",
     "attendeeEmail": "test.attendee@example.com",
-    "attendeeName": "Test Attendee"
+    "attendeeName": "Test Attendee",
+    "status": "registered",
+    "registrationDate": "2025-10-27T10:00:00Z"
   }
 }
 
@@ -31,15 +33,23 @@ tests {
     expect(res.getStatus()).to.equal(201);
   });
 
-  test("should return created registration (Story 1.16.2: registrations still use ID, but eventCode for event reference)", function() {
+  test("should return created registration with registrationCode and attendeeUsername (Story 1.16.2)", function() {
     const registration = res.getBody();
-    expect(registration.id).to.be.a('string');
+    expect(registration.registrationCode).to.be.a('string');
+    expect(registration.registrationCode).to.match(/^BATbern[0-9]+-[a-z]+\.[a-z]+(-[0-9]+)?$/);
+    expect(registration.attendeeUsername).to.equal('test.attendee');
     expect(registration.attendeeEmail).to.equal('test.attendee@example.com');
     expect(registration.attendeeName).to.equal('Test Attendee');
     expect(registration.eventCode).to.equal(bru.getVar("createdEventCode"));
   });
 
-  test("should save registration id", function() {
-    bru.setVar("createdRegistrationId", res.getBody().id);
+  test("should verify no UUID id field (Story 1.16.2)", function() {
+    const registration = res.getBody();
+    expect(registration.id).to.be.undefined;
+    expect(registration.attendeeId).to.be.undefined;
+  });
+
+  test("should save registration code", function() {
+    bru.setVar("createdRegistrationCode", res.getBody().registrationCode);
   });
 }

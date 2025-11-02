@@ -698,8 +698,9 @@ components:
           example: 2025-01-15T10:00:00Z
         createdBy:
           type: string
-          description: User ID who created this company
-          example: auth0|user_abc123
+          description: Username of the user who created this company (Story 1.16.2)
+          example: john.doe
+          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
         statistics:
           $ref: '#/components/schemas/CompanyStatistics'
         logo:
