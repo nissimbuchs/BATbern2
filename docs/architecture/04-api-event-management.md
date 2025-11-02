@@ -1,6 +1,22 @@
 # Event Management API
 
+**Last Updated**: 2025-11-02
+**ADR Reference**: [ADR-003: Meaningful Identifiers in Public APIs](./ADR-003-meaningful-identifiers-public-apis.md)
+
 This document outlines the Event Management Domain API, which handles event lifecycle management, organizer workflows, and the comprehensive 16-step workflow automation including slot management, quality control, overflow handling, and real-time collaboration.
+
+## Identifier Strategy
+
+**Per ADR-003**, this API uses meaningful identifiers in all public endpoints:
+
+- **Events**: `eventCode` (e.g., `BATbern56`) instead of UUID
+- **Users/Organizers**: `username` (e.g., `john.doe`) instead of UUID
+- **Sessions**: `sessionSlug` (e.g., `blockchain-security-101`) instead of UUID
+- **Internal IDs**: Slots and internal references may still use UUIDs for referential integrity
+
+**Database Layer**: UUIDs remain as primary keys internally. Meaningful IDs are unique alternate keys with indexes.
+
+**See**: `docs/api/events-api.openapi.yml` for authoritative OpenAPI specification.
 
 ## Overview
 
@@ -86,16 +102,17 @@ responses:
 #### Get Event Workflow State
 
 ```yaml
-GET /api/v1/events/{eventId}/workflow
+GET /api/v1/events/{eventCode}/workflow
 tags: [Event Workflow]
 summary: Get event workflow state
 parameters:
-  - name: eventId
+  - name: eventCode
     in: path
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
 responses:
   '200':
     description: Event workflow state
@@ -108,18 +125,19 @@ responses:
 #### Update Event Workflow State
 
 ```yaml
-PUT /api/v1/events/{eventId}/workflow
+PUT /api/v1/events/{eventCode}/workflow
 tags: [Event Workflow]
 summary: Update event workflow state
 security:
   - BearerAuth: [organizer]
 parameters:
-  - name: eventId
+  - name: eventCode
     in: path
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
 requestBody:
   required: true
   content:
@@ -140,16 +158,17 @@ responses:
 #### List Event Slots
 
 ```yaml
-GET /api/v1/events/{eventId}/slots
+GET /api/v1/events/{eventCode}/slots
 tags: [Slot Management]
 summary: List event slots
 parameters:
-  - name: eventId
+  - name: eventCode
     in: path
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
   - name: slotType
     in: query
     schema:
@@ -172,18 +191,19 @@ responses:
 #### Create Slot Configuration
 
 ```yaml
-POST /api/v1/events/{eventId}/slots
+POST /api/v1/events/{eventCode}/slots
 tags: [Slot Management]
 summary: Create slot configuration
 security:
   - BearerAuth: [organizer]
 parameters:
-  - name: eventId
+  - name: eventCode
     in: path
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
 requestBody:
   required: true
   content:
@@ -204,24 +224,26 @@ responses:
 #### Assign Speaker to Slot
 
 ```yaml
-POST /api/v1/events/{eventId}/slots/{slotId}/assign
+POST /api/v1/events/{eventCode}/slots/{slotId}/assign
 tags: [Slot Management]
 summary: Assign speaker to slot
 security:
   - BearerAuth: [organizer]
 parameters:
-  - name: eventId
+  - name: eventCode
     in: path
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
   - name: slotId
     in: path
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
 requestBody:
   required: true
   content:
@@ -240,24 +262,26 @@ responses:
 #### Unassign Speaker from Slot
 
 ```yaml
-DELETE /api/v1/events/{eventId}/slots/{slotId}/assign
+DELETE /api/v1/events/{eventCode}/slots/{slotId}/assign
 tags: [Slot Management]
 summary: Unassign speaker from slot
 security:
   - BearerAuth: [organizer]
 parameters:
-  - name: eventId
+  - name: eventCode
     in: path
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
   - name: slotId
     in: path
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
 responses:
   '204':
     description: Speaker unassigned from slot
@@ -268,18 +292,19 @@ responses:
 #### List Overflow Speakers
 
 ```yaml
-GET /api/v1/events/{eventId}/overflow
+GET /api/v1/events/{eventCode}/overflow
 tags: [Overflow Management]
 summary: List overflow speakers
 security:
   - BearerAuth: [organizer]
 parameters:
-  - name: eventId
+  - name: eventCode
     in: path
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
 responses:
   '200':
     description: Overflow speakers
@@ -292,18 +317,19 @@ responses:
 #### Vote on Speaker Selection
 
 ```yaml
-POST /api/v1/events/{eventId}/overflow
+POST /api/v1/events/{eventCode}/overflow
 tags: [Overflow Management]
 summary: Vote on speaker selection
 security:
   - BearerAuth: [organizer]
 parameters:
-  - name: eventId
+  - name: eventCode
     in: path
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
 requestBody:
   required: true
   content:
@@ -322,24 +348,26 @@ responses:
 #### Promote Overflow Speaker
 
 ```yaml
-POST /api/v1/events/{eventId}/overflow/{speakerId}/promote
+POST /api/v1/events/{eventCode}/overflow/{speakerUsername}/promote
 tags: [Overflow Management]
 summary: Promote overflow speaker to active (on dropout)
 security:
   - BearerAuth: [organizer]
 parameters:
-  - name: eventId
+  - name: eventCode
     in: path
     required: true
     schema:
       type: string
-      format: uuid
-  - name: speakerId
+
+      description: Meaningful identifier (see ADR-003)
+  - name: speakerUsername
     in: path
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
 requestBody:
   required: true
   content:
@@ -349,7 +377,8 @@ requestBody:
         properties:
           slotId:
             type: string
-            format: uuid
+
+            description: Meaningful identifier (see ADR-003)
             description: Slot to assign the promoted speaker
           reason:
             type: string
@@ -457,7 +486,8 @@ parameters:
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
   - name: threshold
     in: query
     schema:
@@ -475,7 +505,8 @@ responses:
           properties:
             topicId:
               type: string
-              format: uuid
+
+              description: Meaningful identifier (see ADR-003)
             similarTopics:
               type: array
               items:
@@ -496,7 +527,8 @@ parameters:
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
 responses:
   '200':
     description: Topic staleness metrics
@@ -511,18 +543,19 @@ responses:
 #### Get User Role History
 
 ```yaml
-GET /api/v1/users/{userId}/roles
+GET /api/v1/users/{username}/roles
 tags: [Role Management]
 summary: Get user role history
 security:
   - BearerAuth: [organizer]
 parameters:
-  - name: userId
+  - name: username
     in: path
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
 responses:
   '200':
     description: User role history
@@ -531,9 +564,10 @@ responses:
         schema:
           type: object
           properties:
-            userId:
+            username:
               type: string
-              format: uuid
+
+              description: Meaningful identifier (see ADR-003)
             currentRoles:
               type: array
               items:
@@ -547,18 +581,19 @@ responses:
 #### Promote User to Role
 
 ```yaml
-POST /api/v1/users/{userId}/roles
+POST /api/v1/users/{username}/roles
 tags: [Role Management]
 summary: Promote user to role
 security:
   - BearerAuth: [organizer]
 parameters:
-  - name: userId
+  - name: username
     in: path
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
 requestBody:
   required: true
   content:
@@ -589,18 +624,19 @@ responses:
 #### Demote User from Role
 
 ```yaml
-DELETE /api/v1/users/{userId}/roles/{role}
+DELETE /api/v1/users/{username}/roles/{role}
 tags: [Role Management]
 summary: Demote user from role
 security:
   - BearerAuth: [organizer]
 parameters:
-  - name: userId
+  - name: username
     in: path
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
   - name: role
     in: path
     required: true
@@ -640,24 +676,26 @@ responses:
 #### Approve Organizer Demotion Request
 
 ```yaml
-POST /api/v1/users/{userId}/role-changes/{changeId}/approve
+POST /api/v1/users/{username}/role-changes/{changeId}/approve
 tags: [Role Management]
 summary: Approve organizer demotion request
 security:
   - BearerAuth: [organizer]
 parameters:
-  - name: userId
+  - name: username
     in: path
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
   - name: changeId
     in: path
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
 requestBody:
   required: true
   content:
@@ -759,7 +797,8 @@ Event:
   properties:
     id:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     eventNumber:
       type: integer
     title:
@@ -803,9 +842,10 @@ EventStatus:
 EventWorkflow:
   type: object
   properties:
-    eventId:
+    eventCode:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     currentState:
       $ref: '#/components/schemas/EventWorkflowState'
     stateHistory:
@@ -846,10 +886,12 @@ EventSlot:
   properties:
     id:
       type: string
-      format: uuid
-    eventId:
+
+      description: Meaningful identifier (see ADR-003)
+    eventCode:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     slotType:
       $ref: '#/components/schemas/SlotType'
     startTime:
@@ -858,9 +900,10 @@ EventSlot:
     endTime:
       type: string
       format: date-time
-    assignedSpeakerId:
+    assignedSpeakerUsername:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     assignedAt:
       type: string
       format: date-time
@@ -887,16 +930,20 @@ SlotAssignment:
   properties:
     slotId:
       type: string
-      format: uuid
-    speakerId:
+
+      description: Meaningful identifier (see ADR-003)
+    speakerUsername:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     sessionId:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     assignedBy:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     assignedAt:
       type: string
       format: date-time
@@ -912,9 +959,10 @@ SlotAssignment:
 OverflowManagement:
   type: object
   properties:
-    eventId:
+    eventCode:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     overflowSpeakers:
       type: array
       items:
@@ -928,12 +976,14 @@ OverflowManagement:
 OverflowSpeaker:
   type: object
   properties:
-    speakerId:
+    speakerUsername:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     sessionId:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     addedAt:
       type: string
       format: date-time
@@ -950,9 +1000,10 @@ OverflowSpeaker:
 SpeakerVoteRequest:
   type: object
   properties:
-    speakerId:
+    speakerUsername:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     vote:
       type: string
       enum: [approve, reject]
@@ -968,13 +1019,16 @@ SpeakerSelectionVote:
   properties:
     id:
       type: string
-      format: uuid
-    organizerId:
+
+      description: Meaningful identifier (see ADR-003)
+    organizerUsername:
       type: string
-      format: uuid
-    speakerId:
+
+      description: Meaningful identifier (see ADR-003)
+    speakerUsername:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     vote:
       type: string
       enum: [approve, reject]
@@ -1001,17 +1055,20 @@ RoleChange:
   properties:
     id:
       type: string
-      format: uuid
-    userId:
+
+      description: Meaningful identifier (see ADR-003)
+    username:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     fromRole:
       $ref: '#/components/schemas/UserRole'
     toRole:
       $ref: '#/components/schemas/UserRole'
-    changedBy:
+    changedByUsername:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     reason:
       type: string
     timestamp:
@@ -1026,17 +1083,20 @@ RoleChangeRequest:
   properties:
     id:
       type: string
-      format: uuid
-    userId:
+
+      description: Meaningful identifier (see ADR-003)
+    username:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     requestedRole:
       $ref: '#/components/schemas/UserRole'
     currentRole:
       $ref: '#/components/schemas/UserRole'
-    requestedBy:
+    requestedByUsername:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     reason:
       type: string
     status:
@@ -1045,9 +1105,10 @@ RoleChangeRequest:
     createdAt:
       type: string
       format: date-time
-    requiresApprovalFrom:
+    requiresApprovalFromUsername:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
       description: User ID who must approve (for organizer demotions)
 ```
 
@@ -1059,16 +1120,18 @@ TopicBacklogItem:
   properties:
     id:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     title:
       type: string
       maxLength: 200
     description:
       type: string
       maxLength: 1000
-    suggestedBy:
+    suggestedByUsername:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
       description: User ID who suggested the topic
     suggestedByRole:
       type: string
@@ -1134,7 +1197,8 @@ SimilarTopicMatch:
   properties:
     topicId:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     title:
       type: string
     similarityScore:
@@ -1157,7 +1221,8 @@ TopicStalenessMetrics:
   properties:
     topicId:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     stalenessScore:
       type: number
       format: double
@@ -1259,12 +1324,14 @@ AssignSlotRequest:
   required:
     - speakerId
   properties:
-    speakerId:
+    speakerUsername:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     sessionId:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     notes:
       type: string
       maxLength: 500

@@ -1,5 +1,9 @@
 # Partner Coordination API
 
+**Last Updated**: 2025-11-02
+**ADR Reference**: [ADR-003: Meaningful Identifiers in Public APIs](./ADR-003-meaningful-identifiers-public-apis.md)
+
+
 This document outlines the Partner Coordination Domain API, which handles partner relationship management, strategic topic voting, partner meeting coordination, and partnership lifecycle management.
 
 ## Overview
@@ -85,7 +89,8 @@ parameters:
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
 responses:
   '200':
     description: Template version history
@@ -111,7 +116,8 @@ parameters:
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
 requestBody:
   required: true
   content:
@@ -151,7 +157,8 @@ parameters:
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
 requestBody:
   required: true
   content:
@@ -193,7 +200,8 @@ responses:
           properties:
             testId:
               type: string
-              format: uuid
+
+              description: Meaningful identifier (see ADR-003)
             variants:
               type: array
               items:
@@ -323,7 +331,8 @@ EmailTemplate:
   properties:
     id:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     templateType:
       $ref: '#/components/schemas/TemplateType'
     language:
@@ -378,20 +387,23 @@ EmailTemplate:
               format: double
     previousVersionId:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
       description: Reference to previous template version for history
     createdAt:
       type: string
       format: date-time
-    createdBy:
+    createdByUsername:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     updatedAt:
       type: string
       format: date-time
-    updatedBy:
+    updatedByUsername:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
 
 TemplateType:
   type: string
@@ -413,9 +425,10 @@ TemplateType:
 NotificationPreferences:
   type: object
   properties:
-    userId:
+    username:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     channels:
       type: object
       description: Per-channel notification preferences
@@ -530,10 +543,12 @@ EscalationRule:
   properties:
     id:
       type: string
-      format: uuid
-    eventId:
+
+      description: Meaningful identifier (see ADR-003)
+    eventCode:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
       description: Specific event ID (null for global rules)
     triggerType:
       type: string
@@ -601,9 +616,10 @@ CreateEscalationRuleRequest:
     - thresholdHours
     - escalationLevel
   properties:
-    eventId:
+    eventCode:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     triggerType:
       type: string
       enum:

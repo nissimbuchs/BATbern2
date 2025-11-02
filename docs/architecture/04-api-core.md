@@ -1,5 +1,9 @@
 # Core API Design
 
+**Last Updated**: 2025-11-02
+**ADR Reference**: [ADR-003: Meaningful Identifiers in Public APIs](./ADR-003-meaningful-identifiers-public-apis.md)
+
+
 This document outlines the foundational API design patterns, external integrations, and common components shared across all BATbern Event Management Platform domain APIs.
 
 ## OpenAPI Specification
@@ -158,9 +162,10 @@ ErrorResponse:
         timestamp:
           type: string
           format: date-time
-        requestId:
+        requestCode:
           type: string
-          format: uuid
+
+          description: Meaningful identifier (see ADR-003)
           description: Correlation ID for tracing
         path:
           type: string
@@ -188,7 +193,8 @@ Session:
   properties:
     id:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     title:
       type: string
     description:
@@ -211,9 +217,10 @@ Session:
 SessionSpeaker:
   type: object
   properties:
-    speakerId:
+    username:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     workflowState:
       $ref: '#/components/schemas/SpeakerWorkflowState'
     invitedAt:
@@ -257,7 +264,8 @@ CompanyLogo:
   properties:
     fileId:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     url:
       type: string
       format: uri
@@ -273,7 +281,8 @@ ContentMetadata:
   properties:
     fileId:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     filename:
       type: string
     contentType:
@@ -286,7 +295,8 @@ ContentMetadata:
       format: int64
     uploadedBy:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     uploadedAt:
       type: string
       format: date-time
