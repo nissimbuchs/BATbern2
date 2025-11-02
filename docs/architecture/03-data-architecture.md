@@ -29,28 +29,56 @@ This document outlines the comprehensive data model and database design for the 
 #### TypeScript Interface
 ```typescript
 // Story 1.16.2: Company with meaningful ID (name)
+// ADR-002: Logo storage via Generic File Upload Service
 interface Company {
   name: string;  // Same as id - kept for backwards compatibility
   displayName: string;
-  logo?: CompanyLogo;
+  swissUID?: string;  // Swiss business ID (CHE-XXX.XXX.XXX)
   website?: string;
   industry?: string;
   description?: string;
+  logoUrl?: string;      // CloudFront CDN URL (from logos.cloudfront_url)
+  logoS3Key?: string;    // S3 key reference
+  logoFileId?: string;   // References logos.upload_id (ADR-002)
+  isVerified: boolean;
   createdAt: Date;
   updatedAt: Date;
   createdBy: string; // User ID who created this company
   // Note: employee relationships managed by User Service via User.companyId
   // Note: Partnership status managed by Partner Coordination Service via Partnership.companyId
+  // Note: Logo storage uses Generic File Upload Service (ADR-002)
 }
 
-interface CompanyLogo {
-  fileId: string;
-  fileName: string;
-  mimeType: string;
-  fileSizeBytes: number;
-  s3Key: string;
-  uploadedAt: Date;
-  uploadedBy: string;
+// ADR-002: Generic Logo entity (supports all entity types)
+interface Logo {
+  uploadId: string;              // Public identifier for tracking
+  s3Key: string;                 // Current S3 key (temp or final)
+  cloudFrontUrl?: string;        // CDN URL for access
+  fileExtension: string;         // png, jpg, jpeg, svg
+  fileSize: number;              // Size in bytes
+  mimeType: string;              // image/png, etc.
+  checksum?: string;             // SHA-256 for integrity
+  status: LogoStatus;            // State machine
+  associatedEntityType?: AssociatedEntityType;
+  associatedEntityId?: string;   // Entity's identifier
+  createdAt: Date;
+  updatedAt: Date;
+  expiresAt?: Date;              // For automatic cleanup
+}
+
+enum LogoStatus {
+  PENDING = 'PENDING',           // Upload initiated, file may not exist in S3 yet
+  CONFIRMED = 'CONFIRMED',       // File successfully uploaded to S3 and verified
+  ASSOCIATED = 'ASSOCIATED'      // Linked to entity, file in final location
+}
+
+enum AssociatedEntityType {
+  COMPANY = 'COMPANY',
+  USER = 'USER',
+  EVENT = 'EVENT',
+  PARTNER = 'PARTNER',
+  SPEAKER = 'SPEAKER',
+  ATTENDEE = 'ATTENDEE'
 }
 ```
 
@@ -60,34 +88,67 @@ interface CompanyLogo {
 
 ### Partner
 
-**Purpose:** Partnership-specific data for companies that sponsor BATbern events, with consistent participation across all events.
+**Purpose:** Partnership-specific data for companies that sponsor BATbern events, with consistent participation across all events. Partners are company-centric (not person-centric).
+
+**ADR-004 Reference Pattern:**
+- Partner is company-centric: primary relationship is Partner → Company
+- PartnerContact references User entity via `userId` (UUID foreign key, internal)
+- PartnerContact does NOT duplicate user fields (email, name, photo, company)
+- User fields accessed via join to User entity
 
 **Key Attributes:**
 - id: UUID - Unique partner identifier
-- companyId: UUID - Reference to company entity
+- companyId: UUID - Reference to company entity (primary relationship)
 - partnershipLevel: PartnershipTier - Sponsorship level and benefits
 - partnershipStartDate: Date - When partnership began
+- partnershipEndDate: Date - When partnership ends (optional)
+- isActive: boolean - Current partnership status
+- contacts: PartnerContact[] - Multiple contact persons (each references User)
 - topicVotes: TopicVote[] - Historical voting records
 - topicSuggestions: TopicSuggestion[] - Partner-submitted topic ideas
 - meetingAttendance: PartnerMeetingAttendance[] - Meeting participation history
-- contacts: PartnerContact[] - Multiple contact persons
+- benefits: PartnershipBenefits - Benefits based on partnership tier
 
 #### TypeScript Interface
 ```typescript
+// Partner is company-centric (per ADR-004)
 interface Partner {
   id: string;
-  companyId: string;
+  companyId: string;                       // Primary relationship (FK to Company)
   partnershipLevel: PartnershipTier;
   partnershipStartDate: Date;
   partnershipEndDate?: Date;
   isActive: boolean;
-  contacts: PartnerContact[];
+  contacts: PartnerContact[];              // References User entities
   topicVotes: TopicVote[];
   topicSuggestions: TopicSuggestion[];
   meetingAttendance: PartnerMeetingAttendance[];
   benefits: PartnershipBenefits;
   createdAt: Date;
   updatedAt: Date;
+}
+
+// PartnerContact references User (per ADR-004)
+interface PartnerContact {
+  id: string;
+  partnerId: string;                       // FK to Partner
+  userId: string;                          // FK to User.id (NOT duplicating user fields)
+  contactRole: ContactRole;                // Primary, Billing, Technical
+  isPrimary: boolean;
+
+  // API responses include User fields by joining:
+  // username: string;                     // From User (API identifier)
+  // email: string;                        // From User
+  // firstName: string;                    // From User
+  // lastName: string;                     // From User
+  // profilePictureUrl: string;            // From User
+}
+
+enum ContactRole {
+  PRIMARY = 'primary',
+  BILLING = 'billing',
+  TECHNICAL = 'technical',
+  MARKETING = 'marketing'
 }
 
 interface PartnerAnalytics {
@@ -111,6 +172,7 @@ enum PartnershipTier {
 #### Relationships
 - **One-to-One:** Partner → Company (partner data extends company via `Partner.companyId`)
 - **One-to-Many:** Partner → PartnerContacts (multiple contact persons)
+- **Many-to-One:** PartnerContact → User (via `PartnerContact.userId` FK to `User.id`)
 - **Cross-Service:** Partner analytics track employee attendance by querying User Service and Event Registration Service
 
 ### User
@@ -124,12 +186,14 @@ enum PartnershipTier {
 - email: string - User email address (unique)
 - firstName: string - User's first name
 - lastName: string - User's last name
-- bio: string - User biography and professional summary
+- bio: string - User biography and professional summary (ADR-004: single source of truth)
 - companyId: string - Reference to company name (e.g., "GoogleZH") - Story 1.16.2: Not UUID
 - roles: Role[] - User roles (ORGANIZER, SPEAKER, PARTNER, ATTENDEE)
 - preferences: UserPreferences - User preferences (theme, language, notifications)
 - settings: UserSettings - Account settings and privacy controls
-- profilePictureUrl: string - CloudFront CDN URL for profile picture (cdn.batbern.ch or cdn.staging.batbern.ch)
+- profilePictureUrl: string - CloudFront CDN URL (from logos.cloudfront_url, ADR-002)
+- profilePictureS3Key: string - S3 key reference
+- profilePictureFileId: string - References logos.upload_id (ADR-002)
 - activityHistory: ActivityHistory[] - User activity tracking
 - isActive: boolean - Account active status
 - lastLoginAt: Date - Last successful login timestamp
@@ -146,19 +210,22 @@ enum PartnershipTier {
 #### TypeScript Interface
 ```typescript
 // Story 1.16.2: User with meaningful ID (username)
+// ADR-002: Profile picture via Generic File Upload Service
+// ADR-004: User is single source of truth for email, name, bio, photo
 interface User {
   id: string;  // Story 1.16.2: username (e.g., "john.doe"), not UUID
   cognitoUserId: string;
   email: string;
   firstName: string;
   lastName: string;
-  bio?: string;
+  bio?: string;  // ADR-004: Single source of truth (used by Speaker, Attendee, etc.)
   companyId?: string;  // Story 1.16.2: company name (e.g., "GoogleZH"), not UUID
   roles: Role[];
   preferences: UserPreferences;
   settings: UserSettings;
-  profilePictureUrl?: string;
-  profilePictureS3Key?: string;
+  profilePictureUrl?: string;     // CloudFront URL (from logos.cloudfront_url, ADR-002)
+  profilePictureS3Key?: string;   // S3 key reference
+  profilePictureFileId?: string;  // References logos.upload_id (ADR-002)
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -229,45 +296,66 @@ interface ActivityHistory {
 
 ### Speaker
 
-**Purpose:** Individual speakers with company affiliations and session assignments across multiple events.
+**Purpose:** Individual speakers with speaking-specific workflow and expertise data. Speaker profile extends User entity per ADR-004.
+
+**ADR-004 Reference Pattern:**
+- Speaker references User entity via `userId` (UUID foreign key, internal)
+- API uses `username` as public identifier (e.g., `GET /speakers/john.doe`)
+- User fields (email, name, bio, photo, company) stored in User entity (NEVER duplicated)
+- Speaker entity contains ONLY domain-specific fields (availability, expertise, speaking history)
 
 **Key Attributes:**
 - id: UUID - Unique speaker identifier
-- companyId: UUID - Reference to company entity
-- profile: SpeakerProfile - Bio, expertise, contact information
-- speakingHistory: SpeakingEngagement[] - Past session participation
+- userId: UUID - Foreign key to User entity (internal, NOT exposed in API)
 - availability: SpeakerAvailability - Current availability status
+- workflowState: SpeakerWorkflowState - Speaker coordination workflow state
+- expertiseAreas: string[] - Areas of technical expertise
+- speakingTopics: string[] - Topics the speaker can present
+- speakingHistory: SpeakingEngagement[] - Past session participation
+- linkedInUrl: string - LinkedIn profile (speaker-specific social media)
+- twitterHandle: string - Twitter/X handle (speaker-specific social media)
+- certifications: string[] - Professional certifications
+- languages: string[] - Languages speaker can present in
+- slotPreferences: SpeakerSlotPreferences - Time slot preferences per event
+
+**Fields Stored in User Entity (NOT in Speaker):**
+- ❌ email, firstName, lastName (from User.email, User.firstName, User.lastName)
+- ❌ bio (from User.bio - single source of truth)
+- ❌ profilePhotoUrl (from User.profilePictureUrl)
+- ❌ companyId (from User.companyId)
+- ❌ position (removed entirely per ADR-004)
 
 #### TypeScript Interface
 ```typescript
+// Speaker entity references User (per ADR-004)
 interface Speaker {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  companyId: string;
-  position: string;
-  profile: SpeakerProfile;
+  id: string;                              // UUID (internal)
+  userId: string;                          // UUID FK to User.id (internal)
+
+  // API responses include User fields by joining:
+  // username: string;                     // From User (API identifier)
+  // email: string;                        // From User
+  // firstName: string;                    // From User
+  // lastName: string;                     // From User
+  // bio: string;                          // From User (single bio)
+  // profilePictureUrl: string;            // From User
+  // companyId: string;                    // From User
+
+  // Speaker-specific fields:
   availability: SpeakerAvailability;
   workflowState: SpeakerWorkflowState;
-  slotPreferences: SpeakerSlotPreferences;
-  qualityReview: QualityReviewStatus;
-  communicationPreferences: ContactPreferences;
-  speakingHistory: SpeakingEngagement[];
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-interface SpeakerProfile {
-  shortBio: string;
-  detailedBio: string;
   expertiseAreas: string[];
-  profilePhotoUrl?: string;
+  speakingTopics: string[];
   linkedInUrl?: string;
   twitterHandle?: string;
   certifications: string[];
   languages: string[];
-  speakingTopics: string[];
+  speakingHistory: SpeakingEngagement[];
+  slotPreferences: SpeakerSlotPreferences;
+  qualityReview: QualityReviewStatus;
+  communicationPreferences: ContactPreferences;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 enum SpeakerWorkflowState {
@@ -289,9 +377,30 @@ enum SpeakerAvailability {
 ```
 
 #### Relationships
-- **Many-to-One:** Speaker → Company (speaker belongs to company)
+- **One-to-One:** Speaker → User (via `Speaker.userId` FK to `User.id`)
+- **Many-to-One:** Speaker → Company (via `User.companyId`, transitive through User)
 - **Many-to-Many:** Speaker ↔ Sessions (speakers can present multiple sessions)
 - **One-to-Many:** Speaker → SpeakingEngagements (historical session participation)
+
+#### API Pattern (ADR-003 + ADR-004)
+```http
+# Public API uses username identifier
+GET /api/v1/speakers/john.doe
+
+# Response combines User + Speaker via JPQL join
+{
+  "username": "john.doe",           // From User (public ID)
+  "email": "john@example.com",      // From User
+  "firstName": "John",               // From User
+  "lastName": "Doe",                 // From User
+  "bio": "Experienced architect",    // From User
+  "profilePictureUrl": "https://...",// From User
+  "company": "GoogleZH",             // From User.companyId
+  "availability": "available",       // From Speaker
+  "expertiseAreas": ["Security"],    // From Speaker
+  "speakingTopics": ["Blockchain"]   // From Speaker
+}
+```
 
 ### Session
 
@@ -670,9 +779,38 @@ enum QualityReviewStatus {
 
 ### Content Storage & File Management
 
-#### Content Metadata
+**Important (ADR-002)**: File uploads use a **dual-table pattern**:
+- **`logos` table**: Generic file upload service for profile images (company logos, user photos, event banners)
+  - Uses 3-phase upload pattern (PENDING → CONFIRMED → ASSOCIATED)
+  - Entity-agnostic with generic association
+  - Automatic cleanup of orphaned uploads
+  - See ADR-002 for complete architecture
 
-**Purpose:** Track all uploaded files with S3 references, checksums, and quota management.
+- **`content_metadata` table**: Session content and materials (presentations, documents, videos)
+  - Used for event-related content only
+  - Tied to sessions and events
+  - No state machine (simpler workflow)
+
+#### Logo Files (ADR-002 - Generic File Upload Service)
+
+**Purpose:** Profile images and branding for all entity types. See `logos` table schema in Company Management Service section and ADR-002 for complete documentation.
+
+**Supported Entity Types**: Company logos, User profile pictures, Event banners, Partner logos, Speaker photos
+
+**Three-Phase Upload Pattern**:
+1. **PENDING**: Upload initiated via `POST /logos/presigned-url` (no entity required)
+2. **CONFIRMED**: File uploaded to S3 and verified via `POST /logos/{uploadId}/confirm`
+3. **ASSOCIATED**: Linked to entity during creation (e.g., `POST /companies` with `logoUploadId`)
+
+**S3 Key Strategy**:
+- Temporary: `logos/temp/{uploadId}/logo-{fileId}.{ext}` (PENDING/CONFIRMED)
+- Final: `logos/{year}/{entity-type}/{entity-name}/logo-{fileId}.{ext}` (ASSOCIATED)
+
+**Cleanup**: Automated job removes PENDING > 24h, CONFIRMED > 7 days
+
+#### Content Metadata (Session Materials Only)
+
+**Purpose:** Track session-related content: presentations, handouts, videos, and archive materials. NOT used for profile images (see logos table above).
 
 ```typescript
 interface ContentMetadata {
@@ -694,12 +832,11 @@ interface ContentMetadata {
 }
 
 enum ContentType {
-  PRESENTATION = 'presentation',
-  LOGO = 'logo',
-  SPEAKER_PHOTO = 'speaker_photo',
-  SPEAKER_CV = 'speaker_cv',
-  EVENT_PHOTO = 'event_photo',
-  ARCHIVE_MATERIAL = 'archive_material'
+  PRESENTATION = 'presentation',        // Session presentations
+  SPEAKER_CV = 'speaker_cv',           // Speaker CVs
+  EVENT_PHOTO = 'event_photo',         // Event photography
+  ARCHIVE_MATERIAL = 'archive_material' // Historical content
+  // NOTE: LOGO and SPEAKER_PHOTO removed - use logos table (ADR-002)
 }
 
 enum UploadStatus {
@@ -820,8 +957,10 @@ interface FileUploadConfirmation {
 
 #### Content Metadata Database Schema
 
+**Note (ADR-002)**: Profile images (logos, user photos) use the `logos` table. This table is for session content only.
+
 ```sql
--- Content metadata table
+-- Content metadata table (session content only - NOT profile images)
 CREATE TABLE content_metadata (
     file_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     s3_bucket VARCHAR(255) NOT NULL,
@@ -831,8 +970,11 @@ CREATE TABLE content_metadata (
     mime_type VARCHAR(100) NOT NULL,
     checksum VARCHAR(64), -- SHA-256 hash
     content_type VARCHAR(50) NOT NULL CHECK (content_type IN (
-        'presentation', 'logo', 'speaker_photo', 'speaker_cv',
-        'event_photo', 'archive_material'
+        'presentation',      -- Session presentations
+        'speaker_cv',        -- Speaker CVs
+        'event_photo',       -- Event photography
+        'archive_material'   -- Historical content
+        -- NOTE: 'logo' and 'speaker_photo' removed - use logos table (ADR-002)
     )),
     upload_status VARCHAR(20) NOT NULL CHECK (upload_status IN (
         'pending', 'uploading', 'completed', 'failed', 'virus_detected', 'deleted'
@@ -1008,26 +1150,50 @@ $$ LANGUAGE plpgsql;
 
 ### Attendee
 
-**Purpose:** Conference participants with company affiliations and multi-event participation tracking.
+**Purpose:** Conference participants with event registration and engagement tracking. Attendee profile extends User entity per ADR-004.
+
+**ADR-004 Reference Pattern:**
+- Attendee references User entity via `userId` (UUID foreign key, internal)
+- API uses `username` as public identifier (e.g., `GET /attendees/john.doe`)
+- User fields (email, name, bio, photo, company) stored in User entity (NEVER duplicated)
+- Attendee entity contains ONLY domain-specific fields (registrations, engagement, preferences)
+
+**Key Attributes:**
+- id: UUID - Unique attendee identifier
+- userId: UUID - Foreign key to User entity (internal, NOT exposed in API)
+- eventRegistrations: EventRegistration[] - Many-to-many with events
+- engagementHistory: AttendeeEngagement - Content engagement tracking
+- contentPreferences: ContentPreferences - Topics of interest (different from User.preferences)
+- newsletterSubscription: boolean - Newsletter opt-in status
+- gdprConsent: GDPRConsent - GDPR consent tracking with timestamp and IP
+
+**Fields Stored in User Entity (NOT in Attendee):**
+- ❌ email, firstName, lastName (from User.email, User.firstName, User.lastName)
+- ❌ companyId (from User.companyId)
+- ❌ position (removed entirely per ADR-004)
 
 #### TypeScript Interface
 ```typescript
+// Attendee entity references User (per ADR-004)
 interface Attendee {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  companyId?: string; // Optional company affiliation
-  position?: string;
-  profile: AttendeeProfile;
-  preferences: ContentPreferences;
-  engagementHistory: AttendeeEngagement;
+  id: string;                              // UUID (internal)
+  userId: string;                          // UUID FK to User.id (internal)
+
+  // API responses include User fields by joining:
+  // username: string;                     // From User (API identifier)
+  // email: string;                        // From User
+  // firstName: string;                    // From User
+  // lastName: string;                     // From User
+  // companyId?: string;                   // From User (optional)
+
+  // Attendee-specific fields:
   eventRegistrations: EventRegistration[]; // Many-to-many with events
+  engagementHistory: AttendeeEngagement;   // Content engagement tracking
+  contentPreferences: ContentPreferences;  // Different from User.preferences
   newsletterSubscription: boolean;
   gdprConsent: GDPRConsent;
   createdAt: Date;
   updatedAt: Date;
-  lastLoginAt?: Date;
 }
 
 interface EventRegistration {
@@ -1039,7 +1205,20 @@ interface EventRegistration {
   attendanceConfirmed?: boolean;
   actualAttendance: boolean;
 }
+
+interface GDPRConsent {
+  consentGiven: boolean;
+  consentDate: Date;
+  ipAddress: string;
+  consentVersion: string;
+}
 ```
+
+#### Relationships
+- **One-to-One:** Attendee → User (via `Attendee.userId` FK to `User.id`)
+- **Many-to-One:** Attendee → Company (via `User.companyId`, transitive through User)
+- **Many-to-Many:** Attendee ↔ Events (through EventRegistration)
+- **One-to-Many:** Attendee → EngagementHistory (content interaction tracking)
 
 ### Notification Domain Models
 
@@ -1301,27 +1480,46 @@ CREATE INDEX idx_topic_usage_history_used_date ON topic_usage_history(used_date 
 ### Speaker Coordination Service Database Schema
 
 ```sql
--- Speakers table
+-- Speakers table (ADR-004: References User, no duplicated fields)
 CREATE TABLE speakers (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    email VARCHAR(255) UNIQUE NOT NULL,
-    first_name VARCHAR(100) NOT NULL,
-    last_name VARCHAR(100) NOT NULL,
-    company_id UUID NOT NULL, -- References company service
-    position VARCHAR(255),
-    short_bio TEXT,
-    detailed_bio TEXT,
-    expertise_areas TEXT[] DEFAULT '{}',
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL UNIQUE,  -- FK to users.id (one-to-one)
+
+    -- Domain-specific fields only (NO email, name, bio, photo, company, position)
     availability VARCHAR(50) NOT NULL CHECK (availability IN (
-        'available', 'busy', 'unavailable', 'invited', 'confirmed', 'declined'
+        'available', 'busy', 'unavailable'
     )) DEFAULT 'available',
+    workflow_state VARCHAR(50) NOT NULL CHECK (workflow_state IN (
+        'open', 'contacted', 'ready', 'declined', 'accepted',
+        'slot_assigned', 'quality_reviewed', 'final_agenda'
+    )) DEFAULT 'open',
+    expertise_areas TEXT[] DEFAULT '{}',
+    speaking_topics TEXT[] DEFAULT '{}',
+    linkedin_url VARCHAR(255),
+    twitter_handle VARCHAR(100),
+    certifications TEXT[] DEFAULT '{}',
+    languages VARCHAR(10)[] DEFAULT '{}',
+    speaking_history JSONB DEFAULT '[]',
+
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+
+    -- Foreign key constraint with cascade delete
+    CONSTRAINT fk_speaker_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
 );
+
+-- Indexes
+CREATE UNIQUE INDEX idx_speakers_user_id ON speakers(user_id);
+CREATE INDEX idx_speakers_availability ON speakers(availability);
+CREATE INDEX idx_speakers_workflow_state ON speakers(workflow_state);
+CREATE INDEX idx_speakers_expertise_areas ON speakers USING GIN(expertise_areas);
 
 -- Session speaker assignments (many-to-many with roles)
 CREATE TABLE session_speakers (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     session_id UUID NOT NULL, -- References event service
     speaker_id UUID NOT NULL REFERENCES speakers(id) ON DELETE CASCADE,
     role VARCHAR(50) NOT NULL CHECK (role IN (
@@ -1338,9 +1536,18 @@ CREATE TABLE session_speakers (
 );
 
 -- Indexes
-CREATE INDEX idx_speakers_email ON speakers(email);
-CREATE INDEX idx_speakers_company_id ON speakers(company_id);
 CREATE INDEX idx_session_speakers_session_id ON session_speakers(session_id);
+CREATE INDEX idx_session_speakers_speaker_id ON session_speakers(speaker_id);
+
+-- Example query: Get speaker with user data (JPQL constructor projection)
+-- SELECT new SpeakerResponse(
+--     u.username, u.email, u.firstName, u.lastName, u.bio, u.profilePictureUrl, c.name,
+--     s.availability, s.workflowState, s.expertiseAreas, s.speakingTopics
+-- )
+-- FROM Speaker s
+-- INNER JOIN User u ON s.userId = u.id
+-- LEFT JOIN Company c ON u.companyId = c.id
+-- WHERE u.username = :username
 ```
 
 ### Company Management Service Database Schema
@@ -1348,13 +1555,16 @@ CREATE INDEX idx_session_speakers_session_id ON session_speakers(session_id);
 ```sql
 -- Companies table
 CREATE TABLE companies (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
     display_name VARCHAR(255) NOT NULL,
     swiss_uid VARCHAR(20),
     website VARCHAR(500),
     industry VARCHAR(100),
     description TEXT,
+    logo_url VARCHAR(1000),      -- CloudFront URL (populated after logo association)
+    logo_s3_key VARCHAR(500),     -- S3 key reference
+    logo_file_id VARCHAR(255),    -- References logos.upload_id (ADR-002)
     is_verified BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -1364,26 +1574,67 @@ CREATE TABLE companies (
 -- Note: User-company relationships are managed in User Management Service
 -- Query employee count: SELECT COUNT(*) FROM users WHERE company_id = '{companyId}'
 -- Note: Partnership status managed in Partner Coordination Service via Partnership.companyId
+-- Note: Logo storage uses Generic File Upload Service (ADR-002)
 
--- Company logos (simplified)
-CREATE TABLE company_logos (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-    file_id VARCHAR(255) NOT NULL,
-    file_name VARCHAR(255) NOT NULL,
-    mime_type VARCHAR(100) NOT NULL,
-    file_size_bytes BIGINT NOT NULL,
-    s3_key VARCHAR(500) NOT NULL,
-    uploaded_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    uploaded_by UUID NOT NULL,
-    is_current BOOLEAN DEFAULT TRUE
+-- Generic Logos Table (ADR-002: Generic File Upload Service)
+-- Supports all entity types: COMPANY, USER, EVENT, PARTNER, etc.
+CREATE TABLE logos (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    upload_id VARCHAR(100) UNIQUE NOT NULL,  -- Public identifier for tracking
+    s3_key VARCHAR(500) NOT NULL,             -- Current S3 key (temp or final)
+    cloudfront_url VARCHAR(1000),             -- CDN URL for access
+    file_extension VARCHAR(10) NOT NULL,      -- png, jpg, jpeg, svg
+    file_size BIGINT NOT NULL,                -- Size in bytes
+    mime_type VARCHAR(100) NOT NULL,          -- image/png, etc.
+    checksum VARCHAR(100),                    -- SHA-256 for integrity
+
+    -- State machine (ADR-002 three-phase upload pattern)
+    status VARCHAR(20) NOT NULL CHECK (status IN (
+        'PENDING',      -- Upload initiated, file may not exist in S3 yet
+        'CONFIRMED',    -- File successfully uploaded to S3 and verified
+        'ASSOCIATED'    -- Linked to entity, file in final location
+    )),
+
+    -- Entity association (populated when ASSOCIATED)
+    associated_entity_type VARCHAR(50) CHECK (associated_entity_type IN (
+        'COMPANY', 'USER', 'EVENT', 'PARTNER', 'SPEAKER', 'ATTENDEE'
+    )),
+    associated_entity_id VARCHAR(255),        -- Entity's identifier (name or username)
+
+    -- Lifecycle timestamps
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    expires_at TIMESTAMP WITH TIME ZONE,      -- For automatic cleanup
+
+    -- Constraints
+    CONSTRAINT valid_association CHECK (
+        (status = 'ASSOCIATED' AND associated_entity_type IS NOT NULL AND associated_entity_id IS NOT NULL) OR
+        (status != 'ASSOCIATED')
+    )
 );
 
 -- Indexes
 CREATE INDEX idx_companies_name ON companies(name);
 CREATE INDEX idx_companies_swiss_uid ON companies(swiss_uid);
 CREATE INDEX idx_companies_is_verified ON companies(is_verified);
-CREATE UNIQUE INDEX idx_company_current_logo ON company_logos(company_id) WHERE is_current = TRUE;
+CREATE INDEX idx_companies_logo_file_id ON companies(logo_file_id);
+
+-- Logos table indexes (ADR-002)
+CREATE UNIQUE INDEX idx_logos_upload_id ON logos(upload_id);
+CREATE INDEX idx_logos_status ON logos(status);
+CREATE INDEX idx_logos_status_expires ON logos(status, expires_at) WHERE status != 'ASSOCIATED';
+CREATE INDEX idx_logos_entity_association ON logos(associated_entity_type, associated_entity_id) WHERE status = 'ASSOCIATED';
+
+-- ADR-002: Three-Phase Upload Pattern
+-- Phase 1: POST /logos/presigned-url → Creates logo with status=PENDING, temp S3 key
+-- Phase 2: Confirm upload → Updates status=CONFIRMED
+-- Phase 3: Entity creation → Copies to final S3 location, status=ASSOCIATED, associates with entity
+--
+-- Example S3 key progression:
+--   PENDING/CONFIRMED: logos/temp/{uploadId}/logo-{fileId}.png
+--   ASSOCIATED:        logos/2025/companies/GoogleZH/logo-{fileId}.png
+--
+-- Cleanup: Scheduled job deletes PENDING > 24h, CONFIRMED > 7 days
 ```
 
 ### Partner Coordination Service Database Schema
@@ -1469,25 +1720,38 @@ CREATE INDEX idx_partner_meeting_attendance_partner_id ON partner_meeting_attend
 ### Attendee Experience Service Database Schema
 
 ```sql
--- Attendees table
+-- Attendees table (ADR-004: References User, no duplicated fields)
 CREATE TABLE attendees (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    email VARCHAR(255) UNIQUE NOT NULL,
-    first_name VARCHAR(100) NOT NULL,
-    last_name VARCHAR(100) NOT NULL,
-    company_id UUID, -- References company service (optional)
-    position VARCHAR(255),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL UNIQUE,  -- FK to users.id (one-to-one)
+
+    -- Domain-specific fields only (NO email, name, company, position)
     newsletter_subscription BOOLEAN DEFAULT FALSE,
+    content_preferences JSONB DEFAULT '{}', -- Topics of interest (different from User.preferences)
+
+    -- GDPR consent tracking
     gdpr_consent_given BOOLEAN DEFAULT FALSE,
     gdpr_consent_date TIMESTAMP WITH TIME ZONE,
+    gdpr_consent_ip VARCHAR(45), -- IPv4 or IPv6
+    gdpr_consent_version VARCHAR(20),
+
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    last_login_at TIMESTAMP WITH TIME ZONE
+
+    -- Foreign key constraint with cascade delete
+    CONSTRAINT fk_attendee_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
 );
+
+-- Indexes
+CREATE UNIQUE INDEX idx_attendees_user_id ON attendees(user_id);
+CREATE INDEX idx_attendees_newsletter ON attendees(newsletter_subscription) WHERE newsletter_subscription = true;
 
 -- Event registrations (many-to-many)
 CREATE TABLE event_registrations (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     event_id UUID NOT NULL, -- References event service
     attendee_id UUID NOT NULL REFERENCES attendees(id) ON DELETE CASCADE,
     registration_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -1497,12 +1761,13 @@ CREATE TABLE event_registrations (
     special_requests TEXT,
     attendance_confirmed BOOLEAN DEFAULT FALSE,
     actual_attendance BOOLEAN DEFAULT FALSE,
+    session_preferences TEXT[] DEFAULT '{}',
     UNIQUE(event_id, attendee_id)
 );
 
 -- Content engagement tracking
 CREATE TABLE content_engagement (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     attendee_id UUID NOT NULL REFERENCES attendees(id) ON DELETE CASCADE,
     content_type VARCHAR(50) NOT NULL, -- 'session', 'document', 'video', etc.
     content_id UUID NOT NULL,
@@ -1512,11 +1777,21 @@ CREATE TABLE content_engagement (
 );
 
 -- Indexes
-CREATE INDEX idx_attendees_email ON attendees(email);
-CREATE INDEX idx_attendees_company_id ON attendees(company_id);
 CREATE INDEX idx_event_registrations_event_id ON event_registrations(event_id);
 CREATE INDEX idx_event_registrations_attendee_id ON event_registrations(attendee_id);
+CREATE INDEX idx_event_registrations_status ON event_registrations(status);
 CREATE INDEX idx_content_engagement_attendee_id ON content_engagement(attendee_id);
+CREATE INDEX idx_content_engagement_content ON content_engagement(content_type, content_id);
+
+-- Example query: Get attendee with user data (JPQL constructor projection)
+-- SELECT new AttendeeResponse(
+--     u.username, u.email, u.firstName, u.lastName, c.name,
+--     a.newsletterSubscription, a.contentPreferences, a.gdprConsent
+-- )
+-- FROM Attendee a
+-- INNER JOIN User u ON a.userId = u.id
+-- LEFT JOIN Company c ON u.companyId = c.id
+-- WHERE u.username = :username
 ```
 
 ## User Role Management Tables

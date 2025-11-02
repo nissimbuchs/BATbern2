@@ -14,6 +14,9 @@ info:
     - **Role Management**: Business rules enforcement (minimum 2 organizers)
     - **GDPR Compliance**: Cascade deletion and audit logging
 
+    **Important (ADR-004)**: User entity is the single source of truth for email, name, bio, photo, company.
+    Domain entities (Speaker, Attendee, Partner) reference User and never duplicate these fields.
+
     **Story**: 1.14-2 - User Management Service Foundation
     **Story 1.16.2**: Eliminate UUIDs from API - Use username as identifier
 

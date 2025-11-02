@@ -1,0 +1,501 @@
+openapi: 3.1.0
+info:
+  title: BATbern Attendees API
+  version: 1.0.0
+  description: |
+    Attendee Experience API for BATbern Event Management Platform.
+
+    This API provides attendee management capabilities with:
+    - **Event Registration Management**: Register for events, manage registrations
+    - **Content Engagement**: Track interaction with sessions and materials
+    - **Newsletter Subscriptions**: Manage newsletter preferences
+    - **GDPR Consent Management**: Track and manage GDPR consent
+
+    **Important (ADR-004)**: Attendee entity references User entity.
+    - Email, name, company are stored in User entity (NOT duplicated in Attendee)
+    - API responses combine User + Attendee data via JPQL joins
+    - Internal: Attendee.userId (UUID FK) -> User.id
+    - External: username is the public identifier (ADR-003)
+
+    **Status**: NOT YET IMPLEMENTED - This spec defines the future API design
+
+  contact:
+    name: BATbern Platform Team
+    email: platform@batbern.ch
+  license:
+    name: Proprietary
+    identifier: Proprietary
+
+servers:
+  - url: https://api.batbern.ch/api/v1
+    description: Production
+  - url: https://api.staging.batbern.ch/api/v1
+    description: Staging
+  - url: http://localhost:8080/api/v1
+    description: Development
+
+tags:
+  - name: Attendees
+    description: Attendee profile and management operations
+  - name: Event Registrations
+    description: Event registration management
+  - name: Content Engagement
+    description: Content interaction tracking
+  - name: Newsletter
+    description: Newsletter subscription management
+
+paths:
+  /attendees/{username}:
+    get:
+      tags:
+        - Attendees
+      summary: Get attendee by username
+      description: |
+        Retrieve a specific attendee by their username (public identifier from User entity).
+
+        **Response combines User + Attendee data** (ADR-004):
+        - User fields: username, email, firstName, lastName, companyName
+        - Attendee fields: eventRegistrations, newsletterSubscription, contentPreferences, gdprConsent
+
+      operationId: getAttendeeByUsername
+      parameters:
+        - name: username
+          in: path
+          required: true
+          description: Username (ADR-003 meaningful ID from User entity)
+          schema:
+            type: string
+            pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+            example: john.doe
+        - name: include
+          in: query
+          description: Comma-separated list of resources to include (registrations, engagement)
+          required: false
+          schema:
+            type: string
+            example: 'registrations,engagement'
+      responses:
+        '200':
+          description: Attendee retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttendeeResponse'
+        '404':
+          description: Attendee not found
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+    patch:
+      tags:
+        - Attendees
+      summary: Update attendee profile
+      description: |
+        Update attendee-specific fields (content preferences, newsletter subscription).
+
+        **Important (ADR-004)**:
+        - To update email, name, company: Use User API (/users/{username})
+        - This endpoint updates ONLY attendee-specific fields
+
+      operationId: updateAttendee
+      parameters:
+        - name: username
+          in: path
+          required: true
+          description: Username (ADR-003 meaningful ID from User entity)
+          schema:
+            type: string
+            example: john.doe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAttendeeRequest'
+      responses:
+        '200':
+          description: Attendee updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttendeeResponse'
+        '400':
+          description: Bad request - validation errors
+        '404':
+          description: Attendee not found
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+  /attendees/{username}/registrations:
+    get:
+      tags:
+        - Event Registrations
+      summary: Get attendee's event registrations
+      description: |
+        Retrieve all event registrations for a specific attendee.
+
+      operationId: getAttendeeRegistrations
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+            example: john.doe
+        - name: status
+          in: query
+          description: Filter by registration status
+          required: false
+          schema:
+            $ref: '#/components/schemas/RegistrationStatus'
+      responses:
+        '200':
+          description: Registrations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventRegistration'
+        '404':
+          description: Attendee not found
+
+    post:
+      tags:
+        - Event Registrations
+      summary: Register attendee for an event
+      description: |
+        Register an attendee for a specific event.
+
+      operationId: registerForEvent
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+            example: john.doe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventRegistrationRequest'
+      responses:
+        '201':
+          description: Registration created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventRegistration'
+        '400':
+          description: Bad request - validation errors
+        '409':
+          description: Conflict - already registered
+
+  /attendees/{username}/registrations/{eventCode}:
+    delete:
+      tags:
+        - Event Registrations
+      summary: Cancel event registration
+      description: |
+        Cancel an attendee's registration for a specific event.
+
+      operationId: cancelRegistration
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+            example: john.doe
+        - name: eventCode
+          in: path
+          required: true
+          description: Event code (ADR-003 meaningful ID)
+          schema:
+            type: string
+            example: BATbern56
+      responses:
+        '204':
+          description: Registration cancelled successfully
+        '404':
+          description: Registration not found
+        '400':
+          description: Cannot cancel - event already started
+
+  /attendees/{username}/engagement:
+    get:
+      tags:
+        - Content Engagement
+      summary: Get attendee's content engagement history
+      description: |
+        Retrieve attendee's interaction history with sessions and materials.
+
+      operationId: getContentEngagement
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+            example: john.doe
+        - name: eventCode
+          in: query
+          description: Filter by event code (ADR-003)
+          required: false
+          schema:
+            type: string
+            example: BATbern56
+        - name: contentType
+          in: query
+          description: Filter by content type
+          required: false
+          schema:
+            type: string
+            enum: [session, presentation, video, document]
+      responses:
+        '200':
+          description: Engagement history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ContentEngagement'
+
+  /attendees/{username}/newsletter:
+    put:
+      tags:
+        - Newsletter
+      summary: Update newsletter subscription
+      description: |
+        Update attendee's newsletter subscription preference.
+
+      operationId: updateNewsletterSubscription
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+            example: john.doe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - subscribed
+              properties:
+                subscribed:
+                  type: boolean
+                  description: Newsletter subscription status
+      responses:
+        '200':
+          description: Newsletter subscription updated successfully
+        '404':
+          description: Attendee not found
+
+components:
+  schemas:
+    AttendeeResponse:
+      type: object
+      description: |
+        Attendee response combines User entity fields with Attendee domain fields (ADR-004).
+        Internal: Attendee.userId (UUID FK) -> User.id
+        External: username is the public identifier
+      properties:
+        # From User entity (via JPQL join):
+        username:
+          type: string
+          description: Public identifier from User (ADR-003)
+          example: john.doe
+        email:
+          type: string
+          format: email
+          description: From User entity
+          example: john.doe@example.com
+        firstName:
+          type: string
+          description: From User entity
+          example: John
+        lastName:
+          type: string
+          description: From User entity
+          example: Doe
+        companyName:
+          type: string
+          description: From User.companyId (company name, ADR-003)
+          example: GoogleZH
+          nullable: true
+
+        # Attendee-specific fields:
+        newsletterSubscription:
+          type: boolean
+          description: Newsletter subscription status
+        contentPreferences:
+          $ref: '#/components/schemas/ContentPreferences'
+        gdprConsent:
+          $ref: '#/components/schemas/GDPRConsent'
+        eventRegistrations:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventRegistration'
+          description: Included if ?include=registrations
+        engagementHistory:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContentEngagement'
+          description: Included if ?include=engagement
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UpdateAttendeeRequest:
+      type: object
+      description: |
+        Update attendee-specific fields only.
+        To update email, name, company: Use User API (ADR-004).
+      properties:
+        contentPreferences:
+          $ref: '#/components/schemas/ContentPreferences'
+        newsletterSubscription:
+          type: boolean
+
+    ContentPreferences:
+      type: object
+      description: Topics of interest (different from User.preferences)
+      properties:
+        preferredTopics:
+          type: array
+          items:
+            type: string
+          description: Preferred content topics
+          example: ['Security', 'Cloud Architecture', 'DevOps']
+        sessionTypes:
+          type: array
+          items:
+            type: string
+            enum: [keynote, presentation, workshop, panel_discussion]
+        experienceLevels:
+          type: array
+          items:
+            type: string
+            enum: [beginner, intermediate, advanced, expert]
+
+    GDPRConsent:
+      type: object
+      properties:
+        consentGiven:
+          type: boolean
+          description: Whether GDPR consent was given
+        consentDate:
+          type: string
+          format: date-time
+          description: When consent was given
+        ipAddress:
+          type: string
+          description: IP address when consent was given
+          example: 192.168.1.1
+        consentVersion:
+          type: string
+          description: Version of consent terms accepted
+          example: v1.0
+
+    EventRegistration:
+      type: object
+      properties:
+        eventCode:
+          type: string
+          description: Event code (ADR-003 meaningful ID)
+          example: BATbern56
+        registrationDate:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/RegistrationStatus'
+        sessionPreferences:
+          type: array
+          items:
+            type: string
+          description: Preferred session IDs
+        specialRequests:
+          type: string
+          description: Special requests or dietary restrictions
+        attendanceConfirmed:
+          type: boolean
+          description: Whether attendance was confirmed
+        actualAttendance:
+          type: boolean
+          description: Whether attendee actually attended
+
+    EventRegistrationRequest:
+      type: object
+      required:
+        - eventCode
+      properties:
+        eventCode:
+          type: string
+          description: Event code (ADR-003 meaningful ID)
+          example: BATbern56
+        sessionPreferences:
+          type: array
+          items:
+            type: string
+          description: Preferred session IDs
+        specialRequests:
+          type: string
+          description: Special requests or dietary restrictions
+          maxLength: 500
+
+    RegistrationStatus:
+      type: string
+      enum:
+        - registered
+        - waitlisted
+        - confirmed
+        - cancelled
+        - attended
+      description: |
+        Event registration status:
+        - registered: Initial registration
+        - waitlisted: Event is full, on waiting list
+        - confirmed: Registration confirmed by organizer
+        - cancelled: Registration cancelled
+        - attended: Attendee marked as attended
+
+    ContentEngagement:
+      type: object
+      properties:
+        contentId:
+          type: string
+          description: Content identifier (session, presentation, etc.)
+        contentType:
+          type: string
+          enum: [session, presentation, video, document]
+        contentTitle:
+          type: string
+          description: Content title
+        eventCode:
+          type: string
+          description: Event code (ADR-003)
+          example: BATbern56
+        engagementType:
+          type: string
+          enum: [view, download, rating, attendance]
+        engagementValue:
+          type: number
+          format: float
+          description: Rating score (1-5) or duration in minutes
+        engagedAt:
+          type: string
+          format: date-time
