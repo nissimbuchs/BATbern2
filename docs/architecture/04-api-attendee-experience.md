@@ -1,8 +1,11 @@
 # Attendee Experience API
 
 **Last Updated**: 2025-11-02
-**ADR Reference**: [ADR-003: Meaningful Identifiers in Public APIs](./ADR-003-meaningful-identifiers-public-apis.md)
+**ADR References**:
+- [ADR-003: Meaningful Identifiers in Public APIs](./ADR-003-meaningful-identifiers-public-apis.md)
+- [ADR-004: Factor User Fields from Domain Entities](./ADR-004-factor-user-fields-from-domain-entities.md)
 
+**Important**: Attendee entity references User entity (ADR-004). Attendee does NOT duplicate email, name, or company fields. API responses combine User + Attendee data via JPQL joins.
 
 This document outlines the Attendee Experience Domain API, which handles attendee registration, content discovery, and historical archive search across 20+ years of BATbern content.
 

@@ -1,8 +1,11 @@
 # Speaker Coordination API
 
 **Last Updated**: 2025-11-02
-**ADR Reference**: [ADR-003: Meaningful Identifiers in Public APIs](./ADR-003-meaningful-identifiers-public-apis.md)
+**ADR References**:
+- [ADR-003: Meaningful Identifiers in Public APIs](./ADR-003-meaningful-identifiers-public-apis.md)
+- [ADR-004: Factor User Fields from Domain Entities](./ADR-004-factor-user-fields-from-domain-entities.md)
 
+**Important**: Speaker entity references User entity (ADR-004). Speaker does NOT duplicate email, name, bio, photo, or company fields. API responses combine User + Speaker data via JPQL joins.
 
 This document outlines the Speaker Coordination Domain API, which handles speaker management with complex workflow states, slot preferences collection, material collection with quality control, and seamless coordination between organizers and speakers including waitlist management.
 
@@ -307,31 +310,76 @@ sequenceDiagram
 
 ### Speaker
 
+**ADR-004 Note**: Speaker entity references User. API responses combine User fields + Speaker fields via JPQL join.
+
 ```yaml
 Speaker:
   type: object
+  description: |
+    Speaker response combines User entity fields with Speaker domain fields (ADR-004).
+    Internal: Speaker.userId (UUID FK) -> User.id
+    External: username is the public identifier
   properties:
-    id:
+    # From User entity (via join):
+    username:
       type: string
-
-      description: Meaningful identifier (see ADR-003)
+      description: Public identifier from User (ADR-003)
+      example: john.doe
     email:
       type: string
       format: email
+      description: From User entity
     firstName:
       type: string
+      description: From User entity
     lastName:
       type: string
+      description: From User entity
+    bio:
+      type: string
+      description: From User entity (single source of truth, no detailedBio)
+    profilePictureUrl:
+      type: string
+      format: uri
+      description: From User entity
     companyName:
       type: string
+      description: From User.companyId (company name, ADR-003)
+      example: GoogleZH
 
-      description: Meaningful identifier (see ADR-003)
-    position:
-      type: string
-    profile:
-      $ref: 'common#/components/schemas/SpeakerProfile'
+    # Speaker-specific fields:
     availability:
       $ref: '#/components/schemas/SpeakerAvailability'
+    workflowState:
+      $ref: '#/components/schemas/SpeakerWorkflowState'
+    expertiseAreas:
+      type: array
+      items:
+        type: string
+      description: Areas of technical expertise
+    speakingTopics:
+      type: array
+      items:
+        type: string
+      description: Topics the speaker can present
+    linkedInUrl:
+      type: string
+      format: uri
+      description: LinkedIn profile (speaker-specific)
+    twitterHandle:
+      type: string
+      description: Twitter/X handle (speaker-specific)
+    certifications:
+      type: array
+      items:
+        type: string
+      description: Professional certifications
+    languages:
+      type: array
+      items:
+        type: string
+      description: Languages speaker can present in
+      example: ['de', 'en', 'fr']
 ```
 
 ### Speaker Availability

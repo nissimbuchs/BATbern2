@@ -144,15 +144,20 @@
 6. If saved, API updates profile data and refreshes display
 7. Success toast notification confirms save
 
-### Managing Profile Photo
+### Managing Profile Photo (ADR-002 Generic File Upload Service)
 1. User clicks on profile photo or [Change Photo] button
 2. File picker opens (or drag-and-drop zone activates)
 3. User selects image file
-4. Client validates file size (<5MB) and type (JPEG/PNG)
+4. Client validates file size (<5MB) and type (JPEG/PNG/SVG)
 5. Image preview shows cropping interface (200×200px square)
 6. User adjusts crop and clicks [Upload]
-7. API uploads to S3, updates user profile with image URL
-8. Profile refreshes with new photo
+7. **Three-Phase Upload (ADR-002)**:
+   - Phase 1: Call `POST /logos/presigned-url` to initiate upload (no user entity required)
+   - Phase 2: Upload directly to S3 using presigned URL with progress tracking
+   - Phase 3: Call `POST /logos/{uploadId}/confirm` to verify upload
+8. **Association**: Call `PATCH /users/me` with `profilePictureFileId` (uploadId from step 7)
+9. User Service associates logo with user profile and updates `profilePictureUrl`
+10. Profile refreshes with new photo from CloudFront CDN
 
 ### Switching Role Views
 1. User clicks on a role-specific tab (Organizer/Speaker/Partner/Attendee)
@@ -171,8 +176,13 @@
 
 ## Technical Notes
 
-- **Profile Photo Storage**: S3 bucket with CloudFront CDN for optimized delivery
-- **Image Processing**: Lambda function for resizing/cropping to 200×200px, generating thumbnail
+- **Profile Photo Storage (ADR-002)**: Generic File Upload Service with 3-phase pattern
+  - Phase 1 (PENDING): Upload initiated via `/logos/presigned-url`
+  - Phase 2 (CONFIRMED): File uploaded to S3 temp location
+  - Phase 3 (ASSOCIATED): Associated with user via `PATCH /users/me`, moved to final S3 location
+  - S3 bucket with CloudFront CDN for optimized delivery
+  - Automatic cleanup of orphaned uploads (PENDING > 24h)
+- **Image Processing**: Lambda function for resizing/cropping to 200×200px, generating thumbnail (future enhancement)
 - **Role Data Source**: AWS Cognito custom attributes + PostgreSQL user_roles table
 - **Activity Timeline**: EventSourcing pattern - query from event store for audit trail
 - **Real-time Updates**: WebSocket connection for activity feed updates when user is active
@@ -260,26 +270,67 @@
    - **Consolidated**: Single PATCH endpoint replaces PUT /users/{id}/profile (supports partial updates)
    - **Performance**: <150ms (P95)
 
-2. **POST /api/v1/users/{userId}/profile-photo** (Unchanged)
+2. **POST /api/v1/logos/presigned-url** (ADR-002 Generic File Upload - Phase 1)
    - Triggered by: [Upload] button after selecting/cropping photo
-   - Auth: Required (JWT token)
-   - Content-Type: multipart/form-data
-   - Payload: Form data with `photo` file field
+   - Auth: Not required for presigned URL generation (public endpoint)
+   - Payload:
+     ```json
+     {
+       "fileName": "profile.jpg",
+       "fileSize": 524288,
+       "mimeType": "image/jpeg"
+     }
+     ```
    - Response:
      ```json
      {
-       "profilePhoto": "s3-url-to-uploaded-photo",
-       "thumbnailUrl": "s3-url-to-thumbnail"
+       "uploadUrl": "https://s3.amazonaws.com/...",
+       "uploadId": "abc123-def456",
+       "fileId": "f3e8d1a4",
+       "expiresIn": 900
      }
      ```
-   - Used for: Uploading profile photo and updating display
-   - **Note**: Photo upload remains separate endpoint for file handling
+   - Used for: Getting presigned URL for direct S3 upload
+   - **Generic**: Works for all entity types (company logos, user photos, event banners)
 
-3. **DELETE /api/v1/users/{userId}/profile-photo** (Unchanged)
+3. **PUT {uploadUrl}** (ADR-002 - Phase 2: Direct S3 Upload)
+   - Triggered by: Immediately after receiving presigned URL
+   - Auth: Not required (presigned URL includes auth)
+   - Content-Type: image/jpeg (or image/png, image/svg+xml)
+   - Payload: Binary file data
+   - Used for: Uploading file directly to S3 with progress tracking
+
+4. **POST /api/v1/logos/{uploadId}/confirm** (ADR-002 - Phase 3: Confirm Upload)
+   - Triggered by: After successful S3 upload
+   - Auth: Not required
+   - Payload:
+     ```json
+     {
+       "fileExtension": "jpg",
+       "checksum": "sha256-hash"
+     }
+     ```
+   - Response: 200 OK
+   - Used for: Confirming upload and updating logo status to CONFIRMED
+
+5. **PATCH /api/v1/users/me** (Associate Logo with User)
+   - Triggered by: After logo upload confirmed
+   - Auth: Required (JWT token)
+   - Payload: Includes profilePictureFileId
+     ```json
+     {
+       "profilePictureFileId": "abc123-def456"
+     }
+     ```
+   - Response: Updated user with profilePictureUrl
+   - Used for: Associating uploaded logo with user profile
+   - **Note**: User service copies file from temp to final location and updates logo status to ASSOCIATED
+
+6. **DELETE /api/v1/users/me/picture** (Remove Profile Picture)
    - Triggered by: [Remove Photo] button
    - Auth: Required (JWT token)
    - Response: 204 No Content
-   - Used for: Removing profile photo (reverts to default avatar)
+   - Used for: Removing profile photo (reverts to default avatar, marks logo as deleted)
 
 ---
 
