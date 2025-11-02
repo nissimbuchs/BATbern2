@@ -416,14 +416,60 @@ jobs:
             exit 1
           fi
 
+      - name: Authenticate with Cognito for Bruno tests
+        id: get-bruno-auth-token
+        run: |
+          # Authenticate directly with Cognito using bootstrap user credentials
+          # This avoids the need to manually refresh GitHub secrets
+          echo "Authenticating with Cognito..."
+
+          # Cognito configuration for staging
+          REGION="eu-central-1"
+          USER_POOL_ID="eu-central-1_FtgfxgQRF"
+          CLIENT_ID="1b53lci6qpqsmdn0u3e8s4knvv"
+          EMAIL="${{ secrets.STAGING_TEST_USER_EMAIL }}"
+          PASSWORD="${{ secrets.STAGING_TEST_USER_PASSWORD }}"
+
+          if [ -z "$EMAIL" ] || [ -z "$PASSWORD" ]; then
+            echo "::error::STAGING_TEST_USER_EMAIL and STAGING_TEST_USER_PASSWORD secrets must be set"
+            echo "::error::Go to: Repository → Settings → Secrets and variables → Actions"
+            echo "::error::Add: STAGING_TEST_USER_EMAIL = nissim@buchs.be"
+            echo "::error::Add: STAGING_TEST_USER_PASSWORD = <password>"
+            exit 1
+          fi
+
+          # Authenticate with Cognito
+          auth_response=$(aws cognito-idp initiate-auth \
+            --region $REGION \
+            --auth-flow USER_PASSWORD_AUTH \
+            --client-id $CLIENT_ID \
+            --auth-parameters USERNAME="$EMAIL",PASSWORD="$PASSWORD" \
+            --output json 2>&1)
+
+          if [ $? -ne 0 ]; then
+            echo "::error::Cognito authentication failed"
+            echo "$auth_response"
+            exit 1
+          fi
+
+          # Extract ID token (contains 'aud' claim required by JWT validator)
+          ID_TOKEN=$(echo "$auth_response" | jq -r '.AuthenticationResult.IdToken')
+
+          if [ "$ID_TOKEN" = "null" ] || [ -z "$ID_TOKEN" ]; then
+            echo "::error::Failed to extract ID token from Cognito response"
+            exit 1
+          fi
+
+          echo "✅ Successfully authenticated with Cognito"
+          echo "AUTH_TOKEN=$ID_TOKEN" >> $GITHUB_OUTPUT
+
       - name: Run Bruno API contract tests
         run: |
           if [ -f "scripts/ci/run-bruno-tests.sh" ]; then
             chmod +x scripts/ci/run-bruno-tests.sh
             echo "Running Bruno API contract tests..."
-            # Note: Auth token would be retrieved from Cognito in real deployment
-            # For now, tests will skip authenticated endpoints if no token provided
-            ./scripts/ci/run-bruno-tests.sh staging
+            # Pass auth token as second argument
+            ./scripts/ci/run-bruno-tests.sh staging "${{ steps.get-bruno-auth-token.outputs.AUTH_TOKEN }}"
             echo "✅ Bruno API contract tests completed"
           else
             echo "::error::Bruno test script not found"
@@ -457,14 +503,6 @@ jobs:
           echo "   Reason: Missing AWS SDK dependencies and IAM permissions"
           echo "   Alternative: Runtime validation via smoke tests, CORS tests, and header propagation tests"
 
-      - name: Get auth token for tests
-        id: get-auth-token
-        run: |
-          # Use STAGING_AUTH_TOKEN secret (set in repo settings)
-          # To refresh token: ./scripts/auth/get-token.sh staging <email> <password>
-          # Then update the secret in GitHub repo settings
-          echo "AUTH_TOKEN=${{ secrets.STAGING_AUTH_TOKEN }}" >> $GITHUB_OUTPUT
-
       - name: Run frontend E2E tests (Playwright)
         if: false  # Temporarily disabled - tests running too long with errors
         working-directory: ./web-frontend
@@ -485,7 +523,7 @@ jobs:
           E2E_BASE_URL: https://staging.batbern.ch
           E2E_API_URL: https://api.staging.batbern.ch
           E2E_AWS_REGION: ${{ env.AWS_REGION }}
-          AUTH_TOKEN: ${{ steps.get-auth-token.outputs.AUTH_TOKEN }}
+          AUTH_TOKEN: ${{ steps.get-bruno-auth-token.outputs.AUTH_TOKEN }}
 
       - name: Upload Playwright test results
         if: always()
