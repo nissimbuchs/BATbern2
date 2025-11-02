@@ -81,7 +81,8 @@
       "canton": "Canton",
       "country": "Country",
       "description": "Description",
-      "legalName": "Short name: {{name}}"
+      "legalName": "Short name: {{name}}",
+      "logo": "Company Logo"
     },
     "placeholders": {
       "swissUID": "CHE-123.456.789",
@@ -165,6 +166,17 @@
       "loadFailed": "Failed to load company",
       "saveFailed": "An error occurred while saving the company",
       "retry": "Retry"
+    }
+  },
+  "fileUpload": {
+    "dragDrop": "Drag and drop a file here, or click to select",
+    "dragActive": "Drop the file here",
+    "acceptedFormats": "Accepted formats: PNG, JPEG, SVG (max {{maxSize}}MB)",
+    "uploading": "Uploading... {{progress}}%",
+    "removeFile": "Remove file",
+    "altText": "Uploaded file preview",
+    "errors": {
+      "multipleFiles": "Only one file can be uploaded at a time"
     }
   },
   "app": {

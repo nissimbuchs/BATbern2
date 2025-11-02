@@ -350,8 +350,13 @@ class AuthService {
     // Primary role is first in list, fallback to 'attendee' if empty
     const primaryRole: UserRole = roles[0] || 'attendee';
 
+    // Story 1.16.2: Prefer custom:username (from database) over cognito:username (UUID)
+    // PreTokenGeneration Lambda sets custom:username from database user_profiles.username
+    const username = tokenPayload['custom:username'] || tokenPayload['cognito:username'];
+
     return {
       userId: tokenPayload.sub,
+      username, // Story 1.16.2: Public meaningful username (e.g., "john.doe")
       email: tokenPayload.email,
       emailVerified: tokenPayload.email_verified,
       role: primaryRole,

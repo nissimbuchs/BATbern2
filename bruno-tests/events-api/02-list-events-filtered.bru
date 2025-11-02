@@ -5,13 +5,13 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/events?filter="status":"published"&sort=-date
+  url: {{baseUrl}}/events
   body: none
   auth: bearer
 }
 
 params:query {
-  filter: "status":"published"
+  filter: {"status":"published"}
   sort: -date
 }
 

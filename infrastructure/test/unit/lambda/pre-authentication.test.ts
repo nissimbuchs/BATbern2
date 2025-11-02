@@ -1,5 +1,5 @@
 import { PreAuthenticationTriggerEvent } from 'aws-lambda';
-import * as database from '../common/database';
+import * as database from '../../../lib/lambda/triggers/common/database';
 
 // Mock CloudWatch send function at module level
 const mockCloudWatchSend = jest.fn();
@@ -17,10 +17,10 @@ jest.mock('@aws-sdk/client-cloudwatch', () => {
 });
 
 // Mock database module
-jest.mock('../common/database');
+jest.mock('../../../lib/lambda/triggers/common/database');
 
 // Import handler AFTER mocks are set up
-import { handler } from '../pre-authentication';
+import { handler } from '../../../lib/lambda/triggers/pre-authentication';
 
 describe('PreAuthentication Lambda Tests', () => {
   let mockDbClient: any;
@@ -400,9 +400,9 @@ describe('PreAuthentication Lambda Tests', () => {
       // Then: Authentication allowed for JIT provisioning
       expect(mockCallback).toHaveBeenCalledWith(null, event);
 
-      // And: Correct cognito_id queried
+      // And: Correct cognito_user_id queried
       expect(mockDbClient.query).toHaveBeenCalledWith(
-        expect.stringContaining('WHERE cognito_id = $1'),
+        expect.stringContaining('WHERE cognito_user_id = $1'),
         ['new-cognito-user-123']
       );
 

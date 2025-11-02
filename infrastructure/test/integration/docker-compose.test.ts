@@ -106,7 +106,8 @@ describe('Docker Compose Startup Orchestration (AC6, AC7)', () => {
       const parsed = require('js-yaml').load(dockerComposeContent);
 
       // Assert - Required volumes are defined (redis-data removed with Redis)
-      expect(parsed.volumes['gradle-cache']).toBeDefined();
+      // Check for service-specific gradle caches
+      expect(parsed.volumes['api-gateway-gradle-cache']).toBeDefined();
     });
 
     test('should_defineAllRequiredNetworks_when_configLoaded', () => {

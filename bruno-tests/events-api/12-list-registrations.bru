@@ -28,4 +28,18 @@ tests {
     expect(response.data).to.be.an('array');
     expect(response.pagination).to.be.an('object');
   });
+
+  test("should return registrations with registrationCode and attendeeUsername, no UUID ids (Story 1.16.2)", function() {
+    const response = res.getBody();
+    if (response.data.length > 0) {
+      const registration = response.data[0];
+      expect(registration.registrationCode).to.be.a('string');
+      expect(registration.registrationCode).to.match(/^BATbern[0-9]+-[a-z]+\.[a-z]+(-[0-9]+)?$/);
+      expect(registration.attendeeUsername).to.be.a('string');
+      expect(registration.attendeeUsername).to.match(/^[a-z]+\.[a-z]+(\.[0-9]+)?$/);
+      expect(registration.eventCode).to.be.a('string');
+      expect(registration.id).to.be.undefined;
+      expect(registration.attendeeId).to.be.undefined;
+    }
+  });
 }

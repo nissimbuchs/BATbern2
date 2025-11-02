@@ -81,7 +81,8 @@
       "canton": "Kanton",
       "country": "Land",
       "description": "Beschreibung",
-      "legalName": "Kurzform: {{name}}"
+      "legalName": "Kurzform: {{name}}",
+      "logo": "Firmenlogo"
     },
     "placeholders": {
       "swissUID": "CHE-123.456.789",
@@ -165,6 +166,17 @@
       "loadFailed": "Fehler beim Laden des Unternehmens",
       "saveFailed": "Fehler beim Speichern des Unternehmens",
       "retry": "Wiederholen"
+    }
+  },
+  "fileUpload": {
+    "dragDrop": "Datei hier ablegen oder klicken, um auszuwählen",
+    "dragActive": "Datei hier ablegen",
+    "acceptedFormats": "Akzeptierte Formate: PNG, JPEG, SVG (max {{maxSize}}MB)",
+    "uploading": "Wird hochgeladen... {{progress}}%",
+    "removeFile": "Datei entfernen",
+    "altText": "Vorschau der hochgeladenen Datei",
+    "errors": {
+      "multipleFiles": "Es kann nur eine Datei gleichzeitig hochgeladen werden"
     }
   },
   "app": {

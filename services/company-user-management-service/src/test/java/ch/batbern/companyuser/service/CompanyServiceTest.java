@@ -105,7 +105,8 @@ class CompanyServiceTest {
     @DisplayName("Test 4.1: should_createCompany_when_validRequestReceived")
     void should_createCompany_when_validRequestReceived() {
         // Given
-        when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
+        // Story 1.16.2: Use getCurrentUsername() instead of getCurrentUserId()
+        when(securityContextHelper.getCurrentUsername()).thenReturn("test.user");
         when(uidValidationService.isValidUID(createRequest.getSwissUID())).thenReturn(true);
         when(companyRepository.existsByName(createRequest.getName())).thenReturn(false);
         when(companyRepository.save(any(Company.class))).thenReturn(existingCompany);
@@ -119,7 +120,7 @@ class CompanyServiceTest {
         assertThat(response.getSwissUID()).isEqualTo("CHE-123.456.789");
         assertThat(response.isVerified()).isFalse();
 
-        verify(securityContextHelper).getCurrentUserId();
+        verify(securityContextHelper).getCurrentUsername();
         verify(companyRepository).save(any(Company.class));
         verify(eventPublisher).publish(any());
         verify(searchService).invalidateCache();
@@ -170,12 +171,13 @@ class CompanyServiceTest {
                 .name("Test Company AG")
                 .displayName("Test Company")
                 .isVerified(false)
-                .createdBy("test-user")
+                .createdBy("test.user")  // Story 1.16.2: Use username format
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
 
-        when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
+        // Story 1.16.2: Use getCurrentUsername() instead of getCurrentUserId()
+        when(securityContextHelper.getCurrentUsername()).thenReturn("test.user");
         when(companyRepository.existsByName(requestWithoutUID.getName())).thenReturn(false);
         when(companyRepository.save(any(Company.class))).thenReturn(companyWithoutUID);
 
@@ -199,7 +201,8 @@ class CompanyServiceTest {
                 .name("Test Company AG")
                 .build();
 
-        when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
+        // Story 1.16.2: Use getCurrentUsername() instead of getCurrentUserId()
+        when(securityContextHelper.getCurrentUsername()).thenReturn("test.user");
         when(companyRepository.existsByName(requestWithoutDisplay.getName())).thenReturn(false);
         when(companyRepository.save(any(Company.class))).thenAnswer(invocation -> {
             Company company = invocation.getArgument(0);

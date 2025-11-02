@@ -85,6 +85,37 @@ public class SlugGenerationService {
     }
 
     /**
+     * Ensures a slug is unique by appending numeric suffixes if needed.
+     * Uses hyphen separator (e.g., "slug-2", "slug-3") instead of dot.
+     *
+     * @param baseSlug The base slug to check
+     * @param existsChecker Function that returns true if a slug exists
+     * @return A unique slug
+     * @throws IllegalArgumentException if baseSlug or existsChecker is null
+     */
+    public String ensureUniqueSlug(String baseSlug, Function<String, Boolean> existsChecker) {
+        if (baseSlug == null || baseSlug.trim().isEmpty()) {
+            throw new IllegalArgumentException("Base slug cannot be null or empty");
+        }
+        if (existsChecker == null) {
+            throw new IllegalArgumentException("Exists checker function cannot be null");
+        }
+
+        if (!existsChecker.apply(baseSlug)) {
+            return baseSlug;
+        }
+
+        int suffix = 2;
+        String candidate;
+        do {
+            candidate = baseSlug + "-" + suffix;
+            suffix++;
+        } while (existsChecker.apply(candidate));
+
+        return candidate;
+    }
+
+    /**
      * Generates a URL-friendly slug from a session title.
      *
      * Rules:
