@@ -1,5 +1,9 @@
 # Speaker Coordination API
 
+**Last Updated**: 2025-11-02
+**ADR Reference**: [ADR-003: Meaningful Identifiers in Public APIs](./ADR-003-meaningful-identifiers-public-apis.md)
+
+
 This document outlines the Speaker Coordination Domain API, which handles speaker management with complex workflow states, slot preferences collection, material collection with quality control, and seamless coordination between organizers and speakers including waitlist management.
 
 ## Overview
@@ -23,11 +27,12 @@ GET /api/v1/speakers
 tags: [Speakers]
 summary: List speakers
 parameters:
-  - name: companyId
+  - name: companyName
     in: query
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
   - name: expertiseArea
     in: query
     schema:
@@ -52,21 +57,23 @@ responses:
 #### Get Speaker Slot Preferences
 
 ```yaml
-GET /api/v1/speakers/{speakerId}/preferences
+GET /api/v1/speakers/{username}/preferences
 tags: [Speaker Preferences]
 summary: Get speaker slot preferences
 parameters:
-  - name: speakerId
+  - name: username
     in: path
     required: true
     schema:
       type: string
-      format: uuid
-  - name: eventId
+
+      description: Meaningful identifier (see ADR-003)
+  - name: eventCode
     in: query
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
 responses:
   '200':
     description: Speaker preferences
@@ -79,18 +86,19 @@ responses:
 #### Submit Speaker Preferences
 
 ```yaml
-POST /api/v1/speakers/{speakerId}/preferences
+POST /api/v1/speakers/{username}/preferences
 tags: [Speaker Preferences]
 summary: Submit speaker preferences
 security:
   - BearerAuth: [speaker]
 parameters:
-  - name: speakerId
+  - name: username
     in: path
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
 requestBody:
   required: true
   content:
@@ -109,18 +117,19 @@ responses:
 #### Update Speaker Preferences
 
 ```yaml
-PUT /api/v1/speakers/{speakerId}/preferences
+PUT /api/v1/speakers/{username}/preferences
 tags: [Speaker Preferences]
 summary: Update speaker preferences
 security:
   - BearerAuth: [speaker]
 parameters:
-  - name: speakerId
+  - name: username
     in: path
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
 requestBody:
   required: true
   content:
@@ -150,7 +159,8 @@ parameters:
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
 responses:
   '200':
     description: Quality review status
@@ -174,7 +184,8 @@ parameters:
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
 requestBody:
   required: true
   content:
@@ -204,7 +215,8 @@ parameters:
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
 requestBody:
   required: true
   content:
@@ -234,16 +246,18 @@ parameters:
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
   - name: status
     in: query
     schema:
       $ref: '#/components/schemas/QualityReviewStatus'
-  - name: eventId
+  - name: eventCode
     in: query
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
 responses:
   '200':
     description: List of reviews
@@ -299,7 +313,8 @@ Speaker:
   properties:
     id:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     email:
       type: string
       format: email
@@ -307,9 +322,10 @@ Speaker:
       type: string
     lastName:
       type: string
-    companyId:
+    companyName:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     position:
       type: string
     profile:
@@ -363,12 +379,14 @@ SpeakerWorkflowState:
 SpeakerSlotPreferences:
   type: object
   properties:
-    speakerId:
+    username:
       type: string
-      format: uuid
-    eventId:
+
+      description: Meaningful identifier (see ADR-003)
+    eventCode:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     preferredTimeSlots:
       type: array
       items:
@@ -421,13 +439,16 @@ ContentQualityReview:
   properties:
     id:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     sessionId:
       type: string
-      format: uuid
-    speakerId:
+
+      description: Meaningful identifier (see ADR-003)
+    username:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     status:
       $ref: '#/components/schemas/QualityReviewStatus'
     abstractReview:
@@ -442,7 +463,8 @@ ContentQualityReview:
       format: date-time
     reviewerId:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     feedback:
       type: string
       maxLength: 2000
@@ -484,10 +506,12 @@ MaterialReview:
   properties:
     presentationFileId:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     handoutsFileId:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     videoUrl:
       type: string
       format: uri
@@ -510,9 +534,10 @@ SubmitPreferencesRequest:
     - eventId
     - preferredTimeSlots
   properties:
-    eventId:
+    eventCode:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     preferredTimeSlots:
       type: array
       items:
@@ -568,11 +593,13 @@ SubmitContentRequest:
       description: Session abstract with lessons learned (max 1000 characters)
     presentationFileId:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
       description: File ID of uploaded presentation
     handoutsFileId:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
       description: File ID of uploaded handouts
     videoUrl:
       type: string
