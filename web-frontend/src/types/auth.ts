@@ -22,6 +22,7 @@ export interface UserPreferences {
 
 export interface UserContext {
   userId: string;
+  username: string; // Story 1.16.2: Public username identifier (e.g., "john.doe")
   email: string;
   emailVerified: boolean;
   role: UserRole; // Primary role (first in roles array)
@@ -123,7 +124,8 @@ export interface CognitoTokenClaims {
   token_use: 'access' | 'id';
   scope?: string;
   auth_time: number;
-  'cognito:username': string;
+  'cognito:username': string; // Auto-generated UUID by Cognito
+  'custom:username'?: string; // Story 1.16.2: Meaningful username from database (e.g., "john.doe")
   'custom:role'?: string; // Story 1.2.6: Comma-separated string (e.g., "ORGANIZER,SPEAKER")
   'cognito:groups'?: string[]; // DEPRECATED: Legacy claim, use custom:role instead
   email: string;

@@ -10,6 +10,7 @@ import java.util.Map;
 @Builder
 public class UserContext {
     private String userId;
+    private String username; // Story 1.16.2: Public username identifier (e.g., "john.doe")
     private String email;
     private boolean emailVerified;
     private String role;

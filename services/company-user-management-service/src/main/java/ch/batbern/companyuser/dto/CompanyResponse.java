@@ -54,7 +54,7 @@ public class CompanyResponse {
     @Schema(description = "Timestamp when the company was last updated", example = "2024-01-15T10:30:00Z")
     private Instant updatedAt;
 
-    @Schema(description = "User ID who created this company", example = "auth0|user_abc123")
+    @Schema(description = "Username of the user who created this company (Story 1.16.2)", example = "john.doe")
     private String createdBy;
 
     // Resource expansion fields (AC15)

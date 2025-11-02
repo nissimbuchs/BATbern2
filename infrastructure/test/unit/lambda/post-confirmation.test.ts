@@ -24,10 +24,10 @@ jest.mock('@aws-sdk/client-cloudwatch', () => ({
   })),
   PutMetricDataCommand: jest.fn().mockImplementation((input) => input),
 }));
-jest.mock('../common/database');
+jest.mock('../../../lib/lambda/triggers/common/database');
 
-import { handler } from '../post-confirmation';
-import { getDbClient, executeTransaction } from '../common/database';
+import { handler } from '../../../lib/lambda/triggers/post-confirmation';
+import { getDbClient, executeTransaction } from '../../../lib/lambda/triggers/common/database';
 
 // Test data builders
 function createPostConfirmationEvent(overrides: Partial<PostConfirmationTriggerEvent> = {}): PostConfirmationTriggerEvent {
@@ -131,9 +131,8 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
           expect.objectContaining({
             query: expect.stringContaining('INSERT INTO user_profiles'),
             params: expect.arrayContaining([
-              'a1b2c3d4-5678-90ab-cdef-EXAMPLE11111', // cognito_id
+              'a1b2c3d4-5678-90ab-cdef-EXAMPLE11111', // cognito_user_id
               'user@example.com', // email
-              true, // email_verified
               'john.doe', // username (generated from firstName.lastName)
               'John', // first_name
               'Doe', // last_name
@@ -178,7 +177,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       );
     });
 
-    it('should_setEmailVerified_when_cognitoConfirmed', async () => {
+    it('should_setEmailNotifications_when_cognitoConfirmed', async () => {
       // Arrange
       const event = createPostConfirmationEvent();
       const context = createLambdaContext();
@@ -188,11 +187,11 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       // Act
       await handler(event, context, {} as any);
 
-      // Assert
+      // Assert - Check that pref_email_notifications is set to true by default
       expect(executeTransaction).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({
-            params: expect.arrayContaining([true]), // email_verified = true
+            params: expect.arrayContaining([true]), // pref_email_notifications = true
           }),
         ])
       );
@@ -282,10 +281,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
         expect.stringContaining('role_assignments'),
         expect.anything()
       );
-      expect(mockDbClient.query).toHaveBeenCalledWith(
-        expect.stringContaining('start_date'),
-        expect.anything()
-      );
+      // Note: start_date removed - creation time is tracked via created_at timestamp
     });
 
     it('should_validateRoleValue_when_customAttributeProvided', async () => {

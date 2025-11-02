@@ -15,16 +15,12 @@ auth:bearer {
 }
 
 body:json {
-  {
-    "updates": [
-      {
-        "eventCode": "{{createdEventCode}}",
-        "fields": {
-          "description": "Batch updated description"
-        }
-      }
-    ]
-  }
+  [
+    {
+      "eventCode": "{{createdEventCode}}",
+      "description": "Batch updated description"
+    }
+  ]
 }
 
 assert {
@@ -38,8 +34,10 @@ tests {
 
   test("should return batch update results", function() {
     const result = res.getBody();
-    expect(result.successful).to.be.a('number');
-    expect(result.failed).to.be.a('number');
-    expect(result.errors).to.be.an('array');
+    expect(result.summary).to.be.an('object');
+    expect(result.summary.successful).to.be.a('number');
+    expect(result.summary.failed).to.be.a('number');
+    expect(result.successful).to.be.an('array');
+    expect(result.failed).to.be.an('array');
   });
 }

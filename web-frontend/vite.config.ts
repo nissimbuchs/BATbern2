@@ -245,7 +245,8 @@ export default defineConfig({
         '**/generated/**', // Exclude all generated code
       ],
       reportOnFailure: true, // Generate coverage even when tests fail
-      all: true, // Include all source files in coverage report
+      // Note: 'all' option removed in vitest v4 - use 'include' to specify files
+      include: ['src/**/*.{ts,tsx}'], // Explicitly include source files in coverage
       thresholds: {
         lines: 80,
         functions: 80,

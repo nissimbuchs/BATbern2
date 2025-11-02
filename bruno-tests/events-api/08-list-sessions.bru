@@ -28,4 +28,15 @@ tests {
     expect(response.data).to.be.an('array');
     expect(response.pagination).to.be.an('object');
   });
+
+  test("should return sessions with sessionSlug and no UUID id (Story 1.16.2)", function() {
+    const response = res.getBody();
+    if (response.data.length > 0) {
+      const session = response.data[0];
+      expect(session.sessionSlug).to.be.a('string');
+      expect(session.sessionSlug).to.match(/^[a-z0-9]+(-[a-z0-9]+)*$/);
+      expect(session.eventCode).to.be.a('string');
+      expect(session.id).to.be.undefined;
+    }
+  });
 }

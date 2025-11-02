@@ -5,7 +5,7 @@ meta {
 }
 
 patch {
-  url: {{baseUrl}}/events/{{createdEventCode}}/registrations/{{createdRegistrationId}}
+  url: {{baseUrl}}/events/{{createdEventCode}}/registrations/{{createdRegistrationCode}}
   body: json
   auth: bearer
 }
@@ -30,10 +30,16 @@ tests {
     expect(res.getStatus()).to.equal(200);
   });
 
-  test("should update registration", function() {
+  test("should update registration with registrationCode (Story 1.16.2)", function() {
     const registration = res.getBody();
-    expect(registration.id).to.equal(bru.getVar("createdRegistrationId"));
+    expect(registration.registrationCode).to.equal(bru.getVar("createdRegistrationCode"));
     expect(registration.status).to.equal('confirmed');
     expect(registration.attendeeName).to.equal('Test Attendee - Updated');
+  });
+
+  test("should verify no UUID id field (Story 1.16.2)", function() {
+    const registration = res.getBody();
+    expect(registration.id).to.be.undefined;
+    expect(registration.attendeeId).to.be.undefined;
   });
 }
