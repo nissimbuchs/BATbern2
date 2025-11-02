@@ -53,6 +53,10 @@ const EventCreate = React.lazy(() => import('@pages/EventCreate'));
 const EventTimeline = React.lazy(() => import('@pages/EventTimeline'));
 const EventDetailEdit = React.lazy(() => import('@pages/EventDetailEdit')); // Comprehensive edit page with Tasks 9-13
 
+// Public Pages - Story 4.1.2, 4.1.3
+const HomePage = React.lazy(() => import('@pages/public/HomePage'));
+const CurrentEventPage = React.lazy(() => import('@pages/public/CurrentEventPage'));
+
 // Loading fallback component for Suspense
 const PageLoader = () => (
   <Box
@@ -155,8 +159,53 @@ function App() {
           <NavigationSetup>
             <Suspense fallback={<PageLoader />}>
               <Routes>
-                {/* Public routes */}
+                {/* Public routes - Story 4.1.2, 4.1.3 */}
+                <Route path="/" element={<HomePage />} />
+                <Route path="/current-event" element={<CurrentEventPage />} />
+                <Route
+                  path="/archive"
+                  element={
+                    <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
+                      Archive (Coming in 4.2)
+                    </div>
+                  }
+                />
+                <Route
+                  path="/search"
+                  element={
+                    <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
+                      Search (Coming in 4.3)
+                    </div>
+                  }
+                />
+                <Route
+                  path="/about"
+                  element={
+                    <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
+                      About (Coming later)
+                    </div>
+                  }
+                />
+                <Route
+                  path="/privacy"
+                  element={
+                    <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
+                      Privacy Policy (Coming later)
+                    </div>
+                  }
+                />
+                <Route
+                  path="/terms"
+                  element={
+                    <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
+                      Terms of Service (Coming later)
+                    </div>
+                  }
+                />
+
+                {/* Authentication routes */}
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/auth/login" element={<LoginPage />} />
                 <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/auth/register" element={<RegistrationPage />} />
@@ -306,11 +355,8 @@ function App() {
                   }
                 />
 
-                {/* Default redirect */}
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
-
-                {/* Catch all route */}
-                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                {/* Catch all route - redirect to home */}
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>
           </NavigationSetup>

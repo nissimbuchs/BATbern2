@@ -5,25 +5,52 @@
 
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: ['class'],
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
+    container: {
+      center: true,
+      padding: '2rem',
+      screens: {
+        '2xl': '1400px',
+      },
+    },
     extend: {
       // Swiss Design Color Palette (Front-End Spec Section 6.2)
       colors: {
+        // shadcn/ui colors (for dark theme components)
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
         primary: {
-          DEFAULT: '#2C5F7C', // Professional blue
-          light: '#4A90B8',
-          dark: '#1A3A4D',
+          DEFAULT: 'hsl(var(--primary))',
+          foreground: 'hsl(var(--primary-foreground))',
         },
         secondary: {
-          DEFAULT: '#4A90B8', // Secondary blue
-          light: '#6BAED6',
-          dark: '#2C5F7C',
+          DEFAULT: 'hsl(var(--secondary))',
+          foreground: 'hsl(var(--secondary-foreground))',
+        },
+        destructive: {
+          DEFAULT: 'hsl(var(--destructive))',
+          foreground: 'hsl(var(--destructive-foreground))',
+        },
+        muted: {
+          DEFAULT: 'hsl(var(--muted))',
+          foreground: 'hsl(var(--muted-foreground))',
         },
         accent: {
-          DEFAULT: '#E67E22', // Partner role, important highlights
-          light: '#F39C12',
-          dark: '#D35400',
+          DEFAULT: 'hsl(var(--accent))',
+          foreground: 'hsl(var(--accent-foreground))',
+        },
+        popover: {
+          DEFAULT: 'hsl(var(--popover))',
+          foreground: 'hsl(var(--popover-foreground))',
+        },
+        card: {
+          DEFAULT: 'hsl(var(--card))',
+          foreground: 'hsl(var(--card-foreground))',
         },
         success: {
           DEFAULT: '#27AE60',
@@ -83,16 +110,30 @@ export default {
         56: '7rem', // 112px
         64: '8rem', // 128px
       },
-      // Border radius (matching Material-UI theme)
+      // Border radius (matching Material-UI theme + shadcn)
       borderRadius: {
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)',
         none: '0',
-        sm: '0.125rem', // 2px
         DEFAULT: '0.25rem', // 4px
-        md: '0.375rem', // 6px
-        lg: '0.5rem', // 8px
         xl: '0.75rem', // 12px
         '2xl': '1rem', // 16px
         full: '9999px',
+      },
+      keyframes: {
+        'accordion-down': {
+          from: { height: '0' },
+          to: { height: 'var(--radix-accordion-content-height)' },
+        },
+        'accordion-up': {
+          from: { height: 'var(--radix-accordion-content-height)' },
+          to: { height: '0' },
+        },
+      },
+      animation: {
+        'accordion-down': 'accordion-down 0.2s ease-out',
+        'accordion-up': 'accordion-up 0.2s ease-out',
       },
       // Box shadows
       boxShadow: {
@@ -104,7 +145,7 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [require('tailwindcss-animate')],
   // Disable Tailwind's CSS reset to avoid conflicts with Material-UI
   corePlugins: {
     preflight: false,

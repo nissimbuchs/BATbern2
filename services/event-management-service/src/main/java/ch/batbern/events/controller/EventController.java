@@ -272,6 +272,49 @@ public class EventController {
     }
 
     /**
+     * Get Current Published Event (PUBLIC ACCESS - Story 4.1.3)
+     *
+     * GET /api/v1/events/current?include=topics,venue,speakers,sessions
+     *
+     * Returns the next upcoming published event.
+     * This is a public endpoint (no authentication required) used by the public website.
+     *
+     * @param include Comma-separated list of resources to expand
+     * @return Current published event or 404 if none exists
+     */
+    @GetMapping("/current")
+    @Operation(
+            summary = "Get Current Published Event",
+            description = "Retrieve the next upcoming published event for the public website. No authentication required."
+    )
+    public ResponseEntity<Map<String, Object>> getCurrentEvent(
+            @Parameter(description = "Comma-separated list of resources to include (e.g., topics,venue,speakers,sessions)")
+            @RequestParam(required = false) String include
+    ) {
+        log.debug("GET /api/v1/events/current - include: {}", include);
+
+        // Find the next published event (earliest date in the future or today)
+        Event currentEvent = eventRepository
+                .findFirstByStatusOrderByDateAsc("published")
+                .orElse(null);
+
+        if (currentEvent == null) {
+            log.debug("No current published event found");
+            return ResponseEntity.notFound().build();
+        }
+
+        // Build response with basic event data
+        Map<String, Object> response = buildBasicEventResponse(currentEvent);
+
+        // Apply resource expansions if requested
+        if (include != null && !include.trim().isEmpty()) {
+            applyResourceExpansions(currentEvent, include, response);
+        }
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * Create Event (AC3)
      *
      * POST /api/v1/events
