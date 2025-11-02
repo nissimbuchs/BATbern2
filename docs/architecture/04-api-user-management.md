@@ -1,5 +1,9 @@
 # User Management API
 
+**Last Updated**: 2025-11-02
+**ADR Reference**: [ADR-003: Meaningful Identifiers in Public APIs](./ADR-003-meaningful-identifiers-public-apis.md)
+
+
 This document outlines the User Management Service API, which handles user profiles, preferences, settings, role management, and comprehensive GDPR compliance capabilities.
 
 ## Overview
@@ -207,7 +211,8 @@ parameters:
     required: false
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
 responses:
   '200':
     description: Successful response with paginated users
@@ -254,7 +259,8 @@ parameters:
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
   - name: include
     in: query
     description: Comma-separated list of resources to include
@@ -499,7 +505,8 @@ parameters:
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
 responses:
   '200':
     description: Roles retrieved successfully
@@ -508,9 +515,10 @@ responses:
         schema:
           type: object
           properties:
-            userId:
+            username:
               type: string
-              format: uuid
+
+              description: Meaningful identifier (see ADR-003)
             roles:
               type: array
               items:
@@ -554,7 +562,8 @@ parameters:
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
 requestBody:
   required: true
   content:
@@ -578,9 +587,10 @@ responses:
         schema:
           type: object
           properties:
-            userId:
+            username:
               type: string
-              format: uuid
+
+              description: Meaningful identifier (see ADR-003)
             roles:
               type: array
               items:
@@ -623,7 +633,8 @@ parameters:
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
   - name: timeframe
     in: query
     description: Filter by timeframe
@@ -785,7 +796,8 @@ parameters:
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
 responses:
   '204':
     description: User deleted successfully
@@ -864,7 +876,8 @@ UserResponse:
   properties:
     id:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
       example: 550e8400-e29b-41d4-a716-446655440000
     cognitoUserId:
       type: string
@@ -882,9 +895,10 @@ UserResponse:
     bio:
       type: string
       example: Software engineer passionate about cloud architecture
-    companyId:
+    companyName:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
       example: 550e8400-e29b-41d4-a716-446655440001
     roles:
       type: array
@@ -1023,16 +1037,18 @@ UserSearchResponse:
   properties:
     id:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     email:
       type: string
     firstName:
       type: string
     lastName:
       type: string
-    companyId:
+    companyName:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     roles:
       type: array
       items:
@@ -1059,9 +1075,10 @@ GetOrCreateUserRequest:
       type: string
     lastName:
       type: string
-    companyId:
+    companyName:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     createIfMissing:
       type: boolean
       default: true
@@ -1080,9 +1097,10 @@ GetOrCreateUserResponse:
     - created
     - user
   properties:
-    userId:
+    username:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     created:
       type: boolean
       description: True if user was created, false if existing
@@ -1101,10 +1119,12 @@ ActivityHistory:
   properties:
     id:
       type: string
-      format: uuid
-    userId:
+
+      description: Meaningful identifier (see ADR-003)
+    username:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     activityType:
       type: string
       example: event_registered

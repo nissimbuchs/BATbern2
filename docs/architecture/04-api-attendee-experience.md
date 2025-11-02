@@ -1,5 +1,9 @@
 # Attendee Experience API
 
+**Last Updated**: 2025-11-02
+**ADR Reference**: [ADR-003: Meaningful Identifiers in Public APIs](./ADR-003-meaningful-identifiers-public-apis.md)
+
+
 This document outlines the Attendee Experience Domain API, which handles attendee registration, content discovery, and historical archive search across 20+ years of BATbern content.
 
 ## Overview
@@ -38,11 +42,12 @@ parameters:
     schema:
       type: integer
     description: Filter by event year
-  - name: speakerId
+  - name: username
     in: query
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     description: Filter by speaker
   - name: limit
     in: query
@@ -118,7 +123,8 @@ ContentSearchResult:
   properties:
     id:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     title:
       type: string
     description:
@@ -128,18 +134,21 @@ ContentSearchResult:
       enum: [presentation, handout, video, document]
     fileId:
       type: string
-      format: uuid
-    eventId:
+
+      description: Meaningful identifier (see ADR-003)
+    eventCode:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     eventTitle:
       type: string
     eventDate:
       type: string
       format: date-time
-    speakerId:
+    username:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
     speakerName:
       type: string
     companyName:
@@ -200,9 +209,10 @@ SearchFacets:
       items:
         type: object
         properties:
-          speakerId:
+          username:
             type: string
-            format: uuid
+
+            description: Meaningful identifier (see ADR-003)
           speakerName:
             type: string
           count:
@@ -212,9 +222,10 @@ SearchFacets:
       items:
         type: object
         properties:
-          companyId:
+          companyName:
             type: string
-            format: uuid
+
+            description: Meaningful identifier (see ADR-003)
           companyName:
             type: string
           count:

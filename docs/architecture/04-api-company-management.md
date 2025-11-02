@@ -1,5 +1,9 @@
 # Company Management API
 
+**Last Updated**: 2025-11-02
+**ADR Reference**: [ADR-003: Meaningful Identifiers in Public APIs](./ADR-003-meaningful-identifiers-public-apis.md)
+
+
 This document outlines the Company Management Service API, which handles centralized company entity management with Swiss business validation, advanced querying capabilities, and verification workflows.
 
 ## Overview
@@ -298,7 +302,8 @@ parameters:
     required: true
     schema:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
 responses:
   '200':
     description: Company verified successfully
@@ -332,7 +337,8 @@ CompanyResponse:
   properties:
     id:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
       example: 550e8400-e29b-41d4-a716-446655440000
     name:
       type: string
@@ -370,7 +376,7 @@ CompanyResponse:
       type: string
       format: date-time
       example: 2025-01-15T10:00:00Z
-    createdBy:
+    createdByUsername:
       type: string
       description: User ID who created this company
       example: auth0|user_abc123
@@ -435,7 +441,8 @@ CompanySearchResponse:
   properties:
     id:
       type: string
-      format: uuid
+
+      description: Meaningful identifier (see ADR-003)
       example: 550e8400-e29b-41d4-a716-446655440000
     name:
       type: string
