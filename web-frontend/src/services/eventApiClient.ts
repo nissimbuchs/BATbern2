@@ -1,0 +1,290 @@
+/**
+ * Event API Client (Story 2.5.3 - Task 5b)
+ *
+ * HTTP client for Event Management Service APIs
+ * Features:
+ * - JWT authentication via interceptors (Story 1.17)
+ * - Error handling with correlation IDs (Story 1.9)
+ * - Resource expansion query builder (?include= parameter)
+ * - PATCH support for partial updates
+ * - Client-side validation
+ */
+
+import apiClient from '@/services/api/apiClient';
+import { AxiosError } from 'axios';
+import type {
+  Event,
+  EventDetail,
+  CreateEventRequest,
+  UpdateEventRequest,
+  PatchEventRequest,
+  WorkflowState,
+  CriticalTask,
+  TeamActivity,
+} from '@/types/event.types';
+
+// API base path for event endpoints
+const EVENT_API_PATH = '/events';
+
+// Import types from event.types.ts to avoid duplication
+import type { EventListResponse, EventFilters, PaginationParams } from '@/types/event.types';
+
+/**
+ * Event API Client Class
+ *
+ * Handles all HTTP requests to the Event Management Service
+ */
+class EventApiClient {
+  /**
+   * Get paginated list of events with optional filters
+   */
+  async getEvents(
+    pagination: PaginationParams = { page: 1, limit: 20 },
+    filters?: EventFilters,
+    options?: { expand?: string[] }
+  ): Promise<EventListResponse> {
+    try {
+      const params = new URLSearchParams();
+      params.append('page', pagination.page.toString());
+      params.append('limit', pagination.limit.toString());
+
+      // Build JSON filter object
+      const filterObj: Record<string, string | number | string[]> = {};
+      if (filters?.status && filters.status.length > 0) {
+        filterObj.status = filters.status.join(','); // Convert array to comma-separated string
+      }
+      if (filters?.year) {
+        filterObj.year = filters.year;
+      }
+      if (filters?.search) {
+        params.append('search', filters.search); // Add search as query param
+      }
+
+      // Add filter parameter if we have filters
+      if (Object.keys(filterObj).length > 0) {
+        params.append('filter', JSON.stringify(filterObj));
+      }
+
+      // Add include parameter for resource expansion
+      if (options?.expand && options.expand.length > 0) {
+        params.append('include', options.expand.join(','));
+      }
+
+      const response = await apiClient.get<EventListResponse>(
+        `${EVENT_API_PATH}?${params.toString()}`
+      );
+
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Get single event by eventCode with optional resource expansion
+   * Story 1.16.2: Uses eventCode as identifier instead of UUID
+   */
+  async getEvent(eventCode: string, options?: { expand?: string[] }): Promise<EventDetail> {
+    try {
+      const params = new URLSearchParams();
+      if (options?.expand && options.expand.length > 0) {
+        params.append('include', options.expand.join(','));
+      }
+
+      const url = params.toString()
+        ? `${EVENT_API_PATH}/${eventCode}?${params.toString()}`
+        : `${EVENT_API_PATH}/${eventCode}`;
+
+      const response = await apiClient.get<EventDetail>(url);
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Create a new event
+   */
+  async createEvent(data: CreateEventRequest): Promise<Event> {
+    try {
+      // Client-side validation
+      this.validateEventDate(data.date);
+      this.validateRegistrationDeadline(data.date, data.registrationDeadline);
+      this.validateVenueCapacity(data.venueCapacity);
+
+      const response = await apiClient.post<Event>(EVENT_API_PATH, data);
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Update existing event (full update)
+   * Story 1.16.2: Uses eventCode as identifier instead of UUID
+   */
+  async updateEvent(eventCode: string, data: UpdateEventRequest): Promise<Event> {
+    try {
+      // Client-side validation if dates are being updated
+      if (data.date) {
+        this.validateEventDate(data.date);
+      }
+      if (data.date && data.registrationDeadline) {
+        this.validateRegistrationDeadline(data.date, data.registrationDeadline);
+      }
+
+      const response = await apiClient.put<Event>(`${EVENT_API_PATH}/${eventCode}`, data);
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Partial update of event (PATCH)
+   * Only sends changed fields
+   */
+  async patchEvent(eventCode: string, data: PatchEventRequest): Promise<Event> {
+    try {
+      // Validate dates if they're being updated
+      if (data.date) {
+        this.validateEventDate(data.date);
+      }
+
+      const response = await apiClient.patch<Event>(`${EVENT_API_PATH}/${eventCode}`, data);
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Delete an event
+   */
+  async deleteEvent(eventCode: string): Promise<void> {
+    try {
+      await apiClient.delete(`${EVENT_API_PATH}/${eventCode}`);
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Get workflow state for an event
+   */
+  async getEventWorkflow(eventCode: string): Promise<WorkflowState> {
+    try {
+      const response = await apiClient.get<WorkflowState>(
+        `${EVENT_API_PATH}/${eventCode}/workflow`
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Get critical tasks for an event
+   */
+  async getCriticalTasks(eventCode: string): Promise<CriticalTask[]> {
+    try {
+      const response = await apiClient.get<CriticalTask[]>(
+        `${EVENT_API_PATH}/${eventCode}/tasks/critical`
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Get team activity for an event
+   */
+  async getTeamActivity(eventCode: string): Promise<TeamActivity[]> {
+    try {
+      const response = await apiClient.get<TeamActivity[]>(
+        `${EVENT_API_PATH}/${eventCode}/activity`
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Client-side validation: Event date must be in the future
+   */
+  private validateEventDate(eventDate: string): void {
+    const eventDateTime = new Date(eventDate);
+    const now = new Date();
+
+    if (eventDateTime <= now) {
+      throw new Error('Event date must be in the future');
+    }
+  }
+
+  /**
+   * Client-side validation: Registration deadline must be before event date
+   */
+  private validateRegistrationDeadline(eventDate: string, deadline: string): void {
+    const eventDateTime = new Date(eventDate);
+    const deadlineDateTime = new Date(deadline);
+
+    if (deadlineDateTime >= eventDateTime) {
+      throw new Error('Registration deadline must be before event date');
+    }
+  }
+
+  /**
+   * Client-side validation: Venue capacity must be positive
+   */
+  private validateVenueCapacity(capacity: number): void {
+    if (capacity <= 0) {
+      throw new Error('Venue capacity must be positive');
+    }
+  }
+
+  /**
+   * Transform Axios errors to application errors (Story 1.9 error format)
+   * Preserves correlation ID and provides user-friendly messages
+   */
+  private transformError(error: unknown): Error {
+    if (error instanceof Error && !(error as AxiosError).isAxiosError) {
+      // Already an Error (e.g., validation error), return as-is
+      return error;
+    }
+
+    const axiosError = error as AxiosError;
+
+    // Network errors
+    if (!axiosError.response) {
+      return new Error('Network Error: Unable to connect to server');
+    }
+
+    // HTTP errors with correlation ID
+    const status = axiosError.response.status;
+    const correlationId = axiosError.response.headers['x-correlation-id'];
+
+    let message = 'An error occurred';
+    if (status === 401) {
+      message = 'Unauthorized: Please log in';
+    } else if (status === 403) {
+      message = 'Forbidden: You do not have permission to perform this action';
+    } else if (status === 404) {
+      message = 'Not Found: The requested event was not found';
+    } else if (status === 500) {
+      message = 'Server Error: Please try again later';
+    }
+
+    if (correlationId) {
+      message += ` (ID: ${correlationId})`;
+    }
+
+    const error_final = new Error(message);
+    (error_final as Error & { status?: number }).status = status;
+    return error_final;
+  }
+}
+
+// Export singleton instance
+export const eventApiClient = new EventApiClient();

@@ -73,6 +73,7 @@ commands:
   - explain: teach me what and why you did whatever you just did in detail so I can learn. Explain to me as if you were training a junior engineer.
   - review-qa: run task `apply-qa-fixes.md'
   - run-tests: Execute linting and tests
+  - update-docs: 'Update documentation to reflect implementation changes. Run task `update-documentation.md` with optional parameters: scope (story-only|full-audit|targeted), story_id, target_areas, since_commit, dry_run'
   - process-bugs: 'Fetch and fix all open bugs from GitHub Issues with acceptance-testing label. Run task `process-bugs.md` with optional parameters: story_id, severity_filter, max_bugs'
   - fix-bug: 'Fix a specific bug from GitHub Issues. Run task `fix-bug.md` with required parameter: issue_number. Optional parameters: story_id, skip_tests, dry_run'
   - exit: Say goodbye as the Developer, and then abandon inhabiting this persona
@@ -84,6 +85,7 @@ dependencies:
     - apply-qa-fixes.md
     - execute-checklist.md
     - validate-next-story.md
+    - update-documentation.md
     - process-bugs.md
     - fix-bug.md
 ```

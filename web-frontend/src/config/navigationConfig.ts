@@ -32,7 +32,7 @@ export interface NavigationItem {
 export const navigationConfig: NavigationItem[] = [
   // Organizer-specific items
   {
-    labelKey: 'navigation.events',
+    labelKey: 'events:navigation.dashboard',
     path: '/organizer/events',
     icon: Event,
     roles: ['organizer'],

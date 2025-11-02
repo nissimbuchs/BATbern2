@@ -10,7 +10,6 @@
 
 import { Box, Container, Link } from '@mui/material';
 import AppHeader from '../Navigation/AppHeader';
-import { useBreakpoints } from '@/hooks/useBreakpoints';
 import type { UserProfile } from '@/types/user';
 import type { NotificationsResponse } from '@/types/notification';
 
@@ -21,9 +20,7 @@ interface BaseLayoutProps {
   notifications?: NotificationsResponse;
 }
 
-export function BaseLayout({ children, maxWidth = 'xl', user, notifications }: BaseLayoutProps) {
-  const { isDesktop } = useBreakpoints();
-
+export function BaseLayout({ children, maxWidth = false, user, notifications }: BaseLayoutProps) {
   const handleSkipLinkClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
     const mainContent = document.getElementById('main-content');
@@ -81,15 +78,15 @@ export function BaseLayout({ children, maxWidth = 'xl', user, notifications }: B
         sx={{
           flex: 1,
           py: 3,
-          maxWidth: isDesktop ? '1200px' : '100%',
-          mx: 'auto',
           width: '100%',
           '&:focus': {
             outline: 'none', // Skip link will handle focus, no visual outline needed on main
           },
         }}
       >
-        <Container maxWidth={maxWidth}>{children}</Container>
+        <Container maxWidth={maxWidth} sx={{ px: { xs: 2, sm: 3 } }}>
+          {children}
+        </Container>
       </Box>
     </Box>
   );

@@ -7,6 +7,9 @@ import ch.batbern.events.dto.CreateEventRequest;
 import ch.batbern.events.dto.EventResponse;
 import ch.batbern.events.dto.PatchEventRequest;
 import ch.batbern.events.dto.UpdateEventRequest;
+import ch.batbern.events.event.EventCreatedEvent;
+import ch.batbern.events.event.EventPublishedEvent;
+import ch.batbern.events.event.EventUpdatedEvent;
 import ch.batbern.events.exception.BusinessValidationException;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.exception.WorkflowException;
@@ -19,8 +22,11 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -54,6 +60,9 @@ public class EventController {
     private final EventSearchService eventSearchService;
     private final EventRepository eventRepository;
     private final ch.batbern.events.service.EventAnalyticsService eventAnalyticsService;
+    private final ch.batbern.shared.events.DomainEventPublisher eventPublisher;
+    private final ch.batbern.events.security.SecurityContextHelper securityContextHelper;
+    private final CacheManager cacheManager;
 
     /**
      * List/Search Events (AC1)
@@ -126,7 +135,6 @@ public class EventController {
             summary = "Get Event Detail",
             description = "Retrieve a single event by event code with optional resource expansion using ?include parameter. Cached for 15 minutes."
     )
-    @Cacheable(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, key = "#eventCode + '_' + (#include != null ? #include : 'none')")
     public ResponseEntity<Map<String, Object>> getEvent(
             @PathVariable String eventCode,
             @Parameter(description = "Comma-separated list of resources to include (e.g., venue,speakers,sessions)")
@@ -134,19 +142,50 @@ public class EventController {
     ) {
         log.debug("GET /api/v1/events/{} - include: {}", eventCode, include);
 
-        // Find event by event code
-        Event event = eventRepository.findByEventCode(eventCode)
-                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
+        // Generate cache key
+        String cacheKey = eventCode + "_" + (include != null ? include : "none");
 
-        // Build response with basic event data
-        Map<String, Object> response = buildBasicEventResponse(event);
+        // Check cache first
+        Cache cache = cacheManager.getCache(CacheConfig.EVENT_WITH_INCLUDES_CACHE);
+        String cacheStatus = "MISS";
+        Map<String, Object> response = null;
 
-        // Apply resource expansions if requested
-        if (include != null && !include.trim().isEmpty()) {
-            applyResourceExpansions(event, include, response);
+        if (cache != null) {
+            Cache.ValueWrapper cachedValue = cache.get(cacheKey);
+            if (cachedValue != null) {
+                response = (Map<String, Object>) cachedValue.get();
+                cacheStatus = "HIT";
+                log.debug("Cache HIT for event: {}", eventCode);
+            }
         }
 
-        return ResponseEntity.ok(response);
+        // If not in cache, fetch from database
+        if (response == null) {
+            log.debug("Cache MISS for event: {}", eventCode);
+
+            // Find event by event code
+            Event event = eventRepository.findByEventCode(eventCode)
+                    .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
+
+            // Build response with basic event data
+            response = buildBasicEventResponse(event);
+
+            // Apply resource expansions if requested
+            if (include != null && !include.trim().isEmpty()) {
+                applyResourceExpansions(event, include, response);
+            }
+
+            // Store in cache
+            if (cache != null) {
+                cache.put(cacheKey, response);
+            }
+        }
+
+        // Add cache status header
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("X-Cache-Status", cacheStatus);
+
+        return ResponseEntity.ok().headers(headers).body(response);
     }
 
     /**
@@ -281,6 +320,31 @@ public class EventController {
         // Save event
         Event savedEvent = eventRepository.save(event);
 
+        // Publish domain event (Story 2.2: Architecture Compliance)
+        try {
+            String userId = securityContextHelper.getCurrentUserId();
+            EventCreatedEvent domainEvent = new EventCreatedEvent(
+                    savedEvent.getId(),           // Internal UUID
+                    savedEvent.getEventCode(),    // Public business identifier
+                    savedEvent.getTitle(),
+                    savedEvent.getEventNumber(),
+                    savedEvent.getDate(),
+                    savedEvent.getRegistrationDeadline(),
+                    savedEvent.getVenueName(),
+                    savedEvent.getVenueAddress(),
+                    savedEvent.getVenueCapacity(),
+                    savedEvent.getStatus(),
+                    savedEvent.getOrganizerUsername(),
+                    savedEvent.getDescription(),
+                    userId
+            );
+            eventPublisher.publish(domainEvent);
+            log.info("Published EventCreatedEvent for event: {}", savedEvent.getEventCode());
+        } catch (Exception e) {
+            log.warn("Failed to publish EventCreatedEvent for event {}: {}", savedEvent.getEventCode(), e.getMessage());
+            // Continue - event creation succeeded, publishing failure is non-critical
+        }
+
         // Build response
         Map<String, Object> response = buildBasicEventResponse(savedEvent);
 
@@ -341,6 +405,32 @@ public class EventController {
         // Save updated event
         Event updatedEvent = eventRepository.save(event);
 
+        // Publish domain event (Story 2.2: Architecture Compliance)
+        try {
+            String userId = securityContextHelper.getCurrentUserId();
+            EventUpdatedEvent domainEvent = new EventUpdatedEvent(
+                    updatedEvent.getId(),           // Internal UUID
+                    updatedEvent.getEventCode(),    // Public business identifier
+                    updatedEvent.getTitle(),
+                    updatedEvent.getEventNumber(),
+                    updatedEvent.getDate(),
+                    updatedEvent.getRegistrationDeadline(),
+                    updatedEvent.getVenueName(),
+                    updatedEvent.getVenueAddress(),
+                    updatedEvent.getVenueCapacity(),
+                    updatedEvent.getStatus(),
+                    updatedEvent.getOrganizerUsername(),
+                    updatedEvent.getDescription(),
+                    updatedEvent.getCurrentAttendeeCount(),
+                    userId
+            );
+            eventPublisher.publish(domainEvent);
+            log.info("Published EventUpdatedEvent for event: {}", updatedEvent.getEventCode());
+        } catch (Exception e) {
+            log.warn("Failed to publish EventUpdatedEvent for event {}: {}", updatedEvent.getEventCode(), e.getMessage());
+            // Continue - event update succeeded, publishing failure is non-critical
+        }
+
         // Build response
         Map<String, Object> response = buildBasicEventResponse(updatedEvent);
 
@@ -376,6 +466,32 @@ public class EventController {
         // Save patched event
         Event patchedEvent = eventRepository.save(event);
 
+        // Publish domain event (Story 2.2: Architecture Compliance)
+        try {
+            String userId = securityContextHelper.getCurrentUserId();
+            EventUpdatedEvent domainEvent = new EventUpdatedEvent(
+                    patchedEvent.getId(),           // Internal UUID
+                    patchedEvent.getEventCode(),    // Public business identifier
+                    patchedEvent.getTitle(),
+                    patchedEvent.getEventNumber(),
+                    patchedEvent.getDate(),
+                    patchedEvent.getRegistrationDeadline(),
+                    patchedEvent.getVenueName(),
+                    patchedEvent.getVenueAddress(),
+                    patchedEvent.getVenueCapacity(),
+                    patchedEvent.getStatus(),
+                    patchedEvent.getOrganizerUsername(),
+                    patchedEvent.getDescription(),
+                    patchedEvent.getCurrentAttendeeCount(),
+                    userId
+            );
+            eventPublisher.publish(domainEvent);
+            log.info("Published EventUpdatedEvent (patch) for event: {}", patchedEvent.getEventCode());
+        } catch (Exception e) {
+            log.warn("Failed to publish EventUpdatedEvent (patch) for event {}: {}", patchedEvent.getEventCode(), e.getMessage());
+            // Continue - event patch succeeded, publishing failure is non-critical
+        }
+
         // Build response
         Map<String, Object> response = buildBasicEventResponse(patchedEvent);
 
@@ -408,22 +524,9 @@ public class EventController {
         // Process each update request
         for (BatchUpdateRequest request : requests) {
             try {
-                // Parse UUID from string
-                UUID eventId;
-                try {
-                    eventId = UUID.fromString(request.getId());
-                } catch (IllegalArgumentException e) {
-                    // Invalid UUID format
-                    Map<String, Object> failureResult = new HashMap<>();
-                    failureResult.put("id", request.getId());
-                    failureResult.put("error", "Invalid UUID format");
-                    failed.add(failureResult);
-                    continue;
-                }
-
-                // Find existing event
-                Event event = eventRepository.findById(eventId)
-                        .orElseThrow(() -> new EventNotFoundException(eventId));
+                // Find existing event by eventCode (Story 1.16.2)
+                Event event = eventRepository.findByEventCode(request.getEventCode())
+                        .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + request.getEventCode()));
 
                 // Apply updates (similar to PATCH)
                 if (request.getTitle() != null) {
@@ -442,22 +545,22 @@ public class EventController {
                 // Save updated event
                 Event updatedEvent = eventRepository.save(event);
 
-                // Add to successful list
+                // Add to successful list (Story 1.16.2: use eventCode)
                 Map<String, Object> successResult = new HashMap<>();
-                successResult.put("id", updatedEvent.getId());
+                successResult.put("eventCode", updatedEvent.getEventCode());
                 successResult.put("status", "updated");
                 successful.add(successResult);
 
             } catch (EventNotFoundException e) {
                 // Add to failed list
                 Map<String, Object> failureResult = new HashMap<>();
-                failureResult.put("id", request.getId());
+                failureResult.put("eventCode", request.getEventCode());
                 failureResult.put("error", "Event not found");
                 failed.add(failureResult);
             } catch (Exception e) {
                 // Add to failed list
                 Map<String, Object> failureResult = new HashMap<>();
-                failureResult.put("id", request.getId());
+                failureResult.put("eventCode", request.getEventCode());
                 failureResult.put("error", e.getMessage());
                 failed.add(failureResult);
             }
@@ -479,51 +582,76 @@ public class EventController {
 
     /**
      * Delete Event (AC6 + AC15 cache invalidation)
+     * Story 1.16.2: Updated to use eventCode instead of UUID
      *
-     * DELETE /api/v1/events/{id}
+     * DELETE /api/v1/events/{eventCode}
      */
-    @DeleteMapping("/{id}")
-    @Operation(summary = "Delete Event", description = "Delete an event by ID")
+    @DeleteMapping("/{eventCode}")
+    @Operation(summary = "Delete Event", description = "Delete an event by eventCode (Story 1.16.2)")
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
-    public ResponseEntity<Void> deleteEvent(@PathVariable UUID id) {
-        log.debug("DELETE /api/v1/events/{}", id);
+    public ResponseEntity<Void> deleteEvent(@PathVariable String eventCode) {
+        log.debug("DELETE /api/v1/events/{}", eventCode);
 
-        // Verify event exists
-        if (!eventRepository.existsById(id)) {
-            throw new EventNotFoundException(id);
-        }
+        // Find event by eventCode
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
 
         // Delete event
-        eventRepository.deleteById(id);
+        eventRepository.deleteById(event.getId());
 
         return ResponseEntity.noContent().build();
     }
 
     /**
      * Publish Event (AC7 + AC15 cache invalidation)
+     * Story 1.16.2: Updated to use eventCode instead of UUID
      *
-     * POST /api/v1/events/{id}/publish
+     * POST /api/v1/events/{eventCode}/publish
      *
      * Validates event meets publication requirements and changes status to "published"
      */
-    @PostMapping("/{id}/publish")
-    @Operation(summary = "Publish Event", description = "Publish an event after validation")
+    @PostMapping("/{eventCode}/publish")
+    @Operation(summary = "Publish Event", description = "Publish an event after validation (Story 1.16.2)")
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
-    public ResponseEntity<Map<String, Object>> publishEvent(@PathVariable UUID id) {
-        log.debug("POST /api/v1/events/{}/publish", id);
+    public ResponseEntity<Map<String, Object>> publishEvent(@PathVariable String eventCode) {
+        log.debug("POST /api/v1/events/{}/publish", eventCode);
 
-        // Find event
-        Event event = eventRepository.findById(id)
-                .orElseThrow(() -> new EventNotFoundException(id));
+        // Find event by eventCode
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
 
         // Validate event can be published
         validateForPublishing(event);
 
+        // Store previous status for domain event
+        String previousStatus = event.getStatus();
+
         // Change status to published
         event.setStatus("published");
+        event.setPublishedAt(Instant.now());
 
         // Save updated event
         Event publishedEvent = eventRepository.save(event);
+
+        // Publish domain event (Story 2.2: Architecture Compliance)
+        try {
+            String userId = securityContextHelper.getCurrentUserId();
+            EventPublishedEvent domainEvent = new EventPublishedEvent(
+                    publishedEvent.getId(),           // Internal UUID
+                    publishedEvent.getEventCode(),    // Public business identifier
+                    publishedEvent.getTitle(),
+                    publishedEvent.getEventNumber(),
+                    publishedEvent.getDate(),
+                    publishedEvent.getPublishedAt(),
+                    previousStatus,
+                    userId
+            );
+            eventPublisher.publish(domainEvent);
+            log.info("Published EventPublishedEvent for event: {}", publishedEvent.getEventCode());
+        } catch (Exception e) {
+            log.warn("Failed to publish EventPublishedEvent for event {}: {}", publishedEvent.getEventCode(), e.getMessage());
+            // Continue - event publishing succeeded, domain event publishing failure is non-critical
+        }
 
         // Build response
         Map<String, Object> response = buildBasicEventResponse(publishedEvent);
@@ -533,20 +661,21 @@ public class EventController {
 
     /**
      * Advance Event Workflow (AC8 + AC15 cache invalidation)
+     * Story 1.16.2: Updated to use eventCode instead of UUID
      *
-     * POST /api/v1/events/{id}/workflow/advance
+     * POST /api/v1/events/{eventCode}/workflow/advance
      *
      * Advances the event status through workflow stages
      */
-    @PostMapping("/{id}/workflow/advance")
-    @Operation(summary = "Advance Workflow", description = "Advance event to next workflow stage")
+    @PostMapping("/{eventCode}/workflow/advance")
+    @Operation(summary = "Advance Workflow", description = "Advance event to next workflow stage (Story 1.16.2)")
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
-    public ResponseEntity<Map<String, Object>> advanceWorkflow(@PathVariable UUID id) {
-        log.debug("POST /api/v1/events/{}/workflow/advance", id);
+    public ResponseEntity<Map<String, Object>> advanceWorkflow(@PathVariable String eventCode) {
+        log.debug("POST /api/v1/events/{}/workflow/advance", eventCode);
 
-        // Find event
-        Event event = eventRepository.findById(id)
-                .orElseThrow(() -> new EventNotFoundException(id));
+        // Find event by eventCode
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
 
         // Validate workflow transition is valid and get next status
         String nextStatus = getNextWorkflowStatus(event);
@@ -577,6 +706,10 @@ public class EventController {
         }
         if (event.getTitle() == null || event.getTitle().trim().isEmpty()) {
             throw new BusinessValidationException("Event title is required for publishing");
+        }
+        // Check that event date is in the future
+        if (event.getDate().isBefore(Instant.now())) {
+            throw new BusinessValidationException("Event date must be in the future");
         }
     }
 
@@ -686,22 +819,30 @@ public class EventController {
      * @param timeframe Optional timeframe as "startTime,endTime" in ISO-8601 format
      * @return Analytics data for the event
      */
-    @GetMapping("/{id}/analytics")
+    @GetMapping("/{eventCode}/analytics")
     @Operation(
             summary = "Get Event Analytics",
-            description = "Retrieve analytics data for an event with optional metrics and timeframe filtering"
+            description = "Retrieve analytics data for an event with optional metrics and timeframe filtering (Story 1.16.2)"
     )
     public ResponseEntity<Map<String, Object>> getEventAnalytics(
-            @PathVariable UUID id,
+            @PathVariable String eventCode,
             @Parameter(description = "Comma-separated list of metrics (attendance, registrations, engagement)")
             @RequestParam(required = false, defaultValue = "attendance,registrations,engagement") String metrics,
             @Parameter(description = "Timeframe as 'startTime,endTime' in ISO-8601 format")
             @RequestParam(required = false) String timeframe
     ) {
-        log.debug("GET /api/v1/events/{}/analytics - metrics: {}, timeframe: {}", id, metrics, timeframe);
+        log.debug("GET /api/v1/events/{}/analytics - metrics: {}, timeframe: {}", eventCode, metrics, timeframe);
 
-        // Generate analytics using EventAnalyticsService
-        Map<String, Object> analytics = eventAnalyticsService.generateAnalytics(id, metrics, timeframe);
+        // Find event by eventCode to get UUID for analytics service
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
+
+        // Generate analytics using EventAnalyticsService (still uses internal UUID)
+        Map<String, Object> analytics = eventAnalyticsService.generateAnalytics(event.getId(), metrics, timeframe);
+
+        // Story 1.16.2: Replace eventId (UUID) with eventCode in response
+        analytics.remove("eventId");
+        analytics.put("eventCode", eventCode);
 
         return ResponseEntity.ok(analytics);
     }

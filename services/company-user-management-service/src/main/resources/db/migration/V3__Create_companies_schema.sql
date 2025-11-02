@@ -19,9 +19,9 @@ CREATE TABLE IF NOT EXISTS companies (
     created_by VARCHAR(255) NOT NULL
 );
 
-CREATE INDEX idx_company_name ON companies(name);
-CREATE INDEX idx_company_uid ON companies(swiss_uid);
-CREATE INDEX idx_companies_is_verified ON companies(is_verified);
+CREATE INDEX IF NOT EXISTS idx_company_name ON companies(name);
+CREATE INDEX IF NOT EXISTS idx_company_uid ON companies(swiss_uid);
+CREATE INDEX IF NOT EXISTS idx_companies_is_verified ON companies(is_verified);
 
 COMMENT ON TABLE companies IS 'Company entities with Swiss business validation and logo management';
 COMMENT ON COLUMN companies.name IS 'Official company name (unique identifier)';

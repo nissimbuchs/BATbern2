@@ -20,7 +20,7 @@ const mockApiClient = vi.mocked(apiClient);
 
 describe('useFileUpload Hook', () => {
   let mockXHR: Partial<XMLHttpRequest>;
-  let xhrInstance: any;
+  let xhrInstance: Partial<XMLHttpRequest>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -32,13 +32,13 @@ describe('useFileUpload Hook', () => {
       setRequestHeader: vi.fn(),
       upload: {
         addEventListener: vi.fn(),
-      } as any,
+      } as XMLHttpRequestUpload,
       addEventListener: vi.fn(),
       status: 200,
     };
 
     xhrInstance = mockXHR;
-    global.XMLHttpRequest = vi.fn(() => xhrInstance) as any;
+    global.XMLHttpRequest = vi.fn(() => xhrInstance) as unknown as typeof XMLHttpRequest;
   });
 
   afterEach(() => {
@@ -100,9 +100,10 @@ describe('useFileUpload Hook', () => {
 
     // Simulate S3 upload completion
     await act(async () => {
-      const loadListener = (mockXHR.addEventListener as any).mock.calls.find(
-        (call: any[]) => call[0] === 'load'
-      )?.[1];
+      const mockFn = mockXHR.addEventListener as ReturnType<typeof vi.fn>;
+      const loadListener = mockFn.mock.calls.find((call: unknown[]) => call[0] === 'load')?.[1] as
+        | (() => void)
+        | undefined;
       if (loadListener) {
         loadListener();
       }
@@ -113,7 +114,9 @@ describe('useFileUpload Hook', () => {
       expect(mockApiClient.post).toHaveBeenCalledWith(
         '/logos/upload-123/confirm',
         expect.objectContaining({
+          fileId: 'upload-123',
           fileExtension: 'png',
+          checksum: expect.any(String),
         })
       );
     });
@@ -164,13 +167,14 @@ describe('useFileUpload Hook', () => {
 
     // Simulate progress events
     await act(async () => {
-      const progressListener = (mockXHR.upload!.addEventListener as any).mock.calls.find(
-        (call: any[]) => call[0] === 'progress'
-      )?.[1];
+      const mockFn = mockXHR.upload!.addEventListener as ReturnType<typeof vi.fn>;
+      const progressListener = mockFn.mock.calls.find(
+        (call: unknown[]) => call[0] === 'progress'
+      )?.[1] as ((event: ProgressEvent) => void) | undefined;
 
       if (progressListener) {
         // 50% progress
-        progressListener({ lengthComputable: true, loaded: 500, total: 1000 });
+        progressListener({ lengthComputable: true, loaded: 500, total: 1000 } as ProgressEvent);
       }
     });
 
@@ -181,9 +185,10 @@ describe('useFileUpload Hook', () => {
 
     // Simulate upload completion
     await act(async () => {
-      const loadListener = (mockXHR.addEventListener as any).mock.calls.find(
-        (call: any[]) => call[0] === 'load'
-      )?.[1];
+      const mockFn = mockXHR.addEventListener as ReturnType<typeof vi.fn>;
+      const loadListener = mockFn.mock.calls.find((call: unknown[]) => call[0] === 'load')?.[1] as
+        | (() => void)
+        | undefined;
       if (loadListener) {
         loadListener();
       }
@@ -285,7 +290,7 @@ describe('useFileUpload Hook', () => {
 
     // Assert
     await waitFor(() => {
-      expect(result.current.error).toContain('Failed to upload file');
+      expect(result.current.error).toContain('Backend error');
       expect(result.current.isUploading).toBe(false);
       expect(onUploadError).toHaveBeenCalledWith({
         type: 'UPLOAD_FAILED',
@@ -331,9 +336,10 @@ describe('useFileUpload Hook', () => {
 
     // Simulate S3 error
     await act(async () => {
-      const errorListener = (mockXHR.addEventListener as any).mock.calls.find(
-        (call: any[]) => call[0] === 'error'
-      )?.[1];
+      const mockFn = mockXHR.addEventListener as ReturnType<typeof vi.fn>;
+      const errorListener = mockFn.mock.calls.find(
+        (call: unknown[]) => call[0] === 'error'
+      )?.[1] as (() => void) | undefined;
       if (errorListener) {
         errorListener();
       }
@@ -385,9 +391,10 @@ describe('useFileUpload Hook', () => {
     });
 
     await act(async () => {
-      const loadListener = (mockXHR.addEventListener as any).mock.calls.find(
-        (call: any[]) => call[0] === 'load'
-      )?.[1];
+      const mockFn = mockXHR.addEventListener as ReturnType<typeof vi.fn>;
+      const loadListener = mockFn.mock.calls.find((call: unknown[]) => call[0] === 'load')?.[1] as
+        | (() => void)
+        | undefined;
       if (loadListener) {
         loadListener();
       }
@@ -395,7 +402,7 @@ describe('useFileUpload Hook', () => {
 
     // Assert
     await waitFor(() => {
-      expect(result.current.error).toContain('Failed to upload file');
+      expect(result.current.error).toContain('Confirm failed');
       expect(result.current.isUploading).toBe(false);
       expect(onUploadError).toHaveBeenCalledWith({
         type: 'UPLOAD_FAILED',
@@ -490,9 +497,10 @@ describe('useFileUpload Hook', () => {
 
     // Simulate upload completion
     await act(async () => {
-      const loadListener = (mockXHR.addEventListener as any).mock.calls.find(
-        (call: any[]) => call[0] === 'load'
-      )?.[1];
+      const mockFn = mockXHR.addEventListener as ReturnType<typeof vi.fn>;
+      const loadListener = mockFn.mock.calls.find((call: unknown[]) => call[0] === 'load')?.[1] as
+        | (() => void)
+        | undefined;
       if (loadListener) {
         loadListener();
       }

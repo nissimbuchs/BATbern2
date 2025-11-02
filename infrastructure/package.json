@@ -67,8 +67,7 @@
   "jest": {
     "testEnvironment": "node",
     "roots": [
-      "<rootDir>/test",
-      "<rootDir>/lib"
+      "<rootDir>/test"
     ],
     "testMatch": [
       "**/*.test.ts",

@@ -16,18 +16,12 @@ type Company = components['schemas']['CompanyResponse'];
 type CompanyListResponse = components['schemas']['PaginatedCompanyResponse'];
 type CreateCompanyRequest = components['schemas']['CreateCompanyRequest'];
 type UpdateCompanyRequest = components['schemas']['UpdateCompanyRequest'];
-type LogoUploadRequest = components['schemas']['LogoUploadRequest'];
-type PresignedUploadUrl = components['schemas']['PresignedUploadUrl'];
-type LogoUploadConfirmRequest = components['schemas']['LogoUploadConfirmRequest'];
-type LogoUploadConfirmResponse = components['schemas']['LogoUploadConfirmResponse'];
+// Note: Logo upload types removed in Story 1.16.3 - use generic file upload API instead
 
 // API base path for company endpoints
 // Note: apiClient baseURL is set from runtime config to 'http://localhost:8080/api/v1'
 // so we only need '/companies' (the /v1 prefix is already in the baseURL)
 const COMPANY_API_PATH = '/companies';
-
-// File upload constraints
-const MAX_LOGO_SIZE_MB = 5;
 
 /**
  * Company API Client Class
@@ -173,63 +167,18 @@ class CompanyApiClient {
   }
 
   /**
-   * Request presigned URL for logo upload
-   * Story 1.16.2: Uses company name as identifier instead of UUID
+   * DEPRECATED: Logo upload methods removed in Story 1.16.3
+   * Use the generic file upload API instead (see file-upload-api.openapi.yml)
+   *
+   * Migration path:
+   * 1. POST /api/v1/logos/presigned-url - Generate upload URL
+   * 2. PUT (presigned URL) - Upload file to S3
+   * 3. POST /api/v1/logos/{uploadId}/confirm - Confirm upload
+   * 4. POST /api/v1/companies (with logoUploadId) - Associate logo with company
    */
-  async requestLogoUploadUrl(
-    companyName: string,
-    fileName: string,
-    mimeType: LogoUploadRequest['mimeType'],
-    fileSize: number
-  ): Promise<PresignedUploadUrl> {
-    try {
-      // Validate file size
-      if (fileSize > MAX_LOGO_SIZE_MB * 1024 * 1024) {
-        throw new Error(`File size exceeds maximum allowed size of ${MAX_LOGO_SIZE_MB}MB`);
-      }
 
-      const requestBody: LogoUploadRequest = {
-        fileName,
-        mimeType,
-        fileSize,
-      };
-
-      const response = await apiClient.post<PresignedUploadUrl>(
-        `${COMPANY_API_PATH}/${companyName}/logo/upload-url`,
-        requestBody
-      );
-
-      return response.data;
-    } catch (error) {
-      throw this.transformError(error);
-    }
-  }
-
-  /**
-   * Confirm logo upload completion
-   * Story 1.16.2: Uses company name as identifier instead of UUID
-   */
-  async confirmLogoUpload(
-    companyName: string,
-    fileId: string,
-    fileExtension: string
-  ): Promise<LogoUploadConfirmResponse> {
-    try {
-      const requestBody: LogoUploadConfirmRequest = {
-        fileId,
-        fileExtension,
-      };
-
-      const response = await apiClient.post<LogoUploadConfirmResponse>(
-        `${COMPANY_API_PATH}/${companyName}/logo/confirm`,
-        requestBody
-      );
-
-      return response.data;
-    } catch (error) {
-      throw this.transformError(error);
-    }
-  }
+  // async requestLogoUploadUrl(...) - REMOVED - Use generic file upload API
+  // async confirmLogoUpload(...) - REMOVED - Use generic file upload API
 
   /**
    * Validate Swiss UID format

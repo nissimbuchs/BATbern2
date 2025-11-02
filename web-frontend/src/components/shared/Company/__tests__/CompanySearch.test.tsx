@@ -159,24 +159,26 @@ describe('CompanySearch Component', () => {
       const searchInput = screen.getByRole('combobox');
       await user.type(searchInput, 'Test');
 
-      // Wait for debounce (50ms) + API mock (100ms)
-      await new Promise((resolve) => setTimeout(resolve, 200));
-
       // Click input to open dropdown
       await user.click(searchInput);
 
+      // Wait for listbox and options to appear (debounce + API mock)
       await waitFor(
         () => {
           expect(screen.getByRole('listbox')).toBeInTheDocument();
+          expect(screen.getAllByRole('option').length).toBeGreaterThan(0);
         },
         { timeout: 1000 }
       );
 
-      // Click first result
+      // Click first result and wait for state update
       const firstResult = screen.getAllByRole('option')[0];
       await user.click(firstResult);
 
-      expect(onSelect).toHaveBeenCalled();
+      // Wait for onSelect to be called after state update
+      await waitFor(() => {
+        expect(onSelect).toHaveBeenCalled();
+      });
     });
 
     it.todo('should_showNoResults_when_searchReturnsEmpty', async () => {
@@ -225,20 +227,14 @@ describe('CompanySearch Component', () => {
       await user.click(searchInput);
       await user.type(searchInput, 'Test');
 
-      // Wait for debounce (50ms) + API mock (100ms)
-      await new Promise((resolve) => setTimeout(resolve, 200));
-
-      // Wait for listbox to appear
+      // Wait for listbox and options to appear (debounce + API mock)
       await waitFor(
         () => {
           expect(screen.getByRole('listbox')).toBeInTheDocument();
+          expect(screen.getAllByRole('option').length).toBeGreaterThan(0);
         },
         { timeout: 1000 }
       );
-
-      // Verify we have options
-      const options = screen.getAllByRole('option');
-      expect(options.length).toBeGreaterThan(0);
 
       // Get the initial aria-activedescendant value (if any)
       const initialActiveDescendant = searchInput.getAttribute('aria-activedescendant');
