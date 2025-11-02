@@ -39,8 +39,9 @@ In progress
 **📝 Not Started:**
 - **Story 2.2**: Event Management Service Core + API Consolidation (1.15a.1)
 - **Story 2.3**: Speaker Coordination Service Foundation + API Consolidation (1.15a.3)
+- **Story 2.6**: User Account Management Frontend (Basic Profile + Settings)
 
-**Progress:** 4/6 stories complete (67%)
+**Progress:** 4/7 stories complete (57%)
 
 ---
 
@@ -54,6 +55,7 @@ This epic consolidates stories originally in Epic 1 (1.14-1.20, 1.17) that provi
 - **Story 2.3 (formerly 1.19)**: Speaker Coordination Service Foundation **+ API Consolidation (1.15a.3)** - **Not Started**
 - ✅ **Story 2.4 (formerly 1.20)**: User Role Management **+ API Consolidation** - **Done** (implemented via Stories 2.1b + 2.5.2)
 - ✅ **Story 2.5 (formerly 1.17 partial)**: React Frontend CRUD Foundation (consuming consolidated APIs) - **Done**
+- **Story 2.6**: User Account Management Frontend (Basic Profile + Settings) - **Not Started** (consolidates story-1.20 + story-5.2 basic features)
 
 **API Consolidation Integration:** Each microservice story includes its domain-specific API consolidation (1.15a.x), using the foundation from Story 1.15a (already complete in Epic 1). This ensures RESTful patterns are implemented from the start, avoiding technical debt and future refactoring.
 
@@ -484,6 +486,101 @@ This story implements the frontend consuming all entity CRUD APIs. Wireframes ar
 **Reference:** See `docs/prd/epic-1-foundation-stories.md` Story 1.17 for full details
 
 **Important Scope Note:** This story focuses on basic CRUD forms only. Advanced UI features (speaker dashboard, communication hub, mobile PWA) are deferred to Epic 6 and Epic 7.
+
+---
+
+## Story 2.6: User Account Management Frontend (Basic Profile + Settings)
+
+**Status:** Not Started
+
+**User Story:**
+As a **user of any role**, I want to view and manage my account through a unified interface with basic profile and settings, so that I can maintain my personal information and configure essential preferences.
+
+**Architecture Integration:**
+- **Frontend**: React 19+ with TypeScript
+- **State Management**: Zustand + React Query
+- **UI Framework**: Material-UI (MUI) 5.14+
+- **API Integration**: Consolidated User APIs from Story 2.1b
+
+**Key Functionality:**
+1. **Profile Tab**: View and edit personal profile information
+   - Profile header with photo, name, roles, company affiliation
+   - Personal information (bio, phone, job title, social links)
+   - Role-specific tabbed interface (Organizer/Speaker/Partner/Attendee)
+   - Recent activity history (last 5 items)
+   - Profile photo upload (ADR-002 Generic File Upload Service)
+2. **Settings Tab - Account**: Email display, password change, profile picture management
+3. **Settings Tab - Notifications**: Basic email notification toggles, newsletter subscription
+4. **Settings Tab - Privacy**: Profile visibility, activity visibility, company display preferences
+5. **EXCLUDES**: Advanced content preferences, language/accessibility, GDPR data export (deferred to Epic 7 Story 5.2)
+
+---
+
+### Wireframe Reference
+**From docs/wireframes/:**
+- **Main Screen**: `docs/wireframes/story-2.6-user-account-management.md` ✅
+  - Profile tab with role-specific information
+  - Settings tab with Account, Notifications, Privacy sub-tabs
+  - Profile photo upload component
+  - Activity history timeline
+  - Consolidates basic features from story-1.20 and story-5.2
+
+---
+
+**Acceptance Criteria Summary:**
+
+**Profile Tab:**
+- [ ] Profile header displays photo, name, company, email (Cognito-verified), roles, member since
+- [ ] Profile photo upload/remove using ADR-002 3-phase pattern (presigned URL → S3 → confirm → associate)
+- [ ] Inline profile editing for firstName, lastName, bio (max 2000 chars)
+- [ ] Bio character counter displays (0/2000)
+- [ ] Role-specific tabs display only for assigned roles
+- [ ] Activity history displays last 5 items with [View All →] link
+- [ ] [View Company Profile] link navigates to Story 2.5.1 company detail
+
+**Settings → Account:**
+- [ ] Email displays with "Verified (managed by Cognito)" status (read-only)
+- [ ] [Change Password] redirects to Cognito password change flow
+- [ ] Theme selector (Light/Dark/Auto) persists to UserPreferences
+- [ ] Timezone selector (autocomplete, IANA database) persists to UserSettings
+
+**Settings → Notifications:**
+- [ ] Notification channel toggles (email, in-app, push) persist to UserPreferences
+- [ ] Notification frequency selector (immediate/daily digest/weekly digest) persists to UserPreferences
+- [ ] Info message displays: "Advanced settings (quiet hours) in Epic 7"
+
+**Settings → Privacy:**
+- [ ] Profile visibility selector (Public/Members only/Private) persists to UserSettings
+- [ ] Profile information toggles (show email, show company, show activity) persist to UserSettings
+- [ ] Allow messaging toggle persists to UserSettings
+- [ ] [View Privacy Policy] link functional
+
+**General:**
+- [ ] Tab navigation smooth (Profile ↔ Settings)
+- [ ] Settings sub-tab navigation works (Account, Notifications, Privacy)
+- [ ] Advanced features sidebar shows "Coming in Epic 7" for deferred items
+- [ ] All changes persist via consolidated User APIs:
+  - `PATCH /api/v1/users/me` (profile fields)
+  - `PUT /api/v1/users/me/preferences` (notifications, theme, timezone)
+  - `PUT /api/v1/users/me/settings` (privacy, visibility)
+- [ ] Form validation: client-side (bio 2000 max) + server-side (all fields)
+- [ ] Success/error toast notifications display appropriately
+- [ ] Loading states with skeleton loaders
+- [ ] Responsive design (mobile <768px, tablet 768-1024px, desktop >1024px)
+- [ ] Full i18n support (German primary, English secondary) namespace: `userAccount`
+- [ ] Accessibility: ARIA labels, keyboard navigation (Tab/Enter/Esc), screen reader support
+- [ ] Performance: Initial load <150ms, save operations <200ms (P95)
+- [ ] Component test coverage >80%
+
+**Estimated Duration:** 2 weeks
+
+**References:**
+- Wireframe: `docs/wireframes/story-2.6-user-account-management.md`
+- Consolidated from: `docs/wireframes/story-1.20-user-profile.md` (profile features) + `docs/wireframes/story-5.2-user-settings.md` (basic settings only)
+- Backend APIs: Story 2.1b (User Management Service Foundation + API Consolidation)
+- File Upload: ADR-002 (Generic File Upload Service)
+
+**Important Scope Note:** This story implements **foundational** user account management only. Advanced features (content preferences, language/accessibility options, GDPR data export, account deactivation/deletion) are deferred to Epic 7 (Story 5.2 - Personal Engagement Management) to focus Epic 2 on core entity CRUD functionality.
 
 ---
 
