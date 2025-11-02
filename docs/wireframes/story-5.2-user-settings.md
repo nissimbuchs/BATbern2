@@ -1,133 +1,44 @@
-# Story 5.2: User Settings Screen (Attendee) - Wireframe
+# Story 5.2: Advanced User Settings (Attendee Experience) - Wireframe
 
-**Story**: Epic 5, Story 2 - Personal Dashboard (User Settings)
-**Screen**: User Settings Screen
-**User Role**: Attendee
-**Related FR**: FR14 (Personal Engagement Management), NFR1 (Responsive Design), NFR4 (Multi-language Support)
+> **📦 EPIC 7 (DEFERRED TO PHASE 2)**
+> **⚠️ BASIC SETTINGS MOVED TO STORY 2.6 (Epic 2)**
+> Basic account settings (profile info, email, password, basic notifications, basic privacy) have been moved to **Story 2.6: User Account Management Frontend** in Epic 2.
+> **This wireframe now focuses exclusively on ADVANCED attendee-specific features:**
+> - Content Preferences (interests, topics, experience level, content formats)
+> - Language & Accessibility (UI language, date/time formats, accessibility options)
+> - Data & Export (GDPR data export, account deactivation, account deletion)
+>
+> See `docs/wireframes/story-2.6-user-account-management.md` for basic settings implementation.
+
+**Story**: Epic 7, Story 2 - Personal Engagement Management (Advanced Settings)
+**Screen**: Advanced User Settings Screen
+**User Role**: Attendee (All roles can access, but attendee-focused features)
+**Related FR**: FR14 (Personal Engagement Management - Advanced), NFR4 (Multi-language Support)
+**Status**: Deferred to Phase 2 (Epic 7)
+
+---
+
+## Scope Clarification
+
+### ❌ REMOVED - Moved to Story 2.6 (Epic 2)
+The following features are now in **Story 2.6** as foundational account management:
+- **Account Tab**: Profile information, email, password, profile picture upload
+- **Notifications Tab (Basic)**: Event update toggles, newsletter subscription, notification frequency
+- **Privacy Tab (Basic)**: Profile visibility, activity visibility, company display
+
+### ✅ RETAINED - Advanced Features in Story 5.2 (Epic 7)
+The following **advanced** features remain in this story:
+- **Content Preferences Tab**: Interests/topics selection, content language, experience level, content format preferences, default view mode
+- **Language & Accessibility Tab**: UI language selection, date/time format preferences, accessibility options (high contrast, larger text, screen reader optimizations, keyboard shortcuts)
+- **Data & Export Tab**: GDPR data export request, account deactivation (60-day retention), permanent account deletion
 
 ---
 
 ## Visual Wireframe
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ ← Back to Dashboard            Settings                          [Save]      │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                               │
-│  ┌─── SETTINGS NAVIGATION ──────┐  ┌─── ACCOUNT SETTINGS ─────────────────┐ │
-│  │                               │  │                                       │ │
-│  │  ● Account                    │  │  Profile Information                  │ │
-│  │  ○ Notifications              │  │                                       │ │
-│  │  ○ Privacy                    │  │  Email Address                        │ │
-│  │  ○ Content Preferences        │  │  ┌─────────────────────────────────┐ │ │
-│  │  ○ Language & Accessibility   │  │  │ john.smith@techcorp.ch          │ │ │
-│  │  ○ Data & Export              │  │  ✓ Verified                          │ │
-│  │                               │  │                                       │ │
-│  │                               │  │  First Name                           │ │
-│  │                               │  │  ┌─────────────────────────────────┐ │ │
-│  │                               │  │  │ John                            │ │ │
-│  │                               │  │  └─────────────────────────────────┘ │ │
-│  │                               │  │                                       │ │
-│  │                               │  │  Last Name                            │ │
-│  │                               │  │  ┌─────────────────────────────────┐ │ │
-│  │                               │  │  │ Smith                           │ │ │
-│  │                               │  │  └─────────────────────────────────┘ │ │
-│  │                               │  │                                       │ │
-│  │                               │  │  Company                              │ │
-│  │                               │  │  ┌─────────────────────────────────┐ │ │
-│  │                               │  │  │ TechCorp AG                     │ │ │
-│  │                               │  │  └─────────────────────────────────┘ │ │
-│  │                               │  │  [Search Companies]                   │ │
-│  │                               │  │                                       │ │
-│  │                               │  │  Job Title (optional)                 │ │
-│  │                               │  │  ┌─────────────────────────────────┐ │ │
-│  │                               │  │  │ Senior DevOps Engineer          │ │ │
-│  │                               │  │  └─────────────────────────────────┘ │ │
-│  │                               │  │                                       │ │
-│  │                               │  │  Profile Picture                      │ │
-│  │                               │  │  ┌─────────────────────┐               │ │
-│  │                               │  │  │   [👤 Photo]        │               │ │
-│  │                               │  │  │   200×200px         │               │ │
-│  │                               │  │  └─────────────────────┘               │ │
-│  │                               │  │  [Upload New Photo] [Remove]          │ │
-│  │                               │  │  (JPEG/PNG, max 5MB)                  │ │
-│  │                               │  │                                       │ │
-│  │                               │  │  Password                             │ │
-│  │                               │  │  [Change Password]                    │ │
-│  │                               │  │                                       │ │
-│  └───────────────────────────────┘  └───────────────────────────────────────┘ │
-│                                                                               │
-│                             [Cancel]  [Save Changes]                          │
-│                                                                               │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-[NOTIFICATIONS TAB]
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  ┌─── SETTINGS NAVIGATION ──────┐  ┌─── NOTIFICATION PREFERENCES ─────────┐ │
-│  │                               │  │                                       │ │
-│  │  ○ Account                    │  │  Email Notifications                  │ │
-│  │  ● Notifications              │  │                                       │ │
-│  │  ○ Privacy                    │  │  Event Updates                        │ │
-│  │  ○ Content Preferences        │  │  ☑ Upcoming event reminders          │ │
-│  │  ○ Language & Accessibility   │  │     Send reminders:                   │ │
-│  │  ○ Data & Export              │  │     ☑ 1 day before event             │ │
-│  │                               │  │     ☐ 1 hour before event            │ │
-│  │                               │  │                                       │ │
-│  │                               │  │  ☑ Schedule changes & updates         │ │
-│  │                               │  │  ☑ Speaker announcements              │ │
-│  │                               │  │  ☑ Venue or logistics changes         │ │
-│  │                               │  │                                       │ │
-│  │                               │  │  Content & Recommendations            │ │
-│  │                               │  │  ☑ New content matching interests     │ │
-│  │                               │  │  ☑ Weekly content digest              │ │
-│  │                               │  │  ☐ Trending presentations             │ │
-│  │                               │  │                                       │ │
-│  │                               │  │  Newsletter                           │ │
-│  │                               │  │  ☑ Subscribe to BATbern newsletter    │ │
-│  │                               │  │     Frequency: ● Monthly ○ Quarterly  │ │
-│  │                               │  │                                       │ │
-│  │                               │  │  Email Digest Format                  │ │
-│  │                               │  │  ● HTML (Rich formatting)             │ │
-│  │                               │  │  ○ Plain Text                         │ │
-│  │                               │  │                                       │ │
-│  │                               │  │  [Test Email Notifications]           │ │
-│  │                               │  │                                       │ │
-│  └───────────────────────────────┘  └───────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-[PRIVACY TAB]
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  ┌─── SETTINGS NAVIGATION ──────┐  ┌─── PRIVACY CONTROLS ─────────────────┐ │
-│  │                               │  │                                       │ │
-│  │  ○ Account                    │  │  Profile Visibility                   │ │
-│  │  ○ Notifications              │  │                                       │ │
-│  │  ● Privacy                    │  │  Who can see your profile?            │ │
-│  │  ○ Content Preferences        │  │  ● BATbern community members          │ │
-│  │  ○ Language & Accessibility   │  │  ○ Only organizers                    │ │
-│  │  ○ Data & Export              │  │                                       │ │
-│  │                               │  │  Activity Visibility                  │ │
-│  │                               │  │  ☑ Show events I'm attending          │ │
-│  │                               │  │  ☑ Show my bookmarked content         │ │
-│  │                               │  │  ☐ Show my download history           │ │
-│  │                               │  │                                       │ │
-│  │                               │  │  Company Information                  │ │
-│  │                               │  │  ☑ Display company on profile         │ │
-│  │                               │  │  ☑ Allow company analytics            │ │
-│  │                               │  │  ☐ Share attendance with employer     │ │
-│  │                               │  │                                       │ │
-│  │                               │  │  Data Collection                      │ │
-│  │                               │  │  ☑ Allow analytics for personalization│ │
-│  │                               │  │  ☑ Track content recommendations      │ │
-│  │                               │  │  ☐ Share anonymous usage data         │ │
-│  │                               │  │                                       │ │
-│  │                               │  │  Cookies & Tracking                   │ │
-│  │                               │  │  ● Essential + Functional             │ │
-│  │                               │  │  ○ Essential only                     │ │
-│  │                               │  │                                       │ │
-│  │                               │  │  [View Privacy Policy]                │ │
-│  │                               │  │                                       │ │
-│  └───────────────────────────────┘  └───────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────────┘
+> **Note**: Account, Notifications (basic), and Privacy (basic) tabs have been moved to Story 2.6.
+> See `docs/wireframes/story-2.6-user-account-management.md` for those wireframes.
+> This wireframe now shows only the **advanced settings** tabs that remain in Epic 7.
 
 [CONTENT PREFERENCES TAB]
 ┌─────────────────────────────────────────────────────────────────────────────┐
