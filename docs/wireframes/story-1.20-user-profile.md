@@ -1,9 +1,37 @@
 # Story 1.20: User Profile Screen - Wireframe
 
-**Story**: Epic 1, Story 20 - User Role Management
+> **⚠️ SUPERSEDED BY STORY 2.6 (Epic 2)**
+> This wireframe has been consolidated into **Story 2.6: User Account Management Frontend** as part of Epic 2.
+> Story 2.6 combines the profile features from this wireframe with basic settings from story-5.2.
+> **Use `docs/wireframes/story-2.6-user-account-management.md` for implementation.**
+> This file is retained for historical reference and design evolution documentation.
+>
+> **Key Differences in Story 2.6 (Aligned with Data Model & API):**
+> - **Removed fields** (not supported by backend):
+>   - Phone number
+>   - Job Title
+>   - Department
+>   - Title/Salutation (Dr., Prof.)
+>   - Social Links (LinkedIn, Twitter, Website)
+> - **Modified fields**:
+>   - Bio: 500 chars → 2000 chars (aligned with API)
+>   - Company: Now read-only (managed via company affiliation)
+>   - Email: Read-only from Cognito (cannot be edited)
+> - **Profile picture management**:
+>   - Moved entirely to Profile tab (removed from Settings→Account)
+>   - Added [Remove Photo] button
+> - **Added backend-supported fields** in Settings:
+>   - Theme selector (light/dark/auto)
+>   - Timezone selector
+>   - In-app and push notification toggles
+>   - Show email address toggle
+>   - Allow messaging toggle
+
+**Story**: Epic 1, Story 20 - User Role Management → **MOVED TO Epic 2, Story 2.6**
 **Screen**: User Profile Screen
 **User Role**: All (Organizer, Speaker, Partner, Attendee)
 **Related FR**: FR1 (Role-based authentication with distinct interfaces)
+**Status**: Consolidated into Story 2.6
 
 ---
 

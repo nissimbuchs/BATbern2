@@ -115,16 +115,25 @@ As an **attendee**, I want to search 20+ years of BATbern content with filtering
 
 ---
 
-## Story 5.2: Personal Engagement Management
+## Story 5.2: Personal Engagement Management (Advanced Settings Only)
+
+> **⚠️ SCOPE REDUCED - Basic Settings Moved to Epic 2 (Story 2.6)**
+> Basic account management features (profile info, email, password, basic notifications, basic privacy) have been moved to **Story 2.6: User Account Management Frontend** in Epic 2 as foundational features.
+>
+> **Story 5.2 now focuses exclusively on ADVANCED attendee-specific features:**
+> - Content Preferences (interests, topics, experience level, content formats)
+> - Language & Accessibility (UI language, date/time formats, accessibility options)
+> - Data & Export (GDPR data export, account deactivation, account deletion)
+> - Personal Attendee Dashboard (bookmarks, learning progress, content recommendations)
 
 **User Story:**
-As an **attendee**, I want to manage my preferences, bookmarks, and subscriptions, so that I can customize my BATbern experience.
+As an **attendee**, I want advanced personalization options and content management tools, so that I can optimize my BATbern learning experience with tailored content recommendations and accessibility preferences.
 
 **Architecture Integration:**
 - **Service**: Attendee Experience Service
-- **Database**: PostgreSQL user preferences
-- **Email**: AWS SES for subscriptions
-- **Frontend**: React profile management
+- **Database**: PostgreSQL user preferences, content bookmarks, learning progress
+- **Email**: AWS SES for data export notifications
+- **Frontend**: React advanced settings and personal dashboard
 
 **Wireframe Context:**
 
@@ -138,16 +147,18 @@ As an **attendee**, I want to manage my preferences, bookmarks, and subscription
    - Notification summary
    - Quick access to all features
 
-2. **User Settings:** `docs/wireframes/story-5.2-user-settings.md` ✅ (Attendee version)
-   - Account settings and profile management
-   - Password change and security settings
-   - Granular notification preferences (email, in-app, push)
-   - Privacy controls and GDPR data export/delete
-   - Content preferences and interests
-   - Note: General user settings wireframe needed for all roles
+2. **Advanced User Settings:** `docs/wireframes/story-5.2-user-settings.md` ✅ (Advanced features only)
+   - **Content Preferences**: Interests/topics, content language, experience level, format preferences
+   - **Language & Accessibility**: UI language, date/time formats, accessibility options
+   - **Data & Export**: GDPR data export, account deactivation/deletion
+   - **Note**: Basic settings (Account, Notifications, Privacy) moved to Story 2.6 in Epic 2
 
 ### UI Components
 **Key interface elements:**
+
+> **Note**: Basic account settings (profile photo, name, email, password, basic notifications, basic privacy) are in Story 2.6 (Epic 2).
+> This story focuses on advanced features only.
+
 - **Personal Dashboard**:
   - Upcoming Events cards (registered events with countdown)
   - My Registrations list (current and past)
@@ -155,31 +166,38 @@ As an **attendee**, I want to manage my preferences, bookmarks, and subscription
   - Learning Progress widget (paths, achievements)
   - Notification Center summary (unread count)
   - Quick Actions (find content, register for event, view profile)
-- **User Settings Tabs**:
-  - Account (profile photo, name, email, password change)
-  - Notification Preferences (granular channel & type control)
-  - Privacy (data export GDPR, data delete, visibility controls)
-  - Content Preferences (interests, topic subscriptions)
-  - App Settings (language, accessibility, PWA settings)
-- **Notification Preferences Panel**:
-  - Channel toggles (Email / In-App / Push)
-  - Notification type checkboxes (events, speakers, newsletters, partners, system)
-  - Frequency dropdown (Immediate / Daily Digest / Weekly Digest)
-  - Quiet Hours configuration (start time, end time, timezone)
-  - [Preview Email] button
-  - Bulk actions ([Enable All] / [Disable All])
-  - Notification History link
+
+- **Advanced Settings Tabs** (extends Story 2.6 basic settings):
+  - **Content Preferences**: Interests, topic subscriptions, content language, experience level, format preferences
+  - **Language & Accessibility**: UI language, date/time formats, high contrast mode, larger text, screen reader optimizations, keyboard shortcuts
+  - **Data & Export**: GDPR data export request, account deactivation (60-day retention), permanent account deletion
+
+- **Content Preferences Panel**:
+  - Interest topic multi-select (unlimited custom tags)
+  - Content language preferences (German, English, both)
+  - Experience level checkboxes (Beginner, Intermediate, Advanced)
+  - Content format preferences (Presentations, Workshops, Panels, Lightning talks)
+  - Default view mode (Grid vs List)
+
+- **Language & Accessibility Panel**:
+  - UI language selector (German, English)
+  - Date/time format preferences (DD.MM.YYYY, MM/DD/YYYY, YYYY-MM-DD)
+  - Time format (24-hour, 12-hour)
+  - Accessibility options: High contrast, larger text, reduce animations, focus indicators, keyboard shortcuts, screen reader optimizations
+  - [View Keyboard Shortcuts] link
+
+- **Data & Export Panel**:
+  - GDPR data export (JSON/CSV format)
+  - [Request Data Export] button (async, email notification when ready)
+  - Account deactivation (60-day retention, unregisters from all events)
+  - Permanent account deletion (immediate, irreversible)
+  - Account status display (Active, member since, events attended)
+
 - **Bookmark Management**:
   - Saved content library with grid/list view
   - Collections/folders for organization
   - Quick filters (presentations, speakers, topics)
   - Bulk actions (move to collection, remove)
-- **Profile Editor**:
-  - Personal information form
-  - Interest topics multi-select
-  - Company affiliation (optional)
-  - Biography/notes (optional)
-  - [Save Changes] button
 
 ### Wireframe Status
 - ✅ **EXISTS**: Both wireframes fully documented
@@ -204,36 +222,49 @@ As an **attendee**, I want to manage my preferences, bookmarks, and subscription
   - ⤴ Personal Dashboard
 
 **Acceptance Criteria:**
-1. **User Profile**: Create and manage attendee profile
-2. **Newsletter Preferences**: Subscribe/unsubscribe options
-3. **Content Bookmarking**: Save interesting presentations
-4. **Download History**: Track downloaded content
-5. **Interest Topics**: Select areas of interest
 
-**Notification Preferences (Enhanced):**
-6. **Channel Control**: Opt in/out for email, in-app, push notifications
-7. **Notification Type Granularity**: Control preferences for event announcements, speaker updates, newsletter subscriptions, partner communications, system alerts
-8. **Frequency Management**: Choose immediate, daily digest, or weekly digest
-9. **Quiet Hours**: Configure quiet hours (no notifications sent during this time)
-10. **Notification History**: View history of all received notifications
-11. **Email Preview**: Preview how notifications will appear
-12. **Bulk Actions**: Enable/disable all notifications with one click
+> **Note**: Basic profile, notifications, and privacy features (AC 1, 2, 6-12) are in Story 2.6 (Epic 2).
+> This story focuses on advanced personalization and GDPR features.
+
+**Personal Dashboard:**
+1. **Bookmark Management**: Save and organize content in collections/folders
+2. **Download History**: Track downloaded presentations and materials
+3. **Learning Progress**: Display completed content, paths, achievements
+
+**Advanced Content Preferences:**
+4. **Interest Topics**: Select unlimited custom interest tags
+5. **Content Language**: Prefer German, English, or both for presentations
+6. **Experience Level**: Filter by Beginner, Intermediate, Advanced
+7. **Content Formats**: Prefer Presentations, Workshops, Panels, Lightning talks
+8. **View Mode**: Default to Grid or List view
+
+**Language & Accessibility:**
+9. **UI Language**: Select German or English interface language
+10. **Date/Time Formats**: Choose date format (DD.MM.YYYY, MM/DD/YYYY, YYYY-MM-DD) and time format (24-hour, 12-hour)
+11. **Accessibility Options**: Enable high contrast, larger text, reduce animations, focus indicators, keyboard shortcuts, screen reader optimizations
+12. **Keyboard Shortcuts**: View and customize keyboard shortcuts
+
+**Data & Export (GDPR):**
+13. **Data Export**: Request complete data export (JSON/CSV) with email notification when ready (24h SLA)
+14. **Account Deactivation**: Temporarily disable account (60-day retention, auto-delete after, unregisters from all events)
+15. **Account Deletion**: Permanently delete all data immediately (irreversible, cascade delete across all services)
+16. **Export Content**: Include profile, event registrations, download history, bookmarks, preferences, settings, notification history
 
 **Definition of Done:**
-- [ ] Profile creation simple and quick
-- [ ] Preferences instantly updated
 - [ ] Bookmarks synchronized across devices
-- [ ] Newsletter preferences respected
-- [ ] GDPR compliance implemented
-- [ ] Data export available
-- [ ] Granular notification preference controls functional
-- [ ] All notification channels (email, in-app, push) respected
-- [ ] Frequency settings (immediate, daily, weekly) working
-- [ ] Quiet hours preventing notifications during configured times
-- [ ] Notification history displaying last 90 days
-- [ ] Email preview showing actual rendered template
-- [ ] Bulk enable/disable affecting all preferences correctly
-- [ ] GDPR data export including notification history
+- [ ] Collections/folders for bookmark organization functional
+- [ ] Learning progress tracking displays completed content
+- [ ] Content preferences (interests, language, level, formats) working
+- [ ] UI language selection changes entire interface (i18n)
+- [ ] Date/time format preferences applied throughout app
+- [ ] All accessibility options functional (high contrast, larger text, etc.)
+- [ ] Keyboard shortcuts customizable and working
+- [ ] GDPR data export request triggers async job, email notification sent when ready
+- [ ] Data export includes all user data (profile, events, downloads, bookmarks, preferences, notifications)
+- [ ] Account deactivation unregisters from all events, hides profile, retains data 60 days
+- [ ] Account deletion cascades across all domain services (User, Event, Speaker, Attendee)
+- [ ] Deletion audit trail logged for compliance
+- [ ] All advanced features accessible from Story 2.6 basic settings (seamless UX)
 
 ---
 
