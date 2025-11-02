@@ -1,8 +1,11 @@
 # Partner Coordination API
 
 **Last Updated**: 2025-11-02
-**ADR Reference**: [ADR-003: Meaningful Identifiers in Public APIs](./ADR-003-meaningful-identifiers-public-apis.md)
+**ADR References**:
+- [ADR-003: Meaningful Identifiers in Public APIs](./ADR-003-meaningful-identifiers-public-apis.md)
+- [ADR-004: Factor User Fields from Domain Entities](./ADR-004-factor-user-fields-from-domain-entities.md)
 
+**Important**: Partner is company-centric. PartnerContact references User entity (ADR-004). PartnerContact does NOT duplicate email, name, photo fields from User. API responses combine User + PartnerContact data via JPQL joins.
 
 This document outlines the Partner Coordination Domain API, which handles partner relationship management, strategic topic voting, partner meeting coordination, and partnership lifecycle management.
 

@@ -1,0 +1,627 @@
+openapi: 3.1.0
+info:
+  title: BATbern Partners API
+  version: 1.0.0
+  description: |
+    Partner Coordination API for BATbern Event Management Platform.
+
+    This API provides partner management capabilities with:
+    - **Partner Relationship Management**: Partnership tiers and benefits
+    - **Topic Voting & Suggestions**: Strategic topic influence
+    - **Meeting Coordination**: Partner meeting scheduling and attendance
+    - **Contact Management**: Multiple contact persons per partner
+
+    **Important (ADR-004)**: Partner is company-centric.
+    - Partner entity references Company (primary relationship)
+    - PartnerContact references User entity (NOT duplicating user fields)
+    - PartnerContact does NOT duplicate email, name, photo fields
+    - API responses combine User + PartnerContact data via JPQL joins
+    - Internal: PartnerContact.userId (UUID FK) -> User.id
+    - External: username is the public identifier (ADR-003)
+
+    **Status**: NOT YET IMPLEMENTED - This spec defines the future API design
+
+  contact:
+    name: BATbern Platform Team
+    email: platform@batbern.ch
+  license:
+    name: Proprietary
+    identifier: Proprietary
+
+servers:
+  - url: https://api.batbern.ch/api/v1
+    description: Production
+  - url: https://api.staging.batbern.ch/api/v1
+    description: Staging
+  - url: http://localhost:8080/api/v1
+    description: Development
+
+tags:
+  - name: Partners
+    description: Partner relationship management
+  - name: Partner Contacts
+    description: Partner contact person management
+  - name: Topic Voting
+    description: Topic voting and suggestions
+  - name: Partner Meetings
+    description: Partner meeting coordination
+
+paths:
+  /partners:
+    get:
+      tags:
+        - Partners
+      summary: List partners
+      description: |
+        Retrieve a list of partners with optional filtering by partnership level or active status.
+
+      operationId: listPartners
+      parameters:
+        - name: partnershipLevel
+          in: query
+          description: Filter by partnership tier
+          required: false
+          schema:
+            $ref: '#/components/schemas/PartnershipTier'
+        - name: isActive
+          in: query
+          description: Filter by active status
+          required: false
+          schema:
+            type: boolean
+        - name: include
+          in: query
+          description: Comma-separated list of resources to include (company, contacts, votes)
+          required: false
+          schema:
+            type: string
+            example: 'company,contacts'
+      responses:
+        '200':
+          description: List of partners retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PartnerResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+  /partners/{companyName}:
+    get:
+      tags:
+        - Partners
+      summary: Get partner by company name
+      description: |
+        Retrieve a specific partner by their company name (ADR-003 meaningful ID).
+
+      operationId: getPartnerByCompanyName
+      parameters:
+        - name: companyName
+          in: path
+          required: true
+          description: Company name (ADR-003 meaningful ID)
+          schema:
+            type: string
+            example: GoogleZH
+        - name: include
+          in: query
+          description: Comma-separated list of resources to include
+          required: false
+          schema:
+            type: string
+            example: 'company,contacts,votes'
+      responses:
+        '200':
+          description: Partner retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerResponse'
+        '404':
+          description: Partner not found
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+    patch:
+      tags:
+        - Partners
+      summary: Update partner
+      description: |
+        Update partner relationship details (partnership level, dates, benefits).
+
+      operationId: updatePartner
+      parameters:
+        - name: companyName
+          in: path
+          required: true
+          schema:
+            type: string
+            example: GoogleZH
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePartnerRequest'
+      responses:
+        '200':
+          description: Partner updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerResponse'
+        '400':
+          description: Bad request - validation errors
+        '404':
+          description: Partner not found
+
+  /partners/{companyName}/contacts:
+    get:
+      tags:
+        - Partner Contacts
+      summary: Get partner contacts
+      description: |
+        Retrieve all contact persons for a partner.
+
+        **Response combines User + PartnerContact data** (ADR-004):
+        - User fields: username, email, firstName, lastName, profilePictureUrl
+        - PartnerContact fields: contactRole, isPrimary
+
+      operationId: getPartnerContacts
+      parameters:
+        - name: companyName
+          in: path
+          required: true
+          schema:
+            type: string
+            example: GoogleZH
+      responses:
+        '200':
+          description: Partner contacts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PartnerContactResponse'
+        '404':
+          description: Partner not found
+
+    post:
+      tags:
+        - Partner Contacts
+      summary: Add partner contact
+      description: |
+        Add a new contact person to a partner.
+
+        **Important (ADR-004)**: Contact must reference an existing User (by username).
+
+      operationId: addPartnerContact
+      parameters:
+        - name: companyName
+          in: path
+          required: true
+          schema:
+            type: string
+            example: GoogleZH
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddPartnerContactRequest'
+      responses:
+        '201':
+          description: Contact added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerContactResponse'
+        '400':
+          description: Bad request - validation errors
+        '404':
+          description: Partner or user not found
+        '409':
+          description: Contact already exists
+
+  /partners/{companyName}/contacts/{username}:
+    delete:
+      tags:
+        - Partner Contacts
+      summary: Remove partner contact
+      description: |
+        Remove a contact person from a partner.
+
+      operationId: removePartnerContact
+      parameters:
+        - name: companyName
+          in: path
+          required: true
+          schema:
+            type: string
+            example: GoogleZH
+        - name: username
+          in: path
+          required: true
+          description: Username (ADR-003 meaningful ID from User entity)
+          schema:
+            type: string
+            example: john.doe
+      responses:
+        '204':
+          description: Contact removed successfully
+        '404':
+          description: Partner or contact not found
+        '400':
+          description: Cannot remove - last primary contact
+
+  /partners/{companyName}/votes:
+    get:
+      tags:
+        - Topic Voting
+      summary: Get partner's topic votes
+      description: |
+        Retrieve all topic votes cast by a partner.
+
+      operationId: getPartnerVotes
+      parameters:
+        - name: companyName
+          in: path
+          required: true
+          schema:
+            type: string
+            example: GoogleZH
+      responses:
+        '200':
+          description: Votes retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TopicVote'
+        '404':
+          description: Partner not found
+
+    post:
+      tags:
+        - Topic Voting
+      summary: Cast topic vote
+      description: |
+        Partner casts a vote on a topic. Vote weight is based on partnership tier.
+
+      operationId: voteOnTopic
+      parameters:
+        - name: companyName
+          in: path
+          required: true
+          schema:
+            type: string
+            example: GoogleZH
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CastVoteRequest'
+      responses:
+        '201':
+          description: Vote cast successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicVote'
+        '400':
+          description: Bad request - validation errors
+        '409':
+          description: Already voted on this topic
+
+  /partners/{companyName}/suggestions:
+    get:
+      tags:
+        - Topic Voting
+      summary: Get partner's topic suggestions
+      description: |
+        Retrieve all topic suggestions submitted by a partner.
+
+      operationId: getPartnerSuggestions
+      parameters:
+        - name: companyName
+          in: path
+          required: true
+          schema:
+            type: string
+            example: GoogleZH
+      responses:
+        '200':
+          description: Suggestions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TopicSuggestion'
+
+    post:
+      tags:
+        - Topic Voting
+      summary: Submit topic suggestion
+      description: |
+        Partner submits a new topic suggestion.
+
+      operationId: suggestTopic
+      parameters:
+        - name: companyName
+          in: path
+          required: true
+          schema:
+            type: string
+            example: GoogleZH
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitSuggestionRequest'
+      responses:
+        '201':
+          description: Suggestion submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicSuggestion'
+        '400':
+          description: Bad request - validation errors
+
+components:
+  schemas:
+    PartnerResponse:
+      type: object
+      description: |
+        Partner is company-centric (ADR-004).
+        Partner entity references Company entity (primary relationship).
+      properties:
+        companyName:
+          type: string
+          description: Company name (ADR-003 meaningful ID)
+          example: GoogleZH
+        partnershipLevel:
+          $ref: '#/components/schemas/PartnershipTier'
+        partnershipStartDate:
+          type: string
+          format: date
+        partnershipEndDate:
+          type: string
+          format: date
+          nullable: true
+        isActive:
+          type: boolean
+        contacts:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartnerContactResponse'
+          description: Included if ?include=contacts
+        benefits:
+          $ref: '#/components/schemas/PartnershipBenefits'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UpdatePartnerRequest:
+      type: object
+      properties:
+        partnershipLevel:
+          $ref: '#/components/schemas/PartnershipTier'
+        partnershipEndDate:
+          type: string
+          format: date
+        isActive:
+          type: boolean
+
+    PartnerContactResponse:
+      type: object
+      description: |
+        PartnerContact response combines User entity fields with PartnerContact domain fields (ADR-004).
+        Internal: PartnerContact.userId (UUID FK) -> User.id
+        External: username is the public identifier
+      properties:
+        # From User entity (via JPQL join):
+        username:
+          type: string
+          description: Public identifier from User (ADR-003)
+          example: john.doe
+        email:
+          type: string
+          format: email
+          description: From User entity
+          example: john.doe@example.com
+        firstName:
+          type: string
+          description: From User entity
+          example: John
+        lastName:
+          type: string
+          description: From User entity
+          example: Doe
+        profilePictureUrl:
+          type: string
+          format: uri
+          description: From User entity
+          example: https://cdn.batbern.ch/users/john.doe/profile.jpg
+
+        # PartnerContact-specific fields:
+        contactRole:
+          $ref: '#/components/schemas/ContactRole'
+        isPrimary:
+          type: boolean
+          description: Whether this is the primary contact
+
+    AddPartnerContactRequest:
+      type: object
+      required:
+        - username
+        - contactRole
+      properties:
+        username:
+          type: string
+          description: Username of existing User (ADR-003)
+          example: john.doe
+        contactRole:
+          $ref: '#/components/schemas/ContactRole'
+        isPrimary:
+          type: boolean
+          description: Whether this is the primary contact
+          default: false
+
+    ContactRole:
+      type: string
+      enum:
+        - primary
+        - billing
+        - technical
+        - marketing
+      description: |
+        Contact person role:
+        - primary: Primary point of contact
+        - billing: Billing and invoicing contact
+        - technical: Technical contact for integration
+        - marketing: Marketing and communications contact
+
+    PartnershipTier:
+      type: string
+      enum:
+        - bronze
+        - silver
+        - gold
+        - platinum
+        - strategic
+      description: Partnership tier determining benefits and vote weight
+
+    PartnershipBenefits:
+      type: object
+      properties:
+        voteWeight:
+          type: integer
+          description: Weight of votes (1-5 based on tier)
+        logoOnWebsite:
+          type: boolean
+        logoOnMaterials:
+          type: boolean
+        speakerSlots:
+          type: integer
+          description: Guaranteed speaker slots
+        exclusiveEvents:
+          type: boolean
+        customBenefits:
+          type: array
+          items:
+            type: string
+
+    TopicVote:
+      type: object
+      properties:
+        topicId:
+          type: string
+          description: Topic identifier
+        topicTitle:
+          type: string
+          description: Topic title
+        voteValue:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Vote value (1-5)
+        voteWeight:
+          type: integer
+          description: Weighted vote value based on partnership tier
+        votedAt:
+          type: string
+          format: date-time
+
+    CastVoteRequest:
+      type: object
+      required:
+        - topicId
+        - voteValue
+      properties:
+        topicId:
+          type: string
+          description: Topic identifier
+        voteValue:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Vote value (1=low interest, 5=high interest)
+
+    TopicSuggestion:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Suggestion identifier
+        suggestedTopic:
+          type: string
+          description: Suggested topic title
+        description:
+          type: string
+          description: Topic description
+        businessJustification:
+          type: string
+          description: Why this topic is valuable
+        status:
+          $ref: '#/components/schemas/SuggestionStatus'
+        suggestedAt:
+          type: string
+          format: date-time
+        reviewedAt:
+          type: string
+          format: date-time
+          nullable: true
+        reviewedBy:
+          type: string
+          description: Organizer username who reviewed
+          nullable: true
+
+    SubmitSuggestionRequest:
+      type: object
+      required:
+        - suggestedTopic
+        - description
+      properties:
+        suggestedTopic:
+          type: string
+          maxLength: 500
+          description: Suggested topic title
+        description:
+          type: string
+          maxLength: 2000
+          description: Topic description
+        businessJustification:
+          type: string
+          maxLength: 1000
+          description: Why this topic is valuable for the community
+
+    SuggestionStatus:
+      type: string
+      enum:
+        - submitted
+        - under_review
+        - accepted
+        - rejected
+        - implemented
+      description: |
+        Topic suggestion status:
+        - submitted: Newly submitted suggestion
+        - under_review: Being reviewed by organizers
+        - accepted: Accepted for future consideration
+        - rejected: Not suitable for BATbern
+        - implemented: Topic was used in an event

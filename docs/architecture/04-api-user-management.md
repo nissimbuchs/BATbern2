@@ -1,8 +1,12 @@
 # User Management API
 
 **Last Updated**: 2025-11-02
-**ADR Reference**: [ADR-003: Meaningful Identifiers in Public APIs](./ADR-003-meaningful-identifiers-public-apis.md)
+**ADR References**:
+- [ADR-002: Generic File Upload Service](./ADR-002-generic-file-upload-service.md)
+- [ADR-003: Meaningful Identifiers in Public APIs](./ADR-003-meaningful-identifiers-public-apis.md)
+- [ADR-004: Factor User Fields from Domain Entities](./ADR-004-factor-user-fields-from-domain-entities.md)
 
+**Important**: Profile pictures use the Generic File Upload Service (ADR-002). User entity is the single source of truth for email, name, bio, and photo (ADR-004).
 
 This document outlines the User Management Service API, which handles user profiles, preferences, settings, role management, and comprehensive GDPR compliance capabilities.
 
@@ -15,7 +19,7 @@ The User Management API provides endpoints for:
 - User preferences and settings management
 - Role management with business rules enforcement
 - Activity history tracking and analytics
-- Profile picture upload via S3 presigned URLs
+- Profile picture management via Generic File Upload Service (ADR-002)
 - GDPR compliance (data export, cascade deletion, audit logging)
 - Get-or-create pattern for domain service integration
 
@@ -688,27 +692,55 @@ responses:
     description: Internal server error
 ```
 
-### Profile Picture
+### Profile Picture Management
 
-#### Upload Profile Picture
+**Important (ADR-002)**: Profile pictures use the Generic File Upload Service. See ADR-002 for complete architecture.
+
+#### Three-Phase Upload Pattern
+
+**Phase 1: Initiate Upload** - `POST /api/v1/logos/presigned-url`
+- No authentication required
+- Returns presigned S3 URL and uploadId
+- See ADR-002 for endpoint details
+
+**Phase 2: Upload to S3** - `PUT {presignedUrl}`
+- Direct client-to-S3 upload
+- Binary file upload with progress tracking
+- No backend involvement
+
+**Phase 3: Confirm Upload** - `POST /api/v1/logos/{uploadId}/confirm`
+- Confirms successful S3 upload
+- Updates logo status to CONFIRMED
+- See ADR-002 for endpoint details
+
+**Association: Associate with User** - `PATCH /api/v1/users/me`
+- Include `profilePictureFileId` in request body
+- User service associates logo with user profile
+- Copies file from temp to final S3 location
+- Updates logo status to ASSOCIATED
+- Returns updated user with `profilePictureUrl`
+
+#### Update User Profile (with Profile Picture)
+
+**Note**: This is an extension of the standard user update endpoint to support profile picture association.
 
 ```yaml
-POST /api/v1/users/me/picture
-tags: [Profile Picture]
-summary: Upload profile picture
-operationId: uploadProfilePicture
+PATCH /api/v1/users/me
+tags: [User Management, Profile Picture]
+summary: Update user profile (including profile picture)
+operationId: updateCurrentUser
 description: |
-  Generate presigned S3 upload URL for profile picture.
+  Update user profile fields including profile picture association.
 
-  **File Constraints**:
-  - Max size: 5 MB
-  - Allowed formats: PNG, JPG, JPEG
-  - Recommended dimensions: 400x400 to 1000x1000 pixels
+  **Profile Picture (ADR-002)**:
+  - Set profilePictureFileId to uploadId from Generic File Upload Service
+  - User service will associate logo, copy to final location, update profilePictureUrl
+  - To remove: set profilePictureFileId to null
 
-  **Upload Process**:
-  1. Client calls this endpoint to get presigned URL
-  2. Client uploads directly to S3 using presigned URL
-  3. Client calls confirm endpoint with file ID
+  **Fields**:
+  - firstName, lastName: User's name (ADR-004: single source of truth)
+  - bio: Biography (ADR-004: single source of truth for Speaker, Attendee, etc.)
+  - profilePictureFileId: Logo uploadId from ADR-002 upload flow
 
 security:
   - BearerAuth: []
@@ -718,42 +750,73 @@ requestBody:
     application/json:
       schema:
         type: object
-        required:
-          - filename
-          - fileSizeBytes
-          - mimeType
         properties:
-          filename:
+          firstName:
             type: string
-            maxLength: 255
-          fileSizeBytes:
-            type: integer
-            minimum: 1
-            maximum: 5242880  # 5 MB
-          mimeType:
+            minLength: 2
+            maxLength: 100
+          lastName:
             type: string
-            enum: [image/png, image/jpeg, image/jpg]
+            minLength: 2
+            maxLength: 100
+          bio:
+            type: string
+            maxLength: 2000
+          profilePictureFileId:
+            type: string
+            description: Logo uploadId from Generic File Upload Service (ADR-002)
+            example: abc123-def456
+      example:
+        firstName: Anna
+        lastName: Müller
+        bio: Passionate about distributed systems and cloud architecture.
+        profilePictureFileId: abc123-def456
 responses:
   '200':
-    description: Presigned upload URL generated successfully
+    description: User updated successfully, profile picture associated
     content:
       application/json:
         schema:
-          type: object
-          properties:
-            uploadUrl:
-              type: string
-              format: uri
-              description: Presigned S3 upload URL (valid for 15 minutes)
-            fileId:
-              type: string
-              description: File identifier for confirmation
-            expiresIn:
-              type: integer
-              description: URL expiration time in seconds
-              example: 900
+          $ref: '#/components/schemas/UserResponse'
+        example:
+          username: anna.mueller
+          email: anna.mueller@example.com
+          firstName: Anna
+          lastName: Müller
+          bio: Passionate about distributed systems and cloud architecture.
+          profilePictureUrl: https://cdn.batbern.ch/logos/2025/users/anna.mueller/logo-abc123.jpg
+          profilePictureS3Key: logos/2025/users/anna.mueller/logo-abc123.jpg
+          profilePictureFileId: abc123-def456
   '400':
-    description: Bad request - invalid file size or type
+    description: Bad request - validation error or invalid uploadId
+  '401':
+    description: Unauthorized
+  '404':
+    description: Logo not found or not in CONFIRMED status
+  '500':
+    description: Internal server error
+```
+
+#### Remove Profile Picture
+
+```yaml
+DELETE /api/v1/users/me/picture
+tags: [Profile Picture]
+summary: Remove profile picture
+operationId: removeProfilePicture
+description: |
+  Remove user's profile picture (reverts to default avatar).
+
+  **Action**:
+  - Removes profilePictureUrl, profilePictureS3Key, profilePictureFileId from user
+  - Marks associated logo as deleted (soft delete)
+  - S3 file cleanup handled by scheduled job
+
+security:
+  - BearerAuth: []
+responses:
+  '204':
+    description: Profile picture removed successfully
   '401':
     description: Unauthorized
   '500':
