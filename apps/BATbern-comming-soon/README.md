@@ -50,5 +50,5 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
   Underneath the hero section should be a series of testimonial cards. two rows, each with 10
   cards.\
   the top row should slowly animate left, and the bottom row should slowly animate to the right.
-  both are infinite marquees. each testimonial card should have an avatar, a person's name, their
+  both are infinite marquees. each testimonial card should have an avatar, a users's name, their
   quote and the company they represent.\
