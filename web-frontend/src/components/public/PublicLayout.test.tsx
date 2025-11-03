@@ -34,9 +34,13 @@ describe('PublicLayout', () => {
     );
 
     const layoutDiv = container.firstChild as HTMLElement;
-    expect(layoutDiv).toHaveClass('dark');
     expect(layoutDiv).toHaveClass('min-h-screen');
-    expect(layoutDiv).toHaveClass('bg-zinc-950');
+    expect(layoutDiv).toHaveClass('w-full');
+    expect(layoutDiv).toHaveClass('flex');
+    expect(layoutDiv).toHaveClass('flex-col');
+
+    // Dark theme is applied to html element via useEffect, not to the layout div
+    expect(document.documentElement).toHaveClass('dark');
   });
 
   it('should render navigation and footer', () => {
