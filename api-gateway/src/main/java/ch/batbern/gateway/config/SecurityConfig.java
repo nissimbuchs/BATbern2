@@ -96,8 +96,10 @@ public class SecurityConfig {
 
     /**
      * Default security configuration
-     * Requires authentication for all requests except health checks
+     * Requires authentication for all requests except health checks and public endpoints
      * CSRF disabled: Stateless JWT API - tokens in headers, not cookies
+     *
+     * Story 4.1.3: Added public event discovery endpoints
      */
     @Bean
     @Profile("!test")
@@ -110,7 +112,14 @@ public class SecurityConfig {
                 // Stateless session - no cookies, no CSRF risk
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // System health endpoints
                         .requestMatchers("/actuator/health", "/actuator/info", "/api/v1/config").permitAll()
+
+                        // Story 4.1.3: Public event discovery endpoints (no auth required)
+                        .requestMatchers("/api/v1/events/current").permitAll()
+                        .requestMatchers("/api/v1/events/*/sessions").permitAll()
+
+                        // All other requests require authentication
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> { }))

@@ -6,10 +6,11 @@
 import React, { useEffect, Suspense, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
-import { CssBaseline, Box, CircularProgress } from '@mui/material';
+import { Box, CircularProgress } from '@mui/material';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuth } from '@hooks/useAuth';
 import { BaseLayout } from '@components/shared/Layout/BaseLayout';
+import { AuthPageLayout } from '@components/shared/Layout/AuthPageLayout';
 import {
   ProtectedRoute,
   SpeakerRoute,
@@ -55,7 +56,6 @@ const EventDetailEdit = React.lazy(() => import('@pages/EventDetailEdit')); // C
 
 // Public Pages - Story 4.1.2, 4.1.3
 const HomePage = React.lazy(() => import('@pages/public/HomePage'));
-const CurrentEventPage = React.lazy(() => import('@pages/public/CurrentEventPage'));
 
 // Loading fallback component for Suspense
 const PageLoader = () => (
@@ -154,14 +154,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
-        <CssBaseline />
         <Router>
           <NavigationSetup>
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 {/* Public routes - Story 4.1.2, 4.1.3 */}
                 <Route path="/" element={<HomePage />} />
-                <Route path="/current-event" element={<CurrentEventPage />} />
                 <Route
                   path="/archive"
                   element={
@@ -204,12 +202,54 @@ function App() {
                 />
 
                 {/* Authentication routes */}
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/auth/login" element={<LoginPage />} />
-                <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
-                <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
-                <Route path="/auth/register" element={<RegistrationPage />} />
-                <Route path="/auth/verify-email" element={<EmailVerification />} />
+                <Route
+                  path="/login"
+                  element={
+                    <AuthPageLayout>
+                      <LoginPage />
+                    </AuthPageLayout>
+                  }
+                />
+                <Route
+                  path="/auth/login"
+                  element={
+                    <AuthPageLayout>
+                      <LoginPage />
+                    </AuthPageLayout>
+                  }
+                />
+                <Route
+                  path="/auth/forgot-password"
+                  element={
+                    <AuthPageLayout>
+                      <ForgotPasswordPage />
+                    </AuthPageLayout>
+                  }
+                />
+                <Route
+                  path="/auth/reset-password"
+                  element={
+                    <AuthPageLayout>
+                      <ResetPasswordPage />
+                    </AuthPageLayout>
+                  }
+                />
+                <Route
+                  path="/auth/register"
+                  element={
+                    <AuthPageLayout>
+                      <RegistrationPage />
+                    </AuthPageLayout>
+                  }
+                />
+                <Route
+                  path="/auth/verify-email"
+                  element={
+                    <AuthPageLayout>
+                      <EmailVerification />
+                    </AuthPageLayout>
+                  }
+                />
 
                 {/* Protected routes with lazy-loaded components */}
                 <Route

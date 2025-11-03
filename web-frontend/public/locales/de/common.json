@@ -18,7 +18,15 @@
     "logout": "Abmelden",
     "myEvents": "Meine Veranstaltungen",
     "myContent": "Meine Inhalte",
-    "myRegistrations": "Meine Anmeldungen"
+    "myRegistrations": "Meine Anmeldungen",
+    "about": "Über uns",
+    "pastEvents": "Vergangene Veranstaltungen"
+  },
+  "public": {
+    "login": "Anmelden",
+    "joinUp": "Registrieren",
+    "register": "Anmelden",
+    "goToPortal": "Zum Portal"
   },
   "actions": {
     "save": "Speichern",
