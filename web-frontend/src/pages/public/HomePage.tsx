@@ -5,13 +5,14 @@
 
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { HeroSection } from '@/components/public/Hero/HeroSection';
+import { TestimonialSection } from '@/components/public/Testimonials/TestimonialSection';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 
 const HomePage = () => {
   const { data: event } = useCurrentEvent();
 
   // Fallback title if no event is available
-  const eventTitle = event?.title || 'Zero Trust Journey';
+  const eventTitle = event?.title || 'Coming soon...';
   const registerLink = event ? `/register/${event.eventCode}` : '/register';
   const eventDate = event?.date;
   const eventLocation = event?.venueName;
@@ -24,6 +25,7 @@ const HomePage = () => {
         location={eventLocation}
         ctaLink={registerLink}
       />
+      <TestimonialSection />
     </PublicLayout>
   );
 };
