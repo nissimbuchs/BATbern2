@@ -43,7 +43,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
 
     // AWS SDK for EventBridge, CloudWatch, and Cognito
-    implementation platform('software.amazon.awssdk:bom:2.36.2')
+    implementation platform('software.amazon.awssdk:bom:2.37.3')
     implementation 'software.amazon.awssdk:eventbridge'
     implementation 'software.amazon.awssdk:cloudwatch'
     implementation 'software.amazon.awssdk:cognitoidentityprovider'
