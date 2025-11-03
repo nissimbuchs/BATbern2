@@ -4,7 +4,7 @@
  * Full-screen hero with Unicorn.studio interactive background
  */
 
-import { useEffect } from 'react';
+import { useEffect, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/public/ui/button";
 import { useTranslation } from 'react-i18next';
@@ -16,6 +16,7 @@ interface HeroSectionProps {
   ctaText?: string;
   ctaLink: string;
   unicornProjectId?: string;
+  countdownTimer?: ReactNode;
 }
 
 export const HeroSection = ({
@@ -24,7 +25,8 @@ export const HeroSection = ({
   location,
   ctaText,
   ctaLink,
-  unicornProjectId = 'jfzsiwProJi81qvb7uKX'
+  unicornProjectId = 'jfzsiwProJi81qvb7uKX',
+  countdownTimer
 }: HeroSectionProps) => {
   const { t } = useTranslation('common');
   // Format date for display
@@ -66,8 +68,9 @@ export const HeroSection = ({
       </div>
 
       {/* Content */}
-      <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 h-full flex items-end pb-16 md:pb-20 lg:pb-24">
-        <div className="max-w-4xl">
+      <div className="relative z-10 w-full h-full flex items-end pb-16 md:pb-20 lg:pb-24">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl">
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-foreground leading-tight mb-6">
             {title}
           </h1>
@@ -126,9 +129,17 @@ export const HeroSection = ({
             </div>
           )}
 
-          <Button size="lg" className="text-base md:text-lg" asChild>
-            <Link to={ctaLink}>{ctaText || t('public.register')}</Link>
-          </Button>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <Button size="lg" className="text-base md:text-lg" asChild>
+              <Link to={ctaLink}>{ctaText || t('public.register')}</Link>
+            </Button>
+            {countdownTimer && (
+              <div className="ml-0 sm:ml-4">
+                {countdownTimer}
+              </div>
+            )}
+          </div>
+        </div>
         </div>
       </div>
     </section>
