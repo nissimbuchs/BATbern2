@@ -28,6 +28,15 @@
     "register": "Anmelden",
     "goToPortal": "Zum Portal"
   },
+  "footer": {
+    "tagline": "Berner Architekten Treffen - Wo Innovation auf Tradition trifft",
+    "quickLinks": "Schnelllinks",
+    "currentEvent": "Aktuelle Veranstaltung",
+    "legal": "Rechtliches",
+    "privacyPolicy": "Datenschutzerklärung",
+    "termsOfService": "Nutzungsbedingungen",
+    "copyright": "© {{year}} Berner Architekten Treffen. Alle Rechte vorbehalten."
+  },
   "actions": {
     "save": "Speichern",
     "cancel": "Abbrechen",
