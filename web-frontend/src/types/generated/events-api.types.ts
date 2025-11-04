@@ -449,6 +449,20 @@ export interface components {
       createdAt?: string;
       /** Format: date-time */
       updatedAt?: string;
+      /**
+       * Format: uri
+       * @description CloudFront URL for event theme image.
+       *     Story 2.5.3a: Event Theme Image Upload
+       * @example https://d123456.cloudfront.net/logos/2025/events/BATbern57/theme-abc123.png
+       */
+      themeImageUrl?: string | null;
+      /**
+       * @description Upload ID from three-phase upload pattern (internal reference).
+       *     Story 2.5.3a: Event Theme Image Upload
+       *     This is returned so the frontend can track what was uploaded.
+       * @example abc123-def456
+       */
+      themeImageUploadId?: string | null;
     };
     EventDetail: components['schemas']['Event'] & {
       venue?: components['schemas']['Venue'];
@@ -582,6 +596,12 @@ export interface components {
       publishedAt?: string;
       metadata?: string;
       description?: string;
+      /**
+       * @description Upload ID from /logos/presigned-url for event theme image.
+       *     Story 2.5.3a: Event Theme Image Upload
+       * @example abc123-def456
+       */
+      themeImageUploadId?: string | null;
     };
     UpdateEventRequest: {
       title: string;
@@ -616,6 +636,8 @@ export interface components {
       publishedAt?: string;
       metadata?: string;
       description?: string;
+      /** @description Upload ID from /logos/presigned-url for event theme image */
+      themeImageUploadId?: string | null;
     };
     PatchEventRequest: {
       title?: string;
@@ -650,6 +672,8 @@ export interface components {
       publishedAt?: string;
       metadata?: string;
       description?: string;
+      /** @description Upload ID from /logos/presigned-url for event theme image */
+      themeImageUploadId?: string | null;
     };
     CreateSessionRequest: {
       title: string;
