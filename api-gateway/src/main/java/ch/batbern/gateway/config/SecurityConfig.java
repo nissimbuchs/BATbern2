@@ -3,6 +3,7 @@ package ch.batbern.gateway.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -116,8 +117,13 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health", "/actuator/info", "/api/v1/config").permitAll()
 
                         // Story 4.1.3: Public event discovery endpoints (no auth required)
-                        .requestMatchers("/api/v1/events/current").permitAll()
-                        .requestMatchers("/api/v1/events/*/sessions").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/events/current").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/events/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*").permitAll()
+
+                        // Story 1.15a.1b: Public speaker list endpoint (GET only, POST/DELETE require ORGANIZER)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*/speakers").permitAll()
 
                         // All other requests require authentication
                         .anyRequest().authenticated()
