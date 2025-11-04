@@ -2,6 +2,7 @@ package ch.batbern.events.controller;
 
 import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.domain.Logo;
 import ch.batbern.events.dto.BatchUpdateRequest;
 import ch.batbern.events.dto.CreateEventRequest;
 import ch.batbern.events.dto.EventResponse;
@@ -14,12 +15,15 @@ import ch.batbern.events.exception.BusinessValidationException;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.exception.WorkflowException;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.LogoRepository;
 import ch.batbern.events.service.EventSearchService;
 import jakarta.validation.Valid;
 import ch.batbern.shared.dto.PaginatedResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.Cache;
@@ -59,10 +63,13 @@ public class EventController {
 
     private final EventSearchService eventSearchService;
     private final EventRepository eventRepository;
+    private final LogoRepository logoRepository;
+    private final ch.batbern.events.repository.SessionRepository sessionRepository;
     private final ch.batbern.events.service.EventAnalyticsService eventAnalyticsService;
     private final ch.batbern.shared.events.DomainEventPublisher eventPublisher;
     private final ch.batbern.events.security.SecurityContextHelper securityContextHelper;
     private final CacheManager cacheManager;
+    private final ch.batbern.events.service.GenericLogoService genericLogoService;
 
     /**
      * List/Search Events (AC1)
@@ -208,6 +215,13 @@ public class EventController {
         response.put("currentAttendeeCount", event.getCurrentAttendeeCount());
         response.put("publishedAt", event.getPublishedAt());
         response.put("metadata", event.getMetadata());
+        // Story 2.5.3a: Include theme image fields if present
+        if (event.getThemeImageUrl() != null) {
+            response.put("themeImageUrl", event.getThemeImageUrl());
+        }
+        if (event.getThemeImageUploadId() != null) {
+            response.put("themeImageUploadId", event.getThemeImageUploadId());
+        }
         return response;
     }
 
@@ -263,12 +277,33 @@ public class EventController {
     }
 
     /**
-     * Expand sessions data for an event
-     * TODO: Replace with actual domain model when sessions are implemented
+     * Expand sessions for an event
+     * Story 1.15a.1: Resource expansion for sessions
+     *
+     * @param event The event to expand sessions for
+     * @return List of session maps with public fields only
      */
     private java.util.List<Map<String, Object>> expandSessions(Event event) {
-        // Stub implementation - will be replaced with actual domain model
-        return new java.util.ArrayList<>();
+        // Find all sessions for this event
+        List<ch.batbern.events.domain.Session> sessions = sessionRepository.findByEventId(event.getId());
+
+        // Convert to response format
+        return sessions.stream()
+                .map(session -> {
+                    Map<String, Object> sessionMap = new HashMap<>();
+                    sessionMap.put("sessionSlug", session.getSessionSlug());
+                    sessionMap.put("eventCode", event.getEventCode());
+                    sessionMap.put("title", session.getTitle());
+                    sessionMap.put("description", session.getDescription());
+                    sessionMap.put("sessionType", session.getSessionType());
+                    sessionMap.put("startTime", session.getStartTime());
+                    sessionMap.put("endTime", session.getEndTime());
+                    sessionMap.put("room", session.getRoom());
+                    sessionMap.put("capacity", session.getCapacity());
+                    sessionMap.put("language", session.getLanguage());
+                    return sessionMap;
+                })
+                .collect(Collectors.toList());
     }
 
     /**
@@ -276,16 +311,17 @@ public class EventController {
      *
      * GET /api/v1/events/current?include=topics,venue,speakers,sessions
      *
-     * Returns the next upcoming published event.
+     * Returns the next upcoming event with status published, registration_open, or registration_closed.
+     * If multiple events match, returns the one nearest to the current date.
      * This is a public endpoint (no authentication required) used by the public website.
      *
      * @param include Comma-separated list of resources to expand
-     * @return Current published event or 404 if none exists
+     * @return Current event or 404 if none exists
      */
     @GetMapping("/current")
     @Operation(
-            summary = "Get Current Published Event",
-            description = "Retrieve the next upcoming published event for the public website. No authentication required."
+            summary = "Get Current Event",
+            description = "Retrieve the next upcoming event (published, registration_open, or registration_closed) for the public website. No authentication required."
     )
     public ResponseEntity<Map<String, Object>> getCurrentEvent(
             @Parameter(description = "Comma-separated list of resources to include (e.g., topics,venue,speakers,sessions)")
@@ -293,15 +329,19 @@ public class EventController {
     ) {
         log.debug("GET /api/v1/events/current - include: {}", include);
 
-        // Find the next published event (earliest date in the future or today)
+        // Find the next event with status: published, registration_open, or registration_closed
+        // Returns the event nearest to current date
+        List<String> activeStatuses = List.of("published", "registration_open", "registration_closed");
         Event currentEvent = eventRepository
-                .findFirstByStatusOrderByDateAsc("published")
+                .findFirstByStatusInOrderByDateAsc(activeStatuses)
                 .orElse(null);
 
         if (currentEvent == null) {
-            log.debug("No current published event found");
+            log.debug("No current event found with statuses: {}", activeStatuses);
             return ResponseEntity.notFound().build();
         }
+
+        log.debug("Found current event: {} with status: {}", currentEvent.getEventCode(), currentEvent.getStatus());
 
         // Build response with basic event data
         Map<String, Object> response = buildBasicEventResponse(currentEvent);
@@ -358,10 +398,16 @@ public class EventController {
                 .publishedAt(request.getPublishedAt() != null ? parseDate(request.getPublishedAt()) : null)
                 .metadata(request.getMetadata())
                 .description(request.getDescription())
+                .themeImageUploadId(request.getThemeImageUploadId())
                 .build();
 
         // Save event
         Event savedEvent = eventRepository.save(event);
+
+        // Associate theme image if provided (Story 2.5.3a)
+        if (request.getThemeImageUploadId() != null && !request.getThemeImageUploadId().isBlank()) {
+            associateThemeImage(savedEvent, request.getThemeImageUploadId());
+        }
 
         // Publish domain event (Story 2.2: Architecture Compliance)
         try {
@@ -432,7 +478,19 @@ public class EventController {
 
         // Replace all fields
         event.setTitle(request.getTitle());
+
+        // Validate that the new event number is not already in use by another event
+        if (!request.getEventNumber().equals(event.getEventNumber())) {
+            Optional<Event> existingEvent = eventRepository.findByEventNumber(request.getEventNumber());
+            if (existingEvent.isPresent() && !existingEvent.get().getId().equals(event.getId())) {
+                throw new BusinessValidationException("Event number " + request.getEventNumber() + " is already in use by event " + existingEvent.get().getEventCode());
+            }
+        }
         event.setEventNumber(request.getEventNumber());
+        // Regenerate eventCode when eventNumber changes
+        String newEventCode = "BATbern" + request.getEventNumber();
+        event.setEventCode(newEventCode);
+        log.info("Event number updated to {} via PUT, regenerated eventCode to: {}", request.getEventNumber(), newEventCode);
         event.setDate(parseDate(request.getDate()));
         event.setRegistrationDeadline(request.getRegistrationDeadline() != null ? parseDate(request.getRegistrationDeadline()) : null);
         event.setVenueName(request.getVenueName());
@@ -445,8 +503,30 @@ public class EventController {
         event.setMetadata(request.getMetadata());
         event.setDescription(request.getDescription());
 
+        // Set theme image upload ID before save (Story 2.5.3a)
+        if (request.getThemeImageUploadId() != null && !request.getThemeImageUploadId().isBlank()) {
+            event.setThemeImageUploadId(request.getThemeImageUploadId());
+        }
+
         // Save updated event
         Event updatedEvent = eventRepository.save(event);
+
+        // Associate theme image if new uploadId provided (Story 2.5.3a)
+        // Must be done after save to ensure event has persisted eventCode
+        if (request.getThemeImageUploadId() != null && !request.getThemeImageUploadId().isBlank()) {
+            associateThemeImage(updatedEvent, request.getThemeImageUploadId());
+            // Reload event to get updated themeImageUrl from database
+            updatedEvent = eventRepository.findByEventCode(updatedEvent.getEventCode())
+                    .orElseThrow(() -> new EventNotFoundException("Event not found after theme image association"));
+
+            // Manually evict cache after theme image association (Story 2.5.3a)
+            // The @CacheEvict on the method runs before associateThemeImage, so we need to evict again
+            Cache cache = cacheManager.getCache(CacheConfig.EVENT_WITH_INCLUDES_CACHE);
+            if (cache != null) {
+                cache.clear();
+                log.debug("Cache cleared after theme image association for event: {}", eventCode);
+            }
+        }
 
         // Publish domain event (Story 2.2: Architecture Compliance)
         try {
@@ -508,6 +588,32 @@ public class EventController {
 
         // Save patched event
         Event patchedEvent = eventRepository.save(event);
+
+        // Handle theme image changes (Story 2.5.3a)
+        // Check if themeImageUploadId was provided in the request (including null to clear it)
+        if (request.getThemeImageUploadId() != null) {
+            if (!request.getThemeImageUploadId().isBlank()) {
+                // Associate new theme image
+                associateThemeImage(patchedEvent, request.getThemeImageUploadId());
+                // Reload event to get updated themeImageUrl from database
+                patchedEvent = eventRepository.findByEventCode(patchedEvent.getEventCode())
+                        .orElseThrow(() -> new EventNotFoundException("Event not found after theme image association"));
+            } else {
+                // Clear theme image (blank/empty string means remove)
+                log.info("Clearing theme image for event: {}", eventCode);
+                patchedEvent.setThemeImageUploadId(null);
+                patchedEvent.setThemeImageUrl(null);
+                patchedEvent = eventRepository.save(patchedEvent);
+            }
+
+            // Manually evict cache after theme image changes (Story 2.5.3a)
+            // The @CacheEvict on the method runs before these operations, so we need to evict again
+            Cache cache = cacheManager.getCache(CacheConfig.EVENT_WITH_INCLUDES_CACHE);
+            if (cache != null) {
+                cache.clear();
+                log.debug("Cache cleared after theme image changes for event: {}", eventCode);
+            }
+        }
 
         // Publish domain event (Story 2.2: Architecture Compliance)
         try {
@@ -811,7 +917,18 @@ public class EventController {
             event.setTitle(request.getTitle());
         }
         if (request.getEventNumber() != null) {
+            // Validate that the new event number is not already in use by another event
+            if (!request.getEventNumber().equals(event.getEventNumber())) {
+                Optional<Event> existingEvent = eventRepository.findByEventNumber(request.getEventNumber());
+                if (existingEvent.isPresent() && !existingEvent.get().getId().equals(event.getId())) {
+                    throw new BusinessValidationException("Event number " + request.getEventNumber() + " is already in use by event " + existingEvent.get().getEventCode());
+                }
+            }
             event.setEventNumber(request.getEventNumber());
+            // Regenerate eventCode when eventNumber changes
+            String newEventCode = "BATbern" + request.getEventNumber();
+            event.setEventCode(newEventCode);
+            log.info("Event number updated to {}, regenerated eventCode to: {}", request.getEventNumber(), newEventCode);
         }
         if (request.getDate() != null) {
             event.setDate(parseDate(request.getDate()));
@@ -845,6 +962,10 @@ public class EventController {
         }
         if (request.getDescription() != null) {
             event.setDescription(request.getDescription());
+        }
+        // Story 2.5.3a: Set theme image upload ID (association happens after save in PATCH handler)
+        if (request.getThemeImageUploadId() != null && !request.getThemeImageUploadId().isBlank()) {
+            event.setThemeImageUploadId(request.getThemeImageUploadId());
         }
     }
 
@@ -888,5 +1009,59 @@ public class EventController {
         analytics.put("eventCode", eventCode);
 
         return ResponseEntity.ok(analytics);
+    }
+
+    /**
+     * Associate theme image with event
+     * Story 2.5.3a: Event Theme Image Upload
+     *
+     * @param event Event entity to associate image with
+     * @param uploadId Upload ID from three-phase upload pattern
+     */
+    private void associateThemeImage(Event event, String uploadId) {
+        log.info("Starting theme image association for event {} with uploadId {}", event.getEventCode(), uploadId);
+        try {
+            // Fetch Logo to get file extension (Story 2.5.3a: preserve original file type)
+            Logo logo = logoRepository.findByUploadId(uploadId)
+                    .orElseThrow(() -> new RuntimeException("Logo not found for uploadId: " + uploadId));
+
+            String fileExtension = logo.getFileExtension();
+            log.info("Retrieved file extension from Logo: {}", fileExtension);
+
+            // Generate final S3 key with correct file extension
+            int year = java.time.LocalDate.now().getYear();
+            String finalS3Key = String.format(
+                "logos/%d/events/%s/theme-%s.%s",
+                year,
+                event.getEventCode(),
+                uploadId,
+                fileExtension
+            );
+            log.info("Generated final S3 key: {}", finalS3Key);
+
+            // Call GenericLogoService to associate
+            log.info("Calling GenericLogoService.associateLogoWithEntity...");
+            String cloudFrontUrl = genericLogoService.associateLogoWithEntity(
+                uploadId,
+                "EVENT",
+                event.getEventCode(),
+                finalS3Key
+            );
+            log.info("GenericLogoService returned CloudFront URL: {}", cloudFrontUrl);
+
+            // Update event with CloudFront URL
+            event.setThemeImageUrl(cloudFrontUrl);
+            log.info("Set themeImageUrl on event entity: {}", cloudFrontUrl);
+
+            Event savedEvent = eventRepository.save(event);
+            log.info("Saved event to database. themeImageUrl in saved entity: {}", savedEvent.getThemeImageUrl());
+
+            log.info("Theme image associated successfully for event {}: {}", event.getEventCode(), cloudFrontUrl);
+
+        } catch (Exception e) {
+            log.error("FAILED to associate theme image for event {} with uploadId {}: {}",
+                    event.getEventCode(), uploadId, e.getMessage(), e);
+            // Don't fail event creation - theme image is optional
+        }
     }
 }
