@@ -2,10 +2,12 @@ package ch.batbern.events.controller;
 
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.dto.CreateSessionRequest;
+import ch.batbern.events.dto.SessionResponse;
 import ch.batbern.events.dto.UpdateSessionRequest;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.events.service.SessionService;
 import ch.batbern.shared.api.*;
 import ch.batbern.shared.exception.ValidationException;
 import ch.batbern.shared.service.SlugGenerationService;
@@ -49,6 +51,9 @@ public class SessionController {
 
     @Autowired
     private SlugGenerationService slugGenerationService;
+
+    @Autowired
+    private SessionService sessionService;
 
     /**
      * AC9: List sessions for an event with optional filtering
@@ -111,12 +116,39 @@ public class SessionController {
     }
 
     /**
+     * Get a single session by sessionSlug
+     * Story 1.15a.1b: Returns SessionResponse with speakers array
+     * GET /api/v1/events/{eventCode}/sessions/{sessionSlug}
+     *
+     * @param eventCode Event code (for API consistency, not used in lookup)
+     * @param sessionSlug Session slug (globally unique identifier)
+     * @param expand Optional expand parameter (e.g., "speakers")
+     * @return SessionResponse with optional speaker details
+     */
+    @GetMapping("/{sessionSlug}")
+    public ResponseEntity<SessionResponse> getSession(
+            @PathVariable String eventCode,
+            @PathVariable String sessionSlug,
+            @RequestParam(required = false) String expand) {
+
+        // Find session by slug (globally unique, no need for eventCode in query)
+        Session session = sessionRepository.findBySessionSlug(sessionSlug)
+                .orElseThrow(() -> new EventNotFoundException("Session not found: " + sessionSlug));
+
+        // Convert to SessionResponse with speakers (Story 1.15a.1b)
+        SessionResponse response = sessionService.toSessionResponse(session, eventCode);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * AC10: Create a new session for an event
      * Story 1.16.2: Auto-generates sessionSlug from title
+     * Story 1.15a.1b: Returns SessionResponse with speakers array
      * POST /api/v1/events/{eventCode}/sessions
      */
     @PostMapping
-    public ResponseEntity<Session> createSession(
+    public ResponseEntity<SessionResponse> createSession(
             @PathVariable String eventCode,
             @Valid @RequestBody CreateSessionRequest request) {
 
@@ -147,9 +179,11 @@ public class SessionController {
                 .build();
 
         Session savedSession = sessionRepository.save(session);
-        savedSession.setEventCode(eventCode); // Set for API response
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedSession);
+        // Convert to SessionResponse with speakers (Story 1.15a.1b)
+        SessionResponse response = sessionService.toSessionResponse(savedSession, eventCode);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     /**
@@ -158,7 +192,7 @@ public class SessionController {
      * PUT /api/v1/events/{eventCode}/sessions/{sessionSlug}
      */
     @PutMapping("/{sessionSlug}")
-    public ResponseEntity<Session> updateSession(
+    public ResponseEntity<SessionResponse> updateSession(
             @PathVariable String eventCode,
             @PathVariable String sessionSlug,
             @Valid @RequestBody UpdateSessionRequest request) {
@@ -188,9 +222,11 @@ public class SessionController {
         session.setLanguage(request.getLanguage());
 
         Session updatedSession = sessionRepository.save(session);
-        updatedSession.setEventCode(eventCode); // Set for API response
 
-        return ResponseEntity.ok(updatedSession);
+        // Convert to SessionResponse with speakers (Story 1.15a.1b)
+        SessionResponse response = sessionService.toSessionResponse(updatedSession, eventCode);
+
+        return ResponseEntity.ok(response);
     }
 
     /**

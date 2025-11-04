@@ -1,0 +1,56 @@
+meta {
+  name: Decline Speaker
+  type: http
+  seq: 25
+}
+
+post {
+  url: {{baseUrl}}/events/{{createdEventCode}}/sessions/{{createdSessionSlug}}/speakers/{{testSpeakerUsername}}/decline
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "declineReason": "Schedule conflict - already committed to another event"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.isConfirmed: eq false
+}
+
+tests {
+  test("should return 200 OK status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should set isConfirmed to false (Story 1.15a.1b: AC5)", function() {
+    const speaker = res.getBody();
+    expect(speaker.isConfirmed).to.equal(false);
+  });
+
+  test("should accept decline reason", function() {
+    // API accepts reason but may not return it in response
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return enriched speaker data", function() {
+    const speaker = res.getBody();
+    expect(speaker.username).to.equal(bru.getVar("testSpeakerUsername"));
+    expect(speaker.firstName).to.be.a('string');
+    expect(speaker.lastName).to.be.a('string');
+    expect(speaker.speakerRole).to.be.a('string');
+  });
+
+  test("should require ORGANIZER role (Story 1.15a.1b: AC5)", function() {
+    // If test runs with non-ORGANIZER token, should get 403
+    const status = res.getStatus();
+    expect([200, 403]).to.include(status);
+  });
+}

@@ -15,11 +15,7 @@
 import React, { useState } from 'react';
 import { Paper, Typography, Button, Stack, Box, CircularProgress, Alert } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import {
-  Add as AddIcon,
-  Analytics as AnalyticsIcon,
-  People as PeopleIcon,
-} from '@mui/icons-material';
+import { Add as AddIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useEvents, useCriticalTasks, useTeamActivity } from '@/hooks/useEvents';
@@ -81,14 +77,6 @@ export const EventManagementDashboard: React.FC = () => {
     openCreateModal();
   };
 
-  const handleNavigateToAnalytics = () => {
-    navigate('/organizer/analytics');
-  };
-
-  const handleNavigateToSpeakers = () => {
-    navigate('/organizer/speakers');
-  };
-
   const handleTaskAction = (taskId: string, actionId: string) => {
     console.log('Task action:', taskId, actionId);
     // TODO: Implement task action handling
@@ -123,32 +111,14 @@ export const EventManagementDashboard: React.FC = () => {
         </Typography>
 
         {/* Quick Actions */}
-        <Stack direction="row" spacing={1}>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleNewEvent}
-            aria-label="Create new event"
-          >
-            {t('dashboard.actions.newEvent')}
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<AnalyticsIcon />}
-            onClick={handleNavigateToAnalytics}
-            aria-label="View analytics"
-          >
-            {t('dashboard.actions.analytics')}
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<PeopleIcon />}
-            onClick={handleNavigateToSpeakers}
-            aria-label="Manage speakers"
-          >
-            {t('dashboard.actions.speakers')}
-          </Button>
-        </Stack>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={handleNewEvent}
+          aria-label="Create new event"
+        >
+          {t('dashboard.actions.newEvent')}
+        </Button>
       </Stack>
 
       {/* Search and Filters */}

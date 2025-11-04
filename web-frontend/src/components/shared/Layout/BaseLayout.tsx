@@ -8,7 +8,7 @@
  * Implements WCAG 2.1 AA accessibility with skip links and semantic HTML.
  */
 
-import { Box, Container, Link } from '@mui/material';
+import { Box, Container, Link, CssBaseline } from '@mui/material';
 import AppHeader from '../Navigation/AppHeader';
 import type { UserProfile } from '@/types/user';
 import type { NotificationsResponse } from '@/types/notification';
@@ -42,6 +42,7 @@ export function BaseLayout({ children, maxWidth = false, user, notifications }: 
         backgroundColor: 'background.default',
       }}
     >
+      <CssBaseline />
       {/* Skip to Main Content Link (WCAG 2.1 - Bypass Blocks) */}
       <Link
         href="#main-content"

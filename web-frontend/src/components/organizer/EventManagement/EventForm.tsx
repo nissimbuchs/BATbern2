@@ -37,39 +37,43 @@ import {
   Chip,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
-import { eventApiClient } from '@/services/eventApiClient';
+import { useCreateEvent, useUpdateEvent } from '@/hooks/useEvents';
 import type { Event, EventUI, CreateEventRequest, PatchEventRequest } from '@/types/event.types';
 import { useDebounce } from '@/hooks/useDebounce';
+import { FileUpload } from '@/components/shared/FileUpload/FileUpload';
 
 // Validation schema factory function (needs t function for translations)
 const createEventSchema = (t: (key: string) => string) =>
   z
     .object({
+      eventNumber: z.coerce
+        .number({ message: t('validation.eventNumberRequired') })
+        .positive(t('validation.eventNumberPositive')),
       title: z
         .string()
         .min(1, t('validation.titleRequired'))
         .min(10, t('validation.titleMinLength')),
       description: z.string().min(1, t('validation.descriptionRequired')),
-      date: z
-        .string()
-        .min(1, t('validation.eventDateRequired'))
-        .refine(
-          (val) => {
-            const date = new Date(val);
-            const minDate = new Date();
-            minDate.setDate(minDate.getDate() + 30);
-            return date >= minDate;
-          },
-          { message: t('validation.eventDateFuture') }
-        ),
+      date: z.string().min(1, t('validation.eventDateRequired')),
       registrationDeadline: z.string().optional().or(z.literal('')),
       venueName: z.string().min(1, t('validation.venueNameRequired')),
       venueAddress: z.string().min(1, t('validation.venueAddressRequired')),
       venueCapacity: z.coerce
         .number({ message: t('validation.capacityRequired') })
         .positive(t('validation.capacityPositive')),
+      status: z.enum([
+        'planning',
+        'topic_defined',
+        'speakers_invited',
+        'agenda_draft',
+        'published',
+        'registration_open',
+        'registration_closed',
+        'in_progress',
+        'completed',
+        'archived',
+      ]),
       // UI-only fields (will be stored in metadata)
       theme: z.string().optional().or(z.literal('')),
       eventType: z.enum(['full_day', 'afternoon', 'evening']).optional(),
@@ -79,9 +83,7 @@ const createEventSchema = (t: (key: string) => string) =>
         if (!data.registrationDeadline) return true;
         const eventDate = new Date(data.date);
         const deadline = new Date(data.registrationDeadline);
-        const minDeadline = new Date(eventDate);
-        minDeadline.setDate(minDeadline.getDate() - 7);
-        return deadline <= minDeadline;
+        return deadline <= eventDate;
       },
       {
         message: t('validation.registrationDeadline'),
@@ -91,6 +93,7 @@ const createEventSchema = (t: (key: string) => string) =>
 
 // Explicit type for form data (needed because z.infer doesn't handle complex transforms correctly)
 interface EventFormData {
+  eventNumber: number;
   title: string;
   description: string;
   date: string;
@@ -98,6 +101,7 @@ interface EventFormData {
   venueAddress: string;
   venueCapacity: number;
   registrationDeadline?: string;
+  status: 'planning' | 'topic_defined' | 'speakers_invited' | 'agenda_draft' | 'published' | 'registration_open' | 'registration_closed' | 'in_progress' | 'completed' | 'archived';
   theme?: string;
   eventType?: 'full_day' | 'afternoon' | 'evening';
 }
@@ -118,7 +122,11 @@ interface EventFormProps {
 export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose, onSuccess }) => {
   const { t } = useTranslation('events');
   const { user } = useAuth();
-  const queryClient = useQueryClient();
+
+  // Mutation hooks for proper cache management (MVC pattern)
+  const createEventMutation = useCreateEvent();
+  const updateEventMutation = useUpdateEvent();
+
   const [apiError, setApiError] = useState<string | null>(null);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>(
     'idle'
@@ -126,9 +134,22 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
   const [initialFormData, setInitialFormData] = useState<PartialEventFormData>({});
+  const [themeImageUploadId, setThemeImageUploadId] = useState<string | undefined>(undefined);
 
   // Check role-based access control
   const hasEditPermission = user?.role === 'organizer';
+
+  // Initialize themeImageUploadId when event changes or dialog opens
+  // themeImageUploadId is now included in Event response (Story 2.5.3a)
+  useEffect(() => {
+    if (open && mode === 'create') {
+      // Clear upload ID when creating new event
+      setThemeImageUploadId(undefined);
+    } else if (open && mode === 'edit' && event) {
+      // Initialize from event's upload ID when editing
+      setThemeImageUploadId(event.themeImageUploadId ?? undefined);
+    }
+  }, [event, open, mode]);
 
   // Create validation schema with translations
   const eventSchema = createEventSchema(t);
@@ -137,14 +158,15 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
     // NOTE: Type assertion required here due to Zod limitation
     // z.coerce.number() returns 'unknown' for input type, causing type mismatch with zodResolver
     // This is safe because:
-    // 1. EventFormData interface explicitly defines venueCapacity: number
-    // 2. Zod schema validates and coerces the value to number at runtime
-    // 3. The form will only accept/return EventFormData with venueCapacity as number
+    // 1. EventFormData interface explicitly defines venueCapacity: number and eventNumber: number
+    // 2. Zod schema validates and coerces the values to number at runtime
+    // 3. The form will only accept/return EventFormData with these fields as numbers
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(eventSchema) as any,
     mode: 'onBlur',
     defaultValues: event
       ? {
+          eventNumber: event.eventNumber || 1,
           title: event.title,
           description: event.description || '',
           date: event.date ? event.date.split('T')[0] : '',
@@ -152,10 +174,12 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
           venueName: event.venueName || '',
           venueAddress: event.venueAddress || '',
           venueCapacity: event.venueCapacity || 200,
+          status: event.status || 'planning',
           theme: (event as EventUI).theme || '',
           eventType: (event as EventUI).eventType || 'full_day',
         }
       : {
+          eventNumber: 1,
           title: '',
           description: '',
           date: '',
@@ -163,6 +187,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
           venueName: '',
           venueAddress: '',
           venueCapacity: 200,
+          status: 'planning' as const,
           theme: '',
           eventType: 'full_day',
         },
@@ -181,6 +206,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
   useEffect(() => {
     if (open && mode === 'create') {
       reset({
+        eventNumber: 1,
         title: '',
         description: '',
         date: '',
@@ -188,6 +214,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         venueName: '',
         venueAddress: '',
         venueCapacity: 200,
+        status: 'planning',
         theme: '',
         eventType: 'full_day',
       });
@@ -198,6 +225,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
   useEffect(() => {
     if (event) {
       setInitialFormData({
+        eventNumber: event.eventNumber || 1,
         title: event.title,
         description: event.description || '',
         date: event.date ? event.date.split('T')[0] : '',
@@ -205,6 +233,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         venueName: event.venueName || '',
         venueAddress: event.venueAddress || '',
         venueCapacity: event.venueCapacity || 200,
+        status: event.status || 'planning',
         theme: (event as EventUI).theme || '',
         eventType: (event as EventUI).eventType || 'full_day',
       });
@@ -245,10 +274,12 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
     setApiError(null);
 
     try {
-      // Convert form data to API request format (PatchEventRequest)
-      await eventApiClient.patchEvent(event.eventCode, changedFields as PatchEventRequest);
-      // Invalidate events cache to refresh all components showing events
-      await queryClient.invalidateQueries({ queryKey: ['events'] });
+      // Use mutation hook for proper cache management (MVC pattern)
+      // This ensures all event caches (list, detail, current) are invalidated
+      await updateEventMutation.mutateAsync({
+        eventCode: event.eventCode,
+        data: changedFields as PatchEventRequest,
+      });
       setAutoSaveStatus('saved');
       setLastSavedAt(new Date());
       setInitialFormData(getValues()); // Update initial data after successful save
@@ -274,10 +305,9 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
     try {
       // IMPORTANT: Backend expects organizerUsername (String) per Story 1.16.2
       // OpenAPI spec updated to use username as public identifier
-      // NOTE: Do NOT send eventNumber - backend will auto-generate both eventNumber and eventCode
       const createData = {
         title: data.title,
-        // eventNumber: REMOVED - backend auto-generates to avoid "BATbern0" collision
+        eventNumber: data.eventNumber,
         date: new Date(data.date).toISOString(),
         registrationDeadline: data.registrationDeadline
           ? new Date(data.registrationDeadline).toISOString()
@@ -285,7 +315,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         venueName: data.venueName,
         venueAddress: data.venueAddress,
         venueCapacity: data.venueCapacity,
-        status: isDraft ? 'planning' : 'topic_defined',
+        status: isDraft ? 'planning' : data.status,
         organizerUsername: user.username, // Use username (e.g., "john.doe")
         currentAttendeeCount: 0,
         description: data.description || undefined,
@@ -293,11 +323,11 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
           data.theme || data.eventType
             ? JSON.stringify({ theme: data.theme, eventType: data.eventType })
             : undefined,
+        themeImageUploadId: themeImageUploadId || undefined, // Story 2.5.3a
       } as CreateEventRequest;
 
-      await eventApiClient.createEvent(createData);
-      // Invalidate events cache to refresh all components showing events
-      await queryClient.invalidateQueries({ queryKey: ['events'] });
+      // Use mutation hook for proper cache management (MVC pattern)
+      await createEventMutation.mutateAsync(createData);
       onSuccess?.();
       onClose();
     } catch (error: unknown) {
@@ -313,14 +343,23 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
 
     try {
       const changedFields = getChangedFields(data);
+
+      // Add themeImageUploadId if a new image was uploaded during this edit session
+      // themeImageUploadId is only set when FileUpload component successfully uploads
+      if (themeImageUploadId !== undefined) {
+        (changedFields as any).themeImageUploadId = themeImageUploadId;
+      }
+
       if (Object.keys(changedFields).length === 0) {
         onClose();
         return;
       }
 
-      await eventApiClient.patchEvent(event.eventCode, changedFields as PatchEventRequest);
-      // Invalidate events cache to refresh all components showing events
-      await queryClient.invalidateQueries({ queryKey: ['events'] });
+      // Use mutation hook for proper cache management (MVC pattern)
+      await updateEventMutation.mutateAsync({
+        eventCode: event.eventCode,
+        data: changedFields as PatchEventRequest,
+      });
       onSuccess?.();
       onClose();
     } catch (error: unknown) {
@@ -407,20 +446,38 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
               </Box>
             )}
 
-            <Controller
-              name="title"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label={t('form.title')}
-                  fullWidth
-                  error={!!errors.title}
-                  helperText={errors.title?.message}
-                  margin="normal"
-                />
-              )}
-            />
+            {/* Event Number and Title side-by-side */}
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Controller
+                name="eventNumber"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label={t('form.eventNumber')}
+                    type="number"
+                    error={!!errors.eventNumber}
+                    helperText={errors.eventNumber?.message}
+                    margin="normal"
+                    sx={{ width: '150px' }}
+                  />
+                )}
+              />
+              <Controller
+                name="title"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label={t('form.title')}
+                    fullWidth
+                    error={!!errors.title}
+                    helperText={errors.title?.message}
+                    margin="normal"
+                  />
+                )}
+              />
+            </Box>
 
             <Controller
               name="description"
@@ -439,69 +496,96 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
               )}
             />
 
-            <Controller
-              name="date"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label={t('form.eventDate')}
-                  type="date"
-                  fullWidth
-                  error={!!errors.date}
-                  helperText={errors.date?.message}
-                  margin="normal"
-                  InputLabelProps={{ shrink: true }}
-                />
-              )}
-            />
+            {/* Event Date and Registration Deadline side-by-side */}
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Controller
+                name="date"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label={t('form.eventDate')}
+                    type="date"
+                    fullWidth
+                    error={!!errors.date}
+                    helperText={errors.date?.message}
+                    margin="normal"
+                    slotProps={{ inputLabel: { shrink: true } }}
+                  />
+                )}
+              />
+              <Controller
+                name="registrationDeadline"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label={t('form.registrationDeadline')}
+                    type="date"
+                    fullWidth
+                    error={!!errors.registrationDeadline}
+                    helperText={errors.registrationDeadline?.message}
+                    margin="normal"
+                    slotProps={{ inputLabel: { shrink: true } }}
+                  />
+                )}
+              />
+            </Box>
+
+            {/* Event Type and Venue Capacity side-by-side */}
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Controller
+                name="eventType"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth margin="normal" error={!!errors.eventType}>
+                    <InputLabel>{t('form.eventType')}</InputLabel>
+                    <Select {...field} label={t('form.eventType')}>
+                      <MenuItem value="full_day">{t('form.eventTypes.fullDay')}</MenuItem>
+                      <MenuItem value="afternoon">{t('form.eventTypes.afternoon')}</MenuItem>
+                      <MenuItem value="evening">{t('form.eventTypes.evening')}</MenuItem>
+                    </Select>
+                    {errors.eventType && <FormHelperText>{errors.eventType.message}</FormHelperText>}
+                  </FormControl>
+                )}
+              />
+              <Controller
+                name="venueCapacity"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label={t('form.capacity')}
+                    type="number"
+                    fullWidth
+                    error={!!errors.venueCapacity}
+                    helperText={errors.venueCapacity?.message}
+                    margin="normal"
+                  />
+                )}
+              />
+            </Box>
 
             <Controller
-              name="registrationDeadline"
+              name="status"
               control={control}
               render={({ field }) => (
-                <TextField
-                  {...field}
-                  label={t('form.registrationDeadline')}
-                  type="date"
-                  fullWidth
-                  error={!!errors.registrationDeadline}
-                  helperText={errors.registrationDeadline?.message}
-                  margin="normal"
-                  InputLabelProps={{ shrink: true }}
-                />
-              )}
-            />
-
-            <Controller
-              name="eventType"
-              control={control}
-              render={({ field }) => (
-                <FormControl fullWidth margin="normal" error={!!errors.eventType}>
-                  <InputLabel>{t('form.eventType')}</InputLabel>
-                  <Select {...field} label={t('form.eventType')}>
-                    <MenuItem value="full_day">{t('form.eventTypes.fullDay')}</MenuItem>
-                    <MenuItem value="afternoon">{t('form.eventTypes.afternoon')}</MenuItem>
-                    <MenuItem value="evening">{t('form.eventTypes.evening')}</MenuItem>
+                <FormControl fullWidth margin="normal" error={!!errors.status}>
+                  <InputLabel>{t('form.status')}</InputLabel>
+                  <Select {...field} label={t('form.status')}>
+                    <MenuItem value="planning">{t('form.statusValues.planning')}</MenuItem>
+                    <MenuItem value="topic_defined">{t('form.statusValues.topicDefined')}</MenuItem>
+                    <MenuItem value="speakers_invited">{t('form.statusValues.speakersInvited')}</MenuItem>
+                    <MenuItem value="agenda_draft">{t('form.statusValues.agendaDraft')}</MenuItem>
+                    <MenuItem value="published">{t('form.statusValues.published')}</MenuItem>
+                    <MenuItem value="registration_open">{t('form.statusValues.registrationOpen')}</MenuItem>
+                    <MenuItem value="registration_closed">{t('form.statusValues.registrationClosed')}</MenuItem>
+                    <MenuItem value="in_progress">{t('form.statusValues.inProgress')}</MenuItem>
+                    <MenuItem value="completed">{t('form.statusValues.completed')}</MenuItem>
+                    <MenuItem value="archived">{t('form.statusValues.archived')}</MenuItem>
                   </Select>
-                  {errors.eventType && <FormHelperText>{errors.eventType.message}</FormHelperText>}
+                  {errors.status && <FormHelperText>{errors.status.message}</FormHelperText>}
                 </FormControl>
-              )}
-            />
-
-            <Controller
-              name="venueCapacity"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label={t('form.capacity')}
-                  type="number"
-                  fullWidth
-                  error={!!errors.venueCapacity}
-                  helperText={errors.venueCapacity?.message}
-                  margin="normal"
-                />
               )}
             />
 
@@ -540,6 +624,28 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                 <TextField {...field} label={t('form.theme')} fullWidth margin="normal" />
               )}
             />
+
+            {/* Theme Image Upload - Story 2.5.3a */}
+            <Box sx={{ mt: 3, pt: 3, borderTop: 1, borderColor: 'divider' }}>
+              <Typography variant="subtitle2" gutterBottom>
+                {t('form.themeImage')}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                {t('form.themeImageHelp')}
+              </Typography>
+              <FileUpload
+                currentFileUrl={event?.themeImageUrl ?? undefined}
+                onUploadSuccess={(data) => setThemeImageUploadId(data.uploadId)}
+                onUploadError={(error) => {
+                  setApiError(t(`errors.${error.type}`, { defaultValue: error.message }));
+                }}
+                onFileRemove={() => setThemeImageUploadId('')}
+                maxFileSize={5 * 1024 * 1024}
+                allowedTypes={['image/png', 'image/jpeg', 'image/svg+xml']}
+                altText={t('form.themeImageAlt')}
+                removeButtonLabel={t('form.removeThemeImage')}
+              />
+            </Box>
           </Box>
         </DialogContent>
         <DialogActions>

@@ -49,6 +49,13 @@ management:
     build:
       enabled: true
 
+# AWS Configuration
+aws:
+  s3:
+    bucket-name: ${AWS_S3_BUCKET_NAME:batbern-development-company-logos}
+  cloudfront:
+    domain: ${CLOUDFRONT_DOMAIN:https://cdn.batbern.ch}
+
 # Application Info (exposed via /actuator/info)
 info:
   app:
@@ -64,6 +71,19 @@ info:
       id: ${git.commit.id.abbrev:unknown}
       time: ${git.commit.time:unknown}
     branch: ${git.branch:unknown}
+
+---
+# Local Development Profile
+spring:
+  config:
+    activate:
+      on-profile: local
+
+aws:
+  s3:
+    bucket-name: ${AWS_S3_BUCKET_NAME:batbern-development-company-logos}
+  cloudfront:
+    domain: ${CLOUDFRONT_DOMAIN:http://localhost:9000}
 
 ---
 # Test Profile Configuration
