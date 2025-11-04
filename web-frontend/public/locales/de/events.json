@@ -95,6 +95,8 @@
   "form": {
     "createEvent": "Neue Veranstaltung erstellen",
     "editEvent": "Veranstaltung bearbeiten",
+    "eventNumber": "Veranstaltungsnummer",
+    "eventInformation": "Veranstaltungsinformationen",
     "title": "Titel",
     "description": "Beschreibung",
     "eventDate": "Veranstaltungsdatum",
@@ -104,6 +106,7 @@
     "venue": "Veranstaltungsort",
     "venueAddress": "Adresse des Veranstaltungsorts",
     "theme": "Thema",
+    "status": "Status",
     "save": "Speichern",
     "saveAndCreate": "Speichern & Erstellen",
     "saveCreate": "Speichern & Erstellen",
@@ -116,7 +119,23 @@
       "fullDay": "Ganztägig",
       "afternoon": "Nachmittag",
       "evening": "Abend"
-    }
+    },
+    "statusValues": {
+      "planning": "Planung",
+      "topicDefined": "Thema definiert",
+      "speakersInvited": "Referenten eingeladen",
+      "agendaDraft": "Agenda Entwurf",
+      "published": "Veröffentlicht",
+      "registrationOpen": "Anmeldung offen",
+      "registrationClosed": "Anmeldung geschlossen",
+      "inProgress": "In Arbeit",
+      "completed": "Abgeschlossen",
+      "archived": "Archiviert"
+    },
+    "themeImage": "Veranstaltungs-Themenbild",
+    "themeImageHelp": "Laden Sie ein Themenbild für diese Veranstaltung hoch (PNG, JPEG oder SVG, max. 5MB). Empfohlene Größe: 1920x400px.",
+    "themeImageAlt": "Themenbild für Veranstaltung",
+    "removeThemeImage": "Themenbild entfernen"
   },
   "eventTypes": {
     "full_day": "Ganztägig",
@@ -158,12 +177,14 @@
     "descending": "Absteigend"
   },
   "validation": {
+    "eventNumberRequired": "Veranstaltungsnummer ist erforderlich",
+    "eventNumberPositive": "Veranstaltungsnummer muss eine positive Zahl sein",
     "titleRequired": "Titel ist erforderlich",
     "titleMinLength": "Titel muss mindestens 10 Zeichen lang sein",
     "descriptionRequired": "Beschreibung ist erforderlich",
     "eventDateRequired": "Veranstaltungsdatum ist erforderlich",
     "eventDateFuture": "Veranstaltungsdatum muss mindestens 30 Tage in der Zukunft liegen",
-    "registrationDeadline": "Anmeldefrist muss mindestens 7 Tage vor der Veranstaltung sein",
+    "registrationDeadline": "Anmeldefrist muss am oder vor dem Veranstaltungsdatum sein",
     "capacityRequired": "Kapazität ist erforderlich",
     "capacityPositive": "Kapazität muss eine positive Zahl sein",
     "venueRequired": "Veranstaltungsort ist erforderlich",
@@ -180,7 +201,13 @@
     "serviceError": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
     "networkError": "Netzwerkfehler. Bitte überprüfen Sie Ihre Verbindung.",
     "correlationId": "Korrelations-ID",
-    "retry": "Erneut versuchen"
+    "retry": "Erneut versuchen",
+    "imageUploadFailed": "Fehler beim Hochladen des Themenbilds",
+    "imageTooBig": "Bilddatei ist zu groß (max. 5MB)",
+    "imageInvalidType": "Ungültiger Bildtyp (verwenden Sie PNG, JPEG oder SVG)",
+    "MULTIPLE_FILES": "Bitte laden Sie nur eine Datei gleichzeitig hoch",
+    "FILE_TOO_LARGE": "Dateigröße überschreitet das 5MB-Limit",
+    "INVALID_FILE_TYPE": "Ungültiger Dateityp. Bitte laden Sie nur PNG-, JPEG- oder SVG-Bilder hoch"
   },
   "confirmations": {
     "deleteTitle": "Veranstaltung löschen?",
@@ -361,7 +388,8 @@
     "viewTimeline": "Zeitachse anzeigen",
     "exportData": "Daten exportieren",
     "refresh": "Aktualisieren",
-    "back": "Zurück"
+    "back": "Zurück",
+    "deleteEvent": "Veranstaltung löschen"
   },
   "messages": {
     "draftSaved": "Entwurf gespeichert",
@@ -384,6 +412,9 @@
     "cancel": "Abbrechen",
     "confirm": "Bestätigen",
     "save": "Speichern",
+    "saveChanges": "Änderungen speichern",
+    "saveAndContinue": "Speichern & Fortfahren",
+    "settings": "Einstellungen",
     "delete": "Löschen",
     "edit": "Bearbeiten",
     "close": "Schließen",
@@ -393,5 +424,16 @@
     "loading": "Lädt...",
     "error": "Fehler",
     "success": "Erfolg"
+  },
+  "metrics": {
+    "speakers": "Referenten",
+    "confirmed": "bestätigt",
+    "topics": "Themen",
+    "assigned": "zugewiesen",
+    "materials": "Materialien",
+    "pending": "ausstehend",
+    "registrations": "Anmeldungen",
+    "budget": "Budget",
+    "keyMetrics": "Kennzahlen"
   }
 }

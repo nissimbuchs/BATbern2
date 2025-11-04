@@ -95,6 +95,8 @@
   "form": {
     "createEvent": "Create New Event",
     "editEvent": "Edit Event",
+    "eventNumber": "Event Number",
+    "eventInformation": "Event Information",
     "title": "Title",
     "description": "Description",
     "eventDate": "Event Date",
@@ -104,6 +106,7 @@
     "venue": "Venue Name",
     "venueAddress": "Venue Address",
     "theme": "Theme",
+    "status": "Status",
     "save": "Save",
     "saveAndCreate": "Save & Create",
     "saveCreate": "Save & Create",
@@ -116,7 +119,23 @@
       "fullDay": "Full Day",
       "afternoon": "Afternoon",
       "evening": "Evening"
-    }
+    },
+    "statusValues": {
+      "planning": "Planning",
+      "topicDefined": "Topic Defined",
+      "speakersInvited": "Speakers Invited",
+      "agendaDraft": "Agenda Draft",
+      "published": "Published",
+      "registrationOpen": "Registration Open",
+      "registrationClosed": "Registration Closed",
+      "inProgress": "In Progress",
+      "completed": "Completed",
+      "archived": "Archived"
+    },
+    "themeImage": "Event Theme Image",
+    "themeImageHelp": "Upload a theme image for this event (PNG, JPEG, or SVG, max 5MB). Recommended size: 1920x400px.",
+    "themeImageAlt": "Theme image for event",
+    "removeThemeImage": "Remove theme image"
   },
   "eventTypes": {
     "full_day": "Full Day",
@@ -158,12 +177,14 @@
     "descending": "Descending"
   },
   "validation": {
+    "eventNumberRequired": "Event number is required",
+    "eventNumberPositive": "Event number must be a positive number",
     "titleRequired": "Title is required",
     "titleMinLength": "Title must be at least 10 characters long",
     "descriptionRequired": "Description is required",
     "eventDateRequired": "Event date is required",
     "eventDateFuture": "Event date must be at least 30 days in the future",
-    "registrationDeadline": "Registration deadline must be at least 7 days before the event",
+    "registrationDeadline": "Registration deadline must be on or before the event date",
     "capacityRequired": "Capacity is required",
     "capacityPositive": "Capacity must be a positive number",
     "venueRequired": "Venue is required",
@@ -180,7 +201,13 @@
     "serviceError": "An unexpected error occurred. Please try again.",
     "networkError": "Network error. Please check your connection.",
     "correlationId": "Correlation ID",
-    "retry": "Retry"
+    "retry": "Retry",
+    "imageUploadFailed": "Failed to upload theme image",
+    "imageTooBig": "Image file is too large (max 5MB)",
+    "imageInvalidType": "Invalid image type (use PNG, JPEG, or SVG)",
+    "MULTIPLE_FILES": "Please upload only one file at a time",
+    "FILE_TOO_LARGE": "File size exceeds 5MB limit",
+    "INVALID_FILE_TYPE": "Invalid file type. Please upload PNG, JPEG, or SVG images only"
   },
   "confirmations": {
     "deleteTitle": "Delete Event?",
@@ -361,7 +388,8 @@
     "viewTimeline": "View Timeline",
     "exportData": "Export Data",
     "refresh": "Refresh",
-    "back": "Back"
+    "back": "Back",
+    "deleteEvent": "Delete Event"
   },
   "messages": {
     "draftSaved": "Draft saved",
@@ -384,6 +412,9 @@
     "cancel": "Cancel",
     "confirm": "Confirm",
     "save": "Save",
+    "saveChanges": "Save Changes",
+    "saveAndContinue": "Save & Continue",
+    "settings": "Settings",
     "delete": "Delete",
     "edit": "Edit",
     "close": "Close",
@@ -393,5 +424,16 @@
     "loading": "Loading...",
     "error": "Error",
     "success": "Success"
+  },
+  "metrics": {
+    "speakers": "Speakers",
+    "confirmed": "confirmed",
+    "topics": "Topics",
+    "assigned": "assigned",
+    "materials": "Materials",
+    "pending": "pending",
+    "registrations": "Registrations",
+    "budget": "Budget",
+    "keyMetrics": "Key Metrics"
   }
 }
