@@ -18,8 +18,10 @@ import { OpenGraphTags } from '@/components/SEO/OpenGraphTags';
 import { TestimonialSection } from '@/components/public/Testimonials/TestimonialSection';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const HomePage = () => {
+  const { t } = useTranslation('events');
   const { data: event, isLoading, error } = useCurrentEvent();
 
   // Loading state
@@ -39,10 +41,10 @@ const HomePage = () => {
       <PublicLayout>
         <div className="container mx-auto px-4 py-24 text-center">
           <h2 className="text-2xl font-light text-zinc-300">
-            {error ? 'Failed to load event' : 'No current event available'}
+            {error ? t('public.errors.loadFailed') : t('public.errors.noEvent')}
           </h2>
           <p className="mt-4 text-zinc-400">
-            Please check back later for upcoming events.
+            {t('public.errors.checkBackLater')}
           </p>
         </div>
       </PublicLayout>
@@ -50,7 +52,7 @@ const HomePage = () => {
   }
 
   // Fallback values
-  const eventTitle = event.title || 'Coming soon...';
+  const eventTitle = event.title || t('public.comingSoon');
   const registerLink = event.eventCode ? `/register/${event.eventCode}` : '/register';
   const eventDate = event.date;
   const eventLocation = event.venueName;
@@ -82,7 +84,7 @@ const HomePage = () => {
       <div className="container mx-auto px-4">
         {/* Event Logistics */}
         <div className="mt-12 bg-zinc-900/50 rounded-lg border border-zinc-800 p-8">
-          <h3 className="text-xl font-light text-zinc-100 mb-6">Event Details</h3>
+          <h3 className="text-xl font-light text-zinc-100 mb-6">{t('public.logistics.title')}</h3>
           <EventLogistics event={event} />
         </div>
 

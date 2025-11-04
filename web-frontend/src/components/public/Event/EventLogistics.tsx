@@ -6,12 +6,14 @@
 import { Calendar, Clock, MapPin, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import type { EventDetail } from '@/types/event.types';
+import { useTranslation } from 'react-i18next';
 
 interface EventLogisticsProps {
   event: EventDetail;
 }
 
 export const EventLogistics = ({ event }: EventLogisticsProps) => {
+  const { t } = useTranslation('events');
   // Parse date string to Date object
   const eventDate = event.date ? new Date(event.date) : null;
 
@@ -26,7 +28,7 @@ export const EventLogistics = ({ event }: EventLogisticsProps) => {
         <div className="flex items-start gap-3">
           <Calendar className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
           <div>
-            <p className="text-sm text-zinc-400">Date</p>
+            <p className="text-sm text-zinc-400">{t('public.logistics.date')}</p>
             <p className="text-lg font-light text-zinc-100">
               {format(eventDate, 'PPP')}
             </p>
@@ -39,7 +41,7 @@ export const EventLogistics = ({ event }: EventLogisticsProps) => {
         <div className="flex items-start gap-3">
           <Clock className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
           <div>
-            <p className="text-sm text-zinc-400">Time</p>
+            <p className="text-sm text-zinc-400">{t('public.logistics.time')}</p>
             <p className="text-lg font-light text-zinc-100">
               {startTime}h - {endTime}h
             </p>
@@ -52,7 +54,7 @@ export const EventLogistics = ({ event }: EventLogisticsProps) => {
         <div className="flex items-start gap-3">
           <MapPin className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
           <div>
-            <p className="text-sm text-zinc-400">Location</p>
+            <p className="text-sm text-zinc-400">{t('public.logistics.location')}</p>
             <p className="text-lg font-light text-zinc-100">{event.venueName}</p>
             {event.venueAddress && (
               <p className="text-sm text-zinc-500 mt-1">{event.venueAddress.split(',')[0]}</p>
@@ -66,7 +68,7 @@ export const EventLogistics = ({ event }: EventLogisticsProps) => {
         <div className="flex items-start gap-3">
           <Users className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
           <div>
-            <p className="text-sm text-zinc-400">Capacity</p>
+            <p className="text-sm text-zinc-400">{t('public.logistics.capacity')}</p>
             <p className="text-lg font-light text-zinc-100">
               {event.currentAttendeeCount || 0} / {event.venueCapacity}
             </p>

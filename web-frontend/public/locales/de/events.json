@@ -437,6 +437,19 @@
     "keyMetrics": "Kennzahlen"
   },
   "public": {
+    "comingSoon": "Demnächst...",
+    "logistics": {
+      "title": "Veranstaltungsdetails",
+      "date": "Datum",
+      "time": "Zeit",
+      "location": "Ort",
+      "capacity": "Kapazität"
+    },
+    "errors": {
+      "loadFailed": "Veranstaltung konnte nicht geladen werden",
+      "noEvent": "Keine aktuelle Veranstaltung verfügbar",
+      "checkBackLater": "Bitte schauen Sie später für kommende Veranstaltungen vorbei."
+    },
     "speakers": {
       "title": "Referenten",
       "speakerTBA": "Referent wird noch bekannt gegeben"

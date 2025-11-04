@@ -437,6 +437,19 @@
     "keyMetrics": "Key Metrics"
   },
   "public": {
+    "comingSoon": "Coming soon...",
+    "logistics": {
+      "title": "Event Details",
+      "date": "Date",
+      "time": "Time",
+      "location": "Location",
+      "capacity": "Capacity"
+    },
+    "errors": {
+      "loadFailed": "Failed to load event",
+      "noEvent": "No current event available",
+      "checkBackLater": "Please check back later for upcoming events."
+    },
     "speakers": {
       "title": "Speakers",
       "speakerTBA": "Speaker TBA"
