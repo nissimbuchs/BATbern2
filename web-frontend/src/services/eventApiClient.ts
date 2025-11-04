@@ -212,6 +212,44 @@ class EventApiClient {
   }
 
   /**
+   * Get current published event (PUBLIC ACCESS - Story 4.1.3)
+   *
+   * Retrieves the next upcoming published event for the public website.
+   * This method works with or without authentication (public endpoint).
+   *
+   * @param options Optional configuration for resource expansion
+   * @returns Current published event or null if none exists
+   */
+  async getCurrentEvent(options?: { expand?: string[] }): Promise<EventDetail | null> {
+    try {
+      const params = new URLSearchParams();
+      if (options?.expand && options.expand.length > 0) {
+        params.append('include', options.expand.join(','));
+      }
+
+      const url = params.toString()
+        ? `${EVENT_API_PATH}/current?${params.toString()}`
+        : `${EVENT_API_PATH}/current`;
+
+      const response = await apiClient.get<EventDetail>(url);
+      return response.data;
+    } catch (error) {
+      // Return null if no current event exists (404)
+      if (this.isAxiosError(error) && error.response?.status === 404) {
+        return null;
+      }
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Type guard for Axios errors
+   */
+  private isAxiosError(error: unknown): error is AxiosError {
+    return (error as AxiosError).isAxiosError === true;
+  }
+
+  /**
    * Client-side validation: Event date must be in the future
    */
   private validateEventDate(eventDate: string): void {

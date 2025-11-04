@@ -1,0 +1,57 @@
+meta {
+  name: List Session Speakers
+  type: http
+  seq: 22
+}
+
+get {
+  url: {{baseUrl}}/events/{{createdEventCode}}/sessions/{{createdSessionSlug}}/speakers
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("should return 200 OK status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return speakers array (Story 1.15a.1b: AC6)", function() {
+    const speakers = res.getBody();
+    expect(speakers).to.be.an('array');
+    expect(speakers.length).to.be.greaterThan(0);
+  });
+
+  test("should include enriched User data (Story 1.15a.1b: ADR-004)", function() {
+    const speakers = res.getBody();
+    const firstSpeaker = speakers[0];
+
+    // From User entity
+    expect(firstSpeaker.username).to.be.a('string');
+    expect(firstSpeaker.firstName).to.be.a('string');
+    expect(firstSpeaker.lastName).to.be.a('string');
+    expect(firstSpeaker.company).to.exist;
+
+    // From SessionUser entity
+    expect(firstSpeaker.speakerRole).to.be.a('string');
+    expect(['PRIMARY_SPEAKER', 'CO_SPEAKER', 'MODERATOR', 'PANELIST'])
+      .to.include(firstSpeaker.speakerRole);
+    expect(firstSpeaker.isConfirmed).to.be.a('boolean');
+  });
+
+  test("should be public endpoint (no auth required)", function() {
+    // This test passes if status is 200 without authentication
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should include presentation title if provided", function() {
+    const speakers = res.getBody();
+    const speakerWithTitle = speakers.find(s => s.presentationTitle);
+    if (speakerWithTitle) {
+      expect(speakerWithTitle.presentationTitle).to.be.a('string');
+    }
+  });
+}

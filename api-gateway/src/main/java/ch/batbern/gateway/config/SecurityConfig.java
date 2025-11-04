@@ -3,6 +3,7 @@ package ch.batbern.gateway.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -96,8 +97,10 @@ public class SecurityConfig {
 
     /**
      * Default security configuration
-     * Requires authentication for all requests except health checks
+     * Requires authentication for all requests except health checks and public endpoints
      * CSRF disabled: Stateless JWT API - tokens in headers, not cookies
+     *
+     * Story 4.1.3: Added public event discovery endpoints
      */
     @Bean
     @Profile("!test")
@@ -110,7 +113,19 @@ public class SecurityConfig {
                 // Stateless session - no cookies, no CSRF risk
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // System health endpoints
                         .requestMatchers("/actuator/health", "/actuator/info", "/api/v1/config").permitAll()
+
+                        // Story 4.1.3: Public event discovery endpoints (no auth required)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/events/current").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/events/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*").permitAll()
+
+                        // Story 1.15a.1b: Public speaker list endpoint (GET only, POST/DELETE require ORGANIZER)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*/speakers").permitAll()
+
+                        // All other requests require authentication
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> { }))

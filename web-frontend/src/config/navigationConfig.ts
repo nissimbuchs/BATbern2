@@ -15,6 +15,7 @@ import {
   EventAvailable,
   Business,
   ManageAccounts,
+  Public,
 } from '@mui/icons-material';
 
 export interface NavigationItem {
@@ -73,6 +74,13 @@ export const navigationConfig: NavigationItem[] = [
     roles: ['organizer'],
     description: 'View event analytics',
   },
+  {
+    labelKey: 'navigation.publicSite',
+    path: '/',
+    icon: Public,
+    roles: ['organizer'],
+    description: 'View public website',
+  },
 
   // Speaker-specific items
   {
@@ -110,6 +118,13 @@ export const navigationConfig: NavigationItem[] = [
     roles: ['speaker'],
     description: 'Your speaker profile',
   },
+  {
+    labelKey: 'navigation.publicSite',
+    path: '/',
+    icon: Public,
+    roles: ['speaker'],
+    description: 'View public website',
+  },
 
   // Partner-specific items
   {
@@ -140,6 +155,13 @@ export const navigationConfig: NavigationItem[] = [
     roles: ['partner'],
     description: 'Your partner profile',
   },
+  {
+    labelKey: 'navigation.publicSite',
+    path: '/',
+    icon: Public,
+    roles: ['partner'],
+    description: 'View public website',
+  },
 
   // Attendee-specific items
   {
@@ -162,6 +184,13 @@ export const navigationConfig: NavigationItem[] = [
     icon: EventAvailable,
     roles: ['attendee'],
     description: 'Your event registrations',
+  },
+  {
+    labelKey: 'navigation.publicSite',
+    path: '/',
+    icon: Public,
+    roles: ['attendee'],
+    description: 'View public website',
   },
 ];
 
