@@ -95,6 +95,12 @@ public class Event {
     @Column(name = "updated_by")
     private String updatedBy;
 
+    @Column(name = "theme_image_url", length = 1000)
+    private String themeImageUrl;
+
+    @Column(name = "theme_image_upload_id", length = 100)
+    private String themeImageUploadId;
+
     @PrePersist
     protected void onCreate() {
         Instant now = Instant.now();

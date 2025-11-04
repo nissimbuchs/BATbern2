@@ -6,10 +6,12 @@
 import React, { useEffect, Suspense, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
-import { CssBaseline, Box, CircularProgress } from '@mui/material';
+import { Box, CircularProgress } from '@mui/material';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { HelmetProvider } from 'react-helmet-async';
 import { useAuth } from '@hooks/useAuth';
 import { BaseLayout } from '@components/shared/Layout/BaseLayout';
+import { AuthPageLayout } from '@components/shared/Layout/AuthPageLayout';
 import {
   ProtectedRoute,
   SpeakerRoute,
@@ -52,6 +54,9 @@ const EventManagementDashboard = React.lazy(() => import('@pages/EventManagement
 const EventCreate = React.lazy(() => import('@pages/EventCreate'));
 const EventTimeline = React.lazy(() => import('@pages/EventTimeline'));
 const EventDetailEdit = React.lazy(() => import('@pages/EventDetailEdit')); // Comprehensive edit page with Tasks 9-13
+
+// Public Pages - Story 4.1.2, 4.1.3
+const HomePage = React.lazy(() => import('@pages/public/HomePage'));
 
 // Loading fallback component for Suspense
 const PageLoader = () => (
@@ -149,18 +154,104 @@ const NavigationSetup: React.FC<{ children: React.ReactNode }> = ({ children }) 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <Router>
-          <NavigationSetup>
-            <Suspense fallback={<PageLoader />}>
+      <HelmetProvider>
+        <ThemeProvider theme={theme}>
+          <Router>
+            <NavigationSetup>
+              <Suspense fallback={<PageLoader />}>
               <Routes>
-                {/* Public routes */}
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
-                <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
-                <Route path="/auth/register" element={<RegistrationPage />} />
-                <Route path="/auth/verify-email" element={<EmailVerification />} />
+                {/* Public routes - Story 4.1.2, 4.1.3 */}
+                <Route path="/" element={<HomePage />} />
+                <Route
+                  path="/archive"
+                  element={
+                    <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
+                      Archive (Coming in 4.2)
+                    </div>
+                  }
+                />
+                <Route
+                  path="/search"
+                  element={
+                    <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
+                      Search (Coming in 4.3)
+                    </div>
+                  }
+                />
+                <Route
+                  path="/about"
+                  element={
+                    <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
+                      About (Coming later)
+                    </div>
+                  }
+                />
+                <Route
+                  path="/privacy"
+                  element={
+                    <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
+                      Privacy Policy (Coming later)
+                    </div>
+                  }
+                />
+                <Route
+                  path="/terms"
+                  element={
+                    <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
+                      Terms of Service (Coming later)
+                    </div>
+                  }
+                />
+
+                {/* Authentication routes */}
+                <Route
+                  path="/login"
+                  element={
+                    <AuthPageLayout>
+                      <LoginPage />
+                    </AuthPageLayout>
+                  }
+                />
+                <Route
+                  path="/auth/login"
+                  element={
+                    <AuthPageLayout>
+                      <LoginPage />
+                    </AuthPageLayout>
+                  }
+                />
+                <Route
+                  path="/auth/forgot-password"
+                  element={
+                    <AuthPageLayout>
+                      <ForgotPasswordPage />
+                    </AuthPageLayout>
+                  }
+                />
+                <Route
+                  path="/auth/reset-password"
+                  element={
+                    <AuthPageLayout>
+                      <ResetPasswordPage />
+                    </AuthPageLayout>
+                  }
+                />
+                <Route
+                  path="/auth/register"
+                  element={
+                    <AuthPageLayout>
+                      <RegistrationPage />
+                    </AuthPageLayout>
+                  }
+                />
+                <Route
+                  path="/auth/verify-email"
+                  element={
+                    <AuthPageLayout>
+                      <EmailVerification />
+                    </AuthPageLayout>
+                  }
+                />
 
                 {/* Protected routes with lazy-loaded components */}
                 <Route
@@ -306,16 +397,14 @@ function App() {
                   }
                 />
 
-                {/* Default redirect */}
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
-
-                {/* Catch all route */}
-                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                {/* Catch all route - redirect to home */}
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
-            </Suspense>
-          </NavigationSetup>
-        </Router>
-      </ThemeProvider>
+              </Suspense>
+            </NavigationSetup>
+          </Router>
+        </ThemeProvider>
+      </HelmetProvider>
     </QueryClientProvider>
   );
 }

@@ -1499,4 +1499,309 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                         .content(requestBody))
                 .andExpect(status().isUnprocessableEntity());
     }
+
+    // ============================================================================
+    // GET /api/v1/events/current - Public Current Event Endpoint
+    // ============================================================================
+
+    @Test
+    @DisplayName("should_returnPublishedEvent_when_onlyPublishedExists")
+    void should_returnPublishedEvent_when_onlyPublishedExists() throws Exception {
+        // Given - clean all and create only one published event
+        eventRepository.deleteAll();
+        Event publishedEvent = createTestEvent("Current Published Event", "2025-12-15T09:00:00Z", "published");
+
+        // When/Then
+        mockMvc.perform(get("/api/v1/events/current"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.eventCode").value(publishedEvent.getEventCode()))
+                .andExpect(jsonPath("$.title").value("Current Published Event"))
+                .andExpect(jsonPath("$.status").value("published"));
+    }
+
+    @Test
+    @DisplayName("should_returnRegistrationOpenEvent_when_exists")
+    void should_returnRegistrationOpenEvent_when_exists() throws Exception {
+        // Given - clean all and create registration_open event
+        eventRepository.deleteAll();
+        Event registrationOpenEvent = createTestEvent("Registration Open Event", "2025-11-20T09:00:00Z", "registration_open");
+
+        // When/Then
+        mockMvc.perform(get("/api/v1/events/current"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.eventCode").value(registrationOpenEvent.getEventCode()))
+                .andExpect(jsonPath("$.status").value("registration_open"));
+    }
+
+    @Test
+    @DisplayName("should_returnRegistrationClosedEvent_when_exists")
+    void should_returnRegistrationClosedEvent_when_exists() throws Exception {
+        // Given - clean all and create registration_closed event
+        eventRepository.deleteAll();
+        Event registrationClosedEvent = createTestEvent("Registration Closed Event", "2025-10-10T09:00:00Z", "registration_closed");
+
+        // When/Then
+        mockMvc.perform(get("/api/v1/events/current"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.eventCode").value(registrationClosedEvent.getEventCode()))
+                .andExpect(jsonPath("$.status").value("registration_closed"));
+    }
+
+    @Test
+    @DisplayName("should_returnNearestEvent_when_multipleActiveEventsExist")
+    void should_returnNearestEvent_when_multipleActiveEventsExist() throws Exception {
+        // Given - clean all and create multiple events with different statuses
+        eventRepository.deleteAll();
+
+        // Create events with different dates and statuses
+        createTestEvent("Future Event 1", "2026-12-15T09:00:00Z", "published");
+        Event nearestEvent = createTestEvent("Nearest Event", "2025-08-10T09:00:00Z", "registration_open");
+        createTestEvent("Future Event 2", "2027-01-20T09:00:00Z", "registration_closed");
+
+        // When/Then - should return the event with the earliest date
+        mockMvc.perform(get("/api/v1/events/current"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.eventCode").value(nearestEvent.getEventCode()))
+                .andExpect(jsonPath("$.title").value("Nearest Event"))
+                .andExpect(jsonPath("$.status").value("registration_open"));
+    }
+
+    @Test
+    @DisplayName("should_ignoreNonActiveStatuses_when_gettingCurrentEvent")
+    void should_ignoreNonActiveStatuses_when_gettingCurrentEvent() throws Exception {
+        // Given - clean all and create events with different statuses
+        eventRepository.deleteAll();
+
+        // Create events with non-active statuses (should be ignored)
+        createTestEvent("Planning Event", "2025-07-01T09:00:00Z", "planning");
+        createTestEvent("Archived Event", "2025-06-15T09:00:00Z", "archived");
+        createTestEvent("Cancelled Event", "2025-06-20T09:00:00Z", "cancelled");
+
+        // Create one active event (should be returned)
+        Event activeEvent = createTestEvent("Active Event", "2025-12-01T09:00:00Z", "published");
+
+        // When/Then - should return the active event, ignoring planning/archived/cancelled
+        mockMvc.perform(get("/api/v1/events/current"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.eventCode").value(activeEvent.getEventCode()))
+                .andExpect(jsonPath("$.status").value("published"));
+    }
+
+    @Test
+    @DisplayName("should_return404_when_noActiveEventsExist")
+    void should_return404_when_noActiveEventsExist() throws Exception {
+        // Given - clean all and create only non-active events
+        eventRepository.deleteAll();
+        createTestEvent("Planning Event", "2025-08-01T09:00:00Z", "planning");
+        createTestEvent("Archived Event", "2024-06-15T09:00:00Z", "archived");
+
+        // When/Then - should return 404
+        mockMvc.perform(get("/api/v1/events/current"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("should_includeExpansions_when_includeParamProvided")
+    void should_includeExpansions_when_includeParamProvided() throws Exception {
+        // Given - clean all and create a published event
+        eventRepository.deleteAll();
+        Event publishedEvent = createTestEvent("Event with Expansions", "2025-11-15T09:00:00Z", "published");
+
+        // When/Then - request with include parameter
+        mockMvc.perform(get("/api/v1/events/current?include=venue,speakers"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.eventCode").value(publishedEvent.getEventCode()))
+                .andExpect(jsonPath("$.venue").exists())
+                .andExpect(jsonPath("$.speakers").exists());
+    }
+
+    // ============================================================================
+    // Story 2.5.3a: Event Theme Image Upload - Integration Tests
+    // ============================================================================
+
+    @Test
+    @DisplayName("should_storeThemeImageUploadId_when_uploadIdProvided")
+    void should_storeThemeImageUploadId_when_uploadIdProvided() throws Exception {
+        // Given - Create event with theme image upload ID
+        String uploadId = "test-upload-theme-123";
+
+        String requestBody = """
+                {
+                    "title": "Cloud Conference 2025",
+                    "eventNumber": 99,
+                    "date": "2025-06-15T09:00:00Z",
+                    "registrationDeadline": "2025-06-08T23:59:59Z",
+                    "venueName": "Tech Hub Bern",
+                    "venueAddress": "Bahnhofplatz 1, 3011 Bern",
+                    "venueCapacity": 500,
+                    "status": "published",
+                    "organizerUsername": "john.doe",
+                    "currentAttendeeCount": 0,
+                    "description": "A conference about cloud technologies",
+                    "themeImageUploadId": "%s"
+                }
+                """.formatted(uploadId);
+
+        // When - Create event with theme image
+        mockMvc.perform(post("/api/v1/events")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.eventCode").value("BATbern99"));
+
+        // Then - Verify uploadId was stored in event
+        Event savedEvent = eventRepository.findByEventCode("BATbern99").orElseThrow();
+        assertThat(savedEvent.getThemeImageUploadId()).isEqualTo(uploadId);
+    }
+
+    @Test
+    @DisplayName("should_createEventWithoutThemeImage_when_uploadIdNotProvided")
+    void should_createEventWithoutThemeImage_when_uploadIdNotProvided() throws Exception {
+        // Given - No theme image upload
+        String requestBody = """
+                {
+                    "title": "Traditional Conference 2025",
+                    "eventNumber": 100,
+                    "date": "2025-07-20T09:00:00Z",
+                    "registrationDeadline": "2025-07-13T23:59:59Z",
+                    "venueName": "Kornhausforum",
+                    "venueAddress": "Kornhausplatz 18, 3011 Bern",
+                    "venueCapacity": 200,
+                    "status": "published",
+                    "organizerUsername": "jane.smith",
+                    "currentAttendeeCount": 0,
+                    "description": "Traditional architecture conference"
+                }
+                """;
+
+        // When - Create event without theme image
+        mockMvc.perform(post("/api/v1/events")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.themeImageUrl").doesNotExist())
+                .andExpect(jsonPath("$.eventCode").value("BATbern100"));
+    }
+
+    @Test
+    @DisplayName("should_updateThemeImageUploadId_when_patchingWithUploadId")
+    void should_updateThemeImageUploadId_when_patchingWithUploadId() throws Exception {
+        // Given - Create event without theme image
+        Event existingEvent = createTestEvent("Event to Update", "2025-08-10T09:00:00Z", "published");
+
+        String uploadId = "test-upload-update-456";
+        String patchBody = """
+                {
+                    "themeImageUploadId": "%s"
+                }
+                """.formatted(uploadId);
+
+        // When - Patch event with theme image
+        mockMvc.perform(patch("/api/v1/events/" + existingEvent.getEventCode())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(patchBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.eventCode").value(existingEvent.getEventCode()));
+
+        // Then - Verify uploadId was updated
+        Event updatedEvent = eventRepository.findByEventCode(existingEvent.getEventCode()).orElseThrow();
+        assertThat(updatedEvent.getThemeImageUploadId()).isEqualTo(uploadId);
+    }
+
+    @Test
+    @DisplayName("PATCH /api/v1/events/{eventCode} - Should regenerate eventCode when eventNumber changes")
+    void should_regenerateEventCode_when_eventNumberChangedViaPatch() throws Exception {
+        // Given - Create an event with event number 100
+        Event event = createTestEvent("Original Event", "2026-06-15T09:00:00Z", "planning");
+        // Update to use a known event number for testing
+        event.setEventNumber(5000);
+        event.setEventCode("BATbern5000");
+        Event savedEvent = eventRepository.save(event);
+
+        // When - Update event number to 6000 via PATCH
+        String patchBody = """
+                {
+                    "eventNumber": 6000
+                }
+                """;
+
+        mockMvc.perform(patch("/api/v1/events/BATbern5000")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(patchBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.eventCode").value("BATbern6000"))
+                .andExpect(jsonPath("$.eventNumber").value(6000));
+
+        // Then - Verify eventCode was regenerated in database
+        Event updatedEvent = eventRepository.findById(savedEvent.getId()).orElseThrow();
+        assertThat(updatedEvent.getEventCode()).isEqualTo("BATbern6000");
+        assertThat(updatedEvent.getEventNumber()).isEqualTo(6000);
+    }
+
+    @Test
+    @DisplayName("PUT /api/v1/events/{eventCode} - Should regenerate eventCode when eventNumber changes")
+    void should_regenerateEventCode_when_eventNumberChangedViaPut() throws Exception {
+        // Given - Create an event with event number 5001
+        Event event = createTestEvent("Original Event", "2026-06-15T09:00:00Z", "planning");
+        event.setEventNumber(5001);
+        event.setEventCode("BATbern5001");
+        Event savedEvent = eventRepository.save(event);
+
+        // When - Update event with new event number 6001 via PUT
+        String putBody = """
+                {
+                    "title": "Updated Event",
+                    "eventNumber": 6001,
+                    "date": "2026-06-15T09:00:00Z",
+                    "registrationDeadline": "2026-06-01T23:59:59Z",
+                    "venueName": "Bern TechHub",
+                    "venueAddress": "Test Address",
+                    "venueCapacity": 100,
+                    "status": "planning",
+                    "organizerUsername": "john.doe",
+                    "currentAttendeeCount": 0
+                }
+                """;
+
+        mockMvc.perform(put("/api/v1/events/BATbern5001")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(putBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.eventCode").value("BATbern6001"))
+                .andExpect(jsonPath("$.eventNumber").value(6001));
+
+        // Then - Verify eventCode was regenerated in database
+        Event updatedEvent = eventRepository.findById(savedEvent.getId()).orElseThrow();
+        assertThat(updatedEvent.getEventCode()).isEqualTo("BATbern6001");
+        assertThat(updatedEvent.getEventNumber()).isEqualTo(6001);
+    }
+
+    @Test
+    @DisplayName("PATCH /api/v1/events/{eventCode} - Should reject duplicate eventNumber")
+    void should_rejectDuplicateEventNumber_when_patchingEvent() throws Exception {
+        // Given - Create two events with different event numbers
+        Event event1 = createTestEvent("Event 5002", "2026-06-15T09:00:00Z", "planning");
+        event1.setEventNumber(5002);
+        event1.setEventCode("BATbern5002");
+        eventRepository.save(event1);
+
+        Event event2 = createTestEvent("Event 5003", "2026-06-15T09:00:00Z", "planning");
+        event2.setEventNumber(5003);
+        event2.setEventCode("BATbern5003");
+        eventRepository.save(event2);
+
+        // When - Try to change event2's number to 5002 (already used by event1)
+        String patchBody = """
+                {
+                    "eventNumber": 5002
+                }
+                """;
+
+        // Then - Should return 422 Unprocessable Entity with validation error
+        mockMvc.perform(patch("/api/v1/events/BATbern5003")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(patchBody))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.message").value(containsString("Event number 5002 is already in use")));
+    }
 }

@@ -18,7 +18,24 @@
     "logout": "Logout",
     "myEvents": "My Events",
     "myContent": "My Content",
-    "myRegistrations": "My Registrations"
+    "myRegistrations": "My Registrations",
+    "about": "About",
+    "pastEvents": "Past Events"
+  },
+  "public": {
+    "login": "Login",
+    "joinUp": "Sign Up",
+    "register": "Register",
+    "goToPortal": "Go to Portal"
+  },
+  "footer": {
+    "tagline": "Berner Architekten Treffen - Where innovation meets tradition",
+    "quickLinks": "Quick Links",
+    "currentEvent": "Current Event",
+    "legal": "Legal",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "copyright": "© {{year}} Berner Architekten Treffen. All rights reserved."
   },
   "actions": {
     "save": "Save",

@@ -1,0 +1,57 @@
+meta {
+  name: Get Session with Speakers Array
+  type: http
+  seq: 23
+}
+
+get {
+  url: {{baseUrl}}/events/{{createdEventCode}}/sessions/{{createdSessionSlug}}?expand=speakers
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.sessionSlug: isDefined
+  res.body.speakers: isDefined
+}
+
+tests {
+  test("should return 200 OK status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should include speakers array in session response (Story 1.15a.1b: AC7)", function() {
+    const session = res.getBody();
+    expect(session.speakers).to.be.an('array');
+  });
+
+  test("should populate speakers with enriched data", function() {
+    const session = res.getBody();
+    if (session.speakers && session.speakers.length > 0) {
+      const speaker = session.speakers[0];
+
+      // User data
+      expect(speaker.username).to.be.a('string');
+      expect(speaker.firstName).to.be.a('string');
+      expect(speaker.lastName).to.be.a('string');
+
+      // SessionUser data
+      expect(speaker.speakerRole).to.be.a('string');
+      expect(speaker.isConfirmed).to.be.a('boolean');
+    }
+  });
+
+  test("should include session metadata", function() {
+    const session = res.getBody();
+    expect(session.sessionSlug).to.be.a('string');
+    expect(session.eventCode).to.equal(bru.getVar("createdEventCode"));
+    expect(session.title).to.be.a('string');
+    expect(session.sessionType).to.be.a('string');
+  });
+
+  test("should NOT include UUID id field (Story 1.16.2)", function() {
+    const session = res.getBody();
+    expect(session.id).to.be.undefined;
+  });
+}
