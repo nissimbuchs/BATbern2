@@ -128,10 +128,23 @@ public class DomainRouter {
      */
     public CompletableFuture<ResponseEntity<String>> routeRequest(String targetService, HttpServletRequest request) {
         String requestUri = request.getRequestURI();
-        String queryString = request.getQueryString();
         String method = request.getMethod();
 
         log.info("Routing {} request to service: {} for path: {}", method, targetService, requestUri);
+
+        // Build query string from decoded parameters to avoid double-encoding
+        // HttpServletRequest.getQueryString() returns already-encoded string,
+        // which causes issues when forwarded (commas encoded as %2C won't be decoded properly)
+        StringBuilder queryStringBuilder = new StringBuilder();
+        request.getParameterMap().forEach((key, values) -> {
+            for (String value : values) {
+                if (queryStringBuilder.length() > 0) {
+                    queryStringBuilder.append("&");
+                }
+                queryStringBuilder.append(key).append("=").append(value);
+            }
+        });
+        String queryString = queryStringBuilder.length() > 0 ? queryStringBuilder.toString() : null;
 
         // Read request body BEFORE async execution (input stream can only be read once)
         String requestBody = null;
