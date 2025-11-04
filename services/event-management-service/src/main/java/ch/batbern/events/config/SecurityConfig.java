@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -37,6 +38,8 @@ public class SecurityConfig {
     /**
      * Production security filter chain with JWT authentication
      * Note: Tests use TestSecurityConfig instead
+     *
+     * Story 4.1.3: Public endpoints for event discovery
      */
     @Bean
     @Profile("!test")
@@ -46,8 +49,20 @@ public class SecurityConfig {
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authz -> authz
+                // Public endpoints - no authentication required
                 .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+
+                // Story 4.1.3: Public event discovery endpoints
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/current").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/*").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*").permitAll()
+
+                // Story 1.15a.1b: Public speaker list endpoint (GET only, POST/PUT/DELETE require ORGANIZER)
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*/speakers").permitAll()
+
+                // All other requests require authentication
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2

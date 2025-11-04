@@ -21,6 +21,7 @@ export type EventDetail = components['schemas']['EventDetail'];
 export type Venue = components['schemas']['Venue'];
 export type Speaker = components['schemas']['Speaker'];
 export type Session = components['schemas']['Session'];
+export type SessionSpeaker = components['schemas']['SessionSpeaker'];
 export type Registration = components['schemas']['Registration'];
 export type EventAnalytics = components['schemas']['EventAnalytics'];
 export type CreateEventRequest = components['schemas']['CreateEventRequest'];

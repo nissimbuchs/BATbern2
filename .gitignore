@@ -125,7 +125,10 @@ test-results/
 playwright-report/
 playwright/.cache/
 .env.native
+.playwright-mcp/
+web-frontend/.playwright-mcp/
 
 # MinIO local storage
 .minio/
 security-reports/
+.env.native.*

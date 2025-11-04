@@ -43,7 +43,7 @@ import {
   SpeakersSessionsTable,
   WorkflowProgressBar,
 } from '@/components/organizer/EventManagement';
-import type { Session, Topic, WorkflowStep } from '@/types/event.types';
+import type { SessionUI, Topic, WorkflowStep } from '@/types/event.types';
 
 const EventDetailEdit: React.FC = () => {
   const { eventCode } = useParams<{ eventCode: string }>();
@@ -79,36 +79,30 @@ const EventDetailEdit: React.FC = () => {
   };
 
   // Venue & Logistics handlers
-  const handleVenueUpdate = async (updates: Partial<typeof event>) => {
-    console.log('Update venue:', updates);
+  const handleVenueUpdate = async (_updates: Partial<typeof event>) => {
     // TODO: Implement venue update API call
     // This would typically call useUpdateEvent mutation
   };
 
   // Topics handlers
-  const handleViewTopic = (topicId: string) => {
-    console.log('View topic:', topicId);
+  const handleViewTopic = (_topicId: string) => {
     // TODO: Implement topic details modal
   };
 
-  const handleRemoveTopic = (eventCode: string, topicId: string) => {
-    console.log('Remove topic:', topicId, 'from event:', eventCode);
+  const handleRemoveTopic = (_eventCode: string, _topicId: string) => {
     // TODO: Implement topic removal API call
   };
 
   // Speakers & Sessions handlers
-  const handleViewSessionDetails = (sessionId: string) => {
-    console.log('View session details:', sessionId);
+  const handleViewSessionDetails = (_sessionId: string) => {
     // TODO: Implement session details modal
   };
 
-  const handleEditSlot = (sessionId: string) => {
-    console.log('Edit slot:', sessionId);
+  const handleEditSlot = (_sessionId: string) => {
     // TODO: Implement slot editor dialog
   };
 
-  const handleViewMaterials = (sessionId: string) => {
-    console.log('View materials for session:', sessionId);
+  const handleViewMaterials = (_sessionId: string) => {
     // TODO: Implement materials viewer
   };
 
@@ -120,21 +114,13 @@ const EventDetailEdit: React.FC = () => {
     navigate(`/organizer/events/${eventCode}/speakers`);
   };
 
-  const handleAutoAssignSpeakers = (eventCode: string) => {
-    console.log('Auto-assign speakers for event:', eventCode);
+  const handleAutoAssignSpeakers = (_eventCode: string) => {
     // TODO: Implement AI auto-assign logic
   };
 
   const handleDeleteEvent = () => {
-    console.log('Delete event:', eventCode);
     // TODO: Implement delete confirmation dialog
   };
-
-  // Debug logging
-  console.log('[EventDetailEdit] eventCode:', eventCode);
-  console.log('[EventDetailEdit] isLoading:', isLoading);
-  console.log('[EventDetailEdit] error:', error);
-  console.log('[EventDetailEdit] event:', event);
 
   if (isLoading) {
     return (
@@ -181,7 +167,16 @@ const EventDetailEdit: React.FC = () => {
   // Use real data from event or fallback to empty arrays
   // Note: topics is string[] in Phase 2, will be Topic[] when backend implements it
   const topics: Topic[] = [];
-  const sessions: Session[] = event.sessions || [];
+
+  // Transform API sessions to SessionUI format for the component
+  const sessions: SessionUI[] = (event.sessions || []).map((session, index) => ({
+    ...session,
+    slotNumber: index + 1,
+    // Note: speaker info would come from backend in Phase 2
+    // For now, we show the session without speaker assignment
+    speaker: undefined,
+    materialsStatus: 'pending' as const,
+  }));
 
   return (
     <Box sx={{ p: 3 }}>
@@ -209,7 +204,7 @@ const EventDetailEdit: React.FC = () => {
               size="small"
             />
             <Typography variant="caption" color="text.secondary">
-              Event #{event.eventNumber} • {eventCode}
+              {t('form.eventNumber', 'Event')} {eventCode}
             </Typography>
           </Stack>
           <Typography variant="h4" component="h1">
@@ -224,7 +219,9 @@ const EventDetailEdit: React.FC = () => {
           <Button
             variant="outlined"
             startIcon={<SettingsIcon />}
-            onClick={() => console.log('Event settings')}
+            onClick={() => {
+              // TODO: Implement event settings modal
+            }}
           >
             {t('common.settings', 'Settings')}
           </Button>
@@ -303,6 +300,28 @@ const EventDetailEdit: React.FC = () => {
           </Button>
         </Paper>
 
+        {/* THEME IMAGE SECTION */}
+        {event.themeImageUrl && (
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              {t('form.themeImage', 'Event Theme Image')}
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
+            <Box
+              component="img"
+              src={event.themeImageUrl}
+              alt={t('form.themeImageAlt', 'Theme image for event')}
+              sx={{
+                width: '100%',
+                maxHeight: 400,
+                objectFit: 'cover',
+                borderRadius: 1,
+                boxShadow: 1,
+              }}
+            />
+          </Paper>
+        )}
+
         {/* WORKFLOW PROGRESS & KEY METRICS */}
         <Grid container spacing={3}>
           <Grid size={{ xs: 12, md: 7 }}>
@@ -331,20 +350,21 @@ const EventDetailEdit: React.FC = () => {
           <Grid size={{ xs: 12, md: 5 }}>
             <Paper sx={{ p: 3 }}>
               <Typography variant="h6" gutterBottom>
-                {t('dashboard.keyMetrics', 'Key Metrics')}
+                {t('metrics.keyMetrics', 'Key Metrics')}
               </Typography>
               <Divider sx={{ mb: 2 }} />
               <Stack spacing={1}>
                 <Typography variant="body2">
-                  📊 {t('metrics.speakers', 'Speakers')}: {event.confirmedSpeakersCount || 0}/12
-                  confirmed
+                  📊 {t('metrics.speakers', 'Speakers')}: {event.confirmedSpeakersCount || 0}/12{' '}
+                  {t('metrics.confirmed', 'confirmed')}
                 </Typography>
                 <Typography variant="body2">
-                  ✓ {t('metrics.topics', 'Topics')}: {event.assignedTopicsCount || 0} assigned
+                  ✓ {t('metrics.topics', 'Topics')}: {event.assignedTopicsCount || 0}{' '}
+                  {t('metrics.assigned', 'assigned')}
                 </Typography>
                 <Typography variant="body2">
                   ⚠️ {t('metrics.materials', 'Materials')}: {event.pendingMaterialsCount || 0}{' '}
-                  pending
+                  {t('metrics.pending', 'pending')}
                 </Typography>
                 <Typography variant="body2">
                   📝 {t('metrics.registrations', 'Registrations')}: {event.currentAttendeeCount}/
@@ -360,13 +380,7 @@ const EventDetailEdit: React.FC = () => {
         </Grid>
 
         {/* VENUE & LOGISTICS - Task 11 */}
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            {t('venue.title', 'Venue & Logistics')}
-          </Typography>
-          <Divider sx={{ mb: 2 }} />
-          <VenueLogistics event={event} onUpdate={handleVenueUpdate} />
-        </Paper>
+        <VenueLogistics event={event} onUpdate={handleVenueUpdate} />
 
         {/* ASSIGNED TOPICS - Task 12 */}
         <Paper sx={{ p: 3 }}>
@@ -399,7 +413,7 @@ const EventDetailEdit: React.FC = () => {
           </Typography>
           <Divider sx={{ mb: 2 }} />
           <Typography variant="body2" color="text.secondary">
-            Lead Organizer: {event.organizerUsername}
+            {t('team.leadOrganizer', 'Lead Organizer')}: {event.organizerUsername}
           </Typography>
           <Typography variant="caption" color="text.secondary">
             (Team assignment component - Task 14)
