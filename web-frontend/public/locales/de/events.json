@@ -435,5 +435,47 @@
     "registrations": "Anmeldungen",
     "budget": "Budget",
     "keyMetrics": "Kennzahlen"
+  },
+  "public": {
+    "speakers": {
+      "title": "Referenten",
+      "speakerTBA": "Referent wird noch bekannt gegeben"
+    },
+    "sessions": {
+      "title": "Sessions",
+      "gridView": "Rasteransicht",
+      "listView": "Listenansicht",
+      "noSessions": "Keine Sessions für die ausgewählten Themen gefunden",
+      "clearFilters": "Filter zurücksetzen",
+      "speaker": "Referent",
+      "seats": "{{count}} Plätze",
+      "timeTBD": "Zeit wird noch bekannt gegeben"
+    },
+    "program": {
+      "title": "Programm",
+      "speaker": "Referent"
+    },
+    "venue": {
+      "title": "Veranstaltungsort",
+      "mapNotAvailable": "Karte nicht verfügbar",
+      "getDirections": "Route abrufen"
+    },
+    "social": {
+      "title": "Veranstaltung teilen",
+      "description": "Teilen Sie diese Veranstaltung mit Ihrem Netzwerk",
+      "shareLinkedIn": "Auf LinkedIn teilen",
+      "shareTwitter": "Auf X teilen",
+      "shareEmail": "Per E-Mail teilen",
+      "shareText": "Ich nehme an {{title}} teil!"
+    },
+    "sessionTypes": {
+      "keynote": "Hauptvortrag",
+      "presentation": "Präsentation",
+      "workshop": "Workshop",
+      "panel_discussion": "Podiumsdiskussion",
+      "networking": "Networking",
+      "break": "Pause",
+      "lunch": "Mittagessen"
+    }
   }
 }

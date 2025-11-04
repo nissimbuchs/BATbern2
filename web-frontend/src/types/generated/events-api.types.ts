@@ -257,7 +257,21 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get?: never;
+    /**
+     * Get session details
+     * @description Retrieve detailed information about a specific session including speakers.
+     *
+     *     **Story**: 1.15a.1b - Session-User Many-to-Many Relationship
+     *     **Story**: 4.1.3 - Public event discovery endpoints
+     *
+     *     Returns session information including:
+     *     - Session details (title, description, time, room)
+     *     - Speaker list with enriched User data
+     *     - Confirmation status for each speaker
+     *
+     *     **Public Endpoint**: No authentication required for GET requests
+     */
+    get: operations['getSession'];
     /**
      * Update session
      * @description Update an existing session.
@@ -275,6 +289,115 @@ export interface paths {
      *     **Story**: 1.16.2 - Uses eventCode and sessionSlug (meaningful IDs) instead of UUIDs
      */
     delete: operations['deleteSession'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/sessions/{sessionSlug}/speakers': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List session speakers
+     * @description Retrieve all speakers assigned to a specific session with enriched User data.
+     *
+     *     **Story**: 1.15a.1b - Session-User Many-to-Many Relationship
+     *
+     *     Returns speaker information including:
+     *     - User profile data (name, company, photo)
+     *     - Speaker role (primary, co-speaker, moderator, panelist)
+     *     - Confirmation status
+     */
+    get: operations['listSessionSpeakers'];
+    put?: never;
+    /**
+     * Assign speaker to session
+     * @description Assign a user as a speaker to a session with a specific role.
+     *
+     *     **Story**: 1.15a.1b - Session-User Many-to-Many Relationship
+     *     **Authorization**: Requires ORGANIZER role
+     *
+     *     **Speaker Roles**:
+     *     - PRIMARY_SPEAKER: Main presenter
+     *     - CO_SPEAKER: Co-presenter
+     *     - MODERATOR: Panel moderator
+     *     - PANELIST: Panel participant
+     */
+    post: operations['assignSpeakerToSession'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/sessions/{sessionSlug}/speakers/{username}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Remove speaker from session
+     * @description Remove a speaker assignment from a session.
+     *
+     *     **Story**: 1.15a.1b - Session-User Many-to-Many Relationship
+     *     **Authorization**: Requires ORGANIZER role
+     */
+    delete: operations['removeSpeakerFromSession'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/sessions/{sessionSlug}/speakers/{username}/confirm': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Confirm speaker participation
+     * @description Mark a speaker as confirmed for the session.
+     *
+     *     **Story**: 1.15a.1b - Session-User Many-to-Many Relationship
+     *     **Authorization**: Requires ORGANIZER role
+     */
+    post: operations['confirmSpeaker'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/sessions/{sessionSlug}/speakers/{username}/decline': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Decline speaker participation
+     * @description Mark a speaker as declined for the session with an optional reason.
+     *
+     *     **Story**: 1.15a.1b - Session-User Many-to-Many Relationship
+     *     **Authorization**: Requires ORGANIZER role
+     */
+    post: operations['declineSpeaker'];
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
@@ -532,7 +655,69 @@ export interface components {
       createdAt?: string;
       /** Format: date-time */
       updatedAt?: string;
+      /**
+       * @description Story 1.15a.1b: Session speakers with enriched User data
+       *     List of speakers assigned to this session with their roles
+       */
+      speakers?: components['schemas']['SessionSpeaker'][];
     };
+    /**
+     * @description Story 1.15a.1b: Session speaker with enriched User data
+     *     Combines SessionUser entity (role, confirmation) with User entity (name, company, photo)
+     */
+    SessionSpeaker: {
+      /**
+       * @description User's username (public identifier from User entity)
+       * @example john.doe
+       */
+      username: string;
+      /**
+       * @description Speaker's first name (from User entity)
+       * @example John
+       */
+      firstName: string;
+      /**
+       * @description Speaker's last name (from User entity)
+       * @example Doe
+       */
+      lastName: string;
+      /**
+       * @description Speaker's company name (from User.companyId)
+       * @example GoogleZH
+       */
+      company?: string;
+      /**
+       * Format: uri
+       * @description Speaker's profile picture URL (from User entity)
+       * @example https://cdn.batbern.ch/logos/2025/users/john.doe/profile.jpg
+       */
+      profilePictureUrl?: string;
+      /**
+       * @description Speaker's role in the session:
+       *     - PRIMARY_SPEAKER: Main presenter
+       *     - CO_SPEAKER: Co-presenter
+       *     - MODERATOR: Panel moderator
+       *     - PANELIST: Panel participant
+       * @example PRIMARY_SPEAKER
+       * @enum {string}
+       */
+      speakerRole: 'PRIMARY_SPEAKER' | 'CO_SPEAKER' | 'MODERATOR' | 'PANELIST';
+      /**
+       * @description Optional speaker-specific presentation title (if different from session title)
+       * @example Security Auditing Tools Deep Dive
+       */
+      presentationTitle?: string;
+      /**
+       * @description Whether speaker has confirmed participation
+       * @example true
+       */
+      isConfirmed: boolean;
+    };
+    /**
+     * @description Story 1.15a.1b: Session response with embedded speakers
+     *     Same as Session schema but used specifically for API responses
+     */
+    SessionResponse: components['schemas']['Session'];
     /** @description Story 1.16.2: Uses registrationCode and attendeeUsername as meaningful IDs */
     Registration: {
       /**
@@ -1212,6 +1397,36 @@ export interface operations {
       500: components['responses']['InternalServerError'];
     };
   };
+  getSession: {
+    parameters: {
+      query?: {
+        /** @description Optional expand parameter (currently speakers are always included) */
+        expand?: string;
+      };
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+        /** @description URL-friendly slug generated from session title */
+        sessionSlug: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Session details retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SessionResponse'];
+        };
+      };
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
   updateSession: {
     parameters: {
       query?: never;
@@ -1264,6 +1479,161 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  listSessionSpeakers: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+        sessionSlug: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description List of session speakers */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SessionSpeaker'][];
+        };
+      };
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  assignSpeakerToSession: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+        sessionSlug: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @example john.doe */
+          username: string;
+          /**
+           * @example PRIMARY_SPEAKER
+           * @enum {string}
+           */
+          speakerRole: 'PRIMARY_SPEAKER' | 'CO_SPEAKER' | 'MODERATOR' | 'PANELIST';
+          /** @example Security Auditing Tools Deep Dive */
+          presentationTitle?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Speaker assigned successfully */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SessionSpeaker'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      404: components['responses']['NotFound'];
+      /** @description Speaker already assigned to session */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  removeSpeakerFromSession: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+        sessionSlug: string;
+        username: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Speaker removed successfully */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  confirmSpeaker: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+        sessionSlug: string;
+        username: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Speaker confirmed successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SessionSpeaker'];
+        };
+      };
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  declineSpeaker: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+        sessionSlug: string;
+        username: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': {
+          /** @example Schedule conflict */
+          declineReason?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Speaker declined successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SessionSpeaker'];
+        };
       };
       404: components['responses']['NotFound'];
       500: components['responses']['InternalServerError'];

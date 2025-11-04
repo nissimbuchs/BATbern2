@@ -8,6 +8,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'r
 import { ThemeProvider } from '@mui/material/styles';
 import { Box, CircularProgress } from '@mui/material';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { HelmetProvider } from 'react-helmet-async';
 import { useAuth } from '@hooks/useAuth';
 import { BaseLayout } from '@components/shared/Layout/BaseLayout';
 import { AuthPageLayout } from '@components/shared/Layout/AuthPageLayout';
@@ -153,10 +154,11 @@ const NavigationSetup: React.FC<{ children: React.ReactNode }> = ({ children }) 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider theme={theme}>
-        <Router>
-          <NavigationSetup>
-            <Suspense fallback={<PageLoader />}>
+      <HelmetProvider>
+        <ThemeProvider theme={theme}>
+          <Router>
+            <NavigationSetup>
+              <Suspense fallback={<PageLoader />}>
               <Routes>
                 {/* Public routes - Story 4.1.2, 4.1.3 */}
                 <Route path="/" element={<HomePage />} />
@@ -398,10 +400,11 @@ function App() {
                 {/* Catch all route - redirect to home */}
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
-            </Suspense>
-          </NavigationSetup>
-        </Router>
-      </ThemeProvider>
+              </Suspense>
+            </NavigationSetup>
+          </Router>
+        </ThemeProvider>
+      </HelmetProvider>
     </QueryClientProvider>
   );
 }

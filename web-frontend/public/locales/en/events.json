@@ -435,5 +435,47 @@
     "registrations": "Registrations",
     "budget": "Budget",
     "keyMetrics": "Key Metrics"
+  },
+  "public": {
+    "speakers": {
+      "title": "Speakers",
+      "speakerTBA": "Speaker TBA"
+    },
+    "sessions": {
+      "title": "Sessions",
+      "gridView": "Grid view",
+      "listView": "List view",
+      "noSessions": "No sessions found for selected topics",
+      "clearFilters": "Clear Filters",
+      "speaker": "Speaker",
+      "seats": "{{count}} seats",
+      "timeTBD": "Time TBD"
+    },
+    "program": {
+      "title": "Event Program",
+      "speaker": "Speaker"
+    },
+    "venue": {
+      "title": "Venue",
+      "mapNotAvailable": "Map not available",
+      "getDirections": "Get Directions"
+    },
+    "social": {
+      "title": "Share This Event",
+      "description": "Spread the word about this event with your network",
+      "shareLinkedIn": "Share on LinkedIn",
+      "shareTwitter": "Share on X",
+      "shareEmail": "Share via Email",
+      "shareText": "Join me at {{title}}!"
+    },
+    "sessionTypes": {
+      "keynote": "keynote",
+      "presentation": "presentation",
+      "workshop": "workshop",
+      "panel_discussion": "panel discussion",
+      "networking": "networking",
+      "break": "break",
+      "lunch": "lunch"
+    }
   }
 }

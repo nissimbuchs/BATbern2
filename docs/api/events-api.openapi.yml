@@ -1618,6 +1618,13 @@ components:
           description: Whether speaker has confirmed participation
           example: true
 
+    SessionResponse:
+      description: |
+        Story 1.15a.1b: Session response with embedded speakers
+        Same as Session schema but used specifically for API responses
+      allOf:
+        - $ref: '#/components/schemas/Session'
+
     Registration:
       type: object
       description: |
