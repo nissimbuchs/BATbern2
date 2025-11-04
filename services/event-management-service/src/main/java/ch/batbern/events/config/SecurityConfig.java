@@ -55,8 +55,12 @@ public class SecurityConfig {
 
                 // Story 4.1.3: Public event discovery endpoints
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/current").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/events/{eventCode}").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/events/{eventCode}/sessions").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/*").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*").permitAll()
+
+                // Story 1.15a.1b: Public speaker list endpoint (GET only, POST/PUT/DELETE require ORGANIZER)
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*/speakers").permitAll()
 
                 // All other requests require authentication
                 .anyRequest().authenticated()
