@@ -112,14 +112,28 @@ const EventDetail: React.FC = () => {
       </Stack>
 
       {/* Event Details */}
-      <Paper sx={{ p: 3 }}>
-        <Stack spacing={3}>
+      <Paper sx={{ p: 0, overflow: 'hidden' }}>
+        {/* Theme Image Banner (Story 2.5.3a) */}
+        {event.themeImageUrl && (
+          <Box
+            component="img"
+            src={event.themeImageUrl}
+            alt={`${event.title} theme`}
+            sx={{
+              width: '100%',
+              height: 240,
+              objectFit: 'cover',
+            }}
+          />
+        )}
+
+        <Stack spacing={3} sx={{ p: 3 }}>
           {/* Title and Status */}
           <Box>
             <Stack direction="row" spacing={2} alignItems="center" mb={1}>
               <Chip label={t(`status.${event.status}`)} color="primary" />
               <Typography variant="caption" color="text.secondary">
-                #{event.eventNumber} • {event.eventCode}
+                {event.eventCode}
               </Typography>
             </Stack>
             <Typography variant="h4" component="h1" gutterBottom>

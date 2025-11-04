@@ -1,6 +1,7 @@
 package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.Company;
+import ch.batbern.companyuser.domain.Logo;
 import ch.batbern.companyuser.dto.CompanyLogo;
 import ch.batbern.companyuser.dto.CompanyResponse;
 import ch.batbern.companyuser.dto.CreateCompanyRequest;
@@ -10,6 +11,7 @@ import ch.batbern.companyuser.exception.CompanyNotFoundException;
 import ch.batbern.companyuser.exception.CompanyValidationException;
 import ch.batbern.companyuser.exception.InvalidUIDException;
 import ch.batbern.companyuser.repository.CompanyRepository;
+import ch.batbern.companyuser.repository.LogoRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
 import ch.batbern.shared.events.DomainEventPublisher;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +39,7 @@ import java.util.stream.Collectors;
 public class CompanyService {
 
     private final CompanyRepository companyRepository;
+    private final LogoRepository logoRepository;
     private final SwissUIDValidationService uidValidationService;
     private final DomainEventPublisher eventPublisher;
     private final CompanySearchService searchService;
@@ -189,6 +192,38 @@ public class CompanyService {
         company.setUpdatedAt(Instant.now());
         Company updatedCompany = companyRepository.save(company);
 
+        // Handle logo changes (Story 1.16.3: Generic File Upload)
+        // Check if logoUploadId was provided in the request (including empty string to clear it)
+        if (request.getLogoUploadId() != null) {
+            if (!request.getLogoUploadId().isBlank()) {
+                // Associate new logo
+                try {
+                    String finalS3Key = generateFinalS3Key(updatedCompany.getName(), request.getLogoUploadId());
+                    String logoUrl = genericLogoService.associateLogoWithEntity(
+                            request.getLogoUploadId(),
+                            "COMPANY",
+                            updatedCompany.getName(),
+                            finalS3Key
+                    );
+                    updatedCompany.setLogoUrl(logoUrl);
+                    updatedCompany.setLogoS3Key(finalS3Key);
+                    updatedCompany.setLogoFileId(request.getLogoUploadId());
+                    updatedCompany = companyRepository.save(updatedCompany);
+                    log.info("Logo updated for company: {}, logoUrl: {}", updatedCompany.getName(), logoUrl);
+                } catch (Exception e) {
+                    log.error("Failed to associate logo with company: {}", updatedCompany.getName(), e);
+                    // Don't fail company update if logo association fails
+                }
+            } else {
+                // Clear logo (blank/empty string means remove)
+                log.info("Clearing logo for company: {}", updatedCompany.getName());
+                updatedCompany.setLogoUrl(null);
+                updatedCompany.setLogoS3Key(null);
+                updatedCompany.setLogoFileId(null);
+                updatedCompany = companyRepository.save(updatedCompany);
+            }
+        }
+
         // Invalidate search cache (AC8)
         searchService.invalidateCache();
 
@@ -318,9 +353,20 @@ public class CompanyService {
      * Generate final S3 key for company logo
      * Pattern: logos/{year}/companies/{company-name}/logo-{uploadId}.{ext}
      * Story 1.16.3: Generic File Upload Service
+     *
+     * Fetches Logo entity to get actual file extension (png, jpg, jpeg, svg)
+     * instead of hardcoding to .png
      */
     private String generateFinalS3Key(String companyName, String uploadId) {
+        // Fetch Logo to get file extension (preserve original file type)
+        Logo logo = logoRepository.findByUploadId(uploadId)
+                .orElseThrow(() -> new RuntimeException("Logo not found for uploadId: " + uploadId));
+
+        String fileExtension = logo.getFileExtension();
+        log.debug("Retrieved file extension from Logo: {}", fileExtension);
+
         int year = java.time.LocalDate.now().getYear();
-        return String.format("logos/%d/companies/%s/logo-%s.png", year, companyName, uploadId);
+        return String.format("logos/%d/companies/%s/logo-%s.%s",
+                year, companyName, uploadId, fileExtension);
     }
 }

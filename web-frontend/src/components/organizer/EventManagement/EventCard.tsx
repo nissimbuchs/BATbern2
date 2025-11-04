@@ -22,18 +22,15 @@ import {
   Typography,
   LinearProgress,
   Chip,
-  Button,
   IconButton,
   Box,
   Stack,
 } from '@mui/material';
 import {
   Edit as EditIcon,
-  Visibility as VisibilityIcon,
   Event as EventIcon,
   People as PeopleIcon,
 } from '@mui/icons-material';
-import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
@@ -140,6 +137,22 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
         },
       }}
     >
+      {/* Theme Image Banner (Story 2.5.3a) */}
+      {event.themeImageUrl && (
+        <Box
+          component="img"
+          src={event.themeImageUrl}
+          alt={`${event.title} theme`}
+          sx={{
+            width: '100%',
+            height: 160,
+            objectFit: 'cover',
+            borderTopLeftRadius: 'inherit',
+            borderTopRightRadius: 'inherit',
+          }}
+        />
+      )}
+
       <CardContent data-testid="event-card-content" sx={{ flexGrow: 1 }}>
         {/* Header with Status and Event Code */}
         <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
@@ -149,7 +162,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
             size="small"
           />
           <Typography variant="caption" color="text.secondary">
-            #{event.eventNumber} • {event.eventCode}
+            {event.eventCode}
           </Typography>
         </Stack>
 
@@ -207,17 +220,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
       </CardContent>
 
       {/* Quick Actions */}
-      <CardActions sx={{ justifyContent: 'space-between', px: 2, pb: 2 }}>
-        <Button
-          component={Link}
-          to={`/organizer/events/${event.eventCode}`}
-          size="small"
-          startIcon={<VisibilityIcon />}
-          aria-label={`View details for ${event.title}`}
-        >
-          {t('dashboard.actions.viewDetails')}
-        </Button>
-
+      <CardActions sx={{ justifyContent: 'flex-end', px: 2, pb: 2 }}>
         {isHovered && (
           <IconButton
             size="small"

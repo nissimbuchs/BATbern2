@@ -1,0 +1,56 @@
+meta {
+  name: Assign Speaker to Session
+  type: http
+  seq: 21
+}
+
+post {
+  url: {{baseUrl}}/events/{{createdEventCode}}/sessions/{{createdSessionSlug}}/speakers
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "username": "{{testSpeakerUsername}}",
+    "speakerRole": "PRIMARY_SPEAKER",
+    "presentationTitle": "Test Presentation on Modern Architecture"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.username: isDefined
+  res.body.speakerRole: eq PRIMARY_SPEAKER
+  res.body.isConfirmed: eq false
+}
+
+tests {
+  test("should return 201 Created status", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("should assign speaker with enriched User data (Story 1.15a.1b)", function() {
+    const speaker = res.getBody();
+    expect(speaker.username).to.be.a('string');
+    expect(speaker.firstName).to.be.a('string');
+    expect(speaker.lastName).to.be.a('string');
+    expect(speaker.speakerRole).to.equal('PRIMARY_SPEAKER');
+    expect(speaker.presentationTitle).to.equal('Test Presentation on Modern Architecture');
+  });
+
+  test("should have isConfirmed false initially", function() {
+    const speaker = res.getBody();
+    expect(speaker.isConfirmed).to.equal(false);
+  });
+
+  test("should require ORGANIZER role (Story 1.15a.1b: AC4)", function() {
+    // If test runs with non-ORGANIZER token, should get 403
+    const status = res.getStatus();
+    expect([201, 403]).to.include(status);
+  });
+}

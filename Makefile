@@ -62,6 +62,14 @@ help: ## Show this help message
 	@echo "  make dev-native-logs          - Tail all service logs"
 	@echo "  make dev-native-restart       - Restart all services"
 	@echo ""
+	@echo "🔀 Parallel Instances (Multiple Dev Environments):"
+	@echo "  make dev-native-up-instance BASE_PORT=9000      - Start instance 2"
+	@echo "  make dev-native-down-instance BASE_PORT=9000    - Stop instance 2"
+	@echo "  make dev-native-list                            - List all instances"
+	@echo "  make dev-native-status-all                      - Status of all instances"
+	@echo "  make dev-native-status-instance BASE_PORT=9000  - Status of instance"
+	@echo "  make dev-native-logs-instance BASE_PORT=9000    - Logs from instance"
+	@echo ""
 	@echo "🚀 CI/CD:"
 	@echo "  make ci-build         - Full CI build (clean + build + test)"
 	@echo "  make ci-test          - Run all CI tests"
@@ -291,6 +299,63 @@ dev-native-restart: ## Restart all native services
 
 dev-native-restart-service: ## Restart specific native service (use SERVICE=name)
 	@./scripts/dev/restart-native.sh $(SERVICE)
+
+# ═══════════════════════════════════════════════════════════
+# PARALLEL INSTANCE SUPPORT (Multiple Local Dev Environments)
+# ═══════════════════════════════════════════════════════════
+
+dev-native-up-instance: ## Start specific instance (use BASE_PORT=9000 for instance 2)
+	@if [ -z "$(BASE_PORT)" ]; then \
+		echo "❌ Error: BASE_PORT parameter required"; \
+		echo "Usage: make dev-native-up-instance BASE_PORT=9000"; \
+		echo ""; \
+		echo "Recommended port ranges:"; \
+		echo "  Instance 1: BASE_PORT=8000 (default, services 8080-8085, frontend 3000)"; \
+		echo "  Instance 2: BASE_PORT=9000 (services 9080-9085, frontend 4000)"; \
+		exit 1; \
+	fi
+	@echo "🚀 Starting instance with BASE_PORT=$(BASE_PORT)..."
+	@BASE_PORT=$(BASE_PORT) ./scripts/dev/start-all-native.sh
+
+dev-native-down-instance: ## Stop specific instance (use BASE_PORT=9000)
+	@if [ -z "$(BASE_PORT)" ]; then \
+		echo "❌ Error: BASE_PORT parameter required"; \
+		echo "Usage: make dev-native-down-instance BASE_PORT=9000"; \
+		exit 1; \
+	fi
+	@echo "🛑 Stopping instance with BASE_PORT=$(BASE_PORT)..."
+	@BASE_PORT=$(BASE_PORT) ./scripts/dev/stop-all-native.sh
+
+dev-native-list: ## List all running instances
+	@./scripts/dev/list-instances.sh
+
+dev-native-status-all: ## Show status of all instances
+	@./scripts/dev/status-all-instances.sh
+
+dev-native-status-instance: ## Show status of specific instance (use BASE_PORT=9000)
+	@if [ -z "$(BASE_PORT)" ]; then \
+		echo "❌ Error: BASE_PORT parameter required"; \
+		echo "Usage: make dev-native-status-instance BASE_PORT=9000"; \
+		exit 1; \
+	fi
+	@BASE_PORT=$(BASE_PORT) ./scripts/dev/status-native.sh
+
+dev-native-logs-instance: ## Tail logs from specific instance (use BASE_PORT=9000)
+	@if [ -z "$(BASE_PORT)" ]; then \
+		echo "❌ Error: BASE_PORT parameter required"; \
+		echo "Usage: make dev-native-logs-instance BASE_PORT=9000"; \
+		exit 1; \
+	fi
+	@BASE_PORT=$(BASE_PORT) ./scripts/dev/logs-native.sh
+
+dev-native-restart-instance: ## Restart specific instance (use BASE_PORT=9000)
+	@if [ -z "$(BASE_PORT)" ]; then \
+		echo "❌ Error: BASE_PORT parameter required"; \
+		echo "Usage: make dev-native-restart-instance BASE_PORT=9000"; \
+		exit 1; \
+	fi
+	@echo "🔄 Restarting instance with BASE_PORT=$(BASE_PORT)..."
+	@BASE_PORT=$(BASE_PORT) ./scripts/dev/restart-native.sh
 
 # ═══════════════════════════════════════════════════════════
 # CI/CD

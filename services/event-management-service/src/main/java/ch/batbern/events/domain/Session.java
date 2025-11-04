@@ -8,6 +8,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -69,6 +71,15 @@ public class Session {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
+    /**
+     * Many-to-many relationship with users (speakers)
+     * Story 4.1.4: Sessions can have multiple speakers with different roles
+     * ADR-004: References User entities via userId in SessionUser
+     */
+    @OneToMany(mappedBy = "session", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<SessionUser> sessionUsers = new ArrayList<>();
+
     @PrePersist
     protected void onCreate() {
         createdAt = Instant.now();
@@ -78,5 +89,21 @@ public class Session {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = Instant.now();
+    }
+
+    /**
+     * Helper method to add a speaker to this session
+     */
+    public void addSpeaker(SessionUser sessionUser) {
+        sessionUsers.add(sessionUser);
+        sessionUser.setSession(this);
+    }
+
+    /**
+     * Helper method to remove a speaker from this session
+     */
+    public void removeSpeaker(SessionUser sessionUser) {
+        sessionUsers.remove(sessionUser);
+        sessionUser.setSession(null);
     }
 }

@@ -1,11 +1,18 @@
 #!/bin/bash
 # Start SSM port forward tunnel to RDS database
 # This creates a secure tunnel allowing local Docker containers to access AWS RDS
+#
+# Usage:
+#   ./scripts/dev/start-db-tunnel.sh              # Default port 5432
+#   DB_TUNNEL_PORT=6432 ./scripts/dev/start-db-tunnel.sh  # Custom port 6432
 
 set -e
 
 export AWS_PROFILE=batbern-dev
 export AWS_REGION=eu-central-1
+
+# Instance-specific port (default 5432 for instance 1, 6432 for instance 2)
+DB_TUNNEL_PORT="${DB_TUNNEL_PORT:-5432}"
 
 echo "🔍 Fetching bastion and database information..."
 
@@ -68,7 +75,7 @@ echo ""
 echo "✅ Configuration:"
 echo "   Bastion Instance: $BASTION_ID"
 echo "   RDS Endpoint: $RDS_ENDPOINT"
-echo "   Local Port: 5432"
+echo "   Local Port: $DB_TUNNEL_PORT"
 echo "   Profile: $AWS_PROFILE"
 echo "   Region: $AWS_REGION"
 echo ""
@@ -78,15 +85,16 @@ echo "📝 IMPORTANT:"
 echo "   1. Keep this terminal open while working"
 echo "   2. In .env, set: DB_HOST=host.docker.internal (macOS/Windows)"
 echo "   3. In .env, set: DB_HOST=172.17.0.1 (Linux)"
-echo "   4. Press Ctrl+C to close tunnel when done"
+echo "   4. In .env.native, set: DB_HOST=localhost"
+echo "   5. Press Ctrl+C to close tunnel when done"
 echo ""
-echo "🚀 Tunnel active! You can now start Docker:"
-echo "   docker compose up -d"
+echo "🚀 Tunnel active! Database accessible at:"
+echo "   localhost:$DB_TUNNEL_PORT"
 echo ""
 
-# Start the tunnel
+# Start the tunnel with instance-specific local port
 aws ssm start-session \
   --target $BASTION_ID \
   --document-name AWS-StartPortForwardingSessionToRemoteHost \
-  --parameters "{\"host\":[\"$RDS_ENDPOINT\"],\"portNumber\":[\"5432\"],\"localPortNumber\":[\"5432\"]}" \
+  --parameters "{\"host\":[\"$RDS_ENDPOINT\"],\"portNumber\":[\"5432\"],\"localPortNumber\":[\"$DB_TUNNEL_PORT\"]}" \
   --region $AWS_REGION

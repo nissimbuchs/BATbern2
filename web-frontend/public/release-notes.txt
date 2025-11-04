@@ -1,5 +1,9 @@
 
 ✨ New Features:
+* Epic 4 Public website
+- 4.1.x in progress. Used shadcn and unicorn-studio for attractive look and feel.
+- updated https://batbern.ch with a "coming soon..." teaser.
+
 * Epic 2 on crud for main entities is in progress
 - 1.14/2.5.1 Company management fully working
 - 1.14-2/2.5.2 User management interface for organizers now fully working
@@ -13,9 +17,6 @@
 🚀 Next steps:
 - Epic-2/3: I will continue on frontend for event-management and then move to migrate all old event data
 - Epic-4/3: Other option: start creating the public website and then migrate
-- Or work on some fancy stuff:
--- implement one service with quarkus or kotlin
--- build a frontend extension point to integrate the company web-component in user-detail view
 
 🐛 Bug Fixes:
 - still uuid in event interfaces. now fixed with meaningful ids (username)
