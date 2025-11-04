@@ -197,6 +197,22 @@ export class ApiGatewayStack extends cdk.Stack {
       // No authorizer - public endpoint
     });
 
+    // Public current event endpoint (no auth) - Story 4.1.3
+    const currentEventIntegration = new apigatewayv2_integrations.HttpUrlIntegration(
+      'CurrentEventIntegration',
+      `${apiGatewayServiceUrl}/api/v1/events/current`,
+      {
+        method: apigatewayv2.HttpMethod.GET,
+      }
+    );
+
+    this.api.addRoutes({
+      path: '/api/v1/events/current',
+      methods: [apigatewayv2.HttpMethod.GET],
+      integration: currentEventIntegration,
+      // No authorizer - public endpoint for public website
+    });
+
     // Service-specific health and info endpoints (no auth)
     // Only create routes if service URLs are provided
     const services = [

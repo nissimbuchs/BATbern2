@@ -33,6 +33,7 @@ interface FileUploadProps {
   currentFileUrl?: string;
   onUploadSuccess?: (data: { uploadId: string; tempFileUrl?: string }) => void;
   onUploadError?: (error: { type: string; message: string }) => void;
+  onFileRemove?: () => void; // Callback when file is removed (Story 2.5.3a)
   maxFileSize?: number; // in bytes, default 5MB
   allowedTypes?: string[]; // MIME types
   altText?: string; // Alt text for the uploaded image
@@ -43,6 +44,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   currentFileUrl,
   onUploadSuccess,
   onUploadError,
+  onFileRemove,
   maxFileSize = 5 * 1024 * 1024, // 5MB
   allowedTypes = ['image/png', 'image/jpeg', 'image/svg+xml'],
   altText,
@@ -110,7 +112,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     setFileUrl(undefined);
     setUploadId(undefined);
     reset();
-  }, [reset]);
+    // Notify parent component that file was removed (Story 2.5.3a)
+    onFileRemove?.();
+  }, [reset, onFileRemove]);
 
   return (
     <Box sx={{ width: '100%' }}>

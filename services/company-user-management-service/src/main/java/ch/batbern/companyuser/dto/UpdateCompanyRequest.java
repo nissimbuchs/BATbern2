@@ -43,4 +43,7 @@ public class UpdateCompanyRequest {
     @Size(max = 2000, message = "Description must not exceed 2000 characters")
     @Schema(description = "Company description", example = "Leading telecommunications provider in Switzerland")
     private String description;
+
+    @Schema(description = "Logo upload ID from three-phase upload (set to empty string to remove logo)", example = "abc123-def456")
+    private String logoUploadId;
 }

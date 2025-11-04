@@ -2,10 +2,11 @@
 # Stop all BATbern services running natively
 #
 # Usage:
-#   ./scripts/dev/stop-all-native.sh [--keep-tunnel]
+#   ./scripts/dev/stop-all-native.sh [--keep-tunnel]              # Stop default instance
+#   BASE_PORT=9000 ./scripts/dev/stop-all-native.sh              # Stop instance 2
 #
 # Options:
-#   --keep-tunnel    Don't stop the database tunnel
+#   --keep-tunnel    Don't stop the database tunnel and MinIO
 
 set -e
 
@@ -20,6 +21,18 @@ NC='\033[0m' # No Color
 # Configuration
 PID_DIR="/tmp"
 KEEP_TUNNEL=false
+
+# Instance-specific configuration
+BASE_PORT="${BASE_PORT:-8000}"  # Default to 8000 (instance 1)
+
+# Calculate instance identifier based on BASE_PORT
+if [ "$BASE_PORT" -eq 8000 ]; then
+    INSTANCE="1"
+elif [ "$BASE_PORT" -eq 9000 ]; then
+    INSTANCE="2"
+else
+    INSTANCE="$BASE_PORT"
+fi
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -39,13 +52,14 @@ done
 # Banner
 echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${BLUE}║      BATbern Platform - Stopping Native Services          ║${NC}"
+echo -e "${BLUE}║              Instance ${INSTANCE} (BASE_PORT=${BASE_PORT})                  ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
 # Stop a service gracefully
 stop_service() {
     local service_name=$1
-    local pid_file="${PID_DIR}/batbern-dev-${service_name}.pid"
+    local pid_file="${PID_DIR}/batbern-${INSTANCE}-${service_name}.pid"
 
     if [ ! -f "$pid_file" ]; then
         echo -e "${YELLOW}  ⚠ ${service_name}: No PID file found${NC}"
@@ -111,31 +125,43 @@ main() {
     stop_service "partner-coordination"
     stop_service "attendee-experience"
 
-    # Stop DB tunnel (unless --keep-tunnel is specified)
+    # Stop infrastructure services (unless --keep-tunnel is specified)
     if [ "$KEEP_TUNNEL" = false ]; then
         echo ""
+
+        # Stop MinIO
+        stop_service "minio"
+
+        # Stop DB tunnel
         stop_service "db-tunnel"
 
-        # Also try to kill any AWS SSM session processes
-        if pgrep -f "AWS-StartPortForwardingSessionToRemoteHost" > /dev/null; then
-            echo -e "${CYAN}  → Stopping AWS SSM tunnel sessions...${NC}"
-            pkill -f "AWS-StartPortForwardingSessionToRemoteHost" || true
+        # Also try to kill any instance-specific AWS SSM session processes
+        # Note: We check for instance-specific tunnel by port
+        local db_tunnel_port=$((5432 + (INSTANCE - 1) * 1000))
+        if pgrep -f "localPortNumber=${db_tunnel_port}" > /dev/null; then
+            echo -e "${CYAN}  → Stopping instance ${INSTANCE} AWS SSM tunnel sessions...${NC}"
+            pkill -f "localPortNumber=${db_tunnel_port}" || true
             echo -e "${GREEN}    ✓ SSM tunnel sessions stopped${NC}"
         fi
     else
         echo ""
-        echo -e "${YELLOW}  ⚠ Database tunnel kept running (use --keep-tunnel to stop)${NC}"
+        echo -e "${YELLOW}  ⚠ Infrastructure services (DB tunnel, MinIO) kept running${NC}"
     fi
 
     echo ""
     echo -e "${GREEN}╔════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${GREEN}║          All Services Stopped Successfully! ✅             ║${NC}"
+    echo -e "${GREEN}║              Instance ${INSTANCE} (BASE_PORT=${BASE_PORT})                  ║${NC}"
     echo -e "${GREEN}╚════════════════════════════════════════════════════════════╝${NC}"
     echo ""
 
     if [ "$KEEP_TUNNEL" = true ]; then
-        echo -e "${CYAN}💡 Database tunnel is still running${NC}"
-        echo -e "${CYAN}   To stop it: ./scripts/dev/stop-all-native.sh${NC}"
+        echo -e "${CYAN}💡 Infrastructure services (DB tunnel, MinIO) are still running${NC}"
+        if [ "$INSTANCE" = "1" ]; then
+            echo -e "${CYAN}   To stop them: make dev-native-down${NC}"
+        else
+            echo -e "${CYAN}   To stop them: make dev-native-down-instance BASE_PORT=${BASE_PORT}${NC}"
+        fi
         echo ""
     fi
 }

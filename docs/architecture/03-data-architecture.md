@@ -409,9 +409,14 @@ GET /api/v1/speakers/john.doe
 **Key Attributes:**
 - id: UUID - Unique session identifier
 - eventId: UUID - Parent event reference
-- speakers: SessionSpeaker[] - Multiple speakers with roles
+- sessionUsers: SessionUser[] - Multiple speakers with roles (ADR-004: references User via userId)
 - schedule: SessionSchedule - Timing and location details
 - materials: SessionMaterials - Presentation files and resources
+
+**Implementation Note (Story 4.1.4):**
+- Sessions reference Users directly via `session_users` junction table (not Speakers)
+- Reduces cross-service dependency (event-management-service → company-user-management-service only)
+- Speaker-specific workflow data can be added later in speaker-coordination-service independently
 
 #### TypeScript Interface
 ```typescript
@@ -421,7 +426,7 @@ interface Session {
   title: string;
   description: string;
   sessionType: SessionType;
-  speakers: SessionSpeaker[]; // Multiple speakers
+  sessionUsers: SessionUser[]; // Multiple speakers (references User, not Speaker)
   startTime: Date;
   endTime: Date;
   room?: string;
@@ -435,18 +440,24 @@ interface Session {
   updatedAt: Date;
 }
 
-interface SessionSpeaker {
-  speakerId: string;
-  role: SpeakerRole;
+// ADR-004 pattern: Junction entity references User via userId
+interface SessionUser {
+  id: string;
+  userId: string;          // FK to User.id (ADR-004 reference pattern)
+  speakerRole: SpeakerRole;
   presentationTitle?: string; // Speaker-specific title if different
-  workflowState: SpeakerWorkflowState;
   isConfirmed: boolean;
   invitedAt: Date;
   confirmedAt?: Date;
   declinedAt?: Date;
   declineReason?: string;
-  slotAssignment?: SlotAssignment;
-  qualityReview?: ContentQualityReview;
+
+  // API responses include User fields by joining:
+  // username: string;        // From User
+  // firstName: string;       // From User
+  // lastName: string;        // From User
+  // company: string;         // From User.companyId
+  // profilePictureUrl: string; // From User
 }
 
 enum SessionType {
@@ -469,7 +480,9 @@ enum SpeakerRole {
 
 #### Relationships
 - **Many-to-One:** Session → Event (session belongs to event)
-- **Many-to-Many:** Session ↔ Speakers (multiple speakers per session)
+- **Many-to-Many:** Session ↔ Users via SessionUser junction (multiple speakers per session) - Story 4.1.4
+- **One-to-Many:** Session → SessionUsers (speaker assignments)
+- **Many-to-One:** SessionUser → User (via userId FK, ADR-004 pattern)
 - **One-to-Many:** Session → AttendeeRatings (feedback and ratings)
 - **One-to-Many:** Session → Materials (uploaded files and resources)
 
@@ -1431,6 +1444,26 @@ CREATE TABLE sessions (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Session-User junction table (many-to-many speakers)
+-- Story 4.1.4: ADR-004 pattern - references User via user_id FK
+CREATE TABLE session_users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    session_id UUID NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL, -- FK to user_profiles.id in company-user-management-service
+    speaker_role VARCHAR(50) NOT NULL CHECK (speaker_role IN (
+        'primary_speaker', 'co_speaker', 'moderator', 'panelist'
+    )),
+    presentation_title VARCHAR(255),
+    is_confirmed BOOLEAN DEFAULT FALSE,
+    invited_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    confirmed_at TIMESTAMP WITH TIME ZONE,
+    declined_at TIMESTAMP WITH TIME ZONE,
+    decline_reason TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(session_id, user_id)
+);
+
 -- Topics table with usage tracking
 CREATE TABLE topics (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -1468,6 +1501,9 @@ CREATE TABLE topic_usage_history (
 CREATE INDEX idx_events_status ON events(status);
 CREATE INDEX idx_events_event_date ON events(event_date);
 CREATE INDEX idx_sessions_event_id ON sessions(event_id);
+CREATE INDEX idx_session_users_session_id ON session_users(session_id);
+CREATE INDEX idx_session_users_user_id ON session_users(user_id);
+CREATE INDEX idx_session_users_confirmed ON session_users(is_confirmed);
 CREATE INDEX idx_topics_title_vector ON topics USING GIN(title_vector);
 CREATE INDEX idx_topics_description_vector ON topics USING GIN(description_vector);
 CREATE INDEX idx_topics_last_used ON topics(last_used_date);
