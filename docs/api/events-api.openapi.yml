@@ -1134,6 +1134,24 @@ components:
         updatedAt:
           type: string
           format: date-time
+        themeImageUrl:
+          type: string
+          nullable: true
+          format: uri
+          maxLength: 1000
+          example: "https://d123456.cloudfront.net/logos/2025/events/BATbern57/theme-abc123.png"
+          description: |
+            CloudFront URL for event theme image.
+            Story 2.5.3a: Event Theme Image Upload
+        themeImageUploadId:
+          type: string
+          nullable: true
+          maxLength: 100
+          example: "abc123-def456"
+          description: |
+            Upload ID from three-phase upload pattern (internal reference).
+            Story 2.5.3a: Event Theme Image Upload
+            This is returned so the frontend can track what was uploaded.
 
     EventDetail:
       allOf:
@@ -1344,6 +1362,14 @@ components:
         description:
           type: string
           maxLength: 5000
+        themeImageUploadId:
+          type: string
+          nullable: true
+          maxLength: 100
+          example: "abc123-def456"
+          description: |
+            Upload ID from /logos/presigned-url for event theme image.
+            Story 2.5.3a: Event Theme Image Upload
 
     UpdateEventRequest:
       type: object
@@ -1396,6 +1422,11 @@ components:
         description:
           type: string
           maxLength: 5000
+        themeImageUploadId:
+          type: string
+          nullable: true
+          maxLength: 100
+          description: Upload ID from /logos/presigned-url for event theme image
 
     PatchEventRequest:
       type: object
@@ -1438,6 +1469,11 @@ components:
         description:
           type: string
           maxLength: 5000
+        themeImageUploadId:
+          type: string
+          nullable: true
+          maxLength: 100
+          description: Upload ID from /logos/presigned-url for event theme image
 
     CreateSessionRequest:
       type: object

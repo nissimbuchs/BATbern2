@@ -46,4 +46,22 @@ public interface EventRepository extends JpaRepository<Event, UUID>, JpaSpecific
      * @return Optional containing the next published event if found
      */
     Optional<Event> findFirstByStatusOrderByDateAsc(String status);
+
+    /**
+     * Find the first event matching any of the given statuses, ordered by date ascending
+     * Used for getting the current/next upcoming event for the public website
+     * Includes multiple statuses: published, registration_open, registration_closed
+     *
+     * @param statuses List of event statuses to match
+     * @return Optional containing the next event matching any status if found
+     */
+    Optional<Event> findFirstByStatusInOrderByDateAsc(java.util.List<String> statuses);
+
+    /**
+     * Find an event by its event number
+     *
+     * @param eventNumber The event number to search for
+     * @return Optional containing the event if found
+     */
+    Optional<Event> findByEventNumber(Integer eventNumber);
 }
