@@ -29,14 +29,14 @@ interface FormData {
   firstName: string;
   lastName: string;
   email: string;
-  roles: Role[];
+  initialRoles: Role[];
 }
 
 interface FormErrors {
   firstName?: string;
   lastName?: string;
   email?: string;
-  roles?: string;
+  initialRoles?: string;
 }
 
 const UserCreateModal: React.FC<UserCreateModalProps> = ({ open, onClose, onSuccess }) => {
@@ -47,7 +47,7 @@ const UserCreateModal: React.FC<UserCreateModalProps> = ({ open, onClose, onSucc
     firstName: '',
     lastName: '',
     email: '',
-    roles: [],
+    initialRoles: [],
   };
 
   const [formData, setFormData] = useState<FormData>(initialFormData);
@@ -83,8 +83,8 @@ const UserCreateModal: React.FC<UserCreateModalProps> = ({ open, onClose, onSucc
       newErrors.email = t('error.email.invalid');
     }
 
-    if (formData.roles.length === 0) {
-      newErrors.roles = t('modal.createUser.selectRoles');
+    if (formData.initialRoles.length === 0) {
+      newErrors.initialRoles = t('modal.createUser.selectRoles');
     }
 
     setErrors(newErrors);
@@ -109,18 +109,18 @@ const UserCreateModal: React.FC<UserCreateModalProps> = ({ open, onClose, onSucc
 
   const handleRoleToggle = (role: Role) => {
     setFormData((prev) => {
-      const roles = prev.roles.includes(role)
-        ? prev.roles.filter((r) => r !== role)
-        : [...prev.roles, role];
+      const initialRoles = prev.initialRoles.includes(role)
+        ? prev.initialRoles.filter((r) => r !== role)
+        : [...prev.initialRoles, role];
 
-      return { ...prev, roles };
+      return { ...prev, initialRoles };
     });
 
     // Clear roles error when user selects a role
-    if (errors.roles) {
+    if (errors.initialRoles) {
       setErrors((prev) => ({
         ...prev,
-        roles: undefined,
+        initialRoles: undefined,
       }));
     }
   };
@@ -135,7 +135,7 @@ const UserCreateModal: React.FC<UserCreateModalProps> = ({ open, onClose, onSucc
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
-        roles: formData.roles,
+        initialRoles: formData.initialRoles,
       });
 
       onSuccess?.();
@@ -226,7 +226,7 @@ const UserCreateModal: React.FC<UserCreateModalProps> = ({ open, onClose, onSucc
                   key={role.value}
                   control={
                     <Checkbox
-                      checked={formData.roles.includes(role.value)}
+                      checked={formData.initialRoles.includes(role.value)}
                       onChange={() => handleRoleToggle(role.value)}
                     />
                   }
@@ -234,9 +234,9 @@ const UserCreateModal: React.FC<UserCreateModalProps> = ({ open, onClose, onSucc
                 />
               ))}
             </FormGroup>
-            {errors.roles && (
+            {errors.initialRoles && (
               <Typography variant="caption" color="error">
-                {errors.roles}
+                {errors.initialRoles}
               </Typography>
             )}
           </Box>

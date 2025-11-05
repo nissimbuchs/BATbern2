@@ -68,7 +68,7 @@ export interface CreateUserFormData {
   lastName: string;
   email: string;
   companyId?: string;
-  roles: Role[];
+  initialRoles: Role[];
 }
 
 export interface UserListState {
