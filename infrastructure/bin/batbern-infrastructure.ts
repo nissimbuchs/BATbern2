@@ -242,6 +242,8 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     databaseSecret: databaseStack.databaseSecret,
     userPool: cognitoStack.userPool,
     userPoolClient: cognitoStack.userPoolClient,
+    contentBucket: storageStack.contentBucket,
+    cloudFrontDistribution: storageStack.distribution,
     env,
     description: `BATbern Event Management Service - ${config.envName}`,
     tags: config.tags,
@@ -250,6 +252,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   eventManagementStack.addDependency(databaseStack);
   eventManagementStack.addDependency(cicdStack);
   eventManagementStack.addDependency(cognitoStack);
+  eventManagementStack.addDependency(storageStack);
 
   // 10b. Speaker Coordination Service
   speakerCoordinationStack = new SpeakerCoordinationStack(app, `${stackPrefix}-SpeakerCoordination`, {

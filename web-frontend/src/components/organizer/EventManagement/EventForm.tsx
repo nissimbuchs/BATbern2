@@ -254,6 +254,24 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
     [initialFormData]
   );
 
+  // Transform date fields from date-only format (YYYY-MM-DD) to ISO 8601 (YYYY-MM-DDTHH:mm:ssZ)
+  // Required for PATCH requests per OpenAPI spec (format: date-time)
+  const transformDatesForApi = (data: PartialEventFormData): PatchEventRequest => {
+    const transformed = { ...data } as Record<string, unknown>;
+
+    // Convert date field if present
+    if (transformed.date && typeof transformed.date === 'string') {
+      transformed.date = new Date(transformed.date).toISOString();
+    }
+
+    // Convert registrationDeadline field if present
+    if (transformed.registrationDeadline && typeof transformed.registrationDeadline === 'string') {
+      transformed.registrationDeadline = new Date(transformed.registrationDeadline).toISOString();
+    }
+
+    return transformed as PatchEventRequest;
+  };
+
   // Auto-save functionality (5-second debounce, always enabled)
   const formValues = watch();
   const debouncedFormValues = useDebounce(formValues, 5000);
@@ -274,11 +292,14 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
     setApiError(null);
 
     try {
+      // Transform dates to ISO 8601 format before sending to API
+      const patchData = transformDatesForApi(changedFields);
+
       // Use mutation hook for proper cache management (MVC pattern)
       // This ensures all event caches (list, detail, current) are invalidated
       await updateEventMutation.mutateAsync({
         eventCode: event.eventCode,
-        data: changedFields as PatchEventRequest,
+        data: patchData,
       });
       setAutoSaveStatus('saved');
       setLastSavedAt(new Date());
@@ -355,10 +376,13 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         return;
       }
 
+      // Transform dates to ISO 8601 format before sending to API
+      const patchData = transformDatesForApi(changedFields);
+
       // Use mutation hook for proper cache management (MVC pattern)
       await updateEventMutation.mutateAsync({
         eventCode: event.eventCode,
-        data: changedFields as PatchEventRequest,
+        data: patchData,
       });
       onSuccess?.();
       onClose();
