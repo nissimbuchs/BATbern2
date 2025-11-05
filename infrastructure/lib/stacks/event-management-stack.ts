@@ -4,6 +4,8 @@ import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ecsPatterns from 'aws-cdk-lib/aws-ecs-patterns';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
 import { createDomainService } from '../constructs/domain-service-construct';
@@ -17,6 +19,8 @@ export interface EventManagementStackProps extends cdk.StackProps {
   databaseSecret?: secretsmanager.ISecret;
   userPool: cognito.IUserPool;
   userPoolClient: cognito.IUserPoolClient;
+  contentBucket?: s3.IBucket;
+  cloudFrontDistribution?: cloudfront.IDistribution;
 }
 
 /**
@@ -46,6 +50,13 @@ export class EventManagementStack extends cdk.Stack {
         memoryLimitMiB: 1024,
         additionalEnvironment: {
           JPA_DDL_AUTO: 'none', // Let Flyway handle all schema management
+          // S3 configuration for event theme images (Story 2.5.3a)
+          ...(props.contentBucket && {
+            S3_CONTENT_BUCKET_NAME: props.contentBucket.bucketName,
+          }),
+          ...(props.cloudFrontDistribution && {
+            CLOUDFRONT_DOMAIN: `https://${props.cloudFrontDistribution.distributionDomainName}`,
+          }),
         },
       },
       cluster: props.cluster,
@@ -59,6 +70,11 @@ export class EventManagementStack extends cdk.Stack {
 
     this.service = domainService.service;
     this.serviceUrl = domainService.serviceUrl;
+
+    // Grant S3 permissions for event theme images (Story 2.5.3a)
+    if (props.contentBucket) {
+      props.contentBucket.grantReadWrite(this.service.taskDefinition.taskRole);
+    }
 
     // Outputs
     new cdk.CfnOutput(this, 'ServiceUrl', {

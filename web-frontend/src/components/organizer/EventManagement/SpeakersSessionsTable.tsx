@@ -79,10 +79,24 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
   isLoading = false,
   error,
 }) => {
-  const { t } = useTranslation('events');
+  const { t, i18n } = useTranslation('events');
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [autoAssignDialogOpen, setAutoAssignDialogOpen] = useState(false);
+
+  // Format ISO 8601 timestamp to localized time string
+  const formatTime = (isoTimestamp: string): string => {
+    try {
+      const date = new Date(isoTimestamp);
+      return date.toLocaleTimeString(i18n.language, {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false, // Use 24-hour format
+      });
+    } catch {
+      return isoTimestamp; // Fallback to raw string if parsing fails
+    }
+  };
 
   // Materials status icon and color mapping
   const getMaterialsStatusIcon = (status?: 'pending' | 'submitted' | 'approved' | 'rejected') => {
@@ -206,7 +220,7 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
               <Stack spacing={1}>
                 <Typography variant="subtitle2" color="text.secondary">
                   {t('speakers.slotLabel', { number: session.slotNumber || 0 })} |{' '}
-                  {session.startTime}-{session.endTime}
+                  {formatTime(session.startTime)}-{formatTime(session.endTime)}
                 </Typography>
 
                 {session.speaker ? (
@@ -344,7 +358,7 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
 
                 <TableCell>
                   <Typography variant="body2">
-                    {session.startTime}-{session.endTime}
+                    {formatTime(session.startTime)}-{formatTime(session.endTime)}
                   </Typography>
                 </TableCell>
 

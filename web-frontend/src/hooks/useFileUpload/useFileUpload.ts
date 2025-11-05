@@ -35,6 +35,7 @@ interface UploadError {
 interface PresignedUrlResponse {
   uploadUrl: string;
   fileId: string;
+  s3Key: string; // S3 key for constructing CloudFront URL
   fileExtension: string;
   expiresInMinutes: number;
   requiredHeaders: Record<string, string>;
@@ -42,6 +43,26 @@ interface PresignedUrlResponse {
 
 const DEFAULT_MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const DEFAULT_ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/svg+xml'];
+
+/**
+ * Get CloudFront CDN URL based on environment
+ * Returns the CloudFront domain for accessing uploaded files
+ */
+function getCloudFrontUrl(): string {
+  const hostname = window.location.hostname;
+
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    // Local development - files served from local S3
+    return 'http://localhost:9000'; // LocalStack S3 or MinIO
+  }
+
+  if (hostname === 'staging.batbern.ch' || hostname.includes('staging')) {
+    return 'https://cdn.staging.batbern.ch';
+  }
+
+  // Production
+  return 'https://cdn.batbern.ch';
+}
 
 export const useFileUpload = (options: UseFileUploadOptions = {}) => {
   const {
@@ -120,7 +141,7 @@ export const useFileUpload = (options: UseFileUploadOptions = {}) => {
           }
         );
 
-        const { uploadUrl, fileId, fileExtension, requiredHeaders } = presignedResponse.data;
+        const { uploadUrl, fileId, s3Key, fileExtension, requiredHeaders } = presignedResponse.data;
 
         // Phase 2: Upload file directly to S3 using presigned URL
         await new Promise<void>((resolve, reject) => {
@@ -171,11 +192,12 @@ export const useFileUpload = (options: UseFileUploadOptions = {}) => {
         setUploadProgress(100);
         setIsUploading(false);
 
-        // Notify success
+        // Notify success with CloudFront URL for display
         if (onUploadSuccess) {
+          const cloudFrontUrl = getCloudFrontUrl();
           onUploadSuccess({
             uploadId: fileId,
-            tempFileUrl: uploadUrl.split('?')[0], // Remove query params for display
+            tempFileUrl: `${cloudFrontUrl}/${s3Key}`, // Use CloudFront URL instead of S3 direct URL
           });
         }
 
