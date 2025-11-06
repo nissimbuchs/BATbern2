@@ -70,6 +70,7 @@ public class EventController {
     private final ch.batbern.events.security.SecurityContextHelper securityContextHelper;
     private final CacheManager cacheManager;
     private final ch.batbern.events.service.GenericLogoService genericLogoService;
+    private final ch.batbern.events.client.UserApiClient userApiClient;
 
     /**
      * List/Search Events (AC1)
@@ -279,9 +280,10 @@ public class EventController {
     /**
      * Expand sessions for an event
      * Story 1.15a.1: Resource expansion for sessions
+     * Story 1.15a.1b: Include enriched speaker data
      *
      * @param event The event to expand sessions for
-     * @return List of session maps with public fields only
+     * @return List of session maps with public fields and speakers
      */
     private java.util.List<Map<String, Object>> expandSessions(Event event) {
         // Find all sessions for this event
@@ -301,7 +303,63 @@ public class EventController {
                     sessionMap.put("room", session.getRoom());
                     sessionMap.put("capacity", session.getCapacity());
                     sessionMap.put("language", session.getLanguage());
+
+                    // Story 1.15a.1b: Enrich with speaker data
+                    List<Map<String, Object>> speakers = expandSessionSpeakers(session);
+                    sessionMap.put("speakers", speakers);
+
                     return sessionMap;
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Expand speakers for a session with enriched User data
+     * Story 1.15a.1b: Combines SessionUser (role, confirmation) with User entity (name, company, photo)
+     *
+     * @param session The session to expand speakers for
+     * @return List of speaker maps with enriched user data
+     */
+    private java.util.List<Map<String, Object>> expandSessionSpeakers(ch.batbern.events.domain.Session session) {
+        return session.getSessionUsers().stream()
+                .map(sessionUser -> {
+                    Map<String, Object> speakerMap = new HashMap<>();
+
+                    // Add SessionUser data (role, confirmation)
+                    speakerMap.put("speakerRole", sessionUser.getSpeakerRole().name());
+                    speakerMap.put("isConfirmed", sessionUser.isConfirmed());
+                    speakerMap.put("presentationTitle", sessionUser.getPresentationTitle());
+
+                    // Fetch and add enriched User data
+                    try {
+                        if (sessionUser.getUsername() != null) {
+                            ch.batbern.events.dto.UserProfileDTO userProfile = userApiClient.getUserByUsername(sessionUser.getUsername());
+                            speakerMap.put("username", userProfile.getUsername());
+                            speakerMap.put("firstName", userProfile.getFirstName());
+                            speakerMap.put("lastName", userProfile.getLastName());
+                            speakerMap.put("company", userProfile.getCompanyId());
+                            speakerMap.put("profilePictureUrl", userProfile.getProfilePictureUrl());
+                        } else {
+                            // Fallback: username not set (shouldn't happen with V8 migration)
+                            log.warn("SessionUser {} has no username set", sessionUser.getId());
+                            speakerMap.put("username", null);
+                            speakerMap.put("firstName", "Unknown");
+                            speakerMap.put("lastName", "Speaker");
+                            speakerMap.put("company", null);
+                            speakerMap.put("profilePictureUrl", null);
+                        }
+                    } catch (Exception e) {
+                        // Log error but don't fail the entire request
+                        log.error("Failed to fetch user profile for username {}: {}",
+                                  sessionUser.getUsername(), e.getMessage());
+                        speakerMap.put("username", sessionUser.getUsername());
+                        speakerMap.put("firstName", "Unknown");
+                        speakerMap.put("lastName", "Speaker");
+                        speakerMap.put("company", null);
+                        speakerMap.put("profilePictureUrl", null);
+                    }
+
+                    return speakerMap;
                 })
                 .collect(Collectors.toList());
     }

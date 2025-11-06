@@ -95,4 +95,46 @@ public interface SessionUserRepository extends JpaRepository<SessionUser, UUID> 
      * @param userId the user UUID
      */
     void deleteBySessionIdAndUserId(UUID sessionId, UUID userId);
+
+    // ========================================================================
+    // Username-based methods (ADR-003: Meaningful Identifiers)
+    // ========================================================================
+
+    /**
+     * Find a specific speaker assignment for a session by username
+     * ADR-003: Use username instead of userId for API operations
+     *
+     * @param sessionId the session UUID
+     * @param username the user's username (meaningful identifier)
+     * @return optional SessionUser association
+     */
+    Optional<SessionUser> findBySessionIdAndUsername(UUID sessionId, String username);
+
+    /**
+     * Check if a user is assigned to a session by username
+     * ADR-003: Use username instead of userId for API operations
+     *
+     * @param sessionId the session UUID
+     * @param username the user's username (meaningful identifier)
+     * @return true if user is assigned to session
+     */
+    boolean existsBySessionIdAndUsername(UUID sessionId, String username);
+
+    /**
+     * Delete a specific speaker assignment by username
+     * ADR-003: Use username instead of userId for API operations
+     *
+     * @param sessionId the session UUID
+     * @param username the user's username (meaningful identifier)
+     */
+    void deleteBySessionIdAndUsername(UUID sessionId, String username);
+
+    /**
+     * Find all sessions for a specific user by username
+     * ADR-003: Use username instead of userId for API operations
+     *
+     * @param username the user's username (meaningful identifier)
+     * @return list of SessionUser associations for the user
+     */
+    List<SessionUser> findByUsername(String username);
 }
