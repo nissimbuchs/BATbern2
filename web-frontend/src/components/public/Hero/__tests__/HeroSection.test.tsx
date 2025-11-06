@@ -1,0 +1,264 @@
+/**
+ * HeroSection Component Tests
+ * Story 4.1.3: Event Landing Page Hero Section Testing
+ *
+ * Tests for the public landing page hero with Unicorn.studio background
+ */
+
+import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { BrowserRouter } from 'react-router-dom';
+import { HeroSection } from '../HeroSection';
+
+// Mock useTranslation
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => {
+      const translations: Record<string, string> = {
+        'public.register': 'Register Now',
+      };
+      return translations[key] || key;
+    },
+  }),
+}));
+
+describe('HeroSection Component', () => {
+  beforeEach(() => {
+    // Clear any existing Unicorn Studio scripts
+    delete (window as any).UnicornStudio;
+    const existingScripts = document.querySelectorAll('script[src*="unicornStudio"]');
+    existingScripts.forEach((script) => script.remove());
+  });
+
+  const defaultProps = {
+    title: 'BATbern 2025',
+    ctaLink: '/register',
+  };
+
+  const renderWithRouter = (ui: React.ReactElement) => {
+    return render(<BrowserRouter>{ui}</BrowserRouter>);
+  };
+
+  describe('Basic Rendering', () => {
+    test('should_renderTitle_when_provided', () => {
+      renderWithRouter(<HeroSection {...defaultProps} />);
+
+      expect(screen.getByText('BATbern 2025')).toBeInTheDocument();
+    });
+
+    test('should_renderDefaultCTAText_when_notProvided', () => {
+      renderWithRouter(<HeroSection {...defaultProps} />);
+
+      expect(screen.getByText('Register Now')).toBeInTheDocument();
+    });
+
+    test('should_renderCustomCTAText_when_provided', () => {
+      renderWithRouter(
+        <HeroSection {...defaultProps} ctaText="Join the Conference" />
+      );
+
+      expect(screen.getByText('Join the Conference')).toBeInTheDocument();
+    });
+
+    test('should_renderCTALink_when_provided', () => {
+      renderWithRouter(<HeroSection {...defaultProps} ctaLink="/events" />);
+
+      const link = screen.getByRole('link');
+      expect(link).toHaveAttribute('href', '/events');
+    });
+  });
+
+  describe('Date and Location Display', () => {
+    test('should_renderFormattedDate_when_dateProvided', () => {
+      renderWithRouter(
+        <HeroSection {...defaultProps} date="2025-06-15T00:00:00Z" />
+      );
+
+      // Check for date presence (format depends on locale)
+      expect(screen.getByText(/2025/)).toBeInTheDocument();
+    });
+
+    test('should_renderLocation_when_locationProvided', () => {
+      renderWithRouter(
+        <HeroSection {...defaultProps} location="Bern, Switzerland" />
+      );
+
+      expect(screen.getByText('Bern, Switzerland')).toBeInTheDocument();
+    });
+
+    test('should_renderBothDateAndLocation_when_bothProvided', () => {
+      renderWithRouter(
+        <HeroSection
+          {...defaultProps}
+          date="2025-06-15T00:00:00Z"
+          location="Bern, Switzerland"
+        />
+      );
+
+      expect(screen.getByText(/2025/)).toBeInTheDocument();
+      expect(screen.getByText('Bern, Switzerland')).toBeInTheDocument();
+    });
+
+    test('should_notRenderDateSection_when_dateAndLocationNotProvided', () => {
+      const { container } = renderWithRouter(<HeroSection {...defaultProps} />);
+
+      // Check that the date/location container is not rendered
+      const dateLocationContainer = container.querySelector('.flex.flex-wrap.items-center.gap-4');
+      expect(dateLocationContainer).not.toBeInTheDocument();
+    });
+
+    test('should_renderCalendarIcon_when_dateProvided', () => {
+      const { container } = renderWithRouter(
+        <HeroSection {...defaultProps} date="2025-06-15T00:00:00Z" />
+      );
+
+      const calendarIcon = container.querySelector('svg');
+      expect(calendarIcon).toBeInTheDocument();
+    });
+
+    test('should_renderLocationIcon_when_locationProvided', () => {
+      const { container } = renderWithRouter(
+        <HeroSection {...defaultProps} location="Bern" />
+      );
+
+      const locationIcon = container.querySelector('svg');
+      expect(locationIcon).toBeInTheDocument();
+    });
+  });
+
+  describe('Countdown Timer', () => {
+    test('should_renderCountdownTimer_when_provided', () => {
+      const countdownTimer = <div data-testid="countdown">5 days remaining</div>;
+
+      renderWithRouter(
+        <HeroSection {...defaultProps} countdownTimer={countdownTimer} />
+      );
+
+      expect(screen.getByTestId('countdown')).toBeInTheDocument();
+      expect(screen.getByText('5 days remaining')).toBeInTheDocument();
+    });
+
+    test('should_notRenderCountdownTimer_when_notProvided', () => {
+      renderWithRouter(<HeroSection {...defaultProps} />);
+
+      expect(screen.queryByTestId('countdown')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Unicorn.studio Background', () => {
+    test('should_renderUnicornProjectElement_when_componentMounted', () => {
+      const { container } = renderWithRouter(
+        <HeroSection {...defaultProps} unicornProjectId="custom-project-id" />
+      );
+
+      const unicornElement = container.querySelector('[data-us-project="custom-project-id"]');
+      expect(unicornElement).toBeInTheDocument();
+    });
+
+    test('should_useDefaultProjectId_when_notProvided', () => {
+      const { container } = renderWithRouter(<HeroSection {...defaultProps} />);
+
+      const unicornElement = container.querySelector('[data-us-project="jfzsiwProJi81qvb7uKX"]');
+      expect(unicornElement).toBeInTheDocument();
+    });
+
+    test('should_loadUnicornScript_when_notAlreadyLoaded', () => {
+      renderWithRouter(<HeroSection {...defaultProps} />);
+
+      // Check that script was added to document
+      const script = document.querySelector('script[src*="unicornStudio"]');
+      expect(script).toBeInTheDocument();
+    });
+
+    test('should_notLoadScriptTwice_when_alreadyInitialized', () => {
+      // Simulate already loaded Unicorn Studio
+      (window as any).UnicornStudio = { isInitialized: true };
+
+      renderWithRouter(<HeroSection {...defaultProps} />);
+
+      // Should not add another script
+      const scripts = document.querySelectorAll('script[src*="unicornStudio"]');
+      expect(scripts.length).toBe(0);
+    });
+
+    test('should_markBackgroundAsAriaHidden_when_rendered', () => {
+      const { container } = renderWithRouter(<HeroSection {...defaultProps} />);
+
+      const background = container.querySelector('[aria-hidden="true"]');
+      expect(background).toBeInTheDocument();
+    });
+  });
+
+  describe('Layout and Styling', () => {
+    test('should_renderFullScreenSection_when_mounted', () => {
+      const { container } = renderWithRouter(<HeroSection {...defaultProps} />);
+
+      const section = container.querySelector('section');
+      expect(section).toHaveClass('h-screen');
+    });
+
+    test('should_renderResponsiveTitle_when_mounted', () => {
+      renderWithRouter(<HeroSection {...defaultProps} />);
+
+      const title = screen.getByRole('heading', { level: 1 });
+      expect(title).toHaveClass('text-4xl');
+      expect(title).toHaveClass('sm:text-5xl');
+      expect(title).toHaveClass('md:text-6xl');
+    });
+
+    test('should_renderButtonWithCorrectSize_when_mounted', () => {
+      renderWithRouter(<HeroSection {...defaultProps} />);
+
+      const button = screen.getByRole('link');
+      expect(button).toBeInTheDocument();
+    });
+  });
+
+  describe('Script Loading', () => {
+    test('should_initializeUnicornStudio_when_scriptLoads', () => {
+      renderWithRouter(<HeroSection {...defaultProps} />);
+
+      const script = document.querySelector('script[src*="unicornStudio"]') as HTMLScriptElement;
+
+      // Simulate script load
+      if (script && script.onload) {
+        (script.onload as any)({});
+      }
+
+      // Check that window.UnicornStudio was set
+      expect((window as any).UnicornStudio).toBeDefined();
+    });
+
+    test('should_appendScriptToHead_when_componentMounts', () => {
+      renderWithRouter(<HeroSection {...defaultProps} />);
+
+      const script = document.head.querySelector('script[src*="unicornStudio"]') ||
+                     document.body.querySelector('script[src*="unicornStudio"]');
+      expect(script).toBeInTheDocument();
+    });
+  });
+
+  describe('Edge Cases', () => {
+    test('should_handleEmptyTitle_when_provided', () => {
+      renderWithRouter(<HeroSection {...defaultProps} title="" />);
+
+      const heading = screen.getByRole('heading', { level: 1 });
+      expect(heading).toBeInTheDocument();
+      expect(heading).toHaveTextContent('');
+    });
+
+    test('should_handleInvalidDate_when_provided', () => {
+      // Should not crash with invalid date
+      expect(() => {
+        renderWithRouter(<HeroSection {...defaultProps} date="invalid-date" />);
+      }).not.toThrow();
+    });
+
+    test('should_handleEmptyLocation_when_provided', () => {
+      renderWithRouter(<HeroSection {...defaultProps} location="" />);
+
+      // Empty location should not display location icon/text
+      expect(screen.queryByText('')).not.toBeInTheDocument();
+    });
+  });
+});
