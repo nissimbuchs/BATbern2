@@ -8,12 +8,14 @@
         {
           "name": "Lukas Zaugg",
           "company": "SPOUD",
-          "bio": "Seit über 20 Jahren ist Lukas in unterschiedlichen Rollen und Disziplinen in der Informatik tätig. Im Jahr 2013 wendete Lukas sich der Welt der Startups zu. Drei Jahre später gründete er SPOUD AG mit, leitet seither die technologische Vision und baut zusammen mit über 15 Software- und Data Ninjas die eventgetriebenen und reaktiven Tools von Morgen für die Unterstützung der Enterprise Data Supply Chains."
+          "bio": "Seit über 20 Jahren ist Lukas in unterschiedlichen Rollen und Disziplinen in der Informatik tätig. Im Jahr 2013 wendete Lukas sich der Welt der Startups zu. Drei Jahre später gründete er SPOUD AG mit, leitet seither die technologische Vision und baut zusammen mit über 15 Software- und Data Ninjas die eventgetriebenen und reaktiven Tools von Morgen für die Unterstützung der Enterprise Data Supply Chains.",
+          "portrait": "lukas.zaugg.jpg"
         },
         {
           "name": "Patrick Bönzli",
           "company": "SPOUD",
-          "bio": "Nach seinem Informationstechnologie Studium an der ETH und Tätigkeit bei Google und Netcetera vertiefte er sein Wissen als Engineer, Architekt und Consultant in verschiedenen Firmen und Projekten. Seit 5 Jahren arbeitet Patrick für Technologie Startups und gründete vor 2 Jahren SPOUD AG um Enterprises zu helfen ihre Daten Supply Chain transparent, schnell und kontrollierbar zu machen."
+          "bio": "Nach seinem Informationstechnologie Studium an der ETH und Tätigkeit bei Google und Netcetera vertiefte er sein Wissen als Engineer, Architekt und Consultant in verschiedenen Firmen und Projekten. Seit 5 Jahren arbeitet Patrick für Technologie Startups und gründete vor 2 Jahren SPOUD AG um Enterprises zu helfen ihre Daten Supply Chain transparent, schnell und kontrollierbar zu machen.",
+          "portrait": "patrick.bönzli.jpg"
         }
       ]
     },
@@ -24,7 +26,8 @@
         {
           "name": "Matthias Imsand",
           "company": "Amanox Solutions",
-          "bio": "Matthias Imsand ist Mitgründer und CTO der Firma Amanox Solutions AG. Er ist zertifizierter AWS Instruktor und hat mit seinem Team in den letzten Jahren bereits zahlreiche Schweizer Unternehmen in Cloud Consulting und Engineering Projekten unterstützt. Sein Fokus liegt in den Bereichen DevOps, Serverless Anwendungen und Automatisierung."
+          "bio": "Matthias Imsand ist Mitgründer und CTO der Firma Amanox Solutions AG. Er ist zertifizierter AWS Instruktor und hat mit seinem Team in den letzten Jahren bereits zahlreiche Schweizer Unternehmen in Cloud Consulting und Engineering Projekten unterstützt. Sein Fokus liegt in den Bereichen DevOps, Serverless Anwendungen und Automatisierung.",
+          "portrait": "matthias.imsand.jpg"
         }
       ]
     },
@@ -35,7 +38,8 @@
         {
           "name": "Szabolcs Szádeczky-Kardoss",
           "company": "SBB AG",
-          "bio": "Szabolcs Szádeczky-Kardoss arbeitet seit Anfang 2015 als IT-Architekt bei der SBB. Neben der Betreuung und Mitgestaltung von vielen Cloud-Themen ist er auch zuständig für Monitoring und Logging und unterstützt die interessierten Projekte beim Onboarding auf AWS. Er besitzt langjährige Erfahrung als Senior bzw. Lead Software Entwickler im Java Umfeld."
+          "bio": "Szabolcs Szádeczky-Kardoss arbeitet seit Anfang 2015 als IT-Architekt bei der SBB. Neben der Betreuung und Mitgestaltung von vielen Cloud-Themen ist er auch zuständig für Monitoring und Logging und unterstützt die interessierten Projekte beim Onboarding auf AWS. Er besitzt langjährige Erfahrung als Senior bzw. Lead Software Entwickler im Java Umfeld.",
+          "portrait": "szabolcs.szádeczky-kardoss.jpg"
         }
       ]
     }

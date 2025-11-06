@@ -8,7 +8,8 @@
         {
           "name": "Willy Müller",
           "company": "Informatiksteuerungsorgan des Bundes",
-          "bio": "Willy Müller arbeitet beim Informatiksteuerungsorgan Bund ISB. Er studierte Psychologie und Informatik und hat den Verein eCH ins Leben gerufen, der E-Government-Standards für die Schweizer Behörden herausgibt. Als Leiter der Arbeiten zur E-Government-Architektur Schweiz, einem priorisierten E-Government-Vorhaben der E-Government-Strategie, war er verantwortlich für die Erarbeitung der Cloud-Strategie der Schweizer Behörden."
+          "bio": "Willy Müller arbeitet beim Informatiksteuerungsorgan Bund ISB. Er studierte Psychologie und Informatik und hat den Verein eCH ins Leben gerufen, der E-Government-Standards für die Schweizer Behörden herausgibt. Als Leiter der Arbeiten zur E-Government-Architektur Schweiz, einem priorisierten E-Government-Vorhaben der E-Government-Strategie, war er verantwortlich für die Erarbeitung der Cloud-Strategie der Schweizer Behörden.",
+          "portrait": "willy.müller.jpg"
         }
       ]
     },
@@ -19,7 +20,8 @@
         {
           "name": "Thomas Zerndt",
           "company": "Business Engineering Institute, St. Gallen",
-          "bio": "Thomas Zerndt studierte von 1989 bis 1995 an der Universität St. Gallen Betriebswirtschaft. Danach arbeitete er von 1995 bis 2008 bei der IMG AG in St. Gallen als Vice President in der Business Unit Banking. Von 2004 – 2010 leitete er das Kompetenzzentrum 'Sourcing in der Finanzindustrie' an der Universität St. Gallen zu den Themen 'Gestaltung und Bewertung von Sourcing-Modellen', 'Management service-orientierter Finanznetzwerke' und 'Transformation zur Bank 2015'. Seither unterstützt er das Kompetenzzentrum als Experte im Thema 'Kunden- und serviceorientierte Gestaltung vernetzter Banken'. Seit 2008 ist er zudem Geschäftsführer des Business Engineering Institute St. Gallen."
+          "bio": "Thomas Zerndt studierte von 1989 bis 1995 an der Universität St. Gallen Betriebswirtschaft. Danach arbeitete er von 1995 bis 2008 bei der IMG AG in St. Gallen als Vice President in der Business Unit Banking. Von 2004 – 2010 leitete er das Kompetenzzentrum 'Sourcing in der Finanzindustrie' an der Universität St. Gallen zu den Themen 'Gestaltung und Bewertung von Sourcing-Modellen', 'Management service-orientierter Finanznetzwerke' und 'Transformation zur Bank 2015'. Seither unterstützt er das Kompetenzzentrum als Experte im Thema 'Kunden- und serviceorientierte Gestaltung vernetzter Banken'. Seit 2008 ist er zudem Geschäftsführer des Business Engineering Institute St. Gallen.",
+          "portrait": "thomas.zerndt.jpg"
         }
       ]
     },
@@ -30,7 +32,8 @@
         {
           "name": "Dr. Michele De Lorenzi",
           "company": "Centro Svizzero di Calcolo Scientifico",
-          "bio": "Michele De Lorenzi ist seit 2009 beim Swiss National Supercomputing Centre CSCS - eine autonome Service- und Forschungseinheit der ETH Zürich mit Sitz in Lugano - tätig. Als Leiter der Stabsabteilung und stellvertretenden Direktor ist er für die Bereiche Finanzen & Controlling, Einkauf, internationale Kollaborationen und Kommunikation verantwortlich. Vorher war er für die Pflege der Beziehungen zu den wissenschaftlichen Communities und für die Erbringung von Supercomputing-Dienstleistungen für externe Kunden, wie z. B. MeteoSchweiz, verantwortlich. Begonnen hat Michele De Lorenzi seine Karriere, nach dem Studium als Informatiker an der ETH Zürich, wo er auch promoviert hat, als Berater und Geschäftsführer in der Beratungsbranche während acht Jahre und später in der technologischen Innovation an der ETH Zürich."
+          "bio": "Michele De Lorenzi ist seit 2009 beim Swiss National Supercomputing Centre CSCS - eine autonome Service- und Forschungseinheit der ETH Zürich mit Sitz in Lugano - tätig. Als Leiter der Stabsabteilung und stellvertretenden Direktor ist er für die Bereiche Finanzen & Controlling, Einkauf, internationale Kollaborationen und Kommunikation verantwortlich. Vorher war er für die Pflege der Beziehungen zu den wissenschaftlichen Communities und für die Erbringung von Supercomputing-Dienstleistungen für externe Kunden, wie z. B. MeteoSchweiz, verantwortlich. Begonnen hat Michele De Lorenzi seine Karriere, nach dem Studium als Informatiker an der ETH Zürich, wo er auch promoviert hat, als Berater und Geschäftsführer in der Beratungsbranche während acht Jahre und später in der technologischen Innovation an der ETH Zürich.",
+          "portrait": "michele.lorenzi.jpg"
         }
       ]
     },
@@ -41,12 +44,14 @@
         {
           "name": "Zacharias Laïbi",
           "company": "Swisscom (Schweiz) AG",
-          "bio": "Zacharias Laïbi ist seit über 15 Jahren in der Telekommunikationsbranche tätig. In seiner Funktion als Unit-Leiter verantwortet er die Entwicklung verschiedener Applikationen im Umfeld des Customer Experience Management. Als Führungskraft bei Swisscom (Schweiz) AG hat er die Entwicklung der Online-Kanäle massgebend geprägt. In den letzten Jahren wurde aus dem Online-Spezialist ein Evangelist für Cross-Channel Management."
+          "bio": "Zacharias Laïbi ist seit über 15 Jahren in der Telekommunikationsbranche tätig. In seiner Funktion als Unit-Leiter verantwortet er die Entwicklung verschiedener Applikationen im Umfeld des Customer Experience Management. Als Führungskraft bei Swisscom (Schweiz) AG hat er die Entwicklung der Online-Kanäle massgebend geprägt. In den letzten Jahren wurde aus dem Online-Spezialist ein Evangelist für Cross-Channel Management.",
+          "portrait": "zacharias.laïbi.jpg"
         },
         {
           "name": "Wolfgang Giersche",
           "company": "Zühlke Engineering AG",
-          "bio": "Wolfgang Giersche ist als Software Architekt und Business Unit Leiter bei der Zühlke Engineering AG verantwortlich für die Umsetzung komplexer Entwicklungsprojekte. Er begleitet derzeit ein grosses Engineering Team bei der Übergabe der Projektverantwortung von der Swisscom zur Zühlke."
+          "bio": "Wolfgang Giersche ist als Software Architekt und Business Unit Leiter bei der Zühlke Engineering AG verantwortlich für die Umsetzung komplexer Entwicklungsprojekte. Er begleitet derzeit ein grosses Engineering Team bei der Übergabe der Projektverantwortung von der Swisscom zur Zühlke.",
+          "portrait": "wolfgang.giersche.jpg"
         }
       ]
     },
@@ -57,7 +62,8 @@
         {
           "name": "Simon Martinelli",
           "company": "simas GmbH",
-          "bio": "Simon Martinelli ist Applikationsentwickler bei der Transgourmet Schweiz AG und Geschäftsführer der simas GmbH. Er ist als Software Architekt, Entwickler, Berater und Trainer im Java EE Umfeld tätig und verfügt über 18 Jahre Erfahrung in der Software-Entwicklung in verschiedenen Rollen in Projekten unterschiedlicher Grösse. Als Nebenamtdozent an der Berner Fachhochschule (SWS) in den Bereichen Persistenztechnologien (JPA, DB) und Architektur und Design verteilter Systeme kann er seine Interessen vertiefen und sein Know-How weitergeben."
+          "bio": "Simon Martinelli ist Applikationsentwickler bei der Transgourmet Schweiz AG und Geschäftsführer der simas GmbH. Er ist als Software Architekt, Entwickler, Berater und Trainer im Java EE Umfeld tätig und verfügt über 18 Jahre Erfahrung in der Software-Entwicklung in verschiedenen Rollen in Projekten unterschiedlicher Grösse. Als Nebenamtdozent an der Berner Fachhochschule (SWS) in den Bereichen Persistenztechnologien (JPA, DB) und Architektur und Design verteilter Systeme kann er seine Interessen vertiefen und sein Know-How weitergeben.",
+          "portrait": "simon.martinelli.jpg"
         }
       ]
     },
@@ -68,12 +74,14 @@
         {
           "name": "Hans Ulrich Wiedmer",
           "company": "Eidgenössisches Departement für Wirtschaft, Bildung und Forschung",
-          "bio": "Hans Ulrich Wiedmer studierte Informatik an der ETH Zürich und arbeitete dort einige Jahre am Institut für Werkzeugmaschinen und Fertigung IWF, wo er u.a. an einem ISO/IEC Standard für den Austausch von Normteildaten mitwirkte. Er arbeitet seit 2003 in der Bundesinformatik. Als SOA-Architekt befasst er sich u.a. mit dem Management des SOA-Service-Portfolios WBF und der Unterstützung der Service-Anbieter."
+          "bio": "Hans Ulrich Wiedmer studierte Informatik an der ETH Zürich und arbeitete dort einige Jahre am Institut für Werkzeugmaschinen und Fertigung IWF, wo er u.a. an einem ISO/IEC Standard für den Austausch von Normteildaten mitwirkte. Er arbeitet seit 2003 in der Bundesinformatik. Als SOA-Architekt befasst er sich u.a. mit dem Management des SOA-Service-Portfolios WBF und der Unterstützung der Service-Anbieter.",
+          "portrait": "hans.wiedmer.jpg"
         },
         {
           "name": "Stephan Sutter",
           "company": "ti&m AG",
-          "bio": "Stephan Sutter studierte an der HTL Elektro-Ingenieurwesen in Industrie-Elektronik und erwarb den Master of Science in Telematics (ICT) Management. Während 18 Jahren sammelte er in der Industrie Erfahrungen als Software-Entwickler (Multimedia, Telekom, Mechatronic), Projektleiter und IT-Verantwortlicher. Seit rund 10 Jahren ist er als IT-Architekt und seit 6 Jahren in der ICT-Management-Beratung bei Banken und Versicherungen tätig."
+          "bio": "Stephan Sutter studierte an der HTL Elektro-Ingenieurwesen in Industrie-Elektronik und erwarb den Master of Science in Telematics (ICT) Management. Während 18 Jahren sammelte er in der Industrie Erfahrungen als Software-Entwickler (Multimedia, Telekom, Mechatronic), Projektleiter und IT-Verantwortlicher. Seit rund 10 Jahren ist er als IT-Architekt und seit 6 Jahren in der ICT-Management-Beratung bei Banken und Versicherungen tätig.",
+          "portrait": "stephan.sutter.jpg"
         }
       ]
     }

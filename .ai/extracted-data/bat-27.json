@@ -8,7 +8,8 @@
         {
           "name": "Max Klaus",
           "company": "Melde- und Analysestelle Informationssicherung MELANI, Informatiksteuerungsorgan Bund ISB",
-          "bio": "Max Klaus trat 2002 in die Bundesverwaltung ein, wo er zunächst im Projekt 'Guichet Virtuel' der Schweizerischen Bundeskanzlei tätig war, bevor er ins Projekt „Vote électronique' wechselte. Dort war er insbesondere für die Umsetzung der Bundesvorgaben im Zürcher E-Voting-Projekt zuständig. Seit September 2008 ist er stellvertretender Leiter der Melde- und Analysestelle Informationssicherung MELANI. Zu seinen Hauptaufgaben gehören die strategische Ausrichtung, die Bearbeitung parlamentarischer Geschäfte und die Medienarbeit."
+          "bio": "Max Klaus trat 2002 in die Bundesverwaltung ein, wo er zunächst im Projekt 'Guichet Virtuel' der Schweizerischen Bundeskanzlei tätig war, bevor er ins Projekt „Vote électronique' wechselte. Dort war er insbesondere für die Umsetzung der Bundesvorgaben im Zürcher E-Voting-Projekt zuständig. Seit September 2008 ist er stellvertretender Leiter der Melde- und Analysestelle Informationssicherung MELANI. Zu seinen Hauptaufgaben gehören die strategische Ausrichtung, die Bearbeitung parlamentarischer Geschäfte und die Medienarbeit.",
+          "portrait": "max.klaus.jpg"
         }
       ]
     },
@@ -19,12 +20,14 @@
         {
           "name": "Ernst Kammermann-Gerber",
           "company": "SBB IT",
-          "bio": "Ernst Kammermann-Gerber ist seit 2007 als IT-Architekt bei der SBB tätig. Seit November 2009 ist er verantwortlicher Technologie Manager für die Technologie Gruppe Network & Security. Er hat 2012 seine Masterarbeit zum Thema Netzwerkzonierung geschrieben. Im Projekt «GNWP – Netzwerkzonierung» hat er seit Beginn der Studie die Rolle des Lead-Architekten inne."
+          "bio": "Ernst Kammermann-Gerber ist seit 2007 als IT-Architekt bei der SBB tätig. Seit November 2009 ist er verantwortlicher Technologie Manager für die Technologie Gruppe Network & Security. Er hat 2012 seine Masterarbeit zum Thema Netzwerkzonierung geschrieben. Im Projekt «GNWP – Netzwerkzonierung» hat er seit Beginn der Studie die Rolle des Lead-Architekten inne.",
+          "portrait": "ernst.kammermann-gerber.jpg"
         },
         {
           "name": "Thomas Ragaz",
           "company": "ProBIT AG",
-          "bio": "Thomas Ragaz. Lic. rer. pol. ist Partner in der ProBIT AG und seit gut 20 Jahren als Projektleiter für komplexe IT-Infrastruktur-Projekte bei verschiedenen Kunden erfolgreich tätig. Er ist seit 2011 als Gesamtprojektleiter verantwortlich für das Projekt «GNWP – Netzwerkzonierung» bei der SBB."
+          "bio": "Thomas Ragaz. Lic. rer. pol. ist Partner in der ProBIT AG und seit gut 20 Jahren als Projektleiter für komplexe IT-Infrastruktur-Projekte bei verschiedenen Kunden erfolgreich tätig. Er ist seit 2011 als Gesamtprojektleiter verantwortlich für das Projekt «GNWP – Netzwerkzonierung» bei der SBB.",
+          "portrait": "thomas.ragaz.jpg"
         }
       ]
     },
@@ -35,7 +38,8 @@
         {
           "name": "Peter Andres",
           "company": "Informatik Service Center EJPD",
-          "bio": "Peter Andres arbeitet seit 2003 beim EJPD als ICT-Architekt und ist seit 2007 Leiter der Abteilung Technologie des Informatik Service Center (ISC). Er hat mehrjährige Erfahrung in verteilten, sicherheitskritischen Softwarearchitekturen und spezialisierte Kenntnisse im Bereich Java EE-Anwendungen. Er absolvierte mehrere Weiterbildungen rund um das Thema der IT-Sicherheit und erlangte 2011 den CISSP (Certified Information Systems Security Professional). Aktuell ist er als Auftraggeber und Solution-Architekt der MobileID SSO-Portal."
+          "bio": "Peter Andres arbeitet seit 2003 beim EJPD als ICT-Architekt und ist seit 2007 Leiter der Abteilung Technologie des Informatik Service Center (ISC). Er hat mehrjährige Erfahrung in verteilten, sicherheitskritischen Softwarearchitekturen und spezialisierte Kenntnisse im Bereich Java EE-Anwendungen. Er absolvierte mehrere Weiterbildungen rund um das Thema der IT-Sicherheit und erlangte 2011 den CISSP (Certified Information Systems Security Professional). Aktuell ist er als Auftraggeber und Solution-Architekt der MobileID SSO-Portal.",
+          "portrait": "peter.andres.jpg"
         }
       ]
     }

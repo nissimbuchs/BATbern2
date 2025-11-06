@@ -8,7 +8,8 @@
         {
           "name": "Dr. Bettina Horster",
           "company": "VIVAI Software AG",
-          "bio": "Die Diplom-Informatikerin Dr. Bettina Horster leitet bei der VIVAI Software AG den Bereich 'Internet der Dinge / Industrie 4.0'. Sie führte das EU-Projekt «M2M Teledesk», das 2015 von der Bundesregierung ausgezeichnet wurde. Seit 1996 beschäftigt sie sich intensiv mit dem Thema «mobile Services» und hat hier Pionierarbeit geleistet. Dr. Bettina Horster ist Direktorin des eco e.V. (Verband der deutschen Internetwirtschaft) und ist Mitglied des Münchner Kreises. Sie ist Chairwoman des internationalen Think Tanks «Diplomatic Council», einer NGO, die den Beraterstatus bei den Vereinten Nationen besitzt. Frau Dr. Horster ist 2015 als Unternehmerin des Jahres der Stadt Dortmund ausgezeichnet geworden. Zuvor war sie als Managerin Business Development bei der VEBA Telecom GmbH (heute E.on) im Mobilfunkbereich tätig. Dr. Horster studierte Informatik in Deutschland und den USA (Universität Dortmund und University of California Berkeley) und promovierte an der Universität Münster im Fachbereich BWL. Sie besitzt außerdem ein Diplom der Universität St. Gallen (HSG)."
+          "bio": "Die Diplom-Informatikerin Dr. Bettina Horster leitet bei der VIVAI Software AG den Bereich 'Internet der Dinge / Industrie 4.0'. Sie führte das EU-Projekt «M2M Teledesk», das 2015 von der Bundesregierung ausgezeichnet wurde. Seit 1996 beschäftigt sie sich intensiv mit dem Thema «mobile Services» und hat hier Pionierarbeit geleistet. Dr. Bettina Horster ist Direktorin des eco e.V. (Verband der deutschen Internetwirtschaft) und ist Mitglied des Münchner Kreises. Sie ist Chairwoman des internationalen Think Tanks «Diplomatic Council», einer NGO, die den Beraterstatus bei den Vereinten Nationen besitzt. Frau Dr. Horster ist 2015 als Unternehmerin des Jahres der Stadt Dortmund ausgezeichnet geworden. Zuvor war sie als Managerin Business Development bei der VEBA Telecom GmbH (heute E.on) im Mobilfunkbereich tätig. Dr. Horster studierte Informatik in Deutschland und den USA (Universität Dortmund und University of California Berkeley) und promovierte an der Universität Münster im Fachbereich BWL. Sie besitzt außerdem ein Diplom der Universität St. Gallen (HSG).",
+          "portrait": "bettina.horster.jpg"
         }
       ]
     },
@@ -19,7 +20,8 @@
         {
           "name": "Markus Basler",
           "company": "SBB AG",
-          "bio": "Markus Basler arbeitet seit September 2014 bei der SBB und kümmert sich um strategische Fragestellungen im Kontext der Digitalisierung der SBB. Davor hat er als Unternehmensberater firmeninterne ICT Service Provider bei ihrer Weiterentwicklung und dem Schärfen ihres Profils gegenüber dem Business unterstützt. Markus prägt aktuell als stv. Programmleiter die Digitale Transformation der SBB. Hierbei legt er zur Zeit sein Augenmerk auf digitale Geschäftsmodelle/digitales Ökosystem sowie auf die Auswirkungen der Digitalisierung auf die Mitarbeitenden."
+          "bio": "Markus Basler arbeitet seit September 2014 bei der SBB und kümmert sich um strategische Fragestellungen im Kontext der Digitalisierung der SBB. Davor hat er als Unternehmensberater firmeninterne ICT Service Provider bei ihrer Weiterentwicklung und dem Schärfen ihres Profils gegenüber dem Business unterstützt. Markus prägt aktuell als stv. Programmleiter die Digitale Transformation der SBB. Hierbei legt er zur Zeit sein Augenmerk auf digitale Geschäftsmodelle/digitales Ökosystem sowie auf die Auswirkungen der Digitalisierung auf die Mitarbeitenden.",
+          "portrait": "markus.basler.jpg"
         }
       ]
     },
@@ -30,7 +32,8 @@
         {
           "name": "Roman Stalder",
           "company": "Post AG",
-          "bio": "Roman Stalder ist Leiter CIO Office, ICT-Prozesse & Servicemanagement bei der Schweizerischen Post. Er arbeitet in einem kleinen Team an der Neuausrichtung der Informatiksteuerung und -planung der Post. Vorher war Roman in verschiedenen Funktionen für die Post tätig, bei der internationalen Logistik, der Konzernentwicklung und der Unternehmensentwicklung im internationalen Bereich. Er hat beim IT Serviceprovider das Strategie- und Risikomanagement aufgebaut und führte als Mitglied der Bereichsleitung einige Jahre das Prozess- und Qualitätsmanagement. Schliesslich folgte der Wechsel in den Konzern, wo er die Koordination des ICT-Boardes übernahm und damit verbunden auch Governance- und Architekturaufgaben. Sein Studium absolvierte Roman an der Universität Bern in Betriebswirtschaft mit Schwerpunkt Strategie & Marketing sowie Aufenthalten an Universitäten in Tokyo und Paris. Berufsbegleitend hat er eine Weiterbildung im Bereich Applikationsentwicklung absolviert."
+          "bio": "Roman Stalder ist Leiter CIO Office, ICT-Prozesse & Servicemanagement bei der Schweizerischen Post. Er arbeitet in einem kleinen Team an der Neuausrichtung der Informatiksteuerung und -planung der Post. Vorher war Roman in verschiedenen Funktionen für die Post tätig, bei der internationalen Logistik, der Konzernentwicklung und der Unternehmensentwicklung im internationalen Bereich. Er hat beim IT Serviceprovider das Strategie- und Risikomanagement aufgebaut und führte als Mitglied der Bereichsleitung einige Jahre das Prozess- und Qualitätsmanagement. Schliesslich folgte der Wechsel in den Konzern, wo er die Koordination des ICT-Boardes übernahm und damit verbunden auch Governance- und Architekturaufgaben. Sein Studium absolvierte Roman an der Universität Bern in Betriebswirtschaft mit Schwerpunkt Strategie & Marketing sowie Aufenthalten an Universitäten in Tokyo und Paris. Berufsbegleitend hat er eine Weiterbildung im Bereich Applikationsentwicklung absolviert.",
+          "portrait": "roman.stalder.jpg"
         }
       ]
     },
@@ -41,12 +44,14 @@
         {
           "name": "Dr. Andreas Kronawitter",
           "company": "BLS AG",
-          "bio": "Nach Studium an der LMU München und Promotion in Basel in 'computational astrophysics' stieg Andreas Kronawitter 2000 in die Welt des öffentlichen Verkehrs um, zuerst als Projektleiter und später Manager für IT- und Unternehmensarchitektur bei der SBB. Nach 10 Jahren wechselte er zur BLS und baute dort die Planungs- und Steuerungsfunktionen der IT auf. Daneben ist er in nationalen Gremien des öffentlichen Verkehrs tätig."
+          "bio": "Nach Studium an der LMU München und Promotion in Basel in 'computational astrophysics' stieg Andreas Kronawitter 2000 in die Welt des öffentlichen Verkehrs um, zuerst als Projektleiter und später Manager für IT- und Unternehmensarchitektur bei der SBB. Nach 10 Jahren wechselte er zur BLS und baute dort die Planungs- und Steuerungsfunktionen der IT auf. Daneben ist er in nationalen Gremien des öffentlichen Verkehrs tätig.",
+          "portrait": "andreas.kronawitter.jpg"
         },
         {
           "name": "Marcel Edel",
           "company": "BLS Netz AG",
-          "bio": "Seit rund anderthalb Jahren ist Marcel Edel bei der BLS Infrastruktur im Bereich Strategie und Unternehmensentwicklung tätig, mit aktuellem Fokus auf 'Digitalisierung der Infrastruktur'. Zuvor war er in verschiedenen internationalen Beratungshäusern als Business Consultant tätig. Marcel Edel verfügt über abgeschlossene Masterstudien in Betriebspsychologie und Betriebswissenschaft."
+          "bio": "Seit rund anderthalb Jahren ist Marcel Edel bei der BLS Infrastruktur im Bereich Strategie und Unternehmensentwicklung tätig, mit aktuellem Fokus auf 'Digitalisierung der Infrastruktur'. Zuvor war er in verschiedenen internationalen Beratungshäusern als Business Consultant tätig. Marcel Edel verfügt über abgeschlossene Masterstudien in Betriebspsychologie und Betriebswissenschaft.",
+          "portrait": "marcel.edel.jpg"
         }
       ]
     },
@@ -57,7 +62,8 @@
         {
           "name": "Erich Helwin",
           "company": "PostAuto Schweiz AG",
-          "bio": "Seine Karriere im Bereich ICT begann Erich Helwin als Computertechniker bei Nixdorf. Weitere Stationen waren Ascom Hasler, Wang, Unisys – Positionen in Technik, Customer Care, Marketing und Verkauf, wie Global Account Director und Mitglied der erweiterten Geschäftsleitung (Unisys Schweiz). Er hat Innovationen wie die Bankomaten-Einführung in der Schweiz oder das INFNET Telecom LAN für Telecom PTT initiiert und vorangetrieben. Weitere Highlights sind die Mobile Payment Lösung von PostFinance, der Mobile Boarding Pass, Anwendungen von Augmented Reality, Mobile Tagging und Mobile Apps – darunter auch die PostAuto App."
+          "bio": "Seine Karriere im Bereich ICT begann Erich Helwin als Computertechniker bei Nixdorf. Weitere Stationen waren Ascom Hasler, Wang, Unisys – Positionen in Technik, Customer Care, Marketing und Verkauf, wie Global Account Director und Mitglied der erweiterten Geschäftsleitung (Unisys Schweiz). Er hat Innovationen wie die Bankomaten-Einführung in der Schweiz oder das INFNET Telecom LAN für Telecom PTT initiiert und vorangetrieben. Weitere Highlights sind die Mobile Payment Lösung von PostFinance, der Mobile Boarding Pass, Anwendungen von Augmented Reality, Mobile Tagging und Mobile Apps – darunter auch die PostAuto App.",
+          "portrait": "erich.helwin.jpg"
         }
       ]
     },
@@ -68,7 +74,8 @@
         {
           "name": "Andreas Grütter",
           "company": "Die Mobiliar",
-          "bio": "Andreas Grütter arbeitet seit November 2012 bei der Mobiliar. Er ist eingestiegen als Software Architekt, hat danach die Applikationsarchitektur aufgebaut, leitet seit April 2015 die gesamte IT Architektur und ist Mitglied der IT Führung. Mit seinem Team kümmert er sich vorwiegend um die Modernisierung und Transformation der IT Landschaft, mit dem Ziel der Mobiliar den Weg in die digitale Zukunft zu ermöglichen. Zuvor war Andreas Leiter der IT Architektur in der Bank Julius Bär und im HP BSC (vormals RTC). Er hatte während 10 Jahren als Software Engineer, IT Architekt und technischer Projektleiter Kernbankenlösungen entwickelt und migriert."
+          "bio": "Andreas Grütter arbeitet seit November 2012 bei der Mobiliar. Er ist eingestiegen als Software Architekt, hat danach die Applikationsarchitektur aufgebaut, leitet seit April 2015 die gesamte IT Architektur und ist Mitglied der IT Führung. Mit seinem Team kümmert er sich vorwiegend um die Modernisierung und Transformation der IT Landschaft, mit dem Ziel der Mobiliar den Weg in die digitale Zukunft zu ermöglichen. Zuvor war Andreas Leiter der IT Architektur in der Bank Julius Bär und im HP BSC (vormals RTC). Er hatte während 10 Jahren als Software Engineer, IT Architekt und technischer Projektleiter Kernbankenlösungen entwickelt und migriert.",
+          "portrait": "andreas.grütter.jpg"
         }
       ]
     },
@@ -79,12 +86,14 @@
         {
           "name": "Patrick Bönzli",
           "company": "soom-it GmbH",
-          "bio": "Nach seinem Informationstechnologie Studium an der ETH und Tätigkeit bei Google und Netcetera vertieft er sein Wissen als Software Engineer in verschiedenen Firmen und vielfältigen Projekten. Momentan steht er vor der Gründung eines Spin-Offs im IoT Bereich."
+          "bio": "Nach seinem Informationstechnologie Studium an der ETH und Tätigkeit bei Google und Netcetera vertieft er sein Wissen als Software Engineer in verschiedenen Firmen und vielfältigen Projekten. Momentan steht er vor der Gründung eines Spin-Offs im IoT Bereich.",
+          "portrait": "patrick.bönzli.jpg"
         },
         {
           "name": "Manuel Linder",
           "company": "Noser Group",
-          "bio": "In seiner Tätigkeit als Digial Tranformation Consultat bei der Alpiq und nun bei der Noser Group hat Manuel Linder zahlreiche Unternehmen begleitet in der Ideengewinnung und Erarbeitung von digitalen Strategien."
+          "bio": "In seiner Tätigkeit als Digial Tranformation Consultat bei der Alpiq und nun bei der Noser Group hat Manuel Linder zahlreiche Unternehmen begleitet in der Ideengewinnung und Erarbeitung von digitalen Strategien.",
+          "portrait": "manuel.linder.jpg"
         }
       ]
     },
@@ -95,7 +104,8 @@
         {
           "name": "Thomas Amberg",
           "company": "IoT Zürich Meetup / Yaler.net",
-          "bio": "Thomas Amberg ist freiberuflicher Software Ingenieur, Gründer von Yaler.net und Organisator des Internet of Things Meetups in Zürich. Daneben ist er öfters im Mechartlab Hackerspace und im Fablab Zürich anzutreffen."
+          "bio": "Thomas Amberg ist freiberuflicher Software Ingenieur, Gründer von Yaler.net und Organisator des Internet of Things Meetups in Zürich. Daneben ist er öfters im Mechartlab Hackerspace und im Fablab Zürich anzutreffen.",
+          "portrait": "thomas.amberg.jpg"
         }
       ]
     },
@@ -106,7 +116,8 @@
         {
           "name": "Prof. Dr. Gerhard Knolmayer",
           "company": "Universität Bern",
-          "bio": "Gerhard Knolmayer promovierte an der Wirtschaftsuniversität Wien und wurde an der Universität Wien für Betriebswirtschaftslehre und Betriebsinformatik habilitiert. 1980 wurde er ord. Professor an der Universität Kiel, 1988 an das Institut für Wirtschaftsinformatik der Universität Bern berufen, an dem er 25 Jahre lang tätig war. Einer breiteren Öffentlichkeit wurde Knolmayer als Leiter der Arbeitsgruppe CHIG2000 (Swiss Interest Group in Solving the Year 2000 Problem) bekannt. Forschungsaufenthalte führten ihn u.a. an das International Computer Science Institute (ICSI) der University of California, Berkeley, und an das Centre for Information Technology Innovation (CITI) der Queensland University of Technology. In den letzten Jahren beschäftigt sich Knolmayer insbesondere mit der Gestaltung benutzerfreundlicher Schnittstellen bei webbasierten Systemen. Er ist Fellow der Gesellschaft für Informatik; die Universität Freiburg im Breisgau verlieh ihm ein Ehrendoktorat."
+          "bio": "Gerhard Knolmayer promovierte an der Wirtschaftsuniversität Wien und wurde an der Universität Wien für Betriebswirtschaftslehre und Betriebsinformatik habilitiert. 1980 wurde er ord. Professor an der Universität Kiel, 1988 an das Institut für Wirtschaftsinformatik der Universität Bern berufen, an dem er 25 Jahre lang tätig war. Einer breiteren Öffentlichkeit wurde Knolmayer als Leiter der Arbeitsgruppe CHIG2000 (Swiss Interest Group in Solving the Year 2000 Problem) bekannt. Forschungsaufenthalte führten ihn u.a. an das International Computer Science Institute (ICSI) der University of California, Berkeley, und an das Centre for Information Technology Innovation (CITI) der Queensland University of Technology. In den letzten Jahren beschäftigt sich Knolmayer insbesondere mit der Gestaltung benutzerfreundlicher Schnittstellen bei webbasierten Systemen. Er ist Fellow der Gesellschaft für Informatik; die Universität Freiburg im Breisgau verlieh ihm ein Ehrendoktorat.",
+          "portrait": "gerhard.knolmayer.jpg"
         }
       ]
     }
