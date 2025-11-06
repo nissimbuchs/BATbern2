@@ -161,6 +161,29 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle SpeakerAssignmentNotFoundException (speaker assignment not found)
+     * Returns HTTP 404 Not Found
+     */
+    @ExceptionHandler(SpeakerAssignmentNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleSpeakerAssignmentNotFoundException(
+            SpeakerAssignmentNotFoundException ex,
+            HttpServletRequest request) {
+        log.warn("Speaker assignment not found: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("Not Found")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    /**
      * Handle IllegalArgumentException (invalid input or business logic constraint)
      * Returns HTTP 400 Bad Request
      */
