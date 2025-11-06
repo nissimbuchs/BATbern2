@@ -1,0 +1,81 @@
+{
+  "bat": 19,
+  "presentations": [
+    {
+      "title": "Erneuerung Integrationsplattform",
+      "abstract": "In der ZKB sind heute drei Integrationslösungen im Einsatz – zwei Lösungen für Realtime-Integration und eine mit dem Fokus auf tages-aktuelle Daten (Batch). Für die Erneuerung dieser bestehenden Integrationslösungen wurde die strategische IT-Architektur beauftragt, eine Zielarchitektur zu erarbeiten. Im Vortrag werden die wesentlichen Schritte in der Ausarbeitung der Zielarchitektur Integration präsentiert: Kurzer Abriss zur Methodik der Zielarchitekturen, Referenz-Architektur als Basis für Ist-Analyse und Soll-Architektur, Integrationsprinzipien und Beispiele für Designrichtlinien, Request for Information – Durchführung, Beispiele für Bewertungskriterien, Umsetzung und weitere Planung der Zielarchitektur Integration.",
+      "speakers": [
+        {
+          "name": "Dr. Pascal Kurtansky",
+          "company": "ZKB",
+          "bio": "IT-Architekt. Pascal Kurtansky arbeitet seit vier Jahren bei der ZKB als IT-Architekt. In der strategischen IT-Architektur erarbeitet er Zielarchitekturen an der Schnittstelle zwischen Business und IT. Vor seiner Tätigkeit bei der ZKB promovierte er an der ETH Zürich, wo er auch sein Informatikstudium abgeschlossen hatte."
+        }
+      ]
+    },
+    {
+      "title": "Integrationsarchitektur bei der BKW FMB Energie AG",
+      "abstract": "Als grösste vertikal integrierte Energieversorgerin der Schweiz – die Produktion, Übertragung, Versorgung und Handel unter einem Dach vereint – verfügt die BKW über eine komplexe, heterogene Applikationslandschaft. Für einen effizienten und stabilen Betrieb ist daher eine leistungsfähige Integration der Applikationen unabdingbar. Die Präsentation stellt den Aufbau der Integrationsplattform basierend auf bewährten Mustern und die Wahl des eingesetzten Enterprise Service Bus (ESB) vor. Neben Erfahrungen mit der etablierten Integrationsplattform werden auch die Integrationsbedürfnisse beim Aufbau einer neuen Handelsplattform sowie die zur Anwendung kommenden Grundsätze für die Integration der vom Energiehandel eigesetzten Applikationen diskutiert.",
+      "speakers": [
+        {
+          "name": "Dr. Felix Grimm",
+          "company": "BKW FMB Energie AG",
+          "bio": "Dr. phil.-nat., ICT Architekt. Felix Grimm hat an der Universität Bern im Bereich Künstliche Intelligenz promoviert. Er hat bei der Mobiliar verschiedene Aufgaben in der IT-Entwicklung und Unternehmensarchitektur und bei der RTC in der Lösungs- und Applikationsarchitektur wahrgenommen. Seit 2011 ist er bei der BKW als ICT-Architekt tätig."
+        },
+        {
+          "name": "Baltisar Oswald",
+          "company": "BKW FMB Energie AG",
+          "bio": "lic. phil.-nat., Applikationsentwickler Java. Baltisar Oswald hat an der Universität Bern Mathematik und Informatik studiert. Parallel dazu hat er als Entwickler bei eInsurance Agency AG gearbeitet sowie verschiedene Lehrtätigkeiten ausgeübt. Seit 2006 ist er Entwickler bei der BKW mit den Schwerpunkten Java und Integration."
+        }
+      ]
+    },
+    {
+      "title": "Herausforderungen im föderalistischen Staat",
+      "abstract": "Zwei unterschiedliche Informatiksysteme zu einer zuverlässigen Zusammenarbeit zu bewegen ist nicht einfach. Handelt es sich um dutzende Systeme bei hunderten von Verwaltungsstellen, macht dies das Vorhaben nicht wesentlich einfacher. Und wenn es nun weder einen zentralen Auftraggeber noch eine zentrale Koordinationsstelle gibt… Das Referat versucht einige zentrale Herausforderungen im E-Government zwischen den Verwaltungsstellen im föderalistischen Staat zu beleuchten und zeigt im Sinne eines Erfahrungsberichts die Lösungsansätze, die im Projekt Geres umgesetzt wurden.",
+      "speakers": [
+        {
+          "name": "Stefan Haller",
+          "company": "Bedag Informatik AG",
+          "bio": "Leiter Geschäftsfeld Register. Stefan Haller entwickelte als Software-Entwickler und System-Architekt Management-Systeme für Ticketing-Automaten im öffentlichen Verkehr bevor er als Software-Architekt zur Bedag Informatik AG wechselte. Seit 5 Jahren leitet er ein Geschäftsfeld der Software-Entwicklung der Bedag."
+        }
+      ]
+    },
+    {
+      "title": "swissdec - Architektur zur Integration und Automatisation von Geschäftsprozessen zwischen Unternehmen, Versicherern und Behörden in der Schweiz",
+      "abstract": "swissdec ist ein nicht-gewinnorientiertes Gemeinschaftsprojekt mehrerer unabhängiger Partner und das Qualitätslabel für Lohnbuchhaltungssysteme. Als zentrale Informationsplattform zur Standardisierung des elektronischen Datenaustausches via Lohnbuchhaltungssystemen stellt swissdec Knowhow bereit, dient dem Informationsaustausch zwischen allen Interessierten wie Software-Anwendern, Software-Herstellern, Unternehmen, Verbänden, Ämtern und Organisationen, garantiert und überwacht die gesetzlich konforme Datenübertragung und zertifiziert die erfolgreich geprüften Software-Anwendungen. Verantwortlich für den Inhalt und den Betrieb von swissdec ist im Auftrag der Stakeholder die Suva, welche über eine 30-jährige Erfahrung in der Beratung und Zertifizierung von Lohnbuchhaltungen verfügt. Die Entwicklung des XML-Standards ist die konsequente und technologische Weiterentwicklung der in der Vergangenheit geleisteten Arbeiten. Im Vortrag werden verschiedene Aspekte der swissdec Standards gezeigt, die zur Integration der Prozess-Teilnehmer verwendet wurden. Diese Aspekte stammen aus unterschiedlichen Ebenen der Interoperabilität. Die wesentlichen Design-Entscheidungen und Muster lassen sich anhand der gewählten Architektur aufzeigen. Die Ausführungen werden mit Erfahrungen aus der Standardisierung, Implementierung und Produktion ergänzt, die itServe als der Technologielieferant für swissdec gemacht hat.",
+      "speakers": [
+        {
+          "name": "Anton Böhm",
+          "company": "itServe",
+          "bio": "Geschäftsleiter. Seit über 30 Jahren ist Anton Böhm in der Informatik tätig. Ende der 80er Jahre schloss er das Abendtechnikum als Informatik-Ingenieur ab und erwarb zudem ein Nachdiplom in Betriebswirtschaft. Seit 1996 ist er mit der eigenen Firma itServe ag bei unterschiedlichen Kunden meist in Innovationsprojekten und eigener Produktentwicklung engagiert. Zusätzlich unterrichtet er als Nebenamtdozent an der Berner Fachhochschule."
+        }
+      ]
+    },
+    {
+      "title": "E-Government Web Services zur Integration von Bund und Wirtschaft – standardbasierte e-dec Services für elektronische Verzollungen",
+      "abstract": "e-dec ist die Service-orientierte eGovernment Plattform der Eidgenössischen Zollverwaltung (EZV). Importe und Exporte werden von Zollkunden elektronisch beim Schweizer Zoll angemeldet. Digital signierte elektronische Veranlagungsverfügungen können als MWST-Quittung von den Zollkunden bezogen und in ihren Informationssystemen automatisch weiterverarbeitet werden. Dabei kommunizieren die Systeme von über 1200 Zollkunden mit den E-Government Services von e-dec. SOA Konzepte wurden beim Bau von e-dec konsequent berücksichtigt. Die e-dec Services erlauben die Integration heterogener verteilter Informationssysteme dank dem Einsatz offener Web Service Standards. e-dec wird vom Bundesamt für Informatik und Telekommunikation (BIT) in Zusammenarbeit mit innovation process technology [ipt] und Zühlke gebaut. In diesem Vortrag werden die folgenden Fragen behandelt: Welche Geschäftsprozesse laufen zwischen Unternehmen und der EZV? Welche Services bietet e-dec zur Government-to-Business Integration an? Welche Web Service Standards kommen bei den e-dec Services zum Einsatz?",
+      "speakers": [
+        {
+          "name": "Dr. Stefan Hüsemann",
+          "company": "innovation process technology [ipt]",
+          "bio": "Principal Consultant. Stefan Hüsemann leitet seit mehreren Jahren für [ipt] Projekte, bei denen SOA umgesetzt wird. Seine Interessenschwerpunkte liegen beim Requirements Engineering, iterativen Projektvorgehensmethodiken, Austauschstandards für verteilte Informationssysteme und Web Service Standards. Stefan Hüsemann ist ebenfalls Lehrbeauftragter für Informationssysteme an der Universität Freiburg (Schweiz)."
+        }
+      ]
+    },
+    {
+      "title": "End-of-Life einer hochintegrierten Anwendung – wie Unternehmensarchitektur helfen kann",
+      "abstract": "Die SBB betreiben das Netz mit dem weltweit dichtesten Bahnbetrieb und brauchen dafür hochwertige IT-Unterstützung. Heute gehören dazu über 1'000 Anwendungen, mit zahlreichen Überlappungen in Funktion und Datenhaltung. Die nachhaltige Weiterentwicklung der heterogenen Anwendungslandschaft ist technisch und organisatorisch eine Herausforderung. Anhand eines konkreten, aktuellen Beispiels wird die Wirkungsweise der Unternehmensarchitektur im Zusammenspiel mit IT und Fachbereichen erläutert. Der Fall bezieht sich auf die Ablösung der zentralen, 25-jährigen Fahrplananwendung mit sehr grossen Abhängigkeiten in die ganze Unternehmung hinein. Die Präsentation zeigt die Vorgehensweise, beleuchtet die Problemstellung, den gewählten Lösungsansatz und beschreibt die getroffenen Massnahmen auf technischer, organisatorischer und finanzieller Ebene ein. Dabei werden sowohl Erfolge als auch Irrwege beleuchtet.",
+      "speakers": [
+        {
+          "name": "Peter Moosmann",
+          "company": "SBB",
+          "bio": "IT Architekt. Peter Moosmann (Ing. FH) hat über fünf Jahre am Aufbau der Unternehmensarchitektur der SBB mitgewirkt. Seit 2010 leitet er diesen Bereich. Zuvor war er in verschiedenen Rollen als Entwickler, Softwarearchitekt und Projektleiter bei einem Informatikdienstleister tätig."
+        },
+        {
+          "name": "Jakob Erber",
+          "company": "SBB",
+          "bio": "IT Architekt. Jakob Erber (M.Sc.) ist seit 3 Jahren als Unternehmensarchitekt bei der SBB tätig. Seit 2010 leitet er das Team Architekturmanagement. Zudem ist er als Domänenarchitekt Planung und Produktion Trasse für die betreffende Anwendung verantwortlich. Zuvor war er in verschiedenen Rollen als Entwickler und Softwarearchitekt bei verschiedenen Informatikdienstleistern tätig."
+        }
+      ]
+    }
+  ]
+}
