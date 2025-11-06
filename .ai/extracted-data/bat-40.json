@@ -8,7 +8,8 @@
         {
           "name": "Thilo Stadelmann",
           "company": "ZHAW School of Engineering",
-          "bio": "Thilo Stadelmann is senior lecturer of computer science at ZHAW School of Engineering in Winterthur. He received his doctor of science degree from Marburg University in 2010, where he worked on multimedia analysis and voice recognition. Thilo joined the automotive industry for 3 years prior to switching back to academia. His current research focuses on applications of machine learning, especially deep learning, to pattern recognition problems on diverse kinds of data. He is head of the ZHAW Datalab and vice president of SGAICO, the Swiss Group for Artificial Intelligence and Cognitive Sciences."
+          "bio": "Thilo Stadelmann is senior lecturer of computer science at ZHAW School of Engineering in Winterthur. He received his doctor of science degree from Marburg University in 2010, where he worked on multimedia analysis and voice recognition. Thilo joined the automotive industry for 3 years prior to switching back to academia. His current research focuses on applications of machine learning, especially deep learning, to pattern recognition problems on diverse kinds of data. He is head of the ZHAW Datalab and vice president of SGAICO, the Swiss Group for Artificial Intelligence and Cognitive Sciences.",
+          "portrait": "thilo.stadelmann.jpg"
         }
       ]
     },
@@ -19,7 +20,8 @@
         {
           "name": "Edy Portmann",
           "company": "HUMAN-IST Institut, Universität Freiburg",
-          "bio": "Edy Portmann ist Professor für Informatik und Förderprofessor der Schweizerischen Post am Human-IST Institut der Universität Freiburg i.Üe. Zu seinen transdisziplinären Forschungsschwerpunkten zählt das Thema Cognitive Computing sowie die Anwendung dessen auf Städte. Er studierte Wirtschaftsinformatik, Betriebs- und Volkswirtschaftslehre und promovierte in Informatik. Er war u.a. bei Swisscom, PwC und EY tätig. Zudem forschte Edy Portmann an den Universitäten Singapur, Berkeley und Bern. Heute wohnt er mit seiner Frau und ihren drei Kindern glücklich verheiratet in Bern."
+          "bio": "Edy Portmann ist Professor für Informatik und Förderprofessor der Schweizerischen Post am Human-IST Institut der Universität Freiburg i.Üe. Zu seinen transdisziplinären Forschungsschwerpunkten zählt das Thema Cognitive Computing sowie die Anwendung dessen auf Städte. Er studierte Wirtschaftsinformatik, Betriebs- und Volkswirtschaftslehre und promovierte in Informatik. Er war u.a. bei Swisscom, PwC und EY tätig. Zudem forschte Edy Portmann an den Universitäten Singapur, Berkeley und Bern. Heute wohnt er mit seiner Frau und ihren drei Kindern glücklich verheiratet in Bern.",
+          "portrait": "edy.portmann.jpg"
         }
       ]
     },
@@ -46,17 +48,20 @@
         {
           "name": "Olga Endrich",
           "company": "Insel Gruppe",
-          "bio": "Olga Endrich hat ein Studium der Humanmedizin an der Staatlichen Medizinischen Universität Donetsk und an der Universität Bern absolviert. Sie ist Leiterin Operatives Medizincontrolling Insel Gruppe."
+          "bio": "Olga Endrich hat ein Studium der Humanmedizin an der Staatlichen Medizinischen Universität Donetsk und an der Universität Bern absolviert. Sie ist Leiterin Operatives Medizincontrolling Insel Gruppe.",
+          "portrait": "olga.endrich.jpg"
         },
         {
           "name": "Matthias Kämpf",
           "company": "Insel Gruppe",
-          "bio": "Matthias Kämpf hat an der EPF Lausanne ein Master-Studium in Mathematik absolviert und ist Leiter ICT/Forschung und Gesamtprojektleiter Clinical Data Warehouse."
+          "bio": "Matthias Kämpf hat an der EPF Lausanne ein Master-Studium in Mathematik absolviert und ist Leiter ICT/Forschung und Gesamtprojektleiter Clinical Data Warehouse.",
+          "portrait": "matthias.kämpf.jpg"
         },
         {
           "name": "Tomas Dikk",
           "company": "Zühlke Engineering",
-          "bio": "Tomas Dikk hat an der ETH ein Master-Studium in Informatik absolviert und war danach als wissenschaftlicher Mitarbeiter in der Maschine Learning Forschungsgruppe der ETH tätig, wo er zum Thema Speech Enhancement gearbeitet hat. Er ist als Data Scientist seit einem Jahr bei Zühlke Engineering."
+          "bio": "Tomas Dikk hat an der ETH ein Master-Studium in Informatik absolviert und war danach als wissenschaftlicher Mitarbeiter in der Maschine Learning Forschungsgruppe der ETH tätig, wo er zum Thema Speech Enhancement gearbeitet hat. Er ist als Data Scientist seit einem Jahr bei Zühlke Engineering.",
+          "portrait": "tomas.dikk.jpg"
         }
       ]
     },
@@ -67,7 +72,8 @@
         {
           "name": "Andreas Mösching",
           "company": "Die Mobiliar",
-          "bio": "Seit über 20 Jahren ist Andreas im In- und Ausland in unterschiedlichen Rollen und Disziplinen in der Informatik tätig. Er leitet seit 2011 die Technologie Architektur und beeinflusst massgeblich, die Art und Weise wie in der Mobiliar Software entwickelt und betrieben wird. Als Visionär treibt er die technologische Vision der Mobiliar. Zusammen mit seinem Team lebt und fördert Andreas die konsequente Automation der Softwareentwicklungsprozesse. Als verantwortlicher Architekt von Pythagoras, der kognitiven Entwicklungsplattform der Mobiliar, verbindet er die neuen AI Entwicklungsmöglichkeiten mit den bewährten Prinzipien der traditionellen Softwareentwicklung."
+          "bio": "Seit über 20 Jahren ist Andreas im In- und Ausland in unterschiedlichen Rollen und Disziplinen in der Informatik tätig. Er leitet seit 2011 die Technologie Architektur und beeinflusst massgeblich, die Art und Weise wie in der Mobiliar Software entwickelt und betrieben wird. Als Visionär treibt er die technologische Vision der Mobiliar. Zusammen mit seinem Team lebt und fördert Andreas die konsequente Automation der Softwareentwicklungsprozesse. Als verantwortlicher Architekt von Pythagoras, der kognitiven Entwicklungsplattform der Mobiliar, verbindet er die neuen AI Entwicklungsmöglichkeiten mit den bewährten Prinzipien der traditionellen Softwareentwicklung.",
+          "portrait": "andreas.mösching.jpg"
         },
         {
           "name": "Jérôme Koller",
@@ -83,7 +89,8 @@
         {
           "name": "Lothar Jöckel",
           "company": "SBB",
-          "bio": "Lothar Jöckel arbeitet seit 1983 als Software-Entwickler und Architekt in unterschiedlichen Branchen wie Health-Care, Banking, Telecom, Defense+Intelligence sowie Travel. Hierbei konnten wichtige Erfahrungen in Unternehmen wie McDonnellDouglas, IBM, Dresdner Bank, Bundeswehr/BND und Deutsches Reisebüro (DER) gesammelt werden. Seit 2012 ist er bei der SBB in der Informatik der SBB-Infrastruktur als Business-Analyst tätig. Seit 2015 ist er für «Plattform für Forschung und Innovation» tätig und unterstützt in den Themenbereichen Optimierung und Machine Learning."
+          "bio": "Lothar Jöckel arbeitet seit 1983 als Software-Entwickler und Architekt in unterschiedlichen Branchen wie Health-Care, Banking, Telecom, Defense+Intelligence sowie Travel. Hierbei konnten wichtige Erfahrungen in Unternehmen wie McDonnellDouglas, IBM, Dresdner Bank, Bundeswehr/BND und Deutsches Reisebüro (DER) gesammelt werden. Seit 2012 ist er bei der SBB in der Informatik der SBB-Infrastruktur als Business-Analyst tätig. Seit 2015 ist er für «Plattform für Forschung und Innovation» tätig und unterstützt in den Themenbereichen Optimierung und Machine Learning.",
+          "portrait": "lothar.jöckel.jpg"
         }
       ]
     },

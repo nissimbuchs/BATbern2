@@ -30,7 +30,8 @@
         {
           "name": "Michael Faes",
           "company": "ETH Zürich",
-          "bio": "Michael Faes ist Doktorand in der Software Group an der ETH Zürich. Seine Forschungsschwerpunkte sind Programmiersprachen für sicheres paralleles Programmieren und Tools für das Finden und Analysieren von Concurrency Bugs. Er hat seinen Master in Informatik an der ETH Zürich gemacht und in seiner Master-Arbeit eine automatische Deadlock-Analyse für Java-Bibliotheken entwickelt."
+          "bio": "Michael Faes ist Doktorand in der Software Group an der ETH Zürich. Seine Forschungsschwerpunkte sind Programmiersprachen für sicheres paralleles Programmieren und Tools für das Finden und Analysieren von Concurrency Bugs. Er hat seinen Master in Informatik an der ETH Zürich gemacht und in seiner Master-Arbeit eine automatische Deadlock-Analyse für Java-Bibliotheken entwickelt.",
+          "portrait": "michael.faes.jpg"
         }
       ]
     },
@@ -41,7 +42,8 @@
         {
           "name": "Barbara Marti",
           "company": "PostFinance AG",
-          "bio": "Barbara Marti arbeitet seit 28 Jahren in der IT PostFinance AG – zu Beginn als Ausbildnerin in DELTA/Cobol und Datenmodellierung, DB-Programmierung und CASE-Toolentwicklung. Seit 1996 führte sie IT-Entwicklungs- und Projektteams und ab 2003 ist sie als Mitglied der Führung der IT verantwortlich für den Aufbau der Disziplin Architektur, später als Leiterin verschiedener Organisationseinheiten mehrheitlich bestehend aus SW-Entwicklung und –Integration. Heute ist sie verantwortlich für das Application Management der gesamten Applikationslandschaft. Neben den verschiedenen fachlichen Ausbildungen hat sie das MBA/eMBA Rochester/Bern absolviert."
+          "bio": "Barbara Marti arbeitet seit 28 Jahren in der IT PostFinance AG – zu Beginn als Ausbildnerin in DELTA/Cobol und Datenmodellierung, DB-Programmierung und CASE-Toolentwicklung. Seit 1996 führte sie IT-Entwicklungs- und Projektteams und ab 2003 ist sie als Mitglied der Führung der IT verantwortlich für den Aufbau der Disziplin Architektur, später als Leiterin verschiedener Organisationseinheiten mehrheitlich bestehend aus SW-Entwicklung und –Integration. Heute ist sie verantwortlich für das Application Management der gesamten Applikationslandschaft. Neben den verschiedenen fachlichen Ausbildungen hat sie das MBA/eMBA Rochester/Bern absolviert.",
+          "portrait": "barbara.marti.jpg"
         }
       ]
     }

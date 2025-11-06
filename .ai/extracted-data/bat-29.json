@@ -8,7 +8,8 @@
         {
           "name": "Victor Schlegel",
           "company": "Swisscom Schweiz AG",
-          "bio": "Victor Schlegel begann seine Karriere in Japan bei Fujitsu Inc., Global Marketing Department. Nach den Zwischenstationen bei T-Systems und Credit Suisse, wo er als Black Belt die Effizienzsteigerungsprojekte vorantrieb, hat er die Führung von BigData Themas bei Swisscom Schweiz AG übernommen."
+          "bio": "Victor Schlegel begann seine Karriere in Japan bei Fujitsu Inc., Global Marketing Department. Nach den Zwischenstationen bei T-Systems und Credit Suisse, wo er als Black Belt die Effizienzsteigerungsprojekte vorantrieb, hat er die Führung von BigData Themas bei Swisscom Schweiz AG übernommen.",
+          "portrait": "victor.schlegel.jpg"
         }
       ]
     },
@@ -30,12 +31,14 @@
         {
           "name": "Bernhard Rytz",
           "company": "SBB Informatik",
-          "bio": "Bernhard Rytz, Dipl. Inf. Ing. ETH und EMBA HSG hat als Entwickler, Projektleiter und Architekt über 12 Jahre Informatikdienstleistungen in den Bereichen Finance, Aerospace und Telecom erbracht. 2005 hat er begonnen, die Unternehmensarchitektur bei den Schweizerischen Bundesbahnen SBB aufzubauen. Seit 2010 ist er Chef IT Architekt der SBB und führt im Auftrag der Konzernleitung die Umsetzung der Datenstrategie."
+          "bio": "Bernhard Rytz, Dipl. Inf. Ing. ETH und EMBA HSG hat als Entwickler, Projektleiter und Architekt über 12 Jahre Informatikdienstleistungen in den Bereichen Finance, Aerospace und Telecom erbracht. 2005 hat er begonnen, die Unternehmensarchitektur bei den Schweizerischen Bundesbahnen SBB aufzubauen. Seit 2010 ist er Chef IT Architekt der SBB und führt im Auftrag der Konzernleitung die Umsetzung der Datenstrategie.",
+          "portrait": "bernhard.rytz.jpg"
         },
         {
           "name": "Jürg Frühauf",
           "company": "SBB Informatik",
-          "bio": "Jürg Frühauf nahm im Oktober 2008 seine Tätigkeit im Bereich Business Intelligence und Data Warehousing der SBB Informatik auf. Seit 2014 ist er als Leiter Business Information Management bei der SBB IT für die Erstellung von BI/DWH-Lösungen mit SAP und Non-SAP Technologien zuständig. Seit gut zwei Jahren setzt er sich zudem mit Big Data Ansätzen und deren Nutzen für das Unternehmen auseinander."
+          "bio": "Jürg Frühauf nahm im Oktober 2008 seine Tätigkeit im Bereich Business Intelligence und Data Warehousing der SBB Informatik auf. Seit 2014 ist er als Leiter Business Information Management bei der SBB IT für die Erstellung von BI/DWH-Lösungen mit SAP und Non-SAP Technologien zuständig. Seit gut zwei Jahren setzt er sich zudem mit Big Data Ansätzen und deren Nutzen für das Unternehmen auseinander.",
+          "portrait": "jürg.frühauf.jpg"
         }
       ]
     }

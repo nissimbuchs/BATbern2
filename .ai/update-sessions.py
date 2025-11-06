@@ -124,6 +124,10 @@ for session in sessions:
                 'bio': speaker['bio'],
                 'company': company_id
             }
+            # Add portrait if available
+            if 'portrait' in speaker:
+                referent['portrait'] = speaker['portrait']
+
             session['referenten'].append(referent)
 
         # Remove authoren field since we now have referenten

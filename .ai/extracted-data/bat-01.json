@@ -8,7 +8,8 @@
         {
           "name": "Nissim J. Buchs",
           "company": "RTC AG",
-          "bio": "Dr. Nissim J. Buchs ist Softwarearchitekt und Teamleiter der Frameworks Gruppe in der RTC. Seine Schwerpunkte liegen auf Architektur, modellgetriebener Softwareentwicklung und agilen Methoden im J2EE Umfeld. Er beschäftigt sich seit mehreren Jahren mit der Entwicklung von Frameworks für Java Fatclients. Zuvor studierte er Informatik und Medizin an der Universität Bern, wo er mehrere Arbeiten im Bereich der Neuroinformatik veröffentlichte."
+          "bio": "Dr. Nissim J. Buchs ist Softwarearchitekt und Teamleiter der Frameworks Gruppe in der RTC. Seine Schwerpunkte liegen auf Architektur, modellgetriebener Softwareentwicklung und agilen Methoden im J2EE Umfeld. Er beschäftigt sich seit mehreren Jahren mit der Entwicklung von Frameworks für Java Fatclients. Zuvor studierte er Informatik und Medizin an der Universität Bern, wo er mehrere Arbeiten im Bereich der Neuroinformatik veröffentlichte.",
+          "portrait": "nissim.buchs.jpg"
         }
       ]
     },
@@ -19,7 +20,8 @@
         {
           "name": "Thomas Goetz",
           "company": "Die Mobiliar",
-          "bio": "Thomas Goetz studierte an der Universität Bern Chemie und Informatik. Danach unterrichtete er an der Fachhochschule Bern an einem Nachdiplomstudium (Software-Schule Schweiz)im Bereich Technische Informatik. Nach Stellen im Finanzdienstleistungs- und Telecombereich als IT Architekt und technischer Projektleiter arbeitet Thomas Goetz nun in der Unternehmensarchitektur der Mobiliar Versicherungsgesellschaft und ist verantwortlich für die Technische Architektur, insbesondere die Integration der Mainframe- mit der J2EE Plattform."
+          "bio": "Thomas Goetz studierte an der Universität Bern Chemie und Informatik. Danach unterrichtete er an der Fachhochschule Bern an einem Nachdiplomstudium (Software-Schule Schweiz)im Bereich Technische Informatik. Nach Stellen im Finanzdienstleistungs- und Telecombereich als IT Architekt und technischer Projektleiter arbeitet Thomas Goetz nun in der Unternehmensarchitektur der Mobiliar Versicherungsgesellschaft und ist verantwortlich für die Technische Architektur, insbesondere die Integration der Mainframe- mit der J2EE Plattform.",
+          "portrait": "thomas.goetz.jpg"
         }
       ]
     },
@@ -30,7 +32,8 @@
         {
           "name": "Volkert Barr",
           "company": "PostFinance",
-          "bio": "Volkert Barr erlangte sein Informatik-Diplom an der Carl-Von-Ossietzky Universität Oldenburg/Deutschland. Nach einem Industrieaufenthalt in der Softwareentwicklung wechselte er 2000 an das Institut für Softwaretechnik der Technischen Universität Berlin und arbeitete dort als wissenschaftlicher Mitarbeiter. Seit 2003 ist Volkert Barr als Informatik-Spezialist und Enterprise Architekt im Bereich Core-Systeme bei PostFinance tätig. Derzeit beschäftigt er sich mit Konzepten der Customer Data Integration sowie mit Rich Client GUIs für Bankenarbeitsplätze auf der Basis von Eclipse."
+          "bio": "Volkert Barr erlangte sein Informatik-Diplom an der Carl-Von-Ossietzky Universität Oldenburg/Deutschland. Nach einem Industrieaufenthalt in der Softwareentwicklung wechselte er 2000 an das Institut für Softwaretechnik der Technischen Universität Berlin und arbeitete dort als wissenschaftlicher Mitarbeiter. Seit 2003 ist Volkert Barr als Informatik-Spezialist und Enterprise Architekt im Bereich Core-Systeme bei PostFinance tätig. Derzeit beschäftigt er sich mit Konzepten der Customer Data Integration sowie mit Rich Client GUIs für Bankenarbeitsplätze auf der Basis von Eclipse.",
+          "portrait": "volkert.barr.jpg"
         }
       ]
     }

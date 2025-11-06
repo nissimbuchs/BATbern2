@@ -8,7 +8,8 @@
         {
           "name": "Michael Frandsen",
           "company": "syngenio AG",
-          "bio": "Michael Frandsen ist Berater und Entwickler bei der syngenio AG. Dort entwickelt er JEE Applikationen für die Finanzbranche. Seit dem Studium der Wirtschaftsinformatik in Siegen befasst er sich zudem mit den Einsatzmöglichkeiten von Rule-Engine-Technologien in Serviceorientierten Architekturen. Im Drools Projekt bekleidet er derzeit den Rang des JSR-94-Lead."
+          "bio": "Michael Frandsen ist Berater und Entwickler bei der syngenio AG. Dort entwickelt er JEE Applikationen für die Finanzbranche. Seit dem Studium der Wirtschaftsinformatik in Siegen befasst er sich zudem mit den Einsatzmöglichkeiten von Rule-Engine-Technologien in Serviceorientierten Architekturen. Im Drools Projekt bekleidet er derzeit den Rang des JSR-94-Lead.",
+          "portrait": "michael.frandsen.jpg"
         }
       ]
     },
@@ -19,7 +20,8 @@
         {
           "name": "Patrice Witschi",
           "company": "RTC",
-          "bio": "Patrice Witschi ist seit April 2000 in der RTC im Bereich Entwicklung tätig. während 4 1/2 Jahren arbeitete er als Cobol-Entwickler und Übernahm ab 2005 in dem Bereich auch die Teamleitung. Seit Okt. 2006 leitet er ein Team, welches sich mit den Themen Business Rules Ansatz, Enterprise Application Integration und Workflow beschäftigt. Im Jahre 2003 schloss er die Ausbildung zum Wirtschaftsinformatiker mit Eidgenössischem Fachausweis erfolgreich ab."
+          "bio": "Patrice Witschi ist seit April 2000 in der RTC im Bereich Entwicklung tätig. während 4 1/2 Jahren arbeitete er als Cobol-Entwickler und Übernahm ab 2005 in dem Bereich auch die Teamleitung. Seit Okt. 2006 leitet er ein Team, welches sich mit den Themen Business Rules Ansatz, Enterprise Application Integration und Workflow beschäftigt. Im Jahre 2003 schloss er die Ausbildung zum Wirtschaftsinformatiker mit Eidgenössischem Fachausweis erfolgreich ab.",
+          "portrait": "patrice.witschi.jpg"
         }
       ]
     },
@@ -30,12 +32,14 @@
         {
           "name": "Elmar Boschung",
           "company": "PostFinance",
-          "bio": "Elmar Boschung hat seine Dissertation in Festkörperphysik an der Universität Freiburg im Jahr 1998 abgeschlossen. Anschliessend hat er bis 2003 als Software-Entwickler und Applikationsverantwortlicher im Team Data Warehouse bei PostFinance gearbeitet. Nach dreijähriger Tätigkeit als Teamleiter Anti Money Laundering (AML) ist er seit 2006 Domänenleiter und verantwortlich für die Applikationen im Umfeld CRM, DWH und AML."
+          "bio": "Elmar Boschung hat seine Dissertation in Festkörperphysik an der Universität Freiburg im Jahr 1998 abgeschlossen. Anschliessend hat er bis 2003 als Software-Entwickler und Applikationsverantwortlicher im Team Data Warehouse bei PostFinance gearbeitet. Nach dreijähriger Tätigkeit als Teamleiter Anti Money Laundering (AML) ist er seit 2006 Domänenleiter und verantwortlich für die Applikationen im Umfeld CRM, DWH und AML.",
+          "portrait": "elmar.boschung.jpg"
         },
         {
           "name": "Thomas Fries",
           "company": "Innovations Softwaretechnologie GmbH",
-          "bio": "Thomas Fries hat nach seinem Diplomstudium für Informatik drei Jahre als wissenschaftlicher Mitarbeiter an der Abteilung Datenbanken und Informationssysteme der Universität Ulm mit dem Themenschwerpunkt Workflow-Management gearbeitet. Nach einem Jahr in der Softwareabteilung des Maschinenbauunternehmens Hundegger GmbH in Hawangen ist er seit 2003 Angestellter bei der Firma Innovations. Dort hat er unter anderem die Einführung der AML-Lösung \"mlds\" bei der PostFinance von Anfang an begleitet."
+          "bio": "Thomas Fries hat nach seinem Diplomstudium für Informatik drei Jahre als wissenschaftlicher Mitarbeiter an der Abteilung Datenbanken und Informationssysteme der Universität Ulm mit dem Themenschwerpunkt Workflow-Management gearbeitet. Nach einem Jahr in der Softwareabteilung des Maschinenbauunternehmens Hundegger GmbH in Hawangen ist er seit 2003 Angestellter bei der Firma Innovations. Dort hat er unter anderem die Einführung der AML-Lösung \"mlds\" bei der PostFinance von Anfang an begleitet.",
+          "portrait": "thomas.fries.jpg"
         }
       ]
     }

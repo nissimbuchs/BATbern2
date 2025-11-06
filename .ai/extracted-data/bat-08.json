@@ -8,7 +8,8 @@
         {
           "name": "Josef Lankes",
           "company": "Technische Universität München",
-          "bio": "Josef Lankes ist wissenschaftlicher Mitarbeiter und Doktorand am Lehrstuhl für Software Engineering betrieblicher Informationssysteme der Technischen Universität München. Er beschäftigt sich im Rahmen des Projekts Softwarekartographie mit der Beschreibung, Bewertung und Gestaltung komplexer betrieblicher Informations-Infrastrukturen. Sein Schwerpunkt liegt dabei auf Verfahren zur Bewertung von Anwendungslandschaften, vor allem dem Metrikeinsatz in diesem Bereich. Josef Lankes erhielt sein Diplom im Fach Wirtschaftsinformatik von der Universität Regensburg im Jahr 2004."
+          "bio": "Josef Lankes ist wissenschaftlicher Mitarbeiter und Doktorand am Lehrstuhl für Software Engineering betrieblicher Informationssysteme der Technischen Universität München. Er beschäftigt sich im Rahmen des Projekts Softwarekartographie mit der Beschreibung, Bewertung und Gestaltung komplexer betrieblicher Informations-Infrastrukturen. Sein Schwerpunkt liegt dabei auf Verfahren zur Bewertung von Anwendungslandschaften, vor allem dem Metrikeinsatz in diesem Bereich. Josef Lankes erhielt sein Diplom im Fach Wirtschaftsinformatik von der Universität Regensburg im Jahr 2004.",
+          "portrait": "josef.lankes.jpg"
         }
       ]
     },
@@ -19,7 +20,8 @@
         {
           "name": "Bernhard Rytz",
           "company": "SBB",
-          "bio": "Bernhard Rytz, Dipl. Inf. Ing. ETH hat als Entwickler, Projektleiter, Methodiker und Architekt Informatikdienstleistungen in unterschiedlichsten Branchen erbracht. Seit 2005 baut er das IT Architekturmanagement der Schweizerischen Bundesbahnen (SBB) auf. Zur Zeit ist er Leiter des Architekturmanagements der SBB IT."
+          "bio": "Bernhard Rytz, Dipl. Inf. Ing. ETH hat als Entwickler, Projektleiter, Methodiker und Architekt Informatikdienstleistungen in unterschiedlichsten Branchen erbracht. Seit 2005 baut er das IT Architekturmanagement der Schweizerischen Bundesbahnen (SBB) auf. Zur Zeit ist er Leiter des Architekturmanagements der SBB IT.",
+          "portrait": "bernhard.rytz.jpg"
         }
       ]
     },
@@ -30,7 +32,8 @@
         {
           "name": "Reto Peter",
           "company": "PostFinance",
-          "bio": "Reto Peter ist seit 2006 Unternehmensarchitekt im IT-Architektur Management der PostFinance. Seine Schwerpunkte liegen in der strategischen Ausrichtung der Applikationslandschaft und der Weiterentwicklung der Architekturdokumentation. Reto Peter hat an der Universität Bern im Bereich angewandte Physik promoviert und war mehrere Jahre in der Forschung tätig. Danach war er in verschiedenen Unternehmen in leitender Position verantwortlich für Produktentwicklung, Produktmanagement und Produktion von Identifikations- und Sicherheitssystemen."
+          "bio": "Reto Peter ist seit 2006 Unternehmensarchitekt im IT-Architektur Management der PostFinance. Seine Schwerpunkte liegen in der strategischen Ausrichtung der Applikationslandschaft und der Weiterentwicklung der Architekturdokumentation. Reto Peter hat an der Universität Bern im Bereich angewandte Physik promoviert und war mehrere Jahre in der Forschung tätig. Danach war er in verschiedenen Unternehmen in leitender Position verantwortlich für Produktentwicklung, Produktmanagement und Produktion von Identifikations- und Sicherheitssystemen.",
+          "portrait": "reto.peter.jpg"
         }
       ]
     }

@@ -8,7 +8,8 @@
         {
           "name": "Hans Ulrich Wiedmer",
           "company": "Information Service Center ISCeco, Eidgenössisches Volkswirtschaftsdepartement",
-          "bio": "SOA-Architekt. Hans Ulrich Wiedmer studierte Informatik an der ETH Zürich. Nach Tätigkeiten in der Internationalen Normung, als Software-Entwickler und als Dozent arbeitet er seit 2003 in der Bundesinformatik. Als SOA-Architekt befasst er sich im EVD u.a. mit der Informations-Architektur."
+          "bio": "SOA-Architekt. Hans Ulrich Wiedmer studierte Informatik an der ETH Zürich. Nach Tätigkeiten in der Internationalen Normung, als Software-Entwickler und als Dozent arbeitet er seit 2003 in der Bundesinformatik. Als SOA-Architekt befasst er sich im EVD u.a. mit der Informations-Architektur.",
+          "portrait": "hans.wiedmer.jpg"
         }
       ]
     },
@@ -19,7 +20,8 @@
         {
           "name": "Philippe Chammartin",
           "company": "RUAG Defence",
-          "bio": "IT-Architekt. Seit 2008 ist Philippe Chammartin als IT-Architekt mit Schwerpunkt Prozess-Engineering und Requirement-Engineering für die Ruag tätig. Zwischen 2004 und 2008 studierte er Wirtschaftinformatik an der Fachhochschule Waadt. Aufgewachsen in La Chaux-de-Fonds, arbeitete Philippe nach der Matura während 8 Jahren für die ETH Lausanne als System Administrator."
+          "bio": "IT-Architekt. Seit 2008 ist Philippe Chammartin als IT-Architekt mit Schwerpunkt Prozess-Engineering und Requirement-Engineering für die Ruag tätig. Zwischen 2004 und 2008 studierte er Wirtschaftinformatik an der Fachhochschule Waadt. Aufgewachsen in La Chaux-de-Fonds, arbeitete Philippe nach der Matura während 8 Jahren für die ETH Lausanne als System Administrator.",
+          "portrait": "philippe.chammartin.jpg"
         }
       ]
     },
@@ -30,7 +32,8 @@
         {
           "name": "Hansueli Locher",
           "company": "Schweizerische Nationalbibliothek NB, Eidgenössisches Departement des Innern",
-          "bio": "Leiter Digitale Dienste. Nach seiner Ausbildung zum Primarlehrer und einigen Jahren Berufspraxis machte Hansueli Locher sein Hobby, die Informatik, zum Beruf und arbeitete fortan im Bundesamt für Statistik, wo er für Datenbankbearbeitungen zuständig war. Er entwickelte in dieser Zeit auch ein Bibliotheksprogramm für das Amt und begleitete Projekte an der Schnittstelle zwischen Informatik und Information. Heute ist Hansueli Locher als Leiter der Digitalen Dienste in der Schweizerischen Nationalbibliothek tätig und befasst sich unter anderem mit den technischen Aspekten der Langzeitarchivierung von digitalen Publikationen."
+          "bio": "Leiter Digitale Dienste. Nach seiner Ausbildung zum Primarlehrer und einigen Jahren Berufspraxis machte Hansueli Locher sein Hobby, die Informatik, zum Beruf und arbeitete fortan im Bundesamt für Statistik, wo er für Datenbankbearbeitungen zuständig war. Er entwickelte in dieser Zeit auch ein Bibliotheksprogramm für das Amt und begleitete Projekte an der Schnittstelle zwischen Informatik und Information. Heute ist Hansueli Locher als Leiter der Digitalen Dienste in der Schweizerischen Nationalbibliothek tätig und befasst sich unter anderem mit den technischen Aspekten der Langzeitarchivierung von digitalen Publikationen.",
+          "portrait": "hansueli.locher.jpg"
         }
       ]
     }
