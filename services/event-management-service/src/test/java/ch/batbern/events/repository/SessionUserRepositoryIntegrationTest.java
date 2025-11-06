@@ -276,9 +276,12 @@ class SessionUserRepositoryIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void should_cascadeDelete_when_sessionDeleted() {
-        // Given: Session with speakers
-        createSessionUser(testSession1, userId1, SpeakerRole.PRIMARY_SPEAKER);
-        createSessionUser(testSession1, userId2, SpeakerRole.CO_SPEAKER);
+        // Given: Session with speakers - manually maintain bidirectional relationship for cascade
+        SessionUser su1 = createSessionUser(testSession1, userId1, SpeakerRole.PRIMARY_SPEAKER);
+        SessionUser su2 = createSessionUser(testSession1, userId2, SpeakerRole.CO_SPEAKER);
+        testSession1.getSessionUsers().add(su1);
+        testSession1.getSessionUsers().add(su2);
+        sessionRepository.save(testSession1);
         assertThat(sessionUserRepository.findBySessionId(testSession1.getId())).hasSize(2);
 
         // When: Deleting session

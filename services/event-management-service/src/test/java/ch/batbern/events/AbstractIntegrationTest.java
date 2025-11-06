@@ -6,8 +6,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * Abstract base class for integration tests using Testcontainers PostgreSQL.
@@ -18,24 +16,38 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * - Verify Flyway migrations work correctly
  * - Catch database-specific issues early
  *
- * The container is shared across all test classes for performance (singleton pattern).
+ * The container is a TRUE SINGLETON shared across ALL test classes for performance.
+ *
+ * IMPORTANT: We removed @Testcontainers and @Container annotations to prevent
+ * automatic lifecycle management that would stop the container between test classes.
+ * Instead, we use a static initializer block for manual singleton management.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Testcontainers
 public abstract class AbstractIntegrationTest {
 
     /**
-     * Shared PostgreSQL container for all tests.
-     * Using singleton pattern with reuse=true for optimal performance.
+     * Shared PostgreSQL container for ALL tests - true singleton pattern.
+     * Started once in static block, stopped only at JVM shutdown.
      */
-    @Container
-    static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
-            .withDatabaseName("testdb")
-            .withUsername("test")
-            .withPassword("test")
-            .withReuse(true);
+    static final PostgreSQLContainer<?> postgres;
+
+    static {
+        // Initialize singleton container once for entire test suite
+        postgres = new PostgreSQLContainer<>("postgres:16-alpine")
+                .withDatabaseName("testdb")
+                .withUsername("test")
+                .withPassword("test");
+
+        // Start container once
+        postgres.start();
+
+        // Register shutdown hook to stop container only when JVM exits
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            postgres.stop();
+        }));
+    }
 
     /**
      * Dynamically configure Spring datasource properties from the Testcontainers instance.
