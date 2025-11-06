@@ -6,12 +6,12 @@ import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SessionUser.SpeakerRole;
 import ch.batbern.events.dto.SessionSpeakerResponse;
 import ch.batbern.events.dto.UserProfileDTO;
+import ch.batbern.events.exception.SpeakerAssignmentNotFoundException;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,7 +36,6 @@ public class SessionUserService {
     private final SessionUserRepository sessionUserRepository;
     private final SessionRepository sessionRepository;
     private final UserApiClient userApiClient;
-    private final JdbcTemplate jdbcTemplate;
 
     /**
      * Assign a speaker to a session
@@ -72,10 +71,11 @@ public class SessionUserService {
             );
         }
 
-        // Get userId from local database for FK constraint
-        UUID userId = getUserIdFromUsername(username);
+        // Use placeholder UUID for userId (backward compat field - username is primary identifier)
+        // Per ADR-003: Username is the API identifier; userId kept for backward compat only
+        UUID userId = UUID.nameUUIDFromBytes(("user:" + username).getBytes());
 
-        // Create SessionUser entity with both userId (FK) and username (API identifier)
+        // Create SessionUser entity with both userId (placeholder) and username (API identifier)
         SessionUser sessionUser = SessionUser.builder()
                 .session(session)
                 .userId(userId)  // Required for FK constraint
@@ -98,7 +98,7 @@ public class SessionUserService {
      *
      * @param sessionId Session UUID
      * @param username User's username
-     * @throws IllegalArgumentException if assignment not found
+     * @throws SpeakerAssignmentNotFoundException if assignment not found
      * @throws UserNotFoundException if user not found via API
      */
     public void removeSpeakerFromSession(UUID sessionId, String username) {
@@ -106,9 +106,7 @@ public class SessionUserService {
 
         // Find speaker assignment by username (ADR-003: meaningful identifier)
         SessionUser sessionUser = sessionUserRepository.findBySessionIdAndUsername(sessionId, username)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Speaker assignment not found for user " + username + " and session " + sessionId
-                ));
+                .orElseThrow(() -> new SpeakerAssignmentNotFoundException(sessionId, username));
 
         sessionUserRepository.delete(sessionUser);
 
@@ -121,7 +119,7 @@ public class SessionUserService {
      * @param sessionId Session UUID
      * @param username User's username
      * @return Updated SessionSpeakerResponse
-     * @throws IllegalArgumentException if assignment not found
+     * @throws SpeakerAssignmentNotFoundException if assignment not found
      * @throws UserNotFoundException if user not found via API
      */
     public SessionSpeakerResponse confirmSpeaker(UUID sessionId, String username) {
@@ -129,9 +127,7 @@ public class SessionUserService {
 
         // Find speaker assignment by username (ADR-003: meaningful identifier)
         SessionUser sessionUser = sessionUserRepository.findBySessionIdAndUsername(sessionId, username)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Speaker assignment not found for user " + username + " and session " + sessionId
-                ));
+                .orElseThrow(() -> new SpeakerAssignmentNotFoundException(sessionId, username));
 
         sessionUser.confirm();
         sessionUserRepository.save(sessionUser);
@@ -150,7 +146,7 @@ public class SessionUserService {
      * @param username User's username
      * @param reason Reason for declining
      * @return Updated SessionSpeakerResponse
-     * @throws IllegalArgumentException if assignment not found
+     * @throws SpeakerAssignmentNotFoundException if assignment not found
      * @throws UserNotFoundException if user not found via API
      */
     public SessionSpeakerResponse declineSpeaker(UUID sessionId, String username, String reason) {
@@ -158,9 +154,7 @@ public class SessionUserService {
 
         // Find speaker assignment by username (ADR-003: meaningful identifier)
         SessionUser sessionUser = sessionUserRepository.findBySessionIdAndUsername(sessionId, username)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Speaker assignment not found for user " + username + " and session " + sessionId
-                ));
+                .orElseThrow(() -> new SpeakerAssignmentNotFoundException(sessionId, username));
 
         sessionUser.decline(reason);
         sessionUserRepository.save(sessionUser);
@@ -258,27 +252,4 @@ public class SessionUserService {
                 .build();
     }
 
-    /**
-     * Get userId (UUID) from username by querying user_profiles table locally.
-     *
-     * This is needed because:
-     * - ADR-003: Public APIs use meaningful identifiers (username), not UUIDs
-     * - Database FK constraints still require userId (UUID)
-     * - Both services share the same database
-     *
-     * TODO: Consider making user_id nullable in a future migration to fully embrace ADR-003
-     *
-     * @param username the user's username
-     * @return the user's UUID from user_profiles table
-     * @throws IllegalArgumentException if user not found locally
-     */
-    @org.springframework.transaction.annotation.Transactional(readOnly = true)
-    private UUID getUserIdFromUsername(String username) {
-        // Query user_profiles table directly (same database as event-management)
-        return jdbcTemplate.queryForObject(
-                "SELECT id FROM user_profiles WHERE username = ?",
-                UUID.class,
-                username
-        );
-    }
 }

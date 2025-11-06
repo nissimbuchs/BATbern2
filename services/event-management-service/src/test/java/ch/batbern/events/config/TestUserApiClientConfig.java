@@ -55,7 +55,6 @@ public class TestUserApiClientConfig {
      */
     public static UserProfileDTO createTestUser(String username) {
         return UserProfileDTO.builder()
-                .id(UUID.randomUUID())
                 .username(username)
                 .email(username + "@test.com")
                 .firstName("Test")
