@@ -1,0 +1,38 @@
+{
+  "bat": 8,
+  "presentations": [
+    {
+      "title": "Bewertung und Auswahl von EA Management-Werkzeugen",
+      "abstract": "Enterprise Architecture (EA) Management stellt einen verbreiteten Ansatz im IT-Management dar, der die gegenseitige Ausrichtung von Geschäft und IT erreichen soll. Softwarehersteller unterstützen diesen Ansatz mit Werkzeugen. Da Anwender verstärkt den Bedarf für derartige Software sehen, haben sich Softwarehersteller verstärkt auf diesen Markt zubewegt. Dessen Komplexität steigt dadurch. Dies erschwert allerdings die Entscheidung für Anwenderunternehmen, die mit der Auswahl eines bestimmten Werkzeugs eine wichtige Investition vornehmen, nicht nur aufgrund der Lizenzkosten, sondern auch durch den allgemeinen Einführungsaufwand. Um Anwenderunternehmen in dieser Situation zu unterstützen, haben wir 2005 eine Auswahl von EA Management-Werkzeugen untersucht. Diese Untersuchung wiederholen wir jetzt. Der Vortrag skizziert die Enterprise Architecture Management Tool Survey 2005, stellt den Ansatz der Enterprise Architecture Management Tool Survey 2008 vor und diskutiert Punkte, die eine Toolauswahl berücksichtigen sollte.",
+      "speakers": [
+        {
+          "name": "Josef Lankes",
+          "company": "Technische Universität München",
+          "bio": "Josef Lankes ist wissenschaftlicher Mitarbeiter und Doktorand am Lehrstuhl für Software Engineering betrieblicher Informationssysteme der Technischen Universität München. Er beschäftigt sich im Rahmen des Projekts Softwarekartographie mit der Beschreibung, Bewertung und Gestaltung komplexer betrieblicher Informations-Infrastrukturen. Sein Schwerpunkt liegt dabei auf Verfahren zur Bewertung von Anwendungslandschaften, vor allem dem Metrikeinsatz in diesem Bereich. Josef Lankes erhielt sein Diplom im Fach Wirtschaftsinformatik von der Universität Regensburg im Jahr 2004."
+        }
+      ]
+    },
+    {
+      "title": "EA-Management: ein Erfahrungsbericht der SBB",
+      "abstract": "In einem grösseren Unternehmen wie der SBB ist ein effektives Enterprise Architecture Management für die Verwaltung der Verknüpfungen zwischen Geschäfts-, Anwendungs- und Technologiearchitektur auf Werkzeuge angewiesen, welche über Powerpoint, Excel und Visio hinausgehen. Dieser Vortrag zeigt den aktuellen Stand des SBB EA Modells (Metamodell, Inhalte, Sichten) und beleuchtet insbesondere die Fragen: Von welchen Anforderungen wurde ausgegangen? Wie fiel der Werkzeugentscheid? Wie wird das Werkzeug heute eingesetzt (Arbeit im Team, Publikationen)? Welches sind unsere 'lessons learned' in Bezug auf den Werkzeug-einsatz?",
+      "speakers": [
+        {
+          "name": "Bernhard Rytz",
+          "company": "SBB",
+          "bio": "Bernhard Rytz, Dipl. Inf. Ing. ETH hat als Entwickler, Projektleiter, Methodiker und Architekt Informatikdienstleistungen in unterschiedlichsten Branchen erbracht. Seit 2005 baut er das IT Architekturmanagement der Schweizerischen Bundesbahnen (SBB) auf. Zur Zeit ist er Leiter des Architekturmanagements der SBB IT."
+        }
+      ]
+    },
+    {
+      "title": "Einführung eines EA Tools – ein pragmatischer Ansatz",
+      "abstract": "Eine Enterprise Architektur beginnt oft mit der Einführung eines Tools. Dieser Ansatz steht jedoch häufig im Spannungsfeld von Akzeptanzproblemen sowie Nutzendiskussionen und der Forderung nach Standardprodukten, Erweiterbarkeit des zugrundeliegenden Modells und Anbindungsmöglichkeiten an Umsysteme. Der Beitrag zeigt wie PostFinance mittels eines pragmatischen Ansatzes mit diesen widersprüchlichen Anforderungen umgegangen ist. Im Zentrum stehen dabei in einem ersten Schritt nicht das Tool selbst sondern die Bedürfnisträger, welche auf eine einfache Web-Applikation zurückgreifen müssen, als auch die Dateneigner und die organisatorische Einbettung der EA im Unternehmen. Erst in einem zweiten Schritt erfolgt ein gezielter Einsatz eines Tools, welches die Initial-Lösung schrittweise ergänzen oder ablösen wird.",
+      "speakers": [
+        {
+          "name": "Reto Peter",
+          "company": "PostFinance",
+          "bio": "Reto Peter ist seit 2006 Unternehmensarchitekt im IT-Architektur Management der PostFinance. Seine Schwerpunkte liegen in der strategischen Ausrichtung der Applikationslandschaft und der Weiterentwicklung der Architekturdokumentation. Reto Peter hat an der Universität Bern im Bereich angewandte Physik promoviert und war mehrere Jahre in der Forschung tätig. Danach war er in verschiedenen Unternehmen in leitender Position verantwortlich für Produktentwicklung, Produktmanagement und Produktion von Identifikations- und Sicherheitssystemen."
+        }
+      ]
+    }
+  ]
+}

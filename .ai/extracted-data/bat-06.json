@@ -1,0 +1,65 @@
+{
+  "bat": 6,
+  "presentations": [
+    {
+      "title": "MDSD mit Open Source Tools – eine schrittweise Einführung",
+      "abstract": "Modellgetriebene Software-Entwicklung ist die neue Hoffnung im Software Engineering den Abstraktionsgrad zu erhöhen und die Kosten zu reduzieren. Viele Bücher wurden bereits über das Thema geschrieben und die Tool-Hersteller behaupten \"we are ready for MDA\". Der Einsatz dieser Werkzeuge zeigt uns jedoch, dass viel Anpassungsarbeit notwendig ist, bevor MDA-Tools erfolgreich eingesetzt werden können. Dieser Vortrag gibt Ihnen neben einer kurzen Einführung in die Theorie einen Überblick über die notwendigen Schritte, um basierend auf Open Source Technologie eine eigene MDSD Factory zu erstellen, die die Technologie und Architektur des eigenen Projekts unterstützt. Die dabei eingesetzten Tools sind Eclipse als IDE, openArchitectureWare als MDSD Framework und Enterprise Architekt als UML Modellierungs-Tool.",
+      "speakers": [
+        {
+          "name": "Ulrich Brawand",
+          "company": "Zühlke Engineering",
+          "bio": "Ulrich Brawand ist Business Unit Manager bei Zühlke Engineering und setzt die Objektorientierung und UML seit vielen Jahren in Entwicklungsprojekten erfolgreich ein. Seit 2 Jahren befasst er sich mit Modellen und Generierung von Code mit MDSD-Technologien. Ulrich Brawand ist Commiter beim Open Source Projekt openArchitectureWare, wo er für den EMF-basierten UML2 Exporter für Enterprise Architect verantwortlich ist."
+        }
+      ]
+    },
+    {
+      "title": "Transitioning to Model Driven Software Development",
+      "abstract": "It is time for a major stock take of model driven development approaches and their adoption within software intensive industries. The term \"Model Driven\" has gone through the usual hype cycle, and the dust is in the process of settling. The speed of progress in terms of OMG interoperability standards for model driven tooling has not been spectacular. For example it took five years to develop an industry standard for expressing model transformations, and it remains to be seen if and when the OMG's Query, View, and Transformation (QVT) standard will become relevant. The uptake of proprietary commercial MDA tools has fallen significantly short of vendor expectations. In the mean time a large range of Open Source projects have emerged and have had time to mature. Scope of the talk: An analysis from a tool vendor independent perspective, and practical recommendations for the adoption of a Model Driven Software Development paradigm.",
+      "speakers": [
+        {
+          "name": "Jorn Bettin",
+          "company": "SoftMetaWare",
+          "bio": "Jorn Bettin is Managing Director of SoftMetaWare, a global network of consultants recognized for deep expertise in Model Driven Engineering (MDSD, MDA) and Agile Software Development. Jorn has an international track record in guiding large software organizations through difficult technology transitions/paradigm shifts, and has co-authored three books on Model Driven Engineering approaches."
+        }
+      ]
+    },
+    {
+      "title": "Erarbeitung und Einsatz des UML-Frameworks",
+      "abstract": "Vor etwa 5 Jahren wurde die Idee geboren, auf einem MDA-Ansatz basierend die Informatik der PostFinance zu beschreiben. Immer wieder stand auch das Versprechen im Raum, aus der Beschreibung dann Code zu generieren. Nicht alle Ideen gewannen gleich viele Freunde, einige trafen sogar auf deutlichen Widerstand. Dass im Ansatz insbesondere auch Überlegungen zum CIM (Computational Independant Model) im Zentrum standen, hat das eine wie auch das andere begünstigt. Die Präsentation reflektiert Erfolgsmomente und auch Misserfolge. Zudem wird der aktuelle Stand der Initiative und wo da die Erfolge und auch Probleme stecken dargestellt.",
+      "speakers": [
+        {
+          "name": "Andreas Spichiger",
+          "company": "PostFinance",
+          "bio": "Andreas Spichiger ist Dr. phil.-nat. und Diplominformatiker. Verschiedenste Tätigkeiten in den Bereichen Methodik, Applikations- und Unternehmensarchitektur, Entwicklungsleitung, IT-Strategie und Beratung in versch. Unternehmen. Seit 2003 bei der Schweiz. Post, PostFinance Informatik; verantwortlich für Architekturmanagement."
+        }
+      ]
+    },
+    {
+      "title": "König Fachprozess - Nutzerorientierte Fachprozessmodellierung",
+      "abstract": "In einem Grossprojekt konnte die Mobiliar umfassende Erfahrungen zur Lesbarkeit von Prozessmodellen durch Fachbenutzer sammeln. Auf dieser Grundlage erfolgte eine Methodenerweiterung der UML. Ziel war es, Fachprozesse auf eine IT-Landschaft abbilden und dies für den Benutzer deutlich machen zu können. Die Fachbenutzer sollen so stärker in die Gestaltung der IT-Landschaft eingebunden werden. Die Methodenerweiterung schafft darüber hinaus neue Möglichkeiten zur modellgestützen Konstruktion von Prototypen. Diese werden als Ausblick vorgestellt.",
+      "speakers": [
+        {
+          "name": "Dr. Andreas Dietzsch",
+          "company": "Mobiliar",
+          "bio": "Dr. Andreas Dietzsch promovierte an der TU Dresden auf dem Gebiet der Wirtschaftsinformatik. Er arbeitet seit 2001 für die Schweizerische Mobiliar mit den Schwerpunkten Business Process Engineering, Architekturmanagement und Methodenentwicklung. Er ist verantwortlich für die Methode zum Business Engineering und wirkte in Projekten in den Vertriebs-, Schaden- und administrativen Prozessen mit. Als Mitglied des Kernteams erarbeitet er die IT Strategie der Mobiliar."
+        },
+        {
+          "name": "Dr. Steffen Greiffenberg",
+          "company": "semture GmbH",
+          "bio": "Dr. Steffen Greiffenberg arbeitete mehrere Jahre am Lehrstuhl für Wirtschaftsinformatik an der Technischen Universtät Dresden und promovierte zum Thema \"Methodenentwicklung in Wirtschaft und Verwaltung\"."
+        }
+      ]
+    },
+    {
+      "title": "FRAGen (Full RTC Application Generator)",
+      "abstract": "Die RTC hat langjährige Erfahrung im Einsatz von Code Generatoren. FRAGen ist eine komplett Eclipse basierte Generator Infrastruktur, welche es erlaubt, auf der Basis von Modellen jegliche Art von Artefakten zu generieren. In der RTC wird FRAGen in der GUI Entwicklung angewendet, wo mit Hilfe diverser Frameworks (MVC) Transferobjekte auf ein Business Object Model und dieses auf ein GUI gemappt wird. Es soll anhand eines praktischen Beispiels aufgezeigt werden, wie der MDSD Ansatz zur Zeit in der RTC umgesetzt wird.",
+      "speakers": [
+        {
+          "name": "Andreas Grütter",
+          "company": "RTC AG",
+          "bio": "Andreas Grütter arbeitet seit 2004 in der RTC als IT-Architekt und Java J2EE Entwickler. Er ist verantwortlich für die Client-Frameworks und Generatoren. Zuvor studierte er Informatik und Telekommunikation an der Fachhochschule Nordwestschweiz."
+        }
+      ]
+    }
+  ]
+}

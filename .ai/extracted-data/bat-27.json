@@ -1,0 +1,43 @@
+{
+  "bat": 27,
+  "presentations": [
+    {
+      "title": "MELANI und der tägliche Kampf gegen die Internetkriminalität",
+      "abstract": "Seit fast zehn Jahren unterstützt die Melde- und Analysestelle Informationssicherung MELANI die Betreiber kritischer Infrastrukturen subsidiär bei der Bewältigung von Cyber-Vorfällen. Weitere Aufgaben sind die Erstellung umfassender Lagebilder, die proaktive Warnung vor potenziellen Angriffen sowie Dienstleistungen zugunsten von KMU und Öffentlichkeit. In seiner Präsentation wird Max Klaus in einem ersten Teil auf die Organisation von MELANI eingehen und die Möglichkeiten, aber auch die Grenzen dieser Stelle aufzeigen. Der zweite Teil widmet sich verschiedensten Bedrohungsarten wie Spam, Phishing, DDoS, Cyberspionage, Erpressung, politisch motiviertes Hacking usw. Anhand anschaulicher Beispiele wird aufgezeigt, wie die Angriffe durchgeführt werden und wie gut vernetzt die Täter in der Regel sind. Im Schlussteil wird der Redner auf die 'Nationale Strategie zum Schutz der Schweiz vor Cyber-Risiken' (Nationale Cyber-Strategie; NCS) eingehen.",
+      "speakers": [
+        {
+          "name": "Max Klaus",
+          "company": "Melde- und Analysestelle Informationssicherung MELANI, Informatiksteuerungsorgan Bund ISB",
+          "bio": "Max Klaus trat 2002 in die Bundesverwaltung ein, wo er zunächst im Projekt 'Guichet Virtuel' der Schweizerischen Bundeskanzlei tätig war, bevor er ins Projekt „Vote électronique' wechselte. Dort war er insbesondere für die Umsetzung der Bundesvorgaben im Zürcher E-Voting-Projekt zuständig. Seit September 2008 ist er stellvertretender Leiter der Melde- und Analysestelle Informationssicherung MELANI. Zu seinen Hauptaufgaben gehören die strategische Ausrichtung, die Bearbeitung parlamentarischer Geschäfte und die Medienarbeit."
+        }
+      ]
+    },
+    {
+      "title": "Die neue Netzwerkzonierung der SBB",
+      "abstract": "Die SBB betreibt ein Datennetz welches über die Jahre gewachsen und in dieser Zeit meist nur punktuell erweitert wurde. Mit neuen Anforderungen – primär aus den Bereichen Mobilität und Clouddienste – drängte sich eine grundsätzliche Überprüfung und Neukonzeption des Netzwerk Zonenplans auf. Im Beitrag werden die folgenden Aspekte näher beleuchtet. Ausgangslage: Welche Faktoren haben zu der Überarbeitung des Netzwerkzonenplans geführt? Zonenmodell: Warum braucht es ein Modell, um Netzwerkzonen modellieren zu können und aus welchen Elementen besteht dieses Modell? Neuerung: Wie sieht der neue Zonenplan aus und was sind die Unterscheidungsmerkmale zum alten Plan. Umsetzung: Wo stehen wir in der Umsetzung und mit welchen Herausforderungen muss sich das Projekt auseinandersetzen?",
+      "speakers": [
+        {
+          "name": "Ernst Kammermann-Gerber",
+          "company": "SBB IT",
+          "bio": "Ernst Kammermann-Gerber ist seit 2007 als IT-Architekt bei der SBB tätig. Seit November 2009 ist er verantwortlicher Technologie Manager für die Technologie Gruppe Network & Security. Er hat 2012 seine Masterarbeit zum Thema Netzwerkzonierung geschrieben. Im Projekt «GNWP – Netzwerkzonierung» hat er seit Beginn der Studie die Rolle des Lead-Architekten inne."
+        },
+        {
+          "name": "Thomas Ragaz",
+          "company": "ProBIT AG",
+          "bio": "Thomas Ragaz. Lic. rer. pol. ist Partner in der ProBIT AG und seit gut 20 Jahren als Projektleiter für komplexe IT-Infrastruktur-Projekte bei verschiedenen Kunden erfolgreich tätig. Er ist seit 2011 als Gesamtprojektleiter verantwortlich für das Projekt «GNWP – Netzwerkzonierung» bei der SBB."
+        }
+      ]
+    },
+    {
+      "title": "MobileID – die neue Authentisierungsart am SSO-Portal EJPD",
+      "abstract": "2003 (wir erinnern uns, damals war die Weltneuheit das Nokia 1100!) war die Geburtsstunde des SSO-Portals EJPD. Schon damals war eines der Kernziele die starke Authentisierung mit Hilfe von Smartcards und X.509 v3 Zertifikaten der Admin PKI des BIT. Inzwischen sind 10 Jahre vergangen – vieles hat sich geändert. Die Computerindustrie hat sich gewandelt vom PC Computing zum mobile Computing. Die Anforderungen sind jedoch geblieben. Auch beim mobilen Arbeiten will man den Endbenutzer stark authentisieren. Das Mobile-Computing macht auch in der Bundesverwaltung nicht halt. Insbesondere die Mitarbeitenden im Felde (wie z.B. der Kantonspolizist) arbeiten heute mit mobilen Geräten wie einem iPod. In der heute schnellen und dynamischen Zeit möchten sie natürlich auch direkt ab ihren mobilen Geräten sicher und stark authentisiert sensitive Daten lesen können (wie z.B. ob eine Person in einem Register ist oder nicht) – ohne aber grosse Komfort-Einbussen in Kauf zu nehmen. Der Vortrag soll aufzeigen, wie das SSO-Portal EJPD eine starke Authentisierung von Benutzern mit mobilen Geräten realisiert hat (mit Live-Demo), was die Bedingungen und Anforderungen sind und warum sich das EJPD letztendlich für die MobileID und gegen eine SMS- basierte Authentisierung entschieden hat.",
+      "speakers": [
+        {
+          "name": "Peter Andres",
+          "company": "Informatik Service Center EJPD",
+          "bio": "Peter Andres arbeitet seit 2003 beim EJPD als ICT-Architekt und ist seit 2007 Leiter der Abteilung Technologie des Informatik Service Center (ISC). Er hat mehrjährige Erfahrung in verteilten, sicherheitskritischen Softwarearchitekturen und spezialisierte Kenntnisse im Bereich Java EE-Anwendungen. Er absolvierte mehrere Weiterbildungen rund um das Thema der IT-Sicherheit und erlangte 2011 den CISSP (Certified Information Systems Security Professional). Aktuell ist er als Auftraggeber und Solution-Architekt der MobileID SSO-Portal."
+        }
+      ]
+    }
+  ]
+}

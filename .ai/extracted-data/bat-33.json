@@ -1,0 +1,43 @@
+{
+  "bat": 33,
+  "presentations": [
+    {
+      "title": "Geschwindigkeit, Flexibilität und Governance im digitalen Zeitalter",
+      "abstract": "Das Referat zeigt auf, wie die Domäne Analytics & Risk bei der PostFinance AG positioniert ist, welche Anforderungen bestehen und welche Chancen und Risiken der Neubau des Data Warehouse bietet. Das neue DWH wird als zentrales Active Data Warehouse implementiert und steht als 'Single Source of Analytical Data' beispielsweise für Echtzeitanalysen wie auch für die Unterstützung operativer Prozesse zur Verfügung. Als Technologien werden Hadoop, InMemory DB und verschiedene Datenreplikationsmechanismen eingesetzt.",
+      "speakers": [
+        {
+          "name": "Ralf Leipner",
+          "company": "PostFinance AG",
+          "bio": "Ralf Leipner ist Leitender Architekt der Domäne Analytics & Risk Management der PostFinance AG. Er ist verantwortlich für Architektur und Design der DWH / BI Umgebung basierend auf In-Memory- und Hadoop-Technologie mit Datenintegration in Echtzeit. Zusätzlich zur Erstellung und Kommunikation von Zielarchitektur und Roadmaps für seine Domäne führt er Solution Architects, berät Fachabteilungen und unterstützt Projekte und Beschaffungen. Vor seinem Engagement bei der PostFinance AG arbeitete Ralf als leitender Architekt für SOA & Systemintegration, Business Intelligence und CRM bei Swisscom Schweiz AG und Swisscom Mobile AG. Parallel dazu wirkte er als Dozent und Fachbereichsleiter Wirtschaftsinformatik an der Privaten Hochschule für Wirtschaft in Bern. Davor arbeitete er in unterschiedlichen Positionen als IT-Berater und -Architekt. Sein Studium absolvierte Ralf an der Freien Universität Berlin in den Hauptfächern Wirtschaftsinformatik und Organisation & Führung."
+        }
+      ]
+    },
+    {
+      "title": "Informationen effizient bereitstellen",
+      "abstract": "Die Rahmenbedingen bei der echtzeitnahen Verarbeitung und Verteilung von Datenströmen bringen althergebrachte Persistenz-Strategien an ihre Grenzen. Eine Verabschiedung von althergebrachten Denkweisen und Lösungsmustern ist oft ein guter Anfang, um den immer strengeren Anforderungen an Latenz, Verfügbarkeit und Flexibilität gerecht werden zu können. In unserem Vortrag zeigen wir auf, wie wir beim Aufbau einer Datendrehscheibe für betriebsrelevante Daten auf eine Lösungsarchitektur mit Hazelcast als verteilten und ausfallsicheren NoSQL Store für die Datenaggregation und Vorhaltung gekommen sind. Wir gehen dabei auf das Projektumfeld, die organisatorischen Herausforderungen und auch auf die Technologie selbst ein. Auch den ein oder anderen Stolperstein auf diesem Weg möchten wir euch nicht vorenthalten.",
+      "speakers": [
+        {
+          "name": "Pirmin Suter",
+          "company": "PENTAG Informatik AG",
+          "bio": "Als Mitgründer der PENTAG Informatik AG arbeitet Pirmin Suter seit 1999 für verschiedene Kunden als SW-Architekt und Projektleiter, in den letzten Jahren im Umfeld eines Integrationsprojektes. Seit 2013 zeichnet er zusätzlich als Geschäftsführer der PENTAG Informatik AG verantwortlich. Nach der berufsbegleitenden Ausbildung zum Eidg. Dipl. Wirtschaftsinformatiker hat er 2013 den Lehrgang zum Projektleiter PMP gemäss PMI erfolgreich absolviert."
+        },
+        {
+          "name": "Johannes Mangold",
+          "company": "Trivadis AG",
+          "bio": "Johannes Mangold ist Senior Consultant für Application Development bei Trivadis mit über 15 Jahren Erfahrung als Software-Entwickler, Architekt und Berater. Seit seinem Studium der Wirtschaftsinformatik arbeitet er hauptsächlich an Web- und Integrationslösungen für Grossunternehmen verschiedener Branchen. Aktuell beschäftigt er sich auch intensiv mit modernen Architekturansätzen, NoSQL Datenbanken und cloud computing."
+        }
+      ]
+    },
+    {
+      "title": "Enterprise NoSQL mit der MarkLogic-Datenbank",
+      "abstract": "Unternehmen haben zwei grundsätzliche Anforderungen an Datenbanken: Transaktionssicherheit und zuverlässige Zugriffskontrolle. Während die klassischen relationalen Datenbanken diese Anforderungen selbstverständlich erfüllen, müssen NoSQL-Produkte in aller Regel passen. MarkLogic ist die einzige NoSQL-Datenbank, die bereits seit Jahren sowohl ACID-Transaktionen als auch Sicherheit auf US-Regierungsniveau gewährleistet. Der Vortrag gibt einen kurzen Überblick über die Funktionen und Eigenschaften der MarkLogic-Datenbank. Am Beispiel praktischer Anwendungsfälle zeigt der Vortrag, wie und in welchen Bereichen Unter-nehmen und Organisationen diese NoSQL-Datenbank erfolgreich einsetzen.",
+      "speakers": [
+        {
+          "name": "Andreas Esser",
+          "company": "Tripons GmbH",
+          "bio": "Andreas Esser arbeitet seit über 20 Jahren als Entwickler, Architekt, Projektleiter, Berater und technischer Autor für Unternehmen in der Schweiz, Deutschland und den USA. Andreas Esser ist geschäftsführender Gesellschafter der Tripons GmbH in Bern. Die Tripons GmbH hat zum Zweck, Unternehmen die Schlüsseltechnologien bereitzustellen, die diese für ihre digitale Transformation benötigen."
+        }
+      ]
+    }
+  ]
+}

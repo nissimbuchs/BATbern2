@@ -1,0 +1,49 @@
+{
+  "bat": 35,
+  "presentations": [
+    {
+      "title": "Hochverfügbare Applikationen und Services im EJPD",
+      "abstract": "Das ISC-EJPD entwickelt und betreibt Systeme im sicherheitskritischen Bereich (Anwendungen, welche der inneren Sicherheit der Schweiz dienen), welche teilweise hohe bis höchste Verfügbarkeitsanforderungen haben (99.9%). Diese Verfügbarkeitsanforderungen stammen einerseits aus vertraglichen Verpflichtungen mit Partnern (Schengen / EU) und andererseits aus den Anforderungen der Fachapplikationen selbst. Die Fachapplikationen haben hohe Verfügbarkeitsanforderungen, um beispielsweise 7/24 Stunden Geschäfte (Visums-, Schengen- und Polizei-Systeme) sicherzustellen. Neben den hohen Verfügbarkeitsanforderungen ist beim Bund ein deutlicher Kostendruck spürbar, welcher sich insbesondere auch auf die Dienstleistungen der Informatik auswirkt. Dadurch wird an die Architektur die Anforderung gestellt, kostengünstige Lösungen zu finden, die trotzdem eine hohe Skalierbarkeit und Verfügbarkeit garantieren können. Diese Präsentation zeigt, wie das ISC-EJPD dies konkret umgesetzt hat, welche Prinzipien dabei angewendet worden sind und wo die Architektur an ihre Grenzen kommt. Weiter wird ein Ausblick in die Zukunft (2020 – 2025) gewagt, welche mit einem neuen, zentralen Rechenzentrum für den Bund auch neue Betriebslösungen (Bundes-Cloud) bringen wird.",
+      "speakers": [
+        {
+          "name": "Peter Andres",
+          "company": "Informatik Service Center ISC-EJPD",
+          "bio": "Peter Andres arbeitet seit 2003 beim EJPD als ICT-Architekt und ist seit 2007 Leiter der Abteilung Technologie des Informatik Service Center EJPD. Er hat mehrjährige Erfahrung in verteilten, sicherheitskritischen Softwarearchitekturen und spezialisierte Kenntnisse im Bereich Java EE-Anwendungen. Er absolvierte mehrere Weiterbildungen rund um das Thema der IT-Sicherheit und erlangte 2011 den CISSP (Certified Information Systems Security Professional)."
+        }
+      ]
+    },
+    {
+      "title": "Von 'normalverfügbar' zu 'always-on' - Hochverfügbares Rechenzentrum mit zwei Standorten",
+      "abstract": "2008 hat PostFinance ein zweites Rechenzentrum in Zofingen (AG) in Betrieb genommen, um auch im Falle eines Komplettverlusts des Standortes Bern den Betrieb aufrechterhalten zu können. Eine hochverfügbare Infrastruktur ist jedoch nur ein Baustein einer Hochverfügbarkeits-Architektur, die letztlich bis zu den Kunden-Zugangspunkten reichen muss. Wir stellen in diesem Vortrag die Hochverfügbare PostFinance vor und gehen insbesondere auch auf Massnahmen, Entwicklungen und Fortschritte der letzten Jahre ein.",
+      "speakers": [
+        {
+          "name": "Harald Aust",
+          "company": "PostFinance AG",
+          "bio": "Harald Aust ist Dr. rer. nat. und Dipl.-Informatiker und seit 2002 bei der PostFinance AG mit verschiedenen Aufgaben, unter anderem IT-Architektur und Projektleitung, in den Bereichen IT-Infrastruktur, Middleware und EAI tätig. Im Projekt 'Disaster Tolerance', in dem vor einigen Jahren ein zusätzliches Rechenzentrum in Betrieb genommen wurde, war er für den standortübergreifenden Aufbau der PostFinance-Applikationen verantwortlich."
+        }
+      ]
+    },
+    {
+      "title": "Hochverfügbar als Service - erste Erfahrungen mit AWS Lambda und Azure Service Fabric",
+      "abstract": "Lassen sich mit Cloud Plattformen wie AWS Lambda und Azure Service Fabric hochverfügbare Systeme bauen und betreiben ohne dass man sich um die mit Hochverfügbarkeit verbundene Komplexität kümmern muss? Der Vortrag zeigt auf, was diese Plattformen leisten können, welche Erfahrungen afca. damit gemacht hat und warum dieser Ansatz Architektur, Entwicklung und Betrieb von Software grundsätzlich verändern könnte.",
+      "speakers": [
+        {
+          "name": "Paul Affentranger",
+          "company": "afca",
+          "bio": "Wir arbeiten nach Holacracy (http://www.holacracy.org) wo es keine klassischen Funktionen, sondern Rollen gibt. Ich habe die Rollen: Strategie, Innovation und Entwicklung."
+        }
+      ]
+    },
+    {
+      "title": "HA Cluster mit Pacemaker und Corosync",
+      "abstract": "Hochverfügbarkeit in der Cloud und die Auslagerung von IT-Infrastruktur ist zurzeit ein vielbeachtetes Thema. Es gibt Kunden die aus vielfältigen Gründen eine lokale Hochverfügbarkeitslösung mit eigener Hardware bevorzugen. Puzzle ITC realisiert mit Pacemaker, Corosync und DRBD preiswerte, auf Opensource basierte Hochverfügbarkeit. Die Präsentation zeichnet ein Bild der Bedürfnisse unserer Kunden, gibt einen Einblick in unsere Lösung und deren Weiterentwicklung im Laufe der Zeit.",
+      "speakers": [
+        {
+          "name": "Philippe Schmid",
+          "company": "Puzzle ITC",
+          "bio": "Philippe Schmid arbeitet seit 2012 bei der Puzzle ITC in Bern. Er berät und unterstützt Kunden in der Schweiz und im Ausland in Linux-Fragen. Sein Interesse gilt pragmatischen Lösungen mit Opensource-Produkten. Philippe Schmid verfügt über einen Informatik-Abschluss an der Fachhochschule HTI Biel."
+        }
+      ]
+    }
+  ]
+}

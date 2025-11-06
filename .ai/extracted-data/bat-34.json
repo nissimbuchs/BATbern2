@@ -1,0 +1,114 @@
+{
+  "bat": 34,
+  "presentations": [
+    {
+      "title": "Das Internet der Dinge – Erfahrungen, Innovationen und Umsetzungstipps",
+      "abstract": "Alle finden das Internet der Dinge wichtig um wettbewerbsfähig zu bleiben – nur wenige Unternehmen wissen wie es wirklich geht. Dafür ist Digitalisierungskompetenz gefragt – doch wie bauen Unternehmen diese auf? Was kann man aus anderen Projekten lernen? Wie geht man bei einem Internet der Dinge Projekt vor? Was müssen die kleinen – und mittelständischen Unternehmen beachten? Als Ausblick wollen wir uns noch der Königsdisziplin widmen, wie man Daten monetarisieren kann. Wie kann man diesen Schatz heben? Unternehmen, die ihren Wert überwiegend aus Daten generieren, wie Apple, Google, Amazon und Facebook sind heute mehr wert als alle DAX 30 Unternehmen in Deutschland. Fragen über Fragen in einem komplexen Umfeld. Der Vortrag möchte Antworten geben und eigene praktische Projekterfahrungen aus der Landwirtschaft und der Logistik vermitteln.",
+      "speakers": [
+        {
+          "name": "Dr. Bettina Horster",
+          "company": "VIVAI Software AG",
+          "bio": "Die Diplom-Informatikerin Dr. Bettina Horster leitet bei der VIVAI Software AG den Bereich 'Internet der Dinge / Industrie 4.0'. Sie führte das EU-Projekt «M2M Teledesk», das 2015 von der Bundesregierung ausgezeichnet wurde. Seit 1996 beschäftigt sie sich intensiv mit dem Thema «mobile Services» und hat hier Pionierarbeit geleistet. Dr. Bettina Horster ist Direktorin des eco e.V. (Verband der deutschen Internetwirtschaft) und ist Mitglied des Münchner Kreises. Sie ist Chairwoman des internationalen Think Tanks «Diplomatic Council», einer NGO, die den Beraterstatus bei den Vereinten Nationen besitzt. Frau Dr. Horster ist 2015 als Unternehmerin des Jahres der Stadt Dortmund ausgezeichnet geworden. Zuvor war sie als Managerin Business Development bei der VEBA Telecom GmbH (heute E.on) im Mobilfunkbereich tätig. Dr. Horster studierte Informatik in Deutschland und den USA (Universität Dortmund und University of California Berkeley) und promovierte an der Universität Münster im Fachbereich BWL. Sie besitzt außerdem ein Diplom der Universität St. Gallen (HSG)."
+        }
+      ]
+    },
+    {
+      "title": "Die IT als bremsende Kraft der Digitalen Transformation?",
+      "abstract": "Die Digitale Transformation erhöht die Wettbewerbsintensität und verändert die Spielregeln im Kerngeschäft der SBB nachhaltig. Die SBB will diese Chance nutzen, um ihre führende Marktposition zu stärken und selbstbewusst die Mobilität der Zukunft zu gestalten. Im Unternehmenskontext wirft sie auch die Frage auf, welche Rolle die IT inne hat: Bis dato treibende Kraft der Digitalisierung von Geschäftsprozessen (eShift), stösst der klassische Business-IT-Alignment-Ansatz dort an seine Grenzen, wo das Business selbst sich mittels Digitalisierung am Markt differenzieren möchte. Das Referat thematisiert die Digitale Transformation bei der SBB und zeigt die Herausforderungen fragmentierter Verantwortlichkeiten und komplizierter System- und Prozesslandschaften bei der strategischen Repositionierung des Unternehmens. Die App 'MeinBahnhof', welche eine Indoor Navigation auf Basis von Bluetooth am Zürich HB erlaubt, soll hierzu als illustratives Beispiel dienen. Das Referat schliesst mit einer Betrachtung des App Portfolio Managements und zeigt das aktuelle Vorgehen der SBB bei der App Governance sowie beim App Branding.",
+      "speakers": [
+        {
+          "name": "Markus Basler",
+          "company": "SBB AG",
+          "bio": "Markus Basler arbeitet seit September 2014 bei der SBB und kümmert sich um strategische Fragestellungen im Kontext der Digitalisierung der SBB. Davor hat er als Unternehmensberater firmeninterne ICT Service Provider bei ihrer Weiterentwicklung und dem Schärfen ihres Profils gegenüber dem Business unterstützt. Markus prägt aktuell als stv. Programmleiter die Digitale Transformation der SBB. Hierbei legt er zur Zeit sein Augenmerk auf digitale Geschäftsmodelle/digitales Ökosystem sowie auf die Auswirkungen der Digitalisierung auf die Mitarbeitenden."
+        }
+      ]
+    },
+    {
+      "title": "Digitalisierung bei der Post - wo wir stehen und was uns fordert",
+      "abstract": "Das Referat zeigt auf, wo die Schweizerische Post steht punkto Digitalisierung (inklusive IoT) und woran sie arbeitet. Die Post hat im 2016 den Swiss Digital Transformation Award gewonnen. Der Preis zeichnet Unternehmen aus, welche in den letzten 18 Monaten wesentliche Fortschritte in der digitalen Transformation vollziehen konnten. Was genau hat die Post getan? Weiter teilt der Referent seine persönliche Einschätzung mit, welche Herausforderungen für die Post (aber wohl auch für viele weitere Unternehmen) in der digitalen Transformation bestehen.",
+      "speakers": [
+        {
+          "name": "Roman Stalder",
+          "company": "Post AG",
+          "bio": "Roman Stalder ist Leiter CIO Office, ICT-Prozesse & Servicemanagement bei der Schweizerischen Post. Er arbeitet in einem kleinen Team an der Neuausrichtung der Informatiksteuerung und -planung der Post. Vorher war Roman in verschiedenen Funktionen für die Post tätig, bei der internationalen Logistik, der Konzernentwicklung und der Unternehmensentwicklung im internationalen Bereich. Er hat beim IT Serviceprovider das Strategie- und Risikomanagement aufgebaut und führte als Mitglied der Bereichsleitung einige Jahre das Prozess- und Qualitätsmanagement. Schliesslich folgte der Wechsel in den Konzern, wo er die Koordination des ICT-Boardes übernahm und damit verbunden auch Governance- und Architekturaufgaben. Sein Studium absolvierte Roman an der Universität Bern in Betriebswirtschaft mit Schwerpunkt Strategie & Marketing sowie Aufenthalten an Universitäten in Tokyo und Paris. Berufsbegleitend hat er eine Weiterbildung im Bereich Applikationsentwicklung absolviert."
+        }
+      ]
+    },
+    {
+      "title": "Mobile Ticketing und Digitalisierung in der Infrastruktur",
+      "abstract": "Nachdem die 'digitale Transformation' als veritable Revolution die leicht digitalisierbaren Branchen umgekrempelt hat, rücken die asset-intensiven Industrien in den Fokus. Die Mobilität ist eines dieser Felder, die aufgrund ihres Volumens ein gutes Ziel abgibt. Erste Schritte haben Uber und Kollegen vorgelegt, weitere werden sicher folgen auf dem Weg zur 'Mobility as a Service'. Die BLS will und muss diese Herausforderung annehmen. Als Unternehmen mit einem sehr breiten Tätigkeitsfeld geht sie schrittweise vor, indem sie 'Innovationsfelder' definiert und bearbeitet. Dafür werden die bestehenden Organisationsgrenzen zunehmend überwunden, was ebenso wie die Entwicklung einer 'Innovationskultur' in einem sicherheitsorientierten Traditionsunternehmen eine Herausforderung darstellt. In unserer Präsentation stellen wir den Weg und die (ersten) Ergebnisse der letzten zwei Jahre vor. Anhand von zwei Beispielen beleuchten wir einige der Erlebnisse auf diesem spannenden, aber auch schwierigen Weg in eine verheissungsvolle – oder vernichtende Zukunft.",
+      "speakers": [
+        {
+          "name": "Dr. Andreas Kronawitter",
+          "company": "BLS AG",
+          "bio": "Nach Studium an der LMU München und Promotion in Basel in 'computational astrophysics' stieg Andreas Kronawitter 2000 in die Welt des öffentlichen Verkehrs um, zuerst als Projektleiter und später Manager für IT- und Unternehmensarchitektur bei der SBB. Nach 10 Jahren wechselte er zur BLS und baute dort die Planungs- und Steuerungsfunktionen der IT auf. Daneben ist er in nationalen Gremien des öffentlichen Verkehrs tätig."
+        },
+        {
+          "name": "Marcel Edel",
+          "company": "BLS Netz AG",
+          "bio": "Seit rund anderthalb Jahren ist Marcel Edel bei der BLS Infrastruktur im Bereich Strategie und Unternehmensentwicklung tätig, mit aktuellem Fokus auf 'Digitalisierung der Infrastruktur'. Zuvor war er in verschiedenen internationalen Beratungshäusern als Business Consultant tätig. Marcel Edel verfügt über abgeschlossene Masterstudien in Betriebspsychologie und Betriebswissenschaft."
+        }
+      ]
+    },
+    {
+      "title": "Autonomes Fahren – Traum oder Realität",
+      "abstract": "Das Referat gibt einen Einblick in das PostAuto-Projekt «Autonomes Fahren» in Sitten. Im Auftrag der Post testet die PostAuto Schweiz AG in Sitten zusammen mit weiteren Partnern wie der Stadt Sitten, dem Kanton Wallis sowie der ETH Lausanne während zwei Jahren zwei autonome Fahrzeuge. Es ist das erste Mal, dass ein Transportunternehmen in der Schweiz diese Technologie im öffentlichen Raum einsetzt, um Passagiere zu befördern. PostAuto möchte als Anbieter ganzheitlicher Mobilitätslösungen herausfinden, ob und wie diese intelligenten Fahrzeuge neue Formen der Mobilität in Gebieten ermöglichen, die derzeit vom öffentlichen Verkehr nicht bedient werden.",
+      "speakers": [
+        {
+          "name": "Erich Helwin",
+          "company": "PostAuto Schweiz AG",
+          "bio": "Seine Karriere im Bereich ICT begann Erich Helwin als Computertechniker bei Nixdorf. Weitere Stationen waren Ascom Hasler, Wang, Unisys – Positionen in Technik, Customer Care, Marketing und Verkauf, wie Global Account Director und Mitglied der erweiterten Geschäftsleitung (Unisys Schweiz). Er hat Innovationen wie die Bankomaten-Einführung in der Schweiz oder das INFNET Telecom LAN für Telecom PTT initiiert und vorangetrieben. Weitere Highlights sind die Mobile Payment Lösung von PostFinance, der Mobile Boarding Pass, Anwendungen von Augmented Reality, Mobile Tagging und Mobile Apps – darunter auch die PostAuto App."
+        }
+      ]
+    },
+    {
+      "title": "Persönlich - auch digital - Der Weg der Mobiliar ins digitale Zeitalter",
+      "abstract": "Wie verhält sich ein 190 Jahre altes, genossenschaftlich verankertes, sehr erfolgreiches Unternehmen in mitten der digitalen Revolution? In einer Welt wo jeder von uns mindestens ein Device mit sich trägt, das mit dem Internet verbunden ist. In einer Welt wo täglich neue, personalisierte Apps und Services entstehen, welche uns das Leben erleichtern. In einer Welt wo aber auch Vertrauen immer wichtiger wird. Vertrauen wird geprägt von einer starken Marke und einer guten 'Customer-Experience'. Vertrauen bauen unsere Mitarbeiter mit ihrer Expertise und im Face-to-Face Kontakt auf. Google- und Amazon z.B. eröffnen Flagship-Stores wo Kunden mit den Mitarbeitern in persönlichen Kontakt kommen können. Die Mobiliar, die heute als persönlichste Versicherung gilt, will ihre Stärken auch in der digitalen Welt nutzen: Persönlich - auch digital. In meinem Referat zeige ich auf wie die Mobiliar diese Herausforderung in Angriff genommen hat. Ich skizziere die einzelnen Handlungsfelder und zeige ein paar konkrete Bespiele auf.",
+      "speakers": [
+        {
+          "name": "Andreas Grütter",
+          "company": "Die Mobiliar",
+          "bio": "Andreas Grütter arbeitet seit November 2012 bei der Mobiliar. Er ist eingestiegen als Software Architekt, hat danach die Applikationsarchitektur aufgebaut, leitet seit April 2015 die gesamte IT Architektur und ist Mitglied der IT Führung. Mit seinem Team kümmert er sich vorwiegend um die Modernisierung und Transformation der IT Landschaft, mit dem Ziel der Mobiliar den Weg in die digitale Zukunft zu ermöglichen. Zuvor war Andreas Leiter der IT Architektur in der Bank Julius Bär und im HP BSC (vormals RTC). Er hatte während 10 Jahren als Software Engineer, IT Architekt und technischer Projektleiter Kernbankenlösungen entwickelt und migriert."
+        }
+      ]
+    },
+    {
+      "title": "Datengetriebene Entscheidungsfindung",
+      "abstract": "\"Wenn ein System vermessen werden kann, kann es optimiert werden\" - Lord Kelvin. Seit der Erschaffung der Informatik ermöglicht eine stetig wachsende Menge von Sensoren unsere Umwelt mit immer zunehmender Auflösung, Präzision und Aktualität zu messen und digital abzubilden. Eine Entwicklung, die durch den zunehmenden Preiszerfall von Hardwaregütern und Konnektivität beschleunigt wird. Der derzeitige Abschnitt dieser Entwicklung nennen wir Internet of Things. Viele Entscheidungshilfen in unserem Alltag sind Erzeugnisse dieser Entwicklung. So misst Netatmo beispielsweise den CO2 Gehalt in unserem Wohnzimmer, Apple Watch misst unseren Puls, Gardena stellt sicher, dass der Garten auch ohne grünen Daumen überlebt. Der wahre Mehrwert liegt aber in der Vernetzung dieser Sensoren zur Beantwortung von komplexeren Fragestellungen in Echtzeit. Beispielsweise in einem Detailhandelsgeschäft: Wie verändert sich das Kundenverhalten im Geschäft, wenn Werbung ausgestrahlt wird? Wie können wir diese Informationen nutzen, um bessere Entscheidungen zu treffen? Wie können wir diese Entscheide verifizieren? Dieser Vortrag zeigt anhand konkreter Beispiele Möglichkeiten und Herausforderungen der datengetriebenen Entscheidungsfindung auf und deren Auswirkungen auf Geschäftsprozesse. Abschliessend werden auch typische technische Herangehensweisen an solche Aufgabenstellungen skizziert.",
+      "speakers": [
+        {
+          "name": "Patrick Bönzli",
+          "company": "soom-it GmbH",
+          "bio": "Nach seinem Informationstechnologie Studium an der ETH und Tätigkeit bei Google und Netcetera vertieft er sein Wissen als Software Engineer in verschiedenen Firmen und vielfältigen Projekten. Momentan steht er vor der Gründung eines Spin-Offs im IoT Bereich."
+        },
+        {
+          "name": "Manuel Linder",
+          "company": "Noser Group",
+          "bio": "In seiner Tätigkeit als Digial Tranformation Consultat bei der Alpiq und nun bei der Noser Group hat Manuel Linder zahlreiche Unternehmen begleitet in der Ideengewinnung und Erarbeitung von digitalen Strategien."
+        }
+      ]
+    },
+    {
+      "title": "LoRaWAN IoT Infrastruktur - vom Sensor zur Cloud",
+      "abstract": "Eine Voraussetzung für das Internet der Dinge und Industrie 4.0 ist günstige Connectivity. Mobilfunk ist für viele Anwendungen zu teuer. WiFi eignet sich nicht für grossflächige Installationen und braucht zu viel Strom. LoRaWAN, eine neue Technologie mit grosser Reichweite und geringem Energieverbrauch, soll das jetzt ändern. Die Präsentation beleuchtet die LoRaWAN Situation in der Schweiz, vom Gross-Provider bis zu Do-it-Yourself Infrastruktur, gibt einen Überblick über verfügbare Hardware und vermittelt einen praktischen Einblick anhand eines durchgängigen Beispiels vom Sensor zur Cloud.",
+      "speakers": [
+        {
+          "name": "Thomas Amberg",
+          "company": "IoT Zürich Meetup / Yaler.net",
+          "bio": "Thomas Amberg ist freiberuflicher Software Ingenieur, Gründer von Yaler.net und Organisator des Internet of Things Meetups in Zürich. Daneben ist er öfters im Mechartlab Hackerspace und im Fablab Zürich anzutreffen."
+        }
+      ]
+    },
+    {
+      "title": "Industrie 4.0: Revolution, Evolution und/oder Hype?",
+      "abstract": "Das Wirtschaftsgeschehen, die Geschäftsprozesse und die industrielle Fertigung unterliegen einem steten Wandel. Die Beschäftigung mit neuen Potenzialen, welche insbesondere die Digitalisierung eröffnet, ist eine wichtige unternehmerische Aufgabe. Die zum Begriff 'Industrie 4.0' vertretenen Inhalte sind überaus diffus und eröffnen kaum konkrete Handlungsempfehlungen. Die IT-Branche propagiert in (zu) raschen Zeitabständen (angeblich) völlig revolutionäre Technologien und überlebenswichtige Vorgehensweisen, die intensive Beratung und hohe Investitionen erfordern. Bisher erreichte Zustände werden diskreditiert. Dies führt bei vielen Adressaten zu einer Abstumpfung. Neben dem vorherrschenden Alarmismus sind neuerdings auch Stimmen zu vernehmen, die in der 'Industrie 4.0' einen Hype sehen, der zu Fehlallokationen knapper Ressourcen führen kann. Auch bei dieser Sichtweise wird aber erkannt, dass die rasche Weiterentwicklung der IT-Systeme permanent Aufmerksamkeit erfordert und Anpassungen von Geschäfts- und Fertigungsprozessen zu prüfen sind.",
+      "speakers": [
+        {
+          "name": "Prof. Dr. Gerhard Knolmayer",
+          "company": "Universität Bern",
+          "bio": "Gerhard Knolmayer promovierte an der Wirtschaftsuniversität Wien und wurde an der Universität Wien für Betriebswirtschaftslehre und Betriebsinformatik habilitiert. 1980 wurde er ord. Professor an der Universität Kiel, 1988 an das Institut für Wirtschaftsinformatik der Universität Bern berufen, an dem er 25 Jahre lang tätig war. Einer breiteren Öffentlichkeit wurde Knolmayer als Leiter der Arbeitsgruppe CHIG2000 (Swiss Interest Group in Solving the Year 2000 Problem) bekannt. Forschungsaufenthalte führten ihn u.a. an das International Computer Science Institute (ICSI) der University of California, Berkeley, und an das Centre for Information Technology Innovation (CITI) der Queensland University of Technology. In den letzten Jahren beschäftigt sich Knolmayer insbesondere mit der Gestaltung benutzerfreundlicher Schnittstellen bei webbasierten Systemen. Er ist Fellow der Gesellschaft für Informatik; die Universität Freiburg im Breisgau verlieh ihm ein Ehrendoktorat."
+        }
+      ]
+    }
+  ]
+}

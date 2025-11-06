@@ -1,0 +1,102 @@
+{
+  "bat": 40,
+  "presentations": [
+    {
+      "title": "Deep Learning-based Pattern Recognition in Business",
+      "abstract": "Deep learning has matured considerably in the last years. We still see astounding applications and more and more pattern recognition use cases solved, which furthers the current hype about AI. But we also see a growing body of theory that explains results, best practices that accelerate prototyping, and a general understanding of the methodology that facilitates real-world use cases. This talk explores current research results in deep learning and their impact on daily (non-research) work.",
+      "speakers": [
+        {
+          "name": "Thilo Stadelmann",
+          "company": "ZHAW School of Engineering",
+          "bio": "Thilo Stadelmann is senior lecturer of computer science at ZHAW School of Engineering in Winterthur. He received his doctor of science degree from Marburg University in 2010, where he worked on multimedia analysis and voice recognition. Thilo joined the automotive industry for 3 years prior to switching back to academia. His current research focuses on applications of machine learning, especially deep learning, to pattern recognition problems on diverse kinds of data. He is head of the ZHAW Datalab and vice president of SGAICO, the Swiss Group for Artificial Intelligence and Cognitive Sciences."
+        }
+      ]
+    },
+    {
+      "title": "Smart Cities: Cognitive-Computing für Städte",
+      "abstract": "Wenn Moore's-Law mit Social-Media und Internet-Of-Things Daten kombiniert wird, ermöglicht dies ganz neue Business-Modelle in der und für die Smart-City. Diese Modelle werden dabei mit Methoden des Soft-Computings kombiniert zu neuartigen, bürgerzentrierten Interaktions- und Kommunikationsmodellen, welche dem Cognitive-Computing Konzept Aufwind geben. Dieser Vortrag dreht sich also darum, wie Soft-und Cognitive-Computing Städte und Organisationen businessmässig befeuern kann.",
+      "speakers": [
+        {
+          "name": "Edy Portmann",
+          "company": "HUMAN-IST Institut, Universität Freiburg",
+          "bio": "Edy Portmann ist Professor für Informatik und Förderprofessor der Schweizerischen Post am Human-IST Institut der Universität Freiburg i.Üe. Zu seinen transdisziplinären Forschungsschwerpunkten zählt das Thema Cognitive Computing sowie die Anwendung dessen auf Städte. Er studierte Wirtschaftsinformatik, Betriebs- und Volkswirtschaftslehre und promovierte in Informatik. Er war u.a. bei Swisscom, PwC und EY tätig. Zudem forschte Edy Portmann an den Universitäten Singapur, Berkeley und Bern. Heute wohnt er mit seiner Frau und ihren drei Kindern glücklich verheiratet in Bern."
+        }
+      ]
+    },
+    {
+      "title": "AI an der Kundenschnittstelle?",
+      "abstract": "Entwicklung von AI, welche Technologien werden unter AI subsumiert, Analyse der Anwendungsmöglichkeiten von AI für Unternehmensprozesse und AI als Enabler der Kundenschnittstelle am Beispiel der Finanzindustrie.",
+      "speakers": [
+        {
+          "name": "Thomas Zerndt",
+          "company": "Business Engineering Institute St. Gallen",
+          "bio": "Thomas Zerndt leitet die BEI. Als CFO ist er für den ersten Spin-off aus der BEI verantwortlich für die finanziellen Aspekte der CDQ AG. Nach 12 Jahren Beratung im Bereich der Finanzindustrie hat er 2004 das CC Sourcing aufgebaut. 2008 hat er die Geschäftsführung der BEI übernommen. Gestaltung der Wertschöpfung, neue Technologien, Digitalisierung und Aufbau von Ecosystemen sind Themen, die er sowohl im Bereich der angewandten Forschung wie auch in der Beratung mitprägt."
+        },
+        {
+          "name": "Stefanie Auge-Dickhut",
+          "company": "Business Engineering Institute St. Gallen",
+          "bio": "Stefanie Auge ist Leiterin des Competence Center Ecosysteme des Business Engineering Institute St. Gallen. Themenschwerpunkte des Competence Center sind Ecosysteme & Geschäftsmodelle, Unternehmenstrans-formation vor dem Hintergrund der Digitalisierung und der Einfluss innovativer Technologien wie DLT und AI auf Kundenbedürfnisse und Kernwertversprechen von Ecosysteme. Sie ist Referentin an verschiedenen Universitäten (u.a. Management Center Innsbruck MCI) fachliche Leiterin des CAS Digital Banking der Kalaidos FH Zürich und Board Mitglied bei verschiedenen Konferenzen und Awards im deutschsprachigen Raum."
+        }
+      ]
+    },
+    {
+      "title": "Multilabel Text-Klassifikation von medizinischen Berichten",
+      "abstract": "Medizinische Austrittsberichte für stationäre Patienten werden von Codier Experten mit strukturierten Diagnosen in Form von ICD-10 Codes versehen. Es stellt sich die Frage, wieviel Mehrwert durch eine KI-Unterstützung in diesem Prozess geschaffen werden kann. Im Vortrag wird diese Fragestellung besprochen, Machine Learning Methoden vorgestellt und Fallstricke sowie Resultate diskutiert.",
+      "speakers": [
+        {
+          "name": "Olga Endrich",
+          "company": "Insel Gruppe",
+          "bio": "Olga Endrich hat ein Studium der Humanmedizin an der Staatlichen Medizinischen Universität Donetsk und an der Universität Bern absolviert. Sie ist Leiterin Operatives Medizincontrolling Insel Gruppe."
+        },
+        {
+          "name": "Matthias Kämpf",
+          "company": "Insel Gruppe",
+          "bio": "Matthias Kämpf hat an der EPF Lausanne ein Master-Studium in Mathematik absolviert und ist Leiter ICT/Forschung und Gesamtprojektleiter Clinical Data Warehouse."
+        },
+        {
+          "name": "Tomas Dikk",
+          "company": "Zühlke Engineering",
+          "bio": "Tomas Dikk hat an der ETH ein Master-Studium in Informatik absolviert und war danach als wissenschaftlicher Mitarbeiter in der Maschine Learning Forschungsgruppe der ETH tätig, wo er zum Thema Speech Enhancement gearbeitet hat. Er ist als Data Scientist seit einem Jahr bei Zühlke Engineering."
+        }
+      ]
+    },
+    {
+      "title": "Wie AI-Services in der Mobiliar gebaut und eingesetzt werden",
+      "abstract": "AI oder ML Services werden in der Regel von Data Scientists entwickelt, die gute Kenntnisse in Mathematik und Informatik haben. Ein explorativer Ansatz ist erwünscht und häufige Änderungen an der Codebasis werden erwartet. Mit zunehmender Anzahl der Codezeilen wird es jedoch schwieriger, die Übersicht zu behalten und die Nachvollziehbarkeit wird zur Herausforderung. Um AI Modelle für einen breiten Einsatz zu implementieren und zu operationalisieren, benötigt es nicht nur gute Data Analytics-Fähigkeiten, sondern auch die Denkweise und Werkzeuge der traditionellen Softwareentwicklung. Nach einer Einführung in AI und Beispielen wie in einer modernen Versicherung AI-Funktionalität eingesetzt werden kann, wird mittels eines selbst gebauten autonomen Autos der Workflow bei der Erstellung von AI-Services erklärt. Wie die Mobiliar den Workflow der Data Scientists und der traditionellen Softwareentwicklung verbindet und wie Pythagoras (die Plattform für die Entwicklung und das Betreiben von AI-Services der Mobiliar) den AI Ansatz unterstützt, wird im zweiten Teil aufgezeigt. Die Verbindung von bewährten Konzepten mit der AI Modellentwicklung führt zu Analytics und AI as Code, die nächste Generation der Softwareentwicklung.",
+      "speakers": [
+        {
+          "name": "Andreas Mösching",
+          "company": "Die Mobiliar",
+          "bio": "Seit über 20 Jahren ist Andreas im In- und Ausland in unterschiedlichen Rollen und Disziplinen in der Informatik tätig. Er leitet seit 2011 die Technologie Architektur und beeinflusst massgeblich, die Art und Weise wie in der Mobiliar Software entwickelt und betrieben wird. Als Visionär treibt er die technologische Vision der Mobiliar. Zusammen mit seinem Team lebt und fördert Andreas die konsequente Automation der Softwareentwicklungsprozesse. Als verantwortlicher Architekt von Pythagoras, der kognitiven Entwicklungsplattform der Mobiliar, verbindet er die neuen AI Entwicklungsmöglichkeiten mit den bewährten Prinzipien der traditionellen Softwareentwicklung."
+        },
+        {
+          "name": "Jérôme Koller",
+          "company": "Die Mobiliar",
+          "bio": ""
+        }
+      ]
+    },
+    {
+      "title": "Optische Zuglokalisation mit Machine Learning",
+      "abstract": "Die SBB hat in 2017 die «SmartRail 4.0» Initiative lanciert, mit der die Bahn die künftigen Herausforderungen im multimodalen Verkehr meistern will. Eine erwartete Zunahme des Fahrgastaufkommens um 30% in den nächsten Jahren, macht es erforderlich, die letzten Reserven, auf dem ohnehin schon am dichtest befahrenen Schienennetz der Welt, zu mobilisieren. Neben neuen Ansätzen zur automatisierten Erstellung von Fahrplänen, der Teilautomatisierung des Betriebs mit optimaler Zugsteuerung, und der Volldigitalisierung der Stellwerke, spielt die exakte und zuverlässige Positionsfeststellung eines Zuges, eine entscheidende Rolle. In Ergänzung zu den bekannten Satellitengestützten Verfahren, hat die SBB erste Experimente zur Optischen Lokalisation von Zügen gestartet. In dem Vortrag werden wir den Stand eines «Proof of Concept» vorstellen, mit dem wir die Gleisgenaue Position eines Zuges bestimmen können.",
+      "speakers": [
+        {
+          "name": "Lothar Jöckel",
+          "company": "SBB",
+          "bio": "Lothar Jöckel arbeitet seit 1983 als Software-Entwickler und Architekt in unterschiedlichen Branchen wie Health-Care, Banking, Telecom, Defense+Intelligence sowie Travel. Hierbei konnten wichtige Erfahrungen in Unternehmen wie McDonnellDouglas, IBM, Dresdner Bank, Bundeswehr/BND und Deutsches Reisebüro (DER) gesammelt werden. Seit 2012 ist er bei der SBB in der Informatik der SBB-Infrastruktur als Business-Analyst tätig. Seit 2015 ist er für «Plattform für Forschung und Innovation» tätig und unterstützt in den Themenbereichen Optimierung und Machine Learning."
+        }
+      ]
+    },
+    {
+      "title": "Künstliche Intelligenz, Roboter und autonome Fahrzeuge – Revolution und Chance?",
+      "abstract": "Moderne künstliche Intelligenz mit Deep Learning ist bereits heute schon im Einsatz in verschiedenen Anwendungen. Sprachsteuerung von Apple mit Siri, Amazon mit Alexa, autonome Fahrzeuge von Waymo, Tesla, Gesichtserkennung von Facebook sind nur einige bekannte Beispiele aus dem Silicon Valley welche Deep Learning einsetzen. Der Vortrag zeigt auf was wir von der Technologie erwarten können und wie Sie unsere Leben beeinflussen wird.",
+      "speakers": [
+        {
+          "name": "Marc Stampfli",
+          "company": "NVIDIA",
+          "bio": "Marc Stampfli ist verantwortlich für den Aufbau des Marktes für NVIDIA in der Schweiz. Er hat einen Master in Informatik der Universität Zürich und verfügt über mehr als 17 Jahre Erfahrung in der Entwicklung neuen Marktsegmenten für Unternehmen. Vor NVIDIA arbeitete er für große Technologieunternehmen aus Silicon Valley wie IBM, Oracle, aber auch für traditionelle Unternehmen wie Colt Technology Services und PricewaterhouseCoopers in führenden Positionen. Er ist ein begeisterter Redner, der schwierige technische Themen in einfachen Worten erklärt, so dass jeder nachvollziehen und verstehen kann. Künstliche Intelligenz hat er schon während dem Studium kennengelernt, allerding fehlte zu diesem Zeitpunkt die dazu benötigte Computer Technologie – das ist heute anders."
+        }
+      ]
+    }
+  ]
+}
