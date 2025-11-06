@@ -58,7 +58,7 @@ aws:
 
 # User Service Configuration (API-based user data access)
 user-service:
-  base-url: ${USER_SERVICE_URL:http://localhost:8081}
+  base-url: ${COMPANY_USER_MANAGEMENT_SERVICE_URL:http://localhost:8081}
 
 # Application Info (exposed via /actuator/info)
 info:
