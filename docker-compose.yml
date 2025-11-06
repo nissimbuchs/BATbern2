@@ -151,6 +151,9 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DATABASE_URL=${DATABASE_URL}
 
+      # Service-to-Service Communication
+      - USER_SERVICE_URL=${USER_SERVICE_URL:-http://company-user-management-service:8080}
+
       # EventBridge Configuration
       - EVENT_BUS_NAME=${EVENT_BUS_NAME:-batbern-development}
     volumes:
@@ -163,6 +166,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+    depends_on:
+      - company-user-management-service
     networks:
       - batbern-network
 

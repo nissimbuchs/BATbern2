@@ -1,6 +1,7 @@
 package ch.batbern.events.dto;
 
 import ch.batbern.events.domain.SessionUser.SpeakerRole;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -30,5 +31,7 @@ public class SessionSpeakerResponse {
     // From SessionUser entity
     private SpeakerRole speakerRole;
     private String presentationTitle; // Optional speaker-specific title
+
+    @JsonProperty("isConfirmed")
     private boolean isConfirmed;
 }

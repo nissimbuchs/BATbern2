@@ -56,6 +56,10 @@ aws:
   cloudfront:
     domain: ${CLOUDFRONT_DOMAIN:https://cdn.batbern.ch}
 
+# User Service Configuration (API-based user data access)
+user-service:
+  base-url: ${USER_SERVICE_URL:http://localhost:8081}
+
 # Application Info (exposed via /actuator/info)
 info:
   app:
