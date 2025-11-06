@@ -8,7 +8,8 @@
         {
           "name": "Richard Schären",
           "company": "Informatikstrategieorgan Bund ISB",
-          "bio": "Richard Schären ist eidg. dipl. Wirtschaftsinformatiker und beim Informatikstrategieorgan Bund ISB in der Rolle als Unternehmensarchitekt verantwortlich für die: Leitung des Architekturboard Bund ABB und die Einführung der Unternehmensarchitektur Methodik in der Bundesverwaltung, Leitung des Change Board Supportprozesse CBSP welches die Änderungen von verwaltungsübergreifenden Supportprozesse steuert, Erstellung und Pflege der ERP Strategie und -architektur."
+          "bio": "Richard Schären ist eidg. dipl. Wirtschaftsinformatiker und beim Informatikstrategieorgan Bund ISB in der Rolle als Unternehmensarchitekt verantwortlich für die: Leitung des Architekturboard Bund ABB und die Einführung der Unternehmensarchitektur Methodik in der Bundesverwaltung, Leitung des Change Board Supportprozesse CBSP welches die Änderungen von verwaltungsübergreifenden Supportprozesse steuert, Erstellung und Pflege der ERP Strategie und -architektur.",
+          "portrait": "richard.schären.jpg"
         }
       ]
     },
@@ -19,12 +20,14 @@
         {
           "name": "Dr. Thomas Wettstein",
           "company": "BKW FMB Energie AG",
-          "bio": "Dr. Thomas Wettstein ist seit 2002 bei der BKW. Vor der aktuellen Funktion war er als Leiter der Abteilung Informatik-Strategie und -Einsatz tätig. Davor als Berater, Projektleiter und Bereichsleiter im Bereich ERP-Systeme. Studium der Betriebswirtschaft, Dissertation am Departement für Informatik der Universität Fribourg."
+          "bio": "Dr. Thomas Wettstein ist seit 2002 bei der BKW. Vor der aktuellen Funktion war er als Leiter der Abteilung Informatik-Strategie und -Einsatz tätig. Davor als Berater, Projektleiter und Bereichsleiter im Bereich ERP-Systeme. Studium der Betriebswirtschaft, Dissertation am Departement für Informatik der Universität Fribourg.",
+          "portrait": "thomas.wettstein.jpg"
         },
         {
           "name": "Christian Hürlimann",
           "company": "BKW FMB Energie AG",
-          "bio": "Christian Hürlimann ist seit 2006 bei der BKW. Vorher war er als Geschäftsfeldleiter für die Akquisition und Abwicklung von Projekten im Bereich Individualentwicklungen für Kunden der öffentlichen Verwaltung tätig. Zuvor war er als Projektleiter und Organisationsberater im Umfeld von Standard- und Individuallösungen tätig. BWL- und VWL-Studium mit Schwerpunkt Wirtschaftsinformatik an den Universitäten Bern und Manchester."
+          "bio": "Christian Hürlimann ist seit 2006 bei der BKW. Vorher war er als Geschäftsfeldleiter für die Akquisition und Abwicklung von Projekten im Bereich Individualentwicklungen für Kunden der öffentlichen Verwaltung tätig. Zuvor war er als Projektleiter und Organisationsberater im Umfeld von Standard- und Individuallösungen tätig. BWL- und VWL-Studium mit Schwerpunkt Wirtschaftsinformatik an den Universitäten Bern und Manchester.",
+          "portrait": "christian.hürlimann.jpg"
         }
       ]
     },
@@ -35,7 +38,8 @@
         {
           "name": "Guido Steiner",
           "company": "RTC AG",
-          "bio": "Nach den Ausbildungen zum Wirtschaftsinformatiker, Betriebsökonom und dem Nachdiplomstudium zum Prozessmanager arbeitete Guido Steiner als Projektleiter und Applikationsarchitekt bei verschiedenen Finanzdienstleistern. Seit 2005 ist er Chief Solution Architect und verantwortlich für die Lösungs-architektur innerhalb der RTC."
+          "bio": "Nach den Ausbildungen zum Wirtschaftsinformatiker, Betriebsökonom und dem Nachdiplomstudium zum Prozessmanager arbeitete Guido Steiner als Projektleiter und Applikationsarchitekt bei verschiedenen Finanzdienstleistern. Seit 2005 ist er Chief Solution Architect und verantwortlich für die Lösungs-architektur innerhalb der RTC.",
+          "portrait": "guido.steiner.jpg"
         }
       ]
     }

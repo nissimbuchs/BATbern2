@@ -8,7 +8,8 @@
         {
           "name": "Philip Büchler",
           "company": "SBB",
-          "bio": "Philip Büchler ist als Technologiemanager Mobile bei der SBB für den Einsatz und den Lifecycle mobiler Technolgien zuständig. Als Leiter Fachgruppe Mobile koordiniert er die Bedarfsplanung und den Betrieb mobiler Clients, Anwendungen und Integrationssysteme."
+          "bio": "Philip Büchler ist als Technologiemanager Mobile bei der SBB für den Einsatz und den Lifecycle mobiler Technolgien zuständig. Als Leiter Fachgruppe Mobile koordiniert er die Bedarfsplanung und den Betrieb mobiler Clients, Anwendungen und Integrationssysteme.",
+          "portrait": "philip.büchler.jpg"
         }
       ]
     },
@@ -19,7 +20,8 @@
         {
           "name": "Marco Knaeple",
           "company": "BLS",
-          "bio": "Seit Oktober 2011 hat Marco Knaeple die technische Führung des Projektes FISZ (Fahrgastinformation zentral) bei den BLS inne. Davor war er bei der Firma Steria angestellt und übernahm verschiedene Mandate bei den SBB. Unter anderem führte er das KISZ (Kundeninformation zentral) der SBB als Gesamtprojektleiter zum Erfolg."
+          "bio": "Seit Oktober 2011 hat Marco Knaeple die technische Führung des Projektes FISZ (Fahrgastinformation zentral) bei den BLS inne. Davor war er bei der Firma Steria angestellt und übernahm verschiedene Mandate bei den SBB. Unter anderem führte er das KISZ (Kundeninformation zentral) der SBB als Gesamtprojektleiter zum Erfolg.",
+          "portrait": "marco.knaeple.jpg"
         }
       ]
     },
@@ -30,12 +32,14 @@
         {
           "name": "David C. Gürlet",
           "company": "guerlet consulting",
-          "bio": "David C. Gürlet ist Diplom-Ingenieur und seit 25 Jahren als Unternehmer, Berater, Geschäftsführer und Dozent in den Bereichen ICT/IT und RFID tätig. Er hat vier Unternehmen in diesen Branchen aufgebaut und geleitet und verfügt über technisches und internationales Business-Knowhow in der RFID- und Telecom-Branche."
+          "bio": "David C. Gürlet ist Diplom-Ingenieur und seit 25 Jahren als Unternehmer, Berater, Geschäftsführer und Dozent in den Bereichen ICT/IT und RFID tätig. Er hat vier Unternehmen in diesen Branchen aufgebaut und geleitet und verfügt über technisches und internationales Business-Knowhow in der RFID- und Telecom-Branche.",
+          "portrait": "david.gürlet.jpg"
         },
         {
           "name": "Gerhard Schedler",
           "company": "Swisscom",
-          "bio": "Bevor Gerhard Schedler anfangs 2012 zur Swisscom wechselte, baute er das Unternehmen IDENTEC SOLUTIONS in Lustenau (Österreich) zu einem der weltweit führenden Anbieter von wireless Sensor basierten Tracking- und Tracinglösungen auf. Gerhard Schedler studierte an der Interstaatlichen Hochschule für Technik in Buchs (Schweiz) und absolvierte sein MBA-Studium an der führenden schottischen Wirtschaftsuniversität in Glasgow (Schottland)."
+          "bio": "Bevor Gerhard Schedler anfangs 2012 zur Swisscom wechselte, baute er das Unternehmen IDENTEC SOLUTIONS in Lustenau (Österreich) zu einem der weltweit führenden Anbieter von wireless Sensor basierten Tracking- und Tracinglösungen auf. Gerhard Schedler studierte an der Interstaatlichen Hochschule für Technik in Buchs (Schweiz) und absolvierte sein MBA-Studium an der führenden schottischen Wirtschaftsuniversität in Glasgow (Schottland).",
+          "portrait": "gerhard.schedler.jpg"
         }
       ]
     },
@@ -46,7 +50,8 @@
         {
           "name": "Dr. Marc Brogle",
           "company": "HP Banking Service Center",
-          "bio": "Bevor Marc Brogle zu HP stiess, arbeitete er bei SAP Research in Zürich als Senior Researcher und leitete in dieser Rolle verschiedene europäische Forschungsprojekte. Seine Forschungsgebiete bei SAP reichten von Intelligenten Transport-Systemen über IaaS/SaaS bis hin zu Cloud Computing. Weiterhin besitzt er mehrjährige Forschungserfahrung auf dem Gebiet der Netzwerktechnologien."
+          "bio": "Bevor Marc Brogle zu HP stiess, arbeitete er bei SAP Research in Zürich als Senior Researcher und leitete in dieser Rolle verschiedene europäische Forschungsprojekte. Seine Forschungsgebiete bei SAP reichten von Intelligenten Transport-Systemen über IaaS/SaaS bis hin zu Cloud Computing. Weiterhin besitzt er mehrjährige Forschungserfahrung auf dem Gebiet der Netzwerktechnologien.",
+          "portrait": "marc.brogle.jpg"
         }
       ]
     },
@@ -57,17 +62,20 @@
         {
           "name": "Dr. Thomas Klingl",
           "company": "Bundesamt für Umwelt BAFU",
-          "bio": "Dr. Thomas Klingl studierte Landschaftsökologie an der TU München und promovierte am Geographischen Institut der Univ. Bern. Er ist Leiter der Fachstelle Geo- und Umweltdatenmanagement beim Bundesamt für Umwelt."
+          "bio": "Dr. Thomas Klingl studierte Landschaftsökologie an der TU München und promovierte am Geographischen Institut der Univ. Bern. Er ist Leiter der Fachstelle Geo- und Umweltdatenmanagement beim Bundesamt für Umwelt.",
+          "portrait": "thomas.klingl.jpg"
         },
         {
           "name": "Hans Ulrich Wiedmer",
           "company": "Eidgenössisches Volkswirtschaftsdepartement",
-          "bio": "Hans Ulrich Wiedmer studierte Informatik an der ETH Zürich. Er arbeitet seit 2003 in der Bundesinformatik. Als SOA-Architekt befasst er sich mit dem Management des SOA-Service-Portfolios und der Informations-Architektur."
+          "bio": "Hans Ulrich Wiedmer studierte Informatik an der ETH Zürich. Er arbeitet seit 2003 in der Bundesinformatik. Als SOA-Architekt befasst er sich mit dem Management des SOA-Service-Portfolios und der Informations-Architektur.",
+          "portrait": "hans.wiedmer.jpg"
         },
         {
           "name": "Dr. Ruedi Haller",
           "company": "Schweizer Nationalpark",
-          "bio": "Dr. Ruedi Haller studierte und promovierte am Geographischen Institut der Univ. Zürich. Er ist als Leiter Forschung und Geoinformation Mitglied der Geschäftsleitung des Schweizer Nationalparks."
+          "bio": "Dr. Ruedi Haller studierte und promovierte am Geographischen Institut der Univ. Zürich. Er ist als Leiter Forschung und Geoinformation Mitglied der Geschäftsleitung des Schweizer Nationalparks.",
+          "portrait": "ruedi.haller.jpg"
         }
       ]
     }

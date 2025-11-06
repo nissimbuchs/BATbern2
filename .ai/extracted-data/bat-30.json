@@ -8,7 +8,8 @@
         {
           "name": "Matthias Günter",
           "company": "GnostX GmbH",
-          "bio": "Matthias Günter ist seit mehr als zwanzig Jahren in der Informatik tätig. Mehrheitlich war er in den Bereichen IT-Management, strategische Beratung, Projektleitung, Strategieentwicklung, Businessanalyse und Organisationsentwicklung aktiv. Einige seiner Projekte wurden in einem internationalen Kontext durchgeführt. Mehr als zehn Jahre leitete er als CIO eine grössere Informatikabteilung mit eigener Softwareentwicklung und eigenem Rechenzentrum. Er hat an internationalen und nationalen Informatikstandards mitgearbeitet."
+          "bio": "Matthias Günter ist seit mehr als zwanzig Jahren in der Informatik tätig. Mehrheitlich war er in den Bereichen IT-Management, strategische Beratung, Projektleitung, Strategieentwicklung, Businessanalyse und Organisationsentwicklung aktiv. Einige seiner Projekte wurden in einem internationalen Kontext durchgeführt. Mehr als zehn Jahre leitete er als CIO eine grössere Informatikabteilung mit eigener Softwareentwicklung und eigenem Rechenzentrum. Er hat an internationalen und nationalen Informatikstandards mitgearbeitet.",
+          "portrait": "matthias.günter.jpg"
         }
       ]
     },
@@ -19,7 +20,8 @@
         {
           "name": "Werner Schäfer",
           "company": "PostFinance AG",
-          "bio": "Werner Schäfer ist seit mehr als 30 Jahren in der Softwareentwicklung tätig. Er arbeitete als Architekt in unterschiedlichen Firmen wie die Roche, Galenica, SBB und nun als Chef-Architekt bei der PostFinance. Bei seinen Tätigkeiten hatte er immer einen Fuss in der Business-Analyse und der Methodik."
+          "bio": "Werner Schäfer ist seit mehr als 30 Jahren in der Softwareentwicklung tätig. Er arbeitete als Architekt in unterschiedlichen Firmen wie die Roche, Galenica, SBB und nun als Chef-Architekt bei der PostFinance. Bei seinen Tätigkeiten hatte er immer einen Fuss in der Business-Analyse und der Methodik.",
+          "portrait": "werner.schäfer.jpg"
         }
       ]
     },
@@ -30,7 +32,8 @@
         {
           "name": "Andreas Fuhrer",
           "company": "SBB Informatik",
-          "bio": "Andreas Fuhrer studierte Physik und Mathematik an der Universität Bern und bildete sich an der HSG in Business Engineering weiter. Nach Stationen in der physikalischen und medizinischen Forschung setzt er seit fünfzehn Jahren Technologie- und IT-Projekte für die SBB um und bekleidete verschiedene Linienfunktionen im den Bereichen Innovation und IT. Aktuell ist er verantwortlich für das interdisziplinäre Branchenprogramm 'Zukünftiges Preissystem öV Schweiz', welches eine neue Ticket-Vertriebsplattform für die über 200 Transportunternehmen des öV Schweiz einführt."
+          "bio": "Andreas Fuhrer studierte Physik und Mathematik an der Universität Bern und bildete sich an der HSG in Business Engineering weiter. Nach Stationen in der physikalischen und medizinischen Forschung setzt er seit fünfzehn Jahren Technologie- und IT-Projekte für die SBB um und bekleidete verschiedene Linienfunktionen im den Bereichen Innovation und IT. Aktuell ist er verantwortlich für das interdisziplinäre Branchenprogramm 'Zukünftiges Preissystem öV Schweiz', welches eine neue Ticket-Vertriebsplattform für die über 200 Transportunternehmen des öV Schweiz einführt.",
+          "portrait": "andreas.fuhrer.jpg"
         }
       ]
     }

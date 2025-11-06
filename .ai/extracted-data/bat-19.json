@@ -8,7 +8,8 @@
         {
           "name": "Dr. Pascal Kurtansky",
           "company": "ZKB",
-          "bio": "IT-Architekt. Pascal Kurtansky arbeitet seit vier Jahren bei der ZKB als IT-Architekt. In der strategischen IT-Architektur erarbeitet er Zielarchitekturen an der Schnittstelle zwischen Business und IT. Vor seiner Tätigkeit bei der ZKB promovierte er an der ETH Zürich, wo er auch sein Informatikstudium abgeschlossen hatte."
+          "bio": "IT-Architekt. Pascal Kurtansky arbeitet seit vier Jahren bei der ZKB als IT-Architekt. In der strategischen IT-Architektur erarbeitet er Zielarchitekturen an der Schnittstelle zwischen Business und IT. Vor seiner Tätigkeit bei der ZKB promovierte er an der ETH Zürich, wo er auch sein Informatikstudium abgeschlossen hatte.",
+          "portrait": "pascal.kurtansky.jpg"
         }
       ]
     },
@@ -19,12 +20,14 @@
         {
           "name": "Dr. Felix Grimm",
           "company": "BKW FMB Energie AG",
-          "bio": "Dr. phil.-nat., ICT Architekt. Felix Grimm hat an der Universität Bern im Bereich Künstliche Intelligenz promoviert. Er hat bei der Mobiliar verschiedene Aufgaben in der IT-Entwicklung und Unternehmensarchitektur und bei der RTC in der Lösungs- und Applikationsarchitektur wahrgenommen. Seit 2011 ist er bei der BKW als ICT-Architekt tätig."
+          "bio": "Dr. phil.-nat., ICT Architekt. Felix Grimm hat an der Universität Bern im Bereich Künstliche Intelligenz promoviert. Er hat bei der Mobiliar verschiedene Aufgaben in der IT-Entwicklung und Unternehmensarchitektur und bei der RTC in der Lösungs- und Applikationsarchitektur wahrgenommen. Seit 2011 ist er bei der BKW als ICT-Architekt tätig.",
+          "portrait": "felix.grimm.jpg"
         },
         {
           "name": "Baltisar Oswald",
           "company": "BKW FMB Energie AG",
-          "bio": "lic. phil.-nat., Applikationsentwickler Java. Baltisar Oswald hat an der Universität Bern Mathematik und Informatik studiert. Parallel dazu hat er als Entwickler bei eInsurance Agency AG gearbeitet sowie verschiedene Lehrtätigkeiten ausgeübt. Seit 2006 ist er Entwickler bei der BKW mit den Schwerpunkten Java und Integration."
+          "bio": "lic. phil.-nat., Applikationsentwickler Java. Baltisar Oswald hat an der Universität Bern Mathematik und Informatik studiert. Parallel dazu hat er als Entwickler bei eInsurance Agency AG gearbeitet sowie verschiedene Lehrtätigkeiten ausgeübt. Seit 2006 ist er Entwickler bei der BKW mit den Schwerpunkten Java und Integration.",
+          "portrait": "baltisar.oswald.jpg"
         }
       ]
     },
@@ -35,7 +38,8 @@
         {
           "name": "Stefan Haller",
           "company": "Bedag Informatik AG",
-          "bio": "Leiter Geschäftsfeld Register. Stefan Haller entwickelte als Software-Entwickler und System-Architekt Management-Systeme für Ticketing-Automaten im öffentlichen Verkehr bevor er als Software-Architekt zur Bedag Informatik AG wechselte. Seit 5 Jahren leitet er ein Geschäftsfeld der Software-Entwicklung der Bedag."
+          "bio": "Leiter Geschäftsfeld Register. Stefan Haller entwickelte als Software-Entwickler und System-Architekt Management-Systeme für Ticketing-Automaten im öffentlichen Verkehr bevor er als Software-Architekt zur Bedag Informatik AG wechselte. Seit 5 Jahren leitet er ein Geschäftsfeld der Software-Entwicklung der Bedag.",
+          "portrait": "stefan.haller.jpg"
         }
       ]
     },
@@ -46,7 +50,8 @@
         {
           "name": "Anton Böhm",
           "company": "itServe",
-          "bio": "Geschäftsleiter. Seit über 30 Jahren ist Anton Böhm in der Informatik tätig. Ende der 80er Jahre schloss er das Abendtechnikum als Informatik-Ingenieur ab und erwarb zudem ein Nachdiplom in Betriebswirtschaft. Seit 1996 ist er mit der eigenen Firma itServe ag bei unterschiedlichen Kunden meist in Innovationsprojekten und eigener Produktentwicklung engagiert. Zusätzlich unterrichtet er als Nebenamtdozent an der Berner Fachhochschule."
+          "bio": "Geschäftsleiter. Seit über 30 Jahren ist Anton Böhm in der Informatik tätig. Ende der 80er Jahre schloss er das Abendtechnikum als Informatik-Ingenieur ab und erwarb zudem ein Nachdiplom in Betriebswirtschaft. Seit 1996 ist er mit der eigenen Firma itServe ag bei unterschiedlichen Kunden meist in Innovationsprojekten und eigener Produktentwicklung engagiert. Zusätzlich unterrichtet er als Nebenamtdozent an der Berner Fachhochschule.",
+          "portrait": "anton.böhm.jpg"
         }
       ]
     },
@@ -57,7 +62,8 @@
         {
           "name": "Dr. Stefan Hüsemann",
           "company": "innovation process technology [ipt]",
-          "bio": "Principal Consultant. Stefan Hüsemann leitet seit mehreren Jahren für [ipt] Projekte, bei denen SOA umgesetzt wird. Seine Interessenschwerpunkte liegen beim Requirements Engineering, iterativen Projektvorgehensmethodiken, Austauschstandards für verteilte Informationssysteme und Web Service Standards. Stefan Hüsemann ist ebenfalls Lehrbeauftragter für Informationssysteme an der Universität Freiburg (Schweiz)."
+          "bio": "Principal Consultant. Stefan Hüsemann leitet seit mehreren Jahren für [ipt] Projekte, bei denen SOA umgesetzt wird. Seine Interessenschwerpunkte liegen beim Requirements Engineering, iterativen Projektvorgehensmethodiken, Austauschstandards für verteilte Informationssysteme und Web Service Standards. Stefan Hüsemann ist ebenfalls Lehrbeauftragter für Informationssysteme an der Universität Freiburg (Schweiz).",
+          "portrait": "stefan.hüsemann.jpg"
         }
       ]
     },
@@ -68,12 +74,14 @@
         {
           "name": "Peter Moosmann",
           "company": "SBB",
-          "bio": "IT Architekt. Peter Moosmann (Ing. FH) hat über fünf Jahre am Aufbau der Unternehmensarchitektur der SBB mitgewirkt. Seit 2010 leitet er diesen Bereich. Zuvor war er in verschiedenen Rollen als Entwickler, Softwarearchitekt und Projektleiter bei einem Informatikdienstleister tätig."
+          "bio": "IT Architekt. Peter Moosmann (Ing. FH) hat über fünf Jahre am Aufbau der Unternehmensarchitektur der SBB mitgewirkt. Seit 2010 leitet er diesen Bereich. Zuvor war er in verschiedenen Rollen als Entwickler, Softwarearchitekt und Projektleiter bei einem Informatikdienstleister tätig.",
+          "portrait": "peter.moosmann.jpg"
         },
         {
           "name": "Jakob Erber",
           "company": "SBB",
-          "bio": "IT Architekt. Jakob Erber (M.Sc.) ist seit 3 Jahren als Unternehmensarchitekt bei der SBB tätig. Seit 2010 leitet er das Team Architekturmanagement. Zudem ist er als Domänenarchitekt Planung und Produktion Trasse für die betreffende Anwendung verantwortlich. Zuvor war er in verschiedenen Rollen als Entwickler und Softwarearchitekt bei verschiedenen Informatikdienstleistern tätig."
+          "bio": "IT Architekt. Jakob Erber (M.Sc.) ist seit 3 Jahren als Unternehmensarchitekt bei der SBB tätig. Seit 2010 leitet er das Team Architekturmanagement. Zudem ist er als Domänenarchitekt Planung und Produktion Trasse für die betreffende Anwendung verantwortlich. Zuvor war er in verschiedenen Rollen als Entwickler und Softwarearchitekt bei verschiedenen Informatikdienstleistern tätig.",
+          "portrait": "jakob.erber.jpg"
         }
       ]
     }

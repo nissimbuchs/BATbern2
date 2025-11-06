@@ -8,12 +8,14 @@
         {
           "name": "Stefan Meichtry",
           "company": "SBB AG",
-          "bio": "Stefan Meichtry ist Dipl.-Ing. und arbeitet als Software-Architekt und Senior IT Quality Manager bei der SBB AG. Er ist für den Aufbau und die Durchsetzung von zentralen Architekturprinzipien verantwortlich. Sein Interesse gilt darüber hinaus der Einführung von CMMI in der SBB-Informatik."
+          "bio": "Stefan Meichtry ist Dipl.-Ing. und arbeitet als Software-Architekt und Senior IT Quality Manager bei der SBB AG. Er ist für den Aufbau und die Durchsetzung von zentralen Architekturprinzipien verantwortlich. Sein Interesse gilt darüber hinaus der Einführung von CMMI in der SBB-Informatik.",
+          "portrait": "stefan.meichtry.jpg"
         },
         {
           "name": "Stefan Becker",
           "company": "Network 24/7 AG",
-          "bio": "Stefan Becker ist Dipl.-Ing. und Geschäftsführer der Network 24/7 AG. Als Software-Architekt ist er bei der SBB AG im Projekt Multi Channel Services für das Application Framework verantwortlich. Sein beruflicher Schwerpunkt ist die Entwicklung technologisch innovativer Konzepte und Lösungen in den Bereichen Software-Architektur und Design."
+          "bio": "Stefan Becker ist Dipl.-Ing. und Geschäftsführer der Network 24/7 AG. Als Software-Architekt ist er bei der SBB AG im Projekt Multi Channel Services für das Application Framework verantwortlich. Sein beruflicher Schwerpunkt ist die Entwicklung technologisch innovativer Konzepte und Lösungen in den Bereichen Software-Architektur und Design.",
+          "portrait": "stefan.becker.jpg"
         }
       ]
     },
@@ -24,7 +26,8 @@
         {
           "name": "Harald Aust",
           "company": "PostFinance",
-          "bio": "Harald Aust ist Dr. rer. nat. und Dipl.-Informatiker. Verschiedene Tätigkeiten von Forschung über Software-Entwicklung und Projektleitung bis Geschäftsführung in diversen Unternehmen. Seit 2002 bei der Schweizerischen Post - PostFinance in Bern verantwortlich für technische Infrastruktur, Middleware und EAI."
+          "bio": "Harald Aust ist Dr. rer. nat. und Dipl.-Informatiker. Verschiedene Tätigkeiten von Forschung über Software-Entwicklung und Projektleitung bis Geschäftsführung in diversen Unternehmen. Seit 2002 bei der Schweizerischen Post - PostFinance in Bern verantwortlich für technische Infrastruktur, Middleware und EAI.",
+          "portrait": "harald.aust.jpg"
         }
       ]
     },
@@ -35,7 +38,8 @@
         {
           "name": "Walter Grolimund",
           "company": "Swisscom Fixnet",
-          "bio": "Walter Grolimund leitet seit 2 Jahren den Bereich Informatik Strategie und Architektur bei Swisscom Fixnet. Im Rahmen dieser Funktion führt er den IT-Strategieprozess und leitete im 2004 ein Projekt, welches das Ziel hatte, die IT-Landschaft von Swisscom Fixnet für das Jahr 2010 zu beschreiben. Seit Anfang 2005 zeichnet er sich verantwortlich, diese Zielarchitektur 2010 mit entsprechenden Massnahmen Wirklichkeit werden zu lassen."
+          "bio": "Walter Grolimund leitet seit 2 Jahren den Bereich Informatik Strategie und Architektur bei Swisscom Fixnet. Im Rahmen dieser Funktion führt er den IT-Strategieprozess und leitete im 2004 ein Projekt, welches das Ziel hatte, die IT-Landschaft von Swisscom Fixnet für das Jahr 2010 zu beschreiben. Seit Anfang 2005 zeichnet er sich verantwortlich, diese Zielarchitektur 2010 mit entsprechenden Massnahmen Wirklichkeit werden zu lassen.",
+          "portrait": "walter.grolimund.jpg"
         }
       ]
     }

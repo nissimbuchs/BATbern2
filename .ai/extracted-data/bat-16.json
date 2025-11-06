@@ -30,7 +30,8 @@
         {
           "name": "Thomas Lenggenhager",
           "company": "SWITCH",
-          "bio": "Projektleiter SWITCHaai. Thomas Lenggenhager leitet seit 2007 das SWITCHaai Projekt. Seit der Projekt-Idee 1999 ist er in die Planung und Umsetzung von SWITCHaai involviert. Nach dem Informatik-Ingenieur Studium an der ETH Zürich begann er 1988 bei der erst kurz zuvor gegründeten Stiftung SWITCH als Software Ingenieur. Vor AAI beschäftigte er sich mit Themen wie E-Mail (X.400), Directories (X.500, LDAP), IP Netzwerke und DNS sowie Security (CERT)."
+          "bio": "Projektleiter SWITCHaai. Thomas Lenggenhager leitet seit 2007 das SWITCHaai Projekt. Seit der Projekt-Idee 1999 ist er in die Planung und Umsetzung von SWITCHaai involviert. Nach dem Informatik-Ingenieur Studium an der ETH Zürich begann er 1988 bei der erst kurz zuvor gegründeten Stiftung SWITCH als Software Ingenieur. Vor AAI beschäftigte er sich mit Themen wie E-Mail (X.400), Directories (X.500, LDAP), IP Netzwerke und DNS sowie Security (CERT).",
+          "portrait": "thomas.lenggenhager.jpg"
         }
       ]
     },
@@ -41,7 +42,8 @@
         {
           "name": "Thierry Perroud",
           "company": "Bundesamt für Informatik und Telekommunikation BIT",
-          "bio": "IT-Unternehmensarchitekt. Geboren 1965 in Genf, hat nach einem Musikstudium an der Hochschule der Künste in Bern den Master of Science in Computer Science an der Universität Bern bei Prof. Dr. H. Bunke erhalten. Nach einer zweijährigen Selbständigkeit im Bereich IT-Sicherheit war er seit 2002 im Bundesamt für Informatik und Telekommunikation als Security Architekt tätig. Seit 2006 ist er als IT-Unternehmensarchitekt, sowohl als Leiter des Architekturboards, wie auch als Bereichsleiter IT-Unternehmensarchitektur, im selben Bundesamt tätig und damit verantwortlich für die Gestaltung und die Weiterentwicklung der IT-Unternehmensarchitektur."
+          "bio": "IT-Unternehmensarchitekt. Geboren 1965 in Genf, hat nach einem Musikstudium an der Hochschule der Künste in Bern den Master of Science in Computer Science an der Universität Bern bei Prof. Dr. H. Bunke erhalten. Nach einer zweijährigen Selbständigkeit im Bereich IT-Sicherheit war er seit 2002 im Bundesamt für Informatik und Telekommunikation als Security Architekt tätig. Seit 2006 ist er als IT-Unternehmensarchitekt, sowohl als Leiter des Architekturboards, wie auch als Bereichsleiter IT-Unternehmensarchitektur, im selben Bundesamt tätig und damit verantwortlich für die Gestaltung und die Weiterentwicklung der IT-Unternehmensarchitektur.",
+          "portrait": "thierry.perroud.jpg"
         },
         {
           "name": "Reto Inversini",
@@ -79,12 +81,14 @@
         {
           "name": "Stefan Wyss",
           "company": "BEKB | BCBE",
-          "bio": "Verantwortlicher für die Weiterentwicklung des E-Bankings, BEKB | BCBE. Stefan Wyss ist seit 2001 für die BEKB | BCBE im Bereich des E-Bankings tätig. Seit über 25 Jahren befasst sich Herr Wyss mit der Entwicklung von Elektronik und Software im Bereich der Industrie, Telekommunikation und Banken. Stefan Wyss hat an der Ingenieurschule Burgdorf und am Worcester Polytechnic Institute in Worcester, Massachusetts in Elektrotechnik abgeschlossen."
+          "bio": "Verantwortlicher für die Weiterentwicklung des E-Bankings, BEKB | BCBE. Stefan Wyss ist seit 2001 für die BEKB | BCBE im Bereich des E-Bankings tätig. Seit über 25 Jahren befasst sich Herr Wyss mit der Entwicklung von Elektronik und Software im Bereich der Industrie, Telekommunikation und Banken. Stefan Wyss hat an der Ingenieurschule Burgdorf und am Worcester Polytechnic Institute in Worcester, Massachusetts in Elektrotechnik abgeschlossen.",
+          "portrait": "stefan.wyss.jpg"
         },
         {
           "name": "Alain Rollier",
           "company": "AXSionics",
-          "bio": "Gründer und Verantwortlicher für Sales und Marketing, AXSionics. Alain Rollier ist zusammen mit Lorenz Müller, Marcel Jacomet und Roger Cattin Gründer der AXSionics AG. Das mehrfach ausgezeichnete Unternehmen erhielt unter anderem den Swiss Technology Award 2007, European Identity Award 2009 und ist Finalist in der Global Security Challenge 2010. Zuvor war Alain Rollier fünf Jahre in verschiedenen Management-Positionen bei der Bieler Mikron Technology Group AG in Sales und Marketing tätig. Davor arbeitete er im internationalen Verkauf bei Sulzer Burckhardt und Sulzer Turbo in den USA und im Mittleren Osten. Rollier hat an der Ingenieurschule in Biel Maschinenbau sowie den Diplomstudiengang 'Management von Wachstum in Technologie-Unternehmen (TU-HSG)' abgeschlossen."
+          "bio": "Gründer und Verantwortlicher für Sales und Marketing, AXSionics. Alain Rollier ist zusammen mit Lorenz Müller, Marcel Jacomet und Roger Cattin Gründer der AXSionics AG. Das mehrfach ausgezeichnete Unternehmen erhielt unter anderem den Swiss Technology Award 2007, European Identity Award 2009 und ist Finalist in der Global Security Challenge 2010. Zuvor war Alain Rollier fünf Jahre in verschiedenen Management-Positionen bei der Bieler Mikron Technology Group AG in Sales und Marketing tätig. Davor arbeitete er im internationalen Verkauf bei Sulzer Burckhardt und Sulzer Turbo in den USA und im Mittleren Osten. Rollier hat an der Ingenieurschule in Biel Maschinenbau sowie den Diplomstudiengang 'Management von Wachstum in Technologie-Unternehmen (TU-HSG)' abgeschlossen.",
+          "portrait": "alain.rollier.jpg"
         }
       ]
     },

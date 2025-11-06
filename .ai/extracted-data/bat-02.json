@@ -8,7 +8,8 @@
         {
           "name": "Matilda Anello",
           "company": "Credit Suisse",
-          "bio": "Matilda Anello ist eidg. dipl. Wirtschaftsinformatikerin und als IT Architektin bei der Credit Suisse Group mit Definitionen und Einführung von Methoden und Prozessen im Rahmen der IT Architektur beschäftigt. Zuvor war Matilda Anello unter anderem mehrere Jahre im Versicherungsbereich und im Finanzbereich der Credit Suisse tätig. Sie ist Expertin für die eidg. Diplomprüfung für Wirtschaftsinformatik (Stufe Fachhochschule) und engagiert sich im Weiterbildungsbereich."
+          "bio": "Matilda Anello ist eidg. dipl. Wirtschaftsinformatikerin und als IT Architektin bei der Credit Suisse Group mit Definitionen und Einführung von Methoden und Prozessen im Rahmen der IT Architektur beschäftigt. Zuvor war Matilda Anello unter anderem mehrere Jahre im Versicherungsbereich und im Finanzbereich der Credit Suisse tätig. Sie ist Expertin für die eidg. Diplomprüfung für Wirtschaftsinformatik (Stufe Fachhochschule) und engagiert sich im Weiterbildungsbereich.",
+          "portrait": "matilda.anello.jpg"
         }
       ]
     },
@@ -19,7 +20,8 @@
         {
           "name": "Peter Kummer",
           "company": "Die Mobiliar",
-          "bio": "Peter Kummer ist als Leiter Architektur verantwortlich für die Entwicklung und Umsetzung der Business-, Applikations-, Technischen- und der Datenarchitektur. Er führt den IT-Strategie-entwicklungsprozess und rapportiert an den CIO. Peter Kummer studierte an der Universität Bern Oekonomie mit Schwerpunkt Wirtschaftsinformatik."
+          "bio": "Peter Kummer ist als Leiter Architektur verantwortlich für die Entwicklung und Umsetzung der Business-, Applikations-, Technischen- und der Datenarchitektur. Er führt den IT-Strategie-entwicklungsprozess und rapportiert an den CIO. Peter Kummer studierte an der Universität Bern Oekonomie mit Schwerpunkt Wirtschaftsinformatik.",
+          "portrait": "peter.kummer.jpg"
         }
       ]
     },
@@ -30,12 +32,14 @@
         {
           "name": "Beat M. Stöckli",
           "company": "PostMail",
-          "bio": "Ausbildung als Organisator mit Weiterbildung zum IT-Projektleiter und dipl. Wirtschaftsinformatiker. Langjährige Tätigkeit in entsprechenden Funktionen bei Schweiz. Volksbank, Crédit Suisse, Unisys (Schweiz) AG und RTC AG. Seit 2005 verantwortlich für die Enterprise Architecture PostMail. Besonderes Anliegen ist mir die ganzheitliche Betrachtung von Wechselwirkungen zwischen Prozessen und anwendungsorientierter Informatik."
+          "bio": "Ausbildung als Organisator mit Weiterbildung zum IT-Projektleiter und dipl. Wirtschaftsinformatiker. Langjährige Tätigkeit in entsprechenden Funktionen bei Schweiz. Volksbank, Crédit Suisse, Unisys (Schweiz) AG und RTC AG. Seit 2005 verantwortlich für die Enterprise Architecture PostMail. Besonderes Anliegen ist mir die ganzheitliche Betrachtung von Wechselwirkungen zwischen Prozessen und anwendungsorientierter Informatik.",
+          "portrait": "beat.stöckli.jpg"
         },
         {
           "name": "Alain Jacot-Guillarmod",
           "company": "PostMail",
-          "bio": "Informaticien de gestion, j'ai travaillé dans la réalisation de logiciel dans l'industrie pour ensuite devenir responsable de la documentation en trois langues dans une entreprise de services de progiciels. A la Poste Suisse, j'ai occupé diverses fonctions, de développement, de support, de gestion de projets et d'analyse."
+          "bio": "Informaticien de gestion, j'ai travaillé dans la réalisation de logiciel dans l'industrie pour ensuite devenir responsable de la documentation en trois langues dans une entreprise de services de progiciels. A la Poste Suisse, j'ai occupé diverses fonctions, de développement, de support, de gestion de projets et d'analyse.",
+          "portrait": "alain.jacot-guillarmod.jpg"
         }
       ]
     }

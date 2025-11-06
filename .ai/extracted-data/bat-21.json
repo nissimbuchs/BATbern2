@@ -8,7 +8,8 @@
         {
           "name": "Dr. Andreas Kronawitter",
           "company": "BLS",
-          "bio": "Seit 2010 arbeitet Andreas Kronawitter bei der BLS Informatik als Chef-Architekt für die Strategieentwicklung, Architekturbebauungsplanung, Projektportfolio- und Projektmanagement. Davor war er bei der SBB als Projektleiter, Unternehmensarchitekt und Bereichsleiter tätig. Er ist ausgebildeter Astrophysiker."
+          "bio": "Seit 2010 arbeitet Andreas Kronawitter bei der BLS Informatik als Chef-Architekt für die Strategieentwicklung, Architekturbebauungsplanung, Projektportfolio- und Projektmanagement. Davor war er bei der SBB als Projektleiter, Unternehmensarchitekt und Bereichsleiter tätig. Er ist ausgebildeter Astrophysiker.",
+          "portrait": "andreas.kronawitter.jpg"
         }
       ]
     },
@@ -19,7 +20,8 @@
         {
           "name": "Ursula Deriu",
           "company": "Tirsus GmbH, Olten",
-          "bio": "Ursula Deriu studierte an der Universität Bern Mathematik und Informatik. Sie ist seit über 30 Jahren in der Informatik tätig, hat alle Rollen in der Software-Entwicklung ausgefüllt und kennt das Internet seit seinen frühesten Anfängen. Während 10 Jahren war sie auch Lehrbeauftragte an der Berner Fachhochschule. Von 2006 bis 2010 war sie Geschäftsführerin des FIZ Technik e.V. in Frankfurt am Main. Seit 2011 begleitet sie mit der Tirsus GmbH Unternehmen bei der Einführung von Enterprise 2.0."
+          "bio": "Ursula Deriu studierte an der Universität Bern Mathematik und Informatik. Sie ist seit über 30 Jahren in der Informatik tätig, hat alle Rollen in der Software-Entwicklung ausgefüllt und kennt das Internet seit seinen frühesten Anfängen. Während 10 Jahren war sie auch Lehrbeauftragte an der Berner Fachhochschule. Von 2006 bis 2010 war sie Geschäftsführerin des FIZ Technik e.V. in Frankfurt am Main. Seit 2011 begleitet sie mit der Tirsus GmbH Unternehmen bei der Einführung von Enterprise 2.0.",
+          "portrait": "ursula.deriu.jpg"
         }
       ]
     },
@@ -30,7 +32,8 @@
         {
           "name": "Markus Maurer",
           "company": "Migros-Genossenschafts-Bund",
-          "bio": "Markus Maurer ist interner Berater für Social Media und Internet-Trends beim Migros-Genossenschafts-Bund. Er schult, coached und erklärt in der Migros-Gruppe Social Media und was gerade sonst noch im Internet passiert. Zudem unterrichtet er als Dozent bei der HWZ und der Migros Klubschule. Sein Leitsatz lautet: „engage – learn – interact\""
+          "bio": "Markus Maurer ist interner Berater für Social Media und Internet-Trends beim Migros-Genossenschafts-Bund. Er schult, coached und erklärt in der Migros-Gruppe Social Media und was gerade sonst noch im Internet passiert. Zudem unterrichtet er als Dozent bei der HWZ und der Migros Klubschule. Sein Leitsatz lautet: „engage – learn – interact\"",
+          "portrait": "markus.maurer.jpg"
         }
       ]
     }

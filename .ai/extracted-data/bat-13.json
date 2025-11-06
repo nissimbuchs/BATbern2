@@ -8,7 +8,8 @@
         {
           "name": "Prof. Dr. Robert Winter",
           "company": "Universität St. Gallen",
-          "bio": "Prof. Dr. Robert Winter ist Ordinarius für Wirtschaftsinformatik an der Universität St. Gallen (HSG), Direktor des dortigen Instituts für Wirtschaftsinformatik (IWI-HSG) und akademischer Direktor des Executive Master of Business Engineering (EMBE HSG). Nach dem Studium der Betriebswirtschaft und Wirtschaftspädagogik in Frankfurt am Main war er zehn Jahre am dortigen Institut für Wirtschaftsinformatik als wissenschaftlicher Mitarbeiter tätig. Seit 1996 lehrt und forscht er an der Universität St. Gallen. Prof. Winter baute das 1998 erstmals durchgeführte Executive Master-Programm in Business Engineering auf und leitet es seitdem. Er ist regelmässiger Keynoter bzw. Referent an Veranstaltungen im In- und Ausland, wissenschaftlicher Beirat verschiedener Institutionen, Autor bzw. Herausgeber von mehr als fünfzehn Büchern und Autor bzw. Koautor von mehr als 100 wissenschaftlichen Publikationen in den Bereichen Informationslogistik (seit 1999), Architekturen (seit 2000), Integration (seit 2002), Healthcare (seit 2005) und Unternehmenssteuerung (seit 2007)."
+          "bio": "Prof. Dr. Robert Winter ist Ordinarius für Wirtschaftsinformatik an der Universität St. Gallen (HSG), Direktor des dortigen Instituts für Wirtschaftsinformatik (IWI-HSG) und akademischer Direktor des Executive Master of Business Engineering (EMBE HSG). Nach dem Studium der Betriebswirtschaft und Wirtschaftspädagogik in Frankfurt am Main war er zehn Jahre am dortigen Institut für Wirtschaftsinformatik als wissenschaftlicher Mitarbeiter tätig. Seit 1996 lehrt und forscht er an der Universität St. Gallen. Prof. Winter baute das 1998 erstmals durchgeführte Executive Master-Programm in Business Engineering auf und leitet es seitdem. Er ist regelmässiger Keynoter bzw. Referent an Veranstaltungen im In- und Ausland, wissenschaftlicher Beirat verschiedener Institutionen, Autor bzw. Herausgeber von mehr als fünfzehn Büchern und Autor bzw. Koautor von mehr als 100 wissenschaftlichen Publikationen in den Bereichen Informationslogistik (seit 1999), Architekturen (seit 2000), Integration (seit 2002), Healthcare (seit 2005) und Unternehmenssteuerung (seit 2007).",
+          "portrait": "robert.winter.jpg"
         }
       ]
     },
@@ -19,7 +20,8 @@
         {
           "name": "Dr. Stephan Aier",
           "company": "Universität St. Gallen",
-          "bio": "Dr. Stephan Aier ist seit 2006 Projektleiter und Habilitand am Institut für Wirtschaftsinformatik der Universität St. Gallen (IWI-HSG). Jahrgang 1976. Diplom-(Wirtschafts)-Ingenieur 2002, Dr.-Ing. 2006. Er war Gründungsmitglied der Kompetenzzentren 'Enterprise Application Integration' (2002) und später 'Enterprise Architecture' (2005) an der Technischen Universität Berlin. Seit 2006 leitet er den Forschungsbereich Integration und Architektur am Lehrstuhl von Prof. Dr. Robert Winter am Institut für Wirtschaftsinformatik in Form des Kompetenzzentrums 'Integration Factory'. Seit 2007 ist er ergänzend zum Kompetenzzentrum 'Integration Factory' von Seiten der Universität St. Gallen Projektleiter für den Architektransatz 'Business Engineering Navigator' (BEN) und dem zugehörigen Werkzeug 'ADOben' welches in Kooperation mit der BOC AG entwickelt wird. Mitherausgeber der Reihe 'Enterprise Architecture' und Autor zahlreicher Publikationen in den Bereichen Architektur und Integration. Darüber hinaus leitet er seit 2007 die zugehörige Networking-Plattform 'Anwenderforum St. Gallen'."
+          "bio": "Dr. Stephan Aier ist seit 2006 Projektleiter und Habilitand am Institut für Wirtschaftsinformatik der Universität St. Gallen (IWI-HSG). Jahrgang 1976. Diplom-(Wirtschafts)-Ingenieur 2002, Dr.-Ing. 2006. Er war Gründungsmitglied der Kompetenzzentren 'Enterprise Application Integration' (2002) und später 'Enterprise Architecture' (2005) an der Technischen Universität Berlin. Seit 2006 leitet er den Forschungsbereich Integration und Architektur am Lehrstuhl von Prof. Dr. Robert Winter am Institut für Wirtschaftsinformatik in Form des Kompetenzzentrums 'Integration Factory'. Seit 2007 ist er ergänzend zum Kompetenzzentrum 'Integration Factory' von Seiten der Universität St. Gallen Projektleiter für den Architektransatz 'Business Engineering Navigator' (BEN) und dem zugehörigen Werkzeug 'ADOben' welches in Kooperation mit der BOC AG entwickelt wird. Mitherausgeber der Reihe 'Enterprise Architecture' und Autor zahlreicher Publikationen in den Bereichen Architektur und Integration. Darüber hinaus leitet er seit 2007 die zugehörige Networking-Plattform 'Anwenderforum St. Gallen'.",
+          "portrait": "stephan.aier.jpg"
         }
       ]
     },
@@ -30,7 +32,8 @@
         {
           "name": "Prof. Dr. Alain Wegmann",
           "company": "Ecole Polytechnique Fédérale de Lausanne (EPFL)",
-          "bio": "Alain Wegmann worked 14 years at Logitech in engineering, manfacturing and marketing. In 1997, he joined EPFL as professor and develops, with his team, methods for business and IT alignment."
+          "bio": "Alain Wegmann worked 14 years at Logitech in engineering, manfacturing and marketing. In 1997, he joined EPFL as professor and develops, with his team, methods for business and IT alignment.",
+          "portrait": "alain.wegmann.jpg"
         }
       ]
     },
@@ -41,7 +44,8 @@
         {
           "name": "Willy Müller",
           "company": "Eidg. Finanzdepartement EFD",
-          "bio": "Willy Müller arbeitet als Enterprise Architect beim Informatikstrategieorgan Bund (ISB). Der Schwerpunkt seiner Arbeiten sind E-Government-Architektur und SOA. Er ist Gründer des Vereins eCH, welcher Standards für E-Government in der Schweiz herausgibt."
+          "bio": "Willy Müller arbeitet als Enterprise Architect beim Informatikstrategieorgan Bund (ISB). Der Schwerpunkt seiner Arbeiten sind E-Government-Architektur und SOA. Er ist Gründer des Vereins eCH, welcher Standards für E-Government in der Schweiz herausgibt.",
+          "portrait": "willy.müller.jpg"
         }
       ]
     },
@@ -52,7 +56,8 @@
         {
           "name": "Dierk Matthäus",
           "company": "Universität Bern",
-          "bio": "Nach dem Informatik-Studium an der Universität Bern arbeitete Dierk Matthäus als Entwickler, Team- oder Projektleiter und MFA an verschiedenen Orten in der Verwaltung und Privatwirtschaft. Seit 2003 ist er bei der Medizinischen Fakultät der Universität Bern, seit 2007 auch bei den Informatikdienste tätig für die Bereitstellung von vernetzten Softwarelösungen zur Unterstützung der Administration, Lehre und Forschung."
+          "bio": "Nach dem Informatik-Studium an der Universität Bern arbeitete Dierk Matthäus als Entwickler, Team- oder Projektleiter und MFA an verschiedenen Orten in der Verwaltung und Privatwirtschaft. Seit 2003 ist er bei der Medizinischen Fakultät der Universität Bern, seit 2007 auch bei den Informatikdienste tätig für die Bereitstellung von vernetzten Softwarelösungen zur Unterstützung der Administration, Lehre und Forschung.",
+          "portrait": "dierk.matthäus.jpg"
         }
       ]
     },
@@ -63,7 +68,8 @@
         {
           "name": "Hans Ulrich Wiedmer",
           "company": "swisstopo",
-          "bio": "Hans Ulrich Wiedmer studierte Informatik an der ETH Zürich. Nach Tätigkeiten in der internationalen Normung und als Dozent arbeitet er seit 2003 bei swisstopo im Bereich KOGIS (Koordination, Geoinformation und Services) und ist verantwortlich für die Technik der Bundes Geodaten-Infrastruktur (BGDI)."
+          "bio": "Hans Ulrich Wiedmer studierte Informatik an der ETH Zürich. Nach Tätigkeiten in der internationalen Normung und als Dozent arbeitet er seit 2003 bei swisstopo im Bereich KOGIS (Koordination, Geoinformation und Services) und ist verantwortlich für die Technik der Bundes Geodaten-Infrastruktur (BGDI).",
+          "portrait": "hans.wiedmer.jpg"
         }
       ]
     },
@@ -74,7 +80,8 @@
         {
           "name": "Dirk Slama",
           "company": "inubit AG",
-          "bio": "Dirk Slama ist Diplom-Informatiker (TU Berlin) und hat außerdem am renommierten IMD in Lausanne (CH) den Master of Business Administration (MBA) erworben. Herr Slama hat über 15 Jahre Erfahrung in IT Projekten in den USA, Asien und Europa gesammelt, wo er mit Kunden wie Boeing, AT&T, NTT DoCoMo und Halifax Bank of Scotland große IT Projekte umgesetzt hat. Dirk Slama ist Mitautor der Bücher 'Enterprise SOA' und 'Enterprise CORBA'. Er ist international bekannt für seine Publikationen und Vorträge zu den Themen BPM, Enterprise SOA, Architektur-Management und IT Change Management."
+          "bio": "Dirk Slama ist Diplom-Informatiker (TU Berlin) und hat außerdem am renommierten IMD in Lausanne (CH) den Master of Business Administration (MBA) erworben. Herr Slama hat über 15 Jahre Erfahrung in IT Projekten in den USA, Asien und Europa gesammelt, wo er mit Kunden wie Boeing, AT&T, NTT DoCoMo und Halifax Bank of Scotland große IT Projekte umgesetzt hat. Dirk Slama ist Mitautor der Bücher 'Enterprise SOA' und 'Enterprise CORBA'. Er ist international bekannt für seine Publikationen und Vorträge zu den Themen BPM, Enterprise SOA, Architektur-Management und IT Change Management.",
+          "portrait": "dirk.slama.jpg"
         }
       ]
     }

@@ -8,12 +8,14 @@
         {
           "name": "Bruno Linder",
           "company": "Schweizerische Bundesbahnen SBB",
-          "bio": "Bruno Linder ist seit Herbst 2007 Leiter der Testfactory in der SBB IT. Davor leitete er das Quality- & Releasemanagement einer Versicherung und war 20 Jahre im Informatikdienstleistungsgeschäft für Kunden (Banken, Versicherungen) tätig."
+          "bio": "Bruno Linder ist seit Herbst 2007 Leiter der Testfactory in der SBB IT. Davor leitete er das Quality- & Releasemanagement einer Versicherung und war 20 Jahre im Informatikdienstleistungsgeschäft für Kunden (Banken, Versicherungen) tätig.",
+          "portrait": "bruno.linder.jpg"
         },
         {
           "name": "Michael T. Pilawa",
           "company": "PILAWA.AG",
-          "bio": "Michael T. Pilawa (PILAWA.AG) arbeitet seit Sommer 2007 als Berater für die SBB Testfactory in den Themen Testarchitekturen, Testwerkzeuge und Testautomation. Er begann seine Berufsausbildung 1979 mit dem Bau von Testautomaten in der Verpackungsindustrie und diplomierte 1988 als Physiker im Bereich der Testautomation von Datenerfassungsanlagen der Kernphysik am CERN in Genf. Seit 2001 berät er als Selbständiger Unternehmen im In- und Ausland beim Einsatz von Quality Center und QuickTest Professional."
+          "bio": "Michael T. Pilawa (PILAWA.AG) arbeitet seit Sommer 2007 als Berater für die SBB Testfactory in den Themen Testarchitekturen, Testwerkzeuge und Testautomation. Er begann seine Berufsausbildung 1979 mit dem Bau von Testautomaten in der Verpackungsindustrie und diplomierte 1988 als Physiker im Bereich der Testautomation von Datenerfassungsanlagen der Kernphysik am CERN in Genf. Seit 2001 berät er als Selbständiger Unternehmen im In- und Ausland beim Einsatz von Quality Center und QuickTest Professional.",
+          "portrait": "michael.pilawa.jpg"
         }
       ]
     },
@@ -24,7 +26,8 @@
         {
           "name": "Eric Lewis",
           "company": "IGE",
-          "bio": "Eric Lewis entwickelt seit 2001 Java-Applikationen im Enterprise-Bereich. Davor entwickelte er u. a. in Perl den Swisscom Online-Shop. Neben der Software-Entwicklung liegen seine Interessen in der manuellen und automatischen Qualitätssicherung und Build-Technologie."
+          "bio": "Eric Lewis entwickelt seit 2001 Java-Applikationen im Enterprise-Bereich. Davor entwickelte er u. a. in Perl den Swisscom Online-Shop. Neben der Software-Entwicklung liegen seine Interessen in der manuellen und automatischen Qualitätssicherung und Build-Technologie.",
+          "portrait": "eric.lewis.jpg"
         }
       ]
     },
@@ -35,7 +38,8 @@
         {
           "name": "Pascal Auderset",
           "company": "RTC AG",
-          "bio": "Pascal Auderset ist Diplom-Informatiker (Universität Freiburg CH) und arbeitet seit mehr als 10 Jahren im JEE Umfeld. Dabei hat er sowohl in technischen wie auch in fachlichen Grossprojekten als technischer Projektleiter, Entwickler und Architekt mitgewirkt."
+          "bio": "Pascal Auderset ist Diplom-Informatiker (Universität Freiburg CH) und arbeitet seit mehr als 10 Jahren im JEE Umfeld. Dabei hat er sowohl in technischen wie auch in fachlichen Grossprojekten als technischer Projektleiter, Entwickler und Architekt mitgewirkt.",
+          "portrait": "pascal.auderset.jpg"
         }
       ]
     }
