@@ -1,31 +1,32 @@
 package ch.batbern.events.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
-
-import java.util.UUID;
 
 /**
  * User profile data transfer object.
  *
  * Represents user profile information retrieved from the User Management Service API.
- * Matches the response schema from GET /api/v1/users/{username}.
+ * Matches the UserResponse schema from docs/api/users-api.openapi.yml
  *
- * Used to replace direct database access to user_profiles table with REST API calls.
+ * Per ADR-003 and Story 1.16.2: The 'id' field contains username (not UUID).
+ * This DTO matches the OpenAPI spec exactly.
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties(ignoreUnknown = true)  // Ignore any fields from API not in this DTO
 public class UserProfileDTO {
 
     /**
-     * Internal UUID - used for database foreign keys
-     */
-    private UUID id;
-
-    /**
      * Username - public identifier (e.g., "john.doe")
+     * Per ADR-003: This is returned as 'id' in the API response.
+     *
+     * The @JsonProperty annotation maps the API's 'id' field to our 'username' field.
      */
+    @JsonProperty("id")
     private String username;
 
     /**
@@ -45,6 +46,7 @@ public class UserProfileDTO {
 
     /**
      * Company identifier/name (e.g., "GoogleZH")
+     * Per ADR-003: Company name, not UUID
      */
     private String companyId;
 

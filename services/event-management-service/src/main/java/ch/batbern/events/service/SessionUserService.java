@@ -11,6 +11,7 @@ import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +36,7 @@ public class SessionUserService {
     private final SessionUserRepository sessionUserRepository;
     private final SessionRepository sessionRepository;
     private final UserApiClient userApiClient;
+    private final JdbcTemplate jdbcTemplate;
 
     /**
      * Assign a speaker to a session
@@ -63,18 +65,21 @@ public class SessionUserService {
         UserProfileDTO user = userApiClient.getUserByUsername(username);
         // If user doesn't exist, UserNotFoundException is thrown by API client
 
-        // Check for duplicate assignment (by user_id to maintain backward compatibility)
-        if (sessionUserRepository.existsBySessionIdAndUserId(sessionId, user.getId())) {
+        // Check for duplicate assignment (ADR-003: use username)
+        if (sessionUserRepository.existsBySessionIdAndUsername(sessionId, username)) {
             throw new IllegalArgumentException(
                     "User " + username + " is already assigned to session " + sessionId
             );
         }
 
-        // Create SessionUser entity with both userId (backward compat) and username (API-based)
+        // Get userId from local database for FK constraint
+        UUID userId = getUserIdFromUsername(username);
+
+        // Create SessionUser entity with both userId (FK) and username (API identifier)
         SessionUser sessionUser = SessionUser.builder()
                 .session(session)
-                .userId(user.getId())
-                .username(username)
+                .userId(userId)  // Required for FK constraint
+                .username(username)  // ADR-003: meaningful identifier
                 .speakerRole(speakerRole)
                 .presentationTitle(presentationTitle)
                 .isConfirmed(false)
@@ -99,10 +104,8 @@ public class SessionUserService {
     public void removeSpeakerFromSession(UUID sessionId, String username) {
         log.info("Removing speaker {} from session {}", username, sessionId);
 
-        // Fetch user via API to get UUID for backward-compatible lookup
-        UserProfileDTO user = userApiClient.getUserByUsername(username);
-
-        SessionUser sessionUser = sessionUserRepository.findBySessionIdAndUserId(sessionId, user.getId())
+        // Find speaker assignment by username (ADR-003: meaningful identifier)
+        SessionUser sessionUser = sessionUserRepository.findBySessionIdAndUsername(sessionId, username)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Speaker assignment not found for user " + username + " and session " + sessionId
                 ));
@@ -124,10 +127,8 @@ public class SessionUserService {
     public SessionSpeakerResponse confirmSpeaker(UUID sessionId, String username) {
         log.info("Confirming speaker {} for session {}", username, sessionId);
 
-        // Fetch user via API to get UUID for backward-compatible lookup
-        UserProfileDTO user = userApiClient.getUserByUsername(username);
-
-        SessionUser sessionUser = sessionUserRepository.findBySessionIdAndUserId(sessionId, user.getId())
+        // Find speaker assignment by username (ADR-003: meaningful identifier)
+        SessionUser sessionUser = sessionUserRepository.findBySessionIdAndUsername(sessionId, username)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Speaker assignment not found for user " + username + " and session " + sessionId
                 ));
@@ -137,6 +138,8 @@ public class SessionUserService {
 
         log.info("Successfully confirmed speaker {} for session {}", username, sessionId);
 
+        // Fetch user data via API for response enrichment
+        UserProfileDTO user = userApiClient.getUserByUsername(username);
         return enrichWithUserData(sessionUser, user);
     }
 
@@ -153,10 +156,8 @@ public class SessionUserService {
     public SessionSpeakerResponse declineSpeaker(UUID sessionId, String username, String reason) {
         log.info("Declining speaker {} for session {} with reason: {}", username, sessionId, reason);
 
-        // Fetch user via API to get UUID for backward-compatible lookup
-        UserProfileDTO user = userApiClient.getUserByUsername(username);
-
-        SessionUser sessionUser = sessionUserRepository.findBySessionIdAndUserId(sessionId, user.getId())
+        // Find speaker assignment by username (ADR-003: meaningful identifier)
+        SessionUser sessionUser = sessionUserRepository.findBySessionIdAndUsername(sessionId, username)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Speaker assignment not found for user " + username + " and session " + sessionId
                 ));
@@ -166,6 +167,8 @@ public class SessionUserService {
 
         log.info("Successfully declined speaker {} for session {}", username, sessionId);
 
+        // Fetch user data via API for response enrichment
+        UserProfileDTO user = userApiClient.getUserByUsername(username);
         return enrichWithUserData(sessionUser, user);
     }
 
@@ -253,5 +256,29 @@ public class SessionUserService {
                 .presentationTitle(sessionUser.getPresentationTitle())
                 .isConfirmed(sessionUser.isConfirmed())
                 .build();
+    }
+
+    /**
+     * Get userId (UUID) from username by querying user_profiles table locally.
+     *
+     * This is needed because:
+     * - ADR-003: Public APIs use meaningful identifiers (username), not UUIDs
+     * - Database FK constraints still require userId (UUID)
+     * - Both services share the same database
+     *
+     * TODO: Consider making user_id nullable in a future migration to fully embrace ADR-003
+     *
+     * @param username the user's username
+     * @return the user's UUID from user_profiles table
+     * @throws IllegalArgumentException if user not found locally
+     */
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    private UUID getUserIdFromUsername(String username) {
+        // Query user_profiles table directly (same database as event-management)
+        return jdbcTemplate.queryForObject(
+                "SELECT id FROM user_profiles WHERE username = ?",
+                UUID.class,
+                username
+        );
     }
 }

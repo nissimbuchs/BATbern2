@@ -169,14 +169,23 @@ const EventDetailEdit: React.FC = () => {
   const topics: Topic[] = [];
 
   // Transform API sessions to SessionUI format for the component
-  const sessions: SessionUI[] = (event.sessions || []).map((session, index) => ({
-    ...session,
-    slotNumber: index + 1,
-    // Note: speaker info would come from backend in Phase 2
-    // For now, we show the session without speaker assignment
-    speaker: undefined,
-    materialsStatus: 'pending' as const,
-  }));
+  const sessions: SessionUI[] = (event.sessions || []).map((session, index) => {
+    // Map speakers array to single speaker object (take primary speaker or first speaker)
+    const primarySpeaker = session.speakers?.find((s: any) => s.speakerRole === 'PRIMARY_SPEAKER') || session.speakers?.[0];
+
+    return {
+      ...session,
+      slotNumber: index + 1,
+      // Map speaker from API speakers array to UI speaker object
+      speaker: primarySpeaker ? {
+        speakerSlug: primarySpeaker.username,
+        name: `${primarySpeaker.firstName} ${primarySpeaker.lastName}`,
+        company: primarySpeaker.company,
+        email: primarySpeaker.username, // username serves as email identifier per ADR-003
+      } : undefined,
+      materialsStatus: 'pending' as const,
+    };
+  });
 
   return (
     <Box sx={{ p: 3 }}>
