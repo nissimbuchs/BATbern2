@@ -132,3 +132,7 @@ web-frontend/.playwright-mcp/
 .minio/
 security-reports/
 .env.native.*
+
+# Database import scripts with credentials (never commit these!)
+scripts/data/run-*-import*.sh
+scripts/data/*.sql
