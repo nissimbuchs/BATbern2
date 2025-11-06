@@ -8,12 +8,14 @@
         {
           "name": "Erich Helwin",
           "company": "PostAuto Schweiz AG",
-          "bio": "Seine Karriere im Bereich ICT begann Erich Helwin als Computertechniker bei Nixdorf. Weitere Stationen waren Ascom Hasler, Wang, Unisys - Positionen in Technik, Customer Care, Marketing und Verkauf, wie Global Account Director und Mitglied der erweiterten Geschäftsleitung (Unisys Schweiz). Er hat Innovationen wie die Bankomaten-Einführung in der Schweiz oder das INFNET Telecom LAN für Telecom PTT initiiert und vorangetrieben. Weitere Highlights sind die Mobile Payment Lösung von PostFinance, der Mobile Boarding Pass, Anwendungen von Augmented Reality, Mobile Tagging und Mobile Apps – darunter auch die PostAuto App."
+          "bio": "Seine Karriere im Bereich ICT begann Erich Helwin als Computertechniker bei Nixdorf. Weitere Stationen waren Ascom Hasler, Wang, Unisys - Positionen in Technik, Customer Care, Marketing und Verkauf, wie Global Account Director und Mitglied der erweiterten Geschäftsleitung (Unisys Schweiz). Er hat Innovationen wie die Bankomaten-Einführung in der Schweiz oder das INFNET Telecom LAN für Telecom PTT initiiert und vorangetrieben. Weitere Highlights sind die Mobile Payment Lösung von PostFinance, der Mobile Boarding Pass, Anwendungen von Augmented Reality, Mobile Tagging und Mobile Apps – darunter auch die PostAuto App.",
+          "portrait": "erich.helwin.jpg"
         },
         {
           "name": "Roland Loser",
           "company": "Glue Software Engineering AG",
-          "bio": "Sein Studium an der Universität Bern schloss Roland Loser als Master in Computer Science ab. 1997 kam er zu Glue, wo er Java-Projekte realisierte. Nach einigen Jahren im Bereich Mobile Services baute er die Business Unit Mobile Applications auf, welche J2ME Projekte realisierte und später den Schwerpunkt auf iOS und Android Apps legte. Seit Beginn war er in öV Projekte involviert, wie den SBB SMS Diensten (222, Pendleralarm) und der SBB Mobile App. Ab 2009 leitet er die Entwicklung von Echtzeit Fahrplan Apps wie MEZI für Bernmobil, RBS und Postauto Bern sowie der schweizweiten Postauto App mit Tür-zu-Tür Routing. Roland Loser ist seit 2010 Mitinhaber von Glue."
+          "bio": "Sein Studium an der Universität Bern schloss Roland Loser als Master in Computer Science ab. 1997 kam er zu Glue, wo er Java-Projekte realisierte. Nach einigen Jahren im Bereich Mobile Services baute er die Business Unit Mobile Applications auf, welche J2ME Projekte realisierte und später den Schwerpunkt auf iOS und Android Apps legte. Seit Beginn war er in öV Projekte involviert, wie den SBB SMS Diensten (222, Pendleralarm) und der SBB Mobile App. Ab 2009 leitet er die Entwicklung von Echtzeit Fahrplan Apps wie MEZI für Bernmobil, RBS und Postauto Bern sowie der schweizweiten Postauto App mit Tür-zu-Tür Routing. Roland Loser ist seit 2010 Mitinhaber von Glue.",
+          "portrait": "roland.loser.jpg"
         }
       ]
     },
@@ -24,12 +26,14 @@
         {
           "name": "Tobias Röthlisberger",
           "company": "SBB IT",
-          "bio": "Tobias Röthlisberger ist seit 2010 als Teamleiter Technologiemanagement in der SBB IT tätig. In dieser Architektursteuerungsfunktion definiert er die Technologien und Plattformen für sämtliche Geschäftsbereiche der SBB IT. Aktuell ist er als Auftraggeber der Mobile Enterprise Application Plattform (MEAP) für deren architektonische und organisatorische Positionierung zuständig."
+          "bio": "Tobias Röthlisberger ist seit 2010 als Teamleiter Technologiemanagement in der SBB IT tätig. In dieser Architektursteuerungsfunktion definiert er die Technologien und Plattformen für sämtliche Geschäftsbereiche der SBB IT. Aktuell ist er als Auftraggeber der Mobile Enterprise Application Plattform (MEAP) für deren architektonische und organisatorische Positionierung zuständig.",
+          "portrait": "tobias.röthlisberger.jpg"
         },
         {
           "name": "Erich Siegrist",
           "company": "SBB IT",
-          "bio": "Erich Siegrist gestaltet seit 2005 als IT-Architekt die Technologielandschaft der SBB IT. 2011 erarbeitete er eine \"Bring Your Own Device\"-Strategie für die SBB und verantwortete deren technische Umsetzung. Aktuell ist er als Leiter Technologiearchitektur für die strategische Weiterentwicklung von «Mobile Computing» bei der SBB IT verantwortlich."
+          "bio": "Erich Siegrist gestaltet seit 2005 als IT-Architekt die Technologielandschaft der SBB IT. 2011 erarbeitete er eine \"Bring Your Own Device\"-Strategie für die SBB und verantwortete deren technische Umsetzung. Aktuell ist er als Leiter Technologiearchitektur für die strategische Weiterentwicklung von «Mobile Computing» bei der SBB IT verantwortlich.",
+          "portrait": "erich.siegrist.jpg"
         }
       ]
     },
@@ -40,12 +44,14 @@
         {
           "name": "Stefan Fraefel",
           "company": "Hochschule Luzern HSLU",
-          "bio": "Stefan Fraefel studierte Visuelle Kommunikation mit Schwerpunkt Grafik Design an der HSLU. Danach absolvierte er ein Masterstudium in Design, mit der Vertiefung Data Narratives an der HSLU. Seit 2008 führt er als selbstständiger Grafik Designer ein eigenes Atelier für Visuelle Gestaltung in Zug und seit 2012 forscht er zudem im Departement Design & Kunst in den Bereichen Wayfinding, Navigation, Signaletik und Neue Medien sowie dynamische und komplexe Visualisierungen."
+          "bio": "Stefan Fraefel studierte Visuelle Kommunikation mit Schwerpunkt Grafik Design an der HSLU. Danach absolvierte er ein Masterstudium in Design, mit der Vertiefung Data Narratives an der HSLU. Seit 2008 führt er als selbstständiger Grafik Designer ein eigenes Atelier für Visuelle Gestaltung in Zug und seit 2012 forscht er zudem im Departement Design & Kunst in den Bereichen Wayfinding, Navigation, Signaletik und Neue Medien sowie dynamische und komplexe Visualisierungen.",
+          "portrait": "stefan.fraefel.jpg"
         },
         {
           "name": "Angela Bühler",
           "company": "Netcetera AG",
-          "bio": "Angela Bühler studierte Rechtswissenschaften an den Universitäten Zürich und Bern und schloss mit dem MLaw in 2005 ab. Nach diversen Stellen im In- und Ausland arbeitete sie ab 2008 als IT-Projektleiterin bei Nothing Interactive in Bern. Von 2009 bis 2011 absolvierte sie zusätzlich das 'MAS Management & Technology' an der ETH Zürich. In ihrer Masterarbeit untersuchte sie den Business Case einer eigens entwickelten iPad-App für den Einsatz im Retail-Sektor. Seit 2012 arbeitet sie als Projektleiterin für Netcetera AG, wobei sie u.a. zwei Mobilprojekte für die SBB betreute."
+          "bio": "Angela Bühler studierte Rechtswissenschaften an den Universitäten Zürich und Bern und schloss mit dem MLaw in 2005 ab. Nach diversen Stellen im In- und Ausland arbeitete sie ab 2008 als IT-Projektleiterin bei Nothing Interactive in Bern. Von 2009 bis 2011 absolvierte sie zusätzlich das 'MAS Management & Technology' an der ETH Zürich. In ihrer Masterarbeit untersuchte sie den Business Case einer eigens entwickelten iPad-App für den Einsatz im Retail-Sektor. Seit 2012 arbeitet sie als Projektleiterin für Netcetera AG, wobei sie u.a. zwei Mobilprojekte für die SBB betreute.",
+          "portrait": "angela.bühler.jpg"
         }
       ]
     }

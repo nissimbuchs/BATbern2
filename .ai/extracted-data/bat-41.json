@@ -8,7 +8,8 @@
         {
           "name": "Pascal Auderset",
           "company": "Die Mobiliar",
-          "bio": "Pascal Auderset arbeitet seit 1999 als Software Entwickler, IT Architekt und Programmleiter in der Finanzindustrie. In diesen Positionen hatte er immer mit verteilten Systemen in verschiedensten Ausprägungen (Tuxedo mit CORBA, J2EE mit WLS (SOA), JEE mit EAP (SOA), JEE mit EAP (Microservice)) zu tun und gestaltete diese aktiv mit. In der Mobiliar stellt er mit seinem Team die Plattform inkl. Prozesse zur Verfügung um über 450 MicroServices zu planen, entwickeln, betreiben und ausser Betrieb zu nehmen."
+          "bio": "Pascal Auderset arbeitet seit 1999 als Software Entwickler, IT Architekt und Programmleiter in der Finanzindustrie. In diesen Positionen hatte er immer mit verteilten Systemen in verschiedensten Ausprägungen (Tuxedo mit CORBA, J2EE mit WLS (SOA), JEE mit EAP (SOA), JEE mit EAP (Microservice)) zu tun und gestaltete diese aktiv mit. In der Mobiliar stellt er mit seinem Team die Plattform inkl. Prozesse zur Verfügung um über 450 MicroServices zu planen, entwickeln, betreiben und ausser Betrieb zu nehmen.",
+          "portrait": "pascal.auderset.jpg"
         }
       ]
     },
@@ -19,7 +20,8 @@
         {
           "name": "Gion Sialm",
           "company": "BIT",
-          "bio": "Gion Sialm ist Elektroingenieur ETH, Betriebswirt und hat am Forschungslaboratorium der IBM in Rüschlikon seine Dissertation geschrieben. Er hat über 20 Jahre Erfahrung in Industrie, Forschung und im Bund in den Domänen Lösungs- und Plattformarchitektur sowie Engineering von komplexen Projekten. Heute berät er als Seniorarchitekt im Bundesamt für Informatik (BIT) das oberste Management und Schlüsselkunden bezüglich Technologieanwendung und -umsetzung. Er hat verschiedene Services im Bund aufgebaut. Dazu gehören Messagingsysteme für hochverfügbare verteilte Systeme mit besonderer Anforderung an die Skalierbarkeit, das grösste IAM-System im Bund mit rund 100 Mandanten und mehreren hunderttausend Benutzer sowie die erste Cloud im Bund. Er reviewed Papers über Microservices und hielt Vorträge über verteilte Architekturen und IAM in San Franzisco, London und Frankfurt."
+          "bio": "Gion Sialm ist Elektroingenieur ETH, Betriebswirt und hat am Forschungslaboratorium der IBM in Rüschlikon seine Dissertation geschrieben. Er hat über 20 Jahre Erfahrung in Industrie, Forschung und im Bund in den Domänen Lösungs- und Plattformarchitektur sowie Engineering von komplexen Projekten. Heute berät er als Seniorarchitekt im Bundesamt für Informatik (BIT) das oberste Management und Schlüsselkunden bezüglich Technologieanwendung und -umsetzung. Er hat verschiedene Services im Bund aufgebaut. Dazu gehören Messagingsysteme für hochverfügbare verteilte Systeme mit besonderer Anforderung an die Skalierbarkeit, das grösste IAM-System im Bund mit rund 100 Mandanten und mehreren hunderttausend Benutzer sowie die erste Cloud im Bund. Er reviewed Papers über Microservices und hielt Vorträge über verteilte Architekturen und IAM in San Franzisco, London und Frankfurt.",
+          "portrait": "gion.sialm.jpg"
         }
       ]
     },
@@ -30,7 +32,8 @@
         {
           "name": "Florian Seidel",
           "company": "SBB CFF FFS",
-          "bio": "Florian Seidl ist Architect ICT bei der SBB, hat einen MSc in IT der University of Liverpool und ist seit über 10 Jahren Softwareentwickler und Softwarearchitekt bei der SBB. Er beschäftigt sich aktuell neben der Softwareentwickung unter anderem mit agilem Vorgehen (CSP), Architekturen von Microservicesystemen im Enterpriseumfeld und der Automatisierung von Deployment- und Betriebsprozessen."
+          "bio": "Florian Seidl ist Architect ICT bei der SBB, hat einen MSc in IT der University of Liverpool und ist seit über 10 Jahren Softwareentwickler und Softwarearchitekt bei der SBB. Er beschäftigt sich aktuell neben der Softwareentwickung unter anderem mit agilem Vorgehen (CSP), Architekturen von Microservicesystemen im Enterpriseumfeld und der Automatisierung von Deployment- und Betriebsprozessen.",
+          "portrait": "florian.seidel.jpg"
         }
       ]
     }

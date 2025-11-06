@@ -8,7 +8,8 @@
         {
           "name": "Dr. Matthias Stürmer",
           "company": "/ch/open",
-          "bio": "Matthias Stürmer ist Manager bei Ernst & Young Schweiz mit Spezialisierung auf Open Source Software, Open Government Data und Social Media Governance. Er studierte an der Universität Bern Betriebswirtschaft und Informatik und schloss 2005 mit einer Lizenziatsarbeit zu «Open Source Community Building» ab. Bis 2009 doktorierte er an der ETH Zürich am Lehrstuhl für Strategisches Management und Innovation und erforschte die Zusammenarbeit zwischen Open Source Communities und Technologie-Unternehmen. Danach arbeitete er beim Schweizer Software-Unternehmen Liip AG und ist seit 2010 bei Ernst & Young in Bern tätig. Matthias Stürmer ist Vorstandsmitglied von /ch/open, Geschäftsleiter der Parlamentarischen Gruppe Digitale Nachhaltigkeit und Mitgründer des Open Government Data Vereins Opendata.ch. Zudem ist er Leiter der Working Group Office Interoperability bei der Open Source Business Alliance OSBA und gehört als Stadtrat dem Parlament der Stadt Bern an."
+          "bio": "Matthias Stürmer ist Manager bei Ernst & Young Schweiz mit Spezialisierung auf Open Source Software, Open Government Data und Social Media Governance. Er studierte an der Universität Bern Betriebswirtschaft und Informatik und schloss 2005 mit einer Lizenziatsarbeit zu «Open Source Community Building» ab. Bis 2009 doktorierte er an der ETH Zürich am Lehrstuhl für Strategisches Management und Innovation und erforschte die Zusammenarbeit zwischen Open Source Communities und Technologie-Unternehmen. Danach arbeitete er beim Schweizer Software-Unternehmen Liip AG und ist seit 2010 bei Ernst & Young in Bern tätig. Matthias Stürmer ist Vorstandsmitglied von /ch/open, Geschäftsleiter der Parlamentarischen Gruppe Digitale Nachhaltigkeit und Mitgründer des Open Government Data Vereins Opendata.ch. Zudem ist er Leiter der Working Group Office Interoperability bei der Open Source Business Alliance OSBA und gehört als Stadtrat dem Parlament der Stadt Bern an.",
+          "portrait": "matthias.stürmer.jpg"
         }
       ]
     },
@@ -19,7 +20,8 @@
         {
           "name": "Jérémie Granat",
           "company": "HP Banking Service Center",
-          "bio": "Jérémie Granat arbeitet seit 2011 bei HP BSC. Davor war er Senior Platform Architekt bei der SBB Informatik im Bereich Java Enterprise. Er studierte zuerst an der Berner Fachhochschule in Biel und schloss 2001 als Informatik Ingenieur FH ab. 2008 erwarb er den Abschluss als MSc. in Informatik an der ETH Zürich."
+          "bio": "Jérémie Granat arbeitet seit 2011 bei HP BSC. Davor war er Senior Platform Architekt bei der SBB Informatik im Bereich Java Enterprise. Er studierte zuerst an der Berner Fachhochschule in Biel und schloss 2001 als Informatik Ingenieur FH ab. 2008 erwarb er den Abschluss als MSc. in Informatik an der ETH Zürich.",
+          "portrait": "jérémie.granat.jpg"
         }
       ]
     },
@@ -30,17 +32,20 @@
         {
           "name": "Martin Zust",
           "company": "Jungwacht Blauring Kanton Luzern",
-          "bio": "Martin Zust leitete die Arbeitsgruppe Datenbank bei Jubla und war Projektleiter der nationalen Mitglieder-Datenbank."
+          "bio": "Martin Zust leitete die Arbeitsgruppe Datenbank bei Jubla und war Projektleiter der nationalen Mitglieder-Datenbank.",
+          "portrait": "martin.zust.jpg"
         },
         {
           "name": "Pascal Zumkehr",
           "company": "Puzzle ITC",
-          "bio": "Pascal Zumkehr ist seit 2005 bei Puzzle ITC. Davor arbeitete er als SW-Entwickler bei Ancotech AG und WeServe. Er schloss sein Studium an der Uni Bern in 2007 als MSc in Informatik ab. Pascal ist Certified Java Programmer und Developer."
+          "bio": "Pascal Zumkehr ist seit 2005 bei Puzzle ITC. Davor arbeitete er als SW-Entwickler bei Ancotech AG und WeServe. Er schloss sein Studium an der Uni Bern in 2007 als MSc in Informatik ab. Pascal ist Certified Java Programmer und Developer.",
+          "portrait": "pascal.zumkehr.jpg"
         },
         {
           "name": "Mark Waber",
           "company": "Puzzle ITC",
-          "bio": "Mark Waber ist Mitgründer von Puzzle ICT in 1999. Davor arbeitete er als Projektleiter und SW-Entwickler bei der Firma Dynasystem (heute NEXPLORE AG). Er schloss sein Studium an der IS Biel in 1997 als dipl. Informatik Ingenieur HTL ab. Mark ist seit 2012 Vorstand von /ch/open. Er ist Certified Scrum Master und kann unter waber@puzzle.ch erreicht werden."
+          "bio": "Mark Waber ist Mitgründer von Puzzle ICT in 1999. Davor arbeitete er als Projektleiter und SW-Entwickler bei der Firma Dynasystem (heute NEXPLORE AG). Er schloss sein Studium an der IS Biel in 1997 als dipl. Informatik Ingenieur HTL ab. Mark ist seit 2012 Vorstand von /ch/open. Er ist Certified Scrum Master und kann unter waber@puzzle.ch erreicht werden.",
+          "portrait": "mark.waber.jpg"
         }
       ]
     }

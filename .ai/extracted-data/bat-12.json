@@ -8,7 +8,8 @@
         {
           "name": "Dr. Nissim J. Buchs",
           "company": "RTC AG",
-          "bio": "Dr. Nissim J. Buchs ist seit Mitte 2008 Chef Architekt und Leiter Unternehmensarchitektur und Gesamtplanung. Seine Schwerpunkte liegen auf Enterprise Architecture, modellgetriebener Softwareentwicklung und agilen Methoden im JEE Umfeld. Zuvor war er in mehreren Funktionen in der RTC IT-Architektur tätig, zuletzt als Chef Architekt IT. Herr Dr. Buchs hat Informatik und Medizin an der Universität Bern studiert, wo er mehrere Arbeiten im Bereich der Neuroinformatik veröffentlichte."
+          "bio": "Dr. Nissim J. Buchs ist seit Mitte 2008 Chef Architekt und Leiter Unternehmensarchitektur und Gesamtplanung. Seine Schwerpunkte liegen auf Enterprise Architecture, modellgetriebener Softwareentwicklung und agilen Methoden im JEE Umfeld. Zuvor war er in mehreren Funktionen in der RTC IT-Architektur tätig, zuletzt als Chef Architekt IT. Herr Dr. Buchs hat Informatik und Medizin an der Universität Bern studiert, wo er mehrere Arbeiten im Bereich der Neuroinformatik veröffentlichte.",
+          "portrait": "nissim.buchs.jpg"
         }
       ]
     },
@@ -19,7 +20,8 @@
         {
           "name": "Hans-Jakob Gfeller",
           "company": "SBB Informatik",
-          "bio": "Hans-Jakob Gfeller ist Software-Ingenieur FH (Software-Schule Schweiz). Seit 8 Jahren ist er in unterschiedlichen Funktionen bei der SBB IT tätig. Seit 2 Jahren ist er Enterprise Architekt mit Verantwortung für die Domäne 'Marketing und Vertrieb Personenverkehr' und führt das Projekt 'Bebauungsplan' als Projektleiter."
+          "bio": "Hans-Jakob Gfeller ist Software-Ingenieur FH (Software-Schule Schweiz). Seit 8 Jahren ist er in unterschiedlichen Funktionen bei der SBB IT tätig. Seit 2 Jahren ist er Enterprise Architekt mit Verantwortung für die Domäne 'Marketing und Vertrieb Personenverkehr' und führt das Projekt 'Bebauungsplan' als Projektleiter.",
+          "portrait": "hans-jakob.gfeller.jpg"
         }
       ]
     },
@@ -30,7 +32,8 @@
         {
           "name": "Christian Beyeler",
           "company": "BKW FMB Energie AG",
-          "bio": "Christian Beyeler ist seit 2003 bei der BKW. Vor der aktuellen Funktion als Leiter ICT-Architecture war er als ICT-Architekt tätig. Davor als Projektleiter und Entwickler von Individuallösungen in den Bereichen E-Commerce und Data Warehousing. BWL-Studium an der Wirtschafts- und Sozialwissenschaftlichen Fakultät der Universität Freiburg."
+          "bio": "Christian Beyeler ist seit 2003 bei der BKW. Vor der aktuellen Funktion als Leiter ICT-Architecture war er als ICT-Architekt tätig. Davor als Projektleiter und Entwickler von Individuallösungen in den Bereichen E-Commerce und Data Warehousing. BWL-Studium an der Wirtschafts- und Sozialwissenschaftlichen Fakultät der Universität Freiburg.",
+          "portrait": "christian.beyeler.jpg"
         }
       ]
     }

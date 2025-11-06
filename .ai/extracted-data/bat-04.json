@@ -8,7 +8,8 @@
         {
           "name": "Marc Schaffroth",
           "company": "Informationstrategieorgan Bund ISB",
-          "bio": "Marc Schaffroth ist Projektleiter beim Informatikstrategieorgan Bund ISB und leitet die beiden eCH-Fachgruppen 'Geschäftsprozesse' und 'Records Management/GEVER'."
+          "bio": "Marc Schaffroth ist Projektleiter beim Informatikstrategieorgan Bund ISB und leitet die beiden eCH-Fachgruppen 'Geschäftsprozesse' und 'Records Management/GEVER'.",
+          "portrait": "marc.schaffroth.jpg"
         }
       ]
     },
@@ -19,7 +20,8 @@
         {
           "name": "Tillmann Schall",
           "company": "Anaptecs GmbH",
-          "bio": "Tillmann Schall ist Dipl. Ing. (FH) und Geschäftsführer der anaptecs GmbH. Als Software-Architekt war er im Rahmen des Grossprojekts Phoenics u.a. für die Integration und Erweiterung des eingesetzten Workflow-Management-Systems verantwortlich. Seine Tätigkeitsschwerpunkte liegen im Entwurf komponenten-orientierter, verteilter Systeme, insbesondere in der Konzeption von workflowbasierten Anwendungen, der Integration von Backend und Fremdsystemen und dem Design von Anwendungsframeworks."
+          "bio": "Tillmann Schall ist Dipl. Ing. (FH) und Geschäftsführer der anaptecs GmbH. Als Software-Architekt war er im Rahmen des Grossprojekts Phoenics u.a. für die Integration und Erweiterung des eingesetzten Workflow-Management-Systems verantwortlich. Seine Tätigkeitsschwerpunkte liegen im Entwurf komponenten-orientierter, verteilter Systeme, insbesondere in der Konzeption von workflowbasierten Anwendungen, der Integration von Backend und Fremdsystemen und dem Design von Anwendungsframeworks.",
+          "portrait": "tillmann.schall.jpg"
         }
       ]
     },
@@ -30,7 +32,8 @@
         {
           "name": "Jean-Marc Terrettaz",
           "company": "RTC AG",
-          "bio": "Nach seinem Informatik-Studium an der ETH Lausanne arbeitete Jean-Marc Terrettaz bei der Firma Ascom an der Entwicklung von Software für Telefonzentralen. Anschliessend war er als Mitarbeiter der Firma ELCA bei der Definition und Umsetzung der IT-Architektur für die Firma RTC tätig. Seit 2005 leitet er bei der RTC die Architektur Abteilung."
+          "bio": "Nach seinem Informatik-Studium an der ETH Lausanne arbeitete Jean-Marc Terrettaz bei der Firma Ascom an der Entwicklung von Software für Telefonzentralen. Anschliessend war er als Mitarbeiter der Firma ELCA bei der Definition und Umsetzung der IT-Architektur für die Firma RTC tätig. Seit 2005 leitet er bei der RTC die Architektur Abteilung.",
+          "portrait": "jean-marc.terrettaz.jpg"
         }
       ]
     }

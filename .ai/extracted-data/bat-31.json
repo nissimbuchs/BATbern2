@@ -8,7 +8,8 @@
         {
           "name": "André Golliez",
           "company": "Opendata.ch",
-          "bio": "André Golliez hat nach mehreren Jahren Berufstätigkeit in der IT-Industrie Anfang der 80er Jahre an der ETH Zürich Informatik studiert und anschliessend über zehn Jahre im IT Management der UBS gearbeitet. 1999 hat er zusammen mit vier Partnern die IT-Beratungsfirma itopia gegründet. Ab Juli 2015 wird er unter dem Namen Golliez Open Data Consulting als Berater für die Publikation und Nutzung offener Daten tätig sein. Von 2004 bis 2009 war André Golliez Präsident der Schweizer Informatik Gesellschaft. Seit 2010 hat er zusammen mit Kollegen die Open Data Bewegung in der Schweiz aufgebaut und ist Präsident des 2012 gegründeten Vereins opendata.ch, Swiss Chapter der Open Knowledge Foundation. Seit Juli 2014 leitet André Golliez im Auftrag von Swissuniversities, der Rektorenkonferenz der Schweizer Hochschulen, das Pilotprojekt 'Open Research Data Plattform Schweiz'."
+          "bio": "André Golliez hat nach mehreren Jahren Berufstätigkeit in der IT-Industrie Anfang der 80er Jahre an der ETH Zürich Informatik studiert und anschliessend über zehn Jahre im IT Management der UBS gearbeitet. 1999 hat er zusammen mit vier Partnern die IT-Beratungsfirma itopia gegründet. Ab Juli 2015 wird er unter dem Namen Golliez Open Data Consulting als Berater für die Publikation und Nutzung offener Daten tätig sein. Von 2004 bis 2009 war André Golliez Präsident der Schweizer Informatik Gesellschaft. Seit 2010 hat er zusammen mit Kollegen die Open Data Bewegung in der Schweiz aufgebaut und ist Präsident des 2012 gegründeten Vereins opendata.ch, Swiss Chapter der Open Knowledge Foundation. Seit Juli 2014 leitet André Golliez im Auftrag von Swissuniversities, der Rektorenkonferenz der Schweizer Hochschulen, das Pilotprojekt 'Open Research Data Plattform Schweiz'.",
+          "portrait": "andré.golliez.jpg"
         }
       ]
     },
@@ -19,7 +20,8 @@
         {
           "name": "Christian Trachsel",
           "company": "SBB",
-          "bio": "Christian Trachsel ist seit Dezember 2011 im Bereich Architektur & Qualität für die Datenarchitektur verantwortlich. Davor hat er 15 Jahre lang die Datenarchitektur eines Finanzdienstleisters geprägt und geleitet. Die drei Themen Datenaustausch mit Dritten, Dateninventar und Datenstrategie beschäftigen ihn aktuell."
+          "bio": "Christian Trachsel ist seit Dezember 2011 im Bereich Architektur & Qualität für die Datenarchitektur verantwortlich. Davor hat er 15 Jahre lang die Datenarchitektur eines Finanzdienstleisters geprägt und geleitet. Die drei Themen Datenaustausch mit Dritten, Dateninventar und Datenstrategie beschäftigen ihn aktuell.",
+          "portrait": "christian.trachsel.jpg"
         }
       ]
     },
@@ -41,12 +43,14 @@
         {
           "name": "Adrian Gschwend",
           "company": "BFH",
-          "bio": "Adrian Gschwend ist der Geschäftsleiter von Zazuko GmbH, dem Enterprise Linked Data Spezialist in der Schweiz. Nach seiner Ausbildung zum Elektroniker wurde Adrian via IBM in die Software-Welt gezogen, worauf er das Open Source Projekt netlabs.org gründete. Darauf folgte die Ausbildung zum Dipl. Ing. FH der Informatik mit Spezialisierung im Bereich Netzwerksicherheit und Software. Adrian hat langjährige Erfahrung im Bereich Linked Data, Wissensmanagement, Open Source Software und Projektmanagement."
+          "bio": "Adrian Gschwend ist der Geschäftsleiter von Zazuko GmbH, dem Enterprise Linked Data Spezialist in der Schweiz. Nach seiner Ausbildung zum Elektroniker wurde Adrian via IBM in die Software-Welt gezogen, worauf er das Open Source Projekt netlabs.org gründete. Darauf folgte die Ausbildung zum Dipl. Ing. FH der Informatik mit Spezialisierung im Bereich Netzwerksicherheit und Software. Adrian hat langjährige Erfahrung im Bereich Linked Data, Wissensmanagement, Open Source Software und Projektmanagement.",
+          "portrait": "adrian.gschwend.jpg"
         },
         {
           "name": "Christian Trachsel",
           "company": "SBB",
-          "bio": "Christian Trachsel ist seit Dezember 2011 im Bereich Architektur & Qualität für die Datenarchitektur verantwortlich. Davor hat er 15 Jahre lang die Datenarchitektur eines Finanzdienstleisters geprägt und geleitet. Die drei Themen Datenaustausch mit Dritten, Dateninventar und Datenstrategie beschäftigen ihn aktuell."
+          "bio": "Christian Trachsel ist seit Dezember 2011 im Bereich Architektur & Qualität für die Datenarchitektur verantwortlich. Davor hat er 15 Jahre lang die Datenarchitektur eines Finanzdienstleisters geprägt und geleitet. Die drei Themen Datenaustausch mit Dritten, Dateninventar und Datenstrategie beschäftigen ihn aktuell.",
+          "portrait": "christian.trachsel.jpg"
         }
       ]
     },

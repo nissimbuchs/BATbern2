@@ -8,12 +8,14 @@
         {
           "name": "Felix Grimm",
           "company": "RTC AG",
-          "bio": "Felix Grimm hat an der Universität Bern im Bereich Künstliche Intelligenz promoviert. Nach verschiedenen Projekten (medizinische und technische Informatik) hat er bei der Mobiliar verschiedene Aufgaben in der IT-Entwicklung und Unternehmensarchitektur wahrgenommen. Seit 2006 ist er bei der RTC als ICT-Architekt tätig."
+          "bio": "Felix Grimm hat an der Universität Bern im Bereich Künstliche Intelligenz promoviert. Nach verschiedenen Projekten (medizinische und technische Informatik) hat er bei der Mobiliar verschiedene Aufgaben in der IT-Entwicklung und Unternehmensarchitektur wahrgenommen. Seit 2006 ist er bei der RTC als ICT-Architekt tätig.",
+          "portrait": "felix.grimm.jpg"
         },
         {
           "name": "Matthias Stutz",
           "company": "Universität St. Gallen",
-          "bio": "Matthias Stutz ist wissenschaftlicher Mitarbeiter und Doktorand am Institut für Wirtschaftsinformatik der Universität St. Gallen (IWI-HSG). Zuvor studierte er Wirtschaftswissenschaften an der Universität St. Gallen mit Vertiefung des Informationsmanagements. Heute ist er in diverse praxisnahe Forschungs-projekte involviert und beschäftigt sich insbesondere mit den Themen IT-Governance, Enterprise Architecture und serviceorientierte Architekturen. Daneben ist er aktiv in die Lehre an der Universität St. Gallen eingebunden."
+          "bio": "Matthias Stutz ist wissenschaftlicher Mitarbeiter und Doktorand am Institut für Wirtschaftsinformatik der Universität St. Gallen (IWI-HSG). Zuvor studierte er Wirtschaftswissenschaften an der Universität St. Gallen mit Vertiefung des Informationsmanagements. Heute ist er in diverse praxisnahe Forschungs-projekte involviert und beschäftigt sich insbesondere mit den Themen IT-Governance, Enterprise Architecture und serviceorientierte Architekturen. Daneben ist er aktiv in die Lehre an der Universität St. Gallen eingebunden.",
+          "portrait": "matthias.stutz.jpg"
         }
       ]
     },
@@ -24,7 +26,8 @@
         {
           "name": "Daniel Bernasconi",
           "company": "CSC Switzerland",
-          "bio": "Architektur als Schlüssel für die zielgerichtete Lösung komplexer Geschäftsprobleme zu nutzen, dieses Ziel steht im Zentrum der über 10 jährigen beruflichen Tätigkeit von Herrn Bernasconi. Dabei hat er sowohl technologienahe Softwarearchitekturen (Schwergewicht J2EE) als auch umfassende Unternehmensarchitekturen (Fokus strategisches Business-IT Alignement) entwickelt oder in leitender Stellung verantwortet. Dies geschah immer vor dem Hintergrund einer konkreten fachlichen Problemstellung aus der Bau-, Telekommunikations- oder Finanzindustrie. Drei Branchen in welchen sich Herr Bernasconi in einem Zeitraum von jeweils 3 bis 4 Jahren einen fachlichen Hintergrund aufgebaut hat und in welchen er über Kenntnisse in verschiedenen Referenzarchitekturen verfügt."
+          "bio": "Architektur als Schlüssel für die zielgerichtete Lösung komplexer Geschäftsprobleme zu nutzen, dieses Ziel steht im Zentrum der über 10 jährigen beruflichen Tätigkeit von Herrn Bernasconi. Dabei hat er sowohl technologienahe Softwarearchitekturen (Schwergewicht J2EE) als auch umfassende Unternehmensarchitekturen (Fokus strategisches Business-IT Alignement) entwickelt oder in leitender Stellung verantwortet. Dies geschah immer vor dem Hintergrund einer konkreten fachlichen Problemstellung aus der Bau-, Telekommunikations- oder Finanzindustrie. Drei Branchen in welchen sich Herr Bernasconi in einem Zeitraum von jeweils 3 bis 4 Jahren einen fachlichen Hintergrund aufgebaut hat und in welchen er über Kenntnisse in verschiedenen Referenzarchitekturen verfügt.",
+          "portrait": "daniel.bernasconi.jpg"
         }
       ]
     }

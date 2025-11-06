@@ -8,7 +8,8 @@
         {
           "name": "Ernst Kammermann-Gerber",
           "company": "Schweizerische Bundesbahnen SBB",
-          "bio": "Ernst Kammermann-Gerber ist seit einem Jahr bei der SBB Informatik im Bereich Architektur und Qualität tätig. Innerhalb des Projektes AQUA, welches zum Ziel hat, die heute in der SBB eingesetzten Clientplattform OPUS weiterzuentwickeln, hat er die Rolle des Lead-Architekten inne. Er ist als Plattformarchitekt im Bereich Clientplattformen tätig."
+          "bio": "Ernst Kammermann-Gerber ist seit einem Jahr bei der SBB Informatik im Bereich Architektur und Qualität tätig. Innerhalb des Projektes AQUA, welches zum Ziel hat, die heute in der SBB eingesetzten Clientplattform OPUS weiterzuentwickeln, hat er die Rolle des Lead-Architekten inne. Er ist als Plattformarchitekt im Bereich Clientplattformen tätig.",
+          "portrait": "ernst.kammermann-gerber.jpg"
         }
       ]
     },
@@ -19,7 +20,8 @@
         {
           "name": "Rudolf Oppliger",
           "company": "PostFinance",
-          "bio": "Rudolf Oppliger ist MAS-IT und leitet das Team PFGUI, welches die Umsetzung der GUI-Strategie koordiniert und das Framework PFGUI-OCP basierend auf Eclipse RCP bereitstellt."
+          "bio": "Rudolf Oppliger ist MAS-IT und leitet das Team PFGUI, welches die Umsetzung der GUI-Strategie koordiniert und das Framework PFGUI-OCP basierend auf Eclipse RCP bereitstellt.",
+          "portrait": "rudolf.oppliger.jpg"
         }
       ]
     },
@@ -30,7 +32,8 @@
         {
           "name": "Andreas R. Lehmann",
           "company": "Swisscom",
-          "bio": "Andreas R. Lehmann hat über 30 Jahre Berufserfahrung in Informatik und Telekommunikation in unterschiedlichen Funktionen, wie Geschäftsführer, Senior-Account-Manager, Business-Development-Manager, Berater, Marketing-Manager, Vertriebsleiter und Mitglied der Geschäftsleitung. Er ist Absolvent der Swiss Business School und besitzt ein NDS als Verkaufsleiter. Er ist Head Workplace Innovations bei Swisscom IT Services."
+          "bio": "Andreas R. Lehmann hat über 30 Jahre Berufserfahrung in Informatik und Telekommunikation in unterschiedlichen Funktionen, wie Geschäftsführer, Senior-Account-Manager, Business-Development-Manager, Berater, Marketing-Manager, Vertriebsleiter und Mitglied der Geschäftsleitung. Er ist Absolvent der Swiss Business School und besitzt ein NDS als Verkaufsleiter. Er ist Head Workplace Innovations bei Swisscom IT Services.",
+          "portrait": "andreas.lehmann.jpg"
         }
       ]
     },
@@ -41,7 +44,8 @@
         {
           "name": "Mauro Sala",
           "company": "RTC Real Time Center AG",
-          "bio": "Nach dem Studium arbeitete Mauro Sala als Software-Ingenieur bei Olivetti Schweiz AG von 1994 bis Ende 1997 in verschiedenen Entwicklungsprojekten mit, wie der Schalterapplikation für die Post und der neuen Bankomat-Applikation für die Raiffeisen-Banken. Seit 1998 arbeitet M. Sala bei RTC AG, wo er die Verantwortung für die Entwicklung der eigenen RENO Suite zur Verwaltung der Windows-Infrastruktur übernahm. Heute ist Mauro Sala für die Arbeitsplatzarchitektur und das Identity- und Infrastruktur-Management im Bereich Dezentrale Systeme verantwortlich."
+          "bio": "Nach dem Studium arbeitete Mauro Sala als Software-Ingenieur bei Olivetti Schweiz AG von 1994 bis Ende 1997 in verschiedenen Entwicklungsprojekten mit, wie der Schalterapplikation für die Post und der neuen Bankomat-Applikation für die Raiffeisen-Banken. Seit 1998 arbeitet M. Sala bei RTC AG, wo er die Verantwortung für die Entwicklung der eigenen RENO Suite zur Verwaltung der Windows-Infrastruktur übernahm. Heute ist Mauro Sala für die Arbeitsplatzarchitektur und das Identity- und Infrastruktur-Management im Bereich Dezentrale Systeme verantwortlich.",
+          "portrait": "mauro.sala.jpg"
         }
       ]
     }

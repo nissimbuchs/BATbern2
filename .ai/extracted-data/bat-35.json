@@ -8,7 +8,8 @@
         {
           "name": "Peter Andres",
           "company": "Informatik Service Center ISC-EJPD",
-          "bio": "Peter Andres arbeitet seit 2003 beim EJPD als ICT-Architekt und ist seit 2007 Leiter der Abteilung Technologie des Informatik Service Center EJPD. Er hat mehrjährige Erfahrung in verteilten, sicherheitskritischen Softwarearchitekturen und spezialisierte Kenntnisse im Bereich Java EE-Anwendungen. Er absolvierte mehrere Weiterbildungen rund um das Thema der IT-Sicherheit und erlangte 2011 den CISSP (Certified Information Systems Security Professional)."
+          "bio": "Peter Andres arbeitet seit 2003 beim EJPD als ICT-Architekt und ist seit 2007 Leiter der Abteilung Technologie des Informatik Service Center EJPD. Er hat mehrjährige Erfahrung in verteilten, sicherheitskritischen Softwarearchitekturen und spezialisierte Kenntnisse im Bereich Java EE-Anwendungen. Er absolvierte mehrere Weiterbildungen rund um das Thema der IT-Sicherheit und erlangte 2011 den CISSP (Certified Information Systems Security Professional).",
+          "portrait": "peter.andres.jpg"
         }
       ]
     },
@@ -19,7 +20,8 @@
         {
           "name": "Harald Aust",
           "company": "PostFinance AG",
-          "bio": "Harald Aust ist Dr. rer. nat. und Dipl.-Informatiker und seit 2002 bei der PostFinance AG mit verschiedenen Aufgaben, unter anderem IT-Architektur und Projektleitung, in den Bereichen IT-Infrastruktur, Middleware und EAI tätig. Im Projekt 'Disaster Tolerance', in dem vor einigen Jahren ein zusätzliches Rechenzentrum in Betrieb genommen wurde, war er für den standortübergreifenden Aufbau der PostFinance-Applikationen verantwortlich."
+          "bio": "Harald Aust ist Dr. rer. nat. und Dipl.-Informatiker und seit 2002 bei der PostFinance AG mit verschiedenen Aufgaben, unter anderem IT-Architektur und Projektleitung, in den Bereichen IT-Infrastruktur, Middleware und EAI tätig. Im Projekt 'Disaster Tolerance', in dem vor einigen Jahren ein zusätzliches Rechenzentrum in Betrieb genommen wurde, war er für den standortübergreifenden Aufbau der PostFinance-Applikationen verantwortlich.",
+          "portrait": "harald.aust.jpg"
         }
       ]
     },
@@ -30,7 +32,8 @@
         {
           "name": "Paul Affentranger",
           "company": "afca",
-          "bio": "Wir arbeiten nach Holacracy (http://www.holacracy.org) wo es keine klassischen Funktionen, sondern Rollen gibt. Ich habe die Rollen: Strategie, Innovation und Entwicklung."
+          "bio": "Wir arbeiten nach Holacracy (http://www.holacracy.org) wo es keine klassischen Funktionen, sondern Rollen gibt. Ich habe die Rollen: Strategie, Innovation und Entwicklung.",
+          "portrait": "paul.affentranger.jpg"
         }
       ]
     },
@@ -41,7 +44,8 @@
         {
           "name": "Philippe Schmid",
           "company": "Puzzle ITC",
-          "bio": "Philippe Schmid arbeitet seit 2012 bei der Puzzle ITC in Bern. Er berät und unterstützt Kunden in der Schweiz und im Ausland in Linux-Fragen. Sein Interesse gilt pragmatischen Lösungen mit Opensource-Produkten. Philippe Schmid verfügt über einen Informatik-Abschluss an der Fachhochschule HTI Biel."
+          "bio": "Philippe Schmid arbeitet seit 2012 bei der Puzzle ITC in Bern. Er berät und unterstützt Kunden in der Schweiz und im Ausland in Linux-Fragen. Sein Interesse gilt pragmatischen Lösungen mit Opensource-Produkten. Philippe Schmid verfügt über einen Informatik-Abschluss an der Fachhochschule HTI Biel.",
+          "portrait": "philippe.schmid.jpg"
         }
       ]
     }

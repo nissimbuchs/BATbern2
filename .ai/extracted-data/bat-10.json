@@ -8,7 +8,8 @@
         {
           "name": "Björn Müller",
           "company": "CaptainCasa",
-          "bio": "1991-2001 SAP AG, Anwendungsentwicklung und Basisentwicklung, versch. Entwicklungs-, Architektur- und Leitungsfunktionen. 2001-2005 Gründung der Casabac Technologies GmbH, Pionier im Bereich interaktiver Browseranwendungen (\"AJAX\"), Übernahme durch die Software AG im Jahre 2005. 2005-2007 Software AG, Leitung des Bereiches \"User Interface Technologien\". 2007 Gründung der CaptainCasa GmbH, Entwicklung von Frontend Technologien für komplexe serverseitige Anwendungssysteme."
+          "bio": "1991-2001 SAP AG, Anwendungsentwicklung und Basisentwicklung, versch. Entwicklungs-, Architektur- und Leitungsfunktionen. 2001-2005 Gründung der Casabac Technologies GmbH, Pionier im Bereich interaktiver Browseranwendungen (\"AJAX\"), Übernahme durch die Software AG im Jahre 2005. 2005-2007 Software AG, Leitung des Bereiches \"User Interface Technologien\". 2007 Gründung der CaptainCasa GmbH, Entwicklung von Frontend Technologien für komplexe serverseitige Anwendungssysteme.",
+          "portrait": "björn.müller.jpg"
         }
       ]
     },
@@ -19,7 +20,8 @@
         {
           "name": "Frank Appel",
           "company": "Innoopract",
-          "bio": "Frank Appel ist Software Entwickler bei der Innoopract Informationssysteme GmbH und arbeitet gegenwärtig als technischer Leiter am Rich Ajax Platform (RAP) Projekt mit. Er war Entwicklungsleiter von W4Toolkit (die Ausgangsbasis der Code-Donation für das RAP Projekt) und W4T Eclipse - ein visuelles Entwicklungswerkzeug für W4T-Anwendungen. Er begann 2002 mit der Entwicklung von Eclipse Plug-ins und besitzt umfangreiche Kenntnisse über die Architektur Eclipse basierter Systeme, Eclipse Platform APIs und der IDE-Entwicklung."
+          "bio": "Frank Appel ist Software Entwickler bei der Innoopract Informationssysteme GmbH und arbeitet gegenwärtig als technischer Leiter am Rich Ajax Platform (RAP) Projekt mit. Er war Entwicklungsleiter von W4Toolkit (die Ausgangsbasis der Code-Donation für das RAP Projekt) und W4T Eclipse - ein visuelles Entwicklungswerkzeug für W4T-Anwendungen. Er begann 2002 mit der Entwicklung von Eclipse Plug-ins und besitzt umfangreiche Kenntnisse über die Architektur Eclipse basierter Systeme, Eclipse Platform APIs und der IDE-Entwicklung.",
+          "portrait": "frank.appel.jpg"
         }
       ]
     },
@@ -30,7 +32,8 @@
         {
           "name": "Sascha P. Corti",
           "company": "Microsoft",
-          "bio": "Sascha P. Corti arbeitet seit dem Jahr 2000 für Microsoft Schweiz als \"System Engineer\" mit Fokus auf die Microsoft System Plattform und auf die Software-Entwicklungswerkzeuge von Microsoft. Seine Ausbildung beinhaltet die Studiengänge Informatik-Ingenieur an der ETH Zürich und Wirtschafts-Informatik an der Universität Zürich. Seine praktischen Erfahrungen umfassen 7 Jahre Tätigkeit als Software-Entwickler und -Architekt bei einer Schweizer Bank und Anstellungen als Systems Engineer bei mehreren amerikanischen Hi-Tech Firmen, darunter Silicon Graphics und Microsoft."
+          "bio": "Sascha P. Corti arbeitet seit dem Jahr 2000 für Microsoft Schweiz als \"System Engineer\" mit Fokus auf die Microsoft System Plattform und auf die Software-Entwicklungswerkzeuge von Microsoft. Seine Ausbildung beinhaltet die Studiengänge Informatik-Ingenieur an der ETH Zürich und Wirtschafts-Informatik an der Universität Zürich. Seine praktischen Erfahrungen umfassen 7 Jahre Tätigkeit als Software-Entwickler und -Architekt bei einer Schweizer Bank und Anstellungen als Systems Engineer bei mehreren amerikanischen Hi-Tech Firmen, darunter Silicon Graphics und Microsoft.",
+          "portrait": "sascha.corti.jpg"
         }
       ]
     },
@@ -41,17 +44,20 @@
         {
           "name": "Hans Frauchiger",
           "company": "Steuerverwaltung des Kantons Bern",
-          "bio": "Hans Frauchiger arbeitet als Informatik-Projektleiter in der Applikationsbetreuung der kantonalen Steuerverwaltung. In dieser Funktion ist er für alle Anwendungen im Bereich Taxation von natürlichen und juristischen Personen verantwortlich."
+          "bio": "Hans Frauchiger arbeitet als Informatik-Projektleiter in der Applikationsbetreuung der kantonalen Steuerverwaltung. In dieser Funktion ist er für alle Anwendungen im Bereich Taxation von natürlichen und juristischen Personen verantwortlich.",
+          "portrait": "hans.frauchiger.jpg"
         },
         {
           "name": "Thomas Meister",
           "company": "DV Bern AG",
-          "bio": "Thomas Meister hat nach seinem Fachhochschulabschluss in Wirtschafts-informatik in der DV Bern AG zahlreiche Individuallösungen entwickelt und unter anderem die Architektur von TaxMe-Online des Kantons Bern aufgebaut. Sein primäres Aufgabengebiet besteht in der Konzeption und der Realisierung von Java EE Softwarelösungen."
+          "bio": "Thomas Meister hat nach seinem Fachhochschulabschluss in Wirtschafts-informatik in der DV Bern AG zahlreiche Individuallösungen entwickelt und unter anderem die Architektur von TaxMe-Online des Kantons Bern aufgebaut. Sein primäres Aufgabengebiet besteht in der Konzeption und der Realisierung von Java EE Softwarelösungen.",
+          "portrait": "thomas.meister.jpg"
         },
         {
           "name": "Matthias Germann",
           "company": "DV Bern AG",
-          "bio": "Matthias Germann arbeitet bei der DV Bern AG als Software Architekt. Dort befasst er sich mit der Konzeption und Entwicklung von Java EE Softwarelösungen, hauptsächlich im eGovernement Umfeld. Er studierte Informatik an der Fachhochschule in Biel."
+          "bio": "Matthias Germann arbeitet bei der DV Bern AG als Software Architekt. Dort befasst er sich mit der Konzeption und Entwicklung von Java EE Softwarelösungen, hauptsächlich im eGovernement Umfeld. Er studierte Informatik an der Fachhochschule in Biel.",
+          "portrait": "matthias.germann.jpg"
         }
       ]
     },
@@ -62,12 +68,14 @@
         {
           "name": "Michael Schwendimann",
           "company": "IPT",
-          "bio": "Senior Consultant bei der ipt, der die Business Seite der DHL vertritt. Er muss die Anforderungen der DHL so umformulieren, dass sie für die IT umsetzbar sind."
+          "bio": "Senior Consultant bei der ipt, der die Business Seite der DHL vertritt. Er muss die Anforderungen der DHL so umformulieren, dass sie für die IT umsetzbar sind.",
+          "portrait": "michael.schwendimann.jpg"
         },
         {
           "name": "Marco Venzi",
           "company": "IPT",
-          "bio": "IT Architekt bei ipt, er hat die Auswahl der GUI Technologie für das DHL Projekt als Architekt verantwortet und hat auch die Umsetzung des GUI Teils in diesem Projekt als verantwortlicher Architekt übernommen."
+          "bio": "IT Architekt bei ipt, er hat die Auswahl der GUI Technologie für das DHL Projekt als Architekt verantwortet und hat auch die Umsetzung des GUI Teils in diesem Projekt als verantwortlicher Architekt übernommen.",
+          "portrait": "marco.venzi.jpg"
         }
       ]
     }

@@ -8,7 +8,8 @@
         {
           "name": "Martin Kochert",
           "company": "BKW FMB Energie AG",
-          "bio": "Martin Kochert ist Diplom-Betriebswirt mit Fachrichtung Wirtschaftsinformatik. Er verfügt über eine langjährige Berufserfahrung in diversen leitenden Funktionen, u.a. als Consultant, Projektleiter, Leiter SAP Technology & Architecture, Leiter SAP CC und zuletzt Outsourcing Transition Executive. Er war u.a. für IMG Information Management Group AG, resource informatik ag und CSC Switzerland GmbH tätig. Seit 2011 leitet er das ICT-Architecture-Management bei der BKW-Gruppe."
+          "bio": "Martin Kochert ist Diplom-Betriebswirt mit Fachrichtung Wirtschaftsinformatik. Er verfügt über eine langjährige Berufserfahrung in diversen leitenden Funktionen, u.a. als Consultant, Projektleiter, Leiter SAP Technology & Architecture, Leiter SAP CC und zuletzt Outsourcing Transition Executive. Er war u.a. für IMG Information Management Group AG, resource informatik ag und CSC Switzerland GmbH tätig. Seit 2011 leitet er das ICT-Architecture-Management bei der BKW-Gruppe.",
+          "portrait": "martin.kochert.jpg"
         }
       ]
     },
@@ -19,12 +20,14 @@
         {
           "name": "Hans-Jakob Gfeller",
           "company": "SBB",
-          "bio": "Hans-Jakob Gfeller (Ing. FH) hat über fünf Jahre am Aufbau der Unternehmensarchitektur der SBB mitgewirkt. Seit 2010 leitet er das Team «Domänenarchitektur». Zuvor war er in verschiedenen Rollen als Entwickler, Softwarearchitekt, Domänenarchitekt und Projektleiter tätig."
+          "bio": "Hans-Jakob Gfeller (Ing. FH) hat über fünf Jahre am Aufbau der Unternehmensarchitektur der SBB mitgewirkt. Seit 2010 leitet er das Team «Domänenarchitektur». Zuvor war er in verschiedenen Rollen als Entwickler, Softwarearchitekt, Domänenarchitekt und Projektleiter tätig.",
+          "portrait": "hans-jakob.gfeller.jpg"
         },
         {
           "name": "Stephan Hofstetter",
           "company": "SBB",
-          "bio": "Stephan Hofstetter war mehrere Jahre im Account-Management tätig und ist seit dem 01.01.11 strategischer IT-Projektportfoliomanager. Seine Hauptaufgabe besteht darin, eine koordinierte IT-Projektportfolio-Steuerung, -Finanzplanung und -Bewirtschaftung gegenüber dem CIO sicherzustellen. Zuvor war er im Lösungsverkauf und in der Beratung tätig."
+          "bio": "Stephan Hofstetter war mehrere Jahre im Account-Management tätig und ist seit dem 01.01.11 strategischer IT-Projektportfoliomanager. Seine Hauptaufgabe besteht darin, eine koordinierte IT-Projektportfolio-Steuerung, -Finanzplanung und -Bewirtschaftung gegenüber dem CIO sicherzustellen. Zuvor war er im Lösungsverkauf und in der Beratung tätig.",
+          "portrait": "stephan.hofstetter.jpg"
         }
       ]
     },
@@ -35,7 +38,8 @@
         {
           "name": "Thomas Spahr",
           "company": "Entris Banking AG",
-          "bio": "Thomas Spahr arbeitet seit über 20 Jahren in leitenden Funktionen für die RBA-Banken. Er verfügt nebst seiner IT-Kompetenz über ein fundiertes Bankwissen. Er ist Chief Business Architekt und für den Bereich Architektur der Entris Banking verantwortlich. Dieser Bereich deckt IT-Strategie, IT-Architektur, Prozessintegration, Softwareintegration und die Kompetenz für Evaluationen und Migrationen ab. Zudem ist er seit 1995 in der berufsbegleitenden Aus- und Weiterbildung in den Funktionen als Prüfungsexperte, als Experte für Diplomarbeiten, als Fachvorstand, als Autor und als Dozent tätig."
+          "bio": "Thomas Spahr arbeitet seit über 20 Jahren in leitenden Funktionen für die RBA-Banken. Er verfügt nebst seiner IT-Kompetenz über ein fundiertes Bankwissen. Er ist Chief Business Architekt und für den Bereich Architektur der Entris Banking verantwortlich. Dieser Bereich deckt IT-Strategie, IT-Architektur, Prozessintegration, Softwareintegration und die Kompetenz für Evaluationen und Migrationen ab. Zudem ist er seit 1995 in der berufsbegleitenden Aus- und Weiterbildung in den Funktionen als Prüfungsexperte, als Experte für Diplomarbeiten, als Fachvorstand, als Autor und als Dozent tätig.",
+          "portrait": "thomas.spahr.jpg"
         }
       ]
     }

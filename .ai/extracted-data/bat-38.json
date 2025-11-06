@@ -8,7 +8,8 @@
         {
           "name": "Thomas Goetz",
           "company": "PostFinance AG",
-          "bio": "Thomas Goetz arbeitet bei PostFinance AG als IT-Architekt und Teamleiter. Er begann vor 2 Jahren ein interdisziplinäres Blockchain-Team zusammen mit Mitarbeitenden aus Innovation und Fachbereichen aufzubauen. Weitere Themen seiner Tätigkeit ist Architektur an der Schnittstelle von Fachbereich und IT, sowie Anwendungsintegration."
+          "bio": "Thomas Goetz arbeitet bei PostFinance AG als IT-Architekt und Teamleiter. Er begann vor 2 Jahren ein interdisziplinäres Blockchain-Team zusammen mit Mitarbeitenden aus Innovation und Fachbereichen aufzubauen. Weitere Themen seiner Tätigkeit ist Architektur an der Schnittstelle von Fachbereich und IT, sowie Anwendungsintegration.",
+          "portrait": "thomas.goetz.jpg"
         }
       ]
     },
@@ -40,17 +41,20 @@
         {
           "name": "Nagib Aouini",
           "company": "ELCA Informatique SA",
-          "bio": "Nagib Aouini holds a Master's Degree in Computer Science, Applied Mathematics and Cryptography from the French university ENSIMAG. He is in charge of the Cybersecurity Services division of ELCA and manages a group of cybersecurity experts. Nagib has more than 20 years of experience in the field of digital identity and smartcards."
+          "bio": "Nagib Aouini holds a Master's Degree in Computer Science, Applied Mathematics and Cryptography from the French university ENSIMAG. He is in charge of the Cybersecurity Services division of ELCA and manages a group of cybersecurity experts. Nagib has more than 20 years of experience in the field of digital identity and smartcards.",
+          "portrait": "nagib.aouini.jpg"
         },
         {
           "name": "Dr. Sonia Bogos",
           "company": "ELCA Informatique SA",
-          "bio": "Sonia is a cryptography engineer who joined ELCA this summer. She has a PhD in Computer Science from the Swiss Federal Institute of Technology at Lausanne EPFL. Her PhD thesis focused on the algorithmic study of the Learning Parity with Noise (LPN), a quantum resistant hard problem used in cryptography."
+          "bio": "Sonia is a cryptography engineer who joined ELCA this summer. She has a PhD in Computer Science from the Swiss Federal Institute of Technology at Lausanne EPFL. Her PhD thesis focused on the algorithmic study of the Learning Parity with Noise (LPN), a quantum resistant hard problem used in cryptography.",
+          "portrait": "sonia.bogos.jpg"
         },
         {
           "name": "Jorge Alvarado",
           "company": "ELCA Informatique SA",
-          "bio": "Jorge Alvarado holds a position as Blockchain Solutions Architect at ELCA. He has 9+ years of international working experience in software engineering, systems administration and architecture; recently focusing on the latest blockchain stacks Ethereum, Hyperledger Fabric and IOTA."
+          "bio": "Jorge Alvarado holds a position as Blockchain Solutions Architect at ELCA. He has 9+ years of international working experience in software engineering, systems administration and architecture; recently focusing on the latest blockchain stacks Ethereum, Hyperledger Fabric and IOTA.",
+          "portrait": "jorge.alvarado.jpg"
         }
       ]
     }
