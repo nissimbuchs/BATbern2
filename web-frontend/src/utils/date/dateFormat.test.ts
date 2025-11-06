@@ -68,6 +68,20 @@ describe('Date Formatting Utilities with i18n', () => {
       // Expected: "14:30:45"
       expect(result).toBe('14:30:45');
     });
+
+    test('should_throwError_when_invalidDateProvided', () => {
+      const invalidDate = new Date('invalid');
+
+      expect(() => formatTime(invalidDate, 'de')).toThrow('Invalid date provided');
+    });
+
+    test('should_formatTimeWithSecondsInEnglish_when_includeSecondsTrue', () => {
+      const date = new Date(2024, 2, 15, 14, 30, 45); // Local date with seconds
+      const result = formatTime(date, 'en', true);
+
+      // Expected: "2:30:45 PM" (12-hour format with seconds)
+      expect(result).toBe('2:30:45 PM');
+    });
   });
 
   describe('formatDateTime', () => {
@@ -85,6 +99,12 @@ describe('Date Formatting Utilities with i18n', () => {
 
       // Expected: "March 15, 2024, 2:30 PM"
       expect(result).toBe('March 15, 2024, 2:30 PM');
+    });
+
+    test('should_throwError_when_invalidDateProvided', () => {
+      const invalidDate = new Date('invalid');
+
+      expect(() => formatDateTime(invalidDate, 'de')).toThrow('Invalid date provided');
     });
   });
 
@@ -114,6 +134,21 @@ describe('Date Formatting Utilities with i18n', () => {
 
       // Expected: "vor etwa 5 Stunden" (date-fns rounds 4.5 hours to 5)
       expect(result).toBe('vor etwa 5 Stunden');
+    });
+
+    test('should_throwError_when_invalidDateProvided', () => {
+      const invalidDate = new Date('invalid');
+
+      expect(() => formatRelativeTime(invalidDate, 'de')).toThrow('Invalid date provided');
+    });
+
+    test('should_useCurrentTime_when_baseDateNotProvided', () => {
+      // Create a date that's 1 hour ago
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      const result = formatRelativeTime(oneHourAgo, 'de');
+
+      // Should include "vor" (ago) and "Stunde" (hour)
+      expect(result).toMatch(/vor.*Stunde/);
     });
   });
 
@@ -146,6 +181,22 @@ describe('Date Formatting Utilities with i18n', () => {
   });
 
   describe('Locale fallback behavior', () => {
+    test('should_useDefaultLocale_when_nullLocaleProvided', () => {
+      const date = new Date('2024-03-15T14:30:00Z');
+      const result = formatDate(date, '');
+
+      // Should use German (default) format
+      expect(result).toMatch(/15.*März.*2024|15\.03\.2024/);
+    });
+
+    test('should_useDefaultLocale_when_uppercaseLocaleProvided', () => {
+      const date = new Date('2024-03-15T14:30:00Z');
+      const result = formatDate(date, 'DE'); // Uppercase
+
+      // Should normalize to lowercase and use German format
+      expect(result).toMatch(/15.*März.*2024|15\.03\.2024/);
+    });
+
     test('should_useDefaultLocale_when_unsupportedLocaleProvided', () => {
       const date = new Date('2024-03-15T14:30:00Z');
       // @ts-expect-error Testing invalid locale
