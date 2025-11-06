@@ -274,5 +274,28 @@ describe('UI Store', () => {
       expect(result.current.notificationDrawerOpen).toBe(false);
       expect(result.current.userMenuOpen).toBe(false);
     });
+
+    test('should_clearLocalStorage_when_resetCalled', () => {
+      const { result } = renderHook(() => useUIStore());
+
+      // Set some state that persists to localStorage
+      act(() => {
+        result.current.setLocale('en');
+        result.current.setSidebarCollapsed(true);
+      });
+
+      // Verify localStorage has values
+      expect(localStorage.getItem('batbern-ui-locale')).toBeTruthy();
+      expect(localStorage.getItem('batbern-ui-sidebar')).toBeTruthy();
+
+      // Reset
+      act(() => {
+        result.current.reset();
+      });
+
+      // Verify localStorage is cleared
+      expect(localStorage.getItem('batbern-ui-locale')).toBeNull();
+      expect(localStorage.getItem('batbern-ui-sidebar')).toBeNull();
+    });
   });
 });
