@@ -52,7 +52,7 @@ export class EventManagementStack extends cdk.Stack {
           JPA_DDL_AUTO: 'none', // Let Flyway handle all schema management
           // S3 configuration for event theme images (Story 2.5.3a)
           ...(props.contentBucket && {
-            S3_CONTENT_BUCKET_NAME: props.contentBucket.bucketName,
+            AWS_S3_BUCKET_NAME: props.contentBucket.bucketName,
           }),
           ...(props.cloudFrontDistribution && {
             CLOUDFRONT_DOMAIN: `https://${props.cloudFrontDistribution.distributionDomainName}`,
