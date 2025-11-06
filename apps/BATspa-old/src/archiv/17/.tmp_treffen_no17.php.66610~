@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<head>
+<link rel="SHORTCUT ICON" href="/favicon.ico">
+<title>Berner-Architekten-Treffen</title>
+<link rel="stylesheet" href="/bat.css" type="text/css">
+</head>
+
+<body>
+<div id="lftBar"> 
+	<img src="/bilder/balken.jpg" alt="BAT Balken">
+</div>
+<div id="lftBarImg"> 
+	<img src="/bilder/bag_bild_5.jpg" alt="BAT Logo">
+</div>
+<div id="ebene0"> 
+  <div id="ebene1"> 
+	<?php 
+	  include("../../kopfleiste.inc");
+	?>
+    <div id="ebene2"> 
+      <div id="ebene3"> 
+        <div id="main"> 
+          <br>
+	  <div class="ueberschrift">Das 16. BAT Architekturforum im R&uuml;ckblick</div><br>
+	  <div class="text">
+Das 16. Berner Architekturforum stand ganz unter dem Thema Trends in der Informatik-Sicherheit. Nach einer Motivation von Prof. Haemmerli,
+dass Sicherheit heute aktueller denn je ist und einem sch&ouml;nen Ueberblick &uuml;ber Sicherheit und einem kurzen Einblick in die Forschung dessen
+Projekt Parcifal), haben wir einen Einblick in den Einsatz von SuisseID und Axsionics erhalten. Daneben haben
+Vertreterinnen und Vertreter von Berner Firmen aufgezeigt, welche Aspekte des Themas "Informatik-Sicherheit"
+				in ihrem Umfeld von Bedeutung sind und wie sie Informatik-Sicherheit in ihrer Praxis umsetzen.</p>
+	          </div></br>
+
+          <div class="ueberschrift">Impressionen</div><br>
+          <div class="text"><img src="16-1.jpg" /><img src="16-2.jpg" /><img src="16-3.jpg" /><img src="16-4.jpg" /><img src="16-5.jpg" /><img src="16-6.jpg" /></div><br>
+
+          <div class="ueberschrift">Downloads</div><br>
+          <table>	
+            <tr>
+              <td class="right">&nbsp;</td>
+		  <td class="right">Programmheft</td>
+		  <td class="right"><a target="_blank" href="BAT_No16.pdf"><img src="../../bilder/pdf.jpg" /></a></td>
+            </tr>
+            <tr>
+            	<td>&nbsp;</td>
+            </tr>
+            <tr>
+              <td class="right">Prof. Beat H&auml;mmerli, Hochschule Luzern</td>
+              <td class="right">Herausforderungen der Informationssicherheit<br>
+				  Security Workshop: Wo die Verletzlichkeiten lauern (eigenen Laptop mitbringen)</td>
+		      <td class="right"><a target="_blank" href="1_BAT16_Haemmerli.pdf"><img src="../../bilder/pdf.jpg" /></a></td>
+            </tr>
+            <tr>
+              <td class="right">Urs B&uuml;rge, Urs B&uuml;rge Beratung GmbH</td>
+              <td class="right">Die SuisseID f&uuml;r Identit&auml;ts- und Funktionsnachweis</td>
+		      <td class="right"><a target="_blank" href="2_BAT16_SuisseID.pdf"><img src="../../bilder/pdf.jpg" /></a></td>
+            </tr>
+            <tr>
+              <td class="right">Thomas Lenggenhager, SWITCH</td>
+              <td class="right">AAI - Die Authentifizierungs- und Autorisierungs- Infrastruktur der Schweizer Hochschulen</td>
+		      <td class="right"><a target="_blank" href="3_BAT16_SWITCHaai .pdf"><img src="../../bilder/pdf.jpg" /></a></td>
+            </tr>
+            <tr>
+              <td class="right">Reto Inversini, Thierry Perroud, BIT</td>
+              <td class="right">Sicherheits- und Architekturkonformit&auml;t in Projekten</td>
+		      <td class="right"><a target="_blank" href="4_BAT16_Architektur_Sicherheit_BIT.pdf"><img src="../../bilder/pdf.jpg" /></a></td>
+	            </tr>
+            <tr>
+              <td class="right">Markus Siffert, PostFinance</td>
+              <td class="right">Branchenkonforme IT-Sicherheit</td>
+		      <td class="right"><a target="_blank" href="5_BAT16_branchenkonforme_IT-Sicherheit.pdf"><img src="../../bilder/pdf.jpg" /></a></td>
+            </tr>
+            <tr>
+              <td class="right">Michael Held, HP Banking Service Center Bern</td>
+              <td class="right">IBIS3G Security (applikatorische Sicht)</td>
+		      <td class="right"><a target="_blank" href="6_BAT16_IBIS3G_Security.pdf"><img src="../../bilder/pdf.jpg" /></a></td>
+            </tr>
+            <tr>
+              <td class="right">Stefan Wyss, BEKB und Alain Rollier, Axsionics</td>
+              <td class="right">Innovative Bankenprodukte ben&ouml;tigen eine sichere Technologieumgebung</td>
+		      <td class="right"><a target="_blank" href="7_AXSionics_im_E-Banking_IT.pdf"><img src="../../bilder/pdf.jpg" /></a></td>
+            </tr>
+            	<td>&nbsp;</td>
+            </tr>
+            <tr>
+              <td class="right">Thomas Goetz</td>
+              <td class="right">Moderation</td>
+              <td class="right"><a target="_blank" href="0_BAT_16_moderation.pdf"><img src="../../bilder/pdf.jpg" /></a></td>
+            </tr>
+
+            <tr>
+            </tr>
+           </table>
+
+	<div id="fussleiste">
+	  <a href="http://www.bkw-fmb.ch" target="_blank"><img src="/bilder/logo_bkw.jpg" alt="BKW FMB Energie AG" border="0"/></a>
+	  <a href="http://www.mobi.ch" target="_blank"><img src="/bilder/mobi_logo.jpg" alt="Die Mobiliar" border="0"/></a>
+	  <a href="http://www.postfinance.ch" target="_blank"><img src="/bilder/postfinance_logo.jpg" alt="PostFinance" border="0"/></a>
+	  <a href="http://www.rtc.ch" target="_blank"><img src="/bilder/rtc_logo.gif" alt="RTC AG" border="0"/></a>
+	  <a href="http://www.sbb.ch" target="_blank"><img src="/bilder/logo-sbb.gif" alt="SBB CFS FFS" border="0"/></a>
+	  <a href="http://www.iam.unibe.ch/alumni" target="_blank"><img src="/bilder/alumni_logo.jpg" alt="IAM Alumni" border="0"/></a>
+	</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
