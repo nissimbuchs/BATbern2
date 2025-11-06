@@ -8,8 +8,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication
 @ComponentScan(basePackages = {"ch.batbern.events", "ch.batbern.shared"})
-@EnableJpaRepositories(basePackages = {"ch.batbern.events.repository", "ch.batbern.companyuser.repository"})
-@EntityScan(basePackages = {"ch.batbern.events.domain", "ch.batbern.companyuser.domain"})
+@EnableJpaRepositories(basePackages = {"ch.batbern.events.repository"})
+@EntityScan(basePackages = {"ch.batbern.events.domain"})
 public class EventManagementApplication {
 
     public static void main(String[] args) {

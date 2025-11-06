@@ -1,0 +1,170 @@
+package ch.batbern.events.client.impl;
+
+import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.dto.UserProfileDTO;
+import ch.batbern.events.exception.UserNotFoundException;
+import ch.batbern.events.exception.UserServiceException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestTemplate;
+
+/**
+ * Implementation of UserApiClient using Spring RestTemplate.
+ *
+ * Communicates with the User Management Service REST API to retrieve user data.
+ * Replaces direct database access to user_profiles table.
+ *
+ * Features:
+ * - JWT token propagation from incoming requests
+ * - Aggressive caching (15min TTL) for performance
+ * - Fail-fast error handling
+ * - Comprehensive logging
+ */
+@Component
+@RequiredArgsConstructor
+@Slf4j
+public class UserApiClientImpl implements UserApiClient {
+
+    private final RestTemplate restTemplate;
+
+    @Value("${user-service.base-url}")
+    private String userServiceBaseUrl;
+
+    /**
+     * Get user profile by username.
+     *
+     * Cached for 15 minutes to minimize API calls.
+     *
+     * @param username User's username
+     * @return User profile data
+     * @throws UserNotFoundException if user not found
+     * @throws UserServiceException if API communication fails
+     */
+    @Override
+    @Cacheable(value = "userApiCache", key = "#username")
+    public UserProfileDTO getUserByUsername(String username) {
+        log.debug("Fetching user profile for username: {}", username);
+
+        String url = userServiceBaseUrl + "/api/v1/users/" + username;
+
+        try {
+            HttpHeaders headers = createHeadersWithJwtToken();
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+
+            ResponseEntity<UserProfileDTO> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    request,
+                    UserProfileDTO.class
+            );
+
+            UserProfileDTO user = response.getBody();
+            log.debug("Successfully fetched user profile for username: {}", username);
+            return user;
+
+        } catch (HttpClientErrorException.NotFound e) {
+            log.warn("User not found: {}", username);
+            throw new UserNotFoundException(username, e);
+
+        } catch (HttpClientErrorException e) {
+            log.error("Client error fetching user {}: {} - {}", username, e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "Client error fetching user: " + username,
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (HttpServerErrorException e) {
+            log.error("Server error from User Management Service for user {}: {} - {}",
+                    username, e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "User Management Service error for user: " + username,
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (ResourceAccessException e) {
+            log.error("Network error connecting to User Management Service for user {}: {}",
+                    username, e.getMessage());
+            throw new UserServiceException(
+                    "Failed to connect to User Management Service for user: " + username,
+                    e
+            );
+
+        } catch (Exception e) {
+            log.error("Unexpected error fetching user {}: {}", username, e.getMessage(), e);
+            throw new UserServiceException(
+                    "Unexpected error fetching user: " + username,
+                    e
+            );
+        }
+    }
+
+    /**
+     * Check if a user exists by username.
+     *
+     * Cached for 15 minutes to minimize API calls.
+     *
+     * @param username User's username
+     * @return true if user exists, false otherwise
+     * @throws UserServiceException if API communication fails
+     */
+    @Override
+    @Cacheable(value = "userApiCache", key = "#username", unless = "#result == false")
+    public boolean validateUserExists(String username) {
+        log.debug("Validating user exists: {}", username);
+
+        try {
+            getUserByUsername(username);
+            return true;
+        } catch (UserNotFoundException e) {
+            log.debug("User does not exist: {}", username);
+            return false;
+        }
+    }
+
+    /**
+     * Create HTTP headers with JWT token propagated from SecurityContext.
+     *
+     * Extracts the JWT token from the current security context and adds it
+     * to the Authorization header for service-to-service communication.
+     *
+     * @return HttpHeaders with Authorization Bearer token
+     */
+    private HttpHeaders createHeadersWithJwtToken() {
+        HttpHeaders headers = new HttpHeaders();
+
+        try {
+            Object principal = SecurityContextHolder.getContext()
+                    .getAuthentication()
+                    .getPrincipal();
+
+            if (principal instanceof Jwt jwt) {
+                String token = jwt.getTokenValue();
+                headers.set("Authorization", "Bearer " + token);
+                log.trace("JWT token propagated to User Management Service");
+            } else {
+                log.warn("No JWT token found in SecurityContext, principal type: {}",
+                        principal != null ? principal.getClass().getSimpleName() : "null");
+            }
+
+        } catch (Exception e) {
+            log.warn("Failed to extract JWT token from SecurityContext: {}", e.getMessage());
+            // Continue without token - let the User Management Service handle authorization
+        }
+
+        return headers;
+    }
+}
