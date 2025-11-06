@@ -24,6 +24,19 @@ import { getDbClient } from '../../../lib/lambda/triggers/common/database';
 jest.mock('pg');
 jest.mock('../../../lib/lambda/triggers/common/database');
 
+// Mock CloudWatch client to avoid dynamic import issues
+jest.mock('@aws-sdk/client-cloudwatch', () => {
+  const mockSend = jest.fn();
+  // @ts-ignore - Mock return value for CloudWatch metrics
+  mockSend.mockResolvedValue({});
+  return {
+    CloudWatchClient: jest.fn().mockImplementation(() => ({
+      send: mockSend,
+    })),
+    PutMetricDataCommand: jest.fn(),
+  };
+});
+
 // Test data builders
 function createPreTokenGenerationEvent(overrides: Partial<PreTokenGenerationTriggerEvent> = {}): PreTokenGenerationTriggerEvent {
   return {
@@ -127,7 +140,7 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
 
       // Assert
       expect(mockDbClient.query).toHaveBeenCalledWith(
-        expect.stringContaining('SELECT DISTINCT ra.role'),
+        expect.stringContaining('SELECT u.username, ra.role'),
         expect.arrayContaining(['a1b2c3d4-5678-90ab-cdef-EXAMPLE11111'])
       );
       expect(mockDbClient.release).toHaveBeenCalled();
@@ -147,9 +160,9 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       // Act
       await handler(event, context, () => {});
 
-      // Assert - Query should fetch from role_assignments (all roles are active)
+      // Assert - Query should join user_profiles with role_assignments (all roles are active)
       expect(mockDbClient.query).toHaveBeenCalledWith(
-        expect.stringContaining('FROM role_assignments'),
+        expect.stringContaining('LEFT JOIN role_assignments'),
         expect.anything()
       );
     });
@@ -184,9 +197,9 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       // Act
       await handler(event, context, () => {});
 
-      // Assert - Query should join user_profiles table by cognito_user_id
+      // Assert - Query should select from user_profiles and join role_assignments by user_id
       expect(mockDbClient.query).toHaveBeenCalledWith(
-        expect.stringContaining('JOIN user_profiles'),
+        expect.stringContaining('FROM user_profiles'),
         expect.arrayContaining(['a1b2c3d4-5678-90ab-cdef-EXAMPLE11111'])
       );
     });
@@ -207,9 +220,9 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       // Act
       await handler(event, context, () => {});
 
-      // Assert - Query should fetch from role_assignments (all roles are global)
+      // Assert - Query should fetch from user_profiles with left join to role_assignments (all roles are global)
       expect(mockDbClient.query).toHaveBeenCalledWith(
-        expect.stringContaining('FROM role_assignments'),
+        expect.stringContaining('LEFT JOIN role_assignments'),
         expect.anything()
       );
     });
