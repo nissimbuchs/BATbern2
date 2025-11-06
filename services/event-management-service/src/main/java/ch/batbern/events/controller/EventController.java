@@ -480,17 +480,18 @@ public class EventController {
         event.setTitle(request.getTitle());
 
         // Validate that the new event number is not already in use by another event
-        if (!request.getEventNumber().equals(event.getEventNumber())) {
+        // Only update eventNumber if provided in request (null-safe check)
+        if (request.getEventNumber() != null && !request.getEventNumber().equals(event.getEventNumber())) {
             Optional<Event> existingEvent = eventRepository.findByEventNumber(request.getEventNumber());
             if (existingEvent.isPresent() && !existingEvent.get().getId().equals(event.getId())) {
                 throw new BusinessValidationException("Event number " + request.getEventNumber() + " is already in use by event " + existingEvent.get().getEventCode());
             }
+            event.setEventNumber(request.getEventNumber());
+            // Regenerate eventCode when eventNumber changes
+            String newEventCode = "BATbern" + request.getEventNumber();
+            event.setEventCode(newEventCode);
+            log.info("Event number updated to {} via PUT, regenerated eventCode to: {}", request.getEventNumber(), newEventCode);
         }
-        event.setEventNumber(request.getEventNumber());
-        // Regenerate eventCode when eventNumber changes
-        String newEventCode = "BATbern" + request.getEventNumber();
-        event.setEventCode(newEventCode);
-        log.info("Event number updated to {} via PUT, regenerated eventCode to: {}", request.getEventNumber(), newEventCode);
         event.setDate(parseDate(request.getDate()));
         event.setRegistrationDeadline(request.getRegistrationDeadline() != null ? parseDate(request.getRegistrationDeadline()) : null);
         event.setVenueName(request.getVenueName());
