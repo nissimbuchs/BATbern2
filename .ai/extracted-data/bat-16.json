@@ -1,0 +1,103 @@
+{
+  "bat": 16,
+  "presentations": [
+    {
+      "title": "Herausforderungen der Informationssicherheit",
+      "abstract": "Nach einer kurzen Einführung und Definition der Informationssicherheit werden die wesentlichsten Merkmale und Spannungsfelder der IT-Sicherheit aufgezeigt. Anhand von E-Banking wird ein praktisches Beispiel der Komplexität der Aufgabe gegeben, wenn moderne 'Drive by Download' und 'Phishing' bekämpft werden muss. Ein Ausblick auf die aktuellen und künftigen Herausforderungen anhand der Projektergebnisse der EU finanzierten Studie über den Handlungsbedarf in Finanz IT-Systemen rundet den Vortrag ab.",
+      "speakers": [
+        {
+          "name": "Prof. Dr. Bernhard Hämmerli",
+          "company": "Hochschule Luzern, Technik & Architektur",
+          "bio": "Professor & Leiter Cisco Akademie, Präsident Schweizer Informatikgesellschaft / CEO Acris GmbH. Dr. Bernhard Hämmerli is professor for Networking and Information Security. He drives a master program \"IT-Network Manager\" with courses from the Cisco Academy Program CCNA, CCAN-Security and CCNP. His main interest in research is information security and critical information infrastructure protection CIIP. He has participated in three EU FP CIIP research programs the last was on Protection and Trust in Financial Infrastructures. He is editor of the European CIIP Newsletter called ECN. In associations he serves as president of the Swiss Informatics Society and as chair of scientific and international affairs in the Swiss Information Security Society ISSS. In 2007 he was assigned as seconded national expert from Switzerland to Joint Research Centre of the European Commission. He is now chairing the CIP task force at the centre for European Policy Studies CEPS in Brussels. In consulting his corporation Acris offers service in the same field."
+        }
+      ]
+    },
+    {
+      "title": "Die SuisseID für Identitäts- und Funktionsnachweis",
+      "abstract": "Mit der SuisseID (www.SuisseID.ch) steht ab Mai 2010 ein standardisiertes Werkzeug für rechtsgültige elektronische Signatur, Identitätsnachweis und – künftig – für verschiedene Arten von Funktionsnachweisen zur Verfügung. Sie soll wesentlich dazu beitragen, dass der elektronische Geschäftsverkehr in der Schweiz sich endlich verbreitet und auch in rechtlich und technisch kritische Bereiche Eingang findet. Basierend auf der Tatsache, dass im geschäftlichen Verkehr oft nicht oder nicht nur die persönliche Identität massgeblich ist, sondern die Funktion oder Rolle, die der Kommunikationspartner inne hat, enthält der SuisseID-Standard nebst den beiden standardisierten Zertifikaten für Signatur und Authentisierung insbesondere auch ein Protokoll für den Nachweis von beliebigen Eigenschaften, die in einem Register geführt werden. Damit lassen sich Funktionen, wie z.B. die Zeichnungsberechtigung, berufliche Befähigungen, wie z.B. die Zulassung als Arzt oder Notar und auch andere Eigenschaften über das Netz ‚beweisen'. Im Vortrag werden kurz Entstehung und Aufbau der SuisseID vorgestellt, bevor heutige und künftige Nutzungsmöglichkeiten vorgestellt und diskutiert werden.",
+      "speakers": [
+        {
+          "name": "Urs Bürge",
+          "company": "Urs Bürge Beratung GmbH",
+          "bio": "Inhaber Urs Bürge Beratung GmbH für Informatik und Geschäftsprozess-Management in der öffentlichen Verwaltung. Seit Herbst 2006 selbständiger Berater mit Spezialisierung in den Bereichen eGovernment, eJustice, Digitale Identitäten. Früher IT-Führungsaufgaben im Bundesamt für Justiz, bei Unisys und im Generalsekretariat EJPD als CIO EJPD."
+        }
+      ]
+    },
+    {
+      "title": "AAI - Die Authentifizierungs- und Autorisierungs-Infrastruktur der Schweizer Hochschulen",
+      "abstract": "In enger Zusammenarbeit mit den Schweizer Hochschulen hat SWITCH eine 'Authentifizierungs- und Autorisierungs-Infrastruktur' (AAI) aufgebaut. Heute betreiben 40 Institutionen aus dem akademischen Umfeld einen Identity Provider. Bei Bedarf erhalten deren ca. 300'000 Benutzer über Web Single-Sign-On und Federated Identity dank AAI Zugang zu einem der über 400 beteiligten Service Provider. Einige dieser Service Provider werden durch ausländische Partner betrieben. Diese 'SWITCHaai Federation' basiert auf der SAML Technologie (Security Assertion Markup Language) und verwendet primär die Open Source Software Shibboleth. SWITCHaai diente international als Vorbild, so dass heute in den meisten europäischen Ländern im akademischen Umfeld eine entsprechende Federation existiert. Der Vortrag zeigt auf, weshalb sich die Universitäten entschlossen, diese Infrastruktur aufzubauen. Wie funktioniert Web SSO mit SAML? Wie werden die über 400 Komponenten skalierend verwaltet? Den Abschluss bildet ein Ausblick auf die Pläne für 'Interfederation' im Rahmen eines EU Projekts, d.h. z.B. Zugriff eines Benutzers aus einer nationalen Federation auf einen Service Provider in einer anderen nationalen Federation.",
+      "speakers": [
+        {
+          "name": "Thomas Lenggenhager",
+          "company": "SWITCH",
+          "bio": "Projektleiter SWITCHaai. Thomas Lenggenhager leitet seit 2007 das SWITCHaai Projekt. Seit der Projekt-Idee 1999 ist er in die Planung und Umsetzung von SWITCHaai involviert. Nach dem Informatik-Ingenieur Studium an der ETH Zürich begann er 1988 bei der erst kurz zuvor gegründeten Stiftung SWITCH als Software Ingenieur. Vor AAI beschäftigte er sich mit Themen wie E-Mail (X.400), Directories (X.500, LDAP), IP Netzwerke und DNS sowie Security (CERT)."
+        }
+      ]
+    },
+    {
+      "title": "Sicherheits- und Architekturkonformität in Projekten",
+      "abstract": "IT-Sicherheit und IT-Unternehmensarchitektur sind beides ordnende Elemente in der IT-Landschaft einer Unternehmung, welche der Lösungsfindung für konkrete Probleme zuarbeiten, diese aber nicht vorwegnehmen sollen. Im Bundesamt für Informatik und Telekommunikation arbeiten die Unternehmensarchitekten sehr eng mit den Security Architekten zusammen. Es wurde ein durchgehender Prozess definiert, wie Projekte von der Voranalyse bis zur Einführung begleitet werden. Dazu gibt es verschiedene Meilensteine, die durch Konformitätsprüfungen für die Architektur und für die Sicherheit abgeschlossen werden. Diese Prüfungen basieren beide auf einem Fragenkatalog, den das Projekt beantwortet, sowie auf den gemäss der Projektführungsmethode üblichen Lieferobjekten. Diese werden beurteilt und führen zu einem Architektur- und einem Sicherheitsbericht. Der zweite wichtige Berührungspunkt zwischen Architektur und Sicherheit betrifft das Risikomanagement. Das Ziel ist es, bereits Anforderungen der Sicherheit in die Architekturbausteine aufzunehmen, sowie Aussagen zu Risiken der einzelnen Lösungsbausteine zu machen. Dadurch enthalten diese beiden Kataloge die zentralen Informationen bei der Lösungsfindung für Projekte, aber auch bei der Beurteilung des Zustandes der Informatiklandschaft im BIT.",
+      "speakers": [
+        {
+          "name": "Thierry Perroud",
+          "company": "Bundesamt für Informatik und Telekommunikation BIT",
+          "bio": "IT-Unternehmensarchitekt. Geboren 1965 in Genf, hat nach einem Musikstudium an der Hochschule der Künste in Bern den Master of Science in Computer Science an der Universität Bern bei Prof. Dr. H. Bunke erhalten. Nach einer zweijährigen Selbständigkeit im Bereich IT-Sicherheit war er seit 2002 im Bundesamt für Informatik und Telekommunikation als Security Architekt tätig. Seit 2006 ist er als IT-Unternehmensarchitekt, sowohl als Leiter des Architekturboards, wie auch als Bereichsleiter IT-Unternehmensarchitektur, im selben Bundesamt tätig und damit verantwortlich für die Gestaltung und die Weiterentwicklung der IT-Unternehmensarchitektur."
+        },
+        {
+          "name": "Reto Inversini",
+          "company": "Bundesamt für Informatik und Telekommunikation BIT",
+          "bio": "Security Architekt. Geboren am 17. November 1971 lebt und arbeitet Reto Inversini in Bern. Während und nach dem Studium der Geographie / Klimatologie arbeitete er als System- und Netzwerk-Ingenieur unter anderem für Amnesty International. Seit 2002 ist er im Bundesamt für Informatik und Telekommunikation als Security Architekt für Sicherheitsprüfungen und das Risikomanagement verantwortlich. Als Mitglied des Architekturboards sowie anlässlich einer Diplomarbeit beschäftigte er sich intensiv mit der Thematik der Unternehmensarchitektur."
+        }
+      ]
+    },
+    {
+      "title": "Security Workshop: Wo die Verletzlichkeiten lauern",
+      "abstract": "Mit Ihrem eigenen Laptop werden sie in die Suche nach Verletzlichkeiten eingeführt. Dabei stossen Sie auf systemische Verletzlichkeiten, weil Bruchstücke von Informationen zu einem Ganzen zusammengeführt werden können: Eine praktische kleine Awareness Schulung. Ausserdem erfahren Sie mehr über die konkrete Angriffsplanung.",
+      "speakers": [
+        {
+          "name": "Prof. Dr. Bernhard Hämmerli",
+          "company": "Hochschule Luzern, Technik & Architektur",
+          "bio": "Professor & Leiter Cisco Akademie. Betreuung durch Nicola Lardieri, Thomas Hospenthal und Philippe Schnyder."
+        }
+      ]
+    },
+    {
+      "title": "Branchenkonforme IT-Sicherheit",
+      "abstract": "Die IT‐Sicherheit ist Bestandteil der Informationssicherheit. Damit werden Eigenschaften von informationsverarbeitenden und ‐lagernden Systemen bezeichnet, welche die Sicherheitsanforderungen u.a. an die Vertraulichkeit, Verfügbarkeit und Integrität sicherstellen. Informationssicherheit dient zum Schutz vor Gefahren, der Vermeidung von Schäden und der Minimierung von Risiken. PostFinance orientiert sich in der Praxis an der 'ISO Standard‐Reihe 2700x' zur Sicherstellung der Informationssicherheit. Die Steuerung (Control) der IT Sicherheit ist in das Multicompliance-Framework von PostFinance eingebunden. Ein funktionierendes Security Management System (ISMS) nach ISO/IEC 27001:2005 verlangt eine jährliche Überprüfung der Schutzobjekte. Das aktuelle Setup ermöglicht eine schlanke Durchführung der Umsetzungsgraderhebung. Der modulare Aufbau ermöglicht, dass bei Bedarf neue Sicherheitsanforderungen (bspw. aus PCI) im bestehendem Framework integriert und erweitert werden können. Mittels periodischem Reporting und Initiierung geeigneter Massnahmen soll die Anzahl Schwachstellen risikobasiert reduziert werden können. Der Vortrag zeigt die wichtigsten Inhalte zur Überprüfung und Schwachstellenminimierung auf. Abgerundet wird dieser Praxisbericht durch das aufzeigen von 'lessons learned' sowie der kritischen Erfolgsfaktoren um eine branchenkonforme IT-Sicherheit zu erreichen.",
+      "speakers": [
+        {
+          "name": "Markus Siffert",
+          "company": "PostFinance",
+          "bio": "Sicherheitsbeauftragter Informatik PostFinance. Herr Siffert ist seit dem Januar 2007 in der IT-Sicherheit PF zuständig für Erstellung und Pflege des IT-Sicherheits-Frameworks, Planung und Durchführung von Sicherheitsaudits und berät die IT-Architektur PF in Sicherheitsfragen. Er ist diplomierter Informatiker und Absolvent des MAS Informationssicherheit. Als Berater, Projektleiter und Linienvorgesetzter hat Herr Siffert in den vergangenen 10 Jahren bei verschiedenen Unternehmen den Aufbau und Betrieb von Informationssicherheitsmanagementsystemen und -lösungen massgeblich mitgestaltet."
+        }
+      ]
+    },
+    {
+      "title": "Innovative Bankenprodukte benötigen eine sichere Technologieumgebung",
+      "abstract": "Um wie die BEKB | BCBE innovative Produkte am Markt zu positionieren, wird eine sichere und flexible Technologieumgebung vorausgesetzt. Die Herausforderungen, denen sich eine Universalbank wie die BEKB | BCBE im Online-Bereich stellen muss, ist den richtigen Kompromiss zwischen Sicherheit, Komfort und Lifestyle zu finden – bereits heute für die Bedürfnisse von morgen! In unserem Vortrag wollen wir zeigen, welche Gründe zu einem Entscheid zugunsten des Internet Passport von AXSionics geführt haben, welche Risiken und Chancen damit adressiert werden und wie die Lösung dann konkret umgesetzt wurde. In einem zweiten Teil wollen wir generell auf die Architektur und die Charakteristik der Sicherheitslösung von AXSionics eingehen – und dabei die Fragen rund um Biometrie und Privatsphäre sowie Servicemodells erörtern.",
+      "speakers": [
+        {
+          "name": "Stefan Wyss",
+          "company": "BEKB | BCBE",
+          "bio": "Verantwortlicher für die Weiterentwicklung des E-Bankings, BEKB | BCBE. Stefan Wyss ist seit 2001 für die BEKB | BCBE im Bereich des E-Bankings tätig. Seit über 25 Jahren befasst sich Herr Wyss mit der Entwicklung von Elektronik und Software im Bereich der Industrie, Telekommunikation und Banken. Stefan Wyss hat an der Ingenieurschule Burgdorf und am Worcester Polytechnic Institute in Worcester, Massachusetts in Elektrotechnik abgeschlossen."
+        },
+        {
+          "name": "Alain Rollier",
+          "company": "AXSionics",
+          "bio": "Gründer und Verantwortlicher für Sales und Marketing, AXSionics. Alain Rollier ist zusammen mit Lorenz Müller, Marcel Jacomet und Roger Cattin Gründer der AXSionics AG. Das mehrfach ausgezeichnete Unternehmen erhielt unter anderem den Swiss Technology Award 2007, European Identity Award 2009 und ist Finalist in der Global Security Challenge 2010. Zuvor war Alain Rollier fünf Jahre in verschiedenen Management-Positionen bei der Bieler Mikron Technology Group AG in Sales und Marketing tätig. Davor arbeitete er im internationalen Verkauf bei Sulzer Burckhardt und Sulzer Turbo in den USA und im Mittleren Osten. Rollier hat an der Ingenieurschule in Biel Maschinenbau sowie den Diplomstudiengang 'Management von Wachstum in Technologie-Unternehmen (TU-HSG)' abgeschlossen."
+        }
+      ]
+    },
+    {
+      "title": "IBIS3G Security (applikatorische Sicht)",
+      "abstract": "Die Bankenplattform IBIS3G bildet die sichere Basis für Bankgeschäfte. Neben den hohen Anforderungen des Bankgeschäfts muss die Architektur von IBIS3G Besonderheiten berücksichtigen, wie mehrere Mandanten oder die speziellen Sicherheitsanforderungen der bankübergreifenden Verarbeitung. Die Realisierung mit den jeweils besten auf dem Markt erhältlichen Applikationen (Prinzip Best-of-Breed) führt zudem zu einem grossen Integrationsbedarf von neuen und bestehenden Systemen. Dieser Ansatz führt damit zu weiteren Anforderungen an Identity- und Access-Management sowie Integrationssecurity. Diese Präsentation zeigt die umgesetzten Securitylösungen, welche die grossen Anforderungen lösen.",
+      "speakers": [
+        {
+          "name": "Michael Held",
+          "company": "HP BSC (Banking Service Center)",
+          "bio": "Leiter IT Architektur, HP BSC (Banking Service Center). Michael Held ist seit 2007 Leiter der IT Architektur und verantwortlich für die Weiterentwicklung der GUI- und Middleware-Frameworks und Generatoren. Er hat jahrelange Erfahrung mit IT Architekturen und Softwareentwicklung im Banken- und Versicherungsumfeld. An der Universität Bern hat er ein Diplom der Informatik mit der Spezialisierung in Software Composition erworben. Zusätzlich verfügt er über vertiefte berufliche Erfahrungen in Architektur-Tätigkeiten, speziell bei der Erstellung von Strategien, Beratungen in Projekten und Aufbau von Infrastrukturen."
+        }
+      ]
+    }
+  ]
+}
