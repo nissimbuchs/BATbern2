@@ -129,6 +129,15 @@ describe('Company API Client', () => {
         ).rejects.toThrow(/(Network Error|status code 500|timeout)/);
       });
     });
+
+    describe('deleteCompany', () => {
+      it('should attempt to delete company', async () => {
+        // Expect network/server/timeout error (not validation error)
+        await expect(companyApiClient.deleteCompany('test-company')).rejects.toThrow(
+          /(Network Error|status code 500|timeout)/
+        );
+      });
+    });
   });
 
   describe('API Structure', () => {
