@@ -110,7 +110,6 @@ public class SessionSpeakerControllerIntegrationTest extends AbstractIntegration
 
         // Create test user DTOs (not persisted - fetched via API)
         testUser1 = UserProfileDTO.builder()
-                .id(UUID.randomUUID())
                 .username("john.doe")
                 .email("john@example.com")
                 .firstName("John")
@@ -121,7 +120,6 @@ public class SessionSpeakerControllerIntegrationTest extends AbstractIntegration
                 .build();
 
         testUser2 = UserProfileDTO.builder()
-                .id(UUID.randomUUID())
                 .username("jane.smith")
                 .email("jane@example.com")
                 .firstName("Jane")
