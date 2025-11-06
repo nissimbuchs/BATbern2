@@ -1,13 +1,14 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SessionUser.SpeakerRole;
 import ch.batbern.events.dto.SessionSpeakerResponse;
+import ch.batbern.events.dto.UserProfileDTO;
+import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
-import ch.batbern.companyuser.domain.User;
-import ch.batbern.companyuser.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,6 +30,8 @@ import static org.mockito.Mockito.*;
 /**
  * Unit tests for SessionUserService with mocked dependencies
  * Story 1.15a.1b: Session-User Many-to-Many Relationship - Task 13
+ *
+ * Updated to use UserApiClient instead of direct database access
  */
 @ExtendWith(MockitoExtension.class)
 class SessionUserServiceTest {
@@ -40,13 +43,13 @@ class SessionUserServiceTest {
     private SessionRepository sessionRepository;
 
     @Mock
-    private UserRepository userRepository;
+    private UserApiClient userApiClient;
 
     @InjectMocks
     private SessionUserService sessionUserService;
 
     private Session testSession;
-    private User testUser;
+    private UserProfileDTO testUser;
     private UUID sessionId;
     private UUID userId;
     private String username;
@@ -67,7 +70,7 @@ class SessionUserServiceTest {
                 .endTime(Instant.now().plusSeconds(3600))
                 .build();
 
-        testUser = User.builder()
+        testUser = UserProfileDTO.builder()
                 .id(userId)
                 .username(username)
                 .email("john.doe@example.com")
@@ -75,6 +78,7 @@ class SessionUserServiceTest {
                 .lastName("Doe")
                 .companyId("GoogleZH")
                 .profilePictureUrl("https://example.com/photo.jpg")
+                .active(true)
                 .build();
     }
 
@@ -82,13 +86,14 @@ class SessionUserServiceTest {
     void should_assignSpeakerToSession_when_validDataProvided() {
         // Given: Valid session and user exist
         when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(testSession));
-        when(userRepository.findByUsername(username)).thenReturn(Optional.of(testUser));
+        when(userApiClient.getUserByUsername(username)).thenReturn(testUser);
         when(sessionUserRepository.existsBySessionIdAndUserId(sessionId, userId)).thenReturn(false);
 
         SessionUser savedSessionUser = SessionUser.builder()
                 .id(UUID.randomUUID())
                 .session(testSession)
                 .userId(userId)
+                .username(username)
                 .speakerRole(SpeakerRole.PRIMARY_SPEAKER)
                 .presentationTitle("Test Presentation")
                 .isConfirmed(false)
@@ -110,6 +115,7 @@ class SessionUserServiceTest {
         SessionUser captured = captor.getValue();
         assertThat(captured.getSession()).isEqualTo(testSession);
         assertThat(captured.getUserId()).isEqualTo(userId);
+        assertThat(captured.getUsername()).isEqualTo(username);
         assertThat(captured.getSpeakerRole()).isEqualTo(SpeakerRole.PRIMARY_SPEAKER);
         assertThat(captured.getPresentationTitle()).isEqualTo("Test Presentation");
         assertThat(captured.isConfirmed()).isFalse();
@@ -141,13 +147,13 @@ class SessionUserServiceTest {
     void should_throwException_when_userNotFound() {
         // Given: Session exists but user does not
         when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(testSession));
-        when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
+        when(userApiClient.getUserByUsername(username)).thenThrow(new UserNotFoundException(username));
 
-        // When/Then: Should throw IllegalArgumentException
+        // When/Then: Should throw UserNotFoundException
         assertThatThrownBy(() -> sessionUserService.assignSpeakerToSession(
                 sessionId, username, SpeakerRole.PRIMARY_SPEAKER, null
         ))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(UserNotFoundException.class)
                 .hasMessageContaining("User not found");
 
         verify(sessionUserRepository, never()).save(any());
@@ -157,7 +163,7 @@ class SessionUserServiceTest {
     void should_throwException_when_duplicateAssignment() {
         // Given: Session and user exist, but speaker already assigned
         when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(testSession));
-        when(userRepository.findByUsername(username)).thenReturn(Optional.of(testUser));
+        when(userApiClient.getUserByUsername(username)).thenReturn(testUser);
         when(sessionUserRepository.existsBySessionIdAndUserId(sessionId, userId)).thenReturn(true);
 
         // When/Then: Should throw IllegalArgumentException
@@ -173,12 +179,13 @@ class SessionUserServiceTest {
     @Test
     void should_removeSpeakerFromSession_when_assignmentExists() {
         // Given: Speaker assignment exists
-        when(userRepository.findByUsername(username)).thenReturn(Optional.of(testUser));
+        when(userApiClient.getUserByUsername(username)).thenReturn(testUser);
 
         SessionUser sessionUser = SessionUser.builder()
                 .id(UUID.randomUUID())
                 .session(testSession)
                 .userId(userId)
+                .username(username)
                 .speakerRole(SpeakerRole.PRIMARY_SPEAKER)
                 .build();
         when(sessionUserRepository.findBySessionIdAndUserId(sessionId, userId))
@@ -194,7 +201,7 @@ class SessionUserServiceTest {
     @Test
     void should_throwException_when_removingNonExistentAssignment() {
         // Given: User exists but no assignment
-        when(userRepository.findByUsername(username)).thenReturn(Optional.of(testUser));
+        when(userApiClient.getUserByUsername(username)).thenReturn(testUser);
         when(sessionUserRepository.findBySessionIdAndUserId(sessionId, userId))
                 .thenReturn(Optional.empty());
 
@@ -209,12 +216,13 @@ class SessionUserServiceTest {
     @Test
     void should_confirmSpeaker_when_assignmentExists() {
         // Given: Speaker assignment exists
-        when(userRepository.findByUsername(username)).thenReturn(Optional.of(testUser));
+        when(userApiClient.getUserByUsername(username)).thenReturn(testUser);
 
         SessionUser sessionUser = SessionUser.builder()
                 .id(UUID.randomUUID())
                 .session(testSession)
                 .userId(userId)
+                .username(username)
                 .speakerRole(SpeakerRole.PRIMARY_SPEAKER)
                 .isConfirmed(false)
                 .build();
@@ -237,12 +245,13 @@ class SessionUserServiceTest {
     @Test
     void should_declineSpeaker_when_assignmentExists() {
         // Given: Speaker assignment exists
-        when(userRepository.findByUsername(username)).thenReturn(Optional.of(testUser));
+        when(userApiClient.getUserByUsername(username)).thenReturn(testUser);
 
         SessionUser sessionUser = SessionUser.builder()
                 .id(UUID.randomUUID())
                 .session(testSession)
                 .userId(userId)
+                .username(username)
                 .speakerRole(SpeakerRole.PRIMARY_SPEAKER)
                 .isConfirmed(false)
                 .build();
@@ -273,31 +282,36 @@ class SessionUserServiceTest {
         SessionUser speaker1 = SessionUser.builder()
                 .id(UUID.randomUUID())
                 .userId(userId)
+                .username(username)
                 .speakerRole(SpeakerRole.PRIMARY_SPEAKER)
                 .isConfirmed(true)
                 .build();
 
         UUID userId2 = UUID.randomUUID();
-        User user2 = User.builder()
+        String username2 = "jane.smith";
+        UserProfileDTO user2 = UserProfileDTO.builder()
                 .id(userId2)
-                .username("jane.smith")
+                .username(username2)
+                .email("jane.smith@example.com")
                 .firstName("Jane")
                 .lastName("Smith")
                 .companyId("MicrosoftBE")
                 .profilePictureUrl("https://example.com/jane.jpg")
+                .active(true)
                 .build();
 
         SessionUser speaker2 = SessionUser.builder()
                 .id(UUID.randomUUID())
                 .userId(userId2)
+                .username(username2)
                 .speakerRole(SpeakerRole.CO_SPEAKER)
                 .isConfirmed(false)
                 .build();
 
         when(sessionUserRepository.findBySessionId(sessionId))
                 .thenReturn(List.of(speaker1, speaker2));
-        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
-        when(userRepository.findById(userId2)).thenReturn(Optional.of(user2));
+        when(userApiClient.getUserByUsername(username)).thenReturn(testUser);
+        when(userApiClient.getUserByUsername(username2)).thenReturn(user2);
 
         // When: Getting session speakers
         List<SessionSpeakerResponse> speakers = sessionUserService.getSessionSpeakers(sessionId);
@@ -338,11 +352,12 @@ class SessionUserServiceTest {
 
         SessionUser speaker1 = SessionUser.builder()
                 .userId(userId)
+                .username(username)
                 .speakerRole(SpeakerRole.PRIMARY_SPEAKER)
                 .build();
 
         when(sessionUserRepository.findAllByEventId(eventId)).thenReturn(List.of(speaker1));
-        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        when(userApiClient.getUserByUsername(username)).thenReturn(testUser);
 
         // When: Getting event speakers
         List<SessionSpeakerResponse> speakers = sessionUserService.getEventSpeakers(eventId);
@@ -356,13 +371,14 @@ class SessionUserServiceTest {
     void should_handleNullPresentationTitle_when_assigning() {
         // Given: Valid session and user, no presentation title
         when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(testSession));
-        when(userRepository.findByUsername(username)).thenReturn(Optional.of(testUser));
+        when(userApiClient.getUserByUsername(username)).thenReturn(testUser);
         when(sessionUserRepository.existsBySessionIdAndUserId(sessionId, userId)).thenReturn(false);
 
         SessionUser savedSessionUser = SessionUser.builder()
                 .id(UUID.randomUUID())
                 .session(testSession)
                 .userId(userId)
+                .username(username)
                 .speakerRole(SpeakerRole.MODERATOR)
                 .presentationTitle(null)
                 .isConfirmed(false)

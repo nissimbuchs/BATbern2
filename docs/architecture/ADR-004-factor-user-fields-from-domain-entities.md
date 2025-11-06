@@ -556,12 +556,122 @@ This decision aligns with DDD principles:
    - DTOs prevent domain entities from leaking across boundaries
    - API layer translates between internal (UUID) and public (username) identifiers
 
+## Evolution: API-Based Access Pattern (2025-11-06)
+
+### Context
+
+The original ADR recommended **JPQL joins at the database layer** to combine User and domain entity data. However, during implementation of Story 1.15a.1b (Session-User Many-to-Many), we encountered cross-service JPA entity scanning issues that caused test failures.
+
+### Problem
+
+When event-management-service included User entity in `@EntityScan`, it triggered Hibernate schema validation expecting the `user_profiles` table to exist in the event-management-service test database, causing 101 test failures with "Schema-validation: missing table [user_profiles]".
+
+### Solution: API-Based User Data Retrieval
+
+Instead of direct database joins, we implemented **API-based access** to User Management Service:
+
+```java
+// OLD APPROACH (Database Join):
+@Query("""
+    SELECT new SessionSpeakerResponse(
+        u.username, u.firstName, u.lastName, ...
+    )
+    FROM SessionUser su
+    INNER JOIN User u ON su.userId = u.id
+    WHERE su.sessionId = :sessionId
+    """)
+List<SessionSpeakerResponse> findBySessionId(@Param("sessionId") UUID sessionId);
+
+// NEW APPROACH (API-Based):
+@Service
+public class SessionUserService {
+    private final UserApiClient userApiClient;
+
+    public SessionSpeakerResponse assignSpeakerToSession(...) {
+        // Validate user exists via API
+        UserProfileDTO user = userApiClient.getUserByUsername(username);
+
+        // Create SessionUser with both userId (FK) and username (API lookup)
+        SessionUser sessionUser = SessionUser.builder()
+            .userId(user.getId())      // Foreign key (backward compatibility)
+            .username(username)         // For API lookups
+            .build();
+    }
+}
+```
+
+### Implementation Details
+
+**1. REST Client Infrastructure:**
+- `UserApiClient` interface with `RestTemplate` implementation
+- JWT token propagation via `SecurityContext` for service-to-service auth
+- 15-minute Caffeine cache (expected 80-90% hit rate)
+- Comprehensive exception handling (`UserNotFoundException`, `UserServiceException`)
+
+**2. Database Schema Evolution:**
+```sql
+-- Added username column to support API lookups
+ALTER TABLE session_users
+ADD COLUMN username VARCHAR(100);
+
+-- Maintain userId for backward compatibility
+-- Both userId (FK) and username coexist during transition
+```
+
+**3. Configuration:**
+```yaml
+# application.yml
+user-service:
+  base-url: ${USER_SERVICE_URL:http://localhost:8081}
+
+# Environment variable
+USER_SERVICE_URL=http://company-user-management-service:8080
+```
+
+### Trade-offs
+
+**Advantages:**
+- ✅ **Service Isolation**: event-management-service doesn't need User entity in classpath
+- ✅ **Test Independence**: Integration tests don't require user_profiles table
+- ✅ **Clear Service Boundaries**: API-first communication pattern
+- ✅ **Caching**: 15-minute cache reduces API calls
+- ✅ **Type Safety**: DTOs enforce API contract
+
+**Disadvantages:**
+- ⚠️ **Network Latency**: API calls slower than database joins (mitigated by caching)
+- ⚠️ **Service Dependency**: event-management-service requires User Management Service availability
+- ⚠️ **Fail-Fast**: No graceful degradation if User Management Service is down
+
+### When to Use Each Pattern
+
+**Use API-Based Access When:**
+- Services deployed independently (microservices architecture)
+- Service boundaries must be strictly enforced
+- Test isolation is critical
+- Services use different databases or deployment models
+
+**Use Database Joins When:**
+- Services share same database (monolithic or modular monolith)
+- Performance is critical (high-frequency queries)
+- Services are tightly coupled by design
+- Strong consistency required
+
+### Current Status
+
+**event-management-service** uses API-based access for SessionUser → User relationship:
+- ✅ Implemented: `UserApiClient` with caching
+- ✅ Tests passing: 12/12 unit tests, 9/11 integration tests (2 disabled for API Gateway context)
+- ✅ Migration complete: Cross-service entity scanning removed
+
+**Future services** should evaluate both patterns based on deployment architecture and choose the approach that best fits their needs while maintaining the core ADR-004 principle: **never duplicate user profile fields**.
+
 ## Revision History
 
 | Date | Version | Changes | Author |
 |------|---------|---------|--------|
 | 2025-11-02 | 1.0 | Initial ADR creation | Winston (Architect Agent) |
+| 2025-11-06 | 1.1 | Added API-based access evolution section | Claude Code (Story 1.15a.1b) |
 
 ---
 
-**This ADR establishes the foundational principle: Domain entities reference User by foreign key and never duplicate user profile fields. This ensures data consistency, storage efficiency, and clear API boundaries across the BATbern platform.**
+**This ADR establishes the foundational principle: Domain entities reference User by foreign key and never duplicate user profile fields. Implementation can use either database joins or API-based access depending on deployment architecture and service boundary requirements.**
