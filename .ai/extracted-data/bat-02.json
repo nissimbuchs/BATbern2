@@ -1,0 +1,43 @@
+{
+  "bat": 2,
+  "presentations": [
+    {
+      "title": "Enterprise Architecture - Herausforderung und Implikationen",
+      "abstract": "Die Art und Weise wie Enterprise Architecture definiert wird ist so verschieden wie die Menschen, die darüber reden und doch haben sie alle etwas gemeinsam: Die Unternehmung. Welche Grundlagen müssen also geschaffen werden, um die Unternehmung als Ganzes zu betrachten - keine reine Business Sicht und keine IT Sicht, denn beides sind nur ein Teil davon. Eine Herausforderung und ein weiter Weg, diese beiden Disziplinen zu vereinigen. Als Beispiel diene hier die Bestrebungen der Credit Suisse - der aktuelle Stand und das weitere Vorgehen",
+      "speakers": [
+        {
+          "name": "Matilda Anello",
+          "company": "Credit Suisse",
+          "bio": "Matilda Anello ist eidg. dipl. Wirtschaftsinformatikerin und als IT Architektin bei der Credit Suisse Group mit Definitionen und Einführung von Methoden und Prozessen im Rahmen der IT Architektur beschäftigt. Zuvor war Matilda Anello unter anderem mehrere Jahre im Versicherungsbereich und im Finanzbereich der Credit Suisse tätig. Sie ist Expertin für die eidg. Diplomprüfung für Wirtschaftsinformatik (Stufe Fachhochschule) und engagiert sich im Weiterbildungsbereich."
+        }
+      ]
+    },
+    {
+      "title": "Enterprise Architecture @ Mobiliar",
+      "abstract": "Die Komplexität der gewachsenen Applikationslandschaft der Mobiliar ist zum einen ein wesentlicher Treiber der IT-Kosten. Zum anderen erschwert sie die Ausnutzung der neuen technischen Möglichkeiten der IT-Bedürfnisse der Fachbereiche. Um diesen Problemen zu begegnen wurde 2001 ein umfassender Architekturansatz (enterprise architecture) implementiert. Der Beitrag erläutert die wesentlichen Artefakte, Layer, Prozesse und Instrumente der Unternehmensarchitektur und beurteilt deren kritische Erfolgsfaktoren.",
+      "speakers": [
+        {
+          "name": "Peter Kummer",
+          "company": "Die Mobiliar",
+          "bio": "Peter Kummer ist als Leiter Architektur verantwortlich für die Entwicklung und Umsetzung der Business-, Applikations-, Technischen- und der Datenarchitektur. Er führt den IT-Strategie-entwicklungsprozess und rapportiert an den CIO. Peter Kummer studierte an der Universität Bern Oekonomie mit Schwerpunkt Wirtschaftsinformatik."
+        }
+      ]
+    },
+    {
+      "title": "Enterprise Architecture PostMail – Ein Erfahrungsbericht",
+      "abstract": "Ziel der Enterprise Architecture PostMail ist es, die Prozesse, Anwendungen, Informationen und Technologien übersichtlich zu verknüpfen und trotz zunehmender Komplexität auch in Zukunft effizient, gezielt und flexibel auf Änderungen zu reagieren. In diesem Vortrag berichten wir über Konzepte und Erfahrungen beim Aufbau und bei der Pflege der Enterprise Architecture PostMail.",
+      "speakers": [
+        {
+          "name": "Beat M. Stöckli",
+          "company": "PostMail",
+          "bio": "Ausbildung als Organisator mit Weiterbildung zum IT-Projektleiter und dipl. Wirtschaftsinformatiker. Langjährige Tätigkeit in entsprechenden Funktionen bei Schweiz. Volksbank, Crédit Suisse, Unisys (Schweiz) AG und RTC AG. Seit 2005 verantwortlich für die Enterprise Architecture PostMail. Besonderes Anliegen ist mir die ganzheitliche Betrachtung von Wechselwirkungen zwischen Prozessen und anwendungsorientierter Informatik."
+        },
+        {
+          "name": "Alain Jacot-Guillarmod",
+          "company": "PostMail",
+          "bio": "Informaticien de gestion, j'ai travaillé dans la réalisation de logiciel dans l'industrie pour ensuite devenir responsable de la documentation en trois langues dans une entreprise de services de progiciels. A la Poste Suisse, j'ai occupé diverses fonctions, de développement, de support, de gestion de projets et d'analyse."
+        }
+      ]
+    }
+  ]
+}

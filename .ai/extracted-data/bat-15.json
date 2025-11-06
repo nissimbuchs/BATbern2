@@ -1,0 +1,38 @@
+{
+  "bat": 15,
+  "presentations": [
+    {
+      "title": "Business Intelligence bei BKW – der Weg ist das Ziel",
+      "abstract": "Die Liberalisierung des schweizerischen Strommarktes setzt zahlreiche Absprachen zwischen den Marktakteuren und dem Regulator voraus. Um die richtigen Entscheide zu treffen und die gesetzlichen Anforderungen zu erfüllen, müssen analytische Informationen bereichsübergreifend, zeitgerecht und in konsistenter Form zur Verfügung stehen. Um diese Ziele zu erfüllen ist die Architektur der analytischen Systeme so ausgelegt, dass die Anforderung einer integrierten Informationsversorgung optimal gewährleistet wird. Eine geeignete Aufgabenteilung stellt sicher, dass die Nähe zum Business gewährleistet ist und Synergien im Betrieb genutzt werden. Mit Metadaten wird der Inhalt des DWH sowohl aus fachlicher als auch aus technischer Sicht beschrieben. Dank diesem Mittel wird die Kommunikation zwischen Business und IT wesentlich vereinfacht. Über die letzten Jahre konnten zahlreiche Projekte erfolgreich auf der zentralen Plattform realisiert werden. Das Data Warehouse der BKW Energie AG versorgt eine Vielzahl von analytischen Applikationen aller Organisations-einheiten entlang der gesamten Wertschöpfungskette mit finanziellen und energiewirtschaftlichen Daten. Basis für die Umsetzung ist ein Konzept, dass sowohl die Architektur des unternehmensweiten DWH-Systems als auch die organisatorische Gestaltung des Data Warehousing abdeckt. Dieses Referat zeigt die wichtigsten Inhalte des Konzeptes sowie den Stand der Umsetzung auf. Die kritischen Erfolgsfaktoren sowie lessons learned runden den Praxisbericht ab.",
+      "speakers": [
+        {
+          "name": "Olivier Raemy",
+          "company": "BKW FMB Energie AG",
+          "bio": "Herr Raemy ist seit dem August 2009 Leiter des Competence Center Datawarehousing und führt die Fachgruppe DWH. Er ist diplomierter Informatiker FH und Absolvent des MAS in Betriebswirtschaft, Unternehmensführung und People Management. Als Projektleiter, Consultant und Linienvorgesetzter hat Herr Raemy in den vergangenen 10 Jahren bei verschiedenen Unternehmen den Aufbau und Betrieb von SAP BW-basierten Datawarehouse-Lösungen massgeblich mitgestaltet."
+        }
+      ]
+    },
+    {
+      "title": "Agilität in der BI Praxis",
+      "abstract": "Enterprise BI Systeme in Grossunternehmen stehen vor grossen Herausforderungen: Sie müssen immer schneller ändernden Businessanforderungen einer steigenden Zahl von geschäftskritischen BI Applikationen mit tendenziell sinkenden Budgets gerecht werden. Zusätzliche Anforderungen an die Verfügbarkeit von BI Systemen und die Qualität von BI Informationen entstehen durch den Trend zu grösserer Operationalisierung. In der Swisscom müssen darüber hinaus noch die Veränderungen der grossen Backend IT Transformationen vom BI Delivery Team absorbiert werden. Der Vortrag zeigt auf, wie die Swisscom im BI/DWH Bereich den Herausforderungen mit einem Mix an architektonischen und organisatorischen Mitteln begegnet.",
+      "speakers": [
+        {
+          "name": "Peter Kühni",
+          "company": "Swisscom AG",
+          "bio": "Peter Kühni (lic.phil.nat.) ist seit 2003 Lead BI Architect bei Swisscom AG. Seine Schwerpunkte sind das Design eines konvergenten Enterprise DWH für Swisscom, die Konzeption eines Enterprise DWH für Swisscom Mobile sowie Architektur/Design für zahlreiche BI/DWH Vorhaben. Zuvor war er Partner/Consultant bei Everywhere AG (2000-2003) mit DWH/BI Beratung für diverse Grossfirmen, BI Entwickler/Architekt bei Swisscom AG (1998-2000) mit Konzeption/Umsetzung mehrerer DWH Systeme für Swisscom Fixnet, sowie BI Entwickler bei RBA Service (1997-1998) mit Aufbau eines mandantenfähigen BI Cockpits für Marketing&Sales."
+        }
+      ]
+    },
+    {
+      "title": "Unternehmensweite Informationslogistik",
+      "abstract": "Unternehmensweite Informationsversorgung aus einer Hand - diesem Ideal haben seit Ende der 80er Jahre zahlreiche grosse Unternehmen nahezukommen versucht. In vielen Lehrbüchern beschrieben und angepriesen, hat sich die Lösungsidee des '(Enterprise) Data Warehouses' in der Praxis nur beschränkt bewährt. Welche Erklärungen lassen sich hierfür finden, und wie stellen sich Unternehmen der logistischen Aufgabe, Entscheidungsträger mit Informationen zu versorgen, wenn das Ideal ausser Reichweite ist? Diese Fragen werden im Vortrag aus praxisorientierter Sicht addressiert.",
+      "speakers": [
+        {
+          "name": "Dr. Christian Wilhelmi",
+          "company": "Alpiq AG",
+          "bio": "Christian Wilhelmi nahm im März 2008 eine Tätigkeit in der Corporate IT bei der Atel auf, die seitdem mit dem westschweizer Energieunternehmen EOS zur Alpiq fusioniert ist. In der Alpiq leitet Herr Wilhelmi seit Oktober 2008 das Team IT-Architektur. In den Jahren 2002-2007 befasste er sich als wissenschaftlicher Mitarbeiter an der Universität St. Gallen intensiv mit dem Themengebiet Data Warehousing und zugehörigen architektonischen Fragen aus praktischer Sicht."
+        }
+      ]
+    }
+  ]
+}

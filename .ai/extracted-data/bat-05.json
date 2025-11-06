@@ -1,0 +1,43 @@
+{
+  "bat": 5,
+  "presentations": [
+    {
+      "title": "Enterprise Resource Planning in der Bundesverwaltung – Gestern, Heute und Morgen",
+      "abstract": "Gestützt auf den Bundesratsbeschluss vom 19. Dez. 1997 werden die Supportprozesse der Bundesverwaltung, namentlich die Prozesse in den Bereichen Finanzwesen, Personalwesen, Logistik und Immobilenverwaltung durch SAP Lösungen abgebildet und unterstützt. Die SAP Einführung wurde in Projekten wie REFICO, BV PLUS, etc. durchgeführt und ist abgeschlossen. Aktuell wird durch die Einführung des Neuen Rechnungsmodells Bund (NRM) und der Kosten und Leistungsrechnung (KLR) insbesondere der Supportprozess Finanzwesen starken Änderungen unterworfen. Die zunehmende Integration der Support-prozesse zwischen den federführenden Stellen und die Integration von 'externen' Fachanwendungen erhöhen die Komplexität und führen zu neuen Anforderungen an die Steuerung und Führung der SAP Lösungen. Im Rahmen des Vortrags erhalten Sie eine Übersicht über den SAP Einsatz in der Bundesverwaltung und wie die Bundesverwaltung den SAP Einsatz steuert und führt.",
+      "speakers": [
+        {
+          "name": "Richard Schären",
+          "company": "Informatikstrategieorgan Bund ISB",
+          "bio": "Richard Schären ist eidg. dipl. Wirtschaftsinformatiker und beim Informatikstrategieorgan Bund ISB in der Rolle als Unternehmensarchitekt verantwortlich für die: Leitung des Architekturboard Bund ABB und die Einführung der Unternehmensarchitektur Methodik in der Bundesverwaltung, Leitung des Change Board Supportprozesse CBSP welches die Änderungen von verwaltungsübergreifenden Supportprozesse steuert, Erstellung und Pflege der ERP Strategie und -architektur."
+        }
+      ]
+    },
+    {
+      "title": "Chancen und Grenzen der SAP Plattform-Strategie der BKW FMB Energie AG",
+      "abstract": "BKW FMB Energie AG hat mehr als 10 Jahre Erfahrung mit SAP R/3. In verschiedenen Bereichen von SAP hat die BKW die Rolle des Early Adopters eingenommen. So hat die BKW beispielsweise als erstes Energieversorgungsunternehmen in der Schweiz das Branchenmodul (Industry Solution) Utility (IS-U) von SAP eingeführt. Trotz geltender SAP-Plattformstrategie gilt es bei jedem Anwendungsentscheid abzuwägen, ob die Vorteile der Integration in die SAP-Plattform überwiegen oder aber bewusst ein Best-of-Breed-Ansatz gewählt wird. Mit zunehmender Penetration von SAP steigen die Opportunitätskosten bei einem Entscheid gegen SAP einerseits, andererseits führt die hohe Integration zu zunehmenden betrieblichen Abhängigkeiten. Als spezifischer Aspekt kommt die Rahmenbedingung der von der BKW verfolgten Partnerschaftsstrategie hinzu. Das Referat beleuchtet die Zusammenhänge und die Erfahrungen der BKW in dieser Fragestellung und zeigt die Chancen und Grenzen dieser Strategie auf.",
+      "speakers": [
+        {
+          "name": "Dr. Thomas Wettstein",
+          "company": "BKW FMB Energie AG",
+          "bio": "Dr. Thomas Wettstein ist seit 2002 bei der BKW. Vor der aktuellen Funktion war er als Leiter der Abteilung Informatik-Strategie und -Einsatz tätig. Davor als Berater, Projektleiter und Bereichsleiter im Bereich ERP-Systeme. Studium der Betriebswirtschaft, Dissertation am Departement für Informatik der Universität Fribourg."
+        },
+        {
+          "name": "Christian Hürlimann",
+          "company": "BKW FMB Energie AG",
+          "bio": "Christian Hürlimann ist seit 2006 bei der BKW. Vorher war er als Geschäftsfeldleiter für die Akquisition und Abwicklung von Projekten im Bereich Individualentwicklungen für Kunden der öffentlichen Verwaltung tätig. Zuvor war er als Projektleiter und Organisationsberater im Umfeld von Standard- und Individuallösungen tätig. BWL- und VWL-Studium mit Schwerpunkt Wirtschaftsinformatik an den Universitäten Bern und Manchester."
+        }
+      ]
+    },
+    {
+      "title": "SAP ein Bestandteil von IBIS?",
+      "abstract": "Die Bankenlösung IBIS der RTC wird im Rahmen eines umfassenden Modernisierungsprogramms mit einer serviceorientierten Architektur neu entwickelt. Die 'make or buy'-Strategie wurde auf Basis der Geschäftsstrategie der Kundenbanken definiert und innerhalb der Applikationslandkarte dargestellt. Die Architekturkriterien innerhalb der Applikationsarchitektur legen fest, wann im Falle eines 'buy'-Entscheides SAP in Betracht gezogen werden kann. Wie eine mögliche Integration von SAP-Komponenten innerhalb des IBIS-Umfeldes zu erfolgen hat, ist ein Bestandteil der Integrationsarchitektur. Im Rahmen des Vortrages wird das Zusammenspiel der drei Teile (Produktelandkarte, Applikations- und Integrationsarchitektur) aufgezeigt. Ebenso werden die Erfahrungen, sowie die Konsequenzen für die Organisation dargestellt.",
+      "speakers": [
+        {
+          "name": "Guido Steiner",
+          "company": "RTC AG",
+          "bio": "Nach den Ausbildungen zum Wirtschaftsinformatiker, Betriebsökonom und dem Nachdiplomstudium zum Prozessmanager arbeitete Guido Steiner als Projektleiter und Applikationsarchitekt bei verschiedenen Finanzdienstleistern. Seit 2005 ist er Chief Solution Architect und verantwortlich für die Lösungs-architektur innerhalb der RTC."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "bat": 23,
+  "presentations": [
+    {
+      "title": "Aktives Steuern durch Verknüpfung von Architektur und IT-Projektportfoliomanagement",
+      "abstract": "Die BKW-Gruppe ist eines der bedeutendsten Schweizer Energieunternehmen. Sie deckt alle Stufen der Energieversorgung ab: von der Produktion über den Transport und Handel bis hin zum Vertrieb. Vor dem Hintergrund der neuen Konzernstrategie gewinnt der Einsatz modernster Technologien immer mehr an Bedeutung. Um die Geschäftsprozessunterstützung entlang der gesamten Wertschöpfungskette optimal zu gewährleisten, ist die komplexe IT-Applikationslandschaft laufend auf den funktionalen und betrieblichen Kontext auszurichten. Eine ganzheitliche Planung soll die wirtschaftliche Weiterentwicklung ermöglichen. Der Beitrag zeigt auf, wie dieses Ziel durch eine enge Verknüpfung zwischen dem Architektur- und dem Projektportfolio-Management erreicht werden kann und beleuchtet die eingesetzten Instrumente sowie die gemachten Erfahrungen.",
+      "speakers": [
+        {
+          "name": "Martin Kochert",
+          "company": "BKW FMB Energie AG",
+          "bio": "Martin Kochert ist Diplom-Betriebswirt mit Fachrichtung Wirtschaftsinformatik. Er verfügt über eine langjährige Berufserfahrung in diversen leitenden Funktionen, u.a. als Consultant, Projektleiter, Leiter SAP Technology & Architecture, Leiter SAP CC und zuletzt Outsourcing Transition Executive. Er war u.a. für IMG Information Management Group AG, resource informatik ag und CSC Switzerland GmbH tätig. Seit 2011 leitet er das ICT-Architecture-Management bei der BKW-Gruppe."
+        }
+      ]
+    },
+    {
+      "title": "IT-Projektportfoliomanagement im Spannungsfeld zwischen Geschäftsbedürfnis und Architekturplanung",
+      "abstract": "Die SBB betreiben das Netz mit dem weltweit dichtesten Bahnbetrieb und brauchen dafür hochwertige IT-Unterstützung. Heute gehören dazu über 1'000 Anwendungen, mit zahlreichen Überlappungen in Funktion und Datenhaltung. Die nachhaltige Weiterentwicklung der heterogenen Anwendungslandschaft ist technisch und organisatorisch eine Herausforderung. Die SBB IT wickelt jährlich ein Projektvolumen von gegen 200 Mio CHF in 150 Projekten ab. Dies stellt hohe Anforderungen sowohl an die IT Bedarfsplanung und auch an das IT Projektportfoliomanagement. Der Vortrag gibt einen Überblick über den Stand des IT-Projektportfoliomanagements bei der SBB und geht auf die aktuellen Problemstellungen ein.",
+      "speakers": [
+        {
+          "name": "Hans-Jakob Gfeller",
+          "company": "SBB",
+          "bio": "Hans-Jakob Gfeller (Ing. FH) hat über fünf Jahre am Aufbau der Unternehmensarchitektur der SBB mitgewirkt. Seit 2010 leitet er das Team «Domänenarchitektur». Zuvor war er in verschiedenen Rollen als Entwickler, Softwarearchitekt, Domänenarchitekt und Projektleiter tätig."
+        },
+        {
+          "name": "Stephan Hofstetter",
+          "company": "SBB",
+          "bio": "Stephan Hofstetter war mehrere Jahre im Account-Management tätig und ist seit dem 01.01.11 strategischer IT-Projektportfoliomanager. Seine Hauptaufgabe besteht darin, eine koordinierte IT-Projektportfolio-Steuerung, -Finanzplanung und -Bewirtschaftung gegenüber dem CIO sicherzustellen. Zuvor war er im Lösungsverkauf und in der Beratung tätig."
+        }
+      ]
+    },
+    {
+      "title": "IT-Plattformmigration von 43 Banken in time / on budget / on quality",
+      "abstract": "Die Entris Banking AG ist Zentralbank für alle RBA (Regional) Banken der Schweiz und IT-/Service-Integrator für alle ihre Bankkunden. Im Zeitraum von 2009 – 2012 hat die Entris Banking alle ihre 43 Kundenbanken sowie die Servicecenter Banking, Operations, Audit und Vorsorgen von der bisherigen IT-Plattform IBIS mit dem Hauptprovider rtc / HP BSC auf eine neue Standardlösung mit Basis Finnova und Hauptprovider Swisscom IT Services migriert. Die Migration erfolgte in 5 Gruppen mit bis zu 14 Banken pro Gruppe. Dieses aufwändige und komplexe Vorhaben wurde \"beängstigend\" erfolgreich nach Plan, im Budget und mit hoher Kundenzufriedenheit umgesetzt. Seit Pfingsten 2012 sind die letzten Banken migriert, per Ende September 2012 sind bereits 3 Mandanten fusioniert und ebenfalls alle Komponenten der 18-monatigen Parallelphase eliminiert. Das Referat gibt einen Einblick in das Grossprojekt, vertieft dessen Inhalt, beleuchtet die Struktur der Umsetzung und zeigt Herausforderungen und Erfolgsfaktoren auf.",
+      "speakers": [
+        {
+          "name": "Thomas Spahr",
+          "company": "Entris Banking AG",
+          "bio": "Thomas Spahr arbeitet seit über 20 Jahren in leitenden Funktionen für die RBA-Banken. Er verfügt nebst seiner IT-Kompetenz über ein fundiertes Bankwissen. Er ist Chief Business Architekt und für den Bereich Architektur der Entris Banking verantwortlich. Dieser Bereich deckt IT-Strategie, IT-Architektur, Prozessintegration, Softwareintegration und die Kompetenz für Evaluationen und Migrationen ab. Zudem ist er seit 1995 in der berufsbegleitenden Aus- und Weiterbildung in den Funktionen als Prüfungsexperte, als Experte für Diplomarbeiten, als Fachvorstand, als Autor und als Dozent tätig."
+        }
+      ]
+    }
+  ]
+}

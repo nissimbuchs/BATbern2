@@ -1,0 +1,43 @@
+{
+  "bat": 36,
+  "presentations": [
+    {
+      "title": "Linux Container im Betrieb – ein Erfahrungsbericht",
+      "abstract": "Das Tempo bei der Entwicklung neuer IT-Dienstleistungen ist in den letzten Jahren enorm gestiegen. Die Kunden und Partner erwarten neue Lösungen, neue Produkte und in der Systembereitstellung müssen wir immer rascher auf neue Business-Anforderungen und neue Technologieprodukte reagieren. Einerseits sind von dieser Entwicklung die internen Softwareentwicklungs- und Deployment Prozesse betroffen, andererseits werden bei PostFinance Softwareprodukte vermehrt von Drittherstellern integriert und diese müssen rasch und unkompliziert in die bestehende Applikationslandschaft eingebunden werden. Container-basierte Plattformern haben sich in den letzten Jahren stark entwickelt. Sie bieten in diesem dynamischen Umfeld eine äusserst interessante Alternative zu herkömmlichen, betriebssystem-zentrierten System-Infrastrukturen. PostFinance setzt seit gut einem Jahr Container basierte Plattformen ein. Dieser Vortrag ist ein Erfahrungsbericht und zeigt auf, wie solche Umgebungen helfen können, die steigende Dynamik und Komplexität in Entwicklung und Systembereitstellung zu meistern.",
+      "speakers": [
+        {
+          "name": "Mathias Herzog",
+          "company": "PostFinance AG",
+          "bio": "Mathias Herzog ist seit mehreren Jahren bei PostFinance AG in unterschiedlichen Bereichen im Unix/Linux System-Engineering tätig. Das Linux Team ist verantwortlich für die Konzeption, den Aufbau und den Betrieb der höchstverfügbaren und verteilten Applikationssysteme von PostFinance sowie für das Engineering der Virtualisierungsumgebungen und BigData Plattformen."
+        }
+      ]
+    },
+    {
+      "title": "Container als Immutable Infrastructure",
+      "abstract": "Container bieten eine Vielzahl von Möglichkeiten an, um das IT-Leben zu vereinfachen. Sie können als leichtgewichtige VMs eingesetzt werden oder als einfache Applikations-Installationsplattform. Beginnt man seine Container als Teil der Infrastruktur zu sehen, kann man die Distanz zwischen der Entwicklung und dem Betrieb enorm verkürzen. Paart man diesen Ansatz mit der Idee von Immutable Infrastructure, kann man die Testbarkeit und Reproduzierbarkeit der Komponenten stark verbessern. Mit steigender Erfahrung mit diesem Vorgehen, findet man immer neue Anwendungen, um alle Bereiche der Architektur, der Software-Entwicklung und des Betriebes zu verbessern. Was dieser Vortragende Ihnen über 6 Anwendungen von Immutable Container erzählen wird, wird Sie schockieren!",
+      "speakers": [
+        {
+          "name": "John Hutchison",
+          "company": "Die Mobiliar",
+          "bio": "John Hutchison hat an der Universität Bern Informatik studiert und kam im Juli 2006 zu der Mobiliar als Applikationsentwickler. Er hat in den letzten zwei Jahren mitgeholfen Continuous Delivery in der Mobiliar einzuführen. Seit kurzem unterstützt er als CD Architekt die agilen Teams bei ihrer Arbeit durch Automatisation und Tooling zeitraubender Tätigkeiten und Abläufe."
+        }
+      ]
+    },
+    {
+      "title": "Sind Container die Virtualisierung der Zukunft? – Ein Erfahrungsbericht der SBB",
+      "abstract": "Vor zwei Jahren hat die SBB angefangen, eine container-basierte Cloud-Plattform auf der Grundlage von Redhat Openshift aufzubauen. Dies mit dem Ziel, eine agile und preiswerte Plattform für die Software-Entwicklung zur Verfügung zu stellen. Nach kurzer Zeit haben wir erkannt, dass diese Plattform nicht bloss eine Platform-as-a-Service für Eigenentwicklungen ist, sondern das Potential hat, einen Ersatz oder eine agile und preiswerte Alternative für die klassische Virtualisierung sowie für Infrastructure-as-a-Service Cloud-Plattformen zu bieten. In unserem Vortrag werden wir erläutern, welche Bedeutung die container-basierte Cloud-Plattform Openshift heute für die SBB hat und welche Einsatzgebiete heute und in Zukunft dafür vorgesehen sind. Unsere Ausführungen werden wir mit einer kleinen Live-Demo abrunden.",
+      "speakers": [
+        {
+          "name": "Baltisar Oswald",
+          "company": "SBB AG",
+          "bio": "Nach seinem Studium in Mathematik und Informatik an der Universität Bern arbeitete Baltisar Oswald als Software-Entwickler / Software Architekt bei mehreren Firmen. Vor dem Wechsel zur SBB war er Leiter des Teams Integration der BKW. In den letzten 2 Jahren leitete er das Projekt New Cloud Stack mit dem Ziel, eine container-basierten Cloud-Plattform aufzubauen und in Betrieb zu überführen. Seit Anfang dieses Jahres ist er Product Owner und Leiter des Cloud-Stacks der SBB."
+        },
+        {
+          "name": "Szabolcs Szádeczky-Kardoss",
+          "company": "SBB AG",
+          "bio": "Szabolcs Szádeczky-Kardoss arbeitet seit Anfang 2015 als IT-Architekt bei der SBB. Neben der Betreuung der Technologiegruppen Entwicklungswerkzeuge und Middleware hat er in Cloud-bezogenen Themen und insbesondere beim Aufbau der neuen container-basierten Cloud-Plattform mitgearbeite. Er besitzt langjährige Erfahrung als Senior bzw. Lead Software Entwickler im Java Umfeld."
+        }
+      ]
+    }
+  ]
+}

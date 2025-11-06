@@ -1,0 +1,38 @@
+{
+  "bat": 4,
+  "presentations": [
+    {
+      "title": "Flexible Prozesse - Modulare Gestaltungskonzepte und Umsetzungsbeispiele aus der öffentlichen Verwaltung",
+      "abstract": "Die Aufgabenvielfalt und Arbeitsteilung in der öffentlichen Verwaltung spiegelt sich in einer Vielzahl verschiedener Prozesstypen wieder. Neben standardisierbaren Massengeschäften dominieren informationsgestützte Dienstleistungs- und Entscheidfindungsprozesse. Dabei handelt es sich mehrheitlich um Vorgänge mit oft nicht planbarem, d.h. 'offenem' Ausgang. Die Verwaltungstätigkeit ist weiter geprägt durch bi- resp. multilaterale Abstimmungs- und Aushandlungsprozesse. Konventionelle BPM- / WFM-Konzepte und -Umsetzungen tragen diesen Flexibilitätsanforderungen von Verwaltungsprozessen nicht oder nur ungenügend Rechnung. Im Referat wird alternativ ein generisches und modulares Prozessmodell vorgestellt, welches seit 2000 als Standard für dokumentengestützte Prozesse in der öffentlichen Verwaltung eingesetzt wird und heute als strategische Basiskomponente bei der eGovernment-Umsetzung gilt. Das Referat schliesst mit einem Ausblick auf Modellierungserfordernisse und -Methoden im e-Government-Umfeld: Hier geht es darum, die organisationsübergreifende Sicht der kooperativen Leistungserstellung mit der Behördensicht auf (interne) Geschäftsprozesse zu verbinden.",
+      "speakers": [
+        {
+          "name": "Marc Schaffroth",
+          "company": "Informationstrategieorgan Bund ISB",
+          "bio": "Marc Schaffroth ist Projektleiter beim Informatikstrategieorgan Bund ISB und leitet die beiden eCH-Fachgruppen 'Geschäftsprozesse' und 'Records Management/GEVER'."
+        }
+      ]
+    },
+    {
+      "title": "Integration von Workflow-Management-Systemen in der Praxis",
+      "abstract": "Eine schwer wartbare und nur mit grossem Aufwand zu betreibende Applikations-Landschaft war der Anlass für deutsche Bau-Berufsgenossenschaften eine Vereinheitlichung ihrer IT-Infrastruktur voranzutreiben. Da eine Integration der vielen unterschiedlichen Systeme zu aufwändig gewesen wäre, entschloss man sich, eine komplett neue Software zur Abwicklung der Geschäftsprozesse zu entwickeln. Das neue workflow-orientierte System unterstützt die DV-technische Durchführung nahezu aller Prozesse innerhalb von Berufsgenossenschaften, beginnend mit der automatisierten Posteingangsbearbeitung bis hin zum Versenden von Postausgangsdokumenten. Im Rahmen des Vortrags wird ein allgemeingültiger Ansatz zur Integration von Workflow-Management-Systemen in J2EE-Applikationen vorgestellt. Dabei werden neben Aspekten der Integration auch sinnvolle Erweiterungen beschrieben, die für einen praxistauglichen Einsatz notwendig sind.",
+      "speakers": [
+        {
+          "name": "Tillmann Schall",
+          "company": "Anaptecs GmbH",
+          "bio": "Tillmann Schall ist Dipl. Ing. (FH) und Geschäftsführer der anaptecs GmbH. Als Software-Architekt war er im Rahmen des Grossprojekts Phoenics u.a. für die Integration und Erweiterung des eingesetzten Workflow-Management-Systems verantwortlich. Seine Tätigkeitsschwerpunkte liegen im Entwurf komponenten-orientierter, verteilter Systeme, insbesondere in der Konzeption von workflowbasierten Anwendungen, der Integration von Backend und Fremdsystemen und dem Design von Anwendungsframeworks."
+        }
+      ]
+    },
+    {
+      "title": "BPM für IBIS",
+      "abstract": "Die Bankenlösung IBIS der RTC wird im Rahmen eines umfassenden Modernisierungsprogramms auf Basis einer service-orientierten Architektur neu entwickelt. Dabei wird besonders viel Wert auf die Geschäftsprozesse gelegt. Um Zeit und Aufwand für die Umsetzung und Anpassung von Geschäftsprozessen zu reduzieren, soll es möglich sein, Services flexibel zu orchestrieren. Dafür wurde ein Business Process Management System in IBIS integriert. Wir zeigen wie wir vorgegangen sind, die Architektur der Lösung und die Konsequenzen für das Entwicklungsvorgehensmodell.",
+      "speakers": [
+        {
+          "name": "Jean-Marc Terrettaz",
+          "company": "RTC AG",
+          "bio": "Nach seinem Informatik-Studium an der ETH Lausanne arbeitete Jean-Marc Terrettaz bei der Firma Ascom an der Entwicklung von Software für Telefonzentralen. Anschliessend war er als Mitarbeiter der Firma ELCA bei der Definition und Umsetzung der IT-Architektur für die Firma RTC tätig. Seit 2005 leitet er bei der RTC die Architektur Abteilung."
+        }
+      ]
+    }
+  ]
+}

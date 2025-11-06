@@ -1,0 +1,43 @@
+{
+  "bat": 14,
+  "presentations": [
+    {
+      "title": "Testautomatisierung bei der SBB - Ein Bericht aus der Praxis",
+      "abstract": "Wie und mit welchem Nutzen automatisiert die Testfactory die Tests der Billettautomaten. Das Testmanagement hat sich von der reinen Prüfdisziplin zum Steuerungsinstrument der nachhaltigen Systemqualität weiterentwickelt. In der SBB IT verankert die Testfactory die Test-Governance und Test-Prozesse als Bestandteil in das bestehende Qualitätsmanagement. Dieses Referat zeigt auf, wie die Testfactory die Testautomatisierung als eine der Kernleistungen anbietet, diese den Projekten verrechnet und welche Hilfsmittel dazu eingesetzt werden. Am Beispiel der Billetautomaten wird die Architektur, deren Umsetzung und der Nutzen der Testautomatisierung aufgezeigt. Als Abschluss wird als Lessons Learned darauf eingegangen, welche Stolpersteine in einem solchen Vorhaben auftreten können, welche Ansätze gut funktionieren und welche weniger, sowie wie die Zukunft der Testautomatisierung in der Testfactory aussehen wird.",
+      "speakers": [
+        {
+          "name": "Bruno Linder",
+          "company": "Schweizerische Bundesbahnen SBB",
+          "bio": "Bruno Linder ist seit Herbst 2007 Leiter der Testfactory in der SBB IT. Davor leitete er das Quality- & Releasemanagement einer Versicherung und war 20 Jahre im Informatikdienstleistungsgeschäft für Kunden (Banken, Versicherungen) tätig."
+        },
+        {
+          "name": "Michael T. Pilawa",
+          "company": "PILAWA.AG",
+          "bio": "Michael T. Pilawa (PILAWA.AG) arbeitet seit Sommer 2007 als Berater für die SBB Testfactory in den Themen Testarchitekturen, Testwerkzeuge und Testautomation. Er begann seine Berufsausbildung 1979 mit dem Bau von Testautomaten in der Verpackungsindustrie und diplomierte 1988 als Physiker im Bereich der Testautomation von Datenerfassungsanlagen der Kernphysik am CERN in Genf. Seit 2001 berät er als Selbständiger Unternehmen im In- und Ausland beim Einsatz von Quality Center und QuickTest Professional."
+        }
+      ]
+    },
+    {
+      "title": "Continuous Integration in der Praxis",
+      "abstract": "Der Aufbau eines neuen Builds birgt neben Risiken auch viele Chancen zur Verbesserung der Software-Qualität. Mit dem Einsatz eines Continuous Integration-Servers bekommen die Software-Entwickler innert Minuten wertvolle Informationen darüber, ob ihre Änderung qualitativen Massstäben entspricht und zur restlichen Software kompatibel ist. Mit weiteren Metriken wie Testabdeckung, Einhaltung der Guidelines, potenziellen Bugs etc. werden die Qualitätsansprüche weiter zementiert. Der Vortrag zeigt auf, wie diese Ziele mit Open Source-Werkzeugen erreicht werden können und nennt Vor- und Nachteile aus der Praxis.",
+      "speakers": [
+        {
+          "name": "Eric Lewis",
+          "company": "IGE",
+          "bio": "Eric Lewis entwickelt seit 2001 Java-Applikationen im Enterprise-Bereich. Davor entwickelte er u. a. in Perl den Swisscom Online-Shop. Neben der Software-Entwicklung liegen seine Interessen in der manuellen und automatischen Qualitätssicherung und Build-Technologie."
+        }
+      ]
+    },
+    {
+      "title": "Qualitätssichernde Architekturvorgaben in der IBIS3G Kontoführung",
+      "abstract": "In den letzten 3 Jahren wurde in der RTC die neue JEE basierte IBIS3G Kontoführung gebaut. Durch verschiedenste Vorgaben seitens des Architekturvertreters wurde die Qualität der Software angehoben und regressionssicher gemacht. Die Vorgaben werden erklärt, begründet und der Added Value wird vorgestellt.",
+      "speakers": [
+        {
+          "name": "Pascal Auderset",
+          "company": "RTC AG",
+          "bio": "Pascal Auderset ist Diplom-Informatiker (Universität Freiburg CH) und arbeitet seit mehr als 10 Jahren im JEE Umfeld. Dabei hat er sowohl in technischen wie auch in fachlichen Grossprojekten als technischer Projektleiter, Entwickler und Architekt mitgewirkt."
+        }
+      ]
+    }
+  ]
+}
