@@ -64,6 +64,7 @@ describe('useFileUpload Hook', () => {
       data: {
         uploadUrl: 'https://s3.amazonaws.com/bucket/logos/temp/upload-123/logo.png?signature=xyz',
         fileId: 'upload-123',
+        s3Key: 'logos/temp/upload-123/logo.png',
         fileExtension: 'png',
         expiresInMinutes: 15,
         requiredHeaders: {
@@ -128,7 +129,7 @@ describe('useFileUpload Hook', () => {
       expect(result.current.error).toBeNull();
       expect(onUploadSuccess).toHaveBeenCalledWith({
         uploadId: 'upload-123',
-        tempFileUrl: 'https://s3.amazonaws.com/bucket/logos/temp/upload-123/logo.png',
+        tempFileUrl: 'http://localhost:9000/logos/temp/upload-123/logo.png',
       });
     });
 
@@ -143,6 +144,7 @@ describe('useFileUpload Hook', () => {
       data: {
         uploadUrl: 'https://s3.amazonaws.com/bucket/test.png',
         fileId: 'upload-456',
+        s3Key: 'logos/test.png',
         fileExtension: 'png',
         expiresInMinutes: 15,
         requiredHeaders: {},
@@ -309,6 +311,7 @@ describe('useFileUpload Hook', () => {
       data: {
         uploadUrl: 'https://s3.amazonaws.com/bucket/test.png',
         fileId: 'upload-789',
+        s3Key: 'logos/test.png',
         fileExtension: 'png',
         expiresInMinutes: 15,
         requiredHeaders: {},
@@ -363,6 +366,7 @@ describe('useFileUpload Hook', () => {
       data: {
         uploadUrl: 'https://s3.amazonaws.com/bucket/test.png',
         fileId: 'upload-999',
+        s3Key: 'logos/test.png',
         fileExtension: 'png',
         expiresInMinutes: 15,
         requiredHeaders: {},
@@ -470,6 +474,7 @@ describe('useFileUpload Hook', () => {
       data: {
         uploadUrl: 'https://s3.amazonaws.com/bucket/test.png',
         fileId: 'upload-101',
+        s3Key: 'logos/test.png',
         fileExtension: 'png',
         expiresInMinutes: 15,
         requiredHeaders: {
