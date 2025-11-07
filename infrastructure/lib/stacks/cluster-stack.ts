@@ -30,11 +30,16 @@ export class ClusterStack extends cdk.Stack {
     const envName = props.config.envName;
     const isProd = envName === 'production';
 
-    // Create ECS cluster
+    // Create ECS cluster with Service Connect enabled
     this.cluster = new ecs.Cluster(this, 'MicroservicesCluster', {
       vpc: props.vpc,
       clusterName: `batbern-${envName}`,
-      containerInsightsV2: isProd ? ecs.ContainerInsights.ENABLED : ecs.ContainerInsights.DISABLED, // Enable Container Insights V2 for production
+      containerInsightsV2: isProd ? ecs.ContainerInsights.ENABLED : ecs.ContainerInsights.DISABLED,
+      // Enable Service Connect for automatic service-to-service networking
+      defaultCloudMapNamespace: {
+        name: `batbern.local`,
+        useForServiceConnect: true,
+      },
     });
 
     // Apply tags
