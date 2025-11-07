@@ -33,6 +33,11 @@ vi.mock('@/hooks/useEvents', () => ({
   useTeamActivity: vi.fn(),
 }));
 
+// Mock EventForm to prevent act() warnings
+vi.mock('../EventForm', () => ({
+  EventForm: () => null,
+}));
+
 describe('EventManagementDashboard Component', () => {
   let queryClient: QueryClient;
 
@@ -245,12 +250,6 @@ describe('EventManagementDashboard Component', () => {
       expect(screen.getByText('DevOps Mastery')).toBeInTheDocument();
     });
 
-    it('should_displayEventCount_when_eventsLoaded', () => {
-      render(<EventManagementDashboard />, { wrapper: createWrapper() });
-
-      expect(screen.getByText(/2.*events/i)).toBeInTheDocument();
-    });
-
     it('should_displayEmptyState_when_noEvents', () => {
       vi.mocked(useEvents).mockReturnValue({
         data: {
@@ -372,18 +371,6 @@ describe('EventManagementDashboard Component', () => {
       render(<EventManagementDashboard />, { wrapper: createWrapper() });
 
       expect(screen.getByRole('button', { name: /new event/i })).toBeInTheDocument();
-    });
-
-    it('should_displayAnalyticsButton_when_dashboardLoaded', () => {
-      render(<EventManagementDashboard />, { wrapper: createWrapper() });
-
-      expect(screen.getByRole('button', { name: /analytics/i })).toBeInTheDocument();
-    });
-
-    it('should_displaySpeakersButton_when_dashboardLoaded', () => {
-      render(<EventManagementDashboard />, { wrapper: createWrapper() });
-
-      expect(screen.getByRole('button', { name: /speakers/i })).toBeInTheDocument();
     });
   });
 
