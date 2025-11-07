@@ -21,7 +21,7 @@ import type { TeamActivity } from '@/types/event.types';
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, params?: any) => {
+    t: (key: string, params?: Record<string, unknown>) => {
       const translations: Record<string, string> = {
         'dashboard.teamActivity': 'Team Activity',
         'dashboard.noRecentActivity': 'No recent activity',

@@ -22,7 +22,7 @@ import type { Event } from '@/types/event.types';
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, params?: any) => {
+    t: (key: string, params?: Record<string, unknown>) => {
       const translations: Record<string, string> = {
         'dashboard.noEventsFound': 'No events found',
         'dashboard.tryAdjustingFilters': 'Try adjusting your filters',

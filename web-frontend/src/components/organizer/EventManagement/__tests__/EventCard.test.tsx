@@ -14,7 +14,7 @@
  */
 
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { EventCard } from '../EventCard';
@@ -23,7 +23,7 @@ import type { Event } from '@/types/event.types';
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, params?: any) => {
+    t: (key: string, params?: Record<string, unknown>) => {
       const translations: Record<string, string> = {
         'status.active': 'status.active',
         'status.published': 'status.published',
@@ -399,7 +399,7 @@ describe('EventCard Component', () => {
         ...mockEvent,
         themeImageUrl: 'https://cdn.batbern.ch/invalid-image.png',
       };
-      const { container } = render(<EventCard event={eventWithImage} />, { wrapper: createWrapper() });
+      render(<EventCard event={eventWithImage} />, { wrapper: createWrapper() });
 
       const image = screen.getByRole('img', { name: /cloud computing 2025/i }) as HTMLImageElement;
 

@@ -107,7 +107,7 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
     }
   };
 
-  // Materials status icon and color mapping (QualityReviewStatus enum from architecture)
+  // Materials status icon and color mapping (QualityReviewStatus from architecture)
   const getMaterialsStatusIcon = (status?: 'pending' | 'in_review' | 'approved' | 'requires_changes' | 'rejected' | 'revision_submitted') => {
     // Default to 'pending' if status is not available (Phase 2 feature)
     const effectiveStatus = status || 'pending';

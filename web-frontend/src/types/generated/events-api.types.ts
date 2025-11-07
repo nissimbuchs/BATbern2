@@ -660,6 +660,19 @@ export interface components {
        *     List of speakers assigned to this session with their roles
        */
       speakers?: components['schemas']['SessionSpeaker'][];
+      /**
+       * @description Phase 2 Feature: Quality review status for session materials (presentation, bio, photo).
+       *     Based on QualityReviewStatus enum from architecture (03-data-architecture.md:783-790).
+       * @example pending
+       * @enum {string}
+       */
+      materialsStatus?:
+        | 'pending'
+        | 'in_review'
+        | 'approved'
+        | 'requires_changes'
+        | 'rejected'
+        | 'revision_submitted';
     };
     /**
      * @description Story 1.15a.1b: Session speaker with enriched User data

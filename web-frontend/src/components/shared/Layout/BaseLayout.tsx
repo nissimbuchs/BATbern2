@@ -12,7 +12,6 @@ import { Box, Container, Link, CssBaseline } from '@mui/material';
 import AppHeader from '../Navigation/AppHeader';
 import type { UserProfile } from '@/types/user';
 import type { NotificationsResponse } from '@/types/notification';
-import { useBreakpoints } from '@/hooks/useBreakpoints';
 
 interface BaseLayoutProps {
   children: React.ReactNode;
@@ -22,8 +21,6 @@ interface BaseLayoutProps {
 }
 
 export function BaseLayout({ children, maxWidth = false, user, notifications }: BaseLayoutProps) {
-  const { isDesktop } = useBreakpoints();
-
   const handleSkipLinkClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
     const mainContent = document.getElementById('main-content');
