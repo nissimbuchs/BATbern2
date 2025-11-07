@@ -77,10 +77,10 @@ skipped=0
 
 # Test collection directories
 collections=(
-    "events-api"
-    "companies-api"
     "file-upload-api"
+    "companies-api"
     "users-api"
+    "events-api"
 )
 
 # Run tests for each collection
