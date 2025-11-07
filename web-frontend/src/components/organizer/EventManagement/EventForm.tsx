@@ -368,7 +368,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
       // Add themeImageUploadId if a new image was uploaded during this edit session
       // themeImageUploadId is only set when FileUpload component successfully uploads
       if (themeImageUploadId !== undefined) {
-        (changedFields as any).themeImageUploadId = themeImageUploadId;
+        (changedFields as Record<string, unknown>).themeImageUploadId = themeImageUploadId;
       }
 
       if (Object.keys(changedFields).length === 0) {

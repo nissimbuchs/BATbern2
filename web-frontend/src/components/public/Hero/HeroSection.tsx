@@ -38,16 +38,25 @@ export const HeroSection = ({
         day: 'numeric',
       })
     : null;
+  // Extend Window interface for UnicornStudio
+  interface WindowWithUnicorn extends Window {
+    UnicornStudio?: {
+      isInitialized: boolean;
+      init: () => void;
+    };
+  }
+
   // Load Unicorn.studio script
   useEffect(() => {
-    if (!(window as any).UnicornStudio) {
-      (window as any).UnicornStudio = { isInitialized: false };
+    const win = window as WindowWithUnicorn;
+    if (!win.UnicornStudio) {
+      win.UnicornStudio = { isInitialized: false, init: () => {} };
       const script = document.createElement("script");
       script.src = "https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v1.4.34/dist/unicornStudio.umd.js";
       script.onload = function() {
-        if (!(window as any).UnicornStudio.isInitialized) {
-          (window as any).UnicornStudio.init();
-          (window as any).UnicornStudio.isInitialized = true;
+        if (win.UnicornStudio && !win.UnicornStudio.isInitialized) {
+          win.UnicornStudio.init();
+          win.UnicornStudio.isInitialized = true;
         }
       };
       (document.head || document.body).appendChild(script);

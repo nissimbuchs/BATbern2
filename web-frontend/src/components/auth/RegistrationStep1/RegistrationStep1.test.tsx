@@ -17,9 +17,8 @@ import i18n from '@/i18n/config';
 const theme = createTheme();
 
 // Wrapper component for FormProvider
-const FormWrapper: React.FC<{ children: React.ReactNode; onContinue: () => void }> = ({
+const FormWrapper: React.FC<{ children: React.ReactNode }> = ({
   children,
-  onContinue,
 }) => {
   const methods = useForm({
     defaultValues: {

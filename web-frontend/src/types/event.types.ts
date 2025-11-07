@@ -45,7 +45,7 @@ export interface SessionUI extends Session {
     company?: string; // Speaker's company name
     email?: string;
   };
-  materialsStatus?: 'pending' | 'submitted' | 'approved' | 'rejected';
+  // Note: materialsStatus is now defined in base Session type from OpenAPI spec
 }
 
 /**
