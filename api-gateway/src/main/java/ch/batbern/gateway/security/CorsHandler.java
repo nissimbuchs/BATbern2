@@ -22,18 +22,9 @@ public class CorsHandler {
         "GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"
     );
 
-    private static final Set<String> ALLOWED_HEADERS = Set.of(
-        "Authorization",
-        "Content-Type",
-        "X-Requested-With",
-        "X-Request-Id",
-        "X-Correlation-ID",
-        "Accept",
-        "Accept-Language",
-        "Origin",
-        "Access-Control-Request-Method",
-        "Access-Control-Request-Headers"
-    );
+    // Accept all headers to ensure case-insensitivity (RFC 7230)
+    // Previously used explicit list which was case-sensitive
+    private static final boolean ALLOW_ALL_HEADERS = true;
 
     private static final Set<String> EXPOSED_HEADERS = Set.of(
         "X-Request-Id",
@@ -71,7 +62,8 @@ public class CorsHandler {
         if (origin != null && isOriginAllowed(origin)) {
             response.setHeader("Access-Control-Allow-Origin", origin);
             response.setHeader("Access-Control-Allow-Methods", String.join(", ", ALLOWED_METHODS));
-            response.setHeader("Access-Control-Allow-Headers", String.join(", ", ALLOWED_HEADERS));
+            // Allow all headers to support case-insensitivity (RFC 7230)
+            response.setHeader("Access-Control-Allow-Headers", "*");
             response.setHeader("Access-Control-Allow-Credentials", "true");
             response.setHeader("Access-Control-Max-Age", "3600"); // 1 hour
             response.setHeader("Vary", "Origin");
@@ -105,21 +97,9 @@ public class CorsHandler {
     }
 
     public boolean areHeadersAllowed(HttpServletRequest request) {
-        String requestHeaders = request.getHeader("Access-Control-Request-Headers");
-        if (requestHeaders == null) {
-            return true;
-        }
-
-        String[] headers = requestHeaders.split(",");
-        for (String header : headers) {
-            String trimmedHeader = header.trim();
-            if (!ALLOWED_HEADERS.contains(trimmedHeader)) {
-                log.warn("Forbidden header requested: {}", trimmedHeader);
-                return false;
-            }
-        }
-
-        return true;
+        // Allow all headers to ensure case-insensitivity per RFC 7230
+        // HTTP header names are case-insensitive, so we shouldn't reject based on case
+        return ALLOW_ALL_HEADERS;
     }
 
     private void addSecurityHeaders(HttpServletResponse response) {
