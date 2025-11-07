@@ -27,6 +27,8 @@ import type { EventListResponse } from '@/types/event.types';
 // Mock the hooks
 vi.mock('@/hooks/useEvents', () => ({
   useEvents: vi.fn(),
+  useCreateEvent: vi.fn(),
+  useUpdateEvent: vi.fn(),
   useCriticalTasks: vi.fn(),
   useTeamActivity: vi.fn(),
 }));
