@@ -224,6 +224,7 @@ export default defineConfig({
     reporters: [
       'default', // Console output
       ['junit', { outputFile: 'test-results/junit.xml' }], // JUnit XML for CI/CD and report aggregation
+      ['html', { outputFile: 'test-results/index.html' }], // HTML test report for documentation portal
     ],
     coverage: {
       provider: 'v8',

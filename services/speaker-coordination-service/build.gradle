@@ -44,6 +44,18 @@ jacocoTestReport {
         html.required = true
         csv.required = false
     }
+
+    // Exclude generated code from coverage
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                '**/generated/**',           // OpenAPI generated code
+                '**/*Application.class',     // Spring Boot main class
+                '**/*Config.class',          // Configuration classes
+                '**/*Configuration.class'    // Configuration classes
+            ])
+        }))
+    }
 }
 
 test.finalizedBy jacocoTestReport
