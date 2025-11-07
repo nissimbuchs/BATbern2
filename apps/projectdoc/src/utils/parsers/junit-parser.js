@@ -155,8 +155,10 @@ export class JUnitParser {
     });
 
     totals.passed = totals.totalTests - totals.failures - totals.errors - totals.skipped;
-    totals.successRate = totals.totalTests > 0
-      ? Math.round((totals.passed / totals.totalTests) * 10000) / 100
+    // Calculate success rate based on executed tests only (exclude skipped)
+    const executedTests = totals.passed + totals.failures + totals.errors;
+    totals.successRate = executedTests > 0
+      ? Math.round((totals.passed / executedTests) * 10000) / 100
       : 0;
 
     return totals;
@@ -171,7 +173,11 @@ export class JUnitParser {
   static async findAndParseReports(baseDir, pattern = '**/build/test-results/**/*.xml') {
     const reports = [];
     const { globSync } = await import('glob');
-    const files = globSync(pattern, { cwd: baseDir, absolute: true });
+    const files = globSync(pattern, {
+      cwd: baseDir,
+      absolute: true,
+      ignore: ['**/dist/**', '**/node_modules/**', '**/cdk.out/**']  // Exclude build output directories
+    });
 
     for (const file of files) {
       const testResults = await this.parseFile(file);
@@ -267,9 +273,10 @@ export class JUnitParser {
       });
     });
 
-    // Calculate overall success rate
-    summary.overallStats.successRate = summary.overallStats.totalTests > 0
-      ? Math.round((summary.overallStats.passed / summary.overallStats.totalTests) * 10000) / 100
+    // Calculate overall success rate based on executed tests only (exclude skipped)
+    const executedTests = summary.overallStats.passed + summary.overallStats.failures + summary.overallStats.errors;
+    summary.overallStats.successRate = executedTests > 0
+      ? Math.round((summary.overallStats.passed / executedTests) * 10000) / 100
       : 0;
 
     return summary;

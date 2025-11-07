@@ -64,12 +64,13 @@ class ReportsBuilder {
           maxHistoryEntries: this.config.history.maxHistoryEntries
         });
 
-        await historyManager.saveToHistory(reportData);
-
-        // Get trend data and comparison
-        reportData.trends = await historyManager.getTrendData(this.config.history.trendDataPoints);
+        // Get comparison BEFORE saving current build to history
         reportData.comparison = await historyManager.getComparison(reportData);
+        reportData.trends = await historyManager.getTrendData(this.config.history.trendDataPoints);
         reportData.statistics = await historyManager.getStatistics();
+
+        // Now save current build to history
+        await historyManager.saveToHistory(reportData);
       }
 
       // Step 3: Generate HTML pages
@@ -241,7 +242,7 @@ class ReportsBuilder {
 
     if (moduleName === 'web-frontend') {
       details.htmlReports = {
-        tests: null, // Vitest doesn't generate HTML test reports by default
+        tests: `../${flatModuleName}/test-results/index.html`,
         coverage: `../${flatModuleName}/coverage/index.html`
       };
     } else {
@@ -297,6 +298,18 @@ class ReportsBuilder {
       } else {
         console.warn(`  ⚠️  ${moduleName} HTML reports not found at: ${moduleSourceDir}`);
       }
+    }
+
+    // Copy web-frontend test results HTML report to reports directory
+    const frontendTestSource = path.join(this.baseDir, 'web-frontend', 'test-results');
+    const frontendTestTarget = path.join(this.outputDir, 'web-frontend', 'test-results');
+
+    if (await fs.pathExists(frontendTestSource)) {
+      await fs.ensureDir(path.dirname(frontendTestTarget));
+      await fs.copy(frontendTestSource, frontendTestTarget);
+      console.log('  - Copied web-frontend test results report');
+    } else {
+      console.warn(`  ⚠️  Web-frontend test results report not found at: ${frontendTestSource}`);
     }
 
     // Copy web-frontend coverage report to reports directory

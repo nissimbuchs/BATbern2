@@ -148,7 +148,11 @@ export class CheckstyleParser {
    */
   static async findAndParseReports(baseDir, pattern = '**/build/reports/checkstyle/*.xml') {
     const reports = [];
-    const files = globSync(pattern, { cwd: baseDir, absolute: true });
+    const files = globSync(pattern, {
+      cwd: baseDir,
+      absolute: true,
+      ignore: ['**/dist/**', '**/node_modules/**', '**/cdk.out/**']  // Exclude build output directories
+    });
 
     for (const file of files) {
       const violations = await this.parseFile(file);

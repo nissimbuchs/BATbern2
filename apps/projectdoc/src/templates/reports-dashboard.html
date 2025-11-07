@@ -45,15 +45,15 @@
 
             {{#if comparison}}
             <div class="comparison-strip">
-                <span>Compared to build #{{comparison.previous.buildNumber}}:</span>
+                <span>Compared to previous day ({{formatDate comparison.previous.timestamp}}):</span>
                 <span class="change-item {{#if (gt comparison.changes.coverage.overall 0)}}positive{{else}}negative{{/if}}">
-                    Coverage: {{comparison.changes.coverage.overall}}%
+                    Coverage: {{#if (gt comparison.changes.coverage.overall 0)}}+{{/if}}{{comparison.changes.coverage.overall}}%
                 </span>
                 <span class="change-item {{#if (eq comparison.changes.tests.failed 0)}}positive{{else}}negative{{/if}}">
-                    Failed Tests: {{comparison.changes.tests.failed}}
+                    Failed Tests: {{#if (gt comparison.changes.tests.failed 0)}}+{{/if}}{{comparison.changes.tests.failed}}
                 </span>
                 <span class="change-item {{#if (lte comparison.changes.security.total 0)}}positive{{else}}negative{{/if}}">
-                    Security Issues: {{comparison.changes.security.total}}
+                    Security Issues: {{#if (gt comparison.changes.security.total 0)}}+{{/if}}{{comparison.changes.security.total}}
                 </span>
             </div>
             {{/if}}
