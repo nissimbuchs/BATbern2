@@ -359,7 +359,8 @@ describe('EventForm Component', () => {
     });
 
     it('should_allowDeadline_when_onOrBeforeEventDate', async () => {
-      render(<EventForm mode="create" open={true} onClose={vi.fn()} />, {
+      const onClose = vi.fn();
+      render(<EventForm mode="create" open={true} onClose={onClose} />, {
         wrapper: createWrapper(),
       });
 
@@ -382,11 +383,14 @@ describe('EventForm Component', () => {
       const saveButton = screen.getByRole('button', { name: /save.*create/i });
       await userEvent.click(saveButton);
 
-      // No validation error should appear for deadline on or before event date
+      // Validation error should not appear - check immediately (errors appear synchronously)
+      expect(
+        screen.queryByText(/deadline.*must.*be.*on.*or.*before.*event.*date/i)
+      ).not.toBeInTheDocument();
+
+      // Form should submit successfully (onClose called)
       await waitFor(() => {
-        expect(
-          screen.queryByText(/deadline.*must.*be.*on.*or.*before.*event.*date/i)
-        ).not.toBeInTheDocument();
+        expect(onClose).toHaveBeenCalled();
       });
     });
   });
