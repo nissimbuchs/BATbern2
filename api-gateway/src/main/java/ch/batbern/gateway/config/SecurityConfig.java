@@ -44,18 +44,9 @@ public class SecurityConfig {
         configuration.setAllowedMethods(java.util.Arrays.asList(
             "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"
         ));
-        configuration.setAllowedHeaders(java.util.Arrays.asList(
-            "Authorization",
-            "Content-Type",
-            "X-Requested-With",
-            "X-Request-Id",
-            "X-Correlation-ID",
-            "Accept",
-            "Accept-Language",
-            "Origin",
-            "Access-Control-Request-Method",
-            "Access-Control-Request-Headers"
-        ));
+        // Use wildcard to allow all headers (case-insensitive per RFC 7230)
+        // Prevents issues with case variations (x-correlation-id vs X-Correlation-ID)
+        configuration.addAllowedHeader("*");
         configuration.setExposedHeaders(java.util.Arrays.asList(
             "X-Request-Id",
             "X-Correlation-ID",
