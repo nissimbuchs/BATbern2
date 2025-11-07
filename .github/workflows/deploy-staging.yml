@@ -154,7 +154,7 @@ jobs:
           echo "  Infrastructure: $([ "${{ steps.changes.outputs.infrastructure }}" = "true" ] && echo "YES (full deployment)" || echo "no")"
 
       - name: Build frontend for deployment
-        if: steps.changes.outputs.frontend == 'true'
+        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.deploy_all == 'true'
         working-directory: ./web-frontend
         run: |
           if [ -f "package.json" ]; then
