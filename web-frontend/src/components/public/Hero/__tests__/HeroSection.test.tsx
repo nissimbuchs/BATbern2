@@ -10,6 +10,14 @@ import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { HeroSection } from '../HeroSection';
 
+// Extend Window interface for UnicornStudio
+interface WindowWithUnicorn extends Window {
+  UnicornStudio?: {
+    isInitialized: boolean;
+    init: () => void;
+  };
+}
+
 // Mock useTranslation
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -25,7 +33,7 @@ vi.mock('react-i18next', () => ({
 describe('HeroSection Component', () => {
   beforeEach(() => {
     // Clear any existing Unicorn Studio scripts
-    delete (window as any).UnicornStudio;
+    delete (window as WindowWithUnicorn).UnicornStudio;
     const existingScripts = document.querySelectorAll('script[src*="unicornStudio"]');
     existingScripts.forEach((script) => script.remove());
   });
@@ -181,7 +189,7 @@ describe('HeroSection Component', () => {
 
     test('should_notLoadScriptTwice_when_alreadyInitialized', () => {
       // Simulate already loaded Unicorn Studio
-      (window as any).UnicornStudio = { isInitialized: true };
+      (window as WindowWithUnicorn).UnicornStudio = { isInitialized: true, init: () => {} };
 
       renderWithRouter(<HeroSection {...defaultProps} />);
 
@@ -230,19 +238,20 @@ describe('HeroSection Component', () => {
       const script = document.querySelector('script[src*="unicornStudio"]') as HTMLScriptElement;
 
       // Mock the UnicornStudio.init function
-      (window as any).UnicornStudio = {
+      const win = window as WindowWithUnicorn;
+      win.UnicornStudio = {
         isInitialized: false,
         init: vi.fn()
       };
 
       // Simulate script load
       if (script && script.onload) {
-        (script.onload as any)({});
+        (script.onload as (ev: Event) => void)(new Event('load'));
       }
 
       // Check that init was called and flag was set
-      expect((window as any).UnicornStudio.init).toHaveBeenCalled();
-      expect((window as any).UnicornStudio.isInitialized).toBe(true);
+      expect(win.UnicornStudio?.init).toHaveBeenCalled();
+      expect(win.UnicornStudio?.isInitialized).toBe(true);
     });
 
     test('should_appendScriptToHead_when_componentMounts', () => {
