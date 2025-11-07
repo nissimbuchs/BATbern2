@@ -83,8 +83,6 @@ export function BaseLayout({ children, maxWidth = false, user, notifications }: 
           flex: 1,
           py: 3,
           width: '100%',
-          maxWidth: isDesktop ? '1200px' : 'none',
-          mx: 'auto',
           '&:focus': {
             outline: 'none', // Skip link will handle focus, no visual outline needed on main
           },
