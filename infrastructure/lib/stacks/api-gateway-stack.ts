@@ -89,16 +89,9 @@ export class ApiGatewayStack extends cdk.Stack {
           apigatewayv2.CorsHttpMethod.PATCH,
           apigatewayv2.CorsHttpMethod.OPTIONS,
         ],
-        allowHeaders: [
-          'Content-Type',
-          'Authorization',
-          'X-Correlation-ID',
-          'Accept-Language',
-          'Accept',
-          'X-Amz-Date',
-          'X-Api-Key',
-          'X-Amz-Security-Token',
-        ],
+        // Use wildcard to allow all headers (case-insensitive per RFC 7230)
+        // Prevents CORS rejections due to case variations (x-correlation-id vs X-Correlation-ID)
+        allowHeaders: ['*'],
         allowCredentials: true,
         maxAge: cdk.Duration.hours(1),
       },
