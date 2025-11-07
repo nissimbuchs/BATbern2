@@ -66,14 +66,13 @@ describe('Event API Client (RED Phase)', () => {
       it('should_rejectInvalidEventDate_when_dateIsInThePast', async () => {
         const invalidEvent: CreateEventRequest = {
           title: 'Test Event',
-          description: 'Test Description',
-          eventDate: '2020-01-01T10:00:00Z', // Past date
-          registrationDeadline: '2019-12-15T23:59:59Z',
           eventNumber: 56,
+          date: '2020-01-01T10:00:00Z', // Past date
+          registrationDeadline: '2019-12-15T23:59:59Z',
           venueName: 'Test Venue',
           venueAddress: 'Test Address',
           venueCapacity: 100,
-          organizerId: 'john.doe',
+          status: 'planning',
         };
 
         await expect(eventApiClient.createEvent(invalidEvent)).rejects.toThrow(
@@ -89,14 +88,13 @@ describe('Event API Client (RED Phase)', () => {
 
         const invalidEvent: CreateEventRequest = {
           title: 'Test Event',
-          description: 'Test Description',
-          eventDate: futureDate.toISOString(),
-          registrationDeadline: invalidDeadline.toISOString(),
           eventNumber: 56,
+          date: futureDate.toISOString(),
+          registrationDeadline: invalidDeadline.toISOString(),
           venueName: 'Test Venue',
           venueAddress: 'Test Address',
           venueCapacity: 100,
-          organizerId: 'john.doe',
+          status: 'planning',
         };
 
         await expect(eventApiClient.createEvent(invalidEvent)).rejects.toThrow(
@@ -112,14 +110,13 @@ describe('Event API Client (RED Phase)', () => {
 
         const invalidEvent: CreateEventRequest = {
           title: 'Test Event',
-          description: 'Test Description',
-          eventDate: futureDate.toISOString(),
-          registrationDeadline: deadline.toISOString(),
           eventNumber: 56,
+          date: futureDate.toISOString(),
+          registrationDeadline: deadline.toISOString(),
           venueName: 'Test Venue',
           venueAddress: 'Test Address',
           venueCapacity: -100, // Negative capacity
-          organizerId: 'john.doe',
+          status: 'planning',
         };
 
         await expect(eventApiClient.createEvent(invalidEvent)).rejects.toThrow(
@@ -135,14 +132,13 @@ describe('Event API Client (RED Phase)', () => {
 
         const validEvent: CreateEventRequest = {
           title: 'Test Event',
-          description: 'Test Description',
-          eventDate: futureDate.toISOString(),
-          registrationDeadline: deadline.toISOString(),
           eventNumber: 56,
+          date: futureDate.toISOString(),
+          registrationDeadline: deadline.toISOString(),
           venueName: 'Test Venue',
           venueAddress: 'Test Address',
           venueCapacity: 100,
-          organizerId: 'john.doe',
+          status: 'planning',
         };
 
         // If validation passes, the function should attempt to make the API call
@@ -163,7 +159,7 @@ describe('Event API Client (RED Phase)', () => {
 
         const updates: UpdateEventRequest = {
           registrationDeadline: invalidDeadline.toISOString(),
-          eventDate: futureDate.toISOString(),
+          date: futureDate.toISOString(),
         };
 
         await expect(eventApiClient.updateEvent('BATbern56', updates)).rejects.toThrow(
@@ -286,7 +282,7 @@ describe('Event API Client (RED Phase)', () => {
     });
 
     it('should_supportFiltering_when_getEventsWithFilters', async () => {
-      const filters = { status: 'published', year: 2024 };
+      const filters = { status: ['published'], year: 2024 };
 
       // Should add filter parameter with JSON filter syntax
       // Expect network/timeout error (not filter error)
