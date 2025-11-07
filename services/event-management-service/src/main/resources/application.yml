@@ -57,8 +57,10 @@ aws:
     domain: ${CLOUDFRONT_DOMAIN:https://cdn.batbern.ch}
 
 # User Service Configuration (API-based user data access)
+# Uses ECS Service Connect DNS for service-to-service communication in AWS
+# Format: http://<service-name>:<port> (resolves via CloudMap namespace: batbern.local)
 user-service:
-  base-url: ${COMPANY_USER_MANAGEMENT_SERVICE_URL:http://localhost:8081}
+  base-url: ${COMPANY_USER_MANAGEMENT_SERVICE_URL:http://company-user-management:8080}
 
 # Application Info (exposed via /actuator/info)
 info:
@@ -82,6 +84,10 @@ spring:
   config:
     activate:
       on-profile: local
+
+# Local development uses localhost for user service
+user-service:
+  base-url: http://localhost:8081
 
 aws:
   s3:
