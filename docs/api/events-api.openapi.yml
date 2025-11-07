@@ -1559,6 +1559,13 @@ components:
             List of speakers assigned to this session with their roles
           items:
             $ref: '#/components/schemas/SessionSpeaker'
+        materialsStatus:
+          type: string
+          description: |
+            Phase 2 Feature: Quality review status for session materials (presentation, bio, photo).
+            Based on QualityReviewStatus enum from architecture (03-data-architecture.md:783-790).
+          enum: [pending, in_review, approved, requires_changes, rejected, revision_submitted]
+          example: pending
 
     SessionSpeaker:
       type: object
