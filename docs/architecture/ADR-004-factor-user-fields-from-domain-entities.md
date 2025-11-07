@@ -24,6 +24,7 @@ As we design domain-specific services (Speaker Coordination, Attendee Experience
 **Documented Domain Entities** (from data architecture docs):
 
 **Speaker Entity** currently documented with:
+
 - ⚠️ `email`, `firstName`, `lastName` - **DUPLICATES User**
 - ⚠️ `profile.shortBio` - **DUPLICATES User.bio**
 - ⚠️ `profile.profilePhotoUrl` - **DUPLICATES User.profilePictureUrl**
