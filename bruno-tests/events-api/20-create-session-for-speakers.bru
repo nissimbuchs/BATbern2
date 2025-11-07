@@ -1,0 +1,53 @@
+meta {
+  name: Create Session for Speaker Tests
+  type: http
+  seq: 20
+}
+
+post {
+  url: {{baseUrl}}/events/{{createdEventCode}}/sessions
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "title": "Session for Speaker Tests {{timestamp}}",
+    "sessionType": "presentation",
+    "description": "Test session created for speaker assignment tests",
+    "startTime": "2025-12-15T10:00:00Z",
+    "endTime": "2025-12-15T11:30:00Z",
+    "room": "Main Hall",
+    "capacity": 100,
+    "language": "de"
+  }
+}
+
+vars:pre-request {
+  timestamp: Date.now()
+}
+
+assert {
+  res.status: eq 201
+  res.body.sessionSlug: isDefined
+}
+
+tests {
+  test("should return 201 status", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("should create session with sessionSlug (Story 1.16.2: use sessionSlug as identifier)", function() {
+    const session = res.getBody();
+    expect(session.sessionSlug).to.be.a('string');
+    expect(session.title).to.include('Session for Speaker Tests');
+  });
+
+  test("should save sessionSlug for speaker tests (Story 1.16.2)", function() {
+    bru.setVar("createdSessionSlug", res.getBody().sessionSlug);
+  });
+}
