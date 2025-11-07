@@ -111,7 +111,7 @@ describe('Dialog Component', () => {
   });
 
   test('should_applyCustomClassName_when_provided', () => {
-    const { container } = render(
+    render(
       <Dialog open>
         <DialogContent className="custom-dialog">
           <div>Content</div>
@@ -119,7 +119,8 @@ describe('Dialog Component', () => {
       </Dialog>
     );
 
-    const dialogContent = container.querySelector('.custom-dialog');
+    // DialogContent is rendered in a Portal to document.body, not the container
+    const dialogContent = document.querySelector('.custom-dialog');
     expect(dialogContent).toBeInTheDocument();
   });
 

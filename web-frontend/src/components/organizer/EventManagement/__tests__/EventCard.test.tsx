@@ -14,11 +14,43 @@
  */
 
 import React from 'react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { EventCard } from '../EventCard';
 import type { Event } from '@/types/event.types';
+
+// Mock react-i18next
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, params?: any) => {
+      const translations: Record<string, string> = {
+        'status.active': 'status.active',
+        'status.published': 'status.published',
+        'status.draft': 'status.draft',
+        'status.completed': 'status.completed',
+        'dashboard.eventType.full_day': 'Full Day',
+        'dashboard.eventType.half_day': 'Half Day',
+        'dashboard.eventType.evening': 'Evening',
+        'dashboard.workflowProgress': 'Workflow Progress',
+        'dashboard.workflowState.speaker_research': 'Speaker Research',
+        'dashboard.workflowState.venue_booking': 'Venue Booking',
+        'dashboard.workflowState.topic_selection': 'Topic Selection',
+        'dashboard.workflowState.event_execution': 'Event Execution',
+      };
+
+      // Handle parameterized translations like workflowStep
+      if (key === 'dashboard.workflowStep' && params) {
+        return `Step ${params.current}/${params.total}`;
+      }
+
+      return translations[key] || key;
+    },
+    i18n: {
+      language: 'en',
+    },
+  }),
+}));
 
 describe('EventCard Component', () => {
   const mockEvent: Event = {
@@ -61,7 +93,9 @@ describe('EventCard Component', () => {
     it('should_displayEventNumber_when_rendered', () => {
       render(<EventCard event={mockEvent} />, { wrapper: createWrapper() });
 
-      expect(screen.getByText(/#56/i)).toBeInTheDocument();
+      // Component displays event code "BATbern56" which contains the number 56
+      // The event number is part of the event code, not displayed as "#56" separately
+      expect(screen.getByText(/BATbern56/i)).toBeInTheDocument();
     });
 
     it('should_displayEventDate_when_rendered', () => {
@@ -213,11 +247,7 @@ describe('EventCard Component', () => {
       expect(screen.getByRole('button', { name: /edit/i })).toBeInTheDocument();
     });
 
-    it('should_displayViewDetailsButton_when_rendered', () => {
-      render(<EventCard event={mockEvent} />, { wrapper: createWrapper() });
-
-      expect(screen.getByRole('link', { name: /view details/i })).toBeInTheDocument();
-    });
+    // Note: View Details button removed - card itself is clickable for navigation
 
     it('should_callOnEdit_when_editButtonClicked', () => {
       const onEdit = vi.fn();
@@ -232,12 +262,7 @@ describe('EventCard Component', () => {
       expect(onEdit).toHaveBeenCalledWith(mockEvent.eventCode);
     });
 
-    it('should_navigateToDetails_when_viewDetailsClicked', () => {
-      render(<EventCard event={mockEvent} />, { wrapper: createWrapper() });
-
-      const viewButton = screen.getByRole('link', { name: /view details/i });
-      expect(viewButton).toHaveAttribute('href', '/organizer/events/BATbern56');
-    });
+    // Note: View Details button removed - card itself is clickable for navigation
 
     it('should_navigateToDetails_when_cardClicked', () => {
       const onCardClick = vi.fn();

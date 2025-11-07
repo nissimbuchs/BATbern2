@@ -86,7 +86,7 @@ describe('useCurrentEvent Hook', () => {
     const mockError = new Error('Failed to fetch current event');
     vi.mocked(eventApiClient.getCurrentEvent).mockRejectedValue(mockError);
 
-    const { result } = renderHook(() => useCurrentEvent(), { wrapper });
+    const { result } = renderHook(() => useCurrentEvent({ retry: false }), { wrapper });
 
     await waitFor(() => {
       expect(result.current.isError).toBe(true);
