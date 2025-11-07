@@ -57,6 +57,9 @@ export class EventManagementStack extends cdk.Stack {
           ...(props.cloudFrontDistribution && {
             CLOUDFRONT_DOMAIN: `https://${props.cloudFrontDistribution.distributionDomainName}`,
           }),
+          // Service Connect URL for company-user-management service (ADR-004)
+          // Uses DNS-based service discovery: http://<service-name>:8080
+          COMPANY_USER_MANAGEMENT_SERVICE_URL: 'http://company-user-management:8080',
         },
       },
       cluster: props.cluster,
