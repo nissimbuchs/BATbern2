@@ -5,6 +5,7 @@ import SarifParser from '../utils/parsers/sarif-parser.js';
 import CheckstyleParser from '../utils/parsers/checkstyle-parser.js';
 import fs from 'fs-extra';
 import path from 'path';
+import { execSync } from 'child_process';
 
 /**
  * Aggregates all test and quality reports into a unified data structure
@@ -523,9 +524,12 @@ export class ReportAggregator {
    */
   getCurrentBranch() {
     try {
-      const { execSync } = require('child_process');
-      return execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8' }).trim();
+      return execSync('git rev-parse --abbrev-ref HEAD', {
+        encoding: 'utf8',
+        cwd: this.baseDir
+      }).trim();
     } catch (error) {
+      console.warn('Failed to get git branch:', error.message);
       return 'unknown';
     }
   }
@@ -536,9 +540,12 @@ export class ReportAggregator {
    */
   getCurrentCommit() {
     try {
-      const { execSync } = require('child_process');
-      return execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
+      return execSync('git rev-parse HEAD', {
+        encoding: 'utf8',
+        cwd: this.baseDir
+      }).trim();
     } catch (error) {
+      console.warn('Failed to get git commit:', error.message);
       return 'unknown';
     }
   }

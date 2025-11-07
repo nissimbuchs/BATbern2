@@ -102,13 +102,29 @@ export class HistoryManager {
   }
 
   /**
-   * Get trend data for charts
-   * @param {number} limit - Number of entries to include
+   * Get trend data for charts - one build per day for last N days
+   * @param {number} limit - Number of days to include (default 8)
    * @returns {Promise<Object>} Trend data
    */
-  async getTrendData(limit = 20) {
+  async getTrendData(limit = 8) {
     const history = await this.loadHistory();
-    const entries = history.slice(0, limit).reverse(); // Oldest to newest
+
+    // Group builds by day and keep only the last (most recent) build per day
+    const buildsByDay = new Map();
+
+    for (const entry of history) {
+      const date = new Date(entry.timestamp).toISOString().split('T')[0]; // YYYY-MM-DD
+
+      // Only keep the first entry we see for each day (history is newest first)
+      if (!buildsByDay.has(date)) {
+        buildsByDay.set(date, entry);
+      }
+    }
+
+    // Get the last N days, sorted oldest to newest
+    const entries = Array.from(buildsByDay.values())
+      .slice(0, limit)
+      .reverse(); // Oldest to newest for chart display
 
     return {
       labels: entries.map(e => this.formatBuildLabel(e)),
@@ -150,7 +166,7 @@ export class HistoryManager {
   }
 
   /**
-   * Get comparison with previous build
+   * Get comparison with previous build from a different day
    * @param {Object} currentReport - Current report
    * @returns {Promise<Object>} Comparison data
    */
@@ -161,8 +177,19 @@ export class HistoryManager {
       return null;
     }
 
-    const previous = history[0];
     const current = this.createHistoryEntry(currentReport);
+    const currentDate = new Date(current.timestamp).toISOString().split('T')[0]; // YYYY-MM-DD
+
+    // Find the last build from a previous day
+    const previous = history.find(entry => {
+      const entryDate = new Date(entry.timestamp).toISOString().split('T')[0];
+      return entryDate !== currentDate;
+    });
+
+    // If no build from previous day, return null (don't compare with same day)
+    if (!previous) {
+      return null;
+    }
 
     return {
       previous: {
