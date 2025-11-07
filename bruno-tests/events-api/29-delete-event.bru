@@ -22,7 +22,7 @@ tests {
   test("should return 204 status", function() {
     expect(res.getStatus()).to.equal(204);
   });
-
+  
   test("cleanup: clear event code (Story 1.16.2)", function() {
     bru.setVar("createdEventCode", null);
   });

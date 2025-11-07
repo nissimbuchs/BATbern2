@@ -16,17 +16,17 @@ auth:bearer {
 
 assert {
   res.status: eq 200
-  res.body.confirmed: eq true
+  res.body.isConfirmed: eq true
 }
 
 tests {
   test("should return 200 OK status", function() {
     expect(res.getStatus()).to.equal(200);
   });
-  
+
   test("should set isConfirmed to true (Story 1.15a.1b: AC5)", function() {
     const speaker = res.getBody();
-    expect(speaker.confirmed).to.equal(true);
+    expect(speaker.isConfirmed).to.equal(true);
   });
   
   test("should return enriched speaker data", function() {
