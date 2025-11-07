@@ -122,7 +122,9 @@ export function createDomainService(
       },
     });
 
+    // Add named port mapping (required for Service Connect)
     container.addPortMappings({
+      name: `${serviceName}-port`,
       containerPort: 8080,
       protocol: ecs.Protocol.TCP,
     });
@@ -178,6 +180,22 @@ export function createDomainService(
       'Allow HTTPS outbound for AWS API calls'
     );
 
+    // Allow HTTP outbound for Service Connect inter-service communication
+    // Service Connect uses port 8080 for microservice-to-microservice calls
+    serviceSecurityGroup.addEgressRule(
+      ec2.Peer.ipv4(props.vpc.vpcCidrBlock),
+      ec2.Port.tcp(8080),
+      'Allow HTTP outbound for Service Connect inter-service communication'
+    );
+
+    // Allow HTTP inbound for Service Connect inter-service communication
+    // This allows other services in the VPC to connect to this service via Service Connect
+    serviceSecurityGroup.addIngressRule(
+      ec2.Peer.ipv4(props.vpc.vpcCidrBlock),
+      ec2.Port.tcp(8080),
+      'Allow HTTP inbound for Service Connect inter-service communication'
+    );
+
     // Create service with INTERNAL ALB
     const service = new ecsPatterns.ApplicationLoadBalancedFargateService(scope, 'Service', {
       cluster: props.cluster,
@@ -204,6 +222,23 @@ export function createDomainService(
       unhealthyThresholdCount: 3,
     });
 
+    // Enable Service Connect for service-to-service communication
+    // This allows services to communicate using DNS names (e.g., http://company-user-management:8080)
+    // Must use addPropertyOverride because ApplicationLoadBalancedFargateService doesn't expose Service Connect
+    const cfnService = service.service.node.defaultChild as ecs.CfnService;
+    cfnService.addPropertyOverride('ServiceConnectConfiguration', {
+      Enabled: true,
+      Namespace: 'batbern.local',
+      Services: [{
+        PortName: `${serviceName}-port`,
+        DiscoveryName: serviceName,
+        ClientAliases: [{
+          Port: 8080,
+          DnsName: serviceName,
+        }],
+      }],
+    });
+
     // Configure auto-scaling
     const scaling = service.service.autoScaleTaskCount({
       minCapacity: isProd ? 2 : 1,
@@ -216,7 +251,15 @@ export function createDomainService(
       scaleOutCooldown: cdk.Duration.seconds(60),
     });
 
+    // Service URL for ALB-based routing (kept for backwards compatibility)
     const serviceUrl = `http://${service.loadBalancer.loadBalancerDnsName}`;
+
+    // Output Service Connect DNS name for debugging
+    new cdk.CfnOutput(scope, 'ServiceConnectDNS', {
+      value: `http://${serviceName}:8080`,
+      description: `${serviceName} Service Connect DNS endpoint`,
+      exportName: `${envName}-${serviceName}-service-connect-dns`,
+    });
 
     // Apply tags
     cdk.Tags.of(scope).add('Environment', envName);
