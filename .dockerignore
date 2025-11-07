@@ -1,22 +1,90 @@
-# Infrastructure and CDK output
-infrastructure/
-.git/
-.github/
+# Git
+.git
+.gitignore
+.gitattributes
 
-# Build artifacts
-**/build/
-**/target/
-**/.gradle/
-**/node_modules/
+# Documentation
+*.md
+docs/
+!docs/api/
+README.md
+CHANGELOG.md
 
 # IDE
-**/.idea/
-**/.vscode/
-**/*.iml
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
-# Docs and config (except docs/api/ needed for OpenAPI generation)
-docs/*
-!docs/api/
-mockups/
-*.md
-!README.md
+# Build outputs
+**/build/
+**/target/
+**/dist/
+**/out/
+**/.next/
+**/cdk.out/
+**/node_modules/
+
+# Infrastructure
+infrastructure/node_modules/
+infrastructure/cdk.out/
+infrastructure/.cdk.staging/
+infrastructure/dist/
+
+# Test files
+**/*.test.ts
+**/*.test.js
+**/*.spec.ts
+**/*.spec.js
+**/test/
+**/__tests__/
+**/__mocks__/
+**/coverage/
+**/.nyc_output/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Package manager
+.npm/
+.yarn/
+.pnpm-store/
+
+# Security
+security-reports/
+trivy-reports/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.circleci/
+
+# Frontend build
+web-frontend/node_modules/
+web-frontend/dist/
+web-frontend/.next/
+web-frontend/build/
+web-frontend/coverage/
+
+# Apps
+apps/
