@@ -49,7 +49,8 @@ describe('HeroSection Component', () => {
     test('should_renderDefaultCTAText_when_notProvided', () => {
       renderWithRouter(<HeroSection {...defaultProps} />);
 
-      expect(screen.getByText('Register Now')).toBeInTheDocument();
+      // "Register Now" appears in the button link
+      expect(screen.getByRole('link', { name: 'Register Now' })).toBeInTheDocument();
     });
 
     test('should_renderCustomCTAText_when_provided', () => {
@@ -75,7 +76,9 @@ describe('HeroSection Component', () => {
       );
 
       // Check for date presence (format depends on locale)
-      expect(screen.getByText(/2025/)).toBeInTheDocument();
+      // Use getAllByText since "2025" appears in both title and date
+      const elementsWithYear = screen.getAllByText(/2025/);
+      expect(elementsWithYear.length).toBeGreaterThan(1); // Title + formatted date
     });
 
     test('should_renderLocation_when_locationProvided', () => {
@@ -95,7 +98,9 @@ describe('HeroSection Component', () => {
         />
       );
 
-      expect(screen.getByText(/2025/)).toBeInTheDocument();
+      // Use getAllByText since "2025" appears in both title and date
+      const elementsWithYear = screen.getAllByText(/2025/);
+      expect(elementsWithYear.length).toBeGreaterThan(1);
       expect(screen.getByText('Bern, Switzerland')).toBeInTheDocument();
     });
 
@@ -103,8 +108,12 @@ describe('HeroSection Component', () => {
       const { container } = renderWithRouter(<HeroSection {...defaultProps} />);
 
       // Check that the date/location container is not rendered
-      const dateLocationContainer = container.querySelector('.flex.flex-wrap.items-center.gap-4');
-      expect(dateLocationContainer).not.toBeInTheDocument();
+      // Need to check for the specific container with both flex-wrap and gap-4
+      const allFlexContainers = container.querySelectorAll('[class*="flex"][class*="gap-4"]');
+      const dateLocationContainer = Array.from(allFlexContainers).find(el =>
+        el.className.includes('flex-wrap') && el.className.includes('items-center')
+      );
+      expect(dateLocationContainer).toBeUndefined();
     });
 
     test('should_renderCalendarIcon_when_dateProvided', () => {
@@ -220,13 +229,20 @@ describe('HeroSection Component', () => {
 
       const script = document.querySelector('script[src*="unicornStudio"]') as HTMLScriptElement;
 
+      // Mock the UnicornStudio.init function
+      (window as any).UnicornStudio = {
+        isInitialized: false,
+        init: vi.fn()
+      };
+
       // Simulate script load
       if (script && script.onload) {
         (script.onload as any)({});
       }
 
-      // Check that window.UnicornStudio was set
-      expect((window as any).UnicornStudio).toBeDefined();
+      // Check that init was called and flag was set
+      expect((window as any).UnicornStudio.init).toHaveBeenCalled();
+      expect((window as any).UnicornStudio.isInitialized).toBe(true);
     });
 
     test('should_appendScriptToHead_when_componentMounts', () => {
@@ -255,10 +271,16 @@ describe('HeroSection Component', () => {
     });
 
     test('should_handleEmptyLocation_when_provided', () => {
-      renderWithRouter(<HeroSection {...defaultProps} location="" />);
+      const { container } = renderWithRouter(<HeroSection {...defaultProps} location="" />);
 
-      // Empty location should not display location icon/text
-      expect(screen.queryByText('')).not.toBeInTheDocument();
+      // Empty location should not display the date/location container
+      // Check that location icon (MapPin) is not rendered
+      const allFlexContainers = container.querySelectorAll('[class*="flex"][class*="gap-4"]');
+      const dateLocationContainer = Array.from(allFlexContainers).find(el =>
+        el.className.includes('flex-wrap') && el.className.includes('items-center')
+      );
+      // Should not find the date/location container when location is empty and date is not provided
+      expect(dateLocationContainer).toBeUndefined();
     });
   });
 });

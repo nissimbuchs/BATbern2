@@ -13,9 +13,10 @@ import type { EventDetail } from '@/types/event.types';
 /**
  * Fetch current published event with optional resource expansion
  *
+ * @param options Optional configuration for the query
  * @returns React Query result with current event data
  */
-export const useCurrentEvent = () => {
+export const useCurrentEvent = (options?: { retry?: number | false }) => {
   return useQuery<EventDetail | null, Error>({
     queryKey: ['events', 'current'],
     queryFn: () =>
@@ -23,7 +24,7 @@ export const useCurrentEvent = () => {
         expand: ['topics', 'venue', 'speakers', 'sessions'],
       }),
     staleTime: 5 * 60 * 1000, // 5 minutes (event data doesn't change frequently)
-    retry: 2,
+    retry: options?.retry ?? 2, // Default to 2 retries, but allow override for testing
     refetchOnWindowFocus: false,
   });
 };
