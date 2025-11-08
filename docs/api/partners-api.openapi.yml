@@ -8,19 +8,15 @@ info:
     This API provides partner management capabilities with:
     - **Partner Relationship Management**: Partnership tiers and benefits
     - **Topic Voting & Suggestions**: Strategic topic influence
-    - **Meeting Coordination**: Partner meeting scheduling and attendance
     - **Contact Management**: Multiple contact persons per partner
 
     **Important (ADR-003 + ADR-004)**: Partner is company-centric.
     - Partner entity stores companyName (meaningful ID), NOT companyId UUID
     - PartnerContact stores username (meaningful ID), NOT userId UUID
-    - PartnerContact does NOT duplicate email, name, photo fields from User
     - API responses combine User + PartnerContact data via HTTP enrichment
     - HTTP calls to Company Service: GET /api/v1/companies/{companyName}
     - HTTP calls to User Service: GET /api/v1/users/{username}
     - NO JPQL joins across service boundaries (ADR-003 microservices pattern)
-
-    **Status**: NOT YET IMPLEMENTED - This spec defines the future API design
 
   contact:
     name: BATbern Platform Team
@@ -44,106 +40,118 @@ tags:
     description: Partner contact person management
   - name: Topic Voting
     description: Topic voting and suggestions
-  - name: Partner Meetings
-    description: Partner meeting coordination
 
 paths:
   /partners:
     get:
-      tags:
-        - Partners
-      summary: List partners
-      description: |
-        Retrieve a list of partners with optional filtering by partnership level or active status.
-
+      tags: [Partners]
       operationId: listPartners
+      summary: List all partners
+      description: Get a list of all partner companies with optional filtering
       parameters:
-        - name: partnershipLevel
+        - name: filter
           in: query
-          description: Filter by partnership tier
-          required: false
-          schema:
-            $ref: '#/components/schemas/PartnershipTier'
-        - name: isActive
-          in: query
-          description: Filter by active status
-          required: false
-          schema:
-            type: boolean
-        - name: include
-          in: query
-          description: Comma-separated list of resources to include (company, contacts, votes)
-          required: false
           schema:
             type: string
-            example: 'company,contacts'
+          description: Filter expression (e.g., "partnershipLevel=gold,isActive=true")
+        - name: include
+          in: query
+          schema:
+            type: string
+          description: Related resources to include (e.g., "company,contacts")
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
       responses:
         '200':
-          description: List of partners retrieved successfully
+          description: List of partners
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/PartnerResponse'
-        '401':
-          description: Unauthorized
+                $ref: '#/components/schemas/PartnerListResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags: [Partners]
+      operationId: createPartner
+      summary: Create new partnership
+      description: Create a new partner relationship (organizer-only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePartnerRequest'
+      responses:
+        '201':
+          description: Partner created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Forbidden
+          description: Forbidden - organizer access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /partners/{companyName}:
-    get:
-      tags:
-        - Partners
-      summary: Get partner by company name
-      description: |
-        Retrieve a specific partner by their company name (ADR-003 meaningful ID).
+    parameters:
+      - name: companyName
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 12
+        description: Company name (meaningful ID per ADR-003)
 
+    get:
+      tags: [Partners]
       operationId: getPartnerByCompanyName
+      summary: Get partner by company name
       parameters:
-        - name: companyName
-          in: path
-          required: true
-          description: Company name (ADR-003 meaningful ID)
-          schema:
-            type: string
-            example: GoogleZH
         - name: include
           in: query
-          description: Comma-separated list of resources to include
-          required: false
           schema:
             type: string
-            example: 'company,contacts,votes'
+          description: Related resources to include
       responses:
         '200':
-          description: Partner retrieved successfully
+          description: Partner details
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/PartnerResponse'
         '404':
           description: Partner not found
-        '401':
-          description: Unauthorized
-        '403':
-          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
     patch:
-      tags:
-        - Partners
-      summary: Update partner
-      description: |
-        Update partner relationship details (partnership level, dates, benefits).
-
+      tags: [Partners]
       operationId: updatePartner
-      parameters:
-        - name: companyName
-          in: path
-          required: true
-          schema:
-            type: string
-            example: GoogleZH
+      summary: Update partnership details
       requestBody:
         required: true
         content:
@@ -152,340 +160,157 @@ paths:
               $ref: '#/components/schemas/UpdatePartnerRequest'
       responses:
         '200':
-          description: Partner updated successfully
+          description: Partner updated
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/PartnerResponse'
         '400':
-          description: Bad request - validation errors
-        '404':
-          description: Partner not found
-
-  /partners/{companyName}/contacts:
-    get:
-      tags:
-        - Partner Contacts
-      summary: Get partner contacts
-      description: |
-        Retrieve all contact persons for a partner.
-
-        **Response combines User + PartnerContact data** (ADR-003 + ADR-004):
-        - User fields enriched via HTTP call to User Service (username, email, firstName, lastName, profilePictureUrl)
-        - PartnerContact fields from partner_contacts table (contactRole, isPrimary)
-        - HTTP integration pattern with JWT token propagation
-
-      operationId: getPartnerContacts
-      parameters:
-        - name: companyName
-          in: path
-          required: true
-          schema:
-            type: string
-            example: GoogleZH
-      responses:
-        '200':
-          description: Partner contacts retrieved successfully
+          description: Validation error
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/PartnerContactResponse'
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Partner not found
-
-    post:
-      tags:
-        - Partner Contacts
-      summary: Add partner contact
-      description: |
-        Add a new contact person to a partner.
-
-        **Important (ADR-003 + ADR-004)**:
-        - Contact must reference an existing User (by username, not userId UUID)
-        - User existence validated via HTTP call to User Service: GET /api/v1/users/{username}
-        - Returns 404 if user not found
-
-      operationId: addPartnerContact
-      parameters:
-        - name: companyName
-          in: path
-          required: true
-          schema:
-            type: string
-            example: GoogleZH
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddPartnerContactRequest'
-      responses:
-        '201':
-          description: Contact added successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PartnerContactResponse'
-        '400':
-          description: Bad request - validation errors
-        '404':
-          description: Partner or user not found
-        '409':
-          description: Contact already exists
+                $ref: '#/components/schemas/ErrorResponse'
 
-  /partners/{companyName}/contacts/{username}:
     delete:
-      tags:
-        - Partner Contacts
-      summary: Remove partner contact
-      description: |
-        Remove a contact person from a partner.
-
-      operationId: removePartnerContact
-      parameters:
-        - name: companyName
-          in: path
-          required: true
-          schema:
-            type: string
-            example: GoogleZH
-        - name: username
-          in: path
-          required: true
-          description: Username (ADR-003 meaningful ID from User entity)
-          schema:
-            type: string
-            example: john.doe
+      tags: [Partners]
+      operationId: deletePartner
+      summary: Deactivate partnership (soft delete)
       responses:
         '204':
-          description: Contact removed successfully
-        '404':
-          description: Partner or contact not found
-        '400':
-          description: Cannot remove - last primary contact
-
-  /partners/{companyName}/votes:
-    get:
-      tags:
-        - Topic Voting
-      summary: Get partner's topic votes
-      description: |
-        Retrieve all topic votes cast by a partner.
-
-      operationId: getPartnerVotes
-      parameters:
-        - name: companyName
-          in: path
-          required: true
-          schema:
-            type: string
-            example: GoogleZH
-      responses:
-        '200':
-          description: Votes retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/TopicVote'
+          description: Partner deactivated
         '404':
           description: Partner not found
-
-    post:
-      tags:
-        - Topic Voting
-      summary: Cast topic vote
-      description: |
-        Partner casts a vote on a topic. Vote weight is based on partnership tier.
-
-      operationId: voteOnTopic
-      parameters:
-        - name: companyName
-          in: path
-          required: true
-          schema:
-            type: string
-            example: GoogleZH
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CastVoteRequest'
-      responses:
-        '201':
-          description: Vote cast successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TopicVote'
-        '400':
-          description: Bad request - validation errors
-        '409':
-          description: Already voted on this topic
-
-  /partners/{companyName}/suggestions:
-    get:
-      tags:
-        - Topic Voting
-      summary: Get partner's topic suggestions
-      description: |
-        Retrieve all topic suggestions submitted by a partner.
-
-      operationId: getPartnerSuggestions
-      parameters:
-        - name: companyName
-          in: path
-          required: true
-          schema:
-            type: string
-            example: GoogleZH
-      responses:
-        '200':
-          description: Suggestions retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/TopicSuggestion'
-
-    post:
-      tags:
-        - Topic Voting
-      summary: Submit topic suggestion
-      description: |
-        Partner submits a new topic suggestion.
-
-      operationId: suggestTopic
-      parameters:
-        - name: companyName
-          in: path
-          required: true
-          schema:
-            type: string
-            example: GoogleZH
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SubmitSuggestionRequest'
-      responses:
-        '201':
-          description: Suggestion submitted successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TopicSuggestion'
-        '400':
-          description: Bad request - validation errors
+                $ref: '#/components/schemas/ErrorResponse'
 
 components:
   schemas:
     PartnerResponse:
       type: object
-      description: |
-        Partner is company-centric (ADR-004).
-        Partner entity references Company entity (primary relationship).
+      required:
+        - id
+        - companyName
+        - partnershipLevel
+        - partnershipStartDate
+        - isActive
       properties:
+        id:
+          type: string
+          format: uuid
         companyName:
           type: string
-          description: Company name (ADR-003 meaningful ID)
-          example: GoogleZH
+          maxLength: 12
+          description: Meaningful ID per ADR-003
         partnershipLevel:
-          $ref: '#/components/schemas/PartnershipTier'
+          $ref: '#/components/schemas/PartnershipLevel'
         partnershipStartDate:
           type: string
           format: date
         partnershipEndDate:
           type: string
           format: date
-          nullable: true
         isActive:
           type: boolean
+        company:
+          $ref: '#/components/schemas/CompanyInfo'
+          description: Enriched via HTTP call (when include=company)
         contacts:
           type: array
           items:
             $ref: '#/components/schemas/PartnerContactResponse'
-          description: Included if ?include=contacts
-        benefits:
-          $ref: '#/components/schemas/PartnershipBenefits'
-        createdAt:
+          description: Enriched partner contacts (when include=contacts)
+
+    CreatePartnerRequest:
+      type: object
+      required:
+        - companyName
+        - partnershipLevel
+        - partnershipStartDate
+      properties:
+        companyName:
           type: string
-          format: date-time
-        updatedAt:
+          maxLength: 12
+        partnershipLevel:
+          $ref: '#/components/schemas/PartnershipLevel'
+        partnershipStartDate:
           type: string
-          format: date-time
+          format: date
+        partnershipEndDate:
+          type: string
+          format: date
 
     UpdatePartnerRequest:
       type: object
       properties:
         partnershipLevel:
-          $ref: '#/components/schemas/PartnershipTier'
+          $ref: '#/components/schemas/PartnershipLevel'
         partnershipEndDate:
           type: string
           format: date
         isActive:
           type: boolean
 
-    PartnerContactResponse:
-      type: object
-      description: |
-        PartnerContact response combines User entity fields with PartnerContact domain fields (ADR-003 + ADR-004).
-        PartnerContact stores username (meaningful ID), NOT userId UUID.
-        User data enriched via HTTP call to User Service: GET /api/v1/users/{username}
-      properties:
-        # From User entity (via HTTP enrichment from User Service):
-        username:
-          type: string
-          description: Public identifier from User (ADR-003)
-          example: john.doe
-        email:
-          type: string
-          format: email
-          description: From User entity (HTTP enrichment)
-          example: john.doe@example.com
-        firstName:
-          type: string
-          description: From User entity (HTTP enrichment)
-          example: John
-        lastName:
-          type: string
-          description: From User entity (HTTP enrichment)
-          example: Doe
-        profilePictureUrl:
-          type: string
-          format: uri
-          description: From User entity (HTTP enrichment)
-          example: https://cdn.batbern.ch/users/john.doe/profile.jpg
-
-        # PartnerContact-specific fields (stored in partner_contacts table):
-        contactRole:
-          $ref: '#/components/schemas/ContactRole'
-        isPrimary:
-          type: boolean
-          description: Whether this is the primary contact
-
-    AddPartnerContactRequest:
+    PartnerListResponse:
       type: object
       required:
+        - data
+        - metadata
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartnerResponse'
+        metadata:
+          $ref: '#/components/schemas/PaginationMetadata'
+
+    PartnerContactResponse:
+      type: object
+      required:
+        - id
         - username
         - contactRole
+        - isPrimary
       properties:
+        id:
+          type: string
+          format: uuid
         username:
           type: string
-          description: Username of existing User (ADR-003)
-          example: john.doe
+          description: Meaningful ID per ADR-003
         contactRole:
           $ref: '#/components/schemas/ContactRole'
         isPrimary:
           type: boolean
-          description: Whether this is the primary contact
-          default: false
+        email:
+          type: string
+          description: Enriched from User Service
+        firstName:
+          type: string
+          description: Enriched from User Service
+        lastName:
+          type: string
+          description: Enriched from User Service
+        profilePictureUrl:
+          type: string
+          description: Enriched from User Service
+
+    PartnershipLevel:
+      type: string
+      enum:
+        - bronze
+        - silver
+        - gold
+        - platinum
+        - strategic
 
     ContactRole:
       type: string
@@ -494,139 +319,25 @@ components:
         - billing
         - technical
         - marketing
-      description: |
-        Contact person role:
-        - primary: Primary point of contact
-        - billing: Billing and invoicing contact
-        - technical: Technical contact for integration
-        - marketing: Marketing and communications contact
 
-    PartnershipTier:
-      type: string
-      enum:
-        - bronze
-        - silver
-        - gold
-        - platinum
-        - strategic
-      description: Partnership tier determining benefits and vote weight
-
-    PartnershipBenefits:
+    CompanyInfo:
       type: object
+      description: Enriched from Company Service (ADR-004)
       properties:
-        voteWeight:
-          type: integer
-          description: Weight of votes (1-5 based on tier)
-        logoOnWebsite:
-          type: boolean
-        logoOnMaterials:
-          type: boolean
-        speakerSlots:
-          type: integer
-          description: Guaranteed speaker slots
-        exclusiveEvents:
-          type: boolean
-        customBenefits:
-          type: array
-          items:
-            type: string
+        companyName:
+          type: string
+        displayName:
+          type: string
+        logoUrl:
+          type: string
 
-    TopicVote:
+    # Shared-kernel types (imported, not generated)
+    ErrorResponse:
       type: object
-      properties:
-        topicId:
-          type: string
-          description: Topic identifier
-        topicTitle:
-          type: string
-          description: Topic title
-        voteValue:
-          type: integer
-          minimum: 1
-          maximum: 5
-          description: Vote value (1-5)
-        voteWeight:
-          type: integer
-          description: Weighted vote value based on partnership tier
-        votedAt:
-          type: string
-          format: date-time
+      x-java-class: ch.batbern.shared.dto.ErrorResponse
+      description: Imported from shared-kernel
 
-    CastVoteRequest:
+    PaginationMetadata:
       type: object
-      required:
-        - topicId
-        - voteValue
-      properties:
-        topicId:
-          type: string
-          description: Topic identifier
-        voteValue:
-          type: integer
-          minimum: 1
-          maximum: 5
-          description: Vote value (1=low interest, 5=high interest)
-
-    TopicSuggestion:
-      type: object
-      properties:
-        id:
-          type: string
-          description: Suggestion identifier
-        suggestedTopic:
-          type: string
-          description: Suggested topic title
-        description:
-          type: string
-          description: Topic description
-        businessJustification:
-          type: string
-          description: Why this topic is valuable
-        status:
-          $ref: '#/components/schemas/SuggestionStatus'
-        suggestedAt:
-          type: string
-          format: date-time
-        reviewedAt:
-          type: string
-          format: date-time
-          nullable: true
-        reviewedBy:
-          type: string
-          description: Organizer username who reviewed
-          nullable: true
-
-    SubmitSuggestionRequest:
-      type: object
-      required:
-        - suggestedTopic
-        - description
-      properties:
-        suggestedTopic:
-          type: string
-          maxLength: 500
-          description: Suggested topic title
-        description:
-          type: string
-          maxLength: 2000
-          description: Topic description
-        businessJustification:
-          type: string
-          maxLength: 1000
-          description: Why this topic is valuable for the community
-
-    SuggestionStatus:
-      type: string
-      enum:
-        - submitted
-        - under_review
-        - accepted
-        - rejected
-        - implemented
-      description: |
-        Topic suggestion status:
-        - submitted: Newly submitted suggestion
-        - under_review: Being reviewed by organizers
-        - accepted: Accepted for future consideration
-        - rejected: Not suitable for BATbern
-        - implemented: Topic was used in an event
+      x-java-class: ch.batbern.shared.api.PaginationMetadata
+      description: Imported from shared-kernel
