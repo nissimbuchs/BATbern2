@@ -3,10 +3,13 @@ package ch.batbern.events.controller;
 import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Logo;
+import ch.batbern.events.domain.Registration;
 import ch.batbern.events.dto.BatchUpdateRequest;
 import ch.batbern.events.dto.CreateEventRequest;
+import ch.batbern.events.dto.CreateRegistrationRequest;
 import ch.batbern.events.dto.EventResponse;
 import ch.batbern.events.dto.PatchEventRequest;
+import ch.batbern.events.dto.RegistrationResponse;
 import ch.batbern.events.dto.UpdateEventRequest;
 import ch.batbern.events.event.EventCreatedEvent;
 import ch.batbern.events.event.EventPublishedEvent;
@@ -40,6 +43,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -71,6 +75,9 @@ public class EventController {
     private final CacheManager cacheManager;
     private final ch.batbern.events.service.GenericLogoService genericLogoService;
     private final ch.batbern.events.client.UserApiClient userApiClient;
+    private final ch.batbern.events.service.RegistrationService registrationService;
+    private final ch.batbern.events.repository.RegistrationRepository registrationRepository;
+    private final ch.batbern.events.service.QRCodeService qrCodeService;
 
     /**
      * List/Search Events (AC1)
@@ -1068,6 +1075,177 @@ public class EventController {
         analytics.put("eventCode", eventCode);
 
         return ResponseEntity.ok(analytics);
+    }
+
+    // ================================
+    // Registration Endpoints (Story 2.2a: Anonymous Event Registration)
+    // ================================
+
+    /**
+     * Create Event Registration (Anonymous) - Story 2.2a (ADR-005)
+     *
+     * POST /api/v1/events/{eventCode}/registrations
+     *
+     * Creates a new registration for an event with anonymous user support.
+     * Users can register without creating a Cognito account (anonymous users).
+     *
+     * @param eventCode Event code to register for
+     * @param request Registration request with attendee details
+     * @return Created registration with enriched user data
+     */
+    @PostMapping("/{eventCode}/registrations")
+    @Operation(
+            summary = "Create Event Registration (Anonymous)",
+            description = "Register for an event without requiring authentication. " +
+                    "Creates anonymous user profile automatically."
+    )
+    public ResponseEntity<RegistrationResponse> createRegistration(
+            @PathVariable String eventCode,
+            @Valid @RequestBody CreateRegistrationRequest request) {
+        log.debug("POST /api/v1/events/{}/registrations", eventCode);
+
+        // Create registration (also creates/retrieves anonymous user via User Management Service)
+        Registration registration = registrationService.createRegistration(eventCode, request);
+
+        // Set eventCode in transient field for enrichment
+        registration.setEventCode(eventCode);
+
+        // Enrich with user data from User Management Service (ADR-004)
+        RegistrationResponse response = registrationService.enrichRegistrationWithUserData(registration);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * List Event Registrations - Story 2.2a
+     *
+     * GET /api/v1/events/{eventCode}/registrations
+     *
+     * @param eventCode Event code to list registrations for
+     * @return List of registrations enriched with user data
+     */
+    @GetMapping("/{eventCode}/registrations")
+    @Operation(
+            summary = "List Event Registrations",
+            description = "Retrieve all registrations for a specific event with enriched user data"
+    )
+    public ResponseEntity<List<RegistrationResponse>> listRegistrations(@PathVariable String eventCode) {
+        log.debug("GET /api/v1/events/{}/registrations", eventCode);
+
+        // Find event to get UUID
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
+
+        // Fetch registrations
+        List<Registration> registrations = registrationRepository.findByEventId(event.getId());
+
+        // Enrich each registration with user data
+        List<RegistrationResponse> responses = registrations.stream()
+                .peek(reg -> reg.setEventCode(eventCode)) // Set transient field
+                .map(registrationService::enrichRegistrationWithUserData)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(responses);
+    }
+
+    /**
+     * Get Registration Detail - Story 2.2a
+     *
+     * GET /api/v1/events/{eventCode}/registrations/{registrationCode}
+     *
+     * @param eventCode Event code
+     * @param registrationCode Registration code (e.g., BATbern142-reg-A3X9K2)
+     * @return Registration detail enriched with user data
+     */
+    @GetMapping("/{eventCode}/registrations/{registrationCode}")
+    @Operation(
+            summary = "Get Registration Detail",
+            description = "Retrieve a specific registration by registration code with enriched user data"
+    )
+    public ResponseEntity<RegistrationResponse> getRegistration(
+            @PathVariable String eventCode,
+            @PathVariable String registrationCode) {
+        log.debug("GET /api/v1/events/{}/registrations/{}", eventCode, registrationCode);
+
+        // Find registration by code
+        Registration registration = registrationRepository.findByRegistrationCode(registrationCode)
+                .orElseThrow(() -> new NoSuchElementException("Registration not found: " + registrationCode));
+
+        // Verify registration belongs to this event
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
+
+        if (!registration.getEventId().equals(event.getId())) {
+            throw new NoSuchElementException("Registration " + registrationCode + " does not belong to event " + eventCode);
+        }
+
+        // Set transient field and enrich
+        registration.setEventCode(eventCode);
+        RegistrationResponse response = registrationService.enrichRegistrationWithUserData(registration);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get Registration QR Code - Story 2.2a
+     *
+     * GET /api/v1/events/{eventCode}/registrations/{registrationCode}/qr
+     *
+     * Generates a QR code for the registration ticket containing registration details.
+     * Can be used for event check-in by scanning the QR code.
+     *
+     * @param eventCode Event code
+     * @param registrationCode Registration code
+     * @return QR code as PNG image
+     */
+    @GetMapping(value = "/{eventCode}/registrations/{registrationCode}/qr", produces = "image/png")
+    @Operation(
+            summary = "Get Registration QR Code",
+            description = "Generate QR code for registration ticket. Returns PNG image."
+    )
+    public ResponseEntity<byte[]> getRegistrationQRCode(
+            @PathVariable String eventCode,
+            @PathVariable String registrationCode) {
+        log.debug("GET /api/v1/events/{}/registrations/{}/qr", eventCode, registrationCode);
+
+        // Find registration
+        Registration registration = registrationRepository.findByRegistrationCode(registrationCode)
+                .orElseThrow(() -> new NoSuchElementException("Registration not found: " + registrationCode));
+
+        // Verify registration belongs to this event
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
+
+        if (!registration.getEventId().equals(event.getId())) {
+            throw new NoSuchElementException("Registration " + registrationCode + " does not belong to event " + eventCode);
+        }
+
+        // Enrich with user data
+        registration.setEventCode(eventCode);
+        RegistrationResponse enrichedRegistration = registrationService.enrichRegistrationWithUserData(registration);
+
+        // Build QR code data (JSON format)
+        String qrData = String.format(
+                "{\"registrationCode\":\"%s\",\"eventCode\":\"%s\",\"attendeeUsername\":\"%s\",\"attendeeName\":\"%s %s\",\"status\":\"%s\"}",
+                enrichedRegistration.getRegistrationCode(),
+                enrichedRegistration.getEventCode(),
+                enrichedRegistration.getAttendeeUsername(),
+                enrichedRegistration.getAttendeeFirstName(),
+                enrichedRegistration.getAttendeeLastName(),
+                enrichedRegistration.getStatus()
+        );
+
+        // Generate QR code
+        byte[] qrCodeBytes = qrCodeService.generateQRCode(qrData);
+
+        // Return PNG with proper headers
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"registration-" + registrationCode + ".png\"");
+        headers.add(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate");
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(qrCodeBytes);
     }
 
     /**

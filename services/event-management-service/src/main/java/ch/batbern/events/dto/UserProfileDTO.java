@@ -16,7 +16,7 @@ import lombok.*;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 @JsonIgnoreProperties(ignoreUnknown = true)  // Ignore any fields from API not in this DTO
 public class UserProfileDTO {
 

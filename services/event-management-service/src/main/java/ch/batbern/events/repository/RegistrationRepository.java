@@ -30,6 +30,16 @@ public interface RegistrationRepository extends JpaRepository<Registration, UUID
     boolean existsByRegistrationCode(String registrationCode);
 
     /**
+     * Check if a registration already exists for a specific event and attendee
+     * QA Fix (VALID-001): Duplicate registration prevention
+     *
+     * @param eventId Event UUID
+     * @param attendeeUsername Username reference to User Management Service
+     * @return true if registration exists, false otherwise
+     */
+    boolean existsByEventIdAndAttendeeUsername(UUID eventId, String attendeeUsername);
+
+    /**
      * Find all registrations for a specific event
      */
     List<Registration> findByEventId(UUID eventId);

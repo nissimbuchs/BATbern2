@@ -1,0 +1,53 @@
+meta {
+  name: Get Registration by Code (No Auth)
+  type: http
+  seq: 13.2
+}
+
+get {
+  url: {{baseUrl}}/events/{{createdEventCode}}/registrations/{{anonymousRegistrationCode}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("should return 200 status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return registration with enriched user data (Story 2.2a: ADR-004)", function() {
+    const registration = res.getBody();
+
+    // Registration code
+    expect(registration.registrationCode).to.equal(bru.getVar("anonymousRegistrationCode"));
+    expect(registration.eventCode).to.equal(bru.getVar("createdEventCode"));
+
+    // Enriched user data from User Management Service (no duplication)
+    expect(registration.attendeeUsername).to.equal(bru.getVar("anonymousAttendeeUsername"));
+    expect(registration.attendeeFirstName).to.equal('Jane');
+    expect(registration.attendeeLastName).to.equal('Doe');
+    expect(registration.attendeeEmail).to.equal('jane.doe.anonymous@example.com');
+
+    // Registration details
+    expect(registration.status).to.equal('confirmed');
+    expect(registration.registrationDate).to.be.a('string');
+    expect(registration.createdAt).to.be.a('string');
+    expect(registration.updatedAt).to.be.a('string');
+  });
+
+  test("should work without authentication for public access (Story 2.2a: ADR-005)", function() {
+    // This test passes if we get a 200 response without auth token
+    // Public access is critical for anonymous users checking their registration
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should verify no UUID id fields (ADR-003)", function() {
+    const registration = res.getBody();
+    expect(registration.id).to.be.undefined;
+    expect(registration.attendeeId).to.be.undefined;
+  });
+}

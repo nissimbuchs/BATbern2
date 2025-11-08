@@ -156,6 +156,187 @@ responses:
           $ref: '#/components/schemas/EventWorkflow'
 ```
 
+### Event Registration Operations
+
+**ADR-005 Reference**: Anonymous Event Registration
+**Story**: 4.1.5a Architecture Consolidation
+
+Event registrations support both anonymous (public) and authenticated users. Anonymous users can register without creating a Cognito account. User profiles are created/found via User Management Service API.
+
+#### Create Event Registration (Public Access)
+
+```yaml
+POST /api/v1/events/{eventCode}/registrations
+tags: [Event Registration]
+summary: Register for an event (public access, no authentication required)
+description: |
+  Allows anonymous public users to register for events without creating an account.
+  Creates/finds user_profile via User Management Service (ADR-004, ADR-005).
+  Registration is for the WHOLE EVENT, not individual sessions.
+security: []  # Public endpoint - no authentication required
+parameters:
+  - name: eventCode
+    in: path
+    required: true
+    schema:
+      type: string
+    description: Event code (e.g., "BATbern142")
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        $ref: '#/components/schemas/CreateRegistrationRequest'
+      examples:
+        anonymous_user:
+          summary: Anonymous registration (no account)
+          value:
+            firstName: "John"
+            lastName: "Doe"
+            email: "john.doe@example.com"
+            company: "GoogleZH"
+            role: "Software Architect"
+responses:
+  '201':
+    description: Registration created successfully
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/Registration'
+  '400':
+    description: Validation error
+  '404':
+    description: Event not found
+  '409':
+    description: Already registered
+```
+
+#### Get Registration (Public Access)
+
+```yaml
+GET /api/v1/events/{eventCode}/registrations/{registrationCode}
+tags: [Event Registration]
+summary: Get registration details (public access via confirmation code)
+description: |
+  Anyone with the registration code can view the registration.
+  Confirmation code acts as a secret for anonymous access.
+security: []  # Public endpoint - secured by confirmation code
+parameters:
+  - name: eventCode
+    in: path
+    required: true
+    schema:
+      type: string
+  - name: registrationCode
+    in: path
+    required: true
+    schema:
+      type: string
+    description: Registration confirmation code (e.g., "BATbern142-reg-abc123")
+responses:
+  '200':
+    description: Registration details
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/Registration'
+  '404':
+    description: Registration not found
+```
+
+#### List Event Registrations (Authenticated)
+
+```yaml
+GET /api/v1/events/{eventCode}/registrations
+tags: [Event Registration]
+summary: List all registrations for an event
+security:
+  - BearerAuth: [organizer]
+parameters:
+  - name: eventCode
+    in: path
+    required: true
+    schema:
+      type: string
+  - name: status
+    in: query
+    schema:
+      type: string
+      enum: [registered, waitlisted, confirmed, cancelled, attended]
+responses:
+  '200':
+    description: List of registrations
+    content:
+      application/json:
+        schema:
+          type: array
+          items:
+            $ref: '#/components/schemas/Registration'
+```
+
+#### Update Registration Status
+
+```yaml
+PATCH /api/v1/events/{eventCode}/registrations/{registrationCode}
+tags: [Event Registration]
+summary: Update registration status
+security:
+  - BearerAuth: [organizer]
+parameters:
+  - name: eventCode
+    in: path
+    required: true
+    schema:
+      type: string
+  - name: registrationCode
+    in: path
+    required: true
+    schema:
+      type: string
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          status:
+            type: string
+            enum: [registered, waitlisted, confirmed, cancelled, attended]
+responses:
+  '200':
+    description: Registration updated
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/Registration'
+```
+
+#### Delete Registration
+
+```yaml
+DELETE /api/v1/events/{eventCode}/registrations/{registrationCode}
+tags: [Event Registration]
+summary: Cancel/delete registration
+description: Can be called by owner (public with confirmation code) or organizer (authenticated)
+parameters:
+  - name: eventCode
+    in: path
+    required: true
+    schema:
+      type: string
+  - name: registrationCode
+    in: path
+    required: true
+    schema:
+      type: string
+responses:
+  '204':
+    description: Registration deleted
+  '404':
+    description: Registration not found
+```
+
 ### Slot Management
 
 #### List Event Slots
@@ -1794,4 +1975,93 @@ AssignSlotRequest:
     notes:
       type: string
       maxLength: 500
+
+### Create Registration Request
+
+```yaml
+CreateRegistrationRequest:
+  type: object
+  description: |
+    Request to register for an event (ADR-005: anonymous registration).
+    Creates/finds user_profile via User Management Service.
+    Registration is for the WHOLE EVENT, not individual sessions.
+  required:
+    - firstName
+    - lastName
+    - email
+  properties:
+    firstName:
+      type: string
+      minLength: 1
+      maxLength: 100
+      example: "John"
+    lastName:
+      type: string
+      minLength: 1
+      maxLength: 100
+      example: "Doe"
+    email:
+      type: string
+      format: email
+      example: "john.doe@example.com"
+    company:
+      type: string
+      maxLength: 255
+      example: "GoogleZH"
+      description: Company name or affiliation
+    role:
+      type: string
+      maxLength: 100
+      example: "Software Architect"
+      description: Job title or role
+```
+
+### Registration
+
+```yaml
+Registration:
+  type: object
+  description: |
+    Event registration (ADR-004, ADR-005).
+    References user via attendee_username (cross-service).
+    User details fetched from User Management Service API.
+  properties:
+    registrationCode:
+      type: string
+      example: "BATbern142-reg-abc123"
+      description: Unique registration confirmation code
+    eventCode:
+      type: string
+      example: "BATbern142"
+      description: Event code (ADR-003)
+    attendeeUsername:
+      type: string
+      example: "john.doe"
+      description: Reference to user_profiles.username (cross-service)
+    attendeeEmail:
+      type: string
+      format: email
+      example: "john.doe@example.com"
+      description: Enriched from User Management Service API
+    attendeeName:
+      type: string
+      example: "John Doe"
+      description: Enriched from User Management Service API
+    company:
+      type: string
+      example: "GoogleZH"
+      description: Enriched from User Management Service API
+    status:
+      type: string
+      enum: [registered, waitlisted, confirmed, cancelled, attended]
+      example: "confirmed"
+    registrationDate:
+      type: string
+      format: date-time
+      example: "2025-11-08T10:30:00Z"
+    qrCode:
+      type: string
+      description: Base64-encoded QR code image (data URI)
+      example: "data:image/png;base64,iVBORw0KGg..."
+```
 ```

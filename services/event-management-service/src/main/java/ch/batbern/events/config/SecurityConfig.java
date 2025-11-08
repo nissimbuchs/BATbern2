@@ -40,6 +40,7 @@ public class SecurityConfig {
      * Note: Tests use TestSecurityConfig instead
      *
      * Story 4.1.3: Public endpoints for event discovery
+     * QA Fix (SEC-001): Rate limiting filter auto-registered via @Component @Order
      */
     @Bean
     @Profile("!test")
@@ -61,6 +62,11 @@ public class SecurityConfig {
 
                 // Story 1.15a.1b: Public speaker list endpoint (GET only, POST/PUT/DELETE require ORGANIZER)
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*/speakers").permitAll()
+
+                // Story 2.2a: Public anonymous registration endpoints (ADR-005)
+                .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/*/registrations/*").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/*/registrations/*/qr").permitAll()
 
                 // All other requests require authentication
                 .anyRequest().authenticated()

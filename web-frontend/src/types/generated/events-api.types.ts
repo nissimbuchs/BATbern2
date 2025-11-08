@@ -424,11 +424,16 @@ export interface paths {
     get: operations['listRegistrations'];
     put?: never;
     /**
-     * Create registration
-     * @description Create a new registration for the event.
+     * Create registration (public access, no authentication required)
+     * @description Create a new registration for the event. PUBLIC ENDPOINT - no authentication required.
      *
-     *     **Acceptance Criteria**: AC12
+     *     **ADR-005**: Anonymous Event Registration
+     *     **Story**: 4.1.5a - Architecture consolidation for anonymous registration
      *     **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
+     *
+     *     Allows anonymous public users to register for events without creating an account.
+     *     Creates/finds user_profile via User Management Service (ADR-004, ADR-005).
+     *     Registration is for the WHOLE EVENT, not individual sessions.
      */
     post: operations['createRegistration'];
     delete?: never;
@@ -444,14 +449,24 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get?: never;
+    /**
+     * Get registration details (public access via confirmation code)
+     * @description Retrieve registration details using the confirmation code.
+     *     PUBLIC ENDPOINT - anyone with the registration code can view the registration.
+     *
+     *     **ADR-005**: Anonymous Event Registration
+     *     **Story**: 4.1.5a - Architecture consolidation
+     *
+     *     Confirmation code acts as a secret for anonymous access.
+     */
+    get: operations['getRegistration'];
     put?: never;
     post?: never;
     /**
-     * Delete registration
-     * @description Delete a registration from the event.
+     * Cancel registration
+     * @description Cancel (delete) a registration.
      *
-     *     **Acceptance Criteria**: AC12
+     *     **Acceptance Criteria**: AC13
      *     **Story**: 1.16.2 - Uses eventCode and registrationCode (meaningful IDs) instead of UUIDs
      */
     delete: operations['deleteRegistration'];
@@ -465,6 +480,38 @@ export interface paths {
      *     **Story**: 1.16.2 - Uses eventCode and registrationCode (meaningful IDs) instead of UUIDs
      */
     patch: operations['updateRegistration'];
+    trace?: never;
+  };
+  '/events/{eventCode}/registrations/{registrationCode}/qr': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get registration QR code (public access)
+     * @description Generate a QR code for the registration ticket. PUBLIC ENDPOINT - no authentication required.
+     *
+     *     **Story 2.2a**: Backend - Anonymous Event Registration
+     *     **ADR-005**: Anonymous Event Registration
+     *
+     *     Returns a PNG image containing registration details encoded as JSON:
+     *     - registrationCode
+     *     - eventCode
+     *     - attendeeUsername
+     *     - attendeeName (firstName + lastName)
+     *     - status
+     *
+     *     Can be scanned at event check-in for fast registration verification.
+     */
+    get: operations['getRegistrationQRCode'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   '/events/{eventCode}/analytics': {
@@ -731,11 +778,20 @@ export interface components {
      *     Same as Session schema but used specifically for API responses
      */
     SessionResponse: components['schemas']['Session'];
-    /** @description Story 1.16.2: Uses registrationCode and attendeeUsername as meaningful IDs */
+    /**
+     * @description **ADR-004**: References user via attendee_username (cross-service)
+     *     **ADR-005**: Anonymous Event Registration support
+     *     **Story 2.2a**: Backend - Anonymous Event Registration
+     *     **Story 1.16.2**: Uses registrationCode and attendeeUsername as meaningful IDs
+     *
+     *     User details (email, firstName, lastName, company) are enriched from User Management Service API at response time.
+     *     Registrations table only stores registrationCode, eventId, attendeeUsername, status, dates.
+     *     NO data duplication (ADR-004: Factor User Fields from Domain Entities).
+     */
     Registration: {
       /**
-       * @description Unique registration code (eventCode-username format)
-       * @example BATbern142-john.doe
+       * @description Unique registration confirmation code (eventCode-reg-{6 random alphanumeric chars})
+       * @example BATbern142-reg-A3X9K2
        */
       registrationCode: string;
       /**
@@ -744,13 +800,31 @@ export interface components {
        */
       eventCode: string;
       /**
-       * @description Attendee username in firstname.lastname format
+       * @description Reference to user_profiles.username (cross-service, ADR-004)
        * @example john.doe
        */
       attendeeUsername: string;
-      /** Format: email */
-      attendeeEmail: string;
-      attendeeName: string;
+      /**
+       * @description Enriched from User Management Service API (not stored in registrations table)
+       * @example John
+       */
+      attendeeFirstName?: string;
+      /**
+       * @description Enriched from User Management Service API (not stored in registrations table)
+       * @example Doe
+       */
+      attendeeLastName?: string;
+      /**
+       * Format: email
+       * @description Enriched from User Management Service API (not stored in registrations table)
+       * @example john.doe@example.com
+       */
+      attendeeEmail?: string;
+      /**
+       * @description Enriched from User Management Service API (not stored in registrations table, may be null for anonymous users)
+       * @example GoogleZH
+       */
+      attendeeCompany?: string;
       /** @enum {string} */
       status: 'registered' | 'waitlisted' | 'confirmed' | 'cancelled' | 'attended';
       /** Format: date-time */
@@ -914,16 +988,43 @@ export interface components {
       capacity?: number;
       language?: string;
     };
-    /** @description Story 1.16.2: Uses attendeeUsername instead of UUID */
+    /**
+     * @description **ADR-005**: Anonymous Event Registration
+     *     **Story 2.2a**: Backend - Anonymous Event Registration
+     *
+     *     Request to register for an event. PUBLIC ENDPOINT - no authentication required.
+     *     Creates/finds user_profile via User Management Service (cognitoSync=false for anonymous users).
+     *     Registration is for the WHOLE EVENT, not individual sessions.
+     */
     CreateRegistrationRequest: {
       /**
-       * @description Attendee username in firstname.lastname format
-       * @example john.doe
+       * @description Attendee's first name (passed to User Management Service)
+       * @example John
        */
-      attendeeUsername: string;
-      /** Format: email */
+      attendeeFirstName: string;
+      /**
+       * @description Attendee's last name (passed to User Management Service)
+       * @example Doe
+       */
+      attendeeLastName: string;
+      /**
+       * Format: email
+       * @description Attendee's email address (unique identifier, passed to User Management Service)
+       * @example john.doe@example.com
+       */
       attendeeEmail: string;
-      attendeeName: string;
+      /**
+       * @description Initial registration status
+       * @example confirmed
+       * @enum {string}
+       */
+      status: 'registered' | 'waitlisted' | 'confirmed' | 'cancelled' | 'attended';
+      /**
+       * Format: date-time
+       * @description Date and time of registration
+       * @example 2025-06-01T10:00:00Z
+       */
+      registrationDate: string;
     };
     PatchRegistrationRequest: {
       /** @enum {string} */
@@ -1674,10 +1775,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': {
-            data?: components['schemas']['Registration'][];
-            pagination?: components['schemas']['PaginationMetadata'];
-          };
+          'application/json': components['schemas']['Registration'][];
         };
       };
       404: components['responses']['NotFound'];
@@ -1714,6 +1812,33 @@ export interface operations {
       500: components['responses']['InternalServerError'];
     };
   };
+  getRegistration: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+        /** @description Unique registration confirmation code */
+        registrationCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Registration details */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['Registration'];
+        };
+      };
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
   deleteRegistration: {
     parameters: {
       query?: never;
@@ -1721,14 +1846,14 @@ export interface operations {
       path: {
         /** @description Event code in format BATbern{number} */
         eventCode: string;
-        /** @description Unique registration code (eventCode-username format) */
+        /** @description Unique registration code */
         registrationCode: string;
       };
       cookie?: never;
     };
     requestBody?: never;
     responses: {
-      /** @description Registration deleted successfully */
+      /** @description Registration cancelled successfully */
       204: {
         headers: {
           [name: string]: unknown;
@@ -1746,7 +1871,7 @@ export interface operations {
       path: {
         /** @description Event code in format BATbern{number} */
         eventCode: string;
-        /** @description Unique registration code (eventCode-username format) */
+        /** @description Unique registration code */
         registrationCode: string;
       };
       cookie?: never;
@@ -1767,6 +1892,35 @@ export interface operations {
         };
       };
       400: components['responses']['BadRequest'];
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  getRegistrationQRCode: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+        /** @description Unique registration confirmation code */
+        registrationCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description QR code generated successfully */
+      200: {
+        headers: {
+          'Content-Type'?: string;
+          'Content-Disposition'?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          'image/png': string;
+        };
+      };
       404: components['responses']['NotFound'];
       500: components['responses']['InternalServerError'];
     };
