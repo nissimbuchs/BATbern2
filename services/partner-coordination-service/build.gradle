@@ -39,7 +39,7 @@ dependencies {
     implementation 'org.flywaydb:flyway-database-postgresql'
 
     // HTTP Client for microservices communication (ADR-003)
-    implementation 'org.springframework.boot:spring-boot-starter-webflux' // For WebClient
+    // Uses RestTemplate (matching other services) NOT WebClient
 
     // Caching - Caffeine (application-level in-memory cache)
     implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'

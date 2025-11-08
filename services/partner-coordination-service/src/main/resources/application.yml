@@ -43,11 +43,12 @@ spring:
       spec: maximumSize=1000,expireAfterWrite=10m
 
 # HTTP Clients for Microservices Communication (ADR-003)
-services:
-  company-service:
-    url: ${COMPANY_SERVICE_URL:http://localhost:8081}
-  user-service:
-    url: ${USER_SERVICE_URL:http://localhost:8082}
+# Service Connect DNS: http://{service-name}:8080
+company-service:
+  base-url: ${COMPANY_USER_MANAGEMENT_SERVICE_URL:http://company-user-management:8080}
+
+user-service:
+  base-url: ${COMPANY_USER_MANAGEMENT_SERVICE_URL:http://company-user-management:8080}
 
 # Resilience4j Circuit Breaker
 resilience4j:
