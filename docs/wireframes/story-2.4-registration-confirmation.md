@@ -1,5 +1,29 @@
 # Story 2.4: Registration Confirmation Page - Wireframe
 
+> ⚠️ **PARTIALLY OUTDATED** ⚠️
+> This wireframe is **mostly accurate** but has some outdated elements. Refer to:
+> - **Story 4.1.6** (Registration Confirmation): `/docs/stories/4.1.6.registration-confirmation.md`
+> - **New Wireframe** (Inline Registration Accordion): `/docs/wireframes/story-4.1.5-inline-registration-accordion.md` (State 4: Registration Success)
+>
+> **What's Still Accurate:**
+> - ✅ Confirmation page layout and structure
+> - ✅ QR code download functionality
+> - ✅ Calendar export (.ics file)
+> - ✅ Social sharing (LinkedIn, Twitter/X, Email)
+> - ✅ "Create Free Account" CTA for anonymous users
+> - ✅ Anonymous registration support (ADR-005)
+>
+> **What's Changed:**
+> - ❌ **Removed**: Session-related content (old wireframe shows "Selected Sessions")
+> - ❌ **Updated**: API endpoints changed from `/registrations/{registrationId}` to `/registrations/{confirmationCode}`
+> - 🆕 **NEW**: Confetti animation on page load (canvas-confetti)
+> - 🆕 **NEW**: shadcn dark theme design system
+> - 🆕 **NEW**: Route changed to `/registration-confirmation/:confirmationCode`
+>
+> **Please refer to Story 4.1.6 for current implementation guidance.**
+>
+> Last Updated: November 8, 2025
+
 **Story**: Epic 2, Story 4 - Event Registration Flow (Confirmation)
 **Screen**: Registration Confirmation Page
 **User Role**: Attendee

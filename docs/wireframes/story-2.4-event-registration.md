@@ -1,5 +1,23 @@
 # Story: Event Registration Flow - Wireframe
 
+> ⚠️ **DEPRECATION NOTICE** ⚠️
+> This wireframe is **OUTDATED** and has been superseded by:
+> - **Story 4.1.5** (Registration Wizard - 2-Step Flow): `/docs/stories/4.1.5.registration-wizard.md`
+> - **New Wireframe** (Inline Registration Accordion): `/docs/wireframes/story-4.1.5-inline-registration-accordion.md`
+>
+> **Key Changes:**
+> - ✅ 2-step flow maintained (correct)
+> - ❌ Extra fields removed: Industry Sector, Years of Experience, "How did you hear about us?"
+> - ✅ Anonymous registration support (ADR-005) - correct
+> - ✅ Event-level registration (no session selection) - correct
+> - 🆕 **NEW**: Hybrid approach - inline expandable registration + dedicated page
+> - 🆕 **NEW**: Accordion-style step transitions (Step 1 collapses when Step 2 expands)
+> - 🆕 **NEW**: shadcn dark theme design system integration
+>
+> **Please refer to the new wireframe for current implementation guidance.**
+>
+> Last Updated: November 8, 2025
+
 **Story**: Epic 2, Story 4
 **Screen**: Event Registration Flow
 **User Role**: Attendee
