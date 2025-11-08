@@ -236,7 +236,7 @@ describe('HeroSection Component', () => {
       const { container } = renderWithRouter(<HeroSection {...defaultProps} />);
 
       const section = container.querySelector('section');
-      expect(section).toHaveClass('h-screen');
+      expect(section).toHaveStyle({ minHeight: '100vh' });
     });
 
     test('should_renderResponsiveTitle_when_mounted', () => {

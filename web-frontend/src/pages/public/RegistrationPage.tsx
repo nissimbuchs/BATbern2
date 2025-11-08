@@ -34,8 +34,8 @@ const RegistrationPage = () => {
       <div className="container mx-auto px-4 py-12 min-h-screen">
         {/* Loading State */}
         {isLoading && (
-          <div className="flex justify-center py-24">
-            <Loader2 className="h-12 w-12 animate-spin text-blue-400" />
+          <div className="flex justify-center py-24" role="status" aria-label="Loading event details">
+            <Loader2 className="h-12 w-12 animate-spin text-blue-400" aria-hidden="true" />
           </div>
         )}
 

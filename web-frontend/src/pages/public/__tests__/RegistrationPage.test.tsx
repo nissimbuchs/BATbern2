@@ -7,7 +7,7 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import RegistrationPage from '../RegistrationPage';
 import { eventApiClient } from '@/services/eventApiClient';
@@ -60,19 +60,14 @@ describe('RegistrationPage Component', () => {
   const renderWithProviders = (initialRoute = '/register/BAT2025') => {
     return render(
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
+        <MemoryRouter initialEntries={[initialRoute]}>
           <Routes>
             <Route path="/register/:eventCode" element={<RegistrationPage />} />
+            <Route path="/register" element={<div>Home Page</div>} />
             <Route path="/" element={<div>Home Page</div>} />
           </Routes>
-        </BrowserRouter>
-      </QueryClientProvider>,
-      {
-        wrapper: ({ children }) => {
-          window.history.pushState({}, 'Test page', initialRoute);
-          return <>{children}</>;
-        },
-      }
+        </MemoryRouter>
+      </QueryClientProvider>
     );
   };
 
