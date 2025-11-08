@@ -21,6 +21,8 @@ import type {
   WorkflowState,
   CriticalTask,
   TeamActivity,
+  CreateRegistrationRequest,
+  Registration,
 } from '@/types/event.types';
 
 // API base path for event endpoints
@@ -238,6 +240,55 @@ class EventApiClient {
       if (this.isAxiosError(error) && error.response?.status === 404) {
         return null;
       }
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Create event registration (PUBLIC ACCESS - Story 4.1.5)
+   *
+   * Allows anonymous public users to register for events.
+   * Per ADR-005: Anonymous registration with email-based account linking.
+   *
+   * @param eventCode Event code identifier
+   * @param data Registration request data
+   * @returns Created registration with confirmation code
+   */
+  async createRegistration(
+    eventCode: string,
+    data: CreateRegistrationRequest
+  ): Promise<Registration> {
+    try {
+      const response = await apiClient.post<Registration>(
+        `${EVENT_API_PATH}/${eventCode}/registrations`,
+        data
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Get registration by confirmation code (PUBLIC ACCESS - Story 4.1.5)
+   *
+   * Retrieves registration details using confirmation code.
+   * Anyone with the confirmation code can view the registration.
+   *
+   * @param eventCode Event code identifier
+   * @param confirmationCode Registration confirmation code
+   * @returns Registration details
+   */
+  async getRegistration(
+    eventCode: string,
+    confirmationCode: string
+  ): Promise<Registration> {
+    try {
+      const response = await apiClient.get<Registration>(
+        `${EVENT_API_PATH}/${eventCode}/registrations/${confirmationCode}`
+      );
+      return response.data;
+    } catch (error) {
       throw this.transformError(error);
     }
   }

@@ -55,8 +55,9 @@ const EventCreate = React.lazy(() => import('@pages/EventCreate'));
 const EventTimeline = React.lazy(() => import('@pages/EventTimeline'));
 const EventDetailEdit = React.lazy(() => import('@pages/EventDetailEdit')); // Comprehensive edit page with Tasks 9-13
 
-// Public Pages - Story 4.1.2, 4.1.3
+// Public Pages - Story 4.1.2, 4.1.3, 4.1.5
 const HomePage = React.lazy(() => import('@pages/public/HomePage'));
+const PublicRegistrationPage = React.lazy(() => import('@pages/public/RegistrationPage'));
 
 // Loading fallback component for Suspense
 const PageLoader = () => (
@@ -160,8 +161,9 @@ function App() {
             <NavigationSetup>
               <Suspense fallback={<PageLoader />}>
               <Routes>
-                {/* Public routes - Story 4.1.2, 4.1.3 */}
+                {/* Public routes - Story 4.1.2, 4.1.3, 4.1.5 */}
                 <Route path="/" element={<HomePage />} />
+                <Route path="/register/:eventCode" element={<PublicRegistrationPage />} />
                 <Route
                   path="/archive"
                   element={

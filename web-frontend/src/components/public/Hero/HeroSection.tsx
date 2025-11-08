@@ -4,10 +4,11 @@
  * Full-screen hero with Unicorn.studio interactive background
  */
 
-import { useEffect, ReactNode } from 'react';
+import { useEffect, useState, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/public/ui/button";
 import { useTranslation } from 'react-i18next';
+import { RegistrationWizard } from '@/components/public/Registration/RegistrationWizard';
 
 interface HeroSectionProps {
   title: string;
@@ -15,6 +16,8 @@ interface HeroSectionProps {
   location?: string;
   ctaText?: string;
   ctaLink: string;
+  /** Optional event code for inline registration (Story 4.1.5) */
+  eventCode?: string;
   unicornProjectId?: string;
   countdownTimer?: ReactNode;
 }
@@ -25,10 +28,13 @@ export const HeroSection = ({
   location,
   ctaText,
   ctaLink,
+  eventCode,
   unicornProjectId = 'jfzsiwProJi81qvb7uKX',
   countdownTimer
 }: HeroSectionProps) => {
   const { t } = useTranslation('common');
+  const [isRegistrationExpanded, setIsRegistrationExpanded] = useState(false);
+
   // Format date for display
   const formattedDate = date
     ? new Date(date).toLocaleDateString('de-CH', {
@@ -64,7 +70,7 @@ export const HeroSection = ({
   }, []);
 
   return (
-    <section className="relative h-screen w-full overflow-hidden">
+    <section className="relative w-full overflow-hidden transition-all duration-500 ease-in-out" style={{ minHeight: isRegistrationExpanded ? 'auto' : '100vh' }}>
       {/* Unicorn.studio Interactive Background */}
       <div
         className="absolute inset-0 z-0 w-full h-full"
@@ -75,6 +81,14 @@ export const HeroSection = ({
           style={{ width: '100%', height: '100%' }}
         />
       </div>
+
+      {/* Semi-transparent overlay when registration expanded */}
+      {isRegistrationExpanded && (
+        <div
+          className="absolute inset-0 z-[5] bg-zinc-950/70 transition-opacity duration-500"
+          aria-hidden="true"
+        />
+      )}
 
       {/* Content */}
       <div className="relative z-10 w-full h-full flex items-end pb-16 md:pb-20 lg:pb-24">
@@ -139,9 +153,22 @@ export const HeroSection = ({
           )}
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <Button size="lg" className="text-base md:text-lg" asChild>
-              <Link to={ctaLink}>{ctaText || t('public.register')}</Link>
-            </Button>
+            {eventCode ? (
+              // Inline registration mode: expand wizard below
+              <Button
+                size="lg"
+                className="text-base md:text-lg"
+                onClick={() => setIsRegistrationExpanded(true)}
+                disabled={isRegistrationExpanded}
+              >
+                {ctaText || t('public.register')}
+              </Button>
+            ) : (
+              // Fallback to link mode (when eventCode not provided)
+              <Button size="lg" className="text-base md:text-lg" asChild>
+                <Link to={ctaLink}>{ctaText || t('public.register')}</Link>
+              </Button>
+            )}
             {countdownTimer && (
               <div className="ml-0 sm:ml-4">
                 {countdownTimer}
@@ -151,6 +178,19 @@ export const HeroSection = ({
         </div>
         </div>
       </div>
+
+      {/* Inline Registration (Story 4.1.5) */}
+      {isRegistrationExpanded && eventCode && (
+        <div className="relative z-10 bg-zinc-950 transition-all duration-500 ease-in-out">
+          <div className="container mx-auto px-4 py-16">
+            <RegistrationWizard
+              eventCode={eventCode}
+              inline={true}
+              onCancel={() => setIsRegistrationExpanded(false)}
+            />
+          </div>
+        </div>
+      )}
     </section>
   );
 };
