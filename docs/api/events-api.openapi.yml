@@ -1167,23 +1167,39 @@ paths:
     post:
       tags:
         - Registrations
-      summary: Create registration
+      summary: Create event registration (anonymous or authenticated)
       description: |
-        Create a new registration for the event.
+        Create a new registration for the event. Supports both anonymous and authenticated registration.
 
-        **Acceptance Criteria**: AC12
-        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
+        **Story**: 4.1.5a - Anonymous registration with email-based account linking (ADR-006)
+        **Security**: Public endpoint - no authentication required
+
+        **Anonymous Registration**:
+        - No authentication required
+        - Email serves as identifier
+        - Registration code generated (BAT-YYYY-NNNNNN)
+        - Confirmation email sent automatically
+
+        **Authenticated Registration**:
+        - If user is authenticated, linked to user account immediately
+        - Can view in dashboard
+
+        **Account Linking (ADR-006)**:
+        - When anonymous user creates account with same email, user_profile updated with cognito_user_id
+        - All past registrations automatically linked (via attendeeId FK to user_profiles)
+        - See ADR-006 for details
 
       operationId: createRegistration
+      security: []  # Public endpoint
       parameters:
         - name: eventCode
           in: path
-          description: Event code in format BATbern{number}
+          description: Event code in format BATbernXXX
           required: true
           schema:
             type: string
             pattern: '^BATbern[0-9]+$'
-            example: BATbern142
+            example: BATbern25
       requestBody:
         required: true
         content:
@@ -1198,13 +1214,67 @@ paths:
               schema:
                 $ref: '#/components/schemas/Registration'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          description: Invalid request (validation errors)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/BadRequest'
+              examples:
+                duplicateEmail:
+                  summary: Duplicate registration
+                  value:
+                    error: Already registered
+                    message: This email is already registered for this event
+                    code: DUPLICATE_REGISTRATION
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          description: Rate limit exceeded (public endpoint protection)
         '500':
           $ref: '#/components/responses/InternalServerError'
 
   /events/{eventCode}/registrations/{registrationCode}:
+    get:
+      tags:
+        - Registrations
+      summary: Get registration by confirmation code
+      description: |
+        Retrieve registration details by confirmation code.
+
+        **Story**: 4.1.6 - Registration Confirmation
+        **Security**: Public endpoint - confirmation code acts as access token
+
+      operationId: getRegistration
+      security: []  # Public endpoint
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbernXXX
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern25
+        - name: registrationCode
+          in: path
+          description: Registration code in format BAT-YYYY-NNNNNN
+          required: true
+          schema:
+            type: string
+            pattern: '^BAT-[0-9]{4}-[0-9]{6}$'
+            example: BAT-2025-000123
+      responses:
+        '200':
+          description: Registration found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Registration'
+        '404':
+          description: Registration not found (invalid confirmation code)
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
     patch:
       tags:
         - Registrations
@@ -1212,27 +1282,27 @@ paths:
       description: |
         Partially update a registration.
 
-        **Acceptance Criteria**: AC12
-        **Story**: 1.16.2 - Uses eventCode and registrationCode (meaningful IDs) instead of UUIDs
+        **Story**: 4.1.6 - Uses registrationCode
 
       operationId: updateRegistration
+      security: []  # Public endpoint - confirmation code acts as access token
       parameters:
         - name: eventCode
           in: path
-          description: Event code in format BATbern{number}
+          description: Event code in format BATbernXXX
           required: true
           schema:
             type: string
             pattern: '^BATbern[0-9]+$'
-            example: BATbern142
+            example: BATbern25
         - name: registrationCode
           in: path
-          description: Unique registration code (eventCode-username format)
+          description: Registration code in format BAT-YYYY-NNNNNN
           required: true
           schema:
             type: string
-            pattern: '^BATbern[0-9]+-[a-z]+\.[a-z]+(-[0-9]+)?$'
-            example: BATbern142-john.doe
+            pattern: '^BAT-[0-9]{4}-[0-9]{6}$'
+            example: BAT-2025-000123
       requestBody:
         required: true
         content:
@@ -1256,36 +1326,87 @@ paths:
     delete:
       tags:
         - Registrations
-      summary: Delete registration
+      summary: Cancel registration
       description: |
-        Delete a registration from the event.
+        Cancel a registration from the event.
 
-        **Acceptance Criteria**: AC12
-        **Story**: 1.16.2 - Uses eventCode and registrationCode (meaningful IDs) instead of UUIDs
+        **Story**: 4.1.6 - Public cancellation with confirmation code
 
       operationId: deleteRegistration
+      security: []  # Public endpoint - confirmation code acts as access token
       parameters:
         - name: eventCode
           in: path
-          description: Event code in format BATbern{number}
+          description: Event code in format BATbernXXX
           required: true
           schema:
             type: string
             pattern: '^BATbern[0-9]+$'
-            example: BATbern142
+            example: BATbern25
         - name: registrationCode
           in: path
-          description: Unique registration code (eventCode-username format)
+          description: Registration code in format BAT-YYYY-NNNNNN
           required: true
           schema:
             type: string
-            pattern: '^BATbern[0-9]+-[a-z]+\.[a-z]+(-[0-9]+)?$'
-            example: BATbern142-john.doe
+            pattern: '^BAT-[0-9]{4}-[0-9]{6}$'
+            example: BAT-2025-000123
       responses:
         '204':
           description: Registration deleted successfully
         '404':
           $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{eventCode}/registrations/{registrationCode}/qr:
+    get:
+      tags:
+        - Registrations
+      summary: Generate QR code for registration
+      description: |
+        Generate QR code image for registration check-in.
+
+        **Story**: 4.1.6 - Registration Confirmation QR code
+        **Security**: Public endpoint - confirmation code acts as access token
+
+      operationId: getRegistrationQR
+      security: []  # Public endpoint
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbernXXX
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern25
+        - name: registrationCode
+          in: path
+          description: Registration code in format BAT-YYYY-NNNNNN
+          required: true
+          schema:
+            type: string
+            pattern: '^BAT-[0-9]{4}-[0-9]{6}$'
+            example: BAT-2025-000123
+        - name: size
+          in: query
+          description: QR code size in pixels
+          schema:
+            type: integer
+            default: 300
+            minimum: 100
+            maximum: 1000
+      responses:
+        '200':
+          description: QR code image
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Registration not found
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -1635,44 +1756,83 @@ components:
     Registration:
       type: object
       description: |
-        Story 1.16.2: Uses registrationCode and attendeeUsername as meaningful IDs
+        Story 4.1.5a: Unified user profile approach for anonymous and authenticated registrations (ADR-006)
+        All users (anonymous + authenticated) are in user_profiles table. Anonymous users have cognito_user_id = NULL.
       required:
         - registrationCode
         - eventCode
-        - attendeeUsername
-        - attendeeEmail
-        - attendeeName
         - status
+        - attendeeUsername
       properties:
         registrationCode:
           type: string
-          description: Unique registration code (eventCode-username format)
-          pattern: '^BATbern[0-9]+-[a-z]+\.[a-z]+(-[0-9]+)?$'
-          example: BATbern142-john.doe
+          description: Unique registration code (BAT-YYYY-NNNNNN format) acts as access token
+          pattern: '^BAT-[0-9]{4}-[0-9]{6}$'
+          example: BAT-2025-000123
         eventCode:
           type: string
           description: Event code this registration belongs to
           pattern: '^BATbern[0-9]+$'
-          example: BATbern142
+          example: BATbern25
+        eventTitle:
+          type: string
+          description: Event title (included for convenience)
+        eventDate:
+          type: string
+          format: date-time
+          description: Event date (included for convenience)
+
+        # User profile reference (unified approach - ADR-006, ADR-003)
         attendeeUsername:
           type: string
-          description: Attendee username in firstname.lastname format
           pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          description: |
+            Attendee username from user_profiles (ADR-003: meaningful identifiers in public APIs).
+            Format: firstname.lastname or firstname.lastname.2 for duplicates.
+            Always present - anonymous users are in user_profiles with cognito_user_id = NULL.
+            ADR-006: Unified table eliminates need for separate anonymous_* fields.
           example: john.doe
-          maxLength: 100
-        attendeeEmail:
+
+        # Computed fields from user_profiles
+        firstName:
+          type: string
+          description: First name from user_profiles
+        lastName:
+          type: string
+          description: Last name from user_profiles
+        email:
           type: string
           format: email
-          maxLength: 255
-        attendeeName:
+          description: Email from user_profiles
+        company:
           type: string
-          maxLength: 255
+          description: Company name from user_profiles.company_id (FK to companies table)
+
+        # Registration metadata
         status:
           type: string
           enum: [registered, waitlisted, confirmed, cancelled, attended]
         registrationDate:
           type: string
           format: date-time
+        sessionPreferences:
+          type: array
+          items:
+            type: string
+          description: Event-level registration - sessions are preferences only, not commitments
+        specialRequests:
+          type: string
+          nullable: true
+          description: Dietary preferences, accessibility needs, etc.
+        communicationPreferences:
+          type: object
+          properties:
+            newsletterSubscribed:
+              type: boolean
+              default: false
+            eventReminders:
+              type: boolean
+              default: true
         createdAt:
           type: string
           format: date-time
@@ -1913,35 +2073,84 @@ components:
     CreateRegistrationRequest:
       type: object
       description: |
-        Story 1.16.2: Uses attendeeUsername instead of UUID
+        Story 4.1.5a: Event registration request (ADR-006)
+        Public endpoint - no authentication required.
+        Creates user_profile with cognito_user_id = NULL for anonymous users.
       required:
-        - attendeeUsername
-        - attendeeEmail
-        - attendeeName
+        - email
+        - firstName
+        - lastName
+        - termsAccepted
       properties:
-        attendeeUsername:
-          type: string
-          description: Attendee username in firstname.lastname format
-          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
-          example: john.doe
-          maxLength: 100
-        attendeeEmail:
+        email:
           type: string
           format: email
           maxLength: 255
-        attendeeName:
+          description: Email address for registration and confirmation
+          example: john.doe@example.com
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: First name
+          example: John
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Last name
+          example: Doe
+        company:
           type: string
           maxLength: 255
+          description: Company name (optional)
+          example: Acme Corp
+        role:
+          type: string
+          maxLength: 255
+          description: Job title/role (optional)
+          example: Software Architect
+        termsAccepted:
+          type: boolean
+          description: User must accept terms and conditions
+          example: true
+        communicationPreferences:
+          type: object
+          description: Email communication preferences
+          properties:
+            newsletterSubscribed:
+              type: boolean
+              default: false
+              description: Subscribe to newsletter
+            eventReminders:
+              type: boolean
+              default: true
+              description: Receive event reminders
+        specialRequests:
+          type: string
+          description: Dietary preferences, accessibility needs, etc.
+          example: Vegetarian meal preference
 
     PatchRegistrationRequest:
       type: object
+      description: |
+        Story 4.1.5a/4.1.6: Update registration details
+        Public endpoint - uses confirmation code for access
       properties:
-        status:
+        specialRequests:
           type: string
-          enum: [registered, waitlisted, confirmed, cancelled, attended]
-        attendeeName:
-          type: string
-          maxLength: 255
+          description: Update dietary preferences, accessibility needs, etc.
+          example: Vegan meal preference, wheelchair accessible seating
+        communicationPreferences:
+          type: object
+          description: Update email communication preferences
+          properties:
+            newsletterSubscribed:
+              type: boolean
+              description: Subscribe to newsletter
+            eventReminders:
+              type: boolean
+              description: Receive event reminders
 
     BatchUpdateRequest:
       type: object
