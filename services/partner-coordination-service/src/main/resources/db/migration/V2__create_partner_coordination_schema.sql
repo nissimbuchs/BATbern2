@@ -8,13 +8,12 @@ CREATE TABLE partners (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     company_name VARCHAR(12) NOT NULL UNIQUE, -- ADR-003: Meaningful ID, NO UUID FK
     partnership_level VARCHAR(50) NOT NULL CHECK (partnership_level IN (
-        'bronze', 'silver', 'gold', 'platinum', 'strategic'
+        'BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'STRATEGIC'
     )),
     partnership_start_date DATE NOT NULL,
     partnership_end_date DATE,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create updated_at trigger for partners
@@ -29,8 +28,7 @@ CREATE INDEX idx_partners_company_name ON partners(company_name);
 -- Index on partnership_level for filtering
 CREATE INDEX idx_partners_partnership_level ON partners(partnership_level);
 
--- Index on is_active for filtering active partnerships
-CREATE INDEX idx_partners_is_active ON partners(is_active);
+-- Note: is_active is calculated via @Transient method in Partner entity (not stored in DB)
 
 -- Partner contacts (ADR-003: stores username, NOT user_id UUID)
 CREATE TABLE partner_contacts (
@@ -97,8 +95,8 @@ CREATE TABLE partner_meetings (
     location VARCHAR(255),
     agenda TEXT,
     materials_generated BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create updated_at trigger for partner_meetings

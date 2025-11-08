@@ -122,7 +122,7 @@ class PartnerRepositoryTest extends AbstractIntegrationTest {
     void should_setCreatedAt_when_entityPersisted() {
         // Given
         Partner partner = Partner.builder()
-                .companyName("TimestampTestCo")
+                .companyName("TimestampCo")  // Max 12 chars
                 .partnershipLevel(PartnershipLevel.BRONZE)
                 .partnershipStartDate(LocalDate.now())
                 .build();
