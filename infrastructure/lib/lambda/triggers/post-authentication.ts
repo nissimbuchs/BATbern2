@@ -123,7 +123,7 @@ async function linkAnonymousUserProfile(
 
     return { linked: true, username };
   } finally {
-    await client.end();
+    client.release();
   }
 }
 

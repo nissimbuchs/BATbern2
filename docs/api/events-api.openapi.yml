@@ -1218,7 +1218,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/responses/BadRequest'
+                $ref: '#/components/schemas/ErrorResponse'
               examples:
                 duplicateEmail:
                   summary: Duplicate registration
