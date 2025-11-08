@@ -72,6 +72,7 @@ dependencies {
 
     // OpenAPI Generator - Required for generated code
     implementation 'io.swagger.core.v3:swagger-annotations:2.2.20'
+    implementation 'org.openapitools:jackson-databind-nullable:0.2.6'
     implementation 'jakarta.validation:jakarta.validation-api'
     implementation 'jakarta.annotation:jakarta.annotation-api'
 
