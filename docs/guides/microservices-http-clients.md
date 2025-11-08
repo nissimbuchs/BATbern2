@@ -168,7 +168,7 @@ public class CompanyServiceClient {
 
     public CompanyServiceClient(
             RestTemplate restTemplate,
-            @Value("${services.company-service.url}") String companyServiceUrl) {
+            @Value("${company-service.base-url}") String companyServiceUrl) {
         this.restTemplate = restTemplate;
         this.companyServiceUrl = companyServiceUrl;
     }
@@ -177,7 +177,7 @@ public class CompanyServiceClient {
      * Get company by meaningful ID (companyName).
      * Cached for 15 minutes to reduce HTTP calls.
      */
-    @Cacheable(value = "companies", key = "#companyName")
+    @Cacheable(value = "companyApiCache", key = "#companyName")
     public CompanyResponse getCompany(String companyName) {
         String url = companyServiceUrl + "/api/v1/companies/" + companyName;
         HttpHeaders headers = createHeadersWithJwtToken();
@@ -256,7 +256,7 @@ public class UserServiceClient {
 
     public UserServiceClient(
             RestTemplate restTemplate,
-            @Value("${services.user-service.url}") String userServiceUrl) {
+            @Value("${user-service.base-url}") String userServiceUrl) {
         this.restTemplate = restTemplate;
         this.userServiceUrl = userServiceUrl;
     }
@@ -265,7 +265,7 @@ public class UserServiceClient {
      * Get user by meaningful ID (username).
      * Cached for 15 minutes to reduce HTTP calls.
      */
-    @Cacheable(value = "users", key = "#username")
+    @Cacheable(value = "userApiCache", key = "#username")
     public UserResponse getUser(String username) {
         String url = userServiceUrl + "/api/v1/users/" + username;
         HttpHeaders headers = createHeadersWithJwtToken();
@@ -446,7 +446,11 @@ public class CacheConfig {
 
     @Bean
     public CacheManager cacheManager() {
-        CaffeineCacheManager cacheManager = new CaffeineCacheManager("companies", "users", "partners");
+        CaffeineCacheManager cacheManager = new CaffeineCacheManager(
+            "partners",         // Partner entity cache
+            "companyApiCache",  // Company Service HTTP response cache
+            "userApiCache"      // User Service HTTP response cache
+        );
         cacheManager.setCaffeine(Caffeine.newBuilder()
             .maximumSize(1000)                      // Max 1000 entries per cache
             .expireAfterWrite(15, TimeUnit.MINUTES) // 15-minute TTL
@@ -459,7 +463,7 @@ public class CacheConfig {
 ### Usage with @Cacheable
 
 ```java
-@Cacheable(value = "companies", key = "#companyName")
+@Cacheable(value = "companyApiCache", key = "#companyName")
 public CompanyResponse getCompany(String companyName) {
     // This method is only called if cache miss
     // On cache hit, cached value is returned without executing method
@@ -474,11 +478,11 @@ public CompanyResponse getCompany(String companyName) {
 
 ```java
 // ✅ CORRECT - meaningful ID as cache key
-@Cacheable(value = "companies", key = "#companyName")
+@Cacheable(value = "companyApiCache", key = "#companyName")
 public CompanyResponse getCompany(String companyName) { ... }
 
 // ❌ WRONG - UUID as cache key (UUID is internal to Company Service)
-@Cacheable(value = "companies", key = "#companyId")
+@Cacheable(value = "companyApiCache", key = "#companyId")
 public CompanyResponse getCompany(UUID companyId) { ... }
 ```
 
@@ -663,36 +667,35 @@ public class HttpClientTestConfig {
 ### application.yml
 
 ```yaml
-# HTTP Service URLs (environment-specific)
-services:
-  company-service:
-    url: ${COMPANY_SERVICE_URL:http://localhost:8081}
-  user-service:
-    url: ${USER_SERVICE_URL:http://localhost:8082}
+# HTTP Service URLs for Microservices Communication (ADR-003)
+# Service Connect DNS: http://{service-name}:8080
+company-service:
+  base-url: ${COMPANY_USER_MANAGEMENT_SERVICE_URL:http://company-user-management:8080}
+
+user-service:
+  base-url: ${COMPANY_USER_MANAGEMENT_SERVICE_URL:http://company-user-management:8080}
 
 # Spring Cache (Caffeine)
 spring:
   cache:
     type: caffeine
-    cache-names:
-      - companies
-      - users
-      - partners
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=15m
 ```
 
 ### Environment Variables
 
 **Local Development**:
 ```bash
-export COMPANY_SERVICE_URL=http://localhost:8081
-export USER_SERVICE_URL=http://localhost:8082
+export COMPANY_USER_MANAGEMENT_SERVICE_URL=http://localhost:8081
 ```
 
-**Staging/Production** (ECS Service Connect):
+**Staging/Production** (ECS Service Connect - set by infrastructure CDK):
 ```bash
-export COMPANY_SERVICE_URL=http://company-service:8080
-export USER_SERVICE_URL=http://user-service:8080
+export COMPANY_USER_MANAGEMENT_SERVICE_URL=http://company-user-management:8080
 ```
+
+**Note**: Both Company Service and User Service are part of the `company-user-management-service` microservice, so they share the same base URL.
 
 ---
 
@@ -717,5 +720,5 @@ export USER_SERVICE_URL=http://user-service:8080
 
 ---
 
-**Last Updated**: 2025-01-08
+**Last Updated**: 2025-01-08 (Story 2.7 - aligned with ECS Service Connect)
 **Maintained By**: Development Team
