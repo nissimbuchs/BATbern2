@@ -37,7 +37,11 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
  *
  * CRITICAL: These tests are written BEFORE implementation (TDD RED Phase).
  */
-@RestClientTest(UserServiceClient.class)
+@RestClientTest(components = {
+    ch.batbern.partners.client.impl.UserServiceClientImpl.class,
+    ch.batbern.partners.config.RestClientConfig.class,
+    ch.batbern.partners.config.CacheConfig.class
+})
 @TestPropertySource(properties = {
     "user-service.base-url=http://company-user-management:8080"
 })
