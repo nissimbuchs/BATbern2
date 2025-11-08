@@ -332,6 +332,16 @@ When working on architecture or standards, refer to:
 - `docs/architecture/source-tree.md` - Detailed project structure
 - `docs/api/*.openapi.yml` - API specifications
 
+### Implementation Guides
+
+When implementing new microservices, refer to these reusable implementation guides:
+- `docs/guides/service-foundation-pattern.md` - Standard service structure, package layout, layer responsibilities
+- `docs/guides/openapi-code-generation.md` - Hybrid contract-first approach with OpenAPI Generator
+- `docs/guides/microservices-http-clients.md` - Cross-service communication, JWT propagation, HTTP enrichment
+- `docs/guides/flyway-migration-guide.md` - Service-specific migrations, ADR-003 compliance, PostgreSQL patterns
+
+These guides consolidate implementation patterns from across all BATbern microservices and should be consulted when implementing new services or features.
+
 ## Quality Standards
 
 **Never take shortcuts** when implementing or trying to get tests to work. Always take the time to do the work at highest quality.
