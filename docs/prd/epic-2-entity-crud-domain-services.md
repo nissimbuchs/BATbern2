@@ -5,16 +5,17 @@ In progress
 
 ## Epic Overview
 
-**Epic Goal**: Deliver end-to-end CRUD functionality for all main platform entities (Company, Event, Speaker, User) with REST APIs and React frontend, enabling complete entity management across all user roles.
+**Epic Goal**: Deliver end-to-end CRUD functionality for all main platform entities (Company, Event, Speaker, User, Partner) with REST APIs and React frontend, enabling complete entity management across all user roles.
 
-**Deliverable**: Complete CRUD operations for Company, Event, Speaker, and User entities with role-based access, React frontend forms, and PostgreSQL persistence.
+**Deliverable**: Complete CRUD operations for Company, Event, Speaker, User, and Partner entities with role-based access, React frontend forms, and PostgreSQL persistence.
 
 **Architecture Context**:
-- **Backend Services**: Company Management, Event Management, Speaker Coordination (Java 21 + Spring Boot 3.2)
+- **Backend Services**: Company Management, Event Management, Speaker Coordination, Partner Coordination (Java 21 + Spring Boot 3.2)
 - **Database**: PostgreSQL with proper domain models and indexes
 - **Frontend**: React components with role-adaptive CRUD forms
 - **Cache**: Caffeine for entity search and performance
 - **Storage**: AWS S3 for logos, photos, and documents
+- **Service Integration**: HTTP-based communication following ADR-003 (meaningful IDs, JWT propagation)
 
 **Duration**: 9 weeks (Weeks 10-18) - includes API consolidation for production-ready RESTful APIs
 
@@ -40,8 +41,9 @@ In progress
 - **Story 2.2**: Event Management Service Core + API Consolidation (1.15a.1)
 - **Story 2.3**: Speaker Coordination Service Foundation + API Consolidation (1.15a.3)
 - **Story 2.6**: User Account Management Frontend (Basic Profile + Settings)
+- **Story 2.7**: Partner Coordination Service Foundation + API Consolidation (1.15a.2)
 
-**Progress:** 4/7 stories complete (57%)
+**Progress:** 4/8 stories complete (50%)
 
 ---
 
@@ -56,6 +58,7 @@ This epic consolidates stories originally in Epic 1 (1.14-1.20, 1.17) that provi
 - ✅ **Story 2.4 (formerly 1.20)**: User Role Management **+ API Consolidation** - **Done** (implemented via Stories 2.1b + 2.5.2)
 - ✅ **Story 2.5 (formerly 1.17 partial)**: React Frontend CRUD Foundation (consuming consolidated APIs) - **Done**
 - **Story 2.6**: User Account Management Frontend (Basic Profile + Settings) - **Not Started** (consolidates story-1.20 + story-5.2 basic features)
+- **Story 2.7**: Partner Coordination Service Foundation **+ API Consolidation (1.15a.2)** - **Not Started**
 
 **API Consolidation Integration:** Each microservice story includes its domain-specific API consolidation (1.15a.x), using the foundation from Story 1.15a (already complete in Epic 1). This ensures RESTful patterns are implemented from the start, avoiding technical debt and future refactoring.
 
@@ -584,11 +587,83 @@ As a **user of any role**, I want to view and manage my account through a unifie
 
 ---
 
+## Story 2.7: Partner Coordination Service Foundation + API Consolidation
+**(Includes 1.15a.2 Partners API Consolidation)**
+
+**Status:** Not Started
+
+**User Story:**
+As an **organizer**, I want the foundational Partner Coordination Service with consolidated RESTful APIs, so that I can manage partner relationships, partner contacts, topic votes, and meeting coordination efficiently without multiple API calls.
+
+**Architecture Integration:**
+- **Service**: `partner-coordination-service/` (Java 21 + Spring Boot 3.2)
+- **Database**: PostgreSQL with partner domain schema
+- **Cache**: Caffeine for partner data and HTTP responses (15min TTL)
+- **API Foundation**: Uses Story 1.15a utilities for filtering, sorting, pagination
+- **HTTP Clients**: CompanyServiceClient, UserServiceClient for meaningful ID enrichment
+- **Testing**: Extends `ch.batbern.shared.test.AbstractIntegrationTest` from testFixtures
+
+**Key Functionality:**
+1. Partner CRUD operations with consolidated API patterns
+2. Partner contact management (storing username, not userId UUID)
+3. Topic voting system with weighted votes
+4. Topic suggestion workflow
+5. Partner meeting coordination
+6. **ADR-003 Compliance**: Stores meaningful IDs (companyName, username) instead of UUIDs
+7. **HTTP Integration**: Calls Company/User services for data enrichment with JWT propagation
+8. **Resource Expansion**: `?include=company,contacts,votes` for partner detail in single call
+9. **Advanced Search**: Filter partners by tier, status, company with JSON filter syntax
+10. **Performance**: Partner detail with includes <300ms P95
+
+**Architecture Compliance (ADR-003 Microservices):**
+- **NO cross-service database joins** (NO JPQL joins to companies/users tables)
+- **Stores meaningful IDs**: `companyName` (String), `username` (String) - NOT UUIDs
+- **HTTP enrichment**: UserServiceClient, CompanyServiceClient with JWT token propagation
+- **Error handling**: HttpClientErrorException.NotFound, HttpServerErrorException, ResourceAccessException
+- **Testing pattern**: Spring @MockBean with Mockito (NOT WireMock)
+- **TestFixtures**: Extends `ch.batbern.shared.test.AbstractIntegrationTest` (NO custom AbstractIntegrationTest)
+
+**Acceptance Criteria Summary:**
+- [ ] Partner aggregate with partnership tier management
+- [ ] PartnerContact entity storing username (meaningful ID, NOT userId UUID)
+- [ ] **Consolidated REST API** implementing Story 1.15a.2 patterns
+- [ ] OpenAPI documentation for all consolidated endpoints
+- [ ] Database schema with Flyway migrations (NO foreign keys to companies/users)
+- [ ] HTTP Clients: CompanyServiceClient, UserServiceClient with JWT propagation
+- [ ] CacheConfig class with named caches (partners, companies, users) - 15min TTL
+- [ ] **API Consolidation**: Support `?include=company,contacts,votes,meetings` for resource expansion
+- [ ] **Advanced Search**: Filter by tier, active status, companyName with JSON filter syntax
+- [ ] **Performance**: List <100ms, detail <150ms, detail+includes <300ms (all P95)
+- [ ] Domain events publishing to EventBridge
+- [ ] Integration tests using testFixtures AbstractIntegrationTest
+- [ ] Unit tests with @MockBean for HTTP clients (NOT WireMock)
+
+**Testing Requirements:**
+- [ ] Extends `ch.batbern.shared.test.AbstractIntegrationTest` from testFixtures
+- [ ] TestConfiguration classes: TestCompanyServiceClientConfig, TestUserServiceClientConfig
+- [ ] HTTP client mocking via Spring @MockBean with Mockito
+- [ ] Build.gradle includes `testImplementation testFixtures(project(':shared-kernel'))`
+- [ ] NO custom AbstractIntegrationTest.java file
+- [ ] NO WireMock dependencies
+- [ ] NO Resilience4j dependencies
+
+**Estimated Duration:** 2.5 weeks (includes API consolidation implementation + HTTP client integration)
+
+**References:**
+- Story file: `docs/stories/2.7.partner-coordination-service-foundation.md`
+- API consolidation: `docs/stories/1.15a.2.partners-api-consolidation.md`
+- ADR-003: `docs/architecture/ADR-003-meaningful-identifiers-public-apis.md`
+- Event-management-service: Reference implementation for HTTP clients with JWT propagation
+
+**Important Scope Note:** This story provides partner entity CRUD with consolidated APIs and HTTP-based service integration (ADR-003 compliant). Partner portal, invitation workflows, and advanced partner features are deferred to Epic 8 (Partner Coordination & Engagement).
+
+---
+
 ## Epic 2 Success Metrics
 
 **Functional Success (End of Week 18):**
-- ✅ All entities have complete CRUD operations (Company, Event, Speaker, User)
-- ✅ **Consolidated RESTful APIs** operational for all entities (Stories 1.15a.1-1.15a.8)
+- ✅ All entities have complete CRUD operations (Company, Event, Speaker, User, Partner)
+- ✅ **Consolidated RESTful APIs** operational for all entities (Stories 1.15a.1-1.15a.8 + 1.15a.2)
 - ✅ 100% of CRUD and consolidated APIs documented in OpenAPI specifications
 - ✅ Role-based access control operational for all entities
 - ✅ React frontend with role-adaptive navigation deployed
@@ -601,8 +676,9 @@ As a **user of any role**, I want to view and manage my account through a unifie
 - **API Response Times**:
   - Basic CRUD: <200ms P95 for all operations
   - Event detail with includes: <500ms P95
-  - Company/Speaker detail with includes: <200-300ms P95
+  - Company/Speaker/Partner detail with includes: <200-300ms P95
   - User list with filters: <150ms P95
+  - Partner detail with HTTP enrichment: <300ms P95
 - **API Efficiency**: 80-90% reduction in HTTP requests per page load (via `?include=` expansion)
 - **Search Performance**: Company/speaker/event search <500ms with advanced filters
 - **Frontend Load Time**: Initial load <2.5s, subsequent <1s (improved via API consolidation)
@@ -648,22 +724,25 @@ As a **user of any role**, I want to view and manage my account through a unifie
 ## Implementation Sequence
 
 **Week 10-12: Backend Services (Parallel with User Management)**
-- Story 2.1: Company Management Service + API Consolidation (2.5 weeks)
-- Story 2.1b: User Management Service + API Consolidation (2 weeks) - start parallel
-- Story 2.2: Event Management Service + API Consolidation (3 weeks) - start parallel
-- Story 2.3: Speaker Coordination Service + API Consolidation (2.5 weeks) - start parallel
+- Story 2.1: Company Management Service + API Consolidation (2.5 weeks) ✅ Done
+- Story 2.1b: User Management Service + API Consolidation (2 weeks) ✅ Done
+- Story 2.2: Event Management Service + API Consolidation (3 weeks) - Not Started
+- Story 2.3: Speaker Coordination Service + API Consolidation (2.5 weeks) - Not Started
+- Story 2.7: Partner Coordination Service + API Consolidation (2.5 weeks) - Not Started
 
 **Week 13: User Role Management & Integration**
-- Story 2.4: User Role Management + API Consolidation (2 weeks) - depends on Story 2.1b
+- Story 2.4: User Role Management + API Consolidation (2 weeks) ✅ Done
 - Integration testing across all backend services (0.5 weeks)
 
 **Week 14-18: Frontend Development**
-- Story 2.5: React Frontend CRUD Foundation consuming consolidated APIs (3 weeks)
+- Story 2.5: React Frontend CRUD Foundation consuming consolidated APIs (3 weeks) ✅ Done
+- Story 2.6: User Account Management Frontend (2 weeks) - Not Started
 - End-to-end testing and bug fixes (2 weeks)
 
 **Rationale:**
 - Backend services can be developed in parallel by different developers
 - Story 2.1b (User Management) can be developed parallel to Story 2.1 (Company Management)
+- Story 2.7 (Partner Coordination) depends on Story 2.1 + 2.1b (requires Company/User services for HTTP integration)
 - Story 2.4 (User Role Management) depends on Story 2.1b completion
 - API consolidation adds ~0.5 weeks per service (worth it to avoid future refactoring)
 - Frontend development benefits from consolidated APIs (fewer integration points)
@@ -693,13 +772,14 @@ As a **user of any role**, I want to view and manage my account through a unifie
 ## Transition to Epic 3
 
 **Epic 2 Exit Criteria:**
-- [ ] All 5 stories (2.1-2.5) marked as complete
+- [ ] All 8 stories (2.1, 2.1b, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7) marked as complete
 - [ ] All acceptance criteria verified
 - [ ] Integration tests passing across all services
 - [ ] Frontend deployed and accessible
 - [ ] Performance benchmarks met
 - [ ] Security scan showing zero critical vulnerabilities
 - [ ] Stakeholder demo completed successfully
+- [ ] All services follow ADR-003 microservices pattern (meaningful IDs, HTTP integration)
 
 **Handoff to Epic 3 (Historical Data Migration):**
 - Entity CRUD APIs operational and ready to receive migrated data

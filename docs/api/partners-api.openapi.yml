@@ -11,13 +11,14 @@ info:
     - **Meeting Coordination**: Partner meeting scheduling and attendance
     - **Contact Management**: Multiple contact persons per partner
 
-    **Important (ADR-004)**: Partner is company-centric.
-    - Partner entity references Company (primary relationship)
-    - PartnerContact references User entity (NOT duplicating user fields)
-    - PartnerContact does NOT duplicate email, name, photo fields
-    - API responses combine User + PartnerContact data via JPQL joins
-    - Internal: PartnerContact.userId (UUID FK) -> User.id
-    - External: username is the public identifier (ADR-003)
+    **Important (ADR-003 + ADR-004)**: Partner is company-centric.
+    - Partner entity stores companyName (meaningful ID), NOT companyId UUID
+    - PartnerContact stores username (meaningful ID), NOT userId UUID
+    - PartnerContact does NOT duplicate email, name, photo fields from User
+    - API responses combine User + PartnerContact data via HTTP enrichment
+    - HTTP calls to Company Service: GET /api/v1/companies/{companyName}
+    - HTTP calls to User Service: GET /api/v1/users/{username}
+    - NO JPQL joins across service boundaries (ADR-003 microservices pattern)
 
     **Status**: NOT YET IMPLEMENTED - This spec defines the future API design
 
@@ -169,9 +170,10 @@ paths:
       description: |
         Retrieve all contact persons for a partner.
 
-        **Response combines User + PartnerContact data** (ADR-004):
-        - User fields: username, email, firstName, lastName, profilePictureUrl
-        - PartnerContact fields: contactRole, isPrimary
+        **Response combines User + PartnerContact data** (ADR-003 + ADR-004):
+        - User fields enriched via HTTP call to User Service (username, email, firstName, lastName, profilePictureUrl)
+        - PartnerContact fields from partner_contacts table (contactRole, isPrimary)
+        - HTTP integration pattern with JWT token propagation
 
       operationId: getPartnerContacts
       parameters:
@@ -200,7 +202,10 @@ paths:
       description: |
         Add a new contact person to a partner.
 
-        **Important (ADR-004)**: Contact must reference an existing User (by username).
+        **Important (ADR-003 + ADR-004)**:
+        - Contact must reference an existing User (by username, not userId UUID)
+        - User existence validated via HTTP call to User Service: GET /api/v1/users/{username}
+        - Returns 404 if user not found
 
       operationId: addPartnerContact
       parameters:
@@ -430,11 +435,11 @@ components:
     PartnerContactResponse:
       type: object
       description: |
-        PartnerContact response combines User entity fields with PartnerContact domain fields (ADR-004).
-        Internal: PartnerContact.userId (UUID FK) -> User.id
-        External: username is the public identifier
+        PartnerContact response combines User entity fields with PartnerContact domain fields (ADR-003 + ADR-004).
+        PartnerContact stores username (meaningful ID), NOT userId UUID.
+        User data enriched via HTTP call to User Service: GET /api/v1/users/{username}
       properties:
-        # From User entity (via JPQL join):
+        # From User entity (via HTTP enrichment from User Service):
         username:
           type: string
           description: Public identifier from User (ADR-003)
@@ -442,23 +447,23 @@ components:
         email:
           type: string
           format: email
-          description: From User entity
+          description: From User entity (HTTP enrichment)
           example: john.doe@example.com
         firstName:
           type: string
-          description: From User entity
+          description: From User entity (HTTP enrichment)
           example: John
         lastName:
           type: string
-          description: From User entity
+          description: From User entity (HTTP enrichment)
           example: Doe
         profilePictureUrl:
           type: string
           format: uri
-          description: From User entity
+          description: From User entity (HTTP enrichment)
           example: https://cdn.batbern.ch/users/john.doe/profile.jpg
 
-        # PartnerContact-specific fields:
+        # PartnerContact-specific fields (stored in partner_contacts table):
         contactRole:
           $ref: '#/components/schemas/ContactRole'
         isPrimary:
