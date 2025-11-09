@@ -36,12 +36,19 @@ CREATE TABLE partner_contacts (
     partner_id UUID NOT NULL REFERENCES partners(id) ON DELETE CASCADE,
     username VARCHAR(100) NOT NULL, -- ADR-003: Meaningful ID, NO UUID FK to users
     contact_role VARCHAR(50) NOT NULL CHECK (contact_role IN (
-        'primary', 'billing', 'technical', 'marketing'
+        'PRIMARY', 'BILLING', 'TECHNICAL', 'MARKETING'
     )),
-    is_primary BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    is_primary BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(partner_id, username)
 );
+
+-- Create updated_at trigger for partner_contacts
+CREATE TRIGGER update_partner_contacts_updated_at
+    BEFORE UPDATE ON partner_contacts
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
 
 -- Index on partner_id for efficient lookups
 CREATE INDEX idx_partner_contacts_partner_id ON partner_contacts(partner_id);

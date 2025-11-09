@@ -1,7 +1,7 @@
 package ch.batbern.partners.client.impl;
 
 import ch.batbern.partners.client.UserServiceClient;
-import ch.batbern.partners.dto.UserProfileDTO;
+import ch.batbern.partners.client.user.dto.UserResponse;
 import ch.batbern.partners.exception.UserNotFoundException;
 import ch.batbern.partners.exception.UserServiceException;
 import lombok.RequiredArgsConstructor;
@@ -53,7 +53,7 @@ public class UserServiceClientImpl implements UserServiceClient {
      */
     @Override
     @Cacheable(value = "userApiCache", key = "#username")
-    public UserProfileDTO getUserByUsername(String username) {
+    public UserResponse getUserByUsername(String username) {
         log.debug("Fetching user profile for username: {}", username);
 
         String url = userServiceBaseUrl + "/api/v1/users/" + username;
@@ -62,14 +62,14 @@ public class UserServiceClientImpl implements UserServiceClient {
             HttpHeaders headers = createHeadersWithJwtToken();
             HttpEntity<Void> request = new HttpEntity<>(headers);
 
-            ResponseEntity<UserProfileDTO> response = restTemplate.exchange(
+            ResponseEntity<UserResponse> response = restTemplate.exchange(
                     url,
                     HttpMethod.GET,
                     request,
-                    UserProfileDTO.class
+                    UserResponse.class
             );
 
-            UserProfileDTO user = response.getBody();
+            UserResponse user = response.getBody();
             log.debug("Successfully fetched user profile for username: {}", username);
             return user;
 
@@ -143,5 +143,15 @@ public class UserServiceClientImpl implements UserServiceClient {
         }
 
         return headers;
+    }
+
+    /**
+     * Get user profile by username.
+     *
+     * Alias for getUserByUsername() for clarity in contact enrichment scenarios.
+     */
+    @Override
+    public UserResponse getUserProfile(String username) {
+        return getUserByUsername(username);
     }
 }

@@ -1,12 +1,14 @@
 package ch.batbern.partners.client;
 
-import ch.batbern.partners.dto.UserProfileDTO;
+import ch.batbern.partners.client.user.dto.UserResponse;
 
 /**
  * Client interface for communicating with the User Service API.
  *
  * This client provides user data retrieval for partner contact enrichment.
  * All methods use caching (15min TTL) to minimize API calls.
+ *
+ * Uses generated DTO from users-api.openapi.yml for type safety.
  */
 public interface UserServiceClient {
 
@@ -14,9 +16,21 @@ public interface UserServiceClient {
      * Get user profile by username.
      *
      * @param username User's username (unique identifier per ADR-003)
-     * @return User profile data
+     * @return User profile data (generated from users-api.openapi.yml)
      * @throws ch.batbern.partners.exception.UserNotFoundException if user not found (404)
      * @throws ch.batbern.partners.exception.UserServiceException if API communication fails (5xx, timeout, network error)
      */
-    UserProfileDTO getUserByUsername(String username);
+    UserResponse getUserByUsername(String username);
+
+    /**
+     * Get user profile by username.
+     *
+     * Alias for getUserByUsername() for clarity in contact enrichment scenarios.
+     *
+     * @param username User's username (unique identifier per ADR-003)
+     * @return User profile data (generated from users-api.openapi.yml)
+     * @throws ch.batbern.partners.exception.UserNotFoundException if user not found (404)
+     * @throws ch.batbern.partners.exception.UserServiceException if API communication fails (5xx, timeout, network error)
+     */
+    UserResponse getUserProfile(String username);
 }

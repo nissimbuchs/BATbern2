@@ -1,9 +1,9 @@
 package ch.batbern.partners.service;
 
 import ch.batbern.partners.client.CompanyServiceClient;
+import ch.batbern.partners.client.company.dto.CompanyResponse;
 import ch.batbern.partners.domain.Partner;
 import ch.batbern.partners.domain.PartnershipLevel;
-import ch.batbern.partners.dto.CompanyDTO;
 import ch.batbern.partners.dto.generated.*;
 import ch.batbern.partners.events.PartnerCreatedEvent;
 import ch.batbern.partners.events.PartnerUpdatedEvent;
@@ -91,11 +91,14 @@ public class PartnerService {
 
         // HTTP enrichment per ADR-004
         if (includes.contains("company")) {
-            CompanyDTO companyDTO = companyServiceClient.getCompany(companyName);
+            CompanyResponse companyDTO = companyServiceClient.getCompany(companyName);
             CompanyInfo companyInfo = new CompanyInfo();
-            companyInfo.setCompanyName(companyDTO.getCompanyName());
+            companyInfo.setCompanyName(companyDTO.getName());  // Generated DTO uses getName()
             companyInfo.setDisplayName(companyDTO.getDisplayName());
-            companyInfo.setLogoUrl(companyDTO.getLogoUrl());
+            // CompanyLogo is an object - extract URL if present
+            if (companyDTO.getLogo() != null && companyDTO.getLogo().getUrl() != null) {
+                companyInfo.setLogoUrl(companyDTO.getLogo().getUrl().toString());
+            }
             response.setCompany(companyInfo);
         }
 
@@ -118,8 +121,8 @@ public class PartnerService {
         }
 
         // Validate company exists via HTTP call (ADR-003)
-        CompanyDTO companyDTO = companyServiceClient.getCompany(request.getCompanyName());
-        log.debug("Company validated: {}", companyDTO.getCompanyName());
+        CompanyResponse companyDTO = companyServiceClient.getCompany(request.getCompanyName());
+        log.debug("Company validated: {}", companyDTO.getName());
 
         // Create partner entity
         Partner partner = new Partner();

@@ -1,6 +1,6 @@
 package ch.batbern.partners.client;
 
-import ch.batbern.partners.dto.UserProfileDTO;
+import ch.batbern.partners.client.user.dto.UserResponse;
 import ch.batbern.partners.exception.UserNotFoundException;
 import ch.batbern.partners.exception.UserServiceException;
 import org.junit.jupiter.api.BeforeEach;
@@ -93,13 +93,13 @@ class UserServiceClientTest {
                             """));
 
         // When
-        UserProfileDTO user = userServiceClient.getUserByUsername(username);
+        UserResponse user = userServiceClient.getUserByUsername(username);
 
         // Then
         assertThat(user)
                 .as("Should return user profile data from API")
                 .isNotNull();
-        assertThat(user.getUsername())
+        assertThat(user.getId())  // Generated DTO uses getId() for username
                 .isEqualTo("john.doe@google.com");
         assertThat(user.getFirstName())
                 .isEqualTo("John");
@@ -153,10 +153,10 @@ class UserServiceClientTest {
                             """));
 
         // When - First call hits API
-        UserProfileDTO firstCall = userServiceClient.getUserByUsername(username);
+        UserResponse firstCall = userServiceClient.getUserByUsername(username);
 
         // Then - Second call should use cache (no HTTP request expected)
-        UserProfileDTO secondCall = userServiceClient.getUserByUsername(username);
+        UserResponse secondCall = userServiceClient.getUserByUsername(username);
 
         assertThat(firstCall)
                 .as("First call should return user data")
@@ -203,7 +203,7 @@ class UserServiceClientTest {
                             """));
 
         // When
-        UserProfileDTO user = userServiceClient.getUserByUsername(username);
+        UserResponse user = userServiceClient.getUserByUsername(username);
 
         // Then
         assertThat(user)

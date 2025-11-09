@@ -1,7 +1,7 @@
 package ch.batbern.partners.client.impl;
 
 import ch.batbern.partners.client.CompanyServiceClient;
-import ch.batbern.partners.dto.CompanyDTO;
+import ch.batbern.partners.client.company.dto.CompanyResponse;
 import ch.batbern.partners.exception.CompanyNotFoundException;
 import ch.batbern.partners.exception.CompanyServiceException;
 import lombok.RequiredArgsConstructor;
@@ -53,7 +53,7 @@ public class CompanyServiceClientImpl implements CompanyServiceClient {
      */
     @Override
     @Cacheable(value = "companyApiCache", key = "#companyName")
-    public CompanyDTO getCompanyByName(String companyName) {
+    public CompanyResponse getCompanyByName(String companyName) {
         log.debug("Fetching company data for company name: {}", companyName);
 
         String url = companyServiceBaseUrl + "/api/v1/companies/" + companyName;
@@ -62,20 +62,20 @@ public class CompanyServiceClientImpl implements CompanyServiceClient {
             HttpHeaders headers = createHeadersWithJwtToken();
             HttpEntity<Void> request = new HttpEntity<>(headers);
 
-            ResponseEntity<CompanyDTO> response = restTemplate.exchange(
+            ResponseEntity<CompanyResponse> response = restTemplate.exchange(
                     url,
                     HttpMethod.GET,
                     request,
-                    CompanyDTO.class
+                    CompanyResponse.class
             );
 
-            CompanyDTO company = response.getBody();
+            CompanyResponse company = response.getBody();
             log.debug("Successfully fetched company data for: {}", companyName);
             return company;
 
         } catch (HttpClientErrorException.NotFound e) {
             log.warn("Company not found: {}", companyName);
-            throw new CompanyNotFoundException(companyName, e);
+            throw new CompanyNotFoundException("Company not found: " + companyName);
 
         } catch (HttpClientErrorException e) {
             log.error("Client error fetching company {}: {} - {}",

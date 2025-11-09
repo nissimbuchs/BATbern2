@@ -5,7 +5,7 @@ import ch.batbern.partners.config.TestAwsConfig;
 import ch.batbern.partners.config.TestSecurityConfig;
 import ch.batbern.partners.domain.Partner;
 import ch.batbern.partners.domain.PartnershipLevel;
-import ch.batbern.partners.dto.CompanyDTO;
+import ch.batbern.partners.client.company.dto.CompanyResponse;
 import ch.batbern.partners.repository.PartnerRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -54,17 +54,17 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
     @MockBean
     private CompanyServiceClient companyServiceClient;
 
-    private CompanyDTO mockCompanyResponse;
+    private CompanyResponse mockCompanyResponse;
 
     @BeforeEach
     void setUp() {
         partnerRepository.deleteAll();
 
         // Mock Company Service HTTP response
-        mockCompanyResponse = new CompanyDTO();
-        mockCompanyResponse.setCompanyName("GoogleZH");
+        mockCompanyResponse = new CompanyResponse();
+        mockCompanyResponse.setName("GoogleZH");  // Generated DTO uses setName()
         mockCompanyResponse.setDisplayName("Google Zurich");
-        mockCompanyResponse.setLogoUrl("https://example.com/google-logo.png");
+        // Note: Logo is CompanyLogo object in generated DTO, skip for this test
 
         when(companyServiceClient.getCompany(anyString())).thenReturn(mockCompanyResponse);
     }

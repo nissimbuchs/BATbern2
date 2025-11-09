@@ -1,6 +1,6 @@
 package ch.batbern.partners.client;
 
-import ch.batbern.partners.dto.CompanyDTO;
+import ch.batbern.partners.client.company.dto.CompanyResponse;
 import ch.batbern.partners.exception.CompanyNotFoundException;
 import ch.batbern.partners.exception.CompanyServiceException;
 import org.junit.jupiter.api.BeforeEach;
@@ -96,15 +96,15 @@ class CompanyServiceClientTest {
                             """));
 
         // When
-        CompanyDTO company = companyServiceClient.getCompanyByName(companyName);
+        CompanyResponse company = companyServiceClient.getCompanyByName(companyName);
 
         // Then
         assertThat(company)
                 .as("Should return company data from API")
                 .isNotNull();
-        assertThat(company.getCompanyName())
+        assertThat(company.getName())  // Generated DTO uses getName()
                 .isEqualTo("GoogleZH");
-        assertThat(company.getLegalName())
+        assertThat(company.getDisplayName())  // Generated DTO uses getDisplayName()
                 .isEqualTo("Google Schweiz GmbH");
 
         mockServer.verify();
@@ -150,10 +150,10 @@ class CompanyServiceClientTest {
                             """));
 
         // When - First call hits API
-        CompanyDTO firstCall = companyServiceClient.getCompanyByName(companyName);
+        CompanyResponse firstCall = companyServiceClient.getCompanyByName(companyName);
 
         // Then - Second call should use cache (no HTTP request expected)
-        CompanyDTO secondCall = companyServiceClient.getCompanyByName(companyName);
+        CompanyResponse secondCall = companyServiceClient.getCompanyByName(companyName);
 
         assertThat(firstCall)
                 .as("First call should return company data")
@@ -200,7 +200,7 @@ class CompanyServiceClientTest {
                             """));
 
         // When
-        CompanyDTO company = companyServiceClient.getCompanyByName(companyName);
+        CompanyResponse company = companyServiceClient.getCompanyByName(companyName);
 
         // Then
         assertThat(company)
