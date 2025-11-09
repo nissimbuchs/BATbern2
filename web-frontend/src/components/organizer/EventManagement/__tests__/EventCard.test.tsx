@@ -367,7 +367,10 @@ describe('EventCard Component', () => {
 
       const image = screen.getByRole('img', { name: /cloud computing 2025/i });
       expect(image).toBeInTheDocument();
-      expect(image).toHaveAttribute('src', 'https://cdn.batbern.ch/logos/2025/events/BATbern56/theme.png');
+      expect(image).toHaveAttribute(
+        'src',
+        'https://cdn.batbern.ch/logos/2025/events/BATbern56/theme.png'
+      );
     });
 
     it('should_useGradientBackground_when_themeImageUrlNotProvided', () => {
@@ -379,7 +382,7 @@ describe('EventCard Component', () => {
 
       // Should NOT have an img element
       const images = screen.queryAllByRole('img');
-      const themeImage = images.find(img => img.getAttribute('alt')?.includes(mockEvent.title));
+      const themeImage = images.find((img) => img.getAttribute('alt')?.includes(mockEvent.title));
       expect(themeImage).toBeUndefined();
     });
 
@@ -390,7 +393,9 @@ describe('EventCard Component', () => {
       };
       render(<EventCard event={eventWithImage} />, { wrapper: createWrapper() });
 
-      const imageContainer = screen.getByRole('img', { name: /cloud computing 2025/i }).closest('div');
+      const imageContainer = screen
+        .getByRole('img', { name: /cloud computing 2025/i })
+        .closest('div');
       expect(imageContainer).toBeInTheDocument();
     });
 

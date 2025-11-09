@@ -72,7 +72,9 @@ describe('SessionCards', () => {
 
     // Check session descriptions
     expect(screen.getByText(/Welcome and introduction to the conference/i)).toBeInTheDocument();
-    expect(screen.getByText(/Hands-on workshop about sustainable building materials/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Hands-on workshop about sustainable building materials/i)
+    ).toBeInTheDocument();
 
     // Check room names
     expect(screen.getByText('Main Hall')).toBeInTheDocument();

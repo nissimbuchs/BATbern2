@@ -3,9 +3,9 @@
  * Adapted from BATbern-public Navbar with React Router integration
  */
 
-import { Link } from "react-router-dom";
-import { Button } from "@/components/public/ui/button";
-import { useAuth } from "@/hooks/useAuth";
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/public/ui/button';
+import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 
 export const PublicNavigation = () => {
@@ -32,10 +32,7 @@ export const PublicNavigation = () => {
 
           {/* Primary Navigation - Center */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link
-              to="/"
-              className="text-foreground/80 hover:text-foreground transition-colors"
-            >
+            <Link to="/" className="text-foreground/80 hover:text-foreground transition-colors">
               {t('navigation.home')}
             </Link>
             <Link

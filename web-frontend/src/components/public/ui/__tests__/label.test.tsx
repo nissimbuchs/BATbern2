@@ -24,9 +24,7 @@ describe('Label Component', () => {
   });
 
   test('should_applyCustomClassName_when_provided', () => {
-    const { container } = render(
-      <Label className="custom-label">Custom Styled Label</Label>
-    );
+    const { container } = render(<Label className="custom-label">Custom Styled Label</Label>);
 
     const label = container.querySelector('.custom-label');
     expect(label).toBeInTheDocument();

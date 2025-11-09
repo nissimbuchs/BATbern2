@@ -11,7 +11,6 @@
  * - Story 2.8.3: Partner Create/Edit Modal (createPartner, updatePartner)
  */
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import apiClient from '@/services/api/apiClient';
 import type { components } from '@/types/generated/partner-api.types';
 
@@ -32,7 +31,6 @@ export type UpdateNoteRequest = components['schemas']['UpdateNoteRequest'];
 // API base path for partner endpoints
 // Note: apiClient baseURL is set from runtime config to 'http://localhost:8080/api/v1'
 // so we only need '/partners' (the /v1 prefix is already in the baseURL)
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const PARTNER_API_PATH = '/partners';
 
 // Helper interfaces for filters and pagination
@@ -98,10 +96,15 @@ export const getPartnerStatistics = async (): Promise<PartnerStatistics> => {
  * @returns PartnerResponse with enriched data
  */
 export const getPartnerDetail = async (
-  _companyName: string,
-  _include?: string
+  companyName: string,
+  include?: string
 ): Promise<PartnerResponse> => {
-  throw new Error('Not implemented - Story 2.8.2');
+  const params: Record<string, string> = {};
+  if (include) {
+    params.include = include;
+  }
+  const response = await apiClient.get(`${PARTNER_API_PATH}/${companyName}`, { params });
+  return response.data;
 };
 
 /**
@@ -110,8 +113,9 @@ export const getPartnerDetail = async (
  * @param companyName - Company name (meaningful ID)
  * @returns Array of TopicVoteResponse
  */
-export const getPartnerVotes = async (_companyName: string): Promise<TopicVoteResponse[]> => {
-  throw new Error('Not implemented - Story 2.8.2');
+export const getPartnerVotes = async (companyName: string): Promise<TopicVoteResponse[]> => {
+  const response = await apiClient.get(`${PARTNER_API_PATH}/${companyName}/votes`);
+  return response.data;
 };
 
 /**
@@ -120,8 +124,9 @@ export const getPartnerVotes = async (_companyName: string): Promise<TopicVoteRe
  * @param companyName - Company name (meaningful ID)
  * @returns Array of MeetingResponse
  */
-export const getPartnerMeetings = async (_companyName: string): Promise<MeetingResponse[]> => {
-  throw new Error('Not implemented - Story 2.8.2');
+export const getPartnerMeetings = async (companyName: string): Promise<MeetingResponse[]> => {
+  const response = await apiClient.get(`${PARTNER_API_PATH}/${companyName}/meetings`);
+  return response.data;
 };
 
 /**
@@ -132,10 +137,15 @@ export const getPartnerMeetings = async (_companyName: string): Promise<MeetingR
  * @returns Array of ActivityResponse
  */
 export const getPartnerActivity = async (
-  _companyName: string,
-  _filters?: ActivityFilters
+  companyName: string,
+  filters?: ActivityFilters
 ): Promise<ActivityResponse[]> => {
-  throw new Error('Not implemented - Story 2.8.2');
+  const params: Record<string, string> = {};
+  if (filters?.type) {
+    params.filter = `type:${filters.type}`;
+  }
+  const response = await apiClient.get(`${PARTNER_API_PATH}/${companyName}/activity`, { params });
+  return response.data;
 };
 
 /**
@@ -144,8 +154,9 @@ export const getPartnerActivity = async (
  * @param companyName - Company name (meaningful ID)
  * @returns Array of NoteResponse
  */
-export const getPartnerNotes = async (_companyName: string): Promise<NoteResponse[]> => {
-  throw new Error('Not implemented - Story 2.8.2');
+export const getPartnerNotes = async (companyName: string): Promise<NoteResponse[]> => {
+  const response = await apiClient.get(`${PARTNER_API_PATH}/${companyName}/notes`);
+  return response.data;
 };
 
 /**
@@ -156,10 +167,11 @@ export const getPartnerNotes = async (_companyName: string): Promise<NoteRespons
  * @returns Created NoteResponse
  */
 export const createPartnerNote = async (
-  _companyName: string,
-  _note: CreateNoteRequest
+  companyName: string,
+  note: CreateNoteRequest
 ): Promise<NoteResponse> => {
-  throw new Error('Not implemented - Story 2.8.2');
+  const response = await apiClient.post(`${PARTNER_API_PATH}/${companyName}/notes`, note);
+  return response.data;
 };
 
 /**
@@ -171,11 +183,15 @@ export const createPartnerNote = async (
  * @returns Updated NoteResponse
  */
 export const updatePartnerNote = async (
-  _companyName: string,
-  _noteId: string,
-  _note: UpdateNoteRequest
+  companyName: string,
+  noteId: string,
+  note: UpdateNoteRequest
 ): Promise<NoteResponse> => {
-  throw new Error('Not implemented - Story 2.8.2');
+  const response = await apiClient.patch(
+    `${PARTNER_API_PATH}/${companyName}/notes/${noteId}`,
+    note
+  );
+  return response.data;
 };
 
 /**
@@ -185,8 +201,8 @@ export const updatePartnerNote = async (
  * @param noteId - Note ID to delete
  * @returns void
  */
-export const deletePartnerNote = async (_companyName: string, _noteId: string): Promise<void> => {
-  throw new Error('Not implemented - Story 2.8.2');
+export const deletePartnerNote = async (companyName: string, noteId: string): Promise<void> => {
+  await apiClient.delete(`${PARTNER_API_PATH}/${companyName}/notes/${noteId}`);
 };
 
 // ============================================================================
