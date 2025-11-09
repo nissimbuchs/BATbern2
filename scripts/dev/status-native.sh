@@ -63,7 +63,7 @@ fi
 if [ "$BASE_PORT" -eq 8000 ] || [ "$BASE_PORT" -eq 9000 ]; then
     FRONTEND_PORT=$((3000 + (INSTANCE_NUM - 1) * 1000))
 else
-    FRONTEND_PORT=$((BASE_PORT + 1000))
+    FRONTEND_PORT=$((BASE_PORT + 100))
 fi
 
 # Shared infrastructure ports
