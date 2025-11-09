@@ -7,18 +7,20 @@
 #   BASE_PORT=9000 ./scripts/dev/start-all-native.sh  # Second instance (BASE_PORT=9000)
 #
 # Parallel Instance Support:
-#   - Instance 1: BASE_PORT=8000 (default) → services 8080-8085, frontend 3000, DB tunnel 5432, MinIO 9000-9001
-#   - Instance 2: BASE_PORT=9000 → services 9080-9085, frontend 4000, DB tunnel 6432, MinIO 9100-9101
-#   - Both instances share the same database but have isolated processes
+#   - BASE_PORT=8000 (default) → services 8000-8005, frontend 8100
+#   - BASE_PORT=9000 → services 9000-9005, frontend 9100
+#   - BASE_PORT=9500 → services 9500-9505, frontend 9600
+#   - Any BASE_PORT value supported (e.g., 7000, 10000, etc.)
+#   - Shared infrastructure: DB tunnel (5432), MinIO (8450/8451)
 #
-# Services started (with default ports):
-#   - API Gateway (port 8080)
-#   - Company User Management Service (port 8081)
-#   - Event Management Service (port 8082)
-#   - Speaker Coordination Service (port 8083)
-#   - Partner Coordination Service (port 8084)
-#   - Attendee Experience Service (port 8085)
-#   - Web Frontend (port 3000)
+# Services started (with BASE_PORT=8000):
+#   - API Gateway (port 8000)
+#   - Company User Management Service (port 8001)
+#   - Event Management Service (port 8002)
+#   - Speaker Coordination Service (port 8003)
+#   - Partner Coordination Service (port 8004)
+#   - Attendee Experience Service (port 8005)
+#   - Web Frontend (port 8100)
 
 set -e
 
@@ -37,17 +39,11 @@ LOG_DIR="/tmp"
 ENV_FILE="${PROJECT_ROOT}/.env"
 
 # Instance-specific configuration
-BASE_PORT="${BASE_PORT:-8000}"  # Default to 8000 (instance 1)
+BASE_PORT="${BASE_PORT:-8000}"  # Default instance port
 
 # Calculate instance identifier based on BASE_PORT
-# Use friendly names for common ports, otherwise use the port number itself
-if [ "$BASE_PORT" -eq 8000 ]; then
-    INSTANCE="1"
-elif [ "$BASE_PORT" -eq 9000 ]; then
-    INSTANCE="2"
-else
-    INSTANCE="$BASE_PORT"
-fi
+# Always use BASE_PORT as the instance identifier for consistency
+INSTANCE="$BASE_PORT"
 
 ENV_NATIVE_FILE="${PROJECT_ROOT}/.env.native.${INSTANCE}"
 
@@ -153,6 +149,16 @@ create_env_native() {
     set -a
     source "${ENV_FILE}"
     set +a
+
+    # Recalculate ports AFTER sourcing .env (which may have hardcoded port values)
+    # This ensures instance-specific ports always take precedence
+    API_GATEWAY_PORT=$BASE_PORT
+    COMPANY_USER_MGMT_PORT=$((BASE_PORT + 1))
+    EVENT_MGMT_PORT=$((BASE_PORT + 2))
+    SPEAKER_COORD_PORT=$((BASE_PORT + 3))
+    PARTNER_COORD_PORT=$((BASE_PORT + 4))
+    ATTENDEE_EXP_PORT=$((BASE_PORT + 5))
+    FRONTEND_PORT=$((BASE_PORT + 100))
 
     # Create .env.native.{INSTANCE} with localhost overrides and instance-specific ports
     cat > "${ENV_NATIVE_FILE}" << EOF
