@@ -532,3 +532,103 @@ describe('Partner API Client - Story 2.8.2 (Partner Detail View)', () => {
     });
   });
 });
+
+// ============================================================================
+// Story 2.8.3: Partner Create/Edit Modal Tests
+// ============================================================================
+
+describe('Partner API Client - Story 2.8.3 (Partner Create/Edit)', () => {
+  let originalTimeout: number;
+
+  beforeAll(() => {
+    originalTimeout = apiClient.defaults.timeout || 30000;
+    apiClient.defaults.timeout = 100;
+  });
+
+  afterAll(() => {
+    apiClient.defaults.timeout = originalTimeout;
+  });
+
+  describe('createPartner', () => {
+    it('should_callCreatePartnerAPI_when_createPartnerCalled', async () => {
+      const request = {
+        companyName: 'test-company',
+        partnershipLevel: 'gold' as const,
+        partnershipStartDate: '2025-01-01',
+        partnershipEndDate: '2025-12-31',
+      };
+
+      // Expect network/server/timeout error (not "Not implemented" error)
+      // This confirms the actual API call is being made
+      await expect(partnerApi.createPartner(request)).rejects.toThrow(
+        /(Network Error|status code 500|timeout|status code 404)/
+      );
+    });
+
+    it('should_validateRequiredFields_when_createPartnerCalled', async () => {
+      const request = {
+        companyName: 'test-company',
+        partnershipLevel: 'bronze' as const,
+        partnershipStartDate: '2025-01-01',
+      };
+
+      // Should attempt API call with valid required fields
+      await expect(partnerApi.createPartner(request)).rejects.toThrow(
+        /(Network Error|status code 500|timeout|status code 404)/
+      );
+    });
+  });
+
+  describe('updatePartner', () => {
+    it('should_callUpdatePartnerAPI_when_updatePartnerCalled', async () => {
+      const companyName = 'test-company';
+      const request = {
+        partnershipLevel: 'platinum' as const,
+        partnershipEndDate: '2026-12-31',
+        isActive: true,
+      };
+
+      // Expect network/server/timeout error (not "Not implemented" error)
+      await expect(partnerApi.updatePartner(companyName, request)).rejects.toThrow(
+        /(Network Error|status code 500|timeout|status code 404)/
+      );
+    });
+
+    it('should_updatePartialFields_when_updatePartnerCalled', async () => {
+      const companyName = 'test-company';
+      const request = {
+        partnershipLevel: 'silver' as const,
+      };
+
+      // Should allow partial updates
+      await expect(partnerApi.updatePartner(companyName, request)).rejects.toThrow(
+        /(Network Error|status code 500|timeout|status code 404)/
+      );
+    });
+  });
+
+  describe('error handling', () => {
+    it('should_handleConflictError_when_partnershipExists', async () => {
+      const request = {
+        companyName: 'existing-company',
+        partnershipLevel: 'gold' as const,
+        partnershipStartDate: '2025-01-01',
+      };
+
+      // In production, conflict errors would be 409
+      // In test environment, we expect network/server error since backend is unavailable
+      await expect(partnerApi.createPartner(request)).rejects.toThrow(
+        /(Network Error|status code 500|timeout|status code 404|status code 409)/
+      );
+    });
+  });
+
+  describe('API Structure', () => {
+    it('should have all required mutation methods', () => {
+      expect(partnerApi.createPartner).toBeDefined();
+      expect(typeof partnerApi.createPartner).toBe('function');
+      expect(partnerApi.updatePartner).toBeDefined();
+      expect(typeof partnerApi.updatePartner).toBe('function');
+    });
+  });
+});

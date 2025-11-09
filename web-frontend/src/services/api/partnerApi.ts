@@ -255,25 +255,28 @@ export const deletePartnerNote = async (companyName: string, noteId: string): Pr
 /**
  * Create a new partnership
  * Story 2.8.3
- * @param _request - CreatePartnerRequest payload (unused - not yet implemented)
+ * @param request - CreatePartnerRequest payload
  * @returns Created PartnerResponse
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const createPartner = async (_request: CreatePartnerRequest): Promise<PartnerResponse> => {
-  throw new Error('Not implemented - Story 2.8.3');
+export const createPartner = async (request: CreatePartnerRequest): Promise<PartnerResponse> => {
+  const response = await apiClient.post<PartnerResponse>(PARTNER_API_PATH, request);
+  return response.data;
 };
 
 /**
  * Update an existing partnership
  * Story 2.8.3
- * @param _companyName - Company name (meaningful ID) (unused - not yet implemented)
- * @param _request - UpdatePartnerRequest payload (unused - not yet implemented)
+ * @param companyName - Company name (meaningful ID)
+ * @param request - UpdatePartnerRequest payload
  * @returns Updated PartnerResponse
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const updatePartner = async (
-  _companyName: string,
-  _request: UpdatePartnerRequest
+  companyName: string,
+  request: UpdatePartnerRequest
 ): Promise<PartnerResponse> => {
-  throw new Error('Not implemented - Story 2.8.3');
+  const response = await apiClient.patch<PartnerResponse>(
+    `${PARTNER_API_PATH}/${companyName}`,
+    request
+  );
+  return response.data;
 };

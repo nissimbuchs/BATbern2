@@ -1,7 +1,6 @@
 {
   "title": "Partner Directory",
   "addPartner": "Add Partner",
-  "addPartnerComingSoon": "Coming Soon - Story 2.8.3",
   "searchPlaceholder": "Search by partner name...",
   "searchAriaLabel": "Search partners",
   "clearSearch": "Clear search",
@@ -79,5 +78,66 @@
     "searchResults_plural": "{{count}} partners found",
     "filterUpdate": "Filters updated",
     "loading": "Loading partners"
+  },
+  "modal": {
+    "createTitle": "Create Partnership",
+    "editTitle": "Edit Partnership",
+    "fields": {
+      "company": "Company",
+      "companyPlaceholder": "Search for company...",
+      "partnershipTier": "Partnership Tier",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "endDateOptional": "End Date (Optional)"
+    },
+    "tiers": {
+      "STRATEGIC": "Strategic",
+      "PLATINUM": "Platinum",
+      "GOLD": "Gold",
+      "SILVER": "Silver",
+      "BRONZE": "Bronze"
+    },
+    "tierDescriptions": {
+      "STRATEGIC": "Highest partnership tier with full access and dedicated support",
+      "PLATINUM": "Premium partnership with enhanced benefits",
+      "GOLD": "High-value partnership with major benefits",
+      "SILVER": "Standard partnership with essential benefits",
+      "BRONZE": "Entry-level partnership with basic benefits"
+    },
+    "benefits": {
+      "title": "Tier Benefits",
+      "logoPlacement": "Logo placement on website",
+      "newsletterMentions": "Newsletter mentions",
+      "priorityAccess": "Priority event access",
+      "quarterlyMeetings": "Quarterly strategic meetings",
+      "roiAnalytics": "ROI analytics dashboard",
+      "dedicatedManager": "Dedicated account manager",
+      "eventAccess": "Event access"
+    },
+    "actions": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "saving": "Saving..."
+    },
+    "messages": {
+      "unsavedChanges": "You have unsaved changes. Are you sure you want to close?",
+      "createSuccess": "Partnership created successfully",
+      "updateSuccess": "Partnership updated successfully",
+      "createError": "Failed to create partnership. Correlation ID: {{correlationId}}",
+      "updateError": "Failed to update partnership. Correlation ID: {{correlationId}}"
+    },
+    "companySearch": {
+      "searching": "Searching companies...",
+      "noResults": "No companies found",
+      "error": "Error searching companies",
+      "minChars": "Type at least 2 characters to search"
+    }
+  },
+  "validation": {
+    "companyRequired": "Company is required",
+    "tierRequired": "Partnership tier is required",
+    "startDateRequired": "Start date is required",
+    "startDateFuture": "Start date cannot be in the future",
+    "endDateBeforeStart": "End date must be after start date"
   }
 }

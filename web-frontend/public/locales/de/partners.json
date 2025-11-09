@@ -1,7 +1,6 @@
 {
   "title": "Partner-Verzeichnis",
   "addPartner": "Partner hinzufügen",
-  "addPartnerComingSoon": "Demnächst verfügbar - Story 2.8.3",
   "searchPlaceholder": "Nach Partnername suchen...",
   "searchAriaLabel": "Partner suchen",
   "clearSearch": "Suche löschen",
@@ -79,5 +78,66 @@
     "searchResults_plural": "{{count}} Partner gefunden",
     "filterUpdate": "Filter aktualisiert",
     "loading": "Partner werden geladen"
+  },
+  "modal": {
+    "createTitle": "Partnerschaft erstellen",
+    "editTitle": "Partnerschaft bearbeiten",
+    "fields": {
+      "company": "Unternehmen",
+      "companyPlaceholder": "Unternehmen suchen...",
+      "partnershipTier": "Partnership-Stufe",
+      "startDate": "Startdatum",
+      "endDate": "Enddatum",
+      "endDateOptional": "Enddatum (Optional)"
+    },
+    "tiers": {
+      "STRATEGIC": "Strategisch",
+      "PLATINUM": "Platin",
+      "GOLD": "Gold",
+      "SILVER": "Silber",
+      "BRONZE": "Bronze"
+    },
+    "tierDescriptions": {
+      "STRATEGIC": "Höchste Partnerschaftsstufe mit vollständigem Zugriff und dediziertem Support",
+      "PLATINUM": "Premium-Partnerschaft mit erweiterten Vorteilen",
+      "GOLD": "Hochwertige Partnerschaft mit wichtigen Vorteilen",
+      "SILVER": "Standard-Partnerschaft mit wesentlichen Vorteilen",
+      "BRONZE": "Einstiegs-Partnerschaft mit grundlegenden Vorteilen"
+    },
+    "benefits": {
+      "title": "Vorteile der Stufe",
+      "logoPlacement": "Logo-Platzierung auf der Website",
+      "newsletterMentions": "Newsletter-Erwähnungen",
+      "priorityAccess": "Prioritätszugang zu Veranstaltungen",
+      "quarterlyMeetings": "Vierteljährliche strategische Besprechungen",
+      "roiAnalytics": "ROI-Analytik-Dashboard",
+      "dedicatedManager": "Dedizierter Account Manager",
+      "eventAccess": "Veranstaltungszugang"
+    },
+    "actions": {
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "saving": "Wird gespeichert..."
+    },
+    "messages": {
+      "unsavedChanges": "Sie haben ungespeicherte Änderungen. Sind Sie sicher, dass Sie schliessen möchten?",
+      "createSuccess": "Partnerschaft erfolgreich erstellt",
+      "updateSuccess": "Partnerschaft erfolgreich aktualisiert",
+      "createError": "Fehler beim Erstellen der Partnerschaft. Korrelations-ID: {{correlationId}}",
+      "updateError": "Fehler beim Aktualisieren der Partnerschaft. Korrelations-ID: {{correlationId}}"
+    },
+    "companySearch": {
+      "searching": "Unternehmen werden gesucht...",
+      "noResults": "Keine Unternehmen gefunden",
+      "error": "Fehler beim Suchen von Unternehmen",
+      "minChars": "Mindestens 2 Zeichen für die Suche eingeben"
+    }
+  },
+  "validation": {
+    "companyRequired": "Unternehmen ist erforderlich",
+    "tierRequired": "Partnership-Stufe ist erforderlich",
+    "startDateRequired": "Startdatum ist erforderlich",
+    "startDateFuture": "Startdatum darf nicht in der Zukunft liegen",
+    "endDateBeforeStart": "Enddatum muss nach dem Startdatum liegen"
   }
 }
