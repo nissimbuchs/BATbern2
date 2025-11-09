@@ -252,7 +252,7 @@ describe('RegistrationWizard Component', () => {
   describe('Form Submission', () => {
     test('should_submitRegistration_when_formValid', async () => {
       const mockRegistration = {
-        confirmationCode: 'ABC123',
+        registrationCode: 'ABC123',
         firstName: 'John',
         lastName: 'Doe',
         email: 'john@example.com',
@@ -305,7 +305,7 @@ describe('RegistrationWizard Component', () => {
 
     test('should_navigateToConfirmation_when_submissionSuccessful', async () => {
       const mockRegistration = {
-        confirmationCode: 'ABC123',
+        registrationCode: 'ABC123',
         firstName: 'John',
         lastName: 'Doe',
         email: 'john@example.com',
@@ -380,7 +380,7 @@ describe('RegistrationWizard Component', () => {
 
     test('should_showLoadingState_when_submitting', async () => {
       vi.mocked(eventApiClient.createRegistration).mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve({ confirmationCode: 'ABC123' }), 100))
+        () => new Promise((resolve) => setTimeout(() => resolve({ registrationCode: 'ABC123' }), 100))
       );
 
       renderWithProviders(<RegistrationWizard eventCode="BAT2025" />);

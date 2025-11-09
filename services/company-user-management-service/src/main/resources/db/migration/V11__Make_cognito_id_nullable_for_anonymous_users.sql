@@ -21,15 +21,9 @@ CREATE INDEX idx_user_profiles_email_anonymous
     WHERE cognito_user_id IS NULL;
 
 -- Update column comment to reflect new anonymous user capability
-COMMENT ON COLUMN user_profiles.cognito_user_id IS
-    'AWS Cognito User ID from Cognito User Pool. ' ||
-    'NULL for anonymous users who registered for events without creating an account. ' ||
-    'Set via auto-linking when user creates Cognito account with matching email (ADR-005).';
+COMMENT ON COLUMN user_profiles.cognito_user_id IS 'AWS Cognito User ID from Cognito User Pool. NULL for anonymous users who registered for events without creating an account. Set via auto-linking when user creates Cognito account with matching email (ADR-005).';
 
-COMMENT ON CONSTRAINT check_user_identity ON user_profiles IS
-    'ADR-005: Ensures user has either Cognito account (authenticated) or email (anonymous). ' ||
-    'Anonymous users: cognito_user_id=NULL, email NOT NULL. ' ||
-    'Authenticated users: cognito_user_id NOT NULL.';
+COMMENT ON CONSTRAINT check_user_identity ON user_profiles IS 'ADR-005: Ensures user has either Cognito account (authenticated) or email (anonymous). Anonymous users: cognito_user_id=NULL, email NOT NULL. Authenticated users: cognito_user_id NOT NULL.';
 
 -- Log migration for audit trail
 SELECT
