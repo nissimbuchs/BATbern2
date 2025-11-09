@@ -18,6 +18,8 @@ import java.util.concurrent.TimeUnit;
  * - partners: 10min TTL for partner lookups
  * - companies: 10min TTL for Company Service HTTP responses
  * - users: 10min TTL for User Service HTTP responses
+ *
+ * Note: Cache statistics are enabled via recordStats() for CloudWatch monitoring.
  */
 @Configuration
 @EnableCaching
