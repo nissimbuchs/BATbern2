@@ -76,7 +76,7 @@ export const ConfirmRegistrationStep = ({
               setFormData((prev) => ({
                 ...prev,
                 communicationPreferences: {
-                  ...prev.communicationPreferences,
+                  newsletterSubscribed: prev.communicationPreferences?.newsletterSubscribed ?? false,
                   eventReminders: !!checked,
                 },
               }))
@@ -99,8 +99,8 @@ export const ConfirmRegistrationStep = ({
               setFormData((prev) => ({
                 ...prev,
                 communicationPreferences: {
-                  ...prev.communicationPreferences,
                   newsletterSubscribed: !!checked,
+                  eventReminders: prev.communicationPreferences?.eventReminders ?? true,
                 },
               }))
             }

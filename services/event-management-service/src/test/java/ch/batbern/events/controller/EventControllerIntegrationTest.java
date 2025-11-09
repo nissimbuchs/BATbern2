@@ -1,16 +1,21 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.events.AbstractIntegrationTest;
+import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.dto.GetOrCreateUserRequest;
+import ch.batbern.events.dto.UserProfileDTO;
 import ch.batbern.events.repository.EventRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -21,6 +26,9 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -52,6 +60,9 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @MockBean
+    private UserApiClient userApiClient;
+
     // Counter for generating unique event numbers in tests
     private int eventNumberCounter = 1000;
 
@@ -63,10 +74,57 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         // Reset counter for each test
         eventNumberCounter = 1000;
 
+        // Mock UserApiClient for registration tests (Story 2.2a)
+        mockUserApiClient();
+
         // Create test data
         createTestEvent("BATbern 2025", "2025-05-15T09:00:00Z", "published");
         createTestEvent("BATbern 2024", "2024-06-20T09:00:00Z", "archived");
         createTestEvent("BATbern 2026 Draft", "2026-07-01T09:00:00Z", "planning");
+    }
+
+    private void mockUserApiClient() {
+        // Mock getOrCreateUser() for registration creation - return user based on request data
+        when(userApiClient.getOrCreateUser(any(GetOrCreateUserRequest.class)))
+                .thenAnswer(invocation -> {
+                    GetOrCreateUserRequest request = invocation.getArgument(0);
+                    String email = request.getEmail();
+                    String username = email.split("@")[0].replace(".", ".");
+
+                    return UserProfileDTO.builder()
+                            .username(username)
+                            .firstName(request.getFirstName())
+                            .lastName(request.getLastName())
+                            .email(request.getEmail())
+                            .companyId("TestCorp")
+                            .build();
+                });
+
+        // Mock getUserByUsername() for registration enrichment - return based on username
+        when(userApiClient.getUserByUsername(anyString()))
+                .thenAnswer(invocation -> {
+                    String username = invocation.getArgument(0);
+
+                    // Create a consistent mock user based on username
+                    String[] parts = username.split("\\.");
+                    String firstName = parts.length > 0 ? capitalize(parts[0]) : "Test";
+                    String lastName = parts.length > 1 ? capitalize(parts[1]) : "User";
+
+                    return UserProfileDTO.builder()
+                            .username(username)
+                            .firstName(firstName)
+                            .lastName(lastName)
+                            .email(username + "@example.com")
+                            .companyId("TestCorp")
+                            .build();
+                });
+    }
+
+    private String capitalize(String str) {
+        if (str == null || str.isEmpty()) {
+            return str;
+        }
+        return str.substring(0, 1).toUpperCase() + str.substring(1);
     }
 
     private Event createTestEvent(String title, String dateStr, String status) {
@@ -805,12 +863,12 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     void should_listRegistrations_when_requested() throws Exception {
         Event savedEvent = eventRepository.findAll().get(0);
 
+        // Story 2.2a: Response format changed to array (no pagination wrapper)
         mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data", hasSize(greaterThanOrEqualTo(0))))
-                .andExpect(jsonPath("$.pagination").exists());
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(0))));
     }
 
     @Test
@@ -819,11 +877,12 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         Event savedEvent = eventRepository.findAll().get(0);
         String filter = "{\"status\":\"confirmed\"}";
 
+        // Story 2.2a: Response format changed to array (no pagination wrapper)
         mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
                         .param("filter", filter)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray());
+                .andExpect(jsonPath("$").isArray());
     }
 
     @Test
@@ -917,7 +976,8 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                         .content(patchData))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.registrationCode").value(registrationCode))
-                .andExpect(jsonPath("$.attendeeName").value("Jane Smith")) // Name unchanged
+                .andExpect(jsonPath("$.attendeeFirstName").value("Jane")) // Name unchanged
+                .andExpect(jsonPath("$.attendeeLastName").value("Smith")) // Name unchanged
                 .andExpect(jsonPath("$.status").value("confirmed")); // Status updated
     }
 
@@ -955,7 +1015,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[?(@.registrationCode == '" + registrationCode + "')]").doesNotExist());
+                .andExpect(jsonPath("$[?(@.registrationCode == '" + registrationCode + "')]").doesNotExist());
     }
 
     // ============================================================================
@@ -968,11 +1028,11 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         Event savedEvent = eventRepository.findAll().get(0);
 
         // Create some test data for analytics
-        // Add registrations
+        // Add registrations (Story 2.2a format)
         String registration1 = """
                 {
-                    "attendeeUsername": "analytics.user1",
-                    "attendeeName": "Analytics User 1",
+                    "attendeeFirstName": "Analytics",
+                    "attendeeLastName": "User1",
                     "attendeeEmail": "analytics1@example.com",
                     "status": "confirmed",
                     "registrationDate": "2025-04-01T10:00:00Z"
@@ -985,8 +1045,8 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
         String registration2 = """
                 {
-                    "attendeeUsername": "analytics.user2",
-                    "attendeeName": "Analytics User 2",
+                    "attendeeFirstName": "Analytics",
+                    "attendeeLastName": "User2",
                     "attendeeEmail": "analytics2@example.com",
                     "status": "confirmed",
                     "registrationDate": "2025-04-02T10:00:00Z"
@@ -1015,11 +1075,11 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     void should_filterByTimeframe_when_timeframeProvided() throws Exception {
         Event savedEvent = eventRepository.findAll().get(0);
 
-        // Create registrations with different dates
+        // Create registrations with different dates (Story 2.2a format)
         String earlyRegistration = """
                 {
-                    "attendeeUsername": "early.bird",
-                    "attendeeName": "Early Bird",
+                    "attendeeFirstName": "Early",
+                    "attendeeLastName": "Bird",
                     "attendeeEmail": "early@example.com",
                     "status": "confirmed",
                     "registrationDate": "2025-01-01T10:00:00Z"
@@ -1032,8 +1092,8 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
         String lateRegistration = """
                 {
-                    "attendeeUsername": "late.joiner",
-                    "attendeeName": "Late Joiner",
+                    "attendeeFirstName": "Late",
+                    "attendeeLastName": "Joiner",
                     "attendeeEmail": "late@example.com",
                     "status": "confirmed",
                     "registrationDate": "2025-05-01T10:00:00Z"
@@ -1286,13 +1346,13 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         for (int i = 1; i <= 20; i++) {
             String registration = """
                     {
-                        "attendeeUsername": "attendee%d.test",
-                        "attendeeName": "Attendee %d",
+                        "attendeeFirstName": "Attendee",
+                        "attendeeLastName": "Test%d",
                         "attendeeEmail": "attendee%d@example.com",
                         "status": "confirmed",
                         "registrationDate": "2025-04-01T10:00:00Z"
                     }
-                    """.formatted(i, i, i);
+                    """.formatted(i, i);
 
             mockMvc.perform(post("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
                             .contentType(MediaType.APPLICATION_JSON)

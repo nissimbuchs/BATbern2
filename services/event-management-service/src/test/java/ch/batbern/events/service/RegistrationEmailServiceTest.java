@@ -97,6 +97,21 @@ class RegistrationEmailServiceTest {
                 any(ZonedDateTime.class), any(ZonedDateTime.class), anyString(), anyString()))
                 .thenReturn(mockIcsFile);
 
+        // Mock template variable replacement
+        when(emailService.replaceVariables(anyString(), anyMap()))
+                .thenAnswer(invocation -> {
+                    String template = invocation.getArgument(0);
+                    // Simple replacement for testing
+                    return template
+                            .replace("${attendeeName}", "John Doe")
+                            .replace("${eventTitle}", "BATbern Architekten Treffen #142")
+                            .replace("${registrationCode}", "BATbern142-reg-abc123")
+                            .replace("${venueName}", "Kornhausforum")
+                            .replace("${eventDate}", "")
+                            .replace("${eventTime}", "")
+                            .replace("${organizerName}", "BATbern Team");
+                });
+
         // When
         registrationEmailService.sendRegistrationConfirmation(registration, userProfile, event, Locale.GERMAN);
 
@@ -260,7 +275,7 @@ class RegistrationEmailServiceTest {
                 .thenReturn(mockIcsFile);
 
         doThrow(new RuntimeException("Email sending failed"))
-                .when(emailService).sendHtmlEmailWithAttachments(anyString(), anyString(), anyString(), anyList());
+                .when(emailService).sendHtmlEmailWithAttachments(anyString(), anyString(), any(), anyList());
 
         // When & Then - should not throw exception
         registrationEmailService.sendRegistrationConfirmation(registration, userProfile, event, Locale.GERMAN);
@@ -269,6 +284,6 @@ class RegistrationEmailServiceTest {
         Thread.sleep(100);
 
         // Verify the attempt was made
-        verify(emailService, times(1)).sendHtmlEmailWithAttachments(anyString(), anyString(), anyString(), anyList());
+        verify(emailService, times(1)).sendHtmlEmailWithAttachments(anyString(), anyString(), any(), anyList());
     }
 }

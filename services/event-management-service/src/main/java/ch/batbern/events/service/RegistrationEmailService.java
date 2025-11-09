@@ -127,6 +127,7 @@ public class RegistrationEmailService {
             Map<String, String> variables = Map.ofEntries(
                     Map.entry("attendeeFirstName", userProfile.getFirstName()),
                     Map.entry("attendeeLastName", userProfile.getLastName()),
+                    Map.entry("attendeeName", userProfile.getFirstName() + " " + userProfile.getLastName()),
                     Map.entry("eventTitle", event.getTitle()),
                     Map.entry("eventDate", eventDateTime.format(DATE_FORMATTER)),
                     Map.entry("eventTime", eventDateTime.format(TIME_FORMATTER) + " Uhr"),

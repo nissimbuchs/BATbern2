@@ -1249,6 +1249,95 @@ public class EventController {
     }
 
     /**
+     * Update Event Registration (Partial Update)
+     *
+     * PATCH /api/v1/events/{eventCode}/registrations/{registrationCode}
+     *
+     * Updates specific fields of a registration (e.g., status)
+     *
+     * @param eventCode Event code
+     * @param registrationCode Registration code
+     * @param updates Map of fields to update
+     * @return Updated registration with enriched user data
+     */
+    @PatchMapping("/{eventCode}/registrations/{registrationCode}")
+    @Operation(
+            summary = "Update Event Registration",
+            description = "Partially update a registration (e.g., change status)"
+    )
+    public ResponseEntity<RegistrationResponse> updateRegistration(
+            @PathVariable String eventCode,
+            @PathVariable String registrationCode,
+            @RequestBody Map<String, Object> updates) {
+        log.debug("PATCH /api/v1/events/{}/registrations/{}", eventCode, registrationCode);
+
+        // Find registration
+        Registration registration = registrationRepository.findByRegistrationCode(registrationCode)
+                .orElseThrow(() -> new NoSuchElementException("Registration not found: " + registrationCode));
+
+        // Verify registration belongs to this event
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
+
+        if (!registration.getEventId().equals(event.getId())) {
+            throw new NoSuchElementException("Registration " + registrationCode + " does not belong to event " + eventCode);
+        }
+
+        // Apply updates
+        if (updates.containsKey("status")) {
+            registration.setStatus((String) updates.get("status"));
+        }
+
+        // Save updated registration
+        registration = registrationRepository.save(registration);
+
+        // Enrich with user data
+        registration.setEventCode(eventCode);
+        RegistrationResponse response = registrationService.enrichRegistrationWithUserData(registration);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Delete Event Registration
+     *
+     * DELETE /api/v1/events/{eventCode}/registrations/{registrationCode}
+     *
+     * Deletes a registration from the event
+     *
+     * @param eventCode Event code
+     * @param registrationCode Registration code
+     * @return 204 No Content
+     */
+    @DeleteMapping("/{eventCode}/registrations/{registrationCode}")
+    @Operation(
+            summary = "Delete Event Registration",
+            description = "Delete a registration from the event"
+    )
+    public ResponseEntity<Void> deleteRegistration(
+            @PathVariable String eventCode,
+            @PathVariable String registrationCode) {
+        log.debug("DELETE /api/v1/events/{}/registrations/{}", eventCode, registrationCode);
+
+        // Find registration
+        Registration registration = registrationRepository.findByRegistrationCode(registrationCode)
+                .orElseThrow(() -> new NoSuchElementException("Registration not found: " + registrationCode));
+
+        // Verify registration belongs to this event
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
+
+        if (!registration.getEventId().equals(event.getId())) {
+            throw new NoSuchElementException("Registration " + registrationCode + " does not belong to event " + eventCode);
+        }
+
+        // Delete registration
+        registrationRepository.delete(registration);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
      * Associate theme image with event
      * Story 2.5.3a: Event Theme Image Upload
      *

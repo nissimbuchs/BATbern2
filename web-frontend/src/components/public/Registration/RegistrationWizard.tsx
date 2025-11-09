@@ -103,7 +103,7 @@ export const RegistrationWizard = ({
       const registration = await eventApiClient.createRegistration(eventCode, formData);
 
       // Success: Redirect to confirmation page
-      navigate(`/registration-confirmation/${registration.confirmationCode}`);
+      navigate(`/registration-confirmation/${registration.registrationCode}`);
     } catch (err) {
       // Error handling
       const errorMessage =

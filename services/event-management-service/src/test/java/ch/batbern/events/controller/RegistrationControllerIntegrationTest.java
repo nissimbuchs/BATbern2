@@ -99,7 +99,23 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
                 .build();
 
         when(userApiClient.getOrCreateUser(any())).thenReturn(mockUserProfile);
-        when(userApiClient.getUserByUsername("john.doe")).thenReturn(mockUserProfile);
+
+        // Dynamic mock for getUserByUsername - handles any username
+        when(userApiClient.getUserByUsername(any(String.class)))
+                .thenAnswer(invocation -> {
+                    String username = invocation.getArgument(0);
+                    String[] parts = username.split("\\.");
+                    String firstName = parts.length > 0 ? capitalize(parts[0]) : "Test";
+                    String lastName = parts.length > 1 ? capitalize(parts[1]) : "User";
+
+                    return UserProfileDTO.builder()
+                            .username(username)
+                            .firstName(firstName)
+                            .lastName(lastName)
+                            .email(username + "@example.com")
+                            .companyId("Test Company")
+                            .build();
+                });
     }
 
     // ============================================================================
@@ -410,20 +426,18 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
                 .registrationDate(Instant.parse("2025-06-01T10:00:00Z"))
                 .build();
 
-        // Mock user lookup for enrichment
-        UserProfileDTO userProfile = UserProfileDTO.builder()
-                .username(attendeeUsername)
-                .firstName("John")
-                .lastName("Doe")
-                .email(attendeeUsername + "@example.com")
-                .companyId("Test Company")
-                .build();
-        when(userApiClient.getUserByUsername(attendeeUsername)).thenReturn(userProfile);
-
+        // No need to mock getUserByUsername - handled by dynamic mock in setUp()
         return registrationRepository.save(registration);
     }
 
     private String generateRandomCode() {
         return "TEST" + System.currentTimeMillis() % 100000;
+    }
+
+    private String capitalize(String str) {
+        if (str == null || str.isEmpty()) {
+            return str;
+        }
+        return str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase();
     }
 }
