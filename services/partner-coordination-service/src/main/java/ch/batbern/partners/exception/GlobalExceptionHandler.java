@@ -139,6 +139,29 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle VoteAlreadyExistsException (duplicate vote attempt)
+     * Returns HTTP 409 Conflict
+     */
+    @ExceptionHandler(VoteAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleVoteAlreadyExistsException(
+            VoteAlreadyExistsException ex,
+            HttpServletRequest request) {
+        log.warn("Vote already exists: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
      * Handle ValidationException (business rule violations from shared-kernel)
      * Returns HTTP 409 Conflict for duplicates, HTTP 400 Bad Request for other violations
      */
@@ -163,6 +186,29 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.status(status).body(error);
+    }
+
+    /**
+     * Handle IllegalArgumentException (validation errors in service/domain layer)
+     * Returns HTTP 400 Bad Request
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(
+            IllegalArgumentException ex,
+            HttpServletRequest request) {
+        log.warn("Illegal argument: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Bad Request")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+
+        return ResponseEntity.badRequest().body(error);
     }
 
     /**

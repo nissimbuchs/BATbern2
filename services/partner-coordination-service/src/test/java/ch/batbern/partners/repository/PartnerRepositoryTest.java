@@ -1,10 +1,14 @@
 package ch.batbern.partners.repository;
 
+import ch.batbern.partners.config.TestAwsConfig;
+import ch.batbern.partners.config.TestSecurityConfig;
 import ch.batbern.partners.domain.Partner;
 import ch.batbern.partners.domain.PartnershipLevel;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,7 +28,9 @@ import static org.assertj.core.api.Assertions.*;
  *
  * CRITICAL: Uses real PostgreSQL (NOT H2) for production parity.
  */
+@SpringBootTest
 @Transactional
+@Import({TestSecurityConfig.class, TestAwsConfig.class})
 class PartnerRepositoryTest extends AbstractIntegrationTest {
 
     @Autowired

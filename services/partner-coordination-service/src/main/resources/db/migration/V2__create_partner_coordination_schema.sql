@@ -78,15 +78,23 @@ CREATE TABLE topic_suggestions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     partner_id UUID NOT NULL REFERENCES partners(id) ON DELETE CASCADE,
     suggested_topic VARCHAR(500) NOT NULL,
-    description TEXT,
-    business_justification TEXT,
-    suggested_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    description VARCHAR(2000) NOT NULL,
+    business_justification VARCHAR(1000),
+    suggested_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     status VARCHAR(50) NOT NULL CHECK (status IN (
-        'submitted', 'under_review', 'accepted', 'rejected', 'implemented'
-    )) DEFAULT 'submitted',
+        'SUBMITTED', 'UNDER_REVIEW', 'ACCEPTED', 'REJECTED', 'IMPLEMENTED'
+    )) DEFAULT 'SUBMITTED',
     reviewed_at TIMESTAMP WITH TIME ZONE,
-    reviewed_by UUID -- References organizer
+    reviewed_by UUID, -- References organizer
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Create updated_at trigger for topic_suggestions
+CREATE TRIGGER update_topic_suggestions_updated_at
+    BEFORE UPDATE ON topic_suggestions
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
 
 -- Index on partner_id for partner suggestions
 CREATE INDEX idx_topic_suggestions_partner_id ON topic_suggestions(partner_id);

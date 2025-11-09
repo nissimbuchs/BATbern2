@@ -11,6 +11,7 @@ import ch.batbern.partners.exception.PartnerAlreadyExistsException;
 import ch.batbern.partners.exception.PartnerNotFoundException;
 import ch.batbern.partners.repository.PartnerRepository;
 import ch.batbern.shared.events.DomainEventPublisher;
+import io.micrometer.core.annotation.Timed;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -50,6 +51,7 @@ public class PartnerService {
      * @param size Page size
      * @return List of partner responses
      */
+    @Timed(value = "partner.list", description = "Time taken to list partners")
     public List<PartnerResponse> listPartners(String filter, String sort, int page, int size) {
         log.debug("Listing partners with filter: {}, sort: {}, page: {}, size: {}", filter, sort, page, size);
 
@@ -81,6 +83,7 @@ public class PartnerService {
      * @param includes Set of resources to include (e.g., "company", "contacts")
      * @return Partner response
      */
+    @Timed(value = "partner.get", description = "Time taken to get partner by company name")
     public PartnerResponse getPartnerByCompanyName(String companyName, Set<String> includes) {
         log.debug("Getting partner by company name: {} with includes: {}", companyName, includes);
 
@@ -111,6 +114,7 @@ public class PartnerService {
      * @param request Create partner request
      * @return Created partner response
      */
+    @Timed(value = "partner.create", description = "Time taken to create partner")
     public PartnerResponse createPartner(CreatePartnerRequest request) {
         log.info("Creating partner for company: {}", request.getCompanyName());
 
@@ -149,6 +153,7 @@ public class PartnerService {
      * @param request Update request
      * @return Updated partner response
      */
+    @Timed(value = "partner.update", description = "Time taken to update partner")
     public PartnerResponse updatePartner(String companyName, UpdatePartnerRequest request) {
         log.info("Updating partner for company: {}", companyName);
 
@@ -178,6 +183,7 @@ public class PartnerService {
      *
      * @param companyName Company name
      */
+    @Timed(value = "partner.delete", description = "Time taken to soft delete partner")
     public void deletePartner(String companyName) {
         log.info("Soft deleting partner for company: {}", companyName);
 

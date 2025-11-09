@@ -87,11 +87,11 @@ class CompanyServiceClientTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .body("""
                             {
-                                "companyName": "GoogleZH",
-                                "legalName": "Google Schweiz GmbH",
+                                "name": "GoogleZH",
+                                "displayName": "Google Schweiz GmbH",
                                 "industry": "Technology",
-                                "size": "LARGE",
-                                "city": "Zurich"
+                                "swissUID": "CHE-123.456.789",
+                                "isVerified": true
                             }
                             """));
 

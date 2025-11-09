@@ -84,7 +84,7 @@ class UserServiceClientTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .body("""
                             {
-                                "username": "john.doe@google.com",
+                                "id": "john.doe@google.com",
                                 "email": "john.doe@google.com",
                                 "firstName": "John",
                                 "lastName": "Doe",
@@ -108,7 +108,7 @@ class UserServiceClientTest {
         assertThat(user.getEmail())
                 .isEqualTo("john.doe@google.com");
         assertThat(user.getProfilePictureUrl())
-                .isEqualTo("https://cdn.batbern.ch/profiles/john.doe.jpg");
+                .isEqualTo(java.net.URI.create("https://cdn.batbern.ch/profiles/john.doe.jpg"));
 
         mockServer.verify();
     }

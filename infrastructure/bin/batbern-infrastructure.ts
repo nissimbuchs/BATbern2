@@ -283,6 +283,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     databaseSecret: databaseStack.databaseSecret,
     userPool: cognitoStack.userPool,
     userPoolClient: cognitoStack.userPoolClient,
+    eventBus: eventBusStack.eventBus,
     env,
     description: `BATbern Partner Coordination Service - ${config.envName}`,
     tags: config.tags,
@@ -291,6 +292,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   partnerCoordinationStack.addDependency(databaseStack);
   partnerCoordinationStack.addDependency(cicdStack);
   partnerCoordinationStack.addDependency(cognitoStack);
+  partnerCoordinationStack.addDependency(eventBusStack);
 
   // 10d. Attendee Experience Service
   attendeeExperienceStack = new AttendeeExperienceStack(app, `${stackPrefix}-AttendeeExperience`, {
