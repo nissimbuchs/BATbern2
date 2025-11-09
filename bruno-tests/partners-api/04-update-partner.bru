@@ -1,0 +1,62 @@
+meta {
+  name: Update Partner
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/partners/{{testPartnerCompanyName}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  Origin: https://staging.batbern.ch
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: de-CH
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "partnershipLevel": "platinum",
+    "partnershipEndDate": "2025-12-31"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.companyName: isDefined
+}
+
+tests {
+  test("should return 200 status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should update partnership level", function() {
+    const body = res.getBody();
+    expect(body.partnershipLevel).to.equal('platinum');
+  });
+
+  test("should update partnership end date", function() {
+    const body = res.getBody();
+    expect(body.partnershipEndDate).to.equal('2025-12-31');
+  });
+
+  test("should return full partner response", function() {
+    const body = res.getBody();
+    expect(body.companyName).to.equal(bru.getEnvVar("testPartnerCompanyName"));
+    expect(body.id).to.exist;
+    expect(body.partnershipStartDate).to.exist;
+  });
+
+  test("should accept X-Correlation-ID header", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

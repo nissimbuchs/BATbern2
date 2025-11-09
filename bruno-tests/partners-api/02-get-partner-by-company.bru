@@ -1,0 +1,65 @@
+meta {
+  name: Get Partner by Company Name
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/partners/{{testPartnerCompanyName}}?include=company,contacts
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  Origin: https://staging.batbern.ch
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: de-CH
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.companyName: isDefined
+  res.body.partnershipLevel: isDefined
+}
+
+tests {
+  test("should return 200 status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return partner by company name (ADR-003)", function() {
+    const body = res.getBody();
+    expect(body.companyName).to.equal(bru.getEnvVar("testPartnerCompanyName"));
+  });
+
+  test("should have partnership details", function() {
+    const body = res.getBody();
+    expect(body.id).to.exist;
+    expect(body.partnershipLevel).to.be.oneOf(['bronze', 'silver', 'gold', 'platinum', 'strategic']);
+    expect(body.partnershipStartDate).to.exist;
+    expect(body.isActive).to.be.a('boolean');
+  });
+
+  test("should include enriched company data when include=company", function() {
+    const body = res.getBody();
+    expect(body.company).to.exist;
+    expect(body.company.companyName).to.equal(body.companyName);
+    expect(body.company.displayName).to.exist;
+  });
+
+  test("should include contacts when include=contacts", function() {
+    const body = res.getBody();
+    if (body.contacts) {
+      expect(body.contacts).to.be.an('array');
+    }
+  });
+
+  test("should accept X-Correlation-ID header", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}
