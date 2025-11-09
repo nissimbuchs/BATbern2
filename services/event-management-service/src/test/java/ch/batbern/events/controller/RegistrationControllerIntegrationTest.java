@@ -133,11 +133,10 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     void should_createRegistration_when_validDataProvided() throws Exception {
         String requestJson = """
                 {
-                    "attendeeFirstName": "John",
-                    "attendeeLastName": "Doe",
-                    "attendeeEmail": "john.doe@example.com",
-                    "status": "confirmed",
-                    "registrationDate": "2025-06-01T10:00:00Z"
+                    "firstName": "John",
+                    "lastName": "Doe",
+                    "email": "john.doe@example.com",
+                    "termsAccepted": true
                 }
                 """;
 
@@ -148,7 +147,7 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
                 .andExpect(jsonPath("$.registrationCode").exists())
                 .andExpect(jsonPath("$.registrationCode").value(startsWith("BATbern142-reg-")))
                 .andExpect(jsonPath("$.eventCode").value("BATbern142"))
-                .andExpect(jsonPath("$.status").value("confirmed"))
+                .andExpect(jsonPath("$.status").value("CONFIRMED"))
                 .andExpect(jsonPath("$.attendeeUsername").value("john.doe"))
                 .andExpect(jsonPath("$.attendeeFirstName").value("John"))
                 .andExpect(jsonPath("$.attendeeLastName").value("Doe"))
@@ -163,7 +162,7 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
         Registration savedRegistration = registrationRepository.findAll().get(0);
         assertThat(savedRegistration.getRegistrationCode()).startsWith("BATbern142-reg-");
         assertThat(savedRegistration.getAttendeeUsername()).isEqualTo("john.doe");
-        assertThat(savedRegistration.getStatus()).isEqualTo("confirmed");
+        assertThat(savedRegistration.getStatus()).isEqualTo("CONFIRMED");
     }
 
     @Test
@@ -171,11 +170,10 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     void should_return400_when_invalidDataProvided() throws Exception {
         String requestJson = """
                 {
-                    "attendeeFirstName": "",
-                    "attendeeLastName": "Doe",
-                    "attendeeEmail": "invalid-email",
-                    "status": "confirmed",
-                    "registrationDate": "2025-06-01T10:00:00Z"
+                    "firstName": "",
+                    "lastName": "Doe",
+                    "email": "invalid-email",
+                    "termsAccepted": true
                 }
                 """;
 
@@ -190,11 +188,10 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     void should_return404_when_eventNotFound() throws Exception {
         String requestJson = """
                 {
-                    "attendeeFirstName": "John",
-                    "attendeeLastName": "Doe",
-                    "attendeeEmail": "john.doe@example.com",
-                    "status": "confirmed",
-                    "registrationDate": "2025-06-01T10:00:00Z"
+                    "firstName": "John",
+                    "lastName": "Doe",
+                    "email": "john.doe@example.com",
+                    "termsAccepted": true
                 }
                 """;
 
@@ -213,11 +210,10 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     void should_generateUniqueRegistrationCode_when_multipleRegistrationsCreated() throws Exception {
         String requestJson = """
                 {
-                    "attendeeFirstName": "John",
-                    "attendeeLastName": "Doe",
-                    "attendeeEmail": "john.doe@example.com",
-                    "status": "confirmed",
-                    "registrationDate": "2025-06-01T10:00:00Z"
+                    "firstName": "John",
+                    "lastName": "Doe",
+                    "email": "john.doe@example.com",
+                    "termsAccepted": true
                 }
                 """;
 
@@ -248,11 +244,10 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
 
         String requestJson2 = """
                 {
-                    "attendeeFirstName": "Jane",
-                    "attendeeLastName": "Smith",
-                    "attendeeEmail": "jane.smith@example.com",
-                    "status": "confirmed",
-                    "registrationDate": "2025-06-01T11:00:00Z"
+                    "firstName": "Jane",
+                    "lastName": "Smith",
+                    "email": "jane.smith@example.com",
+                    "termsAccepted": true
                 }
                 """;
 
@@ -316,7 +311,7 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.registrationCode").value(registration.getRegistrationCode()))
                 .andExpect(jsonPath("$.eventCode").value("BATbern142"))
-                .andExpect(jsonPath("$.status").value("confirmed"))
+                .andExpect(jsonPath("$.status").value("CONFIRMED"))
                 .andExpect(jsonPath("$.attendeeUsername").value("john.doe"))
                 .andExpect(jsonPath("$.attendeeFirstName").value("John"))
                 .andExpect(jsonPath("$.attendeeLastName").value("Doe"))
@@ -398,11 +393,10 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
 
         String registrationRequest = """
                 {
-                    "attendeeFirstName": "John",
-                    "attendeeLastName": "Doe",
-                    "attendeeEmail": "john.doe@example.com",
-                    "status": "confirmed",
-                    "registrationDate": "2025-06-01T10:00:00Z"
+                    "firstName": "John",
+                    "lastName": "Doe",
+                    "email": "john.doe@example.com",
+                    "termsAccepted": true
                 }
                 """;
 

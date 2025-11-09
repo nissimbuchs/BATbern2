@@ -905,11 +905,10 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
         String newRegistration = """
                 {
-                    "attendeeFirstName": "John",
-                    "attendeeLastName": "Doe",
-                    "attendeeEmail": "john.doe@example.com",
-                    "status": "pending",
-                    "registrationDate": "2025-04-01T10:00:00Z"
+                    "firstName": "John",
+                    "lastName": "Doe",
+                    "email": "john.doe@example.com",
+                    "termsAccepted": true
                 }
                 """;
 
@@ -929,7 +928,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
         String invalidRegistration = """
                 {
-                    "attendeeEmail": "invalid-email",
+                    "email": "invalid-email",
                     "status": "invalid_status"
                 }
                 """;
@@ -948,11 +947,10 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         // First create a registration
         String newRegistration = """
                 {
-                    "attendeeFirstName": "Jane",
-                    "attendeeLastName": "Smith",
-                    "attendeeEmail": "jane.smith@example.com",
-                    "status": "registered",
-                    "registrationDate": "2025-04-02T10:00:00Z"
+                    "firstName": "Jane",
+                    "lastName": "Smith",
+                    "email": "jane.smith@example.com",
+                    "termsAccepted": true
                 }
                 """;
 
@@ -990,11 +988,10 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         // First create a registration
         String newRegistration = """
                 {
-                    "attendeeFirstName": "Bob",
-                    "attendeeLastName": "Johnson",
-                    "attendeeEmail": "bob.johnson@example.com",
-                    "status": "cancelled",
-                    "registrationDate": "2025-04-03T10:00:00Z"
+                    "firstName": "Bob",
+                    "lastName": "Johnson",
+                    "email": "bob.johnson@example.com",
+                    "termsAccepted": true
                 }
                 """;
 
@@ -1032,11 +1029,10 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         // Add registrations (Story 2.2a format)
         String registration1 = """
                 {
-                    "attendeeFirstName": "Analytics",
-                    "attendeeLastName": "User1",
-                    "attendeeEmail": "analytics1@example.com",
-                    "status": "confirmed",
-                    "registrationDate": "2025-04-01T10:00:00Z"
+                    "firstName": "Analytics",
+                    "lastName": "User1",
+                    "email": "analytics1@example.com",
+                    "termsAccepted": true
                 }
                 """;
         mockMvc.perform(post("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
@@ -1046,11 +1042,10 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
         String registration2 = """
                 {
-                    "attendeeFirstName": "Analytics",
-                    "attendeeLastName": "User2",
-                    "attendeeEmail": "analytics2@example.com",
-                    "status": "confirmed",
-                    "registrationDate": "2025-04-02T10:00:00Z"
+                    "firstName": "Analytics",
+                    "lastName": "User2",
+                    "email": "analytics2@example.com",
+                    "termsAccepted": true
                 }
                 """;
         mockMvc.perform(post("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
@@ -1079,11 +1074,10 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         // Create registrations with different dates (Story 2.2a format)
         String earlyRegistration = """
                 {
-                    "attendeeFirstName": "Early",
-                    "attendeeLastName": "Bird",
-                    "attendeeEmail": "early@example.com",
-                    "status": "confirmed",
-                    "registrationDate": "2025-01-01T10:00:00Z"
+                    "firstName": "Early",
+                    "lastName": "Bird",
+                    "email": "early@example.com",
+                    "termsAccepted": true
                 }
                 """;
         mockMvc.perform(post("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
@@ -1093,11 +1087,10 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
         String lateRegistration = """
                 {
-                    "attendeeFirstName": "Late",
-                    "attendeeLastName": "Joiner",
-                    "attendeeEmail": "late@example.com",
-                    "status": "confirmed",
-                    "registrationDate": "2025-05-01T10:00:00Z"
+                    "firstName": "Late",
+                    "lastName": "Joiner",
+                    "email": "late@example.com",
+                    "termsAccepted": true
                 }
                 """;
         mockMvc.perform(post("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
@@ -1347,11 +1340,10 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         for (int i = 1; i <= 20; i++) {
             String registration = """
                     {
-                        "attendeeFirstName": "Attendee",
-                        "attendeeLastName": "Test%d",
-                        "attendeeEmail": "attendee%d@example.com",
-                        "status": "confirmed",
-                        "registrationDate": "2025-04-01T10:00:00Z"
+                        "firstName": "Attendee",
+                        "lastName": "Test%d",
+                        "email": "attendee%d@example.com",
+                        "termsAccepted": true
                     }
                     """.formatted(i, i);
 

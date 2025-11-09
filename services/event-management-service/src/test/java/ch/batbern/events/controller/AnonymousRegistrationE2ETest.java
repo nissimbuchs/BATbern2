@@ -117,11 +117,10 @@ public class AnonymousRegistrationE2ETest extends AbstractIntegrationTest {
 
         String registrationRequest = """
                 {
-                    "attendeeFirstName": "Alice",
-                    "attendeeLastName": "Wonderland",
-                    "attendeeEmail": "alice.wonderland@example.com",
-                    "status": "confirmed",
-                    "registrationDate": "2025-06-01T10:00:00Z"
+                    "firstName": "Alice",
+                    "lastName": "Wonderland",
+                    "email": "alice.wonderland@example.com",
+                    "termsAccepted": true
                 }
                 """;
 
@@ -235,11 +234,10 @@ public class AnonymousRegistrationE2ETest extends AbstractIntegrationTest {
         // Create first registration
         String firstRegistrationRequest = """
                 {
-                    "attendeeFirstName": "Alice",
-                    "attendeeLastName": "Wonderland",
-                    "attendeeEmail": "alice.wonderland@example.com",
-                    "status": "confirmed",
-                    "registrationDate": "2025-06-01T10:00:00Z"
+                    "firstName": "Alice",
+                    "lastName": "Wonderland",
+                    "email": "alice.wonderland@example.com",
+                    "termsAccepted": true
                 }
                 """;
 
@@ -277,11 +275,10 @@ public class AnonymousRegistrationE2ETest extends AbstractIntegrationTest {
         // Create second registration with same email (different event)
         String secondRegistrationRequest = """
                 {
-                    "attendeeFirstName": "Alice",
-                    "attendeeLastName": "Wonderland",
-                    "attendeeEmail": "alice.wonderland@example.com",
-                    "status": "confirmed",
-                    "registrationDate": "2025-07-01T10:00:00Z"
+                    "firstName": "Alice",
+                    "lastName": "Wonderland",
+                    "email": "alice.wonderland@example.com",
+                    "termsAccepted": true
                 }
                 """;
 
@@ -306,11 +303,10 @@ public class AnonymousRegistrationE2ETest extends AbstractIntegrationTest {
         // Create multiple registrations
         String request1 = """
                 {
-                    "attendeeFirstName": "Alice",
-                    "attendeeLastName": "Wonderland",
-                    "attendeeEmail": "alice.wonderland@example.com",
-                    "status": "confirmed",
-                    "registrationDate": "2025-06-01T10:00:00Z"
+                    "firstName": "Alice",
+                    "lastName": "Wonderland",
+                    "email": "alice.wonderland@example.com",
+                    "termsAccepted": true
                 }
                 """;
 
@@ -340,11 +336,10 @@ public class AnonymousRegistrationE2ETest extends AbstractIntegrationTest {
 
         String request2 = """
                 {
-                    "attendeeFirstName": "Bob",
-                    "attendeeLastName": "Builder",
-                    "attendeeEmail": "bob.builder@example.com",
-                    "status": "confirmed",
-                    "registrationDate": "2025-06-01T11:00:00Z"
+                    "firstName": "Bob",
+                    "lastName": "Builder",
+                    "email": "bob.builder@example.com",
+                    "termsAccepted": true
                 }
                 """;
 

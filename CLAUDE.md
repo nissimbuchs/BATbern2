@@ -343,3 +343,4 @@ When working on architecture or standards, refer to:
 - Use Testcontainers for integration tests (production parity)
 - Update OpenAPI specs when changing APIs
 - Regenerate types after API changes
+- instead of running the test suites several times and grep the output, dump the output to a temp file and grep that file. this saves time
