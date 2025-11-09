@@ -49,6 +49,11 @@ const CompanyManagement = React.lazy(
 );
 const UserManagement = React.lazy(() => import('@components/organizer/UserManagement/UserList'));
 
+// Partner Management Pages - Story 2.8.1
+const PartnerDirectoryScreen = React.lazy(
+  () => import('@components/organizer/PartnerManagement/PartnerDirectoryScreen').then(module => ({ default: module.PartnerDirectoryScreen }))
+);
+
 // Event Management Pages - Story 2.5.3, Task 4
 const EventManagementDashboard = React.lazy(() => import('@pages/EventManagementDashboard'));
 const EventCreate = React.lazy(() => import('@pages/EventCreate'));
@@ -326,6 +331,18 @@ function App() {
                         <Speakers />
                       </AuthLayout>
                     </SpeakerRoute>
+                  }
+                />
+
+                {/* Partner Management Routes - Story 2.8.1 */}
+                <Route
+                  path="/organizer/partners"
+                  element={
+                    <ProtectedRoute>
+                      <AuthLayout>
+                        <PartnerDirectoryScreen />
+                      </AuthLayout>
+                    </ProtectedRoute>
                   }
                 />
 

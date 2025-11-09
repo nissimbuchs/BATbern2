@@ -1,0 +1,83 @@
+{
+  "title": "Partner-Verzeichnis",
+  "addPartner": "Partner hinzufügen",
+  "addPartnerComingSoon": "Demnächst verfügbar - Story 2.8.3",
+  "searchPlaceholder": "Nach Partnername suchen...",
+  "searchAriaLabel": "Partner suchen",
+  "clearSearch": "Suche löschen",
+  "filters": {
+    "tier": "Partnerschaftsstufe",
+    "tierAll": "Alle Stufen",
+    "status": "Status",
+    "statusAll": "Alle",
+    "statusActive": "Aktiv",
+    "statusInactive": "Inaktiv",
+    "reset": "Filter zurücksetzen"
+  },
+  "tiers": {
+    "strategic": "Strategisch",
+    "platinum": "Platin",
+    "gold": "Gold",
+    "silver": "Silber",
+    "bronze": "Bronze"
+  },
+  "viewMode": {
+    "label": "Ansichtsmodus",
+    "grid": "Rasteransicht",
+    "list": "Listenansicht"
+  },
+  "sort": {
+    "label": "Sortieren nach",
+    "engagement": "Engagement-Bewertung",
+    "name": "Firmenname",
+    "tier": "Partnerschaftsstufe",
+    "lastEvent": "Letzte Veranstaltung"
+  },
+  "statistics": {
+    "totalPartners": "Gesamtzahl Partner",
+    "activePartners": "Aktive Partner",
+    "engagedPartners": "Engagierte Partner",
+    "engagedComingSoon": "Demnächst verfügbar - Epic 8",
+    "tierDistribution": "Verteilung nach Stufen"
+  },
+  "card": {
+    "industry": "Branche",
+    "contact": "Hauptansprechpartner",
+    "lastEvent": "Letzte Veranstaltung",
+    "topicVotes": "Themen-Abstimmungen",
+    "nextMeeting": "Nächstes Treffen",
+    "meetingPending": "Ausstehend",
+    "engagement": "Engagement",
+    "engagementComingSoon": "Demnächst verfügbar (Epic 8)",
+    "viewDetails": "Details anzeigen",
+    "sendEmail": "E-Mail senden",
+    "scheduleMeeting": "Treffen planen",
+    "analytics": "Analysen",
+    "comingSoon": "Demnächst verfügbar - Epic 8"
+  },
+  "pagination": {
+    "page": "Seite {{current}} von {{total}}",
+    "partners": "{{count}} Partner",
+    "partners_plural": "{{count}} Partner",
+    "firstPage": "Erste Seite",
+    "previousPage": "Vorherige Seite",
+    "nextPage": "Nächste Seite",
+    "lastPage": "Letzte Seite",
+    "ariaLabel": "Seitennavigation Partner-Liste"
+  },
+  "empty": {
+    "noPartners": "Keine Partner gefunden",
+    "tryAdjustingFilters": "Versuchen Sie, Ihre Suche oder Filter anzupassen"
+  },
+  "loading": "Partner werden geladen...",
+  "error": {
+    "failedToLoad": "Partner konnten nicht geladen werden",
+    "tryAgain": "Bitte versuchen Sie es später erneut"
+  },
+  "screenReader": {
+    "searchResults": "{{count}} Partner gefunden",
+    "searchResults_plural": "{{count}} Partner gefunden",
+    "filterUpdate": "Filter aktualisiert",
+    "loading": "Partner werden geladen"
+  }
+}

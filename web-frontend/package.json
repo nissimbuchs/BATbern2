@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:unit": "vitest run",
+    "test:integration": "RUN_INTEGRATION_TESTS=true vitest run src/services/api/__tests__/*.integration.test.ts",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",

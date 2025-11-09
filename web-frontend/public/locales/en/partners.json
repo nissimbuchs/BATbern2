@@ -1,0 +1,83 @@
+{
+  "title": "Partner Directory",
+  "addPartner": "Add Partner",
+  "addPartnerComingSoon": "Coming Soon - Story 2.8.3",
+  "searchPlaceholder": "Search by partner name...",
+  "searchAriaLabel": "Search partners",
+  "clearSearch": "Clear search",
+  "filters": {
+    "tier": "Partnership Tier",
+    "tierAll": "All Tiers",
+    "status": "Status",
+    "statusAll": "All",
+    "statusActive": "Active",
+    "statusInactive": "Inactive",
+    "reset": "Reset Filters"
+  },
+  "tiers": {
+    "strategic": "Strategic",
+    "platinum": "Platinum",
+    "gold": "Gold",
+    "silver": "Silver",
+    "bronze": "Bronze"
+  },
+  "viewMode": {
+    "label": "View mode",
+    "grid": "Grid view",
+    "list": "List view"
+  },
+  "sort": {
+    "label": "Sort By",
+    "engagement": "Engagement Score",
+    "name": "Company Name",
+    "tier": "Partnership Tier",
+    "lastEvent": "Last Event"
+  },
+  "statistics": {
+    "totalPartners": "Total Partners",
+    "activePartners": "Active Partners",
+    "engagedPartners": "Engaged Partners",
+    "engagedComingSoon": "Coming Soon - Epic 8",
+    "tierDistribution": "Tier Distribution"
+  },
+  "card": {
+    "industry": "Industry",
+    "contact": "Primary Contact",
+    "lastEvent": "Last Event",
+    "topicVotes": "Topic Votes",
+    "nextMeeting": "Next Meeting",
+    "meetingPending": "Pending",
+    "engagement": "Engagement",
+    "engagementComingSoon": "Coming Soon (Epic 8)",
+    "viewDetails": "View Details",
+    "sendEmail": "Send Email",
+    "scheduleMeeting": "Schedule Meeting",
+    "analytics": "Analytics",
+    "comingSoon": "Coming Soon - Epic 8"
+  },
+  "pagination": {
+    "page": "Page {{current}} of {{total}}",
+    "partners": "{{count}} partner",
+    "partners_plural": "{{count}} partners",
+    "firstPage": "First page",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "lastPage": "Last page",
+    "ariaLabel": "Partner list pagination"
+  },
+  "empty": {
+    "noPartners": "No partners found",
+    "tryAdjustingFilters": "Try adjusting your search or filters"
+  },
+  "loading": "Loading partners...",
+  "error": {
+    "failedToLoad": "Failed to load partners",
+    "tryAgain": "Please try again later"
+  },
+  "screenReader": {
+    "searchResults": "{{count}} partner found",
+    "searchResults_plural": "{{count}} partners found",
+    "filterUpdate": "Filters updated",
+    "loading": "Loading partners"
+  }
+}
