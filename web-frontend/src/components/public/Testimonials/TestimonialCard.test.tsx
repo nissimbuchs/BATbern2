@@ -9,7 +9,7 @@ describe('TestimonialCard', () => {
   const mockTestimonial = {
     name: 'John Doe',
     quote: 'This is an excellent event!',
-    company: 'Acme Corp'
+    company: 'Acme Corp',
   };
 
   it('should render testimonial content', () => {

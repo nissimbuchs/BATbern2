@@ -30,9 +30,7 @@ export const SocialSharing = ({ eventTitle, eventUrl }: SocialSharingProps) => {
           <h2 className="text-2xl font-light text-zinc-100">{t('public.social.title')}</h2>
         </div>
 
-        <p className="text-zinc-400 mb-6">
-          {t('public.social.description')}
-        </p>
+        <p className="text-zinc-400 mb-6">{t('public.social.description')}</p>
 
         <div className="flex flex-wrap gap-3">
           <Button
