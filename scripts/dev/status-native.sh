@@ -21,50 +21,24 @@ LOG_DIR="/tmp"
 BASE_PORT="${BASE_PORT:-8000}"  # Default to 8000 (instance 1)
 
 # Calculate instance identifier based on BASE_PORT
-# For standard ports (8000, 9000), use legacy instance numbers (1, 2)
-# For arbitrary ports, use the port itself as instance identifier
+# Use friendly names for common ports, otherwise use the port number itself
 if [ "$BASE_PORT" -eq 8000 ]; then
     INSTANCE="1"
-    INSTANCE_NUM=1
 elif [ "$BASE_PORT" -eq 9000 ]; then
     INSTANCE="2"
-    INSTANCE_NUM=2
 else
-    # For arbitrary BASE_PORT values, use the port itself as instance identifier
     INSTANCE="$BASE_PORT"
-    # Calculate a small instance number for port offset calculations (max instance: 10)
-    INSTANCE_NUM=$(( ((BASE_PORT - 8000) / 500) % 10 + 1 ))
-    if [ $INSTANCE_NUM -lt 1 ]; then
-        INSTANCE_NUM=1
-    fi
 fi
 
-# Calculate port offsets based on BASE_PORT
-if [ "$BASE_PORT" -eq 8000 ] || [ "$BASE_PORT" -eq 9000 ]; then
-    # Legacy calculation for standard ports
-    PORT_OFFSET=$((BASE_PORT / 1000))  # 8000->8, 9000->9
-    API_GATEWAY_PORT=$((PORT_OFFSET * 1000 + 80))
-    COMPANY_USER_MGMT_PORT=$((PORT_OFFSET * 1000 + 81))
-    EVENT_MGMT_PORT=$((PORT_OFFSET * 1000 + 82))
-    SPEAKER_COORD_PORT=$((PORT_OFFSET * 1000 + 83))
-    PARTNER_COORD_PORT=$((PORT_OFFSET * 1000 + 84))
-    ATTENDEE_EXP_PORT=$((PORT_OFFSET * 1000 + 85))
-else
-    # Direct calculation for arbitrary BASE_PORT
-    API_GATEWAY_PORT=$BASE_PORT
-    COMPANY_USER_MGMT_PORT=$((BASE_PORT + 1))
-    EVENT_MGMT_PORT=$((BASE_PORT + 2))
-    SPEAKER_COORD_PORT=$((BASE_PORT + 3))
-    PARTNER_COORD_PORT=$((BASE_PORT + 4))
-    ATTENDEE_EXP_PORT=$((BASE_PORT + 5))
-fi
-
-# Frontend port calculation
-if [ "$BASE_PORT" -eq 8000 ] || [ "$BASE_PORT" -eq 9000 ]; then
-    FRONTEND_PORT=$((3000 + (INSTANCE_NUM - 1) * 1000))
-else
-    FRONTEND_PORT=$((BASE_PORT + 100))
-fi
+# Calculate ports - consistent for all instances
+# Pattern: BASE_PORT for API Gateway, BASE_PORT+1..5 for services, BASE_PORT+100 for frontend
+API_GATEWAY_PORT=$BASE_PORT
+COMPANY_USER_MGMT_PORT=$((BASE_PORT + 1))
+EVENT_MGMT_PORT=$((BASE_PORT + 2))
+SPEAKER_COORD_PORT=$((BASE_PORT + 3))
+PARTNER_COORD_PORT=$((BASE_PORT + 4))
+ATTENDEE_EXP_PORT=$((BASE_PORT + 5))
+FRONTEND_PORT=$((BASE_PORT + 100))
 
 # Shared infrastructure ports
 DB_TUNNEL_PORT=5432
