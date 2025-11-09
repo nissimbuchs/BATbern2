@@ -65,6 +65,11 @@ public class Partner {
     public boolean isActive() {
         LocalDate now = LocalDate.now();
 
+        // Partnership start date is required
+        if (partnershipStartDate == null) {
+            return false;
+        }
+
         // Partnership hasn't started yet
         if (partnershipStartDate.isAfter(now)) {
             return false;
@@ -76,8 +81,8 @@ public class Partner {
             return true;
         }
 
-        // Partnership has end date, check if it has passed
-        return !partnershipEndDate.isBefore(now);
+        // Partnership has end date, check if it's still active (end date is in the future)
+        return partnershipEndDate.isAfter(now);
     }
 
     /**
