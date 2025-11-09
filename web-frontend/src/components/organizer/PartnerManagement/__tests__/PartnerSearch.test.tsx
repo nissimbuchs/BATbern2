@@ -60,22 +60,29 @@ describe('PartnerSearch Component - AC1 Tests', () => {
     it('calls setSearchQuery after 300ms delay', async () => {
       render(<PartnerSearch />);
 
-      const searchInput = screen.getByRole('textbox', { name: /search partners/i }) as HTMLInputElement;
+      const searchInput = screen.getByRole('textbox', {
+        name: /search partners/i,
+      }) as HTMLInputElement;
 
       // Manually trigger change event (Material-UI TextField uses onChange)
       searchInput.value = 'Test Partner';
       searchInput.dispatchEvent(new Event('change', { bubbles: true }));
 
       // Wait for debounce
-      await waitFor(() => {
-        expect(mockSetSearchQuery).toHaveBeenCalledWith('Test Partner');
-      }, { timeout: 500 });
+      await waitFor(
+        () => {
+          expect(mockSetSearchQuery).toHaveBeenCalledWith('Test Partner');
+        },
+        { timeout: 500 }
+      );
     });
 
     it('calls setSearchQuery only once after typing stops', async () => {
       render(<PartnerSearch />);
 
-      const searchInput = screen.getByRole('textbox', { name: /search partners/i }) as HTMLInputElement;
+      const searchInput = screen.getByRole('textbox', {
+        name: /search partners/i,
+      }) as HTMLInputElement;
 
       // Simulate multiple rapid changes
       searchInput.value = 'T';
@@ -91,33 +98,41 @@ describe('PartnerSearch Component - AC1 Tests', () => {
       searchInput.dispatchEvent(new Event('change', { bubbles: true }));
 
       // Wait for debounce - should only be called once with final value
-      await waitFor(() => {
-        expect(mockSetSearchQuery).toHaveBeenCalledTimes(1);
-        expect(mockSetSearchQuery).toHaveBeenCalledWith('Test');
-      }, { timeout: 500 });
+      await waitFor(
+        () => {
+          expect(mockSetSearchQuery).toHaveBeenCalledTimes(1);
+          expect(mockSetSearchQuery).toHaveBeenCalledWith('Test');
+        },
+        { timeout: 500 }
+      );
     });
 
     it('cancels previous debounce when typing continues', async () => {
       render(<PartnerSearch />);
 
-      const searchInput = screen.getByRole('textbox', { name: /search partners/i }) as HTMLInputElement;
+      const searchInput = screen.getByRole('textbox', {
+        name: /search partners/i,
+      }) as HTMLInputElement;
 
       // Type first character
       searchInput.value = 'T';
       searchInput.dispatchEvent(new Event('change', { bubbles: true }));
 
       // Wait a bit
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       // Type second character (should cancel previous debounce)
       searchInput.value = 'Te';
       searchInput.dispatchEvent(new Event('change', { bubbles: true }));
 
       // Wait for debounce
-      await waitFor(() => {
-        expect(mockSetSearchQuery).toHaveBeenCalledTimes(1);
-        expect(mockSetSearchQuery).toHaveBeenCalledWith('Te');
-      }, { timeout: 500 });
+      await waitFor(
+        () => {
+          expect(mockSetSearchQuery).toHaveBeenCalledTimes(1);
+          expect(mockSetSearchQuery).toHaveBeenCalledWith('Te');
+        },
+        { timeout: 500 }
+      );
     });
   });
 
@@ -125,16 +140,21 @@ describe('PartnerSearch Component - AC1 Tests', () => {
     it('updates search query after debounce', async () => {
       render(<PartnerSearch />);
 
-      const searchInput = screen.getByRole('textbox', { name: /search partners/i }) as HTMLInputElement;
+      const searchInput = screen.getByRole('textbox', {
+        name: /search partners/i,
+      }) as HTMLInputElement;
 
       // Manually trigger change event (Material-UI TextField uses onChange)
       searchInput.value = 'Gold Partners';
       searchInput.dispatchEvent(new Event('change', { bubbles: true }));
 
       // Wait for debounce
-      await waitFor(() => {
-        expect(mockSetSearchQuery).toHaveBeenCalledWith('Gold Partners');
-      }, { timeout: 500 });
+      await waitFor(
+        () => {
+          expect(mockSetSearchQuery).toHaveBeenCalledWith('Gold Partners');
+        },
+        { timeout: 500 }
+      );
     });
 
     it('handles empty string', async () => {
@@ -145,31 +165,41 @@ describe('PartnerSearch Component - AC1 Tests', () => {
 
       render(<PartnerSearch />);
 
-      const searchInput = screen.getByRole('textbox', { name: /search partners/i }) as HTMLInputElement;
+      const searchInput = screen.getByRole('textbox', {
+        name: /search partners/i,
+      }) as HTMLInputElement;
 
       // Manually trigger change event to empty
       searchInput.value = '';
       searchInput.dispatchEvent(new Event('change', { bubbles: true }));
 
       // Wait for debounce
-      await waitFor(() => {
-        expect(mockSetSearchQuery).toHaveBeenCalledWith('');
-      }, { timeout: 500 });
+      await waitFor(
+        () => {
+          expect(mockSetSearchQuery).toHaveBeenCalledWith('');
+        },
+        { timeout: 500 }
+      );
     });
 
     it('handles special characters', async () => {
       render(<PartnerSearch />);
 
-      const searchInput = screen.getByRole('textbox', { name: /search partners/i }) as HTMLInputElement;
+      const searchInput = screen.getByRole('textbox', {
+        name: /search partners/i,
+      }) as HTMLInputElement;
 
       // Manually trigger change event with special characters
       searchInput.value = 'Company & Co.';
       searchInput.dispatchEvent(new Event('change', { bubbles: true }));
 
       // Wait for debounce
-      await waitFor(() => {
-        expect(mockSetSearchQuery).toHaveBeenCalledWith('Company & Co.');
-      }, { timeout: 500 });
+      await waitFor(
+        () => {
+          expect(mockSetSearchQuery).toHaveBeenCalledWith('Company & Co.');
+        },
+        { timeout: 500 }
+      );
     });
   });
 
@@ -213,7 +243,9 @@ describe('PartnerSearch Component - AC1 Tests', () => {
 
       render(<PartnerSearch />);
 
-      const searchInput = screen.getByRole('textbox', { name: /search partners/i }) as HTMLInputElement;
+      const searchInput = screen.getByRole('textbox', {
+        name: /search partners/i,
+      }) as HTMLInputElement;
       expect(searchInput.value).toBe('Test Partner');
 
       const clearButton = screen.getByRole('button', { name: /clear search/i });

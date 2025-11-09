@@ -108,12 +108,7 @@ export const PartnerFilters: React.FC = () => {
         </FormControl>
 
         {/* Reset Filters Button */}
-        <Button
-          variant="outlined"
-          startIcon={<ClearIcon />}
-          onClick={resetFilters}
-          size="small"
-        >
+        <Button variant="outlined" startIcon={<ClearIcon />} onClick={resetFilters} size="small">
           Reset Filters
         </Button>
       </Stack>

@@ -14,9 +14,7 @@ vi.mock('@/stores/partnerStore');
 // Mock PartnerCard component
 vi.mock('../PartnerCard', () => ({
   PartnerCard: ({ partner }: any) => (
-    <div data-testid={`partner-card-${partner.id}`}>
-      {partner.companyName}
-    </div>
+    <div data-testid={`partner-card-${partner.id}`}>{partner.companyName}</div>
   ),
 }));
 
@@ -30,7 +28,9 @@ const mockPartners = [
     votesCount: 5,
     nextMeetingDate: '2025-02-15',
     company: { industry: 'Technology', logoUrl: 'https://cdn.example.com/logo1.png' },
-    contacts: [{ id: 'c1', firstName: 'John', lastName: 'Doe', email: 'john@example.com', isPrimary: true }],
+    contacts: [
+      { id: 'c1', firstName: 'John', lastName: 'Doe', email: 'john@example.com', isPrimary: true },
+    ],
   },
   {
     id: '2',

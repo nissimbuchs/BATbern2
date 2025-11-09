@@ -170,12 +170,7 @@ describe('Partner React Query Hooks (RED Phase - Task 2a)', () => {
       });
 
       // Query should be cached with proper key
-      const cachedQuery = queryClient.getQueryData([
-        'partners',
-        filters,
-        sort,
-        pagination,
-      ]);
+      const cachedQuery = queryClient.getQueryData(['partners', filters, sort, pagination]);
       expect(cachedQuery).toEqual(mockResponse);
     });
 

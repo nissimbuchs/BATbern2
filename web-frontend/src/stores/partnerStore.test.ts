@@ -176,7 +176,7 @@ describe('partnerStore (RED Phase - Task 3a)', () => {
       // Check localStorage directly
       const stored = localStorage.getItem('partner-store');
       expect(stored).toBeTruthy();
-      
+
       if (stored) {
         const parsed = JSON.parse(stored);
         expect(parsed.state.viewMode).toBe('list');
@@ -355,13 +355,13 @@ describe('partnerStore (RED Phase - Task 3a)', () => {
       // Check localStorage directly - should only contain viewMode
       const stored = localStorage.getItem('partner-store');
       expect(stored).toBeTruthy();
-      
+
       if (stored) {
         const parsed = JSON.parse(stored);
-        
+
         // Should have viewMode
         expect(parsed.state.viewMode).toBe('list');
-        
+
         // Should NOT have filters, searchQuery, page, sortBy, sortOrder
         expect(parsed.state.filters).toBeUndefined();
         expect(parsed.state.searchQuery).toBeUndefined();

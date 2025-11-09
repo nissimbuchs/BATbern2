@@ -1,20 +1,6 @@
 import React from 'react';
-import {
-  Box,
-  Grid,
-  Stack,
-  Typography,
-  Button,
-  ButtonGroup,
-  Skeleton,
-  Alert,
-} from '@mui/material';
-import {
-  FirstPage,
-  NavigateBefore,
-  NavigateNext,
-  LastPage,
-} from '@mui/icons-material';
+import { Box, Grid, Stack, Typography, Button, ButtonGroup, Skeleton, Alert } from '@mui/material';
+import { FirstPage, NavigateBefore, NavigateNext, LastPage } from '@mui/icons-material';
 import { PartnerCard } from './PartnerCard';
 import { usePartners } from '@/hooks/usePartners';
 import { usePartnerStore } from '@/stores/partnerStore';
@@ -110,13 +96,7 @@ export const PartnerList: React.FC = () => {
   if (viewMode === 'grid') {
     return (
       <Box>
-        <Grid
-          container
-          spacing={2}
-          data-testid="partner-grid"
-          data-columns="3"
-          data-spacing="3"
-        >
+        <Grid container spacing={2} data-testid="partner-grid" data-columns="3" data-spacing="3">
           {partners.map((partner) => (
             <Grid item xs={12} sm={6} md={4} key={partner.id}>
               <PartnerCard partner={partner} />
@@ -145,32 +125,16 @@ export const PartnerList: React.FC = () => {
             </Typography>
 
             <ButtonGroup variant="outlined" size="small">
-              <Button
-                onClick={handleFirstPage}
-                disabled={isFirstPage}
-                aria-label="First page"
-              >
+              <Button onClick={handleFirstPage} disabled={isFirstPage} aria-label="First page">
                 <FirstPage />
               </Button>
-              <Button
-                onClick={handlePrevPage}
-                disabled={isFirstPage}
-                aria-label="Previous page"
-              >
+              <Button onClick={handlePrevPage} disabled={isFirstPage} aria-label="Previous page">
                 <NavigateBefore />
               </Button>
-              <Button
-                onClick={handleNextPage}
-                disabled={isLastPage}
-                aria-label="Next page"
-              >
+              <Button onClick={handleNextPage} disabled={isLastPage} aria-label="Next page">
                 <NavigateNext />
               </Button>
-              <Button
-                onClick={handleLastPage}
-                disabled={isLastPage}
-                aria-label="Last page"
-              >
+              <Button onClick={handleLastPage} disabled={isLastPage} aria-label="Last page">
                 <LastPage />
               </Button>
             </ButtonGroup>
@@ -210,32 +174,16 @@ export const PartnerList: React.FC = () => {
           </Typography>
 
           <ButtonGroup variant="outlined" size="small">
-            <Button
-              onClick={handleFirstPage}
-              disabled={isFirstPage}
-              aria-label="First page"
-            >
+            <Button onClick={handleFirstPage} disabled={isFirstPage} aria-label="First page">
               <FirstPage />
             </Button>
-            <Button
-              onClick={handlePrevPage}
-              disabled={isFirstPage}
-              aria-label="Previous page"
-            >
+            <Button onClick={handlePrevPage} disabled={isFirstPage} aria-label="Previous page">
               <NavigateBefore />
             </Button>
-            <Button
-              onClick={handleNextPage}
-              disabled={isLastPage}
-              aria-label="Next page"
-            >
+            <Button onClick={handleNextPage} disabled={isLastPage} aria-label="Next page">
               <NavigateNext />
             </Button>
-            <Button
-              onClick={handleLastPage}
-              disabled={isLastPage}
-              aria-label="Last page"
-            >
+            <Button onClick={handleLastPage} disabled={isLastPage} aria-label="Last page">
               <LastPage />
             </Button>
           </ButtonGroup>

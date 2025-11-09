@@ -55,7 +55,11 @@ const PartnerCardComponent: React.FC<PartnerCardProps> = ({ partner }) => {
   // Intersection Observer for lazy loading
   useEffect(() => {
     // In test environment or if IntersectionObserver is not available, load immediately
-    if (typeof window === 'undefined' || !('IntersectionObserver' in window) || process.env.NODE_ENV === 'test') {
+    if (
+      typeof window === 'undefined' ||
+      !('IntersectionObserver' in window) ||
+      process.env.NODE_ENV === 'test'
+    ) {
       setIsVisible(true);
       return;
     }
@@ -131,8 +135,7 @@ const PartnerCardComponent: React.FC<PartnerCardProps> = ({ partner }) => {
         {/* Primary Contact */}
         {primaryContact && (
           <Typography variant="body2" color="text.secondary" gutterBottom>
-            👤 {primaryContact.firstName} {primaryContact.lastName} (
-            {primaryContact.email})
+            👤 {primaryContact.firstName} {primaryContact.lastName} ({primaryContact.email})
           </Typography>
         )}
 
@@ -156,12 +159,7 @@ const PartnerCardComponent: React.FC<PartnerCardProps> = ({ partner }) => {
           <Typography variant="caption" color="text.secondary">
             Engagement: Coming Soon (Epic 8)
           </Typography>
-          <LinearProgress
-            variant="determinate"
-            value={0}
-            sx={{ mt: 0.5 }}
-            role="progressbar"
-          />
+          <LinearProgress variant="determinate" value={0} sx={{ mt: 0.5 }} role="progressbar" />
         </Box>
       </CardContent>
 

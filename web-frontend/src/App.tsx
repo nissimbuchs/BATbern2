@@ -50,8 +50,10 @@ const CompanyManagement = React.lazy(
 const UserManagement = React.lazy(() => import('@components/organizer/UserManagement/UserList'));
 
 // Partner Management Pages - Story 2.8.1
-const PartnerDirectoryScreen = React.lazy(
-  () => import('@components/organizer/PartnerManagement/PartnerDirectoryScreen').then(module => ({ default: module.PartnerDirectoryScreen }))
+const PartnerDirectoryScreen = React.lazy(() =>
+  import('@components/organizer/PartnerManagement/PartnerDirectoryScreen').then((module) => ({
+    default: module.PartnerDirectoryScreen,
+  }))
 );
 
 // Event Management Pages - Story 2.5.3, Task 4
@@ -164,259 +166,259 @@ function App() {
           <Router>
             <NavigationSetup>
               <Suspense fallback={<PageLoader />}>
-              <Routes>
-                {/* Public routes - Story 4.1.2, 4.1.3 */}
-                <Route path="/" element={<HomePage />} />
-                <Route
-                  path="/archive"
-                  element={
-                    <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
-                      Archive (Coming in 4.2)
-                    </div>
-                  }
-                />
-                <Route
-                  path="/search"
-                  element={
-                    <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
-                      Search (Coming in 4.3)
-                    </div>
-                  }
-                />
-                <Route
-                  path="/about"
-                  element={
-                    <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
-                      About (Coming later)
-                    </div>
-                  }
-                />
-                <Route
-                  path="/privacy"
-                  element={
-                    <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
-                      Privacy Policy (Coming later)
-                    </div>
-                  }
-                />
-                <Route
-                  path="/terms"
-                  element={
-                    <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
-                      Terms of Service (Coming later)
-                    </div>
-                  }
-                />
+                <Routes>
+                  {/* Public routes - Story 4.1.2, 4.1.3 */}
+                  <Route path="/" element={<HomePage />} />
+                  <Route
+                    path="/archive"
+                    element={
+                      <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
+                        Archive (Coming in 4.2)
+                      </div>
+                    }
+                  />
+                  <Route
+                    path="/search"
+                    element={
+                      <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
+                        Search (Coming in 4.3)
+                      </div>
+                    }
+                  />
+                  <Route
+                    path="/about"
+                    element={
+                      <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
+                        About (Coming later)
+                      </div>
+                    }
+                  />
+                  <Route
+                    path="/privacy"
+                    element={
+                      <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
+                        Privacy Policy (Coming later)
+                      </div>
+                    }
+                  />
+                  <Route
+                    path="/terms"
+                    element={
+                      <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
+                        Terms of Service (Coming later)
+                      </div>
+                    }
+                  />
 
-                {/* Authentication routes */}
-                <Route
-                  path="/login"
-                  element={
-                    <AuthPageLayout>
-                      <LoginPage />
-                    </AuthPageLayout>
-                  }
-                />
-                <Route
-                  path="/auth/login"
-                  element={
-                    <AuthPageLayout>
-                      <LoginPage />
-                    </AuthPageLayout>
-                  }
-                />
-                <Route
-                  path="/auth/forgot-password"
-                  element={
-                    <AuthPageLayout>
-                      <ForgotPasswordPage />
-                    </AuthPageLayout>
-                  }
-                />
-                <Route
-                  path="/auth/reset-password"
-                  element={
-                    <AuthPageLayout>
-                      <ResetPasswordPage />
-                    </AuthPageLayout>
-                  }
-                />
-                <Route
-                  path="/auth/register"
-                  element={
-                    <AuthPageLayout>
-                      <RegistrationPage />
-                    </AuthPageLayout>
-                  }
-                />
-                <Route
-                  path="/auth/verify-email"
-                  element={
-                    <AuthPageLayout>
-                      <EmailVerification />
-                    </AuthPageLayout>
-                  }
-                />
+                  {/* Authentication routes */}
+                  <Route
+                    path="/login"
+                    element={
+                      <AuthPageLayout>
+                        <LoginPage />
+                      </AuthPageLayout>
+                    }
+                  />
+                  <Route
+                    path="/auth/login"
+                    element={
+                      <AuthPageLayout>
+                        <LoginPage />
+                      </AuthPageLayout>
+                    }
+                  />
+                  <Route
+                    path="/auth/forgot-password"
+                    element={
+                      <AuthPageLayout>
+                        <ForgotPasswordPage />
+                      </AuthPageLayout>
+                    }
+                  />
+                  <Route
+                    path="/auth/reset-password"
+                    element={
+                      <AuthPageLayout>
+                        <ResetPasswordPage />
+                      </AuthPageLayout>
+                    }
+                  />
+                  <Route
+                    path="/auth/register"
+                    element={
+                      <AuthPageLayout>
+                        <RegistrationPage />
+                      </AuthPageLayout>
+                    }
+                  />
+                  <Route
+                    path="/auth/verify-email"
+                    element={
+                      <AuthPageLayout>
+                        <EmailVerification />
+                      </AuthPageLayout>
+                    }
+                  />
 
-                {/* Protected routes with lazy-loaded components */}
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <AuthLayout>
-                        <Dashboard />
-                      </AuthLayout>
-                    </ProtectedRoute>
-                  }
-                />
+                  {/* Protected routes with lazy-loaded components */}
+                  <Route
+                    path="/dashboard"
+                    element={
+                      <ProtectedRoute>
+                        <AuthLayout>
+                          <Dashboard />
+                        </AuthLayout>
+                      </ProtectedRoute>
+                    }
+                  />
 
-                <Route
-                  path="/events"
-                  element={
-                    <ProtectedRoute>
-                      <AuthLayout>
-                        <Events />
-                      </AuthLayout>
-                    </ProtectedRoute>
-                  }
-                />
+                  <Route
+                    path="/events"
+                    element={
+                      <ProtectedRoute>
+                        <AuthLayout>
+                          <Events />
+                        </AuthLayout>
+                      </ProtectedRoute>
+                    }
+                  />
 
-                {/* Event Management Routes - Story 2.5.3, Task 4 */}
-                <Route
-                  path="/organizer/events"
-                  element={
-                    <ProtectedRoute>
-                      <AuthLayout>
-                        <EventManagementDashboard />
-                      </AuthLayout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/organizer/events/create"
-                  element={
-                    <ProtectedRoute>
-                      <AuthLayout>
-                        <EventCreate />
-                      </AuthLayout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/organizer/events/timeline"
-                  element={
-                    <ProtectedRoute>
-                      <AuthLayout>
-                        <EventTimeline />
-                      </AuthLayout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/organizer/events/:eventCode"
-                  element={
-                    <ProtectedRoute>
-                      <AuthLayout>
-                        <EventDetailEdit />
-                      </AuthLayout>
-                    </ProtectedRoute>
-                  }
-                />
+                  {/* Event Management Routes - Story 2.5.3, Task 4 */}
+                  <Route
+                    path="/organizer/events"
+                    element={
+                      <ProtectedRoute>
+                        <AuthLayout>
+                          <EventManagementDashboard />
+                        </AuthLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/organizer/events/create"
+                    element={
+                      <ProtectedRoute>
+                        <AuthLayout>
+                          <EventCreate />
+                        </AuthLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/organizer/events/timeline"
+                    element={
+                      <ProtectedRoute>
+                        <AuthLayout>
+                          <EventTimeline />
+                        </AuthLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/organizer/events/:eventCode"
+                    element={
+                      <ProtectedRoute>
+                        <AuthLayout>
+                          <EventDetailEdit />
+                        </AuthLayout>
+                      </ProtectedRoute>
+                    }
+                  />
 
-                <Route
-                  path="/speakers"
-                  element={
-                    <SpeakerRoute>
-                      <AuthLayout>
-                        <Speakers />
-                      </AuthLayout>
-                    </SpeakerRoute>
-                  }
-                />
+                  <Route
+                    path="/speakers"
+                    element={
+                      <SpeakerRoute>
+                        <AuthLayout>
+                          <Speakers />
+                        </AuthLayout>
+                      </SpeakerRoute>
+                    }
+                  />
 
-                {/* Partner Management Routes - Story 2.8.1 */}
-                <Route
-                  path="/organizer/partners"
-                  element={
-                    <ProtectedRoute>
-                      <AuthLayout>
-                        <PartnerDirectoryScreen />
-                      </AuthLayout>
-                    </ProtectedRoute>
-                  }
-                />
+                  {/* Partner Management Routes - Story 2.8.1 */}
+                  <Route
+                    path="/organizer/partners"
+                    element={
+                      <ProtectedRoute>
+                        <AuthLayout>
+                          <PartnerDirectoryScreen />
+                        </AuthLayout>
+                      </ProtectedRoute>
+                    }
+                  />
 
-                <Route
-                  path="/partners"
-                  element={
-                    <PartnerRoute>
-                      <AuthLayout>
-                        <Partners />
-                      </AuthLayout>
-                    </PartnerRoute>
-                  }
-                />
+                  <Route
+                    path="/partners"
+                    element={
+                      <PartnerRoute>
+                        <AuthLayout>
+                          <Partners />
+                        </AuthLayout>
+                      </PartnerRoute>
+                    }
+                  />
 
-                <Route
-                  path="/analytics"
-                  element={
-                    <PartnerRoute>
-                      <AuthLayout>
-                        <Analytics />
-                      </AuthLayout>
-                    </PartnerRoute>
-                  }
-                />
+                  <Route
+                    path="/analytics"
+                    element={
+                      <PartnerRoute>
+                        <AuthLayout>
+                          <Analytics />
+                        </AuthLayout>
+                      </PartnerRoute>
+                    }
+                  />
 
-                <Route
-                  path="/content"
-                  element={
-                    <AttendeeRoute>
-                      <AuthLayout>
-                        <Content />
-                      </AuthLayout>
-                    </AttendeeRoute>
-                  }
-                />
+                  <Route
+                    path="/content"
+                    element={
+                      <AttendeeRoute>
+                        <AuthLayout>
+                          <Content />
+                        </AuthLayout>
+                      </AttendeeRoute>
+                    }
+                  />
 
-                {/* Company Management Routes */}
-                <Route
-                  path="/organizer/companies/*"
-                  element={
-                    <ProtectedRoute>
-                      <AuthLayout>
-                        <CompanyManagement />
-                      </AuthLayout>
-                    </ProtectedRoute>
-                  }
-                />
+                  {/* Company Management Routes */}
+                  <Route
+                    path="/organizer/companies/*"
+                    element={
+                      <ProtectedRoute>
+                        <AuthLayout>
+                          <CompanyManagement />
+                        </AuthLayout>
+                      </ProtectedRoute>
+                    }
+                  />
 
-                <Route
-                  path="/speaker/company/*"
-                  element={
-                    <SpeakerRoute>
-                      <AuthLayout>
-                        <CompanyManagement />
-                      </AuthLayout>
-                    </SpeakerRoute>
-                  }
-                />
+                  <Route
+                    path="/speaker/company/*"
+                    element={
+                      <SpeakerRoute>
+                        <AuthLayout>
+                          <CompanyManagement />
+                        </AuthLayout>
+                      </SpeakerRoute>
+                    }
+                  />
 
-                {/* User Management Routes - Story 2.5.2 */}
-                <Route
-                  path="/organizer/users/*"
-                  element={
-                    <ProtectedRoute>
-                      <AuthLayout>
-                        <UserManagement />
-                      </AuthLayout>
-                    </ProtectedRoute>
-                  }
-                />
+                  {/* User Management Routes - Story 2.5.2 */}
+                  <Route
+                    path="/organizer/users/*"
+                    element={
+                      <ProtectedRoute>
+                        <AuthLayout>
+                          <UserManagement />
+                        </AuthLayout>
+                      </ProtectedRoute>
+                    }
+                  />
 
-                {/* Catch all route - redirect to home */}
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
+                  {/* Catch all route - redirect to home */}
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
               </Suspense>
             </NavigationSetup>
           </Router>

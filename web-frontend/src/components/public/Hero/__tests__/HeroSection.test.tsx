@@ -62,9 +62,7 @@ describe('HeroSection Component', () => {
     });
 
     test('should_renderCustomCTAText_when_provided', () => {
-      renderWithRouter(
-        <HeroSection {...defaultProps} ctaText="Join the Conference" />
-      );
+      renderWithRouter(<HeroSection {...defaultProps} ctaText="Join the Conference" />);
 
       expect(screen.getByText('Join the Conference')).toBeInTheDocument();
     });
@@ -79,9 +77,7 @@ describe('HeroSection Component', () => {
 
   describe('Date and Location Display', () => {
     test('should_renderFormattedDate_when_dateProvided', () => {
-      renderWithRouter(
-        <HeroSection {...defaultProps} date="2025-06-15T00:00:00Z" />
-      );
+      renderWithRouter(<HeroSection {...defaultProps} date="2025-06-15T00:00:00Z" />);
 
       // Check for date presence (format depends on locale)
       // Use getAllByText since "2025" appears in both title and date
@@ -90,20 +86,14 @@ describe('HeroSection Component', () => {
     });
 
     test('should_renderLocation_when_locationProvided', () => {
-      renderWithRouter(
-        <HeroSection {...defaultProps} location="Bern, Switzerland" />
-      );
+      renderWithRouter(<HeroSection {...defaultProps} location="Bern, Switzerland" />);
 
       expect(screen.getByText('Bern, Switzerland')).toBeInTheDocument();
     });
 
     test('should_renderBothDateAndLocation_when_bothProvided', () => {
       renderWithRouter(
-        <HeroSection
-          {...defaultProps}
-          date="2025-06-15T00:00:00Z"
-          location="Bern, Switzerland"
-        />
+        <HeroSection {...defaultProps} date="2025-06-15T00:00:00Z" location="Bern, Switzerland" />
       );
 
       // Use getAllByText since "2025" appears in both title and date
@@ -118,8 +108,8 @@ describe('HeroSection Component', () => {
       // Check that the date/location container is not rendered
       // Need to check for the specific container with both flex-wrap and gap-4
       const allFlexContainers = container.querySelectorAll('[class*="flex"][class*="gap-4"]');
-      const dateLocationContainer = Array.from(allFlexContainers).find(el =>
-        el.className.includes('flex-wrap') && el.className.includes('items-center')
+      const dateLocationContainer = Array.from(allFlexContainers).find(
+        (el) => el.className.includes('flex-wrap') && el.className.includes('items-center')
       );
       expect(dateLocationContainer).toBeUndefined();
     });
@@ -134,9 +124,7 @@ describe('HeroSection Component', () => {
     });
 
     test('should_renderLocationIcon_when_locationProvided', () => {
-      const { container } = renderWithRouter(
-        <HeroSection {...defaultProps} location="Bern" />
-      );
+      const { container } = renderWithRouter(<HeroSection {...defaultProps} location="Bern" />);
 
       const locationIcon = container.querySelector('svg');
       expect(locationIcon).toBeInTheDocument();
@@ -147,9 +135,7 @@ describe('HeroSection Component', () => {
     test('should_renderCountdownTimer_when_provided', () => {
       const countdownTimer = <div data-testid="countdown">5 days remaining</div>;
 
-      renderWithRouter(
-        <HeroSection {...defaultProps} countdownTimer={countdownTimer} />
-      );
+      renderWithRouter(<HeroSection {...defaultProps} countdownTimer={countdownTimer} />);
 
       expect(screen.getByTestId('countdown')).toBeInTheDocument();
       expect(screen.getByText('5 days remaining')).toBeInTheDocument();
@@ -241,7 +227,7 @@ describe('HeroSection Component', () => {
       const win = window as WindowWithUnicorn;
       win.UnicornStudio = {
         isInitialized: false,
-        init: vi.fn()
+        init: vi.fn(),
       };
 
       // Simulate script load
@@ -257,8 +243,9 @@ describe('HeroSection Component', () => {
     test('should_appendScriptToHead_when_componentMounts', () => {
       renderWithRouter(<HeroSection {...defaultProps} />);
 
-      const script = document.head.querySelector('script[src*="unicornStudio"]') ||
-                     document.body.querySelector('script[src*="unicornStudio"]');
+      const script =
+        document.head.querySelector('script[src*="unicornStudio"]') ||
+        document.body.querySelector('script[src*="unicornStudio"]');
       expect(script).toBeInTheDocument();
     });
   });
@@ -285,8 +272,8 @@ describe('HeroSection Component', () => {
       // Empty location should not display the date/location container
       // Check that location icon (MapPin) is not rendered
       const allFlexContainers = container.querySelectorAll('[class*="flex"][class*="gap-4"]');
-      const dateLocationContainer = Array.from(allFlexContainers).find(el =>
-        el.className.includes('flex-wrap') && el.className.includes('items-center')
+      const dateLocationContainer = Array.from(allFlexContainers).find(
+        (el) => el.className.includes('flex-wrap') && el.className.includes('items-center')
       );
       // Should not find the date/location container when location is empty and date is not provided
       expect(dateLocationContainer).toBeUndefined();

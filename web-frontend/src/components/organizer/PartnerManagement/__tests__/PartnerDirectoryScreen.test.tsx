@@ -139,14 +139,12 @@ describe('PartnerDirectoryScreen - Main Screen Component', () => {
         error: null,
       } as any);
 
-      const useStatisticsSpy = vi
-        .spyOn(usePartnersHook, 'usePartnerStatistics')
-        .mockReturnValue({
-          data: { total: 1, active: 1, tierDistribution: {} },
-          isLoading: false,
-          isError: false,
-          error: null,
-        } as any);
+      const useStatisticsSpy = vi.spyOn(usePartnersHook, 'usePartnerStatistics').mockReturnValue({
+        data: { total: 1, active: 1, tierDistribution: {} },
+        isLoading: false,
+        isError: false,
+        error: null,
+      } as any);
 
       renderWithProviders(<PartnerDirectoryScreen />);
 

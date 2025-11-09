@@ -56,17 +56,10 @@ export const PartnerDirectoryScreen: React.FC = () => {
     isLoading: isLoadingPartners,
     isError: isPartnersError,
     error: partnersError,
-  } = usePartners(
-    filters,
-    { sortBy, sortOrder },
-    { page, size: 20 }
-  );
+  } = usePartners(filters, { sortBy, sortOrder }, { page, size: 20 });
 
   // Fetch partner statistics
-  const {
-    data: statisticsData,
-    isLoading: isLoadingStatistics,
-  } = usePartnerStatistics();
+  const { data: statisticsData, isLoading: isLoadingStatistics } = usePartnerStatistics();
 
   const handleViewModeChange = (
     _event: React.MouseEvent<HTMLElement>,
@@ -111,10 +104,7 @@ export const PartnerDirectoryScreen: React.FC = () => {
 
       {/* Overview Statistics */}
       <Box sx={{ mb: 3 }}>
-        <PartnerOverviewStats
-          statistics={statisticsData}
-          isLoading={isLoadingStatistics}
-        />
+        <PartnerOverviewStats statistics={statisticsData} isLoading={isLoadingStatistics} />
       </Box>
 
       {/* Search and Filter Controls */}
@@ -191,16 +181,29 @@ export const PartnerDirectoryScreen: React.FC = () => {
         aria-label="search results"
         aria-live="polite"
         aria-atomic="true"
-        sx={{ position: 'absolute', left: '-10000px', width: '1px', height: '1px', overflow: 'hidden' }}
+        sx={{
+          position: 'absolute',
+          left: '-10000px',
+          width: '1px',
+          height: '1px',
+          overflow: 'hidden',
+        }}
       >
-        {partnersData?.partners && `${partnersData.pagination?.totalElements || 0} ${partnersData.pagination?.totalElements === 1 ? 'partner' : 'partners'} found`}
+        {partnersData?.partners &&
+          `${partnersData.pagination?.totalElements || 0} ${partnersData.pagination?.totalElements === 1 ? 'partner' : 'partners'} found`}
       </Box>
 
       <Box
         role="status"
         aria-label="filter update"
         aria-live="polite"
-        sx={{ position: 'absolute', left: '-10000px', width: '1px', height: '1px', overflow: 'hidden' }}
+        sx={{
+          position: 'absolute',
+          left: '-10000px',
+          width: '1px',
+          height: '1px',
+          overflow: 'hidden',
+        }}
       >
         {filters.tier !== 'all' && `Filtered by tier: ${filters.tier}`}
         {filters.status !== 'all' && ` Status: ${filters.status}`}
@@ -210,7 +213,13 @@ export const PartnerDirectoryScreen: React.FC = () => {
         role="status"
         aria-label="loading"
         aria-live="polite"
-        sx={{ position: 'absolute', left: '-10000px', width: '1px', height: '1px', overflow: 'hidden' }}
+        sx={{
+          position: 'absolute',
+          left: '-10000px',
+          width: '1px',
+          height: '1px',
+          overflow: 'hidden',
+        }}
       >
         {isLoadingPartners && 'Loading partners'}
       </Box>

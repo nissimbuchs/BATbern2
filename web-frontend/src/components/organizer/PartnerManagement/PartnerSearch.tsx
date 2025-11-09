@@ -61,12 +61,7 @@ export const PartnerSearch: React.FC = () => {
         ),
         endAdornment: showClearButton ? (
           <InputAdornment position="end">
-            <IconButton
-              aria-label="Clear search"
-              onClick={handleClear}
-              edge="end"
-              size="small"
-            >
+            <IconButton aria-label="Clear search" onClick={handleClear} edge="end" size="small">
               <ClearIcon />
             </IconButton>
           </InputAdornment>

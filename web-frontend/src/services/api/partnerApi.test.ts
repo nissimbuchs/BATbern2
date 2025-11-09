@@ -152,7 +152,9 @@ describe('Partner API Client (RED Phase - Task 1a)', () => {
         '/partners',
         expect.objectContaining({
           params: expect.objectContaining({
-            filter: expect.stringMatching(/partnershipLevel:platinum.*isActive:true|isActive:true.*partnershipLevel:platinum/),
+            filter: expect.stringMatching(
+              /partnershipLevel:platinum.*isActive:true|isActive:true.*partnershipLevel:platinum/
+            ),
           }),
         })
       );

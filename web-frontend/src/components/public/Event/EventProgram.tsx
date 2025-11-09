@@ -50,9 +50,7 @@ export const EventProgram = ({ sessions }: EventProgramProps) => {
     if (!session.speakers || session.speakers.length === 0) {
       return t('public.speakers.speakerTBA');
     }
-    return session.speakers
-      .map((speaker) => `${speaker.firstName} ${speaker.lastName}`)
-      .join(', ');
+    return session.speakers.map((speaker) => `${speaker.firstName} ${speaker.lastName}`).join(', ');
   };
 
   if (sessions.length === 0) {

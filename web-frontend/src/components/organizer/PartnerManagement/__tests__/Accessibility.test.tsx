@@ -49,9 +49,7 @@ const renderWithProviders = (component: React.ReactElement) => {
 
   return render(
     <BrowserRouter>
-      <QueryClientProvider client={queryClient}>
-        {component}
-      </QueryClientProvider>
+      <QueryClientProvider client={queryClient}>{component}</QueryClientProvider>
     </BrowserRouter>
   );
 };
