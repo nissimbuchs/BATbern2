@@ -12,9 +12,9 @@
  * - API integration for registration submission
  */
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PersonalDetailsStep } from './PersonalDetailsStep';
+import { PersonalDetailsStep, type PersonalDetailsStepRef } from './PersonalDetailsStep';
 import { ConfirmRegistrationStep } from './ConfirmRegistrationStep';
 import { RegistrationAccordion } from './RegistrationAccordion';
 import { Button } from '@/components/public/ui/button';
@@ -45,6 +45,7 @@ export const RegistrationWizard = ({
   inline = false,
 }: RegistrationWizardProps) => {
   const navigate = useNavigate();
+  const step1Ref = useRef<PersonalDetailsStepRef>(null);
 
   // Wizard state
   const [currentStep, setCurrentStep] = useState(1);
@@ -67,7 +68,16 @@ export const RegistrationWizard = ({
   });
 
   // Navigation handlers (Task 7)
-  const handleNext = () => {
+  const handleNext = async () => {
+    if (currentStep === 1) {
+      // Validate Step 1 before proceeding
+      const isValid = await step1Ref.current?.validateAndSync();
+      if (!isValid) {
+        setError('Please fill in all required fields correctly.');
+        return;
+      }
+      setError(null);
+    }
     setCurrentStep((prev) => Math.min(prev + 1, 2));
   };
 
@@ -165,15 +175,27 @@ export const RegistrationWizard = ({
           isExpanded={currentStep === 1}
           title="Step 1: Your Details"
           summary={step1Summary}
-          onToggle={() => setCurrentStep(1)}
+          onToggle={() => {
+            if (currentStep !== 1) {
+              setCurrentStep(1);
+              setError(null);
+            }
+          }}
         >
-          <PersonalDetailsStep formData={formData} setFormData={setFormData} />
+          <PersonalDetailsStep ref={step1Ref} formData={formData} setFormData={setFormData} />
         </RegistrationAccordion>
 
         {/* Step 2: Confirm Registration */}
         <RegistrationAccordion
           isExpanded={currentStep === 2}
           title="Step 2: Confirm Registration"
+          onToggle={() => {
+            // Step 2 can only be accessed by clicking Next from Step 1
+            // Clicking the header when collapsed should not expand it
+            if (currentStep === 2) {
+              // Do nothing - user must use Back button
+            }
+          }}
         >
           <ConfirmRegistrationStep
             formData={formData}

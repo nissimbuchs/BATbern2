@@ -8,6 +8,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useImperativeHandle, forwardRef } from 'react';
 import {
   Form,
   FormControl,
@@ -32,149 +33,165 @@ export interface PersonalDetailsStepProps {
   /** Current form data */
   formData: CreateRegistrationRequest;
   /** Form data update handler */
-  setFormData: (data: CreateRegistrationRequest | ((prev: CreateRegistrationRequest) => CreateRegistrationRequest)) => void;
+  setFormData: (
+    data:
+      | CreateRegistrationRequest
+      | ((prev: CreateRegistrationRequest) => CreateRegistrationRequest)
+  ) => void;
+}
+
+export interface PersonalDetailsStepRef {
+  validateAndSync: () => Promise<boolean>;
 }
 
 /**
  * Step 1: Personal Details Form
  *
  * Collects firstName, lastName, email, company, and role.
- * Validates on blur and updates parent state automatically.
+ * Form is self-contained and only syncs to parent when validated.
  */
-export const PersonalDetailsStep = ({ formData, setFormData }: PersonalDetailsStepProps) => {
-  const form = useForm({
-    resolver: zodResolver(personalDetailsSchema),
-    defaultValues: {
-      firstName: formData.firstName || '',
-      lastName: formData.lastName || '',
-      email: formData.email || '',
-      company: formData.company || '',
-      role: formData.role || '',
-    },
-  });
+export const PersonalDetailsStep = forwardRef<PersonalDetailsStepRef, PersonalDetailsStepProps>(
+  ({ formData, setFormData }, ref) => {
+    const form = useForm({
+      resolver: zodResolver(personalDetailsSchema),
+      mode: 'onBlur', // Only validate on blur, not on change
+      defaultValues: {
+        firstName: formData.firstName || '',
+        lastName: formData.lastName || '',
+        email: formData.email || '',
+        company: formData.company || '',
+        role: formData.role || '',
+      },
+    });
 
-  // Update parent state when form values change
-  const onUpdate = (data: z.infer<typeof personalDetailsSchema>) => {
-    setFormData((prev) => ({ ...prev, ...data }));
-  };
+    // Expose validation function to parent
+    useImperativeHandle(ref, () => ({
+      validateAndSync: async () => {
+        const isValid = await form.trigger();
+        if (isValid) {
+          const values = form.getValues();
+          setFormData((prev) => ({ ...prev, ...values }));
+        }
+        return isValid;
+      },
+    }));
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-light text-zinc-100 mb-2">Personal Information</h2>
-        <p className="text-sm text-zinc-400">
-          Please provide your details to register for the event.
-        </p>
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-light text-zinc-100 mb-2">Personal Information</h2>
+          <p className="text-sm text-zinc-400">
+            Please provide your details to register for the event.
+          </p>
+        </div>
+
+        <Form {...form}>
+          <div className="space-y-4">
+            {/* First Name and Last Name - Side by Side */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="firstName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-zinc-300">First Name *</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        className="bg-zinc-900 border-zinc-800 text-zinc-100"
+                        placeholder="John"
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-400" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="lastName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-zinc-300">Last Name *</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        className="bg-zinc-900 border-zinc-800 text-zinc-100"
+                        placeholder="Smith"
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-400" />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Email */}
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-zinc-300">Email Address *</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      type="email"
+                      className="bg-zinc-900 border-zinc-800 text-zinc-100"
+                      placeholder="john.smith@company.ch"
+                    />
+                  </FormControl>
+                  <p className="text-xs text-zinc-500">
+                    We'll send your ticket and event updates here
+                  </p>
+                  <FormMessage className="text-red-400" />
+                </FormItem>
+              )}
+            />
+
+            {/* Company and Role - Side by Side */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="company"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-zinc-300">Company *</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        className="bg-zinc-900 border-zinc-800 text-zinc-100"
+                        placeholder="TechCorp AG"
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-400" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-zinc-300">Role *</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        className="bg-zinc-900 border-zinc-800 text-zinc-100"
+                        placeholder="Senior Developer"
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-400" />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
+        </Form>
       </div>
+    );
+  }
+);
 
-      <Form {...form}>
-        <form
-          onBlur={form.handleSubmit(onUpdate)}
-          onChange={form.handleSubmit(onUpdate)}
-          className="space-y-4"
-        >
-          {/* First Name and Last Name - Side by Side */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <FormField
-              control={form.control}
-              name="firstName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-zinc-300">First Name *</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      className="bg-zinc-900 border-zinc-800 text-zinc-100"
-                      placeholder="John"
-                    />
-                  </FormControl>
-                  <FormMessage className="text-red-400" />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="lastName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-zinc-300">Last Name *</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      className="bg-zinc-900 border-zinc-800 text-zinc-100"
-                      placeholder="Smith"
-                    />
-                  </FormControl>
-                  <FormMessage className="text-red-400" />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          {/* Email */}
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-zinc-300">Email Address *</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    type="email"
-                    className="bg-zinc-900 border-zinc-800 text-zinc-100"
-                    placeholder="john.smith@company.ch"
-                  />
-                </FormControl>
-                <p className="text-xs text-zinc-500">
-                  We'll send your ticket and event updates here
-                </p>
-                <FormMessage className="text-red-400" />
-              </FormItem>
-            )}
-          />
-
-          {/* Company and Role - Side by Side */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <FormField
-              control={form.control}
-              name="company"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-zinc-300">Company *</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      className="bg-zinc-900 border-zinc-800 text-zinc-100"
-                      placeholder="TechCorp AG"
-                    />
-                  </FormControl>
-                  <FormMessage className="text-red-400" />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="role"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-zinc-300">Role *</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      className="bg-zinc-900 border-zinc-800 text-zinc-100"
-                      placeholder="Senior Developer"
-                    />
-                  </FormControl>
-                  <FormMessage className="text-red-400" />
-                </FormItem>
-              )}
-            />
-          </div>
-        </form>
-      </Form>
-    </div>
-  );
-};
+PersonalDetailsStep.displayName = 'PersonalDetailsStep';

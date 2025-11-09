@@ -5,8 +5,9 @@ import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
-import ch.batbern.events.dto.GetOrCreateUserRequest;
-import ch.batbern.events.dto.UserProfileDTO;
+import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
+import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
+import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.repository.EventRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -91,13 +92,13 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                     String email = request.getEmail();
                     String username = email.split("@")[0].replace(".", ".");
 
-                    return UserProfileDTO.builder()
-                            .username(username)
+                    return new UserResponse()
+                            .id(username)
                             .firstName(request.getFirstName())
                             .lastName(request.getLastName())
                             .email(request.getEmail())
                             .companyId("TestCorp")
-                            .build();
+                            ;
                 });
 
         // Mock getUserByUsername() for registration enrichment - return based on username
@@ -110,13 +111,13 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                     String firstName = parts.length > 0 ? capitalize(parts[0]) : "Test";
                     String lastName = parts.length > 1 ? capitalize(parts[1]) : "User";
 
-                    return UserProfileDTO.builder()
-                            .username(username)
+                    return new UserResponse()
+                            .id(username)
                             .firstName(firstName)
                             .lastName(lastName)
                             .email(username + "@example.com")
                             .companyId("TestCorp")
-                            .build();
+                            ;
                 });
     }
 

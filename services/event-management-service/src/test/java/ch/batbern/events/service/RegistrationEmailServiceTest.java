@@ -2,7 +2,7 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
-import ch.batbern.events.dto.UserProfileDTO;
+import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.service.IcsCalendarService;
 import org.junit.jupiter.api.BeforeEach;
@@ -75,13 +75,13 @@ class RegistrationEmailServiceTest {
                 .attendeeUsername("john.doe")
                 .build();
 
-        UserProfileDTO userProfile = UserProfileDTO.builder()
-                .username("john.doe")
+        UserResponse userProfile = new UserResponse()
+                .id("john.doe")
                 .firstName("John")
                 .lastName("Doe")
                 .email("john.doe@example.com")
                 .companyId("test-company")
-                .build();
+                ;
 
         Event event = Event.builder()
                 .id(registration.getEventId())
@@ -151,12 +151,12 @@ class RegistrationEmailServiceTest {
                 .attendeeUsername("jane.smith")
                 .build();
 
-        UserProfileDTO userProfile = UserProfileDTO.builder()
-                .username("jane.smith")
+        UserResponse userProfile = new UserResponse()
+                .id("jane.smith")
                 .firstName("Jane")
                 .lastName("Smith")
                 .email("jane.smith@example.com")
-                .build();
+                ;
 
         Event event = Event.builder()
                 .id(registration.getEventId())
@@ -202,12 +202,12 @@ class RegistrationEmailServiceTest {
                 .attendeeUsername("test.user")
                 .build();
 
-        UserProfileDTO userProfile = UserProfileDTO.builder()
-                .username("test.user")
+        UserResponse userProfile = new UserResponse()
+                .id("test.user")
                 .firstName("Test")
                 .lastName("User")
                 .email("test@example.com")
-                .build();
+                ;
 
         Instant eventDate = Instant.now().plus(30, java.time.temporal.ChronoUnit.DAYS);
         Event event = Event.builder()
@@ -253,12 +253,12 @@ class RegistrationEmailServiceTest {
                 .attendeeUsername("fail.user")
                 .build();
 
-        UserProfileDTO userProfile = UserProfileDTO.builder()
-                .username("fail.user")
+        UserResponse userProfile = new UserResponse()
+                .id("fail.user")
                 .firstName("Fail")
                 .lastName("User")
                 .email("fail@example.com")
-                .build();
+                ;
 
         Event event = Event.builder()
                 .id(registration.getEventId())

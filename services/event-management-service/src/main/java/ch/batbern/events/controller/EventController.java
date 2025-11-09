@@ -6,7 +6,7 @@ import ch.batbern.events.domain.Logo;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.dto.BatchUpdateRequest;
 import ch.batbern.events.dto.CreateEventRequest;
-import ch.batbern.events.dto.CreateRegistrationRequest;
+import ch.batbern.events.dto.generated.CreateRegistrationRequest;
 import ch.batbern.events.dto.EventResponse;
 import ch.batbern.events.dto.PatchEventRequest;
 import ch.batbern.events.dto.RegistrationResponse;
@@ -340,8 +340,8 @@ public class EventController {
                     // Fetch and add enriched User data
                     try {
                         if (sessionUser.getUsername() != null) {
-                            ch.batbern.events.dto.UserProfileDTO userProfile = userApiClient.getUserByUsername(sessionUser.getUsername());
-                            speakerMap.put("username", userProfile.getUsername());
+                            ch.batbern.events.dto.generated.users.UserResponse userProfile = userApiClient.getUserByUsername(sessionUser.getUsername());
+                            speakerMap.put("username", userProfile.getId());
                             speakerMap.put("firstName", userProfile.getFirstName());
                             speakerMap.put("lastName", userProfile.getLastName());
                             speakerMap.put("company", userProfile.getCompanyId());

@@ -5,7 +5,8 @@ import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
-import ch.batbern.events.dto.UserProfileDTO;
+import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
+import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -63,7 +64,7 @@ public class AnonymousRegistrationE2ETest extends AbstractIntegrationTest {
     private UserApiClient userApiClient;
 
     private Event testEvent;
-    private UserProfileDTO anonymousUserProfile;
+    private UserResponse anonymousUserProfile;
 
     @BeforeEach
     void setUp() {
@@ -89,16 +90,21 @@ public class AnonymousRegistrationE2ETest extends AbstractIntegrationTest {
         testEvent = eventRepository.save(testEvent);
 
         // Mock anonymous user profile (cognito_id = NULL)
-        anonymousUserProfile = UserProfileDTO.builder()
-                .username("alice.wonderland")
+        anonymousUserProfile = new UserResponse()
+                .id("alice.wonderland")
                 .firstName("Alice")
                 .lastName("Wonderland")
                 .email("alice.wonderland@example.com")
                 .companyId(null) // Anonymous users may not have company
                 .active(true)
-                .build();
+                ;
 
-        when(userApiClient.getOrCreateUser(any())).thenReturn(anonymousUserProfile);
+        // Wrap UserResponse in GetOrCreateUserResponse for getOrCreateUser mock
+        GetOrCreateUserResponse createUserResponse = new GetOrCreateUserResponse()
+                .username("alice.wonderland")
+                .created(true)
+                .user(anonymousUserProfile);
+        when(userApiClient.getOrCreateUser(any())).thenReturn(createUserResponse);
         when(userApiClient.getUserByUsername("alice.wonderland")).thenReturn(anonymousUserProfile);
     }
 
@@ -244,7 +250,12 @@ public class AnonymousRegistrationE2ETest extends AbstractIntegrationTest {
 
         // Reset mock to track second call
         reset(userApiClient);
-        when(userApiClient.getOrCreateUser(any())).thenReturn(anonymousUserProfile);
+        // Wrap UserResponse in GetOrCreateUserResponse for getOrCreateUser mock
+        GetOrCreateUserResponse createUserResponse = new GetOrCreateUserResponse()
+                .username("alice.wonderland")
+                .created(true)
+                .user(anonymousUserProfile);
+        when(userApiClient.getOrCreateUser(any())).thenReturn(createUserResponse);
         when(userApiClient.getUserByUsername("alice.wonderland")).thenReturn(anonymousUserProfile);
 
         // Create another event for second registration
@@ -309,17 +320,22 @@ public class AnonymousRegistrationE2ETest extends AbstractIntegrationTest {
                 .andExpect(status().isCreated());
 
         // Create second user
-        UserProfileDTO bobProfile = UserProfileDTO.builder()
-                .username("bob.builder")
+        UserResponse bobProfile = new UserResponse()
+                .id("bob.builder")
                 .firstName("Bob")
                 .lastName("Builder")
                 .email("bob.builder@example.com")
                 .companyId("BuildCo")
                 .active(true)
-                .build();
+                ;
+
+        GetOrCreateUserResponse bobCreateResponse = new GetOrCreateUserResponse()
+                .username("bob.builder")
+                .created(true)
+                .user(bobProfile);
 
         when(userApiClient.getOrCreateUser(argThat(req ->
-                req.getEmail().equals("bob.builder@example.com")))).thenReturn(bobProfile);
+                req.getEmail().equals("bob.builder@example.com")))).thenReturn(bobCreateResponse);
         when(userApiClient.getUserByUsername("bob.builder")).thenReturn(bobProfile);
 
         String request2 = """

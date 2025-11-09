@@ -2,7 +2,7 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
-import ch.batbern.events.dto.UserProfileDTO;
+import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.service.IcsCalendarService;
 import lombok.RequiredArgsConstructor;
@@ -64,7 +64,7 @@ public class RegistrationEmailService {
     @Async
     public void sendRegistrationConfirmation(
             Registration registration,
-            UserProfileDTO userProfile,
+            UserResponse userProfile,
             Event event,
             Locale locale
     ) {
@@ -113,7 +113,7 @@ public class RegistrationEmailService {
     /**
      * Load and populate email template with user/event data.
      */
-    private String loadEmailTemplate(Locale locale, Registration registration, UserProfileDTO userProfile, Event event, ZonedDateTime eventDateTime) {
+    private String loadEmailTemplate(Locale locale, Registration registration, UserResponse userProfile, Event event, ZonedDateTime eventDateTime) {
         try {
             // Determine template file based on locale
             String templateName = locale.getLanguage().equals("de")

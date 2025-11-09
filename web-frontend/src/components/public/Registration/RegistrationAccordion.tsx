@@ -6,11 +6,7 @@
  */
 
 import { ReactNode } from 'react';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/public/ui/ui/collapsible';
+import { Collapsible, CollapsibleContent } from '@/components/public/ui/ui/collapsible';
 
 export interface RegistrationAccordionProps {
   /** Whether the accordion section is expanded */
@@ -36,21 +32,28 @@ export const RegistrationAccordion = ({
   summary,
   onToggle,
 }: RegistrationAccordionProps) => {
+  const handleHeaderClick = () => {
+    // Only allow toggle when collapsed
+    if (!isExpanded && onToggle) {
+      onToggle();
+    }
+  };
+
   return (
     <Collapsible
       open={isExpanded}
-      onOpenChange={onToggle}
       className="border border-zinc-800 rounded-lg overflow-hidden bg-zinc-900/50"
     >
-      <CollapsibleTrigger asChild>
-        <div
-          className={`p-4 cursor-pointer transition-colors ${
-            isExpanded ? 'bg-zinc-800/50' : 'hover:bg-zinc-800/30'
-          }`}
-        >
-          <h3 className="text-lg font-light text-zinc-100">{title}</h3>
-        </div>
-      </CollapsibleTrigger>
+      <div
+        className={`p-4 transition-colors ${
+          isExpanded ? 'bg-zinc-800/50' : 'cursor-pointer hover:bg-zinc-800/30'
+        }`}
+        onClick={handleHeaderClick}
+        role="button"
+        tabIndex={isExpanded ? -1 : 0}
+      >
+        <h3 className="text-lg font-light text-zinc-100">{title}</h3>
+      </div>
 
       {/* Collapsed state summary */}
       {!isExpanded && summary && (

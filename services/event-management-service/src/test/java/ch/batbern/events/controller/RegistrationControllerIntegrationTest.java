@@ -6,7 +6,8 @@ import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
-import ch.batbern.events.dto.UserProfileDTO;
+import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
+import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -64,7 +65,8 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     private UserApiClient userApiClient;
 
     private Event testEvent;
-    private UserProfileDTO mockUserProfile;
+    private UserResponse mockUserProfile;
+    private GetOrCreateUserResponse mockCreateResponse;
 
     @BeforeEach
     void setUp() {
@@ -90,15 +92,19 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
         testEvent = eventRepository.save(testEvent);
 
         // Mock UserApiClient response (simulates User Management Service)
-        mockUserProfile = UserProfileDTO.builder()
-                .username("john.doe")
+        mockUserProfile = new UserResponse()
+                .id("john.doe")
                 .firstName("John")
                 .lastName("Doe")
                 .email("john.doe@example.com")
-                .companyId("Test Company")
-                .build();
+                .companyId("Test Company");
 
-        when(userApiClient.getOrCreateUser(any())).thenReturn(mockUserProfile);
+        mockCreateResponse = new GetOrCreateUserResponse()
+                .username("john.doe")
+                .created(true)
+                .user(mockUserProfile);
+
+        when(userApiClient.getOrCreateUser(any())).thenReturn(mockCreateResponse);
 
         // Dynamic mock for getUserByUsername - handles any username
         when(userApiClient.getUserByUsername(any(String.class)))
@@ -108,13 +114,13 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
                     String firstName = parts.length > 0 ? capitalize(parts[0]) : "Test";
                     String lastName = parts.length > 1 ? capitalize(parts[1]) : "User";
 
-                    return UserProfileDTO.builder()
-                            .username(username)
+                    return new UserResponse()
+                            .id(username)
                             .firstName(firstName)
                             .lastName(lastName)
                             .email(username + "@example.com")
                             .companyId("Test Company")
-                            .build();
+                            ;
                 });
     }
 
@@ -225,14 +231,19 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
         String registrationCode1 = objectMapper.readTree(response1).get("registrationCode").asText();
 
         // Create second registration with different email
-        UserProfileDTO janeProfile = mockUserProfile.toBuilder()
-                .username("jane.smith")
+        UserResponse janeProfile = new UserResponse()
+                .id("jane.smith")
                 .firstName("Jane")
                 .lastName("Smith")
                 .email("jane.smith@example.com")
-                .build();
+                .companyId("Test Company");
 
-        when(userApiClient.getOrCreateUser(any())).thenReturn(janeProfile);
+        GetOrCreateUserResponse janeCreateResponse = new GetOrCreateUserResponse()
+                .username("jane.smith")
+                .created(true)
+                .user(janeProfile);
+
+        when(userApiClient.getOrCreateUser(any())).thenReturn(janeCreateResponse);
         when(userApiClient.getUserByUsername("jane.smith")).thenReturn(janeProfile);
 
         String requestJson2 = """
@@ -382,7 +393,7 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     @DisplayName("QA Fix (VALID-001): should_return500_when_duplicateRegistrationAttempted")
     void should_return500_when_duplicateRegistrationAttempted() throws Exception {
         // Given: A user who already has a registration for this event
-        when(userApiClient.getOrCreateUser(any())).thenReturn(mockUserProfile);
+        when(userApiClient.getOrCreateUser(any())).thenReturn(mockCreateResponse);
         when(userApiClient.getUserByUsername("john.doe")).thenReturn(mockUserProfile);
 
         String registrationRequest = """

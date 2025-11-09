@@ -118,6 +118,12 @@ public class SecurityConfig {
                         // Story 1.15a.1b: Public speaker list endpoint (GET only, POST/DELETE require ORGANIZER)
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*/speakers").permitAll()
 
+                        // Story 4.1.5: Public registration endpoints
+                        // (no auth required - anonymous registration per ADR-005)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/events/*/registrations/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/events/*/registrations/*/qr").permitAll()
+
                         // All other requests require authentication
                         .anyRequest().authenticated()
                 )

@@ -3,10 +3,10 @@ package ch.batbern.events.service;
 import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
-import ch.batbern.events.dto.CreateRegistrationRequest;
-import ch.batbern.events.dto.GetOrCreateUserRequest;
+import ch.batbern.events.dto.generated.CreateRegistrationRequest;
+import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
+import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
 import ch.batbern.events.dto.RegistrationResponse;
-import ch.batbern.events.dto.UserProfileDTO;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import lombok.RequiredArgsConstructor;
@@ -68,25 +68,25 @@ public class RegistrationService {
         log.debug("Found event: {} (ID: {})", eventCode, event.getId());
 
         // 2. Get or create user via User Management Service API (ADR-005: anonymous user)
-        GetOrCreateUserRequest userRequest = GetOrCreateUserRequest.builder()
-                .firstName(request.getAttendeeFirstName())
-                .lastName(request.getAttendeeLastName())
-                .email(request.getAttendeeEmail())
-                .cognitoSync(false) // ADR-005: Create anonymous user (cognito_id = NULL)
-                .build();
+        GetOrCreateUserRequest userRequest = new GetOrCreateUserRequest();
+        userRequest.setFirstName(request.getFirstName());
+        userRequest.setLastName(request.getLastName());
+        userRequest.setEmail(request.getEmail());
+        userRequest.setCognitoSync(false); // ADR-005: Create anonymous user (cognito_id = NULL)
 
-        UserProfileDTO userProfile = userApiClient.getOrCreateUser(userRequest);
-        log.info("Got/created user profile for email: {}, username: {}",
-                request.getAttendeeEmail(), userProfile.getUsername());
+        GetOrCreateUserResponse userResponse = userApiClient.getOrCreateUser(userRequest);
+        String username = userResponse.getUsername();
+        log.info("Got/created user profile for email: {}, username: {}, created: {}",
+                request.getEmail(), username, userResponse.getCreated());
 
         // QA Fix (VALID-001): Check for duplicate registration (same event + attendee)
         boolean alreadyRegistered = registrationRepository.existsByEventIdAndAttendeeUsername(
-                event.getId(), userProfile.getUsername());
+                event.getId(), username);
         if (alreadyRegistered) {
             log.warn("Duplicate registration attempt for event: {} by user: {}",
-                    eventCode, userProfile.getUsername());
+                    eventCode, username);
             throw new IllegalStateException(
-                    "User " + userProfile.getUsername() + " is already registered for event " + eventCode);
+                    "User " + username + " is already registered for event " + eventCode);
         }
 
         // 3. Generate unique registration code (ADR-003: Meaningful Identifiers)
@@ -94,27 +94,28 @@ public class RegistrationService {
         log.debug("Generated registration code: {}", registrationCode);
 
         // 4. Create and save registration (ADR-004: No denormalized user data)
+        // Story 4.1.5: Status defaults to "CONFIRMED", registrationDate is now (Instant.now())
         Registration registration = Registration.builder()
                 .registrationCode(registrationCode)
                 .eventId(event.getId())
                 .eventCode(eventCode) // Transient field for API responses
-                .attendeeUsername(userProfile.getUsername()) // Cross-service reference
-                .status(request.getStatus())
-                .registrationDate(Instant.parse(request.getRegistrationDate()))
+                .attendeeUsername(username) // Cross-service reference
+                .status("CONFIRMED") // Default status for anonymous registrations
+                .registrationDate(Instant.now()) // Auto-set registration timestamp
                 .build();
 
         Registration saved = registrationRepository.save(registration);
         log.info("Created registration: {} for user: {} at event: {}",
-                registrationCode, userProfile.getUsername(), eventCode);
+                registrationCode, username, eventCode);
 
         // Story 2.2a Task B12: Send async registration confirmation email
         registrationEmailService.sendRegistrationConfirmation(
                 saved,
-                userProfile,
+                userResponse.getUser(),
                 event,
                 java.util.Locale.GERMAN // Default to German for BATbern events
         );
-        log.debug("Queued registration confirmation email for: {}", userProfile.getEmail());
+        log.debug("Queued registration confirmation email for: {}", userResponse.getUser().getEmail());
 
         return saved;
     }
@@ -136,8 +137,8 @@ public class RegistrationService {
         log.debug("Enriching registration: {} with user data", registration.getRegistrationCode());
 
         // Fetch user details from User Management Service (cached)
-        UserProfileDTO userProfile = userApiClient.getUserByUsername(registration.getAttendeeUsername());
-        log.debug("Enriched registration {} with user: {}", registration.getRegistrationCode(), userProfile.getUsername());
+        ch.batbern.events.dto.generated.users.UserResponse userProfile = userApiClient.getUserByUsername(registration.getAttendeeUsername());
+        log.debug("Enriched registration {} with user: {}", registration.getRegistrationCode(), userProfile.getId());
 
         return RegistrationResponse.builder()
                 // Registration fields
@@ -151,7 +152,7 @@ public class RegistrationService {
                 .updatedAt(registration.getUpdatedAt() != null
                         ? ISO_FORMATTER.format(registration.getUpdatedAt()) : null)
                 // Enriched user fields (ADR-004)
-                .attendeeUsername(userProfile.getUsername())
+                .attendeeUsername(userProfile.getId())
                 .attendeeFirstName(userProfile.getFirstName())
                 .attendeeLastName(userProfile.getLastName())
                 .attendeeEmail(userProfile.getEmail())

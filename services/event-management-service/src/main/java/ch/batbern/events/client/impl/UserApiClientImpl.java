@@ -1,8 +1,9 @@
 package ch.batbern.events.client.impl;
 
 import ch.batbern.events.client.UserApiClient;
-import ch.batbern.events.dto.GetOrCreateUserRequest;
-import ch.batbern.events.dto.UserProfileDTO;
+import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
+import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
+import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.exception.UserServiceException;
 import lombok.RequiredArgsConstructor;
@@ -55,7 +56,7 @@ public class UserApiClientImpl implements UserApiClient {
      */
     @Override
     @Cacheable(value = "userApiCache", key = "#username")
-    public UserProfileDTO getUserByUsername(String username) {
+    public UserResponse getUserByUsername(String username) {
         log.debug("Fetching user profile for username: {}", username);
 
         String url = userServiceBaseUrl + "/api/v1/users/" + username;
@@ -64,14 +65,14 @@ public class UserApiClientImpl implements UserApiClient {
             HttpHeaders headers = createHeadersWithJwtToken();
             HttpEntity<Void> request = new HttpEntity<>(headers);
 
-            ResponseEntity<UserProfileDTO> response = restTemplate.exchange(
+            ResponseEntity<UserResponse> response = restTemplate.exchange(
                     url,
                     HttpMethod.GET,
                     request,
-                    UserProfileDTO.class
+                    UserResponse.class
             );
 
-            UserProfileDTO user = response.getBody();
+            UserResponse user = response.getBody();
             log.debug("Successfully fetched user profile for username: {}", username);
             return user;
 
@@ -153,7 +154,7 @@ public class UserApiClientImpl implements UserApiClient {
      */
     @Override
     @Cacheable(value = "userApiCache", key = "#request.email")
-    public UserProfileDTO getOrCreateUser(GetOrCreateUserRequest request) {
+    public GetOrCreateUserResponse getOrCreateUser(GetOrCreateUserRequest request) {
         log.debug("Getting or creating user for email: {}", request.getEmail());
 
         String url = userServiceBaseUrl + "/api/v1/users/get-or-create";
@@ -162,17 +163,19 @@ public class UserApiClientImpl implements UserApiClient {
             HttpHeaders headers = createHeadersWithJwtToken();
             HttpEntity<GetOrCreateUserRequest> httpRequest = new HttpEntity<>(request, headers);
 
-            ResponseEntity<UserProfileDTO> response = restTemplate.exchange(
+            ResponseEntity<GetOrCreateUserResponse> response = restTemplate.exchange(
                     url,
                     HttpMethod.POST,
                     httpRequest,
-                    UserProfileDTO.class
+                    GetOrCreateUserResponse.class
             );
 
-            UserProfileDTO user = response.getBody();
-            log.info("Successfully got/created user profile for email: {}, username: {}",
-                    request.getEmail(), user != null ? user.getUsername() : "null");
-            return user;
+            GetOrCreateUserResponse result = response.getBody();
+            log.info("Successfully got/created user profile for email: {}, username: {}, created: {}",
+                    request.getEmail(),
+                    result != null ? result.getUsername() : "null",
+                    result != null ? result.getCreated() : "null");
+            return result;
 
         } catch (HttpClientErrorException e) {
             log.error("Client error getting/creating user for email {}: {} - {}",
