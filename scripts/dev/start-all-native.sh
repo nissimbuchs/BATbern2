@@ -40,12 +40,22 @@ ENV_FILE="${PROJECT_ROOT}/.env"
 BASE_PORT="${BASE_PORT:-8000}"  # Default to 8000 (instance 1)
 
 # Calculate instance identifier based on BASE_PORT
+# For standard ports (8000, 9000), use legacy instance numbers (1, 2)
+# For arbitrary ports, calculate a sequential instance number
 if [ "$BASE_PORT" -eq 8000 ]; then
     INSTANCE="1"
+    INSTANCE_NUM=1
 elif [ "$BASE_PORT" -eq 9000 ]; then
     INSTANCE="2"
+    INSTANCE_NUM=2
 else
+    # For arbitrary BASE_PORT values, use the port itself as instance identifier
     INSTANCE="$BASE_PORT"
+    # Calculate a small instance number for port offset calculations (max instance: 10)
+    INSTANCE_NUM=$(( ((BASE_PORT - 8000) / 500) % 10 + 1 ))
+    if [ $INSTANCE_NUM -lt 1 ]; then
+        INSTANCE_NUM=1
+    fi
 fi
 
 ENV_NATIVE_FILE="${PROJECT_ROOT}/.env.native.${INSTANCE}"
@@ -53,23 +63,41 @@ ENV_NATIVE_FILE="${PROJECT_ROOT}/.env.native.${INSTANCE}"
 # Calculate port offsets based on BASE_PORT
 # Instance 1 (BASE_PORT=8000): 8080-8085, frontend 3000
 # Instance 2 (BASE_PORT=9000): 9080-9085, frontend 4000
-PORT_OFFSET=$((BASE_PORT / 1000))  # 8000->8, 9000->9
-API_GATEWAY_PORT=$((PORT_OFFSET * 1000 + 80))
-COMPANY_USER_MGMT_PORT=$((PORT_OFFSET * 1000 + 81))
-EVENT_MGMT_PORT=$((PORT_OFFSET * 1000 + 82))
-SPEAKER_COORD_PORT=$((PORT_OFFSET * 1000 + 83))
-PARTNER_COORD_PORT=$((PORT_OFFSET * 1000 + 84))
-ATTENDEE_EXP_PORT=$((PORT_OFFSET * 1000 + 85))
+# Arbitrary (BASE_PORT=9500): 9500-9505, frontend calculated
+if [ "$BASE_PORT" -eq 8000 ] || [ "$BASE_PORT" -eq 9000 ]; then
+    # Legacy calculation for standard ports
+    PORT_OFFSET=$((BASE_PORT / 1000))  # 8000->8, 9000->9
+    API_GATEWAY_PORT=$((PORT_OFFSET * 1000 + 80))
+    COMPANY_USER_MGMT_PORT=$((PORT_OFFSET * 1000 + 81))
+    EVENT_MGMT_PORT=$((PORT_OFFSET * 1000 + 82))
+    SPEAKER_COORD_PORT=$((PORT_OFFSET * 1000 + 83))
+    PARTNER_COORD_PORT=$((PORT_OFFSET * 1000 + 84))
+    ATTENDEE_EXP_PORT=$((PORT_OFFSET * 1000 + 85))
+else
+    # Direct calculation for arbitrary BASE_PORT
+    API_GATEWAY_PORT=$BASE_PORT
+    COMPANY_USER_MGMT_PORT=$((BASE_PORT + 1))
+    EVENT_MGMT_PORT=$((BASE_PORT + 2))
+    SPEAKER_COORD_PORT=$((BASE_PORT + 3))
+    PARTNER_COORD_PORT=$((BASE_PORT + 4))
+    ATTENDEE_EXP_PORT=$((BASE_PORT + 5))
+fi
 
-# Frontend port calculation (3000 for instance 1, 4000 for instance 2)
-FRONTEND_PORT=$((3000 + (INSTANCE - 1) * 1000))
+# Frontend port calculation (3000 for instance 1, 4000 for instance 2, BASE_PORT+1000 for others)
+if [ "$BASE_PORT" -eq 8000 ] || [ "$BASE_PORT" -eq 9000 ]; then
+    FRONTEND_PORT=$((3000 + (INSTANCE_NUM - 1) * 1000))
+else
+    FRONTEND_PORT=$((BASE_PORT + 1000))
+fi
 
-# DB tunnel port (5432 for instance 1, 6432 for instance 2)
-DB_TUNNEL_PORT=$((5432 + (INSTANCE - 1) * 1000))
+# Shared infrastructure ports (all instances use the same DB tunnel and MinIO)
+# DB tunnel port - always 5432 (shared across all instances)
+DB_TUNNEL_PORT=5432
 
-# MinIO ports (9000-9001 for instance 1, 9100-9101 for instance 2)
-MINIO_API_PORT=$((9000 + (INSTANCE - 1) * 100))
-MINIO_CONSOLE_PORT=$((9001 + (INSTANCE - 1) * 100))
+# MinIO ports - always 8450/8451 (shared across all instances)
+# Using 8450/8451 to avoid conflicts with common application ports like 9000
+MINIO_API_PORT=8450
+MINIO_CONSOLE_PORT=8451
 
 # Banner
 echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
@@ -259,12 +287,13 @@ EOF
 
 # Check if DB tunnel is running
 check_db_tunnel() {
-    local pid_file="${PID_DIR}/batbern-${INSTANCE}-db-tunnel.pid"
-    local log_file="${LOG_DIR}/batbern-${INSTANCE}-db-tunnel.log"
+    # Shared DB tunnel - use "shared" prefix instead of instance-specific
+    local pid_file="${PID_DIR}/batbern-shared-db-tunnel.pid"
+    local log_file="${LOG_DIR}/batbern-shared-db-tunnel.log"
 
     echo -e "${CYAN}→ Checking database tunnel (port ${DB_TUNNEL_PORT})...${NC}"
 
-    # Check if instance-specific tunnel is already running
+    # Check if shared tunnel is already running
     if [ -f "$pid_file" ]; then
         local old_pid=$(cat "$pid_file")
         if ps -p $old_pid > /dev/null 2>&1; then
@@ -276,7 +305,7 @@ check_db_tunnel() {
         fi
     fi
 
-    echo -e "${YELLOW}  ⚠ Database tunnel not running for instance ${INSTANCE}${NC}"
+    echo -e "${YELLOW}  ⚠ Database tunnel not running (shared across all instances)${NC}"
     echo -e "${CYAN}  → Starting database tunnel on port ${DB_TUNNEL_PORT}...${NC}"
 
     DB_TUNNEL_PORT=${DB_TUNNEL_PORT} "${PROJECT_ROOT}/scripts/dev/start-db-tunnel.sh" > "$log_file" 2>&1 &
@@ -299,11 +328,12 @@ check_db_tunnel() {
 
 # Check if MinIO is running
 check_minio() {
-    local pid_file="${PID_DIR}/batbern-${INSTANCE}-minio.pid"
+    # Shared MinIO - use "shared" prefix instead of instance-specific
+    local pid_file="${PID_DIR}/batbern-shared-minio.pid"
 
     echo -e "${CYAN}→ Checking MinIO (local S3, ports ${MINIO_API_PORT}/${MINIO_CONSOLE_PORT})...${NC}"
 
-    # Check if instance-specific MinIO is already running
+    # Check if shared MinIO is already running
     if [ -f "$pid_file" ]; then
         local old_pid=$(cat "$pid_file")
         if ps -p $old_pid > /dev/null 2>&1; then
@@ -315,7 +345,7 @@ check_minio() {
         fi
     fi
 
-    echo -e "${YELLOW}  ⚠ MinIO not running for instance ${INSTANCE}${NC}"
+    echo -e "${YELLOW}  ⚠ MinIO not running (shared across all instances)${NC}"
     echo -e "${CYAN}  → Starting MinIO on ports ${MINIO_API_PORT}/${MINIO_CONSOLE_PORT}...${NC}"
 
     MINIO_API_PORT=${MINIO_API_PORT} MINIO_CONSOLE_PORT=${MINIO_CONSOLE_PORT} INSTANCE=${INSTANCE} "${PROJECT_ROOT}/scripts/dev/start-minio.sh"
