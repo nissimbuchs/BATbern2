@@ -294,6 +294,39 @@ class EventApiClient {
   }
 
   /**
+   * Get QR code for registration (PUBLIC ACCESS - Story 4.1.6)
+   *
+   * Generates QR code image for registration check-in.
+   * Returns a blob URL that can be used in <img src={url} />
+   *
+   * @param eventCode Event code identifier
+   * @param confirmationCode Registration confirmation code
+   * @param size QR code size in pixels (optional, default: 300)
+   * @returns Blob URL for QR code image
+   */
+  async getRegistrationQR(
+    eventCode: string,
+    confirmationCode: string,
+    size: number = 300
+  ): Promise<string> {
+    try {
+      const params = new URLSearchParams();
+      params.append('size', size.toString());
+
+      const response = await apiClient.get(
+        `${EVENT_API_PATH}/${eventCode}/registrations/${confirmationCode}/qr?${params.toString()}`,
+        {
+          responseType: 'blob',
+        }
+      );
+
+      return URL.createObjectURL(response.data);
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
    * Type guard for Axios errors
    */
   private isAxiosError(error: unknown): error is AxiosError {
