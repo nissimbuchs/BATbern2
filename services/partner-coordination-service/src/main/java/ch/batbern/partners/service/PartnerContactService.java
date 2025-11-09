@@ -80,7 +80,8 @@ public class PartnerContactService {
         PartnerContact contact = new PartnerContact();
         contact.setPartnerId(partner.getId());
         contact.setUsername(request.getUsername());
-        contact.setContactRole(ContactRole.valueOf(request.getContactRole().toString()));
+        // Convert from generated ContactRole (lowercase JSON) to domain ContactRole (uppercase enum)
+        contact.setContactRole(ContactRole.valueOf(request.getContactRole().name()));
         contact.setPrimary(request.getIsPrimary());
 
         contact = partnerContactRepository.save(contact);
@@ -124,8 +125,8 @@ public class PartnerContactService {
     private PartnerContactResponse enrichContactWithUserData(PartnerContact contact) {
         PartnerContactResponse response = new PartnerContactResponse();
         response.setUsername(contact.getUsername());
-        // Map domain ContactRole to generated ContactRole enum
-        response.setContactRole(ch.batbern.partners.dto.generated.ContactRole.valueOf(contact.getContactRole().toString()));
+        // Map domain ContactRole (uppercase) to generated ContactRole (serializes to lowercase JSON)
+        response.setContactRole(ch.batbern.partners.dto.generated.ContactRole.valueOf(contact.getContactRole().name()));
         response.setIsPrimary(contact.isPrimary());
 
         // Enrich with User Service data (using generated UserResponse from users-api.openapi.yml)

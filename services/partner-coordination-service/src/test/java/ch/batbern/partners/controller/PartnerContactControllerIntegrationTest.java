@@ -153,7 +153,7 @@ class PartnerContactControllerIntegrationTest extends AbstractIntegrationTest {
         // Given
         Map<String, Object> request = new HashMap<>();
         request.put("username", "bob.johnson");
-        request.put("contactRole", "TECHNICAL");
+        request.put("contactRole", "technical");
         request.put("isPrimary", true);
 
         // Mock User Service validation
@@ -182,7 +182,7 @@ class PartnerContactControllerIntegrationTest extends AbstractIntegrationTest {
         // Given
         Map<String, Object> request = new HashMap<>();
         request.put("username", "nonexistent.user");
-        request.put("contactRole", "PRIMARY");
+        request.put("contactRole", "primary");
         request.put("isPrimary", true);
 
         // Mock User Service 404 response
@@ -259,7 +259,7 @@ class PartnerContactControllerIntegrationTest extends AbstractIntegrationTest {
         // When - try to add same contact again
         Map<String, Object> request = new HashMap<>();
         request.put("username", "duplicate.user");
-        request.put("contactRole", "BILLING");
+        request.put("contactRole", "billing");
         request.put("isPrimary", false);
 
         // Then - should return 409 Conflict

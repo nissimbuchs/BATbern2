@@ -169,22 +169,325 @@ spring:
 
 - `GET /api/v1/partners` - List partners (with filtering)
 - `GET /api/v1/partners/{companyName}` - Get partner by company name
-- `PUT /api/v1/partners/{companyName}` - Update partnership details
+- `PATCH /api/v1/partners/{companyName}` - Update partnership details
+- `POST /api/v1/partners` - Create new partnership (organizer-only)
+- `DELETE /api/v1/partners/{companyName}` - Deactivate partnership (soft delete)
 
 ### Partner Contacts
 
-- `GET /api/v1/partners/{companyName}/contacts` - List contacts
+- `GET /api/v1/partners/{companyName}/contacts` - List contacts (HTTP enriched with User data)
 - `POST /api/v1/partners/{companyName}/contacts` - Add contact
 - `DELETE /api/v1/partners/{companyName}/contacts/{username}` - Remove contact
 
 ### Topic Voting
 
 - `GET /api/v1/partners/{companyName}/votes` - Get partner's votes
-- `POST /api/v1/partners/{companyName}/votes` - Vote on topic
+- `POST /api/v1/partners/{companyName}/votes` - Vote on topic (weighted by tier)
 - `GET /api/v1/partners/{companyName}/suggestions` - Get suggestions
 - `POST /api/v1/partners/{companyName}/suggestions` - Suggest topic
 
 **Full API specification**: `docs/api/partners-api.openapi.yml`
+
+---
+
+## API Usage Examples
+
+### ADR-003: Meaningful Identifiers
+
+All Partner APIs use **meaningful identifiers** (companyName, username) instead of UUIDs in URLs:
+
+```bash
+# ✅ Correct - using meaningful ID
+GET /api/v1/partners/GoogleZH
+
+# ❌ Wrong - using UUID
+GET /api/v1/partners/550e8400-e29b-41d4-a716-446655440000
+```
+
+### HTTP Enrichment Pattern (ADR-004)
+
+Partner responses can be enriched with related data via HTTP calls using the `?include` parameter:
+
+#### Example 1: Get Partner with Company Data
+
+```bash
+# Request
+GET /api/v1/partners/GoogleZH?include=company
+Authorization: Bearer {jwt-token}
+
+# Response (enriched via HTTP call to Company Service)
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "companyName": "GoogleZH",
+  "partnershipLevel": "gold",
+  "partnershipStartDate": "2024-01-01",
+  "partnershipEndDate": null,
+  "isActive": true,
+  "company": {
+    "companyName": "GoogleZH",
+    "displayName": "Google Zurich",
+    "logoUrl": "https://cdn.batbern.ch/logos/GoogleZH.png"
+  }
+}
+```
+
+**Implementation** (HTTP enrichment in service layer):
+
+```java
+@Service
+@RequiredArgsConstructor
+public class PartnerService {
+    private final PartnerRepository partnerRepository;
+    private final CompanyServiceClient companyServiceClient;  // HTTP client
+
+    public PartnerResponse getPartner(String companyName, Set<String> includes) {
+        Partner partner = partnerRepository.findByCompanyName(companyName)
+            .orElseThrow(() -> new NotFoundException("Partner not found"));
+
+        PartnerResponse response = mapToResponse(partner);
+
+        // HTTP enrichment per ADR-004
+        if (includes.contains("company")) {
+            CompanyResponse company = companyServiceClient.getCompany(companyName);
+            response.setCompany(company);  // Enrich response
+        }
+
+        return response;
+    }
+}
+```
+
+#### Example 2: List Partner Contacts with User Data
+
+```bash
+# Request
+GET /api/v1/partners/GoogleZH/contacts
+Authorization: Bearer {jwt-token}
+
+# Response (User data enriched via HTTP calls to User Service)
+[
+  {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "username": "john.doe",
+    "contactRole": "primary",
+    "isPrimary": true,
+    "email": "john.doe@google.com",        // From User Service
+    "firstName": "John",                    // From User Service
+    "lastName": "Doe",                      // From User Service
+    "profilePictureUrl": "https://..."      // From User Service
+  }
+]
+```
+
+**Implementation** (HTTP enrichment for each contact):
+
+```java
+@Service
+@RequiredArgsConstructor
+public class PartnerContactService {
+    private final PartnerContactRepository contactRepository;
+    private final UserServiceClient userServiceClient;  // HTTP client
+
+    public List<PartnerContactResponse> getPartnerContacts(String companyName) {
+        List<PartnerContact> contacts = contactRepository.findByPartner_CompanyName(companyName);
+
+        return contacts.stream()
+            .map(contact -> {
+                PartnerContactResponse response = mapToResponse(contact);
+
+                // HTTP enrichment: fetch User data per ADR-004
+                try {
+                    UserResponse user = userServiceClient.getUser(contact.getUsername());
+                    response.setEmail(user.getEmail());
+                    response.setFirstName(user.getFirstName());
+                    response.setLastName(user.getLastName());
+                    response.setProfilePictureUrl(user.getProfilePictureUrl());
+                } catch (UserNotFoundException e) {
+                    log.warn("User not found: {}", contact.getUsername());
+                }
+
+                return response;
+            })
+            .toList();
+    }
+}
+```
+
+#### Example 3: Add Partner Contact (Validates User via HTTP)
+
+```bash
+# Request
+POST /api/v1/partners/GoogleZH/contacts
+Authorization: Bearer {jwt-token}
+Content-Type: application/json
+
+{
+  "username": "jane.smith",
+  "contactRole": "billing",
+  "isPrimary": false
+}
+
+# Response (User data enriched)
+{
+  "id": "456e7890-e89b-12d3-a456-426614174111",
+  "username": "jane.smith",
+  "contactRole": "billing",
+  "isPrimary": false,
+  "email": "jane.smith@google.com",
+  "firstName": "Jane",
+  "lastName": "Smith",
+  "profilePictureUrl": "https://..."
+}
+```
+
+**Implementation** (HTTP validation before adding):
+
+```java
+public PartnerContactResponse addPartnerContact(String companyName, AddPartnerContactRequest request) {
+    // 1. Validate user exists via HTTP call to User Service
+    UserResponse user = userServiceClient.getUser(request.getUsername());
+    // Throws UserNotFoundException if user doesn't exist (HTTP 404 → API returns 404)
+
+    // 2. Create contact entity (stores username, NOT userId UUID)
+    Partner partner = partnerRepository.findByCompanyName(companyName)
+        .orElseThrow(() -> new NotFoundException("Partner not found"));
+
+    PartnerContact contact = PartnerContact.builder()
+        .partner(partner)
+        .username(request.getUsername())  // ✅ Meaningful ID (ADR-003)
+        .contactRole(request.getContactRole())
+        .isPrimary(request.getIsPrimary())
+        .build();
+
+    contactRepository.save(contact);
+
+    // 3. Return enriched response
+    PartnerContactResponse response = mapToResponse(contact);
+    response.setEmail(user.getEmail());
+    response.setFirstName(user.getFirstName());
+    response.setLastName(user.getLastName());
+    response.setProfilePictureUrl(user.getProfilePictureUrl());
+
+    return response;
+}
+```
+
+#### Example 4: Cast Vote with Weighted Influence
+
+```bash
+# Request
+POST /api/v1/partners/GoogleZH/votes
+Authorization: Bearer {jwt-token}
+Content-Type: application/json
+
+{
+  "topicId": "789e0123-e89b-12d3-a456-426614174222",
+  "voteValue": 5
+}
+
+# Response (vote weight calculated based on partnership tier)
+{
+  "topicId": "789e0123-e89b-12d3-a456-426614174222",
+  "voteValue": 5,
+  "voteWeight": 3,       // GOLD tier = 3x weight
+  "votedAt": "2024-12-15T10:30:00Z"
+}
+```
+
+**Implementation** (vote weight calculation):
+
+```java
+public TopicVote castVote(String companyName, UUID topicId, int voteValue) {
+    Partner partner = partnerRepository.findByCompanyName(companyName)
+        .orElseThrow(() -> new NotFoundException("Partner not found"));
+
+    // Calculate vote weight based on partnership tier
+    int voteWeight = calculateVoteWeight(partner.getPartnershipLevel());
+    // BRONZE=1, SILVER=2, GOLD=3, PLATINUM=4, STRATEGIC=5
+
+    TopicVote vote = TopicVote.builder()
+        .partner(partner)
+        .topicId(topicId)
+        .voteValue(voteValue)
+        .voteWeight(voteWeight)
+        .votedAt(Instant.now())
+        .build();
+
+    return voteRepository.save(vote);
+}
+
+private int calculateVoteWeight(PartnershipLevel level) {
+    return switch (level) {
+        case BRONZE -> 1;
+        case SILVER -> 2;
+        case GOLD -> 3;
+        case PLATINUM -> 4;
+        case STRATEGIC -> 5;
+    };
+}
+```
+
+### JWT Token Propagation
+
+All HTTP calls to external services propagate the JWT token from the request:
+
+```java
+@Service
+@RequiredArgsConstructor
+public class CompanyServiceClient {
+    private final RestTemplate restTemplate;
+
+    @Cacheable(value = "companies", key = "#companyName")
+    public CompanyResponse getCompany(String companyName) {
+        String url = companyServiceUrl + "/api/v1/companies/" + companyName;
+
+        // Propagate JWT token from SecurityContext
+        HttpHeaders headers = createHeadersWithJwtToken();
+        HttpEntity<?> entity = new HttpEntity<>(headers);
+
+        return restTemplate.exchange(url, HttpMethod.GET, entity, CompanyResponse.class)
+            .getBody();
+    }
+
+    private HttpHeaders createHeadersWithJwtToken() {
+        HttpHeaders headers = new HttpHeaders();
+
+        // Extract JWT from SecurityContext
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getCredentials() instanceof String token) {
+            headers.set("Authorization", "Bearer " + token);
+        }
+
+        return headers;
+    }
+}
+```
+
+### Caching HTTP Responses
+
+HTTP responses are cached to reduce latency and external service load:
+
+```java
+@Configuration
+@EnableCaching
+public class CacheConfig {
+
+    @Bean
+    public CacheManager cacheManager() {
+        return new CaffeineCacheManager("partners", "companies", "users");
+    }
+
+    @Bean
+    public Caffeine<Object, Object> caffeineConfig() {
+        return Caffeine.newBuilder()
+            .expireAfterWrite(10, TimeUnit.MINUTES)  // 10-minute TTL
+            .maximumSize(1000)
+            .recordStats();
+    }
+}
+```
+
+📖 See [Microservices HTTP Clients Guide](../../docs/guides/microservices-http-clients.md) for complete implementation details
 
 ---
 

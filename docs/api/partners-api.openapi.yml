@@ -192,6 +192,252 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /partners/{companyName}/contacts:
+    parameters:
+      - name: companyName
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 12
+        description: Company name (meaningful ID per ADR-003)
+
+    get:
+      tags: [Partner Contacts]
+      operationId: getPartnerContacts
+      summary: List partner contacts
+      description: |
+        Returns contacts enriched with User Service data (email, firstName, lastName, profilePictureUrl).
+        Per ADR-004: User data fetched via HTTP call to User Service.
+      responses:
+        '200':
+          description: List of partner contacts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PartnerContactResponse'
+        '404':
+          description: Partner not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags: [Partner Contacts]
+      operationId: addPartnerContact
+      summary: Add contact to partner
+      description: |
+        Validates user exists via User Service before adding.
+        Enforces uniqueness constraint (partner + username).
+        Business rule: At least one PRIMARY contact required.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddPartnerContactRequest'
+      responses:
+        '201':
+          description: Contact added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerContactResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Partner or user not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Contact already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /partners/{companyName}/contacts/{username}:
+    parameters:
+      - name: companyName
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 12
+        description: Company name (meaningful ID per ADR-003)
+      - name: username
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Username (meaningful ID per ADR-003)
+
+    delete:
+      tags: [Partner Contacts]
+      operationId: removePartnerContact
+      summary: Remove contact from partner
+      description: |
+        Business rule: Cannot remove last primary contact.
+      responses:
+        '204':
+          description: Contact removed
+        '400':
+          description: Cannot remove last primary contact
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Partner or contact not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /partners/{companyName}/votes:
+    parameters:
+      - name: companyName
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 12
+        description: Company name (meaningful ID per ADR-003)
+
+    get:
+      tags: [Topic Voting]
+      operationId: getPartnerVotes
+      summary: List partner votes
+      description: Get all votes cast by a partner on topics
+      responses:
+        '200':
+          description: List of votes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TopicVoteResponse'
+        '404':
+          description: Partner not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags: [Topic Voting]
+      operationId: castVote
+      summary: Cast vote on topic
+      description: |
+        Cast a vote on a topic with weighted influence based on partnership tier.
+        Vote weight: BRONZE=1, SILVER=2, GOLD=3, PLATINUM=4, STRATEGIC=5.
+        One vote per partner per topic.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CastVoteRequest'
+      responses:
+        '201':
+          description: Vote cast
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicVoteResponse'
+        '400':
+          description: Invalid vote value (must be 1-5)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Partner not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Partner already voted on this topic
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /partners/{companyName}/suggestions:
+    parameters:
+      - name: companyName
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 12
+        description: Company name (meaningful ID per ADR-003)
+
+    get:
+      tags: [Topic Voting]
+      operationId: getPartnerSuggestions
+      summary: List partner topic suggestions
+      description: Get all topic suggestions submitted by a partner
+      responses:
+        '200':
+          description: List of suggestions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TopicSuggestionResponse'
+        '404':
+          description: Partner not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags: [Topic Voting]
+      operationId: submitSuggestion
+      summary: Submit topic suggestion
+      description: |
+        Submit a new topic suggestion for consideration.
+        Initial status: SUBMITTED.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitSuggestionRequest'
+      responses:
+        '201':
+          description: Suggestion submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicSuggestionResponse'
+        '400':
+          description: Validation error (title/description too long)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Partner not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   schemas:
     PartnerResponse:
@@ -330,6 +576,113 @@ components:
           type: string
         logoUrl:
           type: string
+
+    AddPartnerContactRequest:
+      type: object
+      required:
+        - username
+        - contactRole
+        - isPrimary
+      properties:
+        username:
+          type: string
+          description: Username (meaningful ID per ADR-003)
+        contactRole:
+          $ref: '#/components/schemas/ContactRole'
+        isPrimary:
+          type: boolean
+          description: Whether this is a primary contact
+
+    CastVoteRequest:
+      type: object
+      required:
+        - topicId
+        - voteValue
+      properties:
+        topicId:
+          type: string
+          format: uuid
+          description: Topic ID from Event Management Service
+        voteValue:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Vote value (1=low interest, 5=high interest)
+
+    TopicVoteResponse:
+      type: object
+      required:
+        - topicId
+        - voteValue
+        - voteWeight
+        - votedAt
+      properties:
+        topicId:
+          type: string
+          format: uuid
+        voteValue:
+          type: integer
+          description: Vote value (1-5)
+        voteWeight:
+          type: integer
+          description: Weighted vote based on partnership tier
+        votedAt:
+          type: string
+          format: date-time
+
+    SubmitSuggestionRequest:
+      type: object
+      required:
+        - suggestedTopic
+        - description
+      properties:
+        suggestedTopic:
+          type: string
+          maxLength: 500
+          description: Suggested topic title
+        description:
+          type: string
+          maxLength: 2000
+          description: Detailed description of the topic
+        businessJustification:
+          type: string
+          maxLength: 1000
+          description: Business rationale for the suggestion
+
+    TopicSuggestionResponse:
+      type: object
+      required:
+        - suggestedTopic
+        - description
+        - status
+        - suggestedAt
+      properties:
+        suggestedTopic:
+          type: string
+        description:
+          type: string
+        businessJustification:
+          type: string
+        status:
+          $ref: '#/components/schemas/SuggestionStatus'
+        suggestedAt:
+          type: string
+          format: date-time
+        reviewedAt:
+          type: string
+          format: date-time
+        reviewedBy:
+          type: string
+          format: uuid
+
+    SuggestionStatus:
+      type: string
+      enum:
+        - submitted
+        - under_review
+        - accepted
+        - rejected
+        - implemented
 
     # Shared-kernel types (imported, not generated)
     ErrorResponse:
