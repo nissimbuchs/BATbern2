@@ -29,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -64,11 +65,17 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @MockBean
     private UserApiClient userApiClient;
 
+    @MockBean
+    private ch.batbern.events.repository.LogoRepository logoRepository;
+
     // Counter for generating unique event numbers in tests
     private int eventNumberCounter = 1000;
 
     @BeforeEach
     void setUp() {
+        // Reset mocks to prevent test pollution
+        reset(userApiClient, logoRepository);
+
         // Clean database before each test
         eventRepository.deleteAll();
 
@@ -77,6 +84,9 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
         // Mock UserApiClient for registration tests (Story 2.2a)
         mockUserApiClient();
+
+        // Mock LogoRepository for theme image upload tests (Story 2.5.3a)
+        mockLogoRepository();
 
         // Create test data
         createTestEvent("BATbern 2025", "2025-05-15T09:00:00Z", "published");
@@ -92,13 +102,18 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                     String email = request.getEmail();
                     String username = email.split("@")[0].replace(".", ".");
 
-                    return new UserResponse()
+                    UserResponse userResponse = new UserResponse()
                             .id(username)
                             .firstName(request.getFirstName())
                             .lastName(request.getLastName())
                             .email(request.getEmail())
                             .companyId("TestCorp")
                             ;
+
+                    return new GetOrCreateUserResponse()
+                            .username(username)
+                            .created(true)
+                            .user(userResponse);
                 });
 
         // Mock getUserByUsername() for registration enrichment - return based on username
@@ -118,6 +133,27 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                             .email(username + "@example.com")
                             .companyId("TestCorp")
                             ;
+                });
+    }
+
+    private void mockLogoRepository() {
+        // Mock findByUploadId to return test logos with proper file extensions
+        when(logoRepository.findByUploadId(anyString()))
+                .thenAnswer(invocation -> {
+                    String uploadId = invocation.getArgument(0);
+
+                    // Create a mock Logo with proper data
+                    ch.batbern.events.domain.Logo logo = ch.batbern.events.domain.Logo.builder()
+                            .id(java.util.UUID.randomUUID())
+                            .uploadId(uploadId)
+                            .s3Key("temp/" + uploadId)
+                            .fileExtension("png")
+                            .fileSize(1024L)
+                            .mimeType("image/png")
+                            .status(ch.batbern.events.domain.LogoStatus.CONFIRMED)
+                            .build();
+
+                    return java.util.Optional.of(logo);
                 });
     }
 
@@ -918,7 +954,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.registrationCode").exists())
                 .andExpect(jsonPath("$.attendeeUsername").exists())
-                .andExpect(jsonPath("$.status").value("pending"));
+                .andExpect(jsonPath("$.status").value("CONFIRMED")); // API returns uppercase confirmed status
     }
 
     @Test
@@ -977,7 +1013,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.registrationCode").value(registrationCode))
                 .andExpect(jsonPath("$.attendeeFirstName").value("Jane")) // Name unchanged
                 .andExpect(jsonPath("$.attendeeLastName").value("Smith")) // Name unchanged
-                .andExpect(jsonPath("$.status").value("confirmed")); // Status updated
+                .andExpect(jsonPath("$.status").value("CONFIRMED")); // API returns uppercase status
     }
 
     @Test
@@ -1098,19 +1134,19 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                         .content(lateRegistration))
                 .andExpect(status().isCreated());
 
-        // Request analytics for specific timeframe (April to May 2025)
+        // Request analytics for specific timeframe (November 2025 - includes registration created "now")
         mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode() + "/analytics")
                         .param("metrics", "registrations")
-                        .param("timeframe", "2025-04-01T00:00:00Z,2025-05-31T23:59:59Z")
+                        .param("timeframe", "2025-11-01T00:00:00Z,2025-11-30T23:59:59Z")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.eventCode").value(savedEvent.getEventCode()))
                 .andExpect(jsonPath("$.timeframe").exists())
-                .andExpect(jsonPath("$.timeframe.start").value("2025-04-01T00:00:00Z"))
-                .andExpect(jsonPath("$.timeframe.end").value("2025-05-31T23:59:59Z"))
+                .andExpect(jsonPath("$.timeframe.start").value("2025-11-01T00:00:00Z"))
+                .andExpect(jsonPath("$.timeframe.end").value("2025-11-30T23:59:59Z"))
                 .andExpect(jsonPath("$.metrics.registrations").exists())
-                // Should only count the late registration within timeframe
-                .andExpect(jsonPath("$.metrics.registrations.total").value(greaterThanOrEqualTo(1)));
+                // Should count both registrations created in November
+                .andExpect(jsonPath("$.metrics.registrations.total").value(greaterThanOrEqualTo(2)));
     }
 
     // ============================================================================

@@ -134,7 +134,7 @@ public class AnonymousRegistrationE2ETest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.attendeeFirstName").value("Alice"))
                 .andExpect(jsonPath("$.attendeeLastName").value("Wonderland"))
                 .andExpect(jsonPath("$.attendeeEmail").value("alice.wonderland@example.com"))
-                .andExpect(jsonPath("$.status").value("confirmed"))
+                .andExpect(jsonPath("$.status").value("CONFIRMED")) // API returns uppercase status
                 .andReturn();
 
         String createResponse = createResult.getResponse().getContentAsString();
@@ -171,7 +171,7 @@ public class AnonymousRegistrationE2ETest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.attendeeFirstName").value("Alice"))
                 .andExpect(jsonPath("$.attendeeLastName").value("Wonderland"))
                 .andExpect(jsonPath("$.attendeeEmail").value("alice.wonderland@example.com"))
-                .andExpect(jsonPath("$.status").value("confirmed"))
+                .andExpect(jsonPath("$.status").value("CONFIRMED")) // API returns uppercase status
                 .andExpect(jsonPath("$.registrationDate").exists())
                 .andExpect(jsonPath("$.createdAt").exists())
                 .andExpect(jsonPath("$.updatedAt").exists());

@@ -144,7 +144,7 @@ public class RegistrationService {
                 // Registration fields
                 .registrationCode(registration.getRegistrationCode())
                 .eventCode(registration.getEventCode()) // Transient field populated by controller
-                .status(registration.getStatus())
+                .status(registration.getStatus() != null ? registration.getStatus().toUpperCase() : null)
                 .registrationDate(registration.getRegistrationDate() != null
                         ? ISO_FORMATTER.format(registration.getRegistrationDate()) : null)
                 .createdAt(registration.getCreatedAt() != null
