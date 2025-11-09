@@ -12,8 +12,8 @@ import software.amazon.awssdk.services.ses.SesClient;
 /**
  * AWS SES configuration for sending transactional emails.
  *
- * In production/staging: Uses AWS IAM roles
- * In local development: Uses LocalStack or disabled
+ * Production/Staging/Local: Uses real AWS SES (sandbox mode in dev)
+ * Test: Uses mock SES client
  *
  * Story 2.2a Task B12: Email service infrastructure
  */
@@ -24,14 +24,22 @@ public class AwsSesConfig {
     @Value("${aws.region:eu-central-1}")
     private String awsRegion;
 
+    @Value("${aws.profile:#{null}}")
+    private String awsProfile;
+
     /**
-     * AWS SES Client for production and staging environments.
-     * Uses IAM roles for authentication.
+     * AWS SES Client for production, staging, and local development.
+     * Local development uses AWS dev account in sandbox mode.
+     * Uses DefaultCredentialsProvider which supports:
+     * - IAM roles (production/staging ECS tasks)
+     * - Named profiles (local development)
+     * - Environment variables
      */
     @Bean
-    @Profile({"!local & !test"})
+    @Profile("!test")
     public SesClient sesClient() {
-        log.info("Initializing AWS SES client for region: {}", awsRegion);
+        log.info("Initializing AWS SES client for region: {}, profile: {}",
+                awsRegion, awsProfile != null ? awsProfile : "default");
 
         return SesClient.builder()
                 .region(Region.of(awsRegion))
@@ -40,15 +48,14 @@ public class AwsSesConfig {
     }
 
     /**
-     * Mock SES Client for local development and testing.
-     * Prevents actual email sending in non-production environments.
+     * Mock SES Client for test environment only.
+     * Returns null and EmailService handles it gracefully by logging instead of sending.
      */
     @Bean
-    @Profile({"local | test"})
-    public SesClient mockSesClient() {
-        log.info("Using mock SES client for local/test environment");
-
-        // In local/test, we return null and handle gracefully in EmailService
+    @Profile("test")
+    public SesClient testSesClient() {
+        log.info("Using mock SES client for test environment");
+        // Return null - EmailService checks for null and logs instead of sending
         return null;
     }
 }
