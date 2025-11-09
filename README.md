@@ -37,6 +37,9 @@ Enterprise event management platform for Berner Architekten Treffen (BATbern) co
 git clone https://github.com/nisimbuchs/BATbern2.git
 cd BATbern
 
+# Install git hooks (pre-commit, pre-push)
+./.githooks/install-hooks.sh
+
 # Generate environment configuration from AWS
 ./scripts/config/sync-backend-config.sh development
 
