@@ -37,10 +37,28 @@ public class SecurityConfig {
     private String jwkSetUri;
 
     /**
+     * Local development security filter chain
+     * Permits all requests for service-to-service communication without authentication
+     */
+    @Bean
+    @Profile("local")
+    public SecurityFilterChain localFilterChain(HttpSecurity http) throws Exception {
+        http
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(session ->
+                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(authz -> authz
+                .anyRequest().permitAll() // Allow all requests in local development
+            );
+
+        return http.build();
+    }
+
+    /**
      * Production security filter chain with JWT authentication
      */
     @Bean
-    @Profile("!test")
+    @Profile("!test & !local")
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable()) // Disable for stateless API

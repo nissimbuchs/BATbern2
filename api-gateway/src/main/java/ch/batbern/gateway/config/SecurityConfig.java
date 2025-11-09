@@ -34,9 +34,11 @@ public class SecurityConfig {
             new org.springframework.web.cors.CorsConfiguration();
 
         // Allow specific origins
-        configuration.setAllowedOrigins(java.util.Arrays.asList(
-            "http://localhost:3000",
-            "http://localhost:3001",
+        // For development: Allow any localhost port (multi-instance support)
+        // For production: Only allow specific domains
+        configuration.setAllowedOriginPatterns(java.util.Arrays.asList(
+            "http://localhost:*",      // Development: any port (e.g., 3000, 4000, 8600)
+            "http://127.0.0.1:*",      // Development: any port on 127.0.0.1
             "https://staging.batbern.ch",
             "https://www.batbern.ch"
         ));

@@ -249,6 +249,7 @@ AWS_S3_BUCKET_NAME=batbern-development-company-logos
 # Frontend Configuration (Instance ${INSTANCE})
 # ==============================================
 VITE_API_BASE_URL=http://localhost:${API_GATEWAY_PORT}
+VITE_API_PORT=${API_GATEWAY_PORT}
 VITE_PORT=${FRONTEND_PORT}
 EOF
 

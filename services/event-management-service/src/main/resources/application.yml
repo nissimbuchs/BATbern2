@@ -96,8 +96,9 @@ spring:
       on-profile: local
 
 # Local development uses localhost for user service
+# Supports multi-instance development via COMPANY_USER_MANAGEMENT_SERVICE_URL env var
 user-service:
-  base-url: http://localhost:8081
+  base-url: ${COMPANY_USER_MANAGEMENT_SERVICE_URL:http://localhost:8081}
 
 aws:
   s3:
