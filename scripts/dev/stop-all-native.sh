@@ -26,11 +26,14 @@ KEEP_TUNNEL=false
 BASE_PORT="${BASE_PORT:-8000}"  # Default to 8000 (instance 1)
 
 # Calculate instance identifier based on BASE_PORT
+# For standard ports (8000, 9000), use legacy instance numbers (1, 2)
+# For arbitrary ports, use the port itself as instance identifier
 if [ "$BASE_PORT" -eq 8000 ]; then
     INSTANCE="1"
 elif [ "$BASE_PORT" -eq 9000 ]; then
     INSTANCE="2"
 else
+    # For arbitrary BASE_PORT values, use the port itself as instance identifier
     INSTANCE="$BASE_PORT"
 fi
 
@@ -59,7 +62,13 @@ echo ""
 # Stop a service gracefully
 stop_service() {
     local service_name=$1
-    local pid_file="${PID_DIR}/batbern-${INSTANCE}-${service_name}.pid"
+
+    # Shared services (minio, db-tunnel) use "shared" prefix instead of instance number
+    if [ "$service_name" = "minio" ] || [ "$service_name" = "db-tunnel" ]; then
+        local pid_file="${PID_DIR}/batbern-shared-${service_name}.pid"
+    else
+        local pid_file="${PID_DIR}/batbern-${INSTANCE}-${service_name}.pid"
+    fi
 
     if [ ! -f "$pid_file" ]; then
         echo -e "${YELLOW}  ⚠ ${service_name}: No PID file found${NC}"
