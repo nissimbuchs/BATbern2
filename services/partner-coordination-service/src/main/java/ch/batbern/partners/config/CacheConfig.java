@@ -16,8 +16,8 @@ import java.util.concurrent.TimeUnit;
  *
  * Cache Strategy:
  * - partners: 10min TTL for partner lookups
- * - companies: 15min TTL for Company Service HTTP responses
- * - users: 15min TTL for User Service HTTP responses
+ * - companies: 10min TTL for Company Service HTTP responses
+ * - users: 10min TTL for User Service HTTP responses
  */
 @Configuration
 @EnableCaching

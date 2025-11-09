@@ -11,6 +11,7 @@ import ch.batbern.partners.exception.CompanyNotFoundException;
 import ch.batbern.partners.exception.PartnerAlreadyExistsException;
 import ch.batbern.partners.exception.PartnerNotFoundException;
 import ch.batbern.partners.repository.PartnerRepository;
+import ch.batbern.partners.security.SecurityContextHelper;
 import ch.batbern.shared.events.DomainEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,6 +46,9 @@ class PartnerServiceTest {
     @Mock
     private DomainEventPublisher eventPublisher;
 
+    @Mock
+    private SecurityContextHelper securityContextHelper;
+
     @InjectMocks
     private PartnerService partnerService;
 
@@ -54,6 +58,9 @@ class PartnerServiceTest {
 
     @BeforeEach
     void setUp() {
+        // Mock securityContextHelper to return "test-user" for all tests (lenient to avoid unnecessary stubbing errors)
+        lenient().when(securityContextHelper.getCurrentUserIdOrSystem()).thenReturn("test-user");
+
         createPartnerRequest = new CreatePartnerRequest();
         createPartnerRequest.setCompanyName("GoogleZH");
         createPartnerRequest.setPartnershipLevel(ch.batbern.partners.dto.generated.PartnershipLevel.GOLD);

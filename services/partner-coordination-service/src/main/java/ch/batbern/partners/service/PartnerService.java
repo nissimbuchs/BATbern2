@@ -10,6 +10,7 @@ import ch.batbern.partners.events.PartnerUpdatedEvent;
 import ch.batbern.partners.exception.PartnerAlreadyExistsException;
 import ch.batbern.partners.exception.PartnerNotFoundException;
 import ch.batbern.partners.repository.PartnerRepository;
+import ch.batbern.partners.security.SecurityContextHelper;
 import ch.batbern.shared.events.DomainEventPublisher;
 import io.micrometer.core.annotation.Timed;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +42,7 @@ public class PartnerService {
     private final PartnerRepository partnerRepository;
     private final CompanyServiceClient companyServiceClient;
     private final DomainEventPublisher eventPublisher;
+    private final SecurityContextHelper securityContextHelper;
 
     /**
      * List all partners with optional filtering.
@@ -234,31 +236,35 @@ public class PartnerService {
     }
 
     private void publishPartnerCreatedEvent(Partner partner) {
+        String userId = securityContextHelper.getCurrentUserIdOrSystem();
+
         PartnerCreatedEvent event = new PartnerCreatedEvent(
                 partner.getId(),
                 partner.getCompanyName(),
                 partner.getPartnershipLevel().name(),
-                "system" // TODO: Get from SecurityContext
+                userId
         );
         event.setCorrelationId(UUID.randomUUID().toString());
         event.setCausationId(UUID.randomUUID().toString());
 
         eventPublisher.publish(event);
-        log.debug("Published PartnerCreatedEvent for partner: {}", partner.getId());
+        log.debug("Published PartnerCreatedEvent for partner: {} by user: {}", partner.getId(), userId);
     }
 
     private void publishPartnerUpdatedEvent(Partner partner) {
+        String userId = securityContextHelper.getCurrentUserIdOrSystem();
+
         PartnerUpdatedEvent event = new PartnerUpdatedEvent(
                 partner.getId(),
                 partner.getCompanyName(),
                 partner.getPartnershipLevel().name(),
                 partner.isActive(),
-                "system" // TODO: Get from SecurityContext
+                userId
         );
         event.setCorrelationId(UUID.randomUUID().toString());
         event.setCausationId(UUID.randomUUID().toString());
 
         eventPublisher.publish(event);
-        log.debug("Published PartnerUpdatedEvent for partner: {}", partner.getId());
+        log.debug("Published PartnerUpdatedEvent for partner: {} by user: {}", partner.getId(), userId);
     }
 }
