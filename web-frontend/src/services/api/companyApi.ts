@@ -223,3 +223,13 @@ class CompanyApiClient {
 
 // Export singleton instance
 export const companyApiClient = new CompanyApiClient();
+
+// Export convenience methods for direct use
+export const {
+  getCompanies,
+  getCompany,
+  searchCompanies,
+  createCompany,
+  updateCompany,
+  deleteCompany,
+} = companyApiClient;

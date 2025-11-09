@@ -58,7 +58,7 @@ test.describe('CORS Validation', () => {
       headers: {
         'X-Correlation-ID': 'test-' + Date.now(),
         'Accept-Language': 'de-CH',
-        'Accept': 'application/json',
+        Accept: 'application/json',
       },
     });
 
@@ -72,7 +72,7 @@ test.describe('CORS Validation', () => {
     const response = await page.request.fetch(`${apiBaseUrl}/api/v1/companies`, {
       method: 'OPTIONS',
       headers: {
-        'Origin': frontendOrigin,
+        Origin: frontendOrigin,
         'Access-Control-Request-Method': 'GET',
         'Access-Control-Request-Headers': 'authorization,x-correlation-id,accept-language',
       },
@@ -93,7 +93,10 @@ test.describe('CORS Validation', () => {
     expect(allowedHeaders).toContain('accept-language');
   });
 
-  test('should make successful authenticated request with all headers', async ({ page, context }) => {
+  test('should make successful authenticated request with all headers', async ({
+    page,
+    context,
+  }) => {
     // This test requires authentication setup
     // Skip if no auth token provided
     const authToken = process.env.E2E_AUTH_TOKEN;
@@ -106,10 +109,10 @@ test.describe('CORS Validation', () => {
 
     const response = await page.request.get(`${apiBaseUrl}/api/v1/companies?page=1&limit=5`, {
       headers: {
-        'Authorization': `Bearer ${authToken}`,
+        Authorization: `Bearer ${authToken}`,
         'X-Correlation-ID': 'test-' + Date.now(),
         'Accept-Language': 'de-CH',
-        'Accept': 'application/json',
+        Accept: 'application/json',
         'Content-Type': 'application/json',
       },
     });
@@ -155,9 +158,10 @@ test.describe('CORS Validation', () => {
     await page.waitForTimeout(1000);
 
     // Should not have CORS-related errors
-    const corsErrors = consoleErrors.filter(err =>
-      err.toLowerCase().includes('cors') ||
-      err.toLowerCase().includes('access-control-allow-origin')
+    const corsErrors = consoleErrors.filter(
+      (err) =>
+        err.toLowerCase().includes('cors') ||
+        err.toLowerCase().includes('access-control-allow-origin')
     );
 
     expect(corsErrors).toHaveLength(0);
@@ -183,17 +187,20 @@ test.describe('Header Propagation Validation', () => {
     await page.goto(process.env.E2E_BASE_URL || 'https://staging.batbern.ch');
 
     // Make API request with correlation ID
-    await page.evaluate(async ([url, corrId]) => {
-      try {
-        await fetch(url + '/health', {
-          headers: {
-            'X-Correlation-ID': corrId,
-          },
-        });
-      } catch (error) {
-        // Expected in some environments
-      }
-    }, [apiBaseUrl, correlationId] as const);
+    await page.evaluate(
+      async ([url, corrId]) => {
+        try {
+          await fetch(url + '/health', {
+            headers: {
+              'X-Correlation-ID': corrId,
+            },
+          });
+        } catch (error) {
+          // Expected in some environments
+        }
+      },
+      [apiBaseUrl, correlationId] as const
+    );
 
     // Wait for response
     await page.waitForTimeout(500);

@@ -40,17 +40,14 @@ test.describe('Companies API Integration', () => {
     test.skip(!authToken, 'Skipping authenticated tests - no auth token provided');
 
     test('should list companies with pagination', async ({ page }) => {
-      const response = await page.request.get(
-        `${apiBaseUrl}/api/v1/companies?page=1&limit=10`,
-        {
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'X-Correlation-ID': 'test-' + Date.now(),
-            'Accept-Language': 'de-CH',
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      const response = await page.request.get(`${apiBaseUrl}/api/v1/companies?page=1&limit=10`, {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          'X-Correlation-ID': 'test-' + Date.now(),
+          'Accept-Language': 'de-CH',
+          'Content-Type': 'application/json',
+        },
+      });
 
       expect(response.ok()).toBeTruthy();
 
@@ -75,7 +72,7 @@ test.describe('Companies API Integration', () => {
         `${apiBaseUrl}/api/v1/companies/search?query=test&limit=5`,
         {
           headers: {
-            'Authorization': `Bearer ${authToken}`,
+            Authorization: `Bearer ${authToken}`,
             'X-Correlation-ID': 'test-' + Date.now(),
             'Accept-Language': 'en-US',
           },
@@ -101,7 +98,7 @@ test.describe('Companies API Integration', () => {
 
       const response = await page.request.post(`${apiBaseUrl}/api/v1/companies`, {
         headers: {
-          'Authorization': `Bearer ${authToken}`,
+          Authorization: `Bearer ${authToken}`,
           'X-Correlation-ID': 'test-' + Date.now(),
           'Accept-Language': 'de-CH',
           'Content-Type': 'application/json',
@@ -131,20 +128,26 @@ test.describe('Companies API Integration', () => {
 
     test('should respect Accept-Language header', async ({ page }) => {
       // Make request with German language preference
-      const responseDe = await page.request.get(`${apiBaseUrl}/api/v1/companies/search?query=invalid`, {
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Accept-Language': 'de-CH',
-        },
-      });
+      const responseDe = await page.request.get(
+        `${apiBaseUrl}/api/v1/companies/search?query=invalid`,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            'Accept-Language': 'de-CH',
+          },
+        }
+      );
 
       // Make request with English language preference
-      const responseEn = await page.request.get(`${apiBaseUrl}/api/v1/companies/search?query=invalid`, {
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Accept-Language': 'en-US',
-        },
-      });
+      const responseEn = await page.request.get(
+        `${apiBaseUrl}/api/v1/companies/search?query=invalid`,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            'Accept-Language': 'en-US',
+          },
+        }
+      );
 
       // Both should succeed (or fail with same status code)
       expect(responseDe.status()).toBe(responseEn.status());
@@ -160,15 +163,12 @@ test.describe('Companies API Integration', () => {
     test('should return 404 for non-existent company', async ({ page }) => {
       const nonExistentId = '00000000-0000-0000-0000-000000000000';
 
-      const response = await page.request.get(
-        `${apiBaseUrl}/api/v1/companies/${nonExistentId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'X-Correlation-ID': 'test-' + Date.now(),
-          },
-        }
-      );
+      const response = await page.request.get(`${apiBaseUrl}/api/v1/companies/${nonExistentId}`, {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          'X-Correlation-ID': 'test-' + Date.now(),
+        },
+      });
 
       expect(response.status()).toBe(404);
     });
@@ -180,7 +180,7 @@ test.describe('Companies API Integration', () => {
 
       const response = await page.request.post(`${apiBaseUrl}/api/v1/companies`, {
         headers: {
-          'Authorization': `Bearer ${authToken}`,
+          Authorization: `Bearer ${authToken}`,
           'X-Correlation-ID': 'test-' + Date.now(),
           'Content-Type': 'application/json',
         },

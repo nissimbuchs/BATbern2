@@ -26,11 +26,7 @@ import {
   Box,
   Stack,
 } from '@mui/material';
-import {
-  Edit as EditIcon,
-  Event as EventIcon,
-  People as PeopleIcon,
-} from '@mui/icons-material';
+import { Edit as EditIcon, Event as EventIcon, People as PeopleIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';

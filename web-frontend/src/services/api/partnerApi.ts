@@ -11,7 +11,6 @@
  * - Story 2.8.3: Partner Create/Edit Modal (createPartner, updatePartner)
  */
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import apiClient from '@/services/api/apiClient';
 import type { components } from '@/types/generated/partner-api.types';
 
@@ -32,7 +31,7 @@ export type UpdateNoteRequest = components['schemas']['UpdateNoteRequest'];
 // API base path for partner endpoints
 // Note: apiClient baseURL is set from runtime config to 'http://localhost:8080/api/v1'
 // so we only need '/partners' (the /v1 prefix is already in the baseURL)
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 const PARTNER_API_PATH = '/partners';
 
 // Helper interfaces for filters and pagination
@@ -199,8 +198,9 @@ export const deletePartnerNote = async (_companyName: string, _noteId: string): 
  * @param request - CreatePartnerRequest payload
  * @returns Created PartnerResponse
  */
-export const createPartner = async (_request: CreatePartnerRequest): Promise<PartnerResponse> => {
-  throw new Error('Not implemented - Story 2.8.3');
+export const createPartner = async (request: CreatePartnerRequest): Promise<PartnerResponse> => {
+  const response = await apiClient.post<PartnerResponse>(PARTNER_API_PATH, request);
+  return response.data;
 };
 
 /**
@@ -211,8 +211,12 @@ export const createPartner = async (_request: CreatePartnerRequest): Promise<Par
  * @returns Updated PartnerResponse
  */
 export const updatePartner = async (
-  _companyName: string,
-  _request: UpdatePartnerRequest
+  companyName: string,
+  request: UpdatePartnerRequest
 ): Promise<PartnerResponse> => {
-  throw new Error('Not implemented - Story 2.8.3');
+  const response = await apiClient.patch<PartnerResponse>(
+    `${PARTNER_API_PATH}/${companyName}`,
+    request
+  );
+  return response.data;
 };

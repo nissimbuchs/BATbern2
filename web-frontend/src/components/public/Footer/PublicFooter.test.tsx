@@ -55,7 +55,9 @@ describe('PublicFooter', () => {
 
     // Copyright is now in the legal section with current year
     const currentYear = new Date().getFullYear();
-    expect(screen.getByText(new RegExp(`© ${currentYear} Berner Architekten Treffen`))).toBeInTheDocument();
+    expect(
+      screen.getByText(new RegExp(`© ${currentYear} Berner Architekten Treffen`))
+    ).toBeInTheDocument();
   });
 
   it('should have correct link hrefs', () => {
