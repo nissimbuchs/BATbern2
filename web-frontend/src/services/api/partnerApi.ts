@@ -9,15 +9,32 @@
  * CRITICAL: Path is '/partners' WITHOUT /api/v1 prefix (baseURL already includes it)
  */
 
-import apiClient from './apiClient';
+import apiClient from '@/services/api/apiClient';
+import type { components } from '@/types/generated/partner-api.types';
 
+// Type aliases for cleaner code
+export type PartnerResponse = components['schemas']['PartnerResponse'];
+export type PartnerListResponse = components['schemas']['PartnerListResponse'];
+export type PartnerStatistics = components['schemas']['PartnerStatistics'];
+export type PartnershipLevel = components['schemas']['PartnershipLevel'];
+export type TopicVoteResponse = components['schemas']['TopicVoteResponse'];
+export type MeetingResponse = components['schemas']['MeetingResponse'];
+export type ActivityResponse = components['schemas']['ActivityResponse'];
+export type NoteResponse = components['schemas']['NoteResponse'];
+export type CreatePartnerRequest = components['schemas']['CreatePartnerRequest'];
+export type UpdatePartnerRequest = components['schemas']['UpdatePartnerRequest'];
+export type CreateNoteRequest = components['schemas']['CreateNoteRequest'];
+export type UpdateNoteRequest = components['schemas']['UpdateNoteRequest'];
+
+// API base path for partner endpoints
 // CRITICAL: Use path WITHOUT /api/v1 prefix (already in baseURL)
+// Note: apiClient baseURL is set from runtime config to 'http://localhost:8080/api/v1'
+// so we only need '/partners' (the /v1 prefix is already in the baseURL)
 const PARTNER_API_PATH = '/partners';
 
-/**
- * Partnership tier levels (matches OpenAPI enum)
- */
-export type PartnershipLevel = 'bronze' | 'silver' | 'gold' | 'platinum' | 'strategic';
+// ============================================================================
+// Supporting types for Story 2.8.1 (Partner Directory)
+// ============================================================================
 
 /**
  * Filter parameters for partner list
@@ -43,65 +60,15 @@ export interface PartnerSort {
   sortOrder: 'asc' | 'desc';
 }
 
-/**
- * Partner response (will be replaced with generated types)
- * Temporary interface for initial implementation
- */
-export interface PartnerResponse {
-  id: string;
-  companyName: string;
-  partnershipLevel: PartnershipLevel;
-  partnershipStartDate: string;
-  partnershipEndDate?: string;
-  isActive: boolean;
-  company?: {
-    companyName: string;
-    displayName: string;
-    logoUrl?: string;
-    industry?: string;
-  };
-  contacts?: Array<{
-    id: string;
-    username: string;
-    contactRole: string;
-    isPrimary: boolean;
-    email?: string;
-    firstName?: string;
-    lastName?: string;
-    profilePictureUrl?: string;
-  }>;
-  lastEventName?: string;
-  votesCount?: number;
-  nextMeetingDate?: string;
-}
+// ============================================================================
+// Supporting types for Story 2.8.2 (Partner Detail View)
+// ============================================================================
 
 /**
- * Partner list response with pagination metadata
+ * Activity filter parameters
  */
-export interface PartnerListResponse {
-  data: PartnerResponse[];
-  metadata: {
-    page: number;
-    size: number;
-    totalElements: number;
-    totalPages: number;
-  };
-}
-
-/**
- * Partner statistics response (Epic 8 feature - placeholder)
- */
-export interface PartnerStatistics {
-  totalPartners: number;
-  activePartners: number;
-  engagedPercentage?: number; // Epic 8
-  tierDistribution: {
-    strategic: number;
-    platinum: number;
-    gold: number;
-    silver: number;
-    bronze: number;
-  };
+export interface ActivityFilters {
+  type?: 'vote' | 'meeting' | 'note' | 'partnership_change';
 }
 
 /**
@@ -158,4 +125,155 @@ export const listPartners = async (
 export const getPartnerStatistics = async (): Promise<PartnerStatistics> => {
   const response = await apiClient.get<PartnerStatistics>(`${PARTNER_API_PATH}/statistics`);
   return response.data;
+};
+
+// ============================================================================
+// Story 2.8.2: Partner Detail View APIs
+// ============================================================================
+
+/**
+ * Get partner detail by companyName with optional includes
+ * Story 2.8.2
+ * @param companyName - Company name (meaningful ID)
+ * @param include - Optional comma-separated includes (company,contacts,votes,meetings,activity)
+ * @returns PartnerResponse with enriched data
+ */
+export const getPartnerDetail = async (
+  companyName: string,
+  include?: string
+): Promise<PartnerResponse> => {
+  const params: Record<string, string> = {};
+  if (include) {
+    params.include = include;
+  }
+  const response = await apiClient.get(`${PARTNER_API_PATH}/${companyName}`, { params });
+  return response.data;
+};
+
+/**
+ * Get partner topic votes
+ * Story 2.8.2
+ * @param companyName - Company name (meaningful ID)
+ * @returns Array of TopicVoteResponse
+ */
+export const getPartnerVotes = async (companyName: string): Promise<TopicVoteResponse[]> => {
+  const response = await apiClient.get(`${PARTNER_API_PATH}/${companyName}/votes`);
+  return response.data;
+};
+
+/**
+ * Get partner meetings
+ * Story 2.8.2
+ * @param companyName - Company name (meaningful ID)
+ * @returns Array of MeetingResponse
+ */
+export const getPartnerMeetings = async (companyName: string): Promise<MeetingResponse[]> => {
+  const response = await apiClient.get(`${PARTNER_API_PATH}/${companyName}/meetings`);
+  return response.data;
+};
+
+/**
+ * Get partner activity timeline
+ * Story 2.8.2
+ * @param companyName - Company name (meaningful ID)
+ * @param filters - Optional activity filters (type)
+ * @returns Array of ActivityResponse
+ */
+export const getPartnerActivity = async (
+  companyName: string,
+  filters?: ActivityFilters
+): Promise<ActivityResponse[]> => {
+  const params: Record<string, string> = {};
+  if (filters?.type) {
+    params.filter = `type:${filters.type}`;
+  }
+  const response = await apiClient.get(`${PARTNER_API_PATH}/${companyName}/activity`, { params });
+  return response.data;
+};
+
+/**
+ * Get partner notes
+ * Story 2.8.2
+ * @param companyName - Company name (meaningful ID)
+ * @returns Array of NoteResponse
+ */
+export const getPartnerNotes = async (companyName: string): Promise<NoteResponse[]> => {
+  const response = await apiClient.get(`${PARTNER_API_PATH}/${companyName}/notes`);
+  return response.data;
+};
+
+/**
+ * Create a new partner note
+ * Story 2.8.2
+ * @param companyName - Company name (meaningful ID)
+ * @param note - CreateNoteRequest payload
+ * @returns Created NoteResponse
+ */
+export const createPartnerNote = async (
+  companyName: string,
+  note: CreateNoteRequest
+): Promise<NoteResponse> => {
+  const response = await apiClient.post(`${PARTNER_API_PATH}/${companyName}/notes`, note);
+  return response.data;
+};
+
+/**
+ * Update an existing partner note
+ * Story 2.8.2
+ * @param companyName - Company name (meaningful ID)
+ * @param noteId - Note ID to update
+ * @param note - UpdateNoteRequest payload
+ * @returns Updated NoteResponse
+ */
+export const updatePartnerNote = async (
+  companyName: string,
+  noteId: string,
+  note: UpdateNoteRequest
+): Promise<NoteResponse> => {
+  const response = await apiClient.patch(
+    `${PARTNER_API_PATH}/${companyName}/notes/${noteId}`,
+    note
+  );
+  return response.data;
+};
+
+/**
+ * Delete a partner note
+ * Story 2.8.2
+ * @param companyName - Company name (meaningful ID)
+ * @param noteId - Note ID to delete
+ * @returns void
+ */
+export const deletePartnerNote = async (companyName: string, noteId: string): Promise<void> => {
+  await apiClient.delete(`${PARTNER_API_PATH}/${companyName}/notes/${noteId}`);
+};
+
+// ============================================================================
+// Story 2.8.3: Partner Create/Edit Modal APIs
+// ============================================================================
+
+/**
+ * Create a new partnership
+ * Story 2.8.3
+ * @param _request - CreatePartnerRequest payload (unused - not yet implemented)
+ * @returns Created PartnerResponse
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const createPartner = async (_request: CreatePartnerRequest): Promise<PartnerResponse> => {
+  throw new Error('Not implemented - Story 2.8.3');
+};
+
+/**
+ * Update an existing partnership
+ * Story 2.8.3
+ * @param _companyName - Company name (meaningful ID) (unused - not yet implemented)
+ * @param _request - UpdatePartnerRequest payload (unused - not yet implemented)
+ * @returns Updated PartnerResponse
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const updatePartner = async (
+  _companyName: string,
+  _request: UpdatePartnerRequest
+): Promise<PartnerResponse> => {
+  throw new Error('Not implemented - Story 2.8.3');
 };
