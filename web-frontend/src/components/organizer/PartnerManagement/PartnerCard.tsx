@@ -36,20 +36,19 @@ interface PartnerCardProps {
   partner: PartnerResponse;
 }
 
-// Tier emoji mapping
+// Tier emoji mapping - UPPER_CASE per coding standards
 const TIER_EMOJIS: Record<string, string> = {
-  strategic: '🏆',
-  platinum: '💎',
-  gold: '🥇',
-  silver: '🥈',
-  bronze: '🥉',
+  STRATEGIC: '🏆',
+  PLATINUM: '💎',
+  GOLD: '🥇',
+  SILVER: '🥈',
+  BRONZE: '🥉',
 };
 
 const PartnerCardComponent: React.FC<PartnerCardProps> = ({ partner }) => {
-  const navigate = useNavigate();
   const { t } = useTranslation('partners');
+  const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
   // Intersection Observer for lazy loading
@@ -58,7 +57,7 @@ const PartnerCardComponent: React.FC<PartnerCardProps> = ({ partner }) => {
     if (
       typeof window === 'undefined' ||
       !('IntersectionObserver' in window) ||
-      process.env.NODE_ENV === 'test'
+      import.meta.env.MODE === 'test'
     ) {
       setIsVisible(true);
       return;
@@ -108,7 +107,7 @@ const PartnerCardComponent: React.FC<PartnerCardProps> = ({ partner }) => {
               sx={{ width: 60, height: 60 }}
               imgProps={{
                 loading: 'lazy',
-                onLoad: () => setImageLoaded(true),
+                // Image loaded callback removed (imageLoaded state unused)
               }}
             />
           ) : (
@@ -118,7 +117,7 @@ const PartnerCardComponent: React.FC<PartnerCardProps> = ({ partner }) => {
           )}
           <Box flexGrow={1}>
             <Chip
-              label={`${tierEmoji} ${partner.partnershipLevel}`}
+              label={`${tierEmoji} ${t(`tiers.${partner.partnershipLevel.toLowerCase()}`)}`}
               color="primary"
               size="small"
               sx={{ mb: 0.5 }}
@@ -139,25 +138,25 @@ const PartnerCardComponent: React.FC<PartnerCardProps> = ({ partner }) => {
           </Typography>
         )}
 
-        {/* Last Event */}
-        <Typography variant="body2" color="text.secondary" gutterBottom>
+        {/* TODO: Future feature - Last Event (requires backend implementation) */}
+        {/* <Typography variant="body2" color="text.secondary" gutterBottom>
           📊 Last Event: {partner.lastEventName || 'N/A'}
-        </Typography>
+        </Typography> */}
 
-        {/* Topic Votes */}
-        <Typography variant="body2" color="text.secondary" gutterBottom>
+        {/* TODO: Future feature - Topic Votes (requires backend implementation) */}
+        {/* <Typography variant="body2" color="text.secondary" gutterBottom>
           🗳️ Topic Votes: {partner.votesCount || 0} active
-        </Typography>
+        </Typography> */}
 
-        {/* Next Meeting */}
-        <Typography variant="body2" color="text.secondary" gutterBottom>
+        {/* TODO: Future feature - Next Meeting (requires backend implementation) */}
+        {/* <Typography variant="body2" color="text.secondary" gutterBottom>
           📅 Next Meeting: {partner.nextMeetingDate || 'Pending'}
-        </Typography>
+        </Typography> */}
 
         {/* Engagement Bar - Placeholder for Epic 8 */}
         <Box mt={2}>
           <Typography variant="caption" color="text.secondary">
-            Engagement: Coming Soon (Epic 8)
+            {t('card.engagement')}: {t('card.engagementComingSoon')}
           </Typography>
           <LinearProgress variant="determinate" value={0} sx={{ mt: 0.5 }} role="progressbar" />
         </Box>
@@ -165,13 +164,13 @@ const PartnerCardComponent: React.FC<PartnerCardProps> = ({ partner }) => {
 
       <CardActions>
         <Button size="small" onClick={handleViewDetails}>
-          View Details
+          {t('card.viewDetails')}
         </Button>
-        <Button size="small" disabled title="Coming Soon - Epic 8">
-          Send Email
+        <Button size="small" disabled title={t('card.comingSoon')}>
+          {t('card.sendEmail')}
         </Button>
-        <Button size="small" disabled title="Coming Soon - Epic 8">
-          Analytics
+        <Button size="small" disabled title={t('card.comingSoon')}>
+          {t('card.analytics')}
         </Button>
       </CardActions>
     </Card>

@@ -139,5 +139,50 @@
     "startDateRequired": "Startdatum ist erforderlich",
     "startDateFuture": "Startdatum darf nicht in der Zukunft liegen",
     "endDateBeforeStart": "Enddatum muss nach dem Startdatum liegen"
+  },
+  "detail": {
+    "header": {
+      "exportData": "Daten exportieren",
+      "scheduleMeeting": "Meeting planen",
+      "sendEmail": "E-Mail senden",
+      "comingSoon": "Kommt in Epic 8"
+    },
+    "quickStats": {
+      "partnerSince": "Partner seit",
+      "eventsAttended": "Teilgenommene Events",
+      "activeVotes": "Aktive Abstimmungen",
+      "votesSubtitle": "(Themen)",
+      "meetings": "Meetings",
+      "meetingsSubtitle": "(saisonal)",
+      "noEventsYet": "Noch keine Events",
+      "lastEvent": "letztes: {{event}}"
+    },
+    "activityTab": {
+      "title": "Aktivität",
+      "filterLabel": "Nach Aktivitätstyp filtern",
+      "noActivity": "Keine Aktivität anzuzeigen"
+    },
+    "meetingsTab": {
+      "title": "Meetings",
+      "addMeeting": "Meeting planen"
+    },
+    "notesTab": {
+      "title": "Notizen",
+      "addNote": "Notiz hinzufügen",
+      "titleLabel": "Titel",
+      "contentLabel": "Inhalt",
+      "htmlSupported": "HTML-Formatierung wird unterstützt",
+      "noNotes": "Noch keine Notizen"
+    },
+    "settingsTab": {
+      "title": "Einstellungen",
+      "activePartnership": "Aktive Partnerschaft",
+      "exportData": "Partnerdaten exportieren",
+      "deletePartner": "Partnerdaten löschen"
+    }
+  },
+  "comingSoon": {
+    "epic8": "Kommt bald - Epic 8",
+    "story283": "Kommt bald - Story 2.8.3"
   }
 }

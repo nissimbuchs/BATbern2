@@ -6,17 +6,8 @@
  */
 
 import React from 'react';
-import {
-  Box,
-  Grid,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  Chip,
-  Divider,
-  Stack,
-} from '@mui/material';
+import { Box, Card, CardContent, Typography, Button, Divider, Stack } from '@mui/material';
+import Grid from '@mui/material/Grid';
 import { CheckCircle, TrendingUp } from '@mui/icons-material';
 import { usePartnerDetailStore } from '@/stores/partnerDetailStore';
 import type { PartnerResponse } from '@/services/api/partnerApi';
@@ -55,16 +46,6 @@ const TIER_BENEFITS: Record<string, string[]> = {
   BRONZE: ['Event access'],
 };
 
-// Format date to "Month DD, YYYY" format
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-};
-
 // Format date to "Jan 1, 2024" format
 const formatShortDate = (dateString: string): string => {
   const date = new Date(dateString);
@@ -80,13 +61,14 @@ export const PartnerOverviewTab: React.FC<PartnerOverviewTabProps> = ({ partner 
 
   const tierEmoji = TIER_EMOJIS[partner.partnershipLevel] || '';
   const benefits = TIER_BENEFITS[partner.partnershipLevel] || [];
-  const previousTierEmoji = partner.previousTier ? TIER_EMOJIS[partner.previousTier] : '';
+  // TODO: previousTier requires backend implementation
+  // const previousTierEmoji = partner.previousTier ? TIER_EMOJIS[partner.previousTier] : '';
 
   return (
     <Box>
       <Grid container spacing={3}>
         {/* Partnership Details Panel */}
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -106,12 +88,15 @@ export const PartnerOverviewTab: React.FC<PartnerOverviewTabProps> = ({ partner 
 
                 <Box>
                   <Typography variant="body2" color="text.secondary">
-                    Tier Start Date
+                    Partnership Start Date
                   </Typography>
-                  <Typography variant="body1">{formatShortDate(partner.tierStartDate)}</Typography>
+                  <Typography variant="body1">
+                    {formatShortDate(partner.partnershipStartDate)}
+                  </Typography>
                 </Box>
 
-                {partner.previousTier && (
+                {/* TODO: Future feature - Previous Tier tracking (requires backend) */}
+                {/* {partner.previousTier && (
                   <Box>
                     <Typography variant="body2" color="text.secondary">
                       Previous Tier
@@ -120,7 +105,7 @@ export const PartnerOverviewTab: React.FC<PartnerOverviewTabProps> = ({ partner 
                       {previousTierEmoji} {partner.previousTier}
                     </Typography>
                   </Box>
-                )}
+                )} */}
 
                 <Box>
                   <Typography variant="body2" color="text.secondary" gutterBottom>
@@ -136,23 +121,7 @@ export const PartnerOverviewTab: React.FC<PartnerOverviewTabProps> = ({ partner 
                   </Stack>
                 </Box>
 
-                {partner.company && (
-                  <>
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        Swiss UID
-                      </Typography>
-                      <Typography variant="body1">{partner.company.swissUid}</Typography>
-                    </Box>
-
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        Tax Status
-                      </Typography>
-                      <Typography variant="body1">{partner.company.taxStatus}</Typography>
-                    </Box>
-                  </>
-                )}
+                {/* TODO: Future feature - Company details (swissUid, taxStatus) require backend */}
 
                 <Button variant="outlined" onClick={() => setShowEditModal(true)} fullWidth>
                   Change Tier
@@ -163,7 +132,7 @@ export const PartnerOverviewTab: React.FC<PartnerOverviewTabProps> = ({ partner 
         </Grid>
 
         {/* Engagement Metrics Panel */}
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -226,7 +195,7 @@ export const PartnerOverviewTab: React.FC<PartnerOverviewTabProps> = ({ partner 
         </Grid>
 
         {/* Recent Activity Panel */}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -234,98 +203,10 @@ export const PartnerOverviewTab: React.FC<PartnerOverviewTabProps> = ({ partner 
               </Typography>
               <Divider sx={{ mb: 2 }} />
 
-              <Grid container spacing={3}>
-                {/* Last Event */}
-                <Grid item xs={12} md={4}>
-                  <Box>
-                    <Typography variant="subtitle1" gutterBottom>
-                      Last Event
-                    </Typography>
-                    {partner.lastEvent ? (
-                      <Stack spacing={1}>
-                        <Typography variant="body1" fontWeight="bold">
-                          {partner.lastEvent.eventName}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {formatDate(partner.lastEvent.attendedAt)}
-                        </Typography>
-                        <Box>
-                          <Typography variant="body2" color="text.secondary">
-                            {partner.lastEvent.attendeeCount} attendees •{' '}
-                            {partner.lastEvent.registrationsCount} registrations •{' '}
-                            {partner.lastEvent.downloadsCount} downloads
-                          </Typography>
-                        </Box>
-                      </Stack>
-                    ) : (
-                      <Typography variant="body2" color="text.secondary">
-                        No recent event
-                      </Typography>
-                    )}
-                  </Box>
-                </Grid>
-
-                {/* Active Topic Votes */}
-                <Grid item xs={12} md={4}>
-                  <Box>
-                    <Typography variant="subtitle1" gutterBottom>
-                      Active Topic Votes
-                    </Typography>
-                    {partner.activeVotes && partner.activeVotes.length > 0 ? (
-                      <Stack spacing={1}>
-                        {partner.activeVotes.map((vote) => (
-                          <Box key={vote.topicId}>
-                            <Typography variant="body2">{vote.topicName}</Typography>
-                            <Chip
-                              label={vote.priority}
-                              size="small"
-                              color={
-                                vote.priority === 'HIGH'
-                                  ? 'error'
-                                  : vote.priority === 'MEDIUM'
-                                    ? 'warning'
-                                    : 'default'
-                              }
-                              sx={{ mt: 0.5 }}
-                            />
-                          </Box>
-                        ))}
-                      </Stack>
-                    ) : (
-                      <Typography variant="body2" color="text.secondary">
-                        No active votes
-                      </Typography>
-                    )}
-                  </Box>
-                </Grid>
-
-                {/* Next Meeting */}
-                <Grid item xs={12} md={4}>
-                  <Box>
-                    <Typography variant="subtitle1" gutterBottom>
-                      Next Meeting
-                    </Typography>
-                    {partner.nextMeeting ? (
-                      <Stack spacing={1}>
-                        <Typography variant="body1" fontWeight="bold">
-                          {partner.nextMeeting.meetingType}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {formatDate(partner.nextMeeting.scheduledDate)}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          📍 {partner.nextMeeting.location}
-                        </Typography>
-                        <Typography variant="body2">{partner.nextMeeting.agenda}</Typography>
-                      </Stack>
-                    ) : (
-                      <Typography variant="body2" color="text.secondary">
-                        No upcoming meeting
-                      </Typography>
-                    )}
-                  </Box>
-                </Grid>
-              </Grid>
+              {/* TODO: Future features - require backend implementation of lastEvent, activeVotes, nextMeeting */}
+              <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                Recent activity tracking will be available in future releases (Epic 8)
+              </Typography>
             </CardContent>
           </Card>
         </Grid>

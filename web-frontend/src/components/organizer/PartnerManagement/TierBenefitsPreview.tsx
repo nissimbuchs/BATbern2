@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Typography, List, ListItem, ListItemIcon, ListItemText } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import type { PartnershipLevel } from '@/types/partner';
+import type { PartnershipLevel } from '@/services/api/partnerApi';
 
 interface TierBenefitsPreviewProps {
   tier: PartnershipLevel;

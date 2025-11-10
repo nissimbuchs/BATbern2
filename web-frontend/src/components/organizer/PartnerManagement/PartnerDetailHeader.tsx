@@ -17,6 +17,7 @@ import React from 'react';
 import { Box, Stack, Typography, Avatar, Chip, Button, Link, Paper } from '@mui/material';
 import { ArrowBack, Edit, NoteAdd, Email, CalendarMonth, Analytics } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { usePartnerDetailStore } from '@/stores/partnerDetailStore';
 import type { PartnerResponse } from '@/services/api/partnerApi';
 
@@ -56,6 +57,7 @@ const getInitials = (name: string): string => {
 };
 
 export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partner }) => {
+  const { t } = useTranslation('partners');
   const navigate = useNavigate();
   const { setShowEditModal } = usePartnerDetailStore();
 
@@ -105,7 +107,7 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partne
                 {companyName}
               </Typography>
               <Chip
-                label={`${tierEmoji} ${partner.partnershipLevel}`}
+                label={`${tierEmoji} ${t(`tiers.${partner.partnershipLevel.toLowerCase()}`)}`}
                 color={tierColor}
                 size="medium"
               />
@@ -140,7 +142,7 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partne
                       •
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      {partner.company.location.city}, {partner.company.location.canton}
+                      {partner.company.location}
                     </Typography>
                   </>
                 )}
@@ -158,7 +160,7 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partne
               }}
             >
               <Typography variant="body2" color="text.secondary">
-                📊 Engagement Analytics - Coming Soon - Epic 8
+                📊 {t('detail.header.comingSoon')}
               </Typography>
             </Box>
           </Stack>
@@ -170,33 +172,33 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partne
               startIcon={<Email />}
               disabled
               size="small"
-              title="Coming in Epic 8"
+              title={t('detail.header.comingSoon')}
             >
-              Send Email
+              {t('detail.header.sendEmail')}
             </Button>
             <Button
               variant="outlined"
               startIcon={<CalendarMonth />}
               disabled
               size="small"
-              title="Coming in Epic 8"
+              title={t('detail.header.comingSoon')}
             >
-              Schedule Meeting
+              {t('detail.header.scheduleMeeting')}
             </Button>
             <Button
               variant="outlined"
               startIcon={<Analytics />}
               disabled
               size="small"
-              title="Coming in Epic 8"
+              title={t('detail.header.comingSoon')}
             >
-              View Analytics
+              {t('detail.header.exportData')}
             </Button>
             <Button variant="outlined" startIcon={<NoteAdd />} size="small">
-              Add Note
+              {t('detail.notesTab.addNote')}
             </Button>
             <Button variant="contained" startIcon={<Edit />} onClick={handleEdit} size="small">
-              Edit Partner
+              {t('modal.editTitle')}
             </Button>
           </Stack>
         </Stack>

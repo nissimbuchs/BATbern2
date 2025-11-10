@@ -13,24 +13,26 @@ import {
   Divider,
 } from '@mui/material';
 import { Add as AddIcon, EventNote as EventNoteIcon } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { usePartnerMeetings } from '@/hooks/usePartnerMeetings';
 
 interface PartnerMeetingsTabProps {
   companyName: string;
 }
 
-interface Meeting {
-  id: string;
-  meetingType: string;
-  scheduledDate: string;
-  location: string;
-  agenda: string;
-  rsvpStatus?: string;
-  materials?: Array<{
-    name: string;
-    url: string;
-  }>;
-}
+// TODO: Remove when backend implements MeetingResponse with all fields
+// interface Meeting {
+//   id: string;
+//   meetingType: string;
+//   scheduledDate: string;
+//   location: string;
+//   agenda: string;
+//   rsvpStatus?: string;
+//   materials?: Array<{
+//     name: string;
+//     url: string;
+//   }>;
+// }
 
 const formatMeetingDate = (dateString: string): string => {
   const date = new Date(dateString);
@@ -48,6 +50,7 @@ const getRsvpColor = (status: string): 'success' | 'warning' | 'default' => {
 };
 
 export const PartnerMeetingsTab: React.FC<PartnerMeetingsTabProps> = ({ companyName }) => {
+  const { t } = useTranslation('partners');
   const { data: meetings, isLoading, error } = usePartnerMeetings(companyName);
 
   if (isLoading) {
@@ -68,14 +71,19 @@ export const PartnerMeetingsTab: React.FC<PartnerMeetingsTabProps> = ({ companyN
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
         <Box>
           <Typography variant="h6" gutterBottom>
-            Meetings
+            {t('detail.meetingsTab.title')}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Full meeting coordination coming in Epic 8
+            {t('detail.header.comingSoon')}
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<AddIcon />} disabled title="Coming in Epic 8">
-          Schedule New Meeting
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          disabled
+          title={t('detail.header.comingSoon')}
+        >
+          {t('detail.meetingsTab.addMeeting')}
         </Button>
       </Stack>
 
@@ -96,7 +104,7 @@ export const PartnerMeetingsTab: React.FC<PartnerMeetingsTabProps> = ({ companyN
         </Card>
       ) : (
         <Stack spacing={2}>
-          {meetings.map((meeting: Meeting) => (
+          {meetings.map((meeting) => (
             <Card key={meeting.id}>
               <CardContent>
                 <Stack spacing={2}>
@@ -104,15 +112,19 @@ export const PartnerMeetingsTab: React.FC<PartnerMeetingsTabProps> = ({ companyN
                   <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
                     <Box>
                       <Typography variant="h6" gutterBottom>
-                        {meeting.agenda}
+                        {(meeting as any).agenda || meeting.title}
                       </Typography>
                       <Stack direction="row" spacing={1} alignItems="center">
-                        <Chip label={meeting.meetingType} size="small" variant="outlined" />
-                        {meeting.rsvpStatus && (
+                        <Chip
+                          label={(meeting as any).meetingType || 'Meeting'}
+                          size="small"
+                          variant="outlined"
+                        />
+                        {(meeting as any).rsvpStatus && (
                           <Chip
-                            label={meeting.rsvpStatus}
+                            label={(meeting as any).rsvpStatus}
                             size="small"
-                            color={getRsvpColor(meeting.rsvpStatus)}
+                            color={getRsvpColor((meeting as any).rsvpStatus)}
                           />
                         )}
                       </Stack>
@@ -122,15 +134,16 @@ export const PartnerMeetingsTab: React.FC<PartnerMeetingsTabProps> = ({ companyN
                   {/* Meeting Details */}
                   <Stack spacing={1}>
                     <Typography variant="body2" color="text.secondary">
-                      <strong>Date:</strong> {formatMeetingDate(meeting.scheduledDate)}
+                      <strong>Date:</strong>{' '}
+                      {formatMeetingDate((meeting as any).scheduledDate || meeting.date)}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      <strong>Location:</strong> {meeting.location}
+                      <strong>Location:</strong> {(meeting as any).location || 'TBD'}
                     </Typography>
                   </Stack>
 
                   {/* Meeting Materials */}
-                  {meeting.materials && meeting.materials.length > 0 && (
+                  {(meeting as any).materials && (meeting as any).materials.length > 0 && (
                     <>
                       <Divider />
                       <Box>
@@ -138,7 +151,7 @@ export const PartnerMeetingsTab: React.FC<PartnerMeetingsTabProps> = ({ companyN
                           Meeting Materials
                         </Typography>
                         <Stack spacing={1}>
-                          {meeting.materials.map((material, index) => (
+                          {(meeting as any).materials.map((material: any, index: number) => (
                             <Link
                               key={index}
                               href={material.url}

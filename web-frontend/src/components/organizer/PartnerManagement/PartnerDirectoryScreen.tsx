@@ -18,7 +18,8 @@ import {
   ViewModule as GridViewIcon,
   ViewList as ListViewIcon,
 } from '@mui/icons-material';
-import { usePartners, usePartnerStatistics } from '@/hooks/usePartners';
+import { useTranslation } from 'react-i18next';
+import { usePartners } from '@/hooks/usePartners';
 import { usePartnerStore } from '@/stores/partnerStore';
 import { PartnerOverviewStats } from './PartnerOverviewStats';
 import { PartnerSearch } from './PartnerSearch';
@@ -38,28 +39,15 @@ import { PartnerList } from './PartnerList';
  * Related: Story 2.8.1, AC1, AC5
  */
 export const PartnerDirectoryScreen: React.FC = () => {
-  const {
-    filters,
-    viewMode,
-    searchQuery,
-    sortBy,
-    sortOrder,
-    page,
-    setViewMode,
-    setSortBy,
-    setSortOrder,
-  } = usePartnerStore();
+  const { t } = useTranslation('partners');
+  const { filters, viewMode, sortBy, sortOrder, page, setViewMode, setSortBy } = usePartnerStore();
 
   // Fetch partners with current filters, sort, and pagination
-  const {
-    data: partnersData,
-    isLoading: isLoadingPartners,
-    isError: isPartnersError,
-    error: partnersError,
-  } = usePartners(filters, { sortBy, sortOrder }, { page, size: 20 });
-
-  // Fetch partner statistics
-  const { data: statisticsData, isLoading: isLoadingStatistics } = usePartnerStatistics();
+  const { data: partnersData, isLoading: isLoadingPartners } = usePartners(
+    filters,
+    { sortBy, sortOrder },
+    { page, size: 20 }
+  );
 
   const handleViewModeChange = (
     _event: React.MouseEvent<HTMLElement>,
@@ -86,7 +74,7 @@ export const PartnerDirectoryScreen: React.FC = () => {
       <Box sx={{ mb: 3, mt: 3 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Typography variant="h4" component="h1">
-            Partner Directory
+            {t('title')}
           </Typography>
           <Button
             variant="contained"
@@ -94,17 +82,17 @@ export const PartnerDirectoryScreen: React.FC = () => {
             startIcon={<AddIcon />}
             onClick={handleAddPartner}
             disabled
-            title="Coming Soon - Story 2.8.3"
+            title={t('comingSoon.story283')}
             data-testid="add-partner-button"
           >
-            Add Partner
+            {t('addPartner')}
           </Button>
         </Stack>
       </Box>
 
       {/* Overview Statistics */}
       <Box sx={{ mb: 3 }}>
-        <PartnerOverviewStats statistics={statisticsData} isLoading={isLoadingStatistics} />
+        <PartnerOverviewStats />
       </Box>
 
       {/* Search and Filter Controls */}
@@ -133,19 +121,19 @@ export const PartnerDirectoryScreen: React.FC = () => {
             <Stack direction="row" spacing={2} alignItems="center">
               {/* Sort Select */}
               <FormControl size="small" sx={{ minWidth: 200 }}>
-                <InputLabel id="sort-select-label">Sort By</InputLabel>
+                <InputLabel id="sort-select-label">{t('sort.label')}</InputLabel>
                 <Select
                   labelId="sort-select-label"
                   id="sort-select"
                   value={sortBy}
-                  label="Sort By"
+                  label={t('sort.label')}
                   onChange={handleSortChange}
                   data-testid="partner-sort-select"
                 >
-                  <MenuItem value="engagement">Engagement Score</MenuItem>
-                  <MenuItem value="name">Company Name</MenuItem>
-                  <MenuItem value="tier">Partnership Tier</MenuItem>
-                  <MenuItem value="lastEvent">Last Event</MenuItem>
+                  <MenuItem value="engagement">{t('sort.engagement')}</MenuItem>
+                  <MenuItem value="name">{t('sort.name')}</MenuItem>
+                  <MenuItem value="tier">{t('sort.tier')}</MenuItem>
+                  <MenuItem value="lastEvent">{t('sort.lastEvent')}</MenuItem>
                 </Select>
               </FormControl>
 
@@ -154,14 +142,14 @@ export const PartnerDirectoryScreen: React.FC = () => {
                 value={viewMode}
                 exclusive
                 onChange={handleViewModeChange}
-                aria-label="view mode"
+                aria-label={t('viewMode.label')}
                 size="small"
                 data-testid="view-mode-toggle"
               >
-                <ToggleButton value="grid" aria-label="grid view">
+                <ToggleButton value="grid" aria-label={t('viewMode.grid')}>
                   <GridViewIcon />
                 </ToggleButton>
-                <ToggleButton value="list" aria-label="list view">
+                <ToggleButton value="list" aria-label={t('viewMode.list')}>
                   <ListViewIcon />
                 </ToggleButton>
               </ToggleButtonGroup>
@@ -178,7 +166,7 @@ export const PartnerDirectoryScreen: React.FC = () => {
       {/* Screen Reader Announcements (aria-live regions) */}
       <Box
         role="status"
-        aria-label="search results"
+        aria-label={t('searchAriaLabel')}
         aria-live="polite"
         aria-atomic="true"
         sx={{
@@ -189,13 +177,13 @@ export const PartnerDirectoryScreen: React.FC = () => {
           overflow: 'hidden',
         }}
       >
-        {partnersData?.partners &&
-          `${partnersData.pagination?.totalElements || 0} ${partnersData.pagination?.totalElements === 1 ? 'partner' : 'partners'} found`}
+        {partnersData?.data &&
+          t('screenReader.searchResults', { count: partnersData.data.length || 0 })}
       </Box>
 
       <Box
         role="status"
-        aria-label="filter update"
+        aria-label={t('screenReader.filterUpdate')}
         aria-live="polite"
         sx={{
           position: 'absolute',
@@ -211,7 +199,7 @@ export const PartnerDirectoryScreen: React.FC = () => {
 
       <Box
         role="status"
-        aria-label="loading"
+        aria-label={t('screenReader.loading')}
         aria-live="polite"
         sx={{
           position: 'absolute',
@@ -221,7 +209,7 @@ export const PartnerDirectoryScreen: React.FC = () => {
           overflow: 'hidden',
         }}
       >
-        {isLoadingPartners && 'Loading partners'}
+        {isLoadingPartners && t('loading')}
       </Box>
     </Container>
   );

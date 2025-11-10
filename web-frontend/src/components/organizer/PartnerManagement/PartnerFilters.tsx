@@ -31,25 +31,23 @@ import type { PartnershipLevel } from '@/services/api/partnerApi';
 
 const TIER_OPTIONS: Array<PartnershipLevel | 'all'> = [
   'all',
-  'strategic',
-  'platinum',
-  'gold',
-  'silver',
-  'bronze',
+  'STRATEGIC',
+  'PLATINUM',
+  'GOLD',
+  'SILVER',
+  'BRONZE',
 ];
 
 const STATUS_OPTIONS = ['all', 'active', 'inactive'] as const;
 
 // Tier emojis for quick filter chips
 const TIER_EMOJIS: Record<string, string> = {
-  strategic: '🏆',
-  platinum: '💎',
-  gold: '🥇',
-  silver: '🥈',
-  bronze: '🥉',
+  STRATEGIC: '🏆',
+  PLATINUM: '💎',
+  GOLD: '🥇',
+  SILVER: '🥈',
+  BRONZE: '🥉',
 };
-
-const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
 
 export const PartnerFilters: React.FC = () => {
   const { t } = useTranslation('partners');
@@ -72,54 +70,61 @@ export const PartnerFilters: React.FC = () => {
       <Stack direction="row" spacing={2} alignItems="center" mb={2}>
         {/* Tier Filter Dropdown */}
         <FormControl size="small" sx={{ minWidth: 200 }}>
-          <InputLabel id="tier-filter-label">Partnership Tier</InputLabel>
+          <InputLabel id="tier-filter-label">{t('filters.tier')}</InputLabel>
           <Select
             labelId="tier-filter-label"
             id="tier-filter"
             value={filters.tier}
-            aria-label="Partnership Tier"
-            label="Tier"
+            aria-label={t('filters.tier')}
+            label={t('filters.tier')}
             onChange={handleTierChange}
           >
-            <MenuItem value="all">All Tiers</MenuItem>
-            <MenuItem value="strategic">Strategic</MenuItem>
-            <MenuItem value="platinum">Platinum</MenuItem>
-            <MenuItem value="gold">Gold</MenuItem>
-            <MenuItem value="silver">Silver</MenuItem>
-            <MenuItem value="bronze">Bronze</MenuItem>
+            {TIER_OPTIONS.map((tier) => (
+              <MenuItem key={tier} value={tier}>
+                {tier === 'all'
+                  ? t('filters.tierAll')
+                  : `${TIER_EMOJIS[tier]} ${t(`tiers.${tier.toLowerCase()}`)}`}
+              </MenuItem>
+            ))}
           </Select>
         </FormControl>
 
         {/* Status Filter Dropdown */}
         <FormControl size="small" sx={{ minWidth: 150 }}>
-          <InputLabel id="status-filter-label">Status</InputLabel>
+          <InputLabel id="status-filter-label">{t('filters.status')}</InputLabel>
           <Select
             labelId="status-filter-label"
             id="status-filter"
             value={filters.status}
-            label="Status"
-            aria-label="Status"
+            label={t('filters.status')}
+            aria-label={t('filters.status')}
             onChange={handleStatusChange}
           >
-            <MenuItem value="all">All</MenuItem>
-            <MenuItem value="active">Active</MenuItem>
-            <MenuItem value="inactive">Inactive</MenuItem>
+            {STATUS_OPTIONS.map((status) => (
+              <MenuItem key={status} value={status}>
+                {status === 'all'
+                  ? t('filters.statusAll')
+                  : status === 'active'
+                    ? t('filters.statusActive')
+                    : t('filters.statusInactive')}
+              </MenuItem>
+            ))}
           </Select>
         </FormControl>
 
         {/* Reset Filters Button */}
         <Button variant="outlined" startIcon={<ClearIcon />} onClick={resetFilters} size="small">
-          Reset Filters
+          {t('filters.reset')}
         </Button>
       </Stack>
 
       {/* Quick Filter Chips */}
       <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-        {(['strategic', 'platinum', 'gold', 'silver', 'bronze'] as PartnershipLevel[]).map(
+        {(['STRATEGIC', 'PLATINUM', 'GOLD', 'SILVER', 'BRONZE'] as PartnershipLevel[]).map(
           (tier) => (
             <Chip
               key={tier}
-              label={TIER_EMOJIS[tier] + ' ' + capitalize(tier)}
+              label={`${TIER_EMOJIS[tier]} ${t(`tiers.${tier.toLowerCase()}`)}`}
               onClick={() => handleQuickFilterClick(tier)}
               color={filters.tier === tier ? 'primary' : 'default'}
               variant={filters.tier === tier ? 'filled' : 'outlined'}

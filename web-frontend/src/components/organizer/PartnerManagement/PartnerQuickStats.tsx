@@ -1,14 +1,17 @@
 import React from 'react';
-import { Grid, Card, CardContent, Typography, Box } from '@mui/material';
+import { Card, CardContent, Typography, Box } from '@mui/material';
+import Grid from '@mui/material/Grid';
 import { CalendarToday, EventNote, HowToVote, MeetingRoom } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Partner data interface for Quick Stats display
+ * TODO: statistics will be added to PartnerResponse in future backend implementation
  */
 interface PartnerQuickStatsProps {
   partner: {
     partnershipStartDate: string;
-    statistics: {
+    statistics?: {
       eventsAttended: number;
       lastEventName: string | null;
       activeVotes: number;
@@ -88,55 +91,64 @@ const formatDate = (dateString: string): string => {
  * @param partner - Partner data with start date and statistics
  */
 export const PartnerQuickStats: React.FC<PartnerQuickStatsProps> = ({ partner }) => {
+  const { t } = useTranslation('partners');
   const { partnershipStartDate, statistics } = partner;
-  const { eventsAttended, lastEventName, activeVotes, totalMeetings } = statistics;
+
+  // TODO: Remove defaults when backend implements statistics
+  const eventsAttended = statistics?.eventsAttended ?? 0;
+  const lastEventName = statistics?.lastEventName ?? null;
+  const activeVotes = statistics?.activeVotes ?? 0;
+  const totalMeetings = statistics?.totalMeetings ?? 0;
 
   // Calculate duration
   const duration = calculateDuration(partnershipStartDate);
   const formattedDate = formatDate(partnershipStartDate);
 
   // Format events subtitle
-  const eventsSubtitle = eventsAttended > 0 ? `last: ${lastEventName || 'N/A'}` : 'No events yet';
+  const eventsSubtitle =
+    eventsAttended > 0
+      ? t('detail.quickStats.lastEvent', { event: lastEventName || 'N/A' })
+      : t('detail.quickStats.noEventsYet');
 
   return (
     <Grid container spacing={2} sx={{ mb: 3 }}>
       {/* Partner Since Card */}
-      <Grid item xs={12} sm={6} md={3}>
+      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
         <StatCard
           icon={<CalendarToday color="primary" />}
-          label="Partner Since"
+          label={t('detail.quickStats.partnerSince')}
           value={formattedDate}
           subtitle={`(${duration})`}
         />
       </Grid>
 
       {/* Events Attended Card */}
-      <Grid item xs={12} sm={6} md={3}>
+      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
         <StatCard
           icon={<EventNote color="primary" />}
-          label="Events Attended"
+          label={t('detail.quickStats.eventsAttended')}
           value={eventsAttended.toString()}
           subtitle={eventsSubtitle}
         />
       </Grid>
 
       {/* Active Votes Card */}
-      <Grid item xs={12} sm={6} md={3}>
+      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
         <StatCard
           icon={<HowToVote color="primary" />}
-          label="Active Votes"
+          label={t('detail.quickStats.activeVotes')}
           value={activeVotes.toString()}
-          subtitle="(topics)"
+          subtitle={t('detail.quickStats.votesSubtitle')}
         />
       </Grid>
 
       {/* Meetings Card */}
-      <Grid item xs={12} sm={6} md={3}>
+      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
         <StatCard
           icon={<MeetingRoom color="primary" />}
-          label="Meetings"
+          label={t('detail.quickStats.meetings')}
           value={totalMeetings.toString()}
-          subtitle="(seasonal)"
+          subtitle={t('detail.quickStats.meetingsSubtitle')}
         />
       </Grid>
     </Grid>

@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useTranslation } from 'react-i18next';
 import { usePartnerModalStore } from '@/stores/partnerModalStore';
 import {
   useCreatePartner,
@@ -26,6 +27,7 @@ import { TierBenefitsPreview } from './TierBenefitsPreview';
 import type { CreatePartnerFormData, UpdatePartnerFormData } from '@/schemas/partnerSchema';
 
 export const PartnerCreateEditModal: React.FC = () => {
+  const { t } = useTranslation('partners');
   const { isOpen, mode, partnerToEdit, closeModal } = usePartnerModalStore();
   const createMutation = useCreatePartner();
   const updateMutation = useUpdatePartner();
@@ -95,18 +97,34 @@ export const PartnerCreateEditModal: React.FC = () => {
 
   const onSubmit = (data: CreatePartnerFormData | UpdatePartnerFormData) => {
     if (isCreate) {
-      createMutation.mutate(data as CreatePartnerFormData);
+      const createData = data as CreatePartnerFormData;
+      // Convert Date objects to ISO strings for API
+      createMutation.mutate({
+        companyName: createData.companyName,
+        partnershipLevel: createData.partnershipLevel,
+        partnershipStartDate: createData.partnershipStartDate.toISOString().split('T')[0],
+        partnershipEndDate: createData.partnershipEndDate
+          ? createData.partnershipEndDate.toISOString().split('T')[0]
+          : undefined,
+      });
     } else {
+      const updateData = data as UpdatePartnerFormData;
+      // Convert Date objects to ISO strings for API
       updateMutation.mutate({
         companyName: partnerToEdit!.companyName,
-        updates: data as UpdatePartnerFormData,
+        data: {
+          partnershipLevel: updateData.partnershipLevel,
+          partnershipEndDate: updateData.partnershipEndDate
+            ? updateData.partnershipEndDate.toISOString().split('T')[0]
+            : undefined,
+        },
       });
     }
   };
 
   const handleClose = () => {
     if (isDirty) {
-      const confirmed = window.confirm('You have unsaved changes. Are you sure you want to close?');
+      const confirmed = window.confirm(t('modal.messages.unsavedChanges'));
       if (!confirmed) return;
     }
     closeModal();
@@ -126,7 +144,7 @@ export const PartnerCreateEditModal: React.FC = () => {
       fullScreen={window.innerWidth < 640}
       TransitionComponent={TransitionComponent}
     >
-      <DialogTitle>{isCreate ? 'Create Partnership' : 'Edit Partnership'}</DialogTitle>
+      <DialogTitle>{isCreate ? t('modal.createTitle') : t('modal.editTitle')}</DialogTitle>
 
       <DialogContent>
         <Box component="form" sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -143,9 +161,9 @@ export const PartnerCreateEditModal: React.FC = () => {
               control={control}
               render={({ field }) => (
                 <CompanyAutocomplete
-                  value={field.value}
-                  onChange={field.onChange}
-                  error={errors.companyName?.message}
+                  value={null}
+                  onChange={(company) => field.onChange(company?.name || '')}
+                  error={'companyName' in errors ? errors.companyName?.message : undefined}
                   disabled={isPending}
                   inputRef={firstFieldRef}
                 />
@@ -154,7 +172,7 @@ export const PartnerCreateEditModal: React.FC = () => {
           ) : (
             <Box>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Company
+                {t('modal.fields.company')}
               </Typography>
               <Typography variant="body1">{partnerToEdit?.companyName}</Typography>
             </Box>
@@ -166,7 +184,7 @@ export const PartnerCreateEditModal: React.FC = () => {
             control={control}
             render={({ field }) => (
               <PartnershipTierSelect
-                value={field.value}
+                value={(field.value ?? 'BRONZE') as string}
                 onChange={field.onChange}
                 error={errors.partnershipLevel?.message}
                 disabled={isPending}
@@ -180,8 +198,8 @@ export const PartnerCreateEditModal: React.FC = () => {
             control={control}
             render={({ field }) => (
               <PartnershipDatePicker
-                label="Partnership Start Date"
-                value={field.value}
+                label={t('modal.fields.startDate')}
+                value={field.value ?? null}
                 onChange={field.onChange}
                 name="partnershipStartDate"
                 maxDate={new Date()}
@@ -197,11 +215,11 @@ export const PartnerCreateEditModal: React.FC = () => {
             control={control}
             render={({ field }) => (
               <PartnershipDatePicker
-                label="Partnership End Date (Optional)"
-                value={field.value || null}
-                onChange={field.onChange}
+                label={t('modal.fields.endDateOptional')}
+                value={field.value ?? null}
+                onChange={(date) => field.onChange(date ?? undefined)}
                 name="partnershipEndDate"
-                minDate={watch('partnershipStartDate')}
+                minDate={(watch('partnershipStartDate') as Date | undefined) ?? undefined}
                 error={errors.partnershipEndDate?.message}
                 disabled={isPending}
               />
@@ -209,13 +227,13 @@ export const PartnerCreateEditModal: React.FC = () => {
           />
 
           {/* Benefits Preview */}
-          <TierBenefitsPreview tier={selectedTier} />
+          {selectedTier && <TierBenefitsPreview tier={selectedTier} />}
         </Box>
       </DialogContent>
 
       <DialogActions>
         <Button onClick={handleClose} disabled={isPending}>
-          Cancel
+          {t('modal.actions.cancel')}
         </Button>
         <Button
           onClick={handleSubmit(onSubmit)}
@@ -223,7 +241,7 @@ export const PartnerCreateEditModal: React.FC = () => {
           disabled={isPending || (!isCreate && !isDirty)}
           startIcon={isPending ? <CircularProgress size={20} role="progressbar" /> : null}
         >
-          Save
+          {isPending ? t('modal.actions.saving') : t('modal.actions.save')}
         </Button>
       </DialogActions>
     </Dialog>

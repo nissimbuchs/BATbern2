@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -17,8 +17,8 @@ import { PartnerQuickStats } from './PartnerQuickStats';
 import { PartnerTabNavigation } from './PartnerTabNavigation';
 import { PartnerOverviewTab } from './PartnerOverviewTab';
 import { PartnerMeetingsTab } from './PartnerMeetingsTab';
-import { PartnerActivityTab } from './PartnerActivityTab';
-import { PartnerNotesTab } from './PartnerNotesTab';
+import PartnerActivityTab from './PartnerActivityTab';
+import PartnerNotesTab from './PartnerNotesTab';
 import { PartnerSettingsTab } from './PartnerSettingsTab';
 
 /**
@@ -27,7 +27,7 @@ import { PartnerSettingsTab } from './PartnerSettingsTab';
  */
 export const PartnerDetailScreen: React.FC = () => {
   const { companyName } = useParams<{ companyName: string }>();
-  const navigate = useNavigate();
+  // const navigate = useNavigate(); // Removed: handleBack was removed
   const activeTab = usePartnerDetailStore((state) => state.activeTab);
   const setActiveTab = usePartnerDetailStore((state) => state.setActiveTab);
 
@@ -38,11 +38,6 @@ export const PartnerDetailScreen: React.FC = () => {
     isError,
     error,
   } = usePartnerDetail(companyName || '', 'company,contacts,votes,meetings,activity');
-
-  // Handle back navigation
-  const handleBack = () => {
-    navigate('/partners');
-  };
 
   // Handle tab change
   const handleTabChange = (newTab: number) => {
@@ -121,7 +116,7 @@ export const PartnerDetailScreen: React.FC = () => {
   return (
     <Container maxWidth="xl" sx={{ py: 4 }} data-testid="partner-detail-container">
       {/* Header */}
-      <PartnerDetailHeader partner={partner} onBack={handleBack} />
+      <PartnerDetailHeader partner={partner} />
 
       {/* Quick Stats */}
       <Box sx={{ mt: 3 }}>

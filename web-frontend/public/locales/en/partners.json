@@ -139,5 +139,50 @@
     "startDateRequired": "Start date is required",
     "startDateFuture": "Start date cannot be in the future",
     "endDateBeforeStart": "End date must be after start date"
+  },
+  "detail": {
+    "header": {
+      "exportData": "Export Data",
+      "scheduleMeeting": "Schedule Meeting",
+      "sendEmail": "Send Email",
+      "comingSoon": "Coming in Epic 8"
+    },
+    "quickStats": {
+      "partnerSince": "Partner Since",
+      "eventsAttended": "Events Attended",
+      "activeVotes": "Active Votes",
+      "votesSubtitle": "(topics)",
+      "meetings": "Meetings",
+      "meetingsSubtitle": "(seasonal)",
+      "noEventsYet": "No events yet",
+      "lastEvent": "last: {{event}}"
+    },
+    "activityTab": {
+      "title": "Activity",
+      "filterLabel": "Filter by Activity Type",
+      "noActivity": "No activity to display"
+    },
+    "meetingsTab": {
+      "title": "Meetings",
+      "addMeeting": "Schedule Meeting"
+    },
+    "notesTab": {
+      "title": "Notes",
+      "addNote": "Add Note",
+      "titleLabel": "Title",
+      "contentLabel": "Content",
+      "htmlSupported": "HTML formatting is supported",
+      "noNotes": "No notes yet"
+    },
+    "settingsTab": {
+      "title": "Settings",
+      "activePartnership": "Active Partnership",
+      "exportData": "Export Partner Data",
+      "deletePartner": "Delete Partner Data"
+    }
+  },
+  "comingSoon": {
+    "epic8": "Coming Soon - Epic 8",
+    "story283": "Coming Soon - Story 2.8.3"
   }
 }

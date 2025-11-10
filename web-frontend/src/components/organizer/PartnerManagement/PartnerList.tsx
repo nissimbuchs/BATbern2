@@ -1,12 +1,13 @@
 import React from 'react';
-import { Box, Grid, Stack, Typography, Button, ButtonGroup, Skeleton, Alert } from '@mui/material';
+import { Box, Stack, Typography, Button, ButtonGroup, Skeleton, Alert } from '@mui/material';
+import Grid from '@mui/material/Grid';
 import { FirstPage, NavigateBefore, NavigateNext, LastPage } from '@mui/icons-material';
 import { PartnerCard } from './PartnerCard';
 import { usePartners } from '@/hooks/usePartners';
 import { usePartnerStore } from '@/stores/partnerStore';
 
 export const PartnerList: React.FC = () => {
-  const { viewMode, filters, searchQuery, sortBy, sortOrder, page, setPage } = usePartnerStore();
+  const { viewMode, filters, sortBy, sortOrder, page, setPage } = usePartnerStore();
 
   // Fetch partners using React Query
   const { data, isLoading, isError, error } = usePartners(
@@ -15,8 +16,8 @@ export const PartnerList: React.FC = () => {
     { page, size: 20 }
   );
 
-  const partners = data?.partners || [];
-  const pagination = data?.pagination;
+  const partners = data?.data || [];
+  const pagination = data?.metadata;
 
   // Loading state
   if (isLoading) {
@@ -24,7 +25,7 @@ export const PartnerList: React.FC = () => {
       <Box data-testid="partner-list-loading">
         <Grid container spacing={2} data-testid="partner-list-grid">
           {[...Array(6)].map((_, index) => (
-            <Grid item xs={12} sm={6} md={4} key={index}>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={index}>
               <Skeleton
                 variant="rectangular"
                 height={300}
@@ -98,7 +99,7 @@ export const PartnerList: React.FC = () => {
       <Box>
         <Grid container spacing={2} data-testid="partner-grid" data-columns="3" data-spacing="3">
           {partners.map((partner) => (
-            <Grid item xs={12} sm={6} md={4} key={partner.id}>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={partner.id}>
               <PartnerCard partner={partner} />
             </Grid>
           ))}

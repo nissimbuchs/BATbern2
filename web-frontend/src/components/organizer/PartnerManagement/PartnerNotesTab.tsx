@@ -17,6 +17,7 @@ import {
   DialogActions,
 } from '@mui/material';
 import { Add, Edit, Delete, Note as NoteIcon } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { usePartnerNotes } from '@/hooks/usePartnerNotes';
 import { usePartnerDetailStore } from '@/stores/partnerDetailStore';
 
@@ -57,6 +58,7 @@ const getContentPreview = (htmlContent: string, maxLength: number = 100): string
 };
 
 const PartnerNotesTab: React.FC<PartnerNotesTabProps> = ({ companyName }) => {
+  const { t } = useTranslation('partners');
   const { showNoteModal, setShowNoteModal } = usePartnerDetailStore();
   const {
     data: notes,
@@ -127,13 +129,13 @@ const PartnerNotesTab: React.FC<PartnerNotesTabProps> = ({ companyName }) => {
       <Box textAlign="center" py={6}>
         <NoteIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
         <Typography variant="h6" color="text.secondary" gutterBottom>
-          No notes yet
+          {t('detail.notesTab.noNotes')}
         </Typography>
         <Typography variant="body2" color="text.secondary" mb={3}>
           Add your first note to track important information about this partner
         </Typography>
         <Button variant="contained" startIcon={<Add />} onClick={handleAddNote}>
-          Add Note
+          {t('detail.notesTab.addNote')}
         </Button>
       </Box>
     );
@@ -143,28 +145,32 @@ const PartnerNotesTab: React.FC<PartnerNotesTabProps> = ({ companyName }) => {
     <Box>
       {/* Header with add button */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h6">Notes</Typography>
+        <Typography variant="h6">{t('detail.notesTab.title')}</Typography>
         <Button variant="contained" startIcon={<Add />} onClick={handleAddNote}>
-          Add Note
+          {t('detail.notesTab.addNote')}
         </Button>
       </Stack>
 
       {/* Notes list */}
       <Stack spacing={2}>
-        {notes.map((note: Note) => (
+        {notes.map((note) => (
           <Card key={note.id} data-testid={`note-item-${note.id}`}>
             <CardContent>
               <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={2}>
                 <Typography variant="h6" fontWeight="medium">
-                  {note.title}
+                  {(note as any).title || 'Note'}
                 </Typography>
                 <Stack direction="row" spacing={1}>
-                  <IconButton size="small" onClick={() => handleEditNote(note)} aria-label="Edit">
+                  <IconButton
+                    size="small"
+                    onClick={() => handleEditNote(note as any)}
+                    aria-label="Edit"
+                  >
                     <Edit fontSize="small" />
                   </IconButton>
                   <IconButton
                     size="small"
-                    onClick={() => handleDeleteNote(note.id, note.title)}
+                    onClick={() => handleDeleteNote(note.id, (note as any).title || 'Note')}
                     aria-label="Delete"
                     color="error"
                   >
@@ -180,10 +186,16 @@ const PartnerNotesTab: React.FC<PartnerNotesTabProps> = ({ companyName }) => {
 
               {/* Author and timestamp */}
               <Stack direction="row" spacing={2} alignItems="center">
-                <Chip label={note.authorUsername} size="small" variant="outlined" />
+                <Chip
+                  label={(note as any).authorUsername || 'Unknown'}
+                  size="small"
+                  variant="outlined"
+                />
                 <Typography variant="caption" color="text.secondary">
                   {formatDate(note.createdAt)}
-                  {note.updatedAt !== note.createdAt && ' (edited)'}
+                  {(note as any).updatedAt &&
+                    (note as any).updatedAt !== note.createdAt &&
+                    ' (edited)'}
                 </Typography>
               </Stack>
             </CardContent>
@@ -193,36 +205,38 @@ const PartnerNotesTab: React.FC<PartnerNotesTabProps> = ({ companyName }) => {
 
       {/* Note Modal */}
       <Dialog open={showNoteModal} onClose={handleCloseModal} maxWidth="md" fullWidth>
-        <DialogTitle>{editingNote ? 'Edit Note' : 'Add Note'}</DialogTitle>
+        <DialogTitle>
+          {editingNote ? t('detail.notesTab.addNote') : t('detail.notesTab.addNote')}
+        </DialogTitle>
         <DialogContent>
           <Stack spacing={3} mt={1}>
             <TextField
-              label="Title"
+              label={t('detail.notesTab.titleLabel')}
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               fullWidth
               required
             />
             <TextField
-              label="Content"
+              label={t('detail.notesTab.contentLabel')}
               value={formData.content}
               onChange={(e) => setFormData({ ...formData, content: e.target.value })}
               multiline
               rows={8}
               fullWidth
               required
-              helperText="HTML formatting is supported"
+              helperText={t('detail.notesTab.htmlSupported')}
             />
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseModal}>Cancel</Button>
+          <Button onClick={handleCloseModal}>{t('modal.actions.cancel')}</Button>
           <Button
             variant="contained"
             onClick={handleSaveNote}
             disabled={!formData.title || !formData.content}
           >
-            Save
+            {t('modal.actions.save')}
           </Button>
         </DialogActions>
       </Dialog>

@@ -14,8 +14,19 @@
  */
 
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
-import { getPartnerActivity, type ActivityFilters } from '@/services/api/partnerApi';
-import type { ActivityResponse } from '@/services/api/partnerApi';
+// import { getPartnerActivity, type ActivityFilters } from '@/services/api/partnerApi';
+// import type { ActivityResponse } from '@/services/api/partnerApi';
+
+// TODO: Remove stub when activity API is implemented
+interface ActivityFilters {
+  type?: string;
+}
+interface ActivityResponse {
+  id: string;
+  type: string;
+  description: string;
+  timestamp: string;
+}
 
 /**
  * usePartnerActivity - Fetch partner activity timeline with optional filters
@@ -32,7 +43,7 @@ export const usePartnerActivity = (
 ): UseQueryResult<ActivityResponse[], Error> => {
   return useQuery({
     queryKey: ['partner', companyName, 'activity', filters],
-    queryFn: () => getPartnerActivity(companyName, filters),
+    queryFn: async () => [], // TODO: Replace with getPartnerActivity(companyName, filters) when API implemented
     enabled: !!companyName,
     staleTime: 2 * 60 * 1000, // 2 minutes
   });

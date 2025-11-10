@@ -13,8 +13,15 @@
  */
 
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
-import { getPartnerMeetings } from '@/services/api/partnerApi';
-import type { MeetingResponse } from '@/services/api/partnerApi';
+// import { getPartnerMeetings } from '@/services/api/partnerApi';
+// import type { MeetingResponse } from '@/services/api/partnerApi';
+
+// TODO: Remove stub when meetings API is implemented
+interface MeetingResponse {
+  id: string;
+  title: string;
+  date: string;
+}
 
 /**
  * usePartnerMeetings - Fetch partner meetings
@@ -29,7 +36,7 @@ export const usePartnerMeetings = (
 ): UseQueryResult<MeetingResponse[], Error> => {
   return useQuery({
     queryKey: ['partner', companyName, 'meetings'],
-    queryFn: () => getPartnerMeetings(companyName),
+    queryFn: async () => [], // TODO: Replace with getPartnerMeetings(companyName) when API implemented
     enabled: !!companyName,
     staleTime: 2 * 60 * 1000, // 2 minutes
   });

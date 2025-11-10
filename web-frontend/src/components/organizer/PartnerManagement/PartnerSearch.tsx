@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { TextField, InputAdornment, IconButton } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
+import { useTranslation } from 'react-i18next';
 import { usePartnerStore } from '@/stores/partnerStore';
 
 /**
@@ -9,6 +10,7 @@ import { usePartnerStore } from '@/stores/partnerStore';
  * Implements AC1 requirement for debounced search functionality.
  */
 export const PartnerSearch: React.FC = () => {
+  const { t } = useTranslation('partners');
   const { searchQuery, setSearchQuery } = usePartnerStore();
   const [localValue, setLocalValue] = useState(searchQuery);
 
@@ -49,9 +51,9 @@ export const PartnerSearch: React.FC = () => {
       value={localValue}
       onChange={handleChange}
       onKeyDown={handleKeyDown}
-      placeholder="Search by partner name..."
+      placeholder={t('searchPlaceholder')}
       inputProps={{
-        'aria-label': 'Search partners',
+        'aria-label': t('searchAriaLabel'),
       }}
       InputProps={{
         startAdornment: (
@@ -61,7 +63,7 @@ export const PartnerSearch: React.FC = () => {
         ),
         endAdornment: showClearButton ? (
           <InputAdornment position="end">
-            <IconButton aria-label="Clear search" onClick={handleClear} edge="end" size="small">
+            <IconButton aria-label={t('clearSearch')} onClick={handleClear} edge="end" size="small">
               <ClearIcon />
             </IconButton>
           </InputAdornment>

@@ -72,14 +72,14 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
     enabled: shouldSearch,
   });
 
-  const handleInputChange = useCallback((event: React.SyntheticEvent, newInputValue: string) => {
+  const handleInputChange = useCallback((_event: React.SyntheticEvent, newInputValue: string) => {
     setInputValue(newInputValue);
   }, []);
 
   return (
     <Autocomplete
       value={value}
-      onChange={(event, newValue) => {
+      onChange={(_event, newValue) => {
         onChange(newValue);
       }}
       inputValue={inputValue}
@@ -118,7 +118,7 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
       renderOption={(props, option) => (
         <Box component="li" {...props} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Avatar
-            src={option.logoUrl}
+            src={option.logo?.url}
             alt={option.displayName || option.name}
             sx={{ width: 32, height: 32 }}
           >

@@ -1,5 +1,6 @@
 import React from 'react';
-import { Box, Card, CardContent, Grid, Skeleton, Typography } from '@mui/material';
+import { Box, Card, CardContent, Skeleton, Typography } from '@mui/material';
+import Grid from '@mui/material/Grid';
 import { usePartnerStatistics } from '@/hooks/usePartners';
 
 const tierEmojis: Record<string, string> = {
@@ -27,7 +28,7 @@ export const PartnerOverviewStats: React.FC = () => {
       <Box sx={{ mb: 3 }}>
         <Grid container spacing={2}>
           {[1, 2, 3, 4].map((i) => (
-            <Grid item xs={12} sm={6} md={3} key={i}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }} key={i}>
               <Card>
                 <CardContent>
                   <Skeleton variant="text" width="60%" />
@@ -59,7 +60,7 @@ export const PartnerOverviewStats: React.FC = () => {
   // Default values when no data
   const totalPartners = statistics?.totalPartners || 0;
   const activePartners = statistics?.activePartners || 0;
-  const tierDistribution = statistics?.tierDistribution || {
+  const tierDistribution = statistics?.tierCounts || {
     STRATEGIC: 0,
     PLATINUM: 0,
     GOLD: 0,
@@ -71,7 +72,7 @@ export const PartnerOverviewStats: React.FC = () => {
     <Box sx={{ mb: 3 }}>
       <Grid container spacing={2}>
         {/* Total Partners */}
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Typography color="text.secondary" variant="body2" gutterBottom>
@@ -85,7 +86,7 @@ export const PartnerOverviewStats: React.FC = () => {
         </Grid>
 
         {/* Active Partners */}
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Typography color="text.secondary" variant="body2" gutterBottom>
@@ -99,7 +100,7 @@ export const PartnerOverviewStats: React.FC = () => {
         </Grid>
 
         {/* Engaged Partners - Placeholder for Epic 8 */}
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Typography color="text.secondary" variant="body2" gutterBottom>
@@ -113,7 +114,7 @@ export const PartnerOverviewStats: React.FC = () => {
         </Grid>
 
         {/* Tier Distribution */}
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Typography color="text.secondary" variant="body2" gutterBottom>

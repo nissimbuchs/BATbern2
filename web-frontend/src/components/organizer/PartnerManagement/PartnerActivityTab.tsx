@@ -23,20 +23,22 @@ import {
   Note,
   Timeline as TimelineIcon,
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { usePartnerActivity } from '@/hooks/usePartnerActivity';
 
 interface PartnerActivityTabProps {
   companyName: string;
 }
 
-interface Activity {
-  id: string;
-  type: string;
-  timestamp: string;
-  username: string;
-  description: string;
-  details?: Record<string, any>;
-}
+// TODO: Remove when backend implements ActivityResponse with all fields
+// interface Activity {
+//   id: string;
+//   type: string;
+//   timestamp: string;
+//   username: string;
+//   description: string;
+//   details?: Record<string, any>;
+// }
 
 // Map activity types to icons
 const activityTypeIcons: Record<string, React.ReactElement> = {
@@ -78,6 +80,7 @@ const formatTimestamp = (timestamp: string): string => {
 };
 
 const PartnerActivityTab: React.FC<PartnerActivityTabProps> = ({ companyName }) => {
+  const { t } = useTranslation('partners');
   const [activityTypeFilter, setActivityTypeFilter] = useState<string>('ALL');
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 20;
@@ -112,7 +115,7 @@ const PartnerActivityTab: React.FC<PartnerActivityTabProps> = ({ companyName }) 
       <Box textAlign="center" py={6}>
         <TimelineIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
         <Typography variant="h6" color="text.secondary">
-          No activity recorded
+          {t('detail.activityTab.noActivity')}
         </Typography>
       </Box>
     );
@@ -142,14 +145,16 @@ const PartnerActivityTab: React.FC<PartnerActivityTabProps> = ({ companyName }) 
     <Box>
       {/* Header with filter */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h6">Activity Timeline</Typography>
+        <Typography variant="h6">{t('detail.activityTab.title')}</Typography>
         <FormControl size="small" sx={{ minWidth: 200 }}>
-          <InputLabel id="activity-type-filter-label">Filter by Activity Type</InputLabel>
+          <InputLabel id="activity-type-filter-label">
+            {t('detail.activityTab.filterLabel')}
+          </InputLabel>
           <Select
             labelId="activity-type-filter-label"
             id="activity-type-filter"
             value={activityTypeFilter}
-            label="Filter by Activity Type"
+            label={t('detail.activityTab.filterLabel')}
             onChange={handleFilterChange}
           >
             <MenuItem value="ALL">All Activities</MenuItem>
@@ -164,7 +169,7 @@ const PartnerActivityTab: React.FC<PartnerActivityTabProps> = ({ companyName }) 
 
       {/* Activity timeline */}
       <Stack spacing={2}>
-        {paginatedActivities.map((activity: Activity) => (
+        {paginatedActivities.map((activity) => (
           <Card key={activity.id} data-testid={`activity-item-${activity.id}`}>
             <CardContent>
               <Stack direction="row" spacing={2} alignItems="flex-start">
@@ -179,7 +184,11 @@ const PartnerActivityTab: React.FC<PartnerActivityTabProps> = ({ companyName }) 
                     {activity.description}
                   </Typography>
                   <Stack direction="row" spacing={2} alignItems="center" mt={1}>
-                    <Chip label={activity.username} size="small" variant="outlined" />
+                    <Chip
+                      label={(activity as any).username || 'System'}
+                      size="small"
+                      variant="outlined"
+                    />
                     <Typography variant="body2" color="text.secondary">
                       {formatTimestamp(activity.timestamp)}
                     </Typography>

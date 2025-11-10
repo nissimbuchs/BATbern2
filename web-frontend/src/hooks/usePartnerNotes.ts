@@ -14,13 +14,26 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  getPartnerNotes,
-  createPartnerNote,
-  updatePartnerNote,
-  deletePartnerNote,
-} from '@/services/api/partnerApi';
-import type { NoteResponse, CreateNoteRequest, UpdateNoteRequest } from '@/services/api/partnerApi';
+// import {
+//   getPartnerNotes,
+//   createPartnerNote,
+//   updatePartnerNote,
+//   deletePartnerNote,
+// } from '@/services/api/partnerApi';
+// import type { NoteResponse, CreateNoteRequest, UpdateNoteRequest } from '@/services/api/partnerApi';
+
+// TODO: Remove stubs when notes API is implemented
+interface NoteResponse {
+  id: string;
+  content: string;
+  createdAt: string;
+}
+interface CreateNoteRequest {
+  content: string;
+}
+interface UpdateNoteRequest {
+  content?: string;
+}
 
 interface UsePartnerNotesReturn {
   data: NoteResponse[] | undefined;
@@ -45,14 +58,14 @@ export const usePartnerNotes = (companyName: string): UsePartnerNotesReturn => {
 
   const { data, isLoading, error } = useQuery({
     queryKey,
-    queryFn: () => getPartnerNotes(companyName),
+    queryFn: async () => [], // TODO: Replace with getPartnerNotes(companyName) when API implemented
     enabled: !!companyName,
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
 
   // Create note mutation
   const createMutation = useMutation({
-    mutationFn: (note: CreateNoteRequest) => createPartnerNote(companyName, note),
+    mutationFn: async (_note: CreateNoteRequest) => ({}) as NoteResponse, // TODO: Replace with createPartnerNote(companyName, note)
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
     },
@@ -60,8 +73,8 @@ export const usePartnerNotes = (companyName: string): UsePartnerNotesReturn => {
 
   // Update note mutation
   const updateMutation = useMutation({
-    mutationFn: ({ noteId, ...note }: { noteId: string } & UpdateNoteRequest) =>
-      updatePartnerNote(companyName, noteId, note),
+    mutationFn: async ({ noteId: _noteId }: { noteId: string } & UpdateNoteRequest) =>
+      ({}) as NoteResponse, // TODO: Replace with updatePartnerNote(companyName, noteId, note)
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
     },
@@ -69,7 +82,7 @@ export const usePartnerNotes = (companyName: string): UsePartnerNotesReturn => {
 
   // Delete note mutation
   const deleteMutation = useMutation({
-    mutationFn: (noteId: string) => deletePartnerNote(companyName, noteId),
+    mutationFn: async (_noteId: string) => {}, // TODO: Replace with deletePartnerNote(companyName, noteId)
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
     },

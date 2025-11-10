@@ -17,6 +17,7 @@ import {
   DeleteForever as DeleteIcon,
   Block as BlockIcon,
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 
 interface User {
   username: string;
@@ -29,7 +30,7 @@ interface PartnerDetail {
   partnershipLevel: 'STRATEGIC' | 'PLATINUM' | 'GOLD' | 'SILVER' | 'BRONZE';
   partnershipStartDate: string;
   isActive: boolean;
-  autoRenewal: boolean;
+  autoRenewal?: boolean; // TODO: Add to backend PartnerResponse
   renewalDate?: string;
 }
 
@@ -62,6 +63,7 @@ export const PartnerSettingsTab: React.FC<PartnerSettingsTabProps> = ({
   onUpdateStatus,
   onUpdateAutoRenewal,
 }) => {
+  const { t } = useTranslation('partners');
   // Check if user is organizer
   const isOrganizer = currentUser.role === 'ORGANIZER';
 
@@ -90,7 +92,7 @@ export const PartnerSettingsTab: React.FC<PartnerSettingsTabProps> = ({
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h5" gutterBottom>
-        Partnership Settings
+        {t('detail.settingsTab.title')}
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         Configure partnership status and preferences
@@ -100,7 +102,7 @@ export const PartnerSettingsTab: React.FC<PartnerSettingsTabProps> = ({
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Typography variant="h6" gutterBottom>
-            Partnership Status
+            {t('detail.settingsTab.activePartnership')}
           </Typography>
           <Stack spacing={2}>
             <Box>
@@ -127,7 +129,7 @@ export const PartnerSettingsTab: React.FC<PartnerSettingsTabProps> = ({
             </Box>
             {partner.isActive && (
               <Chip
-                label="Active Partnership"
+                label={t('detail.settingsTab.activePartnership')}
                 color="success"
                 size="small"
                 sx={{ width: 'fit-content' }}
@@ -185,7 +187,7 @@ export const PartnerSettingsTab: React.FC<PartnerSettingsTabProps> = ({
             Data Management
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            GDPR compliance features (Coming in Epic 8)
+            {t('detail.header.comingSoon')}
           </Typography>
           <Stack spacing={2} divider={<Divider />}>
             <Box>
@@ -193,10 +195,10 @@ export const PartnerSettingsTab: React.FC<PartnerSettingsTabProps> = ({
                 variant="outlined"
                 startIcon={<DownloadIcon />}
                 disabled
-                title="Export Partner Data - Coming in Epic 8"
+                title={t('detail.header.comingSoon')}
                 fullWidth
               >
-                Export Partner Data
+                {t('detail.settingsTab.exportData')}
               </Button>
               <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
                 Download all partner data in JSON format
@@ -208,10 +210,10 @@ export const PartnerSettingsTab: React.FC<PartnerSettingsTabProps> = ({
                 color="error"
                 startIcon={<DeleteIcon />}
                 disabled
-                title="Delete Partner Data - Coming in Epic 8"
+                title={t('detail.header.comingSoon')}
                 fullWidth
               >
-                Delete Partner Data
+                {t('detail.settingsTab.deletePartner')}
               </Button>
               <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
                 Permanently delete all partner data (requires confirmation)
