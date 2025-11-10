@@ -39,12 +39,12 @@ public class SecurityConfig {
     private String jwkSetUri;
 
     /**
-     * Enable method-level security for production and staging environments
+     * Enable method-level security for production, staging, and test environments
      * Enforces @PreAuthorize annotations on controller methods
      */
     @Configuration
     @EnableMethodSecurity(prePostEnabled = true)
-    @Profile("!local & !test")
+    @Profile("!local")
     static class ProductionMethodSecurityConfig {
     }
 

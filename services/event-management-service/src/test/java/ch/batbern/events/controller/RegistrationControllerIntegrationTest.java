@@ -401,7 +401,7 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
         );
 
         // Confirm registration
-        mockMvc.perform(post("/api/v1/registrations/confirm")
+        mockMvc.perform(post("/api/v1/events/" + testEvent.getEventCode() + "/registrations/confirm")
                         .param("token", token)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -426,7 +426,7 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
         );
 
         // Try to confirm again (should be idempotent)
-        mockMvc.perform(post("/api/v1/registrations/confirm")
+        mockMvc.perform(post("/api/v1/events/" + testEvent.getEventCode() + "/registrations/confirm")
                         .param("token", token)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -443,7 +443,7 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     void should_return400_when_invalidTokenProvided() throws Exception {
         String invalidToken = "invalid.jwt.token";
 
-        mockMvc.perform(post("/api/v1/registrations/confirm")
+        mockMvc.perform(post("/api/v1/events/" + testEvent.getEventCode() + "/registrations/confirm")
                         .param("token", invalidToken)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
@@ -459,7 +459,7 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
                 testEvent.getEventCode()
         );
 
-        mockMvc.perform(post("/api/v1/registrations/confirm")
+        mockMvc.perform(post("/api/v1/events/" + testEvent.getEventCode() + "/registrations/confirm")
                         .param("token", token)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());

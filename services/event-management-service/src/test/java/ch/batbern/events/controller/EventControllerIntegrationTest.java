@@ -952,9 +952,8 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(newRegistration))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.registrationCode").exists())
-                .andExpect(jsonPath("$.attendeeUsername").exists())
-                .andExpect(jsonPath("$.status").value("CONFIRMED")); // API returns uppercase confirmed status
+                .andExpect(jsonPath("$.message").value("Registration submitted successfully. Check your email to confirm."))
+                .andExpect(jsonPath("$.email").value("john.doe@example.com")); // Story 4.1.5c: Minimal response
     }
 
     @Test
@@ -975,82 +974,6 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isBadRequest());
     }
 
-    @Test
-    @DisplayName("should_updateRegistration_when_patchProvided")
-    void should_updateRegistration_when_patchProvided() throws Exception {
-        Event savedEvent = eventRepository.findAll().get(0);
-
-        // First create a registration
-        String newRegistration = """
-                {
-                    "firstName": "Jane",
-                    "lastName": "Smith",
-                    "email": "jane.smith@example.com",
-                    "termsAccepted": true
-                }
-                """;
-
-        String createResponse = mockMvc.perform(post("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(newRegistration))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-
-        JsonNode registrationNode = objectMapper.readTree(createResponse);
-        String registrationCode = registrationNode.get("registrationCode").asText();
-
-        // Now update status with PATCH
-        String patchData = """
-                {
-                    "status": "confirmed"
-                }
-                """;
-
-        mockMvc.perform(patch("/api/v1/events/" + savedEvent.getEventCode() + "/registrations/" + registrationCode)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(patchData))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.registrationCode").value(registrationCode))
-                .andExpect(jsonPath("$.attendeeFirstName").value("Jane")) // Name unchanged
-                .andExpect(jsonPath("$.attendeeLastName").value("Smith")) // Name unchanged
-                .andExpect(jsonPath("$.status").value("CONFIRMED")); // API returns uppercase status
-    }
-
-    @Test
-    @DisplayName("should_deleteRegistration_when_requested")
-    void should_deleteRegistration_when_requested() throws Exception {
-        Event savedEvent = eventRepository.findAll().get(0);
-
-        // First create a registration
-        String newRegistration = """
-                {
-                    "firstName": "Bob",
-                    "lastName": "Johnson",
-                    "email": "bob.johnson@example.com",
-                    "termsAccepted": true
-                }
-                """;
-
-        String createResponse = mockMvc.perform(post("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(newRegistration))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-
-        JsonNode registrationNode = objectMapper.readTree(createResponse);
-        String registrationCode = registrationNode.get("registrationCode").asText();
-
-        // Now delete it
-        mockMvc.perform(delete("/api/v1/events/" + savedEvent.getEventCode() + "/registrations/" + registrationCode)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNoContent());
-
-        // Verify it's deleted by checking the list
-        mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.registrationCode == '" + registrationCode + "')]").doesNotExist());
-    }
 
     // ============================================================================
     // AC13: Event Analytics

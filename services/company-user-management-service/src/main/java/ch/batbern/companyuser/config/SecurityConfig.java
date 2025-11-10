@@ -45,7 +45,7 @@ public class SecurityConfig {
      */
     @Configuration
     @EnableMethodSecurity(prePostEnabled = true)
-    @Profile("!local & !test")
+    @Profile("!local")
     static class ProductionMethodSecurityConfig {
     }
 

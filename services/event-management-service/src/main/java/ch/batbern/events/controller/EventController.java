@@ -6,6 +6,7 @@ import ch.batbern.events.domain.Logo;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.dto.BatchUpdateRequest;
 import ch.batbern.events.dto.CreateEventRequest;
+import ch.batbern.events.dto.CreateRegistrationResponse;
 import ch.batbern.events.dto.generated.CreateRegistrationRequest;
 import ch.batbern.events.dto.EventResponse;
 import ch.batbern.events.dto.PatchEventRequest;
@@ -1101,7 +1102,7 @@ public class EventController {
                     "Creates anonymous user profile automatically. " +
                     "Registration starts in PENDING status. User must confirm via email link."
     )
-    public ResponseEntity<Map<String, String>> createRegistration(
+    public ResponseEntity<CreateRegistrationResponse> createRegistration(
             @PathVariable String eventCode,
             @Valid @RequestBody CreateRegistrationRequest request) {
         log.debug("POST /api/v1/events/{}/registrations", eventCode);
@@ -1124,7 +1125,7 @@ public class EventController {
                 userApiClient.getUserByUsername(registration.getAttendeeUsername());
 
         // Send confirmation email with JWT token (Story 4.1.5c)
-        // Email includes confirmation link: https://batbern.ch/confirm-registration?token={confirmationToken}
+        // Email includes confirmation link: https://batbern.ch/events/{eventCode}/confirm-registration?token={confirmationToken}
         registrationEmailService.sendRegistrationConfirmation(
                 registration,
                 userProfile,
@@ -1137,9 +1138,10 @@ public class EventController {
                 registration.getId(), confirmationToken.substring(0, 20) + "...");
 
         // Return minimal response (no sensitive data)
-        Map<String, String> response = new HashMap<>();
-        response.put("message", "Registration submitted successfully. Check your email to confirm.");
-        response.put("email", request.getEmail());
+        CreateRegistrationResponse response = CreateRegistrationResponse.builder()
+                .message("Registration submitted successfully. Check your email to confirm.")
+                .email(request.getEmail())
+                .build();
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -1217,28 +1219,36 @@ public class EventController {
     /**
      * Confirm Event Registration - Email Confirmation Flow
      *
-     * POST /api/v1/registrations/confirm?token={JWT}
+     * POST /api/v1/events/{eventCode}/registrations/confirm?token={JWT}
      *
      * Confirms a pending registration using the JWT token from the confirmation email.
      * Updates registration status from PENDING to CONFIRMED.
-     * Token is valid for 48 hours and can only be used once.
+     * Token is valid for 48 hours and event code in URL must match event code in token.
      *
+     * @param eventCode Event code to confirm registration for
      * @param token JWT confirmation token from email
      * @return Success message
      */
-    @PostMapping("/registrations/confirm")
+    @PostMapping("/{eventCode}/registrations/confirm")
     @Operation(
             summary = "Confirm Registration",
             description = "Confirm a pending registration using the token from the confirmation email. " +
-                    "Token is valid for 48 hours and single-use only."
+                    "Token is valid for 48 hours and event code must match."
     )
     public ResponseEntity<Map<String, String>> confirmRegistration(
+            @PathVariable String eventCode,
             @RequestParam("token") String token) {
-        log.debug("POST /api/v1/registrations/confirm");
+        log.debug("POST /api/v1/events/{}/registrations/confirm", eventCode);
 
         try {
             // Validate token
             io.jsonwebtoken.Claims claims = confirmationTokenService.validateConfirmationToken(token);
+
+            // Extract event code from token and verify it matches URL
+            String tokenEventCode = confirmationTokenService.getEventCode(claims);
+            if (!eventCode.equals(tokenEventCode)) {
+                throw new IllegalArgumentException("Event code mismatch: URL has " + eventCode + " but token has " + tokenEventCode);
+            }
 
             // Extract registration ID
             UUID registrationId = confirmationTokenService.getRegistrationId(claims);
@@ -1246,6 +1256,15 @@ public class EventController {
             // Find registration
             Registration registration = registrationRepository.findById(registrationId)
                     .orElseThrow(() -> new NoSuchElementException("Registration not found: " + registrationId));
+
+            // Fetch the event to verify registration belongs to it and to get event code
+            Event event = eventRepository.findById(registration.getEventId())
+                    .orElseThrow(() -> new NoSuchElementException("Event not found for registration: " + registrationId));
+
+            // Verify registration belongs to this event
+            if (!event.getEventCode().equals(eventCode)) {
+                throw new IllegalArgumentException("Registration does not belong to event: " + eventCode);
+            }
 
             // Check if already confirmed
             if ("confirmed".equalsIgnoreCase(registration.getStatus())) {
@@ -1260,7 +1279,7 @@ public class EventController {
             registration.setUpdatedAt(Instant.now());
             registrationRepository.save(registration);
 
-            log.info("Registration confirmed: {}", registrationId);
+            log.info("Registration confirmed: {} for event: {}", registrationId, eventCode);
 
             // Return success response
             Map<String, String> response = new HashMap<>();

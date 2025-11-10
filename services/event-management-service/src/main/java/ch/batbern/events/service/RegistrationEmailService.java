@@ -136,7 +136,7 @@ public class RegistrationEmailService {
                     Map.entry("eventTime", eventDateTime.format(TIME_FORMATTER) + " Uhr"),
                     Map.entry("venueName", event.getVenueName() != null ? event.getVenueName() : "TBA"),
                     Map.entry("venueAddress", event.getVenueAddress() != null ? event.getVenueAddress() : "TBA"),
-                    Map.entry("confirmationUrl", baseUrl + "/confirm-registration?token=" + confirmationToken),
+                    Map.entry("confirmationUrl", baseUrl + "/events/" + event.getEventCode() + "/confirm-registration?token=" + confirmationToken),
                     Map.entry("createAccountUrl", baseUrl + "/auth/signup?email=" + userProfile.getEmail()),
                     Map.entry("eventUrl", baseUrl + "/events/" + event.getEventCode()),
                     Map.entry("supportUrl", baseUrl + "/support"),

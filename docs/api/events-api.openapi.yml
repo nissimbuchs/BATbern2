@@ -1374,7 +1374,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /registrations/confirm:
+  /events/{eventCode}/registrations/confirm:
     post:
       tags:
         - Registrations
@@ -1390,12 +1390,21 @@ paths:
         - Token expiry checked (48 hours from registration)
         - Token type must be "email-confirmation"
         - Registration ID extracted from token claims
+        - Event code in URL must match event code in token
 
         **Idempotency**: Can be called multiple times safely. Already confirmed registrations return 200 OK.
 
       operationId: confirmRegistration
       security: []  # Public endpoint - JWT token in query param provides security
       parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbernXXX
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern57
         - name: token
           in: query
           description: JWT confirmation token from email link
