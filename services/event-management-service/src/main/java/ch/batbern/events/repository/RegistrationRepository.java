@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -53,4 +54,23 @@ public interface RegistrationRepository extends JpaRepository<Registration, UUID
      * Delete all registrations for a specific event
      */
     void deleteByEventId(UUID eventId);
+
+    /**
+     * Find registrations by status and created before threshold
+     * Used for cleanup of unconfirmed registrations
+     *
+     * @param status Registration status (e.g., "registered")
+     * @param threshold Instant threshold (e.g., 48 hours ago)
+     * @return List of registrations matching criteria
+     */
+    List<Registration> findByStatusAndCreatedAtBefore(String status, Instant threshold);
+
+    /**
+     * Count registrations by status
+     * Used for cleanup statistics and monitoring
+     *
+     * @param status Registration status
+     * @return Count of registrations with given status
+     */
+    long countByStatus(String status);
 }

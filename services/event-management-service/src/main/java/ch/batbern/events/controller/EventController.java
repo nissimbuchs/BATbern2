@@ -1248,15 +1248,15 @@ public class EventController {
                     .orElseThrow(() -> new NoSuchElementException("Registration not found: " + registrationId));
 
             // Check if already confirmed
-            if ("CONFIRMED".equalsIgnoreCase(registration.getStatus())) {
+            if ("confirmed".equalsIgnoreCase(registration.getStatus())) {
                 Map<String, String> response = new HashMap<>();
                 response.put("message", "Registration already confirmed");
-                response.put("status", "CONFIRMED");
+                response.put("status", "confirmed");
                 return ResponseEntity.ok(response);
             }
 
-            // Update status to CONFIRMED
-            registration.setStatus("CONFIRMED");
+            // Update status to confirmed (Story 4.1.5c: registered → confirmed)
+            registration.setStatus("confirmed"); // Lowercase per DB constraint
             registration.setUpdatedAt(Instant.now());
             registrationRepository.save(registration);
 
@@ -1265,7 +1265,7 @@ public class EventController {
             // Return success response
             Map<String, String> response = new HashMap<>();
             response.put("message", "Registration confirmed successfully!");
-            response.put("status", "CONFIRMED");
+            response.put("status", "confirmed");
 
             return ResponseEntity.ok(response);
 

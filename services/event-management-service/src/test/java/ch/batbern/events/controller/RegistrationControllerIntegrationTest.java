@@ -152,7 +152,7 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
                 .andExpect(jsonPath("$.registrationCode").exists())
                 .andExpect(jsonPath("$.registrationCode").value(startsWith("BATbern142-reg-")))
                 .andExpect(jsonPath("$.eventCode").value("BATbern142"))
-                .andExpect(jsonPath("$.status").value("CONFIRMED"))
+                .andExpect(jsonPath("$.status").value("registered")) // Story 4.1.5c: starts as 'registered' before email confirmation
                 .andExpect(jsonPath("$.attendeeUsername").value("john.doe"))
                 .andExpect(jsonPath("$.attendeeFirstName").value("John"))
                 .andExpect(jsonPath("$.attendeeLastName").value("Doe"))
@@ -317,7 +317,7 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.registrationCode").value(registration.getRegistrationCode()))
                 .andExpect(jsonPath("$.eventCode").value("BATbern142"))
-                .andExpect(jsonPath("$.status").value("CONFIRMED"))
+                .andExpect(jsonPath("$.status").value("confirmed"))
                 .andExpect(jsonPath("$.attendeeUsername").value("john.doe"))
                 .andExpect(jsonPath("$.attendeeFirstName").value("John"))
                 .andExpect(jsonPath("$.attendeeLastName").value("Doe"))

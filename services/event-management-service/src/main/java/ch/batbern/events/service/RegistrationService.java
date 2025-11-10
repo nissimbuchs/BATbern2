@@ -94,13 +94,13 @@ public class RegistrationService {
         log.debug("Generated registration code: {}", registrationCode);
 
         // 4. Create and save registration (ADR-004: No denormalized user data)
-        // Story 4.1.5: Status defaults to "confirmed", registrationDate is now (Instant.now())
+        // Story 4.1.5c: Status starts as "registered", becomes "confirmed" after email confirmation
         Registration registration = Registration.builder()
                 .registrationCode(registrationCode)
                 .eventId(event.getId())
                 .eventCode(eventCode) // Transient field for API responses
                 .attendeeUsername(username) // Cross-service reference
-                .status("confirmed") // Default status for anonymous registrations (lowercase per DB constraint)
+                .status("registered") // Status before email confirmation (lowercase per DB constraint)
                 .registrationDate(Instant.now()) // Auto-set registration timestamp
                 .build();
 
