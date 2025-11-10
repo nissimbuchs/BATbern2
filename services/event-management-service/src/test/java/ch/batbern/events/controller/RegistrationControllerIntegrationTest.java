@@ -10,6 +10,7 @@ import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
+import ch.batbern.events.service.ConfirmationTokenService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -36,14 +37,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Integration Tests for Registration Endpoints
  * <p>
  * Story 2.2a: Anonymous Event Registration (ADR-005)
+ * Story 4.1.5c: Secure Email-Based Registration Confirmation
  * <p>
  * Test Scenarios:
- * - Create anonymous registration (no auth required)
+ * - Create anonymous registration (no auth required) - Returns {message, email}
  * - Registration creates/retrieves user via User Management API
  * - Registration code generation and format validation
+ * - Confirm registration via JWT token
  * - Retrieve registration by code with enriched user data
  * - List all registrations for an event
- * - Generate QR code for registration
  * <p>
  * Uses Testcontainers PostgreSQL for production parity.
  */
@@ -62,6 +64,9 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private ConfirmationTokenService confirmationTokenService;
 
     @MockBean
     private UserApiClient userApiClient;
@@ -145,29 +150,23 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
                 }
                 """;
 
+        // Story 4.1.5c: Registration now returns {message, email} instead of full registration
         mockMvc.perform(post("/api/v1/events/BATbern142/registrations")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.registrationCode").exists())
-                .andExpect(jsonPath("$.registrationCode").value(startsWith("BATbern142-reg-")))
-                .andExpect(jsonPath("$.eventCode").value("BATbern142"))
-                .andExpect(jsonPath("$.status").value("registered")) // Story 4.1.5c: starts as 'registered' before email confirmation
-                .andExpect(jsonPath("$.attendeeUsername").value("john.doe"))
-                .andExpect(jsonPath("$.attendeeFirstName").value("John"))
-                .andExpect(jsonPath("$.attendeeLastName").value("Doe"))
-                .andExpect(jsonPath("$.attendeeEmail").value("john.doe@example.com"))
-                .andExpect(jsonPath("$.attendeeCompany").value("Test Company"))
-                .andExpect(jsonPath("$.registrationDate").exists())
-                .andExpect(jsonPath("$.createdAt").exists())
-                .andExpect(jsonPath("$.updatedAt").exists());
+                .andExpect(jsonPath("$.message").value(containsString("Registration submitted successfully")))
+                .andExpect(jsonPath("$.email").value("john.doe@example.com"))
+                // No longer returns registration details in response
+                .andExpect(jsonPath("$.registrationCode").doesNotExist())
+                .andExpect(jsonPath("$.status").doesNotExist());
 
         // Verify registration was saved to database
         assertThat(registrationRepository.count()).isEqualTo(1);
         Registration savedRegistration = registrationRepository.findAll().get(0);
         assertThat(savedRegistration.getRegistrationCode()).startsWith("BATbern142-reg-");
         assertThat(savedRegistration.getAttendeeUsername()).isEqualTo("john.doe");
-        assertThat(savedRegistration.getStatus()).isEqualTo("confirmed"); // Database stores lowercase
+        assertThat(savedRegistration.getStatus()).isEqualTo("registered"); // Story 4.1.5c: starts as 'registered'
     }
 
     @Test
@@ -222,14 +221,16 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
                 }
                 """;
 
-        // Create first registration
-        String response1 = mockMvc.perform(post("/api/v1/events/BATbern142/registrations")
+        // Create first registration - Story 4.1.5c: returns {message, email}
+        mockMvc.perform(post("/api/v1/events/BATbern142/registrations")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson))
                 .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.email").value("john.doe@example.com"));
 
-        String registrationCode1 = objectMapper.readTree(response1).get("registrationCode").asText();
+        // Get registration code from database
+        String registrationCode1 = registrationRepository.findAll().get(0).getRegistrationCode();
 
         // Create second registration with different email
         UserResponse janeProfile = new UserResponse()
@@ -256,13 +257,15 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
                 }
                 """;
 
-        String response2 = mockMvc.perform(post("/api/v1/events/BATbern142/registrations")
+        mockMvc.perform(post("/api/v1/events/BATbern142/registrations")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson2))
                 .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.email").value("jane.smith@example.com"));
 
-        String registrationCode2 = objectMapper.readTree(response2).get("registrationCode").asText();
+        // Get second registration code from database
+        String registrationCode2 = registrationRepository.findAll().get(1).getRegistrationCode();
 
         // Verify codes are unique
         assertThat(registrationCode1).isNotEqualTo(registrationCode2);
@@ -317,7 +320,7 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.registrationCode").value(registration.getRegistrationCode()))
                 .andExpect(jsonPath("$.eventCode").value("BATbern142"))
-                .andExpect(jsonPath("$.status").value("confirmed"))
+                .andExpect(jsonPath("$.status").value("CONFIRMED")) // API returns uppercase
                 .andExpect(jsonPath("$.attendeeUsername").value("john.doe"))
                 .andExpect(jsonPath("$.attendeeFirstName").value("John"))
                 .andExpect(jsonPath("$.attendeeLastName").value("Doe"))
@@ -362,30 +365,102 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     }
 
     // ============================================================================
-    // Test: QR Code Generation
+    // Test: QR Code Generation (DEPRECATED - Story 4.1.5c)
     // ============================================================================
+    // QR code functionality has been removed in Story 4.1.5c
+    // Replaced with email-based confirmation using JWT tokens
 
     @Test
+    @Disabled("Story 4.1.5c: QR code functionality removed")
     @DisplayName("should_generateQRCode_when_validRegistrationProvided")
     void should_generateQRCode_when_validRegistrationProvided() throws Exception {
-        Registration registration = createTestRegistration("john.doe", "confirmed");
-
-        byte[] qrCodeBytes = mockMvc.perform(get("/api/v1/events/BATbern142/registrations/" + registration.getRegistrationCode() + "/qr")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(header().string("Content-Type", "image/png"))
-                .andExpect(header().string("Content-Disposition", containsString("registration-" + registration.getRegistrationCode())))
-                .andReturn().getResponse().getContentAsByteArray();
-
-        // Verify QR code was generated
-        assertThat(qrCodeBytes).isNotNull();
-        assertThat(qrCodeBytes.length).isGreaterThan(0);
+        // This test is disabled because QR code functionality has been removed
     }
 
     @Test
+    @Disabled("Story 4.1.5c: QR code functionality removed")
     @DisplayName("should_return404_when_qrCodeRequestedForNonexistentRegistration")
     void should_return404_when_qrCodeRequestedForNonexistentRegistration() throws Exception {
-        mockMvc.perform(get("/api/v1/events/BATbern142/registrations/NONEXISTENT/qr")
+        // This test is disabled because QR code functionality has been removed
+    }
+
+    // ============================================================================
+    // Test: Email Confirmation Flow (Story 4.1.5c)
+    // ============================================================================
+
+    @Test
+    @DisplayName("should_confirmRegistration_when_validTokenProvided")
+    void should_confirmRegistration_when_validTokenProvided() throws Exception {
+        // Create a test registration in 'registered' status
+        Registration registration = createTestRegistration("john.doe", "registered");
+
+        // Generate confirmation token
+        String token = confirmationTokenService.generateConfirmationToken(
+                registration.getId(),
+                testEvent.getEventCode()
+        );
+
+        // Confirm registration
+        mockMvc.perform(post("/api/v1/registrations/confirm")
+                        .param("token", token)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Registration confirmed successfully!"))
+                .andExpect(jsonPath("$.status").value("confirmed"));
+
+        // Verify status was updated in database
+        Registration confirmedRegistration = registrationRepository.findById(registration.getId()).orElseThrow();
+        assertThat(confirmedRegistration.getStatus()).isEqualTo("confirmed");
+    }
+
+    @Test
+    @DisplayName("should_returnAlreadyConfirmed_when_registrationAlreadyConfirmed")
+    void should_returnAlreadyConfirmed_when_registrationAlreadyConfirmed() throws Exception {
+        // Create a test registration that's already confirmed
+        Registration registration = createTestRegistration("john.doe", "confirmed");
+
+        // Generate confirmation token
+        String token = confirmationTokenService.generateConfirmationToken(
+                registration.getId(),
+                testEvent.getEventCode()
+        );
+
+        // Try to confirm again (should be idempotent)
+        mockMvc.perform(post("/api/v1/registrations/confirm")
+                        .param("token", token)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Registration already confirmed"))
+                .andExpect(jsonPath("$.status").value("confirmed"));
+
+        // Verify status is still confirmed
+        Registration stillConfirmed = registrationRepository.findById(registration.getId()).orElseThrow();
+        assertThat(stillConfirmed.getStatus()).isEqualTo("confirmed");
+    }
+
+    @Test
+    @DisplayName("should_return400_when_invalidTokenProvided")
+    void should_return400_when_invalidTokenProvided() throws Exception {
+        String invalidToken = "invalid.jwt.token";
+
+        mockMvc.perform(post("/api/v1/registrations/confirm")
+                        .param("token", invalidToken)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("should_return404_when_registrationNotFoundForToken")
+    void should_return404_when_registrationNotFoundForToken() throws Exception {
+        // Generate token for non-existent registration
+        java.util.UUID nonExistentId = java.util.UUID.randomUUID();
+        String token = confirmationTokenService.generateConfirmationToken(
+                nonExistentId,
+                testEvent.getEventCode()
+        );
+
+        mockMvc.perform(post("/api/v1/registrations/confirm")
+                        .param("token", token)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
     }
@@ -407,11 +482,13 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
                 """;
 
         // When: First registration attempt (should succeed)
+        // Story 4.1.5c: Registration now returns {message, email}
         mockMvc.perform(post("/api/v1/events/BATbern142/registrations")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(registrationRequest))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.attendeeUsername").value("john.doe"));
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.email").value("john.doe@example.com"));
 
         // Then: Second registration attempt with same user should fail with 409 Conflict
         mockMvc.perform(post("/api/v1/events/BATbern142/registrations")
