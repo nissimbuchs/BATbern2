@@ -37,7 +37,7 @@
   },
   "devDependencies": {
     "@aws-sdk/client-cloudwatch": "^3.917.0",
-    "@aws-sdk/client-cognito-identity-provider": "^3.917.0",
+    "@aws-sdk/client-cognito-identity-provider": "^3.927.0",
     "@aws-sdk/client-lambda": "^3.917.0",
     "@aws-sdk/client-secrets-manager": "^3.917.0",
     "@aws-sdk/client-ses": "^3.917.0",
