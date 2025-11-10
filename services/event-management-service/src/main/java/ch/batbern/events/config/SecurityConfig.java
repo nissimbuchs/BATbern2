@@ -80,7 +80,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*/registrations/*").permitAll()
                 // Email confirmation endpoint (no auth required, token-protected)
-                .requestMatchers(HttpMethod.POST, "/api/v1/registrations/confirm").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations/confirm").permitAll()
 
                 // All other requests require authentication
                 .anyRequest().authenticated()

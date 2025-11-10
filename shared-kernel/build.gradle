@@ -48,6 +48,7 @@ dependencies {
     implementation 'software.amazon.awssdk:cloudwatch'
     implementation 'software.amazon.awssdk:cognitoidentityprovider'
     implementation 'software.amazon.awssdk:ses' // Email service (Story 2.2a Task B12)
+    implementation 'software.amazon.awssdk:sts' // STS for role assumption in local dev
 
     // Jakarta Mail for email MIME message creation (Story 2.2a Task B12)
     implementation 'org.eclipse.angus:angus-mail:2.0.3'

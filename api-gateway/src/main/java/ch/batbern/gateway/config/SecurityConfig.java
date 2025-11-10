@@ -125,7 +125,7 @@ public class SecurityConfig {
 
                         // Story 4.1.5c: Email-based confirmation endpoint
                         // (no auth required - JWT token in query param provides security)
-                        .requestMatchers(HttpMethod.POST, "/api/v1/registrations/confirm").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations/confirm").permitAll()
 
                         // All other requests require authentication
                         .anyRequest().authenticated()

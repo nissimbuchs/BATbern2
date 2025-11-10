@@ -246,6 +246,16 @@ AWS_S3_PATH_STYLE_ACCESS=true
 AWS_S3_BUCKET_NAME=batbern-development-company-logos
 
 # ==============================================
+# Application Base URL (for email links, etc.)
+# ==============================================
+APP_BASE_URL=http://localhost:${FRONTEND_PORT}
+
+# ==============================================
+# JWT Secret (for confirmation tokens)
+# ==============================================
+JWT_SECRET=${JWT_SECRET:-dev-secret-change-in-production-use-openssl-rand-base64-32}
+
+# ==============================================
 # Frontend Configuration (Instance ${INSTANCE})
 # ==============================================
 VITE_API_BASE_URL=http://localhost:${API_GATEWAY_PORT}

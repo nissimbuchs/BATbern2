@@ -170,7 +170,10 @@ function App() {
                   <Route path="/" element={<HomePage />} />
                   <Route path="/register/:eventCode" element={<PublicRegistrationPage />} />
                   <Route path="/registration-success" element={<RegistrationSuccessPage />} />
-                  <Route path="/confirm-registration" element={<ConfirmRegistrationPage />} />
+                  <Route
+                    path="/events/:eventCode/confirm-registration"
+                    element={<ConfirmRegistrationPage />}
+                  />
                   <Route
                     path="/registration-confirmation/:confirmationCode"
                     element={<RegistrationConfirmationPage />}

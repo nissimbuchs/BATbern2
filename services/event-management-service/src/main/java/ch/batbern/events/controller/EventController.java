@@ -1270,7 +1270,7 @@ public class EventController {
             if ("confirmed".equalsIgnoreCase(registration.getStatus())) {
                 Map<String, String> response = new HashMap<>();
                 response.put("message", "Registration already confirmed");
-                response.put("status", "confirmed");
+                response.put("status", "CONFIRMED");
                 return ResponseEntity.ok(response);
             }
 
@@ -1284,7 +1284,7 @@ public class EventController {
             // Return success response
             Map<String, String> response = new HashMap<>();
             response.put("message", "Registration confirmed successfully!");
-            response.put("status", "confirmed");
+            response.put("status", "CONFIRMED");
 
             return ResponseEntity.ok(response);
 

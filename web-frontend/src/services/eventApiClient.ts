@@ -275,15 +275,25 @@ class EventApiClient {
    * Confirms a pending registration using the JWT token from the confirmation email.
    * Updates registration status from PENDING to CONFIRMED.
    *
+   * @param eventCode Event code from URL
    * @param token JWT confirmation token from email
    * @returns Confirmation response with status
    */
-  async confirmRegistration(token: string): Promise<{ message: string; status: string }> {
+  async confirmRegistration(
+    eventCode: string,
+    token: string
+  ): Promise<{ message: string; status: string }> {
     try {
       const response = await apiClient.post<{ message: string; status: string }>(
-        `/api/v1/registrations/confirm`,
+        `/events/${eventCode}/registrations/confirm`,
         null,
-        { params: { token } }
+        {
+          params: { token },
+          headers: {
+            // Public endpoint - skip auth header added by interceptor
+            'Skip-Auth': 'true',
+          },
+        }
       );
       return response.data;
     } catch (error) {

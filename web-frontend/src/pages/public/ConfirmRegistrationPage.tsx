@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { useSearchParams, Link, Navigate } from 'react-router-dom';
+import { useSearchParams, useParams, Link, Navigate } from 'react-router-dom';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { Button } from '@/components/public/ui/button';
 import { Card } from '@/components/public/ui/card';
@@ -17,21 +17,22 @@ type ConfirmationState = 'loading' | 'success' | 'error' | 'already_confirmed';
 
 const ConfirmRegistrationPage = () => {
   const [searchParams] = useSearchParams();
+  const { eventCode } = useParams<{ eventCode: string }>();
   const token = searchParams.get('token');
 
   const [state, setState] = useState<ConfirmationState>('loading');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!token) {
+    if (!token || !eventCode) {
       setState('error');
-      setErrorMessage('No confirmation token provided');
+      setErrorMessage(`No confirmation token${!token ? ' or event code' : ''} provided`);
       return;
     }
 
     const confirmRegistration = async () => {
       try {
-        const response = await eventApiClient.confirmRegistration(token);
+        const response = await eventApiClient.confirmRegistration(eventCode, token);
 
         if (response.status === 'CONFIRMED') {
           // Check if it was already confirmed
