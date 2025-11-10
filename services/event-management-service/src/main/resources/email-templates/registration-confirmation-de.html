@@ -117,12 +117,12 @@
 <body>
     <div class="email-container">
         <div class="header">
-            <h1>✓ Registrierung bestätigt</h1>
+            <h1>📧 Registrierung eingegangen</h1>
         </div>
 
         <p>Hallo {{attendeeFirstName}} {{attendeeLastName}},</p>
 
-        <p>Vielen Dank für Ihre Anmeldung! Wir freuen uns, Sie beim folgenden Event begrüssen zu dürfen:</p>
+        <p>Vielen Dank für Ihre Anmeldung! Um Ihre Registrierung abzuschliessen, bestätigen Sie bitte Ihre E-Mail-Adresse für das folgende Event:</p>
 
         <div class="event-details">
             <h2>{{eventTitle}}</h2>
@@ -140,16 +140,16 @@
             </div>
         </div>
 
-        <div class="registration-code">
-            <div class="registration-code-label">Ihr Registrierungscode</div>
-            <div class="registration-code-value">{{registrationCode}}</div>
-        </div>
-
-        <p><strong>Wichtig:</strong> Bitte bewahren Sie diesen Registrierungscode auf. Sie benötigen ihn beim Check-in am Event.</p>
+        <p><strong>Wichtig:</strong> Bitte bestätigen Sie Ihre Registrierung innerhalb von 48 Stunden, indem Sie auf den folgenden Button klicken:</p>
 
         <div style="text-align: center;">
-            <a href="{{qrCodeUrl}}" class="cta-button">📱 QR-Code-Ticket herunterladen</a>
+            <a href="{{confirmationUrl}}" class="cta-button">✓ Registrierung jetzt bestätigen</a>
         </div>
+
+        <p style="font-size: 12px; color: #666; margin-top: 20px;">
+            Falls der Button nicht funktioniert, kopieren Sie bitte diesen Link in Ihren Browser:<br>
+            <a href="{{confirmationUrl}}" style="color: #0066cc; word-break: break-all;">{{confirmationUrl}}</a>
+        </p>
 
         <div class="create-account-box">
             <h3>💡 Erstellen Sie ein kostenloses Konto</h3>
@@ -172,7 +172,6 @@
         <div class="footer">
             <p>
                 <a href="{{eventUrl}}">Event-Details ansehen</a> |
-                <a href="{{registrationUrl}}">Registrierung verwalten</a> |
                 <a href="{{supportUrl}}">Support kontaktieren</a>
             </p>
             <p>

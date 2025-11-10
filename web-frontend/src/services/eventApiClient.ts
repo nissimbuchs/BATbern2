@@ -257,11 +257,33 @@ class EventApiClient {
   async createRegistration(
     eventCode: string,
     data: CreateRegistrationRequest
-  ): Promise<Registration> {
+  ): Promise<{ message: string; email: string }> {
     try {
-      const response = await apiClient.post<Registration>(
+      const response = await apiClient.post<{ message: string; email: string }>(
         `${EVENT_API_PATH}/${eventCode}/registrations`,
         data
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Confirm Registration (PUBLIC ACCESS - Story: Email Confirmation)
+   *
+   * Confirms a pending registration using the JWT token from the confirmation email.
+   * Updates registration status from PENDING to CONFIRMED.
+   *
+   * @param token JWT confirmation token from email
+   * @returns Confirmation response with status
+   */
+  async confirmRegistration(token: string): Promise<{ message: string; status: string }> {
+    try {
+      const response = await apiClient.post<{ message: string; status: string }>(
+        `/api/v1/registrations/confirm`,
+        null,
+        { params: { token } }
       );
       return response.data;
     } catch (error) {
@@ -279,48 +301,12 @@ class EventApiClient {
    * @param confirmationCode Registration confirmation code
    * @returns Registration details
    */
-  async getRegistration(
-    eventCode: string,
-    confirmationCode: string
-  ): Promise<Registration> {
+  async getRegistration(eventCode: string, confirmationCode: string): Promise<Registration> {
     try {
       const response = await apiClient.get<Registration>(
         `${EVENT_API_PATH}/${eventCode}/registrations/${confirmationCode}`
       );
       return response.data;
-    } catch (error) {
-      throw this.transformError(error);
-    }
-  }
-
-  /**
-   * Get QR code for registration (PUBLIC ACCESS - Story 4.1.6)
-   *
-   * Generates QR code image for registration check-in.
-   * Returns a blob URL that can be used in <img src={url} />
-   *
-   * @param eventCode Event code identifier
-   * @param confirmationCode Registration confirmation code
-   * @param size QR code size in pixels (optional, default: 300)
-   * @returns Blob URL for QR code image
-   */
-  async getRegistrationQR(
-    eventCode: string,
-    confirmationCode: string,
-    size: number = 300
-  ): Promise<string> {
-    try {
-      const params = new URLSearchParams();
-      params.append('size', size.toString());
-
-      const response = await apiClient.get(
-        `${EVENT_API_PATH}/${eventCode}/registrations/${confirmationCode}/qr?${params.toString()}`,
-        {
-          responseType: 'blob',
-        }
-      );
-
-      return URL.createObjectURL(response.data);
     } catch (error) {
       throw this.transformError(error);
     }
@@ -394,6 +380,10 @@ class EventApiClient {
       message = 'Forbidden: You do not have permission to perform this action';
     } else if (status === 404) {
       message = 'Not Found: The requested event was not found';
+    } else if (status === 409) {
+      // Conflict - extract backend error message (e.g., duplicate registration)
+      const errorData = axiosError.response.data as { message?: string; error?: string };
+      message = errorData.message || errorData.error || 'Conflict: Resource already exists';
     } else if (status === 500) {
       message = 'Server Error: Please try again later';
     }

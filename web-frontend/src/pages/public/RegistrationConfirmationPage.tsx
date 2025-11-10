@@ -49,9 +49,15 @@ const RegistrationConfirmationPage = () => {
     return 'BATbern25'; // Default fallback
   };
 
-  const eventCode = eventCodeFromUrl || (confirmationCode ? extractEventCodeFromConfirmationCode(confirmationCode) : '');
+  const eventCode =
+    eventCodeFromUrl ||
+    (confirmationCode ? extractEventCodeFromConfirmationCode(confirmationCode) : '');
 
-  const { data: registration, isLoading, error } = useQuery({
+  const {
+    data: registration,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['registration', eventCode, confirmationCode],
     queryFn: async () => {
       if (!confirmationCode || !eventCode) throw new Error('No confirmation code or event code');
@@ -60,14 +66,12 @@ const RegistrationConfirmationPage = () => {
     enabled: !!confirmationCode && !!eventCode,
   });
 
-  // Fetch QR code when we have both confirmationCode and eventCode
+  // QR code feature removed - users now confirm via email
+  // This page is deprecated and kept for backwards compatibility only
+  // New registrations use /registration-success and /confirm-registration flow
   useEffect(() => {
-    if (confirmationCode && eventCode) {
-      eventApiClient
-        .getRegistrationQR(eventCode, confirmationCode, 300)
-        .then(setQrCodeUrl)
-        .catch((err) => console.error('Failed to load QR code:', err));
-    }
+    // QR code generation removed
+    setQrCodeUrl(null);
   }, [confirmationCode, eventCode]);
 
   // Trigger confetti on successful registration load
@@ -133,11 +137,16 @@ const RegistrationConfirmationPage = () => {
   const handleLinkedInShare = () => {
     const text = encodeURIComponent(`Excited to attend ${registration?.eventTitle || 'BATbern'}!`);
     const url = window.location.href;
-    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}&summary=${text}`, '_blank');
+    window.open(
+      `https://www.linkedin.com/sharing/share-offsite/?url=${url}&summary=${text}`,
+      '_blank'
+    );
   };
 
   const handleTwitterShare = () => {
-    const text = encodeURIComponent(`Registered for ${registration?.eventTitle || 'BATbern'}! #BATbern`);
+    const text = encodeURIComponent(
+      `Registered for ${registration?.eventTitle || 'BATbern'}! #BATbern`
+    );
     window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
   };
 
@@ -167,12 +176,8 @@ const RegistrationConfirmationPage = () => {
         {/* Error State */}
         {error && (
           <div className="text-center py-24">
-            <h2 className="text-2xl font-light text-zinc-300 mb-4">
-              Registration not found
-            </h2>
-            <p className="text-zinc-400 mb-8">
-              Please check your confirmation code and try again.
-            </p>
+            <h2 className="text-2xl font-light text-zinc-300 mb-4">Registration not found</h2>
+            <p className="text-zinc-400 mb-8">Please check your confirmation code and try again.</p>
             <Button asChild variant="outline">
               <Link to="/">
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -190,9 +195,7 @@ const RegistrationConfirmationPage = () => {
               <CheckCircle2 className="h-16 w-16 text-green-400 mx-auto mb-4" />
               <h1 className="text-4xl font-light mb-2">Registration Confirmed!</h1>
               <div className="flex items-center justify-center gap-2 mt-4">
-                <p className="text-xl text-zinc-300 font-mono">
-                  {registration.registrationCode}
-                </p>
+                <p className="text-xl text-zinc-300 font-mono">{registration.registrationCode}</p>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -210,11 +213,7 @@ const RegistrationConfirmationPage = () => {
               <Card className="p-8 mb-8 text-center">
                 <h2 className="text-xl font-light mb-4">Your Check-In QR Code</h2>
                 <div className="inline-block p-4 bg-white rounded-lg mb-4">
-                  <img
-                    src={qrCodeUrl}
-                    alt="Registration QR Code"
-                    className="w-64 h-64"
-                  />
+                  <img src={qrCodeUrl} alt="Registration QR Code" className="w-64 h-64" />
                 </div>
                 <p className="text-sm text-zinc-400">
                   Present this QR code at the event for quick check-in
@@ -228,7 +227,9 @@ const RegistrationConfirmationPage = () => {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-zinc-400">Name:</span>
-                  <span className="text-zinc-100">{registration.firstName} {registration.lastName}</span>
+                  <span className="text-zinc-100">
+                    {registration.firstName} {registration.lastName}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-zinc-400">Email:</span>
@@ -262,16 +263,24 @@ const RegistrationConfirmationPage = () => {
 
             {/* Account Linking CTA for Anonymous Users (AC #11) */}
             {!isAuthenticated && (
-              <Card className="p-6 mb-8 bg-blue-950/30 border-blue-500/30" data-testid="account-linking-cta">
+              <Card
+                className="p-6 mb-8 bg-blue-950/30 border-blue-500/30"
+                data-testid="account-linking-cta"
+              >
                 <div className="flex items-start gap-3">
                   <UserPlus className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
                   <div className="flex-1">
-                    <h3 className="text-lg font-light mb-2">Create an account to manage your registrations</h3>
+                    <h3 className="text-lg font-light mb-2">
+                      Create an account to manage your registrations
+                    </h3>
                     <p className="text-sm text-zinc-400 mb-4">
-                      Your registration will be automatically linked when you create an account with {registration.email}
+                      Your registration will be automatically linked when you create an account with{' '}
+                      {registration.email}
                     </p>
                     <Button asChild variant="outline" size="sm">
-                      <Link to={`/auth/register?email=${encodeURIComponent(registration.email || '')}`}>
+                      <Link
+                        to={`/auth/register?email=${encodeURIComponent(registration.email || '')}`}
+                      >
                         <UserPlus className="h-4 w-4 mr-2" />
                         Create Account
                       </Link>
@@ -283,11 +292,7 @@ const RegistrationConfirmationPage = () => {
 
             {/* Action Buttons */}
             <div className="space-y-4 mb-8">
-              <Button
-                onClick={handleDownloadCalendar}
-                size="lg"
-                className="w-full"
-              >
+              <Button onClick={handleDownloadCalendar} size="lg" className="w-full">
                 <Calendar className="h-4 w-4 mr-2" />
                 Add to Calendar
               </Button>
@@ -315,14 +320,10 @@ const RegistrationConfirmationPage = () => {
             {/* Navigation Links */}
             <div className="grid grid-cols-2 gap-4 mb-8">
               <Button asChild variant="outline">
-                <Link to={`/register/${eventCode}`}>
-                  Register Another Person
-                </Link>
+                <Link to={`/register/${eventCode}`}>Register Another Person</Link>
               </Button>
               <Button asChild variant="outline">
-                <Link to={`/events/${eventCode}`}>
-                  View Event Details
-                </Link>
+                <Link to={`/events/${eventCode}`}>View Event Details</Link>
               </Button>
             </div>
 

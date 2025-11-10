@@ -12,15 +12,16 @@
  * - API integration for registration submission
  */
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { PersonalDetailsStep, type PersonalDetailsStepRef } from './PersonalDetailsStep';
 import { ConfirmRegistrationStep } from './ConfirmRegistrationStep';
 import { RegistrationAccordion } from './RegistrationAccordion';
 import { Button } from '@/components/public/ui/button';
 import { eventApiClient } from '@/services/eventApiClient';
 import type { CreateRegistrationRequest } from '@/types/event.types';
-import { Loader2 } from 'lucide-react';
+import { Loader2, CheckCircle2, Mail, ArrowLeft } from 'lucide-react';
 
 export interface RegistrationWizardProps {
   /** Event code for registration */
@@ -45,12 +46,15 @@ export const RegistrationWizard = ({
   inline = false,
 }: RegistrationWizardProps) => {
   const navigate = useNavigate();
+  const { t } = useTranslation('common');
   const step1Ref = useRef<PersonalDetailsStepRef>(null);
 
   // Wizard state
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
 
   // Form data state
   const [formData, setFormData] = useState<CreateRegistrationRequest>({
@@ -86,6 +90,38 @@ export const RegistrationWizard = ({
     setError(null);
   };
 
+  // Track wizard bottom when step changes (similar to HeroSection)
+  useEffect(() => {
+    if (currentStep !== 2 || !inline) return;
+
+    let animationFrame: number;
+    let startTime: number | null = null;
+    const animationDuration = 500; // Accordion animation duration
+
+    const trackWizardBottom = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const elapsed = timestamp - startTime;
+
+      const wizardSection = document.getElementById('registration-wizard-section');
+      if (wizardSection && elapsed < animationDuration) {
+        const rect = wizardSection.getBoundingClientRect();
+        // Scroll so bottom of wizard aligns with bottom of viewport
+        const scrollTarget = window.pageYOffset + rect.bottom - window.innerHeight;
+        window.scrollTo({ top: scrollTarget, behavior: 'instant' });
+
+        animationFrame = requestAnimationFrame(trackWizardBottom);
+      }
+    };
+
+    animationFrame = requestAnimationFrame(trackWizardBottom);
+
+    return () => {
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+      }
+    };
+  }, [currentStep, inline]);
+
   const handleCancel = () => {
     if (confirm('Are you sure you want to cancel registration?')) {
       if (onCancel) {
@@ -110,16 +146,48 @@ export const RegistrationWizard = ({
     setError(null);
 
     try {
-      const registration = await eventApiClient.createRegistration(eventCode, formData);
+      const response = await eventApiClient.createRegistration(eventCode, formData);
 
-      // Success: Redirect to confirmation page
-      navigate(`/registration-confirmation/${registration.registrationCode}`);
-    } catch (err) {
-      // Error handling
-      const errorMessage =
-        err instanceof Error ? err.message : 'Registration failed. Please try again.';
-      setError(errorMessage);
+      // Store registration in sessionStorage to show "already registered" on homepage
+      sessionStorage.setItem(
+        'pendingRegistration',
+        JSON.stringify({
+          email: response.email,
+          eventCode: eventCode,
+          timestamp: Date.now(),
+          expiresAt: Date.now() + 48 * 60 * 60 * 1000, // 48 hours (matches token validity)
+        })
+      );
+
+      // Success: Show success message inline (Story 4.1.5c)
+      setRegisteredEmail(response.email);
+      setRegistrationSuccess(true);
       setIsSubmitting(false);
+    } catch (err) {
+      // Check if this is a duplicate registration (409 Conflict)
+      if (err instanceof Error && err.message.includes('already registered')) {
+        // Treat duplicate as success - user is already registered
+        sessionStorage.setItem(
+          'pendingRegistration',
+          JSON.stringify({
+            email: formData.email,
+            eventCode: eventCode,
+            timestamp: Date.now(),
+            expiresAt: Date.now() + 48 * 60 * 60 * 1000, // 48 hours (matches token validity)
+          })
+        );
+
+        // Show success message
+        setRegisteredEmail(formData.email);
+        setRegistrationSuccess(true);
+        setIsSubmitting(false);
+      } else {
+        // Other errors: show error message
+        const errorMessage =
+          err instanceof Error ? err.message : 'Registration failed. Please try again.';
+        setError(errorMessage);
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -139,6 +207,66 @@ export const RegistrationWizard = ({
       </Button>
     </div>
   );
+
+  // Success view
+  if (registrationSuccess) {
+    return (
+      <div className={`w-full ${inline ? 'max-w-4xl mx-auto' : ''}`}>
+        <div className="text-center">
+          <CheckCircle2 className="h-16 w-16 text-green-400 mx-auto mb-4" />
+          <h2 className="text-3xl font-light mb-2">{t('registration.success.title')}</h2>
+          <p className="text-xl text-zinc-400 mb-8">{t('registration.success.subtitle')}</p>
+        </div>
+
+        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 mb-6">
+          <div className="flex items-start gap-3">
+            <Mail className="h-6 w-6 text-blue-400 flex-shrink-0 mt-1" />
+            <div className="flex-1">
+              <h3 className="text-lg font-medium mb-2">{t('registration.success.emailSent')}</h3>
+              {registeredEmail && (
+                <p className="text-zinc-300 mb-3">
+                  {t('registration.success.emailSentTo')}{' '}
+                  <span className="font-mono text-blue-400">{registeredEmail}</span>
+                </p>
+              )}
+              <p className="text-sm text-zinc-400 mb-4">
+                {t('registration.success.clickLink')}{' '}
+                <span className="text-zinc-300 font-medium">
+                  {t('registration.success.validFor')}
+                </span>
+                {t('registration.success.valid')}
+              </p>
+              <div className="bg-zinc-800/50 border border-zinc-700 rounded p-3 mt-4">
+                <p className="text-sm font-medium text-zinc-300 mb-1">
+                  {t('registration.success.didntReceive')}
+                </p>
+                <ul className="text-sm text-zinc-400 space-y-1 ml-4">
+                  <li>• {t('registration.success.checkSpam')}</li>
+                  <li>• {t('registration.success.checkEmail')}</li>
+                  <li>• {t('registration.success.waitMinutes')}</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-center gap-4">
+          {onCancel && (
+            <Button variant="outline" onClick={onCancel}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              {t('registration.success.close')}
+            </Button>
+          )}
+          {!inline && (
+            <Button variant="outline" onClick={() => navigate('/')}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              {t('navigation.home')}
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`w-full ${inline ? 'max-w-4xl mx-auto' : ''}`}>

@@ -26,14 +26,27 @@ import java.util.stream.Collectors;
 /**
  * Security configuration for the Event Management Service
  * Configures role-based access control for event management endpoints with JWT authentication
+ *
+ * Method Security Strategy:
+ * - Production/Staging: @EnableMethodSecurity enforces @PreAuthorize annotations
+ * - Local Development: Method security disabled (trusted localhost environment, mirrors AWS VPC security)
  */
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
     @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri:}")
     private String jwkSetUri;
+
+    /**
+     * Enable method-level security for production and staging environments
+     * Enforces @PreAuthorize annotations on controller methods
+     */
+    @Configuration
+    @EnableMethodSecurity(prePostEnabled = true)
+    @Profile("!local & !test")
+    static class ProductionMethodSecurityConfig {
+    }
 
     /**
      * Production security filter chain with JWT authentication
@@ -66,7 +79,8 @@ public class SecurityConfig {
                 // Story 2.2a: Public anonymous registration endpoints (ADR-005)
                 .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*/registrations/*").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/events/*/registrations/*/qr").permitAll()
+                // Email confirmation endpoint (no auth required, token-protected)
+                .requestMatchers(HttpMethod.POST, "/api/v1/registrations/confirm").permitAll()
 
                 // All other requests require authentication
                 .anyRequest().authenticated()

@@ -59,6 +59,7 @@ public class RegistrationEmailService {
      * @param registration Registration entity
      * @param userProfile User profile DTO
      * @param event Event entity
+     * @param confirmationToken JWT token for email confirmation (Story 4.1.5c)
      * @param locale User's preferred locale (defaults to German if null)
      */
     @Async
@@ -66,6 +67,7 @@ public class RegistrationEmailService {
             Registration registration,
             UserResponse userProfile,
             Event event,
+            String confirmationToken,
             Locale locale
     ) {
         try {
@@ -79,7 +81,7 @@ public class RegistrationEmailService {
             ZonedDateTime eventDateTime = event.getDate().atZone(SWISS_ZONE);
 
             // Load email template (i18n)
-            String htmlBody = loadEmailTemplate(emailLocale, registration, userProfile, event, eventDateTime);
+            String htmlBody = loadEmailTemplate(emailLocale, registration, userProfile, event, eventDateTime, confirmationToken);
 
             // Generate calendar file (.ics)
             byte[] icsFile = generateCalendarFile(event, eventDateTime);
@@ -113,7 +115,7 @@ public class RegistrationEmailService {
     /**
      * Load and populate email template with user/event data.
      */
-    private String loadEmailTemplate(Locale locale, Registration registration, UserResponse userProfile, Event event, ZonedDateTime eventDateTime) {
+    private String loadEmailTemplate(Locale locale, Registration registration, UserResponse userProfile, Event event, ZonedDateTime eventDateTime, String confirmationToken) {
         try {
             // Determine template file based on locale
             String templateName = locale.getLanguage().equals("de")
@@ -124,6 +126,7 @@ public class RegistrationEmailService {
             String template = new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
 
             // Prepare template variables
+            // Story 4.1.5c: Use JWT confirmation token instead of registration code in URLs
             Map<String, String> variables = Map.ofEntries(
                     Map.entry("attendeeFirstName", userProfile.getFirstName()),
                     Map.entry("attendeeLastName", userProfile.getLastName()),
@@ -133,13 +136,9 @@ public class RegistrationEmailService {
                     Map.entry("eventTime", eventDateTime.format(TIME_FORMATTER) + " Uhr"),
                     Map.entry("venueName", event.getVenueName() != null ? event.getVenueName() : "TBA"),
                     Map.entry("venueAddress", event.getVenueAddress() != null ? event.getVenueAddress() : "TBA"),
-                    Map.entry("registrationCode", registration.getRegistrationCode()),
-                    Map.entry("qrCodeUrl", baseUrl + "/api/v1/events/" + event.getEventCode() +
-                            "/registrations/" + registration.getRegistrationCode() + "/qr"),
+                    Map.entry("confirmationUrl", baseUrl + "/confirm-registration?token=" + confirmationToken),
                     Map.entry("createAccountUrl", baseUrl + "/auth/signup?email=" + userProfile.getEmail()),
                     Map.entry("eventUrl", baseUrl + "/events/" + event.getEventCode()),
-                    Map.entry("registrationUrl", baseUrl + "/events/" + event.getEventCode() +
-                            "/registrations/" + registration.getRegistrationCode()),
                     Map.entry("supportUrl", baseUrl + "/support"),
                     Map.entry("currentYear", String.valueOf(java.time.Year.now().getValue()))
             );

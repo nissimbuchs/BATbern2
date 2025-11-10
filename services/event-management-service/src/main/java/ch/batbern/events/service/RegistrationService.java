@@ -108,14 +108,8 @@ public class RegistrationService {
         log.info("Created registration: {} for user: {} at event: {}",
                 registrationCode, username, eventCode);
 
-        // Story 2.2a Task B12: Send async registration confirmation email
-        registrationEmailService.sendRegistrationConfirmation(
-                saved,
-                userResponse.getUser(),
-                event,
-                java.util.Locale.GERMAN // Default to German for BATbern events
-        );
-        log.debug("Queued registration confirmation email for: {}", userResponse.getUser().getEmail());
+        // Story 4.1.5c: Email sending moved to EventController (needs JWT token)
+        // Email will be sent after token generation in controller layer
 
         return saved;
     }

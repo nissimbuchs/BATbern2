@@ -122,7 +122,10 @@ public class SecurityConfig {
                         // (no auth required - anonymous registration per ADR-005)
                         .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/*/registrations/*").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/events/*/registrations/*/qr").permitAll()
+
+                        // Story 4.1.5c: Email-based confirmation endpoint
+                        // (no auth required - JWT token in query param provides security)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/registrations/confirm").permitAll()
 
                         // All other requests require authentication
                         .anyRequest().authenticated()

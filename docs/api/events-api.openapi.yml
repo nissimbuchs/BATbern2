@@ -1208,11 +1208,26 @@ paths:
               $ref: '#/components/schemas/CreateRegistrationRequest'
       responses:
         '201':
-          description: Registration created successfully
+          description: Registration created successfully - confirmation email sent
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Registration'
+                type: object
+                required:
+                  - message
+                  - email
+                properties:
+                  message:
+                    type: string
+                    example: Registration successful. Please check your email to confirm.
+                  email:
+                    type: string
+                    format: email
+                    example: john.doe@example.com
+                description: |
+                  **Story 4.1.5c**: Minimal response with no sensitive data.
+                  Confirmation token sent via email (not in response).
+                  User must click email link to confirm registration.
         '400':
           description: Invalid request (validation errors)
           content:
@@ -1359,54 +1374,82 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /events/{eventCode}/registrations/{registrationCode}/qr:
-    get:
+  /registrations/confirm:
+    post:
       tags:
         - Registrations
-      summary: Generate QR code for registration
+      summary: Confirm registration via email token
       description: |
-        Generate QR code image for registration check-in.
+        Confirm a registration using the JWT token sent via email.
 
-        **Story**: 4.1.6 - Registration Confirmation QR code
-        **Security**: Public endpoint - confirmation code acts as access token
+        **Story**: 4.1.5c - Secure Email-Based Registration Confirmation
+        **Security**: Public endpoint - JWT token provides authentication and authorization
 
-      operationId: getRegistrationQR
-      security: []  # Public endpoint
+        **Token Validation**:
+        - JWT signature verified (HMAC-SHA256)
+        - Token expiry checked (48 hours from registration)
+        - Token type must be "email-confirmation"
+        - Registration ID extracted from token claims
+
+        **Idempotency**: Can be called multiple times safely. Already confirmed registrations return 200 OK.
+
+      operationId: confirmRegistration
+      security: []  # Public endpoint - JWT token in query param provides security
       parameters:
-        - name: eventCode
-          in: path
-          description: Event code in format BATbernXXX
-          required: true
-          schema:
-            type: string
-            pattern: '^BATbern[0-9]+$'
-            example: BATbern25
-        - name: registrationCode
-          in: path
-          description: Registration code in format BAT-YYYY-NNNNNN
-          required: true
-          schema:
-            type: string
-            pattern: '^BAT-[0-9]{4}-[0-9]{6}$'
-            example: BAT-2025-000123
-        - name: size
+        - name: token
           in: query
-          description: QR code size in pixels
+          description: JWT confirmation token from email link
+          required: true
           schema:
-            type: integer
-            default: 300
-            minimum: 100
-            maximum: 1000
+            type: string
+            example: eyJhbGciOiJIUzI1NiJ9.eyJyZWdpc3RyYXRpb25JZCI6IjEyMzQ1Njc4LTkwYWItY2RlZi0xMjM0LTU2Nzg5MGFiY2RlZiIsImV2ZW50Q29kZSI6IkJBVGJlcm41NyIsInR5cGUiOiJlbWFpbC1jb25maXJtYXRpb24iLCJpYXQiOjE3MDUwMDAwMDAsImV4cCI6MTcwNTE3MjgwMH0.signature
       responses:
         '200':
-          description: QR code image
+          description: Registration confirmed successfully (or already confirmed)
           content:
-            image/png:
+            application/json:
               schema:
-                type: string
-                format: binary
+                type: object
+                required:
+                  - message
+                  - status
+                properties:
+                  message:
+                    type: string
+                    example: Registration confirmed successfully
+                  status:
+                    type: string
+                    enum: [CONFIRMED]
+                    example: CONFIRMED
+        '400':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                expiredToken:
+                  summary: Token expired
+                  value:
+                    error: Invalid token
+                    message: Token has expired (48 hour validity)
+                    code: TOKEN_EXPIRED
+                invalidToken:
+                  summary: Invalid token signature
+                  value:
+                    error: Invalid token
+                    message: Token signature validation failed
+                    code: INVALID_TOKEN
         '404':
           description: Registration not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Not found
+                message: Registration not found
+                code: REGISTRATION_NOT_FOUND
         '500':
           $ref: '#/components/responses/InternalServerError'
 

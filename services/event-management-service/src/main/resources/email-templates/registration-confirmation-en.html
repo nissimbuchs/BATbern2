@@ -117,12 +117,12 @@
 <body>
     <div class="email-container">
         <div class="header">
-            <h1>✓ Registration Confirmed</h1>
+            <h1>📧 Registration Received</h1>
         </div>
 
         <p>Hello {{attendeeFirstName}} {{attendeeLastName}},</p>
 
-        <p>Thank you for registering! We're excited to have you join us at:</p>
+        <p>Thank you for registering! To complete your registration, please confirm your email address for the following event:</p>
 
         <div class="event-details">
             <h2>{{eventTitle}}</h2>
@@ -140,16 +140,16 @@
             </div>
         </div>
 
-        <div class="registration-code">
-            <div class="registration-code-label">Your Registration Code</div>
-            <div class="registration-code-value">{{registrationCode}}</div>
-        </div>
-
-        <p><strong>Important:</strong> Please save this registration code. You'll need it for check-in at the event.</p>
+        <p><strong>Important:</strong> Please confirm your registration within 48 hours by clicking the button below:</p>
 
         <div style="text-align: center;">
-            <a href="{{qrCodeUrl}}" class="cta-button">📱 Download QR Code Ticket</a>
+            <a href="{{confirmationUrl}}" class="cta-button">✓ Confirm Registration Now</a>
         </div>
+
+        <p style="font-size: 12px; color: #666; margin-top: 20px;">
+            If the button doesn't work, copy and paste this link into your browser:<br>
+            <a href="{{confirmationUrl}}" style="color: #0066cc; word-break: break-all;">{{confirmationUrl}}</a>
+        </p>
 
         <div class="create-account-box">
             <h3>💡 Create a Free Account</h3>
@@ -172,7 +172,6 @@
         <div class="footer">
             <p>
                 <a href="{{eventUrl}}">View Event Details</a> |
-                <a href="{{registrationUrl}}">Manage Registration</a> |
                 <a href="{{supportUrl}}">Contact Support</a>
             </p>
             <p>

@@ -77,7 +77,8 @@ public class EventController {
     private final ch.batbern.events.client.UserApiClient userApiClient;
     private final ch.batbern.events.service.RegistrationService registrationService;
     private final ch.batbern.events.repository.RegistrationRepository registrationRepository;
-    private final ch.batbern.events.service.QRCodeService qrCodeService;
+    private final ch.batbern.events.service.ConfirmationTokenService confirmationTokenService;
+    private final ch.batbern.events.service.RegistrationEmailService registrationEmailService;
 
     /**
      * List/Search Events (AC1)
@@ -1097,21 +1098,48 @@ public class EventController {
     @Operation(
             summary = "Create Event Registration (Anonymous)",
             description = "Register for an event without requiring authentication. " +
-                    "Creates anonymous user profile automatically."
+                    "Creates anonymous user profile automatically. " +
+                    "Registration starts in PENDING status. User must confirm via email link."
     )
-    public ResponseEntity<RegistrationResponse> createRegistration(
+    public ResponseEntity<Map<String, String>> createRegistration(
             @PathVariable String eventCode,
             @Valid @RequestBody CreateRegistrationRequest request) {
         log.debug("POST /api/v1/events/{}/registrations", eventCode);
 
-        // Create registration (also creates/retrieves anonymous user via User Management Service)
+        // Create registration with status=PENDING (will be confirmed via email)
         Registration registration = registrationService.createRegistration(eventCode, request);
 
-        // Set eventCode in transient field for enrichment
-        registration.setEventCode(eventCode);
+        // Generate confirmation token (48h validity)
+        String confirmationToken = confirmationTokenService.generateConfirmationToken(
+                registration.getId(),
+                eventCode
+        );
 
-        // Enrich with user data from User Management Service (ADR-004)
-        RegistrationResponse response = registrationService.enrichRegistrationWithUserData(registration);
+        // Fetch event for email
+        ch.batbern.events.domain.Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new NoSuchElementException("Event not found: " + eventCode));
+
+        // Fetch user profile for email
+        ch.batbern.events.dto.generated.users.UserResponse userProfile =
+                userApiClient.getUserByUsername(registration.getAttendeeUsername());
+
+        // Send confirmation email with JWT token (Story 4.1.5c)
+        // Email includes confirmation link: https://batbern.ch/confirm-registration?token={confirmationToken}
+        registrationEmailService.sendRegistrationConfirmation(
+                registration,
+                userProfile,
+                event,
+                confirmationToken,
+                java.util.Locale.GERMAN // Default to German for BATbern events
+        );
+
+        log.info("Confirmation token generated and email queued for registration {}: {}",
+                registration.getId(), confirmationToken.substring(0, 20) + "...");
+
+        // Return minimal response (no sensitive data)
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Registration submitted successfully. Check your email to confirm.");
+        response.put("email", request.getEmail());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -1187,65 +1215,64 @@ public class EventController {
     }
 
     /**
-     * Get Registration QR Code - Story 2.2a
+     * Confirm Event Registration - Email Confirmation Flow
      *
-     * GET /api/v1/events/{eventCode}/registrations/{registrationCode}/qr
+     * POST /api/v1/registrations/confirm?token={JWT}
      *
-     * Generates a QR code for the registration ticket containing registration details.
-     * Can be used for event check-in by scanning the QR code.
+     * Confirms a pending registration using the JWT token from the confirmation email.
+     * Updates registration status from PENDING to CONFIRMED.
+     * Token is valid for 48 hours and can only be used once.
      *
-     * @param eventCode Event code
-     * @param registrationCode Registration code
-     * @return QR code as PNG image
+     * @param token JWT confirmation token from email
+     * @return Success message
      */
-    @GetMapping(value = "/{eventCode}/registrations/{registrationCode}/qr", produces = "image/png")
+    @PostMapping("/registrations/confirm")
     @Operation(
-            summary = "Get Registration QR Code",
-            description = "Generate QR code for registration ticket. Returns PNG image."
+            summary = "Confirm Registration",
+            description = "Confirm a pending registration using the token from the confirmation email. " +
+                    "Token is valid for 48 hours and single-use only."
     )
-    public ResponseEntity<byte[]> getRegistrationQRCode(
-            @PathVariable String eventCode,
-            @PathVariable String registrationCode) {
-        log.debug("GET /api/v1/events/{}/registrations/{}/qr", eventCode, registrationCode);
+    public ResponseEntity<Map<String, String>> confirmRegistration(
+            @RequestParam("token") String token) {
+        log.debug("POST /api/v1/registrations/confirm");
 
-        // Find registration
-        Registration registration = registrationRepository.findByRegistrationCode(registrationCode)
-                .orElseThrow(() -> new NoSuchElementException("Registration not found: " + registrationCode));
+        try {
+            // Validate token
+            io.jsonwebtoken.Claims claims = confirmationTokenService.validateConfirmationToken(token);
 
-        // Verify registration belongs to this event
-        Event event = eventRepository.findByEventCode(eventCode)
-                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
+            // Extract registration ID
+            UUID registrationId = confirmationTokenService.getRegistrationId(claims);
 
-        if (!registration.getEventId().equals(event.getId())) {
-            throw new NoSuchElementException("Registration " + registrationCode + " does not belong to event " + eventCode);
+            // Find registration
+            Registration registration = registrationRepository.findById(registrationId)
+                    .orElseThrow(() -> new NoSuchElementException("Registration not found: " + registrationId));
+
+            // Check if already confirmed
+            if ("CONFIRMED".equalsIgnoreCase(registration.getStatus())) {
+                Map<String, String> response = new HashMap<>();
+                response.put("message", "Registration already confirmed");
+                response.put("status", "CONFIRMED");
+                return ResponseEntity.ok(response);
+            }
+
+            // Update status to CONFIRMED
+            registration.setStatus("CONFIRMED");
+            registration.setUpdatedAt(Instant.now());
+            registrationRepository.save(registration);
+
+            log.info("Registration confirmed: {}", registrationId);
+
+            // Return success response
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Registration confirmed successfully!");
+            response.put("status", "CONFIRMED");
+
+            return ResponseEntity.ok(response);
+
+        } catch (io.jsonwebtoken.JwtException e) {
+            log.warn("Invalid confirmation token: {}", e.getMessage());
+            throw new IllegalArgumentException("Invalid or expired confirmation token");
         }
-
-        // Enrich with user data
-        registration.setEventCode(eventCode);
-        RegistrationResponse enrichedRegistration = registrationService.enrichRegistrationWithUserData(registration);
-
-        // Build QR code data (JSON format)
-        String qrData = String.format(
-                "{\"registrationCode\":\"%s\",\"eventCode\":\"%s\",\"attendeeUsername\":\"%s\",\"attendeeName\":\"%s %s\",\"status\":\"%s\"}",
-                enrichedRegistration.getRegistrationCode(),
-                enrichedRegistration.getEventCode(),
-                enrichedRegistration.getAttendeeUsername(),
-                enrichedRegistration.getAttendeeFirstName(),
-                enrichedRegistration.getAttendeeLastName(),
-                enrichedRegistration.getStatus()
-        );
-
-        // Generate QR code
-        byte[] qrCodeBytes = qrCodeService.generateQRCode(qrData);
-
-        // Return PNG with proper headers
-        HttpHeaders headers = new HttpHeaders();
-        headers.add(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"registration-" + registrationCode + ".png\"");
-        headers.add(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate");
-
-        return ResponseEntity.ok()
-                .headers(headers)
-                .body(qrCodeBytes);
     }
 
     /**
