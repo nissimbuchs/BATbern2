@@ -438,6 +438,25 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /partners/statistics:
+    get:
+      tags: [Partners]
+      operationId: getPartnerStatistics
+      summary: Get partner statistics
+      description: |
+        Get aggregate statistics across all partners including:
+        - Total active partners count
+        - Partners by tier breakdown
+        - Recently added partners
+        - Expiring partnerships
+      responses:
+        '200':
+          description: Partner statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerStatistics'
+
 components:
   schemas:
     PartnerResponse:
@@ -552,19 +571,19 @@ components:
     PartnershipLevel:
       type: string
       enum:
-        - bronze
-        - silver
-        - gold
-        - platinum
-        - strategic
+        - BRONZE
+        - SILVER
+        - GOLD
+        - PLATINUM
+        - STRATEGIC
 
     ContactRole:
       type: string
       enum:
-        - primary
-        - billing
-        - technical
-        - marketing
+        - PRIMARY
+        - BILLING
+        - TECHNICAL
+        - MARKETING
 
     CompanyInfo:
       type: object
@@ -572,10 +591,22 @@ components:
       properties:
         companyName:
           type: string
+        name:
+          type: string
+          description: Same as companyName (backwards compatibility)
         displayName:
           type: string
         logoUrl:
           type: string
+        industry:
+          type: string
+          description: Industry sector
+        website:
+          type: string
+          description: Company website URL
+        location:
+          type: string
+          description: Company headquarters location
 
     AddPartnerContactRequest:
       type: object
@@ -678,11 +709,65 @@ components:
     SuggestionStatus:
       type: string
       enum:
-        - submitted
-        - under_review
-        - accepted
-        - rejected
-        - implemented
+        - SUBMITTED
+        - UNDER_REVIEW
+        - ACCEPTED
+        - REJECTED
+        - IMPLEMENTED
+
+    PartnerStatistics:
+      type: object
+      required:
+        - totalPartners
+        - activePartners
+        - tierCounts
+      properties:
+        totalPartners:
+          type: integer
+          description: Total number of partners
+        activePartners:
+          type: integer
+          description: Number of active partners
+        tierCounts:
+          type: object
+          description: Count of partners by tier (keys are UPPER_CASE per coding standards)
+          properties:
+            BRONZE:
+              type: integer
+            SILVER:
+              type: integer
+            GOLD:
+              type: integer
+            PLATINUM:
+              type: integer
+            STRATEGIC:
+              type: integer
+        recentPartners:
+          type: array
+          description: Recently added partners (last 30 days)
+          items:
+            type: object
+            properties:
+              companyName:
+                type: string
+              partnershipLevel:
+                $ref: '#/components/schemas/PartnershipLevel'
+              partnershipStartDate:
+                type: string
+                format: date
+        expiringPartnerships:
+          type: array
+          description: Partnerships expiring in next 90 days
+          items:
+            type: object
+            properties:
+              companyName:
+                type: string
+              partnershipLevel:
+                $ref: '#/components/schemas/PartnershipLevel'
+              partnershipEndDate:
+                type: string
+                format: date
 
     # Shared-kernel types (imported, not generated)
     ErrorResponse:

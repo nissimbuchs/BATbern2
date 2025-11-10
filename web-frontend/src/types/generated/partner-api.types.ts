@@ -162,6 +162,30 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/partners/statistics': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get partner statistics
+     * @description Get aggregate statistics across all partners including:
+     *     - Total active partners count
+     *     - Partners by tier breakdown
+     *     - Recently added partners
+     *     - Expiring partnerships
+     */
+    get: operations['getPartnerStatistics'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -217,14 +241,22 @@ export interface components {
       profilePictureUrl?: string;
     };
     /** @enum {string} */
-    PartnershipLevel: 'bronze' | 'silver' | 'gold' | 'platinum' | 'strategic';
+    PartnershipLevel: 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM' | 'STRATEGIC';
     /** @enum {string} */
-    ContactRole: 'primary' | 'billing' | 'technical' | 'marketing';
+    ContactRole: 'PRIMARY' | 'BILLING' | 'TECHNICAL' | 'MARKETING';
     /** @description Enriched from Company Service (ADR-004) */
     CompanyInfo: {
       companyName?: string;
+      /** @description Same as companyName (backwards compatibility) */
+      name?: string;
       displayName?: string;
       logoUrl?: string;
+      /** @description Industry sector */
+      industry?: string;
+      /** @description Company website URL */
+      website?: string;
+      /** @description Company headquarters location */
+      location?: string;
     };
     AddPartnerContactRequest: {
       /** @description Username (meaningful ID per ADR-003) */
@@ -273,7 +305,35 @@ export interface components {
       reviewedBy?: string;
     };
     /** @enum {string} */
-    SuggestionStatus: 'submitted' | 'under_review' | 'accepted' | 'rejected' | 'implemented';
+    SuggestionStatus: 'SUBMITTED' | 'UNDER_REVIEW' | 'ACCEPTED' | 'REJECTED' | 'IMPLEMENTED';
+    PartnerStatistics: {
+      /** @description Total number of partners */
+      totalPartners: number;
+      /** @description Number of active partners */
+      activePartners: number;
+      /** @description Count of partners by tier (keys are UPPER_CASE per coding standards) */
+      tierCounts: {
+        BRONZE?: number;
+        SILVER?: number;
+        GOLD?: number;
+        PLATINUM?: number;
+        STRATEGIC?: number;
+      };
+      /** @description Recently added partners (last 30 days) */
+      recentPartners?: {
+        companyName?: string;
+        partnershipLevel?: components['schemas']['PartnershipLevel'];
+        /** Format: date */
+        partnershipStartDate?: string;
+      }[];
+      /** @description Partnerships expiring in next 90 days */
+      expiringPartnerships?: {
+        companyName?: string;
+        partnershipLevel?: components['schemas']['PartnershipLevel'];
+        /** Format: date */
+        partnershipEndDate?: string;
+      }[];
+    };
     /** @description Imported from shared-kernel */
     ErrorResponse: Record<string, never>;
     /** @description Imported from shared-kernel */
@@ -761,6 +821,26 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  getPartnerStatistics: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Partner statistics */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PartnerStatistics'];
         };
       };
     };

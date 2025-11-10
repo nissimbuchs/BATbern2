@@ -21,11 +21,11 @@ import { z } from 'zod';
 import type { TFunction } from 'i18next';
 
 /**
- * Partnership level enum matching backend API
+ * Partnership level enum matching backend API (UPPER_CASE per coding standards)
  */
 const createPartnershipLevelEnum = (t: TFunction) =>
-  z.enum(['bronze', 'silver', 'gold', 'platinum', 'strategic'], {
-    errorMap: () => ({ message: t('partners:validation.tierRequired') }),
+  z.enum(['BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'STRATEGIC'], {
+    message: t('partners:validation.tierRequired'),
   });
 
 /**
@@ -42,7 +42,7 @@ export const createPartnerSchema = (t: TFunction) =>
         .min(1, t('partners:validation.companyRequired'))
         .max(12, 'Company name must be at most 12 characters'),
       partnershipLevel: createPartnershipLevelEnum(t),
-      partnershipStartDate: z.date({ required_error: t('partners:validation.startDateRequired') }),
+      partnershipStartDate: z.date({ message: t('partners:validation.startDateRequired') }),
       partnershipEndDate: z.date().optional(),
     })
     .refine(
@@ -82,8 +82,8 @@ export const updatePartnerSchema = (t: TFunction) =>
     );
 
 // Legacy exports for backward compatibility (will use default English messages)
-const PartnershipLevelEnum = z.enum(['bronze', 'silver', 'gold', 'platinum', 'strategic'], {
-  errorMap: () => ({ message: 'Partnership tier is required' }),
+const PartnershipLevelEnum = z.enum(['BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'STRATEGIC'], {
+  message: 'Partnership tier is required',
 });
 
 export const CreatePartnerSchema = z
@@ -93,7 +93,7 @@ export const CreatePartnerSchema = z
       .min(1, 'Company is required')
       .max(12, 'Company name must be at most 12 characters'),
     partnershipLevel: PartnershipLevelEnum,
-    partnershipStartDate: z.date({ required_error: 'Start date is required' }),
+    partnershipStartDate: z.date({ message: 'Start date is required' }),
     partnershipEndDate: z.date().optional(),
   })
   .refine(

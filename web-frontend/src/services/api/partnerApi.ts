@@ -15,16 +15,15 @@ import type { components } from '@/types/generated/partner-api.types';
 // Type aliases for cleaner code
 export type PartnerResponse = components['schemas']['PartnerResponse'];
 export type PartnerListResponse = components['schemas']['PartnerListResponse'];
-export type PartnerStatistics = components['schemas']['PartnerStatistics'];
 export type PartnershipLevel = components['schemas']['PartnershipLevel'];
 export type TopicVoteResponse = components['schemas']['TopicVoteResponse'];
-export type MeetingResponse = components['schemas']['MeetingResponse'];
-export type ActivityResponse = components['schemas']['ActivityResponse'];
-export type NoteResponse = components['schemas']['NoteResponse'];
 export type CreatePartnerRequest = components['schemas']['CreatePartnerRequest'];
 export type UpdatePartnerRequest = components['schemas']['UpdatePartnerRequest'];
-export type CreateNoteRequest = components['schemas']['CreateNoteRequest'];
-export type UpdateNoteRequest = components['schemas']['UpdateNoteRequest'];
+export type PartnerContactResponse = components['schemas']['PartnerContactResponse'];
+export type AddPartnerContactRequest = components['schemas']['AddPartnerContactRequest'];
+export type TopicSuggestionResponse = components['schemas']['TopicSuggestionResponse'];
+export type SubmitSuggestionRequest = components['schemas']['SubmitSuggestionRequest'];
+export type PartnerStatistics = components['schemas']['PartnerStatistics'];
 
 // API base path for partner endpoints
 // CRITICAL: Use path WITHOUT /api/v1 prefix (already in baseURL)
@@ -161,92 +160,98 @@ export const getPartnerVotes = async (companyName: string): Promise<TopicVoteRes
   return response.data;
 };
 
-/**
- * Get partner meetings
- * Story 2.8.2
- * @param companyName - Company name (meaningful ID)
- * @returns Array of MeetingResponse
- */
-export const getPartnerMeetings = async (companyName: string): Promise<MeetingResponse[]> => {
-  const response = await apiClient.get(`${PARTNER_API_PATH}/${companyName}/meetings`);
-  return response.data;
-};
+// TODO: Future feature - Add to OpenAPI spec when implemented
+// /**
+//  * Get partner meetings
+//  * Story 2.8.2
+//  * @param companyName - Company name (meaningful ID)
+//  * @returns Array of MeetingResponse
+//  */
+// export const getPartnerMeetings = async (companyName: string): Promise<MeetingResponse[]> => {
+//   const response = await apiClient.get(`${PARTNER_API_PATH}/${companyName}/meetings`);
+//   return response.data;
+// };
 
-/**
- * Get partner activity timeline
- * Story 2.8.2
- * @param companyName - Company name (meaningful ID)
- * @param filters - Optional activity filters (type)
- * @returns Array of ActivityResponse
- */
-export const getPartnerActivity = async (
-  companyName: string,
-  filters?: ActivityFilters
-): Promise<ActivityResponse[]> => {
-  const params: Record<string, string> = {};
-  if (filters?.type) {
-    params.filter = `type:${filters.type}`;
-  }
-  const response = await apiClient.get(`${PARTNER_API_PATH}/${companyName}/activity`, { params });
-  return response.data;
-};
+// TODO: Future feature - Add to OpenAPI spec when implemented
+// /**
+//  * Get partner activity timeline
+//  * Story 2.8.2
+//  * @param companyName - Company name (meaningful ID)
+//  * @param filters - Optional activity filters (type)
+//  * @returns Array of ActivityResponse
+//  */
+// export const getPartnerActivity = async (
+//   companyName: string,
+//   filters?: ActivityFilters
+// ): Promise<ActivityResponse[]> => {
+//   const params: Record<string, string> = {};
+//   if (filters?.type) {
+//     params.filter = `type:${filters.type}`;
+//   }
+//   const response = await apiClient.get(`${PARTNER_API_PATH}/${companyName}/activity`, { params });
+//   return response.data;
+// };
 
-/**
- * Get partner notes
- * Story 2.8.2
- * @param companyName - Company name (meaningful ID)
- * @returns Array of NoteResponse
- */
-export const getPartnerNotes = async (companyName: string): Promise<NoteResponse[]> => {
-  const response = await apiClient.get(`${PARTNER_API_PATH}/${companyName}/notes`);
-  return response.data;
-};
+// TODO: Future feature - Add to OpenAPI spec when implemented
+// /**
+//  * Get partner notes
+//  * Story 2.8.2
+//  * @param companyName - Company name (meaningful ID)
+//  * @returns Array of NoteResponse
+//  */
+// export const getPartnerNotes = async (companyName: string): Promise<NoteResponse[]> => {
+//   const response = await apiClient.get(`${PARTNER_API_PATH}/${companyName}/notes`);
+//   return response.data;
+// };
 
-/**
- * Create a new partner note
- * Story 2.8.2
- * @param companyName - Company name (meaningful ID)
- * @param note - CreateNoteRequest payload
- * @returns Created NoteResponse
- */
-export const createPartnerNote = async (
-  companyName: string,
-  note: CreateNoteRequest
-): Promise<NoteResponse> => {
-  const response = await apiClient.post(`${PARTNER_API_PATH}/${companyName}/notes`, note);
-  return response.data;
-};
+// TODO: Future feature - Add to OpenAPI spec when implemented
+// /**
+//  * Create a new partner note
+//  * Story 2.8.2
+//  * @param companyName - Company name (meaningful ID)
+//  * @param note - CreateNoteRequest payload
+//  * @returns Created NoteResponse
+//  */
+// export const createPartnerNote = async (
+//   companyName: string,
+//   note: CreateNoteRequest
+// ): Promise<NoteResponse> => {
+//   const response = await apiClient.post(`${PARTNER_API_PATH}/${companyName}/notes`, note);
+//   return response.data;
+// };
 
-/**
- * Update an existing partner note
- * Story 2.8.2
- * @param companyName - Company name (meaningful ID)
- * @param noteId - Note ID to update
- * @param note - UpdateNoteRequest payload
- * @returns Updated NoteResponse
- */
-export const updatePartnerNote = async (
-  companyName: string,
-  noteId: string,
-  note: UpdateNoteRequest
-): Promise<NoteResponse> => {
-  const response = await apiClient.patch(
-    `${PARTNER_API_PATH}/${companyName}/notes/${noteId}`,
-    note
-  );
-  return response.data;
-};
+// TODO: Future feature - Add to OpenAPI spec when implemented
+// /**
+//  * Update an existing partner note
+//  * Story 2.8.2
+//  * @param companyName - Company name (meaningful ID)
+//  * @param noteId - Note ID to update
+//  * @param note - UpdateNoteRequest payload
+//  * @returns Updated NoteResponse
+//  */
+// export const updatePartnerNote = async (
+//   companyName: string,
+//   noteId: string,
+//   note: UpdateNoteRequest
+// ): Promise<NoteResponse> => {
+//   const response = await apiClient.patch(
+//     `${PARTNER_API_PATH}/${companyName}/notes/${noteId}`,
+//     note
+//   );
+//   return response.data;
+// };
 
-/**
- * Delete a partner note
- * Story 2.8.2
- * @param companyName - Company name (meaningful ID)
- * @param noteId - Note ID to delete
- * @returns void
- */
-export const deletePartnerNote = async (companyName: string, noteId: string): Promise<void> => {
-  await apiClient.delete(`${PARTNER_API_PATH}/${companyName}/notes/${noteId}`);
-};
+// TODO: Future feature - Add to OpenAPI spec when implemented
+// /**
+//  * Delete a partner note
+//  * Story 2.8.2
+//  * @param companyName - Company name (meaningful ID)
+//  * @param noteId - Note ID to delete
+//  * @returns void
+//  */
+// export const deletePartnerNote = async (companyName: string, noteId: string): Promise<void> => {
+//   await apiClient.delete(`${PARTNER_API_PATH}/${companyName}/notes/${noteId}`);
+// };
 
 // ============================================================================
 // Story 2.8.3: Partner Create/Edit Modal APIs
