@@ -227,7 +227,7 @@ aws:
     bucket-name: ${AWS_S3_BUCKET_NAME:batbern-development-company-logos}
     profile-pictures-bucket: ${S3_PROFILE_PICTURES_BUCKET_NAME:batbern-development-profile-pictures}
   cloudfront:
-    domain: ${CLOUDFRONT_DOMAIN:http://localhost:9000}
+    domain: ${CLOUDFRONT_DOMAIN:http://localhost:8450}
 
 logging:
   level:

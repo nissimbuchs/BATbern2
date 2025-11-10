@@ -72,6 +72,10 @@ app:
     organizer-name: ${EMAIL_ORGANIZER_NAME:BATbern Team}
     organizer-email: ${EMAIL_ORGANIZER:events@batbern.ch}
 
+# JWT Configuration for confirmation tokens
+jwt:
+  secret: ${JWT_SECRET:changeme}
+
 # Application Info (exposed via /actuator/info)
 info:
   app:
@@ -104,7 +108,7 @@ aws:
   s3:
     bucket-name: ${AWS_S3_BUCKET_NAME:batbern-development-company-logos}
   cloudfront:
-    domain: ${CLOUDFRONT_DOMAIN:http://localhost:9000}
+    domain: ${CLOUDFRONT_DOMAIN:http://localhost:8450}
 
 ---
 # Test Profile Configuration
