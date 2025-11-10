@@ -46,19 +46,19 @@ describe('PartnerFilters Component (RED Phase - Task 5a)', () => {
     it('should render tier dropdown', () => {
       render(<PartnerFilters />);
 
-      expect(screen.getByLabelText(/tier/i)).toBeInTheDocument();
+      expect(screen.getByLabelText('filters.tier')).toBeInTheDocument();
     });
 
     it('should render status toggle', () => {
       render(<PartnerFilters />);
 
-      expect(screen.getByLabelText(/status/i)).toBeInTheDocument();
+      expect(screen.getByLabelText('filters.status')).toBeInTheDocument();
     });
 
     it('should render reset filters button', () => {
       render(<PartnerFilters />);
 
-      expect(screen.getByRole('button', { name: /reset filters/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'filters.reset' })).toBeInTheDocument();
     });
   });
 
@@ -66,25 +66,25 @@ describe('PartnerFilters Component (RED Phase - Task 5a)', () => {
     it('should call setFilters with gold when gold tier selected', () => {
       render(<PartnerFilters />);
 
-      const tierSelect = screen.getByLabelText(/tier/i);
+      const tierSelect = screen.getByLabelText('filters.tier');
       fireEvent.mouseDown(tierSelect);
 
       const goldOption = screen.getByRole('option', { name: /gold/i });
       fireEvent.click(goldOption);
 
-      expect(mockSetFilters).toHaveBeenCalledWith({ tier: 'gold' });
+      expect(mockSetFilters).toHaveBeenCalledWith({ tier: 'GOLD' });
     });
 
     it('should call setFilters with strategic when strategic tier selected', () => {
       render(<PartnerFilters />);
 
-      const tierSelect = screen.getByLabelText(/tier/i);
+      const tierSelect = screen.getByLabelText('filters.tier');
       fireEvent.mouseDown(tierSelect);
 
       const strategicOption = screen.getByRole('option', { name: /strategic/i });
       fireEvent.click(strategicOption);
 
-      expect(mockSetFilters).toHaveBeenCalledWith({ tier: 'strategic' });
+      expect(mockSetFilters).toHaveBeenCalledWith({ tier: 'STRATEGIC' });
     });
 
     it('should call setFilters with all when all tiers selected', () => {
@@ -92,22 +92,22 @@ describe('PartnerFilters Component (RED Phase - Task 5a)', () => {
       // We just need to verify that clicking "All Tiers" calls setFilters with { tier: 'all' }
       render(<PartnerFilters />);
 
-      const tierSelect = screen.getByLabelText(/tier/i);
+      const tierSelect = screen.getByLabelText('filters.tier');
       fireEvent.mouseDown(tierSelect);
 
       // Since default is already 'all', let's just verify the option exists
       // The actual functionality is tested by other tests where tier changes from one to another
-      const allOption = screen.getByRole('option', { name: /all tiers/i });
+      const allOption = screen.getByRole('option', { name: 'filters.tierAll' });
       expect(allOption).toBeInTheDocument();
     });
 
     it('should display all tier options', () => {
       render(<PartnerFilters />);
 
-      const tierSelect = screen.getByLabelText(/tier/i);
+      const tierSelect = screen.getByLabelText('filters.tier');
       fireEvent.mouseDown(tierSelect);
 
-      expect(screen.getByRole('option', { name: /all tiers/i })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: 'filters.tierAll' })).toBeInTheDocument();
       expect(screen.getByRole('option', { name: /strategic/i })).toBeInTheDocument();
       expect(screen.getByRole('option', { name: /platinum/i })).toBeInTheDocument();
       expect(screen.getByRole('option', { name: /gold/i })).toBeInTheDocument();
@@ -120,10 +120,10 @@ describe('PartnerFilters Component (RED Phase - Task 5a)', () => {
     it('should call setFilters with active when active status selected', () => {
       render(<PartnerFilters />);
 
-      const statusSelect = screen.getByLabelText(/status/i);
+      const statusSelect = screen.getByLabelText('filters.status');
       fireEvent.mouseDown(statusSelect);
 
-      const activeOption = screen.getByRole('option', { name: /^active$/i });
+      const activeOption = screen.getByRole('option', { name: 'filters.statusActive' });
       fireEvent.click(activeOption);
 
       expect(mockSetFilters).toHaveBeenCalledWith({ status: 'active' });
@@ -132,10 +132,10 @@ describe('PartnerFilters Component (RED Phase - Task 5a)', () => {
     it('should call setFilters with inactive when inactive status selected', () => {
       render(<PartnerFilters />);
 
-      const statusSelect = screen.getByLabelText(/status/i);
+      const statusSelect = screen.getByLabelText('filters.status');
       fireEvent.mouseDown(statusSelect);
 
-      const inactiveOption = screen.getByRole('option', { name: /inactive/i });
+      const inactiveOption = screen.getByRole('option', { name: 'filters.statusInactive' });
       fireEvent.click(inactiveOption);
 
       expect(mockSetFilters).toHaveBeenCalledWith({ status: 'inactive' });
@@ -144,12 +144,12 @@ describe('PartnerFilters Component (RED Phase - Task 5a)', () => {
     it('should display all status options', () => {
       render(<PartnerFilters />);
 
-      const statusSelect = screen.getByLabelText(/status/i);
+      const statusSelect = screen.getByLabelText('filters.status');
       fireEvent.mouseDown(statusSelect);
 
-      expect(screen.getByRole('option', { name: /^all$/i })).toBeInTheDocument();
-      expect(screen.getByRole('option', { name: /^active$/i })).toBeInTheDocument();
-      expect(screen.getByRole('option', { name: /^inactive$/i })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: 'filters.statusAll' })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: 'filters.statusActive' })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: 'filters.statusInactive' })).toBeInTheDocument();
     });
   });
 
@@ -170,7 +170,7 @@ describe('PartnerFilters Component (RED Phase - Task 5a)', () => {
       const goldChip = screen.getByText(/🥇 Gold/i);
       fireEvent.click(goldChip);
 
-      expect(mockSetFilters).toHaveBeenCalledWith({ tier: 'gold' });
+      expect(mockSetFilters).toHaveBeenCalledWith({ tier: 'GOLD' });
     });
 
     it('should call setFilters when strategic chip clicked', () => {
@@ -179,7 +179,7 @@ describe('PartnerFilters Component (RED Phase - Task 5a)', () => {
       const strategicChip = screen.getByText(/🏆 Strategic/i);
       fireEvent.click(strategicChip);
 
-      expect(mockSetFilters).toHaveBeenCalledWith({ tier: 'strategic' });
+      expect(mockSetFilters).toHaveBeenCalledWith({ tier: 'STRATEGIC' });
     });
   });
 
@@ -187,7 +187,7 @@ describe('PartnerFilters Component (RED Phase - Task 5a)', () => {
     it('should call resetFilters when reset button clicked', () => {
       render(<PartnerFilters />);
 
-      const resetButton = screen.getByRole('button', { name: /reset filters/i });
+      const resetButton = screen.getByRole('button', { name: 'filters.reset' });
       fireEvent.click(resetButton);
 
       expect(mockResetFilters).toHaveBeenCalledTimes(1);
@@ -196,7 +196,7 @@ describe('PartnerFilters Component (RED Phase - Task 5a)', () => {
     it('should have reset button enabled', () => {
       render(<PartnerFilters />);
 
-      const resetButton = screen.getByRole('button', { name: /reset filters/i });
+      const resetButton = screen.getByRole('button', { name: 'filters.reset' });
       expect(resetButton).toBeEnabled();
     });
   });
@@ -206,8 +206,8 @@ describe('PartnerFilters Component (RED Phase - Task 5a)', () => {
       // The store mock returns { tier: 'all', status: 'all' }
       render(<PartnerFilters />);
 
-      const tierSelect = screen.getByLabelText(/tier/i);
-      const statusSelect = screen.getByLabelText(/status/i);
+      const tierSelect = screen.getByLabelText('filters.tier');
+      const statusSelect = screen.getByLabelText('filters.status');
 
       // Check that default values are shown
       expect(tierSelect).toBeInTheDocument();

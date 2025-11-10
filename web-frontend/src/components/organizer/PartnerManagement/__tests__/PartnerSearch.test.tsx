@@ -64,9 +64,8 @@ describe('PartnerSearch Component - AC1 Tests', () => {
         name: /search partners/i,
       }) as HTMLInputElement;
 
-      // Manually trigger change event (Material-UI TextField uses onChange)
-      searchInput.value = 'Test Partner';
-      searchInput.dispatchEvent(new Event('change', { bubbles: true }));
+      // Use fireEvent.change for Material-UI TextField
+      fireEvent.change(searchInput, { target: { value: 'Test Partner' } });
 
       // Wait for debounce
       await waitFor(
@@ -84,18 +83,11 @@ describe('PartnerSearch Component - AC1 Tests', () => {
         name: /search partners/i,
       }) as HTMLInputElement;
 
-      // Simulate multiple rapid changes
-      searchInput.value = 'T';
-      searchInput.dispatchEvent(new Event('change', { bubbles: true }));
-
-      searchInput.value = 'Te';
-      searchInput.dispatchEvent(new Event('change', { bubbles: true }));
-
-      searchInput.value = 'Tes';
-      searchInput.dispatchEvent(new Event('change', { bubbles: true }));
-
-      searchInput.value = 'Test';
-      searchInput.dispatchEvent(new Event('change', { bubbles: true }));
+      // Simulate multiple rapid changes using fireEvent
+      fireEvent.change(searchInput, { target: { value: 'T' } });
+      fireEvent.change(searchInput, { target: { value: 'Te' } });
+      fireEvent.change(searchInput, { target: { value: 'Tes' } });
+      fireEvent.change(searchInput, { target: { value: 'Test' } });
 
       // Wait for debounce - should only be called once with final value
       await waitFor(
@@ -114,16 +106,14 @@ describe('PartnerSearch Component - AC1 Tests', () => {
         name: /search partners/i,
       }) as HTMLInputElement;
 
-      // Type first character
-      searchInput.value = 'T';
-      searchInput.dispatchEvent(new Event('change', { bubbles: true }));
+      // Type first character using fireEvent
+      fireEvent.change(searchInput, { target: { value: 'T' } });
 
       // Wait a bit
       await new Promise((resolve) => setTimeout(resolve, 200));
 
       // Type second character (should cancel previous debounce)
-      searchInput.value = 'Te';
-      searchInput.dispatchEvent(new Event('change', { bubbles: true }));
+      fireEvent.change(searchInput, { target: { value: 'Te' } });
 
       // Wait for debounce
       await waitFor(
@@ -144,9 +134,8 @@ describe('PartnerSearch Component - AC1 Tests', () => {
         name: /search partners/i,
       }) as HTMLInputElement;
 
-      // Manually trigger change event (Material-UI TextField uses onChange)
-      searchInput.value = 'Gold Partners';
-      searchInput.dispatchEvent(new Event('change', { bubbles: true }));
+      // Use fireEvent.change for Material-UI TextField
+      fireEvent.change(searchInput, { target: { value: 'Gold Partners' } });
 
       // Wait for debounce
       await waitFor(
@@ -169,9 +158,8 @@ describe('PartnerSearch Component - AC1 Tests', () => {
         name: /search partners/i,
       }) as HTMLInputElement;
 
-      // Manually trigger change event to empty
-      searchInput.value = '';
-      searchInput.dispatchEvent(new Event('change', { bubbles: true }));
+      // Use fireEvent.change to trigger empty value
+      fireEvent.change(searchInput, { target: { value: '' } });
 
       // Wait for debounce
       await waitFor(
@@ -189,9 +177,8 @@ describe('PartnerSearch Component - AC1 Tests', () => {
         name: /search partners/i,
       }) as HTMLInputElement;
 
-      // Manually trigger change event with special characters
-      searchInput.value = 'Company & Co.';
-      searchInput.dispatchEvent(new Event('change', { bubbles: true }));
+      // Use fireEvent.change with special characters
+      fireEvent.change(searchInput, { target: { value: 'Company & Co.' } });
 
       // Wait for debounce
       await waitFor(
