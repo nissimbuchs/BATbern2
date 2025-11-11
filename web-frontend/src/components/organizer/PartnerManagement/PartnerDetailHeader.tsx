@@ -14,7 +14,7 @@
  */
 
 import React from 'react';
-import { Box, Stack, Typography, Avatar, Chip, Button, Link, Paper } from '@mui/material';
+import { Box, Stack, Typography, Chip, Button, Link, Paper } from '@mui/material';
 import { ArrowBack, Edit, NoteAdd, Email, CalendarMonth, Analytics } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -87,15 +87,43 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partne
         {/* Header Content */}
         <Stack direction="row" spacing={3} alignItems="flex-start">
           {/* Logo / Avatar */}
-          <Box>
+          <Box
+            sx={{
+              width: 120,
+              height: 120,
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
             {partner.company?.logoUrl ? (
-              <Avatar
+              <Box
+                component="img"
                 src={partner.company.logoUrl}
                 alt={companyName}
-                sx={{ width: 80, height: 80 }}
+                sx={{
+                  maxWidth: 120,
+                  maxHeight: 120,
+                  objectFit: 'contain',
+                }}
               />
             ) : (
-              <Avatar sx={{ width: 80, height: 80, fontSize: '2rem' }}>{initials}</Avatar>
+              <Box
+                sx={{
+                  width: 120,
+                  height: 120,
+                  borderRadius: 1,
+                  bgcolor: 'primary.main',
+                  color: 'primary.contrastText',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  fontSize: '2.5rem',
+                  fontWeight: 600,
+                }}
+              >
+                {initials}
+              </Box>
             )}
           </Box>
 
