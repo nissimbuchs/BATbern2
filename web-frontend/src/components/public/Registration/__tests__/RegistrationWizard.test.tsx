@@ -32,7 +32,16 @@ vi.mock('react-router-dom', async () => {
 // Mock i18n
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => key,
+    t: (key: string) => {
+      // Map translation keys to actual text for tests
+      const translations: Record<string, string> = {
+        'registration.success.title': 'Registration Submitted!',
+        'registration.success.subtitle': 'Check your email to confirm your registration',
+        'registration.success.emailSent': 'Confirmation Email Sent',
+        'registration.success.emailSentTo': "We've sent a confirmation email to",
+      };
+      return translations[key] || key;
+    },
     i18n: {
       changeLanguage: () => new Promise(() => {}),
     },
@@ -292,18 +301,21 @@ describe('RegistrationWizard Component', () => {
       fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(eventApiClient.createRegistration).toHaveBeenCalledWith('BAT2025', expect.objectContaining({
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john@example.com',
-          company: 'Acme Inc',
-          role: 'Developer',
-          termsAccepted: true,
-        }));
+        expect(eventApiClient.createRegistration).toHaveBeenCalledWith(
+          'BAT2025',
+          expect.objectContaining({
+            firstName: 'John',
+            lastName: 'Doe',
+            email: 'john@example.com',
+            company: 'Acme Inc',
+            role: 'Developer',
+            termsAccepted: true,
+          })
+        );
       });
     });
 
-    test('should_navigateToConfirmation_when_submissionSuccessful', async () => {
+    test('should_showSuccessMessage_when_submissionSuccessful', async () => {
       const mockRegistration = {
         registrationCode: 'ABC123',
         firstName: 'John',
@@ -339,8 +351,11 @@ describe('RegistrationWizard Component', () => {
         fireEvent.click(submitButton);
       });
 
+      // Story 4.1.5c: Inline success message instead of navigation
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith('/registration-confirmation/ABC123');
+        expect(
+          screen.getByText(/check your email to confirm your registration/i)
+        ).toBeInTheDocument();
       });
     });
 
@@ -380,7 +395,8 @@ describe('RegistrationWizard Component', () => {
 
     test('should_showLoadingState_when_submitting', async () => {
       vi.mocked(eventApiClient.createRegistration).mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve({ registrationCode: 'ABC123' }), 100))
+        () =>
+          new Promise((resolve) => setTimeout(() => resolve({ registrationCode: 'ABC123' }), 100))
       );
 
       renderWithProviders(<RegistrationWizard eventCode="BAT2025" />);

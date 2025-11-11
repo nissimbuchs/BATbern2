@@ -29,7 +29,9 @@ vi.mock('canvas-confetti', () => ({
 
 // Mock PublicLayout
 vi.mock('@/components/public/PublicLayout', () => ({
-  PublicLayout: ({ children }: { children: React.ReactNode }) => <div data-testid="public-layout">{children}</div>,
+  PublicLayout: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="public-layout">{children}</div>
+  ),
 }));
 
 // Mock useAuth
@@ -66,7 +68,10 @@ describe('RegistrationConfirmationPage Component', () => {
       <QueryClientProvider client={queryClient}>
         <MemoryRouter initialEntries={[initialRoute]}>
           <Routes>
-            <Route path="/registration-confirmation/:confirmationCode" element={<RegistrationConfirmationPage />} />
+            <Route
+              path="/registration-confirmation/:confirmationCode"
+              element={<RegistrationConfirmationPage />}
+            />
             <Route path="/" element={<div>Home Page</div>} />
           </Routes>
         </MemoryRouter>
@@ -177,39 +182,43 @@ describe('RegistrationConfirmationPage Component', () => {
   });
 
   describe('QR Code Display', () => {
-    test('should_fetchQRCode_when_confirmationCodeProvided', async () => {
+    test('should_notFetchQRCode_when_featureRemoved', async () => {
       vi.mocked(eventApiClient.getRegistration).mockResolvedValue(mockRegistration);
-      vi.mocked(eventApiClient.getRegistrationQR).mockResolvedValue('blob:mock-qr-url');
 
       renderWithProviders();
 
       await waitFor(() => {
-        expect(eventApiClient.getRegistrationQR).toHaveBeenCalledWith('BATbern25', 'BAT-2025-000123', 300);
+        expect(screen.getByText(/confirmed|success/i)).toBeInTheDocument();
       });
+
+      // QR code feature has been removed - verify it's not called
+      expect(eventApiClient.getRegistrationQR).not.toHaveBeenCalled();
     });
 
-    test('should_displayQRCodeImage_when_qrFetched', async () => {
+    test('should_notDisplayQRCode_when_featureRemoved', async () => {
       vi.mocked(eventApiClient.getRegistration).mockResolvedValue(mockRegistration);
-      vi.mocked(eventApiClient.getRegistrationQR).mockResolvedValue('blob:mock-qr-url');
 
       renderWithProviders();
 
       await waitFor(() => {
-        const qrImage = screen.getByAltText(/qr code/i);
-        expect(qrImage).toBeInTheDocument();
-        expect(qrImage).toHaveAttribute('src', 'blob:mock-qr-url');
+        expect(screen.getByText(/confirmed|success/i)).toBeInTheDocument();
       });
+
+      // QR code should not be displayed
+      expect(screen.queryByAltText(/qr code/i)).not.toBeInTheDocument();
     });
 
-    test('should_displayQRCodeInstructions_when_qrDisplayed', async () => {
+    test('should_notDisplayQRCodeInstructions_when_featureRemoved', async () => {
       vi.mocked(eventApiClient.getRegistration).mockResolvedValue(mockRegistration);
-      vi.mocked(eventApiClient.getRegistrationQR).mockResolvedValue('blob:mock-qr-url');
 
       renderWithProviders();
 
       await waitFor(() => {
-        expect(screen.getByText(/present this qr code.*check-in/i)).toBeInTheDocument();
+        expect(screen.getByText(/confirmed|success/i)).toBeInTheDocument();
       });
+
+      // QR instructions should not be displayed
+      expect(screen.queryByText(/present this qr code.*check-in/i)).not.toBeInTheDocument();
     });
   });
 
@@ -221,7 +230,9 @@ describe('RegistrationConfirmationPage Component', () => {
       renderWithProviders();
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /calendar|add to calendar/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole('button', { name: /calendar|add to calendar/i })
+        ).toBeInTheDocument();
       });
     });
   });
