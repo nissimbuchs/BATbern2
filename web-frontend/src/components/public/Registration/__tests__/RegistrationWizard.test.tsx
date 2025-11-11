@@ -39,6 +39,16 @@ vi.mock('react-i18next', () => ({
         'registration.success.subtitle': 'Check your email to confirm your registration',
         'registration.success.emailSent': 'Confirmation Email Sent',
         'registration.success.emailSentTo': "We've sent a confirmation email to",
+        'registration.success.clickLink':
+          'Click the link in the email to confirm your registration.',
+        'registration.success.validFor': 'This link is valid for',
+        'registration.success.valid': '24 hours',
+        'registration.success.didntReceive': "Didn't receive the email?",
+        'registration.success.checkSpam': 'Check your spam folder',
+        'registration.success.checkEmail': 'Verify the email address is correct',
+        'registration.success.waitMinutes': 'Wait a few minutes and try again',
+        'registration.success.close': 'Close',
+        'navigation.home': 'Home',
       };
       return translations[key] || key;
     },
