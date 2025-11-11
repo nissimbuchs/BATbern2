@@ -362,11 +362,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   apiGatewayServiceStack.addDependency(databaseStack);
   apiGatewayServiceStack.addDependency(cicdStack);
   apiGatewayServiceStack.addDependency(cognitoStack);
-  apiGatewayServiceStack.addDependency(eventManagementStack);
-  apiGatewayServiceStack.addDependency(speakerCoordinationStack);
-  apiGatewayServiceStack.addDependency(partnerCoordinationStack);
-  apiGatewayServiceStack.addDependency(attendeeExperienceStack);
-  apiGatewayServiceStack.addDependency(companyManagementStack);
+  // No microservice dependencies - uses Service Connect for runtime discovery
 }
 
 // 11. API Gateway Stack (AWS API Gateway proxy to Spring Boot API Gateway)
@@ -381,12 +377,6 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     hostedZoneId: config.domain?.hostedZoneId,
     certificateArn: networkStack.apiCertificate?.certificateArn || config.domain?.apiCertificateArn,
     apiGatewayServiceUrl: apiGatewayServiceStack?.apiGatewayUrl, // Spring Boot API Gateway internal ALB
-    // Microservice URLs for direct health/info endpoint access
-    eventManagementServiceUrl: eventManagementStack?.serviceUrl,
-    speakerCoordinationServiceUrl: speakerCoordinationStack?.serviceUrl,
-    partnerCoordinationServiceUrl: partnerCoordinationStack?.serviceUrl,
-    attendeeExperienceServiceUrl: attendeeExperienceStack?.serviceUrl,
-    companyUserManagementServiceUrl: companyManagementStack?.serviceUrl,
     env,
     description: `BATbern API Gateway - ${config.envName}`,
     tags: config.tags,
@@ -395,22 +385,6 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   apiGatewayStack.addDependency(networkStack); // Depends on Network for certificate
   if (apiGatewayServiceStack) {
     apiGatewayStack.addDependency(apiGatewayServiceStack); // Depends on API Gateway Service for routing
-  }
-  // Add dependencies on all microservices for health/info endpoints
-  if (eventManagementStack) {
-    apiGatewayStack.addDependency(eventManagementStack);
-  }
-  if (speakerCoordinationStack) {
-    apiGatewayStack.addDependency(speakerCoordinationStack);
-  }
-  if (partnerCoordinationStack) {
-    apiGatewayStack.addDependency(partnerCoordinationStack);
-  }
-  if (attendeeExperienceStack) {
-    apiGatewayStack.addDependency(attendeeExperienceStack);
-  }
-  if (companyManagementStack) {
-    apiGatewayStack.addDependency(companyManagementStack);
   }
 }
 

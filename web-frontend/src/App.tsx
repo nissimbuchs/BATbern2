@@ -49,25 +49,11 @@ const CompanyManagement = React.lazy(
 );
 const UserManagement = React.lazy(() => import('@components/organizer/UserManagement/UserList'));
 
-// Partner Management Pages - Story 2.8.1
-const PartnerDirectoryScreen = React.lazy(() =>
-  import('@components/organizer/PartnerManagement/PartnerDirectoryScreen').then((module) => ({
-    default: module.PartnerDirectoryScreen,
-  }))
-);
-
 // Event Management Pages - Story 2.5.3, Task 4
 const EventManagementDashboard = React.lazy(() => import('@pages/EventManagementDashboard'));
 const EventCreate = React.lazy(() => import('@pages/EventCreate'));
 const EventTimeline = React.lazy(() => import('@pages/EventTimeline'));
 const EventDetailEdit = React.lazy(() => import('@pages/EventDetailEdit')); // Comprehensive edit page with Tasks 9-13
-
-// Partner Management Pages - Story 2.8.2, Task 13
-const PartnerDetailScreen = React.lazy(() =>
-  import('@components/organizer/PartnerManagement/PartnerDetailScreen').then((module) => ({
-    default: module.PartnerDetailScreen,
-  }))
-);
 
 // Public Pages - Story 4.1.2, 4.1.3, 4.1.5, 4.1.6
 const HomePage = React.lazy(() => import('@pages/public/HomePage'));
@@ -359,18 +345,6 @@ function App() {
                     }
                   />
 
-                  {/* Partner Management Routes - Story 2.8.1, 2.8.2 */}
-                  <Route
-                    path="/organizer/partners"
-                    element={
-                      <ProtectedRoute>
-                        <AuthLayout>
-                          <PartnerDirectoryScreen />
-                        </AuthLayout>
-                      </ProtectedRoute>
-                    }
-                  />
-
                   <Route
                     path="/partners"
                     element={
@@ -388,18 +362,6 @@ function App() {
                       <PartnerRoute>
                         <AuthLayout>
                           <Analytics />
-                        </AuthLayout>
-                      </PartnerRoute>
-                    }
-                  />
-
-                  {/* Partner Detail Route - Story 2.8.2, Task 13 */}
-                  <Route
-                    path="/partners/:companyName"
-                    element={
-                      <PartnerRoute>
-                        <AuthLayout>
-                          <PartnerDetailScreen />
                         </AuthLayout>
                       </PartnerRoute>
                     }

@@ -64,7 +64,7 @@ public class OpenApiConfig {
                                 .url("http://localhost:" + serverPort)
                                 .description("Local development server"),
                         new Server()
-                                .url("https://api-staging.batbern.ch")
+                                .url("https://api.staging.batbern.ch")
                                 .description("Staging environment"),
                         new Server()
                                 .url("https://api.batbern.ch")

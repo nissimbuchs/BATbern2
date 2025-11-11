@@ -1,5 +1,6 @@
 package ch.batbern.companyuser.config;
 
+import ch.batbern.companyuser.security.VpcInternalAuthorizationManager;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -38,6 +39,9 @@ public class SecurityConfig {
 
     @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri:}")
     private String jwkSetUri;
+
+    @Value("${vpc.cidr:10.1.0.0/16}")
+    private String vpcCidr;
 
     /**
      * Enable method-level security for production and staging environments
@@ -95,6 +99,12 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/users/get-or-create").permitAll()
                 // Public company endpoint (GET only for partner showcase enrichment)
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/companies/*").permitAll()
+                // Current user endpoint always requires authentication (even from VPC)
+                .requestMatchers("/api/v1/users/me").authenticated()
+                // Service-to-service: Allow user profile lookups from VPC internal network
+                // OR authenticated external requests (via API Gateway with JWT)
+                .requestMatchers("/api/v1/users/*")
+                    .access(new VpcInternalAuthorizationManager(vpcCidr))
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2
@@ -125,6 +135,11 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/users/get-or-create").permitAll()
                 // Public company endpoint (GET only for partner showcase enrichment)
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/companies/*").permitAll()
+                // Current user endpoint always requires authentication (even from VPC)
+                .requestMatchers("/api/v1/users/me").authenticated()
+                // Test environment: Enforce authentication for all user endpoints
+                // (tests run from localhost but should verify authentication logic)
+                .requestMatchers("/api/v1/users/*").authenticated()
                 .anyRequest().authenticated() // Enforce authentication in tests
             )
             .exceptionHandling(exceptions -> exceptions

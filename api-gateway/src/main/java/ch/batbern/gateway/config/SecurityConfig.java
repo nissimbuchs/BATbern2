@@ -133,6 +133,7 @@ public class SecurityConfig {
                         // Public company endpoint (GET only for partner showcase logo/website enrichment)
                         .requestMatchers(HttpMethod.GET, "/api/v1/companies/*").permitAll()
 
+
                         // All other requests require authentication
                         .anyRequest().authenticated()
                 )
