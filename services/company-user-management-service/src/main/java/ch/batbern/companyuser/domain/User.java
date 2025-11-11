@@ -44,9 +44,13 @@ public class User {
     private String username;
 
     /**
-     * AWS Cognito user identifier for authentication
-     * Nullable until user completes registration (invitation flow)
-     * Populated by Cognito pre-token-generation hook on first login
+     * AWS Cognito user identifier for authentication.
+     * <p>
+     * ADR-005: Anonymous Event Registration
+     * - NULL for anonymous users who registered for events without creating an account
+     * - Automatically populated via Cognito post-authentication trigger when user creates account with matching email
+     * - For invited users, populated by Cognito pre-token-generation hook on first login
+     * </p>
      */
     @Column(name = "cognito_user_id", nullable = true, unique = true, length = 255)
     private String cognitoUserId;
@@ -218,5 +222,16 @@ public class User {
     public void recordLogin() {
         this.lastLoginAt = Instant.now();
         this.updatedAt = Instant.now();
+    }
+
+    /**
+     * ADR-005: Check if user is anonymous (no Cognito account).
+     * Anonymous users registered for events without creating an account.
+     * When they create a Cognito account with matching email, cognitoUserId is automatically populated.
+     *
+     * @return true if user has no Cognito account (anonymous), false otherwise
+     */
+    public boolean isAnonymous() {
+        return this.cognitoUserId == null;
     }
 }

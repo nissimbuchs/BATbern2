@@ -53,7 +53,7 @@ function getCloudFrontUrl(): string {
 
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     // Local development - files served from local S3
-    return 'http://localhost:9000'; // LocalStack S3 or MinIO
+    return 'http://localhost:8450'; // MinIO API port for multi-instance support
   }
 
   if (hostname === 'staging.batbern.ch' || hostname.includes('staging')) {

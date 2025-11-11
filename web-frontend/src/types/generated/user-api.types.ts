@@ -386,15 +386,23 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Get or create user (for domain services)
+     * Get or create user (for domain services, supports anonymous users)
      * @description Idempotent endpoint for domain services to get existing user or create new user.
      *
+     *     **ADR-005**: Anonymous Event Registration - creates users with cognito_id=NULL
+     *     **Story 4.1.5a**: Architecture consolidation
      *     **Acceptance Criteria**: AC12
      *
      *     **Use Cases**:
+     *     - Event Service: Create anonymous user during public event registration (ADR-005)
      *     - Speaker Service: Create user account when speaker registers
      *     - Partner Service: Create user account for partner contact
      *     - Attendee Service: Create user account during event registration
+     *
+     *     **Anonymous Users** (ADR-005):
+     *     - When cognitoSync=false, creates user_profile with cognito_id=NULL
+     *     - User can later create Cognito account which auto-links on first login
+     *     - Email serves as unique identifier for anonymous users
      *
      *     **Idempotency**: Safe to call multiple times with same email
      *
@@ -581,19 +589,42 @@ export interface components {
        */
       bio?: string;
     };
+    /** @description Request to get an existing user or create a new one. Supports both authenticated (Cognito) and anonymous users (ADR-005). */
     GetOrCreateUserRequest: {
-      /** Format: email */
+      /**
+       * Format: email
+       * @description User email address. Used as unique identifier for anonymous users and for account linking.
+       * @example john.doe@example.com
+       */
       email: string;
+      /**
+       * @description User first name
+       * @example John
+       */
       firstName: string;
+      /**
+       * @description User last name
+       * @example Doe
+       */
       lastName: string;
       /**
-       * @description Company name (unique identifier) - Story 1.16.2
+       * @description Company name (unique identifier) - Story 1.16.2. Optional for anonymous event registration.
        * @example Swiss IT Solutions AG
        */
       companyId?: string;
-      /** @default true */
+      /**
+       * @description If true, creates a new user if not found. If false, returns error if user doesn't exist.
+       * @default true
+       */
       createIfMissing: boolean;
-      /** @default true */
+      /**
+       * @description ADR-005: Controls whether to sync with AWS Cognito.
+       *     - true (default): Creates/syncs with Cognito account (authenticated user)
+       *     - false: Creates anonymous user with cognito_id=NULL (for event registration without account)
+       *     When false, user profile is created without Cognito account and can be linked later via post-authentication trigger.
+       * @default true
+       * @example false
+       */
       cognitoSync: boolean;
     };
     GetOrCreateUserResponse: {
