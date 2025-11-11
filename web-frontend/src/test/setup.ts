@@ -43,6 +43,9 @@ global.ResizeObserver = class ResizeObserver {
   disconnect() {}
 };
 
+// Mock window.scrollTo
+global.window.scrollTo = vi.fn();
+
 // Mock HTMLCanvasElement for axe-core accessibility tests
 HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
   measureText: vi.fn(() => ({ width: 0 })),

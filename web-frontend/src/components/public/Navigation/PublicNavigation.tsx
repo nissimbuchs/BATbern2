@@ -9,14 +9,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 
 export const PublicNavigation = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { t } = useTranslation('common');
 
   const getPortalPath = () => {
-    if (user?.role === 'organizer') return '/organizer/dashboard';
-    if (user?.role === 'speaker') return '/speaker/dashboard';
-    if (user?.role === 'partner') return '/partner/dashboard';
-    return '/attendee/dashboard';
+    // All roles use the same /dashboard route
+    // Role-based access control is handled by ProtectedRoute component
+    return '/dashboard';
   };
 
   return (

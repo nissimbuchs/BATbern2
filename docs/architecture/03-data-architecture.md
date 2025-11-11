@@ -1210,13 +1210,35 @@ interface Attendee {
 }
 
 interface EventRegistration {
-  eventId: string;
+  id: string;                          // UUID
+  eventId: string;                     // FK to Event
+
+  // Authenticated registration (existing pattern)
+  attendeeId?: string;                 // UUID FK to Attendee (nullable for anonymous registrations)
+
+  // Anonymous registration (new pattern - ADR-010)
+  anonymousEmail?: string;             // Email for anonymous registration
+  anonymousFirstName?: string;         // First name
+  anonymousLastName?: string;          // Last name
+  anonymousCompany?: string;           // Company
+  anonymousRole?: string;              // Job title/role
+
+  // Account linking (when anonymous user creates account)
+  claimedByUserId?: string;            // User who claimed this registration
+  claimedAt?: Date;                    // When registration was claimed
+
+  // Registration metadata
+  confirmationCode: string;            // Format: BAT-YYYY-NNNNNN (e.g., BAT-2025-000123)
   registrationDate: Date;
-  status: RegistrationStatus;
-  sessionPreferences: string[];
+  status: RegistrationStatus;          // 'registered' | 'waitlisted' | 'confirmed' | 'cancelled' | 'attended'
   specialRequests?: string;
   attendanceConfirmed?: boolean;
   actualAttendance: boolean;
+  sessionPreferences?: string[];       // Event-level registration, sessions are preferences only
+
+  // Communication preferences
+  newsletterSubscribed?: boolean;
+  eventReminders?: boolean;
 }
 
 interface GDPRConsent {
@@ -1232,6 +1254,138 @@ interface GDPRConsent {
 - **Many-to-One:** Attendee → Company (via `User.companyId`, transitive through User)
 - **Many-to-Many:** Attendee ↔ Events (through EventRegistration)
 - **One-to-Many:** Attendee → EngagementHistory (content interaction tracking)
+
+### Anonymous Registration Account Linking
+
+**Pattern**: Email-based automatic linking (ADR-005)
+
+**Use Case**: A user registers anonymously for an event, then later creates a Cognito account with the same email address.
+
+#### Workflow
+
+**1. Anonymous Registration (Story 4.1.5)**
+
+User visits `/register/BAT-025` and completes registration wizard without login.
+
+Backend creates:
+```sql
+INSERT INTO event_registrations (
+    id, event_id, anonymous_email, anonymous_first_name, anonymous_last_name,
+    anonymous_company, anonymous_role, confirmation_code, status
+) VALUES (
+    '550e8400-e29b-41d4-a716-446655440000',
+    'BAT-025',
+    'john@example.com',
+    'John',
+    'Doe',
+    'Acme Corp',
+    'Architect',
+    'BAT-2025-000123',
+    'confirmed'
+);
+-- attendee_id is NULL (anonymous registration)
+```
+
+User receives confirmation email with QR code and can access registration via confirmation code.
+
+**2. Account Creation (Later)**
+
+User decides to create a Cognito account with email `john@example.com`.
+
+Backend (on account creation via `UserCreatedEvent` handler):
+```sql
+-- Step 1: Find anonymous registrations with matching email
+SELECT * FROM event_registrations
+WHERE anonymous_email = 'john@example.com'
+  AND attendee_id IS NULL;
+
+-- Step 2: Create Attendee record for user (if doesn't exist)
+INSERT INTO attendees (id, user_id, newsletter_subscription, ...)
+VALUES (gen_random_uuid(), '<new_user_id>', false, ...);
+
+-- Step 3: Link registrations to new Attendee
+UPDATE event_registrations SET
+    attendee_id = '<new_attendee_id>',
+    claimed_by_user_id = '<user_id>',
+    claimed_at = NOW(),
+    anonymous_email = NULL,           -- Clear for privacy
+    anonymous_first_name = NULL,
+    anonymous_last_name = NULL,
+    anonymous_company = NULL,
+    anonymous_role = NULL
+WHERE anonymous_email = 'john@example.com'
+  AND attendee_id IS NULL;
+
+-- Step 4: Send notification email
+-- "Your past registrations have been linked to your account"
+```
+
+**3. Result**
+
+User can now:
+- View all past registrations in authenticated dashboard
+- Register for future events as authenticated user
+- Access all registrations via account (not just confirmation codes)
+
+#### Duplicate Prevention
+
+**Anonymous Registrations:**
+```sql
+-- Unique index prevents duplicate anonymous registrations per event
+CREATE UNIQUE INDEX idx_event_registrations_anonymous_unique
+    ON event_registrations(event_id, anonymous_email)
+    WHERE attendee_id IS NULL;
+
+-- Attempting to register twice with same email for same event: FAILS
+```
+
+**Authenticated Registrations:**
+```sql
+-- Existing unique constraint prevents duplicate authenticated registrations
+UNIQUE(event_id, attendee_id)
+```
+
+#### Edge Cases
+
+**User already has account, registers anonymously by mistake:**
+- Registration is allowed (user might not be logged in)
+- On next login, system can prompt: "We found registrations with your email. Link to account?"
+- Linking follows same workflow above
+
+**Multiple emails for same person:**
+- No automatic linking across different emails
+- User must contact support to merge accounts
+
+**Email typo in anonymous registration:**
+- Confirmation email won't reach user
+- User contacts support with confirmation code
+- Support can update email in database
+
+**Account deleted after claiming:**
+- Cascade policy options:
+  - Keep registration but clear `attendee_id` and `claimed_by_user_id` (registration becomes "orphaned" but still valid)
+  - Delete registration (cascade DELETE via FK)
+- Recommended: Keep registration for event attendance records
+
+#### Implementation Notes
+
+**Auto-linking trigger point:**
+- Execute in `UserService.createUser()` after Cognito account created
+- OR subscribe to domain event `UserCreatedEvent` in Event Management Service
+- Query for anonymous registrations with matching email
+- Create Attendee record if needed
+- Update registrations to link to new Attendee
+
+**Security considerations:**
+- Email verification happens via confirmation email (sent to anonymous_email)
+- Only person with access to email can confirm registration
+- Confirmation code acts as secret token for viewing registration
+- Rate limiting on registration endpoint to prevent abuse
+
+**Privacy considerations:**
+- Clear `anonymous_*` fields after claiming for GDPR compliance
+- Keep audit trail via `claimed_by_user_id` and `claimed_at`
+- User can request deletion of claimed registrations
 
 ### Notification Domain Models
 
@@ -1802,10 +1956,28 @@ CREATE UNIQUE INDEX idx_attendees_user_id ON attendees(user_id);
 CREATE INDEX idx_attendees_newsletter ON attendees(newsletter_subscription) WHERE newsletter_subscription = true;
 
 -- Event registrations (many-to-many)
+-- Supports both authenticated (attendee_id) and anonymous (anonymous_email) registrations
+-- See ADR-005 for anonymous registration pattern and account linking workflow
 CREATE TABLE event_registrations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     event_id UUID NOT NULL, -- References event service
-    attendee_id UUID NOT NULL REFERENCES attendees(id) ON DELETE CASCADE,
+
+    -- Authenticated registration (existing pattern)
+    attendee_id UUID REFERENCES attendees(id) ON DELETE CASCADE, -- Nullable for anonymous registrations
+
+    -- Anonymous registration (new pattern - ADR-010)
+    anonymous_email VARCHAR(255),           -- Email for anonymous registration
+    anonymous_first_name VARCHAR(255),      -- First name for anonymous registration
+    anonymous_last_name VARCHAR(255),       -- Last name for anonymous registration
+    anonymous_company VARCHAR(255),         -- Company for anonymous registration
+    anonymous_role VARCHAR(255),            -- Job title/role for anonymous registration
+
+    -- Account linking (when anonymous user creates account)
+    claimed_by_user_id UUID REFERENCES users(id), -- User who claimed this registration
+    claimed_at TIMESTAMP WITH TIME ZONE,          -- When registration was claimed
+
+    -- Registration metadata
+    confirmation_code VARCHAR(20) NOT NULL UNIQUE, -- Format: BAT-YYYY-NNNNNN (e.g., BAT-2025-000123)
     registration_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     status VARCHAR(50) NOT NULL CHECK (status IN (
         'registered', 'waitlisted', 'confirmed', 'cancelled', 'attended'
@@ -1813,8 +1985,18 @@ CREATE TABLE event_registrations (
     special_requests TEXT,
     attendance_confirmed BOOLEAN DEFAULT FALSE,
     actual_attendance BOOLEAN DEFAULT FALSE,
-    session_preferences TEXT[] DEFAULT '{}',
-    UNIQUE(event_id, attendee_id)
+    session_preferences TEXT[] DEFAULT '{}', -- Event-level registration, sessions are preferences only
+
+    -- Communication preferences
+    newsletter_subscribed BOOLEAN DEFAULT FALSE,
+    event_reminders BOOLEAN DEFAULT TRUE,
+
+    -- Constraints
+    UNIQUE(event_id, attendee_id),                 -- Prevent duplicate authenticated registrations
+    CHECK (                                        -- Must be either authenticated OR anonymous, not both
+        (attendee_id IS NOT NULL AND anonymous_email IS NULL) OR
+        (attendee_id IS NULL AND anonymous_email IS NOT NULL)
+    )
 );
 
 -- Content engagement tracking
@@ -1832,6 +2014,16 @@ CREATE TABLE content_engagement (
 CREATE INDEX idx_event_registrations_event_id ON event_registrations(event_id);
 CREATE INDEX idx_event_registrations_attendee_id ON event_registrations(attendee_id);
 CREATE INDEX idx_event_registrations_status ON event_registrations(status);
+CREATE INDEX idx_event_registrations_confirmation_code ON event_registrations(confirmation_code); -- For public lookup
+
+-- Anonymous registration indexes
+CREATE INDEX idx_event_registrations_anonymous_email ON event_registrations(anonymous_email)
+    WHERE anonymous_email IS NOT NULL; -- For account linking lookup
+CREATE UNIQUE INDEX idx_event_registrations_anonymous_unique ON event_registrations(event_id, anonymous_email)
+    WHERE attendee_id IS NULL; -- Prevent duplicate anonymous registrations
+CREATE INDEX idx_event_registrations_claimed_by ON event_registrations(claimed_by_user_id)
+    WHERE claimed_by_user_id IS NOT NULL; -- For finding claimed registrations
+
 CREATE INDEX idx_content_engagement_attendee_id ON content_engagement(attendee_id);
 CREATE INDEX idx_content_engagement_content ON content_engagement(content_type, content_id);
 

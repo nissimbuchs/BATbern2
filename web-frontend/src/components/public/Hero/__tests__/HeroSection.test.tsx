@@ -1,14 +1,16 @@
 /**
  * HeroSection Component Tests
- * Story 4.1.3: Event Landing Page Hero Section Testing
+ * Story 4.1.3, 4.1.5: Event Landing Page Hero Section Testing
  *
  * Tests for the public landing page hero with Unicorn.studio background
+ * and inline registration functionality (Story 4.1.5)
  */
 
 import { describe, test, expect, beforeEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { HeroSection } from '../HeroSection';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Extend Window interface for UnicornStudio
 interface WindowWithUnicorn extends Window {
@@ -30,6 +32,29 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+// Mock RegistrationWizard component
+vi.mock('@/components/public/Registration/RegistrationWizard', () => ({
+  RegistrationWizard: ({
+    eventCode,
+    inline,
+    onCancel,
+  }: {
+    eventCode: string;
+    inline: boolean;
+    onCancel?: () => void;
+  }) => (
+    <div data-testid="registration-wizard">
+      <div data-testid="wizard-eventCode">{eventCode}</div>
+      <div data-testid="wizard-inline">{inline ? 'inline' : 'dedicated'}</div>
+      {onCancel && (
+        <button onClick={onCancel} data-testid="wizard-cancel">
+          Cancel
+        </button>
+      )}
+    </div>
+  ),
+}));
+
 describe('HeroSection Component', () => {
   beforeEach(() => {
     // Clear any existing Unicorn Studio scripts
@@ -43,8 +68,20 @@ describe('HeroSection Component', () => {
     ctaLink: '/register',
   };
 
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
+    },
+  });
+
   const renderWithRouter = (ui: React.ReactElement) => {
-    return render(<BrowserRouter>{ui}</BrowserRouter>);
+    return render(
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>{ui}</BrowserRouter>
+      </QueryClientProvider>
+    );
   };
 
   describe('Basic Rendering', () => {
@@ -197,7 +234,7 @@ describe('HeroSection Component', () => {
       const { container } = renderWithRouter(<HeroSection {...defaultProps} />);
 
       const section = container.querySelector('section');
-      expect(section).toHaveClass('h-screen');
+      expect(section).toHaveClass('min-h-screen');
     });
 
     test('should_renderResponsiveTitle_when_mounted', () => {
@@ -277,6 +314,117 @@ describe('HeroSection Component', () => {
       );
       // Should not find the date/location container when location is empty and date is not provided
       expect(dateLocationContainer).toBeUndefined();
+    });
+  });
+
+  describe('Inline Registration (Story 4.1.5)', () => {
+    test('should_renderLinkButton_when_eventCodeNotProvided', () => {
+      renderWithRouter(<HeroSection {...defaultProps} />);
+
+      const button = screen.getByRole('link', { name: 'Register Now' });
+      expect(button).toBeInTheDocument();
+      expect(button).toHaveAttribute('href', '/register');
+    });
+
+    test('should_renderClickButton_when_eventCodeProvided', () => {
+      renderWithRouter(<HeroSection {...defaultProps} eventCode="BAT2025" />);
+
+      const button = screen.getByRole('button', { name: 'Register Now' });
+      expect(button).toBeInTheDocument();
+      expect(button).not.toHaveAttribute('href');
+    });
+
+    test('should_expandRegistrationWizard_when_registerButtonClicked', async () => {
+      renderWithRouter(<HeroSection {...defaultProps} eventCode="BAT2025" />);
+
+      // Initially, registration wizard should not be visible
+      expect(screen.queryByTestId('registration-wizard')).not.toBeInTheDocument();
+
+      // Click register button
+      const button = screen.getByRole('button', { name: 'Register Now' });
+      fireEvent.click(button);
+
+      // Registration wizard should now be visible
+      await waitFor(() => {
+        expect(screen.getByTestId('registration-wizard')).toBeInTheDocument();
+      });
+    });
+
+    test('should_passCorrectProps_when_wizardRendered', async () => {
+      renderWithRouter(<HeroSection {...defaultProps} eventCode="BAT2025" />);
+
+      const button = screen.getByRole('button', { name: 'Register Now' });
+      fireEvent.click(button);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('wizard-eventCode')).toHaveTextContent('BAT2025');
+        expect(screen.getByTestId('wizard-inline')).toHaveTextContent('inline');
+      });
+    });
+
+    test('should_collapseWizard_when_cancelClicked', async () => {
+      renderWithRouter(<HeroSection {...defaultProps} eventCode="BAT2025" />);
+
+      // Expand wizard
+      const button = screen.getByRole('button', { name: 'Register Now' });
+      fireEvent.click(button);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('registration-wizard')).toBeInTheDocument();
+      });
+
+      // Click cancel in wizard
+      const cancelButton = screen.getByTestId('wizard-cancel');
+      fireEvent.click(cancelButton);
+
+      // Wizard should be hidden
+      await waitFor(() => {
+        expect(screen.queryByTestId('registration-wizard')).not.toBeInTheDocument();
+      });
+    });
+
+    test('should_disableRegisterButton_when_wizardExpanded', async () => {
+      renderWithRouter(<HeroSection {...defaultProps} eventCode="BAT2025" />);
+
+      const button = screen.getByRole('button', { name: 'Register Now' });
+      expect(button).not.toBeDisabled();
+
+      fireEvent.click(button);
+
+      await waitFor(() => {
+        expect(button).toBeDisabled();
+      });
+    });
+
+    test('should_showOverlay_when_wizardExpanded', async () => {
+      const { container } = renderWithRouter(<HeroSection {...defaultProps} eventCode="BAT2025" />);
+
+      // Click register button
+      const button = screen.getByRole('button', { name: 'Register Now' });
+      fireEvent.click(button);
+
+      // Overlay should appear - check for the overlay in the registration wizard section
+      await waitFor(() => {
+        const wizardSection = container.querySelector('section.relative.z-20');
+        expect(wizardSection).toBeInTheDocument();
+      });
+    });
+
+    test('should_changeHeight_when_wizardExpanded', async () => {
+      const { container } = renderWithRouter(<HeroSection {...defaultProps} eventCode="BAT2025" />);
+
+      const section = container.querySelector('section');
+      expect(section).toHaveClass('min-h-screen');
+
+      // Click register button
+      const button = screen.getByRole('button', { name: 'Register Now' });
+      fireEvent.click(button);
+
+      // Verify wizard is expanded
+      await waitFor(() => {
+        const wizardSection = container.querySelector('section.relative.z-20');
+        expect(wizardSection).toBeInTheDocument();
+      });
     });
   });
 });

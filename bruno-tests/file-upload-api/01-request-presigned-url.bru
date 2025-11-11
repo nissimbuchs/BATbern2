@@ -57,7 +57,7 @@ tests {
     expect(body.uploadUrl).to.exist;
     expect(body.uploadUrl).to.be.a('string');
     // Accept both AWS S3 (production/staging) and MinIO (local development)
-    const isValidS3Url = body.uploadUrl.includes('s3.amazonaws.com') || body.uploadUrl.includes('localhost:9000');
+    const isValidS3Url = body.uploadUrl.includes('s3.amazonaws.com') || body.uploadUrl.includes('localhost:8450');
     expect(isValidS3Url).to.be.true;
   });
 

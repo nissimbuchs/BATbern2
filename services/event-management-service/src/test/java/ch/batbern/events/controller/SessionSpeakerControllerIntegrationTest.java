@@ -7,7 +7,7 @@ import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionUser.SpeakerRole;
-import ch.batbern.events.dto.UserProfileDTO;
+import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
@@ -67,8 +67,8 @@ public class SessionSpeakerControllerIntegrationTest extends AbstractIntegration
 
     private Event testEvent;
     private Session testSession;
-    private UserProfileDTO testUser1;
-    private UserProfileDTO testUser2;
+    private UserResponse testUser1;
+    private UserResponse testUser2;
     private String eventCode;
     private String sessionSlug;
 
@@ -109,25 +109,25 @@ public class SessionSpeakerControllerIntegrationTest extends AbstractIntegration
         testSession = sessionRepository.save(testSession);
 
         // Create test user DTOs (not persisted - fetched via API)
-        testUser1 = UserProfileDTO.builder()
-                .username("john.doe")
+        testUser1 = new UserResponse()
+                .id("john.doe")
                 .email("john@example.com")
                 .firstName("John")
                 .lastName("Doe")
                 .companyId("GoogleZH")
-                .profilePictureUrl("https://example.com/john.jpg")
+                .profilePictureUrl(java.net.URI.create("https://example.com/john.jpg"))
                 .active(true)
-                .build();
+                ;
 
-        testUser2 = UserProfileDTO.builder()
-                .username("jane.smith")
+        testUser2 = new UserResponse()
+                .id("jane.smith")
                 .email("jane@example.com")
                 .firstName("Jane")
                 .lastName("Smith")
                 .companyId("MicrosoftBE")
-                .profilePictureUrl("https://example.com/jane.jpg")
+                .profilePictureUrl(java.net.URI.create("https://example.com/jane.jpg"))
                 .active(true)
-                .build();
+                ;
 
         // Mock UserApiClient responses
         when(userApiClient.getUserByUsername("john.doe")).thenReturn(testUser1);

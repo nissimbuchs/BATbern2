@@ -296,7 +296,7 @@ public class GenericLogoService {
     /**
      * Build CloudFront CDN URL from S3 key
      *
-     * For MinIO (local development): http://localhost:9000/{bucket-name}/{s3Key}
+     * For MinIO (local development): http://localhost:8450/{bucket-name}/{s3Key}
      * For CloudFront (staging/prod): https://cdn.batbern.ch/{s3Key}
      */
     private String buildCloudFrontUrl(String s3Key) {

@@ -69,8 +69,14 @@ const PartnerDetailScreen = React.lazy(() =>
   }))
 );
 
-// Public Pages - Story 4.1.2, 4.1.3
+// Public Pages - Story 4.1.2, 4.1.3, 4.1.5, 4.1.6
 const HomePage = React.lazy(() => import('@pages/public/HomePage'));
+const PublicRegistrationPage = React.lazy(() => import('@pages/public/RegistrationPage'));
+const RegistrationSuccessPage = React.lazy(() => import('@pages/public/RegistrationSuccessPage'));
+const ConfirmRegistrationPage = React.lazy(() => import('@pages/public/ConfirmRegistrationPage'));
+const RegistrationConfirmationPage = React.lazy(
+  () => import('@pages/public/RegistrationConfirmationPage')
+);
 
 // Loading fallback component for Suspense
 const PageLoader = () => (
@@ -174,8 +180,18 @@ function App() {
             <NavigationSetup>
               <Suspense fallback={<PageLoader />}>
                 <Routes>
-                  {/* Public routes - Story 4.1.2, 4.1.3 */}
+                  {/* Public routes - Story 4.1.2, 4.1.3, 4.1.5, 4.1.6 */}
                   <Route path="/" element={<HomePage />} />
+                  <Route path="/register/:eventCode" element={<PublicRegistrationPage />} />
+                  <Route path="/registration-success" element={<RegistrationSuccessPage />} />
+                  <Route
+                    path="/events/:eventCode/confirm-registration"
+                    element={<ConfirmRegistrationPage />}
+                  />
+                  <Route
+                    path="/registration-confirmation/:confirmationCode"
+                    element={<RegistrationConfirmationPage />}
+                  />
                   <Route
                     path="/archive"
                     element={
@@ -366,6 +382,17 @@ function App() {
                     }
                   />
 
+                  <Route
+                    path="/analytics"
+                    element={
+                      <PartnerRoute>
+                        <AuthLayout>
+                          <Analytics />
+                        </AuthLayout>
+                      </PartnerRoute>
+                    }
+                  />
+
                   {/* Partner Detail Route - Story 2.8.2, Task 13 */}
                   <Route
                     path="/partners/:companyName"
@@ -373,17 +400,6 @@ function App() {
                       <PartnerRoute>
                         <AuthLayout>
                           <PartnerDetailScreen />
-                        </AuthLayout>
-                      </PartnerRoute>
-                    }
-                  />
-
-                  <Route
-                    path="/analytics"
-                    element={
-                      <PartnerRoute>
-                        <AuthLayout>
-                          <Analytics />
                         </AuthLayout>
                       </PartnerRoute>
                     }

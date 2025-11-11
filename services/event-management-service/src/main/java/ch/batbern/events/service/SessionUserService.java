@@ -5,7 +5,7 @@ import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SessionUser.SpeakerRole;
 import ch.batbern.events.dto.SessionSpeakerResponse;
-import ch.batbern.events.dto.UserProfileDTO;
+import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.SpeakerAssignmentNotFoundException;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.repository.SessionRepository;
@@ -61,7 +61,7 @@ public class SessionUserService {
                 .orElseThrow(() -> new IllegalArgumentException("Session not found: " + sessionId));
 
         // Validate user exists via API and get user profile data
-        UserProfileDTO user = userApiClient.getUserByUsername(username);
+        UserResponse user = userApiClient.getUserByUsername(username);
         // If user doesn't exist, UserNotFoundException is thrown by API client
 
         // Check for duplicate assignment (ADR-003: use username)
@@ -135,7 +135,7 @@ public class SessionUserService {
         log.info("Successfully confirmed speaker {} for session {}", username, sessionId);
 
         // Fetch user data via API for response enrichment
-        UserProfileDTO user = userApiClient.getUserByUsername(username);
+        UserResponse user = userApiClient.getUserByUsername(username);
         return enrichWithUserData(sessionUser, user);
     }
 
@@ -162,7 +162,7 @@ public class SessionUserService {
         log.info("Successfully declined speaker {} for session {}", username, sessionId);
 
         // Fetch user data via API for response enrichment
-        UserProfileDTO user = userApiClient.getUserByUsername(username);
+        UserResponse user = userApiClient.getUserByUsername(username);
         return enrichWithUserData(sessionUser, user);
     }
 
@@ -213,7 +213,7 @@ public class SessionUserService {
      * @throws UserNotFoundException if user not found via API
      */
     private SessionSpeakerResponse enrichWithUserData(SessionUser sessionUser) {
-        UserProfileDTO user;
+        UserResponse user;
 
         if (sessionUser.getUsername() != null) {
             // Preferred path: fetch user data via API using username (cached for 15 minutes)
@@ -239,13 +239,13 @@ public class SessionUserService {
      * Enrich SessionUser with User data (when User is already loaded)
      * Combines session-user relationship data with user profile data
      */
-    private SessionSpeakerResponse enrichWithUserData(SessionUser sessionUser, UserProfileDTO user) {
+    private SessionSpeakerResponse enrichWithUserData(SessionUser sessionUser, UserResponse user) {
         return SessionSpeakerResponse.builder()
-                .username(user.getUsername())
+                .username(user.getId())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .company(user.getCompanyId()) // companyId is the company name per Story 1.16.2
-                .profilePictureUrl(user.getProfilePictureUrl())
+                .profilePictureUrl(user.getProfilePictureUrl() != null ? user.getProfilePictureUrl().toString() : null)
                 .speakerRole(sessionUser.getSpeakerRole())
                 .presentationTitle(sessionUser.getPresentationTitle())
                 .isConfirmed(sessionUser.isConfirmed())
