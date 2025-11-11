@@ -48,6 +48,10 @@ spring:
           issuer-uri: ${COGNITO_ISSUER_URI:https://cognito-idp.${AWS_REGION:eu-central-1}.amazonaws.com/${COGNITO_USER_POOL_ID:}}
           jwk-set-uri: ${COGNITO_JWK_SET_URI:https://cognito-idp.${AWS_REGION:eu-central-1}.amazonaws.com/${COGNITO_USER_POOL_ID:}/.well-known/jwks.json}
 
+# VPC Network Configuration (for service-to-service authentication)
+vpc:
+  cidr: ${VPC_CIDR:10.1.0.0/16}
+
 # AWS Configuration
 aws:
   region: ${AWS_REGION:eu-central-1}
