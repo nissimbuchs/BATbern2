@@ -24,7 +24,7 @@ headers {
 
 body:json {
   {
-    "partnershipLevel": "platinum",
+    "partnershipLevel": "PLATINUM",
     "partnershipEndDate": "2025-12-31"
   }
 }
@@ -41,7 +41,7 @@ tests {
 
   test("should update partnership level", function() {
     const body = res.getBody();
-    expect(body.partnershipLevel).to.equal('platinum');
+    expect(body.partnershipLevel).to.equal('PLATINUM');
   });
 
   test("should update partnership end date", function() {

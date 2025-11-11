@@ -53,7 +53,7 @@ paths:
           in: query
           schema:
             type: string
-          description: Filter expression (e.g., "partnershipLevel=gold,isActive=true")
+          description: Filter expression (e.g., "partnershipLevel=GOLD,isActive=true")
         - name: include
           in: query
           schema:

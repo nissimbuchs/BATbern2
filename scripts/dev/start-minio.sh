@@ -20,13 +20,13 @@ NC='\033[0m' # No Color
 
 # Instance-specific configuration
 INSTANCE="${INSTANCE:-1}"
-MINIO_API_PORT="${MINIO_API_PORT:-9000}"
-MINIO_CONSOLE_PORT="${MINIO_CONSOLE_PORT:-9001}"
+MINIO_API_PORT="${MINIO_API_PORT:-8450}"
+MINIO_CONSOLE_PORT="${MINIO_CONSOLE_PORT:-8451}"
 
 # Configuration
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-# MinIO is shared across all instances - use "shared" prefix
-MINIO_DATA_DIR="${PROJECT_ROOT}/.minio-shared/data"
+# MinIO is shared across all instances and all BATbern projects - use /tmp
+MINIO_DATA_DIR="/tmp/.minio/data"
 MINIO_PID_FILE="/tmp/batbern-shared-minio.pid"
 MINIO_LOG_FILE="/tmp/batbern-shared-minio.log"
 
@@ -34,8 +34,8 @@ MINIO_LOG_FILE="/tmp/batbern-shared-minio.log"
 export MINIO_ROOT_USER="minioadmin"
 export MINIO_ROOT_PASSWORD="minioadmin"
 
-# Enable CORS for browser access (all frontend instances)
-export MINIO_API_CORS_ALLOW_ORIGIN="http://localhost:3000,http://localhost:3001,http://localhost:4000,http://localhost:4001"
+# Enable CORS for browser access (all localhost ports for local development)
+export MINIO_API_CORS_ALLOW_ORIGIN="*"
 
 # Check if MinIO is already running
 if [ -f "$MINIO_PID_FILE" ]; then

@@ -97,7 +97,7 @@ curl -X POST https://api.staging.batbern.ch/api/v1/partners \
   -H "Content-Type: application/json" \
   -d '{
     "companyName": "GoogleZH",
-    "partnershipLevel": "gold",
+    "partnershipLevel": "GOLD",
     "partnershipStartDate": "2024-01-01"
   }'
 
@@ -199,7 +199,7 @@ test("should return ErrorResponse from shared-kernel", function() {
 - [ ] Partner Coordination Service deployed to staging
 - [ ] Test company created: `GoogleZH`
 - [ ] Test user created: `jane.doe`
-- [ ] Test partner created for GoogleZH (partnership level: gold)
+- [ ] Test partner created for GoogleZH (partnership level: GOLD)
 - [ ] Test topic created (via Event Service), UUID set in env vars
 - [ ] AUTH_TOKEN obtained and configured in environment
 - [ ] All 16 tests passing against staging environment

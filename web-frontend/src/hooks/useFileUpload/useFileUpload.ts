@@ -52,8 +52,9 @@ function getCloudFrontUrl(): string {
   const hostname = window.location.hostname;
 
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    // Local development - files served from local S3
-    return 'http://localhost:8450'; // MinIO API port for multi-instance support
+    // Local development - files served from MinIO (S3-compatible)
+    // MinIO requires bucket name in the path: http://localhost:8450/bucket-name/object-key
+    return 'http://localhost:8450/batbern-development-company-logos';
   }
 
   if (hostname === 'staging.batbern.ch' || hostname.includes('staging')) {

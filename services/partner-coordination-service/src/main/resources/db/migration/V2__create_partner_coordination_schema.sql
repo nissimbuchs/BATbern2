@@ -4,7 +4,7 @@
 -- ADR-003: Uses meaningful IDs (companyName, username) instead of UUIDs for cross-service references
 
 -- Partners table (ADR-003: stores companyName, NOT company_id UUID)
-CREATE TABLE partners (
+CREATE TABLE IF NOT EXISTS partners (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     company_name VARCHAR(12) NOT NULL UNIQUE, -- ADR-003: Meaningful ID, NO UUID FK
     partnership_level VARCHAR(50) NOT NULL CHECK (partnership_level IN (
@@ -17,21 +17,26 @@ CREATE TABLE partners (
 );
 
 -- Create updated_at trigger for partners
-CREATE TRIGGER update_partners_updated_at
-    BEFORE UPDATE ON partners
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_partners_updated_at') THEN
+        CREATE TRIGGER update_partners_updated_at
+            BEFORE UPDATE ON partners
+            FOR EACH ROW
+            EXECUTE FUNCTION update_updated_at_column();
+    END IF;
+END $$;
 
 -- Index on company_name for efficient lookups (primary access pattern)
-CREATE INDEX idx_partners_company_name ON partners(company_name);
+CREATE INDEX IF NOT EXISTS idx_partners_company_name ON partners(company_name);
 
 -- Index on partnership_level for filtering
-CREATE INDEX idx_partners_partnership_level ON partners(partnership_level);
+CREATE INDEX IF NOT EXISTS idx_partners_partnership_level ON partners(partnership_level);
 
 -- Note: is_active is calculated via @Transient method in Partner entity (not stored in DB)
 
 -- Partner contacts (ADR-003: stores username, NOT user_id UUID)
-CREATE TABLE partner_contacts (
+CREATE TABLE IF NOT EXISTS partner_contacts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     partner_id UUID NOT NULL REFERENCES partners(id) ON DELETE CASCADE,
     username VARCHAR(100) NOT NULL, -- ADR-003: Meaningful ID, NO UUID FK to users
@@ -45,19 +50,24 @@ CREATE TABLE partner_contacts (
 );
 
 -- Create updated_at trigger for partner_contacts
-CREATE TRIGGER update_partner_contacts_updated_at
-    BEFORE UPDATE ON partner_contacts
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_partner_contacts_updated_at') THEN
+        CREATE TRIGGER update_partner_contacts_updated_at
+            BEFORE UPDATE ON partner_contacts
+            FOR EACH ROW
+            EXECUTE FUNCTION update_updated_at_column();
+    END IF;
+END $$;
 
 -- Index on partner_id for efficient lookups
-CREATE INDEX idx_partner_contacts_partner_id ON partner_contacts(partner_id);
+CREATE INDEX IF NOT EXISTS idx_partner_contacts_partner_id ON partner_contacts(partner_id);
 
 -- Index on username for cross-service lookups
-CREATE INDEX idx_partner_contacts_username ON partner_contacts(username);
+CREATE INDEX IF NOT EXISTS idx_partner_contacts_username ON partner_contacts(username);
 
 -- Topic voting
-CREATE TABLE topic_votes (
+CREATE TABLE IF NOT EXISTS topic_votes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     topic_id UUID NOT NULL, -- References topic in Event Management Service
     partner_id UUID NOT NULL REFERENCES partners(id) ON DELETE CASCADE,
@@ -68,13 +78,13 @@ CREATE TABLE topic_votes (
 );
 
 -- Index on topic_id for vote aggregation
-CREATE INDEX idx_topic_votes_topic_id ON topic_votes(topic_id);
+CREATE INDEX IF NOT EXISTS idx_topic_votes_topic_id ON topic_votes(topic_id);
 
 -- Index on partner_id for partner vote history
-CREATE INDEX idx_topic_votes_partner_id ON topic_votes(partner_id);
+CREATE INDEX IF NOT EXISTS idx_topic_votes_partner_id ON topic_votes(partner_id);
 
 -- Partner topic suggestions
-CREATE TABLE topic_suggestions (
+CREATE TABLE IF NOT EXISTS topic_suggestions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     partner_id UUID NOT NULL REFERENCES partners(id) ON DELETE CASCADE,
     suggested_topic VARCHAR(500) NOT NULL,
@@ -91,19 +101,24 @@ CREATE TABLE topic_suggestions (
 );
 
 -- Create updated_at trigger for topic_suggestions
-CREATE TRIGGER update_topic_suggestions_updated_at
-    BEFORE UPDATE ON topic_suggestions
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_topic_suggestions_updated_at') THEN
+        CREATE TRIGGER update_topic_suggestions_updated_at
+            BEFORE UPDATE ON topic_suggestions
+            FOR EACH ROW
+            EXECUTE FUNCTION update_updated_at_column();
+    END IF;
+END $$;
 
 -- Index on partner_id for partner suggestions
-CREATE INDEX idx_topic_suggestions_partner_id ON topic_suggestions(partner_id);
+CREATE INDEX IF NOT EXISTS idx_topic_suggestions_partner_id ON topic_suggestions(partner_id);
 
 -- Index on status for filtering
-CREATE INDEX idx_topic_suggestions_status ON topic_suggestions(status);
+CREATE INDEX IF NOT EXISTS idx_topic_suggestions_status ON topic_suggestions(status);
 
 -- Partner meetings
-CREATE TABLE partner_meetings (
+CREATE TABLE IF NOT EXISTS partner_meetings (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     meeting_type VARCHAR(50) NOT NULL CHECK (meeting_type IN ('spring', 'autumn', 'ad_hoc')),
     scheduled_date DATE NOT NULL,
@@ -115,19 +130,24 @@ CREATE TABLE partner_meetings (
 );
 
 -- Create updated_at trigger for partner_meetings
-CREATE TRIGGER update_partner_meetings_updated_at
-    BEFORE UPDATE ON partner_meetings
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_partner_meetings_updated_at') THEN
+        CREATE TRIGGER update_partner_meetings_updated_at
+            BEFORE UPDATE ON partner_meetings
+            FOR EACH ROW
+            EXECUTE FUNCTION update_updated_at_column();
+    END IF;
+END $$;
 
 -- Index on scheduled_date for meeting lookups
-CREATE INDEX idx_partner_meetings_scheduled_date ON partner_meetings(scheduled_date);
+CREATE INDEX IF NOT EXISTS idx_partner_meetings_scheduled_date ON partner_meetings(scheduled_date);
 
 -- Index on meeting_type for filtering
-CREATE INDEX idx_partner_meetings_meeting_type ON partner_meetings(meeting_type);
+CREATE INDEX IF NOT EXISTS idx_partner_meetings_meeting_type ON partner_meetings(meeting_type);
 
 -- Partner meeting attendance
-CREATE TABLE partner_meeting_attendance (
+CREATE TABLE IF NOT EXISTS partner_meeting_attendance (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     meeting_id UUID NOT NULL REFERENCES partner_meetings(id) ON DELETE CASCADE,
     partner_id UUID NOT NULL REFERENCES partners(id) ON DELETE CASCADE,
@@ -140,10 +160,10 @@ CREATE TABLE partner_meeting_attendance (
 );
 
 -- Index on meeting_id for attendance lookups
-CREATE INDEX idx_partner_meeting_attendance_meeting_id ON partner_meeting_attendance(meeting_id);
+CREATE INDEX IF NOT EXISTS idx_partner_meeting_attendance_meeting_id ON partner_meeting_attendance(meeting_id);
 
 -- Index on partner_id for partner attendance history
-CREATE INDEX idx_partner_meeting_attendance_partner_id ON partner_meeting_attendance(partner_id);
+CREATE INDEX IF NOT EXISTS idx_partner_meeting_attendance_partner_id ON partner_meeting_attendance(partner_id);
 
 -- Schema creation complete
 -- Note: NO foreign key constraints to companies/users tables (microservices boundary per ADR-003)
