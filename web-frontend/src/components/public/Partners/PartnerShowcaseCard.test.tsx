@@ -95,16 +95,4 @@ describe('PartnerShowcaseCard', () => {
     const card = screen.getByRole('button');
     expect(card.classList.contains('Mui-disabled')).toBe(true);
   });
-
-  it('should_displayCompanyName', () => {
-    renderWithTheme(
-      <PartnerShowcaseCard
-        companyName="Amazing Corporation"
-        partnershipLevel="BRONZE"
-        partnershipStartDate="2024-01-01"
-      />
-    );
-
-    expect(screen.getByText('Amazing Corporation')).toBeDefined();
-  });
 });

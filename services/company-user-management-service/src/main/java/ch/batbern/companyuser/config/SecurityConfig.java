@@ -64,6 +64,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                // Public company endpoint (GET only for partner showcase enrichment)
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/companies/*").permitAll()
                 .anyRequest().authenticated() // Require authentication but accept any authenticated user
             )
             .oauth2ResourceServer(oauth2 -> oauth2
@@ -91,6 +93,8 @@ public class SecurityConfig {
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 // Story 4.1.5: Anonymous registration - allow get-or-create user endpoint
                 .requestMatchers("/api/v1/users/get-or-create").permitAll()
+                // Public company endpoint (GET only for partner showcase enrichment)
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/companies/*").permitAll()
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2
@@ -119,6 +123,8 @@ public class SecurityConfig {
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 // Story 4.1.5: Anonymous registration - allow get-or-create user endpoint
                 .requestMatchers("/api/v1/users/get-or-create").permitAll()
+                // Public company endpoint (GET only for partner showcase enrichment)
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/companies/*").permitAll()
                 .anyRequest().authenticated() // Enforce authentication in tests
             )
             .exceptionHandling(exceptions -> exceptions

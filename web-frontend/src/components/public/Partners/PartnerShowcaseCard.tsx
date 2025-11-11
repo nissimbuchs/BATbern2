@@ -4,7 +4,7 @@
  * Shows tier and start date, links to company website
  */
 
-import { Card, CardActionArea, Avatar, Box, Typography, Chip, Stack } from '@mui/material';
+import { Card, CardActionArea, Box, Typography, Chip, Stack } from '@mui/material';
 import { format } from 'date-fns';
 
 interface PartnerShowcaseCardProps {
@@ -44,13 +44,14 @@ export const PartnerShowcaseCard = ({
   return (
     <Card
       sx={{
-        width: 280,
-        height: 240,
+        width: 360,
+        height: 200,
         flexShrink: 0,
-        transition: 'transform 0.2s, box-shadow 0.2s',
+        bgcolor: 'transparent',
+        boxShadow: 'none',
+        transition: 'transform 0.2s',
         '&:hover': {
           transform: 'translateY(-4px)',
-          boxShadow: 6,
         },
       }}
     >
@@ -63,51 +64,51 @@ export const PartnerShowcaseCard = ({
           flexDirection: 'column',
           justifyContent: 'center',
           alignItems: 'center',
-          p: 3,
+          p: 1,
         }}
       >
         {/* Logo */}
-        <Box sx={{ mb: 2 }}>
+        <Box
+          sx={{
+            mb: 0.5,
+            width: '100%',
+            height: 160,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+          }}
+        >
           {logoUrl ? (
-            <Avatar
+            <Box
+              component="img"
               src={logoUrl}
               alt={companyName}
               sx={{
-                width: 120,
-                height: 120,
-                fontSize: '2.5rem',
+                maxWidth: '100%',
+                maxHeight: '100%',
+                objectFit: 'contain',
               }}
             />
           ) : (
-            <Avatar
+            <Box
               sx={{
-                width: 120,
-                height: 120,
-                fontSize: '2.5rem',
+                width: 200,
+                height: 100,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 1,
                 bgcolor: 'primary.main',
+                color: 'white',
+                fontSize: '2.5rem',
+                fontWeight: 600,
               }}
             >
               {initials}
-            </Avatar>
+            </Box>
           )}
         </Box>
-
-        {/* Company Name */}
-        <Typography
-          variant="h6"
-          component="div"
-          align="center"
-          sx={{
-            mb: 1,
-            fontWeight: 600,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            maxWidth: '100%',
-          }}
-        >
-          {companyName}
-        </Typography>
 
         {/* Tier and Date - Horizontal Layout */}
         <Stack direction="row" spacing={1} alignItems="center">
