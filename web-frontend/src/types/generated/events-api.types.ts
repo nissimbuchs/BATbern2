@@ -487,23 +487,32 @@ export interface paths {
     patch: operations['updateRegistration'];
     trace?: never;
   };
-  '/events/{eventCode}/registrations/{registrationCode}/qr': {
+  '/events/{eventCode}/registrations/confirm': {
     parameters: {
       query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    /**
-     * Generate QR code for registration
-     * @description Generate QR code image for registration check-in.
-     *
-     *     **Story**: 4.1.6 - Registration Confirmation QR code
-     *     **Security**: Public endpoint - confirmation code acts as access token
-     */
-    get: operations['getRegistrationQR'];
+    get?: never;
     put?: never;
-    post?: never;
+    /**
+     * Confirm registration via email token
+     * @description Confirm a registration using the JWT token sent via email.
+     *
+     *     **Story**: 4.1.5c - Secure Email-Based Registration Confirmation
+     *     **Security**: Public endpoint - JWT token provides authentication and authorization
+     *
+     *     **Token Validation**:
+     *     - JWT signature verified (HMAC-SHA256)
+     *     - Token expiry checked (48 hours from registration)
+     *     - Token type must be "email-confirmation"
+     *     - Registration ID extracted from token claims
+     *     - Event code in URL must match event code in token
+     *
+     *     **Idempotency**: Can be called multiple times safely. Already confirmed registrations return 200 OK.
+     */
+    post: operations['confirmRegistration'];
     delete?: never;
     options?: never;
     head?: never;
@@ -1832,13 +1841,21 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Registration created successfully */
+      /** @description Registration created successfully - confirmation email sent */
       201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['Registration'];
+          'application/json': {
+            /** @example Registration successful. Please check your email to confirm. */
+            message: string;
+            /**
+             * Format: email
+             * @example john.doe@example.com
+             */
+            email: string;
+          };
         };
       };
       /** @description Invalid request (validation errors) */
@@ -1951,30 +1968,45 @@ export interface operations {
       500: components['responses']['InternalServerError'];
     };
   };
-  getRegistrationQR: {
+  confirmRegistration: {
     parameters: {
-      query?: {
-        /** @description QR code size in pixels */
-        size?: number;
+      query: {
+        /** @description JWT confirmation token from email link */
+        token: string;
       };
       header?: never;
       path: {
         /** @description Event code in format BATbernXXX */
         eventCode: string;
-        /** @description Registration code in format BAT-YYYY-NNNNNN */
-        registrationCode: string;
       };
       cookie?: never;
     };
     requestBody?: never;
     responses: {
-      /** @description QR code image */
+      /** @description Registration confirmed successfully (or already confirmed) */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'image/png': string;
+          'application/json': {
+            /** @example Registration confirmed successfully */
+            message: string;
+            /**
+             * @example CONFIRMED
+             * @enum {string}
+             */
+            status: 'CONFIRMED';
+          };
+        };
+      };
+      /** @description Invalid or expired token */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
         };
       };
       /** @description Registration not found */
@@ -1982,7 +2014,16 @@ export interface operations {
         headers: {
           [name: string]: unknown;
         };
-        content?: never;
+        content: {
+          /**
+           * @example {
+           *       "error": "Not found",
+           *       "message": "Registration not found",
+           *       "code": "REGISTRATION_NOT_FOUND"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
       };
       500: components['responses']['InternalServerError'];
     };
