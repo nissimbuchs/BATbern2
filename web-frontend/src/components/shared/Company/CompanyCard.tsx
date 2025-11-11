@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import { Card, CardContent, CardActionArea, Typography, Box, Chip, Avatar } from '@mui/material';
+import { Card, CardContent, CardActionArea, Typography, Box, Chip } from '@mui/material';
 import BusinessIcon from '@mui/icons-material/Business';
 import { useTranslation } from 'react-i18next';
 import type { CompanyListItem } from '@/types/company.types';
@@ -68,28 +68,38 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            minHeight: viewMode === 'grid' ? 120 : 80,
+            minHeight: viewMode === 'grid' ? 180 : 120,
           }}
         >
-          <Avatar
-            src={company.logo?.url}
-            alt={`${company.name} logo`}
-            data-testid="company-logo-fallback"
-            sx={{
-              width: viewMode === 'grid' ? 80 : 60,
-              height: viewMode === 'grid' ? 80 : 60,
-              bgcolor: 'grey.200',
-              borderRadius: 1,
-            }}
-            variant="square"
-            slotProps={{
-              img: {
-                crossOrigin: 'anonymous',
-              },
-            }}
-          >
-            <BusinessIcon sx={{ fontSize: 40, color: 'grey.500' }} />
-          </Avatar>
+          {company.logo?.url ? (
+            <Box
+              component="img"
+              src={company.logo.url}
+              alt={`${company.name} logo`}
+              crossOrigin="anonymous"
+              data-testid="company-logo"
+              sx={{
+                maxWidth: viewMode === 'grid' ? 150 : 100,
+                maxHeight: viewMode === 'grid' ? 150 : 100,
+                objectFit: 'contain',
+              }}
+            />
+          ) : (
+            <Box
+              data-testid="company-logo-fallback"
+              sx={{
+                width: viewMode === 'grid' ? 150 : 100,
+                height: viewMode === 'grid' ? 150 : 100,
+                bgcolor: 'grey.200',
+                borderRadius: 1,
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              <BusinessIcon sx={{ fontSize: 60, color: 'grey.500' }} />
+            </Box>
+          )}
         </Box>
 
         {/* Content Section */}
