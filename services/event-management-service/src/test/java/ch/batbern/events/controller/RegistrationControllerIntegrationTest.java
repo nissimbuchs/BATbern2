@@ -406,7 +406,7 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Registration confirmed successfully!"))
-                .andExpect(jsonPath("$.status").value("confirmed"));
+                .andExpect(jsonPath("$.status").value("CONFIRMED"));
 
         // Verify status was updated in database
         Registration confirmedRegistration = registrationRepository.findById(registration.getId()).orElseThrow();
@@ -431,7 +431,7 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Registration already confirmed"))
-                .andExpect(jsonPath("$.status").value("confirmed"));
+                .andExpect(jsonPath("$.status").value("CONFIRMED"));
 
         // Verify status is still confirmed
         Registration stillConfirmed = registrationRepository.findById(registration.getId()).orElseThrow();
