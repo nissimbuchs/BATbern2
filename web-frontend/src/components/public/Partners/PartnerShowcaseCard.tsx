@@ -50,9 +50,9 @@ export const PartnerShowcaseCard = ({
     >
       <div className="flex flex-col items-center justify-center h-full gap-2">
         {/* Logo */}
-        <div className="flex-1 w-full flex items-center justify-center">
+        <div className="flex-1 w-full max-h-32 flex items-center justify-center">
           {logoUrl ? (
-            <img src={logoUrl} alt={companyName} className="max-w-full max-h-full object-contain" />
+            <img src={logoUrl} alt={companyName} className="max-w-full max-h-32 object-contain" />
           ) : (
             <div className="w-48 h-24 flex items-center justify-center rounded bg-primary">
               <span className="text-4xl font-semibold text-primary-foreground">{initials}</span>
