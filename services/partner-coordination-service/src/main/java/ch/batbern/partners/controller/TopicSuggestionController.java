@@ -1,6 +1,9 @@
 package ch.batbern.partners.controller;
 
 import ch.batbern.partners.domain.TopicSuggestion;
+import ch.batbern.partners.dto.generated.SuggestionStatus;
+import ch.batbern.partners.dto.generated.SubmitSuggestionRequest;
+import ch.batbern.partners.dto.generated.TopicSuggestionResponse;
 import ch.batbern.partners.service.TopicSuggestionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -87,8 +90,8 @@ public class TopicSuggestionController {
         response.setSuggestedTopic(suggestion.getSuggestedTopic());
         response.setDescription(suggestion.getDescription());
         response.setBusinessJustification(suggestion.getBusinessJustification());
-        // Convert database UPPERCASE to API lowercase per OpenAPI spec
-        response.setStatus(suggestion.getStatus().name().toLowerCase());
+        // Map domain enum to DTO enum using builder (UPPERCASE per coding standards)
+        response.setStatus(suggestion.getStatus().name());
         response.setSuggestedAt(suggestion.getSuggestedAt().toString());
         if (suggestion.getReviewedAt() != null) {
             response.setReviewedAt(suggestion.getReviewedAt().toString());

@@ -169,7 +169,7 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
         // Given
         Map<String, Object> request = new HashMap<>();
         request.put("companyName", "GoogleZH");
-        request.put("partnershipLevel", "gold");
+        request.put("partnershipLevel", "GOLD");
         request.put("partnershipStartDate", LocalDate.now().toString());
 
         // When/Then
@@ -190,7 +190,7 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
 
         Map<String, Object> request = new HashMap<>();
         request.put("companyName", "GoogleZH");
-        request.put("partnershipLevel", "platinum");
+        request.put("partnershipLevel", "PLATINUM");
         request.put("partnershipStartDate", LocalDate.now().toString());
 
         // When/Then
@@ -208,7 +208,7 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
         createTestPartner("GoogleZH", PartnershipLevel.GOLD);
 
         Map<String, Object> updateRequest = new HashMap<>();
-        updateRequest.put("partnershipLevel", "platinum");
+        updateRequest.put("partnershipLevel", "PLATINUM");
 
         // When/Then
         mockMvc.perform(patch("/api/v1/partners/GoogleZH")
@@ -240,7 +240,7 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
     void should_return404_when_updatingNonExistentPartner() throws Exception {
         // Given
         Map<String, Object> updateRequest = new HashMap<>();
-        updateRequest.put("partnershipLevel", "platinum");
+        updateRequest.put("partnershipLevel", "PLATINUM");
 
         // When/Then - Use valid company name length (≤12 chars per VARCHAR(12) schema)
         mockMvc.perform(patch("/api/v1/partners/NotFoundCo")

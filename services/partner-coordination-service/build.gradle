@@ -123,6 +123,7 @@ openApiGenerate {
         useBeanValidation: "true",          // @Valid, @NotNull
         useJakartaEe: "true",               // Jakarta EE (Spring Boot 3)
         dateLibrary: "java8",               // java.time.* types
+        generateBuilders: "true",           // Generate builder pattern for DTOs
         skipDefaultInterface: "true"        // No default methods
     ]
 }
