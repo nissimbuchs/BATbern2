@@ -1,7 +1,7 @@
 package ch.batbern.events.config;
 
 import ch.batbern.events.client.UserApiClient;
-import ch.batbern.events.dto.UserProfileDTO;
+import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -51,19 +51,18 @@ public class TestUserApiClientConfig {
      * Helper method to create a test user profile.
      *
      * @param username Username for the test user
-     * @return UserProfileDTO with test data
+     * @return UserResponse with test data
      */
-    public static UserProfileDTO createTestUser(String username) {
-        return UserProfileDTO.builder()
-                .username(username)
+    public static UserResponse createTestUser(String username) {
+        return new UserResponse()
+                .id(username)
                 .email(username + "@test.com")
                 .firstName("Test")
                 .lastName("User")
                 .companyId("TestCompany")
-                .profilePictureUrl("https://cdn.test.com/profile.jpg")
+                .profilePictureUrl(java.net.URI.create("https://cdn.test.com/profile.jpg"))
                 .bio("Test user bio")
-                .active(true)
-                .build();
+                .active(true);
     }
 
     /**

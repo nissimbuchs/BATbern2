@@ -76,7 +76,7 @@ public class LocalAwsConfig {
     @Bean
     @Primary
     public S3Client s3Client() {
-        log.info("🪣 [LOCAL] Creating S3Client configured for MinIO (http://localhost:9000)");
+        log.info("🪣 [LOCAL] Creating S3Client configured for MinIO (http://localhost:8450)");
 
         // Configure S3 client to use MinIO endpoint
         software.amazon.awssdk.regions.Region region = software.amazon.awssdk.regions.Region.EU_CENTRAL_1;
@@ -95,7 +95,7 @@ public class LocalAwsConfig {
             software.amazon.awssdk.auth.credentials.StaticCredentialsProvider.create(credentials);
 
         // Create endpoint override for MinIO
-        java.net.URI minioEndpoint = java.net.URI.create("http://localhost:9000");
+        java.net.URI minioEndpoint = java.net.URI.create("http://localhost:8450");
 
         // Build the S3Client
         S3Client s3Client = S3Client.builder()
@@ -106,7 +106,7 @@ public class LocalAwsConfig {
             .build();
 
         log.info("🪣 [LOCAL] S3Client configured successfully for MinIO");
-        log.info("🪣 [LOCAL] Endpoint: http://localhost:9000");
+        log.info("🪣 [LOCAL] Endpoint: http://localhost:8450");
         log.info("🪣 [LOCAL] Bucket: batbern-development-company-logos");
 
         return s3Client;
@@ -114,12 +114,12 @@ public class LocalAwsConfig {
 
     /**
      * S3 Presigner configured for MinIO (local S3-compatible storage)
-     * Generates real presigned URLs that work with MinIO running on localhost:9000
+     * Generates real presigned URLs that work with MinIO running on localhost:8450
      */
     @Bean
     @Primary
     public S3Presigner s3Presigner() {
-        log.info("🪣 [LOCAL] Using S3Presigner configured for MinIO (http://localhost:9000)");
+        log.info("🪣 [LOCAL] Using S3Presigner configured for MinIO (http://localhost:8450)");
 
         // Configure S3 client to use MinIO endpoint
         software.amazon.awssdk.regions.Region region = software.amazon.awssdk.regions.Region.EU_CENTRAL_1;
@@ -138,7 +138,7 @@ public class LocalAwsConfig {
             software.amazon.awssdk.auth.credentials.StaticCredentialsProvider.create(credentials);
 
         // Create endpoint override for MinIO
-        java.net.URI minioEndpoint = java.net.URI.create("http://localhost:9000");
+        java.net.URI minioEndpoint = java.net.URI.create("http://localhost:8450");
 
         // Build the S3Presigner
         S3Presigner presigner = S3Presigner.builder()
@@ -149,7 +149,7 @@ public class LocalAwsConfig {
             .build();
 
         log.info("🪣 [LOCAL] S3Presigner configured successfully for MinIO");
-        log.info("🪣 [LOCAL] Endpoint: http://localhost:9000");
+        log.info("🪣 [LOCAL] Endpoint: http://localhost:8450");
         log.info("🪣 [LOCAL] Bucket: batbern-development-company-logos");
 
         return presigner;

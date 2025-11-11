@@ -91,7 +91,7 @@ export async function loadRuntimeConfig(): Promise<AppConfig> {
  * Determine API URL based on current hostname
  *
  * This enables the same build to work in different environments:
- * - localhost → local API Gateway (Docker)
+ * - localhost → local API Gateway (supports custom ports via VITE_API_PORT)
  * - staging.batbern.ch → staging API Gateway
  * - batbern.ch → production API Gateway
  */
@@ -99,7 +99,10 @@ function getApiUrl(): string {
   const hostname = window.location.hostname;
 
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'http://localhost:8080';
+    // Support custom API port for multi-instance development
+    // Set via VITE_API_PORT when starting frontend (e.g., VITE_API_PORT=8500 npm run dev)
+    const apiPort = import.meta.env.VITE_API_PORT || '8080';
+    return `http://localhost:${apiPort}`;
   }
 
   if (hostname === 'staging.batbern.ch') {

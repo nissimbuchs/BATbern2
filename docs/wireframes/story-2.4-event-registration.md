@@ -1,5 +1,23 @@
 # Story: Event Registration Flow - Wireframe
 
+> ⚠️ **DEPRECATION NOTICE** ⚠️
+> This wireframe is **OUTDATED** and has been superseded by:
+> - **Story 4.1.5** (Registration Wizard - 2-Step Flow): `/docs/stories/4.1.5.registration-wizard.md`
+> - **New Wireframe** (Inline Registration Accordion): `/docs/wireframes/story-4.1.5-inline-registration-accordion.md`
+>
+> **Key Changes:**
+> - ✅ 2-step flow maintained (correct)
+> - ❌ Extra fields removed: Industry Sector, Years of Experience, "How did you hear about us?"
+> - ✅ Anonymous registration support (ADR-005) - correct
+> - ✅ Event-level registration (no session selection) - correct
+> - 🆕 **NEW**: Hybrid approach - inline expandable registration + dedicated page
+> - 🆕 **NEW**: Accordion-style step transitions (Step 1 collapses when Step 2 expands)
+> - 🆕 **NEW**: shadcn dark theme design system integration
+>
+> **Please refer to the new wireframe for current implementation guidance.**
+>
+> Last Updated: November 8, 2025
+
 **Story**: Epic 2, Story 4
 **Screen**: Event Registration Flow
 **User Role**: Attendee
@@ -81,10 +99,34 @@
 │  │  ☑ I agree to the event terms and photo/video policy                           │  │
 │  │  ☑ I understand this is a free event with limited capacity                     │  │
 │  │                                                                                │  │
+│  │  💡 Want to manage all your registrations? [Create a free account →]          │  │
+│  │                                                                                │  │
 │  │  [← Back]                                   [Complete Registration]            │  │
 │  └────────────────────────────────────────────────────────────────────────────────┘  │
 └────────────────────────────────────────────────────────────────────────────────────-─┘
 ```
+
+---
+
+## Architecture Notes
+
+**ADR-005 Reference**: Anonymous Event Registration
+**Story**: 4.1.5a Architecture Consolidation
+
+**Anonymous Registration**:
+- Users can register WITHOUT creating a Cognito account
+- User profile created via User Management Service with `cognito_id=NULL`
+- Email serves as unique identifier for anonymous users
+- Optional account creation offered after registration
+
+**Registration Scope**:
+- Registration is for the WHOLE EVENT, not individual sessions
+- No session selection step in this flow
+
+**Account Linking**:
+- "Create a free account" CTA shown in confirmation step
+- If user later creates account with same email, automatic linking occurs on first login
+- See story-2.4-registration-confirmation.md for account creation flow
 
 ---
 
@@ -100,11 +142,12 @@ When the Event Registration screen loads, the following APIs are called to provi
    - Used for: Display event name, date, location, time range, price in confirmation view, track capacity for "Limited capacity" messaging, calculate remaining seats
    - Consolidation: Single endpoint replaces separate event + venue calls (Story 1.17)
 
-2. **GET /api/v1/attendees/me?include=registrations,preferences**
-   - Query params: `include=registrations,preferences` (if authenticated)
-   - Returns: Attendee profile with registrations and preferences (firstName, lastName, email, company, jobTitle, industrySector, yearsOfExperience, communicationPreferences)
-   - Used for: Pre-populate all form fields for returning users
-   - Consolidation: Uses consolidated Attendees API (Story 1.25)
+2. **GET /api/v1/users/me** (optional, authenticated users only)
+   - Query params: `include=registrations,preferences` (if user is authenticated)
+   - Returns: User profile with registrations and preferences (firstName, lastName, email, company, jobTitle, industrySector, yearsOfExperience, communicationPreferences)
+   - Used for: Pre-populate all form fields for authenticated returning users
+   - Note: Anonymous users skip this step (no pre-population)
+   - Consolidation: Uses consolidated Users API (ADR-005)
 
 3. **GET /api/v1/companies/search?query={query}&limit=20**
    - Query params: `query` (search string), `limit` (max results, default 20)
@@ -123,9 +166,13 @@ When the Event Registration screen loads, the following APIs are called to provi
 
 5. **POST /api/v1/events/{eventId}/registrations**
    - Triggered by: User clicks [Complete Registration] button in Step 2
-   - Payload: Complete registration data (attendeeDetails, communicationPreferences, termsAccepted, photoVideoConsent)
-   - Returns: Registration confirmation (registrationId, confirmationCode, ticketUrl)
-   - Used for: Creates registration record, sends confirmation email, redirects to success page
+   - Payload: Complete registration data (firstName, lastName, email, company, role, communicationPreferences, termsAccepted, photoVideoConsent)
+   - Returns: Registration confirmation (registrationCode, confirmationCode, ticketUrl)
+   - Used for: Creates registration record AND user profile (via User Management API), sends confirmation email, redirects to success page
+   - Backend Flow (ADR-005):
+     1. Event Service calls User Management API to get-or-create user profile (cognito_id=NULL)
+     2. Event Service creates registration record linked to user_profile.username
+     3. Sends confirmation email with registration code
    - Consolidation: Nested under Events API (Story 1.17)
 
 6. **PATCH /api/v1/events/{eventId}/registrations/draft**
@@ -135,14 +182,7 @@ When the Event Registration screen loads, the following APIs are called to provi
    - Used for: Stores partial registration data, allows user to return later
    - Consolidation: Uses PATCH for partial updates (Story 1.17)
 
-7. **PUT /api/v1/attendees/me**
-    - Triggered by: User completes registration (creates or updates attendee profile)
-    - Payload: Attendee profile data from form (firstName, lastName, email, company, jobTitle, etc.)
-    - Returns: Created or updated attendee profile
-    - Used for: Creates/updates reusable attendee profile for future registrations
-    - Consolidation: Single endpoint for both create and update operations (Story 1.25)
-
-8. **POST /api/v1/notifications/subscriptions**
+7. **POST /api/v1/notifications/subscriptions**
     - Triggered by: User checks "Subscribe to BATbern newsletter" checkbox (on registration completion)
     - Payload: `{ type: "newsletter", email: string, source: "event_registration", eventId: uuid, preferences: { frequency: "monthly" } }`
     - Returns: Subscription confirmation

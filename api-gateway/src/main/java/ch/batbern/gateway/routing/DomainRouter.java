@@ -57,7 +57,7 @@ public class DomainRouter {
         log.debug("Determining target service for path: {}", cleanPath);
 
         // Route based on path patterns - /api/v1/{domain}
-        if (cleanPath.startsWith("/api/v1/events")) {
+        if (cleanPath.startsWith("/api/v1/events") || cleanPath.startsWith("/api/v1/registrations")) {
             return "event-management-service";
         } else if (cleanPath.startsWith("/api/v1/speakers")) {
             return "speaker-coordination-service";

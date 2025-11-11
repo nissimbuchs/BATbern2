@@ -34,9 +34,11 @@ public class SecurityConfig {
             new org.springframework.web.cors.CorsConfiguration();
 
         // Allow specific origins
-        configuration.setAllowedOrigins(java.util.Arrays.asList(
-            "http://localhost:3000",
-            "http://localhost:3001",
+        // For development: Allow any localhost port (multi-instance support)
+        // For production: Only allow specific domains
+        configuration.setAllowedOriginPatterns(java.util.Arrays.asList(
+            "http://localhost:*",      // Development: any port (e.g., 3000, 4000, 8600)
+            "http://127.0.0.1:*",      // Development: any port on 127.0.0.1
             "https://staging.batbern.ch",
             "https://www.batbern.ch"
         ));
@@ -115,6 +117,15 @@ public class SecurityConfig {
 
                         // Story 1.15a.1b: Public speaker list endpoint (GET only, POST/DELETE require ORGANIZER)
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*/speakers").permitAll()
+
+                        // Story 4.1.5: Public registration endpoints
+                        // (no auth required - anonymous registration per ADR-005)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/events/*/registrations/*").permitAll()
+
+                        // Story 4.1.5c: Email-based confirmation endpoint
+                        // (no auth required - JWT token in query param provides security)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations/confirm").permitAll()
 
                         // All other requests require authentication
                         .anyRequest().authenticated()

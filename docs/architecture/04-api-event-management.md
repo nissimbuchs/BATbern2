@@ -1,7 +1,9 @@
 # Event Management API
 
-**Last Updated**: 2025-11-02
-**ADR Reference**: [ADR-003: Meaningful Identifiers in Public APIs](./ADR-003-meaningful-identifiers-public-apis.md)
+**Last Updated**: 2025-11-08
+**ADR References**:
+- [ADR-003: Meaningful Identifiers in Public APIs](./ADR-003-meaningful-identifiers-public-apis.md)
+- [ADR-005: Anonymous Event Registration](./ADR-005-anonymous-event-registration.md)
 
 This document outlines the Event Management Domain API, which handles event lifecycle management, organizer workflows, and the comprehensive 16-step workflow automation including slot management, quality control, overflow handling, and real-time collaboration.
 
@@ -28,6 +30,7 @@ The Event Management API provides endpoints for:
 - Topic backlog management with ML-powered similarity and staleness detection
 - Organizer role management
 - Role promotion and demotion workflows
+- **Event registration (public access)** - Anonymous and authenticated registration with email-based account linking
 
 ## API Endpoints
 
@@ -151,6 +154,187 @@ responses:
       application/json:
         schema:
           $ref: '#/components/schemas/EventWorkflow'
+```
+
+### Event Registration Operations
+
+**ADR-005 Reference**: Anonymous Event Registration
+**Story**: 4.1.5a Architecture Consolidation
+
+Event registrations support both anonymous (public) and authenticated users. Anonymous users can register without creating a Cognito account. User profiles are created/found via User Management Service API.
+
+#### Create Event Registration (Public Access)
+
+```yaml
+POST /api/v1/events/{eventCode}/registrations
+tags: [Event Registration]
+summary: Register for an event (public access, no authentication required)
+description: |
+  Allows anonymous public users to register for events without creating an account.
+  Creates/finds user_profile via User Management Service (ADR-004, ADR-005).
+  Registration is for the WHOLE EVENT, not individual sessions.
+security: []  # Public endpoint - no authentication required
+parameters:
+  - name: eventCode
+    in: path
+    required: true
+    schema:
+      type: string
+    description: Event code (e.g., "BATbern142")
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        $ref: '#/components/schemas/CreateRegistrationRequest'
+      examples:
+        anonymous_user:
+          summary: Anonymous registration (no account)
+          value:
+            firstName: "John"
+            lastName: "Doe"
+            email: "john.doe@example.com"
+            company: "GoogleZH"
+            role: "Software Architect"
+responses:
+  '201':
+    description: Registration created successfully
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/Registration'
+  '400':
+    description: Validation error
+  '404':
+    description: Event not found
+  '409':
+    description: Already registered
+```
+
+#### Get Registration (Public Access)
+
+```yaml
+GET /api/v1/events/{eventCode}/registrations/{registrationCode}
+tags: [Event Registration]
+summary: Get registration details (public access via confirmation code)
+description: |
+  Anyone with the registration code can view the registration.
+  Confirmation code acts as a secret for anonymous access.
+security: []  # Public endpoint - secured by confirmation code
+parameters:
+  - name: eventCode
+    in: path
+    required: true
+    schema:
+      type: string
+  - name: registrationCode
+    in: path
+    required: true
+    schema:
+      type: string
+    description: Registration confirmation code (e.g., "BATbern142-reg-abc123")
+responses:
+  '200':
+    description: Registration details
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/Registration'
+  '404':
+    description: Registration not found
+```
+
+#### List Event Registrations (Authenticated)
+
+```yaml
+GET /api/v1/events/{eventCode}/registrations
+tags: [Event Registration]
+summary: List all registrations for an event
+security:
+  - BearerAuth: [organizer]
+parameters:
+  - name: eventCode
+    in: path
+    required: true
+    schema:
+      type: string
+  - name: status
+    in: query
+    schema:
+      type: string
+      enum: [registered, waitlisted, confirmed, cancelled, attended]
+responses:
+  '200':
+    description: List of registrations
+    content:
+      application/json:
+        schema:
+          type: array
+          items:
+            $ref: '#/components/schemas/Registration'
+```
+
+#### Update Registration Status
+
+```yaml
+PATCH /api/v1/events/{eventCode}/registrations/{registrationCode}
+tags: [Event Registration]
+summary: Update registration status
+security:
+  - BearerAuth: [organizer]
+parameters:
+  - name: eventCode
+    in: path
+    required: true
+    schema:
+      type: string
+  - name: registrationCode
+    in: path
+    required: true
+    schema:
+      type: string
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          status:
+            type: string
+            enum: [registered, waitlisted, confirmed, cancelled, attended]
+responses:
+  '200':
+    description: Registration updated
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/Registration'
+```
+
+#### Delete Registration
+
+```yaml
+DELETE /api/v1/events/{eventCode}/registrations/{registrationCode}
+tags: [Event Registration]
+summary: Cancel/delete registration
+description: Can be called by owner (public with confirmation code) or organizer (authenticated)
+parameters:
+  - name: eventCode
+    in: path
+    required: true
+    schema:
+      type: string
+  - name: registrationCode
+    in: path
+    required: true
+    schema:
+      type: string
+responses:
+  '204':
+    description: Registration deleted
+  '404':
+    description: Registration not found
 ```
 
 ### Slot Management
@@ -721,6 +905,462 @@ responses:
     description: Not authorized to approve this request
   '404':
     description: Role change request not found
+```
+
+### Event Registration (Public Access)
+
+**ADR Reference**: [ADR-005: Anonymous Event Registration](./ADR-005-anonymous-event-registration.md)
+
+Event registration endpoints support **both anonymous and authenticated registration**. Anonymous users can register with just email and personal details (no account required). When they later create a Cognito account with the same email, their past registrations are automatically linked.
+
+**Key Features**:
+- ✅ Public access (no authentication required)
+- ✅ Confirmation code as access token (`BAT-YYYY-NNNNNN`)
+- ✅ Automatic email-based account linking
+- ✅ Event-level registration (not session-level)
+- ✅ QR code generation for event check-in
+
+#### Create Event Registration
+
+```yaml
+POST /api/v1/events/{eventCode}/registrations
+tags: [Registrations, Public]
+summary: Register for event (anonymous or authenticated)
+description: |
+  Public endpoint allowing anyone to register for an event without authentication.
+
+  **Anonymous Registration**:
+  - No authentication required (public access)
+  - Email serves as identifier
+  - Confirmation code generated automatically (BAT-YYYY-NNNNNN format)
+  - Confirmation email sent with QR code
+  - Can view registration via confirmation code
+
+  **Authenticated Registration**:
+  - If user is authenticated (Bearer token provided), attendee_id is set automatically
+  - Links to user's account immediately
+  - Can view in authenticated dashboard
+
+  **Account Linking** (Automatic):
+  - When anonymous user creates Cognito account with same email
+  - All past registrations with that email are automatically claimed
+  - Registrations become visible in user's authenticated dashboard
+  - See ADR-005 for details
+
+security: []  # Public endpoint - no authentication required
+
+parameters:
+  - name: eventCode
+    in: path
+    required: true
+    schema:
+      type: string
+    description: Event code (meaningful identifier per ADR-003)
+    example: BAT-025
+
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        required:
+          - email
+          - firstName
+          - lastName
+          - company
+          - role
+          - termsAccepted
+        properties:
+          email:
+            type: string
+            format: email
+            description: Email address (serves as identifier for anonymous registrations)
+            example: john.doe@example.com
+          firstName:
+            type: string
+            minLength: 1
+            maxLength: 100
+            example: John
+          lastName:
+            type: string
+            minLength: 1
+            maxLength: 100
+            example: Doe
+          company:
+            type: string
+            minLength: 1
+            maxLength: 200
+            example: Acme Corporation
+          role:
+            type: string
+            minLength: 1
+            maxLength: 100
+            description: Job title or role
+            example: Software Architect
+          termsAccepted:
+            type: boolean
+            description: User must accept terms and conditions
+            example: true
+          communicationPreferences:
+            type: object
+            description: Optional communication preferences
+            properties:
+              newsletterSubscribed:
+                type: boolean
+                default: false
+                description: Subscribe to BATbern newsletter
+              eventReminders:
+                type: boolean
+                default: true
+                description: Receive event reminder emails
+          specialRequests:
+            type: string
+            maxLength: 1000
+            description: Dietary preferences, accessibility needs, etc.
+            example: Vegetarian meal preference
+
+responses:
+  '201':
+    description: Registration created successfully
+    headers:
+      Location:
+        description: URL to view registration
+        schema:
+          type: string
+          example: /api/v1/events/BAT-025/registrations/BAT-2025-000123
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: Internal registration ID
+            confirmationCode:
+              type: string
+              pattern: ^BAT-\d{4}-\d{6}$
+              description: Confirmation code (acts as access token)
+              example: BAT-2025-000123
+            eventCode:
+              type: string
+              example: BAT-025
+            status:
+              type: string
+              enum: [registered, confirmed, waitlisted]
+              default: confirmed
+              description: Registration status
+            registrationDate:
+              type: string
+              format: date-time
+              example: '2025-11-08T14:30:00Z'
+            firstName:
+              type: string
+              example: John
+            lastName:
+              type: string
+              example: Doe
+            email:
+              type: string
+              format: email
+              example: john.doe@example.com
+
+  '400':
+    description: Invalid request (validation errors)
+    content:
+      application/json:
+        schema:
+          $ref: 'common#/components/schemas/ErrorResponse'
+        examples:
+          validationError:
+            summary: Validation error
+            value:
+              error: Validation failed
+              message: Email format is invalid
+              code: VALIDATION_ERROR
+              field: email
+          duplicateEmail:
+            summary: Duplicate registration
+            value:
+              error: Already registered
+              message: This email is already registered for this event
+              code: DUPLICATE_REGISTRATION
+          termsNotAccepted:
+            summary: Terms not accepted
+            value:
+              error: Terms required
+              message: You must accept the terms and conditions
+              code: TERMS_NOT_ACCEPTED
+
+  '404':
+    description: Event not found or not open for registration
+    content:
+      application/json:
+        schema:
+          $ref: 'common#/components/schemas/ErrorResponse'
+        example:
+          error: Event not found
+          message: Event BAT-025 not found or not accepting registrations
+          code: EVENT_NOT_FOUND
+
+  '429':
+    description: Rate limit exceeded (public endpoint protection)
+    content:
+      application/json:
+        schema:
+          $ref: 'common#/components/schemas/ErrorResponse'
+        example:
+          error: Too many requests
+          message: Rate limit exceeded. Please try again later.
+          code: RATE_LIMIT_EXCEEDED
+```
+
+#### Get Registration by Confirmation Code
+
+```yaml
+GET /api/v1/events/{eventCode}/registrations/{confirmationCode}
+tags: [Registrations, Public]
+summary: Retrieve registration details by confirmation code
+description: |
+  Public endpoint for viewing registration details.
+
+  **Access Control**:
+  - Confirmation code acts as secret token
+  - Anyone with the confirmation code can view the registration
+  - No authentication required
+  - Cannot list all registrations (only direct lookup by code)
+
+security: []  # Public endpoint - confirmation code is the "secret"
+
+parameters:
+  - name: eventCode
+    in: path
+    required: true
+    schema:
+      type: string
+    description: Event code (meaningful identifier)
+    example: BAT-025
+  - name: confirmationCode
+    in: path
+    required: true
+    schema:
+      type: string
+      pattern: ^BAT-\d{4}-\d{6}$
+    description: Confirmation code received during registration
+    example: BAT-2025-000123
+
+responses:
+  '200':
+    description: Registration found
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            confirmationCode:
+              type: string
+              example: BAT-2025-000123
+            eventCode:
+              type: string
+              example: BAT-025
+            eventTitle:
+              type: string
+              example: 'BATbern 2025 - Architecture Conference'
+            eventDate:
+              type: string
+              format: date-time
+              example: '2025-06-15T09:00:00Z'
+            eventLocation:
+              type: string
+              example: 'Bern, Switzerland'
+            status:
+              type: string
+              enum: [registered, confirmed, cancelled, attended]
+              example: confirmed
+            firstName:
+              type: string
+              example: John
+            lastName:
+              type: string
+              example: Doe
+            email:
+              type: string
+              format: email
+              example: john.doe@example.com
+            company:
+              type: string
+              example: Acme Corporation
+            registrationDate:
+              type: string
+              format: date-time
+              example: '2025-11-08T14:30:00Z'
+            specialRequests:
+              type: string
+              example: Vegetarian meal preference
+            qrCodeUrl:
+              type: string
+              description: URL to QR code image for event check-in
+              example: /api/v1/events/BAT-025/registrations/BAT-2025-000123/qr
+
+  '404':
+    description: Registration not found (invalid confirmation code)
+    content:
+      application/json:
+        schema:
+          $ref: 'common#/components/schemas/ErrorResponse'
+        example:
+          error: Not found
+          message: Registration with confirmation code BAT-2025-000123 not found
+          code: REGISTRATION_NOT_FOUND
+```
+
+#### Generate QR Code for Registration
+
+```yaml
+GET /api/v1/events/{eventCode}/registrations/{confirmationCode}/qr
+tags: [Registrations, Public]
+summary: Generate QR code for registration
+description: |
+  Public endpoint returning QR code image for registration.
+
+  **QR Code Content**:
+  - Encodes confirmation code for quick check-in at event
+  - Format: JSON with confirmationCode and eventCode
+  - Example: `{"confirmationCode":"BAT-2025-000123","eventCode":"BAT-025"}`
+
+  **Image Format**:
+  - PNG format
+  - Configurable size (default 300x300 pixels)
+  - Black QR code on white background
+  - High error correction level (L)
+
+security: []  # Public endpoint
+
+parameters:
+  - name: eventCode
+    in: path
+    required: true
+    schema:
+      type: string
+    example: BAT-025
+  - name: confirmationCode
+    in: path
+    required: true
+    schema:
+      type: string
+      pattern: ^BAT-\d{4}-\d{6}$
+    example: BAT-2025-000123
+  - name: size
+    in: query
+    schema:
+      type: integer
+      default: 300
+      minimum: 100
+      maximum: 1000
+    description: QR code size in pixels (width and height)
+    example: 300
+
+responses:
+  '200':
+    description: QR code image
+    content:
+      image/png:
+        schema:
+          type: string
+          format: binary
+
+  '404':
+    description: Registration not found
+    content:
+      application/json:
+        schema:
+          $ref: 'common#/components/schemas/ErrorResponse'
+```
+
+#### Cancel Registration
+
+```yaml
+DELETE /api/v1/events/{eventCode}/registrations/{confirmationCode}
+tags: [Registrations, Public]
+summary: Cancel event registration
+description: |
+  Public endpoint for canceling registration.
+
+  **Cancellation Policy**:
+  - Free events: Can cancel anytime before event
+  - Paid events: Refund policy applies (to be implemented)
+  - Cannot cancel after event has started
+  - Sends cancellation confirmation email
+
+security: []  # Public endpoint - confirmation code required
+
+parameters:
+  - name: eventCode
+    in: path
+    required: true
+    schema:
+      type: string
+    example: BAT-025
+  - name: confirmationCode
+    in: path
+    required: true
+    schema:
+      type: string
+      pattern: ^BAT-\d{4}-\d{6}$
+    example: BAT-2025-000123
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          reason:
+            type: string
+            maxLength: 500
+            description: Optional cancellation reason
+            example: Schedule conflict
+
+responses:
+  '200':
+    description: Registration cancelled successfully
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            confirmationCode:
+              type: string
+              example: BAT-2025-000123
+            status:
+              type: string
+              enum: [cancelled]
+              example: cancelled
+            cancelledAt:
+              type: string
+              format: date-time
+              example: '2025-11-09T10:00:00Z'
+            message:
+              type: string
+              example: Your registration has been cancelled. A confirmation email has been sent.
+
+  '400':
+    description: Cannot cancel (event already started or other business rule violation)
+    content:
+      application/json:
+        schema:
+          $ref: 'common#/components/schemas/ErrorResponse'
+        example:
+          error: Cannot cancel
+          message: Cannot cancel registration after event has started
+          code: CANCELLATION_NOT_ALLOWED
+
+  '404':
+    description: Registration not found
 ```
 
 ## Core Workflows
@@ -1335,4 +1975,93 @@ AssignSlotRequest:
     notes:
       type: string
       maxLength: 500
+
+### Create Registration Request
+
+```yaml
+CreateRegistrationRequest:
+  type: object
+  description: |
+    Request to register for an event (ADR-005: anonymous registration).
+    Creates/finds user_profile via User Management Service.
+    Registration is for the WHOLE EVENT, not individual sessions.
+  required:
+    - firstName
+    - lastName
+    - email
+  properties:
+    firstName:
+      type: string
+      minLength: 1
+      maxLength: 100
+      example: "John"
+    lastName:
+      type: string
+      minLength: 1
+      maxLength: 100
+      example: "Doe"
+    email:
+      type: string
+      format: email
+      example: "john.doe@example.com"
+    company:
+      type: string
+      maxLength: 255
+      example: "GoogleZH"
+      description: Company name or affiliation
+    role:
+      type: string
+      maxLength: 100
+      example: "Software Architect"
+      description: Job title or role
+```
+
+### Registration
+
+```yaml
+Registration:
+  type: object
+  description: |
+    Event registration (ADR-004, ADR-005).
+    References user via attendee_username (cross-service).
+    User details fetched from User Management Service API.
+  properties:
+    registrationCode:
+      type: string
+      example: "BATbern142-reg-abc123"
+      description: Unique registration confirmation code
+    eventCode:
+      type: string
+      example: "BATbern142"
+      description: Event code (ADR-003)
+    attendeeUsername:
+      type: string
+      example: "john.doe"
+      description: Reference to user_profiles.username (cross-service)
+    attendeeEmail:
+      type: string
+      format: email
+      example: "john.doe@example.com"
+      description: Enriched from User Management Service API
+    attendeeName:
+      type: string
+      example: "John Doe"
+      description: Enriched from User Management Service API
+    company:
+      type: string
+      example: "GoogleZH"
+      description: Enriched from User Management Service API
+    status:
+      type: string
+      enum: [registered, waitlisted, confirmed, cancelled, attended]
+      example: "confirmed"
+    registrationDate:
+      type: string
+      format: date-time
+      example: "2025-11-08T10:30:00Z"
+    qrCode:
+      type: string
+      description: Base64-encoded QR code image (data URI)
+      example: "data:image/png;base64,iVBORw0KGg..."
+```
 ```

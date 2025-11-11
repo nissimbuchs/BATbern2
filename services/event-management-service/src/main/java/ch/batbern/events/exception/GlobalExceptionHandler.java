@@ -184,6 +184,31 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle NoSuchElementException (resource not found)
+     * Returns HTTP 404 Not Found
+     *
+     * Story 2.2a: Anonymous Event Registration (ADR-005)
+     */
+    @ExceptionHandler(java.util.NoSuchElementException.class)
+    public ResponseEntity<ErrorResponse> handleNoSuchElementException(
+            java.util.NoSuchElementException ex,
+            HttpServletRequest request) {
+        log.warn("Resource not found: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("Not Found")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    /**
      * Handle IllegalArgumentException (invalid input or business logic constraint)
      * Returns HTTP 400 Bad Request
      */
@@ -204,6 +229,30 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.badRequest().body(error);
+    }
+
+    /**
+     * Handle IllegalStateException (business logic constraint violations)
+     * Returns HTTP 409 Conflict
+     * QA Fix (VALID-001): Handle duplicate registration attempts
+     */
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalStateException(
+            IllegalStateException ex,
+            HttpServletRequest request) {
+        log.warn("Illegal state: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("MEDIUM")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
     /**

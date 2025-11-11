@@ -43,7 +43,7 @@ public class LocalAwsConfig {
     @Bean
     @Primary
     public S3Client s3Client() {
-        log.info("🪣 [LOCAL] Creating S3Client configured for MinIO (http://localhost:9000)");
+        log.info("🪣 [LOCAL] Creating S3Client configured for MinIO (http://localhost:8450)");
 
         // Configure S3 client to use MinIO endpoint
         Region region = Region.EU_CENTRAL_1;
@@ -62,7 +62,7 @@ public class LocalAwsConfig {
             StaticCredentialsProvider.create(credentials);
 
         // Create endpoint override for MinIO
-        URI minioEndpoint = URI.create("http://localhost:9000");
+        URI minioEndpoint = URI.create("http://localhost:8450");
 
         // Build the S3Client
         S3Client s3Client = S3Client.builder()
@@ -73,7 +73,7 @@ public class LocalAwsConfig {
             .build();
 
         log.info("🪣 [LOCAL] S3Client configured successfully for MinIO");
-        log.info("🪣 [LOCAL] Endpoint: http://localhost:9000");
+        log.info("🪣 [LOCAL] Endpoint: http://localhost:8450");
         log.info("🪣 [LOCAL] Bucket: batbern-development-company-logos");
 
         return s3Client;

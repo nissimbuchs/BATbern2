@@ -21,6 +21,8 @@ import type {
   WorkflowState,
   CriticalTask,
   TeamActivity,
+  CreateRegistrationRequest,
+  Registration,
 } from '@/types/event.types';
 
 // API base path for event endpoints
@@ -243,6 +245,84 @@ class EventApiClient {
   }
 
   /**
+   * Create event registration (PUBLIC ACCESS - Story 4.1.5)
+   *
+   * Allows anonymous public users to register for events.
+   * Per ADR-005: Anonymous registration with email-based account linking.
+   *
+   * @param eventCode Event code identifier
+   * @param data Registration request data
+   * @returns Created registration with confirmation code
+   */
+  async createRegistration(
+    eventCode: string,
+    data: CreateRegistrationRequest
+  ): Promise<{ message: string; email: string }> {
+    try {
+      const response = await apiClient.post<{ message: string; email: string }>(
+        `${EVENT_API_PATH}/${eventCode}/registrations`,
+        data
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Confirm Registration (PUBLIC ACCESS - Story: Email Confirmation)
+   *
+   * Confirms a pending registration using the JWT token from the confirmation email.
+   * Updates registration status from PENDING to CONFIRMED.
+   *
+   * @param eventCode Event code from URL
+   * @param token JWT confirmation token from email
+   * @returns Confirmation response with status
+   */
+  async confirmRegistration(
+    eventCode: string,
+    token: string
+  ): Promise<{ message: string; status: string }> {
+    try {
+      const response = await apiClient.post<{ message: string; status: string }>(
+        `/events/${eventCode}/registrations/confirm`,
+        null,
+        {
+          params: { token },
+          headers: {
+            // Public endpoint - skip auth header added by interceptor
+            'Skip-Auth': 'true',
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Get registration by confirmation code (PUBLIC ACCESS - Story 4.1.5)
+   *
+   * Retrieves registration details using confirmation code.
+   * Anyone with the confirmation code can view the registration.
+   *
+   * @param eventCode Event code identifier
+   * @param confirmationCode Registration confirmation code
+   * @returns Registration details
+   */
+  async getRegistration(eventCode: string, confirmationCode: string): Promise<Registration> {
+    try {
+      const response = await apiClient.get<Registration>(
+        `${EVENT_API_PATH}/${eventCode}/registrations/${confirmationCode}`
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
    * Type guard for Axios errors
    */
   private isAxiosError(error: unknown): error is AxiosError {
@@ -310,6 +390,10 @@ class EventApiClient {
       message = 'Forbidden: You do not have permission to perform this action';
     } else if (status === 404) {
       message = 'Not Found: The requested event was not found';
+    } else if (status === 409) {
+      // Conflict - extract backend error message (e.g., duplicate registration)
+      const errorData = axiosError.response.data as { message?: string; error?: string };
+      message = errorData.message || errorData.error || 'Conflict: Resource already exists';
     } else if (status === 500) {
       message = 'Server Error: Please try again later';
     }

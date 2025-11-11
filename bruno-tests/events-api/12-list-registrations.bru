@@ -23,21 +23,35 @@ tests {
     expect(res.getStatus()).to.equal(200);
   });
 
-  test("should return registrations list", function() {
-    const response = res.getBody();
-    expect(response.data).to.be.an('array');
-    expect(response.pagination).to.be.an('object');
+  test("should return registrations array (Story 2.2a)", function() {
+    const registrations = res.getBody();
+    expect(registrations).to.be.an('array');
+    expect(registrations.length).to.be.greaterThan(0);
   });
 
-  test("should return registrations with registrationCode and attendeeUsername, no UUID ids (Story 1.16.2)", function() {
-    const response = res.getBody();
-    if (response.data.length > 0) {
-      const registration = response.data[0];
+  test("should return enriched registrations with user data (Story 2.2a: ADR-004)", function() {
+    const registrations = res.getBody();
+    if (registrations.length > 0) {
+      const registration = registrations[0];
+
+      // Registration code format: {eventCode}-reg-{6 random chars}
       expect(registration.registrationCode).to.be.a('string');
-      expect(registration.registrationCode).to.match(/^BATbern[0-9]+-[a-z]+\.[a-z]+(-[0-9]+)?$/);
+      expect(registration.registrationCode).to.match(/^BATbern[0-9]+-reg-[A-Z0-9]{6}$/);
+
+      // Enriched user data from User Management Service
       expect(registration.attendeeUsername).to.be.a('string');
-      expect(registration.attendeeUsername).to.match(/^[a-z]+\.[a-z]+(\.[0-9]+)?$/);
+      expect(registration.attendeeFirstName).to.be.a('string');
+      expect(registration.attendeeLastName).to.be.a('string');
+      expect(registration.attendeeEmail).to.be.a('string');
+
+      // Registration details
       expect(registration.eventCode).to.be.a('string');
+      expect(registration.status).to.be.a('string');
+      expect(registration.registrationDate).to.be.a('string');
+      expect(registration.createdAt).to.be.a('string');
+      expect(registration.updatedAt).to.be.a('string');
+
+      // No UUID id fields (ADR-003)
       expect(registration.id).to.be.undefined;
       expect(registration.attendeeId).to.be.undefined;
     }
