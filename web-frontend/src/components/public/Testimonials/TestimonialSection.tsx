@@ -1,10 +1,13 @@
 /**
  * TestimonialSection Component
- * Two rows of testimonials with infinite marquee animations
+ * First row: testimonials with infinite marquee animation
+ * Second row: partner showcase with logos
  */
 
 import { TestimonialCard } from './TestimonialCard';
 import { InfiniteMarquee } from './InfiniteMarquee';
+import { PartnerShowcaseCard } from '../Partners';
+import { usePublicPartners } from '@/hooks/usePublicPartners';
 
 interface Testimonial {
   id: string;
@@ -144,14 +147,17 @@ const testimonials: Testimonial[] = [
 ];
 
 export const TestimonialSection = () => {
-  // Split testimonials into two rows
+  // First row: testimonials
   const firstRow = testimonials.slice(0, 10);
-  const secondRow = testimonials.slice(10, 20);
+
+  // Second row: partners
+  const { data: partnersData } = usePublicPartners();
+  const partners = partnersData?.data || [];
 
   return (
     <section className="py-16 -mx-4 sm:-mx-6 lg:-mx-8 overflow-hidden">
       <div className="space-y-6">
-        {/* First row - scrolling left */}
+        {/* First row - testimonials scrolling left */}
         <InfiniteMarquee direction="left" speed="slow">
           {firstRow.map((testimonial) => (
             <TestimonialCard
@@ -164,18 +170,28 @@ export const TestimonialSection = () => {
           ))}
         </InfiniteMarquee>
 
-        {/* Second row - scrolling right */}
-        <InfiniteMarquee direction="right" speed="slow">
-          {secondRow.map((testimonial) => (
-            <TestimonialCard
-              key={testimonial.id}
-              name={testimonial.name}
-              quote={testimonial.quote}
-              company={testimonial.company}
-              avatar={testimonial.avatar}
-            />
-          ))}
-        </InfiniteMarquee>
+        {/* Second row - partner showcase scrolling right */}
+        {partners.length > 0 && (
+          <InfiniteMarquee direction="right" speed="slow">
+            {partners.map((partner) => (
+              <PartnerShowcaseCard
+                key={partner.id}
+                companyName={partner.company?.displayName || partner.companyName}
+                logoUrl={partner.company?.logoUrl}
+                partnershipLevel={
+                  partner.partnershipLevel as
+                    | 'STRATEGIC'
+                    | 'PLATINUM'
+                    | 'GOLD'
+                    | 'SILVER'
+                    | 'BRONZE'
+                }
+                partnershipStartDate={partner.partnershipStartDate}
+                website={partner.company?.website}
+              />
+            ))}
+          </InfiniteMarquee>
+        )}
       </div>
     </section>
   );

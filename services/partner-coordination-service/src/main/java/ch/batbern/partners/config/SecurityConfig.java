@@ -43,6 +43,7 @@ public class SecurityConfig {
     /**
      * Production security filter chain with JWT authentication
      * Actuator endpoints are public for health checks
+     * Public partner list endpoint for homepage showcase
      */
     @Bean
     @Profile("!local & !test")
@@ -54,6 +55,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                // Public partner showcase endpoint (GET only for homepage display)
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/partners").permitAll()
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {}));

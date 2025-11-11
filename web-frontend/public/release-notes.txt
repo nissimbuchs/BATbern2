@@ -1,12 +1,13 @@
 
 ✨ New Features:
 * Epic 4 Public website
+- public website infinite marquee now shows partners on second row
 - 4.1.5 implemented for public registration workflow with eMail confirmation
 - 4.1.x in progress. Used shadcn and unicorn-studio for attractive look and feel.
 - updated https://batbern.ch with a "coming soon..." teaser.
 
 * Epic 2 on crud for main entities is in progress
-- 2.7/2.8 implemented for partner administration
+- 2.7/2.8 implemented partner coordination crud
 - 1.14/2.5.1 Company management fully working
 - 1.14-2/2.5.2 User management interface for organizers now fully working
 - 1.15.1a/2.5.3 First simple event management works. Organizer dashboard now shows current events.

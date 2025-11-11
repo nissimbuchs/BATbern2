@@ -127,6 +127,9 @@ public class SecurityConfig {
                         // (no auth required - JWT token in query param provides security)
                         .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations/confirm").permitAll()
 
+                        // Public partner showcase endpoint (GET only for homepage display)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/partners").permitAll()
+
                         // All other requests require authentication
                         .anyRequest().authenticated()
                 )
