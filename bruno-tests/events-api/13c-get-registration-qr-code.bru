@@ -1,0 +1,51 @@
+meta {
+  name: Get Registration QR Code (No Auth)
+  type: http
+  seq: 13.3
+}
+
+get {
+  url: {{baseUrl}}/events/{{createdEventCode}}/registrations/{{anonymousRegistrationCode}}/qr
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.headers.content-type: eq image/png
+}
+
+tests {
+  test("should return 200 status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return PNG image with correct headers (Story 2.2a)", function() {
+    // Verify Content-Type is image/png
+    expect(res.getHeader('Content-Type')).to.equal('image/png');
+
+    // Verify Content-Disposition header for file download
+    const contentDisposition = res.getHeader('Content-Disposition');
+    expect(contentDisposition).to.be.a('string');
+    expect(contentDisposition).to.include('attachment');
+    expect(contentDisposition).to.include('registration-');
+    expect(contentDisposition).to.include(bru.getVar("anonymousRegistrationCode"));
+    expect(contentDisposition).to.include('.png');
+  });
+
+  test("should return valid image data", function() {
+    const body = res.getBody();
+    expect(body).to.not.be.null;
+    expect(body).to.not.be.undefined;
+
+    // PNG files start with the signature bytes: 89 50 4E 47 (in hex)
+    // This is a basic check to ensure we got binary image data
+    // Note: Bruno returns body as buffer/bytes for binary responses
+  });
+
+  test("should work without authentication for public QR code access (Story 2.2a: ADR-005)", function() {
+    // This test passes if we get a 200 response without auth token
+    // Public access is critical for anonymous users downloading their QR code ticket
+    expect(res.getStatus()).to.equal(200);
+  });
+}

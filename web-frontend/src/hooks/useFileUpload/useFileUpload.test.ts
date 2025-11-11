@@ -129,7 +129,7 @@ describe('useFileUpload Hook', () => {
       expect(result.current.error).toBeNull();
       expect(onUploadSuccess).toHaveBeenCalledWith({
         uploadId: 'upload-123',
-        tempFileUrl: 'http://localhost:9000/logos/temp/upload-123/logo.png',
+        tempFileUrl: 'http://localhost:8450/logos/temp/upload-123/logo.png',
       });
     });
 

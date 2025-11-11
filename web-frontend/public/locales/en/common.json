@@ -20,7 +20,8 @@
     "myContent": "My Content",
     "myRegistrations": "My Registrations",
     "about": "About",
-    "pastEvents": "Past Events"
+    "pastEvents": "Past Events",
+    "publicSite": "Public Website"
   },
   "public": {
     "login": "Login",
@@ -199,5 +200,26 @@
   "app": {
     "title": "BATbern Event Management Platform",
     "name": "BATbern"
+  },
+  "registration": {
+    "success": {
+      "title": "Registration Submitted!",
+      "subtitle": "Check your email to confirm your registration",
+      "emailSent": "Confirmation Email Sent",
+      "emailSentTo": "We've sent a confirmation email to",
+      "clickLink": "Click the confirmation link in the email to complete your registration. The link is valid for",
+      "validFor": "48 hours",
+      "valid": "",
+      "didntReceive": "Didn't receive the email?",
+      "checkSpam": "Check your spam/junk folder",
+      "checkEmail": "Make sure you entered the correct email address",
+      "waitMinutes": "Wait a few minutes and check again",
+      "close": "Close"
+    },
+    "alreadyRegistered": {
+      "title": "You're Registered!",
+      "pending": "Registration pending for",
+      "checkEmail": "Check your email to confirm"
+    }
   }
 }

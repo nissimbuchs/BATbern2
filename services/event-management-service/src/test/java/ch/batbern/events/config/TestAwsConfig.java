@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Profile;
 import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsResponse;
+import ch.batbern.shared.service.EmailService;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.CopyObjectResponse;
@@ -69,5 +70,17 @@ public class TestAwsConfig {
                 .thenReturn(successResponse);
 
         return mockS3Client;
+    }
+
+    /**
+     * Mock EmailService for testing email functionality
+     * Provides mock shared-kernel EmailService for integration tests
+     */
+    @Bean
+    @Primary
+    public EmailService emailService() {
+        EmailService mockEmailService = Mockito.mock(EmailService.class);
+        // sendEmail is void, no need to configure
+        return mockEmailService;
     }
 }

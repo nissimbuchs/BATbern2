@@ -268,10 +268,25 @@ export function useAuth(): UseAuthReturn {
    */
   const canAccess = useCallback(
     (path: string): boolean => {
+      // Public paths accessible to everyone (authenticated and unauthenticated)
+      const publicPaths = [
+        '/login',
+        '/signup',
+        '/forgot-password',
+        '/auth',
+        '/about',
+        '/archive',
+        '/register',
+      ];
+      const isPublicPath = publicPaths.some((publicPath) => path.startsWith(publicPath));
+
+      // Homepage is always accessible
+      if (path === '/' || isPublicPath) {
+        return true;
+      }
+
       if (!state.isAuthenticated) {
-        // Public paths
-        const publicPaths = ['/login', '/signup', '/forgot-password', '/'];
-        return publicPaths.some((publicPath) => path.startsWith(publicPath));
+        return false;
       }
 
       if (!state.user) return false;

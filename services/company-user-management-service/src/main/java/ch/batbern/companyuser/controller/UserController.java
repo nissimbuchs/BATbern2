@@ -189,11 +189,14 @@ public class UserController {
      * AC12: Get-or-create user (for domain service integration)
      * POST /api/v1/users/get-or-create
      *
+     * Story 4.1.5: Made public for anonymous event registration (ADR-005)
+     * Security config allows public access for this endpoint
+     *
      * @param request Get-or-create request
      * @return User response with created flag
      */
     @PostMapping("/get-or-create")
-    @PreAuthorize("hasAnyRole('SYSTEM', 'SERVICE')")  // Service-to-service auth
+    // Story 4.1.5: Removed @PreAuthorize to allow anonymous registration
     @Timed(value = "users.getOrCreateUser", description = "Time to get or create user (service-to-service)", percentiles = {0.5, 0.95, 0.99})
     public ResponseEntity<GetOrCreateUserResponse> getOrCreateUser(
             @Valid @RequestBody GetOrCreateUserRequest request) {

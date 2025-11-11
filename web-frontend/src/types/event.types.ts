@@ -27,6 +27,7 @@ export type EventAnalytics = components['schemas']['EventAnalytics'];
 export type CreateEventRequest = components['schemas']['CreateEventRequest'];
 export type UpdateEventRequest = components['schemas']['UpdateEventRequest'];
 export type PatchEventRequest = components['schemas']['PatchEventRequest'];
+export type CreateRegistrationRequest = components['schemas']['CreateRegistrationRequest'];
 
 // ============================================================================
 // UI-Extended Types (extends API types with frontend-only fields)

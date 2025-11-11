@@ -22,17 +22,20 @@ export interface CognitoUserSyncTriggersProps {
  * Cognito User Sync Triggers Construct
  * <p>
  * Story 1.2.5: User Sync and Reconciliation Implementation
- * Creates Lambda triggers for PostConfirmation, PreTokenGeneration, and PreAuthentication
+ * Story 2.2a: Anonymous Event Registration (ADR-005)
+ * Creates Lambda triggers for PostConfirmation, PreTokenGeneration, PreAuthentication, and PostAuthentication
  * <p>
  * Triggers:
  * - PostConfirmation: Creates database user after Cognito email verification
  * - PreTokenGeneration: Enriches JWT with roles from database
  * - PreAuthentication: Blocks inactive users from authenticating
+ * - PostAuthentication: Links anonymous user profiles to Cognito accounts (ADR-005)
  */
 export class CognitoUserSyncTriggers extends Construct {
   public readonly postConfirmationTrigger: lambda.Function;
   public readonly preTokenGenerationTrigger: lambda.Function;
   public readonly preAuthenticationTrigger: lambda.Function;
+  public readonly postAuthenticationTrigger: lambda.Function;
 
   constructor(scope: Construct, id: string, props: CognitoUserSyncTriggersProps) {
     super(scope, id);
@@ -112,10 +115,27 @@ export class CognitoUserSyncTriggers extends Construct {
       logGroup: preAuthenticationLogGroup,
     });
 
+    // PostAuthentication Lambda Trigger (ADR-005: Anonymous user account linking)
+    const postAuthenticationLogGroup = new logs.LogGroup(this, 'PostAuthenticationLogGroup', {
+      logGroupName: `/aws/lambda/BATbern-${props.envName}/post-authentication-trigger`,
+      retention: isProd ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    this.postAuthenticationTrigger = new NodejsFunction(this, 'PostAuthenticationTrigger', {
+      ...commonLambdaProps,
+      functionName: `batbern-${props.envName}-post-authentication-trigger`,
+      entry: path.join(__dirname, '../lambda/triggers/post-authentication.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(10),
+      logGroup: postAuthenticationLogGroup,
+    });
+
     // Grant secret read permissions
     props.databaseSecret.grantRead(this.postConfirmationTrigger);
     props.databaseSecret.grantRead(this.preTokenGenerationTrigger);
     props.databaseSecret.grantRead(this.preAuthenticationTrigger);
+    props.databaseSecret.grantRead(this.postAuthenticationTrigger);
 
     // Grant CloudWatch permissions
     const cloudWatchPolicy = new iam.PolicyStatement({
@@ -127,6 +147,7 @@ export class CognitoUserSyncTriggers extends Construct {
     this.postConfirmationTrigger.addToRolePolicy(cloudWatchPolicy);
     this.preTokenGenerationTrigger.addToRolePolicy(cloudWatchPolicy);
     this.preAuthenticationTrigger.addToRolePolicy(cloudWatchPolicy);
+    this.postAuthenticationTrigger.addToRolePolicy(cloudWatchPolicy);
 
     // Note: Database security group ingress rule is configured in VpcConstruct
     // to avoid cyclic dependency (Network -> CompanyManagement -> Network)
@@ -143,6 +164,10 @@ export class CognitoUserSyncTriggers extends Construct {
     props.userPool.addTrigger(
       cognito.UserPoolOperation.PRE_AUTHENTICATION,
       this.preAuthenticationTrigger
+    );
+    props.userPool.addTrigger(
+      cognito.UserPoolOperation.POST_AUTHENTICATION,
+      this.postAuthenticationTrigger
     );
   }
 }
