@@ -6,17 +6,10 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PartnerShowcaseCard } from './PartnerShowcaseCard';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-
-const theme = createTheme();
-
-const renderWithTheme = (component: React.ReactElement) => {
-  return render(<ThemeProvider theme={theme}>{component}</ThemeProvider>);
-};
 
 describe('PartnerShowcaseCard', () => {
   it('should_renderLogo_when_logoUrlProvided', () => {
-    renderWithTheme(
+    render(
       <PartnerShowcaseCard
         companyName="Test Company"
         logoUrl="https://example.com/logo.png"
@@ -32,7 +25,7 @@ describe('PartnerShowcaseCard', () => {
   });
 
   it('should_renderInitials_when_noLogoProvided', () => {
-    renderWithTheme(
+    render(
       <PartnerShowcaseCard
         companyName="Test Company"
         partnershipLevel="PLATINUM"
@@ -45,7 +38,7 @@ describe('PartnerShowcaseCard', () => {
   });
 
   it('should_displayTierAndDate_horizontally', () => {
-    renderWithTheme(
+    render(
       <PartnerShowcaseCard
         companyName="Test Company"
         partnershipLevel="STRATEGIC"
@@ -62,7 +55,7 @@ describe('PartnerShowcaseCard', () => {
     const user = userEvent.setup();
     const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
 
-    renderWithTheme(
+    const { container } = render(
       <PartnerShowcaseCard
         companyName="Test Company"
         partnershipLevel="GOLD"
@@ -71,8 +64,10 @@ describe('PartnerShowcaseCard', () => {
       />
     );
 
-    const card = screen.getByRole('button');
-    await user.click(card);
+    // Click on the card div
+    const card = container.querySelector('.cursor-pointer');
+    expect(card).toBeDefined();
+    await user.click(card!);
 
     expect(windowOpenSpy).toHaveBeenCalledWith(
       'https://example.com',
@@ -83,8 +78,8 @@ describe('PartnerShowcaseCard', () => {
     windowOpenSpy.mockRestore();
   });
 
-  it('should_beDisabled_when_noWebsiteProvided', () => {
-    renderWithTheme(
+  it('should_showDisabledStyle_when_noWebsiteProvided', () => {
+    const { container } = render(
       <PartnerShowcaseCard
         companyName="Test Company"
         partnershipLevel="SILVER"
@@ -92,7 +87,10 @@ describe('PartnerShowcaseCard', () => {
       />
     );
 
-    const card = screen.getByRole('button');
-    expect(card.classList.contains('Mui-disabled')).toBe(true);
+    const card = container.firstChild;
+    expect(card).toBeDefined();
+    // Check for opacity-70 and cursor-default classes
+    expect((card as HTMLElement).className).toContain('opacity-70');
+    expect((card as HTMLElement).className).toContain('cursor-default');
   });
 });

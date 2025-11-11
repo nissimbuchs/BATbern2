@@ -4,7 +4,7 @@
  * Shows tier and start date, links to company website
  */
 
-import { Card, CardActionArea, Box, Typography, Chip, Stack } from '@mui/material';
+import { Card } from '@/components/public/ui/card';
 import { format } from 'date-fns';
 
 interface PartnerShowcaseCardProps {
@@ -17,11 +17,11 @@ interface PartnerShowcaseCardProps {
 
 // Tier emoji and color mapping
 const TIER_CONFIG = {
-  STRATEGIC: { emoji: '🏆', color: '#FFD700', label: 'Strategic' },
-  PLATINUM: { emoji: '💎', color: '#E5E4E2', label: 'Platinum' },
-  GOLD: { emoji: '🥇', color: '#FFD700', label: 'Gold' },
-  SILVER: { emoji: '🥈', color: '#C0C0C0', label: 'Silver' },
-  BRONZE: { emoji: '🥉', color: '#CD7F32', label: 'Bronze' },
+  STRATEGIC: { emoji: '🏆', color: 'text-yellow-400', label: 'Strategic' },
+  PLATINUM: { emoji: '💎', color: 'text-gray-300', label: 'Platinum' },
+  GOLD: { emoji: '🥇', color: 'text-yellow-400', label: 'Gold' },
+  SILVER: { emoji: '🥈', color: 'text-gray-400', label: 'Silver' },
+  BRONZE: { emoji: '🥉', color: 'text-orange-600', label: 'Bronze' },
 };
 
 export const PartnerShowcaseCard = ({
@@ -43,89 +43,31 @@ export const PartnerShowcaseCard = ({
 
   return (
     <Card
-      sx={{
-        width: 360,
-        height: 200,
-        flexShrink: 0,
-        bgcolor: 'transparent',
-        boxShadow: 'none',
-        transition: 'transform 0.2s',
-        '&:hover': {
-          transform: 'translateY(-4px)',
-        },
-      }}
+      className={`flex-shrink-0 w-80 h-48 p-4 bg-zinc-900 border-zinc-800 hover:border-zinc-700 transition-colors ${
+        website ? 'cursor-pointer' : 'cursor-default opacity-70'
+      }`}
+      onClick={handleClick}
     >
-      <CardActionArea
-        onClick={handleClick}
-        disabled={!website}
-        sx={{
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          p: 1,
-        }}
-      >
+      <div className="flex flex-col items-center justify-center h-full gap-2">
         {/* Logo */}
-        <Box
-          sx={{
-            mb: 0.5,
-            width: '100%',
-            height: 160,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            overflow: 'hidden',
-          }}
-        >
+        <div className="flex-1 w-full flex items-center justify-center">
           {logoUrl ? (
-            <Box
-              component="img"
-              src={logoUrl}
-              alt={companyName}
-              sx={{
-                maxWidth: '100%',
-                maxHeight: '100%',
-                objectFit: 'contain',
-              }}
-            />
+            <img src={logoUrl} alt={companyName} className="max-w-full max-h-full object-contain" />
           ) : (
-            <Box
-              sx={{
-                width: 200,
-                height: 100,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 1,
-                bgcolor: 'primary.main',
-                color: 'white',
-                fontSize: '2.5rem',
-                fontWeight: 600,
-              }}
-            >
-              {initials}
-            </Box>
+            <div className="w-48 h-24 flex items-center justify-center rounded bg-primary">
+              <span className="text-4xl font-semibold text-primary-foreground">{initials}</span>
+            </div>
           )}
-        </Box>
+        </div>
 
         {/* Tier and Date - Horizontal Layout */}
-        <Stack direction="row" spacing={1} alignItems="center">
-          <Chip
-            label={`${tierConfig.emoji} ${tierConfig.label}`}
-            size="small"
-            sx={{
-              fontWeight: 500,
-              bgcolor: `${tierConfig.color}15`,
-              border: `1px solid ${tierConfig.color}40`,
-            }}
-          />
-          <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-            since {formattedDate}
-          </Typography>
-        </Stack>
-      </CardActionArea>
+        <div className="flex items-center gap-2 text-sm">
+          <span className={tierConfig.color}>
+            {tierConfig.emoji} {tierConfig.label}
+          </span>
+          <span className="text-zinc-400">since {formattedDate}</span>
+        </div>
+      </div>
     </Card>
   );
 };
