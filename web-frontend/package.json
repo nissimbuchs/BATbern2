@@ -50,7 +50,7 @@
     "@radix-ui/react-tabs": "^1.1.13",
     "@tanstack/react-query": "^5.90.5",
     "aws-amplify": "^6.15.8",
-    "axios": "^1.6.0",
+    "axios": "^1.13.2",
     "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
