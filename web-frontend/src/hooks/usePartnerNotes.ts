@@ -65,6 +65,7 @@ export const usePartnerNotes = (companyName: string): UsePartnerNotesReturn => {
 
   // Create note mutation
   const createMutation = useMutation({
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     mutationFn: async (_note: CreateNoteRequest) => ({}) as NoteResponse, // TODO: Replace with createPartnerNote(companyName, note)
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
@@ -73,6 +74,7 @@ export const usePartnerNotes = (companyName: string): UsePartnerNotesReturn => {
 
   // Update note mutation
   const updateMutation = useMutation({
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     mutationFn: async ({ noteId: _noteId }: { noteId: string } & UpdateNoteRequest) =>
       ({}) as NoteResponse, // TODO: Replace with updatePartnerNote(companyName, noteId, note)
     onSuccess: () => {
@@ -82,6 +84,7 @@ export const usePartnerNotes = (companyName: string): UsePartnerNotesReturn => {
 
   // Delete note mutation
   const deleteMutation = useMutation({
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     mutationFn: async (_noteId: string) => {}, // TODO: Replace with deletePartnerNote(companyName, noteId)
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
