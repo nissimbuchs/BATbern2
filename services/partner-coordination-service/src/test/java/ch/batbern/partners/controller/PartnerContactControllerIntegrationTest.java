@@ -109,7 +109,7 @@ class PartnerContactControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].username").value("john.doe"))
-                .andExpect(jsonPath("$[0].contactRole").value("primary"))
+                .andExpect(jsonPath("$[0].contactRole").value("PRIMARY"))
                 .andExpect(jsonPath("$[0].isPrimary").value(true))
                 .andExpect(jsonPath("$[0].email").value("john.doe@example.com"))
                 .andExpect(jsonPath("$[0].firstName").value("John"))
@@ -171,7 +171,7 @@ class PartnerContactControllerIntegrationTest extends AbstractIntegrationTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.username").value("bob.johnson"))
-                .andExpect(jsonPath("$.contactRole").value("technical"))
+                .andExpect(jsonPath("$.contactRole").value("TECHNICAL"))
                 .andExpect(jsonPath("$.isPrimary").value(true))
                 .andExpect(jsonPath("$.email").value("bob.johnson@example.com"));
     }

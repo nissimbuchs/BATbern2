@@ -94,7 +94,7 @@ class TopicSuggestionControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.suggestedTopic").value("Sustainable Architecture in Swiss Alpine Regions"))
                 .andExpect(jsonPath("$.description").value(containsString("sustainable building practices")))
                 .andExpect(jsonPath("$.businessJustification").value(containsString("High interest from clients")))
-                .andExpect(jsonPath("$.status").value("submitted"))
+                .andExpect(jsonPath("$.status").value("SUBMITTED"))
                 .andExpect(jsonPath("$.suggestedAt").exists())
                 .andExpect(jsonPath("$.reviewedAt").doesNotExist())
                 .andExpect(jsonPath("$.reviewedBy").doesNotExist());
@@ -113,7 +113,7 @@ class TopicSuggestionControllerIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(suggestionRequest)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.status").value("submitted"))
+                .andExpect(jsonPath("$.status").value("SUBMITTED"))
                 .andExpect(jsonPath("$.suggestedAt").exists());
     }
 
@@ -215,7 +215,7 @@ class TopicSuggestionControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.suggestedTopic").value("Topic without Justification"))
                 .andExpect(jsonPath("$.description").value("Description only"))
-                .andExpect(jsonPath("$.status").value("submitted"));
+                .andExpect(jsonPath("$.status").value("SUBMITTED"));
     }
 
     @Test

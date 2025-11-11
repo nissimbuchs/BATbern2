@@ -97,7 +97,7 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(1)))
-                .andExpect(jsonPath("$.data[0].partnershipLevel").value("gold"));
+                .andExpect(jsonPath("$.data[0].partnershipLevel").value("GOLD"));
     }
 
     @Test
@@ -133,7 +133,7 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.companyName").value("GoogleZH"))
-                .andExpect(jsonPath("$.partnershipLevel").value("gold"))
+                .andExpect(jsonPath("$.partnershipLevel").value("GOLD"))
                 .andExpect(jsonPath("$.isActive").value(true));
     }
 
@@ -179,7 +179,7 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.companyName").value("GoogleZH"))
-                .andExpect(jsonPath("$.partnershipLevel").value("gold"))
+                .andExpect(jsonPath("$.partnershipLevel").value("GOLD"))
                 .andExpect(jsonPath("$.isActive").value(true));
     }
 
@@ -216,7 +216,7 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
                         .content(objectMapper.writeValueAsString(updateRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.companyName").value("GoogleZH"))
-                .andExpect(jsonPath("$.partnershipLevel").value("platinum"));
+                .andExpect(jsonPath("$.partnershipLevel").value("PLATINUM"));
     }
 
     @Test
