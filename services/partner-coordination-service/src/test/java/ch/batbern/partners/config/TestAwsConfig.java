@@ -2,6 +2,7 @@ package ch.batbern.partners.config;
 
 import ch.batbern.shared.events.DomainEvent;
 import ch.batbern.shared.events.DomainEventPublisher;
+import ch.batbern.shared.service.EmailService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -98,5 +99,17 @@ public class TestAwsConfig {
                 return true;
             }
         };
+    }
+
+    /**
+     * Mock EmailService for testing email functionality
+     * Provides mock shared-kernel EmailService for integration tests
+     */
+    @Bean
+    @Primary
+    public EmailService emailService() {
+        EmailService mockEmailService = mock(EmailService.class);
+        // sendEmail is void, no need to configure
+        return mockEmailService;
     }
 }
