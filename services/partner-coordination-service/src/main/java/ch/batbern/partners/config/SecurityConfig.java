@@ -21,7 +21,9 @@ public class SecurityConfig {
 
     /**
      * Local development security filter chain
-     * All requests permitted - mirrors AWS VPC security pattern (network isolation in AWS = localhost trust in local dev)
+     * All requests permitted BUT JWT tokens are still parsed for service-to-service propagation
+     * This mirrors AWS VPC security pattern (network isolation in AWS = localhost trust in local dev)
+     * while allowing JWT propagation to downstream services
      */
     @Bean
     @Profile("local")
@@ -32,7 +34,8 @@ public class SecurityConfig {
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authz -> authz
                 .anyRequest().permitAll() // Local dev: trust all inter-service calls (localhost isolation)
-            );
+            )
+            .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {})); // Parse JWT for token propagation
 
         return http.build();
     }

@@ -13,6 +13,7 @@ import {
   Select,
   MenuItem,
 } from '@mui/material';
+import type { SelectChangeEvent } from '@mui/material';
 import {
   Add as AddIcon,
   ViewModule as GridViewIcon,
@@ -21,10 +22,12 @@ import {
 import { useTranslation } from 'react-i18next';
 import { usePartners } from '@/hooks/usePartners';
 import { usePartnerStore } from '@/stores/partnerStore';
+import { usePartnerModalStore } from '@/stores/partnerModalStore';
 import { PartnerOverviewStats } from './PartnerOverviewStats';
 import { PartnerSearch } from './PartnerSearch';
 import { PartnerFilters } from './PartnerFilters';
 import { PartnerList } from './PartnerList';
+import { PartnerCreateEditModal } from './PartnerCreateEditModal';
 
 /**
  * Partner Directory Screen - Main partner management interface for organizers
@@ -41,6 +44,7 @@ import { PartnerList } from './PartnerList';
 export const PartnerDirectoryScreen: React.FC = () => {
   const { t } = useTranslation('partners');
   const { filters, viewMode, sortBy, sortOrder, page, setViewMode, setSortBy } = usePartnerStore();
+  const { openCreateModal } = usePartnerModalStore();
 
   // Fetch partners with current filters, sort, and pagination
   const { data: partnersData, isLoading: isLoadingPartners } = usePartners(
@@ -58,14 +62,13 @@ export const PartnerDirectoryScreen: React.FC = () => {
     }
   };
 
-  const handleSortChange = (event: any) => {
-    const value = event.target.value as string;
-    setSortBy(value as any);
+  const handleSortChange = (event: SelectChangeEvent<string>) => {
+    const value = event.target.value as 'engagement' | 'name' | 'tier' | 'lastEvent';
+    setSortBy(value);
   };
 
   const handleAddPartner = () => {
-    // Story 2.8.3 - Create Partner Modal
-    console.log('Add Partner - Coming Soon in Story 2.8.3');
+    openCreateModal();
   };
 
   return (
@@ -81,8 +84,6 @@ export const PartnerDirectoryScreen: React.FC = () => {
             color="primary"
             startIcon={<AddIcon />}
             onClick={handleAddPartner}
-            disabled
-            title={t('comingSoon.story283')}
             data-testid="add-partner-button"
           >
             {t('addPartner')}
@@ -211,6 +212,9 @@ export const PartnerDirectoryScreen: React.FC = () => {
       >
         {isLoadingPartners && t('loading')}
       </Box>
+
+      {/* Create/Edit Partner Modal */}
+      <PartnerCreateEditModal />
     </Container>
   );
 };

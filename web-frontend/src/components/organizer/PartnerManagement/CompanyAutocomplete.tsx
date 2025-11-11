@@ -115,25 +115,33 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
           }}
         />
       )}
-      renderOption={(props, option) => (
-        <Box component="li" {...props} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Avatar
-            src={option.logo?.url}
-            alt={option.displayName || option.name}
-            sx={{ width: 32, height: 32 }}
+      renderOption={(props, option) => {
+        const { key, ...otherProps } = props;
+        return (
+          <Box
+            component="li"
+            key={key}
+            {...otherProps}
+            sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
           >
-            {(option.displayName || option.name).charAt(0).toUpperCase()}
-          </Avatar>
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="body1">{option.displayName || option.name}</Typography>
-            {option.industry && (
-              <Typography variant="body2" color="text.secondary">
-                {option.industry}
-              </Typography>
-            )}
+            <Avatar
+              src={option.logo?.url}
+              alt={option.displayName || option.name}
+              sx={{ width: 32, height: 32 }}
+            >
+              {(option.displayName || option.name).charAt(0).toUpperCase()}
+            </Avatar>
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="body1">{option.displayName || option.name}</Typography>
+              {option.industry && (
+                <Typography variant="body2" color="text.secondary">
+                  {option.industry}
+                </Typography>
+              )}
+            </Box>
           </Box>
-        </Box>
-      )}
+        );
+      }}
     />
   );
 };

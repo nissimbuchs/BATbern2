@@ -101,7 +101,7 @@ class CompanyControllerTest {
                 .website("https://testcompany.ch")
                 .industry("Technology")
                 .description("A test company")
-                .isVerified(false)
+                .verified(false)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
@@ -164,7 +164,7 @@ class CompanyControllerTest {
                 .website("https://updatedcompany.ch")
                 .industry("Finance")
                 .description("Updated description")
-                .isVerified(false)
+                .verified(false)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
@@ -225,7 +225,7 @@ class CompanyControllerTest {
         CompanyResponse company2 = CompanyResponse.builder()
                 .name("Second Company AG")
                 .displayName("Second Company")
-                .isVerified(true)
+                .verified(true)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
@@ -389,7 +389,7 @@ class CompanyControllerTest {
         CompanyResponse verifiedResponse = CompanyResponse.builder()
                 .name("Test Company AG")
                 .displayName("Test Company")
-                .isVerified(true)
+                .verified(true)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
@@ -422,7 +422,7 @@ class CompanyControllerTest {
                 .swissUID("CHE-123.456.789")
                 .website("https://testcompany.ch")
                 .industry("Technology")
-                .isVerified(false)
+                .verified(false)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
