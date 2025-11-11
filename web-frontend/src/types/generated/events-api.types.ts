@@ -424,11 +424,26 @@ export interface paths {
     get: operations['listRegistrations'];
     put?: never;
     /**
-     * Create registration
-     * @description Create a new registration for the event.
+     * Create event registration (anonymous or authenticated)
+     * @description Create a new registration for the event. Supports both anonymous and authenticated registration.
      *
-     *     **Acceptance Criteria**: AC12
-     *     **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
+     *     **Story**: 4.1.5a - Anonymous registration with email-based account linking (ADR-006)
+     *     **Security**: Public endpoint - no authentication required
+     *
+     *     **Anonymous Registration**:
+     *     - No authentication required
+     *     - Email serves as identifier
+     *     - Registration code generated (BAT-YYYY-NNNNNN)
+     *     - Confirmation email sent automatically
+     *
+     *     **Authenticated Registration**:
+     *     - If user is authenticated, linked to user account immediately
+     *     - Can view in dashboard
+     *
+     *     **Account Linking (ADR-006)**:
+     *     - When anonymous user creates account with same email, user_profile updated with cognito_user_id
+     *     - All past registrations automatically linked (via attendeeId FK to user_profiles)
+     *     - See ADR-006 for details
      */
     post: operations['createRegistration'];
     delete?: never;
@@ -444,15 +459,21 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get?: never;
+    /**
+     * Get registration by confirmation code
+     * @description Retrieve registration details by confirmation code.
+     *
+     *     **Story**: 4.1.6 - Registration Confirmation
+     *     **Security**: Public endpoint - confirmation code acts as access token
+     */
+    get: operations['getRegistration'];
     put?: never;
     post?: never;
     /**
-     * Delete registration
-     * @description Delete a registration from the event.
+     * Cancel registration
+     * @description Cancel a registration from the event.
      *
-     *     **Acceptance Criteria**: AC12
-     *     **Story**: 1.16.2 - Uses eventCode and registrationCode (meaningful IDs) instead of UUIDs
+     *     **Story**: 4.1.6 - Public cancellation with confirmation code
      */
     delete: operations['deleteRegistration'];
     options?: never;
@@ -461,10 +482,41 @@ export interface paths {
      * Update registration
      * @description Partially update a registration.
      *
-     *     **Acceptance Criteria**: AC12
-     *     **Story**: 1.16.2 - Uses eventCode and registrationCode (meaningful IDs) instead of UUIDs
+     *     **Story**: 4.1.6 - Uses registrationCode
      */
     patch: operations['updateRegistration'];
+    trace?: never;
+  };
+  '/events/{eventCode}/registrations/confirm': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Confirm registration via email token
+     * @description Confirm a registration using the JWT token sent via email.
+     *
+     *     **Story**: 4.1.5c - Secure Email-Based Registration Confirmation
+     *     **Security**: Public endpoint - JWT token provides authentication and authorization
+     *
+     *     **Token Validation**:
+     *     - JWT signature verified (HMAC-SHA256)
+     *     - Token expiry checked (48 hours from registration)
+     *     - Token type must be "email-confirmation"
+     *     - Registration ID extracted from token claims
+     *     - Event code in URL must match event code in token
+     *
+     *     **Idempotency**: Can be called multiple times safely. Already confirmed registrations return 200 OK.
+     */
+    post: operations['confirmRegistration'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   '/events/{eventCode}/analytics': {
@@ -731,30 +783,61 @@ export interface components {
      *     Same as Session schema but used specifically for API responses
      */
     SessionResponse: components['schemas']['Session'];
-    /** @description Story 1.16.2: Uses registrationCode and attendeeUsername as meaningful IDs */
+    /**
+     * @description Story 4.1.5a: Unified user profile approach for anonymous and authenticated registrations (ADR-006)
+     *     All users (anonymous + authenticated) are in user_profiles table. Anonymous users have cognito_user_id = NULL.
+     */
     Registration: {
       /**
-       * @description Unique registration code (eventCode-username format)
-       * @example BATbern142-john.doe
+       * @description Unique registration code (BAT-YYYY-NNNNNN format) acts as access token
+       * @example BAT-2025-000123
        */
       registrationCode: string;
       /**
        * @description Event code this registration belongs to
-       * @example BATbern142
+       * @example BATbern25
        */
       eventCode: string;
+      /** @description Event title (included for convenience) */
+      eventTitle?: string;
       /**
-       * @description Attendee username in firstname.lastname format
+       * Format: date-time
+       * @description Event date (included for convenience)
+       */
+      eventDate?: string;
+      /**
+       * @description Attendee username from user_profiles (ADR-003: meaningful identifiers in public APIs).
+       *     Format: firstname.lastname or firstname.lastname.2 for duplicates.
+       *     Always present - anonymous users are in user_profiles with cognito_user_id = NULL.
+       *     ADR-006: Unified table eliminates need for separate anonymous_* fields.
        * @example john.doe
        */
       attendeeUsername: string;
-      /** Format: email */
-      attendeeEmail: string;
-      attendeeName: string;
+      /** @description First name from user_profiles */
+      firstName?: string;
+      /** @description Last name from user_profiles */
+      lastName?: string;
+      /**
+       * Format: email
+       * @description Email from user_profiles
+       */
+      email?: string;
+      /** @description Company name from user_profiles.company_id (FK to companies table) */
+      company?: string;
       /** @enum {string} */
       status: 'registered' | 'waitlisted' | 'confirmed' | 'cancelled' | 'attended';
       /** Format: date-time */
       registrationDate?: string;
+      /** @description Event-level registration - sessions are preferences only, not commitments */
+      sessionPreferences?: string[];
+      /** @description Dietary preferences, accessibility needs, etc. */
+      specialRequests?: string | null;
+      communicationPreferences?: {
+        /** @default false */
+        newsletterSubscribed: boolean;
+        /** @default true */
+        eventReminders: boolean;
+      };
       /** Format: date-time */
       createdAt?: string;
       /** Format: date-time */
@@ -914,21 +997,79 @@ export interface components {
       capacity?: number;
       language?: string;
     };
-    /** @description Story 1.16.2: Uses attendeeUsername instead of UUID */
+    /**
+     * @description Story 4.1.5a: Event registration request (ADR-006)
+     *     Public endpoint - no authentication required.
+     *     Creates user_profile with cognito_user_id = NULL for anonymous users.
+     */
     CreateRegistrationRequest: {
       /**
-       * @description Attendee username in firstname.lastname format
-       * @example john.doe
+       * Format: email
+       * @description Email address for registration and confirmation
+       * @example john.doe@example.com
        */
-      attendeeUsername: string;
-      /** Format: email */
-      attendeeEmail: string;
-      attendeeName: string;
+      email: string;
+      /**
+       * @description First name
+       * @example John
+       */
+      firstName: string;
+      /**
+       * @description Last name
+       * @example Doe
+       */
+      lastName: string;
+      /**
+       * @description Company name (optional)
+       * @example Acme Corp
+       */
+      company?: string;
+      /**
+       * @description Job title/role (optional)
+       * @example Software Architect
+       */
+      role?: string;
+      /**
+       * @description User must accept terms and conditions
+       * @example true
+       */
+      termsAccepted: boolean;
+      /** @description Email communication preferences */
+      communicationPreferences?: {
+        /**
+         * @description Subscribe to newsletter
+         * @default false
+         */
+        newsletterSubscribed: boolean;
+        /**
+         * @description Receive event reminders
+         * @default true
+         */
+        eventReminders: boolean;
+      };
+      /**
+       * @description Dietary preferences, accessibility needs, etc.
+       * @example Vegetarian meal preference
+       */
+      specialRequests?: string;
     };
+    /**
+     * @description Story 4.1.5a/4.1.6: Update registration details
+     *     Public endpoint - uses confirmation code for access
+     */
     PatchRegistrationRequest: {
-      /** @enum {string} */
-      status?: 'registered' | 'waitlisted' | 'confirmed' | 'cancelled' | 'attended';
-      attendeeName?: string;
+      /**
+       * @description Update dietary preferences, accessibility needs, etc.
+       * @example Vegan meal preference, wheelchair accessible seating
+       */
+      specialRequests?: string;
+      /** @description Update email communication preferences */
+      communicationPreferences?: {
+        /** @description Subscribe to newsletter */
+        newsletterSubscribed?: boolean;
+        /** @description Receive event reminders */
+        eventReminders?: boolean;
+      };
     };
     BatchUpdateRequest: {
       updates: {
@@ -1689,7 +1830,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Event code in format BATbern{number} */
+        /** @description Event code in format BATbernXXX */
         eventCode: string;
       };
       cookie?: never;
@@ -1700,8 +1841,59 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Registration created successfully */
+      /** @description Registration created successfully - confirmation email sent */
       201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @example Registration successful. Please check your email to confirm. */
+            message: string;
+            /**
+             * Format: email
+             * @example john.doe@example.com
+             */
+            email: string;
+          };
+        };
+      };
+      /** @description Invalid request (validation errors) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      404: components['responses']['NotFound'];
+      /** @description Rate limit exceeded (public endpoint protection) */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  getRegistration: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbernXXX */
+        eventCode: string;
+        /** @description Registration code in format BAT-YYYY-NNNNNN */
+        registrationCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Registration found */
+      200: {
         headers: {
           [name: string]: unknown;
         };
@@ -1709,8 +1901,13 @@ export interface operations {
           'application/json': components['schemas']['Registration'];
         };
       };
-      400: components['responses']['BadRequest'];
-      404: components['responses']['NotFound'];
+      /** @description Registration not found (invalid confirmation code) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       500: components['responses']['InternalServerError'];
     };
   };
@@ -1719,9 +1916,9 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Event code in format BATbern{number} */
+        /** @description Event code in format BATbernXXX */
         eventCode: string;
-        /** @description Unique registration code (eventCode-username format) */
+        /** @description Registration code in format BAT-YYYY-NNNNNN */
         registrationCode: string;
       };
       cookie?: never;
@@ -1744,9 +1941,9 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Event code in format BATbern{number} */
+        /** @description Event code in format BATbernXXX */
         eventCode: string;
-        /** @description Unique registration code (eventCode-username format) */
+        /** @description Registration code in format BAT-YYYY-NNNNNN */
         registrationCode: string;
       };
       cookie?: never;
@@ -1768,6 +1965,66 @@ export interface operations {
       };
       400: components['responses']['BadRequest'];
       404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  confirmRegistration: {
+    parameters: {
+      query: {
+        /** @description JWT confirmation token from email link */
+        token: string;
+      };
+      header?: never;
+      path: {
+        /** @description Event code in format BATbernXXX */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Registration confirmed successfully (or already confirmed) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @example Registration confirmed successfully */
+            message: string;
+            /**
+             * @example CONFIRMED
+             * @enum {string}
+             */
+            status: 'CONFIRMED';
+          };
+        };
+      };
+      /** @description Invalid or expired token */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Registration not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": "Not found",
+           *       "message": "Registration not found",
+           *       "code": "REGISTRATION_NOT_FOUND"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
       500: components['responses']['InternalServerError'];
     };
   };

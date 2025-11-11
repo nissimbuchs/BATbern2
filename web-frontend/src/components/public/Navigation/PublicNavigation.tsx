@@ -3,20 +3,19 @@
  * Adapted from BATbern-public Navbar with React Router integration
  */
 
-import { Link } from "react-router-dom";
-import { Button } from "@/components/public/ui/button";
-import { useAuth } from "@/hooks/useAuth";
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/public/ui/button';
+import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 
 export const PublicNavigation = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { t } = useTranslation('common');
 
   const getPortalPath = () => {
-    if (user?.role === 'organizer') return '/organizer/dashboard';
-    if (user?.role === 'speaker') return '/speaker/dashboard';
-    if (user?.role === 'partner') return '/partner/dashboard';
-    return '/attendee/dashboard';
+    // All roles use the same /dashboard route
+    // Role-based access control is handled by ProtectedRoute component
+    return '/dashboard';
   };
 
   return (
@@ -32,10 +31,7 @@ export const PublicNavigation = () => {
 
           {/* Primary Navigation - Center */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link
-              to="/"
-              className="text-foreground/80 hover:text-foreground transition-colors"
-            >
+            <Link to="/" className="text-foreground/80 hover:text-foreground transition-colors">
               {t('navigation.home')}
             </Link>
             <Link

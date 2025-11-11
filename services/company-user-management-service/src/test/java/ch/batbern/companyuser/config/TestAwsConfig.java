@@ -2,6 +2,7 @@ package ch.batbern.companyuser.config;
 
 import ch.batbern.companyuser.service.CognitoIntegrationService;
 import ch.batbern.companyuser.service.UserSearchService;
+import ch.batbern.shared.service.EmailService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -120,5 +121,17 @@ public class TestAwsConfig {
         // invalidateCache is void, no need to configure
 
         return mockService;
+    }
+
+    /**
+     * Mock EmailService for testing email functionality
+     * Provides mock shared-kernel EmailService for integration tests
+     */
+    @Bean
+    @Primary
+    public EmailService emailService() {
+        EmailService mockEmailService = Mockito.mock(EmailService.class);
+        // sendEmail is void, no need to configure
+        return mockEmailService;
     }
 }

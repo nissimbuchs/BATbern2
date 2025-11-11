@@ -1,7 +1,9 @@
 package ch.batbern.events.client.impl;
 
 import ch.batbern.events.client.UserApiClient;
-import ch.batbern.events.dto.UserProfileDTO;
+import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
+import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
+import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.exception.UserServiceException;
 import lombok.RequiredArgsConstructor;
@@ -54,7 +56,7 @@ public class UserApiClientImpl implements UserApiClient {
      */
     @Override
     @Cacheable(value = "userApiCache", key = "#username")
-    public UserProfileDTO getUserByUsername(String username) {
+    public UserResponse getUserByUsername(String username) {
         log.debug("Fetching user profile for username: {}", username);
 
         String url = userServiceBaseUrl + "/api/v1/users/" + username;
@@ -63,14 +65,14 @@ public class UserApiClientImpl implements UserApiClient {
             HttpHeaders headers = createHeadersWithJwtToken();
             HttpEntity<Void> request = new HttpEntity<>(headers);
 
-            ResponseEntity<UserProfileDTO> response = restTemplate.exchange(
+            ResponseEntity<UserResponse> response = restTemplate.exchange(
                     url,
                     HttpMethod.GET,
                     request,
-                    UserProfileDTO.class
+                    UserResponse.class
             );
 
-            UserProfileDTO user = response.getBody();
+            UserResponse user = response.getBody();
             log.debug("Successfully fetched user profile for username: {}", username);
             return user;
 
@@ -132,6 +134,82 @@ public class UserApiClientImpl implements UserApiClient {
         } catch (UserNotFoundException e) {
             log.debug("User does not exist: {}", username);
             return false;
+        }
+    }
+
+    /**
+     * Get or create user profile (ADR-005: Anonymous Event Registration).
+     *
+     * Used for anonymous event registration where users register without creating a Cognito account.
+     * Creates user with cognito_id=NULL when cognitoSync=false.
+     *
+     * If user already exists (by email), returns existing user profile.
+     * If user doesn't exist, creates new anonymous user profile.
+     *
+     * Cached for 15 minutes using email as cache key.
+     *
+     * @param request User creation/lookup request with email, names, and cognitoSync flag
+     * @return User profile data (existing or newly created)
+     * @throws UserServiceException if API communication fails
+     */
+    @Override
+    @Cacheable(value = "userApiCache", key = "#request.email")
+    public GetOrCreateUserResponse getOrCreateUser(GetOrCreateUserRequest request) {
+        log.debug("Getting or creating user for email: {}", request.getEmail());
+
+        String url = userServiceBaseUrl + "/api/v1/users/get-or-create";
+
+        try {
+            HttpHeaders headers = createHeadersWithJwtToken();
+            HttpEntity<GetOrCreateUserRequest> httpRequest = new HttpEntity<>(request, headers);
+
+            ResponseEntity<GetOrCreateUserResponse> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    httpRequest,
+                    GetOrCreateUserResponse.class
+            );
+
+            GetOrCreateUserResponse result = response.getBody();
+            log.info("Successfully got/created user profile for email: {}, username: {}, created: {}",
+                    request.getEmail(),
+                    result != null ? result.getUsername() : "null",
+                    result != null ? result.getCreated() : "null");
+            return result;
+
+        } catch (HttpClientErrorException e) {
+            log.error("Client error getting/creating user for email {}: {} - {}",
+                    request.getEmail(), e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "Client error getting/creating user for email: " + request.getEmail(),
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (HttpServerErrorException e) {
+            log.error("Server error from User Management Service for email {}: {} - {}",
+                    request.getEmail(), e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "User Management Service error for email: " + request.getEmail(),
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (ResourceAccessException e) {
+            log.error("Network error connecting to User Management Service for email {}: {}",
+                    request.getEmail(), e.getMessage());
+            throw new UserServiceException(
+                    "Failed to connect to User Management Service for email: " + request.getEmail(),
+                    e
+            );
+
+        } catch (Exception e) {
+            log.error("Unexpected error getting/creating user for email {}: {}",
+                    request.getEmail(), e.getMessage(), e);
+            throw new UserServiceException(
+                    "Unexpected error getting/creating user for email: " + request.getEmail(),
+                    e
+            );
         }
     }
 
