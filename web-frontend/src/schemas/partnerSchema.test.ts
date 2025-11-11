@@ -36,7 +36,7 @@ describe('partnerSchema - Story 2.8.3', () => {
       it('should_acceptValidData_when_allRequiredFieldsProvided', () => {
         const validData = {
           companyName: 'test-company',
-          partnershipLevel: 'gold',
+          partnershipLevel: 'GOLD',
           partnershipStartDate: new Date('2025-01-01'),
         };
 
@@ -45,7 +45,7 @@ describe('partnerSchema - Story 2.8.3', () => {
         expect(result.success).toBe(true);
         if (result.success) {
           expect(result.data.companyName).toBe('test-company');
-          expect(result.data.partnershipLevel).toBe('gold');
+          expect(result.data.partnershipLevel).toBe('GOLD');
           expect(result.data.partnershipStartDate).toEqual(new Date('2025-01-01'));
         }
       });
@@ -53,7 +53,7 @@ describe('partnerSchema - Story 2.8.3', () => {
       it('should_acceptOptionalEndDate_when_provided', () => {
         const validData = {
           companyName: 'test-company',
-          partnershipLevel: 'platinum',
+          partnershipLevel: 'PLATINUM',
           partnershipStartDate: new Date('2025-01-01'),
           partnershipEndDate: new Date('2025-12-31'),
         };
@@ -71,7 +71,7 @@ describe('partnerSchema - Story 2.8.3', () => {
       it('should_rejectEmptyCompanyName_when_validated', () => {
         const invalidData = {
           companyName: '',
-          partnershipLevel: 'bronze',
+          partnershipLevel: 'BRONZE',
           partnershipStartDate: new Date('2025-01-01'),
         };
 
@@ -87,7 +87,7 @@ describe('partnerSchema - Story 2.8.3', () => {
       it('should_rejectTooLongCompanyName_when_exceedsMaxLength', () => {
         const invalidData = {
           companyName: 'a'.repeat(13), // Max is 12
-          partnershipLevel: 'silver',
+          partnershipLevel: 'SILVER',
           partnershipStartDate: new Date('2025-01-01'),
         };
 
@@ -103,7 +103,7 @@ describe('partnerSchema - Story 2.8.3', () => {
 
     describe('Partnership Level Validation', () => {
       it('should_acceptValidPartnershipLevels_when_validated', () => {
-        const levels = ['bronze', 'silver', 'gold', 'platinum', 'strategic'] as const;
+        const levels = ['BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'STRATEGIC'] as const;
 
         levels.forEach((level) => {
           const validData = {
@@ -121,7 +121,7 @@ describe('partnerSchema - Story 2.8.3', () => {
       it('should_rejectInvalidPartnershipLevel_when_validated', () => {
         const invalidData = {
           companyName: 'test-company',
-          partnershipLevel: 'diamond', // Invalid level
+          partnershipLevel: 'DIAMOND', // Invalid level
           partnershipStartDate: new Date('2025-01-01'),
         };
 
@@ -139,7 +139,7 @@ describe('partnerSchema - Story 2.8.3', () => {
       it('should_validateDateRange_when_endDateBeforeStart', () => {
         const invalidData = {
           companyName: 'test-company',
-          partnershipLevel: 'gold',
+          partnershipLevel: 'GOLD',
           partnershipStartDate: new Date('2025-12-31'),
           partnershipEndDate: new Date('2025-01-01'), // Before start date
         };
@@ -156,7 +156,7 @@ describe('partnerSchema - Story 2.8.3', () => {
       it('should_acceptValidDateRange_when_endDateAfterStart', () => {
         const validData = {
           companyName: 'test-company',
-          partnershipLevel: 'strategic',
+          partnershipLevel: 'STRATEGIC',
           partnershipStartDate: new Date('2025-01-01'),
           partnershipEndDate: new Date('2025-12-31'),
         };
@@ -169,7 +169,7 @@ describe('partnerSchema - Story 2.8.3', () => {
       it('should_acceptSameDayDates_when_endDateEqualsStart', () => {
         const validData = {
           companyName: 'test-company',
-          partnershipLevel: 'bronze',
+          partnershipLevel: 'BRONZE',
           partnershipStartDate: new Date('2025-06-15'),
           partnershipEndDate: new Date('2025-06-15'),
         };
@@ -185,7 +185,7 @@ describe('partnerSchema - Story 2.8.3', () => {
   describe('UpdatePartnerSchema', () => {
     it('should_acceptPartialUpdates_when_onlySomeFieldsProvided', () => {
       const validData = {
-        partnershipLevel: 'platinum',
+        partnershipLevel: 'PLATINUM',
       };
 
       const result = UpdatePartnerSchema.safeParse(validData);
@@ -206,7 +206,7 @@ describe('partnerSchema - Story 2.8.3', () => {
 
     it('should_acceptValidUpdate_when_allFieldsProvided', () => {
       const validData = {
-        partnershipLevel: 'strategic',
+        partnershipLevel: 'STRATEGIC',
         partnershipStartDate: new Date('2025-01-01'),
         partnershipEndDate: new Date('2025-12-31'),
       };
@@ -221,7 +221,7 @@ describe('partnerSchema - Story 2.8.3', () => {
     it('should_returnI18nErrors_when_validationFails', () => {
       const invalidData = {
         companyName: '',
-        partnershipLevel: 'invalid',
+        partnershipLevel: 'INVALID',
         partnershipStartDate: 'not-a-date',
       };
 

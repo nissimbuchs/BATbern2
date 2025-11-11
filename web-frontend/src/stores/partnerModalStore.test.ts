@@ -65,7 +65,7 @@ describe('partnerModalStore - Story 2.8.3', () => {
       const mockPartner: PartnerResponse = {
         id: 'partner-123',
         companyName: 'test-company',
-        partnershipLevel: 'gold',
+        partnershipLevel: 'GOLD',
         partnershipStartDate: '2025-01-01',
         isActive: true,
         engagementScore: 75,
@@ -97,7 +97,7 @@ describe('partnerModalStore - Story 2.8.3', () => {
       const mockPartner: PartnerResponse = {
         id: 'partner-456',
         companyName: 'edit-company',
-        partnershipLevel: 'platinum',
+        partnershipLevel: 'PLATINUM',
         partnershipStartDate: '2025-02-01',
         partnershipEndDate: '2025-12-31',
         isActive: true,
@@ -122,7 +122,7 @@ describe('partnerModalStore - Story 2.8.3', () => {
       const mockPartner: PartnerResponse = {
         id: 'partner-789',
         companyName: 'strategic-company',
-        partnershipLevel: 'strategic',
+        partnershipLevel: 'STRATEGIC',
         partnershipStartDate: '2025-01-01',
         isActive: true,
         engagementScore: 95,
@@ -136,7 +136,7 @@ describe('partnerModalStore - Story 2.8.3', () => {
       });
 
       expect(result.current.partnerToEdit?.companyName).toBe('strategic-company');
-      expect(result.current.partnerToEdit?.partnershipLevel).toBe('strategic');
+      expect(result.current.partnerToEdit?.partnershipLevel).toBe('STRATEGIC');
       expect(result.current.partnerToEdit?.engagementScore).toBe(95);
     });
   });
@@ -166,7 +166,7 @@ describe('partnerModalStore - Story 2.8.3', () => {
       const mockPartner: PartnerResponse = {
         id: 'partner-clear-123',
         companyName: 'clear-company',
-        partnershipLevel: 'silver',
+        partnershipLevel: 'SILVER',
         partnershipStartDate: '2025-01-01',
         isActive: true,
         engagementScore: 60,
@@ -207,7 +207,7 @@ describe('partnerModalStore - Story 2.8.3', () => {
       const mockPartner: PartnerResponse = {
         id: 'partner-switch-123',
         companyName: 'switch-company',
-        partnershipLevel: 'bronze',
+        partnershipLevel: 'BRONZE',
         partnershipStartDate: '2025-01-01',
         isActive: true,
         engagementScore: 40,

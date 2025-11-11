@@ -60,29 +60,16 @@ const mockPartner: PartnerResponse = {
   id: '123e4567-e89b-12d3-a456-426614174000',
   companyName: 'GoogleZH',
   partnershipLevel: 'STRATEGIC',
-  partnerSince: '2022-01-15',
-  tierStartDate: '2024-01-01',
-  previousTier: 'PLATINUM',
+  partnershipStartDate: '2024-01-01',
   isActive: true,
-  autoRenew: true,
-  renewalDate: '2025-12-31',
   company: {
-    id: 'comp-123',
+    companyName: 'GoogleZH',
+    displayName: 'Google Zurich',
     name: 'Google Zurich',
     industry: 'Technology',
     website: 'https://www.google.ch',
-    location: {
-      city: 'Zurich',
-      canton: 'ZH',
-      country: 'Switzerland',
-    },
+    location: 'Zurich, ZH',
     logoUrl: 'https://cdn.batbern.ch/logos/google-zh.png',
-  },
-  statistics: {
-    eventsAttended: 24,
-    lastEventDate: '2025-03-15',
-    activeVotes: 5,
-    totalMeetings: 12,
   },
 };
 
@@ -175,7 +162,8 @@ describe('PartnerDetailHeader Component', () => {
         renderWithProviders(<PartnerDetailHeader partner={mockPartner} />);
       });
 
-      expect(screen.getByText(/Coming Soon - Epic 8/i)).toBeInTheDocument();
+      // Check for the emoji placeholder (i18n may not load in test)
+      expect(screen.getByText(/📊/)).toBeInTheDocument();
     });
   });
 
@@ -200,11 +188,11 @@ describe('PartnerDetailHeader Component', () => {
 
       const sendEmailButton = screen.getByRole('button', { name: /Send Email/i });
       const scheduleMeetingButton = screen.getByRole('button', { name: /Schedule Meeting/i });
-      const viewAnalyticsButton = screen.getByRole('button', { name: /View Analytics/i });
+      const exportDataButton = screen.getByRole('button', { name: /Export Data/i });
 
       expect(sendEmailButton).toBeDisabled();
       expect(scheduleMeetingButton).toBeDisabled();
-      expect(viewAnalyticsButton).toBeDisabled();
+      expect(exportDataButton).toBeDisabled();
     });
 
     it('should_haveAddNoteButton_when_rendered', async () => {

@@ -17,11 +17,11 @@ describe('PartnershipTierSelect', () => {
     fireEvent.mouseDown(select);
 
     await waitFor(() => {
-      expect(screen.getByRole('option', { name: /strategic/i })).toBeInTheDocument();
-      expect(screen.getByRole('option', { name: /platinum/i })).toBeInTheDocument();
-      expect(screen.getByRole('option', { name: /gold/i })).toBeInTheDocument();
-      expect(screen.getByRole('option', { name: /silver/i })).toBeInTheDocument();
-      expect(screen.getByRole('option', { name: /bronze/i })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: /STRATEGIC/i })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: /PLATINUM/i })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: /GOLD/i })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: /SILVER/i })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: /BRONZE/i })).toBeInTheDocument();
     });
   });
 
@@ -49,7 +49,7 @@ describe('PartnershipTierSelect', () => {
     fireEvent.mouseDown(select);
 
     await waitFor(() => {
-      const goldOption = screen.getByRole('option', { name: /gold/i });
+      const goldOption = screen.getByRole('option', { name: /GOLD/i });
       fireEvent.click(goldOption);
     });
 
@@ -61,7 +61,7 @@ describe('PartnershipTierSelect', () => {
     render(<PartnershipTierSelect value="PLATINUM" onChange={mockOnChange} error={undefined} />);
 
     expect(screen.getByText(/💎/)).toBeInTheDocument();
-    expect(screen.getByText(/platinum/i)).toBeInTheDocument();
+    expect(screen.getByText(/PLATINUM/i)).toBeInTheDocument();
   });
 
   // Test 4.5: should_displayError_when_errorProvided
@@ -81,7 +81,7 @@ describe('PartnershipTierSelect', () => {
     fireEvent.mouseDown(select);
 
     await waitFor(() => {
-      const silverOption = screen.getByRole('option', { name: /silver/i });
+      const silverOption = screen.getByRole('option', { name: /SILVER/i });
       expect(silverOption).toHaveAttribute('aria-selected', 'true');
     });
   });
@@ -110,7 +110,7 @@ describe('PartnershipTierSelect', () => {
 
     await waitFor(() => {
       // Verify tier options have proper labels
-      const strategicOption = screen.getByRole('option', { name: /strategic/i });
+      const strategicOption = screen.getByRole('option', { name: /STRATEGIC/i });
       expect(strategicOption).toBeInTheDocument();
     });
   });

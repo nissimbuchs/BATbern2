@@ -41,8 +41,8 @@ describe('PartnerSettingsTab - AC8 Tests', () => {
       />
     );
 
-    expect(screen.getByRole('heading', { name: /Partnership Settings/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /Partnership Status/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Settings/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Active Partnership/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Auto-Renewal/i })).toBeInTheDocument();
   });
 

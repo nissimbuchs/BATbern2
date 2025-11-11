@@ -76,8 +76,8 @@ describe('PartnerList Component - RED Phase Tests', () => {
       // Arrange
       (usePartners as any).mockReturnValue({
         data: {
-          partners: mockPartners,
-          pagination: mockPaginationMetadata,
+          data: mockPartners,
+          metadata: mockPaginationMetadata,
         },
         isLoading: false,
         isError: false,
@@ -106,8 +106,8 @@ describe('PartnerList Component - RED Phase Tests', () => {
       // Arrange
       (usePartners as any).mockReturnValue({
         data: {
-          partners: mockPartners,
-          pagination: mockPaginationMetadata,
+          data: mockPartners,
+          metadata: mockPaginationMetadata,
         },
         isLoading: false,
         isError: false,
@@ -124,7 +124,7 @@ describe('PartnerList Component - RED Phase Tests', () => {
 
       // Assert
       await waitFor(() => {
-        const gridContainer = screen.getByTestId('partner-list-grid');
+        const gridContainer = screen.getByTestId('partner-grid');
         expect(gridContainer).toBeInTheDocument();
         // Grid2 doesn't use 'container' attribute, check class instead
         expect(gridContainer).toHaveClass('MuiGrid-container');
@@ -135,8 +135,8 @@ describe('PartnerList Component - RED Phase Tests', () => {
       // Arrange
       (usePartners as any).mockReturnValue({
         data: {
-          partners: mockPartners,
-          pagination: mockPaginationMetadata,
+          data: mockPartners,
+          metadata: mockPaginationMetadata,
         },
         isLoading: false,
         isError: false,
@@ -162,8 +162,8 @@ describe('PartnerList Component - RED Phase Tests', () => {
       // Arrange
       (usePartners as any).mockReturnValue({
         data: {
-          partners: mockPartners,
-          pagination: mockPaginationMetadata,
+          data: mockPartners,
+          metadata: mockPaginationMetadata,
         },
         isLoading: false,
         isError: false,
@@ -191,8 +191,8 @@ describe('PartnerList Component - RED Phase Tests', () => {
       const mockSetPage = vi.fn();
       (usePartners as any).mockReturnValue({
         data: {
-          partners: mockPartners,
-          pagination: mockPaginationMetadata,
+          data: mockPartners,
+          metadata: mockPaginationMetadata,
         },
         isLoading: false,
         isError: false,
@@ -274,8 +274,8 @@ describe('PartnerList Component - RED Phase Tests', () => {
       // Arrange
       (usePartners as any).mockReturnValue({
         data: {
-          partners: mockPartners,
-          pagination: { ...mockPaginationMetadata, page: 0 },
+          data: mockPartners,
+          metadata: { ...mockPaginationMetadata, page: 0 },
         },
         isLoading: false,
         isError: false,
@@ -303,8 +303,8 @@ describe('PartnerList Component - RED Phase Tests', () => {
       // Arrange
       (usePartners as any).mockReturnValue({
         data: {
-          partners: mockPartners,
-          pagination: { ...mockPaginationMetadata, page: 1, totalPages: 2 },
+          data: mockPartners,
+          metadata: { ...mockPaginationMetadata, page: 1, totalPages: 2 },
         },
         isLoading: false,
         isError: false,
@@ -332,8 +332,8 @@ describe('PartnerList Component - RED Phase Tests', () => {
       // Arrange
       (usePartners as any).mockReturnValue({
         data: {
-          partners: mockPartners,
-          pagination: { ...mockPaginationMetadata, page: 1, totalPages: 2 },
+          data: mockPartners,
+          metadata: { ...mockPaginationMetadata, page: 1, totalPages: 2 },
         },
         isLoading: false,
         isError: false,
@@ -360,8 +360,8 @@ describe('PartnerList Component - RED Phase Tests', () => {
       // Arrange
       (usePartners as any).mockReturnValue({
         data: {
-          partners: [],
-          pagination: { page: 0, size: 20, totalElements: 0, totalPages: 0 },
+          data: [],
+          metadata: { page: 0, size: 20, totalElements: 0, totalPages: 0 },
         },
         isLoading: false,
         isError: false,
@@ -386,8 +386,8 @@ describe('PartnerList Component - RED Phase Tests', () => {
       // Arrange
       (usePartners as any).mockReturnValue({
         data: {
-          partners: mockPartners,
-          pagination: { page: 0, size: 20, totalElements: 2, totalPages: 1 },
+          data: mockPartners,
+          metadata: { page: 0, size: 20, totalElements: 2, totalPages: 1 },
         },
         isLoading: false,
         isError: false,
@@ -414,8 +414,8 @@ describe('PartnerList Component - RED Phase Tests', () => {
       // Arrange
       (usePartners as any).mockReturnValue({
         data: {
-          partners: mockPartners,
-          pagination: mockPaginationMetadata,
+          data: mockPartners,
+          metadata: mockPaginationMetadata,
         },
         isLoading: false,
         isError: false,
@@ -447,8 +447,8 @@ describe('PartnerList Component - RED Phase Tests', () => {
       // Arrange
       (usePartners as any).mockReturnValue({
         data: {
-          partners: mockPartners,
-          pagination: mockPaginationMetadata,
+          data: mockPartners,
+          metadata: mockPaginationMetadata,
         },
         isLoading: false,
         isError: false,

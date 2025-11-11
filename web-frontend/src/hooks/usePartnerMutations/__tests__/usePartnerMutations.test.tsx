@@ -70,7 +70,7 @@ describe('usePartnerMutations Hooks - Story 2.8.3', () => {
       // Arrange
       const createRequest: CreatePartnerRequest = {
         companyName: 'test-company',
-        partnershipLevel: 'gold',
+        partnershipLevel: 'GOLD',
         partnershipStartDate: '2025-01-01',
         partnershipEndDate: '2025-12-31',
       };
@@ -78,7 +78,7 @@ describe('usePartnerMutations Hooks - Story 2.8.3', () => {
       const createdPartner: PartnerResponse = {
         id: 'partner-123',
         companyName: 'test-company',
-        partnershipLevel: 'gold',
+        partnershipLevel: 'GOLD',
         partnershipStartDate: '2025-01-01',
         partnershipEndDate: '2025-12-31',
         isActive: true,
@@ -112,14 +112,14 @@ describe('usePartnerMutations Hooks - Story 2.8.3', () => {
       // Arrange
       const createRequest: CreatePartnerRequest = {
         companyName: 'test-company',
-        partnershipLevel: 'silver',
+        partnershipLevel: 'SILVER',
         partnershipStartDate: '2025-01-01',
       };
 
       const createdPartner: PartnerResponse = {
         id: 'partner-456',
         companyName: 'test-company',
-        partnershipLevel: 'silver',
+        partnershipLevel: 'SILVER',
         partnershipStartDate: '2025-01-01',
         isActive: true,
         engagementScore: 0,
@@ -159,14 +159,14 @@ describe('usePartnerMutations Hooks - Story 2.8.3', () => {
       // Arrange
       const createRequest: CreatePartnerRequest = {
         companyName: 'navigate-test-company',
-        partnershipLevel: 'platinum',
+        partnershipLevel: 'PLATINUM',
         partnershipStartDate: '2025-01-01',
       };
 
       const createdPartner: PartnerResponse = {
         id: 'partner-nav-123',
         companyName: 'navigate-test-company',
-        partnershipLevel: 'platinum',
+        partnershipLevel: 'PLATINUM',
         partnershipStartDate: '2025-01-01',
         isActive: true,
         engagementScore: 0,
@@ -200,7 +200,7 @@ describe('usePartnerMutations Hooks - Story 2.8.3', () => {
       // Arrange
       const companyName = 'existing-company';
       const updateRequest: UpdatePartnerRequest = {
-        partnershipLevel: 'strategic',
+        partnershipLevel: 'STRATEGIC',
         partnershipEndDate: '2026-12-31',
         isActive: true,
       };
@@ -208,7 +208,7 @@ describe('usePartnerMutations Hooks - Story 2.8.3', () => {
       const updatedPartner: PartnerResponse = {
         id: 'partner-update-123',
         companyName: 'existing-company',
-        partnershipLevel: 'strategic',
+        partnershipLevel: 'STRATEGIC',
         partnershipStartDate: '2025-01-01',
         partnershipEndDate: '2026-12-31',
         isActive: true,
@@ -242,13 +242,13 @@ describe('usePartnerMutations Hooks - Story 2.8.3', () => {
       // Arrange
       const companyName = 'optimistic-company';
       const updateRequest: UpdatePartnerRequest = {
-        partnershipLevel: 'gold',
+        partnershipLevel: 'GOLD',
       };
 
       const updatedPartner: PartnerResponse = {
         id: 'partner-opt-123',
         companyName: 'optimistic-company',
-        partnershipLevel: 'gold',
+        partnershipLevel: 'GOLD',
         partnershipStartDate: '2025-01-01',
         isActive: true,
         engagementScore: 50,
@@ -283,7 +283,7 @@ describe('usePartnerMutations Hooks - Story 2.8.3', () => {
       // Arrange
       const companyName = 'error-company';
       const updateRequest: UpdatePartnerRequest = {
-        partnershipLevel: 'platinum',
+        partnershipLevel: 'PLATINUM',
       };
 
       const errorResponse = new Error('Network error');

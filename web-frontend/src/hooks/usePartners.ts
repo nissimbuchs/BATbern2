@@ -52,7 +52,7 @@ export const usePartners = (
  * Returns:
  * - Total partners count
  * - Active partners count
- * - Tier distribution (strategic, platinum, gold, silver, bronze)
+ * - Tier distribution (STRATEGIC, PLATINUM, GOLD, SILVER, BRONZE)
  * - Engaged percentage (Epic 8 - placeholder)
  *
  * @returns UseQueryResult with PartnerStatistics

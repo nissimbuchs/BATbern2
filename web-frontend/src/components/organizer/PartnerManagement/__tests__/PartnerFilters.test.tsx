@@ -46,13 +46,13 @@ describe('PartnerFilters Component (RED Phase - Task 5a)', () => {
     it('should render tier dropdown', () => {
       render(<PartnerFilters />);
 
-      expect(screen.getByLabelText('filters.tier')).toBeInTheDocument();
+      expect(screen.getByRole('combobox', { name: 'filters.tier' })).toBeInTheDocument();
     });
 
     it('should render status toggle', () => {
       render(<PartnerFilters />);
 
-      expect(screen.getByLabelText('filters.status')).toBeInTheDocument();
+      expect(screen.getByRole('combobox', { name: 'filters.status' })).toBeInTheDocument();
     });
 
     it('should render reset filters button', () => {
@@ -66,7 +66,7 @@ describe('PartnerFilters Component (RED Phase - Task 5a)', () => {
     it('should call setFilters with gold when gold tier selected', () => {
       render(<PartnerFilters />);
 
-      const tierSelect = screen.getByLabelText('filters.tier');
+      const tierSelect = screen.getByRole('combobox', { name: 'filters.tier' });
       fireEvent.mouseDown(tierSelect);
 
       const goldOption = screen.getByRole('option', { name: /gold/i });
@@ -78,7 +78,7 @@ describe('PartnerFilters Component (RED Phase - Task 5a)', () => {
     it('should call setFilters with strategic when strategic tier selected', () => {
       render(<PartnerFilters />);
 
-      const tierSelect = screen.getByLabelText('filters.tier');
+      const tierSelect = screen.getByRole('combobox', { name: 'filters.tier' });
       fireEvent.mouseDown(tierSelect);
 
       const strategicOption = screen.getByRole('option', { name: /strategic/i });
@@ -92,7 +92,7 @@ describe('PartnerFilters Component (RED Phase - Task 5a)', () => {
       // We just need to verify that clicking "All Tiers" calls setFilters with { tier: 'all' }
       render(<PartnerFilters />);
 
-      const tierSelect = screen.getByLabelText('filters.tier');
+      const tierSelect = screen.getByRole('combobox', { name: 'filters.tier' });
       fireEvent.mouseDown(tierSelect);
 
       // Since default is already 'all', let's just verify the option exists
@@ -104,7 +104,7 @@ describe('PartnerFilters Component (RED Phase - Task 5a)', () => {
     it('should display all tier options', () => {
       render(<PartnerFilters />);
 
-      const tierSelect = screen.getByLabelText('filters.tier');
+      const tierSelect = screen.getByRole('combobox', { name: 'filters.tier' });
       fireEvent.mouseDown(tierSelect);
 
       expect(screen.getByRole('option', { name: 'filters.tierAll' })).toBeInTheDocument();
@@ -120,7 +120,7 @@ describe('PartnerFilters Component (RED Phase - Task 5a)', () => {
     it('should call setFilters with active when active status selected', () => {
       render(<PartnerFilters />);
 
-      const statusSelect = screen.getByLabelText('filters.status');
+      const statusSelect = screen.getByRole('combobox', { name: 'filters.status' });
       fireEvent.mouseDown(statusSelect);
 
       const activeOption = screen.getByRole('option', { name: 'filters.statusActive' });
@@ -132,7 +132,7 @@ describe('PartnerFilters Component (RED Phase - Task 5a)', () => {
     it('should call setFilters with inactive when inactive status selected', () => {
       render(<PartnerFilters />);
 
-      const statusSelect = screen.getByLabelText('filters.status');
+      const statusSelect = screen.getByRole('combobox', { name: 'filters.status' });
       fireEvent.mouseDown(statusSelect);
 
       const inactiveOption = screen.getByRole('option', { name: 'filters.statusInactive' });
@@ -144,7 +144,7 @@ describe('PartnerFilters Component (RED Phase - Task 5a)', () => {
     it('should display all status options', () => {
       render(<PartnerFilters />);
 
-      const statusSelect = screen.getByLabelText('filters.status');
+      const statusSelect = screen.getByRole('combobox', { name: 'filters.status' });
       fireEvent.mouseDown(statusSelect);
 
       expect(screen.getByRole('option', { name: 'filters.statusAll' })).toBeInTheDocument();
@@ -157,17 +157,17 @@ describe('PartnerFilters Component (RED Phase - Task 5a)', () => {
     it('should render quick filter chips for each tier', () => {
       render(<PartnerFilters />);
 
-      expect(screen.getByText(/🏆 Strategic/i)).toBeInTheDocument();
-      expect(screen.getByText(/💎 Platinum/i)).toBeInTheDocument();
-      expect(screen.getByText(/🥇 Gold/i)).toBeInTheDocument();
-      expect(screen.getByText(/🥈 Silver/i)).toBeInTheDocument();
-      expect(screen.getByText(/🥉 Bronze/i)).toBeInTheDocument();
+      expect(screen.getByText(/🏆 tiers\.strategic/i)).toBeInTheDocument();
+      expect(screen.getByText(/💎 tiers\.platinum/i)).toBeInTheDocument();
+      expect(screen.getByText(/🥇 tiers\.gold/i)).toBeInTheDocument();
+      expect(screen.getByText(/🥈 tiers\.silver/i)).toBeInTheDocument();
+      expect(screen.getByText(/🥉 tiers\.bronze/i)).toBeInTheDocument();
     });
 
     it('should call setFilters when gold chip clicked', () => {
       render(<PartnerFilters />);
 
-      const goldChip = screen.getByText(/🥇 Gold/i);
+      const goldChip = screen.getByText(/🥇 tiers\.gold/i);
       fireEvent.click(goldChip);
 
       expect(mockSetFilters).toHaveBeenCalledWith({ tier: 'GOLD' });
@@ -176,7 +176,7 @@ describe('PartnerFilters Component (RED Phase - Task 5a)', () => {
     it('should call setFilters when strategic chip clicked', () => {
       render(<PartnerFilters />);
 
-      const strategicChip = screen.getByText(/🏆 Strategic/i);
+      const strategicChip = screen.getByText(/🏆 tiers\.strategic/i);
       fireEvent.click(strategicChip);
 
       expect(mockSetFilters).toHaveBeenCalledWith({ tier: 'STRATEGIC' });
@@ -206,8 +206,8 @@ describe('PartnerFilters Component (RED Phase - Task 5a)', () => {
       // The store mock returns { tier: 'all', status: 'all' }
       render(<PartnerFilters />);
 
-      const tierSelect = screen.getByLabelText('filters.tier');
-      const statusSelect = screen.getByLabelText('filters.status');
+      const tierSelect = screen.getByRole('combobox', { name: 'filters.tier' });
+      const statusSelect = screen.getByRole('combobox', { name: 'filters.status' });
 
       // Check that default values are shown
       expect(tierSelect).toBeInTheDocument();
