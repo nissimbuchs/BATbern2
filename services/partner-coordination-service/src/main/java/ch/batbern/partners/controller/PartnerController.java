@@ -99,6 +99,15 @@ public class PartnerController implements PartnersApi {
         return ResponseEntity.noContent().build();
     }
 
+    @Override
+    public ResponseEntity<PartnerStatistics> getPartnerStatistics() {
+        log.debug("GET /partners/statistics");
+
+        PartnerStatistics statistics = partnerService.getPartnerStatistics();
+
+        return ResponseEntity.ok(statistics);
+    }
+
     // Helper methods
 
     private Set<String> parseIncludes(String include) {

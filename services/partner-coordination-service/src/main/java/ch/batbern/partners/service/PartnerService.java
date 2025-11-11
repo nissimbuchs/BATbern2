@@ -267,4 +267,44 @@ public class PartnerService {
         eventPublisher.publish(event);
         log.debug("Published PartnerUpdatedEvent for partner: {} by user: {}", partner.getId(), userId);
     }
+
+    public PartnerStatistics getPartnerStatistics() {
+        log.debug("Getting partner statistics");
+
+        List<Partner> allPartners = partnerRepository.findAll();
+        List<Partner> activePartners = allPartners.stream()
+                .filter(Partner::isActive)
+                .toList();
+
+        // Count by tier
+        int bronzeCount = (int) activePartners.stream()
+                .filter(p -> p.getPartnershipLevel() == PartnershipLevel.BRONZE)
+                .count();
+        int silverCount = (int) activePartners.stream()
+                .filter(p -> p.getPartnershipLevel() == PartnershipLevel.SILVER)
+                .count();
+        int goldCount = (int) activePartners.stream()
+                .filter(p -> p.getPartnershipLevel() == PartnershipLevel.GOLD)
+                .count();
+        int platinumCount = (int) activePartners.stream()
+                .filter(p -> p.getPartnershipLevel() == PartnershipLevel.PLATINUM)
+                .count();
+        int strategicCount = (int) activePartners.stream()
+                .filter(p -> p.getPartnershipLevel() == PartnershipLevel.STRATEGIC)
+                .count();
+
+        PartnerStatisticsTierCounts tierCounts = new PartnerStatisticsTierCounts();
+        tierCounts.setBRONZE(bronzeCount);
+        tierCounts.setSILVER(silverCount);
+        tierCounts.setGOLD(goldCount);
+        tierCounts.setPLATINUM(platinumCount);
+        tierCounts.setSTRATEGIC(strategicCount);
+
+        PartnerStatistics statistics = new PartnerStatistics();
+        statistics.setTotalPartners(allPartners.size());
+        statistics.setActivePartners(activePartners.size());
+        statistics.setTierCounts(tierCounts);
+
+        return statistics;
+    }
 }
