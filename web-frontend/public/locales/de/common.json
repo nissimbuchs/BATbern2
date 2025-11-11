@@ -20,7 +20,8 @@
     "myContent": "Meine Inhalte",
     "myRegistrations": "Meine Anmeldungen",
     "about": "Über uns",
-    "pastEvents": "Vergangene Veranstaltungen"
+    "pastEvents": "Vergangene Veranstaltungen",
+    "publicSite": "Öffentliche Webseite"
   },
   "public": {
     "login": "Anmelden",
@@ -199,5 +200,26 @@
   "app": {
     "title": "BATbern Event Management Platform",
     "name": "BATbern"
+  },
+  "registration": {
+    "success": {
+      "title": "Anmeldung eingereicht!",
+      "subtitle": "Prüfen Sie Ihre E-Mail, um Ihre Anmeldung zu bestätigen",
+      "emailSent": "Bestätigungs-E-Mail gesendet",
+      "emailSentTo": "Wir haben eine Bestätigungs-E-Mail an",
+      "clickLink": "Klicken Sie auf den Bestätigungslink in der E-Mail, um Ihre Anmeldung abzuschliessen. Der Link ist",
+      "validFor": "48 Stunden",
+      "valid": "gültig.",
+      "didntReceive": "E-Mail nicht erhalten?",
+      "checkSpam": "Überprüfen Sie Ihren Spam-/Junk-Ordner",
+      "checkEmail": "Stellen Sie sicher, dass Sie die richtige E-Mail-Adresse eingegeben haben",
+      "waitMinutes": "Warten Sie einige Minuten und prüfen Sie erneut",
+      "close": "Schliessen"
+    },
+    "alreadyRegistered": {
+      "title": "Sie sind angemeldet!",
+      "pending": "Anmeldung ausstehend für",
+      "checkEmail": "Prüfen Sie Ihre E-Mail zur Bestätigung"
+    }
   }
 }

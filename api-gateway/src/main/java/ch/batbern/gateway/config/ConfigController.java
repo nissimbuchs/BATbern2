@@ -40,6 +40,9 @@ public class ConfigController {
     @Value("${aws.cognito.region}")
     private String awsRegion;
 
+    @Value("${server.port:8080}")
+    private int serverPort;
+
     /**
      * Get frontend runtime configuration
      *
@@ -74,18 +77,18 @@ public class ConfigController {
     /**
      * Determine API base URL based on environment
      *
-     * Development: Local API Gateway
+     * Development: Local API Gateway (uses actual server port for multi-instance support)
      * Staging: Staging API Gateway with HTTPS
      * Production: Production API Gateway with HTTPS
      */
     private String getApiBaseUrl() {
         return switch (environment.toLowerCase()) {
-            case "development" -> "http://localhost:8080/api/v1";
+            case "development" -> String.format("http://localhost:%d/api/v1", serverPort);
             case "staging" -> "https://api.staging.batbern.ch/api/v1";
             case "production" -> "https://api.batbern.ch/api/v1";
             default -> {
                 log.warn("Unknown environment '{}', defaulting to development", environment);
-                yield "http://localhost:8080/api/v1";
+                yield String.format("http://localhost:%d/api/v1", serverPort);
             }
         };
     }

@@ -5,7 +5,7 @@ import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SessionUser.SpeakerRole;
 import ch.batbern.events.dto.SessionSpeakerResponse;
-import ch.batbern.events.dto.UserProfileDTO;
+import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.SpeakerAssignmentNotFoundException;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.repository.SessionRepository;
@@ -50,7 +50,7 @@ class SessionUserServiceTest {
     private SessionUserService sessionUserService;
 
     private Session testSession;
-    private UserProfileDTO testUser;
+    private UserResponse testUser;
     private UUID sessionId;
     private UUID userId;
     private String username;
@@ -71,15 +71,15 @@ class SessionUserServiceTest {
                 .endTime(Instant.now().plusSeconds(3600))
                 .build();
 
-        testUser = UserProfileDTO.builder()
-                .username(username)
+        testUser = new UserResponse()
+                .id(username)
                 .email("john.doe@example.com")
                 .firstName("John")
                 .lastName("Doe")
                 .companyId("GoogleZH")
-                .profilePictureUrl("https://example.com/photo.jpg")
+                .profilePictureUrl(java.net.URI.create("https://example.com/photo.jpg"))
                 .active(true)
-                .build();
+                ;
     }
 
     @Test
@@ -288,15 +288,15 @@ class SessionUserServiceTest {
 
         UUID userId2 = UUID.randomUUID();
         String username2 = "jane.smith";
-        UserProfileDTO user2 = UserProfileDTO.builder()
-                .username(username2)
+        UserResponse user2 = new UserResponse()
+                .id(username2)
                 .email("jane.smith@example.com")
                 .firstName("Jane")
                 .lastName("Smith")
                 .companyId("MicrosoftBE")
-                .profilePictureUrl("https://example.com/jane.jpg")
+                .profilePictureUrl(java.net.URI.create("https://example.com/jane.jpg"))
                 .active(true)
-                .build();
+                ;
 
         SessionUser speaker2 = SessionUser.builder()
                 .id(UUID.randomUUID())

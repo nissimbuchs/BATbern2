@@ -16,11 +16,17 @@ auth:bearer {
 
 body:json {
   {
-    "attendeeUsername": "test.attendee",
-    "attendeeEmail": "test.attendee@example.com",
-    "attendeeName": "Test Attendee",
-    "status": "registered",
-    "registrationDate": "2025-10-27T10:00:00Z"
+    "firstName": "Test",
+    "lastName": "Attendee",
+    "email": "test.attendee@example.com",
+    "company": "Test Co",
+    "role": "Engineer",
+    "termsAccepted": true,
+    "communicationPreferences": {
+      "newsletterSubscribed": true,
+      "eventReminders": true
+    },
+    "specialRequests": ""
   }
 }
 
@@ -33,17 +39,27 @@ tests {
     expect(res.getStatus()).to.equal(201);
   });
 
-  test("should return created registration with registrationCode and attendeeUsername (Story 1.16.2)", function() {
+  test("should return created registration with registrationCode and enriched user data (Story 2.2a: ADR-005)", function() {
     const registration = res.getBody();
+    // Registration code format: {eventCode}-reg-{6 random chars}
     expect(registration.registrationCode).to.be.a('string');
-    expect(registration.registrationCode).to.match(/^BATbern[0-9]+-[a-z]+\.[a-z]+(-[0-9]+)?$/);
-    expect(registration.attendeeUsername).to.equal('test.attendee');
+    expect(registration.registrationCode).to.match(/^BATbern[0-9]+-reg-[A-Z0-9]{6}$/);
+
+    // Enriched user data from User Management Service (ADR-004)
+    expect(registration.attendeeUsername).to.be.a('string');
+    expect(registration.attendeeFirstName).to.equal('Test');
+    expect(registration.attendeeLastName).to.equal('Attendee');
     expect(registration.attendeeEmail).to.equal('test.attendee@example.com');
-    expect(registration.attendeeName).to.equal('Test Attendee');
+
+    // Registration details
     expect(registration.eventCode).to.equal(bru.getVar("createdEventCode"));
+    expect(registration.status).to.equal('CONFIRMED'); // Story 4.1.5: Auto-set status
+    expect(registration.registrationDate).to.be.a('string'); // Story 4.1.5: Auto-set to now
+    expect(registration.createdAt).to.be.a('string');
+    expect(registration.updatedAt).to.be.a('string');
   });
 
-  test("should verify no UUID id field (Story 1.16.2)", function() {
+  test("should verify no UUID id field (Story 2.2a: ADR-003)", function() {
     const registration = res.getBody();
     expect(registration.id).to.be.undefined;
     expect(registration.attendeeId).to.be.undefined;

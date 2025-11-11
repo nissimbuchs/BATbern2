@@ -17,12 +17,6 @@ export interface ApiGatewayStackProps extends cdk.StackProps {
   hostedZoneId?: string;
   certificateArn?: string;
   apiGatewayServiceUrl?: string; // Internal ALB URL for Spring Boot API Gateway
-  // Microservice URLs for direct health/info endpoint access
-  eventManagementServiceUrl?: string;
-  speakerCoordinationServiceUrl?: string;
-  partnerCoordinationServiceUrl?: string;
-  attendeeExperienceServiceUrl?: string;
-  companyUserManagementServiceUrl?: string;
 }
 
 /**
@@ -204,54 +198,6 @@ export class ApiGatewayStack extends cdk.Stack {
       methods: [apigatewayv2.HttpMethod.GET],
       integration: currentEventIntegration,
       // No authorizer - public endpoint for public website
-    });
-
-    // Service-specific health and info endpoints (no auth)
-    // Only create routes if service URLs are provided
-    const services = [
-      { name: 'event-management', url: props.eventManagementServiceUrl },
-      { name: 'speaker-coordination', url: props.speakerCoordinationServiceUrl },
-      { name: 'partner-coordination', url: props.partnerCoordinationServiceUrl },
-      { name: 'attendee-experience', url: props.attendeeExperienceServiceUrl },
-      { name: 'company-user-management', url: props.companyUserManagementServiceUrl },
-    ];
-
-    services.forEach(service => {
-      if (!service.url) {
-        return; // Skip if service URL not provided
-      }
-
-      // Health endpoint for each service
-      const serviceHealthIntegration = new apigatewayv2_integrations.HttpUrlIntegration(
-        `${service.name}HealthIntegration`,
-        `${service.url}/actuator/health`,
-        {
-          method: apigatewayv2.HttpMethod.GET,
-        }
-      );
-
-      this.api.addRoutes({
-        path: `/services/${service.name}/health`,
-        methods: [apigatewayv2.HttpMethod.GET],
-        integration: serviceHealthIntegration,
-        // No authorizer - public endpoint
-      });
-
-      // Info endpoint for each service
-      const serviceInfoIntegration = new apigatewayv2_integrations.HttpUrlIntegration(
-        `${service.name}InfoIntegration`,
-        `${service.url}/actuator/info`,
-        {
-          method: apigatewayv2.HttpMethod.GET,
-        }
-      );
-
-      this.api.addRoutes({
-        path: `/services/${service.name}/info`,
-        methods: [apigatewayv2.HttpMethod.GET],
-        integration: serviceInfoIntegration,
-        // No authorizer - public endpoint
-      });
     });
 
     // Custom domain (if provided)

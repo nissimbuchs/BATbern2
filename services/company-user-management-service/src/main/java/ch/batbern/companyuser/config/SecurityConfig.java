@@ -1,5 +1,6 @@
 package ch.batbern.companyuser.config;
 
+import ch.batbern.companyuser.security.VpcInternalAuthorizationManager;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,20 +28,55 @@ import java.util.stream.Collectors;
  * Security configuration for the Company-User Management Service
  * AC10: Authentication integration with API Gateway
  * Configures role-based access control for company management endpoints with JWT authentication
+ *
+ * Method Security Strategy:
+ * - Production/Staging: @EnableMethodSecurity enforces @PreAuthorize annotations
+ * - Local Development: Method security disabled (trusted localhost environment, mirrors AWS VPC security)
  */
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
     @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri:}")
     private String jwkSetUri;
 
+    @Value("${vpc.cidr:10.1.0.0/16}")
+    private String vpcCidr;
+
+    /**
+     * Enable method-level security for production and staging environments
+     * Enforces @PreAuthorize annotations on controller methods
+     */
+    @Configuration
+    @EnableMethodSecurity(prePostEnabled = true)
+    @Profile("!local")
+    static class ProductionMethodSecurityConfig {
+    }
+
+    /**
+     * Local development security filter chain
+     * JWT validation active but method-level security disabled (trusted localhost environment)
+     * Mirrors AWS VPC security pattern: network isolation in AWS = localhost trust in local dev
+     */
+    @Bean
+    @Profile("local")
+    public SecurityFilterChain localFilterChain(HttpSecurity http) throws Exception {
+        http
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(session ->
+                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(authz -> authz
+                .anyRequest().permitAll() // Local dev: trust all inter-service calls (localhost isolation)
+            );
+
+        return http.build();
+    }
+
     /**
      * Production security filter chain with JWT authentication
      */
     @Bean
-    @Profile("!test")
+    @Profile("!test & !local")
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable()) // Disable for stateless API
@@ -49,6 +85,14 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                // Story 4.1.5: Anonymous registration - allow get-or-create user endpoint
+                .requestMatchers("/api/v1/users/get-or-create").permitAll()
+                // Current user endpoint always requires authentication (even from VPC)
+                .requestMatchers("/api/v1/users/me").authenticated()
+                // Service-to-service: Allow user profile lookups from VPC internal network
+                // OR authenticated external requests (via API Gateway with JWT)
+                .requestMatchers("/api/v1/users/*")
+                    .access(new VpcInternalAuthorizationManager(vpcCidr))
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2
@@ -75,6 +119,13 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                // Story 4.1.5: Anonymous registration - allow get-or-create user endpoint
+                .requestMatchers("/api/v1/users/get-or-create").permitAll()
+                // Current user endpoint always requires authentication (even from VPC)
+                .requestMatchers("/api/v1/users/me").authenticated()
+                // Test environment: Enforce authentication for all user endpoints
+                // (tests run from localhost but should verify authentication logic)
+                .requestMatchers("/api/v1/users/*").authenticated()
                 .anyRequest().authenticated() // Enforce authentication in tests
             )
             .exceptionHandling(exceptions -> exceptions

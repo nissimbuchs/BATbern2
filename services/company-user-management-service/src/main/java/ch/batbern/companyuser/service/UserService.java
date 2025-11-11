@@ -496,12 +496,19 @@ public class UserService {
     /**
      * Helper method to get username from current security context
      * Looks up user by Cognito User ID and returns their username
+     * Story 4.1.5: Returns "anonymous" for unauthenticated requests (anonymous registration)
      */
     private String getUsernameFromCurrentContext() {
-        String cognitoUserId = securityContext.getCurrentUserId();
-        return userRepository.findByCognitoUserId(cognitoUserId)
-                .map(User::getUsername)
-                .orElse("system");  // Fallback for system operations
+        try {
+            String cognitoUserId = securityContext.getCurrentUserId();
+            return userRepository.findByCognitoUserId(cognitoUserId)
+                    .map(User::getUsername)
+                    .orElse("system");  // Fallback for system operations
+        } catch (SecurityException e) {
+            // Story 4.1.5: Anonymous requests (no authenticated user)
+            log.debug("No authenticated user in context, using 'anonymous' for audit");
+            return "anonymous";
+        }
     }
 
 }

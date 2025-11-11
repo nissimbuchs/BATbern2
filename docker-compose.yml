@@ -154,6 +154,9 @@ services:
       # Service-to-Service Communication
       - USER_SERVICE_URL=${USER_SERVICE_URL:-http://company-user-management-service:8080}
 
+      # Application Base URL (for email confirmation links)
+      - APP_BASE_URL=${APP_BASE_URL:-http://localhost:3000}
+
       # EventBridge Configuration
       - EVENT_BUS_NAME=${EVENT_BUS_NAME:-batbern-development}
     volumes:

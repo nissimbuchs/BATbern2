@@ -77,6 +77,7 @@ const HomePage = () => {
         date={eventDate}
         location={eventLocation}
         ctaLink={registerLink}
+        eventCode={event.eventCode}
         countdownTimer={eventDateObj ? <CountdownTimer eventDate={eventDateObj} /> : undefined}
       />
 

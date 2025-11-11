@@ -1,0 +1,70 @@
+meta {
+  name: Create Anonymous Registration (No Auth)
+  type: http
+  seq: 13.1
+}
+
+post {
+  url: {{baseUrl}}/events/{{createdEventCode}}/registrations
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "firstName": "Jane",
+    "lastName": "Doe",
+    "email": "jane.doe.anonymous@example.com",
+    "company": "Test Company",
+    "role": "Architect",
+    "termsAccepted": true,
+    "communicationPreferences": {
+      "newsletterSubscribed": false,
+      "eventReminders": true
+    },
+    "specialRequests": ""
+  }
+}
+
+assert {
+  res.status: eq 201
+}
+
+tests {
+  test("should return 201 status for anonymous registration", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("should create anonymous user and registration without authentication (Story 2.2a: ADR-005)", function() {
+    const registration = res.getBody();
+
+    // Registration code format: {eventCode}-reg-{6 random chars}
+    expect(registration.registrationCode).to.be.a('string');
+    expect(registration.registrationCode).to.match(/^BATbern[0-9]+-reg-[A-Z0-9]{6}$/);
+
+    // Enriched user data from User Management Service
+    // User should be created with cognitoSync=false (cognito_id = NULL)
+    expect(registration.attendeeUsername).to.be.a('string');
+    expect(registration.attendeeFirstName).to.equal('Jane');
+    expect(registration.attendeeLastName).to.equal('Doe');
+    expect(registration.attendeeEmail).to.equal('jane.doe.anonymous@example.com');
+
+    // Registration details
+    expect(registration.eventCode).to.equal(bru.getVar("createdEventCode"));
+    expect(registration.status).to.equal('CONFIRMED'); // Story 4.1.5: Auto-set status
+    expect(registration.registrationDate).to.be.a('string'); // Story 4.1.5: Auto-set to now
+    expect(registration.createdAt).to.be.a('string');
+    expect(registration.updatedAt).to.be.a('string');
+  });
+
+  test("should verify no UUID id fields exposed (ADR-003: Meaningful Identifiers)", function() {
+    const registration = res.getBody();
+    expect(registration.id).to.be.undefined;
+    expect(registration.attendeeId).to.be.undefined;
+  });
+
+  test("should save anonymous registration code for subsequent tests", function() {
+    bru.setVar("anonymousRegistrationCode", res.getBody().registrationCode);
+    bru.setVar("anonymousAttendeeUsername", res.getBody().attendeeUsername);
+  });
+}

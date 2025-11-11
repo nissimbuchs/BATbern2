@@ -135,7 +135,7 @@ public class GenericLogoService {
      * Build CloudFront CDN URL from S3 key
      * Story 2.5.3a: Event Theme Image Upload
      *
-     * For MinIO (local dev): http://localhost:9000/{bucketName}/{s3Key}
+     * For MinIO (local dev): http://localhost:8450/{bucketName}/{s3Key}
      * For CloudFront (staging/prod): https://cdn.batbern.ch/{s3Key}
      */
     private String buildCloudFrontUrl(String s3Key) {
