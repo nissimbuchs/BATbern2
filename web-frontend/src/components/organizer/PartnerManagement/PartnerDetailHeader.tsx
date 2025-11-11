@@ -18,7 +18,7 @@ import { Box, Stack, Typography, Avatar, Chip, Button, Link, Paper } from '@mui/
 import { ArrowBack, Edit, NoteAdd, Email, CalendarMonth, Analytics } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { usePartnerDetailStore } from '@/stores/partnerDetailStore';
+import { usePartnerModalStore } from '@/stores/partnerModalStore';
 import type { PartnerResponse } from '@/services/api/partnerApi';
 
 interface PartnerDetailHeaderProps {
@@ -59,14 +59,14 @@ const getInitials = (name: string): string => {
 export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partner }) => {
   const { t } = useTranslation('partners');
   const navigate = useNavigate();
-  const { setShowEditModal } = usePartnerDetailStore();
+  const { openEditModal } = usePartnerModalStore();
 
   const handleBack = () => {
-    navigate('/partners');
+    navigate('/organizer/partners');
   };
 
   const handleEdit = () => {
-    setShowEditModal(true);
+    openEditModal(partner);
   };
 
   const companyName = partner.company?.name || partner.companyName;

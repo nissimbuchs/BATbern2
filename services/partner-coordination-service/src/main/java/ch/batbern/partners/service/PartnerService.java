@@ -45,26 +45,27 @@ public class PartnerService {
     private final SecurityContextHelper securityContextHelper;
 
     /**
-     * List all partners with optional filtering.
+     * List all partners with optional filtering and HTTP enrichment.
      *
      * @param filter Filter expression (e.g., "partnershipLevel=gold,isActive=true")
      * @param sort Sort expression (e.g., "partnershipLevel,desc")
      * @param page Page number (0-indexed)
      * @param size Page size
+     * @param includes Set of resources to include (e.g., "company", "contacts")
      * @return List of partner responses
      */
     @Timed(value = "partner.list", description = "Time taken to list partners")
-    public List<PartnerResponse> listPartners(String filter, String sort, int page, int size) {
-        log.debug("Listing partners with filter: {}, sort: {}, page: {}, size: {}", filter, sort, page, size);
+    public List<PartnerResponse> listPartners(String filter, String sort, int page, int size, Set<String> includes) {
+        log.debug("Listing partners with filter: {}, sort: {}, page: {}, size: {}, includes: {}", filter, sort, page, size, includes);
 
         List<Partner> partners;
 
-        // Simple filtering logic
-        if (filter != null && filter.contains("partnershipLevel=")) {
+        // Simple filtering logic - support both : and = syntax
+        if (filter != null && (filter.contains("partnershipLevel:") || filter.contains("partnershipLevel="))) {
             String level = extractFilterValue(filter, "partnershipLevel");
             PartnershipLevel partnershipLevel = PartnershipLevel.valueOf(level.toUpperCase());
             partners = partnerRepository.findByPartnershipLevel(partnershipLevel);
-        } else if (filter != null && filter.contains("isActive=")) {
+        } else if (filter != null && (filter.contains("isActive:") || filter.contains("isActive="))) {
             boolean isActive = Boolean.parseBoolean(extractFilterValue(filter, "isActive"));
             partners = isActive
                     ? partnerRepository.findActivePartners(java.time.LocalDate.now())
@@ -74,7 +75,16 @@ public class PartnerService {
         }
 
         return partners.stream()
-                .map(this::mapToResponse)
+                .map(partner -> {
+                    PartnerResponse response = mapToResponse(partner);
+
+                    // HTTP enrichment per ADR-004
+                    if (includes != null && includes.contains("company")) {
+                        enrichWithCompanyData(response, partner.getCompanyName());
+                    }
+
+                    return response;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -96,15 +106,7 @@ public class PartnerService {
 
         // HTTP enrichment per ADR-004
         if (includes.contains("company")) {
-            CompanyResponse companyDTO = companyServiceClient.getCompany(companyName);
-            CompanyInfo companyInfo = new CompanyInfo();
-            companyInfo.setCompanyName(companyDTO.getName());  // Generated DTO uses getName()
-            companyInfo.setDisplayName(companyDTO.getDisplayName());
-            // CompanyLogo is an object - extract URL if present
-            if (companyDTO.getLogo() != null && companyDTO.getLogo().getUrl() != null) {
-                companyInfo.setLogoUrl(companyDTO.getLogo().getUrl().toString());
-            }
-            response.setCompany(companyInfo);
+            enrichWithCompanyData(response, companyName);
         }
 
         return response;
@@ -225,10 +227,43 @@ public class PartnerService {
         return ch.batbern.partners.dto.generated.PartnershipLevel.valueOf(level.name());
     }
 
+    /**
+     * Enrich partner response with company data via HTTP enrichment (ADR-004).
+     *
+     * @param response Partner response to enrich
+     * @param companyName Company name to fetch
+     */
+    private void enrichWithCompanyData(PartnerResponse response, String companyName) {
+        try {
+            CompanyResponse companyDTO = companyServiceClient.getCompany(companyName);
+            CompanyInfo companyInfo = new CompanyInfo();
+            companyInfo.setCompanyName(companyDTO.getName());
+            companyInfo.setDisplayName(companyDTO.getDisplayName());
+            companyInfo.setName(companyDTO.getName());
+            if (companyDTO.getIndustry() != null) {
+                companyInfo.setIndustry(companyDTO.getIndustry());
+            }
+            if (companyDTO.getWebsite() != null) {
+                companyInfo.setWebsite(companyDTO.getWebsite().toString());
+            }
+            // CompanyLogo is an object - extract URL if present
+            if (companyDTO.getLogo() != null && companyDTO.getLogo().getUrl() != null) {
+                companyInfo.setLogoUrl(companyDTO.getLogo().getUrl().toString());
+            }
+            response.setCompany(companyInfo);
+        } catch (Exception e) {
+            log.warn("Failed to enrich partner {} with company data: {}", companyName, e.getMessage());
+            // Continue without enrichment - fail gracefully
+        }
+    }
+
     private String extractFilterValue(String filter, String key) {
         String[] parts = filter.split(",");
         for (String part : parts) {
-            if (part.startsWith(key + "=")) {
+            // Support both colon (:) and equals (=) syntax for flexibility
+            if (part.startsWith(key + ":")) {
+                return part.substring(key.length() + 1);
+            } else if (part.startsWith(key + "=")) {
                 return part.substring(key.length() + 1);
             }
         }

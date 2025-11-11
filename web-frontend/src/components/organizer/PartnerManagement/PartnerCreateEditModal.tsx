@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -26,6 +26,7 @@ import { PartnershipTierSelect } from './PartnershipTierSelect';
 import { PartnershipDatePicker } from './PartnershipDatePicker';
 import { TierBenefitsPreview } from './TierBenefitsPreview';
 import type { CreatePartnerFormData, UpdatePartnerFormData } from '@/schemas/partnerSchema';
+import type { components } from '@/types/generated/company-api.types';
 
 export const PartnerCreateEditModal: React.FC = () => {
   const { t } = useTranslation('partners');
@@ -37,6 +38,11 @@ export const PartnerCreateEditModal: React.FC = () => {
   const isCreate = mode === 'create';
   const isPending = createMutation.isPending || updateMutation.isPending;
   const error = createMutation.error || updateMutation.error;
+
+  // Track selected company for autocomplete (company object vs form stores just name string)
+  const [selectedCompany, setSelectedCompany] = useState<
+    components['schemas']['CompanyResponse'] | null
+  >(null);
 
   const {
     control,
@@ -89,12 +95,22 @@ export const PartnerCreateEditModal: React.FC = () => {
             }
       );
 
+      // Reset selected company when modal opens
+      setSelectedCompany(null);
+
       // Autofocus first field when modal opens
       setTimeout(() => {
         firstFieldRef.current?.focus();
       }, 100);
     }
   }, [isOpen, mode, partnerToEdit, reset, isCreate]);
+
+  // Close modal on successful mutation (before navigation happens)
+  useEffect(() => {
+    if (createMutation.isSuccess || updateMutation.isSuccess) {
+      closeModal();
+    }
+  }, [createMutation.isSuccess, updateMutation.isSuccess, closeModal]);
 
   const onSubmit = (data: CreatePartnerFormData | UpdatePartnerFormData) => {
     if (isCreate) {
@@ -160,8 +176,11 @@ export const PartnerCreateEditModal: React.FC = () => {
                 control={control}
                 render={({ field }) => (
                   <CompanyAutocomplete
-                    value={null}
-                    onChange={(company) => field.onChange(company?.name || '')}
+                    value={selectedCompany}
+                    onChange={(company) => {
+                      setSelectedCompany(company);
+                      field.onChange(company?.name || '');
+                    }}
                     error={'companyName' in errors ? errors.companyName?.message : undefined}
                     disabled={isPending}
                     inputRef={firstFieldRef}

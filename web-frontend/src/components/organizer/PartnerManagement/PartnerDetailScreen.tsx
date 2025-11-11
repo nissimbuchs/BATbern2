@@ -20,6 +20,7 @@ import { PartnerMeetingsTab } from './PartnerMeetingsTab';
 import PartnerActivityTab from './PartnerActivityTab';
 import PartnerNotesTab from './PartnerNotesTab';
 import { PartnerSettingsTab } from './PartnerSettingsTab';
+import { PartnerCreateEditModal } from './PartnerCreateEditModal';
 
 /**
  * PartnerDetailScreen Component
@@ -160,6 +161,9 @@ export const PartnerDetailScreen: React.FC = () => {
           />
         )}
       </Box>
+
+      {/* Edit Partner Modal */}
+      <PartnerCreateEditModal />
     </Container>
   );
 };

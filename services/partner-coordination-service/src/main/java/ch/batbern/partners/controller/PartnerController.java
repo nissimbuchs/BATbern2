@@ -38,7 +38,8 @@ public class PartnerController implements PartnersApi {
 
         log.debug("GET /partners - filter: {}, include: {}, page: {}, size: {}", filter, include, page, size);
 
-        List<PartnerResponse> partners = partnerService.listPartners(filter, null, page, size);
+        Set<String> includes = parseIncludes(include);
+        List<PartnerResponse> partners = partnerService.listPartners(filter, null, page, size, includes);
 
         // Create pagination metadata
         PaginationMetadata metadata = new PaginationMetadata();

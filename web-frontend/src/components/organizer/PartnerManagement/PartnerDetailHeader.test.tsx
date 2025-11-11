@@ -34,11 +34,11 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
-// Mock partner detail store
-const mockSetShowEditModal = vi.fn();
-vi.mock('@/stores/partnerDetailStore', () => ({
-  usePartnerDetailStore: () => ({
-    setShowEditModal: mockSetShowEditModal,
+// Mock partner modal store
+const mockOpenEditModal = vi.fn();
+vi.mock('@/stores/partnerModalStore', () => ({
+  usePartnerModalStore: () => ({
+    openEditModal: mockOpenEditModal,
   }),
 }));
 
@@ -178,7 +178,7 @@ describe('PartnerDetailHeader Component', () => {
       const editButton = screen.getByRole('button', { name: /Edit Partner/i });
       await user.click(editButton);
 
-      expect(mockSetShowEditModal).toHaveBeenCalledWith(true);
+      expect(mockOpenEditModal).toHaveBeenCalledWith(mockPartner);
     });
 
     it('should_disableEpic8Buttons_when_rendered', async () => {
@@ -217,7 +217,7 @@ describe('PartnerDetailHeader Component', () => {
       const backButton = screen.getByRole('button', { name: /Back to Partner Directory/i });
       await user.click(backButton);
 
-      expect(mockNavigate).toHaveBeenCalledWith('/partners');
+      expect(mockNavigate).toHaveBeenCalledWith('/organizer/partners');
     });
   });
 

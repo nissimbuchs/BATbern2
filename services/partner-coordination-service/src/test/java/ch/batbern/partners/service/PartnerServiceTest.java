@@ -205,7 +205,7 @@ class PartnerServiceTest {
         when(partnerRepository.findAll()).thenReturn(partners);
 
         // When
-        List<PartnerResponse> responses = partnerService.listPartners(null, null, 0, 20);
+        List<PartnerResponse> responses = partnerService.listPartners(null, null, 0, 20, null);
 
         // Then
         assertThat(responses).hasSize(1);
@@ -218,8 +218,8 @@ class PartnerServiceTest {
         List<Partner> partners = Arrays.asList(partner);
         when(partnerRepository.findByPartnershipLevel(PartnershipLevel.GOLD)).thenReturn(partners);
 
-        // When
-        List<PartnerResponse> responses = partnerService.listPartners("partnershipLevel=gold", null, 0, 20);
+        // When (accepts both uppercase and lowercase, but uppercase is clearer)
+        List<PartnerResponse> responses = partnerService.listPartners("partnershipLevel=GOLD", null, 0, 20, null);
 
         // Then
         assertThat(responses).hasSize(1);
@@ -233,7 +233,7 @@ class PartnerServiceTest {
         when(partnerRepository.findActivePartners(any(LocalDate.class))).thenReturn(partners);
 
         // When
-        List<PartnerResponse> responses = partnerService.listPartners("isActive=true", null, 0, 20);
+        List<PartnerResponse> responses = partnerService.listPartners("isActive=true", null, 0, 20, null);
 
         // Then
         assertThat(responses).hasSize(1);
