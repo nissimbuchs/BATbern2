@@ -196,7 +196,7 @@ class TopicSuggestionControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)))
                 .andExpect(jsonPath("$[*].suggestedTopic").value(hasItems("Topic 1", "Topic 2")))
-                .andExpect(jsonPath("$[*].status").value(everyItem(is("submitted"))))
+                .andExpect(jsonPath("$[*].status").value(everyItem(is("SUBMITTED"))))
                 .andExpect(jsonPath("$[*].suggestedAt").exists());
     }
 
