@@ -38,7 +38,7 @@ export interface DomainServiceConstructProps {
  * - Fargate task definition with ARM64 architecture
  * - Container with Docker build from source
  * - Spring Boot configuration (profiles, database, Cognito)
- * - Internal ALB for service-to-service communication
+ * - Service Connect for direct service-to-service communication (no ALB needed)
  * - Health checks via Spring Boot Actuator
  * - CPU-based auto-scaling
  * - CloudWatch logging with environment-based retention
@@ -47,12 +47,12 @@ export interface DomainServiceConstructProps {
  * Used by: Event Management, Speaker Coordination, Partner Coordination,
  *          Company Management, and Attendee Experience services
  *
- * @returns Object with service and serviceUrl properties
+ * @returns Object with service property
  */
 export function createDomainService(
   scope: Construct,
   props: DomainServiceConstructProps
-): { service: ecsPatterns.ApplicationLoadBalancedFargateService; serviceUrl: string } {
+): { service: ecs.FargateService } {
 
     const envName = props.config.envName;
     const isProd = envName === 'production';
@@ -196,51 +196,34 @@ export function createDomainService(
       'Allow HTTP inbound for Service Connect inter-service communication'
     );
 
-    // Create service with INTERNAL ALB
-    const service = new ecsPatterns.ApplicationLoadBalancedFargateService(scope, 'Service', {
+    // Create service with Service Connect (no ALB needed)
+    const service = new ecs.FargateService(scope, 'Service', {
       cluster: props.cluster,
       taskDefinition,
-      publicLoadBalancer: false, // Internal ALB only
       desiredCount: isProd ? 2 : 1,
-      healthCheckGracePeriod: cdk.Duration.seconds(180), // Services take ~105s to start
       assignPublicIp: false,
-      taskSubnets: {
+      vpcSubnets: {
         subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
       },
-      listenerPort: 80,
       minHealthyPercent: 100, // Ensure zero-downtime deployments
       maxHealthyPercent: 200, // Allow temporary extra tasks during deployments
       securityGroups: [serviceSecurityGroup], // Use explicit security group
-    });
-
-    // Configure health checks
-    service.targetGroup.configureHealthCheck({
-      path: '/actuator/health',
-      interval: cdk.Duration.seconds(30),
-      timeout: cdk.Duration.seconds(5),
-      healthyThresholdCount: 2,
-      unhealthyThresholdCount: 3,
-    });
-
-    // Enable Service Connect for service-to-service communication
-    // This allows services to communicate using DNS names (e.g., http://company-user-management:8080)
-    // Must use addPropertyOverride because ApplicationLoadBalancedFargateService doesn't expose Service Connect
-    const cfnService = service.service.node.defaultChild as ecs.CfnService;
-    cfnService.addPropertyOverride('ServiceConnectConfiguration', {
-      Enabled: true,
-      Namespace: 'batbern.local',
-      Services: [{
-        PortName: `${serviceName}-port`,
-        DiscoveryName: serviceName,
-        ClientAliases: [{
-          Port: 8080,
-          DnsName: serviceName,
+      enableExecuteCommand: true, // Allow ECS Exec for debugging
+      // Enable Service Connect for service-to-service communication
+      // This provides automatic DNS-based discovery without requiring ALBs
+      // NOTE: Namespace is inherited from cluster's serviceConnectDefaults
+      serviceConnectConfiguration: {
+        services: [{
+          portMappingName: `${serviceName}-port`, // Must match container port mapping name
+          discoveryName: serviceName, // Service discovery name in CloudMap
+          dnsName: serviceName, // DNS name for other services to use
+          port: 8080, // Port where service is accessible
         }],
-      }],
+      },
     });
 
     // Configure auto-scaling
-    const scaling = service.service.autoScaleTaskCount({
+    const scaling = service.autoScaleTaskCount({
       minCapacity: isProd ? 2 : 1,
       maxCapacity: (isProd ? 2 : 1) * 4,
     });
@@ -251,14 +234,17 @@ export function createDomainService(
       scaleOutCooldown: cdk.Duration.seconds(60),
     });
 
-    // Service URL for ALB-based routing (kept for backwards compatibility)
-    const serviceUrl = `http://${service.loadBalancer.loadBalancerDnsName}`;
-
     // Output Service Connect DNS name for debugging
     new cdk.CfnOutput(scope, 'ServiceConnectDNS', {
       value: `http://${serviceName}:8080`,
-      description: `${serviceName} Service Connect DNS endpoint`,
+      description: `${serviceName} Service Connect DNS endpoint (accessible within VPC)`,
       exportName: `${envName}-${serviceName}-service-connect-dns`,
+    });
+
+    new cdk.CfnOutput(scope, 'ServiceArn', {
+      value: service.serviceArn,
+      description: `${serviceName} ECS Service ARN`,
+      exportName: `${envName}-${serviceName}-service-arn`,
     });
 
     // Apply tags
@@ -266,5 +252,5 @@ export function createDomainService(
     cdk.Tags.of(scope).add('Component', componentTag);
     cdk.Tags.of(scope).add('Project', 'BATbern');
 
-    return { service, serviceUrl };
+    return { service };
 }

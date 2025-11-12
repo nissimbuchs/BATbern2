@@ -27,10 +27,10 @@ export interface PartnerCoordinationStackProps extends cdk.StackProps {
  *
  * Domain microservice for managing partners, sponsors, and exhibitors.
  * Handles /api/v1/partners routes.
+ * Uses Service Connect for direct service-to-service communication (no ALB).
  */
 export class PartnerCoordinationStack extends cdk.Stack {
-  public readonly service: ecsPatterns.ApplicationLoadBalancedFargateService;
-  public readonly serviceUrl: string;
+  public readonly service: ecs.FargateService;
 
   constructor(scope: Construct, id: string, props: PartnerCoordinationStackProps) {
     super(scope, id, props);
@@ -67,7 +67,6 @@ export class PartnerCoordinationStack extends cdk.Stack {
     });
 
     this.service = domainService.service;
-    this.serviceUrl = domainService.serviceUrl;
 
     // Grant EventBridge permissions for domain events
     // Service publishes: PartnerCreatedEvent, PartnerUpdatedEvent, TopicVoteSubmittedEvent, TopicSuggestionSubmittedEvent
@@ -80,12 +79,5 @@ export class PartnerCoordinationStack extends cdk.Stack {
         resources: [props.eventBus.eventBusArn],
       }));
     }
-
-    // Outputs
-    new cdk.CfnOutput(this, 'ServiceUrl', {
-      value: this.serviceUrl,
-      description: 'Partner Coordination Service internal URL',
-      exportName: `${envName}-partner-coordination-url`,
-    });
   }
 }

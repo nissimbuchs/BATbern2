@@ -24,10 +24,10 @@ export interface AttendeeExperienceStackProps extends cdk.StackProps {
  *
  * Domain microservice for managing attendee content, personalization, and engagement.
  * Handles /api/v1/content routes.
+ * Uses Service Connect for direct service-to-service communication (no ALB).
  */
 export class AttendeeExperienceStack extends cdk.Stack {
-  public readonly service: ecsPatterns.ApplicationLoadBalancedFargateService;
-  public readonly serviceUrl: string;
+  public readonly service: ecs.FargateService;
 
   constructor(scope: Construct, id: string, props: AttendeeExperienceStackProps) {
     super(scope, id, props);
@@ -55,13 +55,5 @@ export class AttendeeExperienceStack extends cdk.Stack {
     });
 
     this.service = domainService.service;
-    this.serviceUrl = domainService.serviceUrl;
-
-    // Outputs
-    new cdk.CfnOutput(this, 'ServiceUrl', {
-      value: this.serviceUrl,
-      description: 'Attendee Experience Service internal URL',
-      exportName: `${envName}-attendee-experience-url`,
-    });
   }
 }
