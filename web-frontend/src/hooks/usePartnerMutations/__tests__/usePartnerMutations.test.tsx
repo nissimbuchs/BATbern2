@@ -191,7 +191,7 @@ describe('usePartnerMutations Hooks - Story 2.8.3', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockNavigate).toHaveBeenCalledWith('/partners/navigate-test-company');
+      expect(mockNavigate).toHaveBeenCalledWith('/organizer/partners/navigate-test-company');
     });
   });
 

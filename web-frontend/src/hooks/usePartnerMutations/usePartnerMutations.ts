@@ -36,7 +36,7 @@ export const useCreatePartner = () => {
       queryClient.invalidateQueries({ queryKey: ['partner-statistics'] });
 
       // Navigate to detail view
-      navigate(`/partners/${data.companyName}`);
+      navigate(`/organizer/partners/${data.companyName}`);
     },
   });
 };
