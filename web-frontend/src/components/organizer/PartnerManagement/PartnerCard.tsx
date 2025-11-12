@@ -82,7 +82,7 @@ const PartnerCardComponent: React.FC<PartnerCardProps> = ({ partner }) => {
   }, []);
 
   const handleViewDetails = () => {
-    navigate(`/partners/${partner.companyName}`);
+    navigate(`/organizer/partners/${partner.companyName}`);
   };
 
   const logoUrl = partner.company?.logoUrl;
