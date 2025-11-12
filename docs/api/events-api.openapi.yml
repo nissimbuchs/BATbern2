@@ -1778,6 +1778,11 @@ components:
           format: uri
           description: Speaker's profile picture URL (from User entity)
           example: https://cdn.batbern.ch/logos/2025/users/john.doe/profile.jpg
+        bio:
+          type: string
+          description: Speaker's biography (from User entity)
+          maxLength: 2000
+          example: Software engineer passionate about cloud architecture and security
         speakerRole:
           type: string
           enum: [PRIMARY_SPEAKER, CO_SPEAKER, MODERATOR, PANELIST]

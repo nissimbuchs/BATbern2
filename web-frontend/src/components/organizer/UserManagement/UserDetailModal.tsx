@@ -121,6 +121,18 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, open, onClose, 
             </Grid>
           )}
 
+          {/* Bio Section */}
+          {user.bio && (
+            <Grid size={12}>
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                {t('modal.userDetail.bio', 'Bio')}
+              </Typography>
+              <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                {user.bio}
+              </Typography>
+            </Grid>
+          )}
+
           {/* Additional Info Section */}
           <Grid size={12}>
             <Divider />

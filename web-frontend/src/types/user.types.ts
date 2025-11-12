@@ -67,6 +67,7 @@ export interface CreateUserFormData {
   firstName: string;
   lastName: string;
   email: string;
+  bio?: string;
   companyId?: string;
   initialRoles: Role[];
 }
