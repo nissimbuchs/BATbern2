@@ -313,17 +313,9 @@ class CompanyControllerTest {
     }
 
     /**
-     * Test 4.11: should_returnUnauthorized_when_notAuthenticated
-     * Verifies that unauthenticated requests are rejected
-     * Returns 401 Unauthorized for anonymous/unauthenticated users
-     * Story 1.16.2: use company name instead of UUID
+     * Test 4.11: REMOVED - GET /companies/{name} is now public (Story 4.1: Partner Showcase)
+     * Public company endpoint allows partner showcase enrichment without authentication
      */
-    @Test
-    void should_returnUnauthorized_when_notAuthenticated() throws Exception {
-        // Story 1.16.2: use company name instead of UUID
-        mockMvc.perform(get("/api/v1/companies/{name}", testCompanyName))
-                .andExpect(status().isUnauthorized()); // 401 for unauthenticated users
-    }
 
     /**
      * Test 4.12: should_returnForbidden_when_insufficientPermissions
