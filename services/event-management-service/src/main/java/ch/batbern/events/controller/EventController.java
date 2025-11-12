@@ -348,6 +348,7 @@ public class EventController {
                             speakerMap.put("lastName", userProfile.getLastName());
                             speakerMap.put("company", userProfile.getCompanyId());
                             speakerMap.put("profilePictureUrl", userProfile.getProfilePictureUrl());
+                            speakerMap.put("bio", userProfile.getBio());
                         } else {
                             // Fallback: username not set (shouldn't happen with V8 migration)
                             log.warn("SessionUser {} has no username set", sessionUser.getId());
@@ -356,6 +357,7 @@ public class EventController {
                             speakerMap.put("lastName", "Speaker");
                             speakerMap.put("company", null);
                             speakerMap.put("profilePictureUrl", null);
+                            speakerMap.put("bio", null);
                         }
                     } catch (Exception e) {
                         // Log error but don't fail the entire request
@@ -366,6 +368,7 @@ public class EventController {
                         speakerMap.put("lastName", "Speaker");
                         speakerMap.put("company", null);
                         speakerMap.put("profilePictureUrl", null);
+                        speakerMap.put("bio", null);
                     }
 
                     return speakerMap;

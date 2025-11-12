@@ -1220,6 +1220,12 @@ components:
         bio:
           type: string
           maxLength: 2000
+        companyId:
+          type: string
+          description: Company name (unique identifier, alphanumeric only)
+          pattern: '^[a-zA-Z0-9]{1,12}$'
+          maxLength: 12
+          example: PostFinance
 
     UserSearchResponse:
       type: object

@@ -758,6 +758,11 @@ export interface components {
        */
       profilePictureUrl?: string;
       /**
+       * @description Speaker's biography (from User entity)
+       * @example Software engineer passionate about cloud architecture and security
+       */
+      bio?: string;
+      /**
        * @description Speaker's role in the session:
        *     - PRIMARY_SPEAKER: Main presenter
        *     - CO_SPEAKER: Co-presenter
