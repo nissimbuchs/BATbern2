@@ -55,7 +55,7 @@ public class SecurityConfig {
 
     /**
      * Local development security filter chain
-     * JWT validation active but method-level security disabled (trusted localhost environment)
+     * JWT validation active but all authenticated requests permitted (trusted localhost environment)
      * Mirrors AWS VPC security pattern: network isolation in AWS = localhost trust in local dev
      */
     @Bean
@@ -66,7 +66,19 @@ public class SecurityConfig {
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authz -> authz
-                .anyRequest().permitAll() // Local dev: trust all inter-service calls (localhost isolation)
+                .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                // Public company endpoint (GET only for partner showcase enrichment)
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/companies/*").permitAll()
+                // Public user profile endpoint (GET only for service-to-service calls from localhost)
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/users/*").permitAll()
+                .anyRequest().authenticated() // Require authentication but accept any authenticated user
+            )
+            .oauth2ResourceServer(oauth2 -> oauth2
+                .jwt(jwt -> jwt
+                    .decoder(jwtDecoder())
+                    .jwtAuthenticationConverter(jwtAuthenticationConverter())
+                )
             );
 
         return http.build();
@@ -87,6 +99,8 @@ public class SecurityConfig {
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 // Story 4.1.5: Anonymous registration - allow get-or-create user endpoint
                 .requestMatchers("/api/v1/users/get-or-create").permitAll()
+                // Public company endpoint (GET only for partner showcase enrichment)
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/companies/*").permitAll()
                 // Current user endpoint always requires authentication (even from VPC)
                 .requestMatchers("/api/v1/users/me").authenticated()
                 // Service-to-service: Allow user profile lookups from VPC internal network
@@ -121,6 +135,8 @@ public class SecurityConfig {
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 // Story 4.1.5: Anonymous registration - allow get-or-create user endpoint
                 .requestMatchers("/api/v1/users/get-or-create").permitAll()
+                // Public company endpoint (GET only for partner showcase enrichment)
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/companies/*").permitAll()
                 // Current user endpoint always requires authentication (even from VPC)
                 .requestMatchers("/api/v1/users/me").authenticated()
                 // Test environment: Enforce authentication for all user endpoints

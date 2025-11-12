@@ -29,9 +29,7 @@ export const EventLogistics = ({ event }: EventLogisticsProps) => {
           <Calendar className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
           <div>
             <p className="text-sm text-zinc-400">{t('public.logistics.date')}</p>
-            <p className="text-lg font-light text-zinc-100">
-              {format(eventDate, 'PPP')}
-            </p>
+            <p className="text-lg font-light text-zinc-100">{format(eventDate, 'PPP')}</p>
           </div>
         </div>
       )}

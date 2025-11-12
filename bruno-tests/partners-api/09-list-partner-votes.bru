@@ -1,0 +1,58 @@
+meta {
+  name: List Partner Votes
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/partners/{{testPartnerCompanyName}}/votes
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  Origin: https://staging.batbern.ch
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: de-CH
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("should return 200 status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return array of votes", function() {
+    const body = res.getBody();
+    expect(body).to.be.an('array');
+  });
+
+  test("votes should have required fields", function() {
+    const body = res.getBody();
+    if (body && body.length > 0) {
+      const vote = body[0];
+      expect(vote.topicId).to.exist;
+      expect(vote.voteValue).to.be.a('number');
+      expect(vote.voteValue).to.be.within(1, 5);
+      expect(vote.voteWeight).to.be.a('number');
+      expect(vote.votedAt).to.exist;
+    }
+  });
+
+  test("should accept X-Correlation-ID header", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should have CORS headers", function() {
+    const corsHeader = res.getHeader('access-control-allow-origin');
+    expect(corsHeader).to.exist;
+  });
+}

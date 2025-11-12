@@ -220,6 +220,12 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
             cleanedData[field as keyof typeof cleanedData];
         });
 
+        // Story 1.16.3: Include logoUploadId if a new logo was uploaded during edit
+        if (logoUploadId) {
+          (partialUpdate as CreateCompanyRequest & { logoUploadId?: string }).logoUploadId =
+            logoUploadId;
+        }
+
         await onSubmit(partialUpdate as UpdateCompanyRequest, {
           isPartialUpdate: true,
           changedFields,

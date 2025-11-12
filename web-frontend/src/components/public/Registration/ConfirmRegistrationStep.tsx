@@ -14,7 +14,11 @@ export interface ConfirmRegistrationStepProps {
   /** Current form data */
   formData: CreateRegistrationRequest;
   /** Form data update handler */
-  setFormData: (data: CreateRegistrationRequest | ((prev: CreateRegistrationRequest) => CreateRegistrationRequest)) => void;
+  setFormData: (
+    data:
+      | CreateRegistrationRequest
+      | ((prev: CreateRegistrationRequest) => CreateRegistrationRequest)
+  ) => void;
   /** Handler to edit personal details (go back to Step 1) */
   onEdit: () => void;
 }
@@ -76,17 +80,15 @@ export const ConfirmRegistrationStep = ({
               setFormData((prev) => ({
                 ...prev,
                 communicationPreferences: {
-                  newsletterSubscribed: prev.communicationPreferences?.newsletterSubscribed ?? false,
+                  newsletterSubscribed:
+                    prev.communicationPreferences?.newsletterSubscribed ?? false,
                   eventReminders: !!checked,
                 },
               }))
             }
             className="mt-0.5"
           />
-          <label
-            htmlFor="eventReminders"
-            className="text-sm text-zinc-300 cursor-pointer"
-          >
+          <label htmlFor="eventReminders" className="text-sm text-zinc-300 cursor-pointer">
             Send me event reminders (1 week and 1 day before)
           </label>
         </div>
@@ -106,10 +108,7 @@ export const ConfirmRegistrationStep = ({
             }
             className="mt-0.5"
           />
-          <label
-            htmlFor="newsletter"
-            className="text-sm text-zinc-300 cursor-pointer"
-          >
+          <label htmlFor="newsletter" className="text-sm text-zinc-300 cursor-pointer">
             Subscribe to BATbern newsletter (monthly updates)
           </label>
         </div>
@@ -123,9 +122,7 @@ export const ConfirmRegistrationStep = ({
         <Textarea
           id="specialRequests"
           value={formData.specialRequests || ''}
-          onChange={(e) =>
-            setFormData((prev) => ({ ...prev, specialRequests: e.target.value }))
-          }
+          onChange={(e) => setFormData((prev) => ({ ...prev, specialRequests: e.target.value }))}
           placeholder="Dietary requirements, accessibility needs, etc."
           className="bg-zinc-900 border-zinc-800 text-zinc-100 min-h-[100px]"
           rows={4}
@@ -146,10 +143,7 @@ export const ConfirmRegistrationStep = ({
             }
             className="mt-0.5"
           />
-          <label
-            htmlFor="terms"
-            className="text-sm text-zinc-300 cursor-pointer"
-          >
+          <label htmlFor="terms" className="text-sm text-zinc-300 cursor-pointer">
             I agree to the{' '}
             <a
               href="/terms"

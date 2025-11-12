@@ -1,0 +1,40 @@
+meta {
+  name: Unauthorized Request (401)
+  type: http
+  seq: 16
+}
+
+get {
+  url: {{baseUrl}}/partners
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: https://staging.batbern.ch
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: de-CH
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 401
+}
+
+tests {
+  test("should return 401 status when no JWT token provided", function() {
+    expect(res.getStatus()).to.equal(401);
+  });
+
+  test("should have CORS headers even on error", function() {
+    const corsHeader = res.getHeader('access-control-allow-origin');
+    expect(corsHeader).to.exist;
+  });
+
+  test("should return WWW-Authenticate header", function() {
+    const wwwAuth = res.getHeader('www-authenticate');
+    if (wwwAuth) {
+      expect(wwwAuth).to.include('Bearer');
+    }
+  });
+}

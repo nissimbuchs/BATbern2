@@ -1,11 +1,18 @@
 # Partner Coordination API
 
-**Last Updated**: 2025-11-02
+**Last Updated**: 2025-11-08
 **ADR References**:
 - [ADR-003: Meaningful Identifiers in Public APIs](./ADR-003-meaningful-identifiers-public-apis.md)
 - [ADR-004: Factor User Fields from Domain Entities](./ADR-004-factor-user-fields-from-domain-entities.md)
 
-**Important**: Partner is company-centric. PartnerContact references User entity (ADR-004). PartnerContact does NOT duplicate email, name, photo fields from User. API responses combine User + PartnerContact data via JPQL joins.
+**Important (ADR-003 + ADR-004)**: Partner is company-centric. Partner entity stores `companyName` (meaningful ID), NOT `companyId` UUID. PartnerContact stores `username` (meaningful ID), NOT `userId` UUID. PartnerContact does NOT duplicate email, name, photo fields from User. API responses combine User + PartnerContact data via HTTP enrichment (calls to User Service API).
+
+**Service Integration Pattern (ADR-003)**:
+- Partner service calls Company Service: `GET /api/v1/companies/{companyName}`
+- Partner service calls User Service: `GET /api/v1/users/{username}`
+- NO JPQL joins across service boundaries (microservices pattern)
+- HTTP clients with JWT token propagation for authentication
+- Caching: 15-minute TTL for HTTP responses (Caffeine)
 
 This document outlines the Partner Coordination Domain API, which handles partner relationship management, strategic topic voting, partner meeting coordination, and partnership lifecycle management.
 
@@ -735,10 +742,11 @@ Partners receive comprehensive analytics including:
 - **Brand Exposure**: Logo displays, mentions, and promotional reach
 - **ROI Calculations**: Estimated value vs. partnership investment
 
-**Note on Employee Attendance:** Partner employee attendance metrics are calculated by:
-1. Querying User Service: `GET /api/v1/users?company={companyId}` to get list of employees
-2. Querying Event Registration Service for attendance records of those users
+**Note on Employee Attendance (ADR-003 HTTP Integration):** Partner employee attendance metrics are calculated by:
+1. HTTP call to User Service: `GET /api/v1/users?company={companyName}` to get list of employees (using meaningful ID)
+2. HTTP call to Event Registration Service for attendance records of those users
 3. Aggregating attendance data across all events for analytics
+4. All cross-service communication via HTTP APIs with JWT token propagation
 
 ### Notification System
 

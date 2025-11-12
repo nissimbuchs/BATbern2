@@ -15,11 +15,18 @@
 **Deliverable**: Partners can vote on topics, submit suggestions, and organizers can coordinate seasonal partner meetings with automated scheduling and materials.
 
 **Architecture Context**:
-- **Core Service**: Partner Coordination Service (Java 21 + Spring Boot 3.2)
-- **Database**: PostgreSQL with topic voting and meeting management tables
+- **Core Service**: Partner Coordination Service (Java 21 + Spring Boot 3.2) - ✅ **DONE in Story 2.7** (Epic 2)
+- **Database**: PostgreSQL with topic voting and meeting management tables - ✅ **DONE in Story 2.7**
+- **Frontend Foundation**: Basic partner CRUD in Story 2.8 (Epic 2) - organizer partner directory & detail views
 - **Integration**: Event Management Service for topic voting and backlog integration
 
+**Prerequisites:**
+- ✅ Story 2.7 (Partner Coordination Service Foundation) - Backend APIs complete
+- Story 2.8 (Partner Management Frontend) - Basic organizer CRUD interface (Epic 2)
+
 **Duration**: 4 weeks (Weeks 47-50)
+
+**Note:** Epic 8 builds on Story 2.7 (backend) + Story 2.8 (basic frontend) to add advanced partner portal features: analytics dashboards, interactive topic voting, and automated meeting coordination.
 
 ---
 

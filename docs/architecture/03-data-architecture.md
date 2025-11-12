@@ -1830,10 +1830,10 @@ CREATE INDEX idx_logos_entity_association ON logos(associated_entity_type, assoc
 ### Partner Coordination Service Database Schema
 
 ```sql
--- Partners table
+-- Partners table (ADR-003: stores companyName, NOT company_id UUID)
 CREATE TABLE partners (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    company_id UUID NOT NULL UNIQUE, -- References company service
+    company_name VARCHAR(12) NOT NULL UNIQUE, -- ADR-003: Meaningful ID, NO UUID FK
     partnership_level VARCHAR(50) NOT NULL CHECK (partnership_level IN (
         'bronze', 'silver', 'gold', 'platinum', 'strategic'
     )),
@@ -1842,6 +1842,19 @@ CREATE TABLE partners (
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Partner contacts (ADR-003: stores username, NOT user_id UUID)
+CREATE TABLE partner_contacts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    partner_id UUID NOT NULL REFERENCES partners(id) ON DELETE CASCADE,
+    username VARCHAR(100) NOT NULL, -- ADR-003: Meaningful ID, NO UUID FK to users
+    contact_role VARCHAR(50) NOT NULL CHECK (contact_role IN (
+        'primary', 'billing', 'technical', 'marketing'
+    )),
+    is_primary BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(partner_id, username)
 );
 
 -- Topic voting
@@ -1896,8 +1909,11 @@ CREATE TABLE partner_meeting_attendance (
 );
 
 -- Indexes
-CREATE INDEX idx_partners_company_id ON partners(company_id);
+CREATE INDEX idx_partners_company_name ON partners(company_name); -- Changed from company_id
 CREATE INDEX idx_partners_active ON partners(is_active);
+CREATE INDEX idx_partners_partnership_level ON partners(partnership_level);
+CREATE INDEX idx_partner_contacts_partner_id ON partner_contacts(partner_id);
+CREATE INDEX idx_partner_contacts_username ON partner_contacts(username);
 CREATE INDEX idx_topic_votes_partner_id ON topic_votes(partner_id);
 CREATE INDEX idx_topic_votes_topic_id ON topic_votes(topic_id);
 CREATE INDEX idx_topic_suggestions_partner_id ON topic_suggestions(partner_id);

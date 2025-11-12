@@ -14,12 +14,12 @@ interface InfiniteMarqueeProps {
 export const InfiniteMarquee = ({
   children,
   direction = 'left',
-  speed = 'slow'
+  speed = 'slow',
 }: InfiniteMarqueeProps) => {
   const speedDuration = {
     slow: '60s',
     normal: '40s',
-    fast: '20s'
+    fast: '20s',
   };
 
   const animationDirection = direction === 'left' ? 'scroll-left' : 'scroll-right';
