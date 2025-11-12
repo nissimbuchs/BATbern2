@@ -5,7 +5,7 @@
  */
 
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
-import axios from 'axios';
+import apiClient from '@/services/api/apiClient';
 import type { PartnerListResponse } from '@/services/api/partnerApi';
 
 /**
@@ -13,14 +13,16 @@ import type { PartnerListResponse } from '@/services/api/partnerApi';
  * Includes company enrichment for logos and websites
  */
 const fetchPublicPartners = async (): Promise<PartnerListResponse> => {
-  const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-
-  const response = await axios.get<PartnerListResponse>(`${baseURL}/api/v1/partners`, {
+  const response = await apiClient.get<PartnerListResponse>('/partners', {
     params: {
       page: 0,
       size: 100, // Get all partners for showcase
       include: 'company', // Need logos and websites
       filter: 'isActive:true', // Only active partners
+    },
+    headers: {
+      // Skip auth for public endpoint - prevents 401 with expired tokens
+      'Skip-Auth': 'true',
     },
   });
 
