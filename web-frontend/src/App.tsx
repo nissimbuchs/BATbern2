@@ -345,6 +345,18 @@ function App() {
                     }
                   />
 
+                  {/* Partner Management Routes */}
+                  <Route
+                    path="/organizer/partners"
+                    element={
+                      <ProtectedRoute>
+                        <AuthLayout>
+                          <Partners />
+                        </AuthLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+
                   <Route
                     path="/partners"
                     element={
