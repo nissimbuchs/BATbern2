@@ -1,6 +1,7 @@
 /**
  * SessionCards Component (Story 4.1.4)
  * Displays sessions in grid/list view with filtering capabilities
+ * Hover to expand session description
  */
 
 import { useState, useMemo } from 'react';
@@ -116,7 +117,7 @@ export const SessionCards = ({ sessions, topics = [] }: SessionCardsProps) => {
         {filteredSessions.map((session) => (
           <Card
             key={session.sessionSlug}
-            className="bg-zinc-900/50 border-zinc-800 hover:border-zinc-700 transition-colors"
+            className="group bg-zinc-900/50 border-zinc-800 hover:border-zinc-700 transition-colors"
           >
             <CardHeader>
               <div className="flex items-start justify-between gap-4">
@@ -131,7 +132,9 @@ export const SessionCards = ({ sessions, topics = [] }: SessionCardsProps) => {
             </CardHeader>
             <CardContent className="space-y-4">
               {session.description && (
-                <p className="text-sm text-zinc-400 line-clamp-3">{session.description}</p>
+                <p className="text-sm text-zinc-400 line-clamp-3 group-hover:line-clamp-none transition-all">
+                  {session.description}
+                </p>
               )}
 
               <div className="flex flex-wrap gap-4 text-sm text-zinc-400">

@@ -126,6 +126,65 @@ public class UserService {
     }
 
     /**
+     * Update user profile by username (for organizer/admin)
+     * Allows admins/organizers to update any user's profile
+     *
+     * @param username Username of user to update
+     * @param request Update request with validation
+     * @return Updated user profile
+     */
+    public UserResponse updateUserByUsername(String username, UpdateUserRequest request) {
+        log.info("Updating user {} by admin/organizer", username);
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException(username));
+
+        // Update fields
+        if (request.getFirstName() != null) {
+            user.setFirstName(request.getFirstName());
+        }
+        if (request.getLastName() != null) {
+            user.setLastName(request.getLastName());
+        }
+        if (request.getEmail() != null) {
+            user.setEmail(request.getEmail());
+        }
+        if (request.getBio() != null) {
+            user.setBio(request.getBio());
+        }
+        if (request.getCompanyId() != null) {
+            user.setCompanyId(request.getCompanyId());
+        }
+
+        User updatedUser = userRepository.save(user);
+
+        // Invalidate search cache
+        searchService.invalidateCache();
+
+        // Publish domain event
+        java.util.Map<String, Object> updatedFields = new java.util.HashMap<>();
+        if (request.getFirstName() != null) updatedFields.put("firstName", request.getFirstName());
+        if (request.getLastName() != null) updatedFields.put("lastName", request.getLastName());
+        if (request.getEmail() != null) updatedFields.put("email", request.getEmail());
+        if (request.getBio() != null) updatedFields.put("bio", request.getBio());
+        if (request.getCompanyId() != null) updatedFields.put("companyId", request.getCompanyId());
+
+        // Get current user performing the update
+        String updatedBy = securityContext.getCurrentUserId();
+
+        UserUpdatedEvent event = new UserUpdatedEvent(
+            updatedUser.getUsername(),  // aggregateId = username
+            updatedFields,
+            null,  // previousValues - TODO: implement in future
+            updatedBy  // userId = admin/organizer who performed the update
+        );
+        eventPublisher.publish(event);
+
+        log.info("User {} updated successfully by {}", updatedUser.getUsername(), updatedBy);
+        return responseMapper.mapToResponse(updatedUser);
+    }
+
+    /**
      * List users with filters (admin/organizer only)
      * Story 1.16.2: Public API uses username
      * AC3: List users with role, company, search, and JSON filters
