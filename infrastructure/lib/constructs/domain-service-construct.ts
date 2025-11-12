@@ -209,17 +209,23 @@ export function createDomainService(
       maxHealthyPercent: 200, // Allow temporary extra tasks during deployments
       securityGroups: [serviceSecurityGroup], // Use explicit security group
       enableExecuteCommand: true, // Allow ECS Exec for debugging
-      // Enable Service Connect for service-to-service communication
-      // This provides automatic DNS-based discovery without requiring ALBs
-      // NOTE: Namespace is inherited from cluster's serviceConnectDefaults
-      serviceConnectConfiguration: {
-        services: [{
-          portMappingName: `${serviceName}-port`, // Must match container port mapping name
-          discoveryName: serviceName, // Service discovery name in CloudMap
-          dnsName: serviceName, // DNS name for other services to use
-          port: 8080, // Port where service is accessible
+    });
+
+    // Enable Service Connect for service-to-service communication
+    // This provides automatic DNS-based discovery without requiring ALBs
+    // Using addPropertyOverride because L2 FargateService doesn't fully support Service Connect yet
+    const cfnService = service.node.defaultChild as ecs.CfnService;
+    cfnService.addPropertyOverride('ServiceConnectConfiguration', {
+      Enabled: true,
+      Namespace: 'batbern.local',
+      Services: [{
+        PortName: `${serviceName}-port`, // Must match container port mapping name
+        DiscoveryName: serviceName, // Service discovery name in CloudMap
+        ClientAliases: [{
+          Port: 8080, // Port where service is accessible
+          DnsName: serviceName, // DNS name for other services to use
         }],
-      },
+      }],
     });
 
     // Configure auto-scaling
