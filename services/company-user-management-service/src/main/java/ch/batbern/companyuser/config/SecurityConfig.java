@@ -70,6 +70,8 @@ public class SecurityConfig {
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 // Public company endpoint (GET only for partner showcase enrichment)
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/companies/*").permitAll()
+                // Public user profile endpoint (GET only for service-to-service calls from localhost)
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/users/*").permitAll()
                 .anyRequest().authenticated() // Require authentication but accept any authenticated user
             )
             .oauth2ResourceServer(oauth2 -> oauth2
