@@ -200,6 +200,22 @@ export class ApiGatewayStack extends cdk.Stack {
       // No authorizer - public endpoint for public website
     });
 
+    // Public partners endpoint (no auth) - Partner Showcase
+    const publicPartnersIntegration = new apigatewayv2_integrations.HttpUrlIntegration(
+      'PublicPartnersIntegration',
+      `${apiGatewayServiceUrl}/api/v1/partners`,
+      {
+        method: apigatewayv2.HttpMethod.GET,
+      }
+    );
+
+    this.api.addRoutes({
+      path: '/api/v1/partners',
+      methods: [apigatewayv2.HttpMethod.GET],
+      integration: publicPartnersIntegration,
+      // No authorizer - public endpoint for homepage partner showcase
+    });
+
     // Custom domain (if provided)
     if (props.domainName && props.certificateArn) {
       const certificate = certificatemanager.Certificate.fromCertificateArn(

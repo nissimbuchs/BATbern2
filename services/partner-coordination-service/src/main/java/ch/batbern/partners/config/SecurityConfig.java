@@ -1,11 +1,14 @@
 package ch.batbern.partners.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
@@ -18,6 +21,9 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri:}")
+    private String jwkSetUri;
 
     /**
      * Local development security filter chain
@@ -35,7 +41,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .anyRequest().permitAll() // Local dev: trust all inter-service calls (localhost isolation)
             )
-            .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {})); // Parse JWT for token propagation
+            .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.decoder(jwtDecoder()))); // Parse JWT for token propagation
 
         return http.build();
     }
@@ -59,7 +65,7 @@ public class SecurityConfig {
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/partners").permitAll()
                 .anyRequest().authenticated()
             )
-            .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {}));
+            .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.decoder(jwtDecoder())));
 
         return http.build();
     }
@@ -80,5 +86,18 @@ public class SecurityConfig {
             );
 
         return http.build();
+    }
+
+    /**
+     * JWT decoder for AWS Cognito tokens
+     * Required for oauth2ResourceServer JWT validation
+     */
+    @Bean
+    @Profile("!test")
+    public JwtDecoder jwtDecoder() {
+        if (jwkSetUri == null || jwkSetUri.isEmpty()) {
+            throw new IllegalArgumentException("JWT JWK Set URI must be configured");
+        }
+        return NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
     }
 }
