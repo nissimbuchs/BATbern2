@@ -1,0 +1,188 @@
+{
+  "title": "Partner Directory",
+  "addPartner": "Add Partner",
+  "searchPlaceholder": "Search by partner name...",
+  "searchAriaLabel": "Search partners",
+  "clearSearch": "Clear search",
+  "filters": {
+    "tier": "Partnership Tier",
+    "tierAll": "All Tiers",
+    "status": "Status",
+    "statusAll": "All",
+    "statusActive": "Active",
+    "statusInactive": "Inactive",
+    "reset": "Reset Filters"
+  },
+  "tiers": {
+    "strategic": "Strategic",
+    "platinum": "Platinum",
+    "gold": "Gold",
+    "silver": "Silver",
+    "bronze": "Bronze"
+  },
+  "viewMode": {
+    "label": "View mode",
+    "grid": "Grid view",
+    "list": "List view"
+  },
+  "sort": {
+    "label": "Sort By",
+    "engagement": "Engagement Score",
+    "name": "Company Name",
+    "tier": "Partnership Tier",
+    "lastEvent": "Last Event"
+  },
+  "statistics": {
+    "totalPartners": "Total Partners",
+    "activePartners": "Active Partners",
+    "engagedPartners": "Engaged Partners",
+    "engagedComingSoon": "Coming Soon - Epic 8",
+    "tierDistribution": "Tier Distribution"
+  },
+  "card": {
+    "industry": "Industry",
+    "contact": "Primary Contact",
+    "lastEvent": "Last Event",
+    "topicVotes": "Topic Votes",
+    "nextMeeting": "Next Meeting",
+    "meetingPending": "Pending",
+    "engagement": "Engagement",
+    "engagementComingSoon": "Coming Soon (Epic 8)",
+    "viewDetails": "View Details",
+    "sendEmail": "Send Email",
+    "scheduleMeeting": "Schedule Meeting",
+    "analytics": "Analytics",
+    "comingSoon": "Coming Soon - Epic 8"
+  },
+  "pagination": {
+    "page": "Page {{current}} of {{total}}",
+    "partners": "{{count}} partner",
+    "partners_plural": "{{count}} partners",
+    "firstPage": "First page",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "lastPage": "Last page",
+    "ariaLabel": "Partner list pagination"
+  },
+  "empty": {
+    "noPartners": "No partners found",
+    "tryAdjustingFilters": "Try adjusting your search or filters"
+  },
+  "loading": "Loading partners...",
+  "error": {
+    "failedToLoad": "Failed to load partners",
+    "tryAgain": "Please try again later"
+  },
+  "screenReader": {
+    "searchResults": "{{count}} partner found",
+    "searchResults_plural": "{{count}} partners found",
+    "filterUpdate": "Filters updated",
+    "loading": "Loading partners"
+  },
+  "modal": {
+    "createTitle": "Create Partnership",
+    "editTitle": "Edit Partnership",
+    "fields": {
+      "company": "Company",
+      "companyPlaceholder": "Search for company...",
+      "partnershipTier": "Partnership Tier",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "endDateOptional": "End Date (Optional)"
+    },
+    "tiers": {
+      "STRATEGIC": "Strategic",
+      "PLATINUM": "Platinum",
+      "GOLD": "Gold",
+      "SILVER": "Silver",
+      "BRONZE": "Bronze"
+    },
+    "tierDescriptions": {
+      "STRATEGIC": "Highest partnership tier with full access and dedicated support",
+      "PLATINUM": "Premium partnership with enhanced benefits",
+      "GOLD": "High-value partnership with major benefits",
+      "SILVER": "Standard partnership with essential benefits",
+      "BRONZE": "Entry-level partnership with basic benefits"
+    },
+    "benefits": {
+      "title": "Tier Benefits",
+      "logoPlacement": "Logo placement on website",
+      "newsletterMentions": "Newsletter mentions",
+      "priorityAccess": "Priority event access",
+      "quarterlyMeetings": "Quarterly strategic meetings",
+      "roiAnalytics": "ROI analytics dashboard",
+      "dedicatedManager": "Dedicated account manager",
+      "eventAccess": "Event access"
+    },
+    "actions": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "saving": "Saving..."
+    },
+    "messages": {
+      "unsavedChanges": "You have unsaved changes. Are you sure you want to close?",
+      "createSuccess": "Partnership created successfully",
+      "updateSuccess": "Partnership updated successfully",
+      "createError": "Failed to create partnership. Correlation ID: {{correlationId}}",
+      "updateError": "Failed to update partnership. Correlation ID: {{correlationId}}"
+    },
+    "companySearch": {
+      "searching": "Searching companies...",
+      "noResults": "No companies found",
+      "error": "Error searching companies",
+      "minChars": "Type at least 2 characters to search"
+    }
+  },
+  "validation": {
+    "companyRequired": "Company is required",
+    "tierRequired": "Partnership tier is required",
+    "startDateRequired": "Start date is required",
+    "startDateFuture": "Start date cannot be in the future",
+    "endDateBeforeStart": "End date must be after start date"
+  },
+  "detail": {
+    "header": {
+      "exportData": "Export Data",
+      "scheduleMeeting": "Schedule Meeting",
+      "sendEmail": "Send Email",
+      "comingSoon": "Coming in Epic 8"
+    },
+    "quickStats": {
+      "partnerSince": "Partner Since",
+      "eventsAttended": "Events Attended",
+      "activeVotes": "Active Votes",
+      "votesSubtitle": "(topics)",
+      "meetings": "Meetings",
+      "meetingsSubtitle": "(seasonal)",
+      "noEventsYet": "No events yet",
+      "lastEvent": "last: {{event}}"
+    },
+    "activityTab": {
+      "title": "Activity",
+      "filterLabel": "Filter by Activity Type",
+      "noActivity": "No activity to display"
+    },
+    "meetingsTab": {
+      "title": "Meetings",
+      "addMeeting": "Schedule Meeting"
+    },
+    "notesTab": {
+      "title": "Notes",
+      "addNote": "Add Note",
+      "titleLabel": "Title",
+      "contentLabel": "Content",
+      "htmlSupported": "HTML formatting is supported",
+      "noNotes": "No notes yet"
+    },
+    "settingsTab": {
+      "title": "Settings",
+      "activePartnership": "Active Partnership",
+      "exportData": "Export Partner Data",
+      "deletePartner": "Delete Partner Data"
+    }
+  },
+  "comingSoon": {
+    "epic8": "Coming Soon - Epic 8",
+    "story283": "Coming Soon - Story 2.8.3"
+  }
+}

@@ -1,0 +1,57 @@
+meta {
+  name: List Partner Suggestions
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{baseUrl}}/partners/{{testPartnerCompanyName}}/suggestions
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  Origin: https://staging.batbern.ch
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: de-CH
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("should return 200 status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return array of suggestions", function() {
+    const body = res.getBody();
+    expect(body).to.be.an('array');
+  });
+
+  test("suggestions should have required fields", function() {
+    const body = res.getBody();
+    if (body && body.length > 0) {
+      const suggestion = body[0];
+      expect(suggestion.suggestedTopic).to.exist;
+      expect(suggestion.description).to.exist;
+      expect(suggestion.status).to.be.oneOf(['submitted', 'under_review', 'accepted', 'rejected', 'implemented']);
+      expect(suggestion.suggestedAt).to.exist;
+    }
+  });
+
+  test("should accept X-Correlation-ID header", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should have CORS headers", function() {
+    const corsHeader = res.getHeader('access-control-allow-origin');
+    expect(corsHeader).to.exist;
+  });
+}

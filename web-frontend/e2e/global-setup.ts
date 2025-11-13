@@ -63,7 +63,7 @@ async function globalSetup(config: FullConfig) {
         idToken: token,
         accessToken: token,
         refreshToken: token,
-        expiresAt: Date.now() + (60 * 60 * 1000), // 1 hour from now
+        expiresAt: Date.now() + 60 * 60 * 1000, // 1 hour from now
         isAuthenticated: true,
       };
       localStorage.setItem('auth', JSON.stringify(authState));
@@ -74,7 +74,6 @@ async function globalSetup(config: FullConfig) {
     // Save the storage state to be reused in tests
     await context.storageState({ path: '.playwright-auth-state.json' });
     console.log('[Global Setup] ✓ Auth state saved to .playwright-auth-state.json');
-
   } catch (error) {
     console.error('[Global Setup] ✗ Failed to set up auth state:', error);
     throw error;

@@ -118,7 +118,7 @@ class CompanyServiceTest {
         assertThat(response).isNotNull();
         assertThat(response.getName()).isEqualTo("Test Company AG");
         assertThat(response.getSwissUID()).isEqualTo("CHE-123.456.789");
-        assertThat(response.isVerified()).isFalse();
+        assertThat(response.getVerified()).isFalse();
 
         verify(securityContextHelper).getCurrentUsername();
         verify(companyRepository).save(any(Company.class));

@@ -2,11 +2,13 @@
 # Restart BATbern services running natively
 #
 # Usage:
-#   ./scripts/dev/restart-native.sh [service-name]
+#   ./scripts/dev/restart-native.sh [service-name]              # Default instance (BASE_PORT=8000)
+#   BASE_PORT=9000 ./scripts/dev/restart-native.sh [service]    # Instance with BASE_PORT=9000
 #
 # Examples:
-#   ./scripts/dev/restart-native.sh                  # Restart all services
-#   ./scripts/dev/restart-native.sh api-gateway      # Restart specific service
+#   ./scripts/dev/restart-native.sh                  # Restart all services (instance 8000)
+#   ./scripts/dev/restart-native.sh api-gateway      # Restart specific service (instance 8000)
+#   BASE_PORT=9500 ./scripts/dev/restart-native.sh   # Restart all (instance 9500)
 #
 # Available services:
 #   api-gateway, company-user-management, event-management,
@@ -27,7 +29,25 @@ NC='\033[0m' # No Color
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PID_DIR="/tmp"
 LOG_DIR="/tmp"
-ENV_NATIVE_FILE="${PROJECT_ROOT}/.env.native"
+
+# Instance-specific configuration
+BASE_PORT="${BASE_PORT:-8000}"  # Default instance port
+
+# Calculate instance identifier based on BASE_PORT
+# Always use BASE_PORT as the instance identifier for consistency
+INSTANCE="$BASE_PORT"
+
+ENV_NATIVE_FILE="${PROJECT_ROOT}/.env.native.${INSTANCE}"
+
+# Calculate ports - consistent for all instances
+# Pattern: BASE_PORT for API Gateway, BASE_PORT+1..5 for services, BASE_PORT+100 for frontend
+API_GATEWAY_PORT=$BASE_PORT
+COMPANY_USER_MGMT_PORT=$((BASE_PORT + 1))
+EVENT_MGMT_PORT=$((BASE_PORT + 2))
+SPEAKER_COORD_PORT=$((BASE_PORT + 3))
+PARTNER_COORD_PORT=$((BASE_PORT + 4))
+ATTENDEE_EXP_PORT=$((BASE_PORT + 5))
+FRONTEND_PORT=$((BASE_PORT + 100))
 
 # Helper functions to get service config (bash 3.2 compatible)
 get_gradle_task() {
@@ -44,13 +64,13 @@ get_gradle_task() {
 
 get_service_port() {
     case "$1" in
-        api-gateway) echo "8080" ;;
-        company-user-management) echo "8081" ;;
-        event-management) echo "8082" ;;
-        speaker-coordination) echo "8083" ;;
-        partner-coordination) echo "8084" ;;
-        attendee-experience) echo "8085" ;;
-        web-frontend) echo "3000" ;;
+        api-gateway) echo "$API_GATEWAY_PORT" ;;
+        company-user-management) echo "$COMPANY_USER_MGMT_PORT" ;;
+        event-management) echo "$EVENT_MGMT_PORT" ;;
+        speaker-coordination) echo "$SPEAKER_COORD_PORT" ;;
+        partner-coordination) echo "$PARTNER_COORD_PORT" ;;
+        attendee-experience) echo "$ATTENDEE_EXP_PORT" ;;
+        web-frontend) echo "$FRONTEND_PORT" ;;
         *) echo "" ;;
     esac
 }
@@ -78,7 +98,7 @@ show_usage() {
 # Stop a service
 stop_service() {
     local service_name=$1
-    local pid_file="${PID_DIR}/batbern-dev-${service_name}.pid"
+    local pid_file="${PID_DIR}/batbern-${INSTANCE}-${service_name}.pid"
 
     if [ ! -f "$pid_file" ]; then
         return 0
@@ -133,8 +153,8 @@ start_spring_service() {
     local service_name=$1
     local gradle_task=$(get_gradle_task "$service_name")
     local port=$(get_service_port "$service_name")
-    local pid_file="${PID_DIR}/batbern-dev-${service_name}.pid"
-    local log_file="${LOG_DIR}/batbern-dev-${service_name}.log"
+    local pid_file="${PID_DIR}/batbern-${INSTANCE}-${service_name}.pid"
+    local log_file="${LOG_DIR}/batbern-${INSTANCE}-${service_name}.log"
 
     echo -e "${CYAN}  → Building ${service_name} JAR...${NC}"
 
@@ -190,9 +210,9 @@ start_spring_service() {
 # Start frontend
 start_frontend() {
     local service_name="web-frontend"
-    local port=3000
-    local pid_file="${PID_DIR}/batbern-dev-${service_name}.pid"
-    local log_file="${LOG_DIR}/batbern-dev-${service_name}.log"
+    local port=$FRONTEND_PORT
+    local pid_file="${PID_DIR}/batbern-${INSTANCE}-${service_name}.pid"
+    local log_file="${LOG_DIR}/batbern-${INSTANCE}-${service_name}.log"
 
     echo -e "${CYAN}  → Starting ${service_name}...${NC}"
 
@@ -210,7 +230,7 @@ restart_service() {
     local service_name=$1
 
     echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${BLUE}║     Restarting: ${service_name}${NC}"
+    echo -e "${BLUE}║     Restarting: ${service_name} (Instance ${INSTANCE})${NC}"
     echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
     echo ""
 
@@ -232,7 +252,7 @@ restart_service() {
 # Restart all services
 restart_all() {
     echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${BLUE}║         Restarting All BATbern Services (Native)          ║${NC}"
+    echo -e "${BLUE}║    Restarting All Services - Instance ${INSTANCE} (BASE_PORT=${BASE_PORT})${NC}"
     echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
     echo ""
 
@@ -285,10 +305,14 @@ main() {
         service_name="$1"
     fi
 
-    # Check if .env.native exists
+    # Check if .env.native.{INSTANCE} exists
     if [ ! -f "${ENV_NATIVE_FILE}" ]; then
         echo -e "${RED}Error: ${ENV_NATIVE_FILE} not found${NC}"
-        echo -e "${YELLOW}Run: make dev-native-up${NC}"
+        if [ "$INSTANCE" = "8000" ]; then
+            echo -e "${YELLOW}Run: make dev-native-up${NC}"
+        else
+            echo -e "${YELLOW}Run: make dev-native-up-instance BASE_PORT=${BASE_PORT}${NC}"
+        fi
         exit 1
     fi
 

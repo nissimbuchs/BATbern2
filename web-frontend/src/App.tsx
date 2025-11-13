@@ -42,6 +42,8 @@ const Dashboard = React.lazy(() => import('@pages/Dashboard'));
 const Events = React.lazy(() => import('@pages/Events'));
 const Speakers = React.lazy(() => import('@pages/Speakers'));
 const Partners = React.lazy(() => import('@pages/Partners'));
+const OrganizerPartners = React.lazy(() => import('@pages/OrganizerPartners'));
+const OrganizerPartnerDetail = React.lazy(() => import('@pages/OrganizerPartnerDetail'));
 const Content = React.lazy(() => import('@pages/Content'));
 const Analytics = React.lazy(() => import('@pages/Analytics'));
 const CompanyManagement = React.lazy(
@@ -342,6 +344,29 @@ function App() {
                           <Speakers />
                         </AuthLayout>
                       </SpeakerRoute>
+                    }
+                  />
+
+                  {/* Partner Management Routes */}
+                  <Route
+                    path="/organizer/partners"
+                    element={
+                      <ProtectedRoute>
+                        <AuthLayout>
+                          <OrganizerPartners />
+                        </AuthLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/organizer/partners/:companyName"
+                    element={
+                      <ProtectedRoute>
+                        <AuthLayout>
+                          <OrganizerPartnerDetail />
+                        </AuthLayout>
+                      </ProtectedRoute>
                     }
                   />
 

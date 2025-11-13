@@ -99,7 +99,10 @@ async function createCompanyViaAPI(
 /**
  * Helper: Get company by ID via API
  */
-async function getCompanyById(authToken: string, companyId: string): Promise<CompanyResponse | null> {
+async function getCompanyById(
+  authToken: string,
+  companyId: string
+): Promise<CompanyResponse | null> {
   const response = await fetch(`${API_URL}/api/v1/companies/${companyId}`, {
     method: 'GET',
     headers: {
@@ -209,9 +212,9 @@ test.describe('Company Creation - UI Workflow', () => {
     await page.click('button[type="submit"]');
 
     // Verify validation error displayed
-    await expect(
-      page.getByText(/invalid swiss uid format|uid must match pattern/i)
-    ).toBeVisible({ timeout: 3000 });
+    await expect(page.getByText(/invalid swiss uid format|uid must match pattern/i)).toBeVisible({
+      timeout: 3000,
+    });
   });
 
   test('should_showValidationError_when_requiredFieldsMissing', async ({ page }) => {

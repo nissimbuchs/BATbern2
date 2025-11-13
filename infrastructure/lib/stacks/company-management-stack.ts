@@ -39,10 +39,10 @@ export interface CompanyManagementStackProps extends cdk.StackProps {
  *
  * This service consolidates Company Management and User Management into a single
  * service because both are tightly coupled master data concerns used by all domain services.
+ * Uses Service Connect for direct service-to-service communication (no ALB).
  */
 export class CompanyManagementStack extends cdk.Stack {
-  public readonly service: ecsPatterns.ApplicationLoadBalancedFargateService;
-  public readonly serviceUrl: string;
+  public readonly service: ecs.FargateService;
 
   constructor(scope: Construct, id: string, props: CompanyManagementStackProps) {
     super(scope, id, props);
@@ -94,7 +94,6 @@ export class CompanyManagementStack extends cdk.Stack {
     });
 
     this.service = domainService.service;
-    this.serviceUrl = domainService.serviceUrl;
 
     // Grant S3 permissions for company logos and user profile pictures
     if (props.contentBucket) {
@@ -128,12 +127,5 @@ export class CompanyManagementStack extends cdk.Stack {
 
     // Apply additional tags specific to this service
     cdk.Tags.of(this).add('Consolidation', 'Companies+Users');
-
-    // Outputs
-    new cdk.CfnOutput(this, 'ServiceUrl', {
-      value: this.serviceUrl,
-      description: 'Company & User Management Service internal URL (consolidated)',
-      exportName: `${envName}-company-user-management-url`,
-    });
   }
 }
