@@ -91,14 +91,19 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
           lastName: user.lastName || '',
           email: user.email || '',
           bio: user.bio || '',
-          company: user.companyId
-            ? {
-                name: user.companyId,
-                displayName: user.company?.displayName || user.company?.name || user.companyId,
-                industry: user.company?.industry,
-                logo: user.company?.logo,
-              }
-            : null,
+          company:
+            user.companyId && user.company
+              ? {
+                  name: user.companyId,
+                  displayName: user.company.displayName || user.company.name || user.companyId,
+                  industry: user.company.industry,
+                  website: user.company.website,
+                  isVerified: false, // User.company doesn't include this, default to false
+                  createdAt: new Date().toISOString(), // Required field, use current time as placeholder
+                  updatedAt: new Date().toISOString(), // Required field, use current time as placeholder
+                  logo: undefined, // User.company type doesn't include logo
+                }
+              : null,
           initialRoles: (user.roles as Role[]) || [],
         });
       } else {
