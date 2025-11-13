@@ -79,11 +79,18 @@ apiClient.interceptors.request.use(
     // Add X-Correlation-ID for distributed tracing (Story 1.17 AC6)
     config.headers['X-Correlation-ID'] = generateCorrelationId();
 
-    // Add authentication token from AWS Amplify (secure storage)
-    // SEC-001 Fix: Use AWS Amplify's secure token management instead of localStorage
-    const token = await getIdToken();
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
+    // Skip authentication for public endpoints (e.g., partner showcase, event discovery)
+    // This prevents 401 errors when expired tokens exist in browser storage
+    const skipAuth = config.headers['Skip-Auth'] === 'true';
+    if (skipAuth) {
+      delete config.headers['Skip-Auth']; // Remove marker header
+    } else {
+      // Add authentication token from AWS Amplify (secure storage)
+      // SEC-001 Fix: Use AWS Amplify's secure token management instead of localStorage
+      const token = await getIdToken();
+      if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`;
+      }
     }
 
     return config;

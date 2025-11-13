@@ -18,9 +18,14 @@ const RegistrationPage = () => {
   const { eventCode } = useParams<{ eventCode: string }>();
 
   // Fetch event details for header
-  const { data: event, isLoading, error } = useQuery({
+  const {
+    data: event,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['event', eventCode],
-    queryFn: () => eventCode ? eventApiClient.getEvent(eventCode) : Promise.reject('No event code'),
+    queryFn: () =>
+      eventCode ? eventApiClient.getEvent(eventCode) : Promise.reject('No event code'),
     enabled: !!eventCode,
   });
 
@@ -34,7 +39,11 @@ const RegistrationPage = () => {
       <div className="container mx-auto px-4 py-12 min-h-screen">
         {/* Loading State */}
         {isLoading && (
-          <div className="flex justify-center py-24" role="status" aria-label="Loading event details">
+          <div
+            className="flex justify-center py-24"
+            role="status"
+            aria-label="Loading event details"
+          >
             <Loader2 className="h-12 w-12 animate-spin text-blue-400" aria-hidden="true" />
           </div>
         )}
@@ -45,9 +54,7 @@ const RegistrationPage = () => {
             <h2 className="text-2xl font-light text-zinc-300 mb-4">
               {t('public.errors.loadFailed')}
             </h2>
-            <p className="text-zinc-400">
-              {t('public.errors.checkBackLater')}
-            </p>
+            <p className="text-zinc-400">{t('public.errors.checkBackLater')}</p>
           </div>
         )}
 
@@ -73,10 +80,7 @@ const RegistrationPage = () => {
             </div>
 
             {/* Registration Wizard */}
-            <RegistrationWizard
-              eventCode={eventCode}
-              inline={false}
-            />
+            <RegistrationWizard eventCode={eventCode} inline={false} />
           </div>
         )}
       </div>

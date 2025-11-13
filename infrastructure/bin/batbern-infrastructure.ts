@@ -283,6 +283,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     databaseSecret: databaseStack.databaseSecret,
     userPool: cognitoStack.userPool,
     userPoolClient: cognitoStack.userPoolClient,
+    eventBus: eventBusStack.eventBus,
     env,
     description: `BATbern Partner Coordination Service - ${config.envName}`,
     tags: config.tags,
@@ -291,6 +292,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   partnerCoordinationStack.addDependency(databaseStack);
   partnerCoordinationStack.addDependency(cicdStack);
   partnerCoordinationStack.addDependency(cognitoStack);
+  partnerCoordinationStack.addDependency(eventBusStack);
 
   // 10d. Attendee Experience Service
   attendeeExperienceStack = new AttendeeExperienceStack(app, `${stackPrefix}-AttendeeExperience`, {
@@ -338,6 +340,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   companyManagementStack.addDependency(eventBusStack);
 
   // 10f. API Gateway Service (Spring Boot)
+  // Uses Service Connect DNS names for microservice communication (no ALB URLs needed)
   apiGatewayServiceStack = new ApiGatewayServiceStack(app, `${stackPrefix}-ApiGatewayService`, {
     config,
     cluster: clusterStack.cluster,
@@ -347,11 +350,6 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     databaseSecret: databaseStack.databaseSecret,
     userPool: cognitoStack.userPool,
     userPoolClient: cognitoStack.userPoolClient,
-    eventManagementServiceUrl: eventManagementStack.serviceUrl,
-    speakerCoordinationServiceUrl: speakerCoordinationStack.serviceUrl,
-    partnerCoordinationServiceUrl: partnerCoordinationStack.serviceUrl,
-    attendeeExperienceServiceUrl: attendeeExperienceStack.serviceUrl,
-    companyUserManagementServiceUrl: companyManagementStack.serviceUrl,
     env,
     description: `BATbern API Gateway Service (Spring Boot) - ${config.envName}`,
     tags: config.tags,
