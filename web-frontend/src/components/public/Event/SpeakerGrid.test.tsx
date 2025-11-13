@@ -14,7 +14,8 @@ describe('SpeakerGrid', () => {
       sessionSlug: 'keynote-session',
       eventCode: 'BATbern142',
       title: 'Opening Keynote: Future of Architecture',
-      description: 'An inspiring look at the future of Swiss architecture and sustainable building practices.',
+      description:
+        'An inspiring look at the future of Swiss architecture and sustainable building practices.',
       sessionType: 'keynote',
       startTime: '2025-05-15T09:00:00Z',
       endTime: '2025-05-15T10:30:00Z',
@@ -37,7 +38,8 @@ describe('SpeakerGrid', () => {
       sessionSlug: 'workshop-sustainable',
       eventCode: 'BATbern142',
       title: 'Workshop: Sustainable Materials',
-      description: 'Hands-on workshop exploring sustainable building materials and their applications.',
+      description:
+        'Hands-on workshop exploring sustainable building materials and their applications.',
       sessionType: 'workshop',
       startTime: '2025-05-15T11:00:00Z',
       endTime: '2025-05-15T12:30:00Z',

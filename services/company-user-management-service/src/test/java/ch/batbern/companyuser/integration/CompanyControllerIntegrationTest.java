@@ -203,14 +203,8 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.isVerified").value(testCompany.isVerified()));
     }
 
-    @Test
-    @DisplayName("GET /companies/{name} - should return 401 when not authenticated")
-    void shouldReturn401_whenNotAuthenticatedForGet() throws Exception {
-        // When & Then
-        // Story 1.16.2: use company name instead of UUID
-        mockMvc.perform(get("/api/v1/companies/{name}", testCompany.getName()))
-                .andExpect(status().isUnauthorized());
-    }
+    // Test removed: GET /companies/{name} is now public (Story 4.1: Partner Showcase)
+    // Public company endpoint allows partner showcase enrichment without authentication
 
     @Test
     @DisplayName("GET /companies/{name} - should return 404 when company not found")
@@ -272,14 +266,8 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$[0].name").value("Test Company"));
     }
 
-    @Test
-    @DisplayName("GET /companies/search - should return 401 when not authenticated")
-    void shouldReturn401_whenNotAuthenticatedForSearch() throws Exception {
-        // When & Then
-        mockMvc.perform(get("/api/v1/companies/search")
-                        .param("query", "test"))
-                .andExpect(status().isUnauthorized());
-    }
+    // Test removed: GET /companies/search is now public (Story 4.1: Partner Showcase)
+    // Public company search endpoint allows partner showcase enrichment without authentication
 
     // UPDATE COMPANY TESTS (AC4)
 

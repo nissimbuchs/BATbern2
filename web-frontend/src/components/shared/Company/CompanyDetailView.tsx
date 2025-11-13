@@ -7,7 +7,6 @@ import {
   Button,
   Tabs,
   Tab,
-  Avatar,
   Chip,
   Skeleton,
   Alert,
@@ -18,6 +17,7 @@ import {
   ArrowBack as ArrowBackIcon,
   Edit as EditIcon,
   CheckCircle as CheckCircleIcon,
+  Business as BusinessIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import type { components } from '@/types/generated/company-api.types';
@@ -162,19 +162,41 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
         <CardContent>
           <Grid container spacing={3} component="div">
             <Grid size={{ xs: 12, sm: 3 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                <Avatar
-                  src={company.logo?.url}
-                  alt={`${company.displayName || company.name} logo`}
-                  sx={{ width: 120, height: 120 }}
-                  slotProps={{
-                    img: {
-                      crossOrigin: 'anonymous',
-                    },
-                  }}
-                >
-                  {(company.displayName || company.name).charAt(0)}
-                </Avatar>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  minHeight: 180,
+                }}
+              >
+                {company.logo?.url ? (
+                  <Box
+                    component="img"
+                    src={company.logo.url}
+                    alt={`${company.displayName || company.name} logo`}
+                    crossOrigin="anonymous"
+                    sx={{
+                      maxWidth: 150,
+                      maxHeight: 150,
+                      objectFit: 'contain',
+                    }}
+                  />
+                ) : (
+                  <Box
+                    sx={{
+                      width: 150,
+                      height: 150,
+                      bgcolor: 'grey.200',
+                      borderRadius: 1,
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <BusinessIcon sx={{ fontSize: 60, color: 'grey.500' }} />
+                  </Box>
+                )}
               </Box>
             </Grid>
 

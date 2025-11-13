@@ -1,0 +1,74 @@
+meta {
+  name: Submit Topic Suggestion
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/partners/{{testPartnerCompanyName}}/suggestions
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  Origin: https://staging.batbern.ch
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: de-CH
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "suggestedTopic": "Digital Transformation in Architecture",
+    "description": "Exploring how AI and automation are changing architectural workflows and client interactions",
+    "businessJustification": "Our clients are increasingly asking about digital transformation strategies. This topic would provide valuable insights."
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.suggestedTopic: isDefined
+  res.body.status: eq submitted
+}
+
+tests {
+  test("should return 201 status", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("should submit topic suggestion", function() {
+    const body = res.getBody();
+    expect(body.suggestedTopic).to.equal('Digital Transformation in Architecture');
+    expect(body.description).to.exist;
+    expect(body.businessJustification).to.exist;
+  });
+
+  test("should set status to submitted when initially created", function() {
+    const body = res.getBody();
+    expect(body.status).to.equal('submitted');
+  });
+
+  test("should populate suggested timestamp", function() {
+    const body = res.getBody();
+    expect(body.suggestedAt).to.exist;
+    const suggestedAt = new Date(body.suggestedAt);
+    expect(suggestedAt).to.be.a('date');
+  });
+
+  test("should accept X-Correlation-ID header", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("should return location header", function() {
+    const locationHeader = res.getHeader('location');
+    if (locationHeader) {
+      expect(locationHeader).to.include('/partners/');
+      expect(locationHeader).to.include('/suggestions');
+    }
+  });
+}

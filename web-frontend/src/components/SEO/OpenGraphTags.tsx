@@ -22,8 +22,7 @@ export const OpenGraphTags = ({
 }: OpenGraphTagsProps) => {
   const siteName = 'BATbern';
   const fullTitle = `${title} | ${siteName}`;
-  const defaultImage =
-    image || 'https://cdn.batbern.ch/assets/default-event-cover.jpg';
+  const defaultImage = image || 'https://cdn.batbern.ch/assets/default-event-cover.jpg';
 
   return (
     <Helmet>

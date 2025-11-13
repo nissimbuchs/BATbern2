@@ -223,7 +223,10 @@ const CompanyManagementScreen: React.FC = () => {
           <Route
             path="/:id"
             element={
-              <CompanyDetailWrapper onBack={() => navigate('..')} onEdit={handleEditCompany} />
+              <CompanyDetailWrapper
+                onBack={() => navigate('/organizer/companies')}
+                onEdit={handleEditCompany}
+              />
             }
           />
         </Routes>

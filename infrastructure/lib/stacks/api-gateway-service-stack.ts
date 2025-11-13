@@ -19,11 +19,8 @@ export interface ApiGatewayServiceStackProps extends cdk.StackProps {
   databaseSecret?: secretsmanager.ISecret;
   userPool: cognito.IUserPool;
   userPoolClient: cognito.IUserPoolClient;
-  eventManagementServiceUrl?: string;
-  speakerCoordinationServiceUrl?: string;
-  partnerCoordinationServiceUrl?: string;
-  attendeeExperienceServiceUrl?: string;
-  companyUserManagementServiceUrl?: string;
+  // Note: Service URLs not needed - API Gateway uses Service Connect DNS names
+  // (e.g., http://event-management:8080) configured in environment variables below
 }
 
 /**

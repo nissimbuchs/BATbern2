@@ -65,8 +65,10 @@ find_api_calls() {
 
     # Find all axios/fetch calls in API service files
     # Look for patterns like: axios.get('/users'), apiClient.post('/companies'), etc.
+    # Filter out: test files and commented lines (template variables are handled later)
     grep -rn -E "(axios|apiClient|fetch)\.(get|post|put|patch|delete)\s*\(" "${api_service_dir}" 2>/dev/null | \
         grep -v "test\|spec\|mock" | \
+        grep -v "^[^:]*:[^:]*://.*$" | \
         sed -E "s/.*\.(get|post|put|patch|delete)\s*\(\s*['\`\"]([^'\`\"]+)['\`\"].*/\2 \1/g" | \
         awk '{print toupper($2) " " $1}' | \
         sort -u

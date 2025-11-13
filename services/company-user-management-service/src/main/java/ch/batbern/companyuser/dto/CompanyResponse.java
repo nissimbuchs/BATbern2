@@ -46,7 +46,7 @@ public class CompanyResponse {
 
     @JsonProperty("isVerified")
     @Schema(description = "Whether the company is verified by an ORGANIZER", example = "true")
-    private boolean isVerified;
+    private Boolean verified;
 
     @Schema(description = "Timestamp when the company was created", example = "2024-01-15T10:30:00Z")
     private Instant createdAt;

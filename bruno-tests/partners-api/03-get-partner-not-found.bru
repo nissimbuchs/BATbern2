@@ -1,0 +1,44 @@
+meta {
+  name: Get Partner Not Found (404)
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/partners/NonExist
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  Origin: https://staging.batbern.ch
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: de-CH
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 404
+}
+
+tests {
+  test("should return 404 status when partner not found", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+
+  test("should return ErrorResponse from shared-kernel", function() {
+    const body = res.getBody();
+    expect(body.message).to.exist;
+    expect(body.path).to.exist;
+    expect(body.correlationId).to.exist;
+  });
+
+  test("should have CORS headers even on error", function() {
+    const corsHeader = res.getHeader('access-control-allow-origin');
+    expect(corsHeader).to.exist;
+  });
+}

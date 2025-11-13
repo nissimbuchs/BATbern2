@@ -28,10 +28,10 @@ export interface EventManagementStackProps extends cdk.StackProps {
  *
  * Domain microservice for managing events, sessions, and schedules.
  * Handles /api/v1/events routes.
+ * Uses Service Connect for direct service-to-service communication (no ALB).
  */
 export class EventManagementStack extends cdk.Stack {
-  public readonly service: ecsPatterns.ApplicationLoadBalancedFargateService;
-  public readonly serviceUrl: string;
+  public readonly service: ecs.FargateService;
 
   constructor(scope: Construct, id: string, props: EventManagementStackProps) {
     super(scope, id, props);
@@ -72,18 +72,10 @@ export class EventManagementStack extends cdk.Stack {
     });
 
     this.service = domainService.service;
-    this.serviceUrl = domainService.serviceUrl;
 
     // Grant S3 permissions for event theme images (Story 2.5.3a)
     if (props.contentBucket) {
       props.contentBucket.grantReadWrite(this.service.taskDefinition.taskRole);
     }
-
-    // Outputs
-    new cdk.CfnOutput(this, 'ServiceUrl', {
-      value: this.serviceUrl,
-      description: 'Event Management Service internal URL',
-      exportName: `${envName}-event-management-url`,
-    });
   }
 }

@@ -45,7 +45,9 @@ vi.mock('@/components/public/Registration/RegistrationWizard', () => ({
 
 // Mock PublicLayout
 vi.mock('@/components/public/PublicLayout', () => ({
-  PublicLayout: ({ children }: { children: React.ReactNode }) => <div data-testid="public-layout">{children}</div>,
+  PublicLayout: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="public-layout">{children}</div>
+  ),
 }));
 
 describe('RegistrationPage Component', () => {

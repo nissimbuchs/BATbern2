@@ -102,13 +102,16 @@ async function searchCompaniesViaAPI(
   authToken: string,
   query: string
 ): Promise<CompanySearchResponse[]> {
-  const response = await fetch(`${API_URL}/api/v1/companies/search?query=${encodeURIComponent(query)}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${authToken}`,
-    },
-  });
+  const response = await fetch(
+    `${API_URL}/api/v1/companies/search?query=${encodeURIComponent(query)}`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+    }
+  );
 
   return response.json();
 }
@@ -301,16 +304,13 @@ test.describe('Company Search - API Endpoints', () => {
 
   test('should_limitResults_when_limitParameterProvided', async () => {
     // AC11: Result limiting (default 20 for autocomplete)
-    const response = await fetch(
-      `${API_URL}/api/v1/companies/search?query=test&limit=5`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`,
-        },
-      }
-    );
+    const response = await fetch(`${API_URL}/api/v1/companies/search?query=test&limit=5`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+    });
 
     const results = await response.json();
     expect(results.length).toBeLessThanOrEqual(5);
@@ -533,16 +533,13 @@ test.describe('Company Search - Advanced Query Patterns', () => {
 
   test('should_filterResults_when_filterParameterProvided', async () => {
     // AC14: Filter support
-    const response = await fetch(
-      `${API_URL}/api/v1/companies?filter=industry:Technology`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`,
-        },
-      }
-    );
+    const response = await fetch(`${API_URL}/api/v1/companies?filter=industry:Technology`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+    });
 
     const results = await response.json();
     expect(results.every((c: any) => c.industry === 'Technology')).toBe(true);
@@ -550,16 +547,13 @@ test.describe('Company Search - Advanced Query Patterns', () => {
 
   test('should_sortResults_when_sortParameterProvided', async () => {
     // AC14: Sort support
-    const response = await fetch(
-      `${API_URL}/api/v1/companies?sort=name:asc`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`,
-        },
-      }
-    );
+    const response = await fetch(`${API_URL}/api/v1/companies?sort=name:asc`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+    });
 
     const results = await response.json();
 
@@ -571,16 +565,13 @@ test.describe('Company Search - Advanced Query Patterns', () => {
 
   test('should_paginateResults_when_pageParameterProvided', async () => {
     // AC14: Pagination support
-    const response = await fetch(
-      `${API_URL}/api/v1/companies?page=1&limit=2`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`,
-        },
-      }
-    );
+    const response = await fetch(`${API_URL}/api/v1/companies?page=1&limit=2`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+    });
 
     const results = await response.json();
     expect(results.length).toBeLessThanOrEqual(2);
