@@ -3,6 +3,8 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ecsPatterns from 'aws-cdk-lib/aws-ecs-patterns';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import * as events from 'aws-cdk-lib/aws-events';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
@@ -17,6 +19,7 @@ export interface PartnerCoordinationStackProps extends cdk.StackProps {
   databaseSecret?: secretsmanager.ISecret;
   userPool: cognito.IUserPool;
   userPoolClient: cognito.IUserPoolClient;
+  eventBus?: events.IEventBus;
 }
 
 /**
@@ -24,16 +27,24 @@ export interface PartnerCoordinationStackProps extends cdk.StackProps {
  *
  * Domain microservice for managing partners, sponsors, and exhibitors.
  * Handles /api/v1/partners routes.
+ * Uses Service Connect for direct service-to-service communication (no ALB).
  */
 export class PartnerCoordinationStack extends cdk.Stack {
-  public readonly service: ecsPatterns.ApplicationLoadBalancedFargateService;
-  public readonly serviceUrl: string;
+  public readonly service: ecs.FargateService;
 
   constructor(scope: Construct, id: string, props: PartnerCoordinationStackProps) {
     super(scope, id, props);
 
     const envName = props.config.envName;
     const serviceName = 'partner-coordination';
+
+    // Build additional environment variables specific to this service
+    const additionalEnvironment: Record<string, string> = {
+      // EventBridge for domain events (PartnerCreatedEvent, TopicVoteSubmittedEvent, etc.)
+      ...(props.eventBus && {
+        EVENT_BUS_NAME: props.eventBus.eventBusName,
+      }),
+    };
 
     // Create domain service using reusable helper function
     const domainService = createDomainService(this, {
@@ -44,6 +55,7 @@ export class PartnerCoordinationStack extends cdk.Stack {
         routePattern: '/api/v1/partners',
         cpu: 256,
         memoryLimitMiB: 512,
+        additionalEnvironment,
       },
       cluster: props.cluster,
       vpc: props.vpc,
@@ -55,13 +67,17 @@ export class PartnerCoordinationStack extends cdk.Stack {
     });
 
     this.service = domainService.service;
-    this.serviceUrl = domainService.serviceUrl;
 
-    // Outputs
-    new cdk.CfnOutput(this, 'ServiceUrl', {
-      value: this.serviceUrl,
-      description: 'Partner Coordination Service internal URL',
-      exportName: `${envName}-partner-coordination-url`,
-    });
+    // Grant EventBridge permissions for domain events
+    // Service publishes: PartnerCreatedEvent, PartnerUpdatedEvent, TopicVoteSubmittedEvent, TopicSuggestionSubmittedEvent
+    if (props.eventBus) {
+      this.service.taskDefinition.taskRole.addToPrincipalPolicy(new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'events:PutEvents',
+        ],
+        resources: [props.eventBus.eventBusArn],
+      }));
+    }
   }
 }

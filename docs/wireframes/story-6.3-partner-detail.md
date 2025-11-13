@@ -1,9 +1,30 @@
 # Story 6.3: Partner Detail Screen - Wireframe
 
-**Story**: Epic 6, Story 6.3 - Partner Coordination
+**Story**: Story 2.8 (Epic 2) - Partner Management Frontend
 **Screen**: Partner Detail Screen
 **User Role**: Organizer (primary), Partner (self-view)
 **Related FR**: FR4 (Partner Analytics - Backlog), FR8 (Partner Strategic Input), FR12 (Logistics & Partner Meetings)
+
+**Implementation Scope:**
+- ✅ **Story 2.7** (Epic 2): Partner Coordination Service Foundation (backend APIs)
+  - Partner CRUD with meaningful IDs (`companyName`)
+  - Contact Management (stores `username`)
+  - Topic Voting & Suggestions
+  - Basic Meeting coordination
+- 📝 **Story 2.8** (Epic 2): Partner Management Frontend (THIS WIREFRAME)
+  - Organizer UI for partner detail view with tabbed interface
+  - Contact management UI
+  - Read-only topic voting and meeting display
+  - Notes system for organizer tracking
+- 📦 **Epic 8** (Deferred to Phase 2): Advanced Partner Portal Features
+  - Engagement score calculation & analytics dashboard (Story 6.1)
+  - Interactive topic voting interface (Story 6.4)
+  - Full meeting coordination with RSVP and materials (Story 6.2)
+
+**IMPORTANT (ADR-003 Compliance):**
+- All API endpoints use `{companyName}` (meaningful ID), NOT `{partnerId}` (UUID)
+- Contact endpoints use `{username}` (meaningful ID), NOT `{contactId}` or `{userId}` (UUID)
+- Example: `GET /api/v1/partners/GoogleZH` (NOT `/api/v1/partners/{uuid}`)
 
 ---
 
@@ -16,8 +37,8 @@
 │                                                                                   │
 │  ┌──── PARTNER HEADER ──────────────────────────────────────────────────────┐   │
 │  │                                                                           │   │
-│  │  ┌────────┐  ⭐ PREMIUM PARTNER                                          │   │
-│  │  │ Logo   │  TechCorp AG                      Engagement: ████████ 92%   │   │
+│  │  ┌────────┐  🏆 STRATEGIC PARTNER                                        │   │
+│  │  │ Logo   │  TechCorp AG (GoogleZH)           Engagement: ████████ 92%   │   │
 │  │  │        │                                                               │   │
 │  │  │ [150px]│  🏢 Software & IT Services                                   │   │
 │  │  │        │  🌐 www.techcorp.ch                                           │   │
@@ -46,9 +67,9 @@
 │  │                                                                           │   │
 │  │  ┌── PARTNERSHIP DETAILS ──────────┬── ENGAGEMENT METRICS ──────────┐   │   │
 │  │  │                                  │                                │   │   │
-│  │  │  Partnership Tier: ⭐ Premium   │  Overall Score: 92% (Excellent)│   │   │
-│  │  │  Tier Start Date: Jan 1, 2024   │                                │   │   │
-│  │  │  Previous Tier: 🥇 Gold         │  Score Breakdown:              │   │   │
+│  │  │  Partnership Tier: 🏆 Strategic │  Overall Score: 92% (Excellent)│   │   │
+│  │  │  Tier Start Date: Jan 1, 2024   │  ⚠️ Epic 8 Feature             │   │   │
+│  │  │  Previous Tier: 💎 Platinum     │  Score Breakdown:              │   │   │
 │  │  │                                  │  • Event Attendance: ████░ 85% │   │   │
 │  │  │  Benefits:                       │  • Topic Voting: █████ 95%    │   │   │
 │  │  │  ✓ Logo placement on website    │  • Meeting Participation: 100%│   │   │
@@ -357,114 +378,122 @@
 
 ### Initial Page Load APIs
 
-**Note**: This wireframe has been updated to use the consolidated Partners API from Story 1.18 (109 → 20 endpoints, 82% reduction).
+**Note**: This wireframe uses the Partners API from Story 2.7 (Partner Coordination Service Foundation).
 
-1. **GET /api/v1/partners/{partnerId}?include=analytics,contacts,meetings,employees,votes,settings**
-   - Consolidates: Former 10 separate API calls into single request with include parameter
+**IMPORTANT (ADR-003)**: All endpoints use `companyName` (meaningful ID), NOT UUID identifiers.
+
+1. **GET /api/v1/partners/{companyName}?include=contacts,votes,meetings** ✅ **ADR-003 Compliant**
+   - **ADR-003**: Path uses `companyName` (e.g., `/api/v1/partners/GoogleZH`)
    - Query params: include (comma-separated list of embedded resources)
-   - Returns: Complete partner entity with embedded data:
-     - Company: id, name, logo, website, industry, tier, partnerSince, swissUid
-     - Analytics: engagement score, breakdown, trend, alerts
-     - Contacts: primary and secondary contacts, communication preferences
-     - Meetings: upcoming and recent meeting summaries
-     - Employees: statistics, top attendees
-     - Votes: active topic votes
-     - Settings: partnership configuration (organizer only)
-   - Used for: Populate all tabs with single initial request
-   - **Consolidation Benefit**: Include parameter replaces 10+ separate API calls, reducing initial page load from 10 requests to 1 (90% reduction)
+   - Returns: Partner entity with embedded data from Story 2.7:
+     - Partner: companyName, partnershipLevel (BRONZE/SILVER/GOLD/PLATINUM/STRATEGIC), startDate, endDate, isActive
+     - Company: enriched via `GET /api/v1/companies/{companyName}` (HTTP call)
+     - Contacts: enriched via `GET /api/v1/users/{username}` per contact (HTTP calls)
+     - Votes: active topic votes with vote weight
+     - Meetings: basic meeting data
+   - Used for: Populate Overview and Contacts tabs
+   - **Story 2.8**: Additional tabs (Activity, Notes, Settings) use separate endpoints
+   - **Epic 8**: Analytics and engagement scores deferred (show placeholder in Story 2.8)
 
-2. **GET /api/v1/partners/{partnerId}/meetings?filter={"upcoming":true}&page=1&limit=10**
-   - Consolidates: Meetings filtering via JSON filter parameter
+2. **GET /api/v1/partners/{companyName}/meetings?filter={"upcoming":true}&page=1&limit=10** ✅ **ADR-003**
+   - **ADR-003**: Path uses `companyName` (e.g., `/api/v1/partners/GoogleZH/meetings`)
    - Query params: filter (JSON filter for upcoming/past), page, limit, sort
-   - Returns: Paginated meetings list with full details
-   - Used for: Load additional meetings when Meetings tab activated
-   - **Consolidation Benefit**: Single endpoint for all meeting queries via flexible filtering
+   - Returns: Paginated meetings list with basic details from Story 2.7
+   - Used for: Load meetings when Meetings tab activated
+   - **Story 2.7**: Basic meeting entity with type, dates, agenda
+   - **Epic 8 (Story 6.2)**: Full meeting coordination with RSVP, materials, minutes
 
-3. **GET /api/v1/partners/{partnerId}/activity?page=1&limit=20&sort=-timestamp**
-   - Consolidates: Activity timeline with standard pagination
+3. **GET /api/v1/partners/{companyName}/activity?page=1&limit=20&sort=-timestamp** ⚠️ **Story 2.8 Feature**
+   - **ADR-003**: Path uses `companyName`
+   - **Story 2.8**: Activity timeline endpoint to be implemented (basic audit log)
    - Query params: page, limit, sort, filter (optional activity type filter)
    - Returns: Paginated activity timeline
    - Used for: Load activity when Activity tab activated
-   - **Consolidation Benefit**: Standard list endpoint with pagination
+   - **Implementation**: Can derive from domain events or create dedicated activity log
 
-4. **GET /api/v1/partners/{partnerId}/notes?page=1&limit=10&sort=-createdAt**
-   - Consolidates: Notes with standard pagination
+4. **GET /api/v1/partners/{companyName}/notes?page=1&limit=10&sort=-createdAt** ⚠️ **Story 2.8 Feature**
+   - **ADR-003**: Path uses `companyName`
+   - **Story 2.8**: Notes system endpoint to be implemented (organizer-only)
    - Query params: page, limit, sort
    - Returns: Paginated organizer notes
    - Used for: Load notes when Notes tab activated
-   - **Consolidation Benefit**: Standard list endpoint pattern
+   - **Implementation**: New PartnerNote entity with content, createdBy, createdAt
 
 ### User Action APIs
 
-5. **PATCH /api/v1/partners/{partnerId}**
-    - Consolidates: Partner updates via PATCH (partial update)
+5. **PATCH /api/v1/partners/{companyName}** ✅ **ADR-003 Compliant**
+    - **ADR-003**: Path uses `companyName` (e.g., `/api/v1/partners/GoogleZH`)
     - Triggered by: User clicks [Edit Partner] and saves changes
-    - Payload: `{ name?: "string", website?: "string", industry?: "string" }`
-    - Returns: Updated partner entity with changed fields
-    - Used for: Update partner company information
-    - **Consolidation Benefit**: Standard PATCH pattern for all partner updates
+    - Payload: `{ partnershipLevel?: "GOLD", startDate?: "2025-01-01", endDate?: "2026-12-31" }`
+    - Returns: Updated partner entity
+    - Used for: Update partnership details (tier, dates)
+    - **Note**: Company information (name, website, industry) updated via Company Service
 
-6. **PATCH /api/v1/partners/{partnerId}**
-    - Consolidates: Tier changes via PATCH with tier-specific fields
+6. **PATCH /api/v1/partners/{companyName}** ✅ **ADR-003 Compliant** (Same as #5)
+    - **ADR-003**: Path uses `companyName`
     - Triggered by: User clicks [Change Tier] and confirms
-    - Payload: `{ tier: "premium|gold|silver|bronze", tierChangeReason: "string", tierEffectiveDate: "2025-05-01" }`
-    - Returns: Updated partner with new tier and audit trail
-    - Used for: Change partner tier level with audit trail
-    - **Consolidation Benefit**: Same PATCH endpoint handles tier changes
+    - Payload: `{ partnershipLevel: "STRATEGIC", startDate: "2025-05-01" }`
+    - Returns: Updated partner with new partnershipLevel
+    - Used for: Change partner tier level
+    - **Note**: Tier change audit trail could be added to Activity log (Story 2.8)
 
-7. **POST /api/v1/partners/{partnerId}/contacts**
-    - Maintains: Standard POST for creating contacts
+7. **POST /api/v1/partners/{companyName}/contacts** ✅ **ADR-003 Compliant**
+    - **ADR-003**: Path uses `companyName`, payload uses `username` (NOT userId UUID)
     - Triggered by: User clicks [+ Add Contact] in Contacts tab
-    - Payload: `{ name: "string", title: "string", email: "string", phone?: "string", role: "string", isPrimary: false }`
-    - Returns: Created contact entity
-    - Used for: Add new contact person for partner
+    - Payload: `{ username: "m.schmidt", role: "PRIMARY|BILLING|TECHNICAL|MARKETING" }`
+    - Returns: Created PartnerContact entity
+    - Used for: Add contact person (must be existing user in User Service)
+    - **Story 2.7**: Backend validates user exists via `GET /api/v1/users/{username}`
 
-8. **PATCH /api/v1/partners/{partnerId}/contacts/{contactId}**
-    - Consolidates: Contact updates via PATCH instead of PUT
+8. **PATCH /api/v1/partners/{companyName}/contacts/{username}** ✅ **ADR-003 Compliant**
+    - **ADR-003**: Path uses `companyName` and `username` (NOT contactId UUID)
     - Triggered by: User clicks [Edit Contact] and saves
-    - Payload: `{ name?: "string", title?: "string", email?: "string", phone?: "string", role?: "string" }`
-    - Returns: Updated contact entity
-    - Used for: Update contact information
-    - **Consolidation Benefit**: Standard PATCH for partial contact updates
+    - Payload: `{ role?: "PRIMARY|BILLING|TECHNICAL|MARKETING" }`
+    - Returns: Updated PartnerContact entity
+    - Used for: Update contact role
+    - **Note**: Contact personal info (name, email, phone) updated via User Service, not here
 
-9. **POST /api/v1/partners/{partnerId}/notes**
-    - Maintains: Standard POST for creating notes
+9. **POST /api/v1/partners/{companyName}/notes** ⚠️ **Story 2.8 Feature**
+    - **ADR-003**: Path uses `companyName`
+    - **Story 2.8**: Notes endpoint to be implemented
     - Triggered by: User clicks [+ Add New Note] in Notes tab
     - Payload: `{ content: "string", isPrivate: boolean }`
-    - Returns: Created note entity
+    - Returns: Created PartnerNote entity
     - Used for: Add organizer note about partner
 
-10. **PATCH /api/v1/partners/{partnerId}/notes/{noteId}**
-    - Consolidates: Note updates via PATCH instead of PUT
+10. **PATCH /api/v1/partners/{companyName}/notes/{noteId}** ⚠️ **Story 2.8 Feature**
+    - **ADR-003**: Path uses `companyName`
+    - **Story 2.8**: Notes update endpoint to be implemented
     - Triggered by: User clicks [Edit] on note and saves
     - Payload: `{ content: "string", isPrivate: boolean }`
-    - Returns: Updated note entity
+    - Returns: Updated PartnerNote entity
     - Used for: Edit existing note
-    - **Consolidation Benefit**: Standard PATCH pattern for partial updates
 
-11. **DELETE /api/v1/partners/{partnerId}/notes/{noteId}**
-    - Maintains: Standard DELETE pattern
+11. **DELETE /api/v1/partners/{companyName}/notes/{noteId}** ⚠️ **Story 2.8 Feature**
+    - **ADR-003**: Path uses `companyName`
+    - **Story 2.8**: Notes delete endpoint to be implemented
     - Triggered by: User clicks [Delete] on note and confirms
     - Returns: 204 No Content
     - Used for: Delete note
 
-12. **POST /api/v1/partners/{partnerId}/meetings**
-    - Consolidates: Meeting creation nested under partner resource
+12. **POST /api/v1/partners/{companyName}/meetings** ✅ **ADR-003 Compliant**
+    - **ADR-003**: Path uses `companyName`
     - Triggered by: User clicks [📅 Schedule Meeting] in header or [+ Schedule New Meeting] in Meetings tab
-    - Payload: `{ type: "strategic_planning|quarterly_review", proposedDates: [], duration: 120, location: "string", agenda: "string" }`
-    - Returns: Created meeting ID, availability conflicts, calendar invite
+    - Payload: `{ type: "strategic_planning|quarterly_review", proposedDates: [], agenda: "string" }`
+    - Returns: Created meeting ID
     - Used for: Schedule new partner meeting
-    - **Consolidation Benefit**: Partner-specific meetings use standard sub-resource POST
+    - **Story 2.7**: Basic meeting creation
+    - **Epic 8 (Story 6.2)**: Full meeting coordination with RSVP, calendar integration, materials
 
 13. **POST /api/v1/partners/export**
     - Consolidates: Bulk email as export action with email type
     - Triggered by: User clicks [📧 Send Email] in header
-    - Payload: `{ action: "email", partnerIds: ["uuid"], subject: "string", messageBody: "string", templateId?: "uuid" }`
+    - Payload: `{ action: "email", companyNames: ["GoogleZH", "MicrosoftBE"], subject: "string", messageBody: "string", templateId?: "uuid" }`
     - Returns: Email task ID, sending status
     - Used for: Send email to partner contacts
     - **Consolidation Benefit**: Unified export endpoint handles both email and file exports
 
-14. **PATCH /api/v1/partners/{partnerId}**
+14. **PATCH /api/v1/partners/{companyName}**
     - Consolidates: Settings updates via PATCH on settings section
     - Triggered by: User updates settings in Settings tab (organizer only)
     - Payload: `{ settings: { partnershipStatus?: "active|inactive", autoRenewal?: boolean, renewalDate?: "2026-01-01", accessPermissions?: {...} } }`
@@ -472,7 +501,7 @@
     - Used for: Update partnership configuration
     - **Consolidation Benefit**: Settings managed via same PATCH endpoint as other partner updates
 
-15. **POST /api/v1/partners/{partnerId}/export**
+15. **POST /api/v1/partners/{companyName}/export**
     - Consolidates: Data export using unified export endpoint
     - Triggered by: User clicks [Export Partner Data] in Settings tab
     - Payload: `{ exportType: "all", format: "json|csv", includeActivity: true, includeNotes: true }`
@@ -480,7 +509,7 @@
     - Used for: Export partner data for GDPR compliance or reporting
     - **Consolidation Benefit**: Same export endpoint used across all partner screens
 
-16. **DELETE /api/v1/partners/{partnerId}**
+16. **DELETE /api/v1/partners/{companyName}**
     - Consolidates: Data deletion using standard DELETE with options
     - Triggered by: User clicks [Delete Partner Data] in Settings tab and confirms
     - Payload: `{ deleteScope: "data-only|complete", gdprJustification: "string", confirmPassword: "string" }`
@@ -489,23 +518,22 @@
     - Used for: Delete partner data (GDPR right to erasure)
     - **Consolidation Benefit**: Standard RESTful DELETE with scope parameter
 
-17. **GET /api/v1/partners/{partnerId}/analytics?metrics=attendance,roi,engagement**
-    - Consolidates: Analytics via flexible metrics parameter
+17. **GET /api/v1/partners/{companyName}/analytics** ⚠️ **Deferred to Epic 8 (Story 6.1)**
+    - **ADR-003**: Path uses `companyName`
     - Triggered by: User clicks [📊 View Analytics] or [View Full Analytics →]
-    - Query params: metrics (flexible selection)
-    - Returns: Selected analytics metrics (if FR4 restored post-MVP)
-    - Used for: Navigate to or fetch partner analytics dashboard
-    - **Consolidation Benefit**: Same analytics endpoint used across all partner screens
+    - Status: **NOT IMPLEMENTED in Story 2.7/2.8** - Analytics dashboard deferred to Epic 8
+    - Story 2.8: Show "Coming soon" placeholder or disable button
+    - Epic 8 (Story 6.1): Full analytics with ROI calculations, engagement metrics
 
-18. **GET /api/v1/partners/{partnerId}/activity?filter={"type":"meeting","date":{"$gte":"2025-01-01"}}&page=1**
-    - Consolidates: Activity filtering via JSON filter parameter
+18. **GET /api/v1/partners/{companyName}/activity?filter={"type":"meeting","date":{"$gte":"2025-01-01"}}&page=1** ⚠️ **Story 2.8**
+    - **ADR-003**: Path uses `companyName`
+    - **Story 2.8**: Activity filtering to be implemented
     - Triggered by: User applies filters in Activity tab
     - Query params: filter (JSON with type, date range), page, limit
     - Returns: Filtered and paginated activity timeline
     - Used for: Filter activity by type and date range
-    - **Consolidation Benefit**: Flexible JSON filtering eliminates need for multiple query parameters
 
-19. **GET /api/v1/partners/{partnerId}/employees?page=1&limit=50**
+19. **GET /api/v1/partners/{companyName}/employees?page=1&limit=50**
     - Consolidates: Employees list with standard pagination
     - Triggered by: User clicks [View All Employees →] in Overview tab
     - Query params: page, limit, sort
@@ -525,15 +553,15 @@
 
 2. **[Edit Partner] button** → Opens `Edit Partner Modal`
    - Target: Modal overlay for partner editing
-   - Context: companyId, current partner data pre-filled
+   - Context: companyName, current partner data pre-filled
 
 3. **[📊 View Analytics] button** → Navigate to `Partner Analytics Dashboard` (FR4 backlog)
    - Target: Partner-specific analytics dashboard (if FR4 restored post-MVP)
-   - Context: partnerId, default date range (last 12 months)
+   - Context: companyName, default date range (last 12 months)
 
 4. **[View Full Analytics →] link** → Navigate to `Partner Analytics Dashboard` (FR4 backlog)
    - Target: Partner analytics dashboard (Engagement tab)
-   - Context: partnerId, engagement metrics focus
+   - Context: companyName, engagement metrics focus
 
 5. **[View All Activity →] link** → Navigate to `Activity tab`
    - Target: Same screen, Activity tab activated
@@ -541,7 +569,7 @@
 
 6. **[View All Employees →] link** → Navigate to `Employee List Screen` (MISSING)
    - Target: Dedicated employee list/management screen
-   - Context: partnerId, filter by company
+   - Context: companyName, filter by company
 
 ### Secondary Navigation (Data Interactions)
 
@@ -581,15 +609,15 @@
 
 15. **[📅 Schedule Meeting] button** → Navigate to `Meeting Scheduler` (story-6.2-partner-meetings.md)
     - Target: Meeting scheduling interface
-    - Context: partnerId, partner availability, calendar integration
+    - Context: companyName, partner availability, calendar integration
 
 16. **[📝 Add Note] button** → Opens `Add Note Modal`
     - Target: Note creation modal with rich text editor
-    - Context: partnerId, author (current organizer)
+    - Context: companyName, author (current organizer)
 
 17. **[+ Schedule New Meeting] button** → Navigate to `Meeting Scheduler`
     - Target: Meeting scheduling workflow
-    - Context: partnerId, meeting type selection
+    - Context: companyName, meeting type selection
 
 18. **[Change Tier] button** → Opens `Tier Change Modal`
     - Target: Modal for tier selection with reason input
@@ -598,12 +626,12 @@
 19. **[Export Partner Data] button** → Downloads file
     - Action: Generate and download partner data export
     - Target: File download (JSON or CSV)
-    - Context: partnerId, data export format selection
+    - Context: companyName, data export format selection
 
 ### Error States & Redirects
 
 20. **Partner not found** → Redirect to Partner Directory
-    - Condition: Invalid partnerId or deleted partner
+    - Condition: Invalid companyName or deleted partner
     - Action: Show error notification and redirect
     - Context: "Partner not found" message
 
@@ -734,30 +762,30 @@
 
 ### Server State (React Query)
 
-- `usePartnerDetails(partnerId)`: Partner company data, 5-minute cache, refetch on window focus
-- `usePartnerEngagement(partnerId)`: Engagement metrics, 30-second cache, auto-refetch every minute
-- `usePartnerContacts(partnerId)`: Contact information, 10-minute cache
-- `usePartnerMeetings(partnerId, upcoming)`: Meetings list, 2-minute cache
-- `usePartnerActivity(partnerId, filters)`: Activity timeline, 1-minute cache
-- `usePartnerNotes(partnerId)`: Notes list, 2-minute cache, optimistic updates on create/edit/delete
-- `usePartnerStatistics(partnerId)`: Statistics, 5-minute cache
-- `usePartnerSettings(partnerId)`: Settings (organizer only), 10-minute cache
+- `usePartnerDetails(companyName)`: Partner company data, 5-minute cache, refetch on window focus
+- `usePartnerEngagement(companyName)`: Engagement metrics, 30-second cache, auto-refetch every minute
+- `usePartnerContacts(companyName)`: Contact information, 10-minute cache
+- `usePartnerMeetings(companyName, upcoming)`: Meetings list, 2-minute cache
+- `usePartnerActivity(companyName, filters)`: Activity timeline, 1-minute cache
+- `usePartnerNotes(companyName)`: Notes list, 2-minute cache, optimistic updates on create/edit/delete
+- `usePartnerStatistics(companyName)`: Statistics, 5-minute cache
+- `usePartnerSettings(companyName)`: Settings (organizer only), 10-minute cache
 
 **Query Keys Structure:**
 ```typescript
-['partner', partnerId]
-['partner', partnerId, 'engagement']
-['partner', partnerId, 'contacts']
-['partner', partnerId, 'meetings', { upcoming: boolean }]
-['partner', partnerId, 'activity', { filters }]
-['partner', partnerId, 'notes']
-['partner', partnerId, 'statistics']
-['partner', partnerId, 'settings']
+['partner', companyName]
+['partner', companyName, 'engagement']
+['partner', companyName, 'contacts']
+['partner', companyName, 'meetings', { upcoming: boolean }]
+['partner', companyName, 'activity', { filters }]
+['partner', companyName, 'notes']
+['partner', companyName, 'statistics']
+['partner', companyName, 'settings']
 ```
 
 ### Real-Time Updates
 
-- **WebSocket Connection**: `/ws/partners/{partnerId}/updates`
+- **WebSocket Connection**: `/ws/partners/{companyName}/updates`
   - Real-time engagement score updates when partner activities occur (vote, attendance, meeting RSVP)
   - Activity timeline updates (new activity items pushed)
   - Meeting updates (RSVP status changes, agenda updates)

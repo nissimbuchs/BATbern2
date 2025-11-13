@@ -5,16 +5,17 @@ In progress
 
 ## Epic Overview
 
-**Epic Goal**: Deliver end-to-end CRUD functionality for all main platform entities (Company, Event, Speaker, User) with REST APIs and React frontend, enabling complete entity management across all user roles.
+**Epic Goal**: Deliver end-to-end CRUD functionality for all main platform entities (Company, Event, Speaker, User, Partner) with REST APIs and React frontend, enabling complete entity management across all user roles.
 
-**Deliverable**: Complete CRUD operations for Company, Event, Speaker, and User entities with role-based access, React frontend forms, and PostgreSQL persistence.
+**Deliverable**: Complete CRUD operations for Company, Event, Speaker, User, and Partner entities with role-based access, React frontend forms, and PostgreSQL persistence.
 
 **Architecture Context**:
-- **Backend Services**: Company Management, Event Management, Speaker Coordination (Java 21 + Spring Boot 3.2)
+- **Backend Services**: Company Management, Event Management, Speaker Coordination, Partner Coordination (Java 21 + Spring Boot 3.2)
 - **Database**: PostgreSQL with proper domain models and indexes
 - **Frontend**: React components with role-adaptive CRUD forms
 - **Cache**: Caffeine for entity search and performance
 - **Storage**: AWS S3 for logos, photos, and documents
+- **Service Integration**: HTTP-based communication following ADR-003 (meaningful IDs, JWT propagation)
 
 **Duration**: 9 weeks (Weeks 10-18) - includes API consolidation for production-ready RESTful APIs
 
@@ -27,7 +28,7 @@ In progress
 **✅ Completed Stories:**
 - ✅ **Story 2.1**: Company Management Service Foundation + API Consolidation (1.15a.6)
 - ✅ **Story 2.1b**: User Management Service Foundation + API Consolidation (1.15a.7, 1.15a.8)
-- ✅ **Story 1.15a.1**: Events API Consolidation
+- ✅ **Story 2.2**: Event Management Service Core + Architecture Compliance (refactored from 1.15a.1) - **Done**
 - ✅ **Story 2.4**: User Role Management + API Consolidation (implemented via Stories 2.1b + 2.5.2)
 
 - ✅ **Story 2.5**: React Frontend CRUD Foundation
@@ -36,12 +37,14 @@ In progress
   - ✅ **Story 2.5.2**: User Management Frontend (76/76 tests passing, all acceptance criteria met)
   - ✅ **Story 2.5.3**: Event Management Frontend
 
-**📝 Not Started:**
-- **Story 2.2**: Event Management Service Core + API Consolidation (1.15a.1)
-- **Story 2.3**: Speaker Coordination Service Foundation + API Consolidation (1.15a.3)
-- **Story 2.6**: User Account Management Frontend (Basic Profile + Settings)
+- ✅ **Story 2.6**: User Account Management Frontend (Basic Profile + Settings) - **Accepted**
+- ✅ **Story 2.7**: Partner Coordination Service Foundation + API Consolidation (1.15a.2) - **Done**
 
-**Progress:** 4/7 stories complete (57%)
+**📝 Not Started:**
+- **Story 2.3**: Speaker Coordination Service Foundation + API Consolidation (1.15a.3)
+- **Story 2.8**: Partner Management Frontend (NEW - completes CRUD pattern for all core entities)
+
+**Progress:** 7/9 stories complete (77.8%)
 
 ---
 
@@ -51,11 +54,13 @@ This epic consolidates stories originally in Epic 1 (1.14-1.20, 1.17) that provi
 
 - ✅ **Story 2.1 (formerly 1.14)**: Company Management Service Foundation **+ API Consolidation (1.15a.6, 1.15a.2)** - **Done**
 - ✅ **Story 2.1b (formerly 1.14-2)**: User Management Service Foundation **+ API Consolidation (1.15a.7, 1.15a.8)** - **Done**
-- **Story 2.2 (formerly 1.16)**: Event Management Service Core **+ API Consolidation (1.15a.1)** - **Not Started**
+- ✅ **Story 2.2 (formerly 1.16)**: Event Management Service Core **+ Architecture Compliance (refactored from 1.15a.1)** - **Done**
 - **Story 2.3 (formerly 1.19)**: Speaker Coordination Service Foundation **+ API Consolidation (1.15a.3)** - **Not Started**
 - ✅ **Story 2.4 (formerly 1.20)**: User Role Management **+ API Consolidation** - **Done** (implemented via Stories 2.1b + 2.5.2)
 - ✅ **Story 2.5 (formerly 1.17 partial)**: React Frontend CRUD Foundation (consuming consolidated APIs) - **Done**
-- **Story 2.6**: User Account Management Frontend (Basic Profile + Settings) - **Not Started** (consolidates story-1.20 + story-5.2 basic features)
+- ✅ **Story 2.6**: User Account Management Frontend (Basic Profile + Settings) - **Accepted** (consolidates story-1.20 + story-5.2 basic features)
+- ✅ **Story 2.7**: Partner Coordination Service Foundation **+ API Consolidation (1.15a.2)** - **Done**
+- **Story 2.8**: Partner Management Frontend - **Not Started** (NEW - uses wireframes story-6.3-partner-directory.md, story-6.3-partner-detail.md)
 
 **API Consolidation Integration:** Each microservice story includes its domain-specific API consolidation (1.15a.x), using the foundation from Story 1.15a (already complete in Epic 1). This ensures RESTful patterns are implemented from the start, avoiding technical debt and future refactoring.
 
@@ -180,11 +185,15 @@ As a **user of any role**, I want my user profile, preferences, and settings man
 
 ---
 
-## Story 2.2: Event Management Service Core + API Consolidation
-**(Formerly Story 1.16, includes 1.15a.1 Events API Consolidation)**
+## Story 2.2: Event Management Service Core + Architecture Compliance
+**(Formerly Story 1.16, refactored from 1.15a.1 Events API Consolidation)**
+
+**Status:** ✅ Done
 
 **User Story:**
 As an **organizer**, I want to access and manage events through consolidated RESTful APIs that load all event data efficiently, so that I can plan conferences without making dozens of API calls.
+
+**Note:** This was a refactoring story. The core functionality was implemented in Story 1.15a.1, and Story 2.2 brought it to full architecture compliance with OpenAPI Generator, shared-kernel integration, and meaningful IDs (eventCode pattern).
 
 **Architecture Integration:**
 - **Service**: `event-management-service/` (Java 21 + Spring Boot 3.2)
@@ -491,7 +500,7 @@ This story implements the frontend consuming all entity CRUD APIs. Wireframes ar
 
 ## Story 2.6: User Account Management Frontend (Basic Profile + Settings)
 
-**Status:** Not Started
+**Status:** ✅ Accepted
 
 **User Story:**
 As a **user of any role**, I want to view and manage my account through a unified interface with basic profile and settings, so that I can maintain my personal information and configure essential preferences.
@@ -584,11 +593,83 @@ As a **user of any role**, I want to view and manage my account through a unifie
 
 ---
 
+## Story 2.7: Partner Coordination Service Foundation + API Consolidation
+**(Includes 1.15a.2 Partners API Consolidation)**
+
+**Status:** ✅ Done
+
+**User Story:**
+As an **organizer**, I want the foundational Partner Coordination Service with consolidated RESTful APIs, so that I can manage partner relationships, partner contacts, topic votes, and meeting coordination efficiently without multiple API calls.
+
+**Architecture Integration:**
+- **Service**: `partner-coordination-service/` (Java 21 + Spring Boot 3.2)
+- **Database**: PostgreSQL with partner domain schema
+- **Cache**: Caffeine for partner data and HTTP responses (15min TTL)
+- **API Foundation**: Uses Story 1.15a utilities for filtering, sorting, pagination
+- **HTTP Clients**: CompanyServiceClient, UserServiceClient for meaningful ID enrichment
+- **Testing**: Extends `ch.batbern.shared.test.AbstractIntegrationTest` from testFixtures
+
+**Key Functionality:**
+1. Partner CRUD operations with consolidated API patterns
+2. Partner contact management (storing username, not userId UUID)
+3. Topic voting system with weighted votes
+4. Topic suggestion workflow
+5. Partner meeting coordination
+6. **ADR-003 Compliance**: Stores meaningful IDs (companyName, username) instead of UUIDs
+7. **HTTP Integration**: Calls Company/User services for data enrichment with JWT propagation
+8. **Resource Expansion**: `?include=company,contacts,votes` for partner detail in single call
+9. **Advanced Search**: Filter partners by tier, status, company with JSON filter syntax
+10. **Performance**: Partner detail with includes <300ms P95
+
+**Architecture Compliance (ADR-003 Microservices):**
+- **NO cross-service database joins** (NO JPQL joins to companies/users tables)
+- **Stores meaningful IDs**: `companyName` (String), `username` (String) - NOT UUIDs
+- **HTTP enrichment**: UserServiceClient, CompanyServiceClient with JWT token propagation
+- **Error handling**: HttpClientErrorException.NotFound, HttpServerErrorException, ResourceAccessException
+- **Testing pattern**: Spring @MockBean with Mockito (NOT WireMock)
+- **TestFixtures**: Extends `ch.batbern.shared.test.AbstractIntegrationTest` (NO custom AbstractIntegrationTest)
+
+**Acceptance Criteria Summary:**
+- [ ] Partner aggregate with partnership tier management
+- [ ] PartnerContact entity storing username (meaningful ID, NOT userId UUID)
+- [ ] **Consolidated REST API** implementing Story 1.15a.2 patterns
+- [ ] OpenAPI documentation for all consolidated endpoints
+- [ ] Database schema with Flyway migrations (NO foreign keys to companies/users)
+- [ ] HTTP Clients: CompanyServiceClient, UserServiceClient with JWT propagation
+- [ ] CacheConfig class with named caches (partners, companies, users) - 15min TTL
+- [ ] **API Consolidation**: Support `?include=company,contacts,votes,meetings` for resource expansion
+- [ ] **Advanced Search**: Filter by tier, active status, companyName with JSON filter syntax
+- [ ] **Performance**: List <100ms, detail <150ms, detail+includes <300ms (all P95)
+- [ ] Domain events publishing to EventBridge
+- [ ] Integration tests using testFixtures AbstractIntegrationTest
+- [ ] Unit tests with @MockBean for HTTP clients (NOT WireMock)
+
+**Testing Requirements:**
+- [ ] Extends `ch.batbern.shared.test.AbstractIntegrationTest` from testFixtures
+- [ ] TestConfiguration classes: TestCompanyServiceClientConfig, TestUserServiceClientConfig
+- [ ] HTTP client mocking via Spring @MockBean with Mockito
+- [ ] Build.gradle includes `testImplementation testFixtures(project(':shared-kernel'))`
+- [ ] NO custom AbstractIntegrationTest.java file
+- [ ] NO WireMock dependencies
+- [ ] NO Resilience4j dependencies
+
+**Estimated Duration:** 2.5 weeks (includes API consolidation implementation + HTTP client integration)
+
+**References:**
+- Story file: `docs/stories/2.7.partner-coordination-service-foundation.md`
+- API consolidation: `docs/stories/1.15a.2.partners-api-consolidation.md`
+- ADR-003: `docs/architecture/ADR-003-meaningful-identifiers-public-apis.md`
+- Event-management-service: Reference implementation for HTTP clients with JWT propagation
+
+**Important Scope Note:** This story provides partner entity CRUD with consolidated APIs and HTTP-based service integration (ADR-003 compliant). Partner portal, invitation workflows, and advanced partner features are deferred to Epic 8 (Partner Coordination & Engagement).
+
+---
+
 ## Epic 2 Success Metrics
 
 **Functional Success (End of Week 18):**
-- ✅ All entities have complete CRUD operations (Company, Event, Speaker, User)
-- ✅ **Consolidated RESTful APIs** operational for all entities (Stories 1.15a.1-1.15a.8)
+- ✅ All entities have complete CRUD operations (Company, Event, Speaker, User, Partner)
+- ✅ **Consolidated RESTful APIs** operational for all entities (Stories 1.15a.1-1.15a.8 + 1.15a.2)
 - ✅ 100% of CRUD and consolidated APIs documented in OpenAPI specifications
 - ✅ Role-based access control operational for all entities
 - ✅ React frontend with role-adaptive navigation deployed
@@ -601,8 +682,9 @@ As a **user of any role**, I want to view and manage my account through a unifie
 - **API Response Times**:
   - Basic CRUD: <200ms P95 for all operations
   - Event detail with includes: <500ms P95
-  - Company/Speaker detail with includes: <200-300ms P95
+  - Company/Speaker/Partner detail with includes: <200-300ms P95
   - User list with filters: <150ms P95
+  - Partner detail with HTTP enrichment: <300ms P95
 - **API Efficiency**: 80-90% reduction in HTTP requests per page load (via `?include=` expansion)
 - **Search Performance**: Company/speaker/event search <500ms with advanced filters
 - **Frontend Load Time**: Initial load <2.5s, subsequent <1s (improved via API consolidation)
@@ -627,6 +709,138 @@ As a **user of any role**, I want to view and manage my account through a unifie
 
 ---
 
+## Story 2.8: Partner Management Frontend (Split into 2.8.1 - 2.8.4)
+
+**Status:** Split into focused stories (2.8.1, 2.8.2, 2.8.3, 2.8.4)
+
+**Original User Story:**
+As an **organizer**, I want a React frontend interface for partner management with directory listing, detail views, and CRUD operations, so that I can efficiently manage partner relationships through an intuitive user interface accessible from the main navigation.
+
+**Story Split Rationale:**
+Story 2.8 was split into four focused stories for better manageability, clearer acceptance criteria, and independent deployment:
+
+### Story 2.8.1: Partner Directory
+**Status:** Draft
+
+**Focus:** Partner list screen with search, filtering, and navigation
+
+**Key Features:**
+- Partner directory with search by name (debounced 300ms)
+- Filtering by tier (Strategic, Platinum, Gold, Silver, Bronze) and status (Active/Inactive)
+- Quick filter chips for tier selection
+- Grid/List view toggle (persisted in localStorage)
+- Partner overview statistics (total, active, tier distribution)
+- Partner cards with logo, tier badge, company info, engagement placeholder
+- Pagination (20 partners per page)
+- Top navigation integration ("Partners" menu item)
+- Navigate to detail view on card click
+
+**Wireframe:** `docs/wireframes/story-6.3-partner-directory.md`
+
+**Story File:** `docs/stories/2.8.1.partner-directory.md`
+
+### Story 2.8.2: Partner Detail View
+**Status:** Draft
+
+**Focus:** Partner detail screen with tabbed interface and comprehensive information display
+
+**Key Features:**
+- Partner detail header (logo, tier badge, company info, engagement placeholder)
+- Quick stats cards (partner since, events attended, active votes, meetings)
+- Tab navigation (Overview, Contacts, Meetings, Activity, Notes, Settings)
+- Overview tab (partnership details, engagement placeholder, recent activity, topic votes)
+- Meetings tab (read-only meetings list with RSVP status)
+- Activity tab (timeline of partner activities with filtering)
+- Notes tab (organizer notes CRUD)
+- Settings tab (partnership status, auto-renewal - organizer only)
+- Back button to directory
+- Edit button to open modal (Story 2.8.3)
+
+**Wireframe:** `docs/wireframes/story-6.3-partner-detail.md`
+
+**Story File:** `docs/stories/2.8.2.partner-detail-view.md`
+
+**Dependencies:** Story 2.8.1 (navigation from directory)
+
+### Story 2.8.3: Partner Create/Edit Modal
+**Status:** Draft
+
+**Focus:** Modal form for creating new partnerships and editing existing partnership details
+
+**Key Features:**
+- Create partner modal (triggered from directory [+ Add Partner] button)
+- Edit partner modal (triggered from detail view [Edit Partner] button)
+- Company autocomplete search (min 2 chars, debounced 300ms)
+- Partnership tier dropdown (with emoji icons 🏆💎🥇🥈🥉)
+- Partnership start/end date pickers (MUI X DatePicker)
+- Tier benefits preview (updates dynamically based on tier)
+- Form validation (Zod schema with i18n errors)
+- Dirty detection with unsaved changes warning
+- Create mutation (POST /partners) with navigation to detail view
+- Update mutation (PATCH /partners/{companyName}) with optimistic update
+
+**Wireframe:** `docs/wireframes/story-6.3-partner-directory.md` (Create Modal), `story-6.3-partner-detail.md` (Edit Modal)
+
+**Story File:** `docs/stories/2.8.3.partner-create-edit-modal.md`
+
+**Dependencies:** Story 2.8.1 (create trigger), Story 2.8.2 (edit trigger)
+
+### Story 2.8.4: Partner Contact Management
+**Status:** Draft
+
+**Focus:** Contact management within Contacts tab - add/remove contacts with role assignment
+
+**Key Features:**
+- Contacts tab integration (from Story 2.8.2)
+- Contact list with enriched user data (name, email, role, profile picture)
+- Contact cards with role badges (👤 PRIMARY, 💳 BILLING, 🔧 TECHNICAL, 📧 MARKETING)
+- Primary contact indicator (⭐ star badge)
+- Add contact modal (user autocomplete, role selection, primary toggle)
+- Remove contact with confirmation dialog
+- Primary contact validation (at least one PRIMARY required)
+- User autocomplete search (by username or email)
+- Optimistic updates for add/remove operations
+- Error handling (409 duplicate, 400 primary validation, 404 not found)
+
+**Wireframe:** `docs/wireframes/story-6.3-partner-detail.md` (Contacts Tab)
+
+**Story File:** `docs/stories/2.8.4.partner-contact-management.md`
+
+**Dependencies:** Story 2.8.2 (Contacts tab container)
+
+---
+
+**Architecture Integration (All Stories):**
+- **Frontend**: React 19.x application (TypeScript, Material-UI v5, Zustand, React Query, React Hook Form, Zod)
+- **Backend**: Partner Coordination Service REST APIs (from Story 2.7)
+- **Integration**: Company Management Service (for company data), User Management Service (for contact data)
+- **CDN**: CloudFront for company logos and user profile pictures
+- **Cache**: React Query (2min for lists, 5min for detail, 10min for contacts)
+- **HTTP Enrichment (ADR-004)**: Backend enriches partner data with company/user info via HTTP calls
+
+**Shared Acceptance Criteria (All Stories):**
+- Responsive design (mobile/tablet/desktop)
+- Accessibility (WCAG 2.1 AA)
+- Performance (<2s load, <200ms interactions)
+- Internationalization (German/English)
+- Integration tests with Story 2.7 APIs
+
+**Deferred to Epic 8 (Partner Portal - Phase 2):**
+- Analytics dashboard (Story 6.1) - Advanced engagement analytics
+- Interactive topic voting interface (Story 6.4) - Weighted voting with priorities
+- Meeting coordination UI (Story 6.2) - Full meeting scheduling and RSVP management
+- Email integration, bulk actions, advanced search, export functionality
+
+**Story 2.8.x completes the Epic 2 CRUD pattern:**
+| Entity | Backend Service | Frontend CRUD |
+|--------|----------------|---------------|
+| **Company** | Story 2.1 ✅ | Story 2.5.1 ✅ |
+| **User** | Story 2.1b ✅ | Story 2.5.2 ✅ |
+| **Event** | Story 2.2 ✅ | Story 2.5.3 ✅ |
+| **Partner** | Story 2.7 ✅ | Stories 2.8.1-2.8.4 📝 NEW |
+
+---
+
 ## Dependencies & Prerequisites
 
 **Required Before Starting Epic 2:**
@@ -642,32 +856,45 @@ As a **user of any role**, I want to view and manage my account through a unifie
 - **Epic 4**: Public Website (requires Event Management APIs for public display)
 - **Epic 5**: Enhanced Organizer Workflows (builds on Event Management Service)
 - **Epic 6**: Speaker Portal (builds on Speaker Coordination Service)
+- **Epic 8**: Partner Coordination (builds on Story 2.7 backend + Story 2.8 frontend for advanced partner portal features)
 
 ---
 
 ## Implementation Sequence
 
 **Week 10-12: Backend Services (Parallel with User Management)**
-- Story 2.1: Company Management Service + API Consolidation (2.5 weeks)
-- Story 2.1b: User Management Service + API Consolidation (2 weeks) - start parallel
-- Story 2.2: Event Management Service + API Consolidation (3 weeks) - start parallel
-- Story 2.3: Speaker Coordination Service + API Consolidation (2.5 weeks) - start parallel
+- Story 2.1: Company Management Service + API Consolidation (2.5 weeks) ✅ Done
+- Story 2.1b: User Management Service + API Consolidation (2 weeks) ✅ Done
+- Story 2.2: Event Management Service + Architecture Compliance (refactoring) ✅ Done
+- Story 2.3: Speaker Coordination Service + API Consolidation (2.5 weeks) - Not Started
+- Story 2.7: Partner Coordination Service + API Consolidation (2.5 weeks) ✅ Done
 
 **Week 13: User Role Management & Integration**
-- Story 2.4: User Role Management + API Consolidation (2 weeks) - depends on Story 2.1b
+- Story 2.4: User Role Management + API Consolidation (2 weeks) ✅ Done
 - Integration testing across all backend services (0.5 weeks)
 
 **Week 14-18: Frontend Development**
-- Story 2.5: React Frontend CRUD Foundation consuming consolidated APIs (3 weeks)
+- Story 2.5: React Frontend CRUD Foundation consuming consolidated APIs (3 weeks) ✅ Done
+  - Story 2.5.1: Company Management Frontend ✅ Done
+  - Story 2.5.2: User Management Frontend ✅ Done
+  - Story 2.5.3: Event Management Frontend ✅ Done
+- Story 2.6: User Account Management Frontend (2 weeks) ✅ Accepted
+- Story 2.8: Partner Management Frontend (1.5 weeks) - Not Started
 - End-to-end testing and bug fixes (2 weeks)
 
 **Rationale:**
 - Backend services can be developed in parallel by different developers
 - Story 2.1b (User Management) can be developed parallel to Story 2.1 (Company Management)
-- Story 2.4 (User Role Management) depends on Story 2.1b completion
+- Story 2.7 (Partner Coordination) depends on Story 2.1 + 2.1b (requires Company/User services for HTTP integration) - ✅ Complete
+- Story 2.4 (User Role Management) depends on Story 2.1b completion - ✅ Complete
 - API consolidation adds ~0.5 weeks per service (worth it to avoid future refactoring)
 - Frontend development benefits from consolidated APIs (fewer integration points)
 - Extra time for frontend reflects complexity of consuming resource expansion APIs
+
+**Current Status (Updated):**
+- 7 out of 9 stories complete (77.8% progress)
+- Remaining stories: 2.3 (Speaker Coordination Service Foundation), 2.8 (Partner Management Frontend - NEW)
+- Epic 2 backend services nearly complete (4/5), frontend CRUD pattern needs Partner UI to be complete
 
 ---
 
@@ -693,13 +920,29 @@ As a **user of any role**, I want to view and manage my account through a unifie
 ## Transition to Epic 3
 
 **Epic 2 Exit Criteria:**
-- [ ] All 5 stories (2.1-2.5) marked as complete
-- [ ] All acceptance criteria verified
-- [ ] Integration tests passing across all services
-- [ ] Frontend deployed and accessible
-- [ ] Performance benchmarks met
-- [ ] Security scan showing zero critical vulnerabilities
-- [ ] Stakeholder demo completed successfully
+- [x] Story 2.1 (Company Management Service) - Complete ✅
+- [x] Story 2.1b (User Management Service) - Complete ✅
+- [x] Story 2.2 (Event Management Service Core + Architecture Compliance) - Complete ✅
+- [ ] Story 2.3 (Speaker Coordination Service) - Not Started
+- [x] Story 2.4 (User Role Management) - Complete ✅
+- [x] Story 2.5 (React Frontend CRUD Foundation) - Complete ✅
+  - [x] Story 2.5.1 (Company Management Frontend) ✅
+  - [x] Story 2.5.2 (User Management Frontend) ✅
+  - [x] Story 2.5.3 (Event Management Frontend) ✅
+- [x] Story 2.6 (User Account Management Frontend) - Accepted ✅
+- [x] Story 2.7 (Partner Coordination Service) - Complete ✅
+- [ ] Story 2.8 (Partner Management Frontend) - Not Started (NEW)
+- [x] All completed acceptance criteria verified ✅
+- [x] Integration tests passing for completed services ✅
+- [x] Frontend deployed and accessible ✅
+- [x] Performance benchmarks met for completed features ✅
+- [x] Security scan showing zero critical vulnerabilities ✅
+- [x] All completed services follow ADR-003 microservices pattern ✅
+
+**Progress: 7/9 stories complete (77.8%)**
+**Remaining:**
+- Speaker Coordination Service Foundation (2.3)
+- Partner Management Frontend (2.8) - NEW story to complete CRUD pattern for all entities
 
 **Handoff to Epic 3 (Historical Data Migration):**
 - Entity CRUD APIs operational and ready to receive migrated data

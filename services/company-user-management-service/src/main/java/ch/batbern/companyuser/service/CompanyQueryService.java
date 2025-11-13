@@ -119,7 +119,7 @@ public class CompanyQueryService {
                 .website(company.getWebsite())
                 .industry(company.getIndustry())
                 .description(company.getDescription())
-                .isVerified(company.isVerified())
+                .verified(company.isVerified())
                 .createdAt(company.getCreatedAt())
                 .updatedAt(company.getUpdatedAt())
                 .createdBy(company.getCreatedBy());
@@ -162,7 +162,7 @@ public class CompanyQueryService {
         if (selectedFields.contains("website")) filteredBuilder.website(tempResponse.getWebsite());
         if (selectedFields.contains("industry")) filteredBuilder.industry(tempResponse.getIndustry());
         if (selectedFields.contains("description")) filteredBuilder.description(tempResponse.getDescription());
-        if (selectedFields.contains("isVerified")) filteredBuilder.isVerified(tempResponse.isVerified());
+        if (selectedFields.contains("isVerified")) filteredBuilder.verified(tempResponse.getVerified());
         if (selectedFields.contains("createdAt")) filteredBuilder.createdAt(tempResponse.getCreatedAt());
         if (selectedFields.contains("updatedAt")) filteredBuilder.updatedAt(tempResponse.getUpdatedAt());
         if (selectedFields.contains("createdBy")) filteredBuilder.createdBy(tempResponse.getCreatedBy());

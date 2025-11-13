@@ -86,15 +86,14 @@ public class CompanyController {
 
     /**
      * Get company by name
-     * Requires authentication
+     * Public endpoint for partner showcase enrichment
      * AC4: Company retrieval endpoint
      * Story 1.16.2: Use company name as identifier instead of UUID
      */
     @GetMapping("/{name}")
-    @PreAuthorize("isAuthenticated()")
     @Operation(
             summary = "Get company by name",
-            description = "Retrieves a company by its unique name. Requires authentication. Story 1.16.2: Uses company name instead of UUID."
+            description = "Retrieves a company by its unique name. Public endpoint for partner showcase logo/website enrichment. Story 1.16.2: Uses company name instead of UUID."
     )
     @ApiResponses(value = {
             @ApiResponse(

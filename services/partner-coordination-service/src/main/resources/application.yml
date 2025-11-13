@@ -7,6 +7,82 @@ spring:
   application:
     name: partner-coordination-service
 
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/batbern}
+    username: ${DATABASE_USERNAME:batbern}
+    password: ${DATABASE_PASSWORD:changeme}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate # Let Flyway manage schema
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+    out-of-order: false
+    validate-on-migrate: true
+    clean-disabled: true
+    locations: classpath:db/migration
+    table: flyway_schema_history_partner_coordination
+
+  # Cache configuration
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=10m
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${COGNITO_ISSUER_URI:https://cognito-idp.${AWS_REGION:eu-central-1}.amazonaws.com/${COGNITO_USER_POOL_ID:}}
+          jwk-set-uri: ${COGNITO_JWK_SET_URI:https://cognito-idp.${AWS_REGION:eu-central-1}.amazonaws.com/${COGNITO_USER_POOL_ID:}/.well-known/jwks.json}
+
+# AWS Configuration
+aws:
+  region: ${AWS_REGION:eu-central-1}
+  eventbridge:
+    bus-name: ${EVENT_BUS_NAME:batbern-staging}
+    source: ch.batbern.partners
+
+# HTTP Clients for Microservices Communication (ADR-003)
+# Service Connect DNS: http://{service-name}:8080
+company-service:
+  base-url: ${COMPANY_USER_MANAGEMENT_SERVICE_URL:http://company-user-management:8080}
+
+user-service:
+  base-url: ${COMPANY_USER_MANAGEMENT_SERVICE_URL:http://company-user-management:8080}
+
+# Resilience4j Circuit Breaker
+resilience4j:
+  circuitbreaker:
+    instances:
+      companyService:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10000
+      userService:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10000
+
 management:
   endpoints:
     web:
@@ -50,3 +126,76 @@ info:
       id: ${git.commit.id.abbrev:unknown}
       time: ${git.commit.time:unknown}
     branch: ${git.branch:unknown}
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    ch.batbern: ${LOG_LEVEL:DEBUG}
+    org.springframework.web: INFO
+    org.springframework.security: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# SpringDoc OpenAPI Configuration
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: alpha
+    tags-sorter: alpha
+  show-actuator: true
+
+---
+# Local Profile Configuration (for native development)
+spring:
+  config:
+    activate:
+      on-profile: local
+
+company-service:
+  base-url: ${COMPANY_USER_MANAGEMENT_SERVICE_URL:http://localhost:8081}
+
+user-service:
+  base-url: ${COMPANY_USER_MANAGEMENT_SERVICE_URL:http://localhost:8081}
+
+logging:
+  level:
+    root: INFO
+    ch.batbern: DEBUG
+
+---
+# Test Profile Configuration
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  datasource:
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9999/oauth2/default
+
+logging:
+  level:
+    root: INFO
+    ch.batbern: DEBUG
+    org.testcontainers: INFO
+    com.github.dockerjava: WARN

@@ -54,14 +54,21 @@ The initial BATbern platform design used UUIDs as primary identifiers exposed in
 
 We have decided to implement a **dual-identifier strategy** where:
 
-### Database Layer (Internal - UUIDs)
+### Database Layer (Internal - UUIDs for Own Entities Only)
 
-- **UUID primary keys** remain for all entities
-- **Foreign keys use UUIDs** for joins and referential integrity
+**Within-Service References (Same Microservice)**:
+- **UUID primary keys** for all entities owned by this service
+- **UUID foreign keys** ONLY for relationships within the same service's database
 - **Performance characteristics** of UUID PKs preserved:
   - B-tree index efficiency
   - Immutable identifiers (safe for caching)
   - Distributed ID generation (no coordination needed)
+
+**Cross-Service References (Different Microservices)**:
+- **NEVER use UUID foreign keys** to entities in other services
+- **ALWAYS store meaningful IDs** (companyName, username, eventCode) for cross-service references
+- **NO database foreign key constraints** across service boundaries
+- **Microservice isolation** - each service owns its own database schema
 
 ### API Layer (Public - Meaningful Identifiers)
 
@@ -183,6 +190,177 @@ Optional<EventResponse> findEventResponseByCode(@Param("eventCode") String event
 - Automatic FK resolution (UUID → username)
 - Type-safe DTO construction
 - Performant (index-backed joins)
+
+### Microservice Isolation Rules
+
+**CRITICAL: Services MUST store meaningful IDs for cross-service references, NOT UUIDs.**
+
+#### Rule 1: Own Entities Use UUID PKs
+
+```java
+// ✅ CORRECT: Event entity in event-management-service
+@Entity
+@Table(name = "events")
+public class Event {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID id;  // ✅ UUID PK for entity owned by this service
+
+    @Column(name = "event_code", nullable = false, unique = true)
+    private String eventCode;  // ✅ Meaningful ID for public APIs
+}
+```
+
+#### Rule 2: Cross-Service References Use Meaningful IDs (NOT UUIDs)
+
+```java
+// ✅ CORRECT: Partner entity in partner-coordination-service
+@Entity
+@Table(name = "partners")
+public class Partner {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID id;  // ✅ UUID PK for Partner (owned by this service)
+
+    // Cross-service reference to Company (different service)
+    @Column(name = "company_name", nullable = false, unique = true, length = 12)
+    private String companyName;  // ✅ Meaningful ID, NOT companyId UUID
+
+    // NO: private UUID companyId;  ❌ WRONG - don't use UUID for other service's entity
+}
+
+// ✅ CORRECT: PartnerContact entity
+@Entity
+@Table(name = "partner_contacts")
+public class PartnerContact {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID id;
+
+    @Column(name = "partner_id", nullable = false)
+    private UUID partnerId;  // ✅ OK - Partner is in THIS service
+
+    // Cross-service reference to User (different service)
+    @Column(name = "username", nullable = false, length = 100)
+    private String username;  // ✅ Meaningful ID, NOT userId UUID
+
+    // NO: private UUID userId;  ❌ WRONG - don't use UUID for other service's entity
+}
+```
+
+#### Rule 3: NO Database Foreign Keys Across Services
+
+```sql
+-- ✅ CORRECT: partner-coordination-service database schema
+CREATE TABLE partners (
+    id UUID PRIMARY KEY,
+    company_name VARCHAR(12) NOT NULL UNIQUE,  -- ✅ Meaningful ID
+    -- NO FOREIGN KEY to companies.id  ✅ Correct
+);
+
+CREATE TABLE partner_contacts (
+    id UUID PRIMARY KEY,
+    partner_id UUID NOT NULL REFERENCES partners(id),  -- ✅ OK - same service
+    username VARCHAR(100) NOT NULL,  -- ✅ Meaningful ID
+    -- NO FOREIGN KEY to users.id  ✅ Correct
+);
+
+-- ❌ WRONG: Don't do this
+CREATE TABLE partners (
+    id UUID PRIMARY KEY,
+    company_id UUID NOT NULL,  -- ❌ WRONG - UUID reference
+    FOREIGN KEY (company_id) REFERENCES companies(id)  -- ❌ WRONG - cross-service FK
+);
+```
+
+#### Rule 4: Cross-Service Data Access via HTTP APIs
+
+```java
+// ✅ CORRECT: Partner service accesses Company data via HTTP
+@Service
+public class PartnerService {
+    private final CompanyServiceClient companyServiceClient;
+    private final UserServiceClient userServiceClient;
+
+    @Cacheable(value = "partners", key = "#companyName")
+    public PartnerResponse getPartner(String companyName) {
+        // 1. Get partner from OWN database (uses companyName)
+        Partner partner = partnerRepository.findByCompanyName(companyName)
+            .orElseThrow(() -> new PartnerNotFoundException(companyName));
+
+        // 2. Enrich with Company data via HTTP call
+        CompanyResponse company = companyServiceClient.getCompany(companyName);
+
+        return PartnerResponse.builder()
+            .companyName(partner.getCompanyName())
+            .companyDisplayName(company.getDisplayName())  // From HTTP call
+            .partnershipLevel(partner.getPartnershipLevel())
+            .build();
+    }
+}
+
+// HTTP client with JWT token propagation
+@Component
+public class CompanyServiceClient {
+    @Cacheable(value = "companies", key = "#companyName")
+    public CompanyResponse getCompany(String companyName) {
+        HttpHeaders headers = createHeadersWithJwtToken();
+        HttpEntity<Void> request = new HttpEntity<>(headers);
+
+        return restTemplate.exchange(
+            companyServiceUrl + "/api/v1/companies/" + companyName,
+            HttpMethod.GET,
+            request,
+            CompanyResponse.class
+        ).getBody();
+    }
+}
+```
+
+#### Rule 5: Within-Service Relationships Can Use UUID FKs
+
+```java
+// ✅ CORRECT: TopicVote entity in partner-coordination-service
+@Entity
+@Table(name = "topic_votes")
+public class TopicVote {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID id;
+
+    // Within same service - UUID FK is OK
+    @Column(name = "partner_id", nullable = false)
+    private UUID partnerId;  // ✅ OK - Partner is in THIS service
+
+    // Cross-service reference - use meaningful ID
+    @Column(name = "topic_id", nullable = false)
+    private String topicId;  // ✅ Meaningful ID to Event Management Service topic
+    // NO: private UUID topicUuid;  ❌ WRONG
+}
+```
+
+```sql
+-- Database schema shows the pattern
+CREATE TABLE topic_votes (
+    id UUID PRIMARY KEY,
+    partner_id UUID NOT NULL REFERENCES partners(id),  -- ✅ Within-service FK OK
+    topic_id VARCHAR(100) NOT NULL,  -- ✅ Cross-service: meaningful ID
+    -- NO FOREIGN KEY to topics.id  ✅ Correct
+);
+```
+
+### Summary: UUID vs Meaningful ID Decision Tree
+
+```
+Does this field reference an entity?
+├─ YES → Is the entity in THIS service's database?
+│   ├─ YES → Use UUID FK ✅
+│   │   Example: partner_id UUID REFERENCES partners(id)
+│   └─ NO → Use Meaningful ID ✅
+│       Example: company_name VARCHAR(12), username VARCHAR(100)
+└─ NO → Use appropriate data type
+    Example: vote_value INTEGER, description TEXT
+```
 
 ### Shared Kernel Services
 
@@ -446,7 +624,8 @@ Monitor these metrics:
 | Date | Version | Changes | Author |
 |------|---------|---------|--------|
 | 2025-11-02 | 1.0 | Initial ADR creation | Winston (Architect Agent) |
+| 2025-11-08 | 1.1 | **CRITICAL CLARIFICATION**: Added comprehensive "Microservice Isolation Rules" section with 5 rules and decision tree. Made it crystal clear that cross-service references MUST use meaningful IDs (companyName, username, eventCode), NOT UUIDs. Updated database layer description to distinguish within-service vs. cross-service references. | Claude Code |
 
 ---
 
-**This ADR documents a foundational architectural decision that affects all APIs, URLs, and external integrations in the BATbern platform.**
+**This ADR documents a foundational architectural decision that affects all APIs, URLs, and external integrations in the BATbern platform. All microservices MUST follow the microservice isolation rules: use meaningful IDs for cross-service references, NEVER UUIDs.**

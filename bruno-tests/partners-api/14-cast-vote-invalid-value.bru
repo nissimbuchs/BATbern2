@@ -1,0 +1,53 @@
+meta {
+  name: Cast Vote - Invalid Value (400)
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{baseUrl}}/partners/{{testPartnerCompanyName}}/votes
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  Origin: https://staging.batbern.ch
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: de-CH
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "topicId": "{{testTopicId}}",
+    "voteValue": 10
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("should return 400 status when vote value out of range", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("should return ErrorResponse from shared-kernel", function() {
+    const body = res.getBody();
+    expect(body.message).to.exist;
+    expect(body.message).to.match(/vote.*1.*5/i);
+    expect(body.path).to.exist;
+    expect(body.correlationId).to.exist;
+  });
+
+  test("should have CORS headers even on error", function() {
+    const corsHeader = res.getHeader('access-control-allow-origin');
+    expect(corsHeader).to.exist;
+  });
+}

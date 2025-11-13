@@ -43,9 +43,7 @@ const HomePage = () => {
           <h2 className="text-2xl font-light text-zinc-300">
             {error ? t('public.errors.loadFailed') : t('public.errors.noEvent')}
           </h2>
-          <p className="mt-4 text-zinc-400">
-            {t('public.errors.checkBackLater')}
-          </p>
+          <p className="mt-4 text-zinc-400">{t('public.errors.checkBackLater')}</p>
         </div>
       </PublicLayout>
     );
@@ -98,19 +96,13 @@ const HomePage = () => {
         )} */}
 
         {/* Event Program Timeline */}
-        {event.sessions && event.sessions.length > 0 && (
-          <EventProgram sessions={event.sessions} />
-        )}
+        {event.sessions && event.sessions.length > 0 && <EventProgram sessions={event.sessions} />}
 
         {/* Speaker Grid */}
-        {event.sessions && event.sessions.length > 0 && (
-          <SpeakerGrid sessions={event.sessions} />
-        )}
+        {event.sessions && event.sessions.length > 0 && <SpeakerGrid sessions={event.sessions} />}
 
         {/* Session Cards */}
-        {event.sessions && event.sessions.length > 0 && (
-          <SessionCards sessions={event.sessions} />
-        )}
+        {event.sessions && event.sessions.length > 0 && <SessionCards sessions={event.sessions} />}
 
         {/* Venue Map */}
         {event.venueName && event.venueAddress && (

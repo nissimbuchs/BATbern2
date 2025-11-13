@@ -3,7 +3,7 @@ package ch.batbern.partners;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"ch.batbern.partners", "ch.batbern.shared"})
 public class PartnerCoordinationApplication {
 
     public static void main(String[] args) {

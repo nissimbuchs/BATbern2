@@ -101,7 +101,7 @@ class CompanyControllerTest {
                 .website("https://testcompany.ch")
                 .industry("Technology")
                 .description("A test company")
-                .isVerified(false)
+                .verified(false)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
@@ -164,7 +164,7 @@ class CompanyControllerTest {
                 .website("https://updatedcompany.ch")
                 .industry("Finance")
                 .description("Updated description")
-                .isVerified(false)
+                .verified(false)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
@@ -225,7 +225,7 @@ class CompanyControllerTest {
         CompanyResponse company2 = CompanyResponse.builder()
                 .name("Second Company AG")
                 .displayName("Second Company")
-                .isVerified(true)
+                .verified(true)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
@@ -313,17 +313,9 @@ class CompanyControllerTest {
     }
 
     /**
-     * Test 4.11: should_returnUnauthorized_when_notAuthenticated
-     * Verifies that unauthenticated requests are rejected
-     * Returns 401 Unauthorized for anonymous/unauthenticated users
-     * Story 1.16.2: use company name instead of UUID
+     * Test 4.11: REMOVED - GET /companies/{name} is now public (Story 4.1: Partner Showcase)
+     * Public company endpoint allows partner showcase enrichment without authentication
      */
-    @Test
-    void should_returnUnauthorized_when_notAuthenticated() throws Exception {
-        // Story 1.16.2: use company name instead of UUID
-        mockMvc.perform(get("/api/v1/companies/{name}", testCompanyName))
-                .andExpect(status().isUnauthorized()); // 401 for unauthenticated users
-    }
 
     /**
      * Test 4.12: should_returnForbidden_when_insufficientPermissions
@@ -389,7 +381,7 @@ class CompanyControllerTest {
         CompanyResponse verifiedResponse = CompanyResponse.builder()
                 .name("Test Company AG")
                 .displayName("Test Company")
-                .isVerified(true)
+                .verified(true)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
@@ -422,7 +414,7 @@ class CompanyControllerTest {
                 .swissUID("CHE-123.456.789")
                 .website("https://testcompany.ch")
                 .industry("Technology")
-                .isVerified(false)
+                .verified(false)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
