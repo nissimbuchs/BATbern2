@@ -1,5 +1,6 @@
 package ch.batbern.events.config;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,6 +17,8 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
+import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
 import org.springframework.security.web.SecurityFilterChain;
 
 import java.util.Arrays;
@@ -83,12 +86,40 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations/confirm").permitAll()
 
                 // All other requests require authentication
-                // Note: Actual JWT validation happens at API Gateway layer
-                // Services trust requests from API Gateway (VPC-internal communication)
-                .anyRequest().permitAll()
+                .anyRequest().authenticated()
+            )
+            .oauth2ResourceServer(oauth2 -> oauth2
+                .bearerTokenResolver(bearerTokenResolver())
+                .jwt(jwt -> jwt
+                    .decoder(jwtDecoder())
+                    .jwtAuthenticationConverter(jwtAuthenticationConverter())
+                )
             );
 
         return http.build();
+    }
+
+    /**
+     * Custom BearerTokenResolver that allows anonymous requests
+     * Returns null when no Authorization header is present, allowing permitAll() endpoints to work
+     */
+    @Bean
+    @Profile("!test")
+    public BearerTokenResolver bearerTokenResolver() {
+        DefaultBearerTokenResolver resolver = new DefaultBearerTokenResolver();
+        resolver.setAllowUriQueryParameter(false); // Security best practice: only allow header-based tokens
+        return new BearerTokenResolver() {
+            @Override
+            public String resolve(HttpServletRequest request) {
+                // Only attempt to resolve token if Authorization header exists
+                // This allows anonymous requests to pass through to permitAll() endpoints
+                String authHeader = request.getHeader("Authorization");
+                if (authHeader == null || authHeader.isEmpty()) {
+                    return null; // No token - let Spring Security handle as anonymous
+                }
+                return resolver.resolve(request);
+            }
+        };
     }
 
     /**
