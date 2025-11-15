@@ -56,21 +56,21 @@
   {
     "bat": 2,
     "pdf": "BAT-architecturemobi-v1.0.pdf",
-    "title": "Enterprise Architecture",
-    "abstract": "Die Art und Weise wie Enterprise Architecture definiert wird ist so verschieden wie die Menschen, die darüber reden und doch haben sie alle etwas gemeinsam: Die Unternehmung. Welche Grundlagen müssen also geschaffen werden, um die Unternehmung als Ganzes zu betrachten - keine reine Business Sicht und keine IT Sicht, denn beides sind nur ein Teil davon. Eine Herausforderung und ein weiter Weg, diese beiden Disziplinen zu vereinigen. Als Beispiel diene hier die Bestrebungen der Credit Suisse - der aktuelle Stand und das weitere Vorgehen",
+    "title": "Enterprise Architecture @ Mobiliar",
+    "abstract": "Die Komplexität der gewachsenen Applikationslandschaft der Mobiliar ist zum einen ein wesentlicher Treiber der IT-Kosten. Zum anderen erschwert sie die Anpassung der Dienstleistungen der Informatik an die Bedürfnisse der Fachbereiche. Um diesen Problemen zu begegnen wurde 2001 ein umfassender Architekturansatz (enterprise architecture) implementiert. Der Beitrag erläutert die wesentlichen Artefakte, Layer, Prozesse und Instrumente der Unternehmensarchitektur und beurteilt deren kritische Erfolgsfaktoren.",
     "referenten": [
       {
-        "name": "Matilda Anello, Credit Suisse",
-        "bio": "Matilda Anello ist eidg. dipl. Wirtschaftsinformatikerin und als IT Architektin bei der Credit Suisse Group mit Definitionen und Einführung von Methoden und Prozessen im Rahmen der IT Architektur beschäftigt. Zuvor war Matilda Anello unter anderem mehrere Jahre im Versicherungsbereich und im Finanzbereich der Credit Suisse tätig. Sie ist Expertin für die eidg. Diplomprüfung für Wirtschaftsinformatik (Stufe Fachhochschule) und engagiert sich im Weiterbildungsbereich.",
-        "company": "creditsuisse",
-        "portrait": "matilda.anello.jpg"
+        "name": "Peter Kummer, Die Mobiliar",
+        "bio": "Peter Kummer ist als Leiter Architektur verantwortlich für die Entwicklung und Umsetzung der Business-, Applikations-, Technischen- und der Datenarchitektur. Er führt den ITStrategie-entwicklungsprozess und rapportiert an den CIO. Peter Kummer studierte an der Universität Bern Oekonomie mit Schwerpunkt Wirtschaftsinformatik.",
+        "company": "Mobiliar",
+        "portrait": "peter.kummer.jpg"
       }
     ]
   },
   {
     "bat": 2,
     "pdf": "CS_2005-11-11 - BAT-Vortrag.pdf",
-    "title": "Herausforderung und Implikationen",
+    "title": "Enterprise Architecture - Herausforderung und Implikationen",
     "abstract": "Die Art und Weise wie Enterprise Architecture definiert wird ist so verschieden wie die Menschen, die darüber reden und doch haben sie alle etwas gemeinsam: Die Unternehmung. Welche Grundlagen müssen also geschaffen werden, um die Unternehmung als Ganzes zu betrachten - keine reine Business Sicht und keine IT Sicht, denn beides sind nur ein Teil davon. Eine Herausforderung und ein weiter Weg, diese beiden Disziplinen zu vereinigen. Als Beispiel diene hier die Bestrebungen der Credit Suisse - der aktuelle Stand und das weitere Vorgehen",
     "referenten": [
       {
@@ -84,7 +84,7 @@
   {
     "bat": 2,
     "pdf": "EAPM_Erfa-Ber.pdf",
-    "title": "Ein Erfahrungsbericht",
+    "title": "Enterprise Architecture PostMail - Ein Erfahrungsbericht",
     "abstract": "Ziel der Enterprise Architecture PostMail ist es, die Prozesse, Anwendungen, Informationen und Technologien übersichtlich zu verknüpfen und trotz zunehmender Komplexität auch in Zukunft effizient, gezielt und flexibel auf Änderungen zu reagieren. In diesem Vortrag berichten wir über Konzepte und Erfahrungen beim Aufbau und bei der Pflege der Enterprise Architecture PostMail.",
     "referenten": [
       {
@@ -164,8 +164,16 @@
   {
     "bat": 4,
     "pdf": "Workflow_anaptecs_Integration.pdf",
-    "authoren": "Tillmann Schall (anaptecs GmbH)",
-    "title": "Integration von Workflow-Management Systemen in der Praxis"
+    "title": "Integration von Workflow-Management Systemen in der Praxis",
+    "abstract": "Eine schwer wartbare und nur mit grossem Aufwand zu betreibende Applikations-Landschaft war der Anlass für deutsche Bau-Berufsgenossenschaften eine Vereinheitlichung ihrer IT-Infrastruktur voranzutreiben. Da eine Integration der vielen unterschiedlichen Systeme zu aufwändig gewesen wäre, entschloss man sich, eine komplett neue Software zur Abwicklung der Geschäftsprozesse zu entwickeln. Das neue workflow-orientierte System unterstützt die DV-technische Durchführung nahezu aller Prozesse innerhalb von Berufsgenossenschaften, beginnend mit der automatisierten Posteingangsbearbeitung bis hin zum Versenden von Postausgangsdokumenten. Im Rahmen des Vortrags wird ein allgemeingültiger Ansatz zur Integration von Workflow-Management-Systemen in J2EE-Applikationen vorgestellt. Dabei werden neben Aspekten der Integration auch sinnvolle Erweiterungen beschrieben, die für einen praxistauglichen Einsatz notwendig sind.",
+    "referenten": [
+      {
+        "name": "Tillmann Schall (anaptecs GmbH)",
+        "bio": "Marc Schaffroth ist Projektleiter beim Informatikstrategieorgan Bund ISB und leitet die beiden eCH-Fachgruppen 'Geschäftsprozesse' und 'Records Management/GEVER'.",
+        "company": "anaptecs",
+        "portrait": "tillmann.schall.jpg"
+      }
+    ]
   },
   {
     "bat": 4,
@@ -176,7 +184,7 @@
       {
         "name": "Marc Schaffroth, Informationstrategieorgan Bund ISB",
         "bio": "Marc Schaffroth ist Projektleiter beim Informatikstrategieorgan Bund ISB und leitet die beiden eCH-Fachgruppen 'Geschäftsprozesse' und 'Records Management/GEVER'.",
-        "company": "informationstrategieorgan",
+        "company": "isbbund",
         "portrait": "marc.schaffroth.jpg"
       }
     ]
@@ -224,8 +232,16 @@
   {
     "bat": 5,
     "pdf": "SAP_ISB_ERP_in_der_Bundesverwaltung.pdf",
-    "authoren": "Richard Schären (Informatikstrategieorgan Bund ISB)",
-    "title": "Enterprise Resource Planning in der Bundesverwaltung � Gestern, Heute und Morgen"
+    "title": "Enterprise Resource Planning in der Bundesverwaltung � Gestern, Heute und Morgen",
+    "abstract": "Gestützt auf den Bundesratsbeschluss vom 19. Dez. 1997 werden die Supportprozesse der Bundesverwaltung, namentlich die Prozesse in den Bereichen Finanzwesen, Personalwesen, Logistik und Immobilenverwaltung durch SAP Lösungen abgebildet und unterstützt. Die SAP Einführung wurde in Projekten wie REFICO, BV PLUS, etc. durchgeführt und ist abgeschlossen. Aktuell wird durch die Einführung des Neuen Rechnungsmodells Bund (NRM) und der Kosten und Leistungsrechnung (KLR) insbesondere der Supportprozess Finanzwesen starken Änderungen unterworfen. Die zunehmende Integration der Support-prozesse zwischen den federführenden Stellen und die Integration von 'externen' Fachanwendungen erhöhen die Komplexität und führen zu neuen Anforderungen an die Steuerung und Führung der SAP Lösungen. Im Rahmen des Vortrags erhalten Sie eine Übersicht über den SAP Einsatz in der Bundesverwaltung und wie die Bundesverwaltung den SAP Einsatz steuert und führt.",
+    "referenten": [
+      {
+        "name": "Richard Schären (Informatikstrategieorgan Bund ISB)",
+        "bio": "Richard Schären ist eidg. dipl. Wirtschaftsinformatiker und beim Informatikstrategieorgan Bund ISB in der Rolle als Unternehmensarchitekt verantwortlich für die: - Leitung des Architekturboard Bund ABB und die Einführung der Unternehmensarchitektur Methodik in der Bundesverwaltung - Leitung des Change Board Supportprozesse CBSP welches die Änderungen von verwaltungsübergreifenden Supportprozesse steuert - Erstellung und Pflege der ERP Strategie und - architektur",
+        "company": "isbbund",
+        "portrait": "richard.schaeren.jpg"
+      }
+    ]
   },
   {
     "bat": 5,
@@ -313,7 +329,16 @@
     "bat": 6,
     "pdf": "CHOOSE_Zuehlke_MDSD_with_OpenSource.pdf",
     "authoren": "Ulrich Brawand (Zühlke Engineering)",
-    "title": "MDSD mit Open Source Tools � eine schrittweise Einführung"
+    "title": "MDSD mit Open Source Tools � eine schrittweise Einführung",
+    "abstract": "Modellgetriebene Software-Entwicklung ist die neue Hoffnung im Software Engineering den Abstraktionsgrad zu erhöhen und die Kosten zu reduzieren. Viele Bücher wurden bereits über das Thema geschrieben und die Tool-Hersteller behaupten 'we are ready for MDA'. Der Einsatz dieser Werkzeuge zeigt uns jedoch, dass viel Anpassungsarbeit notwendig ist, bevor MDATools erfolgreich eingesetzt werden können. Dieser Vortrag gibt Ihnen neben einer kurzen Einführung in die Theorie einen Überblick über die notwendigen Schritte, um basierend auf Open Source Technologie eine eigene MDSD Factory zu erstellen, die die Technologie und Architektur des eigenen Projekts unterstützt. Die dabei eingesetzten Tools sind Eclipse als IDE, openArchitectureWare als MDSD Framework und Enterprise Architekt als UML Modellierungs-Tool.",
+    "referenten": [
+      {
+        "name": "Ulrich Brawand (Zühlke Engineering)",
+        "bio": "Ulrich Brawand ist Business Unit Manager bei Zühlke Engineering und setzt die Obejktorientierung und UML seit vielen Jahren in Entwicklungsprojekten erfolgreich ein. Seit 2 Jahren befasst er sich mit Modellen und Generierung von Code mit MDSD-Technologien. Ulrich Brawand ist Commiter beim Open Source Projekt openArchitectureWare, wo er für den EMF-basierten UML2 Exporter für Enterprise Architect verantwortlich ist.",
+        "company": "zuehlke",
+        "portrait": "ulrich.brawand.jpg"
+      }
+    ]
   },
   {
     "bat": 7,
@@ -364,20 +389,44 @@
   {
     "bat": 8,
     "pdf": "EA-Tools_PostFinance_Tooleinfuehrung_pragmatisch.pdf",
-    "authoren": "Reto Peter (PostFinance)",
-    "title": "Einführung eines EA Tools - ein pragmatischer Ansatz"
+    "title": "Einführung eines EA Tools - ein pragmatischer Ansatz",
+    "abstract": "Eine Enterprise Architektur beginnt oft mit der Einführung eines Tools. Dieser Ansatz steht jedoch häufig im Spannungsfeld von Akzeptanzproblemen sowie Nutzendiskussionen und der Forderung nach Standardprodukten, Erweiterbarkeit des zugrundeliegenden Modells und Anbindungsmöglichkeiten an Umsysteme. Der Beitrag zeigt wie PostFinance mittels eines pragmatischen Ansatzes mit diesen widersprüchlichen Anforderungen umgegangen ist. Im Zentrum stehen dabei in einem ersten Schritt nicht das Tool selbst sondern die Bedürfnisträger, welche auf eine einfache Web-Applikation zurückgreifen müssen, als auch die Dateneigner und die organisatorische Einbettung der EA im Unternehmen. Erst in einem zweiten Schritt erfolgt ein gezielter Einsatz eines Tools, welches die Initial-Lösung schrittweise ergänzen oder ablösen wird.",
+    "referenten": [
+      {
+        "name": "Reto Peter (PostFinance)",
+        "bio": "Reto Peter ist seit 2006 Unternehmensarchitekt im IT-Architektur Management der PostFinance. Seine Schwerpunkte liegen in der strategischen Ausrichtung der Applikationslandschaft und der Weiterentwicklung der Architekturdokumentation. Reto Peter hat an der Universität Bern im Bereich angewandte Physik promoviert und war mehrere Jahre in der Forschung tätig. Danach war er in verschiedenen Unternehmen in leitender Position verantwortlich für Produktentwicklung, Produktmanagement und Produktion von Identifikations- und Sicherheitssystemen.",
+        "company": "PostFinance",
+        "portrait": "reto.peter.jpg"
+      }
+    ]
   },
   {
     "bat": 8,
     "pdf": "EA-Tools_SBB_EA_Werkzeug_Erfahrungsbericht.pdf",
-    "authoren": "Bernhard Rytz (SBB)",
-    "title": "Ein Werkzeug ist nicht alles, aber ohne Werkzeug ist Enterprise Architecture Management unrealistisch - ein Erfahrungsbericht der SBB"
+    "title": "Ein Werkzeug ist nicht alles, aber ohne Werkzeug ist Enterprise Architecture Management unrealistisch - ein Erfahrungsbericht der SBB",
+    "abstract": "In einem grösseren Unternehmen wie der SBB ist ein effektives Enterprise Architecture Management für die Verwaltung der Verknüpfungen zwischen Geschäfts-, Anwendungs- und Technologiearchitektur auf Werkzeuge angewiesen, welche über Powerpoint, Excel und Visio hinausgehen. Dieser Vortrag zeigt den aktuellen Stand des SBB EA Modells (Metamodell, Inhalte, Sichten) und beleuchtet insbesondere die Fragen: n Von welchen Anforderungen wurde ausgegangen? n Wie fiel der Werkzeugentscheid? n Wie wird das Werkzeug heute eingesetzt (Arbeit im Team, Publikationen)? n Welches sind unsere „lessons learned“ in Bezug auf den Werkzeug-einsatz?",
+    "referenten": [
+      {
+        "name": "Bernhard Rytz (SBB)",
+        "bio": "Bernhard Rytz, Dipl. Inf. Ing. ETH hat als Entwickler, Projektleiter, Methodiker und Architekt Informatikdienstleistungen in unterschiedlichsten Branchen erbracht. Seit 2005 baut er das Enterprise Architekturmanagement der Schweizerischen Bundesbahnen (SBB) auf. Zur Zeit ist er Leiter des Architekturmanagements der SBB IT.",
+        "company": "SBB",
+        "portrait": "bernhard.rytz.jpg"
+      }
+    ]
   },
   {
     "bat": 8,
     "pdf": "EA-Tools_TUM_Evaluating_Selecting_EAM_Tools.pdf",
-    "authoren": "Josef Lankes (TU München)",
-    "title": "Bewertung und Auswahl von Enterprise Architecture Management-Werkzeugen: Tool Survey von 2005 und 2008"
+    "title": "Bewertung und Auswahl von Enterprise Architecture Management-Werkzeugen: Tool Survey von 2005 und 2008",
+    "abstract": "Enterprise Architecture (EA) Management stellt einen verbreiteten Ansatz im IT-Management dar, der die gegenseitige Ausrichtung von Geschäft und IT erreichen soll. Softwarehersteller unterstützen diesen Ansatz mit Werkzeugen. Da Anwender verstärkt den Bedarf für derartige Software sehen, haben sich Softwarehersteller verstärkt auf diesen Markt zubewegt. Dessen Komplexität steigt dadurch. Dies erschwert allerdings die Entscheidung für Anwenderunternehmen, die mit der Auswahl eines bestimmten Werkzeugs eine wichtige Investition vornehmen, nicht nur aufgrund der Lizenzkosten, sondern auch durch den allgemeinen Einführungsaufwand. Um Anwenderunternehmen in dieser Situation zu unterstützen, haben wir 2005 eine Auswahl von EA Management-Werkzeugen untersucht. Diese Untersuchung wiederholen wir jetzt. Der Vortrag skizziert die Enterprise Architecture Management Tool Survey 2005, stellt den Ansatz der Enterprise Architecture Management Tool Survey 2008 vor und diskutiert Punkte, die eine Toolauswahl berücksichtigen sollte.",
+    "referenten": [
+      {
+        "name": "Josef Lankes (TU München)",
+        "bio": "Josef Lankes ist wissenschaftlicher Mitarbeiter und Doktorand am Lehrstuhl für Software Engineering betrieblicher Informationssysteme der Technischen Universität München. Er beschäftigt sich im Rahmen des Projekts Softwarekartographie mit der Beschreibung, Bewertung und Gestaltung komplexer betrieblicher InformationsInfrastrukturen. Sein Schwerpunkt liegt dabei auf Verfahren zur Bewertung von Anwendungslandschaften, vor allem dem Metrikeinsatz in diesem Bereich. Josef Lankes erhielt sein Diplom im Fach Wirtschaftsinformatik von der Universität Regensburg im Jahr 2004.",
+        "company": "tumuenchen",
+        "portrait": "josef.lankes.jpg"
+      }
+    ]
   },
   {
     "bat": 9,
@@ -442,14 +491,30 @@
   {
     "bat": 10,
     "pdf": "BAT_Forum_RIA_AJAX_for_Enterprise.pdf",
-    "authoren": "Björn Müller (CaptainCasa)",
-    "title": "AJAX for Enterprise Applications"
+    "title": "Rich Client für operative Unternehmensanwendunge",
+    "abstract": "Welche UI Architektur und welche UI Technologie passt zu den Bedürfnissen langlebiger, serverseitiger Anwendungen mit operativen Benutzern ('Power User')? - Eine Community mittelständischer Softwarehäuer hat diese Frage gemeinsam erörtert und daraus Lösungen abgeleitet. Der Vortrag fasst die Erkenntnisse und Ergebnisse zusammen. Konkrete Punkte: - Erfahrungen mit AJAX im Enterprise Umfeld - 'valide', native(re) UI Technologien für den Rich Client - Einsatz Java im Frontend? - Aber richtig!",
+    "referenten": [
+      {
+        "name": "Björn Müller (CaptainCasa)",
+        "bio": "1991-2001 SAP AG, Anwendungsentwicklung und Basisentwicklung, versch. Entwicklungs-, Architektur- und Leitungsfunktionen 2001-2005 Gründung der Casabac Technologies GmbH, Pionier im Bereich interaktiver Browseranwendungen ('AJAX'), Übernahme durch die Software AG im Jahre 2005 2005-2007 Software AG, Leitung des Bereiches 'User Interface Technologien' 2007 Gründung der CaptainCasa GmbH, Entwicklung von Frontend Technologien für komplexe serverseitige Anwendungssysteme",
+        "company": "captaincasa",
+        "portrait": "bjoern.mueller.jpg"
+      }
+    ]
   },
   {
     "bat": 10,
     "pdf": "BAT_Forum_RIA_Eclipse_RAP.pdf",
-    "authoren": "Frank Appel (Innoopract)",
-    "title": "Die Eclipse Rich Ajax Platform"
+    "title": "Die Eclipse Rich Ajax Platform",
+    "abstract": "Die Entwicklung leistungsfähiger und wartbarer AjaxApplikationen steht im Fokus vieler aktueller ITProjekte. In diesem Vortrag wird der Lösungsansatz der Eclipse Rich Ajax Platform (RAP) vorgestellt, der auf die serverseitige Anwendung von Equinox Runtime Technologie setzt. Der Vortrag erläutert, wie Entwickler von der OSGi Bundle Technologie (Plug-ins) und dem wohlbekannten Workbench-Paradigma des Eclipse Entwicklungsmodells profitieren. Eine Übersicht der Architektur von RAP und erste Schritte der Entwicklung mit RAP werden dargelegt. Ausführlich erläutert werden Praktiken, um existierende RCP-Applikationen mit Hilfe von RAP webfähig zu machen. Des weiteren gibt der Vortrag einen Überblick über die Neuerungen des 1.1 Releases und schliesst mit einem Ausblick auf die Roadmap des nächsten Major Releases.",
+    "referenten": [
+      {
+        "name": "Frank Appel (Innoopract)",
+        "bio": "Frank Appel ist Software Entwickler bei der Innoopract Informationssysteme GmbH und arbeitet gegenwärtig als technischer Leiter am Rich Ajax Platform (RAP) Projekt mit. Er war Entwicklungsleiter von W4Toolkit (die Ausgangsbasis der CodeDonation für das RAP Projekt) und W4T Eclipse - ein visuelles Entwicklungswerkzeug für W4T-Anwendungen. Er begann 2002 mit der Entwicklung von Eclipse Plug-ins und besitzt umfangreiche Kenntnisse über die Architektur Eclipse basierter Systeme, Eclipse Platform APIs und der IDEEntwicklung.",
+        "company": "Innoopract",
+        "portrait": "frank.appel.jpg"
+      }
+    ]
   },
   {
     "bat": 10,
@@ -494,14 +559,43 @@
   {
     "bat": 10,
     "pdf": "BAT_Forum_RIA_MS_Silverlight2.pdf",
-    "authoren": "Sascha P. Corti (Microsoft)",
-    "title": "Silverlight 2 und die RIA Plattform von Microsoft"
+    "title": "Silverlight 2 und die RIA Plattform von Microsoft",
+    "abstract": "Dieses Referat gibt Ihnen einen Einblick in die ”Rich Internet Application„ Strategie und Landschaft von Microsoft, stellt Ihnen Silverlight 2 anhand des technologischen Aufbaus und praktischen Beispielen vor und zeigt Ihnen, wie Silverlight 2 sich in dieser Systemlandschaft positioniert. Es werden ebenso kurz die Werkzeuge aufgezeigt, mit denen Entwickler und Designer gemeinsam Silverlight-Lösungen implementieren können.",
+    "referenten": [
+      {
+        "name": "Sascha P. Corti (Microsoft)",
+        "bio": "Sascha P. Corti arbeitet seit dem Jahr 2000 für Microsoft Schweiz als 'System Engineer' mit Fokus auf die Microsoft System Plattform und auf die Software-Entwicklungswerkzeuge von Microsoft. Seine Ausbildung beinhaltet die Studiengänge Informatik-Ingenieur an der ETH Zürich und Wirtschafts-Informatik an der Universität Zürich. Seine praktischen Erfahrungen umfassen 7 Jahre Tätigkeit als Software-Entwickler und -Architekt bei einer Schweizer Bank und Anstellungen als Systems Engineer bei mehreren amerikanischen HiTech Firmen, darunter Silicon Graphics und Microsoft.",
+        "company": "microsoft",
+        "portrait": "sascha.corti.jpg"
+      }
+    ]
   },
   {
     "bat": 10,
     "pdf": "BAT_Forum_RIA_TaxMe_Online.pdf",
-    "authoren": "Hans Frauchiger (kant. Steuerverw.), Matthias Germann, Thomas Meister (DV Bern)",
-    "title": "TaxMe-Online - die Steuererklärung online ausfüllen"
+    "authoren": ", , ",
+    "title": "TaxMe-Online - die Steuererklärung online ausfüllen",
+    "abstract": "Die seit 2001 in Einsatz stehende Online Applikation ermöglicht es den steuerpflichtigen Personen des Kantons Bern ihre Steuererklärung online im Webbrowser auszufüllen und der Steuerverwaltung zu übermitteln. Der Kern der Anwendung ist dabei identisch mit der parallel dazu existierenden CD Lösung, die zwar pro Steuerjahr lokal auf einem PC installiert werden muss, aber punkto Bedienungskomfort nach wie vor ein paar Vorteile aufweist. Die aktuell geplanten Erweiterungen versuchen diese Vorteile innerhalb der Online Applikation mit Hilfe von AJAX-Technologien wett zu machen. Der Beitrag liefert Informationen der RIA TaxMe-Online aus der Sicht der Steuerverwaltung Bern mit Benutzerstatistiken und generellen Erfahrungswerten. Ausserdem wird die technische Architektur des Systems grob vorgestellt und etwas detaillierter auf Herausforderungen und Erfahrungen im Zusammenhang mit den geplanten AJAX-Erweiterungen eingegangen.",
+    "referenten": [
+      {
+        "name": "Hans Frauchiger, kant. Steuerverw.",
+        "bio": "Hans Frauchiger arbeitet als Informatik-Projektleiter in der Applikationsbetreuung der kantonalen Steuerverwaltung. In dieser Funktion ist er für alle Anwendungen im Bereich Taxation von natürlichen und juristischen Personen verantwortlich.",
+        "company": "KtBernSTV",
+        "portrait": "hans.frauchiger.jpg"
+      },
+      {
+        "name": "Matthias Germann, DV Bern",
+        "bio": "Matthias Germann arbeitet bei der DV Bern AG als Software Architekt. Dort befasst er sich mit der Konzeption und Entwicklung von Java EE Softwarelösungen, hauptsächlich im eGovernement Umfeld. Er studierte Informatik an der Fachhochschule in Biel.",
+        "company": "DVBern",
+        "portrait": "matthias.germann.jpg"
+      },
+      {
+        "name": "Thomas Meister, DB Bern",
+        "bio": "Thomas Meister hat nach seinem Fachhochschulabschluss in Wirtschafts-informatik in der DV Bern AG zahlreiche Individuallösungen entwickelt und unter anderem die Architektur von TaxMeOnline des Kantons Bern aufgebaut. Sein primäres Aufgabengebiet besteht in der Konzeption und der Realisierung von Java EE Softwarelösungen.",
+        "company": "DVBern",
+        "portrait": "thomas.meister.jpg"
+      }
+    ]
   },
   {
     "bat": 11,
@@ -554,14 +648,31 @@
   {
     "bat": 11,
     "pdf": "BAT_N11_SC_Future_Workplace_Teil1.pdf",
-    "authoren": "Andreas R. Lehmann (Swisscom)",
-    "title": "Future Workplace, oder wie arbeitet der KnowledgeWorker der Zukunft"
+    "title": "Future Workplace, oder wie arbeitet der KnowledgeWorker der Zukunft Teil 1",
+    "abstract": "Eine Betrachtung aus Benutzersicht und was für Wünsche er an einen Service-Anbieter hat.",
+    "referenten": [
+      {
+        "name": "Andreas R. Lehmann (Swisscom)",
+        "bio": "Andreas R. Lehmann hat über 30 Jahre Berufserfah-rung in Informatik und Telekommunikation in unterschiedlichen Funktionen, wie Geschäftsführer, Senior-AccountManager, Business-Development-Manager, Berater, Marketing-Manager, Vertriebsleiter und Mitglied der Geschäftsleitung. Er ist Absolvent der Swiss Business School und besitzt ein NDS als Verkaufsleiter.",
+        "company": "Swisscom",
+        "portrait": "andreas.lehmann.jpg"
+      }
+    ]
   },
   {
     "bat": 11,
     "pdf": "BAT_N11_SC_Future_Workplace_Teil2.pdf",
     "authoren": "Andreas R. Lehmann (Swisscom)",
-    "title": "Future Workplace, oder wie arbeitet der KnowledgeWorker der Zukunft"
+    "title": "Future Workplace, oder wie arbeitet der KnowledgeWorker der Zukunft Teil 2",
+    "abstract": "Eine Betrachtung aus Benutzersicht und was für Wünsche er an einen Service-Anbieter hat.",
+    "referenten": [
+      {
+        "name": "Andreas R. Lehmann (Swisscom)",
+        "bio": "Andreas R. Lehmann hat über 30 Jahre Berufserfah-rung in Informatik und Telekommunikation in unterschiedlichen Funktionen, wie Geschäftsführer, Senior-AccountManager, Business-Development-Manager, Berater, Marketing-Manager, Vertriebsleiter und Mitglied der Geschäftsleitung. Er ist Absolvent der Swiss Business School und besitzt ein NDS als Verkaufsleiter.",
+        "company": "Swisscom",
+        "portrait": "andreas.lehmann.jpg"
+      }
+    ]
   },
   {
     "bat": 11,
@@ -760,14 +871,30 @@
   {
     "bat": 15,
     "pdf": "1_BI_BKW.pdf",
-    "authoren": "Olivier Raemy, BKW FMB Energie AG",
-    "title": "Business Intelligence bei BKW - der Weg ist das Ziel"
+    "title": "Business Intelligence bei BKW - der Weg ist das Ziel",
+    "abstract": "Die Liberalisierung des schweizerischen Strommarktes setzt zahlreiche Absprachen zwischen den Marktakteuren und dem Regulator voraus. Um die richtigen Entscheide zu treffen und die gesetzlichen Anforderungen zu erfüllen, müssen analytische Informationen bereichsübergreifend, zeitgerecht und in konsistenter Form zur Verfügung stehen. Um diese Ziele zu erfüllen ist die Architektur der analytischen Systeme so ausgelegt, dass die Anforderung einer integrierten Informationsversorgung optimal gewährleistet wird. Eine geeignete Aufgabenteilung stellt sicher, dass die Nähe zum Business gewährleistet ist und Synergien im Betrieb genutzt werden. Mit Metadaten wird der Inhalt des DWH sowohl aus fachlicher als auch aus technischer Sicht beschrieben. Dank diesem Mittel wird die Kommunikation zwischen Business und IT wesentlich vereinfacht. Über die letzten Jahre konnten zahlreiche Projekte erfolgreich auf der zentralen Plattform realisiert werden. Das Data Warehouse der BKW Energie AG versorgt eine Vielzahl von analytischen Applikationen aller Organisations-einheiten entlang der gesamten Wertschöpfungskette mit finanziellen und energiewirtschaftlichen Daten. Basis für die Umsetzung ist ein Konzept, dass sowohl die Architektur des unternehmensweiten DWH-Systems als auch die organisatorische Gestaltung des Data Warehousing abdeckt. Dieses Referat zeigt die wichtigsten Inhalte des Konzeptes sowie den Stand der Umsetzung auf. Die kritischen Erfolgsfaktoren sowie lessons learned runden den Praxisbericht ab.",
+    "referenten": [
+      {
+        "name": "Olivier Raemy, BKW FMB Energie AG",
+        "bio": "Herr Raemy ist seit dem August 2009 Leiter des Competence Center Datawarehousing und führt die Fachgruppe DWH. Er ist diplomierter Informatiker FH und Absolvent des MAS in Betriebswirtschaft, Unternehmensführung und People Management. Als Projektleiter, Consultant und Linienvorgesetzter hat Herr Raemy in den vergangenen 10 Jahren bei verschiedenen Unternehmen den Aufbau und Betrieb von SAP BW-basierten Datawarehouse-Lösungen massgeblich mitgestaltet.",
+        "company": "BKW",
+        "portrait": "oliver.raemy.jpg"
+      }
+    ]
   },
   {
     "bat": 15,
     "pdf": "2_Agilitaet_BI_SC.pdf",
-    "authoren": "Peter Kühni, Swisscom AG",
-    "title": "BI Architektur bei der Swisscom"
+    "title": "BI Architektur bei der Swisscom",
+    "abstract": "Enterprise BI Systeme in Grossunternehmen stehen vor grossen Herausforderungen: Sie müssen immer schneller ändernden Businessanforderungen einer steigenden Zahl von geschäftskritischen BI Applikationen mit tendenziell sinkenden Budgets gerecht werden. Zusätzliche Anforderungen an die Verfügbarkeit von BI Systemen und die Qualität von BI Informationen entstehen durch den Trend zu grösserer Operationalisierung. In der Swisscom müssen darüber hinaus noch die Veränderungen der grossen Backend IT Transformationen vom BI Delivery Team absorbiert werden. Der Vortrag zeigt auf, wie die Swisscom im BI/DWH Bereich den Herausforderungen mit einem Mix an architektonischen und organisatorischen Mitteln begegnet. ",
+    "referenten": [
+      {
+        "name": "Peter Kühni, Swisscom AG",
+        "bio": "2003 - heute Lead BI Architect Swisscom AG Design eines konvergenten Enterprise DWH für Swisscom Konzeption eines Enterprise DWH für Swisscom Mobile Architektur/Design für zahlreiche BI/DWH Vorhaben 2000-2003 Partner/Consultant Everywhere AG, Bern DWH/BI Beratung für diverse Grossfirmen 1998-2000 BI Entwickler/Architekt Swisscom AG, Bern Konzeption/Umsetzung mehrerer DWH Systeme für Swisscom Fixnet 1997-1998 BI Entwickler RBA Service, Gümligen Aufbau eines mandantenfähigen BI Cockpits für Marketing&Sales",
+        "company": "Swisscom",
+        "portrait": "peter.kuehni.jpg"
+      }
+    ]
   },
   {
     "bat": 15,
@@ -824,7 +951,16 @@
     "bat": 16,
     "pdf": "3_BAT16_SWITCHaai .pdf",
     "authoren": "Thomas Lenggenhager, SWITCH",
-    "title": "AAI - Die Authentifizierungs- und Autorisierungs- Infrastruktur der Schweizer Hochschulen"
+    "title": "AAI - Die Authentifizierungs- und Autorisierungs- Infrastruktur der Schweizer Hochschulen",
+    "abstract": "",
+    "referenten": [
+      {
+        "name": "",
+        "bio": "",
+        "company": "",
+        "portrait": ".jpg"
+      }
+    ]
   },
   {
     "bat": 16,
@@ -939,7 +1075,16 @@
     "bat": 17,
     "pdf": "3_Canoo_FindIT.pdf",
     "authoren": "Dr. Stephan Gillmeier, Canoo AG",
-    "title": "FindIT � Innovative Suche in Medienarchiven"
+    "title": "FindIT � Innovative Suche in Medienarchiven",
+    "abstract": "",
+    "referenten": [
+      {
+        "name": "",
+        "bio": "",
+        "company": "",
+        "portrait": ".jpg"
+      }
+    ]
   },
   {
     "bat": 17,
@@ -977,7 +1122,16 @@
     "bat": 18,
     "pdf": "2_RUAG_NAF.pdf",
     "authoren": "Philippe Chammartin, RUAG",
-    "title": "Enterprise Architektur-Modellierung mit dem NATO Architecture Framework � Ein Erfahrungsbericht"
+    "title": "Enterprise Architektur-Modellierung mit dem NATO Architecture Framework � Ein Erfahrungsbericht",
+    "abstract": "",
+    "referenten": [
+      {
+        "name": "",
+        "bio": "",
+        "company": "",
+        "portrait": ".jpg"
+      }
+    ]
   },
   {
     "bat": 18,
@@ -1077,13 +1231,31 @@
     "bat": 19,
     "pdf": "6_E-Government Web Services bei e-dec V 1.1.pdf",
     "authoren": "Dr. Stefan Hüsemann, ipt",
-    "title": "eGovernment Web Services zur Integration von Bund und Wirtschaft � standardbasierte e-dec Services für elektronische Verzollungen"
+    "title": "eGovernment Web Services zur Integration von Bund und Wirtschaft � standardbasierte e-dec Services für elektronische Verzollungen",
+    "abstract": "",
+    "referenten": [
+      {
+        "name": "",
+        "bio": "",
+        "company": "",
+        "portrait": ".jpg"
+      }
+    ]
   },
   {
     "bat": 19,
     "pdf": "7_SBB-IT-AQ_IT_EOL_einer_hochintegrierten_Anwendung_BAT_v008.pdf",
     "authoren": "Peter Moosmann und Jakob Erber, SBB",
-    "title": "End-of-Life einer hochintegrierten Anwendung - wie Unternehmensarchitektur helfen kann"
+    "title": "End-of-Life einer hochintegrierten Anwendung - wie Unternehmensarchitektur helfen kann",
+    "abstract": "",
+    "referenten": [
+      {
+        "name": "",
+        "bio": "",
+        "company": "",
+        "portrait": ".jpg"
+      }
+    ]
   },
   {
     "bat": 19,
@@ -1189,7 +1361,16 @@
     "bat": 22,
     "pdf": "5_BAT22-Mobilkommunikation-Geoinformation-SNP-BAFU-EVD.pdf",
     "authoren": "Dr. Thomas Klingl, BAFU, Hans Ulrich Wiedmer, EVD und Dr. Ruedi Haller, Schweiz. Nationalpark",
-    "title": "Mobilkommunikation und Geoinformation: Realitäten und Visionen im EVD und im BAFU"
+    "title": "Mobilkommunikation und Geoinformation: Realitäten und Visionen im EVD und im BAFU",
+    "abstract": "",
+    "referenten": [
+      {
+        "name": "",
+        "bio": "",
+        "company": "",
+        "portrait": ".jpg"
+      }
+    ]
   },
   {
     "bat": 22,
@@ -1213,7 +1394,16 @@
     "bat": 23,
     "pdf": "BAT23_BKW.pdf",
     "authoren": "Martin Kochert, BKW FMB Energie AG",
-    "title": "Projektportfolio-Management in Verbindung mit Architektur-Management bei der BKW"
+    "title": "Projektportfolio-Management in Verbindung mit Architektur-Management bei der BKW",
+    "abstract": "",
+    "referenten": [
+      {
+        "name": "",
+        "bio": "",
+        "company": "",
+        "portrait": ".jpg"
+      }
+    ]
   },
   {
     "bat": 23,
@@ -1331,13 +1521,31 @@
     "bat": 25,
     "pdf": "1_BAT_25_Willy_Mueller.pdf",
     "authoren": "Willy Müller, Informatiksteuerungsorgan des Bundes",
-    "title": "Fertigungstiefe im Zeitalter des Cloud Computing - Implikationen der Cloud-Strategie der Schweizer Behörden"
+    "title": "Fertigungstiefe im Zeitalter des Cloud Computing - Implikationen der Cloud-Strategie der Schweizer Behörden",
+    "abstract": "",
+    "referenten": [
+      {
+        "name": "",
+        "bio": "",
+        "company": "",
+        "portrait": ".jpg"
+      }
+    ]
   },
   {
     "bat": 25,
     "pdf": "2_BAT_25_Thomas_Zerndt.pdf",
     "authoren": "Thomas Zerndt, Business Engineering Institute, St. Gallen",
-    "title": "Sourcing im Bankenumfeld"
+    "title": "Sourcing im Bankenumfeld",
+    "abstract": "",
+    "referenten": [
+      {
+        "name": "",
+        "bio": "",
+        "company": "",
+        "portrait": ".jpg"
+      }
+    ]
   },
   {
     "bat": 25,
@@ -1483,13 +1691,31 @@
     "bat": 26,
     "pdf": "2_bat_26_sbb.pdf",
     "authoren": "Tobias Röthlisberger, Erich Siegrist (SBB)",
-    "title": "Mobile Enterprise Application Plattform − die Zukunft mobiler Anwendungen bei der SBB"
+    "title": "Mobile Enterprise Application Plattform − die Zukunft mobiler Anwendungen bei der SBB",
+    "abstract": "",
+    "referenten": [
+      {
+        "name": "",
+        "bio": "",
+        "company": "",
+        "portrait": ".jpg"
+      }
+    ]
   },
   {
     "bat": 26,
     "pdf": "3_bat_26_netcetera_HSLU.pdf",
     "authoren": "Stefan Fraefel (HSLU), Angela Bühler (Netcetera)",
-    "title": "Indoor Navigation − von der Forschung zur App"
+    "title": "Indoor Navigation − von der Forschung zur App",
+    "abstract": "",
+    "referenten": [
+      {
+        "name": "",
+        "bio": "",
+        "company": "",
+        "portrait": ".jpg"
+      }
+    ]
   },
   {
     "bat": 26,
@@ -1541,7 +1767,16 @@
     "bat": 27,
     "pdf": "3_bat27_ejpd.pdf",
     "authoren": "Peter Andres, ISC-EJPD",
-    "title": "MobileID - die neue Authentisierungsart am SSO-Portal EJPD"
+    "title": "MobileID - die neue Authentisierungsart am SSO-Portal EJPD",
+    "abstract": "",
+    "referenten": [
+      {
+        "name": "",
+        "bio": "",
+        "company": "",
+        "portrait": ".jpg"
+      }
+    ]
   },
   {
     "bat": 27,
@@ -1620,7 +1855,16 @@
     "bat": 29,
     "pdf": "3_bat29_sbb.pdf",
     "authoren": "Bernhard Rytz und Jürg Frühauf, SBB IT",
-    "title": "BigData macht sich an den Datenschatz der SBB"
+    "title": "BigData macht sich an den Datenschatz der SBB",
+    "abstract": "",
+    "referenten": [
+      {
+        "name": "",
+        "bio": "",
+        "company": "",
+        "portrait": ".jpg"
+      }
+    ]
   },
   {
     "bat": 29,
@@ -1692,7 +1936,16 @@
     "bat": 31,
     "pdf": "BAT31_OpenData.pdf",
     "authoren": "André Golliez, Opendata.ch",
-    "title": "Open Data und Datenwirtschaft in der Schweiz - eine Standortbestimmung"
+    "title": "Open Data und Datenwirtschaft in der Schweiz - eine Standortbestimmung",
+    "abstract": "",
+    "referenten": [
+      {
+        "name": "",
+        "bio": "",
+        "company": "",
+        "portrait": ".jpg"
+      }
+    ]
   },
   {
     "bat": 31,
@@ -1840,7 +2093,16 @@
     "bat": 33,
     "pdf": "BAT33_Leipner_NoSQL_Datenbanken.pdf",
     "authoren": "Ralf Leipner, PostFinance AG",
-    "title": "NoSQL Datenbanksysteme: Übersicht, Abgrenzung & Charakteristik"
+    "title": "NoSQL Datenbanksysteme: Übersicht, Abgrenzung & Charakteristik",
+    "abstract": "",
+    "referenten": [
+      {
+        "name": "",
+        "bio": "",
+        "company": "",
+        "portrait": ".jpg"
+      }
+    ]
   },
   {
     "bat": 33,
@@ -1924,7 +2186,16 @@
     "bat": 34,
     "pdf": "BAT34_Gruetter_Der_Weg_der_Mobiliar_ins_digitale_Zeitalter.pdf",
     "authoren": "Andreas Grütter, Die Mobiliar",
-    "title": "Persönlich - auch digital. Der Weg der Mobiliar ins digitale Zeitalter"
+    "title": "Persönlich - auch digital. Der Weg der Mobiliar ins digitale Zeitalter",
+    "abstract": "",
+    "referenten": [
+      {
+        "name": "",
+        "bio": "",
+        "company": "",
+        "portrait": ".jpg"
+      }
+    ]
   },
   {
     "bat": 34,
@@ -1944,7 +2215,16 @@
     "bat": 34,
     "pdf": "BAT34_Horster_InternetderDinge.pdf",
     "authoren": "Dr. Bettina Horster, Vivai Software AG",
-    "title": "Das Internet der Dinge - Erfahrungen, Innovationen und Umsetzungstipps"
+    "title": "Das Internet der Dinge - Erfahrungen, Innovationen und Umsetzungstipps",
+    "abstract": "",
+    "referenten": [
+      {
+        "name": "",
+        "bio": "",
+        "company": "",
+        "portrait": ".jpg"
+      }
+    ]
   },
   {
     "bat": 34,
