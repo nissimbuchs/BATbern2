@@ -89,7 +89,6 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2
-                .bearerTokenResolver(bearerTokenResolver())
                 .jwt(jwt -> jwt
                     .decoder(jwtDecoder())
                     .jwtAuthenticationConverter(jwtAuthenticationConverter())
@@ -97,29 +96,6 @@ public class SecurityConfig {
             );
 
         return http.build();
-    }
-
-    /**
-     * Custom BearerTokenResolver that allows anonymous requests
-     * Returns null when no Authorization header is present, allowing permitAll() endpoints to work
-     */
-    @Bean
-    @Profile("!test")
-    public BearerTokenResolver bearerTokenResolver() {
-        DefaultBearerTokenResolver resolver = new DefaultBearerTokenResolver();
-        resolver.setAllowUriQueryParameter(false); // Security best practice: only allow header-based tokens
-        return new BearerTokenResolver() {
-            @Override
-            public String resolve(HttpServletRequest request) {
-                // Only attempt to resolve token if Authorization header exists
-                // This allows anonymous requests to pass through to permitAll() endpoints
-                String authHeader = request.getHeader("Authorization");
-                if (authHeader == null || authHeader.isEmpty()) {
-                    return null; // No token - let Spring Security handle as anonymous
-                }
-                return resolver.resolve(request);
-            }
-        };
     }
 
     /**
