@@ -1,6 +1,5 @@
 package ch.batbern.events.config;
 
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,8 +16,6 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
-import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
 import org.springframework.security.web.SecurityFilterChain;
 
 import java.util.Arrays;
@@ -86,13 +83,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations/confirm").permitAll()
 
                 // All other requests require authentication
-                .anyRequest().authenticated()
-            )
-            .oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(jwt -> jwt
-                    .decoder(jwtDecoder())
-                    .jwtAuthenticationConverter(jwtAuthenticationConverter())
-                )
+                // Note: Actual JWT validation happens at API Gateway layer
+                // Services trust requests from API Gateway (VPC-internal communication)
+                .anyRequest().permitAll()
             );
 
         return http.build();
