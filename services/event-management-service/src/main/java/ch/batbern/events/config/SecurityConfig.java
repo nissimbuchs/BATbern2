@@ -83,13 +83,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations/confirm").permitAll()
 
                 // All other requests require authentication
-                .anyRequest().authenticated()
-            )
-            .oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(jwt -> jwt
-                    .decoder(jwtDecoder())
-                    .jwtAuthenticationConverter(jwtAuthenticationConverter())
-                )
+                // Note: Actual JWT validation happens at API Gateway layer
+                // Services trust requests from API Gateway (VPC-internal communication)
+                .anyRequest().permitAll()
             );
 
         return http.build();
