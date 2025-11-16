@@ -27,15 +27,15 @@ export const InfiniteMarquee = ({
   return (
     <div className="relative overflow-hidden">
       <div
-        className="flex gap-4"
+        className="inline-flex w-max"
         style={{
           animation: `${animationDirection} ${speedDuration[speed]} linear infinite`,
         }}
       >
         {/* First set of children */}
-        {children}
+        <div className="flex gap-4 shrink-0">{children}</div>
         {/* Duplicate for seamless loop */}
-        {children}
+        <div className="flex gap-4 shrink-0 ml-4">{children}</div>
       </div>
 
       <style>{`
