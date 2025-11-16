@@ -35,8 +35,11 @@ describe('ProfileHeader', () => {
 
     const profilePhoto = screen.getByTestId('profile-photo');
     expect(profilePhoto).toBeInTheDocument();
-    expect(profilePhoto).toHaveAttribute('src', mockUser.profilePictureUrl);
-    expect(profilePhoto).toHaveAttribute('alt', 'Anna Müller');
+    // MUI Avatar renders img as child element when src is provided
+    const img = profilePhoto.querySelector('img');
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute('src', mockUser.profilePictureUrl);
+    expect(img).toHaveAttribute('alt', 'Anna Müller');
   });
 
   it('should_displayUserName_when_rendered', () => {
@@ -144,10 +147,18 @@ describe('ProfileHeader', () => {
       <ProfileHeader user={mockUser} onPhotoUpload={onPhotoUpload} onPhotoRemove={onPhotoRemove} />
     );
 
-    const uploadButton = screen.getByTestId('upload-photo-button');
-    await user.click(uploadButton);
+    // The upload button triggers file input, so we simulate file selection
+    const fileInput = screen
+      .getByLabelText('Upload profile photo')
+      .closest('label')
+      ?.parentElement?.querySelector('input[type="file"]') as HTMLInputElement;
+    expect(fileInput).toBeInTheDocument();
+
+    const testFile = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
+    await user.upload(fileInput, testFile);
 
     expect(onPhotoUpload).toHaveBeenCalledTimes(1);
+    expect(onPhotoUpload).toHaveBeenCalledWith(testFile);
   });
 
   it('should_callOnPhotoRemove_when_removeButtonClicked', async () => {
@@ -182,8 +193,9 @@ describe('ProfileHeader', () => {
 
     const profilePhoto = screen.getByTestId('profile-photo');
     expect(profilePhoto).toBeInTheDocument();
-    // Should show initials or default avatar
-    expect(profilePhoto).toHaveAttribute('alt', 'Anna Müller');
+    // MUI Avatar shows initials when no src is provided
+    // Check for initials text content instead of alt attribute
+    expect(profilePhoto).toHaveTextContent('AM'); // Anna Müller initials
   });
 
   it('should_haveAccessibleLabels_when_rendered', () => {
