@@ -122,9 +122,15 @@ export default defineConfig({
             },
           },
         ],
-        // Offline fallback - exclude auth pages and API routes
+        // Offline fallback - exclude auth pages, API routes, and public event pages
         navigateFallback: '/offline.html',
-        navigateFallbackDenylist: [/^\/api/, /^\/login/, /^\/register/, /^\/forgot-password/],
+        navigateFallbackDenylist: [
+          /^\/api/,
+          /^\/login/,
+          /^\/register/,
+          /^\/forgot-password/,
+          /^\/events/, // Story 4.1.5: Public event pages (registration confirmation, etc.)
+        ],
       },
       devOptions: {
         enabled: false, // Disable PWA in development for faster builds

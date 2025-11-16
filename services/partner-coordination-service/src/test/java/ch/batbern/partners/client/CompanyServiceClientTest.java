@@ -7,7 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -56,10 +56,10 @@ class CompanyServiceClientTest {
     @Autowired
     private MockRestServiceServer mockServer;
 
-    @MockBean
+    @MockitoBean
     private SecurityContext securityContext;
 
-    @MockBean
+    @MockitoBean
     private Authentication authentication;
 
     @Autowired(required = false)

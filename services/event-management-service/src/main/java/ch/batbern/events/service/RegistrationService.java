@@ -18,6 +18,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 /**
  * Service for Registration business logic
@@ -72,6 +73,7 @@ public class RegistrationService {
         userRequest.setFirstName(request.getFirstName());
         userRequest.setLastName(request.getLastName());
         userRequest.setEmail(request.getEmail());
+        userRequest.setCompanyId(request.getCompany()); // Pass company from registration
         userRequest.setCognitoSync(false); // ADR-005: Create anonymous user (cognito_id = NULL)
 
         GetOrCreateUserResponse userResponse = userApiClient.getOrCreateUser(userRequest);
@@ -80,13 +82,24 @@ public class RegistrationService {
                 request.getEmail(), username, userResponse.getCreated());
 
         // QA Fix (VALID-001): Check for duplicate registration (same event + attendee)
-        boolean alreadyRegistered = registrationRepository.existsByEventIdAndAttendeeUsername(
+        // If registration exists but is pending ("registered" status), return it to resend confirmation email
+        Optional<Registration> existingRegistration = registrationRepository.findByEventIdAndAttendeeUsername(
                 event.getId(), username);
-        if (alreadyRegistered) {
-            log.warn("Duplicate registration attempt for event: {} by user: {}",
-                    eventCode, username);
-            throw new IllegalStateException(
-                    "User " + username + " is already registered for event " + eventCode);
+        if (existingRegistration.isPresent()) {
+            Registration registration = existingRegistration.get();
+            if ("registered".equalsIgnoreCase(registration.getStatus())) {
+                // Return existing pending registration - controller will resend confirmation email
+                log.info("Found pending registration for event: {} by user: {}, will resend confirmation email",
+                        eventCode, username);
+                registration.setEventCode(eventCode); // Set transient field for API response
+                return registration;
+            } else {
+                // Registration exists and is confirmed/cancelled - reject duplicate
+                log.warn("Duplicate registration attempt for event: {} by user: {} (status: {})",
+                        eventCode, username, registration.getStatus());
+                throw new IllegalStateException(
+                        "User " + username + " is already registered for event " + eventCode);
+            }
         }
 
         // 3. Generate unique registration code (ADR-003: Meaningful Identifiers)

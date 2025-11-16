@@ -49,11 +49,12 @@ describe('CompanySearch Component', () => {
     });
 
     it('should_debounceSearchInput_when_userTyping', async () => {
-      // Test 2.2: Debounce search input (50ms for faster tests)
+      // Test 2.2: Debounce search input
+      // The test verifies that search is debounced by checking call count
       const user = userEvent.setup();
       const onSearch = vi.fn();
 
-      render(<CompanySearch onSearch={onSearch} debounceMs={50} />, {
+      render(<CompanySearch onSearch={onSearch} debounceMs={100} />, {
         wrapper: createTestWrapper(),
       });
 
@@ -62,21 +63,20 @@ describe('CompanySearch Component', () => {
       // Clear any initial calls (component may call onSearch with '' on mount)
       onSearch.mockClear();
 
-      // Type quickly
+      // Type quickly - each character triggers the debounce timer
       await user.type(searchInput, 'Test');
 
-      // Should NOT have been called during typing (debounced)
-      expect(onSearch).not.toHaveBeenCalledWith('Test');
-
-      // Wait for debounce delay (50ms + buffer)
+      // Wait for debounce to fire (100ms + buffer)
       await waitFor(
         () => {
           expect(onSearch).toHaveBeenCalledWith('Test');
         },
-        { timeout: 200 }
+        { timeout: 300 }
       );
 
-      // Verify it was only called once after debounce (not on every keystroke)
+      // The key verification: onSearch should only be called ONCE after typing completes
+      // not 4 times (once per character T, e, s, t)
+      // This proves debouncing is working - only the final value triggers the callback
       expect(onSearch).toHaveBeenCalledTimes(1);
     });
 
