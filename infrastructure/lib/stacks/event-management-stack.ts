@@ -6,6 +6,7 @@ import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
 import { createDomainService } from '../constructs/domain-service-construct';
@@ -60,6 +61,11 @@ export class EventManagementStack extends cdk.Stack {
           // Service Connect URL for company-user-management service (ADR-004)
           // Uses DNS-based service discovery: http://<service-name>:8080
           COMPANY_USER_MANAGEMENT_SERVICE_URL: 'http://company-user-management:8080',
+          // Story 4.1.5: Base URL for email confirmation links
+          // Must match the frontend domain for correct email link generation
+          ...(props.config.domain && {
+            APP_BASE_URL: `https://${props.config.domain.frontendDomain}`,
+          }),
         },
       },
       cluster: props.cluster,
@@ -77,5 +83,24 @@ export class EventManagementStack extends cdk.Stack {
     if (props.contentBucket) {
       props.contentBucket.grantReadWrite(this.service.taskDefinition.taskRole);
     }
+
+    // Grant SES permissions for sending registration confirmation emails (Story 4.1.5)
+    // Note: In SES sandbox mode, permissions are required for BOTH sender (FROM) and recipient (TO) identities
+    // Using wildcard (*) for recipient identities to support any verified email in sandbox mode
+    // In production (out of sandbox), only FROM identity permissions are needed
+    this.service.taskDefinition.taskRole.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['ses:SendEmail', 'ses:SendRawEmail'],
+        resources: [
+          // FROM identity - batbern.ch domain (verified domain)
+          `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:identity/batbern.ch`,
+          `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:identity/*@batbern.ch`,
+          // TO identities - all verified emails (required for sandbox mode)
+          // This allows sending to any verified recipient in sandbox mode
+          `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:identity/*`,
+        ],
+      })
+    );
   }
 }
