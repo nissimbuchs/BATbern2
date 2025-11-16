@@ -86,15 +86,19 @@ describe('SpeakerGrid', () => {
     expect(screen.getByText('Green Building Innovations')).toBeInTheDocument(); // presentationTitle
   });
 
-  it('should_displaySessionAbstract_when_sessionHasDescription', () => {
+  it('should_storeSessionDescription_when_sessionHasDescription', () => {
+    // Session description is stored in speaker data but not displayed in card
+    // Only session title and speaker bio are shown
     render(<SpeakerGrid sessions={mockSessions} />);
 
+    // Verify session titles are displayed
+    expect(screen.getByText('Opening Keynote: Future of Architecture')).toBeInTheDocument();
+    expect(screen.getByText('Green Building Innovations')).toBeInTheDocument();
+
+    // Session descriptions are not rendered in the UI (kept minimal)
     expect(
-      screen.getByText(/An inspiring look at the future of Swiss architecture/i)
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Hands-on workshop exploring sustainable building materials/i)
-    ).toBeInTheDocument();
+      screen.queryByText(/An inspiring look at the future of Swiss architecture/i)
+    ).not.toBeInTheDocument();
   });
 
   it('should_displayInitials_when_noProfilePictureProvided', () => {
