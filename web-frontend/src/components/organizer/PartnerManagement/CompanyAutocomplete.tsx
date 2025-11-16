@@ -61,7 +61,7 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
   // Sync inputValue when value prop changes (e.g., when editing existing user)
   React.useEffect(() => {
     if (value) {
-      setInputValue(value.displayName || value.name);
+      setInputValue(value.name); // Show technical identifier in input
     } else {
       setInputValue('');
     }
@@ -70,8 +70,7 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
   // Only search if:
   // 1. Input is at least 2 characters
   // 2. Input doesn't match already selected value (avoid unnecessary search after selection)
-  const isValueSelected =
-    value && (debouncedInputValue === value.displayName || debouncedInputValue === value.name);
+  const isValueSelected = value && debouncedInputValue === value.name;
   const shouldSearch = debouncedInputValue.length >= 2 && !isValueSelected;
 
   // Query for company search
@@ -98,7 +97,7 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
       inputValue={inputValue}
       onInputChange={handleInputChange}
       options={companies}
-      getOptionLabel={(option) => option.displayName || option.name}
+      getOptionLabel={(option) => option.name} // Show technical identifier in input field
       isOptionEqualToValue={(option, value) => option.name === value.name}
       disabled={disabled}
       loading={isLoading}
@@ -115,7 +114,10 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
           {...params}
           label={label || t('Company')}
           error={!!error}
-          helperText={error}
+          helperText={
+            error ||
+            (value?.displayName && value.displayName !== value.name ? value.displayName : undefined)
+          }
           inputRef={inputRef}
           InputProps={{
             ...params.InputProps,
