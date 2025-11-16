@@ -163,7 +163,6 @@ describe('EventManagementDashboard Component', () => {
       isError: false,
       data: undefined,
       error: null,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
     vi.mocked(useUpdateEvent).mockReturnValue({
@@ -174,7 +173,6 @@ describe('EventManagementDashboard Component', () => {
       isError: false,
       data: undefined,
       error: null,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
     vi.mocked(useDeleteEvent).mockReturnValue({
@@ -185,7 +183,6 @@ describe('EventManagementDashboard Component', () => {
       isError: false,
       data: undefined,
       error: null,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
     // Provide default mocks for query hooks
@@ -195,7 +192,6 @@ describe('EventManagementDashboard Component', () => {
       isSuccess: false,
       isError: false,
       error: null,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
     vi.mocked(useEventWorkflow).mockReturnValue({
@@ -204,7 +200,6 @@ describe('EventManagementDashboard Component', () => {
       isSuccess: false,
       isError: false,
       error: null,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
   });
 
