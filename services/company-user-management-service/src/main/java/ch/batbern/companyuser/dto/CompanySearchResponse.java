@@ -5,12 +5,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.UUID;
-
 /**
  * Response DTO for company search results (autocomplete)
  * AC5: Search functionality response format
  * AC11: Advanced search results with verification status
+ * ADR-003: No UUID exposure - uses name as meaningful identifier
  */
 @Data
 @Builder
@@ -18,7 +17,6 @@ import java.util.UUID;
 @AllArgsConstructor
 public class CompanySearchResponse {
 
-    private UUID id;
     private String name;
     private String displayName;
     private String swissUID;
