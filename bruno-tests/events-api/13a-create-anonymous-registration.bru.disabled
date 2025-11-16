@@ -15,7 +15,7 @@ body:json {
     "firstName": "Jane",
     "lastName": "Doe",
     "email": "jane.doe.anonymous@example.com",
-    "company": "Test Company",
+    "company": "TestCompany",
     "role": "Architect",
     "termsAccepted": true,
     "communicationPreferences": {

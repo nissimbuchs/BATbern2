@@ -1,5 +1,5 @@
 meta {
-  name: Create Registration
+  name: Create Anonymous Registration (No Auth)
   type: http
   seq: 13
 }
@@ -7,11 +7,7 @@ meta {
 post {
   url: {{baseUrl}}/events/{{createdEventCode}}/registrations
   body: json
-  auth: bearer
-}
-
-auth:bearer {
-  token: {{authToken}}
+  auth: none
 }
 
 body:json {
