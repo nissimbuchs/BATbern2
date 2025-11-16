@@ -167,10 +167,16 @@ if [ "$ENVIRONMENT" == "development" ]; then
     # Development uses in-memory caching (no Redis)
     SPRING_PROFILE="local"
     LOG_LEVEL="DEBUG"
-else
-    # Staging/Production also use in-memory caching (Redis removed for cost optimization)
+    APP_BASE_URL="http://localhost:3000"
+elif [ "$ENVIRONMENT" == "staging" ]; then
     SPRING_PROFILE="${ENVIRONMENT}"
     LOG_LEVEL="INFO"
+    APP_BASE_URL="https://staging.batbern.ch"
+else
+    # Production
+    SPRING_PROFILE="${ENVIRONMENT}"
+    LOG_LEVEL="INFO"
+    APP_BASE_URL="https://batbern.ch"
 fi
 
 # Get AWS Account ID
@@ -184,6 +190,7 @@ cat "${TEMPLATE_FILE}" | \
     sed "s|{{GENERATION_TIMESTAMP}}|$(date)|g" | \
     sed "s|{{SPRING_PROFILE}}|${SPRING_PROFILE}|g" | \
     sed "s|{{LOG_LEVEL}}|${LOG_LEVEL}|g" | \
+    sed "s|{{APP_BASE_URL}}|${APP_BASE_URL}|g" | \
     sed "s|{{AWS_REGION}}|${AWS_REGION}|g" | \
     sed "s|{{AWS_ACCOUNT_ID}}|${AWS_ACCOUNT_ID}|g" | \
     sed "s|{{DB_ENDPOINT}}|${DB_ENDPOINT}|g" | \

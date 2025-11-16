@@ -124,7 +124,7 @@ export default {
     enabled: true,
     historyFile: 'dist/reports/data/history.json',
     maxHistoryEntries: 50,      // Keep last 50 builds
-    trendDataPoints: 20         // Number of data points for trend charts
+    trendDataPoints: 8          // Number of days to show in trend charts (one build per day)
   },
 
   // Output configuration

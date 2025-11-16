@@ -1,0 +1,59 @@
+meta {
+  name: List Partner Contacts
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/partners/{{testPartnerCompanyName}}/contacts
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  Origin: https://staging.batbern.ch
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: de-CH
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("should return 200 status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return array of contacts", function() {
+    const body = res.getBody();
+    expect(body).to.be.an('array');
+  });
+
+  test("contacts should be enriched with User data (ADR-004)", function() {
+    const body = res.getBody();
+    if (body && body.length > 0) {
+      const contact = body[0];
+      expect(contact.username).to.exist;
+      expect(contact.email).to.exist;        // From User Service
+      expect(contact.firstName).to.exist;    // From User Service
+      expect(contact.lastName).to.exist;     // From User Service
+      expect(contact.contactRole).to.be.oneOf(['primary', 'billing', 'technical', 'marketing']);
+      expect(contact.isPrimary).to.be.a('boolean');
+    }
+  });
+
+  test("should accept X-Correlation-ID header", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should have CORS headers", function() {
+    const corsHeader = res.getHeader('access-control-allow-origin');
+    expect(corsHeader).to.exist;
+  });
+}

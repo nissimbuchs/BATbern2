@@ -34,8 +34,8 @@ MINIO_LOG_FILE="/tmp/batbern-shared-minio.log"
 export MINIO_ROOT_USER="minioadmin"
 export MINIO_ROOT_PASSWORD="minioadmin"
 
-# Enable CORS for browser access (all frontend instances)
-export MINIO_API_CORS_ALLOW_ORIGIN="http://localhost:3000,http://localhost:3001,http://localhost:4000,http://localhost:4001"
+# Enable CORS for browser access (all localhost ports for local development)
+export MINIO_API_CORS_ALLOW_ORIGIN="*"
 
 # Check if MinIO is already running
 if [ -f "$MINIO_PID_FILE" ]; then
@@ -51,13 +51,13 @@ fi
 # Create data directory if it doesn't exist
 mkdir -p "$MINIO_DATA_DIR"
 
-echo -e "${CYAN}→ Starting MinIO server (Instance ${INSTANCE})...${NC}"
+echo -e "${CYAN}→ Starting MinIO server (shared across all instances)...${NC}"
 echo -e "${CYAN}  Data directory: ${MINIO_DATA_DIR}${NC}"
 echo -e "${CYAN}  API endpoint:   http://localhost:${MINIO_API_PORT}${NC}"
 echo -e "${CYAN}  Console:        http://localhost:${MINIO_CONSOLE_PORT}${NC}"
 echo -e "${CYAN}  Credentials:    minioadmin / minioadmin${NC}"
 
-# Start MinIO server in background with instance-specific ports
+# Start MinIO server in background on shared ports
 nohup minio server "$MINIO_DATA_DIR" \
     --address ":${MINIO_API_PORT}" \
     --console-address ":${MINIO_CONSOLE_PORT}" \
@@ -89,22 +89,22 @@ if [ $ATTEMPT -gt $MAX_ATTEMPTS ]; then
     exit 1
 fi
 
-# Configure MinIO client alias (instance-specific)
+# Configure MinIO client alias (shared across all instances)
 echo -e "${CYAN}→ Configuring MinIO client...${NC}"
-mc alias set local-${INSTANCE} http://localhost:${MINIO_API_PORT} minioadmin minioadmin > /dev/null 2>&1 || true
+mc alias set local-shared http://localhost:${MINIO_API_PORT} minioadmin minioadmin > /dev/null 2>&1 || true
 
 # Create batbern-development-company-logos bucket if it doesn't exist
 echo -e "${CYAN}→ Creating batbern-development-company-logos bucket...${NC}"
-if mc ls local-${INSTANCE}/batbern-development-company-logos > /dev/null 2>&1; then
+if mc ls local-shared/batbern-development-company-logos > /dev/null 2>&1; then
     echo -e "${YELLOW}  ⚠ Bucket 'batbern-development-company-logos' already exists${NC}"
 else
-    mc mb local-${INSTANCE}/batbern-development-company-logos > /dev/null 2>&1
+    mc mb local-shared/batbern-development-company-logos > /dev/null 2>&1
     echo -e "${GREEN}  ✓ Created bucket 'batbern-development-company-logos'${NC}"
 fi
 
 # Set bucket policy to allow public read (for logo access)
 echo -e "${CYAN}→ Setting bucket policy (public read)...${NC}"
-cat > /tmp/minio-policy-${INSTANCE}.json << 'EOF'
+cat > /tmp/minio-policy-shared.json << 'EOF'
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -117,15 +117,15 @@ cat > /tmp/minio-policy-${INSTANCE}.json << 'EOF'
   ]
 }
 EOF
-mc anonymous set-json /tmp/minio-policy-${INSTANCE}.json local-${INSTANCE}/batbern-development-company-logos > /dev/null 2>&1
-rm -f /tmp/minio-policy-${INSTANCE}.json
+mc anonymous set-json /tmp/minio-policy-shared.json local-shared/batbern-development-company-logos > /dev/null 2>&1
+rm -f /tmp/minio-policy-shared.json
 echo -e "${GREEN}  ✓ Bucket policy configured (public read)${NC}"
 echo -e "${GREEN}  ✓ CORS enabled via environment variable (MINIO_API_CORS_ALLOW_ORIGIN)${NC}"
 
 echo ""
 echo -e "${GREEN}╔════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${GREEN}║          MinIO Started Successfully! 🪣                     ║${NC}"
-echo -e "${GREEN}║              Instance ${INSTANCE} (Ports ${MINIO_API_PORT}/${MINIO_CONSOLE_PORT})              ║${NC}"
+echo -e "${GREEN}║        Shared (Ports ${MINIO_API_PORT}/${MINIO_CONSOLE_PORT})                    ║${NC}"
 echo -e "${GREEN}╚════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 echo -e "${CYAN}MinIO Console: ${GREEN}http://localhost:${MINIO_CONSOLE_PORT}${NC}"

@@ -1,0 +1,53 @@
+meta {
+  name: Cast Vote - Duplicate (409)
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/partners/{{testPartnerCompanyName}}/votes
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  Origin: https://staging.batbern.ch
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: de-CH
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "topicId": "{{testTopicId}}",
+    "voteValue": 3
+  }
+}
+
+assert {
+  res.status: eq 409
+}
+
+tests {
+  test("should return 409 status when partner already voted on topic", function() {
+    expect(res.getStatus()).to.equal(409);
+  });
+
+  test("should return ErrorResponse from shared-kernel", function() {
+    const body = res.getBody();
+    expect(body.message).to.exist;
+    expect(body.message).to.include('already voted');
+    expect(body.path).to.exist;
+    expect(body.correlationId).to.exist;
+  });
+
+  test("should have CORS headers even on error", function() {
+    const corsHeader = res.getHeader('access-control-allow-origin');
+    expect(corsHeader).to.exist;
+  });
+}

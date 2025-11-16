@@ -40,6 +40,7 @@ ENV_FILE="${PROJECT_ROOT}/.env"
 BASE_PORT="${BASE_PORT:-8000}"  # Default to 8000 (instance 1)
 
 # Calculate instance identifier based on BASE_PORT
+# Use friendly names for common ports, otherwise use the port number itself
 if [ "$BASE_PORT" -eq 8000 ]; then
     INSTANCE="1"
 elif [ "$BASE_PORT" -eq 9000 ]; then
@@ -50,26 +51,24 @@ fi
 
 ENV_NATIVE_FILE="${PROJECT_ROOT}/.env.native.${INSTANCE}"
 
-# Calculate port offsets based on BASE_PORT
-# Instance 1 (BASE_PORT=8000): 8080-8085, frontend 3000
-# Instance 2 (BASE_PORT=9000): 9080-9085, frontend 4000
-PORT_OFFSET=$((BASE_PORT / 1000))  # 8000->8, 9000->9
-API_GATEWAY_PORT=$((PORT_OFFSET * 1000 + 80))
-COMPANY_USER_MGMT_PORT=$((PORT_OFFSET * 1000 + 81))
-EVENT_MGMT_PORT=$((PORT_OFFSET * 1000 + 82))
-SPEAKER_COORD_PORT=$((PORT_OFFSET * 1000 + 83))
-PARTNER_COORD_PORT=$((PORT_OFFSET * 1000 + 84))
-ATTENDEE_EXP_PORT=$((PORT_OFFSET * 1000 + 85))
+# Calculate ports - consistent for all instances
+# Pattern: BASE_PORT for API Gateway, BASE_PORT+1..5 for services, BASE_PORT+100 for frontend
+API_GATEWAY_PORT=$BASE_PORT
+COMPANY_USER_MGMT_PORT=$((BASE_PORT + 1))
+EVENT_MGMT_PORT=$((BASE_PORT + 2))
+SPEAKER_COORD_PORT=$((BASE_PORT + 3))
+PARTNER_COORD_PORT=$((BASE_PORT + 4))
+ATTENDEE_EXP_PORT=$((BASE_PORT + 5))
+FRONTEND_PORT=$((BASE_PORT + 100))
 
-# Frontend port calculation (3000 for instance 1, 4000 for instance 2)
-FRONTEND_PORT=$((3000 + (INSTANCE - 1) * 1000))
+# Shared infrastructure ports (all instances use the same DB tunnel and MinIO)
+# DB tunnel port - always 5432 (shared across all instances)
+DB_TUNNEL_PORT=5432
 
-# DB tunnel port (5432 for instance 1, 6432 for instance 2)
-DB_TUNNEL_PORT=$((5432 + (INSTANCE - 1) * 1000))
-
-# MinIO ports (9000-9001 for instance 1, 9100-9101 for instance 2)
-MINIO_API_PORT=$((9000 + (INSTANCE - 1) * 100))
-MINIO_CONSOLE_PORT=$((9001 + (INSTANCE - 1) * 100))
+# MinIO ports - always 8450/8451 (shared across all instances)
+# Using 8450/8451 to avoid conflicts with common application ports like 9000
+MINIO_API_PORT=8450
+MINIO_CONSOLE_PORT=8451
 
 # Banner
 echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
@@ -247,9 +246,20 @@ AWS_S3_PATH_STYLE_ACCESS=true
 AWS_S3_BUCKET_NAME=batbern-development-company-logos
 
 # ==============================================
+# Application Base URL (for email links, etc.)
+# ==============================================
+APP_BASE_URL=http://localhost:${FRONTEND_PORT}
+
+# ==============================================
+# JWT Secret (for confirmation tokens)
+# ==============================================
+JWT_SECRET=${JWT_SECRET:-dev-secret-change-in-production-use-openssl-rand-base64-32}
+
+# ==============================================
 # Frontend Configuration (Instance ${INSTANCE})
 # ==============================================
 VITE_API_BASE_URL=http://localhost:${API_GATEWAY_PORT}
+VITE_API_PORT=${API_GATEWAY_PORT}
 VITE_PORT=${FRONTEND_PORT}
 EOF
 
@@ -259,12 +269,13 @@ EOF
 
 # Check if DB tunnel is running
 check_db_tunnel() {
-    local pid_file="${PID_DIR}/batbern-${INSTANCE}-db-tunnel.pid"
-    local log_file="${LOG_DIR}/batbern-${INSTANCE}-db-tunnel.log"
+    # Shared DB tunnel - use "shared" prefix instead of instance-specific
+    local pid_file="${PID_DIR}/batbern-shared-db-tunnel.pid"
+    local log_file="${LOG_DIR}/batbern-shared-db-tunnel.log"
 
     echo -e "${CYAN}→ Checking database tunnel (port ${DB_TUNNEL_PORT})...${NC}"
 
-    # Check if instance-specific tunnel is already running
+    # Check if shared tunnel is already running
     if [ -f "$pid_file" ]; then
         local old_pid=$(cat "$pid_file")
         if ps -p $old_pid > /dev/null 2>&1; then
@@ -276,7 +287,7 @@ check_db_tunnel() {
         fi
     fi
 
-    echo -e "${YELLOW}  ⚠ Database tunnel not running for instance ${INSTANCE}${NC}"
+    echo -e "${YELLOW}  ⚠ Database tunnel not running (shared across all instances)${NC}"
     echo -e "${CYAN}  → Starting database tunnel on port ${DB_TUNNEL_PORT}...${NC}"
 
     DB_TUNNEL_PORT=${DB_TUNNEL_PORT} "${PROJECT_ROOT}/scripts/dev/start-db-tunnel.sh" > "$log_file" 2>&1 &
@@ -299,11 +310,12 @@ check_db_tunnel() {
 
 # Check if MinIO is running
 check_minio() {
-    local pid_file="${PID_DIR}/batbern-${INSTANCE}-minio.pid"
+    # Shared MinIO - use "shared" prefix instead of instance-specific
+    local pid_file="${PID_DIR}/batbern-shared-minio.pid"
 
     echo -e "${CYAN}→ Checking MinIO (local S3, ports ${MINIO_API_PORT}/${MINIO_CONSOLE_PORT})...${NC}"
 
-    # Check if instance-specific MinIO is already running
+    # Check if shared MinIO is already running
     if [ -f "$pid_file" ]; then
         local old_pid=$(cat "$pid_file")
         if ps -p $old_pid > /dev/null 2>&1; then
@@ -315,7 +327,7 @@ check_minio() {
         fi
     fi
 
-    echo -e "${YELLOW}  ⚠ MinIO not running for instance ${INSTANCE}${NC}"
+    echo -e "${YELLOW}  ⚠ MinIO not running (shared across all instances)${NC}"
     echo -e "${CYAN}  → Starting MinIO on ports ${MINIO_API_PORT}/${MINIO_CONSOLE_PORT}...${NC}"
 
     MINIO_API_PORT=${MINIO_API_PORT} MINIO_CONSOLE_PORT=${MINIO_CONSOLE_PORT} INSTANCE=${INSTANCE} "${PROJECT_ROOT}/scripts/dev/start-minio.sh"

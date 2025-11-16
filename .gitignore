@@ -129,7 +129,7 @@ playwright/.cache/
 web-frontend/.playwright-mcp/
 
 # MinIO local storage
-.minio/
+.minio*/
 security-reports/
 .env.native.*
 

@@ -53,6 +53,54 @@ public class SlugGenerationService {
     }
 
     /**
+     * Generates a username from first and last names, with email fallback.
+     * ADR-005: Used for anonymous user registration where names might be unavailable.
+     *
+     * Rules:
+     * - If both firstName and lastName are provided, uses name-based username
+     * - If names are missing/empty, falls back to email prefix (before @)
+     * - Converts to lowercase
+     * - Replaces spaces with dots
+     * - Converts German characters: ä→ae, ö→oe, ü→ue, ß→ss
+     * - Removes special characters
+     *
+     * Example: "Müller" + "Özdemir" + "email@example.com" → "mueller.oezdemir"
+     * Example: null + null + "john.doe@example.com" → "john.doe"
+     *
+     * @param firstName The user's first name (can be null/empty)
+     * @param lastName The user's last name (can be null/empty)
+     * @param email The user's email address (fallback if names unavailable)
+     * @return A username string
+     * @throws IllegalArgumentException if all parameters are null/empty or email is invalid
+     */
+    public String generateUsername(String firstName, String lastName, String email) {
+        // Try name-based username first
+        boolean hasFirstName = firstName != null && !firstName.trim().isEmpty();
+        boolean hasLastName = lastName != null && !lastName.trim().isEmpty();
+
+        if (hasFirstName && hasLastName) {
+            return generateUsername(firstName, lastName);
+        }
+
+        // Fallback to email prefix
+        if (email == null || email.trim().isEmpty()) {
+            throw new IllegalArgumentException("Email cannot be null or empty when names are unavailable");
+        }
+
+        if (!email.contains("@")) {
+            throw new IllegalArgumentException("Invalid email format: " + email);
+        }
+
+        String emailPrefix = email.substring(0, email.indexOf("@"));
+        String slugified = slugifyName(emailPrefix);
+
+        // Ensure username has proper format (may need to replace hyphens with dots)
+        slugified = slugified.replace("-", ".");
+
+        return slugified;
+    }
+
+    /**
      * Ensures a username is unique by appending numeric suffixes if needed.
      *
      * If baseUsername exists, tries baseUsername.2, baseUsername.3, etc.

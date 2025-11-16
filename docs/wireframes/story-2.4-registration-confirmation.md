@@ -1,5 +1,29 @@
 # Story 2.4: Registration Confirmation Page - Wireframe
 
+> ⚠️ **PARTIALLY OUTDATED** ⚠️
+> This wireframe is **mostly accurate** but has some outdated elements. Refer to:
+> - **Story 4.1.6** (Registration Confirmation): `/docs/stories/4.1.6.registration-confirmation.md`
+> - **New Wireframe** (Inline Registration Accordion): `/docs/wireframes/story-4.1.5-inline-registration-accordion.md` (State 4: Registration Success)
+>
+> **What's Still Accurate:**
+> - ✅ Confirmation page layout and structure
+> - ✅ QR code download functionality
+> - ✅ Calendar export (.ics file)
+> - ✅ Social sharing (LinkedIn, Twitter/X, Email)
+> - ✅ "Create Free Account" CTA for anonymous users
+> - ✅ Anonymous registration support (ADR-005)
+>
+> **What's Changed:**
+> - ❌ **Removed**: Session-related content (old wireframe shows "Selected Sessions")
+> - ❌ **Updated**: API endpoints changed from `/registrations/{registrationId}` to `/registrations/{confirmationCode}`
+> - 🆕 **NEW**: Confetti animation on page load (canvas-confetti)
+> - 🆕 **NEW**: shadcn dark theme design system
+> - 🆕 **NEW**: Route changed to `/registration-confirmation/:confirmationCode`
+>
+> **Please refer to Story 4.1.6 for current implementation guidance.**
+>
+> Last Updated: November 8, 2025
+
 **Story**: Epic 2, Story 4 - Event Registration Flow (Confirmation)
 **Screen**: Registration Confirmation Page
 **User Role**: Attendee
@@ -56,6 +80,22 @@
 │  │                                                                        │  │
 │  │  4. 🔔 Event Reminders                                                │  │
 │  │     You'll receive reminders 1 week and 1 day before the event       │  │
+│  │                                                                        │  │
+│  └────────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌─── CREATE YOUR FREE ACCOUNT ─────────────────────────────────────────┐  │
+│  │                                                                        │  │
+│  │  🎯 Want to manage all your registrations in one place?              │  │
+│  │                                                                        │  │
+│  │  Create a free account to:                                            │  │
+│  │  ✓ View all your event registrations                                 │  │
+│  │  ✓ Edit your profile and preferences                                 │  │
+│  │  ✓ Get personalized event recommendations                            │  │
+│  │  ✓ Quick registration for future events                              │  │
+│  │                                                                        │  │
+│  │  [🚀 Create Free Account]                                            │  │
+│  │                                                                        │  │
+│  │  Already have an account? [Sign In]                                  │  │
 │  │                                                                        │  │
 │  └────────────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
@@ -145,6 +185,15 @@
 
 - **Email link (events@batbern.ch)**: Opens default email client with support address
 
+- **[🚀 Create Free Account] button**: Navigates to account creation flow (anonymous users only)
+  - Opens signup form with email pre-filled from registration
+  - Creates Cognito account and links to existing user profile
+  - Available only to anonymous users (hidden for authenticated users)
+
+- **[Sign In] link**: Navigates to login page
+  - Opens sign-in form for users who already have an account
+  - After successful login, auto-links anonymous registration if email matches
+
 ---
 
 ## Functional Requirements Met
@@ -163,6 +212,33 @@
   - Newsletter subscription confirmation (if opted in during registration)
 
 - **NFR1 (Responsive Design)**: Layout optimized for mobile, tablet, and desktop viewing
+
+---
+
+## Architecture Notes
+
+**ADR-005 Reference**: Anonymous Event Registration
+
+**Anonymous User Confirmation**:
+- This page displays for both anonymous and authenticated users
+- Anonymous users see prominent "Create Free Account" CTA
+- Account creation links existing registration via email matching
+
+**Account Creation Benefits**:
+- Manage all registrations in one place
+- Edit profile and preferences
+- Get personalized event recommendations
+- Quick registration for future events (pre-filled forms)
+
+**Account Linking**:
+- When anonymous user creates account with same email, automatic linking occurs on first login
+- User's registration history preserved and viewable in their account
+- Cognito post-authentication trigger updates user_profile.cognito_id
+
+**Registration Access**:
+- Confirmation page accessible without authentication via confirmation code in URL
+- Confirmation code acts as a secret for secure access to registration details
+- Both anonymous and authenticated users can download ticket, add to calendar, etc.
 
 ---
 
@@ -189,11 +265,13 @@
 
 When the Registration Confirmation Page loads, the following APIs are called:
 
-1. **GET /api/v1/events/{eventId}/registrations/{confirmationCode}**
-   - Query params: None (confirmation code in URL path)
-   - Returns: Complete registration details (registrationId, attendeeInfo, eventInfo with embedded venue, ticketUrl, emailStatus)
-   - Used for: Validate confirmation code exists, display registration details, show attendee info, verify email sent, enable ticket download button
-   - Consolidation: Uses nested registrations endpoint under Events API (Story 1.17)
+1. **GET /api/v1/events/{eventCode}/registrations/{registrationCode}**
+   - Security: `[]` (public access via registration code)
+   - Query params: None (registration code in URL path)
+   - Returns: Complete registration details (registrationId, registrationCode, attendeeUsername, attendeeInfo enriched from User API, eventInfo with embedded venue, ticketUrl, emailStatus)
+   - Used for: Validate registration code exists, display registration details, show attendee info (enriched via User Management API), verify email sent, enable ticket download button, determine if anonymous user (show account creation CTA)
+   - Note: Registration code acts as a secret for secure access without authentication
+   - Consolidation: Uses nested registrations endpoint under Events API (Story 1.17, ADR-005)
 
 2. **GET /api/v1/events/{eventId}?include=venue,sessions,speakers**
    - Query params: `include=venue,sessions,speakers` (to embed venue and session data)
@@ -256,12 +334,13 @@ When the Registration Confirmation Page loads, the following APIs are called:
     - Used for: Downloads full agenda document
     - Consolidation: Nested under Events API (Story 1.17)
 
-11. **PUT /api/v1/attendees/me**
-    - Triggered by: User clicks [Update My Preferences]
+11. **PUT /api/v1/users/me**
+    - Triggered by: User clicks [Update My Preferences] (authenticated users only)
     - Payload: `{ email: string, preferences: { notifications: object, newsletter: { frequency: string } } }`
-    - Returns: Updated attendee profile with preferences
+    - Returns: Updated user profile with preferences
     - Used for: Opens modal or navigates to preferences page for managing communication settings
-    - Consolidation: Uses consolidated Attendees API with embedded preferences (Story 1.25)
+    - Note: Only available for authenticated users (anonymous users must create account first)
+    - Consolidation: Uses consolidated Users API with embedded preferences (ADR-005)
 
 12. **POST /api/v1/content/share**
     - Triggered by: User clicks social sharing button (LinkedIn, Twitter/X, or Email)
@@ -272,6 +351,19 @@ When the Registration Confirmation Page loads, the following APIs are called:
     - Twitter/X: Opens Twitter/X share dialog with event hashtag and message
     - Email: Opens mailto: link with pre-filled subject and body
     - Consolidation: Uses consolidated Content API for sharing features (Story 1.20)
+
+13. **POST /api/v1/auth/signup**
+    - Triggered by: Anonymous user clicks [🚀 Create Free Account] button
+    - Payload: `{ email: string, password: string, firstName: string, lastName: string }`
+    - Returns: Cognito signup response with confirmation required (email verification)
+    - Used for: Creates new Cognito account for anonymous user
+    - Backend Flow (ADR-005):
+      1. Creates Cognito user account
+      2. Sends email verification code
+      3. On first login post-authentication trigger links existing user_profile (cognito_id=NULL) to new Cognito account by email
+      4. Sets user_profile.cognito_id to link accounts
+    - Note: Email must match existing registration email for automatic linking
+    - Consolidation: Uses Cognito authentication API (ADR-005)
 
 ---
 
@@ -304,55 +396,68 @@ When the Registration Confirmation Page loads, the following APIs are called:
    - Context: Venue coordinates and address
    - Behavior: Opens in new tab or native map app (mobile)
 
+6. **[🚀 Create Free Account] button** → Navigate to `Signup Page` (anonymous users only)
+   - Target: Account creation/signup page
+   - Context: Email pre-filled from registration, firstName, lastName
+   - Behavior: Full page navigation to signup form
+   - Visibility: Only shown to anonymous users (hidden for authenticated users)
+
+7. **[Sign In] link** → Navigate to `Login Page`
+   - Target: Authentication/sign-in page
+   - Context: Email pre-filled from registration
+   - Behavior: Full page navigation to login form
+   - Post-login: Auto-links anonymous registration if email matches (ADR-005)
+
 ### Secondary Navigation (Data Interactions)
 
-6. **[View Speaker Lineup] link** → Navigate to `Current Event Landing Page` (speaker section)
+8. **[View Speaker Lineup] link** → Navigate to `Current Event Landing Page` (speaker section)
    - Target: Current event landing page, scrolled to speakers section
    - Context: eventId, anchor: #speakers
    - Behavior: Full page navigation with scroll
 
-7. **[View Full Agenda] link** → Download agenda PDF
+9. **[View Full Agenda] link** → Download agenda PDF
    - Downloads complete event agenda
    - Context: eventId
    - Behavior: Browser download
 
-8. **[Explore Past Events] link** → Navigate to `Historical Archive` (story-1.18-historical-archive.md)
-   - Target: Historical archive browse page
-   - Context: None (general archive entry)
-   - Behavior: Full page navigation
+10. **[Explore Past Events] link** → Navigate to `Historical Archive` (story-1.18-historical-archive.md)
+    - Target: Historical archive browse page
+    - Context: None (general archive entry)
+    - Behavior: Full page navigation
 
-9. **[Update My Preferences] link** → Navigate to `User Settings` (TBD: User settings wireframe)
-   - Target: User settings page or modal
-   - Context: User email, current preferences
-   - Behavior: Modal or full page navigation
+11. **[Update My Preferences] link** → Navigate to `User Settings` (authenticated users only)
+    - Target: User settings page or modal
+    - Context: User email, current preferences
+    - Behavior: Modal or full page navigation
+    - Note: Anonymous users must create account first
 
-10. **[Edit Registration] button** → Navigate to `Event Registration Form` (story-2.4-event-registration.md)
+12. **[Edit Registration] button** → Navigate to `Event Registration Form` (story-2.4-event-registration.md)
     - Target: Registration form with edit mode
     - Context: registrationId, pre-filled registration data
     - Behavior: Full page navigation to registration form
     - Validation: Registration must not be canceled
 
-11. **Email link (events@batbern.ch)** → External email client
+13. **Email link (events@batbern.ch)** → External email client
     - Opens default email client with support address
     - Context: Pre-filled subject with confirmation code
     - Behavior: mailto: link
 
 ### Modal Interactions
 
-12. **[Update Preferences] (Catering section)** → Opens `Dietary Requirements Modal`
+14. **[Update Preferences] (Catering section)** → Opens `Dietary Requirements Modal`
     - Modal with form for dietary requirements and accessibility needs
     - Context: Current dietary requirements (if any)
     - Behavior: Modal overlay on same screen
     - Save action: Updates registration, closes modal, shows success message
 
-13. **[Social Sharing buttons] (LinkedIn, Twitter/X, Email)** → Opens social sharing dialog
+15. **[Social Sharing buttons] (LinkedIn, Twitter/X, Email)** → Opens social sharing dialog
     - LinkedIn: Opens LinkedIn share dialog with pre-filled message and event link
     - Twitter/X: Opens Twitter/X share dialog with pre-filled message and event hashtag
     - Email: Opens mailto: link with event details and registration info
     - Context: Event details, share message
     - Behavior: Opens external platform dialog or email client
 
-14. **[Cancel Registration] button** → Opens `Cancel Confirmation Modal`
+16. **[Cancel Registration] button** → Opens `Cancel Confirmation Modal`
     - Modal with cancellation warning and "Sorry to see you go" message
     - Context: Registration details, free event notice (no refunds)
     - Behavior: Modal overlay on same screen
@@ -361,25 +466,25 @@ When the Registration Confirmation Page loads, the following APIs are called:
 
 ### Event-Driven Navigation
 
-15. **Email not sent (failed)** → Shows `Email Retry Banner`
+17. **Email not sent (failed)** → Shows `Email Retry Banner`
     - Inline banner at top of page with [Resend Email] button
     - Context: registrationId, email address
     - Behavior: Banner shown only if email delivery failed
     - Action: Triggers email resend API
 
-16. **Registration already canceled** → Redirect to `Cancellation Page`
+18. **Registration already canceled** → Redirect to `Cancellation Page`
     - If user tries to access confirmation page for canceled registration
     - Target: Cancellation confirmation page
     - Behavior: Automatic redirect with cancellation details
 
 ### Error States & Redirects
 
-17. **Invalid confirmation code** → Navigate to `404 or Error Page`
+19. **Invalid confirmation code** → Navigate to `404 or Error Page`
     - If confirmation code doesn't exist or is invalid
     - Target: Error page with message and link back to events
     - Behavior: HTTP 404 response
 
-18. **Registration expired** → Shows `Expired Registration Page`
+20. **Registration expired** → Shows `Expired Registration Page`
     - If registration is too old or event has passed
     - Target: Expired registration page with archive link
     - Behavior: Shows event details in archived state
@@ -434,6 +539,8 @@ When the Registration Confirmation Page loads, the following APIs are called:
 - `emailResendSuccess: boolean` - Success state for email resend action
 - `countdownText: string` - Live countdown timer display (e.g., "45 days, 3 hours, 12 minutes")
 - `shareInProgress: boolean` - Loading state for social sharing action
+- `isAnonymousUser: boolean` - Whether user is anonymous (determines visibility of "Create Account" CTA)
+- `isCreatingAccount: boolean` - Loading state for account creation flow
 
 ### Global State (Zustand Store)
 - `auth.user` - Current user information (if authenticated)

@@ -51,14 +51,30 @@ management:
 
 # AWS Configuration
 aws:
+  region: ${AWS_REGION:eu-central-1}
   s3:
     bucket-name: ${AWS_S3_BUCKET_NAME:batbern-development-company-logos}
   cloudfront:
     domain: ${CLOUDFRONT_DOMAIN:https://cdn.batbern.ch}
 
 # User Service Configuration (API-based user data access)
+# Uses ECS Service Connect DNS for service-to-service communication in AWS
+# Format: http://<service-name>:<port> (resolves via CloudMap namespace: batbern.local)
 user-service:
-  base-url: ${COMPANY_USER_MANAGEMENT_SERVICE_URL:http://localhost:8081}
+  base-url: ${COMPANY_USER_MANAGEMENT_SERVICE_URL:http://company-user-management:8080}
+
+# Email Configuration (Story 2.2a Task B12)
+app:
+  base-url: ${APP_BASE_URL:https://batbern.ch}
+  email:
+    from: ${EMAIL_FROM:noreply@batbern.ch}
+    from-name: ${EMAIL_FROM_NAME:BATbern Platform}
+    organizer-name: ${EMAIL_ORGANIZER_NAME:BATbern Team}
+    organizer-email: ${EMAIL_ORGANIZER:events@batbern.ch}
+
+# JWT Configuration for confirmation tokens
+jwt:
+  secret: ${JWT_SECRET:changeme}
 
 # Application Info (exposed via /actuator/info)
 info:
@@ -83,11 +99,16 @@ spring:
     activate:
       on-profile: local
 
+# Local development uses localhost for user service
+# Supports multi-instance development via COMPANY_USER_MANAGEMENT_SERVICE_URL env var
+user-service:
+  base-url: ${COMPANY_USER_MANAGEMENT_SERVICE_URL:http://localhost:8081}
+
 aws:
   s3:
     bucket-name: ${AWS_S3_BUCKET_NAME:batbern-development-company-logos}
   cloudfront:
-    domain: ${CLOUDFRONT_DOMAIN:http://localhost:9000}
+    domain: ${CLOUDFRONT_DOMAIN:http://localhost:8450}
 
 ---
 # Test Profile Configuration

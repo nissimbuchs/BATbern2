@@ -24,10 +24,10 @@ export interface SpeakerCoordinationStackProps extends cdk.StackProps {
  *
  * Domain microservice for managing speakers, profiles, and availability.
  * Handles /api/v1/speakers routes.
+ * Uses Service Connect for direct service-to-service communication (no ALB).
  */
 export class SpeakerCoordinationStack extends cdk.Stack {
-  public readonly service: ecsPatterns.ApplicationLoadBalancedFargateService;
-  public readonly serviceUrl: string;
+  public readonly service: ecs.FargateService;
 
   constructor(scope: Construct, id: string, props: SpeakerCoordinationStackProps) {
     super(scope, id, props);
@@ -55,13 +55,5 @@ export class SpeakerCoordinationStack extends cdk.Stack {
     });
 
     this.service = domainService.service;
-    this.serviceUrl = domainService.serviceUrl;
-
-    // Outputs
-    new cdk.CfnOutput(this, 'ServiceUrl', {
-      value: this.serviceUrl,
-      description: 'Speaker Coordination Service internal URL',
-      exportName: `${envName}-speaker-coordination-url`,
-    });
   }
 }

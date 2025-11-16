@@ -1,0 +1,72 @@
+meta {
+  name: Add Partner Contact
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/partners/{{testPartnerCompanyName}}/contacts
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  Origin: https://staging.batbern.ch
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: de-CH
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "username": "{{testContactUsername}}",
+    "contactRole": "billing",
+    "isPrimary": false
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.username: isDefined
+}
+
+tests {
+  test("should return 201 status", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("should add contact by username (ADR-003)", function() {
+    const body = res.getBody();
+    expect(body.username).to.equal(bru.getEnvVar("testContactUsername"));
+  });
+
+  test("should set contact role", function() {
+    const body = res.getBody();
+    expect(body.contactRole).to.equal('billing');
+    expect(body.isPrimary).to.equal(false);
+  });
+
+  test("should enrich response with User data (ADR-004)", function() {
+    const body = res.getBody();
+    expect(body.email).to.exist;
+    expect(body.firstName).to.exist;
+    expect(body.lastName).to.exist;
+  });
+
+  test("should accept X-Correlation-ID header", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("should return location header", function() {
+    const locationHeader = res.getHeader('location');
+    if (locationHeader) {
+      expect(locationHeader).to.include('/partners/');
+      expect(locationHeader).to.include('/contacts/');
+    }
+  });
+}

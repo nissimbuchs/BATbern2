@@ -28,11 +28,7 @@ export const TestimonialCard = ({ avatar, name, quote, company }: TestimonialCar
         {/* Avatar */}
         <div className="flex-shrink-0">
           {avatar ? (
-            <img
-              src={avatar}
-              alt={name}
-              className="w-12 h-12 rounded-full object-cover"
-            />
+            <img src={avatar} alt={name} className="w-12 h-12 rounded-full object-cover" />
           ) : (
             <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
               <span className="text-base font-semibold text-primary-foreground">
@@ -44,9 +40,7 @@ export const TestimonialCard = ({ avatar, name, quote, company }: TestimonialCar
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-zinc-300 italic mb-3 line-clamp-3">
-            "{quote}"
-          </p>
+          <p className="text-sm text-zinc-300 italic mb-3 line-clamp-3">"{quote}"</p>
           <div>
             <p className="text-sm font-medium text-zinc-100">{name}</p>
             <p className="text-xs text-zinc-400">{company}</p>

@@ -66,14 +66,13 @@ describe('Event API Client (RED Phase)', () => {
       it('should_rejectInvalidEventDate_when_dateIsInThePast', async () => {
         const invalidEvent: CreateEventRequest = {
           title: 'Test Event',
-          description: 'Test Description',
-          eventDate: '2020-01-01T10:00:00Z', // Past date
-          registrationDeadline: '2019-12-15T23:59:59Z',
           eventNumber: 56,
+          date: '2020-01-01T10:00:00Z', // Past date
+          registrationDeadline: '2019-12-15T23:59:59Z',
           venueName: 'Test Venue',
           venueAddress: 'Test Address',
           venueCapacity: 100,
-          organizerId: 'john.doe',
+          status: 'planning',
         };
 
         await expect(eventApiClient.createEvent(invalidEvent)).rejects.toThrow(
@@ -89,14 +88,13 @@ describe('Event API Client (RED Phase)', () => {
 
         const invalidEvent: CreateEventRequest = {
           title: 'Test Event',
-          description: 'Test Description',
-          eventDate: futureDate.toISOString(),
-          registrationDeadline: invalidDeadline.toISOString(),
           eventNumber: 56,
+          date: futureDate.toISOString(),
+          registrationDeadline: invalidDeadline.toISOString(),
           venueName: 'Test Venue',
           venueAddress: 'Test Address',
           venueCapacity: 100,
-          organizerId: 'john.doe',
+          status: 'planning',
         };
 
         await expect(eventApiClient.createEvent(invalidEvent)).rejects.toThrow(
@@ -112,14 +110,13 @@ describe('Event API Client (RED Phase)', () => {
 
         const invalidEvent: CreateEventRequest = {
           title: 'Test Event',
-          description: 'Test Description',
-          eventDate: futureDate.toISOString(),
-          registrationDeadline: deadline.toISOString(),
           eventNumber: 56,
+          date: futureDate.toISOString(),
+          registrationDeadline: deadline.toISOString(),
           venueName: 'Test Venue',
           venueAddress: 'Test Address',
           venueCapacity: -100, // Negative capacity
-          organizerId: 'john.doe',
+          status: 'planning',
         };
 
         await expect(eventApiClient.createEvent(invalidEvent)).rejects.toThrow(
@@ -135,21 +132,21 @@ describe('Event API Client (RED Phase)', () => {
 
         const validEvent: CreateEventRequest = {
           title: 'Test Event',
-          description: 'Test Description',
-          eventDate: futureDate.toISOString(),
-          registrationDeadline: deadline.toISOString(),
           eventNumber: 56,
+          date: futureDate.toISOString(),
+          registrationDeadline: deadline.toISOString(),
           venueName: 'Test Venue',
           venueAddress: 'Test Address',
           venueCapacity: 100,
-          organizerId: 'john.doe',
+          status: 'planning',
         };
 
         // If validation passes, the function should attempt to make the API call
         // In test environment without backend, this will fail with network/timeout error or 500
-        // We expect network/server/timeout error (not validation error)
+        // We expect network/server error (not validation error)
+        // Error is transformed to user-friendly message by transformError()
         await expect(eventApiClient.createEvent(validEvent)).rejects.toThrow(
-          /(Network Error|status code 500|timeout)/
+          /(Network Error|Server Error)/
         );
       });
     });
@@ -163,7 +160,7 @@ describe('Event API Client (RED Phase)', () => {
 
         const updates: UpdateEventRequest = {
           registrationDeadline: invalidDeadline.toISOString(),
-          eventDate: futureDate.toISOString(),
+          date: futureDate.toISOString(),
         };
 
         await expect(eventApiClient.updateEvent('BATbern56', updates)).rejects.toThrow(
@@ -179,26 +176,29 @@ describe('Event API Client (RED Phase)', () => {
       // We can't fully test without backend, but we can verify the call is made
       const options = { expand: ['workflow', 'speakers', 'sessions', 'venue'] };
 
-      // Expect network/timeout error (not parameter building error)
+      // Expect network/server error (not parameter building error)
+      // Error is transformed to user-friendly message by transformError()
       await expect(eventApiClient.getEvent('BATbern56', options)).rejects.toThrow(
-        /(Network Error|status code 500|timeout)/
+        /(Network Error|Server Error)/
       );
     });
 
     it('should_getEventList_when_includeParameterProvided', async () => {
       const options = { expand: ['workflow'] };
 
-      // Expect network/timeout error (not parameter building error)
+      // Expect network/server error (not parameter building error)
+      // Error is transformed to user-friendly message by transformError()
       await expect(
         eventApiClient.getEvents({ page: 1, limit: 20 }, undefined, options)
-      ).rejects.toThrow(/(Network Error|status code 500|timeout)/);
+      ).rejects.toThrow(/(Network Error|Server Error)/);
     });
 
     it('should_omitIncludeParameter_when_noExpandOptionsProvided', async () => {
       // Without expand options, should not add ?include= parameter
-      // Expect network/timeout error (not parameter building error)
+      // Expect network/server error (not parameter building error)
+      // Error is transformed to user-friendly message by transformError()
       await expect(eventApiClient.getEvent('BATbern56')).rejects.toThrow(
-        /(Network Error|status code 500|timeout)/
+        /(Network Error|Server Error)/
       );
     });
   });
@@ -211,9 +211,10 @@ describe('Event API Client (RED Phase)', () => {
       };
 
       // Should use PATCH method, not PUT
-      // Expect network/timeout error (not method error)
+      // Expect network/server error (not method error)
+      // Error is transformed to user-friendly message by transformError()
       await expect(eventApiClient.patchEvent('BATbern56', partialUpdate)).rejects.toThrow(
-        /(Network Error|status code 500|timeout)/
+        /(Network Error|Server Error)/
       );
     });
 
@@ -223,9 +224,10 @@ describe('Event API Client (RED Phase)', () => {
       };
 
       // Should only send changed fields in request body
-      // Expect network/timeout error (not validation error)
+      // Expect network/server error (not validation error)
+      // Error is transformed to user-friendly message by transformError()
       await expect(eventApiClient.patchEvent('BATbern56', partialUpdate)).rejects.toThrow(
-        /(Network Error|status code 500|timeout)/
+        /(Network Error|Server Error)/
       );
     });
   });
@@ -279,42 +281,47 @@ describe('Event API Client (RED Phase)', () => {
       const pagination = { page: 2, limit: 10 };
 
       // Should add ?page=2&limit=10 to query
-      // Expect network/timeout error (not parameter error)
+      // Expect network/server error (not parameter error)
+      // Error is transformed to user-friendly message by transformError()
       await expect(eventApiClient.getEvents(pagination)).rejects.toThrow(
-        /(Network Error|status code 500|timeout)/
+        /(Network Error|Server Error)/
       );
     });
 
     it('should_supportFiltering_when_getEventsWithFilters', async () => {
-      const filters = { status: 'published', year: 2024 };
+      const filters = { status: ['published'], year: 2024 };
 
       // Should add filter parameter with JSON filter syntax
-      // Expect network/timeout error (not filter error)
+      // Expect network/server error (not filter error)
+      // Error is transformed to user-friendly message by transformError()
       await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
-        /(Network Error|status code 500|timeout)/
+        /(Network Error|Server Error)/
       );
     });
   });
 
   describe('Workflow and Tasks APIs', () => {
     it('should_getWorkflowState_when_eventCodeProvided', async () => {
-      // Expect network/timeout error (not API structure error)
+      // Expect network/server error (not API structure error)
+      // Error is transformed to user-friendly message by transformError()
       await expect(eventApiClient.getEventWorkflow('BATbern56')).rejects.toThrow(
-        /(Network Error|status code 500|timeout)/
+        /(Network Error|Server Error)/
       );
     });
 
     it('should_getCriticalTasks_when_eventCodeProvided', async () => {
-      // Expect network/timeout error (not API structure error)
+      // Expect network/server error (not API structure error)
+      // Error is transformed to user-friendly message by transformError()
       await expect(eventApiClient.getCriticalTasks('BATbern56')).rejects.toThrow(
-        /(Network Error|status code 500|timeout)/
+        /(Network Error|Server Error)/
       );
     });
 
     it('should_getTeamActivity_when_eventCodeProvided', async () => {
-      // Expect network/timeout error (not API structure error)
+      // Expect network/server error (not API structure error)
+      // Error is transformed to user-friendly message by transformError()
       await expect(eventApiClient.getTeamActivity('BATbern56')).rejects.toThrow(
-        /(Network Error|status code 500|timeout)/
+        /(Network Error|Server Error)/
       );
     });
   });

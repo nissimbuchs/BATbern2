@@ -93,7 +93,10 @@ describe('Sheet Component', () => {
       </Sheet>
     );
 
-    expect(screen.getByText('Close')).toBeInTheDocument();
+    // Multiple "Close" texts exist (screen-reader close button + footer button)
+    // Query for the footer button specifically
+    const closeButtons = screen.getAllByText('Close');
+    expect(closeButtons.length).toBeGreaterThanOrEqual(1);
   });
 
   test('should_renderCloseButton_when_sheetOpen', () => {
@@ -109,7 +112,7 @@ describe('Sheet Component', () => {
   });
 
   test('should_renderSheetFromRight_when_sideNotSpecified', () => {
-    const { container } = render(
+    render(
       <Sheet open>
         <SheetContent>
           <div>Content</div>
@@ -117,13 +120,13 @@ describe('Sheet Component', () => {
       </Sheet>
     );
 
-    // Default side is 'right'
-    const content = container.querySelector('[class*="right"]');
-    expect(content).toBeInTheDocument();
+    // Default side is 'right' - SheetContent renders in portal, so query by role
+    const content = screen.getByRole('dialog');
+    expect(content).toHaveClass('right-0'); // Verify right positioning class
   });
 
   test('should_renderSheetFromLeft_when_sideIsLeft', () => {
-    const { container } = render(
+    render(
       <Sheet open>
         <SheetContent side="left">
           <div>Content</div>
@@ -131,12 +134,12 @@ describe('Sheet Component', () => {
       </Sheet>
     );
 
-    const content = container.querySelector('[class*="left"]');
-    expect(content).toBeInTheDocument();
+    const content = screen.getByRole('dialog');
+    expect(content).toHaveClass('left-0'); // Verify left positioning class
   });
 
   test('should_renderSheetFromTop_when_sideIsTop', () => {
-    const { container } = render(
+    render(
       <Sheet open>
         <SheetContent side="top">
           <div>Content</div>
@@ -144,12 +147,12 @@ describe('Sheet Component', () => {
       </Sheet>
     );
 
-    const content = container.querySelector('[class*="top"]');
-    expect(content).toBeInTheDocument();
+    const content = screen.getByRole('dialog');
+    expect(content).toHaveClass('top-0'); // Verify top positioning class
   });
 
   test('should_renderSheetFromBottom_when_sideIsBottom', () => {
-    const { container } = render(
+    render(
       <Sheet open>
         <SheetContent side="bottom">
           <div>Content</div>
@@ -157,12 +160,12 @@ describe('Sheet Component', () => {
       </Sheet>
     );
 
-    const content = container.querySelector('[class*="bottom"]');
-    expect(content).toBeInTheDocument();
+    const content = screen.getByRole('dialog');
+    expect(content).toHaveClass('bottom-0'); // Verify bottom positioning class
   });
 
   test('should_applyCustomClassName_when_provided', () => {
-    const { container } = render(
+    render(
       <Sheet open>
         <SheetContent className="custom-sheet">
           <div>Content</div>
@@ -170,8 +173,8 @@ describe('Sheet Component', () => {
       </Sheet>
     );
 
-    const sheetContent = container.querySelector('.custom-sheet');
-    expect(sheetContent).toBeInTheDocument();
+    const sheetContent = screen.getByRole('dialog');
+    expect(sheetContent).toHaveClass('custom-sheet'); // Verify custom class is applied
   });
 
   test('should_renderCompleteSheet_when_allPartsProvided', () => {

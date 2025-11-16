@@ -1,6 +1,7 @@
 /**
  * SessionCards Component (Story 4.1.4)
  * Displays sessions in grid/list view with filtering capabilities
+ * Hover to expand session description
  */
 
 import { useState, useMemo } from 'react';
@@ -59,9 +60,7 @@ export const SessionCards = ({ sessions, topics = [] }: SessionCardsProps) => {
     if (!session.speakers || session.speakers.length === 0) {
       return t('public.speakers.speakerTBA');
     }
-    return session.speakers
-      .map((speaker) => `${speaker.firstName} ${speaker.lastName}`)
-      .join(', ');
+    return session.speakers.map((speaker) => `${speaker.firstName} ${speaker.lastName}`).join(', ');
   };
 
   if (sessions.length === 0) {
@@ -114,23 +113,15 @@ export const SessionCards = ({ sessions, topics = [] }: SessionCardsProps) => {
       )}
 
       {/* Sessions grid/list */}
-      <div
-        className={
-          viewMode === 'grid'
-            ? 'grid grid-cols-1 md:grid-cols-2 gap-6'
-            : 'space-y-4'
-        }
-      >
+      <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 gap-6' : 'space-y-4'}>
         {filteredSessions.map((session) => (
           <Card
             key={session.sessionSlug}
-            className="bg-zinc-900/50 border-zinc-800 hover:border-zinc-700 transition-colors"
+            className="group bg-zinc-900/50 border-zinc-800 hover:border-zinc-700 transition-colors"
           >
             <CardHeader>
               <div className="flex items-start justify-between gap-4">
-                <CardTitle className="font-light text-xl text-zinc-100">
-                  {session.title}
-                </CardTitle>
+                <CardTitle className="font-light text-xl text-zinc-100">{session.title}</CardTitle>
                 <Badge
                   variant="outline"
                   className="bg-blue-400/10 text-blue-400 border-blue-400/20"
@@ -141,7 +132,7 @@ export const SessionCards = ({ sessions, topics = [] }: SessionCardsProps) => {
             </CardHeader>
             <CardContent className="space-y-4">
               {session.description && (
-                <p className="text-sm text-zinc-400 line-clamp-3">
+                <p className="text-sm text-zinc-400 line-clamp-3 group-hover:line-clamp-none transition-all">
                   {session.description}
                 </p>
               )}

@@ -341,7 +341,7 @@ public class CompanyService {
                 .website(company.getWebsite())
                 .industry(company.getIndustry())
                 .description(company.getDescription())
-                .isVerified(company.isVerified())
+                .verified(company.isVerified())
                 .createdAt(company.getCreatedAt())
                 .updatedAt(company.getUpdatedAt())
                 .createdBy(company.getCreatedBy())

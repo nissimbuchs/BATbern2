@@ -24,6 +24,7 @@ As we design domain-specific services (Speaker Coordination, Attendee Experience
 **Documented Domain Entities** (from data architecture docs):
 
 **Speaker Entity** currently documented with:
+
 - ⚠️ `email`, `firstName`, `lastName` - **DUPLICATES User**
 - ⚠️ `profile.shortBio` - **DUPLICATES User.bio**
 - ⚠️ `profile.profilePhotoUrl` - **DUPLICATES User.profilePictureUrl**
@@ -129,98 +130,158 @@ We have decided to implement **User Entity as Single Source of Truth with Foreig
 
 ### Principle: Domain Entities Reference User, Never Duplicate
 
-All domain entities (Speaker, Attendee, Partner) will:
-1. **Reference User by UUID foreign key** (internal database layer)
-2. **Expose username in APIs** (public API layer per ADR-003)
-3. **Never duplicate user profile fields** (email, name, bio, photo)
-4. **Only store domain-specific fields** (expertiseAreas, engagementHistory, etc.)
+**CRITICAL RULE (ADR-003 Microservice Isolation)**: Domain entities in different services MUST reference User by **username (meaningful ID)**, NOT by userId UUID.
 
-### Database Layer: Foreign Key to User
+All domain entities (Speaker, Attendee, Partner) will:
+1. **Store username (meaningful ID)** for cross-service references to User entity
+2. **NEVER store userId UUID** when User is in a different service
+3. **Expose username in APIs** (public API layer per ADR-003)
+4. **Never duplicate user profile fields** (email, name, bio, photo)
+5. **Only store domain-specific fields** (expertiseAreas, engagementHistory, etc.)
+6. **Use UUID PKs** only for entities owned by this service
+
+### Database Layer: Meaningful ID Reference (ADR-003 Compliant)
+
+**CRITICAL**: Domain entities in separate microservices MUST store username (meaningful ID), NOT userId UUID.
 
 ```sql
--- Speaker entity references User
+-- ✅ CORRECT: Speaker entity in speaker-coordination-service
 CREATE TABLE speakers (
     id UUID PRIMARY KEY,
-    user_id UUID NOT NULL UNIQUE,  -- FK to users.id (one-to-one)
-    availability VARCHAR(20),       -- Domain-specific
-    workflow_state VARCHAR(50),     -- Domain-specific
-    expertise_areas TEXT[],         -- Domain-specific
-    speaking_topics TEXT[],         -- Domain-specific
-    speaking_history JSONB,         -- Domain-specific
+    username VARCHAR(100) NOT NULL UNIQUE,  -- ADR-003: Meaningful ID, NOT userId UUID
+    availability VARCHAR(20),                -- Domain-specific
+    workflow_state VARCHAR(50),              -- Domain-specific
+    expertise_areas TEXT[],                  -- Domain-specific
+    speaking_topics TEXT[],                  -- Domain-specific
+    speaking_history JSONB,                  -- Domain-specific
     -- NO email, firstName, lastName, bio, photo
-    CONSTRAINT fk_speaker_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    -- NO FOREIGN KEY to users.id (different service)
 );
 
-CREATE UNIQUE INDEX idx_speakers_user_id ON speakers(user_id);
+CREATE UNIQUE INDEX idx_speakers_username ON speakers(username);
+
+-- ❌ WRONG: Don't use userId UUID for cross-service references
+CREATE TABLE speakers (
+    id UUID PRIMARY KEY,
+    user_id UUID NOT NULL UNIQUE,  -- ❌ WRONG - UUID reference to different service
+    CONSTRAINT fk_speaker_user FOREIGN KEY (user_id) REFERENCES users(id)  -- ❌ WRONG - cross-service FK
+);
 ```
 
 **Key Design Decisions**:
-- `user_id` is UNIQUE (one-to-one relationship: one user = one speaker profile)
-- `ON DELETE CASCADE` - deleting user deletes speaker profile
+- `username` is UNIQUE (one-to-one relationship: one user = one speaker profile)
+- NO database foreign key to users table (different service, ADR-003)
+- User data enriched via HTTP call to User Service API
 - No duplicated user fields in speaker table
 - Domain-specific fields only
 
-### API Layer: Username-Based Endpoints with Joined Data
+### API Layer: Username-Based Endpoints with HTTP Enrichment
 
-Following ADR-003, APIs use **username** as the public identifier but **join User + domain entity data** internally:
+Following ADR-003, APIs use **username** as the public identifier and **enrich domain entity data with User data via HTTP calls**:
 
 ```http
 GET /api/v1/speakers/{username}
 ```
 
-**Response DTO** (combines User + Speaker):
+**Response DTO** (combines User + Speaker via HTTP enrichment):
 ```json
 {
   "username": "john.doe",
-  "email": "john.doe@example.com",          // From User
-  "firstName": "John",                       // From User
-  "lastName": "Doe",                         // From User
-  "company": "GoogleZH",                     // From User.companyId
-  "bio": "Experienced architect...",         // From User.bio
-  "profilePictureUrl": "https://cdn...",     // From User.profilePictureUrl
-  "availability": "available",               // From Speaker
-  "workflowState": "ready",                  // From Speaker
-  "expertiseAreas": ["Security", "Cloud"],   // From Speaker
-  "speakingTopics": ["Blockchain"]           // From Speaker
+  "email": "john.doe@example.com",          // From User Service HTTP call
+  "firstName": "John",                       // From User Service HTTP call
+  "lastName": "Doe",                         // From User Service HTTP call
+  "company": "GoogleZH",                     // From User Service HTTP call
+  "bio": "Experienced architect...",         // From User Service HTTP call
+  "profilePictureUrl": "https://cdn...",     // From User Service HTTP call
+  "availability": "available",               // From Speaker table
+  "workflowState": "ready",                  // From Speaker table
+  "expertiseAreas": ["Security", "Cloud"],   // From Speaker table
+  "speakingTopics": ["Blockchain"]           // From Speaker table
 }
 ```
 
-### Repository Layer: JPQL Constructor Projections
+### Service Layer: HTTP Client Integration (ADR-003 Compliant)
 
-To avoid N+1 queries, use **JPQL constructor projections** (as established in ADR-003):
+**CRITICAL**: Cross-service data access MUST use HTTP clients, NOT JPQL joins.
 
 ```java
+// ❌ WRONG: Don't use JPQL joins across services
 @Query("""
-    SELECT new ch.batbern.speaker.dto.SpeakerResponse(
-        u.username,
-        u.email,
-        u.firstName,
-        u.lastName,
-        u.bio,
-        u.profilePictureUrl,
-        c.name,
-        s.availability,
-        s.workflowState,
-        s.expertiseAreas,
-        s.speakingTopics
-    )
+    SELECT new SpeakerResponse(u.username, u.email, ...)
     FROM Speaker s
-    INNER JOIN User u ON s.userId = u.id
-    LEFT JOIN Company c ON u.companyId = c.id
-    WHERE u.username = :username
+    INNER JOIN User u ON s.userId = u.id  -- ❌ Cross-service join
     """)
-Optional<SpeakerResponse> findSpeakerByUsername(@Param("username") String username);
+
+// ✅ CORRECT: Use HTTP client for cross-service data
+@Service
+public class SpeakerService {
+    private final SpeakerRepository speakerRepository;
+    private final UserServiceClient userServiceClient;
+
+    @Transactional(readOnly = true)
+    public SpeakerResponse getSpeaker(String username) {
+        // 1. Get speaker from OWN database
+        Speaker speaker = speakerRepository.findByUsername(username)
+            .orElseThrow(() -> new SpeakerNotFoundException(username));
+
+        // 2. Enrich with User data via HTTP call
+        UserResponse user = userServiceClient.getUser(username);
+
+        // 3. Combine into response DTO
+        return SpeakerResponse.builder()
+            .username(user.getUsername())
+            .email(user.getEmail())                    // From HTTP call
+            .firstName(user.getFirstName())            // From HTTP call
+            .lastName(user.getLastName())              // From HTTP call
+            .bio(user.getBio())                        // From HTTP call
+            .profilePictureUrl(user.getProfilePictureUrl())  // From HTTP call
+            .availability(speaker.getAvailability())   // From Speaker table
+            .workflowState(speaker.getWorkflowState()) // From Speaker table
+            .expertiseAreas(speaker.getExpertiseAreas())  // From Speaker table
+            .build();
+    }
+}
+
+// HTTP Client with JWT token propagation and caching
+@Component
+public class UserServiceClient {
+    @Cacheable(value = "users", key = "#username")
+    public UserResponse getUser(String username) {
+        HttpHeaders headers = createHeadersWithJwtToken();
+        HttpEntity<Void> request = new HttpEntity<>(headers);
+
+        return restTemplate.exchange(
+            userServiceUrl + "/api/v1/users/" + username,
+            HttpMethod.GET,
+            request,
+            UserResponse.class
+        ).getBody();
+    }
+
+    private HttpHeaders createHeadersWithJwtToken() {
+        // Extract JWT from SecurityContext and propagate
+        // See ADR-003 for full implementation
+    }
+}
+```
+
+**Repository Pattern** (simple, no cross-service joins):
+```java
+public interface SpeakerRepository extends JpaRepository<Speaker, UUID> {
+    Optional<Speaker> findByUsername(String username);  // Uses username, not userId
+}
 ```
 
 **Benefits**:
-- Single database query (efficient join)
-- Automatic FK resolution (user_id → User → username)
-- Type-safe DTO construction
-- No N+1 problem
+- Microservice isolation (no cross-service database dependencies)
+- Service can be deployed independently
+- Clear service boundaries
+- HTTP caching reduces latency (15-minute TTL)
+- JWT token propagation for authentication
 
 ### Domain Entity Design Patterns
 
-#### Speaker Entity (Refactored)
+#### Speaker Entity (Refactored - ADR-003 Compliant)
 
 **REMOVED Fields** (now in User):
 - ❌ `email`, `firstName`, `lastName`
@@ -230,7 +291,7 @@ Optional<SpeakerResponse> findSpeakerByUsername(@Param("username") String userna
 
 **KEPT Fields** (domain-specific):
 - ✅ `id` (UUID primary key)
-- ✅ `userId` (UUID FK to User - internal)
+- ✅ `username` (VARCHAR - meaningful ID, NOT userId UUID)
 - ✅ `availability` (available, busy, unavailable)
 - ✅ `workflowState` (open, contacted, ready, confirmed, cancelled)
 - ✅ `expertiseAreas` (array of expertise domains)
@@ -240,7 +301,7 @@ Optional<SpeakerResponse> findSpeakerByUsername(@Param("username") String userna
 - ✅ `certifications`, `languages` (speaker-specific)
 - ✅ `slotPreferences` (for speaker coordination workflow)
 
-#### Attendee Entity (Refactored)
+#### Attendee Entity (Refactored - ADR-003 Compliant)
 
 **REMOVED Fields** (now in User):
 - ❌ `email`, `firstName`, `lastName`
@@ -248,22 +309,23 @@ Optional<SpeakerResponse> findSpeakerByUsername(@Param("username") String userna
 
 **KEPT Fields** (domain-specific):
 - ✅ `id` (UUID primary key)
-- ✅ `userId` (UUID FK to User - internal)
+- ✅ `username` (VARCHAR - meaningful ID, NOT userId UUID)
 - ✅ `eventRegistrations` (many-to-many with events)
 - ✅ `engagementHistory` (session attendance, interactions)
 - ✅ `newsletterSubscription` (boolean + preferences)
 - ✅ `contentPreferences` (topics of interest - different from User.preferences)
 - ✅ `gdprConsent` (legal: consent timestamp, IP address)
 
-#### Partner Entity (Refactored)
+#### Partner Entity (Refactored - ADR-003 Compliant)
 
 Partners are **company-centric** (not person-centric):
 
 ```java
+// ✅ CORRECT: Partner entity in partner-coordination-service
 @Entity
 public class Partner {
-    private UUID id;
-    private UUID companyId;  // FK to Company (primary relationship)
+    private UUID id;  // ✅ UUID PK for Partner (owned by this service)
+    private String companyName;  // ✅ Meaningful ID, NOT companyId UUID
     private PartnershipLevel level;
     private LocalDate startDate;
     private LocalDate endDate;
@@ -271,33 +333,69 @@ public class Partner {
     // ...
 }
 
+// ✅ CORRECT: PartnerContact entity
 @Entity
 public class PartnerContact {
     private UUID id;
-    private UUID partnerId;   // FK to Partner
-    private UUID userId;      // FK to User (NOT duplicating user fields)
+    private UUID partnerId;   // ✅ OK - Partner is in THIS service
+    private String username;  // ✅ Meaningful ID, NOT userId UUID
     private ContactRole role; // Primary, Billing, Technical
     private boolean isPrimary;
+    // NO: private UUID userId;  ❌ WRONG
+}
+
+// ❌ WRONG: Don't use UUIDs for cross-service references
+@Entity
+public class Partner {
+    private UUID id;
+    private UUID companyId;  // ❌ WRONG - UUID reference to different service
 }
 ```
 
-**Key Decision**: PartnerContact references User by `userId` (no duplication).
+**Key Decision**: PartnerContact references User by `username` (meaningful ID), NOT `userId` UUID (ADR-003 microservice isolation).
 
-### Cross-Service Communication
+### Cross-Service Communication (ADR-003 Microservice Isolation)
+
+**CRITICAL**: Domain services access User information via **HTTP API calls**, NOT database joins.
 
 When domain services need user information:
 
-1. **Synchronous**: Join at database layer (JPQL projections)
-2. **Asynchronous**: Listen to User domain events for caching (optional optimization)
+1. **Synchronous HTTP calls** (primary pattern):
+   - Use UserServiceClient with JWT token propagation
+   - Cache responses (15-minute TTL with Caffeine)
+   - Handle errors: HttpClientErrorException, HttpServerErrorException, ResourceAccessException
 
-**Example - Speaker Service needs user data**:
+2. **Asynchronous domain events** (optional optimization):
+   - Listen to User domain events for cache warming
+   - NOT for maintaining duplicated data
+
+**Example - Speaker Service accesses User data**:
 ```java
-// Option 1: Join query (preferred for read operations)
-speakerRepository.findSpeakerByUsername(username); // Returns joined DTO
+// ✅ CORRECT: HTTP-based access
+@Service
+public class SpeakerService {
+    private final SpeakerRepository speakerRepository;
+    private final UserServiceClient userServiceClient;
 
-// Option 2: Separate queries (if partial data needed)
-User user = userRepository.findByUsername(username);
-Speaker speaker = speakerRepository.findByUserId(user.getId());
+    public SpeakerResponse getSpeaker(String username) {
+        // 1. Get Speaker from OWN database
+        Speaker speaker = speakerRepository.findByUsername(username)
+            .orElseThrow(() -> new SpeakerNotFoundException(username));
+
+        // 2. Get User data via HTTP call (with caching)
+        UserResponse user = userServiceClient.getUser(username);
+
+        // 3. Combine into response
+        return buildSpeakerResponse(speaker, user);
+    }
+}
+
+// ❌ WRONG: Don't use database joins across services
+@Query("""
+    SELECT new SpeakerResponse(...)
+    FROM Speaker s
+    INNER JOIN User u ON s.userId = u.id  -- ❌ Cross-service join
+    """)
 ```
 
 ### User Role Management
@@ -420,69 +518,91 @@ PATCH /api/v1/speakers/me
 
 ## Implementation Guidelines
 
-### For New Domain Services
+### For New Domain Services (ADR-003 Compliant)
 
 When creating a new domain service (e.g., Speaker Coordination Service):
 
-1. **Entity Design**:
+1. **Entity Design** (stores username, NOT userId UUID):
    ```java
    @Entity
    @Table(name = "speakers")
    public class Speaker {
        @Id
+       @GeneratedValue(strategy = GenerationType.AUTO)
        private UUID id;
 
-       @Column(name = "user_id", nullable = false, unique = true)
-       private UUID userId;  // FK to users.id
+       @Column(name = "username", nullable = false, unique = true, length = 100)
+       private String username;  // ✅ Meaningful ID, NOT userId UUID
 
        // Domain-specific fields only
        @Enumerated(EnumType.STRING)
        private Availability availability;
 
        // NO email, firstName, lastName, bio, photo
+       // NO userId UUID
    }
    ```
 
-2. **Repository Pattern**:
+2. **Repository Pattern** (simple, no cross-service joins):
    ```java
    public interface SpeakerRepository extends JpaRepository<Speaker, UUID> {
-       @Query("SELECT new SpeakerResponse(...) FROM Speaker s " +
-              "INNER JOIN User u ON s.userId = u.id WHERE u.username = :username")
-       Optional<SpeakerResponse> findByUsername(@Param("username") String username);
+       Optional<Speaker> findByUsername(String username);  // Simple query
    }
    ```
 
-3. **DTO Design**:
+3. **Service Pattern** (HTTP-based enrichment):
    ```java
-   // Response DTO combines User + Speaker
+   @Service
+   public class SpeakerService {
+       private final SpeakerRepository speakerRepository;
+       private final UserServiceClient userServiceClient;
+
+       public SpeakerResponse getSpeaker(String username) {
+           Speaker speaker = speakerRepository.findByUsername(username)
+               .orElseThrow(() -> new SpeakerNotFoundException(username));
+
+           UserResponse user = userServiceClient.getUser(username);
+
+           return SpeakerResponse.builder()
+               .username(user.getUsername())
+               .email(user.getEmail())           // From HTTP call
+               .firstName(user.getFirstName())   // From HTTP call
+               .availability(speaker.getAvailability())  // From Speaker table
+               .build();
+       }
+   }
+   ```
+
+4. **DTO Design**:
+   ```java
+   // Response DTO combines User + Speaker (via HTTP enrichment)
    public record SpeakerResponse(
-       String username,      // From User
-       String email,         // From User
-       String firstName,     // From User
-       String bio,           // From User
-       String availability,  // From Speaker
-       List<String> topics   // From Speaker
+       String username,      // From User (HTTP)
+       String email,         // From User (HTTP)
+       String firstName,     // From User (HTTP)
+       String bio,           // From User (HTTP)
+       String availability,  // From Speaker table
+       List<String> topics   // From Speaker table
    ) {}
    ```
 
-4. **Controller Pattern**:
+5. **Controller Pattern**:
    ```java
    @GetMapping("/speakers/{username}")
    public SpeakerResponse getSpeaker(@PathVariable String username) {
-       return speakerRepository.findByUsername(username)
-           .orElseThrow(() -> new SpeakerNotFoundException(username));
+       return speakerService.getSpeaker(username);  // Service handles HTTP enrichment
    }
    ```
 
-### Database Migration Template
+### Database Migration Template (ADR-003 Compliant)
 
 For each domain entity:
 
 ```sql
 -- V1__Create_speakers_table.sql
 CREATE TABLE speakers (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL UNIQUE,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    username VARCHAR(100) NOT NULL UNIQUE,  -- ✅ Meaningful ID, NOT user_id UUID
 
     -- Domain-specific fields
     availability VARCHAR(20),
@@ -490,18 +610,23 @@ CREATE TABLE speakers (
     expertise_areas TEXT[],
 
     -- NO: email, first_name, last_name, bio, photo
+    -- NO: user_id UUID (cross-service reference)
+    -- NO: FOREIGN KEY to users.id (different service)
 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT fk_speaker_user
-        FOREIGN KEY (user_id)
-        REFERENCES users(id)
-        ON DELETE CASCADE
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE UNIQUE INDEX idx_speakers_user_id ON speakers(user_id);
+CREATE UNIQUE INDEX idx_speakers_username ON speakers(username);
 CREATE INDEX idx_speakers_availability ON speakers(availability);
+CREATE INDEX idx_speakers_workflow_state ON speakers(workflow_state);
+
+-- ❌ WRONG: Don't do this for cross-service references
+CREATE TABLE speakers (
+    id UUID PRIMARY KEY,
+    user_id UUID NOT NULL UNIQUE,  -- ❌ WRONG
+    CONSTRAINT fk_speaker_user FOREIGN KEY (user_id) REFERENCES users(id)  -- ❌ WRONG
+);
 ```
 
 ## Related Documents
@@ -671,7 +796,8 @@ USER_SERVICE_URL=http://company-user-management-service:8080
 |------|---------|---------|--------|
 | 2025-11-02 | 1.0 | Initial ADR creation | Winston (Architect Agent) |
 | 2025-11-06 | 1.1 | Added API-based access evolution section | Claude Code (Story 1.15a.1b) |
+| 2025-11-08 | 1.2 | **CRITICAL CLARIFICATION**: Domain entities MUST store username (meaningful ID), NOT userId UUID for cross-service references. Updated all examples to use HTTP-based access with meaningful IDs (ADR-003 microservice isolation). | Claude Code |
 
 ---
 
-**This ADR establishes the foundational principle: Domain entities reference User by foreign key and never duplicate user profile fields. Implementation can use either database joins or API-based access depending on deployment architecture and service boundary requirements.**
+**This ADR establishes the foundational principle: Domain entities reference User by meaningful ID (username) and never duplicate user profile fields. Implementation MUST use HTTP-based access for cross-service communication (ADR-003 microservices pattern).**

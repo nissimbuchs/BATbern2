@@ -86,7 +86,7 @@ describe('useCurrentEvent Hook', () => {
     const mockError = new Error('Failed to fetch current event');
     vi.mocked(eventApiClient.getCurrentEvent).mockRejectedValue(mockError);
 
-    const { result } = renderHook(() => useCurrentEvent(), { wrapper });
+    const { result } = renderHook(() => useCurrentEvent({ retry: false }), { wrapper });
 
     await waitFor(() => {
       expect(result.current.isError).toBe(true);
@@ -98,7 +98,7 @@ describe('useCurrentEvent Hook', () => {
   test('should_useCorrectQueryKey_when_hookCalled', () => {
     vi.mocked(eventApiClient.getCurrentEvent).mockResolvedValue(null);
 
-    const { result } = renderHook(() => useCurrentEvent(), { wrapper });
+    renderHook(() => useCurrentEvent(), { wrapper });
 
     // Query key is accessible via the query cache
     const query = queryClient.getQueryCache().findAll({ queryKey: ['events', 'current'] });

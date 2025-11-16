@@ -16,21 +16,23 @@ public class InMemoryRateLimitStorage implements RateLimitStorage {
     private final Map<String, RateLimitEntry> rateLimitMap = new ConcurrentHashMap<>();
 
     // Rate limits per role (requests per minute)
+    // Must match RateLimiter.ROLE_RATE_LIMITS
     private static final Map<String, Integer> RATE_LIMITS = Map.of(
-        "organizer", 100,
-        "speaker", 50,
-        "partner", 75,
-        "attendee", 20,
-        "anonymous", 10
+        "organizer", 1000,
+        "speaker", 500,
+        "partner", 500,
+        "attendee", 200,
+        "anonymous", 50
     );
 
     // Burst limits per role (requests per 10 seconds)
+    // Must match RateLimiter.ROLE_BURST_LIMITS
     private static final Map<String, Integer> BURST_LIMITS = Map.of(
-        "organizer", 20,
-        "speaker", 15,
-        "partner", 15,
-        "attendee", 10,
-        "anonymous", 5
+        "organizer", 200,
+        "speaker", 100,
+        "partner", 100,
+        "attendee", 50,
+        "anonymous", 20
     );
 
     @Override

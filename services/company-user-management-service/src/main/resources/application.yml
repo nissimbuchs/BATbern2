@@ -2,6 +2,11 @@ spring:
   application:
     name: company-user-management-service
 
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+
   datasource:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/batbern}
     username: ${DATABASE_USERNAME:batbern}
@@ -47,6 +52,10 @@ spring:
         jwt:
           issuer-uri: ${COGNITO_ISSUER_URI:https://cognito-idp.${AWS_REGION:eu-central-1}.amazonaws.com/${COGNITO_USER_POOL_ID:}}
           jwk-set-uri: ${COGNITO_JWK_SET_URI:https://cognito-idp.${AWS_REGION:eu-central-1}.amazonaws.com/${COGNITO_USER_POOL_ID:}/.well-known/jwks.json}
+
+# VPC Network Configuration (for service-to-service authentication)
+vpc:
+  cidr: ${VPC_CIDR:10.1.0.0/16}
 
 # AWS Configuration
 aws:
@@ -227,7 +236,7 @@ aws:
     bucket-name: ${AWS_S3_BUCKET_NAME:batbern-development-company-logos}
     profile-pictures-bucket: ${S3_PROFILE_PICTURES_BUCKET_NAME:batbern-development-profile-pictures}
   cloudfront:
-    domain: ${CLOUDFRONT_DOMAIN:http://localhost:9000}
+    domain: ${CLOUDFRONT_DOMAIN:http://localhost:8450}
 
 logging:
   level:

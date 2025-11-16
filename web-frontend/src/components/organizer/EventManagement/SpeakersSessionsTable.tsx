@@ -84,10 +84,19 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [autoAssignDialogOpen, setAutoAssignDialogOpen] = useState(false);
 
-  // Format ISO 8601 timestamp to localized time string
+  // Format ISO 8601 timestamp or simple time string (HH:mm) to localized time string
   const formatTime = (isoTimestamp: string): string => {
+    // If it's already in HH:mm format (e.g., "09:00"), return as-is
+    if (/^\d{2}:\d{2}$/.test(isoTimestamp)) {
+      return isoTimestamp;
+    }
+
     try {
       const date = new Date(isoTimestamp);
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return isoTimestamp; // Fallback to raw string if invalid
+      }
       return date.toLocaleTimeString(i18n.language, {
         hour: '2-digit',
         minute: '2-digit',
@@ -98,8 +107,16 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
     }
   };
 
-  // Materials status icon and color mapping
-  const getMaterialsStatusIcon = (status?: 'pending' | 'submitted' | 'approved' | 'rejected') => {
+  // Materials status icon and color mapping (QualityReviewStatus from architecture)
+  const getMaterialsStatusIcon = (
+    status?:
+      | 'pending'
+      | 'in_review'
+      | 'approved'
+      | 'requires_changes'
+      | 'rejected'
+      | 'revision_submitted'
+  ) => {
     // Default to 'pending' if status is not available (Phase 2 feature)
     const effectiveStatus = status || 'pending';
     switch (effectiveStatus) {
@@ -107,27 +124,41 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
         return (
           <CheckIcon color="success" fontSize="small" data-testid="materials-status-complete" />
         );
-      case 'submitted':
+      case 'in_review':
+      case 'revision_submitted':
       case 'pending':
         return (
           <WarningIcon color="warning" fontSize="small" data-testid="materials-status-pending" />
         );
       case 'rejected':
+      case 'requires_changes':
         return <ErrorIcon color="error" fontSize="small" data-testid="materials-status-missing" />;
     }
   };
 
-  const getMaterialsStatusLabel = (status?: 'pending' | 'submitted' | 'approved' | 'rejected') => {
+  const getMaterialsStatusLabel = (
+    status?:
+      | 'pending'
+      | 'in_review'
+      | 'approved'
+      | 'requires_changes'
+      | 'rejected'
+      | 'revision_submitted'
+  ) => {
     // Default to 'pending' if status is not available (Phase 2 feature)
     const effectiveStatus = status || 'pending';
     switch (effectiveStatus) {
       case 'approved':
         return t('speakers.materialsComplete');
-      case 'submitted':
+      case 'in_review':
+      case 'revision_submitted':
       case 'pending':
         return t('speakers.materialsPending');
       case 'rejected':
+      case 'requires_changes':
         return t('speakers.materialsMissing');
+      default:
+        return '';
     }
   };
 

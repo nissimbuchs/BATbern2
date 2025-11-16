@@ -47,6 +47,11 @@ dependencies {
     implementation 'software.amazon.awssdk:s3'
     implementation 'software.amazon.awssdk:url-connection-client'
 
+    // JWT for email confirmation tokens
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.5'
+
     // OpenAPI documentation
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
 
@@ -96,6 +101,18 @@ jacocoTestReport {
         xml.required = true
         html.required = true
         csv.required = false
+    }
+
+    // Exclude generated code from coverage
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                '**/generated/**',           // OpenAPI generated code
+                '**/*Application.class',     // Spring Boot main class
+                '**/*Config.class',          // Configuration classes
+                '**/*Configuration.class'    // Configuration classes
+            ])
+        }))
     }
 }
 
@@ -196,14 +213,68 @@ openApiGenerate {
     ]
 }
 
-// Make compileJava depend on openApiGenerate
-compileJava.dependsOn tasks.openApiGenerate
+// OpenAPI Generator - Generate User API client DTOs (Story 2.2a: Cross-service types)
+// This task generates DTOs from users-api.openapi.yml for use in event-management-service
+// when calling User Management Service APIs (e.g., get-or-create user for anonymous registration)
+task openApiGenerateUsersClient(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+    generatorName = 'spring'
+    inputSpec = "$rootDir/docs/api/users-api.openapi.yml".toString()
+    outputDir = "$buildDir/generated-users-client".toString()
+    modelPackage = 'ch.batbern.events.dto.generated.users'
+    validateSpec = false  // Skip validation for custom license fields
+
+    // Import mappings - use shared-kernel types instead of generating
+    importMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
+        'PaginatedResponse': 'ch.batbern.shared.dto.PaginatedResponse'
+    ]
+
+    // Type mappings - map OpenAPI schemas to shared-kernel classes
+    typeMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+
+    configOptions = [
+        dateLibrary: 'java8',
+        interfaceOnly: 'false',             // Generate POJOs for DTOs
+        skipDefaultInterface: 'true',
+        useTags: 'false',                   // Don't organize by tags (client-side)
+        useSpringBoot3: 'true',
+        documentationProvider: 'none',
+        openApiNullable: 'false',
+        hideGenerationTimestamp: 'true',
+        useBeanValidation: 'true',
+        performBeanValidation: 'true',
+        useOptional: 'false',
+        useJakartaEe: 'true',
+        generateBuilders: 'true'            // Generate builder pattern for DTOs
+    ]
+
+    // Generate only models (DTOs), no API interfaces
+    globalProperties = [
+        models: '',
+        apis: 'false',
+        supportingFiles: 'ApiUtil.java'
+    ]
+
+    // Skip generation of shared-kernel types
+    schemaMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+}
+
+// Make compileJava depend on both OpenAPI generation tasks
+compileJava.dependsOn tasks.openApiGenerate, tasks.openApiGenerateUsersClient
 
 // Add generated sources to source sets
 sourceSets {
     main {
         java {
             srcDir "$buildDir/generated/src/main/java"
+            srcDir "$buildDir/generated-users-client/src/main/java"
         }
     }
 }
@@ -211,4 +282,5 @@ sourceSets {
 // Clean generated sources when running clean
 clean {
     delete "$buildDir/generated"
+    delete "$buildDir/generated-users-client"
 }

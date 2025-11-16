@@ -90,45 +90,8 @@ describe('Company API Client', () => {
       });
     });
 
-    describe('requestLogoUploadUrl', () => {
-      it('should reject files exceeding size limit', async () => {
-        const fileSizeTooLarge = 10 * 1024 * 1024; // 10MB
-
-        await expect(
-          companyApiClient.requestLogoUploadUrl(
-            'test-id',
-            'huge.png',
-            'image/png',
-            fileSizeTooLarge
-          )
-        ).rejects.toThrow(/File size exceeds maximum/);
-      });
-
-      it('should accept valid image types', async () => {
-        const validTypes: Array<'image/png' | 'image/jpeg' | 'image/svg+xml'> = [
-          'image/png',
-          'image/jpeg',
-          'image/svg+xml',
-        ];
-
-        // Test each type sequentially to avoid unhandled promises
-        for (const mimeType of validTypes) {
-          // Expect network/server/timeout error (not validation error)
-          await expect(
-            companyApiClient.requestLogoUploadUrl('test-id', 'logo.png', mimeType, 1024)
-          ).rejects.toThrow(/(Network Error|status code 500|timeout)/);
-        }
-      });
-
-      it('should accept files within size limit', async () => {
-        const validSize = 2 * 1024 * 1024; // 2MB
-
-        // Expect network/server/timeout error (not validation error)
-        await expect(
-          companyApiClient.requestLogoUploadUrl('test-id', 'logo.png', 'image/png', validSize)
-        ).rejects.toThrow(/(Network Error|status code 500|timeout)/);
-      });
-    });
+    // DEPRECATED: requestLogoUploadUrl tests removed in Story 1.16.3
+    // Logo upload now uses generic file upload API (see file-upload-api.openapi.yml)
 
     describe('deleteCompany', () => {
       it('should attempt to delete company', async () => {
@@ -148,8 +111,8 @@ describe('Company API Client', () => {
       expect(companyApiClient).toHaveProperty('createCompany');
       expect(companyApiClient).toHaveProperty('updateCompany');
       expect(companyApiClient).toHaveProperty('deleteCompany');
-      expect(companyApiClient).toHaveProperty('requestLogoUploadUrl');
-      expect(companyApiClient).toHaveProperty('confirmLogoUpload');
+      // Note: requestLogoUploadUrl and confirmLogoUpload removed in Story 1.16.3
+      // Logo uploads now use generic file upload API
     });
 
     it('should have methods that return promises', () => {

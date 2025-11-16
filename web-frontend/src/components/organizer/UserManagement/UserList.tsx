@@ -23,7 +23,7 @@ import { useUserList } from '@/hooks/useUserManagement';
 import UserTable from './UserTable';
 import UserFilters from './UserFilters';
 import UserDetailModal from './UserDetailModal';
-import UserCreateModal from './UserCreateModal';
+import UserCreateEditModal from './UserCreateEditModal';
 import RoleManagerModal from './RoleManagerModal';
 import DeleteUserDialog from './DeleteUserDialog';
 import UserPagination from './UserPagination';
@@ -35,6 +35,7 @@ const UserList: React.FC = () => {
   const { filters, pagination, selectedUser, setSelectedUser, setPage, setLimit } =
     useUserManagementStore();
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [editUser, setEditUser] = useState<User | null>(null);
   const [roleManagerUser, setRoleManagerUser] = useState<User | null>(null);
   const [deleteDialogUser, setDeleteDialogUser] = useState<User | null>(null);
 
@@ -53,17 +54,13 @@ const UserList: React.FC = () => {
   };
 
   const handleEditUser = (user: User) => {
-    // Close detail modal and open role manager
+    // Close detail modal and open edit modal
     setSelectedUser(null);
-    setRoleManagerUser(user);
+    setEditUser(user);
   };
 
   const handleOpenCreateModal = () => {
     setCreateModalOpen(true);
-  };
-
-  const handleCloseCreateModal = () => {
-    setCreateModalOpen(false);
   };
 
   // Loading state
@@ -163,10 +160,19 @@ const UserList: React.FC = () => {
           onClose={handleCloseDetailModal}
           onEdit={handleEditUser}
         />
-        <UserCreateModal
-          open={createModalOpen}
-          onClose={handleCloseCreateModal}
-          onSuccess={() => refetch()}
+        {/* Create/Edit User Modal */}
+        <UserCreateEditModal
+          open={createModalOpen || !!editUser}
+          user={editUser}
+          onClose={() => {
+            setCreateModalOpen(false);
+            setEditUser(null);
+          }}
+          onSuccess={() => {
+            refetch();
+            setCreateModalOpen(false);
+            setEditUser(null);
+          }}
         />
         <RoleManagerModal
           user={roleManagerUser}

@@ -1,7 +1,7 @@
 /**
  * SpeakerGrid Component (Story 4.1.4)
  * Displays speakers in a responsive grid with session information
- * Hover to show session abstract
+ * Hover to show speaker bio
  */
 
 import { Card, CardContent, CardHeader } from '@/components/public/ui/card';
@@ -17,7 +17,8 @@ interface SpeakerWithSession {
   company?: string;
   profilePictureUrl?: string;
   sessionTitle: string;
-  sessionAbstract?: string;
+  sessionDescription?: string;
+  bio?: string;
   speakerRole: string;
 }
 
@@ -44,7 +45,8 @@ export const SpeakerGrid = ({ sessions }: SpeakerGridProps) => {
               company: speaker.company,
               profilePictureUrl: speaker.profilePictureUrl,
               sessionTitle: speaker.presentationTitle || session.title,
-              sessionAbstract: session.description,
+              sessionDescription: session.description,
+              bio: speaker.bio,
               speakerRole: speaker.speakerRole,
             });
           }
@@ -97,12 +99,10 @@ export const SpeakerGrid = ({ sessions }: SpeakerGridProps) => {
             </CardHeader>
             <CardContent className="pt-0">
               <div className="border-t border-zinc-800 pt-4">
-                <p className="text-sm font-medium text-blue-400 mb-2">
-                  {speaker.sessionTitle}
-                </p>
-                {speaker.sessionAbstract && (
-                  <p className="text-sm text-zinc-400 line-clamp-3 group-hover:line-clamp-none transition-all">
-                    {speaker.sessionAbstract}
+                <p className="text-sm font-medium text-blue-400 mb-2">{speaker.sessionTitle}</p>
+                {speaker.bio && (
+                  <p className="text-sm text-zinc-400 line-clamp-3 group-hover:line-clamp-none transition-all mt-2">
+                    {speaker.bio}
                   </p>
                 )}
               </div>

@@ -163,7 +163,7 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
         assertThat(response.getWebsite()).isEqualTo("https://event.example.com");
         assertThat(response.getIndustry()).isEqualTo("Testing");
         assertThat(response.getDescription()).isEqualTo("Testing events");
-        assertThat(response.isVerified()).isFalse();
+        assertThat(response.getVerified()).isFalse();
         assertThat(response.getCreatedAt()).isNotNull();
         assertThat(response.getUpdatedAt()).isNotNull();
     }

@@ -26,20 +26,34 @@ import java.util.stream.Collectors;
 /**
  * Security configuration for the Event Management Service
  * Configures role-based access control for event management endpoints with JWT authentication
+ *
+ * Method Security Strategy:
+ * - Production/Staging: @EnableMethodSecurity enforces @PreAuthorize annotations
+ * - Local Development: Method security disabled (trusted localhost environment, mirrors AWS VPC security)
  */
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
     @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri:}")
     private String jwkSetUri;
 
     /**
+     * Enable method-level security for production, staging, and test environments
+     * Enforces @PreAuthorize annotations on controller methods
+     */
+    @Configuration
+    @EnableMethodSecurity(prePostEnabled = true)
+    @Profile("!local")
+    static class ProductionMethodSecurityConfig {
+    }
+
+    /**
      * Production security filter chain with JWT authentication
      * Note: Tests use TestSecurityConfig instead
      *
      * Story 4.1.3: Public endpoints for event discovery
+     * QA Fix (SEC-001): Rate limiting filter auto-registered via @Component @Order
      */
     @Bean
     @Profile("!test")
@@ -62,14 +76,16 @@ public class SecurityConfig {
                 // Story 1.15a.1b: Public speaker list endpoint (GET only, POST/PUT/DELETE require ORGANIZER)
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*/speakers").permitAll()
 
+                // Story 2.2a: Public anonymous registration endpoints (ADR-005)
+                .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/*/registrations/*").permitAll()
+                // Email confirmation endpoint (no auth required, token-protected)
+                .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations/confirm").permitAll()
+
                 // All other requests require authentication
-                .anyRequest().authenticated()
-            )
-            .oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(jwt -> jwt
-                    .decoder(jwtDecoder())
-                    .jwtAuthenticationConverter(jwtAuthenticationConverter())
-                )
+                // Note: Actual JWT validation happens at API Gateway layer
+                // Services trust requests from API Gateway (VPC-internal communication)
+                .anyRequest().permitAll()
             );
 
         return http.build();

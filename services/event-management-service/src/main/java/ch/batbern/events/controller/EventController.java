@@ -3,10 +3,14 @@ package ch.batbern.events.controller;
 import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Logo;
+import ch.batbern.events.domain.Registration;
 import ch.batbern.events.dto.BatchUpdateRequest;
 import ch.batbern.events.dto.CreateEventRequest;
+import ch.batbern.events.dto.CreateRegistrationResponse;
+import ch.batbern.events.dto.generated.CreateRegistrationRequest;
 import ch.batbern.events.dto.EventResponse;
 import ch.batbern.events.dto.PatchEventRequest;
+import ch.batbern.events.dto.RegistrationResponse;
 import ch.batbern.events.dto.UpdateEventRequest;
 import ch.batbern.events.event.EventCreatedEvent;
 import ch.batbern.events.event.EventPublishedEvent;
@@ -40,6 +44,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -71,6 +76,10 @@ public class EventController {
     private final CacheManager cacheManager;
     private final ch.batbern.events.service.GenericLogoService genericLogoService;
     private final ch.batbern.events.client.UserApiClient userApiClient;
+    private final ch.batbern.events.service.RegistrationService registrationService;
+    private final ch.batbern.events.repository.RegistrationRepository registrationRepository;
+    private final ch.batbern.events.service.ConfirmationTokenService confirmationTokenService;
+    private final ch.batbern.events.service.RegistrationEmailService registrationEmailService;
 
     /**
      * List/Search Events (AC1)
@@ -333,12 +342,13 @@ public class EventController {
                     // Fetch and add enriched User data
                     try {
                         if (sessionUser.getUsername() != null) {
-                            ch.batbern.events.dto.UserProfileDTO userProfile = userApiClient.getUserByUsername(sessionUser.getUsername());
-                            speakerMap.put("username", userProfile.getUsername());
+                            ch.batbern.events.dto.generated.users.UserResponse userProfile = userApiClient.getUserByUsername(sessionUser.getUsername());
+                            speakerMap.put("username", userProfile.getId());
                             speakerMap.put("firstName", userProfile.getFirstName());
                             speakerMap.put("lastName", userProfile.getLastName());
                             speakerMap.put("company", userProfile.getCompanyId());
                             speakerMap.put("profilePictureUrl", userProfile.getProfilePictureUrl());
+                            speakerMap.put("bio", userProfile.getBio());
                         } else {
                             // Fallback: username not set (shouldn't happen with V8 migration)
                             log.warn("SessionUser {} has no username set", sessionUser.getId());
@@ -347,6 +357,7 @@ public class EventController {
                             speakerMap.put("lastName", "Speaker");
                             speakerMap.put("company", null);
                             speakerMap.put("profilePictureUrl", null);
+                            speakerMap.put("bio", null);
                         }
                     } catch (Exception e) {
                         // Log error but don't fail the entire request
@@ -357,6 +368,7 @@ public class EventController {
                         speakerMap.put("lastName", "Speaker");
                         speakerMap.put("company", null);
                         speakerMap.put("profilePictureUrl", null);
+                        speakerMap.put("bio", null);
                     }
 
                     return speakerMap;
@@ -1068,6 +1080,310 @@ public class EventController {
         analytics.put("eventCode", eventCode);
 
         return ResponseEntity.ok(analytics);
+    }
+
+    // ================================
+    // Registration Endpoints (Story 2.2a: Anonymous Event Registration)
+    // ================================
+
+    /**
+     * Create Event Registration (Anonymous) - Story 2.2a (ADR-005)
+     *
+     * POST /api/v1/events/{eventCode}/registrations
+     *
+     * Creates a new registration for an event with anonymous user support.
+     * Users can register without creating a Cognito account (anonymous users).
+     *
+     * @param eventCode Event code to register for
+     * @param request Registration request with attendee details
+     * @return Created registration with enriched user data
+     */
+    @PostMapping("/{eventCode}/registrations")
+    @Operation(
+            summary = "Create Event Registration (Anonymous)",
+            description = "Register for an event without requiring authentication. " +
+                    "Creates anonymous user profile automatically. " +
+                    "Registration starts in PENDING status. User must confirm via email link."
+    )
+    public ResponseEntity<CreateRegistrationResponse> createRegistration(
+            @PathVariable String eventCode,
+            @Valid @RequestBody CreateRegistrationRequest request) {
+        log.debug("POST /api/v1/events/{}/registrations", eventCode);
+
+        // Create registration with status=PENDING (will be confirmed via email)
+        Registration registration = registrationService.createRegistration(eventCode, request);
+
+        // Generate confirmation token (48h validity)
+        String confirmationToken = confirmationTokenService.generateConfirmationToken(
+                registration.getId(),
+                eventCode
+        );
+
+        // Fetch event for email
+        ch.batbern.events.domain.Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new NoSuchElementException("Event not found: " + eventCode));
+
+        // Fetch user profile for email
+        ch.batbern.events.dto.generated.users.UserResponse userProfile =
+                userApiClient.getUserByUsername(registration.getAttendeeUsername());
+
+        // Send confirmation email with JWT token (Story 4.1.5c)
+        // Email includes confirmation link: https://batbern.ch/events/{eventCode}/confirm-registration?token={confirmationToken}
+        registrationEmailService.sendRegistrationConfirmation(
+                registration,
+                userProfile,
+                event,
+                confirmationToken,
+                java.util.Locale.GERMAN // Default to German for BATbern events
+        );
+
+        log.info("Confirmation token generated and email queued for registration {}: {}",
+                registration.getId(), confirmationToken.substring(0, 20) + "...");
+
+        // Return minimal response (no sensitive data)
+        CreateRegistrationResponse response = CreateRegistrationResponse.builder()
+                .message("Registration submitted successfully. Check your email to confirm.")
+                .email(request.getEmail())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * List Event Registrations - Story 2.2a
+     *
+     * GET /api/v1/events/{eventCode}/registrations
+     *
+     * @param eventCode Event code to list registrations for
+     * @return List of registrations enriched with user data
+     */
+    @GetMapping("/{eventCode}/registrations")
+    @Operation(
+            summary = "List Event Registrations",
+            description = "Retrieve all registrations for a specific event with enriched user data"
+    )
+    public ResponseEntity<List<RegistrationResponse>> listRegistrations(@PathVariable String eventCode) {
+        log.debug("GET /api/v1/events/{}/registrations", eventCode);
+
+        // Find event to get UUID
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
+
+        // Fetch registrations
+        List<Registration> registrations = registrationRepository.findByEventId(event.getId());
+
+        // Enrich each registration with user data
+        List<RegistrationResponse> responses = registrations.stream()
+                .peek(reg -> reg.setEventCode(eventCode)) // Set transient field
+                .map(registrationService::enrichRegistrationWithUserData)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(responses);
+    }
+
+    /**
+     * Get Registration Detail - Story 2.2a
+     *
+     * GET /api/v1/events/{eventCode}/registrations/{registrationCode}
+     *
+     * @param eventCode Event code
+     * @param registrationCode Registration code (e.g., BATbern142-reg-A3X9K2)
+     * @return Registration detail enriched with user data
+     */
+    @GetMapping("/{eventCode}/registrations/{registrationCode}")
+    @Operation(
+            summary = "Get Registration Detail",
+            description = "Retrieve a specific registration by registration code with enriched user data"
+    )
+    public ResponseEntity<RegistrationResponse> getRegistration(
+            @PathVariable String eventCode,
+            @PathVariable String registrationCode) {
+        log.debug("GET /api/v1/events/{}/registrations/{}", eventCode, registrationCode);
+
+        // Find registration by code
+        Registration registration = registrationRepository.findByRegistrationCode(registrationCode)
+                .orElseThrow(() -> new NoSuchElementException("Registration not found: " + registrationCode));
+
+        // Verify registration belongs to this event
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
+
+        if (!registration.getEventId().equals(event.getId())) {
+            throw new NoSuchElementException("Registration " + registrationCode + " does not belong to event " + eventCode);
+        }
+
+        // Set transient field and enrich
+        registration.setEventCode(eventCode);
+        RegistrationResponse response = registrationService.enrichRegistrationWithUserData(registration);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Confirm Event Registration - Email Confirmation Flow
+     *
+     * POST /api/v1/events/{eventCode}/registrations/confirm?token={JWT}
+     *
+     * Confirms a pending registration using the JWT token from the confirmation email.
+     * Updates registration status from PENDING to CONFIRMED.
+     * Token is valid for 48 hours and event code in URL must match event code in token.
+     *
+     * @param eventCode Event code to confirm registration for
+     * @param token JWT confirmation token from email
+     * @return Success message
+     */
+    @PostMapping("/{eventCode}/registrations/confirm")
+    @Operation(
+            summary = "Confirm Registration",
+            description = "Confirm a pending registration using the token from the confirmation email. " +
+                    "Token is valid for 48 hours and event code must match."
+    )
+    public ResponseEntity<Map<String, String>> confirmRegistration(
+            @PathVariable String eventCode,
+            @RequestParam("token") String token) {
+        log.debug("POST /api/v1/events/{}/registrations/confirm", eventCode);
+
+        try {
+            // Validate token
+            io.jsonwebtoken.Claims claims = confirmationTokenService.validateConfirmationToken(token);
+
+            // Extract event code from token and verify it matches URL
+            String tokenEventCode = confirmationTokenService.getEventCode(claims);
+            if (!eventCode.equals(tokenEventCode)) {
+                throw new IllegalArgumentException("Event code mismatch: URL has " + eventCode + " but token has " + tokenEventCode);
+            }
+
+            // Extract registration ID
+            UUID registrationId = confirmationTokenService.getRegistrationId(claims);
+
+            // Find registration
+            Registration registration = registrationRepository.findById(registrationId)
+                    .orElseThrow(() -> new NoSuchElementException("Registration not found: " + registrationId));
+
+            // Fetch the event to verify registration belongs to it and to get event code
+            Event event = eventRepository.findById(registration.getEventId())
+                    .orElseThrow(() -> new NoSuchElementException("Event not found for registration: " + registrationId));
+
+            // Verify registration belongs to this event
+            if (!event.getEventCode().equals(eventCode)) {
+                throw new IllegalArgumentException("Registration does not belong to event: " + eventCode);
+            }
+
+            // Check if already confirmed
+            if ("confirmed".equalsIgnoreCase(registration.getStatus())) {
+                Map<String, String> response = new HashMap<>();
+                response.put("message", "Registration already confirmed");
+                response.put("status", "CONFIRMED");
+                return ResponseEntity.ok(response);
+            }
+
+            // Update status to confirmed (Story 4.1.5c: registered → confirmed)
+            registration.setStatus("confirmed"); // Lowercase per DB constraint
+            registration.setUpdatedAt(Instant.now());
+            registrationRepository.save(registration);
+
+            log.info("Registration confirmed: {} for event: {}", registrationId, eventCode);
+
+            // Return success response
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Registration confirmed successfully!");
+            response.put("status", "CONFIRMED");
+
+            return ResponseEntity.ok(response);
+
+        } catch (io.jsonwebtoken.JwtException e) {
+            log.warn("Invalid confirmation token: {}", e.getMessage());
+            throw new IllegalArgumentException("Invalid or expired confirmation token");
+        }
+    }
+
+    /**
+     * Update Event Registration (Partial Update)
+     *
+     * PATCH /api/v1/events/{eventCode}/registrations/{registrationCode}
+     *
+     * Updates specific fields of a registration (e.g., status)
+     *
+     * @param eventCode Event code
+     * @param registrationCode Registration code
+     * @param updates Map of fields to update
+     * @return Updated registration with enriched user data
+     */
+    @PatchMapping("/{eventCode}/registrations/{registrationCode}")
+    @Operation(
+            summary = "Update Event Registration",
+            description = "Partially update a registration (e.g., change status)"
+    )
+    public ResponseEntity<RegistrationResponse> updateRegistration(
+            @PathVariable String eventCode,
+            @PathVariable String registrationCode,
+            @RequestBody Map<String, Object> updates) {
+        log.debug("PATCH /api/v1/events/{}/registrations/{}", eventCode, registrationCode);
+
+        // Find registration
+        Registration registration = registrationRepository.findByRegistrationCode(registrationCode)
+                .orElseThrow(() -> new NoSuchElementException("Registration not found: " + registrationCode));
+
+        // Verify registration belongs to this event
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
+
+        if (!registration.getEventId().equals(event.getId())) {
+            throw new NoSuchElementException("Registration " + registrationCode + " does not belong to event " + eventCode);
+        }
+
+        // Apply updates
+        if (updates.containsKey("status")) {
+            registration.setStatus((String) updates.get("status"));
+        }
+
+        // Save updated registration
+        registration = registrationRepository.save(registration);
+
+        // Enrich with user data
+        registration.setEventCode(eventCode);
+        RegistrationResponse response = registrationService.enrichRegistrationWithUserData(registration);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Delete Event Registration
+     *
+     * DELETE /api/v1/events/{eventCode}/registrations/{registrationCode}
+     *
+     * Deletes a registration from the event
+     *
+     * @param eventCode Event code
+     * @param registrationCode Registration code
+     * @return 204 No Content
+     */
+    @DeleteMapping("/{eventCode}/registrations/{registrationCode}")
+    @Operation(
+            summary = "Delete Event Registration",
+            description = "Delete a registration from the event"
+    )
+    public ResponseEntity<Void> deleteRegistration(
+            @PathVariable String eventCode,
+            @PathVariable String registrationCode) {
+        log.debug("DELETE /api/v1/events/{}/registrations/{}", eventCode, registrationCode);
+
+        // Find registration
+        Registration registration = registrationRepository.findByRegistrationCode(registrationCode)
+                .orElseThrow(() -> new NoSuchElementException("Registration not found: " + registrationCode));
+
+        // Verify registration belongs to this event
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
+
+        if (!registration.getEventId().equals(event.getId())) {
+            throw new NoSuchElementException("Registration " + registrationCode + " does not belong to event " + eventCode);
+        }
+
+        // Delete registration
+        registrationRepository.delete(registration);
+
+        return ResponseEntity.noContent().build();
     }
 
     /**

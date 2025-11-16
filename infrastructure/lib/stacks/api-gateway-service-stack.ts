@@ -19,21 +19,21 @@ export interface ApiGatewayServiceStackProps extends cdk.StackProps {
   databaseSecret?: secretsmanager.ISecret;
   userPool: cognito.IUserPool;
   userPoolClient: cognito.IUserPoolClient;
-  eventManagementServiceUrl?: string;
-  speakerCoordinationServiceUrl?: string;
-  partnerCoordinationServiceUrl?: string;
-  attendeeExperienceServiceUrl?: string;
-  companyUserManagementServiceUrl?: string;
+  // Note: Service URLs not needed - API Gateway uses Service Connect DNS names
+  // (e.g., http://event-management:8080) configured in environment variables below
 }
 
 /**
  * API Gateway Service Stack - Spring Boot API Gateway on ECS Fargate
  *
  * This is the Spring Boot application that routes requests to domain microservices.
- * It runs on ECS with a public ALB and handles all API routing logic.
+ * It runs on ECS with a public ALB and uses Service Connect for direct communication with microservices.
  *
  * Architecture:
- * Client → AWS API Gateway (Cognito auth) → **This Service** → Domain Microservices
+ * Client → AWS HTTP API (Cognito auth) → **This Service** (Public ALB) → Domain Microservices (Service Connect)
+ *
+ * Service Connect eliminates the need for internal ALBs on microservices, reducing costs by ~$64/month
+ * and improving latency through direct container-to-container communication via Envoy proxy.
  */
 export class ApiGatewayServiceStack extends cdk.Stack {
   public readonly service: ecsPatterns.ApplicationLoadBalancedFargateService;
@@ -96,12 +96,13 @@ export class ApiGatewayServiceStack extends cdk.Stack {
       environment: {
         ...commonEnv,
         SERVICE_NAME: 'api-gateway',
-        // Service discovery URLs for internal routing
-        EVENT_MANAGEMENT_SERVICE_URL: props.eventManagementServiceUrl || 'http://event-management.internal',
-        SPEAKER_COORDINATION_SERVICE_URL: props.speakerCoordinationServiceUrl || 'http://speaker-coordination.internal',
-        PARTNER_COORDINATION_SERVICE_URL: props.partnerCoordinationServiceUrl || 'http://partner-coordination.internal',
-        ATTENDEE_EXPERIENCE_SERVICE_URL: props.attendeeExperienceServiceUrl || 'http://attendee-experience.internal',
-        COMPANY_USER_MANAGEMENT_SERVICE_URL: props.companyUserManagementServiceUrl || 'http://company-user-management.internal',
+        // Service Connect DNS names for direct service-to-service communication
+        // Format: http://<service-name>:8080 (resolves via CloudMap namespace: batbern.local)
+        EVENT_MANAGEMENT_SERVICE_URL: 'http://event-management:8080',
+        SPEAKER_COORDINATION_SERVICE_URL: 'http://speaker-coordination:8080',
+        PARTNER_COORDINATION_SERVICE_URL: 'http://partner-coordination:8080',
+        ATTENDEE_EXPERIENCE_SERVICE_URL: 'http://attendee-experience:8080',
+        COMPANY_USER_MANAGEMENT_SERVICE_URL: 'http://company-user-management:8080',
         // Cognito configuration
         COGNITO_USER_POOL_ID: props.userPool.userPoolId,
         COGNITO_CLIENT_ID: props.userPoolClient.userPoolClientId,
@@ -116,7 +117,9 @@ export class ApiGatewayServiceStack extends cdk.Stack {
       },
     });
 
+    // Add named port mapping (required for Service Connect)
     container.addPortMappings({
+      name: 'api-gateway-port',
       containerPort: 8080,
       protocol: ecs.Protocol.TCP,
     });
@@ -168,11 +171,20 @@ export class ApiGatewayServiceStack extends cdk.Stack {
       'Allow HTTPS outbound for AWS API calls'
     );
 
-    // Allow HTTP outbound to internal domain services
+    // Allow HTTP outbound for Service Connect inter-service communication
+    // Service Connect uses port 8080 for microservice-to-microservice calls
     serviceSecurityGroup.addEgressRule(
       ec2.Peer.ipv4(props.vpc.vpcCidrBlock),
-      ec2.Port.tcp(80),
-      'Allow HTTP outbound to internal domain services'
+      ec2.Port.tcp(8080),
+      'Allow HTTP outbound for Service Connect inter-service communication'
+    );
+
+    // Allow HTTP inbound for Service Connect inter-service communication
+    // This allows other services in the VPC to connect to this service via Service Connect
+    serviceSecurityGroup.addIngressRule(
+      ec2.Peer.ipv4(props.vpc.vpcCidrBlock),
+      ec2.Port.tcp(8080),
+      'Allow HTTP inbound for Service Connect inter-service communication'
     );
 
     // Create service with PUBLIC ALB
@@ -199,6 +211,30 @@ export class ApiGatewayServiceStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(5),
       healthyThresholdCount: 2,
       unhealthyThresholdCount: 3,
+    });
+
+    // Enable Service Connect for service-to-service communication
+    // This allows API Gateway to communicate directly with microservices using DNS names
+    // Must use addPropertyOverride because ApplicationLoadBalancedFargateService doesn't expose Service Connect
+    const cfnService = this.service.service.node.defaultChild as ecs.CfnService;
+    cfnService.addPropertyOverride('ServiceConnectConfiguration', {
+      Enabled: true,
+      Namespace: 'batbern.local',
+      Services: [{
+        PortName: 'api-gateway-port',
+        DiscoveryName: 'api-gateway',
+        ClientAliases: [{
+          Port: 8080,
+          DnsName: 'api-gateway',
+        }],
+      }],
+    });
+
+    // Output Service Connect DNS name for debugging
+    new cdk.CfnOutput(this, 'ServiceConnectDNS', {
+      value: 'http://api-gateway:8080',
+      description: 'API Gateway Service Connect DNS endpoint',
+      exportName: `${envName}-api-gateway-service-connect-dns`,
     });
 
     // Configure auto-scaling

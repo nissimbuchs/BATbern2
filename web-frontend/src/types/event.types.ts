@@ -27,6 +27,7 @@ export type EventAnalytics = components['schemas']['EventAnalytics'];
 export type CreateEventRequest = components['schemas']['CreateEventRequest'];
 export type UpdateEventRequest = components['schemas']['UpdateEventRequest'];
 export type PatchEventRequest = components['schemas']['PatchEventRequest'];
+export type CreateRegistrationRequest = components['schemas']['CreateRegistrationRequest'];
 
 // ============================================================================
 // UI-Extended Types (extends API types with frontend-only fields)
@@ -45,7 +46,7 @@ export interface SessionUI extends Session {
     company?: string; // Speaker's company name
     email?: string;
   };
-  materialsStatus?: 'pending' | 'submitted' | 'approved' | 'rejected';
+  // Note: materialsStatus is now defined in base Session type from OpenAPI spec
 }
 
 /**

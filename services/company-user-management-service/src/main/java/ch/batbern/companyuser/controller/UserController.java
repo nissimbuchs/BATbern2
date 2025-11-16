@@ -186,14 +186,40 @@ public class UserController {
     }
 
     /**
+     * Update user profile by username (Organizer/Admin only)
+     * PUT /api/v1/users/{username}
+     *
+     * Allows organizers/admins to update any user's profile
+     *
+     * @param username User username to update
+     * @param request Update request with validation
+     * @return Updated user profile
+     */
+    @PutMapping("/{username}")
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
+    @Timed(value = "users.updateUserByUsername", description = "Time to update user by username (admin/organizer)", percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<UserResponse> updateUserByUsername(
+            @PathVariable String username,
+            @Valid @RequestBody UpdateUserRequest request) {
+        log.info("Updating user {} by organizer/admin", username);
+
+        UserResponse response = userService.updateUserByUsername(username, request);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * AC12: Get-or-create user (for domain service integration)
      * POST /api/v1/users/get-or-create
+     *
+     * Story 4.1.5: Made public for anonymous event registration (ADR-005)
+     * Security config allows public access for this endpoint
      *
      * @param request Get-or-create request
      * @return User response with created flag
      */
     @PostMapping("/get-or-create")
-    @PreAuthorize("hasAnyRole('SYSTEM', 'SERVICE')")  // Service-to-service auth
+    // Story 4.1.5: Removed @PreAuthorize to allow anonymous registration
     @Timed(value = "users.getOrCreateUser", description = "Time to get or create user (service-to-service)", percentiles = {0.5, 0.95, 0.99})
     public ResponseEntity<GetOrCreateUserResponse> getOrCreateUser(
             @Valid @RequestBody GetOrCreateUserRequest request) {

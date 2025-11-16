@@ -8,6 +8,7 @@
 export { useUserList } from './useUserList';
 export { useUserSearch } from './useUserSearch';
 export { useCreateUser } from './useCreateUser';
+export { useUpdateUser } from './useUpdateUser';
 export { useUpdateUserRoles } from './useUpdateUserRoles';
 export { useDeleteUser } from './useDeleteUser';
 export { useUserById } from './useUserById';

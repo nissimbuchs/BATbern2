@@ -101,7 +101,17 @@ interface EventFormData {
   venueAddress: string;
   venueCapacity: number;
   registrationDeadline?: string;
-  status: 'planning' | 'topic_defined' | 'speakers_invited' | 'agenda_draft' | 'published' | 'registration_open' | 'registration_closed' | 'in_progress' | 'completed' | 'archived';
+  status:
+    | 'planning'
+    | 'topic_defined'
+    | 'speakers_invited'
+    | 'agenda_draft'
+    | 'published'
+    | 'registration_open'
+    | 'registration_closed'
+    | 'in_progress'
+    | 'completed'
+    | 'archived';
   theme?: string;
   eventType?: 'full_day' | 'afternoon' | 'evening';
 }
@@ -368,7 +378,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
       // Add themeImageUploadId if a new image was uploaded during this edit session
       // themeImageUploadId is only set when FileUpload component successfully uploads
       if (themeImageUploadId !== undefined) {
-        (changedFields as any).themeImageUploadId = themeImageUploadId;
+        (changedFields as Record<string, unknown>).themeImageUploadId = themeImageUploadId;
       }
 
       if (Object.keys(changedFields).length === 0) {
@@ -569,7 +579,9 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                       <MenuItem value="afternoon">{t('form.eventTypes.afternoon')}</MenuItem>
                       <MenuItem value="evening">{t('form.eventTypes.evening')}</MenuItem>
                     </Select>
-                    {errors.eventType && <FormHelperText>{errors.eventType.message}</FormHelperText>}
+                    {errors.eventType && (
+                      <FormHelperText>{errors.eventType.message}</FormHelperText>
+                    )}
                   </FormControl>
                 )}
               />
@@ -599,11 +611,17 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                   <Select {...field} label={t('form.status')}>
                     <MenuItem value="planning">{t('form.statusValues.planning')}</MenuItem>
                     <MenuItem value="topic_defined">{t('form.statusValues.topicDefined')}</MenuItem>
-                    <MenuItem value="speakers_invited">{t('form.statusValues.speakersInvited')}</MenuItem>
+                    <MenuItem value="speakers_invited">
+                      {t('form.statusValues.speakersInvited')}
+                    </MenuItem>
                     <MenuItem value="agenda_draft">{t('form.statusValues.agendaDraft')}</MenuItem>
                     <MenuItem value="published">{t('form.statusValues.published')}</MenuItem>
-                    <MenuItem value="registration_open">{t('form.statusValues.registrationOpen')}</MenuItem>
-                    <MenuItem value="registration_closed">{t('form.statusValues.registrationClosed')}</MenuItem>
+                    <MenuItem value="registration_open">
+                      {t('form.statusValues.registrationOpen')}
+                    </MenuItem>
+                    <MenuItem value="registration_closed">
+                      {t('form.statusValues.registrationClosed')}
+                    </MenuItem>
                     <MenuItem value="in_progress">{t('form.statusValues.inProgress')}</MenuItem>
                     <MenuItem value="completed">{t('form.statusValues.completed')}</MenuItem>
                     <MenuItem value="archived">{t('form.statusValues.archived')}</MenuItem>

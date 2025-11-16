@@ -122,6 +122,22 @@ export const createUser = async (data: CreateUserFormData): Promise<User> => {
 };
 
 /**
+ * Update user profile (name, bio, company)
+ * For admin/organizer to update any user's profile
+ */
+export interface UpdateUserData {
+  firstName?: string;
+  lastName?: string;
+  bio?: string;
+  companyId?: string;
+}
+
+export const updateUser = async (username: string, data: UpdateUserData): Promise<User> => {
+  const response = await apiClient.put<User>(`${USER_API_PATH}/${username}`, data);
+  return response.data;
+};
+
+/**
  * Update user roles with minimum organizers validation
  * AC3: Role Management
  */

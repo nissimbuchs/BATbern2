@@ -108,13 +108,14 @@ class CorsConfigurationTest {
         // Then
         assertThat(response.getHeader("Access-Control-Allow-Origin")).isEqualTo("https://www.batbern.ch");
         assertThat(response.getHeader("Access-Control-Allow-Methods")).contains("GET", "POST", "PUT", "DELETE", "OPTIONS");
-        assertThat(response.getHeader("Access-Control-Allow-Headers")).contains("Authorization", "Content-Type");
+        // Wildcard allows all headers (case-insensitive per RFC 7230)
+        assertThat(response.getHeader("Access-Control-Allow-Headers")).isEqualTo("*");
         assertThat(response.getHeader("Access-Control-Max-Age")).isEqualTo("3600");
     }
 
     @Test
-    @DisplayName("should_allowSpecificHeaders_when_requestContainsAllowedHeaders")
-    void should_allowSpecificHeaders_when_requestContainsAllowedHeaders() {
+    @DisplayName("should_allowAllHeaders_when_preflightRequest")
+    void should_allowAllHeaders_when_preflightRequest() {
         // Given
         MockHttpServletRequest request = new MockHttpServletRequest();
         MockHttpServletResponse response = new MockHttpServletResponse();
@@ -127,29 +128,27 @@ class CorsConfigurationTest {
         corsHandler.handlePreflightRequest(request, response);
 
         // Then
+        // Wildcard allows all headers (case-insensitive per RFC 7230)
         String allowedHeaders = response.getHeader("Access-Control-Allow-Headers");
-        assertThat(allowedHeaders).contains("Authorization");
-        assertThat(allowedHeaders).contains("Content-Type");
-        assertThat(allowedHeaders).contains("X-Requested-With");
-        assertThat(allowedHeaders).contains("X-Request-Id");
+        assertThat(allowedHeaders).isEqualTo("*");
     }
 
     @Test
-    @DisplayName("should_rejectForbiddenHeaders_when_requestContainsUnsafeHeaders")
-    void should_rejectForbiddenHeaders_when_requestContainsUnsafeHeaders() {
+    @DisplayName("should_allowAllHeaders_when_requestContainsAnyHeaders")
+    void should_allowAllHeaders_when_requestContainsAnyHeaders() {
         // Given
         MockHttpServletRequest request = new MockHttpServletRequest();
-        MockHttpServletResponse response = new MockHttpServletResponse();
 
         request.setMethod("OPTIONS");
         request.addHeader("Origin", "https://www.batbern.ch");
-        request.addHeader("Access-Control-Request-Headers", "X-Dangerous-Header, Authorization");
+        // Test that even custom headers are allowed (for case-insensitivity per RFC 7230)
+        request.addHeader("Access-Control-Request-Headers", "X-Custom-Header, Authorization");
 
         // When
         boolean isAllowed = corsHandler.areHeadersAllowed(request);
 
         // Then
-        assertThat(isAllowed).isFalse();
+        assertThat(isAllowed).isTrue();
     }
 
     @Test
