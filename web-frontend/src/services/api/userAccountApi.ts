@@ -377,3 +377,76 @@ export const uploadProfilePicture = async (
 
   return confirmResponse.cloudFrontUrl;
 };
+
+// Admin endpoints for uploading profile pictures for other users
+
+/**
+ * Phase 1 (Admin): Request presigned URL for S3 upload for a specific user
+ */
+export const requestPresignedUrlForUser = async (
+  username: string,
+  request: LogoUploadRequest
+): Promise<LogoUploadResponse> => {
+  const response = await apiClient.post(
+    `${USER_API_PATH}/${username}/picture/presigned-url`,
+    request
+  );
+  const data = response.data;
+
+  return {
+    uploadId: data.fileId,
+    presignedUrl: data.uploadUrl,
+    s3Key: data.s3Key,
+    expiresAt: new Date(Date.now() + (data.expiresInMinutes || 15) * 60 * 1000).toISOString(),
+  };
+};
+
+/**
+ * Phase 3 (Admin): Confirm upload completion for a specific user
+ */
+export const confirmUploadForUser = async (
+  username: string,
+  uploadId: string,
+  request: LogoConfirmRequest
+): Promise<LogoConfirmResponse> => {
+  const response = await apiClient.post(`${USER_API_PATH}/${username}/picture/confirm`, {
+    fileId: uploadId,
+    fileExtension: request.fileExtension,
+    checksum: request.checksum,
+  });
+  const data = response.data;
+
+  return {
+    uploadId: uploadId,
+    status: 'CONFIRMED',
+    cloudFrontUrl: data.profilePictureUrl,
+  };
+};
+
+/**
+ * Complete 3-phase upload workflow for a specific user (Admin)
+ */
+export const uploadProfilePictureForUser = async (
+  username: string,
+  file: File,
+  onProgress?: (progress: number) => void
+): Promise<string> => {
+  // Phase 1: Request presigned URL
+  const uploadResponse = await requestPresignedUrlForUser(username, {
+    fileName: file.name,
+    fileSize: file.size,
+    mimeType: file.type,
+  });
+
+  // Phase 2: Upload to S3
+  await uploadToS3(uploadResponse.presignedUrl, file, onProgress);
+
+  // Phase 3: Confirm upload
+  const fileExtension = file.name.split('.').pop() || 'jpg';
+  const confirmResponse = await confirmUploadForUser(username, uploadResponse.uploadId, {
+    fileExtension,
+    checksum: '', // TODO: Implement SHA256 checksum
+  });
+
+  return confirmResponse.cloudFrontUrl;
+};

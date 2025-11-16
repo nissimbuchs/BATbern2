@@ -376,6 +376,141 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/users/me/picture/presigned-url': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Request presigned URL for profile picture upload
+     * @description Generate presigned S3 upload URL for current user's profile picture.
+     *
+     *     **Acceptance Criteria**: AC10
+     *
+     *     **File Constraints**:
+     *     - Max size: 5 MB
+     *     - Allowed formats: PNG, JPG, JPEG, SVG
+     *     - Recommended dimensions: 400x400 to 1000x1000 pixels
+     *
+     *     **Upload Process**:
+     *     1. Client calls this endpoint to get presigned URL
+     *     2. Client uploads directly to S3 using presigned URL
+     *     3. Client calls /users/me/picture/confirm with file ID and extension
+     */
+    post: operations['requestProfilePictureUploadUrl'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/users/me/picture/confirm': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Confirm profile picture upload completion
+     * @description Confirm that profile picture has been uploaded to S3 and associate with user.
+     *
+     *     **Acceptance Criteria**: AC10
+     *
+     *     Must be called after successful upload to presigned URL.
+     */
+    post: operations['confirmProfilePictureUpload'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/users/{username}/picture/presigned-url': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Request presigned URL for user profile picture upload (Admin)
+     * @description Admin endpoint to generate presigned S3 upload URL for a specific user's profile picture.
+     *
+     *     **Authorization**: ORGANIZER role required
+     *
+     *     **File Constraints**:
+     *     - Max size: 5 MB
+     *     - Allowed formats: PNG, JPG, JPEG, SVG
+     *
+     *     **Upload Process**:
+     *     1. Admin calls this endpoint to get presigned URL
+     *     2. Admin uploads directly to S3 using presigned URL
+     *     3. Admin calls /users/{username}/picture/confirm with file ID and extension
+     */
+    post: operations['requestProfilePictureUploadUrlForUser'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/users/{username}/picture/confirm': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Confirm user profile picture upload completion (Admin)
+     * @description Admin endpoint to confirm that profile picture has been uploaded to S3 for a specific user.
+     *
+     *     **Authorization**: ORGANIZER role required
+     *
+     *     Must be called after successful upload to presigned URL.
+     */
+    post: operations['confirmProfilePictureUploadForUser'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/users/{username}/picture': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Remove user profile picture (Admin)
+     * @description Admin endpoint to remove profile picture for a specific user.
+     *
+     *     **Authorization**: ORGANIZER role required
+     *
+     *     Clears profile picture URL and S3 key from user entity.
+     */
+    delete: operations['removeProfilePictureForUser'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/users/get-or-create': {
     parameters: {
       query?: never;
@@ -530,6 +665,11 @@ export interface components {
       /** Format: email */
       email?: string;
       bio?: string;
+      /**
+       * @description Company name (unique identifier, alphanumeric only)
+       * @example PostFinance
+       */
+      companyId?: string;
     };
     /**
      * @description User search result with meaningful IDs.
@@ -700,6 +840,84 @@ export interface components {
     /** @description Request to update user roles */
     UpdateUserRolesRequest: {
       roles: ('ORGANIZER' | 'SPEAKER' | 'PARTNER' | 'ATTENDEE')[];
+    };
+    /** @description Request to generate presigned URL for profile picture upload */
+    ProfilePictureUploadRequest: {
+      /**
+       * @description Original filename with extension
+       * @example profile.jpg
+       */
+      fileName: string;
+      /**
+       * @description File size in bytes (max 5 MB)
+       * @example 1048576
+       */
+      fileSize: number;
+    };
+    /** @description Presigned URL response for S3 upload */
+    PresignedUploadUrl: {
+      /**
+       * Format: uri
+       * @description Presigned S3 upload URL
+       * @example https://s3.eu-central-1.amazonaws.com/bucket/...
+       */
+      uploadUrl: string;
+      /**
+       * @description Unique file identifier for confirmation
+       * @example f3e8d1a4-5b2c-4d6e-8a9b-1c2d3e4f5a6b
+       */
+      fileId: string;
+      /**
+       * @description S3 object key where file will be stored
+       * @example profile-pictures/2025/john.doe/profile-f3e8d1a4.jpg
+       */
+      s3Key: string;
+      /**
+       * @description File extension
+       * @example jpg
+       */
+      fileExtension: string;
+      /**
+       * @description URL expiration time in minutes
+       * @example 15
+       */
+      expiresInMinutes: number;
+      /**
+       * @description Headers required for the upload request
+       * @example {
+       *       "Content-Type": "image/jpeg"
+       *     }
+       */
+      requiredHeaders?: {
+        [key: string]: string;
+      };
+    };
+    /** @description Request to confirm profile picture upload completion */
+    ProfilePictureUploadConfirmRequest: {
+      /**
+       * @description File identifier from presigned URL response
+       * @example f3e8d1a4-5b2c-4d6e-8a9b-1c2d3e4f5a6b
+       */
+      fileId: string;
+      /**
+       * @description File extension (png, jpg, jpeg, svg)
+       * @example jpg
+       */
+      fileExtension: string;
+      /**
+       * @description Optional SHA256 checksum of uploaded file
+       * @example sha256=abc123...
+       */
+      checksum?: string;
+    };
+    /** @description Response after confirming profile picture upload */
+    ProfilePictureUploadConfirmResponse: {
+      /**
+       * Format: uri
+       * @description CloudFront URL for the uploaded profile picture
+       * @example https://cdn.batbern.ch/profile-pictures/2025/john.doe/profile-f3e8d1a4.jpg
+       */
+      profilePictureUrl: string;
     };
     PaginationMetadata: {
       /**
@@ -1303,6 +1521,150 @@ export interface operations {
       };
       400: components['responses']['BadRequest'];
       401: components['responses']['Unauthorized'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  requestProfilePictureUploadUrl: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ProfilePictureUploadRequest'];
+      };
+    };
+    responses: {
+      /** @description Presigned upload URL generated successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PresignedUploadUrl'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  confirmProfilePictureUpload: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ProfilePictureUploadConfirmRequest'];
+      };
+    };
+    responses: {
+      /** @description Upload confirmed successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProfilePictureUploadConfirmResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  requestProfilePictureUploadUrlForUser: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Username (unique identifier) */
+        username: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ProfilePictureUploadRequest'];
+      };
+    };
+    responses: {
+      /** @description Presigned upload URL generated successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PresignedUploadUrl'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  confirmProfilePictureUploadForUser: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Username (unique identifier) */
+        username: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ProfilePictureUploadConfirmRequest'];
+      };
+    };
+    responses: {
+      /** @description Upload confirmed successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProfilePictureUploadConfirmResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  removeProfilePictureForUser: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Username (unique identifier) */
+        username: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Profile picture removed successfully */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
       500: components['responses']['InternalServerError'];
     };
   };
