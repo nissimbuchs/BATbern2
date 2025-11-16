@@ -64,6 +64,7 @@ export class CognitoUserSyncTriggers extends Construct {
         externalModules: ['@aws-sdk/*'], // Use AWS SDK from Lambda runtime
         minify: true,
         sourceMap: false,
+        forceDockerBundling: false, // Prefer local esbuild over Docker for faster builds on ARM64
       },
     };
 
