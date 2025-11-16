@@ -216,6 +216,135 @@ export class ApiGatewayStack extends cdk.Stack {
       // No authorizer - public endpoint for homepage partner showcase
     });
 
+    // Story 4.1.5: Public registration endpoints (no auth required - anonymous registration per ADR-005)
+    // POST /api/v1/events/{eventCode}/registrations - Create registration
+    const createRegistrationIntegration = new apigatewayv2_integrations.HttpUrlIntegration(
+      'CreateRegistrationIntegration',
+      `${apiGatewayServiceUrl}/api/v1/events/{eventCode}/registrations`,
+      {
+        method: apigatewayv2.HttpMethod.POST,
+      }
+    );
+
+    this.api.addRoutes({
+      path: '/api/v1/events/{eventCode}/registrations',
+      methods: [apigatewayv2.HttpMethod.POST],
+      integration: createRegistrationIntegration,
+      // No authorizer - public endpoint for anonymous registration
+    });
+
+    // GET /api/v1/events/{eventCode}/registrations/{registrationCode} - Get registration by code
+    const getRegistrationIntegration = new apigatewayv2_integrations.HttpUrlIntegration(
+      'GetRegistrationIntegration',
+      `${apiGatewayServiceUrl}/api/v1/events/{eventCode}/registrations/{registrationCode}`,
+      {
+        method: apigatewayv2.HttpMethod.GET,
+      }
+    );
+
+    this.api.addRoutes({
+      path: '/api/v1/events/{eventCode}/registrations/{registrationCode}',
+      methods: [apigatewayv2.HttpMethod.GET],
+      integration: getRegistrationIntegration,
+      // No authorizer - public endpoint for viewing registration with confirmation code
+    });
+
+    // POST /api/v1/events/{eventCode}/registrations/confirm - Confirm registration via email link
+    const confirmRegistrationIntegration = new apigatewayv2_integrations.HttpUrlIntegration(
+      'ConfirmRegistrationIntegration',
+      `${apiGatewayServiceUrl}/api/v1/events/{eventCode}/registrations/confirm`,
+      {
+        method: apigatewayv2.HttpMethod.POST,
+      }
+    );
+
+    this.api.addRoutes({
+      path: '/api/v1/events/{eventCode}/registrations/confirm',
+      methods: [apigatewayv2.HttpMethod.POST],
+      integration: confirmRegistrationIntegration,
+      // No authorizer - public endpoint for email-based confirmation (JWT in query param)
+    });
+
+    // Story 4.1.3: Public event detail endpoint (no auth)
+    const getEventIntegration = new apigatewayv2_integrations.HttpUrlIntegration(
+      'GetEventIntegration',
+      `${apiGatewayServiceUrl}/api/v1/events/{eventCode}`,
+      {
+        method: apigatewayv2.HttpMethod.GET,
+      }
+    );
+
+    this.api.addRoutes({
+      path: '/api/v1/events/{eventCode}',
+      methods: [apigatewayv2.HttpMethod.GET],
+      integration: getEventIntegration,
+      // No authorizer - public endpoint for event details
+    });
+
+    // Public event sessions endpoint (no auth) - Story 4.1.3
+    const getEventSessionsIntegration = new apigatewayv2_integrations.HttpUrlIntegration(
+      'GetEventSessionsIntegration',
+      `${apiGatewayServiceUrl}/api/v1/events/{eventCode}/sessions`,
+      {
+        method: apigatewayv2.HttpMethod.GET,
+      }
+    );
+
+    this.api.addRoutes({
+      path: '/api/v1/events/{eventCode}/sessions',
+      methods: [apigatewayv2.HttpMethod.GET],
+      integration: getEventSessionsIntegration,
+      // No authorizer - public endpoint for event sessions
+    });
+
+    // Public single session endpoint (no auth)
+    const getSessionIntegration = new apigatewayv2_integrations.HttpUrlIntegration(
+      'GetSessionIntegration',
+      `${apiGatewayServiceUrl}/api/v1/events/{eventCode}/sessions/{sessionId}`,
+      {
+        method: apigatewayv2.HttpMethod.GET,
+      }
+    );
+
+    this.api.addRoutes({
+      path: '/api/v1/events/{eventCode}/sessions/{sessionId}',
+      methods: [apigatewayv2.HttpMethod.GET],
+      integration: getSessionIntegration,
+      // No authorizer - public endpoint for session details
+    });
+
+    // Public session speakers endpoint (no auth) - Story 1.15a.1b
+    const getSessionSpeakersIntegration = new apigatewayv2_integrations.HttpUrlIntegration(
+      'GetSessionSpeakersIntegration',
+      `${apiGatewayServiceUrl}/api/v1/events/{eventCode}/sessions/{sessionId}/speakers`,
+      {
+        method: apigatewayv2.HttpMethod.GET,
+      }
+    );
+
+    this.api.addRoutes({
+      path: '/api/v1/events/{eventCode}/sessions/{sessionId}/speakers',
+      methods: [apigatewayv2.HttpMethod.GET],
+      integration: getSessionSpeakersIntegration,
+      // No authorizer - public endpoint for speaker list
+    });
+
+    // Public company endpoint (no auth) - for partner showcase logo/website enrichment
+    const getCompanyIntegration = new apigatewayv2_integrations.HttpUrlIntegration(
+      'GetCompanyIntegration',
+      `${apiGatewayServiceUrl}/api/v1/companies/{companyIdentifier}`,
+      {
+        method: apigatewayv2.HttpMethod.GET,
+      }
+    );
+
+    this.api.addRoutes({
+      path: '/api/v1/companies/{companyIdentifier}',
+      methods: [apigatewayv2.HttpMethod.GET],
+      integration: getCompanyIntegration,
+      // No authorizer - public endpoint for company details
+    });
+
     // Custom domain (if provided)
     if (props.domainName && props.certificateArn) {
       const certificate = certificatemanager.Certificate.fromCertificateArn(

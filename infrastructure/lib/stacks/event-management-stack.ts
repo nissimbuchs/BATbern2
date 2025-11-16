@@ -6,6 +6,7 @@ import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
 import { createDomainService } from '../constructs/domain-service-construct';
@@ -77,5 +78,17 @@ export class EventManagementStack extends cdk.Stack {
     if (props.contentBucket) {
       props.contentBucket.grantReadWrite(this.service.taskDefinition.taskRole);
     }
+
+    // Grant SES permissions for sending registration confirmation emails (Story 4.1.5)
+    this.service.taskDefinition.taskRole.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['ses:SendEmail', 'ses:SendRawEmail'],
+        resources: [
+          `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:identity/batbern.ch`,
+          `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:identity/*@batbern.ch`,
+        ],
+      })
+    );
   }
 }
