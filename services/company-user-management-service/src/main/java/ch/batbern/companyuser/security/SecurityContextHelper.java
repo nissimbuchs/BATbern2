@@ -48,7 +48,8 @@ public class SecurityContextHelper {
     /**
      * Gets the current authenticated user's username from JWT token or mock user
      * Story 1.16.2: Use username instead of UUID for public API
-     * @return Username (cognito:username claim from JWT or username from mock user)
+     * ADR-001: Custom claims are set by PreTokenGeneration Lambda from database
+     * @return Username (custom:username claim from JWT or username from mock user)
      * @throws SecurityException if not authenticated
      */
     public String getCurrentUsername() {
@@ -56,9 +57,10 @@ public class SecurityContextHelper {
 
         if (authentication.getPrincipal() instanceof Jwt) {
             Jwt jwt = (Jwt) authentication.getPrincipal();
-            String username = jwt.getClaim("cognito:username");
+            // ADR-001: PreTokenGeneration Lambda sets 'custom:username' claim from database
+            String username = jwt.getClaim("custom:username");
             if (username == null) {
-                log.warn("cognito:username claim not found in JWT, falling back to subject");
+                log.warn("custom:username claim not found in JWT, falling back to subject (UUID). This indicates PreTokenGeneration Lambda may not be configured properly.");
                 return jwt.getSubject(); // Fallback to subject for backward compatibility
             }
             return username;

@@ -28,6 +28,7 @@ import {
 } from '@/hooks/useUserAccount/useUserAccount';
 
 interface UserSettingsTabProps {
+  email?: string;
   preferences?: UserPreferences;
   settings?: UserSettings;
 }
@@ -47,7 +48,7 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
-const UserSettingsTab: React.FC<UserSettingsTabProps> = ({ preferences, settings }) => {
+const UserSettingsTab: React.FC<UserSettingsTabProps> = ({ email, preferences, settings }) => {
   const [activeSubTab, setActiveSubTab] = useState(0);
   const [preferencesForm, setPreferencesForm] = useState(
     preferences || {
@@ -105,7 +106,7 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({ preferences, settings
           <TextField
             fullWidth
             label="Email"
-            value="user@example.com"
+            value={email || ''}
             InputProps={{ readOnly: true }}
             helperText="Verified (managed by Cognito)"
             margin="normal"

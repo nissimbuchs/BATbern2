@@ -174,12 +174,12 @@ const getMockUserProfile = (): {
 };
 
 /**
- * Update user profile (firstName, lastName, email, bio)
+ * Update user profile (firstName, lastName, email, bio, companyId)
  * Only sends fields that the backend accepts per UpdateUserRequest schema
  * Note: Backend implements PUT, not PATCH
  */
 export const updateUserProfile = async (updates: Partial<User>): Promise<User> => {
-  // Backend only accepts: firstName, lastName, email, bio
+  // Backend only accepts: firstName, lastName, email, bio, companyId
   // Filter out any other fields to avoid 500 errors
   const allowedFields: Partial<User> = {};
 
@@ -187,6 +187,7 @@ export const updateUserProfile = async (updates: Partial<User>): Promise<User> =
   if (updates.lastName !== undefined) allowedFields.lastName = updates.lastName;
   if (updates.email !== undefined) allowedFields.email = updates.email;
   if (updates.bio !== undefined) allowedFields.bio = updates.bio;
+  if (updates.companyId !== undefined) allowedFields.companyId = updates.companyId;
 
   const response = await apiClient.put(`${USER_API_PATH}/me`, allowedFields);
 
@@ -256,7 +257,17 @@ export const requestPresignedUrl = async (
 ): Promise<LogoUploadResponse> => {
   // For profile pictures, use /users/me/picture/presigned-url
   const response = await apiClient.post(`${USER_API_PATH}/me/picture/presigned-url`, request);
-  return response.data;
+  const data = response.data;
+
+  // Map backend response fields to frontend type
+  // Backend returns: uploadUrl, fileId, s3Key, fileExtension, expiresInMinutes
+  // Frontend expects: presignedUrl, uploadId, s3Key, expiresAt
+  return {
+    uploadId: data.fileId,
+    presignedUrl: data.uploadUrl,
+    s3Key: data.s3Key,
+    expiresAt: new Date(Date.now() + (data.expiresInMinutes || 15) * 60 * 1000).toISOString(),
+  };
 };
 
 /**
@@ -313,7 +324,16 @@ export const confirmUpload = async (
     fileExtension: request.fileExtension,
     checksum: request.checksum,
   });
-  return response.data;
+  const data = response.data;
+
+  // Map backend response to frontend type
+  // Backend returns: profilePictureUrl
+  // Frontend expects: cloudFrontUrl
+  return {
+    uploadId: uploadId,
+    status: 'CONFIRMED',
+    cloudFrontUrl: data.profilePictureUrl,
+  };
 };
 
 /**
@@ -348,14 +368,12 @@ export const uploadProfilePicture = async (
   await uploadToS3(uploadResponse.presignedUrl, file, onProgress);
 
   // Phase 3: Confirm upload
+  // Backend automatically associates the picture with user during confirmation
   const fileExtension = file.name.split('.').pop() || 'jpg';
   const confirmResponse = await confirmUpload(uploadResponse.uploadId, {
     fileExtension,
     checksum: '', // TODO: Implement SHA256 checksum
   });
-
-  // Associate with user profile
-  await associateProfilePicture(uploadResponse.uploadId);
 
   return confirmResponse.cloudFrontUrl;
 };

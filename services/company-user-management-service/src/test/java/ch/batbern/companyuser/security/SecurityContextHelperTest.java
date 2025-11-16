@@ -233,4 +233,57 @@ class SecurityContextHelperTest {
         // Then
         assertThat(companyId).isNull();
     }
+
+    /**
+     * Test 10.10: should_extractUsername_when_customUsernameClaimPresent
+     * ADR-001: PreTokenGeneration Lambda sets custom:username claim from database
+     * Story 1.16.2: Use username (meaningful ID) instead of UUID for public API
+     */
+    @Test
+    void should_extractUsername_when_customUsernameClaimPresent() {
+        // Given
+        Jwt jwt = mock(Jwt.class);
+        when(jwt.getClaim("custom:username")).thenReturn("john.doe");
+
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(jwt);
+        when(authentication.isAuthenticated()).thenReturn(true);
+
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        // When
+        String username = securityContextHelper.getCurrentUsername();
+
+        // Then
+        assertThat(username).isEqualTo("john.doe");
+    }
+
+    /**
+     * Test 10.11: should_fallbackToSubject_when_customUsernameClaimMissing
+     * Backward compatibility: if custom:username not present, use subject (UUID)
+     */
+    @Test
+    void should_fallbackToSubject_when_customUsernameClaimMissing() {
+        // Given
+        Jwt jwt = mock(Jwt.class);
+        when(jwt.getClaim("custom:username")).thenReturn(null);
+        when(jwt.getSubject()).thenReturn("2324b842-2021-707d-09f7-0bf3fc7e981c");
+
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(jwt);
+        when(authentication.isAuthenticated()).thenReturn(true);
+
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        // When
+        String username = securityContextHelper.getCurrentUsername();
+
+        // Then
+        assertThat(username).isEqualTo("2324b842-2021-707d-09f7-0bf3fc7e981c");
+    }
 }
+

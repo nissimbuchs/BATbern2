@@ -44,7 +44,7 @@ public class UserService {
 
     /**
      * Get current authenticated user
-     * Story 1.16.2: SecurityContext returns username (cognito:username claim from JWT)
+     * Story 1.16.2: SecurityContext returns username (custom:username claim from JWT)
      * ADR-003: Use username for user identification, not UUID
      * AC1: Current user retrieval
      * AC14: Resource expansion support
@@ -52,7 +52,7 @@ public class UserService {
     @Transactional(readOnly = true)
     public UserResponse getCurrentUser() {
         log.debug("Fetching current authenticated user");
-        String username = securityContext.getCurrentUsername();  // Returns username (cognito:username claim from JWT)
+        String username = securityContext.getCurrentUsername();  // Returns username (custom:username claim from JWT)
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException(username));
         return responseMapper.mapToResponse(user);
@@ -79,7 +79,7 @@ public class UserService {
      */
     public UserResponse updateCurrentUser(UpdateUserRequest request) {
         log.info("Updating current user profile");
-        String username = securityContext.getCurrentUsername();  // Returns username (cognito:username claim from JWT)
+        String username = securityContext.getCurrentUsername();  // Returns username (custom:username claim from JWT)
 
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException(username));
@@ -96,6 +96,9 @@ public class UserService {
         }
         if (request.getBio() != null) {
             user.setBio(request.getBio());
+        }
+        if (request.getCompanyId() != null) {
+            user.setCompanyId(request.getCompanyId());
         }
 
         User updatedUser = userRepository.save(user);
@@ -114,6 +117,7 @@ public class UserService {
         if (request.getLastName() != null) updatedFields.put("lastName", request.getLastName());
         if (request.getEmail() != null) updatedFields.put("email", request.getEmail());
         if (request.getBio() != null) updatedFields.put("bio", request.getBio());
+        if (request.getCompanyId() != null) updatedFields.put("companyId", request.getCompanyId());
 
         UserUpdatedEvent event = new UserUpdatedEvent(
             updatedUser.getUsername(),  // aggregateId = username

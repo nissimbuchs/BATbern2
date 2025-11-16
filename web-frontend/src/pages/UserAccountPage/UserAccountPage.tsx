@@ -111,7 +111,11 @@ const UserAccountPage: React.FC = () => {
       </TabPanel>
 
       <TabPanel value={activeTab} index={1}>
-        <UserSettingsTab preferences={profileData.preferences} settings={profileData.settings} />
+        <UserSettingsTab
+          email={profileData.user.email}
+          preferences={profileData.preferences}
+          settings={profileData.settings}
+        />
       </TabPanel>
     </Box>
   );

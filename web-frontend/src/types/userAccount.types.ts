@@ -12,6 +12,7 @@ export interface User {
   lastName: string;
   bio?: string;
   profilePictureUrl?: string;
+  companyId?: string;
   company?: {
     id: string;
     name: string;

@@ -80,6 +80,8 @@ export const useUpdateUserProfile = () => {
     onSuccess: () => {
       // Invalidate and refetch user profile
       queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+      // Also invalidate user list queries so updates are visible in admin screens
+      queryClient.invalidateQueries({ queryKey: ['users'] });
     },
   });
 };
@@ -127,6 +129,8 @@ export const useUploadProfilePicture = () => {
     onSuccess: () => {
       // Invalidate and refetch user profile to get new picture URL
       queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+      // Also invalidate user list queries so updates are visible in admin screens
+      queryClient.invalidateQueries({ queryKey: ['users'] });
     },
   });
 };
@@ -142,6 +146,8 @@ export const useRemoveProfilePicture = () => {
     onSuccess: () => {
       // Invalidate and refetch user profile
       queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+      // Also invalidate user list queries so updates are visible in admin screens
+      queryClient.invalidateQueries({ queryKey: ['users'] });
     },
   });
 };

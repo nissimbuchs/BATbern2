@@ -3,15 +3,19 @@
  * Story 2.6: User Account Management Frontend
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Button, TextField, Typography, Paper, Divider } from '@mui/material';
 import ProfileHeader from '../ProfileHeader/ProfileHeader';
+import { CompanyAutocomplete } from '@/components/organizer/PartnerManagement/CompanyAutocomplete';
 import type { User, UserActivity } from '@/types/userAccount.types';
+import type { components } from '@/types/generated/company-api.types';
 import {
   useUpdateUserProfile,
   useUploadProfilePicture,
   useRemoveProfilePicture,
 } from '@/hooks/useUserAccount/useUserAccount';
+
+type Company = components['schemas']['CompanyResponse'];
 
 interface UserProfileTabProps {
   user: User;
@@ -20,11 +24,43 @@ interface UserProfileTabProps {
 
 const UserProfileTab: React.FC<UserProfileTabProps> = ({ user, activity }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    firstName: string;
+    lastName: string;
+    bio: string;
+    company: Company | null;
+  }>({
     firstName: user.firstName,
     lastName: user.lastName,
     bio: user.bio || '',
+    company: user.company
+      ? {
+          name: user.company.name,
+          displayName: user.company.name,
+          isVerified: false,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }
+      : null,
   });
+
+  // Sync form data when user prop changes (e.g., after save)
+  useEffect(() => {
+    setFormData({
+      firstName: user.firstName,
+      lastName: user.lastName,
+      bio: user.bio || '',
+      company: user.company
+        ? {
+            name: user.company.name,
+            displayName: user.company.name,
+            isVerified: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }
+        : null,
+    });
+  }, [user]);
 
   const updateProfileMutation = useUpdateUserProfile();
   const uploadPhotoMutation = useUploadProfilePicture();
@@ -50,7 +86,12 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user, activity }) => {
 
   const handleSave = async () => {
     try {
-      await updateProfileMutation.mutateAsync(formData);
+      await updateProfileMutation.mutateAsync({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        bio: formData.bio,
+        companyId: formData.company?.name || undefined,
+      });
       setIsEditing(false);
     } catch (error) {
       console.error('Profile update failed:', error);
@@ -62,8 +103,21 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user, activity }) => {
       firstName: user.firstName,
       lastName: user.lastName,
       bio: user.bio || '',
+      company: user.company
+        ? {
+            name: user.company.name,
+            displayName: user.company.name,
+            isVerified: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }
+        : null,
     });
     setIsEditing(false);
+  };
+
+  const handleCompanyChange = (company: Company | null) => {
+    setFormData((prev) => ({ ...prev, company }));
   };
 
   const bioCharCount = formData.bio.length;
@@ -111,6 +165,13 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user, activity }) => {
               margin="normal"
               data-testid="last-name-field"
             />
+            <Box sx={{ mt: 2 }}>
+              <CompanyAutocomplete
+                value={formData.company}
+                onChange={handleCompanyChange}
+                label="Company"
+              />
+            </Box>
             <TextField
               fullWidth
               label="Bio"
