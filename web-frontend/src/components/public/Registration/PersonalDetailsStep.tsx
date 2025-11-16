@@ -18,6 +18,7 @@ import {
   FormMessage,
 } from '@/components/public/ui/form';
 import { Input } from '@/components/public/ui/ui/input';
+import { CompanyAutocomplete } from './CompanyAutocomplete';
 import type { CreateRegistrationRequest } from '@/types/event.types';
 
 // Validation schema for personal details
@@ -154,14 +155,17 @@ export const PersonalDetailsStep = forwardRef<PersonalDetailsStepRef, PersonalDe
               <FormField
                 control={form.control}
                 name="company"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
                     <FormLabel className="text-zinc-300">Company *</FormLabel>
                     <FormControl>
-                      <Input
-                        {...field}
-                        className="bg-zinc-900 border-zinc-800 text-zinc-100"
-                        placeholder="TechCorp AG"
+                      <CompanyAutocomplete
+                        value={field.value}
+                        onCompanySelect={(companyName) => {
+                          field.onChange(companyName);
+                        }}
+                        error={fieldState.error?.message}
+                        placeholder="Search for your company..."
                       />
                     </FormControl>
                     <FormMessage className="text-red-400" />

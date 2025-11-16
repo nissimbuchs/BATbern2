@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -68,7 +68,7 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     @Autowired
     private ConfirmationTokenService confirmationTokenService;
 
-    @MockBean
+    @MockitoBean
     private UserApiClient userApiClient;
 
     private Event testEvent;

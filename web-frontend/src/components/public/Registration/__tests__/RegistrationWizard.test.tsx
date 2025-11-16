@@ -125,7 +125,7 @@ describe('RegistrationWizard Component', () => {
       fireEvent.change(screen.getByPlaceholderText('john.smith@company.ch'), {
         target: { value: 'john@example.com' },
       });
-      fireEvent.change(screen.getByPlaceholderText('TechCorp AG'), {
+      fireEvent.change(screen.getByPlaceholderText('Search for your company...'), {
         target: { value: 'Acme Inc' },
       });
       fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
@@ -150,7 +150,7 @@ describe('RegistrationWizard Component', () => {
       fireEvent.change(screen.getByPlaceholderText('john.smith@company.ch'), {
         target: { value: 'john@example.com' },
       });
-      fireEvent.change(screen.getByPlaceholderText('TechCorp AG'), {
+      fireEvent.change(screen.getByPlaceholderText('Search for your company...'), {
         target: { value: 'Acme Inc' },
       });
       fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
@@ -172,7 +172,7 @@ describe('RegistrationWizard Component', () => {
       fireEvent.change(screen.getByPlaceholderText('john.smith@company.ch'), {
         target: { value: 'john@example.com' },
       });
-      fireEvent.change(screen.getByPlaceholderText('TechCorp AG'), {
+      fireEvent.change(screen.getByPlaceholderText('Search for your company...'), {
         target: { value: 'Acme Inc' },
       });
       fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
@@ -205,7 +205,7 @@ describe('RegistrationWizard Component', () => {
       fireEvent.change(screen.getByPlaceholderText('john.smith@company.ch'), {
         target: { value: 'john@example.com' },
       });
-      fireEvent.change(screen.getByPlaceholderText('TechCorp AG'), {
+      fireEvent.change(screen.getByPlaceholderText('Search for your company...'), {
         target: { value: 'Acme Inc' },
       });
       fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
@@ -230,7 +230,7 @@ describe('RegistrationWizard Component', () => {
       fireEvent.change(screen.getByPlaceholderText('john.smith@company.ch'), {
         target: { value: 'john@example.com' },
       });
-      fireEvent.change(screen.getByPlaceholderText('TechCorp AG'), {
+      fireEvent.change(screen.getByPlaceholderText('Search for your company...'), {
         target: { value: 'Acme Inc' },
       });
       fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
@@ -253,7 +253,7 @@ describe('RegistrationWizard Component', () => {
       fireEvent.change(screen.getByPlaceholderText('john.smith@company.ch'), {
         target: { value: 'john@example.com' },
       });
-      fireEvent.change(screen.getByPlaceholderText('TechCorp AG'), {
+      fireEvent.change(screen.getByPlaceholderText('Search for your company...'), {
         target: { value: 'Acme Inc' },
       });
       fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
@@ -287,7 +287,7 @@ describe('RegistrationWizard Component', () => {
       fireEvent.change(screen.getByPlaceholderText('john.smith@company.ch'), {
         target: { value: 'john@example.com' },
       });
-      fireEvent.change(screen.getByPlaceholderText('TechCorp AG'), {
+      fireEvent.change(screen.getByPlaceholderText('Search for your company...'), {
         target: { value: 'Acme Inc' },
       });
       fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
@@ -343,7 +343,7 @@ describe('RegistrationWizard Component', () => {
       fireEvent.change(screen.getByPlaceholderText('john.smith@company.ch'), {
         target: { value: 'john@example.com' },
       });
-      fireEvent.change(screen.getByPlaceholderText('TechCorp AG'), {
+      fireEvent.change(screen.getByPlaceholderText('Search for your company...'), {
         target: { value: 'Acme Inc' },
       });
       fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
@@ -380,7 +380,7 @@ describe('RegistrationWizard Component', () => {
       fireEvent.change(screen.getByPlaceholderText('john.smith@company.ch'), {
         target: { value: 'john@example.com' },
       });
-      fireEvent.change(screen.getByPlaceholderText('TechCorp AG'), {
+      fireEvent.change(screen.getByPlaceholderText('Search for your company...'), {
         target: { value: 'Acme Inc' },
       });
       fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
@@ -417,7 +417,7 @@ describe('RegistrationWizard Component', () => {
       fireEvent.change(screen.getByPlaceholderText('john.smith@company.ch'), {
         target: { value: 'john@example.com' },
       });
-      fireEvent.change(screen.getByPlaceholderText('TechCorp AG'), {
+      fireEvent.change(screen.getByPlaceholderText('Search for your company...'), {
         target: { value: 'Acme Inc' },
       });
       fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
