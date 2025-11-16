@@ -73,6 +73,7 @@ public class RegistrationService {
         userRequest.setFirstName(request.getFirstName());
         userRequest.setLastName(request.getLastName());
         userRequest.setEmail(request.getEmail());
+        userRequest.setCompanyId(request.getCompany()); // Pass company from registration
         userRequest.setCognitoSync(false); // ADR-005: Create anonymous user (cognito_id = NULL)
 
         GetOrCreateUserResponse userResponse = userApiClient.getOrCreateUser(userRequest);
