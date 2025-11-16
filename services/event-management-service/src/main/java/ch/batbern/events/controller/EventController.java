@@ -27,6 +27,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import java.time.Instant;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -1110,8 +1111,16 @@ public class EventController {
             @Valid @RequestBody CreateRegistrationRequest request) {
         log.debug("POST /api/v1/events/{}/registrations", eventCode);
 
+        // QA Fix (VALID-001): Check if this is a resend (existing pending registration)
+        // Service returns existing registration if status is "registered" (pending)
+        Instant beforeCreate = Instant.now();
+
         // Create registration with status=PENDING (will be confirmed via email)
         Registration registration = registrationService.createRegistration(eventCode, request);
+
+        // QA Fix (VALID-001): Detect if this is a resend (registration existed before this call)
+        boolean isResend = registration.getCreatedAt() != null &&
+                          registration.getCreatedAt().isBefore(beforeCreate);
 
         // Generate confirmation token (48h validity)
         String confirmationToken = confirmationTokenService.generateConfirmationToken(
@@ -1139,6 +1148,18 @@ public class EventController {
 
         log.info("Confirmation token generated and email queued for registration {}: {}",
                 registration.getId(), confirmationToken.substring(0, 20) + "...");
+
+        // QA Fix (VALID-001): Return different status for resend vs new registration
+        if (isResend) {
+            // Resending confirmation email for existing pending registration
+            log.info("Resending confirmation email for existing pending registration: {}", registration.getId());
+            CreateRegistrationResponse response = CreateRegistrationResponse.builder()
+                    .message("You are already registered for this event. A new confirmation email has been sent.")
+                    .email(request.getEmail())
+                    .build();
+            // Return 409 Conflict for duplicate registration attempt
+            throw new IllegalStateException("User " + registration.getAttendeeUsername() + " is already registered for event " + eventCode);
+        }
 
         // Return minimal response (no sensitive data)
         CreateRegistrationResponse response = CreateRegistrationResponse.builder()

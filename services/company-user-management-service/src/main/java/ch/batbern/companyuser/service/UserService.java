@@ -335,7 +335,7 @@ public class UserService {
 
         // Publish domain event (Story 1.16.2: String IDs)
         // Note: For delete, we need to get the current user performing the action
-        String deletedByUsername = getUsernameFromCurrentContext();
+        String deletedByUsername = getAuditUsername();
         UserDeletedEvent event = new UserDeletedEvent(
             user.getUsername(),  // aggregateId = username
             user.getEmail(),
@@ -424,7 +424,7 @@ public class UserService {
         User savedUser = userRepository.save(user);
 
         // Publish domain event (Story 1.16.2: String IDs)
-        String createdByUsername = getUsernameFromCurrentContext();
+        String createdByUsername = getAuditUsername();
         UserCreatedEvent event = new UserCreatedEvent(
             savedUser.getUsername(),  // aggregateId = username
             savedUser.getEmail(),
@@ -468,7 +468,7 @@ public class UserService {
 
         // Publish domain event (Story 1.16.2: String IDs)
         // Note: For create, get the current user performing the action
-        String createdByUsername = getUsernameFromCurrentContext();
+        String createdByUsername = getAuditUsername();
         UserCreatedEvent event = new UserCreatedEvent(
             savedUser.getUsername(),  // aggregateId = username
             savedUser.getEmail(),
@@ -559,16 +559,13 @@ public class UserService {
     }
 
     /**
-     * Helper method to get username from current security context
-     * Looks up user by Cognito User ID and returns their username
+     * Helper method to get username from current security context for audit purposes
+     * Uses SecurityContextHelper which reads custom:username claim from JWT
      * Story 4.1.5: Returns "anonymous" for unauthenticated requests (anonymous registration)
      */
-    private String getUsernameFromCurrentContext() {
+    private String getAuditUsername() {
         try {
-            String cognitoUserId = securityContext.getCurrentUserId();
-            return userRepository.findByCognitoUserId(cognitoUserId)
-                    .map(User::getUsername)
-                    .orElse("system");  // Fallback for system operations
+            return securityContext.getCurrentUsername();
         } catch (SecurityException e) {
             // Story 4.1.5: Anonymous requests (no authenticated user)
             log.debug("No authenticated user in context, using 'anonymous' for audit");

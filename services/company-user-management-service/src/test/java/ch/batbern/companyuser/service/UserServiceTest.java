@@ -185,7 +185,7 @@ class UserServiceTest {
                 .build();
 
         when(userRepository.save(any(User.class))).thenReturn(createdUser);
-        when(securityContext.getCurrentUsername()).thenReturn("admin.user");  // Story 2.6: Returns username from JWT
+        when(securityContext.getCurrentUsername()).thenReturn("admin.user");  // Story 2.6: Returns username from JWT custom:username claim
 
         UserResponse userResponse = new UserResponse();
         userResponse.setId("new.user");
@@ -283,7 +283,7 @@ class UserServiceTest {
                 .build();
 
         when(userRepository.save(any(User.class))).thenReturn(createdUser);
-        when(securityContext.getCurrentUsername()).thenReturn("admin.user");  // Story 2.6: Returns username from JWT
+        when(securityContext.getCurrentUsername()).thenReturn("admin.user");  // Story 2.6: Returns username from JWT custom:username claim
 
         // When
         userService.getOrCreateUser(request);
@@ -314,7 +314,7 @@ class UserServiceTest {
                 .build();
 
         when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
-        when(securityContext.getCurrentUsername()).thenReturn("admin.user");  // Story 2.6: Returns username from JWT
+        when(securityContext.getCurrentUsername()).thenReturn("admin.user");  // Story 2.6: Returns username from JWT custom:username claim
 
         // When
         userService.deleteUser(username);
