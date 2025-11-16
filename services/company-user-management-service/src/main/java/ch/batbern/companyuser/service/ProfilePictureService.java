@@ -45,7 +45,7 @@ public class ProfilePictureService {
     public ProfilePictureService(
             S3Presigner s3Presigner,
             UserRepository userRepository,
-            @Value("${aws.s3.profile-pictures-bucket:batbern-development-profile-pictures}") String bucketName,
+            @Value("${aws.s3.bucket-name:batbern-development-company-logos}") String bucketName,
             @Value("${aws.cloudfront.domain:https://cdn.batbern.ch}") String cloudFrontDomain) {
         this.s3Presigner = s3Presigner;
         this.userRepository = userRepository;
@@ -152,12 +152,13 @@ public class ProfilePictureService {
 
     /**
      * Generate S3 key with year-based partitioning
-     * Pattern: /profile-pictures/{year}/{username}/{filename-with-uuid}.{ext}
-     * Example: /profile-pictures/2024/john.doe/profile-f3e8d1a4.png
+     * Pattern: profile-pictures/{year}/{username}/{filename-with-uuid}.{ext}
+     * Example: profile-pictures/2024/john.doe/profile-f3e8d1a4.png
+     * Note: No leading slash to avoid double slash in presigned URL
      */
     private String generateS3Key(String username, String fileId, String extension) {
         int currentYear = LocalDate.now().getYear();
-        return String.format("/profile-pictures/%d/%s/profile-%s.%s",
+        return String.format("profile-pictures/%d/%s/profile-%s.%s",
                 currentYear,
                 username,
                 fileId,
@@ -167,9 +168,17 @@ public class ProfilePictureService {
     /**
      * Build CloudFront CDN URL from S3 key
      * AC10.4: Serve profile pictures through CloudFront
+     * Note: In local development (MinIO), we need to include bucket name in path
+     * In production (CloudFront), the bucket is behind the CDN
      */
     private String buildCloudFrontUrl(String s3Key) {
-        return cloudFrontDomain + s3Key;
+        // Check if we're in local development (MinIO) by checking if domain contains localhost
+        if (cloudFrontDomain.contains("localhost")) {
+            // Local MinIO: include bucket name in path
+            return cloudFrontDomain + "/" + bucketName + "/" + s3Key;
+        }
+        // Production CloudFront: bucket is behind CDN
+        return cloudFrontDomain + "/" + s3Key;
     }
 
     /**
@@ -205,6 +214,6 @@ public class ProfilePictureService {
      */
     private String findS3KeyByFileId(String username, String fileId, String fileExtension) {
         int currentYear = LocalDate.now().getYear();
-        return String.format("/profile-pictures/%d/%s/profile-%s.%s", currentYear, username, fileId, fileExtension);
+        return String.format("profile-pictures/%d/%s/profile-%s.%s", currentYear, username, fileId, fileExtension);
     }
 }

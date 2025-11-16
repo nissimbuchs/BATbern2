@@ -78,19 +78,18 @@ class UserServiceTest {
     @Test
     void should_updateUserProfile_when_validDataProvided() {
         // Given
-        String cognitoUserId = "cognito-123";
         String username = "john.doe";
-        when(securityContext.getCurrentUserId()).thenReturn(cognitoUserId);  // Returns Cognito user ID
+        when(securityContext.getCurrentUsername()).thenReturn(username);  // Story 2.6: Returns username from JWT
 
         User existingUser = User.builder()
                 .username(username)
                 .email("john.doe@example.com")
                 .firstName("John")
                 .lastName("Doe")
-                .cognitoUserId(cognitoUserId)
+                .cognitoUserId("cognito-123")
                 .build();
 
-        when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findByUsername(username)).thenReturn(Optional.of(existingUser));
         when(userRepository.save(any(User.class))).thenReturn(existingUser);
 
         UserResponse mockResponse = new UserResponse();
@@ -121,19 +120,18 @@ class UserServiceTest {
     @Test
     void should_syncCognito_when_userUpdated() {
         // Given
-        String cognitoUserId = "cognito-123";
         String username = "john.doe";
-        when(securityContext.getCurrentUserId()).thenReturn(cognitoUserId);  // Returns Cognito user ID
+        when(securityContext.getCurrentUsername()).thenReturn(username);  // Story 2.6: Returns username from JWT
 
         User user = User.builder()
                 .username(username)
                 .email("john@example.com")
                 .firstName("John")
                 .lastName("Doe")
-                .cognitoUserId(cognitoUserId)
+                .cognitoUserId("cognito-123")
                 .build();
 
-        when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.of(user));
+        when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenReturn(user);
 
         UpdateUserRequest request = new UpdateUserRequest();
@@ -187,7 +185,7 @@ class UserServiceTest {
                 .build();
 
         when(userRepository.save(any(User.class))).thenReturn(createdUser);
-        when(securityContext.getCurrentUserId()).thenReturn("admin.user");
+        when(securityContext.getCurrentUsername()).thenReturn("admin.user");  // Story 2.6: Returns username from JWT custom:username claim
 
         UserResponse userResponse = new UserResponse();
         userResponse.setId("new.user");
@@ -285,7 +283,7 @@ class UserServiceTest {
                 .build();
 
         when(userRepository.save(any(User.class))).thenReturn(createdUser);
-        when(securityContext.getCurrentUserId()).thenReturn("admin.user");
+        when(securityContext.getCurrentUsername()).thenReturn("admin.user");  // Story 2.6: Returns username from JWT custom:username claim
 
         // When
         userService.getOrCreateUser(request);
@@ -316,7 +314,7 @@ class UserServiceTest {
                 .build();
 
         when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
-        when(securityContext.getCurrentUserId()).thenReturn("admin.user");
+        when(securityContext.getCurrentUsername()).thenReturn("admin.user");  // Story 2.6: Returns username from JWT custom:username claim
 
         // When
         userService.deleteUser(username);

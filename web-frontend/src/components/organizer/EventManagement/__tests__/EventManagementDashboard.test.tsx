@@ -19,18 +19,28 @@ import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider, type UseQueryResult } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import { EventManagementDashboard } from '../EventManagementDashboard';
-import { useEvents } from '@/hooks/useEvents';
-import { useCriticalTasks } from '@/hooks/useEvents';
-import { useTeamActivity } from '@/hooks/useEvents';
+import {
+  useEvents,
+  useEvent,
+  useEventWorkflow,
+  useCriticalTasks,
+  useTeamActivity,
+  useCreateEvent,
+  useUpdateEvent,
+  useDeleteEvent,
+} from '@/hooks/useEvents';
 import type { EventListResponse } from '@/types/event.types';
 
 // Mock the hooks
 vi.mock('@/hooks/useEvents', () => ({
   useEvents: vi.fn(),
-  useCreateEvent: vi.fn(),
-  useUpdateEvent: vi.fn(),
+  useEvent: vi.fn(),
+  useEventWorkflow: vi.fn(),
   useCriticalTasks: vi.fn(),
   useTeamActivity: vi.fn(),
+  useCreateEvent: vi.fn(),
+  useUpdateEvent: vi.fn(),
+  useDeleteEvent: vi.fn(),
 }));
 
 // Mock EventForm to prevent act() warnings
@@ -143,6 +153,59 @@ describe('EventManagementDashboard Component', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+
+    // Provide default mocks for mutation hooks
+    vi.mocked(useCreateEvent).mockReturnValue({
+      mutate: vi.fn(),
+      mutateAsync: vi.fn(),
+      isPending: false,
+      isSuccess: false,
+      isError: false,
+      data: undefined,
+      error: null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+
+    vi.mocked(useUpdateEvent).mockReturnValue({
+      mutate: vi.fn(),
+      mutateAsync: vi.fn(),
+      isPending: false,
+      isSuccess: false,
+      isError: false,
+      data: undefined,
+      error: null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+
+    vi.mocked(useDeleteEvent).mockReturnValue({
+      mutate: vi.fn(),
+      mutateAsync: vi.fn(),
+      isPending: false,
+      isSuccess: false,
+      isError: false,
+      data: undefined,
+      error: null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+
+    // Provide default mocks for query hooks
+    vi.mocked(useEvent).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isSuccess: false,
+      isError: false,
+      error: null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+
+    vi.mocked(useEventWorkflow).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isSuccess: false,
+      isError: false,
+      error: null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
   });
 
   describe('Initial Render', () => {

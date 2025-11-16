@@ -46,12 +46,27 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
   );
 
   const handleProfileClick = () => {
-    navigate('/profile');
+    console.log('[UserMenuDropdown] Profile clicked, navigating to /account');
+    console.log('[UserMenuDropdown] navigate function:', navigate);
+    console.log('[UserMenuDropdown] Current location:', window.location.pathname);
+    try {
+      navigate('/account');
+      console.log('[UserMenuDropdown] Navigation called successfully');
+    } catch (error) {
+      console.error('[UserMenuDropdown] Navigation error:', error);
+    }
     onClose();
   };
 
   const handleSettingsClick = () => {
-    navigate('/settings');
+    console.log('[UserMenuDropdown] Settings clicked, navigating to /account');
+    console.log('[UserMenuDropdown] navigate function:', navigate);
+    try {
+      navigate('/account');
+      console.log('[UserMenuDropdown] Navigation called successfully');
+    } catch (error) {
+      console.error('[UserMenuDropdown] Navigation error:', error);
+    }
     onClose();
   };
 
@@ -112,7 +127,7 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
       <Divider />
 
       {/* Profile Menu Item */}
-      <MenuItem onClick={handleProfileClick} role="menuitem">
+      <MenuItem onClick={handleProfileClick} role="menuitem" data-testid="my-account-link">
         <ListItemIcon>
           <PersonIcon fontSize="small" />
         </ListItemIcon>
