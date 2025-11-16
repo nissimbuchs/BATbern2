@@ -10,15 +10,15 @@ post {
   auth: bearer
 }
 
-auth:bearer {
-  token: {{authToken}}
-}
-
 headers {
   X-Correlation-ID: {{$guid}}
   Accept-Language: en-US
   Accept: application/json
   Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{authToken}}
 }
 
 body:json {
@@ -51,16 +51,16 @@ tests {
   test("should return 200 OK", function() {
     expect(res.getStatus()).to.equal(200);
   });
-
+  
   test("should return presigned upload URL", function() {
     const body = res.getBody();
     expect(body.uploadUrl).to.exist;
     expect(body.uploadUrl).to.be.a('string');
     // Accept both AWS S3 (production/staging) and MinIO (local development)
-    const isValidS3Url = body.uploadUrl.includes('s3.amazonaws.com') || body.uploadUrl.includes('localhost:8450');
+    const isValidS3Url = body.uploadUrl.includes('s3.eu-central-1.amazonaws.com') || body.uploadUrl.includes('localhost:8450');
     expect(isValidS3Url).to.be.true;
   });
-
+  
   test("should return file metadata", function() {
     const body = res.getBody();
     expect(body.fileId).to.exist;
@@ -68,13 +68,13 @@ tests {
     expect(body.fileExtension).to.equal('png');
     expect(body.expiresInMinutes).to.equal(15);
   });
-
+  
   test("should return required headers", function() {
     const body = res.getBody();
     expect(body.requiredHeaders).to.exist;
     expect(body.requiredHeaders).to.be.an('object');
   });
-
+  
   test("should have CORS headers", function() {
     const headers = res.getHeaders();
     const corsHeader = headers['access-control-allow-origin'];

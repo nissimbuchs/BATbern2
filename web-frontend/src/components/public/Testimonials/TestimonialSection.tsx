@@ -155,7 +155,7 @@ export const TestimonialSection = () => {
   const partners = partnersData?.data || [];
 
   return (
-    <section className="py-16 -mx-4 sm:-mx-6 lg:-mx-8 overflow-hidden">
+    <section className="py-16 relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden">
       <div className="space-y-6">
         {/* First row - testimonials scrolling left */}
         <InfiniteMarquee direction="left" speed="slow">

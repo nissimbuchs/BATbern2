@@ -122,12 +122,13 @@ class AdditionalEndpointsIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("GET /api/v1/companies/search - should return 401 when unauthenticated")
-    void shouldReturn401_whenSearchingUnauthenticated() throws Exception {
+    @DisplayName("GET /api/v1/companies/search - should return 200 when unauthenticated (public endpoint for registration autocomplete)")
+    void shouldReturn200_whenSearchingUnauthenticated() throws Exception {
+        // Story 4.1.5: Company search is now public for registration autocomplete
         mockMvc.perform(get("/api/v1/companies/search")
                         .param("query", "Test")
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isOk());
     }
 
     @Test

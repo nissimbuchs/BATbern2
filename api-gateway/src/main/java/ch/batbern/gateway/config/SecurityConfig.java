@@ -133,6 +133,9 @@ public class SecurityConfig {
                         // Public company endpoint (GET only for partner showcase logo/website enrichment)
                         .requestMatchers(HttpMethod.GET, "/api/v1/companies/*").permitAll()
 
+                        // Story 4.1.5: Public company search for registration autocomplete
+                        .requestMatchers(HttpMethod.GET, "/api/v1/companies/search").permitAll()
+
 
                         // All other requests require authentication
                         .anyRequest().authenticated()

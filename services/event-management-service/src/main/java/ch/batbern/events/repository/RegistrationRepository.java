@@ -41,6 +41,16 @@ public interface RegistrationRepository extends JpaRepository<Registration, UUID
     boolean existsByEventIdAndAttendeeUsername(UUID eventId, String attendeeUsername);
 
     /**
+     * Find registration for a specific event and attendee
+     * Used to check status and resend confirmation email for pending registrations
+     *
+     * @param eventId Event UUID
+     * @param attendeeUsername Username reference to User Management Service
+     * @return Registration if exists
+     */
+    Optional<Registration> findByEventIdAndAttendeeUsername(UUID eventId, String attendeeUsername);
+
+    /**
      * Find all registrations for a specific event
      */
     List<Registration> findByEventId(UUID eventId);

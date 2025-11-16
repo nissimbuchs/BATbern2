@@ -83,8 +83,8 @@ test {
     }
 
     // Increase timeout for CI environments with Testcontainers
-    // Individual test timeout: 5 minutes (handles slow Testcontainers startup in CI)
-    timeout = java.time.Duration.ofMinutes(5)
+    // Test task timeout: 10 minutes (handles slow Testcontainers startup in CI + large test suite)
+    timeout = java.time.Duration.ofMinutes(10)
 
     // System properties for test execution
     systemProperty 'junit.jupiter.execution.timeout.default', '5m'
