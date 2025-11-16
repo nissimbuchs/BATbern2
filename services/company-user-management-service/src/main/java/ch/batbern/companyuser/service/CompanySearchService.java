@@ -93,13 +93,14 @@ public class CompanySearchService {
 
     /**
      * Map Company entity to CompanySearchResponse DTO
+     * ADR-003: No UUID exposure - uses name as meaningful identifier
      */
     private CompanySearchResponse mapToSearchResponse(Company company) {
         return CompanySearchResponse.builder()
-                .id(company.getId())
                 .name(company.getName())
                 .displayName(company.getDisplayName())
                 .swissUID(company.getSwissUID())
+                .industry(company.getIndustry())
                 .isVerified(company.isVerified())
                 .build();
     }
