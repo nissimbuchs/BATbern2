@@ -20,14 +20,15 @@ NC='\033[0m' # No Color
 
 # Instance-specific configuration
 INSTANCE="${INSTANCE:-1}"
-MINIO_API_PORT="${MINIO_API_PORT:-9000}"
-MINIO_CONSOLE_PORT="${MINIO_CONSOLE_PORT:-9001}"
+MINIO_API_PORT="${MINIO_API_PORT:-8450}"
+MINIO_CONSOLE_PORT="${MINIO_CONSOLE_PORT:-8451}"
 
 # Configuration
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-MINIO_DATA_DIR="${PROJECT_ROOT}/.minio-${INSTANCE}/data"
-MINIO_PID_FILE="/tmp/batbern-${INSTANCE}-minio.pid"
-MINIO_LOG_FILE="/tmp/batbern-${INSTANCE}-minio.log"
+# MinIO is shared across all instances and all BATbern projects - use /tmp
+MINIO_DATA_DIR="/tmp/.minio/data"
+MINIO_PID_FILE="/tmp/batbern-shared-minio.pid"
+MINIO_LOG_FILE="/tmp/batbern-shared-minio.log"
 
 # MinIO credentials (default for local dev)
 export MINIO_ROOT_USER="minioadmin"

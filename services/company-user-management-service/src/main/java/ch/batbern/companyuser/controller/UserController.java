@@ -315,7 +315,7 @@ public class UserController {
         log.info("Requesting presigned URL for profile picture upload: {}", request.getFileName());
 
         // Get current user from security context (Story 1.16.2: username-based lookup)
-        String currentUsername = securityContextHelper.getCurrentUserId();
+        String currentUsername = securityContextHelper.getCurrentUsername();
         User user = userRepository.findByUsername(currentUsername)
             .orElseThrow(() -> new ch.batbern.companyuser.exception.UserNotFoundException(currentUsername));
 
@@ -342,7 +342,7 @@ public class UserController {
         log.info("Confirming profile picture upload: fileId={}", request.getFileId());
 
         // Get current user from security context (Story 1.16.2: username-based lookup)
-        String currentUsername = securityContextHelper.getCurrentUserId();
+        String currentUsername = securityContextHelper.getCurrentUsername();
         User user = userRepository.findByUsername(currentUsername)
             .orElseThrow(() -> new ch.batbern.companyuser.exception.UserNotFoundException(currentUsername));
 
