@@ -2,6 +2,11 @@ spring:
   application:
     name: company-user-management-service
 
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+
   datasource:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/batbern}
     username: ${DATABASE_USERNAME:batbern}

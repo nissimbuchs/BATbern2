@@ -58,8 +58,21 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
   const [inputValue, setInputValue] = useState('');
   const debouncedInputValue = useDebounce(inputValue, 300);
 
-  // Only search if input is at least 2 characters
-  const shouldSearch = debouncedInputValue.length >= 2;
+  // Sync inputValue when value prop changes (e.g., when editing existing user)
+  React.useEffect(() => {
+    if (value) {
+      setInputValue(value.displayName || value.name);
+    } else {
+      setInputValue('');
+    }
+  }, [value]);
+
+  // Only search if:
+  // 1. Input is at least 2 characters
+  // 2. Input doesn't match already selected value (avoid unnecessary search after selection)
+  const isValueSelected =
+    value && (debouncedInputValue === value.displayName || debouncedInputValue === value.name);
+  const shouldSearch = debouncedInputValue.length >= 2 && !isValueSelected;
 
   // Query for company search
   const {
