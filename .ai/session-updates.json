@@ -1,0 +1,140 @@
+{
+  "updates": [
+    {
+      "bat": 13,
+      "index": 56,
+      "title": "SOA Reloaded: DEI: Alles wird besser!",
+      "abstract": "SOA wurde bei den Informatikdiensten (ID) der Universität Bern von 2003-6 zum neuen Paradigma erhoben. Viel Konzeptarbeit und erste Webservices sind daraus entstanden. Mit Wechsel der Leitung bei den Informatikdiensten im Jahr 2006 wurden andere strategische Schwerpunkte gesetzt und die Arbeit an SOA verfiel in den Dornröschenschlaf. Heute versucht man SOA wieder wachzuküssen, aber vorsichtig, da sie an vielen Orten stark dornenumrankt ist. Der neue Weg wird pragmatischer und schmaler sein. Ein neues innovatives Konzept, welches auf SOA aufbaut, soll die Defizite decken: DEI. Das Referat bezweckt aufzuzeigen, welche Voraussetzungen gegeben sein müssen, um überhaupt an SOA denken zu dürfen. Sie werden auch erfahren, was hinter DEI steckt und warum DEI besser ist als SOA.",
+      "referenten": [
+        {
+          "name": "Dierk Matthäus, Universität Bern",
+          "bio": "Nach dem Informatik-Studium an der Universität Bern arbeitete Dierk Matthäus als Mitarbeiter, Team- oder Projektleiter und MfA an verschiedenen Orten in der Verwaltung und Privatwirtschaft. Seit 2003 ist er bei der Medizinischen Fakultät der Universität Bern, seit 2007 auch für deren Informatikdienste tätig für die Bereitstellung von vernetzten Softwarelösungen zur Unterstützung der Administration, Lehre und Forschung.",
+          "company": "unibern",
+          "portrait": ""
+        }
+      ]
+    },
+    {
+      "bat": 13,
+      "index": 59,
+      "title": "Serviceorientierung in Unternehmensarchitekturen: Die \"richtige\" Transparenz als Basis von Flexibilität und Agilität.",
+      "abstract": "Serviceorientierung als Gestaltungsparadigma ist ein lang diskutiertes Thema. Angefangen von Web Services bis zur andauernden Forderung nach mehr Geschäftsperspektive bei der Umsetzung von Serviceorientierung wurde viel diskutiert, wurden viele Rückschläge erlitten und einige Erfolge gefeiert. Doch wie lässt sich Serviceorientierung in Unternehmensarchitekturen positionieren, welche Stakeholdergruppen sind einzubinden, wie können diese überzeugt werden und welche Unterstützung kann eine gut funktionierende Unternehmensarchitektur bei Transformationsprojekten liefern?",
+      "referenten": [
+        {
+          "name": "Dr. Stephan Aier, Universität St. Gallen",
+          "bio": "Dr. Stephan Aier ist seit 2006 Projektleiter und Habilitand am Institut für Wirtschaftsinformatik der Universität St. Gallen (IWI-HSG). Jahrgang 1976. Diplom-(Wirtschafts)-Ingenieur 2002, Dr.-Ing. 2006. Er war Gründungsmitglied der Kompetenzzentren \"Enterprise Application Integration\" (2002) und später \"Enterprise Architecture\" (2005) an der Technischen Universität Berlin. Seit 2006 leitet er den Forschungsbereich Integration und Architektur am Lehrstuhl von Prof. Dr. Robert Winter am Institut für Wirtschaftsinformatik in Form des Kompetenzzentrums \"Integration Factory\". Seit 2007 ist er ergänzend zum Kompetenzzentrum \"Integration Factory\" von Seiten der Universität St. Gallen Projektleiter für den Architekturansatz \"Business Engineering Navigator\" (BEN) und dem zugehörigen Werkzeug \"ADOben\" welches in Kooperation mit der BOC AG entwickelt wird. Mitherausgeber der Reihe \"Enterprise Architecture\" und Autor zahlreicher Publikationen in den Bereichen Architektur und Integration. Darüber hinaus leitet er seit 2007 die zugehörige Networking-Plattform \"Anwenderforum St. Gallen\"",
+          "company": "unisg",
+          "portrait": ""
+        }
+      ]
+    },
+    {
+      "bat": 16,
+      "index": 75,
+      "title": "AAI - Die Authentifizierungs- und Autorisierungs- Infrastruktur der Schweizer Hochschulen",
+      "abstract": "In enger Zusammenarbeit mit den Schweizer Hochschulen hat SWITCH eine 'Authentifizierungs- und Autorisierungs-Infrastruktur' (AAI) aufgebaut. Heute betreiben 40 Institutionen aus dem akademischen Umfeld einen Identity Provider. Bei Bedarf erhalten deren ca. 300'000 Benutzer über Web Single-Sign-On und Federated Identity dank AAI Zugang zu einem der über 400 beteiligten Service Provider. Einige dieser Service Provider werden durch ausländische Partner betrieben. Diese 'SWITCHaai Federation' basiert auf der SAML Technologie (Security Assertion Markup Language) und verwendet primär die Open Source Software Shibboleth. SWITCHaai diente international als Vorbild, so dass heute in den meisten europäischen Ländern im akademischen Umfeld eine entsprechende Federation existiert. Der Vortrag zeigt auf, weshalb sich die Universitäten entschlossen, diese Infrastruktur aufzubauen. Wie funktioniert Web SSO mit SAML? Wie werden die über 400 Komponenten skalierend verwaltet? Den Abschluss bildet ein Ausblick auf die Pläne für 'Interfederation' im Rahmen eines EU Projekts, d.h. z.B. Zugriff eines Benutzers aus einer nationalen Federation auf einen Service Provider in einer anderen nationalen Federation.",
+      "referenten": [
+        {
+          "name": "Thomas Lenggenhager, SWITCH",
+          "bio": "Thomas Lenggenhager leitet seit 2007 das SWITCHaai Projekt. Seit der Projekt-Idee 1999 ist er in die Planung und Umsetzung von SWITCHaai involviert. Nach dem Informatik-Ingenieur Studium an der ETH Zürich begann er 1988 bei der erst kurz zuvor gegründeten Stiftung SWITCH als Software Ingenieur. Vor AAI beschäftigte er sich mit Themen wie E-Mail (X.400), Directories (X.500, LDAP), IP Netzwerke und DNS sowie Security (CERT).",
+          "company": "switch",
+          "portrait": ""
+        }
+      ]
+    },
+    {
+      "bat": 17,
+      "index": 84,
+      "title": "FindIT – Innovative Suche in Medienarchiven",
+      "abstract": "Nach einer Studie des Beratungsunternehmens Dr. Pascal Sieber & Partners entfallen in Schweizer Unternehmen heute 18 Prozent der Arbeitszeit auf die Informationssuche. Mit innovativen semantischen Suchmaschinen lässt sich dieser Aufwand deutlich reduzieren. Der Springer Verlag setzt zu diesem Zweck das intelligente Enterprise-Suchsystem Canoo FindIT ein und präsentiert den Lesern seiner Online-Ausgaben www.bilanz.ch und www.handelszeitung.ch damit ein interessanteres, erweitertes Informationsangebot. Durch die Kombination eines umfassenden Wörterbuchs und einer ausgeklügelten Wortanalyse-Software mit dem gesammelten Wissen der Online-Enzyklopädie Wikipedia findet Canoo FindIT alle relevanten Informationen effizient in sämtlichen digitalen Quellen des Verlags. Wir stellen die Architektur und innovativen Merkmale der Lösung vor und gehen auf die Integration in die digitalen Medienarchive ein. Zudem zeigen wir, wie durch den gewählten SaaS-Ansatz das Projekt flexibel und kosteneffizient realisiert wurde.",
+      "referenten": [
+        {
+          "name": "Dr. Stephan Gillmeier, Canoo Engineering AG",
+          "bio": "Stephan Gillmeier befasst sich seit 8 Jahren mit dem Gebiet des Information Retrievals und seit 3 Jahren mit der Entwicklung von mobilen Applikationen. In seiner Promotion entwickelte er einen semantischen Suchansatz, welcher auf der Struktur der Wikipedia beruht. Anfang 2008 gründete er das Projekt Wikihood. Basierend auf Canoos Sprachtechnologie \"wmtrans\" entsprang daraus die Entwicklung des semantischen Suchsystems FindIT.",
+          "company": "canoo",
+          "portrait": ""
+        },
+        {
+          "name": "Reinhard Kronenberg, Axel Springer Schweiz AG",
+          "bio": "Reinhard Kronenberg verfügt über vielfältige Erfahrungen im Medienbereich. Er arbeitete mehr als zehn Jahre für verschiedene Tages- und Wochenzeitungen sowie das Schweizer Fernsehen. Später verantwortete er die Online-Plattformen carwinner.ch und car4you.ch und baute für das Unternehmen Migros die interne Online-Abteilung auf. Zuletzt war er als Chefredaktor der Online-Redaktion bei der Aargauer Zeitung/Mittelland Zeitung tätig.",
+          "company": "axelspringer",
+          "portrait": ""
+        }
+      ]
+    },
+    {
+      "bat": 18,
+      "index": 89,
+      "title": "Enterprise Architektur-Modellierung mit dem NATO Architecture Framework – Ein Erfahrungsbericht",
+      "abstract": "Seit Zachmann in seinem Enterprise Architektur Framework definierte Sichtweisen postulierte, wurden Architekturframeworks kontinuierlich weiterentwickelt und adaptiert. Im militärischen wie im zivilen Bereich setzten sich mit TOGAF, MoDAF, DoDAF und NAF eine Reihe von Architekturframeworks durch. Erst die Etablierung von Metamodellen ermöglicht jedoch den praktikablen, werkzeugbasierten Einsatz von EA-Frameworks, da Metamodelle Sprachumfang und Syntax einzelner Views definieren. Wenn technische Wirklichkeit, Systemdokumentation und Geschäftsabläufe beim Aufeinandertreffen divergieren, können vorhandene Diskrepanzen mittels EA-Modellierung visualisiert und minimiert werden. Mit diesem Vortrag wird die durchgängige EA-Modellierung mittels UML, NATO Architecture Framework (NAF) und NATO Meta Modell (NMM) anhand eines realen Anwendungsfalles gezeigt.",
+      "referenten": [
+        {
+          "name": "Philippe Chammartin, RUAG Defence",
+          "bio": "Seit 2008 ist Philippe Chammartin als IT-Architekt mit Schwerpunkt Prozess-Engineering und Requirement-Engineering für die Ruag tätig. Zwischen 2004 und 2008 studierte er Wirtschaftinformatik an der Fachhochschule Waadt. Aufgewachsen in La Chaux-de-Fonds, arbeitete Philippe nach der Matura während 8 Jahren für die ETH Lausanne als System Administrator.",
+          "company": "ruag",
+          "portrait": ""
+        }
+      ]
+    },
+    {
+      "bat": 19,
+      "index": 98,
+      "title": "eGovernment Web Services zur Integration von Bund und Wirtschaft – standardbasierte e-dec Services für elektronische Verzollungen",
+      "abstract": "e-dec ist die Service-orientierte eGovernment Plattform der Eidgenössischen Zollverwaltung (EZV). Importe und Exporte werden von Zollkunden elektronisch beim Schweizer Zoll angemeldet. Digital signierte elektronische Veranlagungsverfügungen können als MWST-Quittung von den Zollkunden bezogen und in ihren Informationssystemen automatisch weiterverarbeitet werden. Dabei kommunizieren die Systeme von über 1200 Zollkunden mit den E-Government Services von e-dec. SOA Konzepte wurden beim Bau von e-dec konsequent berücksichtigt. Die e-dec Services erlauben die Integration heterogener verteilter Informationssysteme dank dem Einsatz offener Web Service Standards. e-dec wird vom Bundesamt für Informatik und Telekommunikation (BIT) in Zusammenarbeit mit innovation process technology [ipt] und Zühlke gebaut. In diesem Vortrag werden die folgenden Fragen behandelt: Welche Geschäftsprozesse laufen zwischen Unternehmen und der EZV? Welche Services bietet e-dec zur Government-to-Business Integration an? Welche Web Service Standards kommen bei den e-dec Services zum Einsatz?",
+      "referenten": [
+        {
+          "name": "Dr. Stefan Hüsemann, innovation process technology [ipt]",
+          "bio": "Stefan Hüsemann leitet seit mehreren Jahren für [ipt] Projekte, bei denen SOA umgesetzt wird. Seine Interessenschwerpunkte liegen beim Requirements Engineering, iterativen Projektvorgehensmethodiken, Austauschstandards für verteilte Informationssysteme und Web Service Standards. Stefan Hüsemann ist ebenfalls Lehrbeauftragter für Informationssysteme an der Universität Freiburg (Schweiz).",
+          "company": "ipt",
+          "portrait": ""
+        }
+      ]
+    },
+    {
+      "bat": 19,
+      "index": 99,
+      "title": "End-of-Life einer hochintegrierten Anwendung – wie Unternehmensarchitektur helfen kann",
+      "abstract": "Die SBB betreiben das Netz mit dem weltweit dichtesten Bahnbetrieb und brauchen dafür hochwertige IT-Unterstützung. Heute gehören dazu über 1'000 Anwendungen, mit zahlreichen Überlappungen in Funktion und Datenhaltung. Die nachhaltige Weiterentwicklung der heterogenen Anwendungslandschaft ist technisch und organisatorisch eine Herausforderung. Anhand eines konkreten, aktuellen Beispiels wird die Wirkungsweise der Unternehmensarchitektur im Zusammenspiel mit IT und Fachbereichen erläutert. Der Fall bezieht sich auf die Ablösung der zentralen, 25-jährigen Fahrplananwendung mit sehr grossen Abhängigkeiten in die ganze Unternehmung hinein. Die Präsentation zeigt die Vorgehensweise, beleuchtet die Problemstellung, den gewählten Lösungsansatz und beschreibt die getroffenen Massnahmen auf technischer, organisatorischer und finanzieller Ebene ein. Dabei werden sowohl Erfolge als auch Irrwege beleuchtet.",
+      "referenten": [
+        {
+          "name": "Peter Moosmann, SBB",
+          "bio": "Peter Moosmann (Ing. FH) hat über fünf Jahre am Aufbau der Unternehmensarchitektur der SBB mitgewirkt. Seit 2010 leitet er diesen Bereich. Zuvor war er in verschiedenen Rollen als Entwickler, Softwarearchitekt und Projektleiter bei einem Informatikdienstleister tätig.",
+          "company": "sbb",
+          "portrait": ""
+        },
+        {
+          "name": "Jakob Erber, SBB",
+          "bio": "Jakob Erber (M.Sc.) ist seit 3 Jahren als Unternehmensarchitekt bei der SBB tätig. Seit 2010 leitet er das Team Architekturmanagement. Zudem ist er als Domänenarchitekt Planung und Produktion Trasse für die betreffende Anwendung verantwortlich. Zuvor war er in verschiedenen Rollen als Entwickler und Softwarearchitekt bei verschiedenen Informatikdienstleistern tätig.",
+          "company": "sbb",
+          "portrait": ""
+        }
+      ]
+    },
+    {
+      "bat": 22,
+      "index": 109,
+      "title": "Mobilkommunikation und Geoinformation: Realitäten und Visionen im Schweizer Nationalpark, im BAFU und im EVD",
+      "abstract": "Seit über zehn Jahren werden beim Bund die Aktivitäten rund um Geoinformationen departementsübergreifend koordiniert. Ein Meilenstein in dieser Zeit war die Inkraftsetzung des Geoinformationsgesetzes GeoIG im Jahr 2007. Heute steht ein Fundus an Geoinformationen aus verschiedenen Ämtern für die Nutzung zur Verfügung, so z.B. in den Bereichen Landwirtschaft, Veterinärwesen, Umwelt, Naturschutz und in vielen weiteren Bereichen. Mit dem zunehmenden Einsatz mobiler Geräte ist die Verbindung der aktuellen Position dank GPS mit solchen Grundlagen- und Fachdaten naheliegend. Dies eröffnet Verwaltungen wie Unternehmen und Privatpersonen neue Möglichkeiten, sich zu informieren oder Prozesse im Sinne des eGovernment abzuwickeln. Einige solche bereits bestehende Lösungen werden vorgestellt, zudem wird eine Vorschau auf künftige Möglichkeiten gegeben. Tom Klingl und Hans Ulrich Wiedmer sind Vertreter im interdepartementalen Koordinationsgremium für Geoinformation des Bundes (GKG).",
+      "referenten": [
+        {
+          "name": "Dr. Thomas Klingl, Bundesamt für Umwelt BAFU",
+          "bio": "Dr. Thomas Klingl studierte Landschaftsökologie an der TU München und promovierte am Geographischen Institut der Univ. Bern. Er ist Leiter der Fachstelle Geo- und Umweltdatenmanagement beim Bundesamt für Umwelt.",
+          "company": "bafu",
+          "portrait": ""
+        },
+        {
+          "name": "Hans Ulrich Wiedmer, Eidgenössisches Volkswirtschaftsdepartement",
+          "bio": "Hans Ulrich Wiedmer studierte Informatik an der ETH Zürich. Er arbeitet seit 2003 in der Bundesinformatik. Als SOA-Architekt befasst er sich mit dem Management des SOA-Service-Portfolios und der Informations-Architektur.",
+          "company": "evd",
+          "portrait": ""
+        },
+        {
+          "name": "Dr. Ruedi Haller, Schweizer Nationalpark",
+          "bio": "Dr. Ruedi Haller studierte und promovierte am Geographischen Institut der Univ. Zürich. Er ist als Leiter Forschung und Geoinformation Mitglied der Geschäftsleitung des Schweizer Nationalparks.",
+          "company": "nationalpark",
+          "portrait": ""
+        }
+      ]
+    }
+  ]
+}
