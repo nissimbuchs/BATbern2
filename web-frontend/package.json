@@ -104,7 +104,7 @@
     "husky": "^8.0.3",
     "jsdom": "^23.0.0",
     "lint-staged": "^16.2.4",
-    "msw": "^2.11.6",
+    "msw": "^2.12.2",
     "openapi-typescript": "^7.10.1",
     "postcss": "^8.5.6",
     "prettier": "^3.6.2",
