@@ -61,7 +61,7 @@
     "@aws-crypto/client-node": "^4.2.1",
     "aws-cdk-lib": "^2.221.0",
     "constructs": "^10.3.0",
-    "js-yaml": "^4.1.0",
+    "js-yaml": "^4.1.1",
     "pg": "^8.16.3",
     "source-map-support": "^0.5.21"
   },
