@@ -1,8 +1,9 @@
 # Migration Readiness Assessment
 
-**Generated**: 2025-11-17
+**Generated**: 2025-11-17 (Updated: 2025-11-19)
 **Story**: 3.1.1 - Historical Data Inventory & Analysis
 **Author**: Dev Agent (James)
+**Company Data Update**: 2025-11-19 (Comprehensive company URL and logo collection)
 
 ## Executive Summary
 
@@ -12,8 +13,9 @@ The analysis of BATbern historical data from the legacy Angular application reve
 
 - **60 events** spanning from 2005 to present
 - **302 sessions/presentations** with comprehensive metadata
-- **269 unique speakers** from **143 companies**
+- **269 unique speakers** from **70 unique companies** (normalized from 143 variations)
 - **258 PDF documents** and **578 images** (596.9 MB total)
+- **Company database**: 42 complete companies (60% with logos + URLs), 53 with URLs (76%)
 - **0 critical issues**, 4 warnings, 5 informational items
 
 ### Migration Readiness Score: 8/10 ✅
@@ -29,7 +31,7 @@ The analysis of BATbern historical data from the legacy Angular application reve
 | **Events (BAT Sessions)** | 60 | 44 Abend-BAT, 14 Ganztag-BAT, 2 Other |
 | **Sessions/Presentations** | 302 | 232 with abstracts, 71 program brochures |
 | **Unique Speakers** | 269 | 267 with bios, 223 with photos |
-| **Unique Companies** | 143 | Strong B2B/enterprise representation |
+| **Unique Companies** | 70 | Normalized from 143 variations, 42 complete (60%), 53 with URLs (76%) |
 | **PDF/PPTX Files** | 258 | ~400 MB total |
 | **Image Files** | 578 | ~197 MB (portraits, logos, event photos) |
 | **Total Storage** | 596.9 MB | Manageable for S3 migration |
@@ -43,6 +45,7 @@ The analysis of BATbern historical data from the legacy Angular application reve
 3. **Event Metadata**: All 60 events have topic, date, and type information
 4. **File Integrity**: Most PDF and image files exist and are accessible
 5. **Schema Consistency**: JSON structure is well-defined and predictable
+6. **Company Database**: Comprehensive company data collection with 76% URL coverage and 60% complete (logo + URL)
 
 ### Areas Requiring Attention ⚠️
 
@@ -60,7 +63,7 @@ None identified. Migration can proceed without blocking issues.
 1. **PDF files not found**: Some session PDFs missing from archiv directory
 2. **Portrait images missing**: Speaker portraits referenced but not on disk
 3. **Sessions without speakers**: A few presentations lack referenten array
-4. **Company name variations**: Same company with different identifiers
+4. **Company name variations**: ✅ RESOLVED - Normalized 143 variations to 70 unique companies with systematic data collection
 
 ### Informational (5)
 1. **Speaker entries without bios**: Historical speakers may lack biographies
@@ -95,7 +98,11 @@ Common partial-pass reasons:
 
 ### Phase 1: Data Preparation (Week 1)
 1. **Locate Missing Files**: Find PDFs and images not in expected paths
-2. **Normalize Company Names**: Create mapping table for variations
+2. **✅ Company Normalization**: COMPLETED - 143 variations normalized to 70 unique companies
+   - Comprehensive company JSON database created (`companies.json`)
+   - 42 companies complete with logos and URLs (60%)
+   - 53 companies with URLs (76%)
+   - Systematic web research and logo URL collection completed
 3. **Standardize Dates**: Convert all dates to ISO 8601 format
 4. **Placeholder Images**: Create default speaker portrait for gaps
 
@@ -127,11 +134,20 @@ Common partial-pass reasons:
 
 ## Supporting Documentation
 
+**Primary Analysis Reports:**
 - [Data Source Catalog](./data-source-catalog.md)
 - [JSON Schema Documentation](./json-schema-documentation.md)
 - [Volume Metrics Report](./volume-metrics.md)
 - [Data Quality Report](./data-quality-report.md)
 - [Sample Validation Report](./sample-validation-report.md)
+
+**Company Data Collection (NEW - 2025-11-19):**
+- [Company Data Collection Report](./COLLECTION-REPORT.md) - Systematic web research and logo collection
+- [Company Completeness Report](./company-completeness-report.md) - Data quality and coverage analysis
+- [companies.json](./companies.json) - Comprehensive company database (70 companies, 21KB)
+  - **Metadata**: 42 complete (60%), 53 with URLs (76%), 25 with local logos
+  - **Coverage**: Top 5 companies (100% complete), Priority companies (100% complete)
+  - **Quality Improvements**: +96% URL coverage increase, duplicate detection, acquisition tracking
 
 ## Conclusion
 
@@ -142,7 +158,7 @@ The BATbern historical data migration is **feasible and low-risk**. The legacy d
 3. ✅ Predictable JSON schema
 4. ✅ Manageable data volume
 5. ⚠️ Minor file reference issues to resolve
-6. ⚠️ Company name normalization needed
+6. ✅ Company name normalization COMPLETED - 70 unique companies identified with comprehensive metadata
 
 **Final Recommendation**: **APPROVED FOR MIGRATION**
 
