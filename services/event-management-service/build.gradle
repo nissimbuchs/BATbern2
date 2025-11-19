@@ -1,10 +1,10 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.5.6'
+    id 'org.springframework.boot' version '3.5.7'
     id 'io.spring.dependency-management' version '1.1.6'
     id 'jacoco'
     id 'checkstyle'
-    id 'org.flywaydb.flyway' version '10.10.0'
+    id 'org.flywaydb.flyway' version '11.15.0'
     id 'org.openapi.generator' version '7.2.0'
     id 'com.gorylenko.gradle-git-properties' version '2.4.1'
 }
@@ -33,8 +33,8 @@ dependencies {
 
     // Database
     implementation 'org.postgresql:postgresql:42.7.4'
-    implementation 'org.flywaydb:flyway-core:10.21.0'
-    implementation 'org.flywaydb:flyway-database-postgresql:10.21.0'
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-database-postgresql'
 
     // Caching (Caffeine in-memory cache)
     implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
@@ -43,7 +43,7 @@ dependencies {
     implementation project(':shared-kernel')
 
     // AWS SDK for EventBridge and S3 (for logo upload service)
-    implementation platform('software.amazon.awssdk:bom:2.29.45')
+    implementation platform('software.amazon.awssdk:bom:2.38.2')
     implementation 'software.amazon.awssdk:eventbridge'
     implementation 'software.amazon.awssdk:s3'
     implementation 'software.amazon.awssdk:url-connection-client'
