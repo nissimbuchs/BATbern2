@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -122,6 +123,7 @@ class AdditionalEndpointsIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @WithAnonymousUser
     @DisplayName("GET /api/v1/companies/search - should return 200 when unauthenticated (public endpoint for registration autocomplete)")
     void shouldReturn200_whenSearchingUnauthenticated() throws Exception {
         // Story 4.1.5: Company search is now public for registration autocomplete

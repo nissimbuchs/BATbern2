@@ -341,7 +341,7 @@ public class UserController {
         log.info("Requesting presigned URL for profile picture upload: {}", request.getFileName());
 
         // Get current user from security context (Story 1.16.2: username-based lookup)
-        String currentUsername = securityContextHelper.getCurrentUserId();
+        String currentUsername = securityContextHelper.getCurrentUsername();
         User user = userRepository.findByUsername(currentUsername)
             .orElseThrow(() -> new ch.batbern.companyuser.exception.UserNotFoundException(currentUsername));
 
@@ -368,7 +368,7 @@ public class UserController {
         log.info("Confirming profile picture upload: fileId={}", request.getFileId());
 
         // Get current user from security context (Story 1.16.2: username-based lookup)
-        String currentUsername = securityContextHelper.getCurrentUserId();
+        String currentUsername = securityContextHelper.getCurrentUsername();
         User user = userRepository.findByUsername(currentUsername)
             .orElseThrow(() -> new ch.batbern.companyuser.exception.UserNotFoundException(currentUsername));
 
@@ -388,6 +388,102 @@ public class UserController {
             .build();
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Admin endpoint: Request presigned URL for profile picture upload for a specific user
+     * POST /api/v1/users/{username}/picture/presigned-url
+     *
+     * Allows organizers to upload profile pictures for other users
+     *
+     * @param username Target user's username
+     * @param request Upload request with file metadata
+     * @return Presigned upload URL with metadata
+     */
+    @PostMapping("/{username}/picture/presigned-url")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    @Timed(value = "users.profilePicture.admin.requestPresignedUrl", description = "Time to generate presigned URL for user profile picture (admin)", percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<PresignedUploadUrl> requestProfilePictureUploadUrlForUser(
+            @PathVariable String username,
+            @Valid @RequestBody ProfilePictureUploadRequest request) {
+        log.info("Admin requesting presigned URL for profile picture upload for user: {}, file: {}", username, request.getFileName());
+
+        User user = userRepository.findByUsername(username)
+            .orElseThrow(() -> new ch.batbern.companyuser.exception.UserNotFoundException(username));
+
+        PresignedUploadUrl response = profilePictureService.generateProfilePictureUploadUrl(
+            user.getId(),  // UUID for internal use
+            user.getUsername(),  // username for S3 key
+            request.getFileName(),
+            request.getFileSize()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Admin endpoint: Confirm profile picture upload completion for a specific user
+     * POST /api/v1/users/{username}/picture/confirm
+     *
+     * Allows organizers to confirm profile picture uploads for other users
+     *
+     * @param username Target user's username
+     * @param request Confirmation request with file ID
+     * @return CloudFront URL for the uploaded picture
+     */
+    @PostMapping("/{username}/picture/confirm")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    @Timed(value = "users.profilePicture.admin.confirm", description = "Time to confirm profile picture upload for user (admin)", percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<ProfilePictureUploadConfirmResponse> confirmProfilePictureUploadForUser(
+            @PathVariable String username,
+            @Valid @RequestBody ProfilePictureUploadConfirmRequest request) {
+        log.info("Admin confirming profile picture upload for user: {}, fileId={}", username, request.getFileId());
+
+        User user = userRepository.findByUsername(username)
+            .orElseThrow(() -> new ch.batbern.companyuser.exception.UserNotFoundException(username));
+
+        profilePictureService.confirmProfilePictureUpload(
+            user.getId(),  // UUID for internal use
+            user.getUsername(),  // username for S3 key
+            request.getFileId(),
+            request.getFileExtension()
+        );
+
+        // Fetch updated user to get CloudFront URL
+        UserResponse updatedUser = userService.getUserByUsername(username);
+
+        ProfilePictureUploadConfirmResponse response = ProfilePictureUploadConfirmResponse.builder()
+            .profilePictureUrl(updatedUser.getProfilePictureUrl() != null ?
+                updatedUser.getProfilePictureUrl().toString() : null)
+            .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Admin endpoint: Remove profile picture for a specific user
+     * DELETE /api/v1/users/{username}/picture
+     *
+     * Allows organizers to remove profile pictures for other users
+     *
+     * @param username Target user's username
+     * @return No content on success
+     */
+    @DeleteMapping("/{username}/picture")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    @Timed(value = "users.profilePicture.admin.remove", description = "Time to remove profile picture for user (admin)", percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<Void> removeProfilePictureForUser(@PathVariable String username) {
+        log.info("Admin removing profile picture for user: {}", username);
+
+        User user = userRepository.findByUsername(username)
+            .orElseThrow(() -> new ch.batbern.companyuser.exception.UserNotFoundException(username));
+
+        // Clear profile picture fields
+        user.setProfilePictureUrl(null);
+        user.setProfilePictureS3Key(null);
+        userRepository.save(user);
+
+        return ResponseEntity.noContent().build();
     }
 
     /**

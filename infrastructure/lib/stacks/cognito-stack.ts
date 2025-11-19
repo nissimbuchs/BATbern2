@@ -131,6 +131,7 @@ export class CognitoStack extends cdk.Stack {
         nodeModules: ['@aws-crypto/client-node'], // Bundle this module with dependencies
         minify: true,
         sourceMap: false,
+        forceDockerBundling: false, // Prefer local esbuild over Docker for faster builds on ARM64
       },
     });
 

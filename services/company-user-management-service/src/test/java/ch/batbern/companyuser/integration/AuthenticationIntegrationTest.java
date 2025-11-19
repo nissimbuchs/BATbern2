@@ -190,13 +190,15 @@ class AuthenticationIntegrationTest extends AbstractIntegrationTest {
     }
 
     /**
-     * Test 10.9: should_denySearch_when_notAuthenticated
+     * Test 10.9: should_allowSearch_when_notAuthenticated
+     * Story 4.1.5: Company search is now public for registration autocomplete
      */
     @Test
-    void should_denySearch_when_notAuthenticated() throws Exception {
+    void should_allowSearch_when_notAuthenticated() throws Exception {
         // When/Then
+        // Story 4.1.5: Company search is now public for registration autocomplete
         mockMvc.perform(get("/api/v1/companies/search")
                 .param("query", "test"))
-            .andExpect(status().isUnauthorized());
+            .andExpect(status().isOk());
     }
 }
