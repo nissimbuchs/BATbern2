@@ -171,7 +171,7 @@ const UserTable: React.FC<UserTableProps> = ({ users, onRowClick, onAction }) =>
             >
               <TableCell>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Avatar sx={{ width: 32, height: 32 }}>
+                  <Avatar src={user.profilePictureUrl || undefined} sx={{ width: 32, height: 32 }}>
                     {user.firstName[0]}
                     {user.lastName[0]}
                   </Avatar>

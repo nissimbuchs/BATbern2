@@ -1,16 +1,21 @@
 
 ✨ New Features:
+* Epic 3 Historical Data Migration
+- Started on data quality of topic.json and session.json. Now also old sessions have abstract and correct speaker info
+
 * Epic 4 Public website
+- 4.1.3 public website now shows speakers with profile picture and bio
 - public website infinite marquee now shows partners on second row
 - 4.1.5 implemented for public registration workflow with eMail confirmation
-- 4.1.x in progress. Used shadcn and unicorn-studio for attractive look and feel.
-- updated https://batbern.ch with a "coming soon..." teaser.
+- 4.1.x in progress. Used shadcn and unicorn-studio for attractive look and feel
+- updated https://batbern.ch with a "coming soon..." teaser
 
 * Epic 2 on crud for main entities is in progress
+- 2.6 user can now edit his profile, and ORGANIZER can now edit profile of any user
 - 2.7/2.8 implemented partner coordination crud
 - 1.14/2.5.1 Company management fully working
 - 1.14-2/2.5.2 User management interface for organizers now fully working
-- 1.15.1a/2.5.3 First simple event management works. Organizer dashboard now shows current events.
+- 1.15.1a/2.5.3 First simple event management works. Organizer dashboard now shows current events
 
 * Epic 1 now fully implemented.
 - 1.2 Login/Password reset/Create account with eMail verification fully working
@@ -18,10 +23,8 @@
 - 1.6 Local dev with make dev-native-up/down
 
 🚀 Next steps:
-- Update public website to show current partners in the marquise.
+- Epic-3: Migrate all old event data
 - Update event detail/edit to show/manage registrations
-- Epic-2/3: I will continue on frontend for event-management and then move to migrate all old event data
-- Epic-4/3: Other option: start creating the public website and then migrate
 
 🐛 Bug Fixes:
 - still uuid in event interfaces. now fixed with meaningful ids (username)

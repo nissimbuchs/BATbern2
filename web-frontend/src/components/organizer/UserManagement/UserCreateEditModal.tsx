@@ -22,11 +22,21 @@ import {
   Typography,
   IconButton,
   Alert,
+  Avatar,
+  Badge,
+  Tooltip,
+  CircularProgress,
 } from '@mui/material';
-import { Close as CloseIcon } from '@mui/icons-material';
+import {
+  Close as CloseIcon,
+  PhotoCamera as PhotoCameraIcon,
+  Delete as DeleteIcon,
+} from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useCreateUser, useUpdateUser } from '../../../hooks/useUserManagement';
 import { CompanyAutocomplete } from '../PartnerManagement/CompanyAutocomplete';
+import { uploadProfilePictureForUser } from '@/services/api/userAccountApi';
+import apiClient from '@/services/api/apiClient';
 import type { Role, User } from '../../../types/user.types';
 import type { components } from '@/types/generated/company-api.types';
 
@@ -80,6 +90,8 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
 
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [profilePictureUrl, setProfilePictureUrl] = useState<string | undefined>(undefined);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   // Initialize form when modal opens or user changes
   useEffect(() => {
@@ -105,9 +117,11 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
             : null,
           initialRoles: (user.roles as Role[]) || [],
         });
+        setProfilePictureUrl(user.profilePictureUrl || undefined);
       } else {
         // Create mode - reset form
         setFormData(initialFormData);
+        setProfilePictureUrl(undefined);
       }
       setErrors({});
     }
@@ -180,6 +194,37 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
         ...prev,
         company: undefined,
       }));
+    }
+  };
+
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !isEditMode || !user) return;
+
+    setIsUploadingPhoto(true);
+    try {
+      // Use admin endpoint to upload for the specific user (user.id is the username)
+      const newUrl = await uploadProfilePictureForUser(user.id, file);
+      setProfilePictureUrl(newUrl);
+    } catch (error) {
+      console.error('Photo upload failed:', error);
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
+
+  const handlePhotoRemove = async () => {
+    if (!isEditMode || !user) return;
+
+    setIsUploadingPhoto(true);
+    try {
+      // Use admin endpoint to remove for the specific user
+      await apiClient.delete(`/users/${user.id}/picture`);
+      setProfilePictureUrl(undefined);
+    } catch (error) {
+      console.error('Photo removal failed:', error);
+    } finally {
+      setIsUploadingPhoto(false);
     }
   };
 
@@ -268,28 +313,108 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
 
       <DialogContent dividers>
         <Box component="form" noValidate sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {/* First Name */}
-          <TextField
-            label={t('modal.createUser.firstName')}
-            value={formData.firstName}
-            onChange={handleInputChange('firstName')}
-            error={!!errors.firstName}
-            helperText={errors.firstName}
-            required
-            fullWidth
-            autoFocus
-          />
+          {/* Profile Picture and Name Fields */}
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+            {/* Profile Picture (only in edit mode) */}
+            {isEditMode && (
+              <Box sx={{ position: 'relative', flexShrink: 0 }}>
+                <Badge
+                  overlap="circular"
+                  anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                  badgeContent={
+                    <>
+                      <input
+                        accept="image/jpeg,image/png"
+                        style={{ display: 'none' }}
+                        id="modal-profile-photo-upload"
+                        type="file"
+                        onChange={handlePhotoUpload}
+                        disabled={isUploadingPhoto}
+                      />
+                      <label htmlFor="modal-profile-photo-upload">
+                        <Tooltip title={t('modal.editUser.uploadPhoto', 'Upload Photo')}>
+                          <IconButton
+                            aria-label="Upload profile photo"
+                            component="span"
+                            size="small"
+                            disabled={isUploadingPhoto}
+                            sx={{
+                              bgcolor: 'primary.main',
+                              color: 'white',
+                              '&:hover': { bgcolor: 'primary.dark' },
+                              '&:disabled': { bgcolor: 'grey.400' },
+                            }}
+                          >
+                            {isUploadingPhoto ? (
+                              <CircularProgress size={16} color="inherit" />
+                            ) : (
+                              <PhotoCameraIcon fontSize="small" />
+                            )}
+                          </IconButton>
+                        </Tooltip>
+                      </label>
+                    </>
+                  }
+                >
+                  <Avatar
+                    src={profilePictureUrl}
+                    sx={{ width: 80, height: 80, fontSize: '1.5rem' }}
+                  >
+                    {formData.firstName[0] || ''}
+                    {formData.lastName[0] || ''}
+                  </Avatar>
+                </Badge>
 
-          {/* Last Name */}
-          <TextField
-            label={t('modal.createUser.lastName')}
-            value={formData.lastName}
-            onChange={handleInputChange('lastName')}
-            error={!!errors.lastName}
-            helperText={errors.lastName}
-            required
-            fullWidth
-          />
+                {profilePictureUrl && (
+                  <Tooltip title={t('modal.editUser.removePhoto', 'Remove Photo')}>
+                    <IconButton
+                      aria-label="Remove profile photo"
+                      size="small"
+                      onClick={handlePhotoRemove}
+                      disabled={isUploadingPhoto}
+                      sx={{
+                        position: 'absolute',
+                        top: -8,
+                        right: -8,
+                        bgcolor: 'error.main',
+                        color: 'white',
+                        '&:hover': { bgcolor: 'error.dark' },
+                        '&:disabled': { bgcolor: 'grey.400' },
+                      }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                )}
+              </Box>
+            )}
+
+            {/* Name Fields */}
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {/* First Name */}
+              <TextField
+                label={t('modal.createUser.firstName')}
+                value={formData.firstName}
+                onChange={handleInputChange('firstName')}
+                error={!!errors.firstName}
+                helperText={errors.firstName}
+                required
+                fullWidth
+                autoFocus
+              />
+
+              {/* Last Name */}
+              <TextField
+                label={t('modal.createUser.lastName')}
+                value={formData.lastName}
+                onChange={handleInputChange('lastName')}
+                error={!!errors.lastName}
+                helperText={errors.lastName}
+                required
+                fullWidth
+              />
+            </Box>
+          </Box>
 
           {/* Email (only in create mode) */}
           {!isEditMode && (

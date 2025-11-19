@@ -62,7 +62,6 @@ aws:
   region: ${AWS_REGION:eu-central-1}
   s3:
     bucket-name: ${S3_CONTENT_BUCKET_NAME:batbern-content-staging}
-    profile-pictures-bucket: ${S3_PROFILE_PICTURES_BUCKET_NAME:batbern-profile-pictures-staging}
     presigned-url-expiration-minutes: 15
   cloudfront:
     domain: ${CLOUDFRONT_DOMAIN:https://cdn.batbern.ch}
@@ -234,7 +233,6 @@ spring:
 aws:
   s3:
     bucket-name: ${AWS_S3_BUCKET_NAME:batbern-development-company-logos}
-    profile-pictures-bucket: ${S3_PROFILE_PICTURES_BUCKET_NAME:batbern-development-profile-pictures}
   cloudfront:
     domain: ${CLOUDFRONT_DOMAIN:http://localhost:8450}
 

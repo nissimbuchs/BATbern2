@@ -15,13 +15,13 @@ params:query {
   sort: -date
 }
 
-auth:bearer {
-  token: {{authToken}}
-}
-
 headers {
   X-Correlation-ID: {{$guid}}
   Accept: application/json
+}
+
+auth:bearer {
+  token: {{authToken}}
 }
 
 assert {

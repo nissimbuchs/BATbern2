@@ -44,16 +44,17 @@ public class UserService {
 
     /**
      * Get current authenticated user
-     * Story 1.16.2: SecurityContext returns Cognito user ID (sub claim from JWT)
+     * Story 1.16.2: SecurityContext returns username (custom:username claim from JWT)
+     * ADR-003: Use username for user identification, not UUID
      * AC1: Current user retrieval
      * AC14: Resource expansion support
      */
     @Transactional(readOnly = true)
     public UserResponse getCurrentUser() {
         log.debug("Fetching current authenticated user");
-        String cognitoUserId = securityContext.getCurrentUserId();  // Returns Cognito user ID (sub claim from JWT)
-        User user = userRepository.findByCognitoUserId(cognitoUserId)
-                .orElseThrow(() -> new UserNotFoundException(cognitoUserId));
+        String username = securityContext.getCurrentUsername();  // Returns username (custom:username claim from JWT)
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException(username));
         return responseMapper.mapToResponse(user);
     }
 
@@ -72,15 +73,16 @@ public class UserService {
 
     /**
      * Update current authenticated user
-     * Story 1.16.2: Uses Cognito user ID from SecurityContext for lookup
+     * Story 1.16.2: Uses username from SecurityContext for lookup
+     * ADR-003: Use username for user identification, not UUID
      * AC2: Cognito sync on update
      */
     public UserResponse updateCurrentUser(UpdateUserRequest request) {
         log.info("Updating current user profile");
-        String cognitoUserId = securityContext.getCurrentUserId();  // Returns Cognito user ID (sub claim from JWT)
+        String username = securityContext.getCurrentUsername();  // Returns username (custom:username claim from JWT)
 
-        User user = userRepository.findByCognitoUserId(cognitoUserId)
-                .orElseThrow(() -> new UserNotFoundException(cognitoUserId));
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException(username));
 
         // Update fields
         if (request.getFirstName() != null) {
@@ -94,6 +96,9 @@ public class UserService {
         }
         if (request.getBio() != null) {
             user.setBio(request.getBio());
+        }
+        if (request.getCompanyId() != null) {
+            user.setCompanyId(request.getCompanyId());
         }
 
         User updatedUser = userRepository.save(user);
@@ -112,6 +117,7 @@ public class UserService {
         if (request.getLastName() != null) updatedFields.put("lastName", request.getLastName());
         if (request.getEmail() != null) updatedFields.put("email", request.getEmail());
         if (request.getBio() != null) updatedFields.put("bio", request.getBio());
+        if (request.getCompanyId() != null) updatedFields.put("companyId", request.getCompanyId());
 
         UserUpdatedEvent event = new UserUpdatedEvent(
             updatedUser.getUsername(),  // aggregateId = username
@@ -329,7 +335,7 @@ public class UserService {
 
         // Publish domain event (Story 1.16.2: String IDs)
         // Note: For delete, we need to get the current user performing the action
-        String deletedByUsername = getUsernameFromCurrentContext();
+        String deletedByUsername = getAuditUsername();
         UserDeletedEvent event = new UserDeletedEvent(
             user.getUsername(),  // aggregateId = username
             user.getEmail(),
@@ -418,7 +424,7 @@ public class UserService {
         User savedUser = userRepository.save(user);
 
         // Publish domain event (Story 1.16.2: String IDs)
-        String createdByUsername = getUsernameFromCurrentContext();
+        String createdByUsername = getAuditUsername();
         UserCreatedEvent event = new UserCreatedEvent(
             savedUser.getUsername(),  // aggregateId = username
             savedUser.getEmail(),
@@ -462,7 +468,7 @@ public class UserService {
 
         // Publish domain event (Story 1.16.2: String IDs)
         // Note: For create, get the current user performing the action
-        String createdByUsername = getUsernameFromCurrentContext();
+        String createdByUsername = getAuditUsername();
         UserCreatedEvent event = new UserCreatedEvent(
             savedUser.getUsername(),  // aggregateId = username
             savedUser.getEmail(),
@@ -553,16 +559,13 @@ public class UserService {
     }
 
     /**
-     * Helper method to get username from current security context
-     * Looks up user by Cognito User ID and returns their username
+     * Helper method to get username from current security context for audit purposes
+     * Uses SecurityContextHelper which reads custom:username claim from JWT
      * Story 4.1.5: Returns "anonymous" for unauthenticated requests (anonymous registration)
      */
-    private String getUsernameFromCurrentContext() {
+    private String getAuditUsername() {
         try {
-            String cognitoUserId = securityContext.getCurrentUserId();
-            return userRepository.findByCognitoUserId(cognitoUserId)
-                    .map(User::getUsername)
-                    .orElse("system");  // Fallback for system operations
+            return securityContext.getCurrentUsername();
         } catch (SecurityException e) {
             // Story 4.1.5: Anonymous requests (no authenticated user)
             log.debug("No authenticated user in context, using 'anonymous' for audit");
