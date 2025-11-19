@@ -2717,7 +2717,7 @@
         "name": "Matthias Kämpf, Insel Gruppe",
         "bio": "Matthias Kämpf hat an der EPF Lausanne ein Master-Studium in Mathematik absolviert und ist Leiter ICT/Forschung und Gesamtprojektleiter Clinical Data Warehouse.",
         "company": "insel",
-        "portrait": "matthias.kämpf.jpg"
+        "portrait": "matthias.kaempf.jpg"
       },
       {
         "name": "Tomas Dikk, Zühlke Engineering",
@@ -2889,7 +2889,7 @@
   },
   {
     "bat": 43,
-    "pdf": "BATbern43_Moderation.pdf",
+    "pdf": "01_BATbern43_moderation.pdf",
     "authoren": "Daniel Kühni",
     "title": "Moderation"
   },
