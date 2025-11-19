@@ -30,8 +30,12 @@ public class UserDeletedEvent extends DomainEvent<String> {
 
     public UserDeletedEvent(String username, String email, String reason, String deletedBy) {
         super(username, "UserDeletedEvent", deletedBy);
-        if (username == null) throw new NullPointerException("username is marked non-null but is null");
-        if (email == null) throw new NullPointerException("email is marked non-null but is null");
+        if (username == null) {
+            throw new NullPointerException("username is marked non-null but is null");
+        }
+        if (email == null) {
+            throw new NullPointerException("email is marked non-null but is null");
+        }
 
         this.username = username;
         this.email = email;

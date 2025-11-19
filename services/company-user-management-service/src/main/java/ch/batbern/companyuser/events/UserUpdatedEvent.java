@@ -33,8 +33,12 @@ public class UserUpdatedEvent extends DomainEvent<String> {
     public UserUpdatedEvent(String username, Map<String, Object> updatedFields,
                            Map<String, Object> previousValues, String updatedBy) {
         super(username, "UserUpdatedEvent", updatedBy);
-        if (username == null) throw new NullPointerException("username is marked non-null but is null");
-        if (updatedFields == null) throw new NullPointerException("updatedFields is marked non-null but is null");
+        if (username == null) {
+            throw new NullPointerException("username is marked non-null but is null");
+        }
+        if (updatedFields == null) {
+            throw new NullPointerException("updatedFields is marked non-null but is null");
+        }
 
         this.username = username;
         this.updatedFields = updatedFields;

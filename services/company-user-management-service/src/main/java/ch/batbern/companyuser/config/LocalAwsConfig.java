@@ -10,12 +10,13 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import software.amazon.awssdk.services.cloudwatch.CloudWatchClient;
-import software.amazon.awssdk.services.cloudwatch.model.*;
+import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataRequest;
+import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataResponse;
 import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient;
-import software.amazon.awssdk.services.eventbridge.model.*;
+import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
+import software.amazon.awssdk.services.eventbridge.model.PutEventsResponse;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-import software.amazon.awssdk.services.s3.presigner.model.*;
 
 import java.util.concurrent.CompletableFuture;
 

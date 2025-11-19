@@ -19,7 +19,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * REST API controller for generic file upload operations
@@ -58,21 +64,21 @@ public class LogoController {
     @PostMapping("/presigned-url")
     @Operation(
             summary = "Generate presigned URL for file upload",
-            description = "Creates a presigned S3 URL for uploading a logo. " +
-                    "The URL expires after 15 minutes. Supports PNG, JPEG, and SVG files up to 5MB. " +
-                    "After uploading to S3, call the confirm endpoint to complete the upload. " +
-                    "No entity association required - works standalone."
+            description = "Creates a presigned S3 URL for uploading a logo. "
+                    + "The URL expires after 15 minutes. Supports PNG, JPEG, and SVG files up to 5MB. "
+                    + "After uploading to S3, call the confirm endpoint to complete the upload. "
+                    + "No entity association required - works standalone."
     )
     @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Presigned URL generated successfully",
-                    content = @Content(schema = @Schema(implementation = PresignedUploadUrl.class))
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Invalid file type or size exceeds limit (5MB)"
-            )
+        @ApiResponse(
+            responseCode = "200",
+            description = "Presigned URL generated successfully",
+            content = @Content(schema = @Schema(implementation = PresignedUploadUrl.class))
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid file type or size exceeds limit (5MB)"
+        )
     })
     public ResponseEntity<PresignedUploadUrl> requestUploadUrl(
             @Valid @RequestBody LogoUploadRequest request) {
@@ -100,23 +106,23 @@ public class LogoController {
     @PostMapping("/{uploadId}/confirm")
     @Operation(
             summary = "Confirm file upload completion",
-            description = "Confirms that the file has been successfully uploaded to S3. " +
-                    "Updates the logo status from PENDING to CONFIRMED. " +
-                    "Logo will expire after 7 days if not associated with an entity."
+            description = "Confirms that the file has been successfully uploaded to S3. "
+                    + "Updates the logo status from PENDING to CONFIRMED. "
+                    + "Logo will expire after 7 days if not associated with an entity."
     )
     @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Upload confirmed successfully"
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Upload ID not found"
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Invalid upload state (not PENDING)"
-            )
+        @ApiResponse(
+            responseCode = "200",
+            description = "Upload confirmed successfully"
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Upload ID not found"
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid upload state (not PENDING)"
+        )
     })
     public ResponseEntity<Void> confirmUpload(
             @Parameter(description = "Upload ID from presigned URL response", required = true)
@@ -143,27 +149,27 @@ public class LogoController {
     @SecurityRequirement(name = "bearerAuth")
     @Operation(
             summary = "Delete unused logo",
-            description = "Deletes a logo that has not been associated with an entity. " +
-                    "Can only delete logos in PENDING or CONFIRMED status. " +
-                    "ASSOCIATED logos cannot be deleted directly."
+            description = "Deletes a logo that has not been associated with an entity. "
+                    + "Can only delete logos in PENDING or CONFIRMED status. "
+                    + "ASSOCIATED logos cannot be deleted directly."
     )
     @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "204",
-                    description = "Logo deleted successfully"
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Unauthorized - missing or invalid JWT token"
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Upload ID not found"
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Cannot delete ASSOCIATED logo"
-            )
+        @ApiResponse(
+            responseCode = "204",
+            description = "Logo deleted successfully"
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - missing or invalid JWT token"
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Upload ID not found"
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Cannot delete ASSOCIATED logo"
+        )
     })
     public ResponseEntity<Void> deleteUnusedLogo(
             @Parameter(description = "Upload ID to delete", required = true)
@@ -187,24 +193,25 @@ public class LogoController {
     @SecurityRequirement(name = "bearerAuth")
     @Operation(
             summary = "Get cleanup statistics",
-            description = "Returns statistics about logo uploads in various states. " +
-                    "Used for monitoring and identifying orphaned uploads. " +
-                    "Requires ORGANIZER role."
+            description = "Returns statistics about logo uploads in various states. "
+                    + "Used for monitoring and identifying orphaned uploads. "
+                    + "Requires ORGANIZER role."
     )
     @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Statistics retrieved successfully",
-                    content = @Content(schema = @Schema(implementation = LogoCleanupService.CleanupStatistics.class))
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Unauthorized - missing or invalid JWT token"
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "Forbidden - requires ORGANIZER role"
-            )
+        @ApiResponse(
+            responseCode = "200",
+            description = "Statistics retrieved successfully",
+            content = @Content(
+                schema = @Schema(implementation = LogoCleanupService.CleanupStatistics.class))
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - missing or invalid JWT token"
+        ),
+        @ApiResponse(
+            responseCode = "403",
+            description = "Forbidden - requires ORGANIZER role"
+        )
     })
     public ResponseEntity<LogoCleanupService.CleanupStatistics> getCleanupStatistics() {
         log.debug("Fetching cleanup statistics");
@@ -226,24 +233,24 @@ public class LogoController {
     @SecurityRequirement(name = "bearerAuth")
     @Operation(
             summary = "Manually trigger cleanup job",
-            description = "Manually triggers the cleanup job to remove orphaned uploads. " +
-                    "Normally runs automatically at 2 AM daily. " +
-                    "Use this endpoint for testing or emergency cleanup. " +
-                    "Requires ORGANIZER role."
+            description = "Manually triggers the cleanup job to remove orphaned uploads. "
+                    + "Normally runs automatically at 2 AM daily. "
+                    + "Use this endpoint for testing or emergency cleanup. "
+                    + "Requires ORGANIZER role."
     )
     @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "202",
-                    description = "Cleanup job triggered successfully"
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Unauthorized - missing or invalid JWT token"
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "Forbidden - requires ORGANIZER role"
-            )
+        @ApiResponse(
+            responseCode = "202",
+            description = "Cleanup job triggered successfully"
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - missing or invalid JWT token"
+        ),
+        @ApiResponse(
+            responseCode = "403",
+            description = "Forbidden - requires ORGANIZER role"
+        )
     })
     public ResponseEntity<Void> triggerManualCleanup() {
         log.warn("Manual cleanup triggered by admin");
