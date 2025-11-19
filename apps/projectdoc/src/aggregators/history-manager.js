@@ -19,10 +19,13 @@ export class HistoryManager {
     try {
       if (await fs.pathExists(this.historyFile)) {
         const data = await fs.readJson(this.historyFile);
+        console.log(`  ℹ Loaded history from: ${this.historyFile} (${data.totalEntries || 0} entries)`);
         return data.history || [];
+      } else {
+        console.log(`  ℹ No existing history found at: ${this.historyFile}`);
       }
     } catch (error) {
-      console.warn(`Failed to load history from ${this.historyFile}:`, error.message);
+      console.warn(`  ⚠️  Failed to load history from ${this.historyFile}:`, error.message);
     }
 
     return [];
@@ -50,8 +53,6 @@ export class HistoryManager {
 
     // Save back to file
     await this.saveHistory(history);
-
-    console.log(`Saved report to history (${history.length} entries)`);
   }
 
   /**
@@ -99,6 +100,7 @@ export class HistoryManager {
     };
 
     await fs.writeJson(this.historyFile, data, { spaces: 2 });
+    console.log(`  ✓ Saved history to: ${this.historyFile} (${history.length} entries)`);
   }
 
   /**

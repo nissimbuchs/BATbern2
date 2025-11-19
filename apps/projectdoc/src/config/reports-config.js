@@ -1,6 +1,12 @@
 /**
  * Configuration for test and quality reports aggregation
  */
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 export default {
   // Base directory for report scanning (defaults to project root)
   baseDir: process.cwd(),
@@ -122,7 +128,10 @@ export default {
   // Historical data configuration
   history: {
     enabled: true,
-    historyFile: 'dist/reports/data/history.json',
+    // Shared history location: environment variable override > shared user location > local fallback
+    historyFile: process.env.BATBERN_HISTORY_FILE
+      || path.join(process.env.HOME || process.env.USERPROFILE, '.batbern', 'projectdoc-history.json')
+      || 'dist/reports/data/history.json',
     maxHistoryEntries: 50,      // Keep last 50 builds
     trendDataPoints: 8          // Number of days to show in trend charts (one build per day)
   },
