@@ -60,7 +60,7 @@ class ReportsBuilder {
       if (this.config.history.enabled) {
         console.log('\nStep 2: Saving to history...');
         const historyManager = new HistoryManager({
-          historyFile: path.join(this.outputDir, 'data', 'history.json'),
+          historyFile: this.config.history.historyFile,
           maxHistoryEntries: this.config.history.maxHistoryEntries
         });
 
@@ -255,7 +255,7 @@ class ReportsBuilder {
     // Get module trend from history
     if (this.config.history.enabled) {
       const historyManager = new HistoryManager({
-        historyFile: path.join(this.outputDir, 'data', 'history.json'),
+        historyFile: this.config.history.historyFile,
         maxHistoryEntries: this.config.history.maxHistoryEntries
       });
       details.moduleTrend = await historyManager.getModuleTrend(moduleName, 20);
