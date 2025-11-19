@@ -158,19 +158,21 @@ const PartnerNotesTab: React.FC<PartnerNotesTabProps> = ({ companyName }) => {
             <CardContent>
               <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={2}>
                 <Typography variant="h6" fontWeight="medium">
-                  {(note as any).title || 'Note'}
+                  {'title' in note ? (note as Note).title : 'Note'}
                 </Typography>
                 <Stack direction="row" spacing={1}>
                   <IconButton
                     size="small"
-                    onClick={() => handleEditNote(note as any)}
+                    onClick={() => handleEditNote(note as Note)}
                     aria-label="Edit"
                   >
                     <Edit fontSize="small" />
                   </IconButton>
                   <IconButton
                     size="small"
-                    onClick={() => handleDeleteNote(note.id, (note as any).title || 'Note')}
+                    onClick={() =>
+                      handleDeleteNote(note.id, 'title' in note ? (note as Note).title : 'Note')
+                    }
                     aria-label="Delete"
                     color="error"
                   >
@@ -187,14 +189,14 @@ const PartnerNotesTab: React.FC<PartnerNotesTabProps> = ({ companyName }) => {
               {/* Author and timestamp */}
               <Stack direction="row" spacing={2} alignItems="center">
                 <Chip
-                  label={(note as any).authorUsername || 'Unknown'}
+                  label={'authorUsername' in note ? (note as Note).authorUsername : 'Unknown'}
                   size="small"
                   variant="outlined"
                 />
                 <Typography variant="caption" color="text.secondary">
                   {formatDate(note.createdAt)}
-                  {(note as any).updatedAt &&
-                    (note as any).updatedAt !== note.createdAt &&
+                  {'updatedAt' in note &&
+                    (note as Note).updatedAt !== note.createdAt &&
                     ' (edited)'}
                 </Typography>
               </Stack>

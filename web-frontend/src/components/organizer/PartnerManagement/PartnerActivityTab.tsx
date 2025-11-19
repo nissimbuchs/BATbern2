@@ -14,6 +14,7 @@ import {
   FormControl,
   InputLabel,
   Pagination,
+  SelectChangeEvent,
 } from '@mui/material';
 import {
   HowToVote,
@@ -132,7 +133,7 @@ const PartnerActivityTab: React.FC<PartnerActivityTabProps> = ({ companyName }) 
   const endIndex = startIndex + itemsPerPage;
   const paginatedActivities = sortedActivities.slice(startIndex, endIndex);
 
-  const handleFilterChange = (event: any) => {
+  const handleFilterChange = (event: SelectChangeEvent) => {
     setActivityTypeFilter(event.target.value);
     setCurrentPage(1); // Reset to first page when filter changes
   };
@@ -185,7 +186,11 @@ const PartnerActivityTab: React.FC<PartnerActivityTabProps> = ({ companyName }) 
                   </Typography>
                   <Stack direction="row" spacing={2} alignItems="center" mt={1}>
                     <Chip
-                      label={(activity as any).username || 'System'}
+                      label={
+                        'username' in activity
+                          ? (activity as { username: string }).username
+                          : 'System'
+                      }
                       size="small"
                       variant="outlined"
                     />
