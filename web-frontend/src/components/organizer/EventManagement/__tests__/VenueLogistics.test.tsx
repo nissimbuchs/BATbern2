@@ -123,14 +123,17 @@ describe('VenueLogistics Component (AC6 - SIMPLIFIED)', () => {
       await user.clear(venueNameInput);
       await user.type(venueNameInput, 'Kornhausforum Bern');
 
-      // Should call onUpdate
-      await waitFor(() => {
-        expect(onUpdate).toHaveBeenCalledWith(
-          expect.objectContaining({
-            venueName: 'Kornhausforum Bern',
-          })
-        );
-      });
+      // Should call onUpdate - wait for debounce (1000ms) + buffer
+      await waitFor(
+        () => {
+          expect(onUpdate).toHaveBeenCalledWith(
+            expect.objectContaining({
+              venueName: 'Kornhausforum Bern',
+            })
+          );
+        },
+        { timeout: 2500 }
+      );
     });
 
     it('should_updateVenueAddress_when_addressChanged', async () => {

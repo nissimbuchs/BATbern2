@@ -173,10 +173,10 @@ public class CompanyController {
      * AC5 & AC11: Company search endpoint with Caffeine caching and configurable limit
      */
     @GetMapping("/search")
-    @PreAuthorize("isAuthenticated()")
+    // Story 4.1.5: Public endpoint for registration autocomplete (no authentication required)
     @Operation(
             summary = "Search companies with autocomplete",
-            description = "Search companies by name with autocomplete functionality. Results are cached using Caffeine for 15 minutes. P95 latency < 100ms with cache."
+            description = "Search companies by name with autocomplete functionality. Results are cached using Caffeine for 15 minutes. P95 latency < 100ms with cache. Public endpoint for registration autocomplete."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -186,10 +186,6 @@ public class CompanyController {
             @ApiResponse(
                     responseCode = "400",
                     description = "Invalid query or limit parameter"
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Unauthorized - missing or invalid JWT token"
             )
     })
     public ResponseEntity<List<CompanySearchResponse>> searchCompanies(

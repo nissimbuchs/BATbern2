@@ -83,7 +83,7 @@ class ProfilePictureServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.getUploadUrl()).isEqualTo(mockPresignedUrl.toString());
         assertThat(result.getFileId()).isNotBlank();
-        assertThat(result.getS3Key()).contains("/profile-pictures/");
+        assertThat(result.getS3Key()).startsWith("profile-pictures/");
         assertThat(result.getS3Key()).contains(username);
         assertThat(result.getFileExtension()).isEqualTo("png");
         assertThat(result.getExpiresInMinutes()).isEqualTo(15);
@@ -173,7 +173,7 @@ class ProfilePictureServiceTest {
         User savedUser = userCaptor.getValue();
         assertThat(savedUser.getProfilePictureUrl()).isNotBlank();
         assertThat(savedUser.getProfilePictureUrl()).startsWith(CLOUDFRONT_DOMAIN);
-        assertThat(savedUser.getProfilePictureS3Key()).contains("/profile-pictures/");
+        assertThat(savedUser.getProfilePictureS3Key()).startsWith("profile-pictures/");
         assertThat(savedUser.getProfilePictureS3Key()).contains(username);
         assertThat(savedUser.getProfilePictureS3Key()).contains(fileId);
     }

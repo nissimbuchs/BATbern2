@@ -66,7 +66,8 @@ public class SecurityContextHelper {
 
     /**
      * Gets the current authenticated user's roles from JWT token or mock user
-     * @return List of role names (cognito:groups claim from JWT or authorities from mock user)
+     * ADR-001: Custom claims are set by PreTokenGeneration Lambda from database (not Cognito Groups)
+     * @return List of role names (custom:role claim from JWT or authorities from mock user)
      * @throws SecurityException if not authenticated
      */
     @SuppressWarnings("unchecked")
@@ -75,10 +76,15 @@ public class SecurityContextHelper {
 
         if (authentication.getPrincipal() instanceof Jwt) {
             Jwt jwt = (Jwt) authentication.getPrincipal();
-            Object groups = jwt.getClaim("cognito:groups");
+            // ADR-001: PreTokenGeneration Lambda sets 'custom:role' claim from database
+            String rolesString = jwt.getClaim("custom:role");
 
-            if (groups instanceof List) {
-                return (List<String>) groups;
+            if (rolesString != null && !rolesString.isEmpty()) {
+                // Split comma-separated roles (e.g., "ORGANIZER,SPEAKER")
+                return List.of(rolesString.split(","))
+                        .stream()
+                        .map(String::trim)
+                        .collect(Collectors.toList());
             }
 
             return Collections.emptyList();

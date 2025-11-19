@@ -60,18 +60,32 @@ extract_endpoints() {
 # Function to find API calls in frontend code
 find_api_calls() {
     local api_service_dir=$1
+    local file_pattern="${2:-*}"  # Optional file pattern to filter
 
-    echo -e "${BLUE}→ Scanning frontend API service files...${NC}" >&2
+    echo -e "${BLUE}→ Scanning frontend API service files (pattern: ${file_pattern})...${NC}" >&2
 
     # Find all axios/fetch calls in API service files
     # Look for patterns like: axios.get('/users'), apiClient.post('/companies'), etc.
     # Filter out: test files and commented lines (template variables are handled later)
-    grep -rn -E "(axios|apiClient|fetch)\.(get|post|put|patch|delete)\s*\(" "${api_service_dir}" 2>/dev/null | \
-        grep -v "test\|spec\|mock" | \
-        grep -v "^[^:]*:[^:]*://.*$" | \
-        sed -E "s/.*\.(get|post|put|patch|delete)\s*\(\s*['\`\"]([^'\`\"]+)['\`\"].*/\2 \1/g" | \
-        awk '{print toupper($2) " " $1}' | \
-        sort -u
+    if [[ "$file_pattern" == "*" ]]; then
+        grep -rn -E "(axios|apiClient|fetch)\.(get|post|put|patch|delete)\s*\(" "${api_service_dir}" 2>/dev/null | \
+            grep -v "test\|spec\|mock" | \
+            grep -v "^[^:]*:[^:]*://.*$" | \
+            sed -E "s/.*\.(get|post|put|patch|delete)\s*\(\s*['\`\"]([^'\`\"]+)['\`\"].*/\2 \1/g" | \
+            awk '{print toupper($2) " " $1}' | \
+            grep -E "^(GET|POST|PUT|PATCH|DELETE) " | \
+            sort -u
+    else
+        # Only scan files matching the pattern
+        find "${api_service_dir}" -name "${file_pattern}" -type f 2>/dev/null | while read -r file; do
+            grep -n -E "(axios|apiClient|fetch)\.(get|post|put|patch|delete)\s*\(" "$file" 2>/dev/null | \
+                grep -v "test\|spec\|mock" | \
+                grep -v "^[^:]*://.*$" | \
+                sed -E "s/.*\.(get|post|put|patch|delete)\s*\(\s*['\`\"]([^'\`\"]+)['\`\"].*/\2 \1/g" | \
+                awk '{print toupper($2) " " $1}' | \
+                grep -E "^(GET|POST|PUT|PATCH|DELETE) "  # Only keep valid extractions
+        done | sort -u
+    fi
 }
 
 # Main validation logic
@@ -79,6 +93,7 @@ validate_service() {
     local spec_file=$1
     local service_name=$2
     local api_dir=$3
+    local file_pattern="${4:-*}"  # Optional file pattern
 
     echo ""
     echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
@@ -102,7 +117,7 @@ validate_service() {
 
     # Find API calls in frontend code
     local frontend_calls=$(mktemp)
-    find_api_calls "${api_dir}" | sort -u > "${frontend_calls}"
+    find_api_calls "${api_dir}" "${file_pattern}" | sort -u > "${frontend_calls}"
 
     if [ ! -s "${frontend_calls}" ]; then
         echo -e "${YELLOW}  ⚠ No API calls found in frontend code${NC}"
@@ -157,22 +172,24 @@ validate_service() {
 # Validate each service
 total_violations=0
 
-# Users API
+# Users API - only validate user-related API files
 if [ -f "${DOCS_DIR}/users-api.openapi.yml" ]; then
     if ! validate_service \
         "${DOCS_DIR}/users-api.openapi.yml" \
         "Users API" \
-        "${FRONTEND_DIR}/src/services/api"; then
+        "${FRONTEND_DIR}/src/services/api" \
+        "*user*.ts"; then
         total_violations=$((total_violations + 1))
     fi
 fi
 
-# Companies API
+# Companies API - only validate company-related API files
 if [ -f "${DOCS_DIR}/companies-api.openapi.yml" ]; then
     if ! validate_service \
         "${DOCS_DIR}/companies-api.openapi.yml" \
         "Companies API" \
-        "${FRONTEND_DIR}/src/services/api"; then
+        "${FRONTEND_DIR}/src/services/api" \
+        "*company*.ts"; then
         total_violations=$((total_violations + 1))
     fi
 fi

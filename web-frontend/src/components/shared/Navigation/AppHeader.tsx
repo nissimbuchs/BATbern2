@@ -173,6 +173,7 @@ const AppHeader = React.memo(function AppHeader({
               aria-label="user menu"
               aria-expanded={userMenuOpen}
               aria-haspopup="true"
+              data-testid="user-menu-button"
             >
               <Avatar
                 sx={{
