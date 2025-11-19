@@ -93,7 +93,7 @@ install: install-java install-node ## Install all dependencies
 install-java: ## Install Java/Gradle dependencies
 	@echo "📦 Installing Java dependencies..."
 	@echo "→ Building shared-kernel..."
-	@cd shared-kernel && ./gradlew build publishToMavenLocal -x test
+	@./gradlew :shared-kernel:build :shared-kernel:publishToMavenLocal -x test
 	@echo "✓ Java dependencies installed"
 
 install-node: ## Install Node.js dependencies
