@@ -1007,6 +1007,225 @@ paths:
       security:
         - BearerAuth: []
 
+  /users/me/picture/presigned-url:
+    post:
+      tags:
+        - Profile Picture
+      summary: Request presigned URL for profile picture upload
+      description: |
+        Generate presigned S3 upload URL for current user's profile picture.
+
+        **Acceptance Criteria**: AC10
+
+        **File Constraints**:
+        - Max size: 5 MB
+        - Allowed formats: PNG, JPG, JPEG, SVG
+        - Recommended dimensions: 400x400 to 1000x1000 pixels
+
+        **Upload Process**:
+        1. Client calls this endpoint to get presigned URL
+        2. Client uploads directly to S3 using presigned URL
+        3. Client calls /users/me/picture/confirm with file ID and extension
+
+      operationId: requestProfilePictureUploadUrl
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfilePictureUploadRequest'
+      responses:
+        '200':
+          description: Presigned upload URL generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresignedUploadUrl'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /users/me/picture/confirm:
+    post:
+      tags:
+        - Profile Picture
+      summary: Confirm profile picture upload completion
+      description: |
+        Confirm that profile picture has been uploaded to S3 and associate with user.
+
+        **Acceptance Criteria**: AC10
+
+        Must be called after successful upload to presigned URL.
+
+      operationId: confirmProfilePictureUpload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfilePictureUploadConfirmRequest'
+      responses:
+        '200':
+          description: Upload confirmed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfilePictureUploadConfirmResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /users/{username}/picture/presigned-url:
+    post:
+      tags:
+        - Profile Picture
+      summary: Request presigned URL for user profile picture upload (Admin)
+      description: |
+        Admin endpoint to generate presigned S3 upload URL for a specific user's profile picture.
+
+        **Authorization**: ORGANIZER role required
+
+        **File Constraints**:
+        - Max size: 5 MB
+        - Allowed formats: PNG, JPG, JPEG, SVG
+
+        **Upload Process**:
+        1. Admin calls this endpoint to get presigned URL
+        2. Admin uploads directly to S3 using presigned URL
+        3. Admin calls /users/{username}/picture/confirm with file ID and extension
+
+      operationId: requestProfilePictureUploadUrlForUser
+      parameters:
+        - name: username
+          in: path
+          description: Username (unique identifier)
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+            example: john.doe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfilePictureUploadRequest'
+      responses:
+        '200':
+          description: Presigned upload URL generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresignedUploadUrl'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /users/{username}/picture/confirm:
+    post:
+      tags:
+        - Profile Picture
+      summary: Confirm user profile picture upload completion (Admin)
+      description: |
+        Admin endpoint to confirm that profile picture has been uploaded to S3 for a specific user.
+
+        **Authorization**: ORGANIZER role required
+
+        Must be called after successful upload to presigned URL.
+
+      operationId: confirmProfilePictureUploadForUser
+      parameters:
+        - name: username
+          in: path
+          description: Username (unique identifier)
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+            example: john.doe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfilePictureUploadConfirmRequest'
+      responses:
+        '200':
+          description: Upload confirmed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfilePictureUploadConfirmResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /users/{username}/picture:
+    delete:
+      tags:
+        - Profile Picture
+      summary: Remove user profile picture (Admin)
+      description: |
+        Admin endpoint to remove profile picture for a specific user.
+
+        **Authorization**: ORGANIZER role required
+
+        Clears profile picture URL and S3 key from user entity.
+
+      operationId: removeProfilePictureForUser
+      parameters:
+        - name: username
+          in: path
+          description: Username (unique identifier)
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+            example: john.doe
+      responses:
+        '204':
+          description: Profile picture removed successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
   /users/get-or-create:
     post:
       tags:
@@ -1459,6 +1678,96 @@ components:
             type: string
             enum: [ORGANIZER, SPEAKER, PARTNER, ATTENDEE]
           minItems: 1
+
+    ProfilePictureUploadRequest:
+      type: object
+      description: Request to generate presigned URL for profile picture upload
+      required:
+        - fileName
+        - fileSize
+      properties:
+        fileName:
+          type: string
+          description: Original filename with extension
+          maxLength: 255
+          example: profile.jpg
+        fileSize:
+          type: integer
+          description: File size in bytes (max 5 MB)
+          minimum: 1
+          maximum: 5242880
+          example: 1048576
+
+    PresignedUploadUrl:
+      type: object
+      description: Presigned URL response for S3 upload
+      required:
+        - uploadUrl
+        - fileId
+        - s3Key
+        - fileExtension
+        - expiresInMinutes
+      properties:
+        uploadUrl:
+          type: string
+          format: uri
+          description: Presigned S3 upload URL
+          example: https://s3.eu-central-1.amazonaws.com/bucket/...
+        fileId:
+          type: string
+          description: Unique file identifier for confirmation
+          example: f3e8d1a4-5b2c-4d6e-8a9b-1c2d3e4f5a6b
+        s3Key:
+          type: string
+          description: S3 object key where file will be stored
+          example: profile-pictures/2025/john.doe/profile-f3e8d1a4.jpg
+        fileExtension:
+          type: string
+          description: File extension
+          example: jpg
+        expiresInMinutes:
+          type: integer
+          description: URL expiration time in minutes
+          example: 15
+        requiredHeaders:
+          type: object
+          additionalProperties:
+            type: string
+          description: Headers required for the upload request
+          example:
+            Content-Type: image/jpeg
+
+    ProfilePictureUploadConfirmRequest:
+      type: object
+      description: Request to confirm profile picture upload completion
+      required:
+        - fileId
+        - fileExtension
+      properties:
+        fileId:
+          type: string
+          description: File identifier from presigned URL response
+          example: f3e8d1a4-5b2c-4d6e-8a9b-1c2d3e4f5a6b
+        fileExtension:
+          type: string
+          description: File extension (png, jpg, jpeg, svg)
+          example: jpg
+        checksum:
+          type: string
+          description: Optional SHA256 checksum of uploaded file
+          example: sha256=abc123...
+
+    ProfilePictureUploadConfirmResponse:
+      type: object
+      description: Response after confirming profile picture upload
+      required:
+        - profilePictureUrl
+      properties:
+        profilePictureUrl:
+          type: string
+          format: uri
+          description: CloudFront URL for the uploaded profile picture
+          example: https://cdn.batbern.ch/profile-pictures/2025/john.doe/profile-f3e8d1a4.jpg
 
     PaginationMetadata:
       type: object

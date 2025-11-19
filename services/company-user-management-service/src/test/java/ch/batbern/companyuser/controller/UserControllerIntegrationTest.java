@@ -427,7 +427,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.uploadUrl").isNotEmpty())
                 .andExpect(jsonPath("$.fileId").isNotEmpty())
                 .andExpect(jsonPath("$.s3Key").isNotEmpty())
-                .andExpect(jsonPath("$.s3Key").value(containsString("/profile-pictures/")))
+                .andExpect(jsonPath("$.s3Key").value(startsWith("profile-pictures/")))
                 .andExpect(jsonPath("$.s3Key").value(containsString("john.doe")))
                 .andExpect(jsonPath("$.fileExtension").value("png"))
                 .andExpect(jsonPath("$.expiresInMinutes").value(15))

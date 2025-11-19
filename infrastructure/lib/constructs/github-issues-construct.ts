@@ -47,6 +47,7 @@ export class GitHubIssuesConstruct extends Construct {
         externalModules: ['@aws-sdk/*'], // AWS SDK v3 is provided by Lambda runtime
         minify: true,
         sourceMap: true,
+        forceDockerBundling: false, // Prefer local esbuild over Docker for faster builds on ARM64
       },
     });
 

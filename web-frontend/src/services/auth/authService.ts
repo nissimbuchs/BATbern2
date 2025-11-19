@@ -352,7 +352,7 @@ class AuthService {
 
     // Story 1.16.2: Prefer custom:username (from database) over cognito:username (UUID)
     // PreTokenGeneration Lambda sets custom:username from database user_profiles.username
-    const username = tokenPayload['custom:username'] || tokenPayload['cognito:username'];
+    const username = tokenPayload['custom:username'] || '';
 
     return {
       userId: tokenPayload.sub,

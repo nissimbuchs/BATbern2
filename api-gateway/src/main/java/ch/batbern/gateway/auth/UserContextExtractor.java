@@ -32,10 +32,6 @@ public class UserContextExtractor {
         if (jwt.getClaim("custom:username") != null && !jwt.getClaim("custom:username").isNull()) {
             username = jwt.getClaim("custom:username").asString();
         }
-        if (username == null && jwt.getClaim("cognito:username") != null
-                && !jwt.getClaim("cognito:username").isNull()) {
-            username = jwt.getClaim("cognito:username").asString();
-        }
         if (username != null) {
             builder.username(username);
         }
