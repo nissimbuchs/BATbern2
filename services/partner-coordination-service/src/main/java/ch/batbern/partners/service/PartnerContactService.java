@@ -22,7 +22,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -109,7 +108,8 @@ public class PartnerContactService {
         if (contact.isPrimary()) {
             long primaryCount = partnerContactRepository.countByPartnerIdAndIsPrimaryTrue(partner.getId());
             if (primaryCount <= 1) {
-                throw new ValidationException("Cannot remove last primary contact. Partner must have at least one primary contact.");
+                throw new ValidationException(
+                        "Cannot remove last primary contact. Partner must have at least one primary contact.");
             }
         }
 

@@ -76,11 +76,13 @@ public class RegistrationCleanupService {
                 registrationRepository.delete(registration);
 
                 deleted++;
-                log.debug("Deleted unconfirmed registration: registrationCode={}, attendeeUsername={}, createdAt={}, age={}h",
-                        registration.getRegistrationCode(),
-                        registration.getAttendeeUsername(),
-                        registration.getCreatedAt(),
-                        ChronoUnit.HOURS.between(registration.getCreatedAt(), now));
+                log.debug(
+                    "Deleted unconfirmed registration: registrationCode={}, attendeeUsername={},"
+                    + " createdAt={}, age={}h",
+                    registration.getRegistrationCode(),
+                    registration.getAttendeeUsername(),
+                    registration.getCreatedAt(),
+                    ChronoUnit.HOURS.between(registration.getCreatedAt(), now));
             } catch (Exception e) {
                 log.error("Failed to delete registration: registrationCode={}",
                         registration.getRegistrationCode(), e);

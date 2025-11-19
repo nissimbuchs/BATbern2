@@ -18,7 +18,8 @@ public interface UserServiceClient {
      * @param username User's username (unique identifier per ADR-003)
      * @return User profile data (generated from users-api.openapi.yml)
      * @throws ch.batbern.partners.exception.UserNotFoundException if user not found (404)
-     * @throws ch.batbern.partners.exception.UserServiceException if API communication fails (5xx, timeout, network error)
+     * @throws ch.batbern.partners.exception.UserServiceException if API communication fails
+     *         (5xx, timeout, network error)
      */
     UserResponse getUserByUsername(String username);
 
@@ -30,7 +31,8 @@ public interface UserServiceClient {
      * @param username User's username (unique identifier per ADR-003)
      * @return User profile data (generated from users-api.openapi.yml)
      * @throws ch.batbern.partners.exception.UserNotFoundException if user not found (404)
-     * @throws ch.batbern.partners.exception.UserServiceException if API communication fails (5xx, timeout, network error)
+     * @throws ch.batbern.partners.exception.UserServiceException if API communication fails
+     *         (5xx, timeout, network error)
      */
     UserResponse getUserProfile(String username);
 }
