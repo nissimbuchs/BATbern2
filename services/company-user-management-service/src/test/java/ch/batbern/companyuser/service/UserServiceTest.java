@@ -2,6 +2,7 @@ package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
+import ch.batbern.companyuser.dto.generated.CreateUserRequest;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserRequest;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserResponse;
 import ch.batbern.companyuser.dto.generated.UpdateUserRequest;
@@ -10,6 +11,7 @@ import ch.batbern.companyuser.events.UserCreatedEvent;
 import ch.batbern.companyuser.events.UserDeletedEvent;
 import ch.batbern.companyuser.events.UserUpdatedEvent;
 import ch.batbern.companyuser.exception.UserNotFoundException;
+import ch.batbern.companyuser.exception.UserValidationException;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
 import ch.batbern.shared.events.DomainEventPublisher;
@@ -21,6 +23,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -330,5 +334,242 @@ class UserServiceTest {
         assertThat(event.getUsername()).isEqualTo(username);
         assertThat(event.getEmail()).isEqualTo("john@example.com");
         assertThat(event.getReason()).isEqualTo("GDPR compliance");
+    }
+
+    // Test: should_updateUserByUsername_when_adminUpdatesUser
+    @Test
+    void should_updateUserByUsername_when_adminUpdatesUser() {
+        // Given
+        String username = "john.doe";
+        String adminUsername = "admin.user";
+
+        User existingUser = User.builder()
+                .id(UUID.randomUUID())
+                .username(username)
+                .email("john.doe@example.com")
+                .firstName("John")
+                .lastName("Doe")
+                .bio("Old bio")
+                .companyId("OldCompany")
+                .build();
+
+        when(userRepository.findByUsername(username)).thenReturn(Optional.of(existingUser));
+        when(userRepository.save(any(User.class))).thenReturn(existingUser);
+        when(securityContext.getCurrentUserId()).thenReturn(adminUsername);
+
+        UserResponse mockResponse = new UserResponse();
+        mockResponse.setId(username);
+        mockResponse.setFirstName("Johnny");
+        mockResponse.setLastName("Smith");
+        mockResponse.setEmail("johnny.smith@example.com");
+        mockResponse.setBio("New bio");
+        mockResponse.setCompanyId("NewCompany");
+        when(responseMapper.mapToResponse(any(User.class))).thenReturn(mockResponse);
+
+        UpdateUserRequest request = new UpdateUserRequest();
+        request.setFirstName("Johnny");
+        request.setLastName("Smith");
+        request.setEmail("johnny.smith@example.com");
+        request.setBio("New bio");
+        request.setCompanyId("NewCompany");
+
+        // When
+        UserResponse response = userService.updateUserByUsername(username, request);
+
+        // Then
+        assertThat(response).isNotNull();
+        assertThat(response.getId()).isEqualTo(username);
+        assertThat(response.getFirstName()).isEqualTo("Johnny");
+        assertThat(response.getLastName()).isEqualTo("Smith");
+        assertThat(response.getEmail()).isEqualTo("johnny.smith@example.com");
+        assertThat(response.getBio()).isEqualTo("New bio");
+        assertThat(response.getCompanyId()).isEqualTo("NewCompany");
+
+        verify(userRepository).save(any(User.class));
+        verify(searchService).invalidateCache();
+
+        ArgumentCaptor<UserUpdatedEvent> eventCaptor = ArgumentCaptor.forClass(UserUpdatedEvent.class);
+        verify(eventPublisher).publish(eventCaptor.capture());
+
+        UserUpdatedEvent event = eventCaptor.getValue();
+        assertThat(event.getAggregateId()).isEqualTo(username);
+        assertThat(event.getUpdatedFields()).containsKeys("firstName", "lastName", "email", "bio", "companyId");
+        assertThat(event.getUserId()).isEqualTo(adminUsername);
+    }
+
+    // Test: should_updatePartialFields_when_someFieldsProvided
+    @Test
+    void should_updatePartialFields_when_someFieldsProvided() {
+        // Given
+        String username = "john.doe";
+
+        User existingUser = User.builder()
+                .id(UUID.randomUUID())
+                .username(username)
+                .email("john.doe@example.com")
+                .firstName("John")
+                .lastName("Doe")
+                .bio("Old bio")
+                .companyId("OldCompany")
+                .build();
+
+        when(userRepository.findByUsername(username)).thenReturn(Optional.of(existingUser));
+        when(userRepository.save(any(User.class))).thenReturn(existingUser);
+        when(securityContext.getCurrentUserId()).thenReturn("admin.user");
+
+        UserResponse mockResponse = new UserResponse();
+        when(responseMapper.mapToResponse(any(User.class))).thenReturn(mockResponse);
+
+        UpdateUserRequest request = new UpdateUserRequest();
+        request.setFirstName("Johnny");  // Only update first name
+        request.setBio("New bio");       // and bio
+
+        // When
+        userService.updateUserByUsername(username, request);
+
+        // Then
+        ArgumentCaptor<UserUpdatedEvent> eventCaptor = ArgumentCaptor.forClass(UserUpdatedEvent.class);
+        verify(eventPublisher).publish(eventCaptor.capture());
+
+        UserUpdatedEvent event = eventCaptor.getValue();
+        assertThat(event.getUpdatedFields()).containsKeys("firstName", "bio");
+        assertThat(event.getUpdatedFields()).doesNotContainKeys("lastName", "email", "companyId");
+    }
+
+    // Test: should_throwUserNotFoundException_when_userDoesNotExist
+    @Test
+    void should_throwUserNotFoundException_when_updatingNonexistentUser() {
+        // Given
+        String username = "nonexistent.user";
+        when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
+
+        UpdateUserRequest request = new UpdateUserRequest();
+        request.setFirstName("John");
+
+        // When / Then
+        assertThatThrownBy(() -> userService.updateUserByUsername(username, request))
+                .isInstanceOf(UserNotFoundException.class)
+                .hasMessageContaining("User with ID 'nonexistent.user' not found");
+
+        verify(userRepository, never()).save(any());
+        verify(eventPublisher, never()).publish(any());
+    }
+
+    // Test: should_createUser_when_validDataProvided
+    @Test
+    void should_createUser_when_validDataProvided() {
+        // Given
+        CreateUserRequest request = new CreateUserRequest();
+        request.setEmail("newuser@example.com");
+        request.setFirstName("New");
+        request.setLastName("User");
+        request.setCompanyId("TechCorp");
+        request.setBio("Software engineer");
+        request.setInitialRoles(List.of(CreateUserRequest.InitialRolesEnum.SPEAKER));
+
+        when(userRepository.existsByEmail(request.getEmail())).thenReturn(false);
+        when(slugService.generateUsername("New", "User")).thenReturn("new.user");
+        when(slugService.ensureUniqueUsername(eq("new.user"), any())).thenReturn("new.user");
+        when(securityContext.getCurrentUsername()).thenReturn("admin.user");
+
+        User savedUser = User.builder()
+                .id(UUID.randomUUID())
+                .username("new.user")
+                .email("newuser@example.com")
+                .firstName("New")
+                .lastName("User")
+                .companyId("TechCorp")
+                .bio("Software engineer")
+                .roles(Set.of(Role.SPEAKER))
+                .build();
+
+        when(userRepository.save(any(User.class))).thenReturn(savedUser);
+
+        UserResponse userResponse = new UserResponse();
+        userResponse.setId("new.user");
+        userResponse.setEmail("newuser@example.com");
+        when(responseMapper.mapToResponse(any(User.class))).thenReturn(userResponse);
+
+        // When
+        UserResponse response = userService.createUser(request);
+
+        // Then
+        assertThat(response).isNotNull();
+        assertThat(response.getId()).isEqualTo("new.user");
+
+        verify(slugService).generateUsername("New", "User");
+        verify(slugService).ensureUniqueUsername(eq("new.user"), any());
+        verify(userRepository).save(any(User.class));
+
+        ArgumentCaptor<UserCreatedEvent> eventCaptor = ArgumentCaptor.forClass(UserCreatedEvent.class);
+        verify(eventPublisher).publish(eventCaptor.capture());
+
+        UserCreatedEvent event = eventCaptor.getValue();
+        assertThat(event.getAggregateId()).isEqualTo("new.user");
+        assertThat(event.getEmail()).isEqualTo("newuser@example.com");
+        assertThat(event.getFirstName()).isEqualTo("New");
+        assertThat(event.getLastName()).isEqualTo("User");
+        assertThat(event.getCompanyId()).isEqualTo("TechCorp");
+    }
+
+    // Test: should_createUserWithDefaultRole_when_noRolesProvided
+    @Test
+    void should_createUserWithDefaultRole_when_noRolesProvided() {
+        // Given
+        CreateUserRequest request = new CreateUserRequest();
+        request.setEmail("attendee@example.com");
+        request.setFirstName("Jane");
+        request.setLastName("Attendee");
+        request.setCompanyId("FinanceCorp");
+        // No initial roles specified
+
+        when(userRepository.existsByEmail(request.getEmail())).thenReturn(false);
+        when(slugService.generateUsername("Jane", "Attendee")).thenReturn("jane.attendee");
+        when(slugService.ensureUniqueUsername(eq("jane.attendee"), any())).thenReturn("jane.attendee");
+        when(securityContext.getCurrentUsername()).thenReturn("admin.user");
+
+        User savedUser = User.builder()
+                .id(UUID.randomUUID())
+                .username("jane.attendee")
+                .email("attendee@example.com")
+                .firstName("Jane")
+                .lastName("Attendee")
+                .companyId("FinanceCorp")
+                .roles(Set.of(Role.ATTENDEE))  // Default role
+                .build();
+
+        when(userRepository.save(any(User.class))).thenReturn(savedUser);
+
+        UserResponse userResponse = new UserResponse();
+        userResponse.setId("jane.attendee");
+        when(responseMapper.mapToResponse(any(User.class))).thenReturn(userResponse);
+
+        // When
+        UserResponse response = userService.createUser(request);
+
+        // Then
+        assertThat(response).isNotNull();
+        verify(userRepository).save(any(User.class));
+        verify(eventPublisher).publish(any(UserCreatedEvent.class));
+    }
+
+    // Test: should_throwException_when_emailAlreadyExists
+    @Test
+    void should_throwException_when_emailAlreadyExists() {
+        // Given
+        CreateUserRequest request = new CreateUserRequest();
+        request.setEmail("existing@example.com");
+        request.setFirstName("Existing");
+        request.setLastName("User");
+
+        when(userRepository.existsByEmail(request.getEmail())).thenReturn(true);
+
+        // When / Then
+        assertThatThrownBy(() -> userService.createUser(request))
+                .isInstanceOf(UserValidationException.class)
+                .hasMessageContaining("User with email existing@example.com already exists");
+
+        verify(userRepository, never()).save(any());
+        verify(eventPublisher, never()).publish(any());
     }
 }

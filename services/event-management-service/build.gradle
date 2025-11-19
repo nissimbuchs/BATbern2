@@ -3,6 +3,7 @@ plugins {
     id 'org.springframework.boot' version '3.5.6'
     id 'io.spring.dependency-management' version '1.1.6'
     id 'jacoco'
+    id 'checkstyle'
     id 'org.flywaydb.flyway' version '10.10.0'
     id 'org.openapi.generator' version '7.2.0'
     id 'com.gorylenko.gradle-git-properties' version '2.4.1'
@@ -107,10 +108,12 @@ jacocoTestReport {
     afterEvaluate {
         classDirectories.setFrom(files(classDirectories.files.collect {
             fileTree(dir: it, exclude: [
-                '**/generated/**',           // OpenAPI generated code
-                '**/*Application.class',     // Spring Boot main class
-                '**/*Config.class',          // Configuration classes
-                '**/*Configuration.class'    // Configuration classes
+                '**/generated/**',                    // OpenAPI generated code
+                '**/dto/generated/**',                // Generated DTOs from events-api.openapi.yml
+                '**/api/generated/**',                // Generated API interfaces
+                '**/*Application.class',              // Spring Boot main class
+                '**/*Config.class',                   // Configuration classes
+                '**/*Configuration.class'             // Configuration classes
             ])
         }))
     }
@@ -122,15 +125,37 @@ jacocoTestCoverageVerification {
     violationRules {
         rule {
             limit {
-                // Minimal threshold for skeleton services
+                // Use 60% threshold for incremental development
                 // TODO: Increase to 0.90 once service is fully implemented
-                minimum = 0.0
+                minimum = 0.60
             }
         }
+    }
+
+    // Exclude generated code from coverage verification (same as jacocoTestReport)
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                '**/generated/**',                    // OpenAPI generated code
+                '**/dto/generated/**',                // Generated DTOs from events-api.openapi.yml
+                '**/api/generated/**',                // Generated API interfaces
+                '**/*Application.class',              // Spring Boot main class
+                '**/*Config.class',                   // Configuration classes
+                '**/*Configuration.class'             // Configuration classes
+            ])
+        }))
     }
 }
 
 check.dependsOn jacocoTestCoverageVerification
+
+// Checkstyle configuration
+checkstyle {
+    toolVersion = '10.12.5'
+    configFile = file("${rootProject.projectDir}/config/checkstyle/checkstyle.xml")
+    ignoreFailures = true  // Allow build to succeed while generating quality reports
+    maxWarnings = 0
+}
 
 // Apply Trivy security scanning
 apply from: "../../gradle/trivy-security.gradle"

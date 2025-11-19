@@ -11,6 +11,8 @@ plugins {
     id 'org.springframework.boot' version '3.5.7'
     id 'io.spring.dependency-management' version '1.1.6'
     id 'maven-publish'
+    id 'jacoco'
+    id 'checkstyle'
     id 'org.flywaydb.flyway' version '11.15.0'
 }
 
@@ -93,9 +95,6 @@ dependencies {
     testFixturesImplementation 'org.testcontainers:junit-jupiter:1.21.3'
 }
 
-// Configure JaCoCo for code coverage
-apply plugin: 'jacoco'
-
 // Apply Trivy security scanning
 apply from: "../gradle/trivy-security.gradle"
 
@@ -144,9 +143,29 @@ jacocoTestCoverageVerification {
             }
         }
     }
+
+    // Exclude generated code from coverage verification (same as jacocoTestReport)
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                '**/generated/**',           // OpenAPI generated code
+                '**/*Application.class',     // Spring Boot main class
+                '**/*Config.class',          // Configuration classes
+                '**/*Configuration.class'    // Configuration classes
+            ])
+        }))
+    }
 }
 
 check.dependsOn jacocoTestCoverageVerification
+
+// Checkstyle configuration
+checkstyle {
+    toolVersion = '10.12.5'
+    configFile = file("${rootProject.projectDir}/config/checkstyle/checkstyle.xml")
+    ignoreFailures = true  // Allow build to succeed while generating quality reports
+    maxWarnings = 0
+}
 
 // Disable Spring Boot executable jar creation for library module
 bootJar {
