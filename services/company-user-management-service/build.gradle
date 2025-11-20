@@ -42,7 +42,7 @@ dependencies {
     implementation 'org.flywaydb:flyway-database-postgresql'
 
     // AWS SDK
-    implementation platform('software.amazon.awssdk:bom:2.29.30')  // Updated from 2.20.26 to fix S3Presigner NPE
+    implementation platform('software.amazon.awssdk:bom:2.39.0')  // Updated from 2.20.26 to fix S3Presigner NPE
     implementation 'software.amazon.awssdk:s3'
     implementation 'software.amazon.awssdk:url-connection-client'
     implementation 'software.amazon.awssdk:eventbridge'

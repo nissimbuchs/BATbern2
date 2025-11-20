@@ -45,7 +45,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
 
     // AWS SDK for EventBridge, CloudWatch, Cognito, and SES
-    implementation platform('software.amazon.awssdk:bom:2.38.2')
+    implementation platform('software.amazon.awssdk:bom:2.39.0')
     implementation 'software.amazon.awssdk:eventbridge'
     implementation 'software.amazon.awssdk:cloudwatch'
     implementation 'software.amazon.awssdk:cognitoidentityprovider'
@@ -69,7 +69,7 @@ dependencies {
     implementation 'ch.qos.logback:logback-classic'
 
     // Database
-    implementation 'org.postgresql:postgresql:42.7.2'
+    implementation 'org.postgresql:postgresql:42.7.7'
     implementation 'org.flywaydb:flyway-core'
     implementation 'org.flywaydb:flyway-database-postgresql'
 
