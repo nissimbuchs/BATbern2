@@ -11,7 +11,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import java.util.List;
 import java.util.Map;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Migration verification tests for User Management schema (Story 1.14-2)
@@ -75,8 +77,8 @@ class UserManagementMigrationsTest extends AbstractIntegrationTest {
     void should_haveUsernameColumn_when_userProfilesTableExists() {
         // When
         List<Map<String, Object>> columns = jdbcTemplate.queryForList(
-                "SELECT column_name, data_type FROM information_schema.columns " +
-                        "WHERE table_name = 'user_profiles' AND column_name = 'username'"
+                "SELECT column_name, data_type FROM information_schema.columns "
+                        + "WHERE table_name = 'user_profiles' AND column_name = 'username'"
         );
 
         // Then
@@ -90,8 +92,8 @@ class UserManagementMigrationsTest extends AbstractIntegrationTest {
     void should_haveEmbeddedPreferencesColumns_when_userProfilesTableExists() {
         // When
         List<String> prefColumns = jdbcTemplate.queryForList(
-                "SELECT column_name FROM information_schema.columns " +
-                        "WHERE table_name = 'user_profiles' AND column_name LIKE 'pref_%'",
+                "SELECT column_name FROM information_schema.columns "
+                        + "WHERE table_name = 'user_profiles' AND column_name LIKE 'pref_%'",
                 String.class
         );
 
@@ -111,8 +113,8 @@ class UserManagementMigrationsTest extends AbstractIntegrationTest {
     void should_haveEmbeddedSettingsColumns_when_userProfilesTableExists() {
         // When
         List<String> settingsColumns = jdbcTemplate.queryForList(
-                "SELECT column_name FROM information_schema.columns " +
-                        "WHERE table_name = 'user_profiles' AND column_name LIKE 'settings_%'",
+                "SELECT column_name FROM information_schema.columns "
+                        + "WHERE table_name = 'user_profiles' AND column_name LIKE 'settings_%'",
                 String.class
         );
 
@@ -141,8 +143,8 @@ class UserManagementMigrationsTest extends AbstractIntegrationTest {
             // When/Then
             assertThatThrownBy(() ->
                     jdbcTemplate.update(
-                            "INSERT INTO user_profiles (username, cognito_user_id, email, first_name, last_name) " +
-                                    "VALUES (?, ?, ?, ?, ?)",
+                            "INSERT INTO user_profiles (username, cognito_user_id, email, first_name, last_name) "
+                                    + "VALUES (?, ?, ?, ?, ?)",
                             invalidUsername, "cognito-" + System.nanoTime(), "test@example.com", "John", "Doe"
                     )
             ).satisfiesAnyOf(
@@ -167,8 +169,8 @@ class UserManagementMigrationsTest extends AbstractIntegrationTest {
             // When/Then - Should NOT throw exception
             assertThatCode(() ->
                     jdbcTemplate.update(
-                            "INSERT INTO user_profiles (username, cognito_user_id, email, first_name, last_name) " +
-                                    "VALUES (?, ?, ?, ?, ?)",
+                            "INSERT INTO user_profiles (username, cognito_user_id, email, first_name, last_name) "
+                                    + "VALUES (?, ?, ?, ?, ?)",
                             validUsername,
                             "cognito-" + System.nanoTime(),
                             validUsername + "@example.com",
@@ -199,8 +201,8 @@ class UserManagementMigrationsTest extends AbstractIntegrationTest {
             // When/Then
             assertThatThrownBy(() ->
                     jdbcTemplate.update(
-                            "INSERT INTO user_profiles (username, cognito_user_id, email, first_name, last_name, company_id) " +
-                                    "VALUES (?, ?, ?, ?, ?, ?)",
+                            "INSERT INTO user_profiles (username, cognito_user_id, email, first_name, last_name, company_id) "
+                                    + "VALUES (?, ?, ?, ?, ?, ?)",
                             "test.user." + index,
                             "cognito-" + System.nanoTime(),
                             "testuser" + index + "@example.com",
@@ -236,8 +238,8 @@ class UserManagementMigrationsTest extends AbstractIntegrationTest {
             // When/Then - Should NOT throw exception
             assertThatCode(() ->
                     jdbcTemplate.update(
-                            "INSERT INTO user_profiles (username, cognito_user_id, email, first_name, last_name, company_id) " +
-                                    "VALUES (?, ?, ?, ?, ?, ?)",
+                            "INSERT INTO user_profiles (username, cognito_user_id, email, first_name, last_name, company_id) "
+                                    + "VALUES (?, ?, ?, ?, ?, ?)",
                             username,
                             "cognito-" + System.nanoTime(),
                             email,

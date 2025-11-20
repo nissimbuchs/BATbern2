@@ -23,12 +23,23 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.Collections;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit Tests for JITUserProvisioningInterceptor
@@ -75,9 +86,15 @@ class JITUserProvisioningInterceptorTest {
 
         Map<String, Object> claims = new HashMap<>();
         claims.put("sub", subject);
-        if (email != null) claims.put("email", email);
-        if (givenName != null) claims.put("given_name", givenName);
-        if (familyName != null) claims.put("family_name", familyName);
+        if  (email != null) {
+            claims.put("email", email);
+        }
+        if  (givenName != null) {
+            claims.put("given_name", givenName);
+        }
+        if  (familyName != null) {
+            claims.put("family_name", familyName);
+        }
         claims.put("iat", Instant.now().getEpochSecond());
         claims.put("exp", Instant.now().plusSeconds(3600).getEpochSecond());
 

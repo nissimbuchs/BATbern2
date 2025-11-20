@@ -186,10 +186,10 @@ class LocalAwsConfigTest {
         private String id;
         private Instant timestamp;
 
-        public TestEvent() {
+        TestEvent() {
         }
 
-        public TestEvent(String id, Instant timestamp) {
+        TestEvent(String id, Instant timestamp) {
             this.id = id;
             this.timestamp = timestamp;
         }
