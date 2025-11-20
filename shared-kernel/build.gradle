@@ -102,7 +102,7 @@ test {
     useJUnitPlatform()
     testLogging {
         events "passed", "skipped", "failed"
-        exceptionFormat "full"
+        exceptionFormat = "full"
     }
 }
 
@@ -209,11 +209,12 @@ publishing {
 
 // Task to generate version info
 task generateVersionInfo {
+    def projectVersion = project.version
     doLast {
         def versionFile = file("$buildDir/generated/version.properties")
         versionFile.parentFile.mkdirs()
         versionFile.text = """
-version=${project.version}
+version=${projectVersion}
 buildTime=${new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getTimeZone("UTC"))}
 """
     }
