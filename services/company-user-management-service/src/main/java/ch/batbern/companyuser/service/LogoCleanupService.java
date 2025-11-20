@@ -36,7 +36,8 @@ public class LogoCleanupService {
     public LogoCleanupService(
             LogoRepository logoRepository,
             S3Client s3Client,
-            @org.springframework.beans.factory.annotation.Value("${aws.s3.bucket-name:batbern-development-company-logos}")
+            @org.springframework.beans.factory.annotation.Value(
+                    "${aws.s3.bucket-name:batbern-development-company-logos}")
             String bucketName) {
         this.logoRepository = logoRepository;
         this.s3Client = s3Client;

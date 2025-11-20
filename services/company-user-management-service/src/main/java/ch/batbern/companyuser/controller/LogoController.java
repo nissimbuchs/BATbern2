@@ -71,14 +71,14 @@ public class LogoController {
     )
     @ApiResponses(value = {
         @ApiResponse(
-            responseCode = "200",
-            description = "Presigned URL generated successfully",
-            content = @Content(schema = @Schema(implementation = PresignedUploadUrl.class))
-        ),
+                responseCode = "200",
+                description = "Presigned URL generated successfully",
+                content = @Content(schema = @Schema(implementation = PresignedUploadUrl.class))
+            ),
         @ApiResponse(
-            responseCode = "400",
-            description = "Invalid file type or size exceeds limit (5MB)"
-        )
+                responseCode = "400",
+                description = "Invalid file type or size exceeds limit (5MB)"
+            )
     })
     public ResponseEntity<PresignedUploadUrl> requestUploadUrl(
             @Valid @RequestBody LogoUploadRequest request) {
@@ -112,17 +112,17 @@ public class LogoController {
     )
     @ApiResponses(value = {
         @ApiResponse(
-            responseCode = "200",
-            description = "Upload confirmed successfully"
-        ),
+                responseCode = "200",
+                description = "Upload confirmed successfully"
+            ),
         @ApiResponse(
-            responseCode = "404",
-            description = "Upload ID not found"
-        ),
+                responseCode = "404",
+                description = "Upload ID not found"
+            ),
         @ApiResponse(
-            responseCode = "400",
-            description = "Invalid upload state (not PENDING)"
-        )
+                responseCode = "400",
+                description = "Invalid upload state (not PENDING)"
+            )
     })
     public ResponseEntity<Void> confirmUpload(
             @Parameter(description = "Upload ID from presigned URL response", required = true)
@@ -155,21 +155,21 @@ public class LogoController {
     )
     @ApiResponses(value = {
         @ApiResponse(
-            responseCode = "204",
-            description = "Logo deleted successfully"
-        ),
+                responseCode = "204",
+                description = "Logo deleted successfully"
+            ),
         @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized - missing or invalid JWT token"
-        ),
+                responseCode = "401",
+                description = "Unauthorized - missing or invalid JWT token"
+            ),
         @ApiResponse(
-            responseCode = "404",
-            description = "Upload ID not found"
-        ),
+                responseCode = "404",
+                description = "Upload ID not found"
+            ),
         @ApiResponse(
-            responseCode = "400",
-            description = "Cannot delete ASSOCIATED logo"
-        )
+                responseCode = "400",
+                description = "Cannot delete ASSOCIATED logo"
+            )
     })
     public ResponseEntity<Void> deleteUnusedLogo(
             @Parameter(description = "Upload ID to delete", required = true)
@@ -199,19 +199,19 @@ public class LogoController {
     )
     @ApiResponses(value = {
         @ApiResponse(
-            responseCode = "200",
-            description = "Statistics retrieved successfully",
-            content = @Content(
-                            schema = @Schema(implementation = LogoCleanupService.CleanupStatistics.class))
-        ),
+                responseCode = "200",
+                description = "Statistics retrieved successfully",
+                content = @Content(
+                                schema = @Schema(implementation = LogoCleanupService.CleanupStatistics.class))
+            ),
         @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized - missing or invalid JWT token"
-        ),
+                responseCode = "401",
+                description = "Unauthorized - missing or invalid JWT token"
+            ),
         @ApiResponse(
-            responseCode = "403",
-            description = "Forbidden - requires ORGANIZER role"
-        )
+                responseCode = "403",
+                description = "Forbidden - requires ORGANIZER role"
+            )
     })
     public ResponseEntity<LogoCleanupService.CleanupStatistics> getCleanupStatistics() {
         log.debug("Fetching cleanup statistics");
@@ -240,17 +240,17 @@ public class LogoController {
     )
     @ApiResponses(value = {
         @ApiResponse(
-            responseCode = "202",
-            description = "Cleanup job triggered successfully"
-        ),
+                responseCode = "202",
+                description = "Cleanup job triggered successfully"
+            ),
         @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized - missing or invalid JWT token"
-        ),
+                responseCode = "401",
+                description = "Unauthorized - missing or invalid JWT token"
+            ),
         @ApiResponse(
-            responseCode = "403",
-            description = "Forbidden - requires ORGANIZER role"
-        )
+                responseCode = "403",
+                description = "Forbidden - requires ORGANIZER role"
+            )
     })
     public ResponseEntity<Void> triggerManualCleanup() {
         log.warn("Manual cleanup triggered by admin");

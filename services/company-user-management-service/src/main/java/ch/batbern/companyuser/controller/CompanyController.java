@@ -70,26 +70,26 @@ public class CompanyController {
     )
     @ApiResponses(value = {
         @ApiResponse(
-            responseCode = "201",
-            description = "Company created successfully",
-            content = @Content(schema = @Schema(implementation = CompanyResponse.class))
-        ),
+                responseCode = "201",
+                description = "Company created successfully",
+                content = @Content(schema = @Schema(implementation = CompanyResponse.class))
+            ),
         @ApiResponse(
-            responseCode = "400",
-            description = "Invalid request data (validation failed)"
-        ),
+                responseCode = "400",
+                description = "Invalid request data (validation failed)"
+            ),
         @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized - missing or invalid JWT token"
-        ),
+                responseCode = "401",
+                description = "Unauthorized - missing or invalid JWT token"
+            ),
         @ApiResponse(
-            responseCode = "403",
-            description = "Forbidden - insufficient permissions"
-        ),
+                responseCode = "403",
+                description = "Forbidden - insufficient permissions"
+            ),
         @ApiResponse(
-            responseCode = "409",
-            description = "Conflict - company with this name already exists"
-        )
+                responseCode = "409",
+                description = "Conflict - company with this name already exists"
+            )
     })
     public ResponseEntity<CompanyResponse> createCompany(
             @Valid @RequestBody CreateCompanyRequest request) {
@@ -112,18 +112,18 @@ public class CompanyController {
     )
     @ApiResponses(value = {
         @ApiResponse(
-            responseCode = "200",
-            description = "Company found",
-            content = @Content(schema = @Schema(implementation = CompanyResponse.class))
-        ),
+                responseCode = "200",
+                description = "Company found",
+                content = @Content(schema = @Schema(implementation = CompanyResponse.class))
+            ),
         @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized - missing or invalid JWT token"
-        ),
+                responseCode = "401",
+                description = "Unauthorized - missing or invalid JWT token"
+            ),
         @ApiResponse(
-            responseCode = "404",
-            description = "Company not found"
-        )
+                responseCode = "404",
+                description = "Company not found"
+            )
     })
     public ResponseEntity<CompanyResponse> getCompany(
             @Parameter(description = "Company name (unique identifier)", required = true, example = "Swisscom AG")
@@ -153,18 +153,18 @@ public class CompanyController {
     )
     @ApiResponses(value = {
         @ApiResponse(
-            responseCode = "200",
-            description = "Companies retrieved successfully with pagination metadata",
-            content = @Content(schema = @Schema(implementation = PaginatedCompanyResponse.class))
-        ),
+                responseCode = "200",
+                description = "Companies retrieved successfully with pagination metadata",
+                content = @Content(schema = @Schema(implementation = PaginatedCompanyResponse.class))
+            ),
         @ApiResponse(
-            responseCode = "400",
-            description = "Invalid query parameters (invalid JSON, negative page, etc.)"
-        ),
+                responseCode = "400",
+                description = "Invalid query parameters (invalid JSON, negative page, etc.)"
+            ),
         @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized - missing or invalid JWT token"
-        )
+                responseCode = "401",
+                description = "Unauthorized - missing or invalid JWT token"
+            )
     })
     public ResponseEntity<PaginatedCompanyResponse> getAllCompanies(
             @Parameter(description = "MongoDB-style JSON filter (e.g., {\"industry\":\"Technology\"})",
@@ -206,13 +206,13 @@ public class CompanyController {
     )
     @ApiResponses(value = {
         @ApiResponse(
-            responseCode = "200",
-            description = "Search results returned successfully"
-        ),
+                responseCode = "200",
+                description = "Search results returned successfully"
+            ),
         @ApiResponse(
-            responseCode = "400",
-            description = "Invalid query or limit parameter"
-        )
+                responseCode = "400",
+                description = "Invalid query or limit parameter"
+            )
     })
     public ResponseEntity<List<CompanySearchResponse>> searchCompanies(
             @Parameter(description = "Search query (minimum 1 character)", required = true)
@@ -239,30 +239,30 @@ public class CompanyController {
     )
     @ApiResponses(value = {
         @ApiResponse(
-            responseCode = "200",
-            description = "Company updated successfully",
-            content = @Content(schema = @Schema(implementation = CompanyResponse.class))
-        ),
+                responseCode = "200",
+                description = "Company updated successfully",
+                content = @Content(schema = @Schema(implementation = CompanyResponse.class))
+            ),
         @ApiResponse(
-            responseCode = "400",
-            description = "Invalid request data (validation failed)"
-        ),
+                responseCode = "400",
+                description = "Invalid request data (validation failed)"
+            ),
         @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized - missing or invalid JWT token"
-        ),
+                responseCode = "401",
+                description = "Unauthorized - missing or invalid JWT token"
+            ),
         @ApiResponse(
-            responseCode = "403",
-            description = "Forbidden - requires ORGANIZER role"
-        ),
+                responseCode = "403",
+                description = "Forbidden - requires ORGANIZER role"
+            ),
         @ApiResponse(
-            responseCode = "404",
-            description = "Company not found"
-        ),
+                responseCode = "404",
+                description = "Company not found"
+            ),
         @ApiResponse(
-            responseCode = "409",
-            description = "Conflict - company name already exists"
-        )
+                responseCode = "409",
+                description = "Conflict - company name already exists"
+            )
     })
     public ResponseEntity<CompanyResponse> updateCompany(
             @Parameter(description = "Company name (unique identifier)", required = true, example = "Swisscom AG")
@@ -288,30 +288,30 @@ public class CompanyController {
     )
     @ApiResponses(value = {
         @ApiResponse(
-            responseCode = "200",
-            description = "Company updated successfully",
-            content = @Content(schema = @Schema(implementation = CompanyResponse.class))
-        ),
+                responseCode = "200",
+                description = "Company updated successfully",
+                content = @Content(schema = @Schema(implementation = CompanyResponse.class))
+            ),
         @ApiResponse(
-            responseCode = "400",
-            description = "Invalid request data (validation failed)"
-        ),
+                responseCode = "400",
+                description = "Invalid request data (validation failed)"
+            ),
         @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized - missing or invalid JWT token"
-        ),
+                responseCode = "401",
+                description = "Unauthorized - missing or invalid JWT token"
+            ),
         @ApiResponse(
-            responseCode = "403",
-            description = "Forbidden - requires ORGANIZER role"
-        ),
+                responseCode = "403",
+                description = "Forbidden - requires ORGANIZER role"
+            ),
         @ApiResponse(
-            responseCode = "404",
-            description = "Company not found"
-        ),
+                responseCode = "404",
+                description = "Company not found"
+            ),
         @ApiResponse(
-            responseCode = "409",
-            description = "Conflict - company name already exists"
-        )
+                responseCode = "409",
+                description = "Conflict - company name already exists"
+            )
     })
     public ResponseEntity<CompanyResponse> patchCompany(
             @Parameter(description = "Company name (unique identifier)", required = true, example = "Swisscom AG")
@@ -337,21 +337,21 @@ public class CompanyController {
     )
     @ApiResponses(value = {
         @ApiResponse(
-            responseCode = "204",
-            description = "Company deleted successfully"
-        ),
+                responseCode = "204",
+                description = "Company deleted successfully"
+            ),
         @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized - missing or invalid JWT token"
-        ),
+                responseCode = "401",
+                description = "Unauthorized - missing or invalid JWT token"
+            ),
         @ApiResponse(
-            responseCode = "403",
-            description = "Forbidden - requires ORGANIZER role"
-        ),
+                responseCode = "403",
+                description = "Forbidden - requires ORGANIZER role"
+            ),
         @ApiResponse(
-            responseCode = "404",
-            description = "Company not found"
-        )
+                responseCode = "404",
+                description = "Company not found"
+            )
     })
     public ResponseEntity<Void> deleteCompany(
             @Parameter(description = "Company name (unique identifier)", required = true, example = "Swisscom AG")
@@ -375,18 +375,18 @@ public class CompanyController {
     )
     @ApiResponses(value = {
         @ApiResponse(
-            responseCode = "200",
-            description = "Validation result returned",
-            content = @Content(schema = @Schema(implementation = UIDValidationResponse.class))
-        ),
+                responseCode = "200",
+                description = "Validation result returned",
+                content = @Content(schema = @Schema(implementation = UIDValidationResponse.class))
+            ),
         @ApiResponse(
-            responseCode = "400",
-            description = "Missing UID parameter"
-        ),
+                responseCode = "400",
+                description = "Missing UID parameter"
+            ),
         @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized - missing or invalid JWT token"
-        )
+                responseCode = "401",
+                description = "Unauthorized - missing or invalid JWT token"
+            )
     })
     public ResponseEntity<UIDValidationResponse> validateUID(
             @Parameter(description = "Swiss UID to validate", required = true)
@@ -422,22 +422,22 @@ public class CompanyController {
     )
     @ApiResponses(value = {
         @ApiResponse(
-            responseCode = "200",
-            description = "Company verified successfully",
-            content = @Content(schema = @Schema(implementation = CompanyResponse.class))
-        ),
+                responseCode = "200",
+                description = "Company verified successfully",
+                content = @Content(schema = @Schema(implementation = CompanyResponse.class))
+            ),
         @ApiResponse(
-            responseCode = "401",
-            description = "Unauthorized - missing or invalid JWT token"
-        ),
+                responseCode = "401",
+                description = "Unauthorized - missing or invalid JWT token"
+            ),
         @ApiResponse(
-            responseCode = "403",
-            description = "Forbidden - requires ORGANIZER role"
-        ),
+                responseCode = "403",
+                description = "Forbidden - requires ORGANIZER role"
+            ),
         @ApiResponse(
-            responseCode = "404",
-            description = "Company not found"
-        )
+                responseCode = "404",
+                description = "Company not found"
+            )
     })
     public ResponseEntity<CompanyResponse> verifyCompany(
             @Parameter(description = "Company name (unique identifier)", required = true, example = "Swisscom AG")
