@@ -5,7 +5,7 @@ plugins {
     id 'jacoco'
     id 'checkstyle'
     id 'org.flywaydb.flyway' version '11.15.0'
-    id 'com.gorylenko.gradle-git-properties' version '2.4.1'
+    id 'com.gorylenko.gradle-git-properties' version '2.5.3'
 }
 
 group = 'ch.batbern'
