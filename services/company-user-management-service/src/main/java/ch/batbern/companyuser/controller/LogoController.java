@@ -202,7 +202,7 @@ public class LogoController {
             responseCode = "200",
             description = "Statistics retrieved successfully",
             content = @Content(
-                schema = @Schema(implementation = LogoCleanupService.CleanupStatistics.class))
+                            schema = @Schema(implementation = LogoCleanupService.CleanupStatistics.class))
         ),
         @ApiResponse(
             responseCode = "401",

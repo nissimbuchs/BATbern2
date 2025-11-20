@@ -25,7 +25,8 @@ public class UserResponseMapper {
             try {
                 profilePictureUri = java.net.URI.create(user.getProfilePictureUrl());
             } catch (IllegalArgumentException e) {
-                log.warn("Invalid profile picture URL for user {}: {}", user.getUsername(), user.getProfilePictureUrl());
+                log.warn("Invalid profile picture URL for user {}: {}",
+                        user.getUsername(), user.getProfilePictureUrl());
             }
         }
 
@@ -41,11 +42,11 @@ public class UserResponseMapper {
                         .toList())
                 .profilePictureUrl(profilePictureUri)
                 .active(user.isActive())
-                .createdAt(user.getCreatedAt() != null ?
-                        user.getCreatedAt().atOffset(java.time.ZoneOffset.UTC) : null)
-                .updatedAt(user.getUpdatedAt() != null ?
-                        user.getUpdatedAt().atOffset(java.time.ZoneOffset.UTC) : null)
-                .lastLoginAt(user.getLastLoginAt() != null ?
-                        user.getLastLoginAt().atOffset(java.time.ZoneOffset.UTC) : null);
+                .createdAt(user.getCreatedAt() != null
+                        ? user.getCreatedAt().atOffset(java.time.ZoneOffset.UTC) : null)
+                .updatedAt(user.getUpdatedAt() != null
+                        ? user.getUpdatedAt().atOffset(java.time.ZoneOffset.UTC) : null)
+                .lastLoginAt(user.getLastLoginAt() != null
+                        ? user.getLastLoginAt().atOffset(java.time.ZoneOffset.UTC) : null);
     }
 }

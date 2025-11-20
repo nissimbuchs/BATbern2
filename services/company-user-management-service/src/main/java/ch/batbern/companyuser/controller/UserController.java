@@ -416,8 +416,8 @@ public class UserController {
         UserResponse updatedUser = userService.getCurrentUser();
 
         ProfilePictureUploadConfirmResponse response = ProfilePictureUploadConfirmResponse.builder()
-            .profilePictureUrl(updatedUser.getProfilePictureUrl() != null ?
-                updatedUser.getProfilePictureUrl().toString() : null)
+            .profilePictureUrl(updatedUser.getProfilePictureUrl() != null
+                    ? updatedUser.getProfilePictureUrl().toString() : null)
             .build();
 
         return ResponseEntity.ok(response);
@@ -491,8 +491,8 @@ public class UserController {
         UserResponse updatedUser = userService.getUserByUsername(username);
 
         ProfilePictureUploadConfirmResponse response = ProfilePictureUploadConfirmResponse.builder()
-            .profilePictureUrl(updatedUser.getProfilePictureUrl() != null ?
-                updatedUser.getProfilePictureUrl().toString() : null)
+            .profilePictureUrl(updatedUser.getProfilePictureUrl() != null
+                    ? updatedUser.getProfilePictureUrl().toString() : null)
             .build();
 
         return ResponseEntity.ok(response);
@@ -602,7 +602,8 @@ public class UserController {
     /**
      * Build human-readable reconciliation message
      */
-    private String buildReconciliationMessage(ch.batbern.companyuser.service.UserReconciliationService.ReconciliationReport report) {
+    private String buildReconciliationMessage(
+            ch.batbern.companyuser.service.UserReconciliationService.ReconciliationReport report) {
         if (!report.getErrors().isEmpty()) {
             return String.format("Reconciliation completed with %d error(s)", report.getErrors().size());
         }

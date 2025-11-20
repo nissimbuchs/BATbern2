@@ -41,7 +41,9 @@ public class AuditLoggingAspect {
      * Intercept methods annotated with @AuditLog
      */
     @Around("@annotation(auditLog)")
+    // CHECKSTYLE.OFF: IllegalThrows - AspectJ requires throwing Throwable for ProceedingJoinPoint.proceed()
     public Object logAuditEvent(ProceedingJoinPoint joinPoint, AuditLog auditLog) throws Throwable {
+        // CHECKSTYLE.ON: IllegalThrows
 
         // Extract user context
         String userId = extractUserId();
@@ -74,7 +76,7 @@ public class AuditLoggingAspect {
             auditData.put("status", "SUCCESS");
             log.info("AUDIT_SUCCESS: {}", action);
 
-        } catch (Exception e) {
+        } catch (Throwable e) {
             auditData.put("status", "FAILURE");
             auditData.put("error", e.getMessage());
             auditData.put("errorType", e.getClass().getSimpleName());

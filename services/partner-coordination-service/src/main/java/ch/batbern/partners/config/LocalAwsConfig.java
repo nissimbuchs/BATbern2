@@ -10,7 +10,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient;
-import software.amazon.awssdk.services.eventbridge.model.*;
+import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
+import software.amazon.awssdk.services.eventbridge.model.PutEventsResponse;
 
 import java.util.concurrent.CompletableFuture;
 

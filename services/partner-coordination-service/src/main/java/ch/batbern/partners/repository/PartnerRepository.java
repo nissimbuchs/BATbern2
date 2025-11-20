@@ -46,7 +46,8 @@ public interface PartnerRepository extends JpaRepository<Partner, UUID> {
      *
      * @return List of currently active partners
      */
-    @Query("SELECT p FROM Partner p WHERE p.partnershipStartDate <= :today AND (p.partnershipEndDate IS NULL OR p.partnershipEndDate >= :today)")
+    @Query("SELECT p FROM Partner p WHERE p.partnershipStartDate <= :today "
+            + "AND (p.partnershipEndDate IS NULL OR p.partnershipEndDate >= :today)")
     List<Partner> findActivePartners(@Param("today") LocalDate today);
 
     /**
@@ -54,6 +55,7 @@ public interface PartnerRepository extends JpaRepository<Partner, UUID> {
      *
      * @return List of inactive partners
      */
-    @Query("SELECT p FROM Partner p WHERE p.partnershipStartDate > :today OR (p.partnershipEndDate IS NOT NULL AND p.partnershipEndDate < :today)")
+    @Query("SELECT p FROM Partner p WHERE p.partnershipStartDate > :today "
+            + "OR (p.partnershipEndDate IS NOT NULL AND p.partnershipEndDate < :today)")
     List<Partner> findInactivePartners(@Param("today") LocalDate today);
 }
