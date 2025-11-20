@@ -88,8 +88,7 @@ class RegistrationEmailServiceTest {
                 .firstName("John")
                 .lastName("Doe")
                 .email("john.doe@example.com")
-                .companyId("test-company")
-                ;
+                .companyId("test-company");
 
         Event event = Event.builder()
                 .id(registration.getEventId())
@@ -163,8 +162,7 @@ class RegistrationEmailServiceTest {
                 .id("jane.smith")
                 .firstName("Jane")
                 .lastName("Smith")
-                .email("jane.smith@example.com")
-                ;
+                .email("jane.smith@example.com");
 
         Event event = Event.builder()
                 .id(registration.getEventId())
@@ -214,8 +212,7 @@ class RegistrationEmailServiceTest {
                 .id("test.user")
                 .firstName("Test")
                 .lastName("User")
-                .email("test@example.com")
-                ;
+                .email("test@example.com");
 
         Instant eventDate = Instant.now().plus(30, java.time.temporal.ChronoUnit.DAYS);
         Event event = Event.builder()
@@ -265,8 +262,7 @@ class RegistrationEmailServiceTest {
                 .id("fail.user")
                 .firstName("Fail")
                 .lastName("User")
-                .email("fail@example.com")
-                ;
+                .email("fail@example.com");
 
         Event event = Event.builder()
                 .id(registration.getEventId())

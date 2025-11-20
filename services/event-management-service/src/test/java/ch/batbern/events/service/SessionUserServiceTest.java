@@ -80,8 +80,7 @@ class SessionUserServiceTest {
                 .lastName("Doe")
                 .companyId("GoogleZH")
                 .profilePictureUrl(java.net.URI.create("https://example.com/photo.jpg"))
-                .active(true)
-                ;
+                .active(true);
     }
 
     @Test
@@ -297,8 +296,7 @@ class SessionUserServiceTest {
                 .lastName("Smith")
                 .companyId("MicrosoftBE")
                 .profilePictureUrl(java.net.URI.create("https://example.com/jane.jpg"))
-                .active(true)
-                ;
+                .active(true);
 
         SessionUser speaker2 = SessionUser.builder()
                 .id(UUID.randomUUID())
