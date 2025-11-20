@@ -28,7 +28,7 @@ public class TestSecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll() // Allow all at HTTP level, @PreAuthorize handles method-level auth
+                    .anyRequest().permitAll() // Allow all at HTTP level, @PreAuthorize handles method-level auth
                 );
         return http.build();
     }

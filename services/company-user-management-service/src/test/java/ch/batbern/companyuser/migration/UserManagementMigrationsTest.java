@@ -133,10 +133,10 @@ class UserManagementMigrationsTest extends AbstractIntegrationTest {
     void should_enforceUsernameFormat_when_invalidUsernameInserted() {
         // Given - Invalid username formats (Story 1.16.2)
         String[] invalidUsernames = {
-                "John.Doe",      // Uppercase not allowed
-                "john_doe",      // Underscores not allowed
-                "johndoe",       // Missing dot separator
-                "john.doe.abc"   // Invalid suffix (must be numeric)
+            "John.Doe",      // Uppercase not allowed
+            "john_doe",      // Underscores not allowed
+            "johndoe",       // Missing dot separator
+            "john.doe.abc"   // Invalid suffix (must be numeric)
         };
 
         for (String invalidUsername : invalidUsernames) {
@@ -159,10 +159,10 @@ class UserManagementMigrationsTest extends AbstractIntegrationTest {
     void should_acceptValidUsername_when_correctFormatProvided() {
         // Given - Valid username formats (Story 1.16.2)
         String[] validUsernames = {
-                "john.doe",
-                "jane.smith",
-                "max.mueller.1",
-                "anna.schmidt.123"
+            "john.doe",
+            "jane.smith",
+            "max.mueller.1",
+            "anna.schmidt.123"
         };
 
         for (String validUsername : validUsernames) {
@@ -189,9 +189,9 @@ class UserManagementMigrationsTest extends AbstractIntegrationTest {
     void should_enforceCompanyIdFormat_when_invalidCompanyIdProvided() {
         // Given - Invalid company IDs (Story 1.16.2: max 12 alphanumeric chars)
         String[] invalidCompanyIds = {
-                "Company-Name-123",   // Hyphens not allowed
-                "VeryLongCompanyName123456",  // Exceeds 12 chars
-                "Company_ID"          // Underscores not allowed
+            "Company-Name-123",   // Hyphens not allowed
+            "VeryLongCompanyName123456",  // Exceeds 12 chars
+            "Company_ID"          // Underscores not allowed
         };
 
         for (int i = 0; i < invalidCompanyIds.length; i++) {
@@ -223,10 +223,10 @@ class UserManagementMigrationsTest extends AbstractIntegrationTest {
     void should_acceptValidCompanyId_when_correctFormatProvided() {
         // Given - Valid company IDs (Story 1.16.2)
         String[] validCompanyIds = {
-                "GoogleZH",
-                "MicrosoftBE",
-                "IBM",
-                "SAP123"
+            "GoogleZH",
+            "MicrosoftBE",
+            "IBM",
+            "SAP123"
         };
 
         for (int i = 0; i < validCompanyIds.length; i++) {
