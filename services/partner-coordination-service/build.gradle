@@ -196,7 +196,7 @@ jacoco {
 }
 
 jacocoTestReport {
-    dependsOn test
+    dependsOn test, classes
     reports {
         xml.required = true
         html.required = true
@@ -221,6 +221,7 @@ jacocoTestReport {
 test.finalizedBy jacocoTestReport
 
 jacocoTestCoverageVerification {
+    dependsOn jacocoTestReport
     violationRules {
         rule {
             limit {
