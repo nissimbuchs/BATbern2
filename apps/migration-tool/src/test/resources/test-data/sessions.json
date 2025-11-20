@@ -1,0 +1,78 @@
+[
+  {
+    "bat": 1,
+    "pdf": "BAT01_Mobiliar_UserInterface.pdf",
+    "title": "User Interface",
+    "abstract": "Test abstract for session 1",
+    "referenten": [
+      {
+        "name": "Thomas Goetz, Die Mobiliar",
+        "bio": "Thomas Goetz bio text here",
+        "company": "mobiliar",
+        "portrait": "thomas.goetz.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 1,
+    "pdf": "BAT01_PostFinance_GUIs.pdf",
+    "title": "GUIs - Heute und Morgen",
+    "abstract": "Test abstract for session 2",
+    "referenten": [
+      {
+        "name": "Volkert Barr, PostFinance",
+        "bio": "Volkert Barr bio text",
+        "company": "postfinance",
+        "portrait": "volkert.barr.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 2,
+    "pdf": "BAT-architecturemobi-v1.0.pdf",
+    "title": "Enterprise Architecture",
+    "abstract": "Test abstract for session 3",
+    "referenten": [
+      {
+        "name": "Peter Kummer, Die Mobiliar",
+        "bio": "Peter Kummer bio text",
+        "company": "Mobiliar",
+        "portrait": "peter.kummer.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 2,
+    "pdf": "EAPM_Erfa-Ber.pdf",
+    "title": "Enterprise Architecture PostMail",
+    "abstract": "Test abstract with multiple speakers",
+    "referenten": [
+      {
+        "name": "Beat M. Stöckli, PostMail",
+        "bio": "Beat Stöckli bio text",
+        "company": "postmail",
+        "portrait": "beat.stöckli.jpg"
+      },
+      {
+        "name": "Alain Jacot-Guillarmod, PostMail",
+        "bio": "Alain Jacot-Guillarmod bio text",
+        "company": "postmail",
+        "portrait": "alain.jacot-guillarmod.jpg"
+      }
+    ]
+  },
+  {
+    "bat": 3,
+    "pdf": "BAT03_duplicate_speaker.pdf",
+    "title": "Duplicate Speaker Test",
+    "abstract": "Session with duplicate speaker",
+    "referenten": [
+      {
+        "name": "Thomas Goetz, Die Mobiliar",
+        "bio": "Thomas Goetz appears again",
+        "company": "mobiliar",
+        "portrait": "thomas.goetz.jpg"
+      }
+    ]
+  }
+]

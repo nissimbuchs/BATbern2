@@ -12,3 +12,6 @@ include 'services:speaker-coordination-service'
 include 'services:partner-coordination-service'
 include 'services:company-user-management-service'
 include 'services:attendee-experience-service'
+
+// Migration Tools
+include 'apps:migration-tool'

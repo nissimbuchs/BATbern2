@@ -1,0 +1,51 @@
+{
+  "metadata": {
+    "lastUpdated": "2025-11-19T11:30:43Z",
+    "source": "Test Data for Migration Tool",
+    "totalCompanies": 5,
+    "companiesComplete": 3,
+    "companiesWithLogos": 2,
+    "companiesWithUrls": 4
+  },
+  "companies": [
+    {
+      "id": "sbb",
+      "displayName": "SBB CFF FFS",
+      "logo": "sbb.jpg",
+      "url": "https://www.sbb.ch",
+      "speakerCount": 36,
+      "logoFilePath": "/test/logos/sbb.jpg",
+      "status": "complete"
+    },
+    {
+      "id": "mobiliar",
+      "displayName": "Die Mobiliar",
+      "logo": "mobiliar.jpg",
+      "url": "https://www.mobiliar.ch",
+      "speakerCount": 22,
+      "logoFilePath": "/test/logos/mobiliar.jpg",
+      "status": "complete"
+    },
+    {
+      "id": "swisscom",
+      "displayName": "Swisscom AG",
+      "url": "https://www.swisscom.ch",
+      "speakerCount": 20,
+      "status": "needs_logo"
+    },
+    {
+      "id": "duplicate-company",
+      "displayName": "Duplicate Company AG",
+      "speakerCount": 5,
+      "status": "duplicate",
+      "note": "This is a duplicate and should be skipped"
+    },
+    {
+      "id": "verylongcompanynamethatneedstruncation",
+      "displayName": "Very Long Company Name That Needs Truncation AG",
+      "url": "https://www.example.com",
+      "speakerCount": 3,
+      "status": "complete"
+    }
+  ]
+}

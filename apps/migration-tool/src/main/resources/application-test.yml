@@ -1,0 +1,54 @@
+spring:
+  main:
+    allow-bean-definition-overriding: true
+
+  datasource:
+    # Configured dynamically by Testcontainers
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+  batch:
+    jdbc:
+      initialize-schema: always
+      platform: postgresql
+    job:
+      enabled: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+migration:
+  source-data-path: src/test/resources/test-data
+
+  target-api:
+    company-management:
+      base-url: http://localhost:8080  # WireMock
+    event-management:
+      base-url: http://localhost:8080  # WireMock
+    speaker-coordination:
+      base-url: http://localhost:8080  # WireMock
+
+  s3:
+    bucket-name: test-bucket
+    endpoint: http://localhost:4566  # LocalStack
+    region: us-east-1
+    cdn-base-url: https://cdn.test.batbern.ch
+
+  batch:
+    chunk-size: 10  # Smaller for tests
+    thread-pool-size: 2
+    skip-limit: 5
+    retry-limit: 2
+
+logging:
+  level:
+    ch.batbern.migration: DEBUG
+    org.springframework.batch: DEBUG
+    org.testcontainers: INFO

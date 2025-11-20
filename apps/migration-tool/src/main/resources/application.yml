@@ -1,0 +1,78 @@
+server:
+  port: 8090  # Different from API Gateway (8080)
+
+spring:
+  application:
+    name: migration-tool
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:migration}
+    username: ${DB_USER:migration}
+    password: ${DB_PASSWORD:migration}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate  # Let Flyway manage schema
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: Europe/Zurich
+
+  batch:
+    jdbc:
+      initialize-schema: always
+      table-prefix: BATCH_
+    job:
+      enabled: false  # Don't auto-run jobs on startup
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,batch
+  endpoint:
+    health:
+      show-details: always
+
+migration:
+  source-data-path: ${SOURCE_DATA_PATH:apps/BATspa-old/src/api}
+
+  target-api:
+    company-management:
+      base-url: ${COMPANY_API_URL:http://localhost:8080}
+    event-management:
+      base-url: ${EVENT_API_URL:http://localhost:8080}
+    speaker-coordination:
+      base-url: ${SPEAKER_API_URL:http://localhost:8080}
+
+  s3:
+    bucket-name: ${S3_BUCKET:batbern-development-company-logos}
+    region: ${AWS_REGION:eu-central-1}
+    cdn-base-url: ${CDN_BASE_URL:https://cdn.batbern.ch}
+
+  batch:
+    chunk-size: ${CHUNK_SIZE:100}
+    thread-pool-size: ${THREAD_POOL_SIZE:10}
+    skip-limit: ${SKIP_LIMIT:10}
+    retry-limit: ${RETRY_LIMIT:3}
+
+logging:
+  level:
+    ch.batbern.migration: INFO
+    org.springframework.batch: INFO
+    org.springframework.web: WARN
+    org.hibernate: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/migration.log
