@@ -1,10 +1,10 @@
 plugins {
     id 'java'
     id 'org.springframework.boot' version '3.5.7'
-    id 'io.spring.dependency-management' version '1.1.6'
+    id 'io.spring.dependency-management' version '1.1.7'
     id 'jacoco'
     id 'checkstyle'
-    id 'org.flywaydb.flyway' version '11.15.0'
+    id 'org.flywaydb.flyway' version '11.17.0'
     id 'org.openapi.generator' version '7.2.0'
     id 'com.gorylenko.gradle-git-properties' version '2.5.3'
 }
@@ -47,12 +47,12 @@ dependencies {
     // Uses RestTemplate (matching other services) NOT WebClient
 
     // Caching - Caffeine (application-level in-memory cache)
-    implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
+    implementation 'com.github.ben-manes.caffeine:caffeine:3.2.3'
     implementation 'org.springframework.boot:spring-boot-starter-cache'
 
     // Resilience4j for circuit breaker
-    implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.2.0'
-    implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.2.0'
+    implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.3.0'
+    implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.3.0'
 
     // AWS SDK
     implementation platform('software.amazon.awssdk:bom:2.39.0')

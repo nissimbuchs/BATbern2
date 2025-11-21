@@ -1,7 +1,7 @@
 buildscript {
     dependencies {
         // Flyway PostgreSQL database plugin required for Flyway 11.x
-        classpath 'org.flywaydb:flyway-database-postgresql:11.15.0'
+        classpath 'org.flywaydb:flyway-database-postgresql:11.17.0'
     }
 }
 
@@ -9,11 +9,11 @@ plugins {
     id 'java-library'
     id 'java-test-fixtures'
     id 'org.springframework.boot' version '3.5.7'
-    id 'io.spring.dependency-management' version '1.1.6'
+    id 'io.spring.dependency-management' version '1.1.7'
     id 'maven-publish'
     id 'jacoco'
     id 'checkstyle'
-    id 'org.flywaydb.flyway' version '11.15.0'
+    id 'org.flywaydb.flyway' version '11.17.0'
 }
 
 group = 'ch.batbern'

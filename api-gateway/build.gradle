@@ -1,7 +1,7 @@
 plugins {
     id 'java'
     id 'org.springframework.boot' version '3.5.7'
-    id 'io.spring.dependency-management' version '1.1.6'
+    id 'io.spring.dependency-management' version '1.1.7'
     id 'checkstyle'
     id 'com.gorylenko.gradle-git-properties' version '2.5.3'
 }
@@ -39,7 +39,7 @@ dependencies {
     implementation 'software.amazon.awssdk:auth'
 
     // JWT Processing
-    implementation 'com.auth0:java-jwt:4.4.0'
+    implementation 'com.auth0:java-jwt:4.5.0'
     implementation 'com.auth0:jwks-rsa:0.22.1'
 
     // Jackson for JSON processing
