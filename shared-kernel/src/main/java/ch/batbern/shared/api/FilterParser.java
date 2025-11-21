@@ -90,7 +90,7 @@ import java.util.Map;
 @Slf4j
 public class FilterParser {
 
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     // Operator mappings
     private static final Map<String, FilterOperator> OPERATOR_MAP = Map.ofEntries(
@@ -136,7 +136,7 @@ public class FilterParser {
 
         try {
             // Parse JSON string to JsonNode
-            JsonNode rootNode = objectMapper.readTree(filterJson);
+            JsonNode rootNode = OBJECT_MAPPER.readTree(filterJson);
 
             // Empty object check
             if (rootNode.isEmpty()) {

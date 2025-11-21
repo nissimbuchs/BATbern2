@@ -50,7 +50,8 @@ public class UserSearchServiceImpl implements UserSearchService {
         log.debug("Searching users with query: {} and role: {}", query, role);
 
         // Search users by name
-        List<User> users = userRepository.findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(query, query);
+        List<User> users = userRepository
+                .findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(query, query);
 
         // Filter by role if provided
         if (role != null) {

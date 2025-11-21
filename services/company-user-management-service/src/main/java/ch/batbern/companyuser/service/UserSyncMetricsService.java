@@ -4,7 +4,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.cloudwatch.CloudWatchClient;
-import software.amazon.awssdk.services.cloudwatch.model.*;
+import software.amazon.awssdk.services.cloudwatch.model.Dimension;
+import software.amazon.awssdk.services.cloudwatch.model.MetricDatum;
+import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataRequest;
+import software.amazon.awssdk.services.cloudwatch.model.StandardUnit;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -56,7 +59,7 @@ public class UserSyncMetricsService {
             publishMetric(metric);
 
             log.debug("Sync latency metric recorded",
-                    Map("syncType", syncType, "latencyMs", latencyMs));
+                    mapOf("syncType", syncType, "latencyMs", latencyMs));
 
         } catch (Exception e) {
             log.error("Failed to record sync latency metric", e);
@@ -87,7 +90,7 @@ public class UserSyncMetricsService {
             publishMetric(metric);
 
             log.debug("Sync failure metric recorded",
-                    Map("syncType", syncType));
+                    mapOf("syncType", syncType));
 
         } catch (Exception e) {
             log.error("Failed to record sync failure metric", e);
@@ -112,7 +115,7 @@ public class UserSyncMetricsService {
             publishMetric(metric);
 
             log.debug("Drift detected metric recorded",
-                    Map("driftCount", driftCount));
+                    mapOf("driftCount", driftCount));
 
         } catch (Exception e) {
             log.error("Failed to record drift detected metric", e);
@@ -142,7 +145,7 @@ public class UserSyncMetricsService {
             publishMetric(metric);
 
             log.debug("User created metric recorded",
-                    Map("source", source));
+                    mapOf("source", source));
 
         } catch (Exception e) {
             log.error("Failed to record user created metric", e);
@@ -172,7 +175,7 @@ public class UserSyncMetricsService {
             publishMetric(metric);
 
             log.debug("Compensation log metric recorded",
-                    Map("operation", operation));
+                    mapOf("operation", operation));
 
         } catch (Exception e) {
             log.error("Failed to record compensation log metric", e);
@@ -232,7 +235,7 @@ public class UserSyncMetricsService {
             publishMetrics(metrics);
 
             log.info("Reconciliation job metrics recorded",
-                    Map("orphanedUsers", orphanedUsers,
+                    mapOf("orphanedUsers", orphanedUsers,
                             "missingUsers", missingUsers,
                             "roleMismatches", roleMismatches,
                             "compensationRetries", compensationRetries,
@@ -276,7 +279,7 @@ public class UserSyncMetricsService {
     }
 
     // Map helper
-    private <K, V> java.util.Map<K, V> Map(Object... entries) {
+    private <K, V> java.util.Map<K, V> mapOf(Object... entries) {
         java.util.Map<K, V> map = new java.util.HashMap<>();
         for (int i = 0; i < entries.length; i += 2) {
             map.put((K) entries[i], (V) entries[i + 1]);

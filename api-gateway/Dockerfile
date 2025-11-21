@@ -30,7 +30,14 @@ WORKDIR /app
 # Install curl for health checks
 RUN apk add --no-cache curl
 
-COPY --from=build /workspace/api-gateway/build/libs/*.jar app.jar
+# Create non-root user
+RUN addgroup -g 1001 -S spring && \
+    adduser -S spring -u 1001
+
+COPY --from=build --chown=spring:spring /workspace/api-gateway/build/libs/*.jar app.jar
+
+# Switch to non-root user
+USER spring
 
 EXPOSE 8080
 

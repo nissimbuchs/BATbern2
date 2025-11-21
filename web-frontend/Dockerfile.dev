@@ -2,14 +2,21 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
 # Copy package files for better caching
-COPY package*.json ./
+COPY --chown=nodejs:nodejs package*.json ./
 
 # Install dependencies
 RUN npm install
 
 # Copy source code
-COPY . .
+COPY --chown=nodejs:nodejs . .
+
+# Switch to non-root user
+USER nodejs
 
 # Expose Vite dev server port
 EXPOSE 3000

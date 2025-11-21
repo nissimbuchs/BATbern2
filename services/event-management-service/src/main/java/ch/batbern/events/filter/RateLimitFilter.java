@@ -74,8 +74,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
             response.setContentType("application/json");
             response.getWriter().write(
-                    "{\"error\":\"Too many requests\",\"message\":\"Rate limit exceeded. " +
-                            "Please try again later.\",\"retryAfter\":60}"
+                "{\"error\":\"Too many requests\",\"message\":\"Rate limit exceeded. "
+                + "Please try again later.\",\"retryAfter\":60}"
             );
             return;
         }
@@ -89,8 +89,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
      */
     private boolean shouldRateLimit(String requestUri, String method) {
         // Apply to POST requests to registration endpoints only
-        return "POST".equalsIgnoreCase(method) &&
-                requestUri.matches(".*/api/v1/events/[^/]+/registrations$");
+        return "POST".equalsIgnoreCase(method)
+            && requestUri.matches(".*/api/v1/events/[^/]+/registrations$");
     }
 
     /**

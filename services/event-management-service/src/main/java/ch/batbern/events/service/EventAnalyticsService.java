@@ -96,7 +96,8 @@ public class EventAnalyticsService {
         if (startTime != null && endTime != null) {
             registrations = registrations.stream()
                     .filter(r -> r.getRegistrationDate() != null)
-                    .filter(r -> !r.getRegistrationDate().isBefore(startTime) && !r.getRegistrationDate().isAfter(endTime))
+                    .filter(r -> !r.getRegistrationDate().isBefore(startTime)
+                        && !r.getRegistrationDate().isAfter(endTime))
                     .toList();
         }
 
@@ -127,7 +128,8 @@ public class EventAnalyticsService {
         if (startTime != null && endTime != null) {
             registrations = registrations.stream()
                     .filter(r -> r.getRegistrationDate() != null)
-                    .filter(r -> !r.getRegistrationDate().isBefore(startTime) && !r.getRegistrationDate().isAfter(endTime))
+                    .filter(r -> !r.getRegistrationDate().isBefore(startTime)
+                        && !r.getRegistrationDate().isAfter(endTime))
                     .toList();
         }
 
@@ -154,7 +156,8 @@ public class EventAnalyticsService {
         if (startTime != null && endTime != null) {
             registrations = registrations.stream()
                     .filter(r -> r.getRegistrationDate() != null)
-                    .filter(r -> !r.getRegistrationDate().isBefore(startTime) && !r.getRegistrationDate().isAfter(endTime))
+                    .filter(r -> !r.getRegistrationDate().isBefore(startTime)
+                        && !r.getRegistrationDate().isAfter(endTime))
                     .toList();
         }
 

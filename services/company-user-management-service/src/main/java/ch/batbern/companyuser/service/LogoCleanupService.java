@@ -3,7 +3,6 @@ package ch.batbern.companyuser.service;
 import ch.batbern.companyuser.domain.Logo;
 import ch.batbern.companyuser.domain.LogoStatus;
 import ch.batbern.companyuser.repository.LogoRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -37,7 +36,9 @@ public class LogoCleanupService {
     public LogoCleanupService(
             LogoRepository logoRepository,
             S3Client s3Client,
-            @org.springframework.beans.factory.annotation.Value("${aws.s3.bucket-name:batbern-development-company-logos}") String bucketName) {
+            @org.springframework.beans.factory.annotation.Value(
+                    "${aws.s3.bucket-name:batbern-development-company-logos}")
+            String bucketName) {
         this.logoRepository = logoRepository;
         this.s3Client = s3Client;
         this.bucketName = bucketName;

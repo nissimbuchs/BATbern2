@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Unit tests for Swiss UID Validation Service
@@ -39,9 +39,9 @@ class SwissUIDValidationServiceTest {
 
     @ParameterizedTest
     @ValueSource(strings = {
-            "CHE-123.456.789",
-            "CHE-100.000.001",
-            "CHE-999.999.999"
+        "CHE-123.456.789",
+        "CHE-100.000.001",
+        "CHE-999.999.999"
     })
     @DisplayName("Test 12.1b: should_validateUID_when_variousValidFormatsProvided")
     void should_validateUID_when_variousValidFormatsProvided(String validUID) {
@@ -67,12 +67,12 @@ class SwissUIDValidationServiceTest {
 
     @ParameterizedTest
     @ValueSource(strings = {
-            "CHE-12.345.678",    // Wrong digit count
-            "CHE123456789",       // Missing dots
-            "CH-123.456.789",     // Wrong prefix
-            "CHE-ABC.DEF.GHI",    // Letters instead of numbers
-            "",                   // Empty string
-            "   "                 // Whitespace
+        "CHE-12.345.678",    // Wrong digit count
+        "CHE123456789",       // Missing dots
+        "CH-123.456.789",     // Wrong prefix
+        "CHE-ABC.DEF.GHI",    // Letters instead of numbers
+        "",                   // Empty string
+        "   "                 // Whitespace
     })
     @DisplayName("Test 12.2b: should_returnInvalid_when_variousInvalidFormats")
     void should_returnInvalid_when_variousInvalidFormats(String invalidUID) {

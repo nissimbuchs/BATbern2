@@ -93,7 +93,7 @@ install: install-java install-node ## Install all dependencies
 install-java: ## Install Java/Gradle dependencies
 	@echo "📦 Installing Java dependencies..."
 	@echo "→ Building shared-kernel..."
-	@cd shared-kernel && ./gradlew build publishToMavenLocal -x test
+	@./gradlew :shared-kernel:build :shared-kernel:publishToMavenLocal -x test
 	@echo "✓ Java dependencies installed"
 
 install-node: ## Install Node.js dependencies
@@ -137,14 +137,15 @@ test-java: ## Run Java tests (unit + integration, requires Docker)
 	@./gradlew test --parallel
 	@echo "✓ Java tests complete"
 
-test-node: ## Run Node.js unit tests
+test-node: ## Run Node.js unit tests with coverage
 	@echo "🧪 Running Node.js tests..."
 	@echo "→ Testing infrastructure..."
 	@cd infrastructure && npm test
-	@echo "→ Testing web-frontend (unit tests)..."
-	@cd web-frontend && npm run test:unit
+	@echo "→ Testing web-frontend (unit tests with coverage)..."
+	@cd web-frontend && npm run test:coverage
 	@echo "✓ Node.js tests complete"
 	@echo ""
+	@echo "📊 Coverage report: web-frontend/coverage/index.html"
 	@echo "💡 To run E2E tests: cd web-frontend && npm run test:e2e"
 
 test-coverage: ## Run tests with coverage reports

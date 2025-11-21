@@ -69,7 +69,8 @@ public class ProfilePictureService {
      * @throws FileSizeExceededException if file size exceeds 5 MB
      * @throws InvalidFileTypeException if file type is not allowed
      */
-    public PresignedUploadUrl generateProfilePictureUploadUrl(UUID userId, String username, String filename, long fileSizeBytes) {
+    public PresignedUploadUrl generateProfilePictureUploadUrl(UUID userId, String username, String filename,
+            long fileSizeBytes) {
         log.info("Generating presigned upload URL for user: {}, username: {}, filename: {}, size: {} bytes",
                 userId, username, filename, fileSizeBytes);
 

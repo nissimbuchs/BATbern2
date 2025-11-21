@@ -28,8 +28,10 @@ public class UpdateCompanyRequest {
     @Schema(description = "Display-friendly company name", example = "Swisscom")
     private String displayName;
 
-    @Pattern(regexp = "^CHE-\\d{3}\\.\\d{3}\\.\\d{3}$", message = "Invalid Swiss UID format. Expected: CHE-XXX.XXX.XXX")
-    @Schema(description = "Swiss UID (Unternehmens-Identifikationsnummer)", example = "CHE-123.456.789", pattern = "CHE-XXX.XXX.XXX")
+    @Pattern(regexp = "^CHE-\\d{3}\\.\\d{3}\\.\\d{3}$",
+            message = "Invalid Swiss UID format. Expected: CHE-XXX.XXX.XXX")
+    @Schema(description = "Swiss UID (Unternehmens-Identifikationsnummer)",
+            example = "CHE-123.456.789", pattern = "CHE-XXX.XXX.XXX")
     private String swissUID;
 
     @Size(max = 500, message = "Website URL must not exceed 500 characters")
@@ -44,6 +46,7 @@ public class UpdateCompanyRequest {
     @Schema(description = "Company description", example = "Leading telecommunications provider in Switzerland")
     private String description;
 
-    @Schema(description = "Logo upload ID from three-phase upload (set to empty string to remove logo)", example = "abc123-def456")
+    @Schema(description = "Logo upload ID from three-phase upload (set to empty string to remove logo)",
+            example = "abc123-def456")
     private String logoUploadId;
 }

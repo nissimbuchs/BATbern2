@@ -81,7 +81,8 @@ public class RegistrationEmailService {
             ZonedDateTime eventDateTime = event.getDate().atZone(SWISS_ZONE);
 
             // Load email template (i18n)
-            String htmlBody = loadEmailTemplate(emailLocale, registration, userProfile, event, eventDateTime, confirmationToken);
+            String htmlBody = loadEmailTemplate(emailLocale, registration, userProfile, event,
+                eventDateTime, confirmationToken);
 
             // Generate calendar file (.ics)
             byte[] icsFile = generateCalendarFile(event, eventDateTime);
@@ -115,7 +116,9 @@ public class RegistrationEmailService {
     /**
      * Load and populate email template with user/event data.
      */
-    private String loadEmailTemplate(Locale locale, Registration registration, UserResponse userProfile, Event event, ZonedDateTime eventDateTime, String confirmationToken) {
+    private String loadEmailTemplate(Locale locale, Registration registration,
+        UserResponse userProfile, Event event, ZonedDateTime eventDateTime,
+        String confirmationToken) {
         try {
             // Determine template file based on locale
             String templateName = locale.getLanguage().equals("de")
@@ -136,7 +139,8 @@ public class RegistrationEmailService {
                     Map.entry("eventTime", eventDateTime.format(TIME_FORMATTER) + " Uhr"),
                     Map.entry("venueName", event.getVenueName() != null ? event.getVenueName() : "TBA"),
                     Map.entry("venueAddress", event.getVenueAddress() != null ? event.getVenueAddress() : "TBA"),
-                    Map.entry("confirmationUrl", baseUrl + "/events/" + event.getEventCode() + "/confirm-registration?token=" + confirmationToken),
+                    Map.entry("confirmationUrl", baseUrl + "/events/" + event.getEventCode()
+                        + "/confirm-registration?token=" + confirmationToken),
                     Map.entry("createAccountUrl", baseUrl + "/auth/signup?email=" + userProfile.getEmail()),
                     Map.entry("eventUrl", baseUrl + "/events/" + event.getEventCode()),
                     Map.entry("supportUrl", baseUrl + "/support"),

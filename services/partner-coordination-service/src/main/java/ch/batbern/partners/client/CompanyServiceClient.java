@@ -18,7 +18,8 @@ public interface CompanyServiceClient {
      * @param companyName Company's name (unique identifier per ADR-003)
      * @return Company data (generated from companies-api.openapi.yml)
      * @throws ch.batbern.partners.exception.CompanyNotFoundException if company not found (404)
-     * @throws ch.batbern.partners.exception.CompanyServiceException if API communication fails (5xx, timeout, network error)
+     * @throws ch.batbern.partners.exception.CompanyServiceException if API communication fails
+     *         (5xx, timeout, network error)
      */
     CompanyResponse getCompanyByName(String companyName);
 
@@ -28,7 +29,8 @@ public interface CompanyServiceClient {
      * @param companyName Company's name (unique identifier per ADR-003)
      * @return Company data (generated from companies-api.openapi.yml)
      * @throws ch.batbern.partners.exception.CompanyNotFoundException if company not found (404)
-     * @throws ch.batbern.partners.exception.CompanyServiceException if API communication fails (5xx, timeout, network error)
+     * @throws ch.batbern.partners.exception.CompanyServiceException if API communication fails
+     *         (5xx, timeout, network error)
      */
     default CompanyResponse getCompany(String companyName) {
         return getCompanyByName(companyName);

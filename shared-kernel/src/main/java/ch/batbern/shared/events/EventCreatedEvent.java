@@ -2,7 +2,10 @@ package ch.batbern.shared.events;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
 
 import java.time.LocalDate;
 
@@ -37,12 +40,24 @@ public class EventCreatedEvent extends DomainEvent<String> {
     public EventCreatedEvent(String eventCode, String title, String eventType,
                            LocalDate eventDate, String venue, String organizerId) {
         super(eventCode, "EventCreatedEvent", organizerId);
-        if (eventCode == null) throw new NullPointerException("eventCode is marked non-null but is null");
-        if (title == null) throw new NullPointerException("title is marked non-null but is null");
-        if (eventType == null) throw new NullPointerException("eventType is marked non-null but is null");
-        if (eventDate == null) throw new NullPointerException("eventDate is marked non-null but is null");
-        if (venue == null) throw new NullPointerException("venue is marked non-null but is null");
-        if (organizerId == null) throw new NullPointerException("organizerId is marked non-null but is null");
+        if (eventCode == null) {
+            throw new NullPointerException("eventCode is marked non-null but is null");
+        }
+        if (title == null) {
+            throw new NullPointerException("title is marked non-null but is null");
+        }
+        if (eventType == null) {
+            throw new NullPointerException("eventType is marked non-null but is null");
+        }
+        if (eventDate == null) {
+            throw new NullPointerException("eventDate is marked non-null but is null");
+        }
+        if (venue == null) {
+            throw new NullPointerException("venue is marked non-null but is null");
+        }
+        if (organizerId == null) {
+            throw new NullPointerException("organizerId is marked non-null but is null");
+        }
         this.createdEventCode = eventCode;
         this.title = title;
         this.eventType = eventType;

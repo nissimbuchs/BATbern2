@@ -4,7 +4,6 @@ import ch.batbern.shared.exception.ValidationException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -55,8 +54,8 @@ public class FieldSelector {
         // Validate each field name
         for (String field : fields) {
             if (!VALID_FIELD_PATTERN.matcher(field).matches()) {
-                throw new ValidationException("Invalid field name: " + field +
-                        " (must contain only alphanumeric characters, underscores, and dots)");
+                throw new ValidationException("Invalid field name: " + field
+                        + " (must contain only alphanumeric characters, underscores, and dots)");
             }
         }
 

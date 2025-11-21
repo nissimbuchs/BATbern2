@@ -35,12 +35,13 @@ public class TestEventBridgeConfig {
                 .thenReturn(CompletableFuture.completedFuture(successResponse));
 
         // Configure mock for createEventBus (used in ensureEventBusExists)
-        software.amazon.awssdk.services.eventbridge.model.CreateEventBusResponse createBusResponse =
-                software.amazon.awssdk.services.eventbridge.model.CreateEventBusResponse.builder()
-                        .eventBusArn("arn:aws:events:us-east-1:123456789012:event-bus/batbern-test-events")
-                        .build();
+        software.amazon.awssdk.services.eventbridge.model.CreateEventBusResponse createBusResponse = software
+                .amazon.awssdk.services.eventbridge.model.CreateEventBusResponse.builder()
+                .eventBusArn("arn:aws:events:us-east-1:123456789012:event-bus/batbern-test-events")
+                .build();
 
-        when(mockClient.createEventBus(any(software.amazon.awssdk.services.eventbridge.model.CreateEventBusRequest.class)))
+        when(mockClient.createEventBus(
+                any(software.amazon.awssdk.services.eventbridge.model.CreateEventBusRequest.class)))
                 .thenReturn(CompletableFuture.completedFuture(createBusResponse));
 
         return mockClient;
