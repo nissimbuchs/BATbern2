@@ -46,17 +46,18 @@ CREATE TABLE user_profiles (
 ### Speaker Entity (Speaker Coordination Service)
 
 **Table**: `speakers`
-**Schema Source**: `services/speaker-coordination-service` (ADR-004 pattern)
+**Schema Source**: `services/speaker-coordination-service` (ADR-003 + ADR-004 pattern)
 
 ```sql
 CREATE TABLE speakers (
   id UUID PRIMARY KEY,
-  user_id UUID NOT NULL,                    -- FK to user_profiles.id (cross-service)
+  username VARCHAR(100) NOT NULL UNIQUE,    -- FK to user_profiles.username (meaningful ID, cross-service per ADR-003)
   availability VARCHAR(50),                 -- 'available', 'limited', 'unavailable'
   workflow_state VARCHAR(50),               -- 'open', 'in_review', 'approved', 'archived'
   expertise_areas JSONB,                    -- Array of expertise topics
   speaking_topics JSONB                     -- Array of speaking topics
   -- NOTE: bio, profile_picture_url, company_id stored in User (NOT here)
+  -- Cross-service reference uses meaningful ID (username) per ADR-003, NOT UUID
 );
 ```
 
@@ -159,13 +160,13 @@ const user: User = {
 };
 
 const speaker: Speaker = {
-  userId: user.id
+  username: user.username  // Meaningful ID FK per ADR-003
   // bio NOT included here
 };
 
 // ❌ Wrong
 const speaker: Speaker = {
-  userId: user.id,
+  username: user.username,
   bio: "..." // Don't duplicate bio in Speaker
 };
 ```
@@ -220,9 +221,9 @@ const speaker: Speaker = {
 }
 ```
 
-### 7. Speaker Entity Creation (ADR-004)
+### 7. Speaker Entity Creation (ADR-003 + ADR-004)
 
-**Target**: Speaker entity with userId FK
+**Target**: Speaker entity with username FK (meaningful ID per ADR-003)
 
 **Default Values** for Historical Speakers:
 - `availability` = `'available'` - Historical speakers assumed available
@@ -230,13 +231,13 @@ const speaker: Speaker = {
 - `expertiseAreas` = `[]` - Empty array, can be backfilled
 - `speakingTopics` = `[]` - Empty array, can be backfilled
 
-**Relationship**: `Speaker.userId` → `User.id` (UUID FK, cross-service)
+**Relationship**: `Speaker.username` → `User.username` (VARCHAR(100), meaningful ID, cross-service per ADR-003)
 
 **Example**:
 ```typescript
 const speaker: Speaker = {
-  id: "b2c3d4e5-f6a7-8901-bcde-f12345678901",
-  userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890", // FK to User.id
+  id: "b2c3d4e5-f6a7-8901-bcde-f12345678901",  // Internal UUID for Speaker (owned by this service)
+  username: "thomas.goetz",  // FK to User.username (meaningful ID per ADR-003)
   availability: "available",
   workflowState: "open",
   expertiseAreas: [],
@@ -251,14 +252,15 @@ const speaker: Speaker = {
 ✅ **User.username VARCHAR(100) UNIQUE**: Max 100 chars, unique
 ✅ **User.companyId VARCHAR(12)**: Max 12 chars, alphanumeric, FK to Company.name
 ✅ **User.bio TEXT**: No length limit (TEXT type)
-✅ **Speaker.userId UUID**: FK to user_profiles.id (cross-service)
+✅ **Speaker.username VARCHAR(100) UNIQUE**: FK to user_profiles.username (meaningful ID, cross-service per ADR-003)
+✅ **ADR-003**: Cross-service references use meaningful IDs (username), NOT UUIDs
 ✅ **ADR-004**: bio, profilePictureUrl NOT duplicated in Speaker
 ✅ **Story 1.16.2**: username is public API identifier
 
 ### Foreign Key Relationships
 
 1. **User → Company**: `user_profiles.company_id` → `companies.name` (VARCHAR(12), meaningful ID)
-2. **Speaker → User**: `speakers.user_id` → `user_profiles.id` (UUID, cross-service)
+2. **Speaker → User**: `speakers.username` → `user_profiles.username` (VARCHAR(100), meaningful ID, cross-service per ADR-003)
 
 **Migration Order**:
 1. Create Company entities (Task 1) ✅
@@ -278,7 +280,7 @@ const speaker: Speaker = {
 - `parseSpeakerName(name)`: Parse "FirstName LastName, Company" format
 - `generateUsername(firstName, lastName)`: Generate username with normalization
 - `mapSpeakerToUser(legacySpeaker, companies)`: Map to User entity (includes bio, portrait)
-- `mapSpeakerToSpeaker(userId)`: Map to Speaker entity (domain-specific fields only)
+- `mapSpeakerToSpeaker(username)`: Map to Speaker entity (domain-specific fields only, username FK per ADR-003)
 - `validateCompanyExists(companyId, companies)`: Validate FK before creating User
 
 ## Example Mapping
@@ -314,8 +316,8 @@ const speaker: Speaker = {
 
 // Speaker entity
 {
-  id: "b2c3d4e5-f6a7-8901-bcde-f12345678901",
-  userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890", // FK to User.id
+  id: "b2c3d4e5-f6a7-8901-bcde-f12345678901",  // Internal UUID for Speaker (owned by this service)
+  username: "thomas.goetz",  // FK to User.username (meaningful ID per ADR-003)
   availability: "available",
   workflowState: "open",
   expertiseAreas: [],
@@ -334,6 +336,7 @@ const speaker: Speaker = {
 
 ## References
 
+- **ADR-003**: Meaningful Identifiers in Public APIs (cross-service references MUST use meaningful IDs, NOT UUIDs)
 - **ADR-004**: Reference pattern (no field duplication between User and Speaker)
 - **Story 1.16.2**: Meaningful IDs (username as public identifier)
 - **ProfilePictureService**: S3 key pattern (ProfilePictureService.java:161)

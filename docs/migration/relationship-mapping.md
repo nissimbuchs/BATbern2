@@ -24,8 +24,8 @@ Foreign keys across microservices (different databases).
 
 | Relationship | From Service | To Service | FK Column | FK Type |
 |--------------|--------------|------------|-----------|---------|
-| SessionUser → User | Event Management | Company User Management | user_id | UUID |
-| Speaker → User | Speaker Coordination | Company User Management | user_id | UUID |
+| SessionUser → User | Event Management | Company User Management | username | VARCHAR(100) (meaningful ID, cross-service per ADR-003) |
+| Speaker → User | Speaker Coordination | Company User Management | username | VARCHAR(100) (meaningful ID, cross-service per ADR-003) |
 | User → Company | Company User Management | Company User Management | company_id | VARCHAR(12) (meaningful ID) |
 
 ## Detailed Relationship Specifications
@@ -72,8 +72,8 @@ session.eventId = event.id; // UUID FK
 **Pattern**: ADR-004 (Reference pattern, no field duplication)
 
 **Foreign Key**:
-- Column: `session_users.user_id`
-- References: `user_profiles.id` (UUID in different database)
+- Column: `session_users.username`
+- References: `user_profiles.username` (VARCHAR(100), meaningful ID, cross-service per ADR-003)
 - Constraint: `NOT NULL`
 
 **Mapping Logic**:
@@ -81,13 +81,13 @@ session.eventId = event.id; // UUID FK
 // Find user by generated username
 const username = generateUsername(speaker.firstName, speaker.lastName);
 const user = users.find(u => u.username === username);
-sessionUser.userId = user.id; // UUID FK (cross-service)
+sessionUser.username = user.username; // Meaningful ID FK (cross-service per ADR-003)
 ```
 
-**ADR-004 Implications**:
+**ADR-003 & ADR-004 Implications**:
 - User fields (bio, email, firstName, lastName) stored in `user_profiles` table
 - SessionUser does NOT duplicate these fields
-- Access user data via JOIN or service call using userId
+- Access user data via HTTP API call using username (meaningful ID per ADR-003)
 
 **Example**:
 ```typescript
@@ -95,11 +95,11 @@ sessionUser.userId = user.id; // UUID FK (cross-service)
   sessionUser: {
     id: "session-user-uuid-1",
     sessionId: "session-uuid-1",
-    userId: "user-uuid-123",  // FK to user_profiles.id (cross-service)
+    username: "thomas.goetz",  // FK to user_profiles.username (meaningful ID, cross-service per ADR-003)
     speakerRole: "primary_speaker"
   },
   user: {
-    id: "user-uuid-123",
+    id: "user-uuid-123",  // Internal UUID, NOT exposed cross-service
     username: "thomas.goetz",
     firstName: "Thomas",
     lastName: "Goetz",
@@ -118,15 +118,15 @@ sessionUser.userId = user.id; // UUID FK (cross-service)
 - Column: `session_users.session_id`
 - References: `sessions.id` (UUID)
 - Constraint: `NOT NULL`, `ON DELETE CASCADE`
-- Unique Constraint: `UNIQUE (session_id, user_id)` - prevents duplicate speaker assignments
+- Unique Constraint: `UNIQUE (session_id, username)` - prevents duplicate speaker assignments
 
 **Example**:
 ```typescript
 {
   sessionUser: {
     id: "session-user-uuid-1",
-    sessionId: "session-uuid-1",  // FK to sessions.id
-    userId: "user-uuid-123",
+    sessionId: "session-uuid-1",  // FK to sessions.id (within-service UUID)
+    username: "thomas.goetz",     // FK to user_profiles.username (cross-service meaningful ID per ADR-003)
     speakerRole: "primary_speaker"
   }
 }
@@ -140,34 +140,34 @@ sessionUser.userId = user.id; // UUID FK (cross-service)
 **Pattern**: ADR-004 (Reference pattern)
 
 **Foreign Key**:
-- Column: `speakers.user_id`
-- References: `user_profiles.id` (UUID in different database)
+- Column: `speakers.username`
+- References: `user_profiles.username` (VARCHAR(100), meaningful ID, cross-service per ADR-003)
 - Constraint: `NOT NULL`, `UNIQUE` (one speaker per user)
 
-**ADR-004 Implications**:
+**ADR-003 & ADR-004 Implications**:
 - User fields (bio, profilePictureUrl, companyId) stored in `user_profiles`
 - Speaker entity contains only domain-specific fields (availability, workflowState, expertiseAreas)
-- Access user data via userId FK
+- Access user data via HTTP API call using username (meaningful ID per ADR-003)
 
 **Mapping Logic**:
 ```typescript
-// Create User first, then Speaker with userId FK
+// Create User first, then Speaker with username FK (meaningful ID)
 const user = mapSpeakerToUser(legacySpeaker, companies);
-const speaker = mapSpeakerToSpeaker(user.id); // Speaker.userId = User.id
+const speaker = mapSpeakerToSpeaker(user.username); // Speaker.username = User.username (meaningful ID)
 ```
 
 **Example**:
 ```typescript
 {
   speaker: {
-    id: "speaker-uuid-1",
-    userId: "user-uuid-123",  // FK to user_profiles.id (cross-service, UNIQUE)
+    id: "speaker-uuid-1",  // Internal UUID for Speaker entity (owned by this service)
+    username: "thomas.goetz",  // FK to user_profiles.username (cross-service meaningful ID per ADR-003)
     availability: "available",
     workflowState: "open"
     // NOTE: bio, profilePictureUrl NOT here (in User per ADR-004)
   },
   user: {
-    id: "user-uuid-123",
+    id: "user-uuid-123",  // Internal UUID, NOT exposed cross-service
     username: "thomas.goetz",
     bio: "Experienced architect",
     profilePictureUrl: "https://cdn.batbern.ch/..."
@@ -232,9 +232,9 @@ user.companyId = companyId; // FK to companies.name (meaningful ID)
 
 **Critical Path**:
 - Companies MUST exist before Users (User.companyId → Company.name)
-- Users MUST exist before Speakers (Speaker.userId → User.id)
+- Users MUST exist before Speakers (Speaker.username → User.username, meaningful ID per ADR-003)
 - Events MUST exist before Sessions (Session.eventId → Event.id)
-- Sessions + Users MUST exist before SessionUsers
+- Sessions + Users MUST exist before SessionUsers (SessionUser.username → User.username, meaningful ID per ADR-003)
 
 ## Lookup Functions
 
@@ -259,7 +259,7 @@ function findUserByUsername(username: string, users: User[]): User | undefined {
 
 // Usage during migration
 const user = findUserByUsername('thomas.goetz', users);
-sessionUser.userId = user.id;
+sessionUser.username = user.username; // Meaningful ID FK (per ADR-003)
 ```
 
 ## Relationship Validation
@@ -285,9 +285,9 @@ if (!validateCompanyExists(user.companyId, companies)) {
 - Session.eventId → Event.id (FK constraint in PostgreSQL)
 - SessionUser.sessionId → Session.id (FK constraint)
 
-**Cross-Service** (application enforced):
-- SessionUser.userId → User.id (must validate before insert)
-- Speaker.userId → User.id (must validate before insert)
+**Cross-Service** (application enforced, meaningful IDs per ADR-003):
+- SessionUser.username → User.username (must validate before insert)
+- Speaker.username → User.username (must validate before insert)
 - User.companyId → Company.name (must validate before insert)
 
 ## Implementation
@@ -306,6 +306,7 @@ if (!validateCompanyExists(user.companyId, companies)) {
 
 ## References
 
+- **ADR-003**: Meaningful Identifiers in Public APIs (cross-service references MUST use meaningful IDs, NOT UUIDs)
 - **ADR-004**: Reference pattern (no field duplication across services)
 - **Story 1.16.2**: Meaningful IDs (Company.name, Event.eventCode, User.username)
 - **Flyway Migrations**: Schema source of truth for FK constraints
