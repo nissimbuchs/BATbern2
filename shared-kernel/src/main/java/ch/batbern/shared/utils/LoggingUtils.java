@@ -6,15 +6,13 @@ import org.slf4j.MDC;
 
 import java.time.Instant;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class LoggingUtils {
 
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private LoggingUtils() {
         // Utility class, prevent instantiation
@@ -49,7 +47,7 @@ public class LoggingUtils {
         logEntry.putAll(context);
 
         try {
-            return objectMapper.writeValueAsString(logEntry);
+            return OBJECT_MAPPER.writeValueAsString(logEntry);
         } catch (JsonProcessingException e) {
             return formatStructuredMessage(message, context);
         }
@@ -165,12 +163,12 @@ public class LoggingUtils {
 
     private static boolean isSensitiveField(String fieldName) {
         String lower = fieldName.toLowerCase();
-        return lower.contains("password") ||
-               lower.contains("email") ||
-               lower.contains("creditcard") ||
-               lower.contains("ssn") ||
-               lower.contains("token") ||
-               lower.contains("secret");
+        return lower.contains("password")
+               || lower.contains("email")
+               || lower.contains("creditcard")
+               || lower.contains("ssn")
+               || lower.contains("token")
+               || lower.contains("secret");
     }
 
     private static String maskValue(String fieldName, String value) {

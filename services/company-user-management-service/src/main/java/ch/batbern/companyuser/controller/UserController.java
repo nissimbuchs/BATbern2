@@ -2,7 +2,12 @@ package ch.batbern.companyuser.controller;
 
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
-import ch.batbern.companyuser.dto.*;
+import ch.batbern.companyuser.dto.PresignedUploadUrl;
+import ch.batbern.companyuser.dto.ProfilePictureUploadConfirmRequest;
+import ch.batbern.companyuser.dto.ProfilePictureUploadConfirmResponse;
+import ch.batbern.companyuser.dto.ProfilePictureUploadRequest;
+import ch.batbern.companyuser.dto.ReconciliationReportDTO;
+import ch.batbern.companyuser.dto.SyncStatusDTO;
 import ch.batbern.companyuser.dto.generated.CreateUserRequest;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserRequest;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserResponse;
@@ -22,11 +27,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * REST Controller for User Management
@@ -57,7 +68,9 @@ public class UserController {
      * @return Current user profile
      */
     @GetMapping("/me")
-    @Timed(value = "users.getCurrentUser", description = "Time to get current authenticated user", percentiles = {0.5, 0.95, 0.99})
+    @Timed(value = "users.getCurrentUser",
+            description = "Time to get current authenticated user",
+            percentiles = {0.5, 0.95, 0.99})
     public ResponseEntity<UserResponse> getCurrentUser(
             @RequestParam(required = false) String include) {
         log.debug("Getting current authenticated user with include: {}", include);
@@ -77,7 +90,9 @@ public class UserController {
      * @return Updated user profile
      */
     @PutMapping("/me")
-    @Timed(value = "users.updateCurrentUser", description = "Time to update current user profile", percentiles = {0.5, 0.95, 0.99})
+    @Timed(value = "users.updateCurrentUser",
+            description = "Time to update current user profile",
+            percentiles = {0.5, 0.95, 0.99})
     public ResponseEntity<UserResponse> updateCurrentUser(
             @Valid @RequestBody UpdateUserRequest request) {
         log.info("Updating current user profile");
@@ -97,7 +112,9 @@ public class UserController {
      */
     @PostMapping
     @PreAuthorize("hasAnyRole('ORGANIZER')")
-    @Timed(value = "users.createUser", description = "Time to create new user (admin/organizer)", percentiles = {0.5, 0.95, 0.99})
+    @Timed(value = "users.createUser",
+            description = "Time to create new user (admin/organizer)",
+            percentiles = {0.5, 0.95, 0.99})
     public ResponseEntity<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
         log.info("Creating new user: {}", request.getEmail());
 
@@ -119,7 +136,9 @@ public class UserController {
      */
     @GetMapping
     @PreAuthorize("hasAnyRole('ORGANIZER')")
-    @Timed(value = "users.listUsers", description = "Time to list users (admin/organizer)", percentiles = {0.5, 0.95, 0.99})
+    @Timed(value = "users.listUsers",
+            description = "Time to list users (admin/organizer)",
+            percentiles = {0.5, 0.95, 0.99})
     public ResponseEntity<PaginatedUserResponse> listUsers(
             @RequestParam(required = false) String filter,
             @RequestParam(required = false) String role,
@@ -197,7 +216,9 @@ public class UserController {
      */
     @PutMapping("/{username}")
     @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
-    @Timed(value = "users.updateUserByUsername", description = "Time to update user by username (admin/organizer)", percentiles = {0.5, 0.95, 0.99})
+    @Timed(value = "users.updateUserByUsername",
+            description = "Time to update user by username (admin/organizer)",
+            percentiles = {0.5, 0.95, 0.99})
     public ResponseEntity<UserResponse> updateUserByUsername(
             @PathVariable String username,
             @Valid @RequestBody UpdateUserRequest request) {
@@ -220,7 +241,9 @@ public class UserController {
      */
     @PostMapping("/get-or-create")
     // Story 4.1.5: Removed @PreAuthorize to allow anonymous registration
-    @Timed(value = "users.getOrCreateUser", description = "Time to get or create user (service-to-service)", percentiles = {0.5, 0.95, 0.99})
+    @Timed(value = "users.getOrCreateUser",
+            description = "Time to get or create user (service-to-service)",
+            percentiles = {0.5, 0.95, 0.99})
     public ResponseEntity<GetOrCreateUserResponse> getOrCreateUser(
             @Valid @RequestBody GetOrCreateUserRequest request) {
         log.info("Get-or-create user for email: {}", request.getEmail());
@@ -241,7 +264,9 @@ public class UserController {
      * @return List of matching users (max 20 for autocomplete)
      */
     @GetMapping("/search")
-    @Timed(value = "users.searchUsers", description = "Time to search users with caching", percentiles = {0.5, 0.95, 0.99})
+    @Timed(value = "users.searchUsers",
+            description = "Time to search users with caching",
+            percentiles = {0.5, 0.95, 0.99})
     public ResponseEntity<List<UserResponse>> searchUsers(
             @RequestParam String query,
             @RequestParam(required = false) String role) {
@@ -262,7 +287,9 @@ public class UserController {
      */
     @DeleteMapping("/{username}")
     @PreAuthorize("hasRole('ORGANIZER')")
-    @Timed(value = "users.deleteUser", description = "Time to delete user (GDPR compliance)", percentiles = {0.5, 0.95, 0.99})
+    @Timed(value = "users.deleteUser",
+            description = "Time to delete user (GDPR compliance)",
+            percentiles = {0.5, 0.95, 0.99})
     public ResponseEntity<Void> deleteUser(@PathVariable String username) {
         log.warn("Deleting user (GDPR): {}", username);
 
@@ -280,7 +307,9 @@ public class UserController {
      */
     @GetMapping("/{username}/roles")
     @PreAuthorize("hasAnyRole('ORGANIZER')")
-    @Timed(value = "users.getUserRoles", description = "Time to get user roles", percentiles = {0.5, 0.95, 0.99})
+    @Timed(value = "users.getUserRoles",
+            description = "Time to get user roles",
+            percentiles = {0.5, 0.95, 0.99})
     public ResponseEntity<UserRolesResponse> getUserRoles(@PathVariable String username) {
         log.info("Getting roles for user: {}", username);
 
@@ -304,7 +333,9 @@ public class UserController {
      */
     @PutMapping("/{username}/roles")
     @PreAuthorize("hasAnyRole('ORGANIZER')")
-    @Timed(value = "users.updateUserRoles", description = "Time to update user roles", percentiles = {0.5, 0.95, 0.99})
+    @Timed(value = "users.updateUserRoles",
+            description = "Time to update user roles",
+            percentiles = {0.5, 0.95, 0.99})
     public ResponseEntity<UserRolesResponse> updateUserRoles(
             @PathVariable String username,
             @Valid @RequestBody UpdateUserRolesRequest request) {
@@ -335,7 +366,9 @@ public class UserController {
      * @return Presigned upload URL with metadata
      */
     @PostMapping("/me/picture/presigned-url")
-    @Timed(value = "users.profilePicture.requestPresignedUrl", description = "Time to generate presigned URL for profile picture", percentiles = {0.5, 0.95, 0.99})
+    @Timed(value = "users.profilePicture.requestPresignedUrl",
+            description = "Time to generate presigned URL for profile picture",
+            percentiles = {0.5, 0.95, 0.99})
     public ResponseEntity<PresignedUploadUrl> requestProfilePictureUploadUrl(
             @Valid @RequestBody ProfilePictureUploadRequest request) {
         log.info("Requesting presigned URL for profile picture upload: {}", request.getFileName());
@@ -383,8 +416,8 @@ public class UserController {
         UserResponse updatedUser = userService.getCurrentUser();
 
         ProfilePictureUploadConfirmResponse response = ProfilePictureUploadConfirmResponse.builder()
-            .profilePictureUrl(updatedUser.getProfilePictureUrl() != null ?
-                updatedUser.getProfilePictureUrl().toString() : null)
+            .profilePictureUrl(updatedUser.getProfilePictureUrl() != null
+                    ? updatedUser.getProfilePictureUrl().toString() : null)
             .build();
 
         return ResponseEntity.ok(response);
@@ -402,11 +435,14 @@ public class UserController {
      */
     @PostMapping("/{username}/picture/presigned-url")
     @PreAuthorize("hasRole('ORGANIZER')")
-    @Timed(value = "users.profilePicture.admin.requestPresignedUrl", description = "Time to generate presigned URL for user profile picture (admin)", percentiles = {0.5, 0.95, 0.99})
+    @Timed(value = "users.profilePicture.admin.requestPresignedUrl",
+            description = "Time to generate presigned URL for user profile picture (admin)",
+            percentiles = {0.5, 0.95, 0.99})
     public ResponseEntity<PresignedUploadUrl> requestProfilePictureUploadUrlForUser(
             @PathVariable String username,
             @Valid @RequestBody ProfilePictureUploadRequest request) {
-        log.info("Admin requesting presigned URL for profile picture upload for user: {}, file: {}", username, request.getFileName());
+        log.info("Admin requesting presigned URL for profile picture upload for user: {}, file: {}",
+                username, request.getFileName());
 
         User user = userRepository.findByUsername(username)
             .orElseThrow(() -> new ch.batbern.companyuser.exception.UserNotFoundException(username));
@@ -433,7 +469,9 @@ public class UserController {
      */
     @PostMapping("/{username}/picture/confirm")
     @PreAuthorize("hasRole('ORGANIZER')")
-    @Timed(value = "users.profilePicture.admin.confirm", description = "Time to confirm profile picture upload for user (admin)", percentiles = {0.5, 0.95, 0.99})
+    @Timed(value = "users.profilePicture.admin.confirm",
+            description = "Time to confirm profile picture upload for user (admin)",
+            percentiles = {0.5, 0.95, 0.99})
     public ResponseEntity<ProfilePictureUploadConfirmResponse> confirmProfilePictureUploadForUser(
             @PathVariable String username,
             @Valid @RequestBody ProfilePictureUploadConfirmRequest request) {
@@ -453,8 +491,8 @@ public class UserController {
         UserResponse updatedUser = userService.getUserByUsername(username);
 
         ProfilePictureUploadConfirmResponse response = ProfilePictureUploadConfirmResponse.builder()
-            .profilePictureUrl(updatedUser.getProfilePictureUrl() != null ?
-                updatedUser.getProfilePictureUrl().toString() : null)
+            .profilePictureUrl(updatedUser.getProfilePictureUrl() != null
+                    ? updatedUser.getProfilePictureUrl().toString() : null)
             .build();
 
         return ResponseEntity.ok(response);
@@ -471,7 +509,9 @@ public class UserController {
      */
     @DeleteMapping("/{username}/picture")
     @PreAuthorize("hasRole('ORGANIZER')")
-    @Timed(value = "users.profilePicture.admin.remove", description = "Time to remove profile picture for user (admin)", percentiles = {0.5, 0.95, 0.99})
+    @Timed(value = "users.profilePicture.admin.remove",
+            description = "Time to remove profile picture for user (admin)",
+            percentiles = {0.5, 0.95, 0.99})
     public ResponseEntity<Void> removeProfilePictureForUser(@PathVariable String username) {
         log.info("Admin removing profile picture for user: {}", username);
 
@@ -498,7 +538,9 @@ public class UserController {
      */
     @PostMapping("/admin/reconcile")
     @PreAuthorize("hasRole('ORGANIZER')")
-    @Timed(value = "users.admin.reconcile", description = "Time to reconcile users (Cognito to DB)", percentiles = {0.5, 0.95, 0.99})
+    @Timed(value = "users.admin.reconcile",
+            description = "Time to reconcile users (Cognito to DB)",
+            percentiles = {0.5, 0.95, 0.99})
     public ResponseEntity<ReconciliationReportDTO> reconcileUsers() {
         log.info("Manual user reconciliation triggered by admin");
 
@@ -531,7 +573,9 @@ public class UserController {
      */
     @GetMapping("/admin/sync-status")
     @PreAuthorize("hasRole('ORGANIZER')")
-    @Timed(value = "users.admin.syncStatus", description = "Time to check sync status", percentiles = {0.5, 0.95, 0.99})
+    @Timed(value = "users.admin.syncStatus",
+            description = "Time to check sync status",
+            percentiles = {0.5, 0.95, 0.99})
     public ResponseEntity<SyncStatusDTO> getSyncStatus() {
         log.debug("Checking Cognito-Database sync status");
 
@@ -558,7 +602,8 @@ public class UserController {
     /**
      * Build human-readable reconciliation message
      */
-    private String buildReconciliationMessage(ch.batbern.companyuser.service.UserReconciliationService.ReconciliationReport report) {
+    private String buildReconciliationMessage(
+            ch.batbern.companyuser.service.UserReconciliationService.ReconciliationReport report) {
         if (!report.getErrors().isEmpty()) {
             return String.format("Reconciliation completed with %d error(s)", report.getErrors().size());
         }

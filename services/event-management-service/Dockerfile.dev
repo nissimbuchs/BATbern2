@@ -6,28 +6,36 @@ WORKDIR /workspace
 # Install curl for health checks
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
+# Create non-root user (gradle image already has gradle user)
+# Ensure gradle user owns the workspace and cache
+RUN mkdir -p /gradle-cache && \
+    chown -R gradle:gradle /workspace /gradle-cache
+
 # Copy Gradle wrapper and settings
-COPY settings.gradle ./
-COPY gradle ./gradle
-COPY gradlew ./
+COPY --chown=gradle:gradle settings.gradle ./
+COPY --chown=gradle:gradle gradle ./gradle
+COPY --chown=gradle:gradle gradlew ./
 
 # Copy shared-kernel dependency
-COPY shared-kernel/build.gradle ./shared-kernel/
-COPY shared-kernel/src ./shared-kernel/src
+COPY --chown=gradle:gradle shared-kernel/build.gradle ./shared-kernel/
+COPY --chown=gradle:gradle shared-kernel/src ./shared-kernel/src
 
 # Copy service build file
-COPY services/event-management-service/build.gradle ./services/event-management-service/
+COPY --chown=gradle:gradle services/event-management-service/build.gradle ./services/event-management-service/
 
 # Download dependencies (cached layer)
 RUN gradle :services:event-management-service:dependencies --no-daemon || true
 
 # Copy source code
-COPY services/event-management-service/src ./services/event-management-service/src
+COPY --chown=gradle:gradle services/event-management-service/src ./services/event-management-service/src
 
 WORKDIR /workspace/services/event-management-service
 
 # Set unique Gradle user home to avoid cache conflicts
 ENV GRADLE_USER_HOME=/gradle-cache
+
+# Switch to non-root user
+USER gradle
 
 # Expose application port and debug port
 EXPOSE 8080

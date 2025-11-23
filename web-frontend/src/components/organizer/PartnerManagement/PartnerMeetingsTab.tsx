@@ -112,19 +112,25 @@ export const PartnerMeetingsTab: React.FC<PartnerMeetingsTabProps> = ({ companyN
                   <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
                     <Box>
                       <Typography variant="h6" gutterBottom>
-                        {(meeting as any).agenda || meeting.title}
+                        {'agenda' in meeting
+                          ? (meeting as { agenda: string }).agenda
+                          : meeting.title}
                       </Typography>
                       <Stack direction="row" spacing={1} alignItems="center">
                         <Chip
-                          label={(meeting as any).meetingType || 'Meeting'}
+                          label={
+                            'meetingType' in meeting
+                              ? (meeting as { meetingType: string }).meetingType
+                              : 'Meeting'
+                          }
                           size="small"
                           variant="outlined"
                         />
-                        {(meeting as any).rsvpStatus && (
+                        {'rsvpStatus' in meeting && (
                           <Chip
-                            label={(meeting as any).rsvpStatus}
+                            label={(meeting as { rsvpStatus: string }).rsvpStatus}
                             size="small"
-                            color={getRsvpColor((meeting as any).rsvpStatus)}
+                            color={getRsvpColor((meeting as { rsvpStatus: string }).rsvpStatus)}
                           />
                         )}
                       </Stack>
@@ -135,37 +141,49 @@ export const PartnerMeetingsTab: React.FC<PartnerMeetingsTabProps> = ({ companyN
                   <Stack spacing={1}>
                     <Typography variant="body2" color="text.secondary">
                       <strong>Date:</strong>{' '}
-                      {formatMeetingDate((meeting as any).scheduledDate || meeting.date)}
+                      {formatMeetingDate(
+                        'scheduledDate' in meeting
+                          ? (meeting as { scheduledDate: string }).scheduledDate
+                          : meeting.date
+                      )}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      <strong>Location:</strong> {(meeting as any).location || 'TBD'}
+                      <strong>Location:</strong>{' '}
+                      {'location' in meeting ? (meeting as { location: string }).location : 'TBD'}
                     </Typography>
                   </Stack>
 
                   {/* Meeting Materials */}
-                  {(meeting as any).materials && (meeting as any).materials.length > 0 && (
-                    <>
-                      <Divider />
-                      <Box>
-                        <Typography variant="subtitle2" gutterBottom>
-                          Meeting Materials
-                        </Typography>
-                        <Stack spacing={1}>
-                          {(meeting as any).materials.map((material: any, index: number) => (
-                            <Link
-                              key={index}
-                              href={material.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              underline="hover"
-                            >
-                              {material.name}
-                            </Link>
-                          ))}
-                        </Stack>
-                      </Box>
-                    </>
-                  )}
+                  {'materials' in meeting &&
+                    Array.isArray(
+                      (meeting as { materials: Array<{ name: string; url: string }> }).materials
+                    ) &&
+                    (meeting as { materials: Array<{ name: string; url: string }> }).materials
+                      .length > 0 && (
+                      <>
+                        <Divider />
+                        <Box>
+                          <Typography variant="subtitle2" gutterBottom>
+                            Meeting Materials
+                          </Typography>
+                          <Stack spacing={1}>
+                            {(
+                              meeting as { materials: Array<{ name: string; url: string }> }
+                            ).materials.map((material, index) => (
+                              <Link
+                                key={index}
+                                href={material.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                underline="hover"
+                              >
+                                {material.name}
+                              </Link>
+                            ))}
+                          </Stack>
+                        </Box>
+                      </>
+                    )}
                 </Stack>
               </CardContent>
             </Card>

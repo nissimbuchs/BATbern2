@@ -16,7 +16,8 @@ public class PartnerUpdatedEvent extends DomainEvent<UUID> {
     private final String partnershipLevel;
     private final boolean isActive;
 
-    public PartnerUpdatedEvent(UUID partnerId, String companyName, String partnershipLevel, boolean isActive, String userId) {
+    public PartnerUpdatedEvent(UUID partnerId, String companyName, String partnershipLevel,
+                               boolean isActive, String userId) {
         super(partnerId, "PartnerUpdated", userId);
         this.partnerId = partnerId;
         this.companyName = companyName;

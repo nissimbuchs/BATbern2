@@ -31,21 +31,21 @@ public abstract class AbstractIntegrationTest {
      * Shared PostgreSQL container for ALL tests - true singleton pattern.
      * Started once in static block, stopped only at JVM shutdown.
      */
-    static final PostgreSQLContainer<?> postgres;
+    static final PostgreSQLContainer<?> POSTGRES;
 
     static {
         // Initialize singleton container once for entire test suite
-        postgres = new PostgreSQLContainer<>("postgres:16-alpine")
+        POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine")
                 .withDatabaseName("testdb")
                 .withUsername("test")
                 .withPassword("test");
 
         // Start container once
-        postgres.start();
+        POSTGRES.start();
 
         // Register shutdown hook to stop container only when JVM exits
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            postgres.stop();
+            POSTGRES.stop();
         }));
     }
 
@@ -54,8 +54,8 @@ public abstract class AbstractIntegrationTest {
      */
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
+        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
+        registry.add("spring.datasource.username", POSTGRES::getUsername);
+        registry.add("spring.datasource.password", POSTGRES::getPassword);
     }
 }

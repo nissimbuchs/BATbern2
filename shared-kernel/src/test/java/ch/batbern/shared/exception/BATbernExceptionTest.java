@@ -3,7 +3,7 @@ package ch.batbern.shared.exception;
 import org.junit.jupiter.api.Test;
 import java.util.Map;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class BATbernExceptionTest {
 
@@ -73,11 +73,11 @@ class BATbernExceptionTest {
 
     // Test concrete exception for testing abstract base class
     private static class TestException extends BATbernException {
-        public TestException(ErrorCode errorCode, String message, Severity severity) {
+        TestException(ErrorCode errorCode, String message, Severity severity) {
             super(errorCode, message, severity);
         }
 
-        public TestException(ErrorCode errorCode, String message, Map<String, Object> details, Severity severity) {
+        TestException(ErrorCode errorCode, String message, Map<String, Object> details, Severity severity) {
             super(errorCode, message, details, severity);
         }
     }

@@ -23,8 +23,16 @@ import java.util.Locale;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for RegistrationEmailService.
@@ -80,8 +88,7 @@ class RegistrationEmailServiceTest {
                 .firstName("John")
                 .lastName("Doe")
                 .email("john.doe@example.com")
-                .companyId("test-company")
-                ;
+                .companyId("test-company");
 
         Event event = Event.builder()
                 .id(registration.getEventId())
@@ -155,8 +162,7 @@ class RegistrationEmailServiceTest {
                 .id("jane.smith")
                 .firstName("Jane")
                 .lastName("Smith")
-                .email("jane.smith@example.com")
-                ;
+                .email("jane.smith@example.com");
 
         Event event = Event.builder()
                 .id(registration.getEventId())
@@ -206,8 +212,7 @@ class RegistrationEmailServiceTest {
                 .id("test.user")
                 .firstName("Test")
                 .lastName("User")
-                .email("test@example.com")
-                ;
+                .email("test@example.com");
 
         Instant eventDate = Instant.now().plus(30, java.time.temporal.ChronoUnit.DAYS);
         Event event = Event.builder()
@@ -257,8 +262,7 @@ class RegistrationEmailServiceTest {
                 .id("fail.user")
                 .firstName("Fail")
                 .lastName("User")
-                .email("fail@example.com")
-                ;
+                .email("fail@example.com");
 
         Event event = Event.builder()
                 .id(registration.getEventId())

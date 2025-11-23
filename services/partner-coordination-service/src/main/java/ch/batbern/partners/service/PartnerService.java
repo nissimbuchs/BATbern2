@@ -4,7 +4,12 @@ import ch.batbern.partners.client.CompanyServiceClient;
 import ch.batbern.partners.client.company.dto.CompanyResponse;
 import ch.batbern.partners.domain.Partner;
 import ch.batbern.partners.domain.PartnershipLevel;
-import ch.batbern.partners.dto.generated.*;
+import ch.batbern.partners.dto.generated.CompanyInfo;
+import ch.batbern.partners.dto.generated.CreatePartnerRequest;
+import ch.batbern.partners.dto.generated.PartnerResponse;
+import ch.batbern.partners.dto.generated.PartnerStatistics;
+import ch.batbern.partners.dto.generated.PartnerStatisticsTierCounts;
+import ch.batbern.partners.dto.generated.UpdatePartnerRequest;
 import ch.batbern.partners.events.PartnerCreatedEvent;
 import ch.batbern.partners.events.PartnerUpdatedEvent;
 import ch.batbern.partners.exception.PartnerAlreadyExistsException;
@@ -19,7 +24,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -55,8 +63,10 @@ public class PartnerService {
      * @return List of partner responses
      */
     @Timed(value = "partner.list", description = "Time taken to list partners")
-    public List<PartnerResponse> listPartners(String filter, String sort, int page, int size, Set<String> includes) {
-        log.debug("Listing partners with filter: {}, sort: {}, page: {}, size: {}, includes: {}", filter, sort, page, size, includes);
+    public List<PartnerResponse> listPartners(String filter, String sort, int page, int size,
+            Set<String> includes) {
+        log.debug("Listing partners with filter: {}, sort: {}, page: {}, size: {}, includes: {}",
+                filter, sort, page, size, includes);
 
         List<Partner> partners;
 

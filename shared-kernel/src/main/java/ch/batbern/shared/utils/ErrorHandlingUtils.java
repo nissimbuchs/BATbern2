@@ -90,8 +90,8 @@ public class ErrorHandlingUtils {
     }
 
     public static boolean isClientError(Exception exception) {
-        return exception instanceof ValidationException ||
-               exception instanceof IllegalArgumentException;
+        return exception instanceof ValidationException
+               || exception instanceof IllegalArgumentException;
     }
 
     public static boolean isServerError(Exception exception) {
@@ -104,9 +104,9 @@ public class ErrorHandlingUtils {
             return false;
         }
         String lowerMessage = message.toLowerCase();
-        return lowerMessage.contains("timeout") ||
-               lowerMessage.contains("connection") ||
-               lowerMessage.contains("temporarily unavailable");
+        return lowerMessage.contains("timeout")
+               || lowerMessage.contains("connection")
+               || lowerMessage.contains("temporarily unavailable");
     }
 
     public static ErrorResponse aggregateErrors(List<? extends Exception> errors) {

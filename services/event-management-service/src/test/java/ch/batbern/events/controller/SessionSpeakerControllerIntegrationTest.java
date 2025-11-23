@@ -6,7 +6,6 @@ import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
-import ch.batbern.events.domain.SessionUser.SpeakerRole;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.repository.EventRepository;
@@ -23,18 +22,19 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
-import static org.hamcrest.Matchers.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Integration tests for SessionSpeakerController
@@ -116,8 +116,7 @@ public class SessionSpeakerControllerIntegrationTest extends AbstractIntegration
                 .lastName("Doe")
                 .companyId("GoogleZH")
                 .profilePictureUrl(java.net.URI.create("https://example.com/john.jpg"))
-                .active(true)
-                ;
+                .active(true);
 
         testUser2 = new UserResponse()
                 .id("jane.smith")
@@ -126,8 +125,7 @@ public class SessionSpeakerControllerIntegrationTest extends AbstractIntegration
                 .lastName("Smith")
                 .companyId("MicrosoftBE")
                 .profilePictureUrl(java.net.URI.create("https://example.com/jane.jpg"))
-                .active(true)
-                ;
+                .active(true);
 
         // Mock UserApiClient responses
         when(userApiClient.getUserByUsername("john.doe")).thenReturn(testUser1);
@@ -168,9 +166,9 @@ public class SessionSpeakerControllerIntegrationTest extends AbstractIntegration
 
     @Test
     @WithMockUser(roles = "ATTENDEE")
-    @org.junit.jupiter.api.Disabled("Method-level security (@PreAuthorize) is not enforced in test environment. " +
-            "In production, authorization is handled at API Gateway level before requests reach this service (Story 1.2). " +
-            "This test would require full Spring Security context which conflicts with the gateway-based auth architecture.")
+    @org.junit.jupiter.api.Disabled("Method-level security (@PreAuthorize) is not enforced in test environment. "
+            + "In production, authorization is handled at API Gateway level before requests reach this service (Story 1.2). "
+            + "This test would require full Spring Security context which conflicts with the gateway-based auth architecture.")
     void should_return403_when_nonOrganizerAssignsSpeaker() throws Exception {
         // Given: Non-ORGANIZER user
         Map<String, Object> request = new HashMap<>();
@@ -335,9 +333,9 @@ public class SessionSpeakerControllerIntegrationTest extends AbstractIntegration
 
     @Test
     @WithMockUser(roles = "ATTENDEE")
-    @org.junit.jupiter.api.Disabled("Method-level security (@PreAuthorize) is not enforced in test environment. " +
-            "In production, authorization is handled at API Gateway level before requests reach this service (Story 1.2). " +
-            "This test would require full Spring Security context which conflicts with the gateway-based auth architecture.")
+    @org.junit.jupiter.api.Disabled("Method-level security (@PreAuthorize) is not enforced in test environment. "
+            + "In production, authorization is handled at API Gateway level before requests reach this service (Story 1.2). "
+            + "This test would require full Spring Security context which conflicts with the gateway-based auth architecture.")
     void should_return403_when_nonOrganizerConfirmsSpeaker() throws Exception {
         // Given: Assigned speaker
         // (Would need ORGANIZER role to assign first, so skip assignment)
