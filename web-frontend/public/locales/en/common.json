@@ -184,6 +184,45 @@
       "loadFailed": "Failed to load company",
       "saveFailed": "An error occurred while saving the company",
       "retry": "Retry"
+    },
+    "search": {
+      "placeholder": "Search companies..."
+    },
+    "batchImport": {
+      "button": "Batch Import",
+      "title": "Import Companies from JSON",
+      "dropzone": "Drop JSON file here or click to upload",
+      "dropzoneActive": "Drop the JSON file here",
+      "invalidJson": "Invalid JSON file. Please check the format.",
+      "noCompanies": "No companies found in the JSON file.",
+      "preview": "Preview ({{count}} companies)",
+      "importButton": "Import All",
+      "cancelButton": "Cancel",
+      "status": {
+        "pending": "Pending",
+        "importing": "Importing...",
+        "success": "Imported",
+        "error": "Error",
+        "skipped": "Skipped (exists)"
+      },
+      "progress": "Importing {{current}} of {{total}}...",
+      "complete": "Import complete: {{success}} succeeded, {{failed}} failed, {{skipped}} skipped",
+      "checkingDuplicates": "Checking for existing companies...",
+      "duplicatesFound": "{{count}} of {{total}} companies already exist and will be skipped.",
+      "allSkipped": "All Skipped",
+      "importButtonWithCount": "Import {{count}} Companies",
+      "columns": {
+        "logo": "Logo",
+        "displayName": "Display Name",
+        "name": "API Name",
+        "website": "Website",
+        "status": "Status"
+      },
+      "errors": {
+        "invalidFile": "Invalid file type. Please upload a JSON file.",
+        "parseError": "Failed to parse JSON file: {{error}}",
+        "importFailed": "Failed to import {{name}}: {{error}}"
+      }
     }
   },
   "fileUpload": {

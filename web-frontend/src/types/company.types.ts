@@ -31,6 +31,7 @@ export type CompanyListItem = components['schemas']['CompanySearchResponse'] & {
 export interface CompanyFilters {
   isVerified?: boolean;
   industry?: string;
+  searchQuery?: string;
 }
 
 /**
