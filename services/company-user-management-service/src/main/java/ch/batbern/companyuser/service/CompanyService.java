@@ -6,7 +6,10 @@ import ch.batbern.companyuser.dto.CompanyLogo;
 import ch.batbern.companyuser.dto.CompanyResponse;
 import ch.batbern.companyuser.dto.CreateCompanyRequest;
 import ch.batbern.companyuser.dto.UpdateCompanyRequest;
-import ch.batbern.companyuser.event.*;
+import ch.batbern.companyuser.event.CompanyCreatedEvent;
+import ch.batbern.companyuser.event.CompanyDeletedEvent;
+import ch.batbern.companyuser.event.CompanyUpdatedEvent;
+import ch.batbern.companyuser.event.CompanyVerifiedEvent;
 import ch.batbern.companyuser.exception.CompanyNotFoundException;
 import ch.batbern.companyuser.exception.CompanyValidationException;
 import ch.batbern.companyuser.exception.InvalidUIDException;
@@ -21,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -170,8 +172,8 @@ public class CompanyService {
         // Update only provided fields
         if (request.getName() != null) {
             // Check for duplicate company name if name is being changed (AC3)
-            if (!request.getName().equals(company.getName()) &&
-                companyRepository.existsByName(request.getName())) {
+            if (!request.getName().equals(company.getName())
+                    && companyRepository.existsByName(request.getName())) {
                 throw new CompanyValidationException("Company with name '" + request.getName() + "' already exists");
             }
             company.setName(request.getName());

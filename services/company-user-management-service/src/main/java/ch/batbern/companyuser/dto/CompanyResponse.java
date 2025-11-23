@@ -59,9 +59,11 @@ public class CompanyResponse {
 
     // Resource expansion fields (AC15)
 
-    @Schema(description = "Company statistics (only included when ?include=statistics)", example = "{\"totalEvents\": 5, \"totalSpeakers\": 12, \"totalPartners\": 3}")
+    @Schema(description = "Company statistics (only included when ?include=statistics)",
+            example = "{\"totalEvents\": 5, \"totalSpeakers\": 12, \"totalPartners\": 3}")
     private CompanyStatistics statistics;
 
-    @Schema(description = "Company logo information (only included when ?include=logo)", example = "{\"url\": \"https://cdn.batbern.ch/logos/...\", \"s3Key\": \"/logos/2024/...\"}")
+    @Schema(description = "Company logo information (only included when ?include=logo)",
+            example = "{\"url\": \"https://cdn.batbern.ch/logos/...\", \"s3Key\": \"/logos/2024/...\"}")
     private CompanyLogo logo;
 }

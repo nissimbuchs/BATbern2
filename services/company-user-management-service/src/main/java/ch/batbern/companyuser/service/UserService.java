@@ -22,7 +22,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
-import java.util.UUID;
 
 /**
  * UserService - Core business logic for user management
@@ -113,11 +112,21 @@ public class UserService {
         // Publish domain event (Story 1.16.2: String IDs)
         // TODO: Track updated fields and previous values for better event audit trail
         java.util.Map<String, Object> updatedFields = new java.util.HashMap<>();
-        if (request.getFirstName() != null) updatedFields.put("firstName", request.getFirstName());
-        if (request.getLastName() != null) updatedFields.put("lastName", request.getLastName());
-        if (request.getEmail() != null) updatedFields.put("email", request.getEmail());
-        if (request.getBio() != null) updatedFields.put("bio", request.getBio());
-        if (request.getCompanyId() != null) updatedFields.put("companyId", request.getCompanyId());
+        if (request.getFirstName() != null) {
+            updatedFields.put("firstName", request.getFirstName());
+        }
+        if (request.getLastName() != null) {
+            updatedFields.put("lastName", request.getLastName());
+        }
+        if (request.getEmail() != null) {
+            updatedFields.put("email", request.getEmail());
+        }
+        if (request.getBio() != null) {
+            updatedFields.put("bio", request.getBio());
+        }
+        if (request.getCompanyId() != null) {
+            updatedFields.put("companyId", request.getCompanyId());
+        }
 
         UserUpdatedEvent event = new UserUpdatedEvent(
             updatedUser.getUsername(),  // aggregateId = username
@@ -169,11 +178,21 @@ public class UserService {
 
         // Publish domain event
         java.util.Map<String, Object> updatedFields = new java.util.HashMap<>();
-        if (request.getFirstName() != null) updatedFields.put("firstName", request.getFirstName());
-        if (request.getLastName() != null) updatedFields.put("lastName", request.getLastName());
-        if (request.getEmail() != null) updatedFields.put("email", request.getEmail());
-        if (request.getBio() != null) updatedFields.put("bio", request.getBio());
-        if (request.getCompanyId() != null) updatedFields.put("companyId", request.getCompanyId());
+        if (request.getFirstName() != null) {
+            updatedFields.put("firstName", request.getFirstName());
+        }
+        if (request.getLastName() != null) {
+            updatedFields.put("lastName", request.getLastName());
+        }
+        if (request.getEmail() != null) {
+            updatedFields.put("email", request.getEmail());
+        }
+        if (request.getBio() != null) {
+            updatedFields.put("bio", request.getBio());
+        }
+        if (request.getCompanyId() != null) {
+            updatedFields.put("companyId", request.getCompanyId());
+        }
 
         // Get current user performing the update
         String updatedBy = securityContext.getCurrentUserId();
@@ -196,7 +215,8 @@ public class UserService {
      * AC3: List users with role, company, search, and JSON filters
      */
     @Transactional(readOnly = true)
-    public java.util.List<UserResponse> listUsers(String roleFilter, String companyFilter, String search, String jsonFilter) {
+    public java.util.List<UserResponse> listUsers(String roleFilter, String companyFilter, String search,
+            String jsonFilter) {
         log.debug("User Service Listing users with filters: role={}, company={}, search={}, filter={}",
                 roleFilter, companyFilter, search, jsonFilter);
 
@@ -228,10 +248,10 @@ public class UserService {
             String searchLower = search.toLowerCase();
             users = users.stream()
                     .filter(u ->
-                            (u.getFirstName() != null && u.getFirstName().toLowerCase().contains(searchLower)) ||
-                            (u.getLastName() != null && u.getLastName().toLowerCase().contains(searchLower)) ||
-                            (u.getEmail() != null && u.getEmail().toLowerCase().contains(searchLower)) ||
-                            (u.getUsername() != null && u.getUsername().toLowerCase().contains(searchLower))
+                            (u.getFirstName() != null && u.getFirstName().toLowerCase().contains(searchLower))
+                            || (u.getLastName() != null && u.getLastName().toLowerCase().contains(searchLower))
+                            || (u.getEmail() != null && u.getEmail().toLowerCase().contains(searchLower))
+                            || (u.getUsername() != null && u.getUsername().toLowerCase().contains(searchLower))
                     )
                     .toList();
         }

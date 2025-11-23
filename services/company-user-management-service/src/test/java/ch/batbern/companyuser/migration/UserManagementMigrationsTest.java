@@ -11,7 +11,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import java.util.List;
 import java.util.Map;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Migration verification tests for User Management schema (Story 1.14-2)
@@ -75,8 +77,8 @@ class UserManagementMigrationsTest extends AbstractIntegrationTest {
     void should_haveUsernameColumn_when_userProfilesTableExists() {
         // When
         List<Map<String, Object>> columns = jdbcTemplate.queryForList(
-                "SELECT column_name, data_type FROM information_schema.columns " +
-                        "WHERE table_name = 'user_profiles' AND column_name = 'username'"
+                "SELECT column_name, data_type FROM information_schema.columns "
+                        + "WHERE table_name = 'user_profiles' AND column_name = 'username'"
         );
 
         // Then
@@ -90,8 +92,8 @@ class UserManagementMigrationsTest extends AbstractIntegrationTest {
     void should_haveEmbeddedPreferencesColumns_when_userProfilesTableExists() {
         // When
         List<String> prefColumns = jdbcTemplate.queryForList(
-                "SELECT column_name FROM information_schema.columns " +
-                        "WHERE table_name = 'user_profiles' AND column_name LIKE 'pref_%'",
+                "SELECT column_name FROM information_schema.columns "
+                        + "WHERE table_name = 'user_profiles' AND column_name LIKE 'pref_%'",
                 String.class
         );
 
@@ -111,8 +113,8 @@ class UserManagementMigrationsTest extends AbstractIntegrationTest {
     void should_haveEmbeddedSettingsColumns_when_userProfilesTableExists() {
         // When
         List<String> settingsColumns = jdbcTemplate.queryForList(
-                "SELECT column_name FROM information_schema.columns " +
-                        "WHERE table_name = 'user_profiles' AND column_name LIKE 'settings_%'",
+                "SELECT column_name FROM information_schema.columns "
+                        + "WHERE table_name = 'user_profiles' AND column_name LIKE 'settings_%'",
                 String.class
         );
 
@@ -131,18 +133,18 @@ class UserManagementMigrationsTest extends AbstractIntegrationTest {
     void should_enforceUsernameFormat_when_invalidUsernameInserted() {
         // Given - Invalid username formats (Story 1.16.2)
         String[] invalidUsernames = {
-                "John.Doe",      // Uppercase not allowed
-                "john_doe",      // Underscores not allowed
-                "johndoe",       // Missing dot separator
-                "john.doe.abc"   // Invalid suffix (must be numeric)
+            "John.Doe",      // Uppercase not allowed
+            "john_doe",      // Underscores not allowed
+            "johndoe",       // Missing dot separator
+            "john.doe.abc"   // Invalid suffix (must be numeric)
         };
 
         for (String invalidUsername : invalidUsernames) {
             // When/Then
             assertThatThrownBy(() ->
                     jdbcTemplate.update(
-                            "INSERT INTO user_profiles (username, cognito_user_id, email, first_name, last_name) " +
-                                    "VALUES (?, ?, ?, ?, ?)",
+                            "INSERT INTO user_profiles (username, cognito_user_id, email, first_name, last_name) "
+                                    + "VALUES (?, ?, ?, ?, ?)",
                             invalidUsername, "cognito-" + System.nanoTime(), "test@example.com", "John", "Doe"
                     )
             ).satisfiesAnyOf(
@@ -157,18 +159,18 @@ class UserManagementMigrationsTest extends AbstractIntegrationTest {
     void should_acceptValidUsername_when_correctFormatProvided() {
         // Given - Valid username formats (Story 1.16.2)
         String[] validUsernames = {
-                "john.doe",
-                "jane.smith",
-                "max.mueller.1",
-                "anna.schmidt.123"
+            "john.doe",
+            "jane.smith",
+            "max.mueller.1",
+            "anna.schmidt.123"
         };
 
         for (String validUsername : validUsernames) {
             // When/Then - Should NOT throw exception
             assertThatCode(() ->
                     jdbcTemplate.update(
-                            "INSERT INTO user_profiles (username, cognito_user_id, email, first_name, last_name) " +
-                                    "VALUES (?, ?, ?, ?, ?)",
+                            "INSERT INTO user_profiles (username, cognito_user_id, email, first_name, last_name) "
+                                    + "VALUES (?, ?, ?, ?, ?)",
                             validUsername,
                             "cognito-" + System.nanoTime(),
                             validUsername + "@example.com",
@@ -187,9 +189,9 @@ class UserManagementMigrationsTest extends AbstractIntegrationTest {
     void should_enforceCompanyIdFormat_when_invalidCompanyIdProvided() {
         // Given - Invalid company IDs (Story 1.16.2: max 12 alphanumeric chars)
         String[] invalidCompanyIds = {
-                "Company-Name-123",   // Hyphens not allowed
-                "VeryLongCompanyName123456",  // Exceeds 12 chars
-                "Company_ID"          // Underscores not allowed
+            "Company-Name-123",   // Hyphens not allowed
+            "VeryLongCompanyName123456",  // Exceeds 12 chars
+            "Company_ID"          // Underscores not allowed
         };
 
         for (int i = 0; i < invalidCompanyIds.length; i++) {
@@ -199,8 +201,8 @@ class UserManagementMigrationsTest extends AbstractIntegrationTest {
             // When/Then
             assertThatThrownBy(() ->
                     jdbcTemplate.update(
-                            "INSERT INTO user_profiles (username, cognito_user_id, email, first_name, last_name, company_id) " +
-                                    "VALUES (?, ?, ?, ?, ?, ?)",
+                            "INSERT INTO user_profiles (username, cognito_user_id, email, first_name, last_name, company_id) "
+                                    + "VALUES (?, ?, ?, ?, ?, ?)",
                             "test.user." + index,
                             "cognito-" + System.nanoTime(),
                             "testuser" + index + "@example.com",
@@ -221,10 +223,10 @@ class UserManagementMigrationsTest extends AbstractIntegrationTest {
     void should_acceptValidCompanyId_when_correctFormatProvided() {
         // Given - Valid company IDs (Story 1.16.2)
         String[] validCompanyIds = {
-                "GoogleZH",
-                "MicrosoftBE",
-                "IBM",
-                "SAP123"
+            "GoogleZH",
+            "MicrosoftBE",
+            "IBM",
+            "SAP123"
         };
 
         for (int i = 0; i < validCompanyIds.length; i++) {
@@ -236,8 +238,8 @@ class UserManagementMigrationsTest extends AbstractIntegrationTest {
             // When/Then - Should NOT throw exception
             assertThatCode(() ->
                     jdbcTemplate.update(
-                            "INSERT INTO user_profiles (username, cognito_user_id, email, first_name, last_name, company_id) " +
-                                    "VALUES (?, ?, ?, ?, ?, ?)",
+                            "INSERT INTO user_profiles (username, cognito_user_id, email, first_name, last_name, company_id) "
+                                    + "VALUES (?, ?, ?, ?, ?, ?)",
                             username,
                             "cognito-" + System.nanoTime(),
                             email,

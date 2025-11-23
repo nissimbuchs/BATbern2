@@ -67,10 +67,10 @@ public interface SessionUserRepository extends JpaRepository<SessionUser, UUID> 
      * @param eventId the event UUID
      * @return list of all SessionUser associations for the event
      */
-    @Query("SELECT su FROM SessionUser su " +
-           "JOIN su.session s " +
-           "WHERE s.eventId = :eventId " +
-           "ORDER BY s.startTime ASC, su.speakerRole ASC")
+    @Query("SELECT su FROM SessionUser su "
+        + "JOIN su.session s "
+        + "WHERE s.eventId = :eventId "
+        + "ORDER BY s.startTime ASC, su.speakerRole ASC")
     List<SessionUser> findAllByEventId(@Param("eventId") UUID eventId);
 
     /**

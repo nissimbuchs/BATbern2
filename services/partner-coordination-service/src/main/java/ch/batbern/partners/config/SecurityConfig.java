@@ -41,7 +41,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .anyRequest().permitAll() // Local dev: trust all inter-service calls (localhost isolation)
             )
-            .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.decoder(jwtDecoder()))); // Parse JWT for token propagation
+            .oauth2ResourceServer(oauth2 ->
+                oauth2.jwt(jwt -> jwt.decoder(jwtDecoder()))); // Parse JWT for token propagation
 
         return http.build();
     }

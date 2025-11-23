@@ -53,8 +53,8 @@ public class IncludeParser {
         // Validate each relation name
         for (String relation : includes) {
             if (!VALID_RELATION_PATTERN.matcher(relation).matches()) {
-                throw new ValidationException("Invalid relation name: " + relation +
-                        " (must contain only alphanumeric characters, underscores, and dots)");
+                throw new ValidationException("Invalid relation name: " + relation
+                        + " (must contain only alphanumeric characters, underscores, and dots)");
             }
         }
 

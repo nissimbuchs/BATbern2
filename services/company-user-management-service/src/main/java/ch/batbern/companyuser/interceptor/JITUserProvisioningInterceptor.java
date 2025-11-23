@@ -91,7 +91,7 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
 
             // User doesn't exist - perform JIT provisioning
             log.info("User not found in database, performing JIT provisioning",
-                    Map("cognitoUserId", cognitoUserId));
+                    mapOf("cognitoUserId", cognitoUserId));
 
             // Extract user information from JWT
             String email = jwt.getClaimAsString("email");
@@ -119,7 +119,7 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
             User savedUser = userRepository.save(newUser);
 
             log.info("JIT provisioning completed successfully",
-                    Map(
+                    mapOf(
                         "cognitoUserId", cognitoUserId,
                         "username", username,
                         "email", email,
@@ -220,7 +220,7 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
             eventPublisher.publishEvent(event);
 
             log.debug("Published UserCreatedEvent",
-                    Map(
+                    mapOf(
                         "userId", user.getId(),
                         "source", source
                     ));
@@ -230,7 +230,7 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
     }
 
     // Map.of helper (Java 11 compatibility)
-    private <K, V> java.util.Map<K, V> Map(Object... entries) {
+    private <K, V> java.util.Map<K, V> mapOf(Object... entries) {
         java.util.Map<K, V> map = new java.util.HashMap<>();
         for (int i = 0; i < entries.length; i += 2) {
             map.put((K) entries[i], (V) entries[i + 1]);

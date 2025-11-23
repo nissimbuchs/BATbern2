@@ -1,7 +1,10 @@
 package ch.batbern.events.dto;
 
 import ch.batbern.events.domain.Event;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import java.time.Instant;
 
 /**

@@ -15,7 +15,8 @@ public class PartnerContactAddedEvent extends DomainEvent<UUID> {
     private final String username;
     private final String contactRole;
 
-    public PartnerContactAddedEvent(UUID partnerId, String companyName, String username, String contactRole, String userId) {
+    public PartnerContactAddedEvent(UUID partnerId, String companyName, String username,
+                                    String contactRole, String userId) {
         super(partnerId, "PartnerContactAdded", userId);
         this.companyName = companyName;
         this.username = username;

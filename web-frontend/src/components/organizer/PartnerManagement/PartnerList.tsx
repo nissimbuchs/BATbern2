@@ -41,8 +41,9 @@ export const PartnerList: React.FC = () => {
 
   // Error state
   if (isError) {
-    const errorMessage = (error as any)?.message || 'Failed to fetch partners';
-    const correlationId = (error as any)?.correlationId || 'N/A';
+    const errorObj = error as Error & { correlationId?: string };
+    const errorMessage = errorObj?.message || 'Failed to fetch partners';
+    const correlationId = errorObj?.correlationId || 'N/A';
 
     return (
       <Box data-testid="partner-list-error">
