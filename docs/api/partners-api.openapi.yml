@@ -462,15 +462,11 @@ components:
     PartnerResponse:
       type: object
       required:
-        - id
         - companyName
         - partnershipLevel
         - partnershipStartDate
         - isActive
       properties:
-        id:
-          type: string
-          description: Internal database identifier (not exposed in cross-service references per ADR-003)
         companyName:
           type: string
           maxLength: 12
@@ -540,14 +536,10 @@ components:
     PartnerContactResponse:
       type: object
       required:
-        - id
         - username
         - contactRole
         - isPrimary
       properties:
-        id:
-          type: string
-          description: Internal database identifier (not exposed in cross-service references per ADR-003)
         username:
           type: string
           description: Meaningful ID per ADR-003
