@@ -1,7 +1,26 @@
 package ch.batbern.companyuser.domain;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.Instant;
 import java.util.HashSet;
@@ -15,11 +34,11 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "user_profiles", indexes = {
-        @Index(name = "idx_users_username", columnList = "username", unique = true),
-        @Index(name = "idx_users_email", columnList = "email", unique = true),
-        @Index(name = "idx_users_company", columnList = "company_id"),
-        @Index(name = "idx_users_cognito_user_id", columnList = "cognito_user_id", unique = true),
-        @Index(name = "idx_users_active", columnList = "is_active")
+    @Index(name = "idx_users_username", columnList = "username", unique = true),
+    @Index(name = "idx_users_email", columnList = "email", unique = true),
+    @Index(name = "idx_users_company", columnList = "company_id"),
+    @Index(name = "idx_users_cognito_user_id", columnList = "cognito_user_id", unique = true),
+    @Index(name = "idx_users_active", columnList = "is_active")
 })
 @Getter
 @Setter

@@ -181,8 +181,8 @@ public class RoleService {
 
         if (organizerCount < MINIMUM_ORGANIZERS - 1) {
             String message = String.format(
-                    "Cannot remove ORGANIZER role from user %s. System requires a minimum of %d organizers. " +
-                            "Currently there are %d organizers remaining after removal.",
+                    "Cannot remove ORGANIZER role from user %s. System requires a minimum of %d organizers. "
+                            + "Currently there are %d organizers remaining after removal.",
                     userToCheck.getUsername(),
                     MINIMUM_ORGANIZERS,
                     organizerCount + 1  // +1 because we're counting before removal

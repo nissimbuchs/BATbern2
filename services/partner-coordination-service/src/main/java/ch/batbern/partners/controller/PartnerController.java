@@ -1,7 +1,11 @@
 package ch.batbern.partners.controller;
 
 import ch.batbern.partners.api.generated.PartnersApi;
-import ch.batbern.partners.dto.generated.*;
+import ch.batbern.partners.dto.generated.CreatePartnerRequest;
+import ch.batbern.partners.dto.generated.PartnerListResponse;
+import ch.batbern.partners.dto.generated.PartnerResponse;
+import ch.batbern.partners.dto.generated.PartnerStatistics;
+import ch.batbern.partners.dto.generated.UpdatePartnerRequest;
 import ch.batbern.partners.service.PartnerService;
 import ch.batbern.shared.api.PaginationMetadata;
 import lombok.RequiredArgsConstructor;

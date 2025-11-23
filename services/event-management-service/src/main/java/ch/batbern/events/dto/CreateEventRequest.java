@@ -1,7 +1,12 @@
 package ch.batbern.events.dto;
 
-import jakarta.validation.constraints.*;
-import lombok.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * Request DTO for creating a new event
@@ -31,7 +36,8 @@ public class CreateEventRequest {
 
     private Integer venueCapacity;
 
-    @Pattern(regexp = "planning|topic_defined|speakers_invited|agenda_draft|published|registration_open|registration_closed|in_progress|completed|archived",
+    @Pattern(regexp = "planning|topic_defined|speakers_invited|agenda_draft|published|"
+        + "registration_open|registration_closed|in_progress|completed|archived",
              message = "Status must be a valid workflow state")
     private String status;
 

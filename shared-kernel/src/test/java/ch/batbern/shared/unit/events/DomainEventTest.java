@@ -9,7 +9,7 @@ import org.junit.jupiter.api.DisplayName;
 import java.time.Instant;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class DomainEventTest {
 
@@ -149,7 +149,7 @@ class DomainEventTest {
     }
 
     static class TestDomainEvent extends DomainEvent<String> {
-        public TestDomainEvent(String aggregateId, String eventType, String userId) {
+        TestDomainEvent(String aggregateId, String eventType, String userId) {
             super(aggregateId, eventType, userId);
         }
 

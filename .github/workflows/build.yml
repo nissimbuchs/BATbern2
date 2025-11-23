@@ -55,16 +55,15 @@ jobs:
           cache: 'gradle'
 
       - name: Build and test shared kernel with coverage
-        working-directory: ./shared-kernel
         run: |
           chmod +x gradlew
+          # Build from root to use monorepo settings.gradle (consistent with other services)
           # 'check' task includes: build, test, jacocoTestReport, and jacocoTestCoverageVerification
-          # Will fail automatically if coverage falls below 90% threshold
-          ./gradlew clean check --no-daemon
+          # Will fail automatically if coverage falls below threshold
+          ./gradlew :shared-kernel:clean :shared-kernel:check --no-daemon
 
       - name: Publish shared kernel artifact
-        working-directory: ./shared-kernel
-        run: ./gradlew publishToMavenLocal
+        run: ./gradlew :shared-kernel:publishToMavenLocal --no-daemon
 
       - name: Upload coverage reports
         if: always()
@@ -359,20 +358,20 @@ jobs:
           cache: 'gradle'
 
       - name: Build shared-kernel and generate coverage
-        working-directory: ./shared-kernel
         run: |
           chmod +x gradlew
+          # Build from root to use monorepo settings.gradle (consistent with other services)
           # Always compile and test to ensure classes exist for SonarCloud
           # (GitHub Actions jobs are isolated - build artifacts from build-shared-kernel job aren't available here)
-          ./gradlew clean compileJava test jacocoTestReport --no-daemon
+          ./gradlew :shared-kernel:clean :shared-kernel:compileJava :shared-kernel:test :shared-kernel:jacocoTestReport --no-daemon
 
       - name: Build api-gateway and generate coverage
-        working-directory: ./api-gateway
         run: |
           chmod +x gradlew
+          # Build from root to use monorepo settings.gradle (consistent with other services)
           # Always compile and test to ensure classes exist for SonarCloud
           # (GitHub Actions jobs are isolated - build artifacts from build-services job aren't available here)
-          ./gradlew clean compileJava test jacocoTestReport --no-daemon
+          ./gradlew :api-gateway:clean :api-gateway:compileJava :api-gateway:test :api-gateway:jacocoTestReport --no-daemon
 
       - name: Build services and generate coverage
         run: |

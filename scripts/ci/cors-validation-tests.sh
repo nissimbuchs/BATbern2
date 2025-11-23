@@ -73,17 +73,22 @@ test_cors_preflight() {
     fi
 
     # Validate requested headers are allowed
-    IFS=',' read -ra REQUESTED_HEADERS <<< "$headers"
-    for header in "${REQUESTED_HEADERS[@]}"; do
-        header=$(echo "$header" | xargs) # trim whitespace
-        if ! echo "$allow_headers" | grep -qi "$header"; then
-            echo -e "  ${RED}✗ FAIL${NC}: Header '$header' not in Access-Control-Allow-Headers"
-            echo -e "  ${RED}   Allowed headers: $allow_headers${NC}"
-            test_passed=false
-        else
-            echo -e "  ${GREEN}✓${NC} Header allowed: $header"
-        fi
-    done
+    # Wildcard '*' means all headers are allowed
+    if [ "$allow_headers" = "*" ]; then
+        echo -e "  ${GREEN}✓${NC} All headers allowed (wildcard '*')"
+    else
+        IFS=',' read -ra REQUESTED_HEADERS <<< "$headers"
+        for header in "${REQUESTED_HEADERS[@]}"; do
+            header=$(echo "$header" | xargs) # trim whitespace
+            if ! echo "$allow_headers" | grep -qi "$header"; then
+                echo -e "  ${RED}✗ FAIL${NC}: Header '$header' not in Access-Control-Allow-Headers"
+                echo -e "  ${RED}   Allowed headers: $allow_headers${NC}"
+                test_passed=false
+            else
+                echo -e "  ${GREEN}✓${NC} Header allowed: $header"
+            fi
+        done
+    fi
 
     # Validate method is allowed
     if ! echo "$allow_methods" | grep -qi "$method"; then

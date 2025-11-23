@@ -1,11 +1,12 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.5.6'
-    id 'io.spring.dependency-management' version '1.1.6'
+    id 'org.springframework.boot' version '3.5.7'
+    id 'io.spring.dependency-management' version '1.1.7'
     id 'jacoco'
-    id 'org.flywaydb.flyway' version '10.10.0'
+    id 'checkstyle'
+    id 'org.flywaydb.flyway' version '11.17.0'
     id 'org.openapi.generator' version '7.2.0'
-    id 'com.gorylenko.gradle-git-properties' version '2.4.1'
+    id 'com.gorylenko.gradle-git-properties' version '2.5.3'
 }
 
 group = 'ch.batbern'
@@ -31,29 +32,29 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
 
     // Database
-    implementation 'org.postgresql:postgresql:42.7.4'
-    implementation 'org.flywaydb:flyway-core:10.21.0'
-    implementation 'org.flywaydb:flyway-database-postgresql:10.21.0'
+    implementation 'org.postgresql:postgresql:42.7.7'
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-database-postgresql'
 
     // Caching (Caffeine in-memory cache)
-    implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
+    implementation 'com.github.ben-manes.caffeine:caffeine:3.2.3'
 
     // Shared kernel (API utilities from Story 1.15a)
     implementation project(':shared-kernel')
 
     // AWS SDK for EventBridge and S3 (for logo upload service)
-    implementation platform('software.amazon.awssdk:bom:2.29.45')
+    implementation platform('software.amazon.awssdk:bom:2.39.0')
     implementation 'software.amazon.awssdk:eventbridge'
     implementation 'software.amazon.awssdk:s3'
     implementation 'software.amazon.awssdk:url-connection-client'
 
     // JWT for email confirmation tokens
-    implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
-    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'
-    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.5'
+    implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.13.0'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
 
     // OpenAPI documentation
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.14'
 
     // OpenAPI Generator - Required for generated code
     implementation 'io.swagger.core.v3:swagger-annotations:2.2.20'
@@ -96,7 +97,7 @@ jacoco {
 }
 
 jacocoTestReport {
-    dependsOn test
+    dependsOn test, classes
     reports {
         xml.required = true
         html.required = true
@@ -107,10 +108,12 @@ jacocoTestReport {
     afterEvaluate {
         classDirectories.setFrom(files(classDirectories.files.collect {
             fileTree(dir: it, exclude: [
-                '**/generated/**',           // OpenAPI generated code
-                '**/*Application.class',     // Spring Boot main class
-                '**/*Config.class',          // Configuration classes
-                '**/*Configuration.class'    // Configuration classes
+                '**/generated/**',                    // OpenAPI generated code
+                '**/dto/generated/**',                // Generated DTOs from events-api.openapi.yml
+                '**/api/generated/**',                // Generated API interfaces
+                '**/*Application.class',              // Spring Boot main class
+                '**/*Config.class',                   // Configuration classes
+                '**/*Configuration.class'             // Configuration classes
             ])
         }))
     }
@@ -119,18 +122,41 @@ jacocoTestReport {
 test.finalizedBy jacocoTestReport
 
 jacocoTestCoverageVerification {
+    dependsOn jacocoTestReport
     violationRules {
         rule {
             limit {
-                // Minimal threshold for skeleton services
+                // Use 60% threshold for incremental development
                 // TODO: Increase to 0.90 once service is fully implemented
-                minimum = 0.0
+                minimum = 0.60
             }
         }
+    }
+
+    // Exclude generated code from coverage verification (same as jacocoTestReport)
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                '**/generated/**',                    // OpenAPI generated code
+                '**/dto/generated/**',                // Generated DTOs from events-api.openapi.yml
+                '**/api/generated/**',                // Generated API interfaces
+                '**/*Application.class',              // Spring Boot main class
+                '**/*Config.class',                   // Configuration classes
+                '**/*Configuration.class'             // Configuration classes
+            ])
+        }))
     }
 }
 
 check.dependsOn jacocoTestCoverageVerification
+
+// Checkstyle configuration
+checkstyle {
+    toolVersion = '10.12.5'
+    configFile = file("${rootProject.projectDir}/config/checkstyle/checkstyle.xml")
+    ignoreFailures = true  // Allow build to succeed while generating quality reports
+    maxWarnings = 0
+}
 
 // Apply Trivy security scanning
 apply from: "../../gradle/trivy-security.gradle"
