@@ -42,10 +42,18 @@ public class UserCreatedEvent extends DomainEvent<String> {
     public UserCreatedEvent(String username, String email, String firstName, String lastName,
                            String companyId, String cognitoUserId, String createdBy) {
         super(username, "UserCreatedEvent", createdBy);
-        if (username == null) throw new NullPointerException("username is marked non-null but is null");
-        if (email == null) throw new NullPointerException("email is marked non-null but is null");
-        if (firstName == null) throw new NullPointerException("firstName is marked non-null but is null");
-        if (lastName == null) throw new NullPointerException("lastName is marked non-null but is null");
+        if (username == null) {
+            throw new NullPointerException("username is marked non-null but is null");
+        }
+        if (email == null) {
+            throw new NullPointerException("email is marked non-null but is null");
+        }
+        if (firstName == null) {
+            throw new NullPointerException("firstName is marked non-null but is null");
+        }
+        if (lastName == null) {
+            throw new NullPointerException("lastName is marked non-null but is null");
+        }
         // cognitoUserId can be null - populated on first login via Cognito hook
 
         this.username = username;

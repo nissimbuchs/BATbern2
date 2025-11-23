@@ -2,7 +2,15 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.repository.EventRepository;
-import ch.batbern.shared.api.*;
+import ch.batbern.shared.api.FilterCriteria;
+import ch.batbern.shared.api.FilterOperator;
+import ch.batbern.shared.api.FilterParser;
+import ch.batbern.shared.api.PaginationMetadata;
+import ch.batbern.shared.api.PaginationParams;
+import ch.batbern.shared.api.PaginationUtils;
+import ch.batbern.shared.api.SortCriteria;
+import ch.batbern.shared.api.SortDirection;
+import ch.batbern.shared.api.SortParser;
 import ch.batbern.shared.dto.PaginatedResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

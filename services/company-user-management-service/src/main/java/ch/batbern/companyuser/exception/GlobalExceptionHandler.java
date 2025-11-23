@@ -222,9 +222,9 @@ public class GlobalExceptionHandler {
         org.springframework.security.core.Authentication auth =
             org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
 
-        boolean isAnonymous = auth == null ||
-            auth instanceof org.springframework.security.authentication.AnonymousAuthenticationToken ||
-            !auth.isAuthenticated();
+        boolean isAnonymous = auth == null
+                || auth instanceof org.springframework.security.authentication.AnonymousAuthenticationToken
+                || !auth.isAuthenticated();
 
         if (isAnonymous) {
             // Return 401 Unauthorized for anonymous users

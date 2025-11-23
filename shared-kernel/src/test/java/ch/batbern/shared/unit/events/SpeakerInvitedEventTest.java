@@ -9,7 +9,8 @@ import org.junit.jupiter.api.BeforeEach;
 
 import java.time.LocalDateTime;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class SpeakerInvitedEventTest {
 

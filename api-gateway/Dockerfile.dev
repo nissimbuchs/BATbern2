@@ -6,6 +6,14 @@ WORKDIR /workspace
 # Set unique Gradle user home to avoid cache conflicts with service containers
 ENV GRADLE_USER_HOME=/gradle-cache
 
+# Create non-root user (gradle image already has gradle user with uid 1000)
+# Ensure gradle user owns the workspace and cache
+RUN mkdir -p /gradle-cache && \
+    chown -R gradle:gradle /workspace /gradle-cache
+
+# Switch to non-root user
+USER gradle
+
 # Expose application port
 EXPOSE 8080
 

@@ -2,7 +2,10 @@ package ch.batbern.shared.events;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
 
 import java.time.LocalDateTime;
 
@@ -45,13 +48,27 @@ public class SpeakerInvitedEvent extends DomainEvent<String> {
                               String speakerEmail, String sessionTitle, LocalDateTime sessionTime,
                               String invitedBy, String invitationStatus) {
         super(speakerUsername, "SpeakerInvitedEvent", invitedBy);
-        if (eventCode == null) throw new NullPointerException("eventCode is marked non-null but is null");
-        if (speakerUsername == null) throw new NullPointerException("speakerUsername is marked non-null but is null");
-        if (speakerName == null) throw new NullPointerException("speakerName is marked non-null but is null");
-        if (speakerEmail == null) throw new NullPointerException("speakerEmail is marked non-null but is null");
-        if (sessionTitle == null) throw new NullPointerException("sessionTitle is marked non-null but is null");
-        if (sessionTime == null) throw new NullPointerException("sessionTime is marked non-null but is null");
-        if (invitedBy == null) throw new NullPointerException("invitedBy is marked non-null but is null");
+        if (eventCode == null) {
+            throw new NullPointerException("eventCode is marked non-null but is null");
+        }
+        if (speakerUsername == null) {
+            throw new NullPointerException("speakerUsername is marked non-null but is null");
+        }
+        if (speakerName == null) {
+            throw new NullPointerException("speakerName is marked non-null but is null");
+        }
+        if (speakerEmail == null) {
+            throw new NullPointerException("speakerEmail is marked non-null but is null");
+        }
+        if (sessionTitle == null) {
+            throw new NullPointerException("sessionTitle is marked non-null but is null");
+        }
+        if (sessionTime == null) {
+            throw new NullPointerException("sessionTime is marked non-null but is null");
+        }
+        if (invitedBy == null) {
+            throw new NullPointerException("invitedBy is marked non-null but is null");
+        }
         this.targetEventCode = eventCode;
         this.speakerUsername = speakerUsername;
         this.speakerName = speakerName;

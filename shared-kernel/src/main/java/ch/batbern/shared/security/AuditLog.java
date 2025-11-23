@@ -39,7 +39,7 @@ public @interface AuditLog {
      */
     AuditSeverity severity() default AuditSeverity.INFO;
 
-    public enum AuditSeverity {
+    enum AuditSeverity {
         INFO,
         WARNING,
         CRITICAL

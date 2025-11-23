@@ -8,8 +8,8 @@ public class ValidationUtils {
 
     private static final Pattern SWISS_UID_PATTERN = Pattern.compile("^CHE-\\d{3}\\.\\d{3}\\.\\d{3}$");
     private static final Pattern EMAIL_PATTERN = Pattern.compile(
-        "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@" +
-        "(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$"
+        "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@"
+        + "(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$"
     );
 
     private ValidationUtils() {

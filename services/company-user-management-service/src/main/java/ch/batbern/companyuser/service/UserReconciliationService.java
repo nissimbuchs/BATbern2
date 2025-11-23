@@ -10,12 +10,20 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.*;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.ListUsersResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.UserNotFoundException;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
 import software.amazon.awssdk.services.cognitoidentityprovider.paginators.ListUsersIterable;
 
 import java.time.Instant;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * User Reconciliation Service
@@ -101,7 +109,7 @@ public class UserReconciliationService {
             );
 
             log.info("User reconciliation completed",
-                    Map("durationMs", durationMs,
+                    mapOf("durationMs", durationMs,
                             "orphanedUsers", report.getOrphanedUsers(),
                             "missingUsers", report.getMissingUsers(),
                             "errors", report.getErrors()));
@@ -163,15 +171,15 @@ public class UserReconciliationService {
             // Find orphaned in DB
             int orphaned = 0;
             for (User user : dbUsers) {
-                if (user.getCognitoUserId() != null &&
-                        !cognitoUserIds.contains(user.getCognitoUserId())) {
+                if (user.getCognitoUserId() != null
+                        && !cognitoUserIds.contains(user.getCognitoUserId())) {
                     orphaned++;
                 }
             }
             status.setOrphanedInDatabase(orphaned);
 
             log.info("Sync status check completed",
-                    Map("cognitoUsers", cognitoUserIds.size(),
+                    mapOf("cognitoUsers", cognitoUserIds.size(),
                             "dbUsers", dbUsers.size(),
                             "missing", missingCognitoIds.size(),
                             "orphaned", orphaned));
@@ -213,7 +221,7 @@ public class UserReconciliationService {
             } catch (UserNotFoundException e) {
                 // User deleted in Cognito - deactivate in database
                 log.warn("Orphaned database user detected, deactivating",
-                        Map("userId", user.getId(), "cognitoId", user.getCognitoUserId()));
+                        mapOf("userId", user.getId(), "cognitoId", user.getCognitoUserId()));
 
                 user.setActive(false);
                 user.setDeactivationReason("Cognito user deleted");
@@ -224,13 +232,13 @@ public class UserReconciliationService {
 
             } catch (Exception e) {
                 log.error("Failed to check Cognito user",
-                        Map("userId", user.getId(), "cognitoId", user.getCognitoUserId(), "error", e.getMessage()));
+                        mapOf("userId", user.getId(), "cognitoId", user.getCognitoUserId(), "error", e.getMessage()));
                 report.addError("Orphaned user check failed: " + e.getMessage());
             }
         }
 
         log.info("Orphaned users reconciliation completed",
-                Map("deactivated", report.getOrphanedUsers()));
+                mapOf("deactivated", report.getOrphanedUsers()));
     }
 
     /**
@@ -260,7 +268,7 @@ public class UserReconciliationService {
                     if (dbUser.isEmpty()) {
                         // User missing in database - create
                         log.warn("Missing database user detected, creating",
-                                Map("cognitoId", cognitoId));
+                                mapOf("cognitoId", cognitoId));
 
                         createMissingUser(cognitoUser);
                         report.incrementMissingUsers();
@@ -272,7 +280,7 @@ public class UserReconciliationService {
             }
 
             log.info("Missing users reconciliation completed",
-                    Map("created", report.getMissingUsers()));
+                    mapOf("created", report.getMissingUsers()));
 
         } catch (Exception e) {
             log.error("Failed to reconcile missing users", e);
@@ -312,7 +320,7 @@ public class UserReconciliationService {
         userRepository.save(user);
 
         log.info("Missing user created (roles will sync to JWT at next login)",
-                Map("cognitoId", cognitoId, "username", username, "roles", roles));
+                mapOf("cognitoId", cognitoId, "username", username, "roles", roles));
     }
 
     /**
@@ -347,7 +355,7 @@ public class UserReconciliationService {
     }
 
     // Map helper
-    private <K, V> java.util.Map<K, V> Map(Object... entries) {
+    private <K, V> java.util.Map<K, V> mapOf(Object... entries) {
         java.util.Map<K, V> map = new java.util.HashMap<>();
         for (int i = 0; i < entries.length; i += 2) {
             map.put((K) entries[i], (V) entries[i + 1]);
