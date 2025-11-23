@@ -9,10 +9,13 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient;
-import software.amazon.awssdk.services.eventbridge.model.*;
+import software.amazon.awssdk.services.eventbridge.model.CreateEventBusRequest;
+import software.amazon.awssdk.services.eventbridge.model.DescribeEventBusRequest;
+import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
+import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
+import software.amazon.awssdk.services.eventbridge.model.PutEventsResponse;
+import software.amazon.awssdk.services.eventbridge.model.PutEventsResultEntry;
 
-import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -21,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class EventBridgeEventPublisher implements DomainEventPublisher {
 
-    private static final Logger logger = LoggerFactory.getLogger(EventBridgeEventPublisher.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(EventBridgeEventPublisher.class);
     private static final int MAX_BATCH_SIZE = 10; // EventBridge limit
 
     private final EventBridgeAsyncClient eventBridgeClient;
@@ -64,7 +67,7 @@ public class EventBridgeEventPublisher implements DomainEventPublisher {
 
             logSuccessfulPublish(event);
         } catch (Exception e) {
-            logger.error("Failed to publish event: {}", event.getEventType(), e);
+            LOGGER.error("Failed to publish event: {}", event.getEventType(), e);
             throw new RuntimeException("Event publishing failed", e);
         }
     }
@@ -86,7 +89,7 @@ public class EventBridgeEventPublisher implements DomainEventPublisher {
                 logSuccessfulPublish(event);
             })
             .exceptionally(throwable -> {
-                logger.error("Async event publishing failed: {}", event.getEventType(), throwable);
+                LOGGER.error("Async event publishing failed: {}", event.getEventType(), throwable);
                 throw new RuntimeException("Async event publishing failed", throwable);
             });
     }
@@ -121,9 +124,9 @@ public class EventBridgeEventPublisher implements DomainEventPublisher {
                 handleFailedEntries(response.entries(), batch);
             }
 
-            logger.info("Published batch of {} events", batch.size());
+            LOGGER.info("Published batch of {} events", batch.size());
         } catch (Exception e) {
-            logger.error("Failed to publish batch of {} events", batch.size(), e);
+            LOGGER.error("Failed to publish batch of {} events", batch.size(), e);
             throw new RuntimeException("Batch event publishing failed", e);
         }
     }
@@ -143,7 +146,7 @@ public class EventBridgeEventPublisher implements DomainEventPublisher {
 
                 if (attempts < maxRetries) {
                     long delay = retryDelayMs * (long) Math.pow(2, attempts - 1); // Exponential backoff
-                    logger.warn("Publish attempt {} failed for event {}, retrying in {} ms",
+                    LOGGER.warn("Publish attempt {} failed for event {}, retrying in {} ms",
                         attempts, event.getEventType(), delay);
 
                     try {
@@ -156,7 +159,7 @@ public class EventBridgeEventPublisher implements DomainEventPublisher {
             }
         }
 
-        logger.error("Failed to publish event {} after {} attempts",
+        LOGGER.error("Failed to publish event {} after {} attempts",
             event.getEventType(), maxRetries, lastException);
         throw new RuntimeException("Event publishing failed after " + maxRetries + " attempts", lastException);
     }
@@ -195,7 +198,7 @@ public class EventBridgeEventPublisher implements DomainEventPublisher {
                 .build();
 
             eventBridgeClient.describeEventBus(describeRequest).get(5, TimeUnit.SECONDS);
-            logger.info("Event bus '{}' exists", eventBusName);
+            LOGGER.info("Event bus '{}' exists", eventBusName);
         } catch (Exception e) {
             // Event bus doesn't exist, create it
             try {
@@ -204,9 +207,9 @@ public class EventBridgeEventPublisher implements DomainEventPublisher {
                     .build();
 
                 eventBridgeClient.createEventBus(createRequest).get(5, TimeUnit.SECONDS);
-                logger.info("Created event bus '{}'", eventBusName);
+                LOGGER.info("Created event bus '{}'", eventBusName);
             } catch (Exception createException) {
-                logger.error("Failed to create event bus '{}'", eventBusName, createException);
+                LOGGER.error("Failed to create event bus '{}'", eventBusName, createException);
                 throw new RuntimeException("Failed to ensure event bus exists", createException);
             }
         }
@@ -240,7 +243,7 @@ public class EventBridgeEventPublisher implements DomainEventPublisher {
             PutEventsResultEntry entry = entries.get(i);
             if (entry.errorCode() != null) {
                 DomainEvent<?> failedEvent = events.get(i);
-                logger.error("Failed to publish event {}: {} - {}",
+                LOGGER.error("Failed to publish event {}: {} - {}",
                     failedEvent.getEventType(),
                     entry.errorCode(),
                     entry.errorMessage());
@@ -256,7 +259,7 @@ public class EventBridgeEventPublisher implements DomainEventPublisher {
             "timestamp", event.getOccurredAt().toString()
         );
 
-        logger.info(LoggingUtils.formatStructuredMessage("Event published successfully", context));
+        LOGGER.info(LoggingUtils.formatStructuredMessage("Event published successfully", context));
     }
 
 }

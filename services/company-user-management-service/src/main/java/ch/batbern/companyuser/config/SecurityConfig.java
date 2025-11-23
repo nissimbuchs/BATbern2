@@ -21,7 +21,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -66,7 +65,7 @@ public class SecurityConfig {
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 // Story 4.1.5: Public company search for registration autocomplete
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/companies/search").permitAll()
@@ -97,7 +96,7 @@ public class SecurityConfig {
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 // Story 4.1.5: Anonymous registration - allow get-or-create user endpoint
                 .requestMatchers("/api/v1/users/get-or-create").permitAll()
@@ -134,9 +133,10 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .anonymous(anonymous -> anonymous.principal("anonymous"))  // Enable anonymous authentication for public endpoints
+            // Enable anonymous authentication for public endpoints
+            .anonymous(anonymous -> anonymous.principal("anonymous"))
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 // Story 4.1.5: Anonymous registration - allow get-or-create user endpoint
                 .requestMatchers("/api/v1/users/get-or-create").permitAll()

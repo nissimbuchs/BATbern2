@@ -24,11 +24,18 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * End-to-End Integration Test for Anonymous Event Registration
@@ -96,8 +103,7 @@ public class AnonymousRegistrationE2ETest extends AbstractIntegrationTest {
                 .lastName("Wonderland")
                 .email("alice.wonderland@example.com")
                 .companyId(null) // Anonymous users may not have company
-                .active(true)
-                ;
+                .active(true);
 
         // Wrap UserResponse in GetOrCreateUserResponse for getOrCreateUser mock
         GetOrCreateUserResponse createUserResponse = new GetOrCreateUserResponse()
@@ -155,10 +161,10 @@ public class AnonymousRegistrationE2ETest extends AbstractIntegrationTest {
 
         // Verify getOrCreateUser was called with cognitoSync=false
         verify(userApiClient, times(1)).getOrCreateUser(argThat(request ->
-                request.getEmail().equals("alice.wonderland@example.com") &&
-                request.getFirstName().equals("Alice") &&
-                request.getLastName().equals("Wonderland") &&
-                request.getCognitoSync() == Boolean.FALSE
+                request.getEmail().equals("alice.wonderland@example.com")
+                && request.getFirstName().equals("Alice")
+                && request.getLastName().equals("Wonderland")
+                && request.getCognitoSync() == Boolean.FALSE
         ));
 
         // Verify getUserByUsername was called for enrichment
@@ -300,8 +306,7 @@ public class AnonymousRegistrationE2ETest extends AbstractIntegrationTest {
                 .lastName("Builder")
                 .email("bob.builder@example.com")
                 .companyId("BuildCo")
-                .active(true)
-                ;
+                .active(true);
 
         GetOrCreateUserResponse bobCreateResponse = new GetOrCreateUserResponse()
                 .username("bob.builder")

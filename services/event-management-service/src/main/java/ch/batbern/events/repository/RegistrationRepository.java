@@ -16,7 +16,8 @@ import java.util.UUID;
  * Story 1.16.2: Uses registrationCode and attendeeUsername as public identifiers
  */
 @Repository
-public interface RegistrationRepository extends JpaRepository<Registration, UUID>, JpaSpecificationExecutor<Registration> {
+public interface RegistrationRepository
+    extends JpaRepository<Registration, UUID>, JpaSpecificationExecutor<Registration> {
 
     /**
      * Find a registration by its code (public identifier)

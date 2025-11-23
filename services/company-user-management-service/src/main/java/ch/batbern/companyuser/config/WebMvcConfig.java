@@ -22,13 +22,13 @@ public class WebMvcConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         // Register JIT provisioning interceptor for all API endpoints
         registry.addInterceptor(jitUserProvisioningInterceptor)
-                .addPathPatterns("/api/**")
-                .excludePathPatterns(
-                        "/api/auth/**",           // Exclude auth endpoints
-                        "/api/public/**",         // Exclude public endpoints
-                        "/actuator/**",           // Exclude actuator endpoints
-                        "/swagger-ui/**",         // Exclude Swagger UI
-                        "/v3/api-docs/**"         // Exclude OpenAPI docs
-                );
+            .addPathPatterns("/api/**")
+            .excludePathPatterns(
+                "/api/auth/**",           // Exclude auth endpoints
+                "/api/public/**",         // Exclude public endpoints
+                "/actuator/**",           // Exclude actuator endpoints
+                "/swagger-ui/**",         // Exclude Swagger UI
+                "/v3/api-docs/**"         // Exclude OpenAPI docs
+            );
     }
 }

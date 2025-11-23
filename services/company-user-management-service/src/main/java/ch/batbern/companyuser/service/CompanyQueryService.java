@@ -1,10 +1,22 @@
 package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.Company;
-import ch.batbern.companyuser.dto.*;
+import ch.batbern.companyuser.dto.CompanyLogo;
+import ch.batbern.companyuser.dto.CompanyResponse;
+import ch.batbern.companyuser.dto.CompanyStatistics;
+import ch.batbern.companyuser.dto.PaginatedCompanyResponse;
 import ch.batbern.companyuser.repository.CompanyRepository;
 import ch.batbern.companyuser.specification.CompanySpecification;
-import ch.batbern.shared.api.*;
+import ch.batbern.shared.api.FieldSelector;
+import ch.batbern.shared.api.FilterCriteria;
+import ch.batbern.shared.api.FilterParser;
+import ch.batbern.shared.api.IncludeParser;
+import ch.batbern.shared.api.PaginationMetadata;
+import ch.batbern.shared.api.PaginationParams;
+import ch.batbern.shared.api.PaginationUtils;
+import ch.batbern.shared.api.SortCriteria;
+import ch.batbern.shared.api.SortDirection;
+import ch.batbern.shared.api.SortParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -90,7 +102,8 @@ public class CompanyQueryService {
         // Build Sort from SortCriteria
         if (sortCriteria.isEmpty()) {
             // Default sort: createdAt DESC (most recent first)
-            return PageRequest.of(zeroIndexedPage, paginationParams.getLimit(), Sort.by(Sort.Direction.DESC, "createdAt"));
+            return PageRequest.of(zeroIndexedPage, paginationParams.getLimit(),
+                    Sort.by(Sort.Direction.DESC, "createdAt"));
         }
 
         // Convert SortCriteria to Spring Data Sort
@@ -157,15 +170,33 @@ public class CompanyQueryService {
         if (selectedFields.contains("id") || selectedFields.contains("name")) {
             filteredBuilder.name(tempResponse.getName());
         }
-        if (selectedFields.contains("displayName")) filteredBuilder.displayName(tempResponse.getDisplayName());
-        if (selectedFields.contains("swissUID")) filteredBuilder.swissUID(tempResponse.getSwissUID());
-        if (selectedFields.contains("website")) filteredBuilder.website(tempResponse.getWebsite());
-        if (selectedFields.contains("industry")) filteredBuilder.industry(tempResponse.getIndustry());
-        if (selectedFields.contains("description")) filteredBuilder.description(tempResponse.getDescription());
-        if (selectedFields.contains("isVerified")) filteredBuilder.verified(tempResponse.getVerified());
-        if (selectedFields.contains("createdAt")) filteredBuilder.createdAt(tempResponse.getCreatedAt());
-        if (selectedFields.contains("updatedAt")) filteredBuilder.updatedAt(tempResponse.getUpdatedAt());
-        if (selectedFields.contains("createdBy")) filteredBuilder.createdBy(tempResponse.getCreatedBy());
+        if (selectedFields.contains("displayName")) {
+            filteredBuilder.displayName(tempResponse.getDisplayName());
+        }
+        if (selectedFields.contains("swissUID")) {
+            filteredBuilder.swissUID(tempResponse.getSwissUID());
+        }
+        if (selectedFields.contains("website")) {
+            filteredBuilder.website(tempResponse.getWebsite());
+        }
+        if (selectedFields.contains("industry")) {
+            filteredBuilder.industry(tempResponse.getIndustry());
+        }
+        if (selectedFields.contains("description")) {
+            filteredBuilder.description(tempResponse.getDescription());
+        }
+        if (selectedFields.contains("isVerified")) {
+            filteredBuilder.verified(tempResponse.getVerified());
+        }
+        if (selectedFields.contains("createdAt")) {
+            filteredBuilder.createdAt(tempResponse.getCreatedAt());
+        }
+        if (selectedFields.contains("updatedAt")) {
+            filteredBuilder.updatedAt(tempResponse.getUpdatedAt());
+        }
+        if (selectedFields.contains("createdBy")) {
+            filteredBuilder.createdBy(tempResponse.getCreatedBy());
+        }
 
         return filteredBuilder;
     }

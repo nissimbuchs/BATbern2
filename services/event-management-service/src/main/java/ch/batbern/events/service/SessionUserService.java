@@ -227,8 +227,8 @@ public class SessionUserService {
             // We need to fetch user by any username to get the UUID match
             // For now, this is a limitation - in practice, tests should ensure username is set
             throw new IllegalStateException(
-                "SessionUser must have username populated for API-based user lookup. " +
-                "SessionUser ID: " + sessionUser.getId() + ", UserId: " + sessionUser.getUserId()
+                "SessionUser must have username populated for API-based user lookup. "
+                + "SessionUser ID: " + sessionUser.getId() + ", UserId: " + sessionUser.getUserId()
             );
         }
 

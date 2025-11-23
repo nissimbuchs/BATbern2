@@ -1,7 +1,17 @@
 package ch.batbern.events.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -28,18 +38,21 @@ import java.util.UUID;
  */
 @Entity
 @Table(
-    name = "registrations",
-    uniqueConstraints = {
-        @UniqueConstraint(
-            name = "uk_registration_event_attendee",
-            columnNames = {"event_id", "attendee_username"}
-        )
-    },
-    indexes = {
-        @Index(name = "idx_registration_code", columnList = "registration_code", unique = true),
-        @Index(name = "idx_event_id", columnList = "event_id"),
-        @Index(name = "idx_attendee_username", columnList = "attendee_username")
-    }
+        name = "registrations",
+        uniqueConstraints = {
+            @UniqueConstraint(
+                    name = "uk_registration_event_attendee",
+                    columnNames = {
+                        "event_id",
+                        "attendee_username"
+                    }
+                )
+        },
+        indexes = {
+            @Index(name = "idx_registration_code", columnList = "registration_code", unique = true),
+            @Index(name = "idx_event_id", columnList = "event_id"),
+            @Index(name = "idx_attendee_username", columnList = "attendee_username")
+        }
 )
 @Data
 @Builder

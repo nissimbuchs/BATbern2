@@ -144,8 +144,10 @@ public class RegistrationService {
         log.debug("Enriching registration: {} with user data", registration.getRegistrationCode());
 
         // Fetch user details from User Management Service (cached)
-        ch.batbern.events.dto.generated.users.UserResponse userProfile = userApiClient.getUserByUsername(registration.getAttendeeUsername());
-        log.debug("Enriched registration {} with user: {}", registration.getRegistrationCode(), userProfile.getId());
+        ch.batbern.events.dto.generated.users.UserResponse userProfile =
+            userApiClient.getUserByUsername(registration.getAttendeeUsername());
+        log.debug("Enriched registration {} with user: {}", registration.getRegistrationCode(),
+            userProfile.getId());
 
         return RegistrationResponse.builder()
                 // Registration fields

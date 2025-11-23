@@ -42,7 +42,8 @@ public class TopicSuggestionSubmittedEvent extends DomainEvent<UUID> {
             Instant suggestedAt,
             Instant timestamp
     ) {
-        super(suggestionId, "TopicSuggestionSubmitted", null);  // userId can be extracted from SecurityContext if needed
+        // userId can be extracted from SecurityContext if needed
+        super(suggestionId, "TopicSuggestionSubmitted", null);
         this.suggestionId = suggestionId;
         this.partnerId = partnerId;
         this.companyName = companyName;

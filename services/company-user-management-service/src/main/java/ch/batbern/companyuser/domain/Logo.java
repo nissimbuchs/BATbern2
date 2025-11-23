@@ -1,7 +1,21 @@
 package ch.batbern.companyuser.domain;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -22,9 +36,9 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "logos", indexes = {
-        @Index(name = "idx_logos_upload_id", columnList = "upload_id"),
-        @Index(name = "idx_logos_status_expires", columnList = "status, expires_at"),
-        @Index(name = "idx_logos_entity", columnList = "associated_entity_type, associated_entity_id")
+    @Index(name = "idx_logos_upload_id", columnList = "upload_id"),
+    @Index(name = "idx_logos_status_expires", columnList = "status, expires_at"),
+    @Index(name = "idx_logos_entity", columnList = "associated_entity_type, associated_entity_id")
 })
 @Getter
 @Setter

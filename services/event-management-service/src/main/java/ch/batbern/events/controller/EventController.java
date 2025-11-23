@@ -34,13 +34,20 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -90,7 +97,8 @@ public class EventController {
      * Examples:
      * - List all: GET /api/v1/events
      * - Filter by status: GET /api/v1/events?filter={"status":"published"}
-     * - Filter by year: GET /api/v1/events?filter={"date":{"$gte":"2025-01-01T00:00:00Z","$lt":"2026-01-01T00:00:00Z"}}
+     * - Filter by year: GET /api/v1/events?filter={"date":{"$gte":"2025-01-01T00:00:00Z",
+     *   "$lt":"2026-01-01T00:00:00Z"}}
      * - Sort descending: GET /api/v1/events?sort=-date
      * - Paginate: GET /api/v1/events?page=2&limit=10
      * - Combined: GET /api/v1/events?filter={"status":"published"}&sort=-date&page=1&limit=20
@@ -98,8 +106,8 @@ public class EventController {
     @GetMapping
     @Operation(
             summary = "List/Search Events",
-            description = "Retrieve events with optional filtering, sorting, and pagination. " +
-                    "Uses MongoDB-style filter syntax for rich querying."
+            description = "Retrieve events with optional filtering, sorting, and pagination. "
+                    + "Uses MongoDB-style filter syntax for rich querying."
     )
     public ResponseEntity<PaginatedResponse<EventResponse>> listEvents(
             @Parameter(description = "JSON filter object (e.g., {\"status\":\"published\"})")
@@ -143,15 +151,17 @@ public class EventController {
      * - With venue: GET /api/v1/events/BATbern56?include=venue
      * - Multiple: GET /api/v1/events/BATbern56?include=venue,speakers,sessions
      *
-     * Caching: Results with includes are cached for 15 minutes using Caffeine in-memory cache.
-     * Cache key includes both event code and include parameters to ensure correct cache hits.
+     * Caching: Results with includes are cached for 15 minutes using Caffeine in-memory
+     * cache. Cache key includes both event code and include parameters to ensure correct
+     * cache hits.
      *
      * Story 1.16.2: Uses eventCode (String) instead of UUID
      */
     @GetMapping("/{eventCode}")
     @Operation(
             summary = "Get Event Detail",
-            description = "Retrieve a single event by event code with optional resource expansion using ?include parameter. Cached for 15 minutes."
+            description = "Retrieve a single event by event code with optional resource expansion "
+                + "using ?include parameter. Cached for 15 minutes."
     )
     public ResponseEntity<Map<String, Object>> getEvent(
             @PathVariable String eventCode,
@@ -330,7 +340,8 @@ public class EventController {
      * @param session The session to expand speakers for
      * @return List of speaker maps with enriched user data
      */
-    private java.util.List<Map<String, Object>> expandSessionSpeakers(ch.batbern.events.domain.Session session) {
+    private java.util.List<Map<String, Object>> expandSessionSpeakers(
+        ch.batbern.events.domain.Session session) {
         return session.getSessionUsers().stream()
                 .map(sessionUser -> {
                     Map<String, Object> speakerMap = new HashMap<>();
@@ -343,7 +354,8 @@ public class EventController {
                     // Fetch and add enriched User data
                     try {
                         if (sessionUser.getUsername() != null) {
-                            ch.batbern.events.dto.generated.users.UserResponse userProfile = userApiClient.getUserByUsername(sessionUser.getUsername());
+                            ch.batbern.events.dto.generated.users.UserResponse userProfile =
+                                userApiClient.getUserByUsername(sessionUser.getUsername());
                             speakerMap.put("username", userProfile.getId());
                             speakerMap.put("firstName", userProfile.getFirstName());
                             speakerMap.put("lastName", userProfile.getLastName());
@@ -382,9 +394,9 @@ public class EventController {
      *
      * GET /api/v1/events/current?include=topics,venue,speakers,sessions
      *
-     * Returns the next upcoming event with status published, registration_open, or registration_closed.
-     * If multiple events match, returns the one nearest to the current date.
-     * This is a public endpoint (no authentication required) used by the public website.
+     * Returns the next upcoming event with status published, registration_open, or
+     * registration_closed. If multiple events match, returns the one nearest to the current
+     * date. This is a public endpoint (no authentication required) used by the public website.
      *
      * @param include Comma-separated list of resources to expand
      * @return Current event or 404 if none exists
@@ -392,10 +404,12 @@ public class EventController {
     @GetMapping("/current")
     @Operation(
             summary = "Get Current Event",
-            description = "Retrieve the next upcoming event (published, registration_open, or registration_closed) for the public website. No authentication required."
+            description = "Retrieve the next upcoming event (published, registration_open, or "
+                + "registration_closed) for the public website. No authentication required."
     )
     public ResponseEntity<Map<String, Object>> getCurrentEvent(
-            @Parameter(description = "Comma-separated list of resources to include (e.g., topics,venue,speakers,sessions)")
+            @Parameter(description = "Comma-separated list of resources to include "
+                + "(e.g., topics,venue,speakers,sessions)")
             @RequestParam(required = false) String include
     ) {
         log.debug("GET /api/v1/events/current - include: {}", include);
@@ -450,7 +464,8 @@ public class EventController {
 
         // Validate eventCode is unique
         if (eventRepository.existsByEventCode(eventCode)) {
-            throw new BusinessValidationException("eventCode", "Event code already exists: " + eventCode);
+            throw new BusinessValidationException("eventCode",
+                "Event code already exists: " + eventCode);
         }
 
         // Create new event entity
@@ -459,7 +474,8 @@ public class EventController {
                 .title(request.getTitle())
                 .eventNumber(eventNumber)
                 .date(parseDate(request.getDate()))
-                .registrationDeadline(request.getRegistrationDeadline() != null ? parseDate(request.getRegistrationDeadline()) : null)
+                .registrationDeadline(request.getRegistrationDeadline() != null
+                    ? parseDate(request.getRegistrationDeadline()) : null)
                 .venueName(request.getVenueName())
                 .venueAddress(request.getVenueAddress())
                 .venueCapacity(request.getVenueCapacity())
@@ -545,7 +561,8 @@ public class EventController {
 
         // Find existing event by event code
         Event event = eventRepository.findByEventCode(eventCode)
-                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
+                .orElseThrow(() -> new EventNotFoundException(
+                    "Event not found with code: " + eventCode));
 
         // Replace all fields
         event.setTitle(request.getTitle());
@@ -555,16 +572,20 @@ public class EventController {
         if (request.getEventNumber() != null && !request.getEventNumber().equals(event.getEventNumber())) {
             Optional<Event> existingEvent = eventRepository.findByEventNumber(request.getEventNumber());
             if (existingEvent.isPresent() && !existingEvent.get().getId().equals(event.getId())) {
-                throw new BusinessValidationException("Event number " + request.getEventNumber() + " is already in use by event " + existingEvent.get().getEventCode());
+                throw new BusinessValidationException("Event number",
+                    "Event number " + request.getEventNumber() + " is already in use by event "
+                    + existingEvent.get().getEventCode());
             }
             event.setEventNumber(request.getEventNumber());
             // Regenerate eventCode when eventNumber changes
             String newEventCode = "BATbern" + request.getEventNumber();
             event.setEventCode(newEventCode);
-            log.info("Event number updated to {} via PUT, regenerated eventCode to: {}", request.getEventNumber(), newEventCode);
+            log.info("Event number updated to {} via PUT, regenerated eventCode to: {}",
+                request.getEventNumber(), newEventCode);
         }
         event.setDate(parseDate(request.getDate()));
-        event.setRegistrationDeadline(request.getRegistrationDeadline() != null ? parseDate(request.getRegistrationDeadline()) : null);
+        event.setRegistrationDeadline(request.getRegistrationDeadline() != null
+            ? parseDate(request.getRegistrationDeadline()) : null);
         event.setVenueName(request.getVenueName());
         event.setVenueAddress(request.getVenueAddress());
         event.setVenueCapacity(request.getVenueCapacity());
@@ -622,7 +643,8 @@ public class EventController {
             eventPublisher.publish(domainEvent);
             log.info("Published EventUpdatedEvent for event: {}", updatedEvent.getEventCode());
         } catch (Exception e) {
-            log.warn("Failed to publish EventUpdatedEvent for event {}: {}", updatedEvent.getEventCode(), e.getMessage());
+            log.warn("Failed to publish EventUpdatedEvent for event {}: {}",
+                updatedEvent.getEventCode(), e.getMessage());
             // Continue - event update succeeded, publishing failure is non-critical
         }
 
@@ -709,7 +731,8 @@ public class EventController {
             eventPublisher.publish(domainEvent);
             log.info("Published EventUpdatedEvent (patch) for event: {}", patchedEvent.getEventCode());
         } catch (Exception e) {
-            log.warn("Failed to publish EventUpdatedEvent (patch) for event {}: {}", patchedEvent.getEventCode(), e.getMessage());
+            log.warn("Failed to publish EventUpdatedEvent (patch) for event {}: {}",
+                patchedEvent.getEventCode(), e.getMessage());
             // Continue - event patch succeeded, publishing failure is non-critical
         }
 
@@ -747,7 +770,8 @@ public class EventController {
             try {
                 // Find existing event by eventCode (Story 1.16.2)
                 Event event = eventRepository.findByEventCode(request.getEventCode())
-                        .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + request.getEventCode()));
+                        .orElseThrow(() -> new EventNotFoundException(
+                            "Event not found with code: " + request.getEventCode()));
 
                 // Apply updates (similar to PATCH)
                 if (request.getTitle() != null) {
@@ -870,7 +894,8 @@ public class EventController {
             eventPublisher.publish(domainEvent);
             log.info("Published EventPublishedEvent for event: {}", publishedEvent.getEventCode());
         } catch (Exception e) {
-            log.warn("Failed to publish EventPublishedEvent for event {}: {}", publishedEvent.getEventCode(), e.getMessage());
+            log.warn("Failed to publish EventPublishedEvent for event {}: {}",
+                publishedEvent.getEventCode(), e.getMessage());
             // Continue - event publishing succeeded, domain event publishing failure is non-critical
         }
 
@@ -993,14 +1018,17 @@ public class EventController {
             if (!request.getEventNumber().equals(event.getEventNumber())) {
                 Optional<Event> existingEvent = eventRepository.findByEventNumber(request.getEventNumber());
                 if (existingEvent.isPresent() && !existingEvent.get().getId().equals(event.getId())) {
-                    throw new BusinessValidationException("Event number " + request.getEventNumber() + " is already in use by event " + existingEvent.get().getEventCode());
+                    throw new BusinessValidationException("Event number",
+                        "Event number " + request.getEventNumber() + " is already in use by event "
+                        + existingEvent.get().getEventCode());
                 }
             }
             event.setEventNumber(request.getEventNumber());
             // Regenerate eventCode when eventNumber changes
             String newEventCode = "BATbern" + request.getEventNumber();
             event.setEventCode(newEventCode);
-            log.info("Event number updated to {}, regenerated eventCode to: {}", request.getEventNumber(), newEventCode);
+            log.info("Event number updated to {}, regenerated eventCode to: {}",
+                request.getEventNumber(), newEventCode);
         }
         if (request.getDate() != null) {
             event.setDate(parseDate(request.getDate()));
@@ -1048,7 +1076,8 @@ public class EventController {
      *
      * Examples:
      * - All metrics: GET /api/v1/events/123/analytics?metrics=attendance,registrations,engagement
-     * - With timeframe: GET /api/v1/events/123/analytics?metrics=registrations&timeframe=2025-04-01T00:00:00Z,2025-05-31T23:59:59Z
+     * - With timeframe: GET /api/v1/events/123/analytics?metrics=registrations&timeframe=
+     *   2025-04-01T00:00:00Z,2025-05-31T23:59:59Z
      *
      * @param id Event ID
      * @param metrics Comma-separated list of metrics to return
@@ -1058,7 +1087,8 @@ public class EventController {
     @GetMapping("/{eventCode}/analytics")
     @Operation(
             summary = "Get Event Analytics",
-            description = "Retrieve analytics data for an event with optional metrics and timeframe filtering (Story 1.16.2)"
+            description = "Retrieve analytics data for an event with optional metrics and timeframe "
+                + "filtering (Story 1.16.2)"
     )
     public ResponseEntity<Map<String, Object>> getEventAnalytics(
             @PathVariable String eventCode,
@@ -1102,9 +1132,9 @@ public class EventController {
     @PostMapping("/{eventCode}/registrations")
     @Operation(
             summary = "Create Event Registration (Anonymous)",
-            description = "Register for an event without requiring authentication. " +
-                    "Creates anonymous user profile automatically. " +
-                    "Registration starts in PENDING status. User must confirm via email link."
+            description = "Register for an event without requiring authentication. "
+                    + "Creates anonymous user profile automatically. "
+                    + "Registration starts in PENDING status. User must confirm via email link."
     )
     public ResponseEntity<CreateRegistrationResponse> createRegistration(
             @PathVariable String eventCode,
@@ -1119,8 +1149,8 @@ public class EventController {
         Registration registration = registrationService.createRegistration(eventCode, request);
 
         // QA Fix (VALID-001): Detect if this is a resend (registration existed before this call)
-        boolean isResend = registration.getCreatedAt() != null &&
-                          registration.getCreatedAt().isBefore(beforeCreate);
+        boolean isResend = registration.getCreatedAt() != null
+            && registration.getCreatedAt().isBefore(beforeCreate);
 
         // Generate confirmation token (48h validity)
         String confirmationToken = confirmationTokenService.generateConfirmationToken(
@@ -1152,13 +1182,15 @@ public class EventController {
         // QA Fix (VALID-001): Return different status for resend vs new registration
         if (isResend) {
             // Resending confirmation email for existing pending registration
-            log.info("Resending confirmation email for existing pending registration: {}", registration.getId());
+            log.info("Resending confirmation email for existing pending registration: {}",
+                registration.getId());
             CreateRegistrationResponse response = CreateRegistrationResponse.builder()
                     .message("You are already registered for this event. A new confirmation email has been sent.")
                     .email(request.getEmail())
                     .build();
             // Return 409 Conflict for duplicate registration attempt
-            throw new IllegalStateException("User " + registration.getAttendeeUsername() + " is already registered for event " + eventCode);
+            throw new IllegalStateException("User " + registration.getAttendeeUsername()
+                + " is already registered for event " + eventCode);
         }
 
         // Return minimal response (no sensitive data)
@@ -1230,7 +1262,8 @@ public class EventController {
                 .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
 
         if (!registration.getEventId().equals(event.getId())) {
-            throw new NoSuchElementException("Registration " + registrationCode + " does not belong to event " + eventCode);
+            throw new NoSuchElementException("Registration " + registrationCode
+                + " does not belong to event " + eventCode);
         }
 
         // Set transient field and enrich
@@ -1256,8 +1289,8 @@ public class EventController {
     @PostMapping("/{eventCode}/registrations/confirm")
     @Operation(
             summary = "Confirm Registration",
-            description = "Confirm a pending registration using the token from the confirmation email. " +
-                    "Token is valid for 48 hours and event code must match."
+            description = "Confirm a pending registration using the token from the confirmation "
+                + "email. Token is valid for 48 hours and event code must match."
     )
     public ResponseEntity<Map<String, String>> confirmRegistration(
             @PathVariable String eventCode,
@@ -1271,7 +1304,8 @@ public class EventController {
             // Extract event code from token and verify it matches URL
             String tokenEventCode = confirmationTokenService.getEventCode(claims);
             if (!eventCode.equals(tokenEventCode)) {
-                throw new IllegalArgumentException("Event code mismatch: URL has " + eventCode + " but token has " + tokenEventCode);
+                throw new IllegalArgumentException("Event code mismatch: URL has " + eventCode
+                    + " but token has " + tokenEventCode);
             }
 
             // Extract registration ID
@@ -1283,7 +1317,8 @@ public class EventController {
 
             // Fetch the event to verify registration belongs to it and to get event code
             Event event = eventRepository.findById(registration.getEventId())
-                    .orElseThrow(() -> new NoSuchElementException("Event not found for registration: " + registrationId));
+                    .orElseThrow(() -> new NoSuchElementException(
+                            "Event not found for registration: " + registrationId));
 
             // Verify registration belongs to this event
             if (!event.getEventCode().equals(eventCode)) {
@@ -1350,7 +1385,8 @@ public class EventController {
                 .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
 
         if (!registration.getEventId().equals(event.getId())) {
-            throw new NoSuchElementException("Registration " + registrationCode + " does not belong to event " + eventCode);
+            throw new NoSuchElementException("Registration " + registrationCode
+                    + " does not belong to event " + eventCode);
         }
 
         // Apply updates
@@ -1398,7 +1434,8 @@ public class EventController {
                 .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
 
         if (!registration.getEventId().equals(event.getId())) {
-            throw new NoSuchElementException("Registration " + registrationCode + " does not belong to event " + eventCode);
+            throw new NoSuchElementException("Registration " + registrationCode
+                    + " does not belong to event " + eventCode);
         }
 
         // Delete registration
