@@ -9,7 +9,7 @@
  * - Progress indicator
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useDropzone } from 'react-dropzone';
 import {
   Dialog,
@@ -125,13 +125,14 @@ export const CompanyBatchImportModal: React.FC<CompanyBatchImportModalProps> = (
   });
 
   // Get set of existing company names for fast lookup
-  const existingCompanyNames = new Set(
-    (existingCompaniesData?.data || []).map((c) => c.name.toLowerCase())
+  const existingCompanyNames = useMemo(
+    () => new Set((existingCompaniesData?.data || []).map((c) => c.name.toLowerCase())),
+    [existingCompaniesData]
   );
 
   // Mark duplicates when candidates change or existing companies load
   useEffect(() => {
-    if (importCandidates.length > 0 && !isLoadingCompanies) {
+    if (importCandidates.length > 0 && !isLoadingCompanies && existingCompaniesData) {
       setIsCheckingDuplicates(true);
       const updatedCandidates = importCandidates.map((candidate) => {
         const nameExists = existingCompanyNames.has(candidate.apiPayload.name.toLowerCase());
@@ -144,10 +145,18 @@ export const CompanyBatchImportModal: React.FC<CompanyBatchImportModalProps> = (
         }
         return candidate;
       });
-      setImportCandidates(updatedCandidates);
+
+      // Only update if there are actual changes
+      const hasChanges = updatedCandidates.some(
+        (updated, index) => updated.importStatus !== importCandidates[index].importStatus
+      );
+
+      if (hasChanges) {
+        setImportCandidates(updatedCandidates);
+      }
       setIsCheckingDuplicates(false);
     }
-  }, [existingCompaniesData, isLoadingCompanies, importCandidates, existingCompanyNames, t]);
+  }, [existingCompaniesData, isLoadingCompanies, t, existingCompanyNames, importCandidates]);
 
   // Use updated candidates from hook during import, otherwise use local state
   const displayCandidates = isImporting || importResult ? updatedCandidates : importCandidates;
