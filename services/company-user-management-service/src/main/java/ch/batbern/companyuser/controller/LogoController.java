@@ -278,7 +278,7 @@ public class LogoController {
      * @param requestBody Map containing the URL to fetch
      * @return Image blob with appropriate content type
      */
-    @PostMapping(value = "/fetch-from-url", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @PostMapping("/fetch-from-url")
     @Operation(
             summary = "Fetch image from external URL",
             description = "Fetches an image from an external URL and returns it as a blob. " +
@@ -300,7 +300,7 @@ public class LogoController {
                     description = "Failed to fetch image from URL"
             )
     })
-    public ResponseEntity<Resource> fetchImageFromUrl(@RequestBody Map<String, String> requestBody) {
+    public ResponseEntity<byte[]> fetchImageFromUrl(@RequestBody Map<String, String> requestBody) {
         String url = requestBody.get("url");
 
         if (url == null || url.isBlank()) {
@@ -349,14 +349,14 @@ public class LogoController {
 
             log.info("Successfully fetched image: {} bytes, type: {}", body.length, contentType);
 
-            // Return binary data as Resource to prevent charset encoding issues
-            // Using APPLICATION_OCTET_STREAM as produces type ensures no charset is applied
-            ByteArrayResource resource = new ByteArrayResource(body);
+            // Return raw bytes with proper Content-Type
+            // Critical: Use MediaType.valueOf() instead of parseMediaType() to avoid charset addition
+            MediaType mediaType = MediaType.valueOf(contentType);
 
             return ResponseEntity.ok()
-                    .header("Content-Length", String.valueOf(body.length))
-                    .header("X-Original-Content-Type", contentType)  // Preserve original type for debugging
-                    .body(resource);
+                    .contentLength(body.length)
+                    .contentType(mediaType)
+                    .body(body);
 
         } catch (IOException | InterruptedException e) {
             log.error("Error fetching image from URL: {}", url, e);
