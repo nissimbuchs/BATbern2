@@ -21,7 +21,9 @@ const path = require('path');
 const PROJECT_ROOT = path.resolve(__dirname, '../../');
 const INPUT_FILE = path.join(PROJECT_ROOT, 'apps/BATspa-old/src/api/companies.json');
 const OUTPUT_FILE = path.join(PROJECT_ROOT, 'apps/BATspa-old/src/api/companies-with-local-urls.json');
-const LOGO_SERVER_URL = 'http://localhost:8888';
+// Use host.docker.internal for Docker environments (backend runs in container)
+// This allows the backend to reach the host machine's localhost:8888
+const LOGO_SERVER_URL = 'http://host.docker.internal:8888';
 const ARCHIV_BASE = path.join(PROJECT_ROOT, 'apps/BATspa-old/src/archiv');
 const PARTNERS_DIR = path.join(PROJECT_ROOT, 'apps/BATspa-old/src/assets/partners');
 
