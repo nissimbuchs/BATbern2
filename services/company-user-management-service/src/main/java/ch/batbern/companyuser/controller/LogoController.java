@@ -347,8 +347,9 @@ public class LogoController {
 
             log.info("Successfully fetched image: {} bytes, type: {}", body.length, contentType);
 
+            // Return binary data with explicit content type (no charset to prevent UTF-8 corruption)
             return ResponseEntity.ok()
-                    .contentType(MediaType.parseMediaType(contentType))
+                    .header("Content-Type", contentType)
                     .body(body);
 
         } catch (IOException | InterruptedException e) {
