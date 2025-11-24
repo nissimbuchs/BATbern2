@@ -278,7 +278,7 @@ public class LogoController {
      * @param requestBody Map containing the URL to fetch
      * @return Image blob with appropriate content type
      */
-    @PostMapping("/fetch-from-url")
+    @PostMapping(value = "/fetch-from-url", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     @Operation(
             summary = "Fetch image from external URL",
             description = "Fetches an image from an external URL and returns it as a blob. " +
@@ -350,11 +350,12 @@ public class LogoController {
             log.info("Successfully fetched image: {} bytes, type: {}", body.length, contentType);
 
             // Return binary data as Resource to prevent charset encoding issues
+            // Using APPLICATION_OCTET_STREAM as produces type ensures no charset is applied
             ByteArrayResource resource = new ByteArrayResource(body);
 
             return ResponseEntity.ok()
-                    .contentLength(body.length)
-                    .contentType(MediaType.parseMediaType(contentType))
+                    .header("Content-Length", String.valueOf(body.length))
+                    .header("X-Original-Content-Type", contentType)  // Preserve original type for debugging
                     .body(resource);
 
         } catch (IOException | InterruptedException e) {
