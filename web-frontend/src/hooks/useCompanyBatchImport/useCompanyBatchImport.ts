@@ -35,14 +35,31 @@ async function calculateChecksum(file: File): Promise<string> {
 
 /**
  * Fetch image from URL and convert to File object
+ * Note: May fail due to CORS if the image host doesn't allow cross-origin requests
  */
 async function fetchImageAsFile(url: string, filename: string): Promise<File> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch image: ${response.statusText}`);
+  try {
+    const response = await fetch(url, {
+      mode: 'cors',
+      credentials: 'omit',
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    const blob = await response.blob();
+
+    // Validate that we got an image
+    if (!blob.type.startsWith('image/')) {
+      throw new Error(`Invalid content type: ${blob.type} (expected image/*)`);
+    }
+
+    return new File([blob], filename, { type: blob.type });
+  } catch (error) {
+    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+      throw new Error(`CORS error or network failure while fetching: ${url}`);
+    }
+    throw error;
   }
-  const blob = await response.blob();
-  return new File([blob], filename, { type: blob.type });
 }
 
 /**
@@ -50,35 +67,47 @@ async function fetchImageAsFile(url: string, filename: string): Promise<File> {
  * Returns the uploadId to include in CreateCompanyRequest
  */
 async function uploadLogo(logoUrl: string, companyName: string): Promise<string> {
-  // Step 1: Fetch the image from the URL
-  const filename = `${companyName}-logo.${logoUrl.split('.').pop() || 'png'}`;
-  const file = await fetchImageAsFile(logoUrl, filename);
+  try {
+    // Step 1: Fetch the image from the URL
+    const filename = `${companyName}-logo.${logoUrl.split('.').pop() || 'png'}`;
+    const file = await fetchImageAsFile(logoUrl, filename);
 
-  // Step 2: Request presigned URL from backend
-  const presignedResponse = await apiClient.post<PresignedUrlResponse>('/logos/presigned-url', {
-    fileName: file.name,
-    fileSize: file.size,
-    mimeType: file.type,
-  });
+    // Step 2: Request presigned URL from backend
+    const presignedResponse = await apiClient.post<PresignedUrlResponse>('/logos/presigned-url', {
+      fileName: file.name,
+      fileSize: file.size,
+      mimeType: file.type,
+    });
 
-  const { uploadUrl, fileId, fileExtension, requiredHeaders } = presignedResponse.data;
+    const { uploadUrl, fileId, fileExtension, requiredHeaders } = presignedResponse.data;
 
-  // Step 3: Upload file directly to S3 using presigned URL
-  await fetch(uploadUrl, {
-    method: 'PUT',
-    headers: requiredHeaders,
-    body: file,
-  });
+    // Step 3: Upload file directly to S3 using presigned URL
+    const s3Response = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: requiredHeaders,
+      body: file,
+    });
 
-  // Step 4: Confirm upload with backend
-  const checksum = await calculateChecksum(file);
-  await apiClient.post(`/logos/${fileId}/confirm`, {
-    fileId,
-    fileExtension,
-    checksum,
-  });
+    if (!s3Response.ok) {
+      throw new Error(`S3 upload failed: ${s3Response.status} ${s3Response.statusText}`);
+    }
 
-  return fileId;
+    // Step 4: Confirm upload with backend
+    const checksum = await calculateChecksum(file);
+    await apiClient.post(`/logos/${fileId}/confirm`, {
+      fileId,
+      fileExtension,
+      checksum,
+    });
+
+    return fileId;
+  } catch (error) {
+    // Re-throw with more context
+    if (error instanceof Error) {
+      throw new Error(`Logo upload failed for ${companyName}: ${error.message}`);
+    }
+    throw error;
+  }
 }
 
 interface UseCompanyBatchImportOptions {
@@ -155,9 +184,18 @@ export function useCompanyBatchImport(
           let logoUploadId: string | undefined;
           if (candidate.logoUrl) {
             try {
+              console.log(
+                `[BatchImport] Uploading logo for ${candidate.apiPayload.name} from ${candidate.logoUrl}`
+              );
               logoUploadId = await uploadLogo(candidate.logoUrl, candidate.apiPayload.name);
+              console.log(
+                `[BatchImport] Successfully uploaded logo for ${candidate.apiPayload.name}, uploadId: ${logoUploadId}`
+              );
             } catch (logoError) {
-              console.warn(`Failed to upload logo for ${candidate.apiPayload.name}:`, logoError);
+              console.error(
+                `[BatchImport] Failed to upload logo for ${candidate.apiPayload.name}:`,
+                logoError
+              );
               // Continue without logo rather than failing the entire import
             }
           }
