@@ -58,7 +58,8 @@
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/assets/bilder/logo-rtc.jpg",
     "has_logo": true,
     "status": "complete",
-    "note": "Logo added by user"
+    "note": "Logo added by user",
+    "logoUrl": "http://localhost:8888/logo-rtc.jpg"
   },
   {
     "id": "bkw",
@@ -112,7 +113,8 @@
     "speakerCount": 4,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/assets/partners/logo-bls.jpg",
     "has_logo": false,
-    "status": "needs_logo"
+    "status": "needs_logo",
+    "logoUrl": "http://localhost:8888/logo-bls.jpg"
   },
   {
     "id": "aws",

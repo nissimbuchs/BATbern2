@@ -23,9 +23,17 @@ const INPUT_FILE = path.join(PROJECT_ROOT, 'apps/BATspa-old/src/api/companies.js
 const OUTPUT_FILE = path.join(PROJECT_ROOT, 'apps/BATspa-old/src/api/companies-with-local-urls.json');
 const LOGO_SERVER_URL = 'http://localhost:8888';
 const ARCHIV_BASE = path.join(PROJECT_ROOT, 'apps/BATspa-old/src/archiv');
+const PARTNERS_DIR = path.join(PROJECT_ROOT, 'apps/BATspa-old/src/assets/partners');
 
-// Logo directories to check if files exist (all archiv directories 1-57)
+// Logo directories to check if files exist
 const LOGO_DIRS = [];
+
+// Add partners directory first (higher quality logos)
+if (fs.existsSync(PARTNERS_DIR)) {
+  LOGO_DIRS.push(PARTNERS_DIR);
+}
+
+// Add all archiv directories (1-57)
 for (let i = 1; i <= 57; i++) {
   const dir = path.join(ARCHIV_BASE, String(i));
   if (fs.existsSync(dir)) {

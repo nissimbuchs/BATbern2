@@ -18,9 +18,17 @@ const path = require('path');
 const PORT = 8888;
 const PROJECT_ROOT = path.resolve(__dirname, '../../');
 const ARCHIV_BASE = path.join(PROJECT_ROOT, 'apps/BATspa-old/src/archiv');
+const PARTNERS_DIR = path.join(PROJECT_ROOT, 'apps/BATspa-old/src/assets/partners');
 
 // Generate all archiv directory paths (1-57)
 const LOGO_DIRS = [];
+
+// Add partners directory first (higher quality logos)
+if (fs.existsSync(PARTNERS_DIR)) {
+  LOGO_DIRS.push(PARTNERS_DIR);
+}
+
+// Add all archiv directories
 for (let i = 1; i <= 57; i++) {
   const dir = path.join(ARCHIV_BASE, String(i));
   if (fs.existsSync(dir)) {
