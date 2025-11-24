@@ -363,4 +363,112 @@ public class LogoController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    /**
+     * Fetch image from URL and upload directly to S3 (server-side only)
+     * Bypasses frontend entirely to avoid binary data corruption
+     *
+     * @param requestBody Map containing url and optionally filename
+     * @return Upload ID for use in company creation
+     */
+    @PostMapping("/upload-from-url")
+    @Operation(
+            summary = "Fetch and upload image from URL",
+            description = "Fetches an image from a URL and uploads it directly to S3, " +
+                    "returning the upload ID. This completely bypasses the frontend to " +
+                    "avoid binary data corruption issues."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Image uploaded successfully",
+                    content = @Content(schema = @Schema(implementation = String.class))
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid URL or not an image"
+            ),
+            @ApiResponse(
+                    responseCode = "413",
+                    description = "Image too large (max 10MB)"
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Failed to fetch or upload image"
+            )
+    })
+    public ResponseEntity<Map<String, String>> uploadImageFromUrl(
+            @RequestBody Map<String, String> requestBody) {
+        
+        String url = requestBody.get("url");
+        String suggestedFilename = requestBody.getOrDefault("filename", "logo");
+        
+        if (url == null || url.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        log.info("Uploading image from URL: {}", url);
+        
+        try {
+            // Fetch image from URL
+            HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(10))
+                    .followRedirects(HttpClient.Redirect.NORMAL)
+                    .build();
+            
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(30))
+                    .GET()
+                    .build();
+            
+            HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            
+            if (response.statusCode() != 200) {
+                log.error("Failed to fetch image: HTTP {}", response.statusCode());
+                return ResponseEntity.status(response.statusCode()).build();
+            }
+            
+            // Validate content type
+            String contentType = response.headers()
+                    .firstValue("Content-Type")
+                    .orElse("application/octet-stream");
+            
+            if (!contentType.startsWith("image/")) {
+                log.error("URL does not point to an image: {}", contentType);
+                return ResponseEntity.badRequest().build();
+            }
+            
+            byte[] imageData = response.body();
+            
+            // Check size limit
+            if (imageData.length > 10 * 1024 * 1024) {
+                log.error("Image too large: {} bytes", imageData.length);
+                return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).build();
+            }
+            
+            // Determine file extension from content type
+            String extension = contentType.substring(contentType.indexOf('/') + 1);
+            if (extension.contains(";")) {
+                extension = extension.substring(0, extension.indexOf(';'));
+            }
+            if (extension.equals("svg+xml")) {
+                extension = "svg";
+            }
+            
+            String filename = suggestedFilename + "." + extension;
+            
+            // Upload directly to S3 via logoService
+            // We'll use the logoService's internal upload method
+            String uploadId = logoService.uploadLogoDirectly(imageData, filename, contentType);
+            
+            log.info("Successfully uploaded image: {} bytes, uploadId: {}", imageData.length, uploadId);
+            
+            return ResponseEntity.ok(Map.of("uploadId", uploadId));
+            
+        } catch (IOException | InterruptedException e) {
+            log.error("Error uploading image from URL: {}", url, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }

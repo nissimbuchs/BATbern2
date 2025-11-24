@@ -13,97 +13,23 @@ import apiClient from '@/services/api/apiClient';
 import type { ImportCandidate, BatchImportResult } from '@/types/companyImport.types';
 
 /**
- * Presigned URL response from backend
- */
-interface PresignedUrlResponse {
-  uploadUrl: string;
-  fileId: string;
-  s3Key: string;
-  fileExtension: string;
-  requiredHeaders: Record<string, string>;
-}
-
-/**
- * Calculate SHA-256 checksum of a file
- */
-async function calculateChecksum(file: File): Promise<string> {
-  const arrayBuffer = await file.arrayBuffer();
-  const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-/**
- * Fetch image from URL and convert to File object
- * Uses backend proxy to bypass CORS restrictions
- */
-async function fetchImageAsFile(url: string, filename: string): Promise<File> {
-  try {
-    // Use backend proxy endpoint to fetch images (bypasses CORS)
-    const proxyUrl = `/logos/fetch-from-url`;
-    const response = await apiClient.post(
-      proxyUrl,
-      { url },
-      {
-        responseType: 'blob',
-      }
-    );
-
-    const blob = response.data;
-
-    // Validate that we got an image
-    if (!blob.type.startsWith('image/')) {
-      throw new Error(`Invalid content type: ${blob.type} (expected image/*)`);
-    }
-
-    return new File([blob], filename, { type: blob.type });
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(`Failed to fetch image from ${url}: ${error.message}`);
-    }
-    throw error;
-  }
-}
-
-/**
- * Upload logo using ADR-002 3-step process
+ * Upload logo using server-side upload endpoint
+ * This completely bypasses the frontend to avoid binary data corruption
+ * with JPEG/BMP files (UTF-8 encoding issue).
+ *
  * Returns the uploadId to include in CreateCompanyRequest
  */
 async function uploadLogo(logoUrl: string, companyName: string): Promise<string> {
   try {
-    // Step 1: Fetch the image from the URL
-    const filename = `${companyName}-logo.${logoUrl.split('.').pop() || 'png'}`;
-    const file = await fetchImageAsFile(logoUrl, filename);
+    const filename = `${companyName}-logo`;
 
-    // Step 2: Request presigned URL from backend
-    const presignedResponse = await apiClient.post<PresignedUrlResponse>('/logos/presigned-url', {
-      fileName: file.name,
-      fileSize: file.size,
-      mimeType: file.type,
+    // Use server-side upload endpoint (bypasses frontend entirely)
+    const response = await apiClient.post<{ uploadId: string }>('/logos/upload-from-url', {
+      url: logoUrl,
+      filename,
     });
 
-    const { uploadUrl, fileId, fileExtension, requiredHeaders } = presignedResponse.data;
-
-    // Step 3: Upload file directly to S3 using presigned URL
-    const s3Response = await fetch(uploadUrl, {
-      method: 'PUT',
-      headers: requiredHeaders,
-      body: file,
-    });
-
-    if (!s3Response.ok) {
-      throw new Error(`S3 upload failed: ${s3Response.status} ${s3Response.statusText}`);
-    }
-
-    // Step 4: Confirm upload with backend
-    const checksum = await calculateChecksum(file);
-    await apiClient.post(`/logos/${fileId}/confirm`, {
-      fileId,
-      fileExtension,
-      checksum,
-    });
-
-    return fileId;
+    return response.data.uploadId;
   } catch (error) {
     // Re-throw with more context
     if (error instanceof Error) {
