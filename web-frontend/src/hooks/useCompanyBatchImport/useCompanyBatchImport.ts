@@ -35,18 +35,21 @@ async function calculateChecksum(file: File): Promise<string> {
 
 /**
  * Fetch image from URL and convert to File object
- * Note: May fail due to CORS if the image host doesn't allow cross-origin requests
+ * Uses backend proxy to bypass CORS restrictions
  */
 async function fetchImageAsFile(url: string, filename: string): Promise<File> {
   try {
-    const response = await fetch(url, {
-      mode: 'cors',
-      credentials: 'omit',
-    });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    const blob = await response.blob();
+    // Use backend proxy endpoint to fetch images (bypasses CORS)
+    const proxyUrl = `/logos/fetch-from-url`;
+    const response = await apiClient.post(
+      proxyUrl,
+      { url },
+      {
+        responseType: 'blob',
+      }
+    );
+
+    const blob = response.data;
 
     // Validate that we got an image
     if (!blob.type.startsWith('image/')) {
@@ -55,8 +58,8 @@ async function fetchImageAsFile(url: string, filename: string): Promise<File> {
 
     return new File([blob], filename, { type: blob.type });
   } catch (error) {
-    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-      throw new Error(`CORS error or network failure while fetching: ${url}`);
+    if (error instanceof Error) {
+      throw new Error(`Failed to fetch image from ${url}: ${error.message}`);
     }
     throw error;
   }

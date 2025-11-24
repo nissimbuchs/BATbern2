@@ -17,6 +17,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -26,6 +27,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.Map;
 
 /**
  * REST API controller for generic file upload operations
@@ -258,5 +267,93 @@ public class LogoController {
         cleanupService.triggerManualCleanup();
 
         return ResponseEntity.status(HttpStatus.ACCEPTED).build();
+    }
+
+    /**
+     * Fetch image from external URL and return as blob
+     * Used by batch import to bypass CORS restrictions
+     *
+     * @param requestBody Map containing the URL to fetch
+     * @return Image blob with appropriate content type
+     */
+    @PostMapping("/fetch-from-url")
+    @Operation(
+            summary = "Fetch image from external URL",
+            description = "Fetches an image from an external URL and returns it as a blob. " +
+                    "This endpoint acts as a proxy to bypass CORS restrictions when importing company logos. " +
+                    "Supports images up to 10MB. Validates that the content is actually an image."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Image fetched successfully",
+                    content = @Content(mediaType = "image/*")
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid URL or not an image"
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Failed to fetch image from URL"
+            )
+    })
+    public ResponseEntity<byte[]> fetchImageFromUrl(@RequestBody Map<String, String> requestBody) {
+        String url = requestBody.get("url");
+
+        if (url == null || url.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        log.info("Fetching image from URL: {}", url);
+
+        try {
+            // Use Java 11+ HttpClient for better performance and timeout handling
+            HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(10))
+                    .followRedirects(HttpClient.Redirect.NORMAL)
+                    .build();
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(30))
+                    .GET()
+                    .build();
+
+            HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
+
+            if (response.statusCode() != 200) {
+                log.error("Failed to fetch image: HTTP {}", response.statusCode());
+                return ResponseEntity.status(response.statusCode()).build();
+            }
+
+            // Get content type from response headers
+            String contentType = response.headers()
+                    .firstValue("Content-Type")
+                    .orElse("application/octet-stream");
+
+            // Validate it's an image
+            if (!contentType.startsWith("image/")) {
+                log.error("URL does not point to an image: {}", contentType);
+                return ResponseEntity.badRequest().build();
+            }
+
+            // Check size limit (10MB)
+            byte[] body = response.body();
+            if (body.length > 10 * 1024 * 1024) {
+                log.error("Image too large: {} bytes", body.length);
+                return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).build();
+            }
+
+            log.info("Successfully fetched image: {} bytes, type: {}", body.length, contentType);
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .body(body);
+
+        } catch (IOException | InterruptedException e) {
+            log.error("Error fetching image from URL: {}", url, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }
