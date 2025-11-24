@@ -27,6 +27,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
 
 import java.io.IOException;
 import java.net.URI;
@@ -298,7 +300,7 @@ public class LogoController {
                     description = "Failed to fetch image from URL"
             )
     })
-    public ResponseEntity<byte[]> fetchImageFromUrl(@RequestBody Map<String, String> requestBody) {
+    public ResponseEntity<Resource> fetchImageFromUrl(@RequestBody Map<String, String> requestBody) {
         String url = requestBody.get("url");
 
         if (url == null || url.isBlank()) {
@@ -347,10 +349,13 @@ public class LogoController {
 
             log.info("Successfully fetched image: {} bytes, type: {}", body.length, contentType);
 
-            // Return binary data with explicit content type (no charset to prevent UTF-8 corruption)
+            // Return binary data as Resource to prevent charset encoding issues
+            ByteArrayResource resource = new ByteArrayResource(body);
+
             return ResponseEntity.ok()
-                    .header("Content-Type", contentType)
-                    .body(body);
+                    .contentLength(body.length)
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .body(resource);
 
         } catch (IOException | InterruptedException e) {
             log.error("Error fetching image from URL: {}", url, e);
