@@ -57,8 +57,7 @@ docker-compose down -v
 ```
 
 **What gets started locally:**
-- ✅ Redis 7.2 (local caching - not deployed to AWS for dev)
-- ✅ API Gateway (http://localhost:8080)
+- ✅ API Gateway (http://localhost:8080) - uses Caffeine in-memory cache
 - ✅ Web Frontend (http://localhost:3000)
 
 **What connects to AWS DEV environment:**
@@ -101,9 +100,6 @@ docker-compose ps
 
 # View service logs
 docker-compose logs -f api-gateway
-
-# Access local Redis
-docker exec -it batbern-redis redis-cli
 
 # Access AWS RDS database (requires AWS credentials)
 AWS_PROFILE=batbern-mgmt psql -h $(grep DB_HOST .env | cut -d '=' -f2) -U postgres -d batbern
@@ -260,8 +256,8 @@ Version: v1.2.3
 - **Backend:** Java 21, Spring Boot 3.5+
 - **Frontend:** React 18, TypeScript 5.3+, Material-UI
 - **Database:** PostgreSQL 15+
-- **Cache:** Redis 7.2+
-- **Infrastructure:** AWS ECS, RDS, ElastiCache, S3, CloudFront
+- **Cache:** Caffeine 3.x (in-memory)
+- **Infrastructure:** AWS ECS, RDS, S3, CloudFront
 - **IaC:** AWS CDK 2.110+
 
 ## Testing
