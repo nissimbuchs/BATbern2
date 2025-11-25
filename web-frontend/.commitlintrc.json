@@ -18,9 +18,16 @@
         "revert"
       ]
     ],
-    "type-case": [2, "always", "lower-case"],
-    "type-empty": [2, "never"],
-    "subject-empty": [2, "never"],
-    "subject-case": [2, "never"]
+    "type-case": [1, "always", "lower-case"],
+    "type-empty": [1, "never"],
+    "subject-empty": [1, "never"],
+    "subject-case": [0],
+    "body-leading-blank": [0],
+    "body-max-line-length": [0],
+    "footer-leading-blank": [0],
+    "footer-max-line-length": [0],
+    "header-max-length": [0],
+    "scope-case": [0],
+    "subject-full-stop": [0]
   }
 }
