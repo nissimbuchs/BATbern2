@@ -168,26 +168,29 @@ As a **platform engineer**, I want comprehensive performance monitoring and SLA 
 As a **backend developer**, I want a comprehensive caching strategy implemented across all services, so that we achieve optimal performance and reduce database load.
 
 **Why Deferred:**
-- Redis infrastructure already in place from Epic 1 Story 1.3
+- Caffeine in-memory caching already in place from Epic 1 Story 1.3
 - Simple cache-aside pattern with sensible TTLs sufficient for MVP
 - Advanced patterns require traffic data to optimize
 - Premature optimization without performance profiling data
+- Distributed caching not needed until horizontal scaling required
 
 **Current Alternative:**
-- Simple cache-aside pattern for hot data
+- Simple Caffeine cache-aside pattern for hot data
 - Sensible TTLs (5-15 min for events, 1 hour for speakers)
 - Manual cache invalidation when needed
+- Application-level in-memory caching (no external cache infrastructure)
 
 **Implementation Triggers:**
 - Performance profiling identifies caching as bottleneck
 - Database load becomes concerning (>70% utilization)
 - Specific hot paths need optimization (proven by data)
 - Cache hit rate consistently <70%
+- Horizontal scaling requires distributed cache coordination
 
 **Acceptance Criteria (When Implemented):**
 
 **Advanced Caching Patterns:**
-1. **Cache-Aside Pattern**: Already implemented (validate effectiveness)
+1. **Cache-Aside Pattern**: Already implemented with Caffeine (validate effectiveness)
 2. **Write-Through Cache**: Synchronous cache updates for critical data
 3. **Write-Behind Cache**: Asynchronous batch updates for performance
 4. **Cache Warming**: Preload critical data on startup
@@ -198,15 +201,15 @@ As a **backend developer**, I want a comprehensive caching strategy implemented 
 7. **Cache Invalidation**: Event-driven invalidation using EventBridge
 8. **Cache Versioning**: Handle schema changes gracefully
 
-**Redis Advanced Features:**
-9. **Clustering**: Redis cluster for horizontal scaling
-10. **Replication**: Master-slave with automatic failover
-11. **Persistence**: Optimized RDB + AOF configuration
-12. **Memory Management**: Eviction policies per data type
+**Distributed Caching (If Needed):**
+9. **Distributed Cache Selection**: Evaluate options (Redis, Hazelcast, etc.) if distributed caching needed
+10. **Cache Coordination**: Cross-instance cache coherence for horizontal scaling
+11. **Persistence Strategy**: Decide on cache persistence requirements
+12. **Monitoring**: Distributed cache health and performance metrics
 
 **Performance Targets:**
 13. **Hit Rate**: >90% for hot paths (events, speakers, companies)
-14. **Cache Latency**: <5ms P95 for cache operations
+14. **Cache Latency**: <5ms P95 for cache operations (in-memory)
 15. **Memory Efficiency**: <2GB per service instance
 16. **Invalidation Speed**: <100ms for critical data updates
 

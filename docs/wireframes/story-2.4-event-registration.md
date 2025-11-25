@@ -153,7 +153,7 @@ When the Event Registration screen loads, the following APIs are called to provi
    - Query params: `query` (search string), `limit` (max results, default 20)
    - Returns: List of existing companies matching the query (id, name, industry)
    - Used for: Provide smart suggestions for company field autocomplete
-   - Caching: Redis-backed with 5-minute TTL for common queries
+   - Caching: Caffeine in-memory cache with 5-minute TTL for common queries
    - Consolidation: Uses consolidated Companies API with search endpoint (Story 1.22)
 
 4. **GET /api/v1/events/{eventId}/registrations?filter[email]={email}**

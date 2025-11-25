@@ -19,6 +19,7 @@
 - **Search**: PostgreSQL full-text search for content discovery
 - **Frontend**: React PWA with offline capabilities
 - **Infrastructure**: CloudFront CDN for global delivery
+- **Caching**: Caffeine in-memory cache for search optimization
 
 **Duration**: 8 weeks (Weeks 39-46)
 
@@ -33,7 +34,7 @@ As an **attendee**, I want to search 20+ years of BATbern content with filtering
 - **Search Engine**: PostgreSQL full-text search
 - **Database**: PostgreSQL for content metadata and search
 - **Frontend**: React search interface with facets
-- **Cache**: Redis for search results
+- **Cache**: Caffeine in-memory cache for search results
 
 **Wireframe Context:**
 

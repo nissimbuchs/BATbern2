@@ -2889,14 +2889,14 @@ public class HealthController {
     private DatabaseHealthIndicator databaseHealth;
 
     @Autowired
-    private RedisHealthIndicator redisHealth;
+    private CaffeineHealthIndicator caffeineHealth;
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> health() {
         Map<String, Object> health = new HashMap<>();
         health.put("status", "UP");
         health.put("database", databaseHealth.health());
-        health.put("cache", redisHealth.health());
+        health.put("cache", caffeineHealth.health());
         health.put("timestamp", Instant.now());
 
         return ResponseEntity.ok(health);

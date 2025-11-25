@@ -232,7 +232,7 @@ As a **platform stakeholder**, I want all 20+ years of historical BATbern event 
 - ✅ Speaker Coordination Service API ready
 - ✅ S3 buckets configured with CDN integration
 - ✅ PostgreSQL databases ready for data import
-- ✅ Redis caches configured for search
+- ✅ Caffeine in-memory caches configured for search
 
 **Enables Following Epics:**
 - **Epic 4**: Public Website (requires migrated events and content for display)

@@ -33,7 +33,7 @@ nfr_validation:
     notes: "Excellent security posture with encryption at rest/transit, KMS-encrypted secrets with rotation, 3-tier network isolation, least privilege security groups, and production deletion protection."
   performance:
     status: PASS
-    notes: "Excellent performance design with cost optimization (ARM64, single NAT for dev), auto-scaling policies, optimized PostgreSQL parameters, Redis caching, and CloudFront CDN for global delivery."
+    notes: "Excellent performance design with cost optimization (ARM64, single NAT for dev), auto-scaling policies, optimized PostgreSQL parameters, Caffeine in-memory caching, and CloudFront CDN for global delivery."
   reliability:
     status: PASS
     notes: "Production uses Multi-AZ deployment for high availability, automated backups with appropriate retention, health checks at multiple levels, and comprehensive CloudWatch monitoring with alarms."
