@@ -7,7 +7,7 @@
     "speakerCount": 36,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/42/sbb.jpg",
     "status": "complete",
-    "logoUrl": "http://host.docker.internal:8888/sbb.jpg"
+    "logoUrl": "http://localhost:8888/sbb.jpg"
   },
   {
     "id": "mobiliar",
@@ -17,7 +17,7 @@
     "speakerCount": 22,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/42/mobiliar.jpg",
     "status": "complete",
-    "logoUrl": "http://host.docker.internal:8888/mobiliar.jpg"
+    "logoUrl": "http://localhost:8888/mobiliar.jpg"
   },
   {
     "id": "swisscom",
@@ -27,7 +27,7 @@
     "speakerCount": 20,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/43/swisscom.jpg",
     "status": "complete",
-    "logoUrl": "http://host.docker.internal:8888/swisscom.jpg"
+    "logoUrl": "http://localhost:8888/swisscom.jpg"
   },
   {
     "id": "postfinance",
@@ -37,7 +37,7 @@
     "speakerCount": 17,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/43/postfinance.jpg",
     "status": "complete",
-    "logoUrl": "http://host.docker.internal:8888/postfinance.jpg"
+    "logoUrl": "http://localhost:8888/postfinance.jpg"
   },
   {
     "id": "elca",
@@ -47,7 +47,7 @@
     "speakerCount": 10,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/43/elca.jpg",
     "status": "complete",
-    "logoUrl": "http://host.docker.internal:8888/elca.jpg"
+    "logoUrl": "http://localhost:8888/elca.jpg"
   },
   {
     "id": "rtc",
@@ -59,7 +59,7 @@
     "has_logo": true,
     "status": "complete",
     "note": "Logo added by user",
-    "logoUrl": "http://host.docker.internal:8888/logo-rtc.jpg"
+    "logoUrl": "http://localhost:8888/logo-rtc.jpg"
   },
   {
     "id": "bkw",
@@ -70,7 +70,7 @@
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/53/bkw.jpg",
     "has_logo": true,
     "status": "complete",
-    "logoUrl": "http://host.docker.internal:8888/bkw.jpg"
+    "logoUrl": "http://localhost:8888/bkw.jpg"
   },
   {
     "id": "mtrail",
@@ -81,7 +81,7 @@
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/42/mtrail.jpg",
     "has_logo": true,
     "status": "complete",
-    "logoUrl": "http://host.docker.internal:8888/mtrail.jpg"
+    "logoUrl": "http://localhost:8888/mtrail.jpg"
   },
   {
     "id": "ipt",
@@ -92,7 +92,7 @@
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/56/ipt.png",
     "has_logo": false,
     "status": "complete",
-    "logoUrl": "http://host.docker.internal:8888/ipt.png"
+    "logoUrl": "http://localhost:8888/ipt.png"
   },
   {
     "id": "isc-ejpd",
@@ -103,7 +103,7 @@
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/48/isc-ejpd.png",
     "has_logo": true,
     "status": "complete",
-    "logoUrl": "http://host.docker.internal:8888/isc-ejpd.png"
+    "logoUrl": "http://localhost:8888/isc-ejpd.png"
   },
   {
     "id": "bls",
@@ -114,7 +114,7 @@
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/assets/partners/logo-bls.jpg",
     "has_logo": false,
     "status": "needs_logo",
-    "logoUrl": "http://host.docker.internal:8888/logo-bls.jpg"
+    "logoUrl": "http://localhost:8888/logo-bls.jpg"
   },
   {
     "id": "aws",
@@ -125,7 +125,7 @@
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/47/aws-logo.png",
     "has_logo": true,
     "status": "complete",
-    "logoUrl": "http://host.docker.internal:8888/aws-logo.png"
+    "logoUrl": "http://localhost:8888/aws-logo.png"
   },
   {
     "id": "post",
@@ -136,7 +136,7 @@
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/43/postfinance.jpg",
     "has_logo": true,
     "status": "complete",
-    "logoUrl": "http://host.docker.internal:8888/postfinance.jpg"
+    "logoUrl": "http://localhost:8888/postfinance.jpg"
   },
   {
     "id": "zühlke",
@@ -178,7 +178,7 @@
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/47/nuvibit-logo.png",
     "has_logo": false,
     "status": "needs_logo",
-    "logoUrl": "http://host.docker.internal:8888/nuvibit-logo.png"
+    "logoUrl": "http://localhost:8888/nuvibit-logo.png"
   },
   {
     "id": "googlecloud",
@@ -189,7 +189,7 @@
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/56/googleCloud.png",
     "has_logo": true,
     "status": "pending_url",
-    "logoUrl": "http://host.docker.internal:8888/googleCloud.png"
+    "logoUrl": "http://localhost:8888/googleCloud.png"
   },
   {
     "id": "ibm",
@@ -200,7 +200,7 @@
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/50/ibm.jpg",
     "has_logo": true,
     "status": "complete",
-    "logoUrl": "http://host.docker.internal:8888/ibm.jpg"
+    "logoUrl": "http://localhost:8888/ibm.jpg"
   },
   {
     "id": "raiffeisen",
@@ -211,7 +211,7 @@
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/49/raiffeisen.jpg",
     "has_logo": true,
     "status": "complete",
-    "logoUrl": "http://host.docker.internal:8888/raiffeisen.jpg"
+    "logoUrl": "http://localhost:8888/raiffeisen.jpg"
   },
   {
     "id": "syncier",
@@ -222,7 +222,7 @@
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/46/syncier.JPG",
     "has_logo": true,
     "status": "complete",
-    "logoUrl": "http://host.docker.internal:8888/syncier.JPG"
+    "logoUrl": "http://localhost:8888/syncier.JPG"
   },
   {
     "id": "insel",
@@ -266,7 +266,7 @@
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/42/afca.jpg",
     "has_logo": true,
     "status": "pending_url",
-    "logoUrl": "http://host.docker.internal:8888/afca.jpg"
+    "logoUrl": "http://localhost:8888/afca.jpg"
   },
   {
     "id": "opendatach",
@@ -299,7 +299,7 @@
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/46/BEI.png",
     "has_logo": true,
     "status": "pending_url",
-    "logoUrl": "http://host.docker.internal:8888/BEI.png"
+    "logoUrl": "http://localhost:8888/BEI.png"
   },
   {
     "id": "hslu",
@@ -321,7 +321,7 @@
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/46/swisstopo.JPG",
     "has_logo": true,
     "status": "complete",
-    "logoUrl": "http://host.docker.internal:8888/swisstopo.JPG"
+    "logoUrl": "http://localhost:8888/swisstopo.JPG"
   },
   {
     "id": "dvbern",
@@ -343,7 +343,7 @@
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/48/microsoft.png",
     "has_logo": true,
     "status": "complete",
-    "logoUrl": "http://host.docker.internal:8888/microsoft.png"
+    "logoUrl": "http://localhost:8888/microsoft.png"
   },
   {
     "id": "isbbund",
@@ -363,7 +363,7 @@
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/47/vshn.png",
     "status": "complete",
-    "logoUrl": "http://host.docker.internal:8888/vshn.png"
+    "logoUrl": "http://localhost:8888/vshn.png"
   },
   {
     "id": "twint",
@@ -373,7 +373,7 @@
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/55/twint-logo.png",
     "status": "complete",
-    "logoUrl": "http://host.docker.internal:8888/twint-logo.png"
+    "logoUrl": "http://localhost:8888/twint-logo.png"
   },
   {
     "id": "ti8m",
@@ -383,7 +383,7 @@
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/47/ti8m.jpg",
     "status": "complete",
-    "logoUrl": "http://host.docker.internal:8888/ti8m.jpg"
+    "logoUrl": "http://localhost:8888/ti8m.jpg"
   },
   {
     "id": "swissport",
@@ -393,7 +393,7 @@
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/43/swissport.jpg",
     "status": "complete",
-    "logoUrl": "http://host.docker.internal:8888/swissport.jpg"
+    "logoUrl": "http://localhost:8888/swissport.jpg"
   },
   {
     "id": "sqooba",
@@ -404,7 +404,7 @@
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/43/sqooba.jpg",
     "status": "complete",
     "note": "Acquired by Open Systems in 2020",
-    "logoUrl": "http://host.docker.internal:8888/sqooba.jpg"
+    "logoUrl": "http://localhost:8888/sqooba.jpg"
   },
   {
     "id": "smg",
@@ -414,7 +414,7 @@
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/51/smg.png",
     "status": "pending_url",
-    "logoUrl": "http://host.docker.internal:8888/smg.png"
+    "logoUrl": "http://localhost:8888/smg.png"
   },
   {
     "id": "pragmaticsol",
@@ -424,7 +424,7 @@
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/47/pragmaticsolutions.png",
     "status": "pending_url",
-    "logoUrl": "http://host.docker.internal:8888/pragmaticsolutions.png"
+    "logoUrl": "http://localhost:8888/pragmaticsolutions.png"
   },
   {
     "id": "lifestage",
@@ -434,7 +434,7 @@
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/51/lifestage.png",
     "status": "pending_url",
-    "logoUrl": "http://host.docker.internal:8888/lifestage.png"
+    "logoUrl": "http://localhost:8888/lifestage.png"
   },
   {
     "id": "bjb",
@@ -444,7 +444,7 @@
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/47/JB_LA_RGB_blue.jpg",
     "status": "complete",
-    "logoUrl": "http://host.docker.internal:8888/JB_LA_RGB_blue.jpg"
+    "logoUrl": "http://localhost:8888/JB_LA_RGB_blue.jpg"
   },
   {
     "id": "innoq",
@@ -454,7 +454,7 @@
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/52/innoq.png",
     "status": "complete",
-    "logoUrl": "http://host.docker.internal:8888/innoq.png"
+    "logoUrl": "http://localhost:8888/innoq.png"
   },
   {
     "id": "finnova",
@@ -473,7 +473,7 @@
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/50/feenk.png",
     "status": "complete",
-    "logoUrl": "http://host.docker.internal:8888/feenk.png"
+    "logoUrl": "http://localhost:8888/feenk.png"
   },
   {
     "id": "ethz",
@@ -483,7 +483,7 @@
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/53/ethz.jpg",
     "status": "complete",
-    "logoUrl": "http://host.docker.internal:8888/ethz.jpg"
+    "logoUrl": "http://localhost:8888/ethz.jpg"
   },
   {
     "id": "epfl",
@@ -493,7 +493,7 @@
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/53/epfl-logo.jpg",
     "status": "complete",
-    "logoUrl": "http://host.docker.internal:8888/epfl-logo.jpg"
+    "logoUrl": "http://localhost:8888/epfl-logo.jpg"
   },
   {
     "id": "dxc",
@@ -503,7 +503,7 @@
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/46/DXC Logo.png",
     "status": "complete",
-    "logoUrl": "http://host.docker.internal:8888/DXC Logo.png"
+    "logoUrl": "http://localhost:8888/DXC Logo.png"
   },
   {
     "id": "dartfish",
@@ -513,7 +513,7 @@
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/49/dartfish.jpg",
     "status": "complete",
-    "logoUrl": "http://host.docker.internal:8888/dartfish.jpg"
+    "logoUrl": "http://localhost:8888/dartfish.jpg"
   },
   {
     "id": "cslbehring",
@@ -523,7 +523,7 @@
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/42/cslbehring.jpg",
     "status": "complete",
-    "logoUrl": "http://host.docker.internal:8888/cslbehring.jpg"
+    "logoUrl": "http://localhost:8888/cslbehring.jpg"
   },
   {
     "id": "coop",
@@ -533,7 +533,7 @@
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/44/cooprechtsschutz.jpg",
     "status": "pending_url",
-    "logoUrl": "http://host.docker.internal:8888/cooprechtsschutz.jpg"
+    "logoUrl": "http://localhost:8888/cooprechtsschutz.jpg"
   },
   {
     "id": "confluent",
@@ -543,7 +543,7 @@
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/43/confluent.jpg",
     "status": "complete",
-    "logoUrl": "http://host.docker.internal:8888/confluent.jpg"
+    "logoUrl": "http://localhost:8888/confluent.jpg"
   },
   {
     "id": "bcge",
@@ -553,7 +553,7 @@
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/46/bcge.jpg",
     "status": "complete",
-    "logoUrl": "http://host.docker.internal:8888/bcge.jpg"
+    "logoUrl": "http://localhost:8888/bcge.jpg"
   },
   {
     "id": "bafu",
@@ -572,7 +572,7 @@
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/47/avega.png",
     "status": "pending_url",
-    "logoUrl": "http://host.docker.internal:8888/avega.png"
+    "logoUrl": "http://localhost:8888/avega.png"
   },
   {
     "id": "ariolilaw",
@@ -582,6 +582,6 @@
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/56/ariolilaw.png",
     "status": "complete",
-    "logoUrl": "http://host.docker.internal:8888/ariolilaw.png"
+    "logoUrl": "http://localhost:8888/ariolilaw.png"
   }
 ]
