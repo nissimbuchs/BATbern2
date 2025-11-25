@@ -121,7 +121,7 @@ The platform employs a **Domain-Driven Design microservices architecture** with 
 
 ### Technology Stack Summary
 - **Frontend**: React 18.2+ with TypeScript, Material-UI, Zustand + React Query
-- **Backend**: Java 21 LTS with Spring Boot 3.2+, PostgreSQL, Redis
+- **Backend**: Java 21 LTS with Spring Boot 3.2+, PostgreSQL, Caffeine (in-memory caching)
 - **Infrastructure**: AWS (ECS Fargate, Cognito, S3, CloudFront)
 - **Development**: Gradle, Vite, GitHub Actions, AWS CDK
 

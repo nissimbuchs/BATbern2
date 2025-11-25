@@ -129,7 +129,7 @@ When the alarm resolves, the issue is automatically closed with a comment.
 | Alarm | Runbook | Action | Priority |
 |-------|---------|--------|----------|
 | high-cpu | restart-service | Scale ECS tasks or restart | P1 |
-| high-memory | clear-cache | Clear Redis cache, restart if needed | P1 |
+| high-memory | restart-service | Restart service to clear in-memory cache | P1 |
 | high-disk | cleanup-logs | Run log rotation, archive old logs | P2 |
 | database-connections | scale-connections | Increase max connections or kill idle | P1 |
 | high-errors | rollback-deployment | Trigger automatic rollback | P0 |
@@ -178,22 +178,15 @@ async function handleHighCPU(message: any) {
 }
 
 async function handleHighMemory(message: any) {
-  // Clear Redis cache
-  const command = new SendCommandCommand({
-    DocumentName: 'AWS-RunShellScript',
-    Parameters: {
-      commands: ['redis-cli FLUSHALL'],
-    },
-    Targets: [
-      {
-        Key: 'tag:Name',
-        Values: ['batbern-redis'],
-      },
-    ],
+  // Restart ECS service to clear Caffeine in-memory cache
+  const command = new UpdateServiceCommand({
+    cluster: process.env.ECS_CLUSTER,
+    service: process.env.ECS_SERVICE,
+    forceNewDeployment: true,
   });
 
-  await ssm.send(command);
-  console.log('Cleared Redis cache');
+  await ecs.send(command);
+  console.log('Restarted service to clear in-memory cache');
 }
 
 async function handleHighDisk(message: any) {

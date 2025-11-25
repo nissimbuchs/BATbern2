@@ -11,7 +11,7 @@
 - **Backend**: Attendee Experience Service + Event Management Service APIs
 - **Search**: PostgreSQL full-text search for content discovery
 - **CDN**: CloudFront for global content delivery
-- **Cache**: Redis for event data and search results
+- **Cache**: Caffeine in-memory cache for event data and search results
 
 **Duration**: 5 weeks (Weeks 22-26)
 
@@ -41,7 +41,7 @@ As an **attendee**, I want to see the current/upcoming BATbern event prominently
 - **Frontend**: React landing page with server-side rendering
 - **Backend**: Attendee Experience Service, Event Management Service
 - **CDN**: CloudFront for global content delivery
-- **Cache**: Redis for event data caching (1-minute TTL)
+- **Cache**: Caffeine in-memory cache for event data (1-minute TTL)
 - **Email**: AWS SES for registration confirmations
 
 **Key Functionality:**
@@ -196,7 +196,7 @@ As an **visitor or attendee**, I want to browse and view historical BATbern even
 - **Backend**: Attendee Experience Service for content discovery
 - **Database**: PostgreSQL with full-text search indexes
 - **CDN**: CloudFront for optimized content delivery
-- **Cache**: Redis for archive data (15-minute TTL)
+- **Cache**: Caffeine in-memory cache for archive data (15-minute TTL)
 
 **Key Functionality:**
 1. **Event Archive Grid**: Card-based layout showing events with thumbnails, dates, titles, topics
@@ -277,7 +277,7 @@ As an **attendee**, I want to search 20+ years of BATbern content with filtering
 - **Search Engine**: PostgreSQL full-text search with ts_rank scoring
 - **Database**: PostgreSQL content metadata with GIN indexes
 - **Frontend**: React search interface with faceted search
-- **Cache**: Redis for search results (5-minute TTL)
+- **Cache**: Caffeine in-memory cache for search results (5-minute TTL)
 - **Backend**: Attendee Experience Service search APIs
 
 **Key Functionality:**
@@ -348,7 +348,7 @@ As an **attendee**, I want to search 20+ years of BATbern content with filtering
 19. **Response Time**: Search results return in <500ms for typical queries
 20. **Pagination**: Efficient pagination for large result sets (20 results per page)
 21. **Index Optimization**: PostgreSQL GIN indexes on searchable fields
-22. **Cache Strategy**: Redis caching for common searches (5-minute TTL)
+22. **Cache Strategy**: Caffeine in-memory caching for common searches (5-minute TTL)
 
 **Deliverables:**
 - [ ] Full-text search functional across all content
@@ -437,7 +437,7 @@ As an **attendee**, I want to search 20+ years of BATbern content with filtering
 
 **Technical Risks:**
 - **Risk**: PostgreSQL full-text search performance degrades with large result sets
-  - **Mitigation**: GIN indexes, Redis caching, pagination limits
+  - **Mitigation**: GIN indexes, Caffeine in-memory caching, pagination limits
 - **Risk**: QR code generation library issues or format incompatibility
   - **Mitigation**: Test with multiple QR code scanner apps, use standard format
 - **Risk**: Email deliverability issues with registration confirmations

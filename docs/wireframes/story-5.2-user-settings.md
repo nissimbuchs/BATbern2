@@ -321,7 +321,7 @@ When the Settings screen loads, the following APIs are called:
 
 2. **GET /api/v1/companies/search?query={}&limit=20**
    - Query params: `query` (user input), `limit` (default 20)
-   - Returns: Company autocomplete suggestions (Redis cached)
+   - Returns: Company autocomplete suggestions (Caffeine cached)
      ```json
      {
        "suggestions": [
@@ -335,7 +335,7 @@ When the Settings screen loads, the following APIs are called:
      }
      ```
    - Used for: Company autocomplete search in Account tab
-   - **Consolidated**: Uses Story 1.22 company search endpoint with Redis caching (<100ms P95)
+   - **Consolidated**: Uses Story 1.22 company search endpoint with Caffeine in-memory caching (<100ms P95)
    - Note: Called on-demand when user types in company field
 
 ---
