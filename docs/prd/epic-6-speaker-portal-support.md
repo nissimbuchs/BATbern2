@@ -1,480 +1,302 @@
-# Epic 6: Speaker Portal & Support - DEFERRED
+# Epic 6: Speaker Self-Service Portal (Enhancement Layer) - DEFERRED
 
-**Status:** 📦 **DEFERRED TO PHASE 2** (Week 26+)
+**Status:** 📦 **DEFERRED TO PHASE 2+** (Week 42+)
 
-**Reorganization Note:** This epic was formerly "Epic 3: Core Speaker Management" and now focuses on the self-service speaker portal and advanced features. Basic speaker CRUD is in Epic 2.
+**Strategic Repositioning (2025-11-25):** Epic 6 is now an **optional enhancement layer** on top of Epic 5. Epic 5 provides complete organizer-driven workflow where organizers manually handle all speaker coordination. Epic 6 adds self-service capabilities to reduce organizer workload.
 
-**Phase 1 Priority:** Epic 2 provides speaker entity CRUD. This epic adds invitation workflows, material submission portal, and communication hub.
+**Dependency Change:** Epic 6 no longer blocks Epic 5. Epic 5 is self-contained and operational without Epic 6.
 
 ---
 
 ## Epic Overview
 
-**Epic Goal**: Deliver comprehensive self-service speaker portal with invitation workflows, material submission, performance dashboards, and communication hub, enabling speakers to manage their BATbern participation independently.
+**Epic Goal**: Provide self-service portal for speakers to reduce organizer workload by enabling speakers to independently respond to invitations, submit materials, and manage their participation.
 
-**Deliverable**: Complete speaker invitation, response tracking, and material collection workflow enabling organizers to manage speakers end-to-end.
+**Deliverable**: Optional speaker self-service portal that enhances the organizer-driven workflow (Epic 5) with speaker autonomy, reducing manual organizer tasks by ~40%.
 
 **Architecture Context**:
 - **Core Service**: Speaker Coordination Service (Java 21 + Spring Boot 3.2)
-- **Integration**: Event Management Service for speaker assignments
+- **Integration**: Enhances Epic 5 workflows (Stories 5.3-5.5)
 - **Storage**: AWS S3 for speaker materials (presentations, photos, CVs)
 - **Communication**: AWS SES for invitation and reminder emails
-- **Frontend**: React components for organizer dashboard and basic speaker portal
+- **Frontend**: React speaker portal components
 
-**Duration**: 12 weeks (Weeks 21-32) - includes 2 weeks for Story 3.6 Notification Infrastructure
+**Duration**: 8 weeks (Weeks 42-49, after Epic 5 complete)
+
+**What Changed:**
+- **Epic 5 First**: Organizer-driven workflow operational before Epic 6
+- **Enhancement Layer**: Epic 6 adds self-service options, not core functionality
+- **Backward Compatible**: Organizers can still upload materials on behalf of speakers
+- **Reduced Scope**: Focus on high-value self-service features only
 
 ---
 
-## Story 3.1: Speaker Invitation System (Workflow Step 3)
+## Why Epic 6 is Optional
+
+### Epic 5 Provides Complete Workflow Without Epic 6
+
+| Workflow Step | Epic 5 (Organizer-Driven) | Epic 6 Enhancement (Optional) |
+|---------------|---------------------------|-------------------------------|
+| **Step 4: Speaker Outreach** | Organizer manually contacts speaker, records contact | Speaker receives automated invitation email |
+| **Step 5: Speaker Status** | Organizer manually updates status after conversation | Speaker self-updates status via response link |
+| **Step 6: Content Collection** | Organizer uploads CV, photo, abstract on speaker's behalf | Speaker self-submits via portal |
+
+### Value Proposition of Epic 6
+
+**Without Epic 6 (Epic 5 Only):**
+- ✅ Organizers manually handle all speaker coordination
+- ✅ Organizers collect materials via email/shared drives
+- ✅ Organizers upload materials on behalf of speakers
+- ❌ Higher organizer workload
+- ❌ More manual data entry
+- ❌ Slower material collection
+
+**With Epic 6 Enhancement:**
+- ✅ Speakers self-respond to invitations (reduces organizer follow-up)
+- ✅ Speakers self-submit materials (reduces organizer data entry)
+- ✅ Automated reminders reduce organizer coordination time
+- ✅ ~40% reduction in organizer workload
+- ✅ Faster material collection (1 week average vs 3 weeks manual)
+
+### Implementation Decision
+
+**Recommendation:** Implement Epic 5 first, gather organizer feedback, then decide if Epic 6 ROI justifies development effort.
+
+---
+
+## Epic 6 Stories (Enhancement Features)
+
+### Story 6.1: Automated Speaker Invitation System
 
 **User Story:**
-As an **organizer**, I want to invite speakers efficiently through an automated system that handles bulk invitations and tracks responses, so that I can build event agendas quickly.
+As an **organizer**, I want to send automated speaker invitations with unique response links, so that speakers can self-respond without manual follow-up.
+
+**Enhancement Over Epic 5:**
+- Epic 5: Organizer manually contacts speaker and records response
+- Epic 6: Automated email with unique link for self-service response
 
 **Architecture Integration:**
 - **Service**: Speaker Coordination Service
 - **Email**: AWS SES with template management
 - **Database**: PostgreSQL invitations and response tracking
-- **Frontend**: React invitation management interface
-
-**Wireframe Context:**
-
-### Wireframe References
-**From docs/wireframes/sitemap.md:**
-- **Main Screen:** `docs/wireframes/story-3.1-speaker-matching-interface.md` ✅
-  - Speaker Matching Interface with AI-powered recommendations
-  - Speaker search and filtering capabilities
-  - Invitation management and tracking
-  - Bulk invitation operations
-
-### UI Components
-**Key interface elements:**
-- **Speaker Search**: Search bar with autocomplete for speaker names, companies, expertise
-- **Filter Panel**: Multi-criteria filters (expertise, company, past participation, availability)
-- **Speaker Cards**: Grid/list view with speaker photos, names, companies, expertise tags
-- **AI Matching Score**: Visual indicators showing speaker-topic fit percentage
-- **Selection Controls**: Checkboxes for bulk selection, "Select All" option
-- **Invitation Panel**: Right sidebar showing selected speakers for invitation
-- **[Send Invitations] Button**: Triggers bulk invitation workflow
-- **Status Indicators**: Visual badges showing invitation status (sent/opened/accepted/declined)
-- **Speaker Profile Preview**: Quick view panel with speaker bio, speaking history
-- **Company Affiliation**: Company logos and partner status badges
-
-### Wireframe Status
-- ✅ **EXISTS**: Speaker Matching Interface wireframe fully documented
-  - Complete speaker discovery and selection interface
-  - AI-powered matching recommendations
-  - Bulk invitation management
-  - Status tracking dashboard
-
-### Navigation
-**Key navigation paths from this screen:**
-- → Speaker Profile Detail View (click speaker card)
-- → Invitation Management Screen (manage sent invitations)
-- → Company Management Screen (click company logo)
-- → Event Detail/Edit (back to event being planned)
-- ⤴ Event Management Dashboard
+- **Frontend**: React invitation management + speaker response interface
 
 **Acceptance Criteria:**
 
-**Invitation Management:**
-1. **Invitation Creation**: Create invitations with event context and requirements
-2. **Bulk Operations**: Send invitations to multiple speakers simultaneously
-3. **Template System**: Reusable invitation templates with personalization
+**Automated Invitations:**
+1. **Template System**: Pre-defined invitation email templates with variable substitution
+2. **Unique Links**: Generate unique response link per speaker (no authentication required)
+3. **Bulk Operations**: Send invitations to multiple speakers simultaneously
 4. **Tracking**: Monitor invitation status (sent/opened/responded)
+5. **Personalization**: Include speaker name, event details, deadlines
 
-**Technical Implementation:**
-5. **Invitation Entity**: Create Invitation aggregate with status tracking
-6. **Email Integration**: SES templates with tracking pixels
-7. **REST API**: POST /api/speakers/invitations endpoint
-8. **React Component**: InvitationManager with bulk selection
+**Integration with Epic 5:**
+6. **Hybrid Workflow**: Organizer can still manually record responses (Epic 5) if speaker doesn't use portal
+7. **Status Sync**: Self-service responses update same status tracking as Epic 5 manual updates
+8. **Backward Compatible**: System works with or without speaker self-service
 
 **Definition of Done:**
+- [ ] Automated email invitations sent via AWS SES
+- [ ] Unique response links work without authentication
+- [ ] Organizer can still manually record responses (Epic 5 workflow)
+- [ ] Status tracking syncs between self-service and manual updates
 - [ ] Bulk invitation system handles 50+ speakers
-- [ ] Email templates personalized with speaker names
-- [ ] Response tracking accurately captures status
-- [ ] API supports batch operations efficiently
-- [ ] Frontend provides intuitive invitation interface
 - [ ] Integration test verifies end-to-end flow
+
+**Estimated Duration:** 2 weeks
 
 ---
 
-## Story 3.2: Speaker Response Management (Workflow Step 4)
+### Story 6.2: Speaker Self-Service Response Portal
 
 **User Story:**
-As a **speaker**, I want to easily respond to invitations with my availability and any constraints, so that organizers can plan the event effectively.
+As a **speaker**, I want to respond to invitations via a simple web form, so that I can confirm my participation without email back-and-forth with organizers.
+
+**Enhancement Over Epic 5:**
+- Epic 5: Speaker responds via email/phone, organizer manually updates status
+- Epic 6: Speaker self-updates status via web form
 
 **Architecture Integration:**
-- **Frontend**: React response form (no authentication required)
+- **Frontend**: React response form (no authentication required, accessed via unique link)
 - **Backend**: Speaker Coordination Service response processing
 - **Database**: PostgreSQL speaker responses and constraints
 - **Notifications**: Real-time updates to organizers
 
-**Wireframe Context:**
-
-### Wireframe References
-**From docs/wireframes/sitemap.md:**
-- **Main Screen:** `docs/wireframes/story-3.2-invitation-response.md` ✅
-  - Invitation Response form accessible via unique link (no auth required)
-  - Invitation details display (event, date, topic, organizer)
-  - Response options (Accept/Decline/Tentative)
-  - Availability and constraints form
-  - Alternative date suggestions
-
-### UI Components
-**Key interface elements:**
-- **Invitation Summary**: Event title, date, location, topic description
-- **Response Options**: Large, clear radio buttons or cards for Accept/Decline/Tentative
-- **Availability Form** (if Accept/Tentative):
-  - Preferred date/time slots
-  - Scheduling constraints
-  - Technical requirements (AV, equipment)
-  - Dietary restrictions (for catering)
-- **Decline Form** (if Decline):
-  - Optional reason for declining
-  - Alternative speaker suggestions
-  - Alternative date preferences
-- **Contact Information**: Speaker can update contact details
-- **Comments Box**: Free-form text for additional information
-- **[Submit Response] Button**: Primary action to submit
-- **Confirmation Message**: Success feedback after submission
-- **Email Confirmation**: Notice that confirmation email sent
-
-### Wireframe Status
-- ✅ **EXISTS**: Invitation Response wireframe fully documented
-  - Complete response form with all accept/decline/tentative paths
-  - No-authentication unique link access
-  - Real-time status updates to organizer
-  - Constraint collection forms
-
-### Navigation
-**Key navigation paths from this screen:**
-- → Confirmation Page (after submit)
-- → Help/FAQ (if link provided)
-- No navigation required (standalone unique link page)
+**Wireframe Reference:**
+- `docs/wireframes/story-3.2-invitation-response.md` ✅
 
 **Acceptance Criteria:**
 
 **Response Interface:**
-1. **Response Form**: Simple form accessible via unique link
+1. **Response Form**: Simple form accessible via unique link from invitation email
 2. **Availability Options**: Accept/Decline/Tentative responses
 3. **Constraint Collection**: Capture scheduling preferences, technical needs
 4. **Confirmation**: Immediate confirmation of response submission
 
 **Response Processing:**
-5. **Status Updates**: Automatic status updates in organizer dashboard
-6. **Tentative Handling**: Support for tentative responses with follow-up
-7. **Decline Reasons**: Optional collection of decline reasons
-8. **Alternative Suggestions**: Allow speakers to suggest alternatives
+5. **Auto Status Update**: Response automatically updates speaker status in Epic 5 workflow
+6. **Organizer Notification**: Organizers notified in real-time of speaker responses
+7. **Tentative Handling**: Support for tentative responses with follow-up
+8. **Decline Reasons**: Optional collection of decline reasons
+
+**Hybrid Operation:**
+9. **Manual Override**: Organizer can still manually update status if speaker doesn't use portal
+10. **Conflict Resolution**: If speaker self-responds after organizer manual update, show warning
 
 **Definition of Done:**
-- [ ] Response form works without authentication
-- [ ] All response types properly handled
+- [ ] Response form works without authentication via unique link
+- [ ] All response types (Accept/Decline/Tentative) properly handled
+- [ ] Status automatically updates in Epic 5 speaker status dashboard
 - [ ] Organizers notified of responses in real-time
-- [ ] Constraints properly stored and displayed
+- [ ] Organizer can override speaker response if needed
 - [ ] Mobile-responsive response interface
-- [ ] Response rate tracking implemented
+- [ ] Integration test verifies status sync between self-service and manual
+
+**Estimated Duration:** 1.5 weeks
 
 ---
 
-## Story 3.3: Basic Material Submission Portal (Workflow Step 5)
+### Story 6.3: Speaker Material Self-Submission Portal
 
 **User Story:**
-As a **speaker**, I want to submit my presentation materials through a simple portal, so that organizers have all required content for the event.
+As a **speaker**, I want to upload my presentation materials through a self-service portal, so that organizers don't have to manually collect and upload my content.
+
+**Enhancement Over Epic 5:**
+- Epic 5: Speaker emails materials to organizer, organizer uploads to system
+- Epic 6: Speaker directly uploads materials to system via portal
 
 **Architecture Integration:**
 - **Storage**: AWS S3 with presigned URLs for uploads
 - **Backend**: Speaker Coordination Service validation
 - **Database**: PostgreSQL submission tracking
-- **Frontend**: React upload interface
+- **Frontend**: React upload interface (accessed via unique link or speaker dashboard)
 
-**Wireframe Context:**
-
-### Wireframe References
-**From docs/wireframes/sitemap.md:**
-
-1. **Material Submission Wizard:** `docs/wireframes/story-3.3-material-submission-wizard.md` ✅
-   - Multi-step submission wizard guiding speakers through material upload
-   - Step-by-step progress indicator
-   - Required vs optional fields clearly marked
-   - Metadata entry forms (title, abstract, bio, tags)
-   - Draft auto-save functionality
-   - Review and submit final step
-
-2. **Presentation Upload:** `docs/wireframes/story-3.3-presentation-upload.md` ✅
-   - Drag-and-drop file upload interface
-   - Upload progress bar with percentage and ETA
-   - File validation (type, size, format)
-   - Thumbnail/preview generation
-   - Version management (replace previous upload)
-   - File metadata editor
-
-### UI Components
-**Key interface elements:**
-- **Multi-Step Wizard**:
-  - Step 1: Speaker Bio & Photo
-  - Step 2: Presentation Details (title, abstract, learning objectives)
-  - Step 3: File Upload (presentation, supporting materials)
-  - Step 4: Review & Submit
-  - Progress indicator showing current step
-- **File Upload Panel**:
-  - Drag-and-drop zone with visual feedback
-  - Browse file button alternative
-  - Upload progress bar (percentage, MB uploaded, ETA)
-  - File validation messages (✓ Valid format, ⚠ File too large)
-  - Preview thumbnail after upload
-- **Form Fields**:
-  - Title (required, max 200 chars)
-  - Abstract (required, max 1000 chars, character counter)
-  - Learning objectives (optional, bullet points)
-  - Tags/keywords (optional, autocomplete)
-  - Biography (required if not on file, rich text editor)
-  - Professional photo upload (required, face detection validation)
-- **Action Buttons**:
-  - [Save Draft] - Auto-save with manual trigger
-  - [Previous]/[Next] - Step navigation
-  - [Preview] - See how materials will appear
-  - [Submit for Review] - Final submission to moderator queue
-
-### Wireframe Status
-- ✅ **EXISTS**: Both wireframes fully documented and ready for implementation
-  - Material Submission Wizard (multi-step guided workflow)
-  - Presentation Upload (advanced file upload with progress tracking)
-  - Integration with moderator review queue (Story 4.1)
-
-### Navigation
-**Key navigation paths from these screens:**
-- Material Submission Wizard →
-  - → Presentation Upload (step 3 of wizard)
-  - → Preview Modal (click [Preview])
-  - → Content Detail/Edit (view submitted materials)
-  - → Speaker Dashboard (after submission)
-- Presentation Upload →
-  - Part of Material Submission Wizard Step 3
-  - → Metadata Editor (after upload completes)
-  - → Version History (if replacing file)
+**Wireframe References:**
+- `docs/wireframes/story-3.3-material-submission-wizard.md` ✅
+- `docs/wireframes/story-3.3-presentation-upload.md` ✅
 
 **Acceptance Criteria:**
 
-**Submission Requirements:**
-1. **Required Materials**:
-   - Title and abstract (max 1000 chars)
-   - CV/biography
-   - Professional photo
-   - Presentation file (PDF/PPTX)
-2. **Validation**: Enforce all requirements before submission
-3. **File Upload**: Support for large files (up to 100MB)
-4. **Progress Tracking**: Show upload progress for large files
-
-**Portal Features:**
+**Self-Service Upload:**
+1. **Material Wizard**: Multi-step wizard for title, abstract, CV, photo, presentation upload
+2. **File Upload**: Drag-and-drop interface with progress tracking
+3. **Validation**: Enforce abstract length (1000 char max), file size, format requirements
+4. **Preview**: Speaker can preview how materials will appear
 5. **Draft Saving**: Auto-save progress to prevent data loss
-6. **Preview**: Preview uploaded materials before final submission
-7. **Edit Capability**: Update submissions until deadline
-8. **Confirmation**: Email confirmation of successful submission
+
+**Integration with Epic 5:**
+6. **Hybrid Workflow**: Organizer can still upload materials on speaker's behalf (Epic 5)
+7. **Review Queue**: Materials flow to same moderator review queue as Epic 5 (Story 5.6)
+8. **Organizer Notification**: Notify organizer when speaker submits materials
+9. **Approval Workflow**: Organizer reviews and approves before publication (same as Epic 5)
 
 **Definition of Done:**
-- [ ] All required materials can be uploaded
+- [ ] Speaker can self-submit all required materials (title, abstract, CV, photo, presentation)
+- [ ] Materials upload to S3 using presigned URLs
 - [ ] Abstract validation enforces 1000 char limit
-- [ ] Large file uploads work reliably
+- [ ] Organizer can still upload materials on speaker's behalf (Epic 5 workflow)
+- [ ] Submitted materials appear in moderator review queue (Story 5.6)
+- [ ] Organizer notified when speaker submits materials
 - [ ] Draft auto-save prevents data loss
-- [ ] S3 integration secure with presigned URLs
+- [ ] Integration test verifies hybrid workflow (both self-service and organizer upload)
+
+**Estimated Duration:** 2.5 weeks
 
 ---
 
-## Story 3.4: Speaker Brainstorming & Assignment (Workflow Step 6)
+### Story 6.4: Speaker Dashboard (View-Only)
 
 **User Story:**
-As an **organizer**, I want to brainstorm potential speakers and assign contact responsibilities, so that we can efficiently build a strong speaker lineup.
+As a **speaker**, I want to view my upcoming and past BATbern presentations, so that I can see my speaking history and event details.
 
 **Architecture Integration:**
-- **Service**: Speaker Coordination Service
-- **Database**: PostgreSQL speaker profiles and assignments
-- **Cache**: Caffeine in-memory cache for speaker search and suggestions
-- **Frontend**: React collaborative brainstorming interface
+- **Authentication**: Simple email-based authentication (no account creation)
+- **Backend**: Speaker Coordination Service
+- **Frontend**: React speaker dashboard
 
 **Acceptance Criteria:**
 
-**Brainstorming Tools:**
-1. **Speaker Database**: Access to 500+ historical speaker profiles
-2. **Expertise Matching**: Match speakers to event topics
-3. **Collaborative Interface**: Multi-organizer brainstorming support
-4. **Research Notes**: Shared notes about potential speakers
+**Dashboard Features:**
+1. **Upcoming Events**: List of events speaker is confirmed for with session details
+2. **Past Events**: Historical speaking engagements with event dates, topics
+3. **Material Status**: Show submission status for upcoming events
+4. **Event Details**: View event date, location, session time, topic
+5. **Contact Information**: Organizer contact details for questions
 
-**Assignment Management:**
-5. **Contact Assignment**: Assign organizers to specific speakers
-6. **Workload Balancing**: Distribute contacts evenly
-7. **Assignment Tracking**: Monitor who's contacting whom
-8. **Handoff Process**: Support reassignment when needed
+**Authentication:**
+6. **Email-Based Access**: Magic link authentication (no password required)
+7. **Session Management**: 30-day session expiration
+8. **No Account Creation**: Speaker doesn't need to create account
 
 **Definition of Done:**
-- [ ] Speaker database searchable and filterable
-- [ ] Expertise matching provides relevant suggestions
-- [ ] Multiple organizers can collaborate in real-time
-- [ ] Assignments prevent duplicate contacts
-- [ ] Workload visibility for all organizers
-- [ ] Assignment history tracked for accountability
+- [ ] Speaker can access dashboard via magic link (email-based auth)
+- [ ] Dashboard shows upcoming and past events
+- [ ] Material submission status displayed
+- [ ] Speaker can view but not edit event details
+- [ ] 30-day session management working
+- [ ] Integration test verifies dashboard functionality
+
+**Estimated Duration:** 1.5 weeks
 
 ---
 
-## Story 3.5: Speaker Outreach & Status Tracking (Workflow Step 6 continued)
+### Story 6.5: Automated Deadline Reminders
 
 **User Story:**
-As an **organizer**, I want to track speaker outreach with automated reminders and status updates, so that I can ensure timely speaker confirmations and material collection.
+As an **organizer**, I want automated deadline reminders sent to speakers, so that I don't have to manually follow up on material submission deadlines.
+
+**Enhancement Over Epic 5:**
+- Epic 5: Organizer manually reminds speakers about deadlines
+- Epic 6: Automated email reminders sent at configurable intervals
 
 **Architecture Integration:**
-- **Workflow**: Spring State Machine for status transitions
-- **Communication**: AWS SES for automated follow-ups
-- **Database**: PostgreSQL status tracking with audit trail
-- **Frontend**: React pipeline visualization
-
-**Wireframe Context:**
-
-### Wireframe References
-**From docs/wireframes/sitemap.md:**
-- **Main Screen:** `docs/wireframes/story-3.5-event-timeline.md` ✅
-  - Event Timeline view showing key dates and milestones
-  - Task list with speaker-specific deadlines
-  - Status indicators for each timeline phase
-  - Automated reminder schedule visualization
-
-### UI Components
-**Key interface elements:**
-- **Timeline Visualization**: Gantt-style timeline showing event lifecycle
-  - Key dates & milestones (invitation sent, response due, materials due, event date)
-  - Current position indicator ("You are here")
-  - Color-coded phases (planning, outreach, preparation, execution)
-  - Countdown timers for upcoming deadlines
-- **Task List Panel**: Speaker-specific tasks with status
-  - [ ] Respond to invitation (due: 2 weeks)
-  - [ ] Submit presentation materials (due: 4 weeks before event)
-  - [ ] Confirm technical requirements (due: 2 weeks before event)
-  - [ ] Complete pre-event checklist (due: 3 days before event)
-  - Task status badges (pending, overdue, completed)
-- **Status Dashboard**: Current speaker status summary
-  - Overall status badge (On Track / At Risk / Overdue)
-  - Completion percentage (e.g., "3/5 tasks completed")
-  - Next action required with deadline
-  - Risk indicators (⚠ Materials due in 3 days)
-- **Communication Log**: History of automated reminders
-  - Reminder sent dates
-  - Email open/click tracking
-  - Response timestamps
-  - Manual follow-up notes
-- **Event Details Panel**: Quick reference info
-  - Event date, location, topic
-  - Session time slot
-  - Contact information for organizers
-
-### Wireframe Status
-- ✅ **EXISTS**: Event Timeline wireframe fully documented
-  - Complete timeline visualization for speakers
-  - Task list with deadlines and status tracking
-  - Automated reminder integration
-  - Risk detection and escalation indicators
-
-### Navigation
-**Key navigation paths from this screen:**
-- → Material Submission Wizard (click task to complete)
-- → Invitation Response (if not yet responded)
-- → Event Details (speaker view)
-- → Session Details (assigned session info)
-- → Communication Hub (view all messages)
-- ⤴ Speaker Dashboard
-
-**Acceptance Criteria:**
-
-**Status Management:**
-1. **Speaker States**:
-   - Open → Contacted → Ready → Accepted/Declined
-   - Accepted → Slot Assigned → Final Agenda
-2. **State Transitions**: Validated transitions with business rules
-3. **Real-time Updates**: WebSocket updates for team visibility
-4. **Audit Trail**: Complete history of all status changes
-
-**Automation Features:**
-5. **Follow-up Reminders**: Automated reminders for non-responses
-6. **Material Deadlines**: Reminders 1 month before event
-7. **Risk Detection**: Flag speakers at risk of missing deadlines
-8. **Escalation**: Automatic escalation for overdue items
-
-**Definition of Done:**
-- [ ] Status tracking covers complete speaker lifecycle
-- [ ] State transitions enforce business rules
-- [ ] Real-time updates keep team synchronized
-- [ ] Automated reminders reduce manual follow-up
-- [ ] Risk detection identifies issues early
-- [ ] Complete audit trail for compliance
-
----
-
-## Story 3.6: Speaker Notification Infrastructure
-
-**User Story:**
-As an **organizer**, I want automated notifications for speaker invitations and deadline tracking with escalation rules, so that speaker coordination is efficient and deadlines are never missed.
-
-**Architecture Integration:**
-- **Service**: Notification Service (new microservice)
-- **Email**: AWS SES for email delivery
-- **Database**: PostgreSQL notification_log, email_templates, escalation_rules
 - **Scheduler**: Spring @Scheduled tasks for deadline monitoring
-- **Frontend**: React notification preference UI
+- **Email**: AWS SES for reminder delivery
+- **Database**: PostgreSQL reminder_log, reminder_rules
+- **Frontend**: React reminder configuration UI
 
 **Acceptance Criteria:**
 
-**Email Template Management:**
-1. **Template CRUD**: Create, read, update, delete email templates
-2. **Template Types**: Support for speaker_invitation, deadline_reminder_48h, deadline_reminder_24h, deadline_critical, material_received_confirmation
-3. **Variable Substitution**: Support template variables ({{speakerName}}, {{eventTitle}}, {{deadline}}, etc.)
-4. **Multilingual**: Templates in German and English
-5. **Version Control**: Track template versions with rollback capability
+**Reminder Configuration:**
+1. **Reminder Rules**: Configure reminder schedule (e.g., 1 month before, 2 weeks before, 3 days before)
+2. **Template Management**: Pre-defined reminder email templates
+3. **Escalation Tiers**: Tier 1 (friendly reminder), Tier 2 (urgent), Tier 3 (escalate to organizer)
+4. **Per-Event Configuration**: Different rules for different event types
 
-**Deadline Monitoring & Escalation:**
-6. **Deadline Tracking**: Monitor all speaker deadlines (invitation response, material submission)
-7. **Escalation Tiers**: Tier 1 (48h before), Tier 2 (24h before), Tier 3 (deadline passed + escalate to backup organizer)
-8. **Automatic Escalation**: If no response within threshold, escalate to backup organizer
-9. **Escalation Dashboard**: Organizers see all active escalations with status
+**Automated Sending:**
+5. **Deadline Detection**: Monitor all speaker deadlines (material submission, response deadlines)
+6. **Auto-Send**: Automatically send reminders based on configured rules
+7. **Tracking**: Log all reminders sent with delivery status
+8. **Deduplication**: Don't send reminder if materials already submitted
 
-**Notification Delivery:**
-10. **AWS SES Integration**: Send via SES with bounce/complaint handling
-11. **Delivery Tracking**: Log all notifications with delivery status
-12. **Retry Logic**: Retry failed deliveries with exponential backoff
-13. **Rate Limiting**: Respect SES sending limits
-
-**User Preferences:**
-14. **Preference Management**: Users control notification frequency and channels
-15. **Quiet Hours**: Respect user-configured quiet hours
-16. **Opt-out**: GDPR-compliant opt-out with audit trail
+**Integration with Epic 5:**
+9. **Manual Override**: Organizer can disable automated reminders for specific speakers
+10. **Manual Reminders**: Organizer can still manually contact speaker (Epic 5 workflow)
+11. **Unified Tracking**: Automated and manual reminders both logged in communication history
 
 **Definition of Done:**
-- [ ] Email template CRUD operations functional
-- [ ] AWS SES integration sending emails successfully
-- [ ] Deadline monitoring detecting and triggering escalations
-- [ ] All three escalation tiers functioning correctly
-- [ ] Notification preferences respected for all users
-- [ ] Delivery tracking and logging operational
-- [ ] Template variables substituting correctly
-- [ ] Multilingual templates working (German/English)
-- [ ] Bounce and complaint handling implemented
-- [ ] Escalation dashboard displaying real-time status
-- [ ] >98% email delivery rate achieved
-- [ ] Unit tests cover all notification scenarios
-- [ ] Integration tests verify end-to-end notification flow
+- [ ] Reminder rules configurable per event type
+- [ ] Automated reminders sent based on deadline proximity
+- [ ] Reminders not sent if materials already submitted
+- [ ] Organizer can disable automated reminders for specific speakers
+- [ ] All reminders logged in communication history
+- [ ] Integration test verifies reminder scheduling and delivery
 
-**Estimated Effort:** 2 weeks
-
-**Dependencies:**
-- AWS SES account configured and verified
-- Database migrations for notification tables
-- Email templates designed and approved
+**Estimated Duration:** 1.5 weeks
 
 ---
 
-## Epic 3 Success Metrics
+## Epic 6 Success Metrics
 
-**Functional Success:**
-- ✅ Complete speaker workflow from invitation to materials
-- ✅ 90% speaker response rate to invitations
-- ✅ Materials collected 1 month before events
-- ✅ Support for 50+ speakers per event
+**Adoption Metrics:**
+- **Self-Service Rate**: 70%+ of speakers use self-service portal
+- **Response Time**: Speakers respond 2x faster via portal vs email (3 days vs 7 days average)
+- **Material Submission**: Materials submitted 1 week faster on average (1 week vs 3 weeks)
+
+**Organizer Efficiency:**
+- **Workload Reduction**: 40% reduction in manual speaker coordination tasks
+- **Time Savings**: 3 hours saved per event on average
+- **Data Entry**: 80% reduction in manual data entry
 
 **Technical Performance:**
 - **Invitation Delivery**: 100% delivery rate via SES
@@ -483,9 +305,70 @@ As an **organizer**, I want automated notifications for speaker invitations and 
 - **System Availability**: >99.5% uptime
 
 **Business Value:**
-- **Efficiency**: 70% reduction in speaker coordination time
-- **Quality**: All materials validated against requirements
-- **Transparency**: Real-time visibility for all organizers
-- **Speaker Satisfaction**: Simple, efficient submission process
+- **Speaker Satisfaction**: Simplified submission process increases speaker participation
+- **Quality**: All materials validated against requirements (same as Epic 5)
+- **Transparency**: Real-time visibility for all organizers (same as Epic 5)
+- **Scalability**: System handles increased event frequency without proportional organizer workload increase
 
-This epic provides the core speaker management functionality needed to run events, without requiring the full speaker portal features that come later in Epic 7.
+---
+
+## Implementation Considerations
+
+### Prerequisites
+
+**Must Complete First:**
+- ✅ Epic 5 complete and operational (all 16 workflow steps working with organizer-driven approach)
+- ✅ Organizer feedback collected on Epic 5 workflows
+- ✅ ROI analysis confirms Epic 6 value justifies development cost
+
+### Backward Compatibility
+
+**Critical Requirement:** Epic 6 must not break Epic 5 organizer-driven workflows.
+
+- Organizers can still manually handle all tasks even if Epic 6 deployed
+- Hybrid mode: Some speakers use self-service, others use organizer-driven
+- No forced migration: Organizers choose when/if to enable self-service per speaker
+
+### Rollout Strategy
+
+**Recommended Approach:**
+1. **Phase 1**: Deploy to single event as pilot (Week 42-43)
+2. **Phase 2**: Gather feedback, iterate on UX (Week 44)
+3. **Phase 3**: Gradual rollout to all events (Week 45-49)
+4. **Phase 4**: Make self-service default, organizer-driven fallback (Phase 3+)
+
+---
+
+## Relationship to Epic 5
+
+| Aspect | Epic 5 (Organizer-Driven) | Epic 6 (Self-Service Enhancement) |
+|--------|---------------------------|-----------------------------------|
+| **Status** | Required - Core Workflow | Optional - Efficiency Enhancement |
+| **Timeline** | Weeks 27-41 | Weeks 42-49 (after Epic 5) |
+| **Dependency** | Independent | Depends on Epic 5 complete |
+| **Speaker Outreach** | Manual contact by organizer | Automated invitation emails |
+| **Response Tracking** | Organizer records status manually | Speaker self-updates via portal |
+| **Content Collection** | Organizer uploads on behalf | Speaker self-submits |
+| **Deadline Management** | Manual organizer follow-up | Automated reminders |
+| **Workload** | Higher organizer burden | 40% reduction via self-service |
+| **Fallback** | N/A | Epic 5 workflows if portal not used |
+
+---
+
+## Decision Point: Build Epic 6?
+
+**After Epic 5 Complete, Evaluate:**
+
+**Build Epic 6 If:**
+- ✅ Organizers report high workload coordinating speakers
+- ✅ Event frequency increasing (more events = more coordination time)
+- ✅ Speaker feedback requests self-service option
+- ✅ Development resources available for 8-week project
+
+**Defer Epic 6 If:**
+- ❌ Epic 5 organizer-driven workflow sufficient
+- ❌ Low event frequency (limited workload savings)
+- ❌ Other features higher priority
+- ❌ Limited development resources
+
+**Recommendation:** Gather data from Epic 5 operation (3-6 months) before committing to Epic 6.
