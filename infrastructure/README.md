@@ -7,7 +7,7 @@ AWS CDK infrastructure as code for the Berner Architekten Treffen (BATbern) conf
 This infrastructure implements a complete AWS-based multi-tier architecture with:
 
 - **Network Layer**: Isolated VPCs with public, private, and isolated subnets
-- **Database Layer**: RDS PostgreSQL and ElastiCache Redis with Multi-AZ support
+- **Database Layer**: RDS PostgreSQL with Multi-AZ support (caching handled by Caffeine in-memory)
 - **Storage Layer**: S3 buckets with CloudFront CDN
 - **Security Layer**: Secrets Manager, KMS encryption, IAM roles
 - **Monitoring Layer**: CloudWatch dashboards, alarms, and log aggregation
@@ -189,7 +189,6 @@ Creates isolated VPC with:
 
 Manages sensitive credentials with:
 - Database credentials with automatic rotation (production)
-- Redis authentication tokens
 - JWT signing keys
 - KMS encryption for all secrets
 
@@ -199,11 +198,12 @@ Manages sensitive credentials with:
 
 Provides data persistence with:
 - RDS PostgreSQL with automated backups
-- ElastiCache Redis for caching
 - Multi-AZ deployment for production
 - Automated snapshots and retention policies
 
-**Resources**: RDS Instances, ElastiCache Clusters, DB Subnet Groups
+**Note**: Caching is handled at the application level using Caffeine in-memory caching, not infrastructure-level cache clusters.
+
+**Resources**: RDS Instances, DB Subnet Groups
 
 ### 4. Storage Stack
 
@@ -230,7 +230,6 @@ Observability and alerting:
 ### Development
 - **VPC CIDR**: 10.0.0.0/16
 - **RDS**: t3.micro, Single-AZ
-- **Redis**: t3.micro, 1 node
 - **NAT Gateways**: 1 (cost optimization)
 - **Backup Retention**: 7 days
 - **Log Retention**: 30 days
@@ -238,7 +237,6 @@ Observability and alerting:
 ### Staging
 - **VPC CIDR**: 10.1.0.0/16
 - **RDS**: t3.small, Multi-AZ
-- **Redis**: t3.small, 2 nodes with failover
 - **NAT Gateways**: 2 (high availability)
 - **Backup Retention**: 14 days
 - **Log Retention**: 90 days
@@ -246,7 +244,6 @@ Observability and alerting:
 ### Production
 - **VPC CIDR**: 10.2.0.0/16
 - **RDS**: t3.medium, Multi-AZ
-- **Redis**: t3.medium, 3 nodes with failover
 - **NAT Gateways**: 3 (across 3 AZs)
 - **Backup Retention**: 30 days
 - **Log Retention**: 180 days
@@ -283,13 +280,11 @@ After deployment, each stack exports important values:
 
 ### Secrets Stack
 - Database Secret ARN
-- Redis Secret ARN
 - JWT Secret ARN
 - KMS Key ID
 
 ### Database Stack
 - RDS Endpoint and Port
-- Redis Endpoint
 
 ### Storage Stack
 - Content Bucket Name
@@ -358,7 +353,7 @@ AWS_PROFILE=batbern-prod cdk bootstrap aws://422940799530/eu-central-1
 
 Ensure your AWS credentials have permissions for:
 - VPC and EC2
-- RDS and ElastiCache
+- RDS PostgreSQL
 - S3 and CloudFront
 - Secrets Manager and KMS
 - CloudWatch and SNS
