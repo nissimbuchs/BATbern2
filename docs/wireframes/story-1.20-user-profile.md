@@ -214,7 +214,7 @@
 - **Role Data Source**: AWS Cognito custom attributes + PostgreSQL user_roles table
 - **Activity Timeline**: EventSourcing pattern - query from event store for audit trail
 - **Real-time Updates**: WebSocket connection for activity feed updates when user is active
-- **Caching Strategy**: Profile data cached in Redis for 5 minutes, invalidated on update
+- **Caching Strategy**: Profile data cached in Caffeine (in-memory) for 5 minutes, invalidated on update
 - **Responsive Design**: Two-column layout collapses to single column on mobile (<768px)
 - **Lazy Loading**: Activity history loaded on scroll (infinite scroll pattern)
 

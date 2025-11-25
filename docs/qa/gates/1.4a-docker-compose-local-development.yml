@@ -72,7 +72,7 @@ evidence:
     ac_gaps: []  # All ACs now have automated test coverage
     test_breakdown:
       ac1: 5  # AWS Infrastructure Connection
-      ac2: 4  # Local Redis Service
+      ac2: 4  # Caffeine In-Memory Cache
       ac3: 6  # Auto-Generated Environment
       ac4: 5  # API Gateway Integration
       ac5: 9  # Service Discovery

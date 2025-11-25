@@ -723,7 +723,7 @@
    - **Performance**: <300ms (P95)
 
 5. **GET /api/v1/companies/search?query={searchTerm}&limit=10** *(Story 1.22)*
-   - **Consolidation**: Company autocomplete uses dedicated search endpoint with Redis caching
+   - **Consolidation**: Company autocomplete uses dedicated search endpoint with Caffeine in-memory caching
    - **Triggered by**: Typing in company filter search box
    - **Authorization**: Optional
    - **Query Params**:
@@ -760,7 +760,7 @@
        "totalMatches": 3
      }
      ```
-   - **Performance**: <100ms (P95) with Redis caching
+   - **Performance**: <100ms (P95) with Caffeine in-memory caching
    - **Consolidation Benefit**: Dedicated search endpoints replace generic autocomplete API, optimized per resource type
 
 ---

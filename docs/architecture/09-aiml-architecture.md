@@ -49,7 +49,7 @@ ML Platform:
     - AWS Lambda: Real-time inference for lightweight models
     - Amazon ECS: Containerized model serving for complex models
     - API Gateway: Unified ML API endpoints
-    - Model caching: Redis for frequently accessed predictions
+    - Model caching: Caffeine in-memory cache for frequently accessed predictions
 
   Data Platform:
     - Amazon S3: Data lake for training data and model artifacts
@@ -672,7 +672,7 @@ class MLModelService:
 
     def __init__(self):
         self.model_registry = ModelRegistry()
-        self.cache = RedisCache()
+        self.cache = CaffeineCache()  # In-memory cache for predictions
         self.monitoring = ModelMonitoring()
 
     async def predict(
@@ -829,11 +829,10 @@ spec:
           value: "1000"
         - name: BATCH_SIZE
           value: "32"
-        - name: REDIS_URL
-          valueFrom:
-            secretKeyRef:
-              name: ml-service-config
-              key: redis-url
+        - name: CACHE_TYPE
+          value: "caffeine"
+        - name: CACHE_MAX_SIZE
+          value: "1000"
         livenessProbe:
           httpGet:
             path: /health

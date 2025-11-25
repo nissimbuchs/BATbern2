@@ -155,7 +155,7 @@
 │  │  │ Attendee Experience      ✓ UP      58ms             │   │         │
 │  │  │ Company Management       ✓ UP      67ms             │   │         │
 │  │  │ PostgreSQL Database      ✓ UP      12ms             │   │         │
-│  │  │ Redis Cache              ✓ UP      3ms              │   │         │
+│  │  │ Caffeine Cache           ✓ UP      3ms              │   │         │
 │  │  │ AWS S3                   ✓ UP      24ms             │   │         │
 │  │  │ AWS SES                  ✓ UP      156ms            │   │         │
 │  │  │ CloudFront CDN           ✓ UP      18ms             │   │         │
@@ -346,7 +346,7 @@
 - **Configuration Storage**: PostgreSQL `system_configuration` table with JSONB columns for flexible schema
 - **Audit Trail**: All changes logged to `configuration_audit_log` with timestamp, user, old/new values
 - **Validation**: Server-side validation mirrors client-side rules, business logic validation (e.g., workflow dependencies)
-- **Caching**: Redis cache for read-heavy configuration with 5-minute TTL, cache invalidation on updates
+- **Caching**: Caffeine in-memory cache for read-heavy configuration with 5-minute TTL, cache invalidation on updates
 
 ### Performance Optimization
 - **Code Splitting**: Each configuration tab lazy-loaded separately

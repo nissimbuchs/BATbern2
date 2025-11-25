@@ -182,11 +182,11 @@ Database Performance:
 
   replication_lag: "< 100ms"
 
-# Redis Cache Performance
+# Caffeine In-Memory Cache Performance
 Cache Performance:
   memory_utilization: "< 80%"
   hit_ratio: "> 95%"
-  avg_response_time: "< 1ms"
+  avg_response_time: "< 1ms (in-process, no network latency)"
   eviction_rate: "< 5%"
 ```
 

@@ -91,7 +91,7 @@ sequenceDiagram
     participant AE as Attendee Experience Service
     participant Search as PostgreSQL Search
     participant S3 as AWS S3
-    participant Cache as Redis Cache
+    participant Cache as Caffeine Cache
 
     A->>AE: Search "advanced architecture patterns"
     AE->>Cache: Check Search Cache
@@ -276,8 +276,8 @@ Faceted search allows attendees to:
 ### Caching Strategy
 
 Content search employs multi-level caching:
-- **Search Results**: 15-minute Redis cache for query results
-- **Content Metadata**: 1-hour cache for file metadata
+- **Search Results**: 15-minute Caffeine in-memory cache for query results (per service instance)
+- **Content Metadata**: 1-hour in-memory cache for file metadata
 - **CDN Caching**: CloudFront edge caching for static content
 - **Browser Caching**: Client-side caching with ETags
 

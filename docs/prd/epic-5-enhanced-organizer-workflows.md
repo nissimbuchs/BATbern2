@@ -19,6 +19,7 @@
 - **Frontend**: React components for event creation and management
 - **Publishing**: Automated publishing engine with immediate publication
 - **Infrastructure**: AWS CloudFront CDN integration
+- **Caching**: Caffeine in-memory cache for performance optimization
 
 **Duration**: 8 weeks (Weeks 13-20)
 
@@ -33,7 +34,7 @@ As an **organizer**, I want to define event types with slot requirements, so tha
 - **Service**: Event Management Service
 - **Database**: PostgreSQL event_types and event_slots tables
 - **Frontend**: React event type configuration component
-- **Cache**: Redis for event type templates
+- **Cache**: Caffeine in-memory cache for event type templates
 
 **Acceptance Criteria:**
 
@@ -210,7 +211,6 @@ As an **organizer**, I want created events with topics to be immediately visible
 
 **Architecture Integration:**
 - **Publishing Service**: Part of Event Management Service
-- **Cache**: Redis for published event data
 - **CDN**: CloudFront for public content delivery
 - **Frontend**: React components for public display
 
@@ -295,7 +295,7 @@ As an **organizer**, I want created events with topics to be immediately visible
 **Technical Implementation:**
 9. **Publishing State Machine**: Implement state transitions for publishing
 10. **REST API**: POST /api/events/{id}/publish endpoint
-11. **Cache Strategy**: Redis cache with 1-minute TTL for event data
+11. **Cache Strategy**: Caffeine in-memory cache with 1-minute TTL for event data
 12. **CDN Integration**: CloudFront invalidation on publish
 
 **Definition of Done:**
