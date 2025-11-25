@@ -146,7 +146,7 @@ graph LR
     subgraph "Data & Infrastructure - AWS eu-central-1"
         M[AWS Cognito<br/>User Pools<br/>OAuth2 + JWT]
         N[RDS PostgreSQL<br/>db.t4g.micro Single-AZ<br/>ARM Graviton2<br/>Cost-optimized]
-        O[Application Cache<br/>Caffeine In-Memory<br/>Per-service instance<br/>No Redis]
+        O[Application Cache<br/>Caffeine In-Memory<br/>Per-service instance<br/>No external cache service]
         P[S3 Buckets<br/>Presentations / Logos / Profiles<br/>Lifecycle policies<br/>Versioning enabled]
         R[AWS SES<br/>Email delivery<br/>Bounce handling<br/>Template management]
         S[Route53<br/>DNS + Health Checks<br/>Subdomain delegation<br/>batbern.ch zone]
@@ -206,7 +206,7 @@ we can convert this to architecture-beta syntax with icon support.
 1. **Dual API Gateway**: AWS HTTP API for edge security + Spring Boot Gateway for routing
 2. **ECS Fargate ARM64**: 20% cost savings with Graviton2 processors
 3. **Single-AZ RDS**: Cost-optimized for 1000 users/month workload
-4. **Application-level Caching**: Caffeine in-memory (replaces ElastiCache Redis, $149/month savings)
+4. **Application-level Caching**: Caffeine in-memory per service instance (eliminates ElastiCache Redis, $149/month savings)
 5. **Branded CDN**: Custom CloudFront domains (cdn.batbern.ch) for professional appearance
 6. **Event-Driven Architecture**: EventBridge for loosely coupled domain events
 
@@ -246,7 +246,7 @@ graph TB
 
         subgraph "Infrastructure"
             L[PostgreSQL Database<br/>Event data persistence]
-            M[Caffeine Cache<br/>In-memory event state caching]
+            M[Caffeine Cache<br/>In-memory event state caching<br/>Per-instance, no shared cache]
             N[S3 Storage<br/>Event documents & media]
             O[EventBridge<br/>Domain event publishing]
         end

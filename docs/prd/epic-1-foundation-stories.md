@@ -196,7 +196,7 @@ As a **developer**, I want comprehensive testing infrastructure and utilities fo
 **Testing Utilities:**
 5. **Custom Assertions**: Develop domain-specific assertions for validation rules and business logic
 6. **Mock Service Clients**: Create mock implementations for all external service dependencies (AWS services, microservices)
-7. **Test Container Configurations**: Setup Testcontainers for PostgreSQL, Redis, LocalStack (AWS services)
+7. **Test Container Configurations**: Setup Testcontainers for PostgreSQL, LocalStack (AWS services)
 8. **Test Helper Functions**: Common utilities for authentication, API calls, and data validation
 
 **Coverage and Reporting:**
@@ -219,8 +219,9 @@ As a **developer**, I want comprehensive testing infrastructure and utilities fo
 **Architecture Integration:**
 - **Infrastructure**: `infrastructure/` AWS CDK TypeScript project
 - **Environments**: Development, Staging, Production configurations
-- **Resources**: RDS PostgreSQL, ElastiCache Redis, S3 buckets, VPC networking
+- **Resources**: RDS PostgreSQL, S3 buckets, VPC networking
 - **Security**: IAM roles, security groups, secrets management
+- **Caching**: Caffeine in-memory caching (application-level)
 
 **Acceptance Criteria:**
 
@@ -244,10 +245,9 @@ As a **developer**, I want comprehensive testing infrastructure and utilities fo
 13. **Service Discovery**: AWS Cloud Map for service-to-service communication
 
 **Supporting Services:**
-14. **Redis Clusters**: ElastiCache Redis with appropriate clustering
-15. **S3 Buckets**: Content storage with lifecycle policies
-16. **CloudFront**: CDN distribution for static content
-17. **Secrets Manager**: Secure credential storage and rotation
+14. **S3 Buckets**: Content storage with lifecycle policies
+15. **CloudFront**: CDN distribution for static content
+16. **Secrets Manager**: Secure credential storage and rotation
 
 **Definition of Done:**
 - [ ] CDK stacks successfully deploy all three environments
@@ -327,44 +327,43 @@ As a **developer**, I want a single-command local development environment with D
 
 **Architecture Integration:**
 - **Container Orchestration**: Docker Compose for local service orchestration
-- **Technology**: Docker Compose v3.8, PostgreSQL 15, Redis 7.2, LocalStack
+- **Technology**: Docker Compose v3.8, PostgreSQL 15, LocalStack
 - **Pattern**: Service discovery via Docker DNS, progressive service addition
 - **Dependencies**: All existing services (shared-kernel, api-gateway) + future domain services
+- **Caching**: Caffeine in-memory caching (application-level, no external cache infrastructure)
 
 **Acceptance Criteria:**
 
 **Base Infrastructure:**
 1. **PostgreSQL 15**: Database with automatic schema initialization and persistent volumes
-2. **Redis 7.2**: Caching layer with data persistence
-3. **LocalStack**: AWS service simulation (EventBridge, S3, Cognito) for testing
-4. **API Gateway Integration**: API Gateway runs via docker-compose with proper environment configuration
+2. **LocalStack**: AWS service simulation (EventBridge, S3, Cognito) for testing
+3. **API Gateway Integration**: API Gateway runs via docker-compose with proper environment configuration
 
 **Developer Experience:**
-5. **Single Command Startup**: `docker-compose up` starts all infrastructure and services successfully
-6. **Service Discovery**: All services communicate using Docker DNS (service names as hostnames)
-7. **Startup Orchestration**: Services start in correct order with health checks and dependencies
-8. **Hot Reload Support**: Code changes trigger automatic rebuilds in development mode
-9. **Volume Persistence**: PostgreSQL and Redis data persists across container restarts
+4. **Single Command Startup**: `docker-compose up` starts all infrastructure and services successfully
+5. **Service Discovery**: All services communicate using Docker DNS (service names as hostnames)
+6. **Startup Orchestration**: Services start in correct order with health checks and dependencies
+7. **Hot Reload Support**: Code changes trigger automatic rebuilds in development mode
+8. **Volume Persistence**: PostgreSQL data persists across container restarts
 
 **Configuration & Documentation:**
-10. **Environment Configuration**: `.env` file for local configuration with secure defaults
-11. **Documentation**: README.md updated with docker-compose instructions and troubleshooting guide
-12. **Service Addition Template**: Clear documentation for adding new services to docker-compose.yml
-13. **Developer Onboarding**: New developer can run `docker-compose up` and start coding in <5 minutes
+9. **Environment Configuration**: `.env` file for local configuration with secure defaults
+10. **Documentation**: README.md updated with docker-compose instructions and troubleshooting guide
+11. **Service Addition Template**: Clear documentation for adding new services to docker-compose.yml
+12. **Developer Onboarding**: New developer can run `docker-compose up` and start coding in <5 minutes
 
 **Progressive Enhancement Strategy:**
-14. **Extensibility**: Template for adding domain services as they are implemented in Stories 1.14-1.19
-15. **Service Templates**: Each domain service story includes docker-compose service definition
-16. **Automated Updates**: Scripts to add new services to docker-compose.yml
+13. **Extensibility**: Template for adding domain services as they are implemented in Stories 1.14-1.19
+14. **Service Templates**: Each domain service story includes docker-compose service definition
+15. **Automated Updates**: Scripts to add new services to docker-compose.yml
 
 **Definition of Done:**
-- [x] docker-compose.yml created with local Redis and application services
+- [x] docker-compose.yml created with application services
 - [x] setup-env.sh script auto-generates .env from AWS
 - [x] All local services start successfully with health checks
 - [x] Service discovery working (DNS resolution for local services)
 - [x] API Gateway accessible at http://localhost:8080
 - [x] Web Frontend accessible at http://localhost:3000
-- [x] Redis accessible and functioning locally
 - [x] AWS RDS connection validated
 - [x] AWS Cognito configuration validated
 - [x] Hot reload verified for all services
@@ -826,24 +825,24 @@ As a **platform engineer**, I want comprehensive performance monitoring and SLA 
 As a **backend developer**, I want a comprehensive caching strategy implemented across all services, so that we achieve optimal performance and reduce database load.
 
 **⚠️ DECISION: MOVED TO BACKLOG**
-- **Why**: Redis infrastructure is already in place from Story 1.3. Advanced caching patterns (write-behind, cache warming, sophisticated invalidation, >90% hit rate optimization) are premature optimization before having real traffic patterns and performance data.
-- **Alternative**: Simple cache-aside pattern with sensible TTLs (e.g., 5-15 min for events, 1 hour for speaker profiles)
-- **When to Implement**: When performance profiling identifies caching as a bottleneck, or when you have data showing specific hot paths needing optimization
+- **Why**: Caffeine in-memory caching is implemented at the application level (Story 1.3). Advanced distributed caching patterns (write-behind, cache warming, sophisticated invalidation, >90% hit rate optimization) are premature optimization before having real traffic patterns and performance data.
+- **Alternative**: Simple Caffeine cache-aside pattern with sensible TTLs (e.g., 5-15 min for events, 1 hour for speaker profiles)
+- **When to Implement**: When performance profiling identifies caching as a bottleneck, or when distributed caching is needed for horizontal scaling
 - **Time Saved**: 2-3 weeks redirected to functional features
 
 **Architecture Integration:**
-- **Cache Layer**: Redis with cluster configuration
+- **Cache Layer**: Caffeine in-memory caching with optional distributed cache later
 - **Cache Patterns**: Cache-aside, write-through, write-behind
 - **Cache Invalidation**: Event-driven invalidation strategies
 - **Cache Monitoring**: Hit rates and performance tracking
 
 **Acceptance Criteria:**
 
-**Redis Infrastructure:**
-1. **Redis Clusters**: Environment-specific cluster configurations
-2. **Persistence Strategy**: RDB + AOF for data durability
-3. **Replication**: Master-slave replication setup
-4. **Failover**: Automatic failover with Redis Sentinel
+**Caffeine Infrastructure:**
+1. **Cache Configurations**: Service-specific cache configurations
+2. **Eviction Policies**: Size-based and time-based eviction
+3. **Monitoring**: Cache statistics and metrics
+4. **Testing**: Cache behavior verification
 
 **Caching Patterns:**
 5. **Cache-Aside Pattern**: Lazy loading for read-heavy data
@@ -860,17 +859,17 @@ As a **backend developer**, I want a comprehensive caching strategy implemented 
 **Performance Optimization:**
 13. **Hit Rate Optimization**: Target >90% cache hit rate
 14. **Serialization**: Efficient serialization formats
-15. **Connection Pooling**: Optimize Redis connections
-16. **Pipeline Operations**: Batch Redis operations
+15. **Memory Efficiency**: Optimize cache sizing per service
+16. **Performance Testing**: Validate cache effectiveness
 
 **Definition of Done:**
-- [ ] Redis clusters operational in all environments
+- [ ] Caffeine caching operational in all services
 - [ ] Cache patterns implemented consistently
 - [ ] Cache hit rate >90% for hot paths
 - [ ] Invalidation strategies tested and working
 - [ ] Cache monitoring dashboards created
 - [ ] Performance improvements measured and documented
-- [ ] Cache sizing optimized for cost
+- [ ] Cache sizing optimized for memory usage
 - [ ] Team trained on caching patterns
 
 ---

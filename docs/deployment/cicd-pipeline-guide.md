@@ -76,8 +76,9 @@ The BATbern platform uses GitHub Actions for continuous integration and deployme
    - Duration: ~3-4 minutes
 
 4. **Integration Tests**
-   - Spins up PostgreSQL and Redis containers
+   - Spins up PostgreSQL containers
    - Runs integration tests with Testcontainers
+   - Uses Caffeine for in-memory caching (no external cache required)
    - Duration: ~3-5 minutes
 
 **Total Pipeline Duration:** ~10-12 minutes
@@ -173,7 +174,7 @@ The BATbern platform uses GitHub Actions for continuous integration and deployme
 5. **Smoke Tests**
    - Verifies critical endpoints
    - Checks service health
-   - Validates database and cache connectivity
+   - Validates database connectivity
 
 6. **Rollback on Failure**
    - Automatically triggers on any failure

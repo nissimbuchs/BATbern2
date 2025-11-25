@@ -26,7 +26,7 @@ decision_rationale: |
   4. ✅ JWT authentication setup complete with mock JwtDecoder for tests
 
   **REMAINING TECHNICAL DEBT (tracked, not blocking merge):**
-  1. 🟡 GDPR deletion uses in-memory token storage (acceptable for MVP/dev, requires Redis for scaled production)
+  1. 🟡 GDPR deletion uses HashMap token storage (acceptable for MVP/dev, should migrate to Caffeine cache with TTL for scaled production)
   2. 🟡 GDPR services use placeholder implementations (must implement real API calls before production)
   3. 🟡 CSP policy allows unsafe-inline/unsafe-eval (documented, intentional for React)
 
@@ -145,8 +145,8 @@ requirements_traceability:
           risk: "HIGH"
           impact: "Tokens persist forever, not shared across instances, lost on restart"
           code: "private final Map<String, String> confirmationTokens = new HashMap<>();"
-          comment: "// In-memory token storage (in production, use Redis with TTL)"
-      recommendation: "MUST replace with Redis before production deployment"
+          comment: "// In-memory token storage (in production, use Caffeine cache with TTL)"
+      recommendation: "SHOULD replace with Caffeine cache with TTL before scaled production deployment"
       technical_debt:
         - "Service has placeholder implementations for deletion methods"
         - "Need to implement actual API calls to domain services"
@@ -205,7 +205,7 @@ code_quality_assessment:
 
   remaining_weaknesses:
     - "GDPR services use placeholder/hardcoded data (tracked as technical debt)"
-    - "In-memory token storage for GDPR deletion (MVP-acceptable, production requires Redis)"
+    - "In-memory token storage for GDPR deletion (MVP-acceptable, scaled production should use Caffeine cache with TTL)"
     - "Multiple TODO comments in production code (properly documented)"
     - "Test coverage threshold at 60% (intentional for MVP pace)"
 
@@ -240,7 +240,7 @@ security_assessment:
         - Lost on application restart
         - Vulnerable to memory exhaustion attacks
       impact: "MVP-acceptable for single-instance deployment, must fix for scaled production"
-      recommendation: "Replace with Caffeine cache (with TTL) for MVP; Redis for multi-instance production"
+      recommendation: "Replace with Caffeine cache (with TTL) for MVP; may require distributed caching for multi-instance production"
       blocking: false  # Not blocking merge, documented as technical debt
 
     - severity: MEDIUM
@@ -364,7 +364,7 @@ production_readiness:
     - "✅ Dependabot and CodeQL configured"
 
   technical_debt_for_scaled_production:
-    - "GDPR deletion token storage uses HashMap (acceptable for MVP, use Caffeine/Redis for scale)"
+    - "GDPR deletion token storage uses HashMap (acceptable for MVP, use Caffeine cache with TTL for scale)"
     - "GDPR export/deletion services use placeholder implementations (must implement real API calls)"
     - "Consider JWT validation integration tests (currently relying on Spring Security OAuth2)"
     - "Consider audit logging verification tests (currently relying on aspect execution)"
@@ -383,20 +383,16 @@ technical_debt:
       files_created: "api-gateway/src/main/java/ch/batbern/gateway/security/RateLimitingFilter.java"
 
   high_priority_for_scaled_production:
-    - issue: "Replace in-memory token storage with Caffeine cache (MVP) or Redis (scaled production)"
-      effort: "2-4 hours (Caffeine), 4-6 hours (Redis)"
+    - issue: "Replace in-memory token storage with Caffeine cache with TTL"
+      effort: "2-4 hours"
       files_affected: "UserDataDeletionService.java:23"
       implementation_notes: |
-        MVP Option (Caffeine):
-        - Add com.github.ben-manes.caffeine dependency
+        Caffeine Implementation:
+        - Add com.github.ben-manes.caffeine dependency (already in project)
         - Replace HashMap with Caffeine cache
         - Configure TTL (e.g., 15 minutes for confirmation tokens)
-
-        Scaled Production Option (Redis):
-        - Add spring-boot-starter-data-redis dependency
-        - Create RedisTokenStore service
-        - Configure Redis cluster for high availability
-        - Configure TTL (e.g., 15 minutes)
+        - Configure maximum size to prevent memory exhaustion
+        - For multi-instance deployments, consider distributed caching solution if needed
 
     - issue: "Implement real GDPR service API calls"
       effort: "8-16 hours"
@@ -455,7 +451,7 @@ before_merge:
   - "✅ Story ready for merge"
 
 before_scaled_production_deployment:
-  - "Replace in-memory token storage with Caffeine cache (MVP) or Redis (scaled production)"
+  - "Replace in-memory token storage with Caffeine cache with TTL"
   - "Implement real GDPR service API calls to domain services"
   - "Add JWT validation integration tests (verify Spring Security OAuth2 works)"
   - "Add audit log verification tests (verify CloudWatch logging)"
@@ -495,7 +491,7 @@ summary: |
 
   **Technical Debt (tracked, not blocking):**
   🟡 GDPR deletion uses in-memory token storage (MVP-acceptable for single-instance,
-     requires Caffeine/Redis for scaled production)
+     should migrate to Caffeine cache with TTL for scaled production)
   🟡 GDPR services use placeholder implementations (must implement real API calls)
   🟡 Consider JWT validation integration tests
   🟡 Consider audit log verification tests

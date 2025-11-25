@@ -98,10 +98,10 @@ VITE_FEATURE_AI_RECOMMENDATIONS=true
 DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=batbern_dev
-REDIS_HOST=localhost
 AWS_REGION=eu-central-1
 JWT_SECRET=dev-secret-key
 COGNITO_USER_POOL_ID=eu-central-1_dev_pool
+# Note: Caching is handled by Caffeine in-memory (no external cache service needed)
 ```
 
 ## Quick Reference Links

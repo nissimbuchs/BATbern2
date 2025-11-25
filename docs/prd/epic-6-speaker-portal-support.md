@@ -288,7 +288,7 @@ As an **organizer**, I want to brainstorm potential speakers and assign contact 
 **Architecture Integration:**
 - **Service**: Speaker Coordination Service
 - **Database**: PostgreSQL speaker profiles and assignments
-- **Cache**: Redis for speaker search and suggestions
+- **Cache**: Caffeine in-memory cache for speaker search and suggestions
 - **Frontend**: React collaborative brainstorming interface
 
 **Acceptance Criteria:**
