@@ -12,17 +12,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import CompanyManagementScreen from '@/components/shared/Company/CompanyManagementScreen';
 
 // Mock child components to isolate testing
-vi.mock('../CompanyFilters', () => ({
+vi.mock('@/components/shared/Company/CompanyFilters', () => ({
   default: () => <div data-testid="company-filters">Filters Mock</div>,
 }));
 
-vi.mock('../CompanySearch', () => ({
-  CompanySearch: () => (
-    <input role="combobox" aria-label="search companies" placeholder="Search companies" />
-  ),
-}));
-
-vi.mock('../CompanyList', () => ({
+vi.mock('@/components/shared/Company/CompanyList', () => ({
   CompanyList: () => <div data-testid="company-list">Company List Mock</div>,
 }));
 
@@ -68,8 +62,8 @@ describe('CompanyManagementScreen Component', () => {
     it('should_renderSearchBar_when_screenLoaded', () => {
       renderWithProviders(<CompanyManagementScreen />);
 
-      // Should have search input
-      expect(screen.getByRole('combobox', { name: /search companies/i })).toBeInTheDocument();
+      // Should have search input (TextField renders as textbox, not combobox)
+      expect(screen.getByPlaceholderText(/search companies/i)).toBeInTheDocument();
     });
 
     it('should_renderFilterSection_when_screenLoaded', () => {

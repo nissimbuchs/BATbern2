@@ -7,11 +7,20 @@
  * Story: 2.5.1 - Company Management Frontend
  */
 
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { CompanySearch } from '@/components/shared/Company/CompanySearch';
+import { companyApiClient } from '@/services/api/companyApi';
+import type { Company } from '@/types/company.types';
+
+// Mock the API client
+vi.mock('@/services/api/companyApi', () => ({
+  companyApiClient: {
+    searchCompanies: vi.fn(),
+  },
+}));
 
 // Test wrapper
 const createTestWrapper = () => {
@@ -29,6 +38,38 @@ const createTestWrapper = () => {
 
 describe('CompanySearch Component', () => {
   // Note: Not using fake timers as they conflict with MUI Autocomplete's internal timers
+
+  const mockCompanies: Company[] = [
+    {
+      id: '1',
+      name: 'Test Company AG',
+      industry: 'Technology',
+      location: { city: 'Zurich', country: 'Switzerland' },
+      isVerified: true,
+      verificationStatus: 'Verified',
+      createdAt: '2024-01-01T00:00:00Z',
+      updatedAt: '2024-01-01T00:00:00Z',
+      createdBy: 'user-1',
+    },
+    {
+      id: '2',
+      name: 'Acme Corporation',
+      industry: 'Technology',
+      location: { city: 'Bern', country: 'Switzerland' },
+      isVerified: true,
+      verificationStatus: 'Verified',
+      createdAt: '2024-01-01T00:00:00Z',
+      updatedAt: '2024-01-01T00:00:00Z',
+      createdBy: 'user-1',
+    },
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Default: return mock companies for any search
+    vi.mocked(companyApiClient.searchCompanies).mockResolvedValue(mockCompanies);
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
   });
