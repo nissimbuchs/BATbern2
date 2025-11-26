@@ -1,353 +1,526 @@
 [
-    {
-      "bat": 1,
-      "topic": " GUI Frameworks ",
-      "datum": "24. Juni 05, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 2,
-      "topic": " Enterprise Architektur ",
-      "datum": "11. November 05, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 3,
-      "topic": " SOA ",
-      "datum": "17. März 06, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 4,
-      "topic": " Workflow ",
-      "datum": "23. Juni 06, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 5,
-      "topic": " SAP Integration ",
-      "datum": "17. November 06, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 6,
-      "topic": " MDA/MDSD ",
-      "datum": "23. März 07, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 7,
-      "topic": " Architektur messen/verkaufen ",
-      "datum": "15. Juni 07, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 8,
-      "topic": " EA Tools ",
-      "datum": "16. November 07, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 9,
-      "topic": " Business Rules ",
-      "datum": "14. März 08, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 10,
-      "topic": " RIA ",
-      "datum": "20. Juni 08, 08:30h - 16:30h",
-      "eventType": "Ganztages-BAT"
-    },
-    {
-      "bat": 11,
-      "topic": " Workplace ",
-      "datum": "21. November 08, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 12,
-      "topic": " Architekturplanung ",
-      "datum": "13. März 09, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 13,
-      "topic": " SOAreloaded ",
-      "datum": "12. Juni 09, 09:00h - 16:45h",
-      "eventType": "Ganztages-BAT"
-    },
-    {
-      "bat": 14,
-      "topic": " Qualitätssicherung ",
-      "datum": "13. November 09, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 15,
-      "topic": " Business Intelligence, DWH",
-      "datum": "05. März 10, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 16,
-      "topic": " Informatik-Sicherheit ",
-      "datum": "11. Juni 10, 09:00h - 16:20h",
-      "eventType": "Ganztages-BAT"
-    },
-    {
-      "bat": 17,
-      "topic": " IT-Innovation ",
-      "datum": "05. November 10, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 18,
-      "topic": " Datenhaltung ",
-      "datum": "11. März 11, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 19,
-      "topic": " Integration ",
-      "datum": "01. Juli 11, 09:00h - 16:00h",
-      "eventType": "Ganztages-BAT"
-    },
-    {
-      "bat": 20,
-      "topic": " Jubiläums-BAT ",
-      "datum": "11. November 11, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 21,
-      "topic": " Social Media im Unternehmenseinsatz ",
-      "datum": "09. März 12, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 22,
-      "topic": " Mobilkommunikation im Unternehmen ",
-      "datum": "29. Juni 12, 08:30h - 16:30h",
-      "eventType": "Ganztages-BAT"
-    },
-    {
-      "bat": 23,
-      "topic": " Management von Projekt- & Anwendungsportfolios ",
-      "datum": "02. November 12, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 24,
-      "topic": " Open Source Software ",
-      "datum": "15. März 13, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 25,
-      "topic": " Fertigungstiefe ",
-      "datum": "28. Juni 13, 09:00h - 16:00h",
-      "eventType": "Ganztages-BAT"
-    },
-    {
-      "bat": 26,
-      "topic": " Mobile Applikationen ",
-      "datum": "08. November 13, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 27,
-      "topic": " Security - Quo Vadis? ",
-      "datum": "28. März 14, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 28,
-      "topic": " IT-getriebene Geschäftsinnovationen ",
-      "datum": "20. Juni 14, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 29,
-      "topic": " Big Data / Information Management ",
-      "datum": "21. November 14, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 30,
-      "topic": " Agile Architektur ",
-      "datum": "27. März 15, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 31,
-      "topic": " Open Data ",
-      "datum": "19. Juni 15, 08:30h - 16:30h",
-      "eventType": "Ganztages-BAT"
-    },
-    {
-      "bat": 32,
-      "topic": " Internet of Things ",
-      "datum": "06. November 15, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 33,
-      "topic": " NoSQL Databases ",
-      "datum": "15. April 16, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 34,
-      "topic": " Digitalisierung / Industrie 4.0 ",
-      "datum": "01. Juli 16, 09:00h - 16:35h",
-      "eventType": "Ganztages-BAT"
-    },
-    {
-      "bat": 35,
-      "topic": " Hochverfügbare Systeme ",
-      "datum": "04. November 16, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 36,
-      "topic": " Container ",
-      "datum": "03. März 17, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 37,
-      "topic": " Not only Java - Programmiersprachen in Unternehmen ",
-      "datum": "23. Juni 17, 13:00h - 16:45h",
-      "eventType": "Nachmittags-BAT"
-    },
-    {
-      "bat": 38,
-      "topic": " Kryptographie ",
-      "datum": "03. November 17, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 39,
-      "topic": " Cloud ",
-      "datum": "23. März 18, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 40,
-      "topic": " Advanced Analytics / Artificial Intelligence im Unternehmen ",
-      "datum": "29. Juni 18, 08:45h - 16:30h",
-      "eventType": "Ganztages-BAT"
-    },
-    {
-      "bat": 41,
-      "topic": " Microservice Architekturen & APIs ",
-      "datum": "02. November 18, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 42,
-      "topic": " Large-scale Frontends ",
-      "datum": "08. März 19, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-    {
-      "bat": 43,
-      "topic": " Event Driven Architecture ",
-      "datum": "28. Juni 2019, 09:00h - 16:45h",
-      "eventType": "Ganztages-BAT"
-    },
-    {
-      "bat": 44,
-      "topic": " Chatbots ",
-      "datum": "01. November 2019, 16:00h - 18:30h",
-      "eventType": "Abend-BAT"
-    },
-	  {
-      "bat": 45,
-      "topic": " Legacy? WTF!",
-      "datum": "5. November 2021, 16:00h - 18:30h, GGG Zertifikat obligatorisch",
-      "eventType": "Abend-BAT"
-    },
-    {
+  {
+    "bat": 1,
+    "topic": " GUI Frameworks ",
+    "datum": "24. Juni 05, 16:00h - 18:30h",
+    "parsedDate": "2005-06-24T16:00:00+02:00",
+    "description": "GUI Frameworks befasste sich mit der Entwicklung grafischer Benutzeroberflächen in Unternehmensanwendungen, mit Fokus auf Rich Client Technologien und der Eclipse RCP Plattform. Drei Schweizer Organisationen teilten ihre Erfahrungen: Die Mobiliar präsentierte ihren Ansatz zur Modernisierung Mainframe-basierter Benutzeroberflächen unter Berücksichtigung der Geschäftsanforderungen und IT-Strategievorgaben. PostFinance demonstrierte die Renaissance von Desktop-Anwendungen durch ihr \"PF-GUI\" Projekt, welches einen auf der Eclipse Rich Client Plattform basierenden Bankenarbeitsplatz etablierte, und diskutierte Chancen und Risiken moderner GUI-Technologien. Die RTC AG stellte die IBIS Desktop Lösung vor, bei der diverse Clientapplikationen in eine einheitliche, Java-basierte Benutzeroberfläche mittels Eclipse RCP Container mit dynamischer Plug-in-Funktionalität integriert wurden, inklusive serviceorientierter Backend-Integration und einem Mapping/Controller-Framework für konsistente Benutzererfahrung.",
+    "eventType": "Abend-BAT",
+    "moderator": "Daniel Kühni"
+  },
+  {
+    "bat": 2,
+    "topic": " Enterprise Architektur ",
+    "datum": "11. November 05, 16:00h - 18:30h",
+    "parsedDate": "2005-11-11T16:00:00+01:00",
+    "description": "Enterprise Architektur beleuchtete die Herausforderungen und Ansätze bei der Einführung von Unternehmensarchitekturen in Schweizer Organisationen. Die Mobiliar präsentierte ihren 2001 implementierten umfassenden Architekturansatz zur Bewältigung der Komplexität gewachsener Applikationslandschaften, erläuterte die wesentlichen Artefakte, Layer, Prozesse und Instrumente sowie deren kritische Erfolgsfaktoren. Credit Suisse diskutierte die grundlegende Herausforderung, Business- und IT-Sichten zu vereinen, um die Unternehmung ganzheitlich zu betrachten, und präsentierte ihre Bestrebungen sowie das weitere Vorgehen. PostMail berichtete über Konzepte und Erfahrungen beim Aufbau und der Pflege ihrer Enterprise Architecture mit dem Ziel, Prozesse, Anwendungen, Informationen und Technologien übersichtlich zu verknüpfen und trotz zunehmender Komplexität effizient, gezielt und flexibel auf Änderungen reagieren zu können.",
+    "eventType": "Abend-BAT",
+    "moderator": "Daniel Kühni"
+  },
+  {
+    "bat": 3,
+    "topic": " SOA ",
+    "datum": "17. März 06, 16:00h - 18:30h",
+    "parsedDate": "2006-03-17T16:00:00+01:00",
+    "description": "SOA präsentierte praxisnahe Erfahrungen mit Service-orientierten Architekturen bei führenden Schweizer Unternehmen. Die SBB zeigte den Erfolg ihres Online Ticketshops, der mit durchgängiger Verwendung von SOA-Prinzipien ein leichtgewichtiges, flexibles und robustes Architektur-Framework schuf, welches plattformübergreifenden Einsatz ermöglicht und die Multi Channel Strategie unterstützt. PostFinance stellte ihre Vision vor, Geschäftsmodellierung in lauffähigem Code wiederzufinden, und präsentierte, wie SOA alte und neue Applikationswelten technologieübergreifend zusammenbringt, ohne Neuimplementierungen zu erfordern. Swisscom Fixnet berichtete über ihre IT-Vision 2010 zur Reduktion von Kosten und Komplexität, wobei Serviceorientierung als wichtige Komponente zur Erreichung der Ziele wie Kostenreduktion, Prozesskostensenkung und Erhöhung der Flexibilität dient.",
+    "eventType": "Abend-BAT",
+    "moderator": "Daniel Kühni"
+  },
+  {
+    "bat": 4,
+    "topic": " Workflow ",
+    "datum": "23. Juni 06, 16:00h - 18:30h",
+    "parsedDate": "2006-06-23T16:00:00+02:00",
+    "description": "Workflow behandelte die Integration und flexible Gestaltung von Workflow-Management-Systemen in verschiedenen Anwendungsbereichen. Die anaptecs GmbH präsentierte einen allgemeingültigen Ansatz zur Integration von Workflow-Management-Systemen in J2EE-Applikationen am Beispiel deutscher Bau-Berufsgenossenschaften, die ihre IT-Infrastruktur durch ein komplett neues workflow-orientiertes System vereinheitlichten. Das Informatikstrategieorgan Bund ISB stellte ein generisches und modulares Prozessmodell vor, welches seit 2000 als Standard für dokumentengestützte Prozesse in der öffentlichen Verwaltung dient und den Flexibilitätsanforderungen von Verwaltungsprozessen Rechnung trägt. Die RTC AG zeigte die Integration eines Business Process Management Systems in die Bankenlösung IBIS zur flexiblen Orchestrierung von Services im Rahmen einer service-orientierten Architektur.",
+    "eventType": "Abend-BAT",
+    "moderator": "Daniel Kühni"
+  },
+  {
+    "bat": 5,
+    "topic": " SAP Integration ",
+    "datum": "17. November 06, 16:00h - 18:30h",
+    "parsedDate": "2006-11-17T16:00:00+01:00",
+    "description": "SAP Integration behandelte strategische und praktische Aspekte der SAP-Integration in verschiedenen Schweizer Organisationen. Die BKW FMB Energie AG teilte ihre über 10-jährige Erfahrung mit SAP R/3 und diskutierte die Abwägung zwischen SAP-Plattformintegration und Best-of-Breed-Ansätzen, wobei mit zunehmender Penetration von SAP sowohl Opportunitätskosten als auch betriebliche Abhängigkeiten steigen. Das Informatikstrategieorgan Bund ISB präsentierte eine Übersicht über den SAP-Einsatz in der Bundesverwaltung zur Unterstützung von Supportprozessen in Finanzwesen, Personalwesen, Logistik und Immobilienverwaltung, sowie deren Steuerung und Führung. Die RTC AG zeigte das Zusammenspiel von Produktelandkarte, Applikations- und Integrationsarchitektur bei der möglichen Integration von SAP-Komponenten in die Bankenlösung IBIS im Rahmen einer serviceorientierten Architektur.",
+    "eventType": "Abend-BAT",
+    "moderator": "Daniel Kühni"
+  },
+  {
+    "bat": 6,
+    "topic": " MDA/MDSD ",
+    "datum": "23. März 07, 16:00h - 18:30h",
+    "parsedDate": "2007-03-23T16:00:00+01:00",
+    "description": "MDA/MDSD fokussierte auf modellgetriebene Softwareentwicklung und deren praktische Anwendung in Schweizer Unternehmen. Die Mobiliar präsentierte ihre Methodenerweiterung der UML zur nutzerorientierten Fachprozessmodellierung, die es ermöglicht, Fachprozesse auf IT-Landschaften abzubilden und Fachbenutzer stärker in die Gestaltung einzubinden. PostFinance reflektierte ihre 5-jährige Erfahrung mit einem MDA-Ansatz zur Beschreibung ihrer Informatik, mit Fokus auf das CIM (Computational Independent Model), und teilte Erfolgsmomente sowie Herausforderungen. Die RTC AG stellte FRAGen vor, eine Eclipse-basierte Generator-Infrastruktur für die modellbasierte Generierung von Artefakten, die in der GUI-Entwicklung mit MVC-Frameworks zum Mapping von Transferobjekten auf Business Object Models und GUIs eingesetzt wird.",
+    "eventType": "Abend-BAT",
+    "moderator": "Daniel Kühni"
+  },
+  {
+    "bat": 7,
+    "topic": " Architektur messen/verkaufen ",
+    "datum": "15. Juni 07, 16:00h - 18:30h",
+    "parsedDate": "2007-06-15T16:00:00+02:00",
+    "description": "Architektur messen/verkaufen widmete sich der Vermarktung und Erfolgsmessung von IT-Architektur. Ein Vortrag diskutierte den Marketing-Mix für IT-Architektur nach den klassischen vier Aufgaben Product, Price, Place und Promotion, und wie diese auf das \"Produkt\" IT-Architektur angewendet werden können. Die RTC AG präsentierte ihr Praxisprojekt zur wertorientierten Architektursteuerung mittels IT-Architektur Scorecard auf Basis von Kennzahlensystemen, entwickelt zusammen mit der Universität St. Gallen, zur systematischen und langfristigen Planung und Steuerung von Architekturen. PostFinance zeigte einen pragmatischen Ansatz zur Einführung eines EA Tools, der im Spannungsfeld von Akzeptanz, Standardprodukten und Erweiterbarkeit steht, wobei zunächst Bedürfnisträger und organisatorische Einbettung im Fokus stehen, bevor ein gezielter Tool-Einsatz erfolgt.",
+    "eventType": "Abend-BAT",
+    "moderator": "Daniel Kühni"
+  },
+  {
+    "bat": 8,
+    "topic": " EA Tools ",
+    "datum": "16. November 07, 16:00h - 18:30h",
+    "parsedDate": "2007-11-16T16:00:00+01:00",
+    "description": "EA Tools untersuchte den Einsatz von Enterprise Architecture Management-Werkzeugen in der Praxis. PostFinance präsentierte ihren pragmatischen Ansatz zur Tool-Einführung, der zunächst Bedürfnisträger und organisatorische Einbettung fokussiert, bevor ein gezielter Tool-Einsatz erfolgt. Die SBB teilte ihren Erfahrungsbericht zum Enterprise Architecture Management mit Werkzeugen, die über Powerpoint, Excel und Visio hinausgehen, und beleuchtete Anforderungen, Werkzeugentscheid, praktischen Einsatz sowie \"lessons learned\". Eine akademische Präsentation stellte die Enterprise Architecture Management Tool Surveys von 2005 und 2008 vor, um Anwenderunternehmen bei der Bewertung und Auswahl von EA-Werkzeugen zu unterstützen, da der Markt zunehmend komplexer wird und Werkzeugentscheidungen wichtige Investitionen darstellen.",
+    "eventType": "Abend-BAT",
+    "moderator": "Daniel Kühni"
+  },
+  {
+    "bat": 9,
+    "topic": " Business Rules ",
+    "datum": "14. März 08, 16:00h - 18:30h",
+    "parsedDate": "2008-03-14T16:00:00+01:00",
+    "description": "Business Rules fokussierte auf den Einsatz und die Verwaltung von Geschäftsregeln in IT-Systemen. Ein Vortrag beleuchtete die Herausforderungen bei der Einführung des Business Rules Ansatzes in einem etablierten Informatikunternehmen parallel zu hoch priorisierten Projekten. PostFinance präsentierte ihre fortschrittliche Lösung für Business Rules Management im Compliance-Bereich, insbesondere für AML (Anti Money Laundry), wo der Fachbereich seit 2005 eigenständig signifikante Geschäftsregeln verwaltet und Änderungen unmittelbar ohne IT-Beteiligung im System wirksam machen kann. Ein weiterer Beitrag diskutierte die Integration der Open Source Rule Engine Drools aus der JBoss-Familie in IT-Architekturen, wobei Rule Engines die zentrale Verwaltung von Regeln ermöglichen und eine verteilte Implementierung über das gesamte System vermeiden.",
+    "eventType": "Abend-BAT",
+    "moderator": "Daniel Kühni"
+  },
+  {
+    "bat": 10,
+    "topic": " RIA ",
+    "datum": "20. Juni 08, 08:30h - 16:30h",
+    "parsedDate": "2008-06-20T08:30:00+02:00",
+    "description": "RIA (Rich Internet Applications) beleuchtete verschiedene Technologien und Architekturansätze für interaktive, leistungsfähige Webanwendungen im Unternehmensumfeld. CaptainCasa präsentierte Erkenntnisse einer Community mittelständischer Softwarehäuser zu UI-Architekturen für langlebige, serverseitige Anwendungen mit Power-Usern, einschliesslich Erfahrungen mit AJAX und nativen Rich Client Technologien. Innoopract stellte die Eclipse Rich Ajax Platform (RAP) vor, welche serverseitige Equinox Runtime und OSGi Bundle Technologie nutzt, um leistungsfähige und wartbare Ajax-Applikationen zu entwickeln und bestehende RCP-Applikationen webfähig zu machen. IPT zeigte die GUI-Entwicklung für DHL's zeitkritischen \"customs clearance\" Prozess, mit Fokus auf Framework-Auswahl zur Erfüllung spezieller Business-Anforderungen und Projekterfahrungen. Microsoft demonstrierte ihre Rich Internet Application Strategie mit Silverlight 2, dessen technologischen Aufbau und die Integration in die Microsoft-Systemlandschaft. Die kantonale Steuerverwaltung Bern und DV Bern präsentierten TaxMe-Online, eine seit 2001 eingesetzte Webanwendung für Online-Steuererklärungen, sowie geplante AJAX-Erweiterungen zur Verbesserung des Bedienungskomforts.",
+    "eventType": "Ganztages-BAT",
+    "moderator": "Nissim Buchs"
+  },
+  {
+    "bat": 11,
+    "topic": " Workplace ",
+    "datum": "21. November 08, 16:00h - 18:30h",
+    "parsedDate": "2008-11-21T16:00:00+01:00",
+    "description": "Workplace behandelte die Entwicklung und Herausforderungen moderner IT-Arbeitsplätze in Unternehmen. PostFinance präsentierte PFGUI, ein Eclipse RCP-basiertes Rich Client Framework, welches als Teil einer umfassenden GUI-Strategie die Basisanforderungen der Fachabteilung adressiert, wobei neben Technologie viele weitere Faktoren für erfolgreiche Umsetzung entscheidend sind. Ein Exkurs beleuchtete die Evolution des Finanzinstitut-Arbeitsplatzes über 10 Jahre vom begrenzten statischen Modell zum mobilen, vernetzten Workplace, mit Parallelen zu Infrastruktur-Management-Herausforderungen. Die vielfältigen und teils widersprüchlichen Ansprüche verschiedener Stakeholder an IT-Arbeitsplätze wurden diskutiert, wobei der traditionelle 'One-Size-Fits-All'-Ansatz nicht mehr praktikabel ist, und strategische Lösungsansätze sowie Einflussfaktoren auf die Gestaltung moderner IT-Arbeitsplätze aus verschiedenen Perspektiven betrachtet wurden. Eine Betrachtung des Future Workplace aus Benutzersicht zeigte die Wünsche des Knowledge Workers der Zukunft an Service-Anbieter.",
+    "eventType": "Abend-BAT",
+    "moderator": "Thomas Goetz"
+  },
+  {
+    "bat": 12,
+    "topic": " Architekturplanung ",
+    "datum": "13. März 09, 16:00h - 18:30h",
+    "parsedDate": "2009-03-13T16:00:00+01:00",
+    "description": "Architekturplanung fokussierte auf strategische IT-Bebauungsplanung und die enge Verzahnung von Business und IT-Architektur. Die BKW FMB Energie AG teilte ihre erfolgreiche Ausrichtung der IT-Applikationslandschaft auf den liberalisierten Strommarkt, wobei Bebauungspläne als wichtiges Element zur ganzheitlichen Umsetzung dienten und die enge Einbindung des Business in Architekturprozesse sowie die Ableitung der richtigen Projekte aus der Soll-Architektur sicherstellten. Die RTC AG präsentierte ihre architekturgetriebene Gesamtplanung während der totalen Erneuerung der Bankenlösung IBIS mit über 150 Applikationen, wobei klare Zielbilder und Roadmaps für eine flexible, robuste und serviceorientierte Lösung erforderlich sind, um das Projektportfolio zu definieren und zu überwachen. Die SBB stellte ihr 2008 durchgeführtes Projekt zur Erstellung des Bebauungsplans der Anwendungsdomänen vor, erläuterte Methodik, Aufbau, Erstellungsprozess, Aktualisierung sowie Darstellung und Kommunikation des Bebauungsplans. EPFL präsentierte einen Vergleich von ITIL und SOA Services anhand des SEAM Enterprise Frameworks.",
+    "eventType": "Abend-BAT",
+    "moderator": "Nissim Buchs"
+  },
+  {
+    "bat": 13,
+    "topic": " SOAreloaded ",
+    "datum": "12. Juni 09, 09:00h - 16:45h",
+    "parsedDate": "2009-06-12T09:00:00+02:00",
+    "description": "SOAreloaded reflektierte kritisch über Serviceorientierung und präsentierte reife, praxisnahe Ansätze. Die Universität Bern teilte ihren pragmatischen Weg, SOA nach Jahren strategischer Neuausrichtung wieder zu aktivieren, und stellte das innovative DEI-Konzept als Weiterentwicklung vor. Swisstopo demonstrierte als Geoinformationszentrum des Bundes die organisationsübergreifende Zusammenarbeit mittels Geoinformations-Services für Geschäftsprozesse mit Raumbezug, die von BAKOM, BVET und im militärischen Umfeld (JAPII) erfolgreich genutzt werden. Das IWI-HSG präsentierte Differenzierungsdimensionen von Unternehmensarchitektur-Management-Ansätzen und Potenziale anpassbarer Managementansätze für Wiederverwendung von Standard-Komponenten bei gleichzeitiger Anpassung an unternehmensspezifische Nutzungssituationen. Weitere Vorträge diskutierten die richtige Transparenz in serviceorientierten Unternehmensarchitekturen als Basis für Flexibilität und Agilität, sowie spezifische Herausforderungen von SOA in der Bundesverwaltung als Multi-Organisationskontext, die über klassische 'out of the book'-SOA-Konzepte hinausgehen. Die SBB Testfactory präsentierte ihre Testautomatisierung der Billettautomaten als Steuerungsinstrument nachhaltiger Systemqualität.",
+    "eventType": "Ganztages-BAT",
+    "moderator": "Nissim Buchs"
+  },
+  {
+    "bat": 14,
+    "topic": " Qualitätssicherung ",
+    "datum": "13. November 09, 16:00h - 18:30h",
+    "parsedDate": "2009-11-13T16:00:00+01:00",
+    "description": "Qualitätssicherung zeigte praxiserprobte Ansätze zur Sicherstellung hoher Softwarequalität in Schweizer Unternehmen. Die SBB Testfactory präsentierte die erfolgreiche Testautomatisierung der Billettautomaten, wobei Testmanagement sich vom reinen Prüfinstrument zum Steuerungsinstrument nachhaltiger Systemqualität entwickelte, mit Test-Governance und Prozessen als integraler Bestandteil des Qualitätsmanagements. Ein Vortrag demonstrierte den Aufbau eines Continuous Integration-Servers mit Open Source-Werkzeugen, der Software-Entwicklern innert Minuten wertvolle Qualitätsinformationen über Codeänderungen, Testabdeckung, Guidelines-Einhaltung und potenzielle Bugs liefert. Die RTC AG stellte qualitätssichernde Architekturvorgaben in der neuen JEE-basierten IBIS3G Kontoführung vor, welche die Softwarequalität anhoben und regressionssicher machten.",
+    "eventType": "Abend-BAT",
+    "moderator": "Thomas Goetz"
+  },
+  {
+    "bat": 15,
+    "topic": " Business Intelligence, DWH",
+    "datum": "05. März 10, 16:00h - 18:30h",
+    "parsedDate": "2010-03-05T16:00:00+01:00",
+    "description": "Business Intelligence und Data Warehousing behandelte Architektur und Organisation unternehmensweiter analytischer Systeme. Die BKW Energie AG präsentierte ihr Data Warehouse-Konzept zur integrierten Informationsversorgung im liberalisierten Strommarkt, wobei Metadaten die Kommunikation zwischen Business und IT wesentlich vereinfachen und eine Vielzahl analytischer Applikationen entlang der gesamten Wertschöpfungskette mit finanziellen und energiewirtschaftlichen Daten versorgt werden. Swisscom zeigte, wie sie den grossen Herausforderungen von Enterprise BI Systemen - schnell ändernde Businessanforderungen, steigende Zahl geschäftskritischer BI-Applikationen, sinkende Budgets und grössere Operationalisierung - mit einem Mix an architektonischen und organisatorischen Mitteln begegnet. Ein weiterer Vortrag reflektierte kritisch über das Ideal des Enterprise Data Warehouse, welches sich in der Praxis nur beschränkt bewährt hat, und adressierte die logistische Aufgabe der Informationsversorgung für Entscheidungsträger aus praxisorientierter Sicht.",
+    "eventType": "Abend-BAT",
+    "moderator": "Thomas Goetz"
+  },
+  {
+    "bat": 16,
+    "topic": " Informatik-Sicherheit ",
+    "datum": "11. Juni 10, 09:00h - 16:20h",
+    "parsedDate": "2010-06-11T09:00:00+02:00",
+    "description": "Informatik-Sicherheit widmete sich umfassend den Herausforderungen der IT-Sicherheit in Unternehmen und im öffentlichen Sektor. Vorträge beleuchteten die Spannungsfelder der Informationssicherheit, insbesondere die Komplexität der Bekämpfung von Drive-by-Downloads und Phishing im E-Banking. Die SuisseID wurde als standardisiertes Werkzeug für rechtsgültige elektronische Signatur, Identitätsnachweis und Funktionsnachweise vorgestellt. SWITCH präsentierte ihre Authentifizierungs- und Autorisierungs-Infrastruktur (AAI) mit über 300'000 Benutzern und 400 Service Providern basierend auf SAML und Shibboleth. Das Bundesamt für Informatik und Telekommunikation zeigte den durchgehenden Prozess zur Sicherheits- und Architekturkonformitätsprüfung in Projekten. PostFinance demonstrierte ihr branchenkonformes Security Management System nach ISO/IEC 27001:2005 im Rahmen des Multicompliance-Frameworks. Die RTC AG präsentierte die Security-Lösungen der Bankenplattform IBIS3G für mehrere Mandanten mit Identity-  und Access-Management. Die BEKB|BCBE teilte ihre Erfahrungen mit dem Internet Passport von AXSionics für innovative Bankenprodukte.",
+    "eventType": "Ganztages-BAT",
+    "moderator": "Thomas Goetz"
+  },
+  {
+    "bat": 17,
+    "topic": " IT-Innovation ",
+    "datum": "05. November 10, 16:00h - 18:30h",
+    "parsedDate": "2010-11-05T16:00:00+01:00",
+    "description": "IT-Innovation präsentierte innovative Ansätze und Technologien in Schweizer Unternehmen. PostFinance stellte ihre iPhone-App zur Ansprache der mobil-affinen Kundengruppe vor, um das Image der 'mobilen Welt von PostFinance' zu stärken und als innovativ wahrgenommen zu werden. Die RTC AG demonstrierte ihren Einsatz von IP-Storage mit NetApp-Architektur im Banking-Umfeld für IBIS mit WLS-Clustern, MQ und zentralen Logs. Springer Verlag präsentierte das intelligente Enterprise-Suchsystem Canoo FindIT, welches durch Kombination eines umfassenden Wörterbuchs, Wortanalyse-Software und Wikipedia-Wissen relevante Informationen effizient in digitalen Quellen findet und als SaaS-Lösung flexibel und kosteneffizient realisiert wurde.",
+    "eventType": "Abend-BAT",
+    "moderator": "Thomas Goetz"
+  },
+  {
+    "bat": 18,
+    "topic": " Datenhaltung ",
+    "datum": "11. März 11, 16:00h - 18:30h",
+    "parsedDate": "2011-03-11T16:00:00+01:00",
+    "description": "Datenhaltung behandelte Architektur und Management von Daten in Unternehmen und Verwaltung. Das Eidg. Volkswirtschaftsdepartement EVD präsentierte die Pflege der Informations-Architektur als projektübergreifende Policy, demonstriert am Beispiel des ämterübergreifenden Betriebs- und Unternehmensdaten-Integrations-Service (BUDIS) für SECO, BLW, BVET und weitere Ämter mit einheitlicher Datenbasis inklusive neuer Unternehmens-Identifikationsnummer (UID). Ein Vortrag zeigte die durchgängige Enterprise Architecture Modellierung mittels UML, NATO Architecture Framework (NAF) und NATO Meta Modell (NMM) zur Visualisierung und Minimierung von Diskrepanzen zwischen technischer Wirklichkeit, Systemdokumentation und Geschäftsabläufen. Die Nationalbibliothek präsentierte Lösungsansätze zur Langzeitarchivierung digitaler Daten, um nicht nur den Bitstream zu erhalten, sondern diesen auch in für Menschen verstehbarer Form darzustellen.",
+    "eventType": "Abend-BAT",
+    "moderator": "Thomas Goetz"
+  },
+  {
+    "bat": 19,
+    "topic": " Integration ",
+    "datum": "01. Juli 11, 09:00h - 16:00h",
+    "parsedDate": "2011-07-01T09:00:00+02:00",
+    "description": "Integration fokussierte auf Integrationsarchitekturen und Enterprise Service Buses in komplexen Unternehmenslandschaften. Die ZKB präsentierte die Erarbeitung ihrer Zielarchitektur Integration für drei bestehende Integrationslösungen, mit Referenz-Architektur, Integrationsprinzipien, Designrichtlinien und Request for Information zur Bewertung von Lösungen. Die BKW Energie AG stellte ihre Integrationsplattform basierend auf bewährten Mustern und Enterprise Service Bus vor, die für die effiziente und stabile Integration der komplexen, heterogenen Applikationslandschaft sowie für die neue Handelsplattform eingesetzt wird. Ein Erfahrungsbericht zum E-Government-Projekt Geres beleuchtete die zentralen Herausforderungen der Integration von dutzenden Systemen bei hunderten von Verwaltungsstellen im föderalistischen Staat ohne zentralen Auftraggeber oder Koordinationsstelle.",
+    "eventType": "Ganztages-BAT",
+    "moderator": "Thomas Goetz"
+  },
+  {
+    "bat": 20,
+    "topic": " Jubiläums-BAT ",
+    "datum": "11. November 11, 16:00h - 18:30h",
+    "parsedDate": "2011-11-11T16:00:00+01:00",
+    "description": "Jubiläums-BAT feierte das 10-jährige Bestehen mit einem Rückblick auf wichtige Themen und einem Ausblick auf künftige Entwicklungen. Die BLS präsentierte ihre Studie zu Social Media-Elementen im Intra- und Internet, wobei die Frage geklärt wurde, wie künftig mit Social Media-Plattformen wie Facebook, Youtube, Blogs und Foren umgegangen werden soll. Diskutiert wurden Erfahrungen mit Social Media im Unternehmenseinsatz und deren kulturelle Auswirkungen auf Organisationen.",
+    "eventType": "Abend-BAT",
+    "moderator": "Thomas Goetz"
+  },
+  {
+    "bat": 21,
+    "topic": " Social Media im Unternehmenseinsatz ",
+    "datum": "09. März 12, 16:00h - 18:30h",
+    "parsedDate": "2012-03-09T16:00:00+01:00",
+    "description": "Social Media im Unternehmenseinsatz untersuchte den Einsatz webbasierter, sozialer Plattformen in Organisationen. Die BLS teilte ihre Studie zu Social Media-Elementen wie Blogs, Foren, Facebook und Youtube sowie deren Bewirtschaftung und erarbeitete Varianten für die künftige Nutzung. Der FIZ Technik e.V. aus Frankfurt berichtete über die Einführung unternehmensinterner, webbasierter, sozialer Plattformen, wobei besonders die kulturellen Rahmenbedingungen und Veränderungen im Kontext von Enterprise 2.0 beleuchtet wurden. Ein Vortrag führte in RFID, RTLS, Internet-of-Things (IoT) und M-to-M Kommunikation ein, mit Beispielen aus Korea und der Schweiz, wo langfristig mehr als 100 Millionen Maschinen über Funknetze verbunden werden sollen, um Prozesse zu vereinfachen, Kosten zu senken und nachhaltig mit Ressourcen umzugehen.",
+    "eventType": "Abend-BAT",
+    "moderator": "Nissim Buchs"
+  },
+  {
+    "bat": 22,
+    "topic": " Mobilkommunikation im Unternehmen ",
+    "datum": "29. Juni 12, 08:30h - 16:30h",
+    "parsedDate": "2012-06-29T08:30:00+02:00",
+    "description": "Mobilkommunikation im Unternehmen präsentierte innovative mobile Lösungen und Strategien. Ein Vortrag zur M-to-M Kommunikation und dem Internet-of-Things zeigte, wie Maschinen über Funknetze miteinander verbunden werden für Anwendungen wie automatisierte Stromzählerablesung, Verkehrsinformationen und medizinische Fernüberwachung. Die SBB stellte ihre 'Bring your own Device'-Strategie (BYOD) vor, welche die Definition des Funktionsumfangs, Sicherheit und Compliance von privaten Geräten im Unternehmenseinsatz sowie die technische Lösung für sichere und nachhaltige Einbindung behandelt. Die BLS präsentierte den Ausbau der Fahrgastinformation in Zügen mit Echtzeitinformationen und mobilen Diensten für weitere Applikationen wie Fahrgastzählung, Fahrzeugdiagnose und Videoüberwachung, mit spezifischen Herausforderungen der Fahrzeugkommunikation.",
+    "eventType": "Ganztages-BAT",
+    "moderator": "Nissim Buchs"
+  },
+  {
+    "bat": 23,
+    "topic": " Management von Projekt- & Anwendungsportfolios ",
+    "datum": "02. November 12, 16:00h - 18:30h",
+    "parsedDate": "2012-11-02T16:00:00+01:00",
+    "description": "Management von Projekt- und Anwendungsportfolios fokussierte auf die strategische Steuerung von IT-Landschaften. Die BKW-Gruppe zeigte, wie durch enge Verknüpfung zwischen Architektur- und Projektportfolio-Management die wirtschaftliche Weiterentwicklung der komplexen IT-Applikationslandschaft entlang der gesamten Wertschöpfungskette gewährleistet wird. Die Entris Banking AG berichtete über die erfolgreiche Migration aller 43 Kundenbanken von der IBIS-Plattform auf eine neue Standardlösung mit Finnova und Swisscom IT Services in 5 Gruppen, wobei das komplexe Grossprojekt 'beängstigend' erfolgreich nach Plan, im Budget und mit hoher Kundenzufriedenheit umgesetzt wurde. Die SBB präsentierte ihr IT-Projektportfoliomanagement für jährlich 150 Projekte mit einem Volumen von 200 Mio CHF bei über 1'000 Anwendungen mit zahlreichen Überlappungen.",
+    "eventType": "Abend-BAT",
+    "moderator": "Thomas Goetz"
+  },
+  {
+    "bat": 24,
+    "topic": " Open Source Software ",
+    "datum": "15. März 13, 16:00h - 18:30h",
+    "parsedDate": "2013-03-15T16:00:00+01:00",
+    "description": "Open Source Software beleuchtete den strategischen Einsatz von Open Source im Unternehmensumfeld. HP Banking Service Center präsentierte die Evaluation von JMS- und ESB-Produkten unter Einbezug von Open Source Software für die modularisierte IBIS3G Bankenlösung, mit Beurteilungskriterien und Argumenten für verschiedene Plattformen. Jungwacht Blauring Schweiz stellte ihre Nationale Mitglieder-Datenbank als Individuallösung vor, die vollständig auf Open Source mit Ruby on Rails Tech-Stack realisiert und nach Fertigstellung unter Open Source Lizenz veröffentlicht wird. Ein weiterer Vortrag zeigte basierend auf der Open Source Studie Schweiz 2012 (93% bewusster Einsatz), wie Open Source Software strategisch eingesetzt werden kann, um Potenziale zu nutzen und Risiken zu adressieren, illustriert durch zahlreiche Praxis-Beispiele aus Wirtschaft und öffentlicher Hand.",
+    "eventType": "Abend-BAT",
+    "moderator": "Thomas Goetz"
+  },
+  {
+    "bat": 25,
+    "topic": " Fertigungstiefe ",
+    "datum": "28. Juni 13, 09:00h - 16:00h",
+    "parsedDate": "2013-06-28T09:00:00+02:00",
+    "description": "Fertigungstiefe untersuchte Sourcing-Modelle und Make-or-Buy-Entscheidungen in der IT. Der Steuerausschuss E-Government präsentierte die Cloud-Strategie der Schweizer Behörden und deren Auswirkungen auf die künftige Fertigungstiefe von Lösungen. Ein Vortrag zur Finanzindustrie diskutierte relevante Sourcing-Dimensionen wie BPO, ASP, ITP, Onshoring, Offshoring und Multiprovider vs. Singleprovider, präsentierte erste Studienergebnisse zu Erwartungen der Banken bis 2020 hinsichtlich Kernkompetenz, Eigenfertigung, Outsourcing und Industrialisierung sowie Erfolgsfaktoren für Sourcing-Partnerschaften. Das Swiss National Supercomputing Centre (CSCS) der ETH Zürich zeigte, wie sich die Zusammenarbeit mit der Schweizer Forschungsgemeinschaft über eine reine Leistungsbezüger-Leistungserbringer-Beziehung hinaus entwickelt hat, mit gemeinschaftlicher Arbeit bei neuen Supercomputer-Generationen.",
+    "eventType": "Ganztages-BAT",
+    "moderator": "Thomas Goetz"
+  },
+  {
+    "bat": 26,
+    "topic": " Mobile Applikationen ",
+    "datum": "08. November 13, 16:00h - 18:30h",
+    "parsedDate": "2013-11-08T16:00:00+01:00",
+    "description": "Mobile Applikationen präsentierte fortgeschrittene Architekturen und Plattformen für mobile Unternehmensanwendungen. PostAuto Schweiz AG und Glue Software Engineering AG demonstrierten die komplexe Lösungsarchitektur der PostAuto App mit Tür-zu-Tür intermodaler Reiseplanung, bestehend aus clientseitiger Multi-App-Einbindung und serverseitiger Parallelisierung mit Cloud-Auslagerung. Die SBB stellte ihre strategische Mobile Enterprise Application Plattform (MEAP) vor, mit der künftig 80% aller neuen mobilen Geschäftsanwendungen über die SAP Mobile Plattform (SMP) entwickelt, integriert und betrieben werden, um die zunehmenden Architekturmuster mobiler Anwendungen zu steuern. Netcetera AG präsentierte in Zusammenarbeit mit HSLU und SBB einen innovativen Pilot zur Indoor Navigation am Bahnhof Luzern, basierend auf einem Landmark-Ansatz mit visuellen Referenzpunkten statt kartenbasierter Navigation.",
+    "eventType": "Abend-BAT",
+    "moderator": "Thomas Goetz"
+  },
+  {
+    "bat": 27,
+    "topic": " Security - Quo Vadis? ",
+    "datum": "28. März 14, 16:00h - 18:30h",
+    "parsedDate": "2014-03-28T16:00:00+01:00",
+    "description": "Security - Quo Vadis? beleuchtete aktuelle und künftige Herausforderungen der IT-Sicherheit in der Schweiz. MELANI, die Melde- und Analysestelle Informationssicherung, präsentierte ihre Organisation und subsidiäre Unterstützung kritischer Infrastrukturen bei Cyber-Vorfällen, demonstrierte anschaulich verschiedenste Bedrohungsarten wie Spam, Phishing, DDoS, Cyberspionage und politisch motiviertes Hacking, und stellte die Nationale Strategie zum Schutz der Schweiz vor Cyber-Risiken vor. Die SBB zeigte ihre neue Netzwerkzonierung, die aufgrund neuer Anforderungen aus Mobilität und Clouddiensten grundlegend überarbeitet wurde, mit einem neuen Zonenmodell und Herausforderungen in der Umsetzung. Das EJPD präsentierte die Integration der MobileID als neue starke Authentisierungsart am SSO-Portal für mobiles Arbeiten, insbesondere für Mitarbeitende im Felde mit mobilen Geräten, und erläuterte die Entscheidung für MobileID statt SMS-basierter Authentisierung.",
+    "eventType": "Abend-BAT",
+    "moderator": "Thomas Goetz"
+  },
+  {
+    "bat": 28,
+    "topic": " IT-getriebene Geschäftsinnovationen ",
+    "datum": "20. Juni 14, 16:00h - 18:30h",
+    "parsedDate": "2014-06-20T16:00:00+02:00",
+    "description": "IT-getriebene Geschäftsinnovationen fokussierte auf digitale Transformation und innovative Geschäftsmodelle. Ein Vortrag zur digitalen Revolution zeigte, wie technologischer Fortschritt und Globalisierung zur Dezentralisierung von Information führen, wobei aktive Kunden an Einfluss gewinnen und sich über Benutzer-zentrierte Ökosysteme vernetzen, was Chancen für neue Businessmodelle bietet und Digital Natives helfen, die neue Kundengeneration zu verstehen und innovative Zahlungssysteme zu etablieren. Die Integration von Design Thinking ins Requirements Engineering wurde als Ergänzung zu agilen Methoden präsentiert, um die zeitnahe Entwicklung innovativer kundennaher Lösungen zu ermöglichen und radikal nutzerzentrierte Innovationen durch nahtlose Integration beider Ansätze zu entwerfen.",
+    "eventType": "Abend-BAT",
+    "moderator": "Thomas Goetz"
+  },
+  {
+    "bat": 29,
+    "topic": " Big Data / Information Management ",
+    "datum": "21. November 14, 16:00h - 18:30h",
+    "parsedDate": "2014-11-21T16:00:00+01:00",
+    "description": "Big Data und Information Management beleuchtete praktische Anwendungen und Potenziale grosser Datenmengen in Schweizer Unternehmen. Swisscom präsentierte Use Cases aus der Telekommunikationsperspektive zur Analyse der Mobilität eines ganzen Landes in Echtzeit, um Mobilitätsbedürfnisse zu verstehen und darauf zeitgerecht zu reagieren. PostFinance zeigte moderne Architekturansätze für Fraud-Detection in digitalen Kanälen, wobei Machine-Learning Algorithmen die erhöhte Datenmenge und Datenvielfalt nutzen, um schnell auf Events zu reagieren und qualitativ hochwertige Fraud-Alerts zu generieren. Die SBB präsentierte ihre Datenstrategie mit Fokus auf Big Data, um aus der riesigen Menge laufend generierter Daten geschäftsrelevante Erkenntnisse zu gewinnen, personalisierte Reiseerlebnisse zu ermöglichen, den Bahnbetrieb zu stabilisieren und vorausschauende Instandhaltung zu optimieren.",
+    "eventType": "Abend-BAT",
+    "moderator": "Nissim Buchs"
+  },
+  {
+    "bat": 30,
+    "topic": " Agile Architektur ",
+    "datum": "27. März 15, 16:00h - 18:30h",
+    "parsedDate": "2015-03-27T16:00:00+01:00",
+    "description": "Agile Architektur untersuchte die Übertragbarkeit agiler Prinzipien auf Architekturmanagement und die Herausforderungen zwischen Richtungsvorgabe und Flexibilität. GnostX GmbH beleuchtete Chancen und Risiken der Agilität für verschiedene Architekturebenen, wobei nicht alles aus der agilen Entwicklung 1:1 übernommen werden kann und die Erfolgsfaktoren auch für Architektur gelten müssen. PostFinance reflektierte den Widerspruch zwischen erwartetem 'Big Up Front Design' und notwendiger Anpassungsfähigkeit, sowie praktische Erfahrungen, wie IT-Architektur gleichzeitig Rahmen bilden und sich an veränderte Bedingungen anpassen kann. Die SBB zeigte anhand konkreter Grossprojekte, wie die Architektur refactoringfähig werden muss, wenn 20-30% des Aufwandes in Refactorings investiert werden, und leitete Hypothesen ab, wie agile Prinzipien für refactoringfähige Architektur aussehen könnten.",
+    "eventType": "Abend-BAT",
+    "moderator": "Thomas Goetz"
+  },
+  {
+    "bat": 31,
+    "topic": " Open Data ",
+    "datum": "19. Juni 15, 08:30h - 16:30h",
+    "parsedDate": "2015-06-19T08:30:00+02:00",
+    "description": "Open Data widmete sich der Publikation und Nutzung offener Daten in der Schweiz und deren wirtschaftlichem Potenzial. Opendata.ch präsentierte eine Standortbestimmung zur Open-Government-Data-Strategie Schweiz 2014-2018, verglich die Entwicklung mit anderen Ländern und zeigte Perspektiven zur Nutzung offen zugänglicher Daten für Innovation und wirtschaftliches Wachstum. Die SBB demonstrierte ihre ÖV Information 2.0 basierend auf offenen Daten, wobei neben Big Players auch Open Source Projekte, KMU's und Privatpersonen qualitativ hochwertige Reiseinformation mit intermodalen Routenplanern und Tür-zu-Tür Navigation anbieten. Die Universität Bern stellte Highlights aus Theorie und Praxis vor, inklusive Impact-Messung von OGD-Aktivitäten, rechtlichen Aspekten, Datenjournalismus und interaktiven Web-Applikationen basierend auf D3.js. Ein Workshop bot Hands-on Erfahrung mit SBB Fahrplandaten als Linked Open Data mittels SPARQL-Abfragen, und Geschäftsmodelle mit Open Data wurden konkret diskutiert.",
+    "eventType": "Ganztages-BAT",
+    "moderator": "Thomas Goetz"
+  },
+  {
+    "bat": 32,
+    "topic": " Internet of Things ",
+    "datum": "06. November 15, 16:00h - 18:30h",
+    "parsedDate": "2015-11-06T16:00:00+01:00",
+    "description": "Internet of Things beleuchtete praktische IoT-Anwendungen und deren strategische Bedeutung für Schweizer Unternehmen. Die SBB demonstrierte elektrisches Lastmanagement zur Glättung von Spitzenlast im Bahnstromnetz, wobei smarte, vernetzte Dinge das Verständnis für Betriebszusammenhänge erhöhen und Optimierungen zugunsten der Geschäftsziele im Kontext der Digitalen Transformation ermöglichen. Securiton AG und Zühlke Engineering präsentierten einen systematischen Analyse-Ansatz zu IoT in der Sicherheitstechnik, der nicht nur technologische Möglichkeiten, sondern insbesondere auch betriebswirtschaftliche Zusammenhänge hinsichtlich Nutzung dieser Technologien untersucht und konkrete Handlungsfelder für das Business ableitet. Die Berner Fachhochschule stellte ein Referenzmodell für das Internet der Dinge vor, welches Terminologie klärt und zusammen mit einer Referenzarchitektur die Definition konkreter Architekturen für IoT-Anwendungen erleichtert.",
+    "eventType": "Abend-BAT",
+    "moderator": "Thomas Goetz"
+  },
+  {
+    "bat": 33,
+    "topic": " NoSQL Databases ",
+    "datum": "15. April 16, 16:00h - 18:30h",
+    "parsedDate": "2016-04-15T16:00:00+02:00",
+    "description": "NoSQL Databases präsentierte Enterprise-taugliche NoSQL-Lösungen und deren praktische Anwendung in Unternehmen. Tripons GmbH stellte MarkLogic als einzige NoSQL-Datenbank vor, die sowohl ACID-Transaktionen als auch Sicherheit auf US-Regierungsniveau gewährleistet, und zeigte anhand praktischer Anwendungsfälle den erfolgreichen Einsatz in Unternehmen und Organisationen. PostFinance präsentierte den Neubau ihres Data Warehouse als zentrales Active Data Warehouse mit Hadoop, InMemory DB und verschiedenen Datenreplikationsmechanismen, welches als 'Single Source of Analytical Data' für Echtzeitanalysen und Unterstützung operativer Prozesse dient, sowie eine Übersicht über NoSQL Datenbanksysteme, deren Abgrenzung und Charakteristik.",
+    "eventType": "Abend-BAT",
+    "moderator": "Thomas Goetz"
+  },
+  {
+    "bat": 34,
+    "topic": " Digitalisierung / Industrie 4.0 ",
+    "datum": "01. Juli 16, 09:00h - 16:35h",
+    "parsedDate": "2016-07-01T09:00:00+02:00",
+    "description": "Digitalisierung und Industrie 4.0 beleuchtete umfassend die digitale Transformation in verschiedenen Branchen. Vorträge behandelten LoRaWAN als kostengünstige IoT-Infrastruktur, die Rolle der IT bei der Digitalen Transformation der SBB mit der App 'MeinBahnhof' als Beispiel, sowie datengetriebene Entscheidungsfindung im Detailhandel. Die Mobiliar präsentierte ihren Weg als 190 Jahre altes Unternehmen ins digitale Zeitalter mit dem Grundsatz 'Persönlich - auch digital'. PostAuto demonstrierte ihr Projekt zum autonomen Fahren in Sitten als erste derartige Initiative eines Transportunternehmens in der Schweiz. Weitere Themen umfassten praktische IoT-Projekterfahrungen, eine kritische Diskussion über Industrie 4.0 als Revolution, Evolution oder Hype, Mobile Ticketing und Digitalisierung in der Infrastruktur bei der BLS, sowie die Auszeichnung der Post mit dem Swiss Digital Transformation Award 2016.",
+    "eventType": "Ganztages-BAT",
+    "moderator": "Thomas Goetz"
+  },
+  {
+    "bat": 35,
+    "topic": " Hochverfügbare Systeme ",
+    "datum": "04. November 16, 16:00h - 18:30h",
+    "parsedDate": "2016-11-04T16:00:00+01:00",
+    "description": "Hochverfügbare Systeme präsentierte verschiedene Ansätze zur Realisierung von Hochverfügbarkeit in modernen IT-Umgebungen. Afca demonstrierte erste Erfahrungen mit Cloud-Plattformen wie AWS Lambda und Azure Service Fabric zur Vereinfachung hochverfügbarer Systeme ohne komplexe eigene Infrastruktur. Das ISC-EJPD zeigte die Umsetzung sicherheitskritischer Systeme mit 99.9% Verfügbarkeitsanforderungen unter Kostendruck, mit Prinzipien für kostengünstige, aber hochverfügbare und skalierbare Lösungen sowie einem Ausblick auf die Bundes-Cloud. PostFinance präsentierte ihr zweites Rechenzentrum in Zofingen zur Disaster Tolerance und den Weg von 'normalverfügbar' zu 'always-on' mit hochverfügbarer Infrastruktur bis zu den Kunden-Zugangspunkten. Puzzle ITC stellte preiswerte, auf Opensource basierende Hochverfügbarkeitslösungen mit Pacemaker, Corosync und DRBD für Kunden vor, die lokale Lösungen mit eigener Hardware bevorzugen.",
+    "eventType": "Abend-BAT",
+    "moderator": "Thomas Goetz"
+  },
+  {
+    "bat": 36,
+    "topic": " Container ",
+    "datum": "03. März 17, 16:00h - 18:30h",
+    "parsedDate": "2017-03-03T16:00:00+01:00",
+    "description": "Container präsentierte praktische Erfahrungen mit Container-Technologien in Schweizer Unternehmen. Die Mobiliar zeigte Container als Immutable Infrastructure zur Verkürzung der Distanz zwischen Entwicklung und Betrieb, wobei die Testbarkeit und Reproduzierbarkeit von Komponenten durch den Einsatz als Teil der Infrastruktur stark verbessert werden. PostFinance berichtete über den einjährigen Betriebseinsatz container-basierter Plattformen, die helfen, steigende Dynamik und Komplexität in Entwicklung und Systembereitstellung bei rascher Integration von Drittherstellersoftware zu meistern. Die SBB präsentierte ihre Openshift-basierte Cloud-Plattform, die sich von einer Platform-as-a-Service für Eigenentwicklungen zu einem agilen und preiswerten Ersatz oder Alternative für klassische Virtualisierung und Infrastructure-as-a-Service entwickelt hat.",
+    "eventType": "Abend-BAT",
+    "moderator": "Thomas Goetz"
+  },
+  {
+    "bat": 37,
+    "topic": " Not only Java - Programmiersprachen in Unternehmen ",
+    "datum": "23. Juni 17, 13:00h - 16:45h",
+    "parsedDate": "2017-06-23T13:00:00+02:00",
+    "description": "Not only Java untersuchte die Vielfalt von Programmiersprachen jenseits von Java im Unternehmenskontext. Ein Trainer und Freelancer demonstrierte JavaScript als einzige wirklich universelle Plattform für Desktop-Applikationen (Electron), Mobile-Apps (Native-Script & React-Native), Backend-Services (Node.js) und Datenbanken, mit Überlegungen zur Code-Wiederverwendbarkeit. Die ETH Zürich präsentierte die Bedeutung paralleler Programmierung für Multicore-Prozessoren, Lösungswege für fehleranfällige und schwer testbare parallele Programme, sowie ein Forschungsprojekt für sicheres paralleles Programmieren. Linkyard zeigte Einsatzgebiete für Scala im Microservices-Umfeld, insbesondere ereignisbasiertes Domain Driven Design mit Integration in bestehende Applikationen. PostFinance reflektierte über den Stellenwert von Java aus IT-Management-Sicht, Kriterien für Programmiersprachenwahl, Rolle bei Sourcing-Überlegungen und Bedingungen für einen Wechsel weg von Java.",
+    "eventType": "Nachmittags-BAT",
+    "moderator": "Thomas Goetz"
+  },
+  {
+    "bat": 38,
+    "topic": " Kryptographie ",
+    "datum": "03. November 17, 16:00h - 18:30h",
+    "parsedDate": "2017-11-03T16:00:00+01:00",
+    "description": "Kryptographie beleuchtete moderne kryptographische Verfahren und deren praktische Anwendungen. ELCA präsentierte zk-SNARKs (Zero-Knowledge Succinct Non-Interactive Argument of Knowledge) als privacy-preserving Technik für die öffentliche Ethereum Blockchain, welche Verifizierung von Berechnungen ohne Kenntnis der Berechnung selbst ermöglicht und im Ethereum Byzantium Improvement Proposal enthalten ist. Die Berner Fachhochschule demonstrierte ihr realisiertes E-Voting-System mit kryptographischen Verfahren und Protokollen für Verifizierbarkeit der eigenen Stimme und des Gesamtresultats unter Wahrung des Stimmgeheimnisses, wobei kryptographische Beweise neben digitalen Signaturen und Verschlüsselung zentrale Rollen spielen. PostFinance präsentierte einen nüchternen Blick auf den aktuellen Stand von Blockchain-Anwendungen und -Technologie, um Illusion und Wirklichkeit in diesem breit diskutierten Thema auseinanderzuhalten.",
+    "eventType": "Abend-BAT",
+    "moderator": "Thomas Goetz"
+  },
+  {
+    "bat": 39,
+    "topic": " Cloud ",
+    "datum": "23. März 18, 16:00h - 18:30h",
+    "parsedDate": "2018-03-23T16:00:00+01:00",
+    "description": "Cloud präsentierte verschiedene Perspektiven auf Cloud-Technologien aus Startup- und Enterprise-Sicht. SPOUD AG teilte Erwartungen, Fehler und Erfahrungen als Startup, das ohne Cloud nicht existieren würde und selbst Cloud Services anbietet, von hohen Rechnungen über Geschwindigkeitsrausch bis zu 'deploy-your-idea-in-15-minutes' und Serverless-Architekturen. Amanox Solutions demonstrierte Serverless Application Frameworks, erläuterte warum sich Kunden an Serverless Architekturen orientieren, zeigte Stärken und Schwächen auf, und demonstrierte Deployment und Ausführung einer typischen Serverless-Anwendung. Die SBB zog nach einem Jahr Public Cloud Nutzung eine erste Bilanz, präsentierte Verwendungsmengen, Herausforderungen beim Aufbau und Erwartungen für die nahe Zukunft.",
+    "eventType": "Abend-BAT",
+    "moderator": "Nissim Buchs"
+  },
+  {
+    "bat": 40,
+    "topic": " Advanced Analytics / Artificial Intelligence im Unternehmen ",
+    "datum": "29. Juni 18, 08:45h - 16:30h",
+    "parsedDate": "2018-06-29T08:45:00+02:00",
+    "description": "Advanced Analytics und Artificial Intelligence im Unternehmen beleuchtete aktuelle Forschung und praktische Anwendungen von AI. Die ZHAW School of Engineering präsentierte Deep Learning-based Pattern Recognition in Business, diskutierte die Reifung von Deep Learning in den letzten Jahren mit wachsendem theoretischem Fundament, Best Practices für Prototyping und zunehmender Umsetzbarkeit von realen Anwendungsfällen. Die Universität Freiburg zeigte Smart Cities und Cognitive Computing für Städte, wobei die Kombination von Moore's Law mit Social Media und IoT-Daten ganz neue, bürgerzentrierte Business-Modelle, Interaktions- und Kommunikationsmodelle ermöglicht. Das Business Engineering Institute St. Gallen analysierte AI an der Kundenschnittstelle, die Entwicklung von AI-Technologien, Anwendungsmöglichkeiten für Unternehmensprozesse und AI als Enabler der Kundenschnittstelle am Beispiel der Finanzindustrie.",
+    "eventType": "Ganztages-BAT",
+    "moderator": "Baltisar Oswald"
+  },
+  {
+    "bat": 41,
+    "topic": " Microservice Architekturen & APIs ",
+    "datum": "02. November 18, 16:00h - 18:30h",
+    "parsedDate": "2018-11-02T16:00:00+01:00",
+    "description": "Microservice Architekturen und APIs präsentierte Praxiserfahrungen und Patterns für den Einsatz von Microservices im Enterprise-Umfeld. Die Mobiliar teilte ihre Evolution zu Microservices seit 2014 mit 450 Microservices in Produktion, Erkenntnisse zu Schnittstellen, Granularität, Plattformarchitektur, Continuous Delivery und 'Architecture as Code' zur Messung und Verwaltung loser Architekturen. Das BIT diskutierte 'SOA vs. Microservices oder SOA & Microservices', zeigte die Daseinsberechtigung eines lightweight ESB im Microserviceumfeld für API Management mit SOAP, REST und JMS, insbesondere für Betrieb, Capacity Management und Fehleranalyse. Die SBB erläuterte die Vorteile von Microservicearchitekturen im Enterpriseumfeld trotz höherer Komplexität, zeigte Grenzen und Patterns auf, sowie Voraussetzungen für erfolgreichen Einsatz.",
+    "eventType": "Abend-BAT",
+    "moderator": "Thomas Goetz"
+  },
+  {
+    "bat": 42,
+    "topic": " Large-scale Frontends ",
+    "datum": "08. März 19, 16:00h - 18:30h",
+    "parsedDate": "2019-03-08T16:00:00+01:00",
+    "description": "Large-scale Frontends untersuchte Modularisierungsansätze für grosse Frontend-Applikationen. Die Mobiliar präsentierte ihren Weg vom Frontend Monolithen zu Micro-Frontends, um schneller und agiler Funktionalität auszuliefern, mit Herausforderungen, Visionen, Entscheidungen und Lösungen bei der Aufteilung ihres B2E Mitarbeiterportals in kleinere SPAs. Die SBB demonstrierte SCION Workbench, ein Opensource Framework für GUI Integration verschiedener Microfrontends mit ganzheitlich verantwortlichen Teams, die Microservices vertikal über den gesamten Stack entwickeln, mit leichtgewichtigem Applikationsrahmen für lose gekoppelte Interaktion zwischen Applikationen. CSL Behring und afca zeigten Large-scale Frontends mit Mixed Reality für Firstline-Workers, wobei traditionelle GUIs durch Mixed Reality kombiniert mit AI-basierten virtuellen Assistenten erweitert werden für neues Interaktions-Paradigma mit geringerem cognitive load.",
+    "eventType": "Abend-BAT",
+    "moderator": "Nissim Buchs"
+  },
+  {
+    "bat": 43,
+    "topic": " Event Driven Architecture ",
+    "datum": "28. Juni 2019, 09:00h - 16:45h",
+    "parsedDate": "2019-06-28T09:00:00+02:00",
+    "description": "Event Driven Architecture widmete sich umfassend dem Design und der Implementierung event-getriebener Systeme. Die Mobiliar zeigte Commands & Events für Business Prozesse über Microservice-Grenzen hinweg mit Fällen und Aufgaben zur Benutzerinvolvierung. Die BFH/ISB präsentierte Events aus Business Sicht bei der Registerharmonisierung in der Verwaltung. Confluent demonstrierte Stream All Things und Data Integration Patterns mit Apache Kafka. Swissport teilte Lessons Learnt beim Aufbau eines Enterprise Data Bus unter strikter Kostenkontrolle mit nur 10 Sprints bis Produktivsetzung. Swisscom stellte den morphologischen Kasten als Architektur Framework für ihre Architekturvision 2025 vor. Die SBB/mtrail präsentierte hochverfügbare Anwendungen für Bahnproduktion mit Event-Verarbeitung. PostFinance und ELCA zeigten Fraud Detection mit Stream Analytics auf BigData Stack. Swisscom demonstrierte Self Service auf ihrer Big Data Platform mit Kafka, Hadoop und Kubernetes.",
+    "eventType": "Ganztages-BAT",
+    "moderator": "Daniel Kühni"
+  },
+  {
+    "bat": 44,
+    "topic": " Chatbots ",
+    "datum": "01. November 2019, 16:00h - 18:30h",
+    "parsedDate": "2019-11-01T16:00:00+01:00",
+    "description": "Chatbots präsentierte praktische Anwendungen von Conversational AI in verschiedenen Branchen. Coop Rechtsschutz und YLEX zeigten die Vermählung von Recht und Technologie mit Legal Tech Projekten und intelligenten Bots zur Erleichterung des Zugangs zum Recht. PostFinance und ELCA demonstrierten ihren Virtual Assistant mit Fokus auf Funktionsweise, Bedienung und Transformation vom Chatbot zum Voicebot, sowie Herausforderungen bei Einführung und Weiterentwicklung. Swisscom präsentierte Plato, ihre Dialogplattform für alle digitalen Kundeninteraktionen, erklärte die Verknüpfung von künstlicher Intelligenz mit Kundeninteraktionen, zugrunde liegende Technologien und Alltagsanwendungen.",
+    "eventType": "Abend-BAT",
+    "moderator": "Baltisar Oswald"
+  },
+  {
+    "bat": 45,
+    "topic": " Legacy? WTF!",
+    "datum": "5. November 2021, 16:00h - 18:30h, GGG Zertifikat obligatorisch",
+    "parsedDate": "2021-11-05T16:00:00+01:00",
+    "description": "Legacy? WTF! befasste sich mit dem Umgang mit Legacy-Systemen in der digitalen Transformation. Die Mobiliar präsentierte ihre Strategien und Massnahmen im Umgang mit Altsystemen auf Technologien wie Smalltalk, Cobol oder Siebel, mit denen heute noch ein Grossteil des Geldes verdient wird, während gleichzeitig Digitalisierung, Cloud, AI, Microservices und Agile die Modernisierung des Versicherungsgeschäfts prägen. Die SBB stellte ihren Ansatz zum aktiven und kontinuierlichen Priorisieren und Abbauen technischer Schulden mittels WSJF (Weighted Shortest Job First) vor, basierend auf der Erkenntnis, dass jede Plattform/Applikation kurz nach Inbetriebnahme bereits zur Legacy wird. Object Engineering demonstrierte Automatisierungsmöglichkeiten beim Legacy-Reengineering, wobei maschinelle Hilfe notwendig ist, um die über Jahre angesammelten Code-Mengen und Artefakte zu analysieren und zu modernisieren, ohne die verborgenen Wissens-Schätze in bestehenden Applikationen zu verlieren, mit Praxis-Beispielen aus kleineren und grösseren Projekten.",
+    "eventType": "Abend-BAT",
+    "moderator": "Daniel Kühni"
+  },
+  {
     "bat": 46,
     "topic": " API Management / Open Banking",
     "datum": "25. Februar 2022, 16:00h - 19:00h",
-    "eventType": "Abend-BAT"
-    },
-    {
+    "parsedDate": "2022-02-25T16:00:00+01:00",
+    "description": "API Management und Open Banking behandelte die Entwicklung, den Betrieb und die strategische Bedeutung von APIs in der Finanzindustrie und öffentlichen Verwaltung. Swisstopo berichtete über 12-jährige Erfahrung mit API-Entwicklung und -Betrieb für Fachkunden und die Öffentlichkeit, wobei offener Zugang, auf offenen Standards basierende API-Spezifikationen und früher Cloud-Einsatz zu den Erfolgsfaktoren gehören. Syncier präsentierte ihren Ansatz für qualitativ hochwertige API-Ökosysteme in der Versicherungsbranche mittels SaaS-Plattform und API Marketplace zur Optimierung bestehender IT-Systeme und Umsetzung neuer Geschäftsideen in stark regulierten Landschaften. Die Banque Cantonale de Genève teilte ihre API Management Journey im Banking-Kontext, inklusive API-Governance, Sicherheitskonzepte, Identity-Propagation und Change-Management-Herausforderungen. Das Business Engineering Institute St. Gallen, Finnova und DXC Technology präsentierten Open Banking als Konzept zur Stärkung der Kundendatenkontrolle, mit Kurzeinführung, fachlicher und technischer Übersicht sowie ersten Schweizer Praxiserfahrungen und wesentlichen Bausteinen der OpenBankingProject.ch Initiative.",
+    "eventType": "Abend-BAT",
+    "moderator": "Nissim Buchs"
+  },
+  {
     "bat": 47,
     "topic": " Shift Left Everything",
     "datum": "17. Juni 2022, 09:00h - 16:45h",
-    "eventType": "Ganztages-BAT"
-    },
-    {
+    "parsedDate": "2022-06-17T09:00:00+02:00",
+    "description": "Shift Left Everything widmete sich umfassend der Verlagerung von Testing, Security und Quality Assurance an den Anfang des Entwicklungsprozesses. Vorträge zeigten, dass Shift Left bis zum Kunden reicht durch Lean Startup und Design Thinking Ansätze mit Experimentieren im realen Markt. Eine augenzwinkernde 'Anleitung zum erfolgreichen Scheitern' beleuchtete typische Fallstricke bei DevOps und Shift Left Implementation. Shift Left Security präsentierte systematische Praktiken zur Erhöhung der Sicherheit im Software Development Lifecycle mit einheitlicher deklarativer Bereitstellung. Die Cloud-DevOps-Herausforderungen zwischen Enterprise Compliance und Continuous Delivery wurden diskutiert. Nuvibit zeigte DevSecOps-Lösungen für Multi-Account Cloud-Architekturen mit AWS nativen Security Services. Bank Julius Bär demonstrierte ihre DevCloud-Journey mit 'Scotty' zur Sicherstellung der Release-Qualität. Das Covid Zertifikat Team präsentierte zeitnahe Reaktion auf Verordnungsänderungen mittels Feature Toggles. VSHN teilte die Entstehungsgeschichte ihres APPUiO Cloud Produkts durch konsequente Anwendung von DevOps und Agile Prinzipien.",
+    "eventType": "Ganztages-BAT",
+    "moderator": "Daniel Kühni"
+  },
+  {
     "bat": 48,
     "topic": " Zero-Trust",
     "datum": "11. November 2022, 16:00h - 18:30h",
-    "eventType": "Abend-BAT"
-    },
-    {
+    "parsedDate": "2022-11-11T16:00:00+01:00",
+    "description": "Zero-Trust fokussierte auf das Sicherheitskonzept, das keinem Gerät, Nutzer oder Dienst innerhalb oder ausserhalb des eigenen Netzwerks standardmässig vertraut. Das ISC-EJPD präsentierte ihre Zero Trust Architektur, die bereits seit 2003 mit der Einführung des SSO-Portals aktiv umgesetzt wird und zeigt, wie das Prinzip 'never trust, always verify' in der Praxis funktioniert. Ein Vortrag beleuchtete, wie das Zero Trust Framework Organisationen hilft, ihre Cybersecurity-Posture und Resilienz zu verbessern, sowie die damit verbundenen organisatorischen Herausforderungen. Die durchgängige Umsetzung des Zero Trust Konzepts in einer Umgebung mit vielen verschiedenen Akteuren wurde demonstriert, wobei OAuth-Token und die Token-Exchange Funktionalität eine zentrale Rolle für die kontinuierliche Verifizierung jeder Abfrage im System spielen.",
+    "eventType": "Abend-BAT",
+    "moderator": "Baltisar Oswald"
+  },
+  {
     "bat": 49,
     "topic": " AI / MLOps in Produktion",
     "datum": "24. Februar 2023, 16:00h - 19:00h",
-    "eventType": "Abend-BAT"
-    },
-    {
+    "parsedDate": "2023-02-24T16:00:00+01:00",
+    "description": "AI und MLOps in Produktion präsentierte praxisnahe Beispiele für den nachhaltigen Betrieb von Machine Learning Modellen in Schweizer Unternehmen. Die Mobiliar demonstrierte ihr NLP-Modell zur Klassifizierung von Versicherungsschäden, wobei MLOps-Prozesse und -Infrastruktur die Grundlage für effiziente Entwicklung im interdisziplinären Team und Einbindung in B2E- und B2C-Geschäftsprozesse bilden, inklusive Monitoring-Herausforderungen. Dartfish teilte ihre Erfahrungen mit AI- und Machine Learning-basierter Datengenerierung im Sport durch optisches Tracking und Sensoren zur Unterstützung besserer Entscheidungen von Coaches. Raiffeisen präsentierte ihre Scoring Factory, ein MLOps-Framework, das ML-Modelle in 7 Tagen von der Ideenfindung bis zur stabilen Produktion bringt, basierend auf einem 3-jährigen Aufbau einer Customer Analytics Platform mit Feature Data Layer und Scoring Template. Swisscom zeigte ihre MLOps Journey mit verschiedenen AI/ML-Projekten von Conversational AI über Recommender Systems bis Anomaly Detection, inklusive Automatisierung, Skalierung und Operationalisierung der ML-Pipelines sowie ihrer Cloud-Roadmap mit AWS.",
+    "eventType": "Abend-BAT",
+    "moderator": "Andreas Grütter"
+  },
+  {
     "bat": 50,
     "topic": " Jubiläums-BAT 50",
     "datum": "9. Juni 2023, 14:30h - 19:00h",
-    "eventType": "Nachmittags-BAT"
-    },
-    {
+    "parsedDate": "2023-06-09T14:30:00+02:00",
+    "description": "Jubiläums-BAT 50 feierte das 50-jährige Bestehen mit Rückblick und Ausblick auf die Zukunft der digitalen Innovation. Eine Hommage würdigte die Geschichte des BAT aus Sicht eines treuen Partners. Der Keynote-Vortrag 'Navigating the next phase of digital innovation' thematisierte den Umgang mit Unsicherheit und hoher Veränderungsdynamik, künftige Rahmenbedingungen von Wirtschaft und Gesellschaft sowie Innovationsfelder für Technologie- und Informationsarchitektur zur Vertrauensbildung in der nächsten Phase der digitalen Transformation. IBM präsentierte Quantum Computing als Aufbruch in ein neues IT-Zeitalter, mit quantenmechanischen Eigenschaften der Natur zur Lösung komplexester Probleme wie Klimawandel und Krankheitsbekämpfung, inklusive Hardware, Software und globalem Ökosystem. Die Bedrohung aktueller Kryptographie durch Quantencomputer wurde diskutiert, mit quantensicheren Algorithmen nach NIST-Standardisierung und Minderungsmaßnahmen. Ein Rückblick auf 50 Jahre Software Engineering zeigte, wie Fortschritte durch Automatisierung und Commoditization Feedback-Loops verkürzten und neue Möglichkeiten wie DevOps-basiertes Echtzeit-Experimentieren schufen. Eine Podiumsdiskussion behandelte aktuelle Fragen und Herausforderungen.",
+    "eventType": "Nachmittags-BAT",
+    "moderator": "Daniel Kühni"
+  },
+  {
     "bat": 51,
     "topic": " Serverless?!",
     "datum": "10. November 2023, 15:00h - 19:00h",
-    "eventType": "Abend-BAT"
-    },
-    {
+    "parsedDate": "2023-11-10T15:00:00+01:00",
+    "description": "Serverless?! untersuchte Serverless-Architekturen und deren praktische Anwendungen über die reine Compute-Abstraktion hinaus. Die Keynote beleuchtete, wie Serverless als inhärent verteilte, ereignisgesteuerte Anwendungen die Application Delivery beeinflusst, mit Event-driven Architectures und Infrastructure from Code als aktuelle Trends. Lifestage teilte ihre mehrjährige Erfahrung mit Serverless, inklusive Vorteile und Herausforderungen. Raiffeisen Schweiz demonstrierte ihr Translation Portal mit ausschliesslich cloud-nativen Diensten, vollautomatisierten Pipelines für Integration, Testing und Deployment, sowie die Bedeutung von Serverless aus DevOps-Perspektive. Die Anwendung von Serverless in IoT wurde als lebendige Domäne präsentiert, wo Event-Driven Architecture mit PaaS und Serverless-Diensten der Public Cloud Provider zur asynchronen IoT-Natur passt, mit Azure-basierten Beispielen. Ein Real Estate Marketplace präsentierte die Migration vom On-Premises-Monolithen zu vollständig serverless, event-driven Microservices auf AWS, mit Business-Treibern, Herausforderungen, Sicherheitsvorteilen durch AWS Shared Responsibility Model und Pay-as-you-go Wirtschaftlichkeit.",
+    "eventType": "Abend-BAT",
+    "moderator": "Andreas Grütter"
+  },
+  {
     "bat": 52,
     "topic": " Data Mesh - Modernes Datenmanagement",
     "datum": "8. März 2024, 16:00h - 19:00h",
-    "eventType": "Abend-BAT"
-    },
-    {
+    "parsedDate": "2024-03-08T16:00:00+01:00",
+    "description": "Data Mesh - Modernes Datenmanagement präsentierte den soziotechnischen Ansatz für dezentralisierte Datenarchitekturen. Ein Überblicksvortrag stellte Zhamak Deghhanis ursprüngliche Data Mesh Theorie von 2019 vor, reflektierte den aktuellen Praxisstand von 2023 und präsentierte die Top 5 überraschenden Entwicklungen für die Zukunft. Die Mobiliar demonstrierte skalierte Datenwertschöpfung als strategische Unternehmensfähigkeit zur Erreichung ihres Ziels 'unter jedem Dach daheim' mit optimalem Kundenerlebnis, wobei Datenprodukte die Digitalisierung aktiv vorantreiben. Die Adaption von Data Products und Data Mesh in bestehende Analytics-Landschaften wurde diskutiert, mit Konzepten aus dem Software Engineering nach Martin Fowler, wobei Data Products als klar abgegrenzte Einheiten mit Mehrwert in Mesh-Architektur verknüpft werden, um den Ad-Hoc-Charakter vieler Analytics-Lösungen zu überwinden, inklusive technischer und organisatorischer Hürden. Swisscom teilte ihre Data Mesh Journey zur datengetriebenen Transformation, mit Business-first-Ansatz für schnelle Umwandlung von Daten in Informationen und Insights, Co-Creation zwischen Data Producers und Consumers sowie Balance zwischen zentraler Governance und dezentraler Accountability.",
+    "eventType": "Abend-BAT",
+    "moderator": "Nissim Buchs"
+  },
+  {
     "bat": 53,
     "topic": " Daten, Persistenz, und alles drumherum",
     "datum": "21. Juni 2024, 09:00h - 16:45h",
-    "eventType": "Ganztages-BAT"
-    },
-    {
+    "parsedDate": "2024-06-21T09:00:00+02:00",
+    "description": "Daten, Persistenz, und alles drumherum widmete sich umfassend modernen Datenhaltungstechnologien und -architekturen. EPFL Blue Brain Project präsentierte Blue Brain Brayns und BioExplorer zur compute-centric Visualisierung biologischer Systeme mit AI-gestützter Bildverarbeitung. Forschung zu Dirigent zeigte ein FaaS-optimiertes Cluster State Management mit höherem Scheduling-Durchsatz als Kubernetes. AWS demonstrierte purpose-built Databases für verschiedene Workloads (In-Memory, Key-Value, Document, Time-Series, Graph, Ledger) in modernen Anwendungsarchitekturen. SQL-Embedded Machine Learning wurde als Paradigma 'Bring die Algorithmen zu den Daten' mit Explainable AI vorgestellt. IBM Research diskutierte die Zukunft von Magnetic Tape mit 317 Gb/in² Areal Density und dem INSIC Tape Technology Roadmap. Open Table Formats (Iceberg, Delta Lake, Hudi) für Cloud Analytics Plattformen wurden mit Metadaten Management, Transaktionen und CDC präsentiert. Die Post zeigte Data Persistence in event-driven Paketsortiersystemen. Clean Architecture für einfache Cloud-Migration mit Code Bricks Architecture wurde demonstriert. Die SBB präsentierte MongoDB Atlas als Document Store im Enterprise-Umfeld für verschiedene Anwendungsfälle.",
+    "eventType": "Ganztages-BAT",
+    "moderator": "Baltisar Oswald"
+  },
+  {
     "bat": 54,
     "topic": " Platform Engineering",
     "datum": "8. November 2024, 16:00h - 18:30h",
-    "eventType": "Abend-BAT"
-    },
-	{
+    "parsedDate": "2024-11-08T16:00:00+01:00",
+    "description": "Platform Engineering präsentierte praktische Ansätze zur Entwicklung interner Developer Plattformen und deren Bedeutung für organisatorische Skalierung. Ein Vortrag zeigte, wie Plattform-Engineering erfolgreich auf die Entwicklung digitaler Versicherungsprodukte im Retail-Geschäft angewendet werden kann, wobei Muster aus der Software-Entwicklung organisatorische Skalierung und Parallelisierung ermöglichen, um schneller auf Marktveränderungen zu reagieren. Die Joint Application Plattform (JAP) wurde als erfolgreiche Umsetzung einer Internal Developer Plattform demonstriert, die verschiedenste Programmiersprachen und Produkte verwendet, um übergreifende Interoperabilität zu ermöglichen. Ein Vortrag zu 'Build & Run on the same platform' zeigte, wie Platform Engineering Teams DevOps-Prinzipien aktiv fördern und Development Teams in Build- und Run-Phasen unterstützen, wobei Cloud Provider Services für schnelles Bootstrapping, direkte Kostenallokation, robuste Infrastruktur und Automatisierung genutzt werden, mit einem Self-Service Portal für operationale Readiness in unter einem Tag.",
+    "eventType": "Abend-BAT",
+    "moderator": "Daniel Kühni"
+  },
+  {
     "bat": 55,
     "topic": " Architektur in agilen Organisationen",
     "datum": "7. März 2025, 16:00h - 18:30h",
-    "eventType": "Abend-BAT"
-    },
-	{
+    "parsedDate": "2025-03-07T16:00:00+01:00",
+    "description": "Architektur in agilen Organisationen untersucht die zentrale Rolle der Architektur bei agiler Transformation und strategischer Ausrichtung. Swisscom präsentiert die Transformation der Telko-Industrie von Telco zu Techco durch Digitalisierung, wobei Agile Architecture entscheidend ist, um Komplexität zu reduzieren, Time-to-Market zu beschleunigen und Innovation zu fördern, mit Beispielen aus der Network Division zur Navigation dieser Transformation. TWINT erläutert, wie ein Fintech Agilität und Innovation in einem langsam innovierenden Schweizer Banking-Ökosystem mit grossen, global aktiven Playern erreicht, die sich nicht so schnell anpassen können wie das Fintech muss, um seine Marktposition zu sichern. PostFinance zeigt, wie Architektur-Management-Prozesse gestaltet werden müssen, um flexibel auf Veränderungen zu reagieren bei gleichzeitiger Beibehaltung strategischer Leitplanken, mit Aufbau und Entwicklung agiler Architektur, deren Nutzen und Herausforderungen, einem Praxisbeispiel und Lessons Learned für zukunftsfähige Architekturstrategien.",
+    "eventType": "Abend-BAT",
+    "moderator": "Nissim Buchs"
+  },
+  {
     "bat": 56,
     "topic": " GenAI - Generative künstliche Intelligenz",
     "datum": "27. Juni 2025, 09:00h - 16:45h",
-    "eventType": "Ganztages-BAT"
+    "parsedDate": "2025-06-27T09:00:00+02:00",
+    "description": "GenAI - Generative künstliche Intelligenz widmet sich umfassend der produktiven Implementierung von GenAI-Lösungen. Ein Keynote zur Architektur der intelligenten Zukunft präsentiert den Wandel vom GenAI-Experiment zu skalierba rem Business-Wert, mit multimodaler KI-Architektur und dem IT-Architekten als 'Komponist eines intelligenten Orchesters' zur Definition kooperativer Agenten. Retrieval-Augmented Generation (RAG) wird am Beispiel von Versicherungsbedingungen in Produktion gezeigt, mit XML-Daten, KI-gestützten Q&A-Systemen und Lessons Learned. Das BAFU demonstriert seinen digitalen Assistenten mit RAG-Technologie und Agenten zur Verknüpfung interner und externer Datenquellen auf AWS/Amazon Bedrock für komplexe Anfragen, Bildanalyse und Dokumentenauswertung unter Berücksichtigung von Datenschutz und IT-Sicherheit. Der rechtskonforme Einsatz von GenAI nach Schweizer und EU-Recht wird analysiert. Das ISC-EJPD präsentiert seine KI-Initiative 'KI in der Praxis erleben' mit pragmatischer, sicherer Implementierung im sicherheitsrelevanten öffentlichen Sektor. SBB TrainVision teilt einen ehrlichen Erfahrungsbericht vom CAS-Prototyp zur produktiven Computer Vision Lösung mit Herausforderungen bei Training, False Positives und Business-Logik-Integration. Swisscom zeigt Erkenntnisse aus dem 9-monatigen Aufbau der Swiss AI Platform mit Nvidia als souveräne, skalierbare, sichere und mehrmandantenfähige Infrastruktur für die Schweiz.",
+    "eventType": "Ganztages-BAT",
+    "moderator": "Andreas Grütter"
   },
-	{
+  {
     "bat": 57,
     "topic": " Zero Trust Journey",
     "datum": "7. November 2025, 16:00h - 18:30h",
-    "eventType": "Abend-BAT"
+    "parsedDate": "2025-11-07T16:00:00+01:00",
+    "description": "Zero Trust Journey präsentiert die praktische Umsetzung von Zero Trust-Konzepten in führenden Schweizer Organisationen. Die Schweizerische Post beleuchtet die Schritte zur Realisierung von Zero Trust mit praktischen Beispielen, wie theoretische Konzepte umgesetzt werden, wobei der traditionelle Perimeter-Ansatz durch Fokus auf gemeinsame Bedrohungsvektoren und multidimensionale Profile der zugreifenden Entitäten ersetzt wird, bedingt durch Digitalisierung, Cloud-Transformation und Remote-Arbeit. Die SBB demonstriert ihre Secure Access Architecture als Weg zur Zero Trust Architecture angesichts stetig steigender Sicherheitsrisiken, mit Herausforderungen, Zielbild und aktuellem Stand. Die Mobiliar zeigt ihren Weg zu Zero Trust mit intelligenter, vernetzter, datenzentrierter und automatisierbarer Security als Antwort auf unklare Perimeter-Definitionen und vielfältige Remote-Nutzergruppen-Bedürfnisse, inklusive Planung, Fortschrittsmessung und konkreter Schritte. PostFinance präsentiert ihr 3-jähriges Zero Trust Konzept mit 5-Jahres-Zielbild, wobei Security Service Edge und Mikrosegmentierung in Evaluation und Implementation sind, mit Fokus auf Sicherheits-Aspekte, Prinzipien, Zielbild, Lösungskonzept sowie technischen und organisatorischen Erkenntnissen.",
+    "eventType": "Abend-BAT",
+    "moderator": "Baltisar Oswald"
   },
   {
     "bat": 58,
     "topic": " AI in der Software Entwicklung",
     "datum": "6. März 2026, 16:00h - 18:30h",
+    "parsedDate": "2026-03-06T16:00:00+01:00",
     "eventType": "Abend-BAT",
     "planned": 1,
-    "next": 1
+    "next": 1,
+    "moderator": "Nissim Buchs"
   },
   {
     "bat": 59,
@@ -355,13 +528,15 @@
     "datum": "19. Juni 2026, 09:00h - 16:45h",
     "eventType": "Ganztages-BAT",
     "planned": 1,
-    "next": 1
+    "next": 1,
+    "moderator": "Nissim Buchs"
   },
   {
     "bat": 60,
     "topic": " Thema noch offen",
     "datum": "6. November 2026, 16:00h - 18:30h",
     "eventType": "Abend-BAT",
-    "planned": 1
+    "planned": 1,
+    "moderator": "Nissim Buchs"
   }
 ]

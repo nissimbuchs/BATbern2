@@ -225,6 +225,43 @@
       }
     }
   },
+  "event": {
+    "batchImport": {
+      "button": "Import Historical Events",
+      "title": "Import Events from topics.json",
+      "dropzone": "Drop topics.json file here or click to upload",
+      "dropzoneActive": "Drop the JSON file here",
+      "dropzoneHint": "Upload the pre-processed topics.json file (with parsedDate, description, and moderator fields)",
+      "invalidJson": "Invalid JSON file. Please check the format.",
+      "noEvents": "No events found in the JSON file.",
+      "preview": "Preview ({{count}} events)",
+      "importButton": "Import All",
+      "cancelButton": "Cancel",
+      "status": {
+        "pending": "Pending",
+        "importing": "Importing...",
+        "success": "Imported",
+        "error": "Error",
+        "skipped": "Skipped (exists)"
+      },
+      "progress": "Importing {{current}} of {{total}}...",
+      "complete": "Import complete: {{success}} succeeded, {{failed}} failed, {{skipped}} skipped",
+      "allSkipped": "All Skipped",
+      "importButtonWithCount": "Import {{count}} Events",
+      "columns": {
+        "eventNumber": "#",
+        "title": "Title",
+        "date": "Date",
+        "organizer": "Organizer",
+        "status": "Status"
+      },
+      "errors": {
+        "invalidFile": "Invalid file type. Please upload a JSON file.",
+        "parseError": "Failed to parse JSON file: {{error}}",
+        "importFailed": "Failed to import event {{number}}: {{error}}"
+      }
+    }
+  },
   "fileUpload": {
     "dragDrop": "Drag and drop a file here, or click to select",
     "dragActive": "Drop the file here",

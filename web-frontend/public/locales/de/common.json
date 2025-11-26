@@ -225,6 +225,43 @@
       }
     }
   },
+  "event": {
+    "batchImport": {
+      "button": "Historische Events importieren",
+      "title": "Events aus topics.json importieren",
+      "dropzone": "topics.json-Datei hier ablegen oder klicken zum Hochladen",
+      "dropzoneActive": "JSON-Datei hier ablegen",
+      "dropzoneHint": "Die vorverarbeitete topics.json-Datei hochladen (mit parsedDate, description und moderator Feldern)",
+      "invalidJson": "Ungültige JSON-Datei. Bitte überprüfen Sie das Format.",
+      "noEvents": "Keine Events in der JSON-Datei gefunden.",
+      "preview": "Vorschau ({{count}} Events)",
+      "importButton": "Alle importieren",
+      "cancelButton": "Abbrechen",
+      "status": {
+        "pending": "Ausstehend",
+        "importing": "Wird importiert...",
+        "success": "Importiert",
+        "error": "Fehler",
+        "skipped": "Übersprungen (existiert)"
+      },
+      "progress": "Importiere {{current}} von {{total}}...",
+      "complete": "Import abgeschlossen: {{success}} erfolgreich, {{failed}} fehlgeschlagen, {{skipped}} übersprungen",
+      "allSkipped": "Alle übersprungen",
+      "importButtonWithCount": "{{count}} Events importieren",
+      "columns": {
+        "eventNumber": "Nr.",
+        "title": "Titel",
+        "date": "Datum",
+        "organizer": "Organisator",
+        "status": "Status"
+      },
+      "errors": {
+        "invalidFile": "Ungültiger Dateityp. Bitte laden Sie eine JSON-Datei hoch.",
+        "parseError": "JSON-Datei konnte nicht gelesen werden: {{error}}",
+        "importFailed": "Import von Event {{number}} fehlgeschlagen: {{error}}"
+      }
+    }
+  },
   "fileUpload": {
     "dragDrop": "Datei hier ablegen oder klicken, um auszuwählen",
     "dragActive": "Datei hier ablegen",

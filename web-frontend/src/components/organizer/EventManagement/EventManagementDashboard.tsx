@@ -15,7 +15,7 @@
 import React, { useState } from 'react';
 import { Paper, Typography, Button, Stack, Box, CircularProgress, Alert } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { Add as AddIcon } from '@mui/icons-material';
+import { Add as AddIcon, UploadFile as UploadFileIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useEvents, useCriticalTasks, useTeamActivity } from '@/hooks/useEvents';
@@ -26,6 +26,7 @@ import { EventSearch } from './EventSearch';
 import { CriticalTasksList } from './CriticalTasksList';
 import { TeamActivityFeed } from './TeamActivityFeed';
 import { EventForm } from './EventForm';
+import { EventBatchImportModal } from '@/components/shared/Event/EventBatchImportModal';
 import type { EventFilters } from '@/types/event.types';
 
 export const EventManagementDashboard: React.FC = () => {
@@ -44,6 +45,7 @@ export const EventManagementDashboard: React.FC = () => {
   } = useEventStore();
 
   const [pagination] = useState({ page: 1, limit: 20 });
+  const [isBatchImportOpen, setIsBatchImportOpen] = useState(false);
 
   // Fetch data with React Query hooks
   const {
@@ -111,14 +113,24 @@ export const EventManagementDashboard: React.FC = () => {
         </Typography>
 
         {/* Quick Actions */}
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleNewEvent}
-          aria-label="Create new event"
-        >
-          {t('dashboard.actions.newEvent')}
-        </Button>
+        <Stack direction="row" spacing={2}>
+          <Button
+            variant="outlined"
+            startIcon={<UploadFileIcon />}
+            onClick={() => setIsBatchImportOpen(true)}
+            aria-label="Import historical events"
+          >
+            {t('common:event.batchImport.button')}
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleNewEvent}
+            aria-label="Create new event"
+          >
+            {t('dashboard.actions.newEvent')}
+          </Button>
+        </Stack>
       </Stack>
 
       {/* Search and Filters */}
@@ -198,6 +210,16 @@ export const EventManagementDashboard: React.FC = () => {
           }}
         />
       )}
+
+      {/* Batch Import Modal */}
+      <EventBatchImportModal
+        open={isBatchImportOpen}
+        onClose={() => setIsBatchImportOpen(false)}
+        onImportComplete={(result) => {
+          console.log('Import complete:', result);
+          // The useEvents hook will automatically refetch due to query invalidation
+        }}
+      />
     </Box>
   );
 };
