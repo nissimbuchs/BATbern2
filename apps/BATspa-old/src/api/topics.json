@@ -511,32 +511,5 @@
     "description": "Zero Trust Journey präsentiert die praktische Umsetzung von Zero Trust-Konzepten in führenden Schweizer Organisationen. Die Schweizerische Post beleuchtet die Schritte zur Realisierung von Zero Trust mit praktischen Beispielen, wie theoretische Konzepte umgesetzt werden, wobei der traditionelle Perimeter-Ansatz durch Fokus auf gemeinsame Bedrohungsvektoren und multidimensionale Profile der zugreifenden Entitäten ersetzt wird, bedingt durch Digitalisierung, Cloud-Transformation und Remote-Arbeit. Die SBB demonstriert ihre Secure Access Architecture als Weg zur Zero Trust Architecture angesichts stetig steigender Sicherheitsrisiken, mit Herausforderungen, Zielbild und aktuellem Stand. Die Mobiliar zeigt ihren Weg zu Zero Trust mit intelligenter, vernetzter, datenzentrierter und automatisierbarer Security als Antwort auf unklare Perimeter-Definitionen und vielfältige Remote-Nutzergruppen-Bedürfnisse, inklusive Planung, Fortschrittsmessung und konkreter Schritte. PostFinance präsentiert ihr 3-jähriges Zero Trust Konzept mit 5-Jahres-Zielbild, wobei Security Service Edge und Mikrosegmentierung in Evaluation und Implementation sind, mit Fokus auf Sicherheits-Aspekte, Prinzipien, Zielbild, Lösungskonzept sowie technischen und organisatorischen Erkenntnissen.",
     "eventType": "Abend-BAT",
     "moderator": "Baltisar Oswald"
-  },
-  {
-    "bat": 58,
-    "topic": " AI in der Software Entwicklung",
-    "datum": "6. März 2026, 16:00h - 18:30h",
-    "parsedDate": "2026-03-06T16:00:00+01:00",
-    "eventType": "Abend-BAT",
-    "planned": 1,
-    "next": 1,
-    "moderator": "Nissim Buchs"
-  },
-  {
-    "bat": 59,
-    "topic": " Thema noch offen",
-    "datum": "19. Juni 2026, 09:00h - 16:45h",
-    "eventType": "Ganztages-BAT",
-    "planned": 1,
-    "next": 1,
-    "moderator": "Nissim Buchs"
-  },
-  {
-    "bat": 60,
-    "topic": " Thema noch offen",
-    "datum": "6. November 2026, 16:00h - 18:30h",
-    "eventType": "Abend-BAT",
-    "planned": 1,
-    "moderator": "Nissim Buchs"
   }
 ]

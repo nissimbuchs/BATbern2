@@ -21,6 +21,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.HashMap;
+import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -395,5 +396,130 @@ class LogoControllerTest {
                 .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(cleanupService);
+    }
+
+    // ============ POST /fetch-from-url Tests ============
+
+    @Test
+    @WithMockUser
+    @DisplayName("Should handle fetch from URL request")
+    void shouldHandleFetchFromUrl_whenValidUrl() throws Exception {
+        // Arrange
+        Map<String, String> requestBody = Map.of("url", "https://example.com/logo.png");
+
+        // Act & Assert - will fail to fetch external URL in test environment with 500 error
+        mockMvc.perform(post("/api/v1/logos/fetch-from-url")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestBody)))
+                .andExpect(status().is5xxServerError()); // Network error from external URL fetch
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("Should return 400 when URL is missing")
+    void shouldReturn400_whenUrlMissing() throws Exception {
+        // Arrange
+        Map<String, String> requestBody = Map.of();
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/logos/fetch-from-url")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestBody)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("Should return 400 when URL is blank")
+    void shouldReturn400_whenUrlBlank() throws Exception {
+        // Arrange
+        Map<String, String> requestBody = Map.of("url", "");
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/logos/fetch-from-url")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestBody)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Should return 401 when fetching without authentication")
+    void shouldReturn401_whenFetchingWithoutAuth() throws Exception {
+        // Arrange
+        Map<String, String> requestBody = Map.of("url", "https://example.com/logo.png");
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/logos/fetch-from-url")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestBody)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    // ============ POST /upload-from-url Tests ============
+
+    @Test
+    @WithMockUser
+    @DisplayName("Should handle upload from URL request")
+    void shouldHandleUploadFromUrl_whenValidUrl() throws Exception {
+        // Arrange
+        Map<String, String> requestBody = Map.of(
+                "url", "https://example.com/logo.png",
+                "filename", "company-logo.png"
+        );
+
+        // Act & Assert - will fail to fetch external URL in test environment with 500 error
+        mockMvc.perform(post("/api/v1/logos/upload-from-url")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestBody)))
+                .andExpect(status().is5xxServerError()); // Network error from external URL fetch
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("Should return 400 when upload URL is missing")
+    void shouldReturn400_whenUploadUrlMissing() throws Exception {
+        // Arrange
+        Map<String, String> requestBody = Map.of("filename", "logo.png");
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/logos/upload-from-url")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestBody)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("Should return 400 when upload URL is blank")
+    void shouldReturn400_whenUploadUrlBlank() throws Exception {
+        // Arrange
+        Map<String, String> requestBody = Map.of("url", "");
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/logos/upload-from-url")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestBody)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Should return 401 when uploading from URL without authentication")
+    void shouldReturn401_whenUploadingFromUrlWithoutAuth() throws Exception {
+        // Arrange
+        Map<String, String> requestBody = Map.of("url", "https://example.com/logo.png");
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/logos/upload-from-url")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestBody)))
+                .andExpect(status().isUnauthorized());
     }
 }

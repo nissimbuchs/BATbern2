@@ -281,23 +281,23 @@ public class LogoController {
     @PostMapping("/fetch-from-url")
     @Operation(
             summary = "Fetch image from external URL",
-            description = "Fetches an image from an external URL and returns it as a blob. " +
-                    "This endpoint acts as a proxy to bypass CORS restrictions when importing company logos. " +
-                    "Supports images up to 10MB. Validates that the content is actually an image."
+            description = "Fetches an image from an external URL and returns it as a blob. "
+                    + "This endpoint acts as a proxy to bypass CORS restrictions when importing company logos. "
+                    + "Supports images up to 10MB. Validates that the content is actually an image."
     )
     @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Image fetched successfully",
-                    content = @Content(mediaType = "image/*")
+        @ApiResponse(
+                responseCode = "200",
+                description = "Image fetched successfully",
+                content = @Content(mediaType = "image/*")
             ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Invalid URL or not an image"
+        @ApiResponse(
+                responseCode = "400",
+                description = "Invalid URL or not an image"
             ),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Failed to fetch image from URL"
+        @ApiResponse(
+                responseCode = "500",
+                description = "Failed to fetch image from URL"
             )
     })
     public ResponseEntity<byte[]> fetchImageFromUrl(@RequestBody Map<String, String> requestBody) {
@@ -374,27 +374,27 @@ public class LogoController {
     @PostMapping("/upload-from-url")
     @Operation(
             summary = "Fetch and upload image from URL",
-            description = "Fetches an image from a URL and uploads it directly to S3, " +
-                    "returning the upload ID. This completely bypasses the frontend to " +
-                    "avoid binary data corruption issues."
+            description = "Fetches an image from a URL and uploads it directly to S3, "
+                    + "returning the upload ID. This completely bypasses the frontend to "
+                    + "avoid binary data corruption issues."
     )
     @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Image uploaded successfully",
-                    content = @Content(schema = @Schema(implementation = String.class))
+        @ApiResponse(
+                responseCode = "200",
+                description = "Image uploaded successfully",
+                content = @Content(schema = @Schema(implementation = String.class))
             ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Invalid URL or not an image"
+        @ApiResponse(
+                responseCode = "400",
+                description = "Invalid URL or not an image"
             ),
-            @ApiResponse(
-                    responseCode = "413",
-                    description = "Image too large (max 10MB)"
+        @ApiResponse(
+                responseCode = "413",
+                description = "Image too large (max 10MB)"
             ),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Failed to fetch or upload image"
+        @ApiResponse(
+                responseCode = "500",
+                description = "Failed to fetch or upload image"
             )
     })
     public ResponseEntity<Map<String, String>> uploadImageFromUrl(

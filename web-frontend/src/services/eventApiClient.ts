@@ -110,7 +110,7 @@ class EventApiClient {
   async createEvent(data: CreateEventRequest): Promise<Event> {
     try {
       // Client-side validation
-      this.validateEventDate(data.date);
+      this.validateEventDate(data.date, data.status);
       this.validateRegistrationDeadline(data.date, data.registrationDeadline);
       this.validateVenueCapacity(data.venueCapacity);
 
@@ -129,7 +129,7 @@ class EventApiClient {
     try {
       // Client-side validation if dates are being updated
       if (data.date) {
-        this.validateEventDate(data.date);
+        this.validateEventDate(data.date, data.status);
       }
       if (data.date && data.registrationDeadline) {
         this.validateRegistrationDeadline(data.date, data.registrationDeadline);
@@ -150,7 +150,7 @@ class EventApiClient {
     try {
       // Validate dates if they're being updated
       if (data.date) {
-        this.validateEventDate(data.date);
+        this.validateEventDate(data.date, data.status);
       }
 
       const response = await apiClient.patch<Event>(`${EVENT_API_PATH}/${eventCode}`, data);
@@ -331,8 +331,14 @@ class EventApiClient {
 
   /**
    * Client-side validation: Event date must be in the future
+   * Skip validation for archived events (historical imports)
    */
-  private validateEventDate(eventDate: string): void {
+  private validateEventDate(eventDate: string, status?: string): void {
+    // Skip validation for archived events (historical imports)
+    if (status === 'archived') {
+      return;
+    }
+
     const eventDateTime = new Date(eventDate);
     const now = new Date();
 
