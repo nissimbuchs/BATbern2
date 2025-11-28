@@ -213,22 +213,68 @@ export const updateUserProfile = async (updates: Partial<User>): Promise<User> =
 
 /**
  * Update user preferences (theme, timezone, notifications)
+ * Converts frontend enums (uppercase) to backend format (lowercase)
  */
 export const updateUserPreferences = async (
   preferences: Partial<UserPreferences>
 ): Promise<UserPreferences> => {
-  const response = await apiClient.put(`${USER_API_PATH}/me/preferences`, preferences);
-  return response.data;
+  // Transform frontend preferences to backend format (lowercase enums)
+  const backendPreferences = {
+    theme: preferences.theme?.toLowerCase(),
+    language: preferences.timezone ? 'de' : undefined, // TODO: Get from i18n
+    timezone: preferences.timezone,
+    emailNotifications: preferences.notificationChannels?.email,
+    inAppNotifications: preferences.notificationChannels?.inApp,
+    pushNotifications: preferences.notificationChannels?.push,
+    notificationFrequency: preferences.notificationFrequency?.toLowerCase().replace('_', '_'),
+    quietHoursStart: undefined, // TODO: Add to frontend type
+    quietHoursEnd: undefined, // TODO: Add to frontend type
+  };
+
+  const response = await apiClient.put(`${USER_API_PATH}/me/preferences`, backendPreferences);
+
+  // Transform backend response back to frontend format (uppercase enums)
+  return {
+    theme: mapTheme(response.data.theme),
+    timezone: response.data.timezone || 'Europe/Zurich',
+    notificationChannels: {
+      email: response.data.emailNotifications ?? true,
+      inApp: response.data.inAppNotifications ?? true,
+      push: response.data.pushNotifications ?? false,
+    },
+    notificationFrequency: mapNotificationFrequency(response.data.notificationFrequency),
+  };
 };
 
 /**
  * Update user settings (privacy, visibility)
+ * Converts frontend enums (uppercase) to backend format (lowercase)
  */
 export const updateUserSettings = async (
   settings: Partial<UserSettings>
 ): Promise<UserSettings> => {
-  const response = await apiClient.put(`${USER_API_PATH}/me/settings`, settings);
-  return response.data;
+  // Transform frontend settings to backend format (lowercase enums, snake_case)
+  const backendSettings = {
+    profileVisibility: settings.profileVisibility?.toLowerCase().replace('_', '_'),
+    showEmail: settings.showEmail,
+    showCompany: settings.showCompany,
+    showActivityHistory: settings.showActivity,
+    allowMessaging: settings.allowMessaging,
+    allowCalendarSync: undefined, // TODO: Add to frontend type
+    timezone: 'Europe/Zurich', // TODO: Get from preferences
+    twoFactorEnabled: false, // TODO: Add to frontend type
+  };
+
+  const response = await apiClient.put(`${USER_API_PATH}/me/settings`, backendSettings);
+
+  // Transform backend response back to frontend format (uppercase enums)
+  return {
+    profileVisibility: mapProfileVisibility(response.data.profileVisibility),
+    showEmail: response.data.showEmail ?? false,
+    showCompany: response.data.showCompany ?? true,
+    showActivity: response.data.showActivityHistory ?? true,
+    allowMessaging: response.data.allowMessaging ?? true,
+  };
 };
 
 /**
