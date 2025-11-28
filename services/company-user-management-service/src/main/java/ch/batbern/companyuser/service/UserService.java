@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalTime;
 import java.util.Set;
 
 /**
@@ -555,6 +556,134 @@ public class UserService {
     }
 
     /**
+     * Get preferences for current authenticated user
+     * Story 2.6 AC21, AC24, AC28: Retrieve user preferences
+     *
+     * @return User preferences DTO
+     */
+    public ch.batbern.companyuser.dto.generated.UserPreferences getCurrentUserPreferences() {
+        String username = securityContext.getCurrentUsername();
+        log.debug("Getting preferences for user: {}", username);
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException(username));
+
+        if (user.getPreferences() == null) {
+            // Initialize with defaults if not set
+            user.setPreferences(ch.batbern.companyuser.domain.UserPreferences.builder().build());
+            userRepository.save(user);
+        }
+
+        return mapPreferencesToDTO(user.getPreferences());
+    }
+
+    /**
+     * Update preferences for current authenticated user
+     * Story 2.6 AC21: Persist theme changes
+     * Story 2.6 AC24: Persist timezone changes
+     * Story 2.6 AC28: Persist notification preferences
+     *
+     * @param preferencesDTO Updated preferences
+     * @return Updated preferences DTO
+     */
+    @Transactional
+    public ch.batbern.companyuser.dto.generated.UserPreferences updateCurrentUserPreferences(
+            ch.batbern.companyuser.dto.generated.UserPreferences preferencesDTO) {
+        String username = securityContext.getCurrentUsername();
+        log.info("Updating preferences for user: {}", username);
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException(username));
+
+        // Update domain preferences from DTO
+        if (user.getPreferences() == null) {
+            user.setPreferences(new ch.batbern.companyuser.domain.UserPreferences());
+        }
+
+        ch.batbern.companyuser.domain.UserPreferences prefs = user.getPreferences();
+        prefs.setTheme(preferencesDTO.getTheme().getValue());
+        prefs.setLanguage(preferencesDTO.getLanguage().getValue());
+        prefs.setEmailNotifications(preferencesDTO.getEmailNotifications());
+        prefs.setInAppNotifications(preferencesDTO.getInAppNotifications());
+        prefs.setPushNotifications(preferencesDTO.getPushNotifications());
+        prefs.setNotificationFrequency(preferencesDTO.getNotificationFrequency().getValue());
+
+        // Convert String to LocalTime for quiet hours
+        if (preferencesDTO.getQuietHoursStart() != null) {
+            prefs.setQuietHoursStart(LocalTime.parse(preferencesDTO.getQuietHoursStart()));
+        }
+        if (preferencesDTO.getQuietHoursEnd() != null) {
+            prefs.setQuietHoursEnd(LocalTime.parse(preferencesDTO.getQuietHoursEnd()));
+        }
+
+        userRepository.save(user);
+
+        log.info("Successfully updated preferences for user: {}", username);
+
+        return mapPreferencesToDTO(user.getPreferences());
+    }
+
+    /**
+     * Get settings for current authenticated user
+     * Story 2.6 AC34: Retrieve user settings
+     *
+     * @return User settings DTO
+     */
+    public ch.batbern.companyuser.dto.generated.UserSettings getCurrentUserSettings() {
+        String username = securityContext.getCurrentUsername();
+        log.debug("Getting settings for user: {}", username);
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException(username));
+
+        if (user.getSettings() == null) {
+            // Initialize with defaults if not set
+            user.setSettings(ch.batbern.companyuser.domain.UserSettings.builder().build());
+            userRepository.save(user);
+        }
+
+        return mapSettingsToDTO(user.getSettings());
+    }
+
+    /**
+     * Update settings for current authenticated user
+     * Story 2.6 AC34: Persist privacy settings
+     *
+     * @param settingsDTO Updated settings
+     * @return Updated settings DTO
+     */
+    @Transactional
+    public ch.batbern.companyuser.dto.generated.UserSettings updateCurrentUserSettings(
+            ch.batbern.companyuser.dto.generated.UserSettings settingsDTO) {
+        String username = securityContext.getCurrentUsername();
+        log.info("Updating settings for user: {}", username);
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException(username));
+
+        // Update domain settings from DTO
+        if (user.getSettings() == null) {
+            user.setSettings(new ch.batbern.companyuser.domain.UserSettings());
+        }
+
+        ch.batbern.companyuser.domain.UserSettings settings = user.getSettings();
+        settings.setProfileVisibility(settingsDTO.getProfileVisibility().getValue());
+        settings.setShowEmail(settingsDTO.getShowEmail());
+        settings.setShowCompany(settingsDTO.getShowCompany());
+        settings.setShowActivityHistory(settingsDTO.getShowActivityHistory());
+        settings.setAllowMessaging(settingsDTO.getAllowMessaging());
+        settings.setAllowCalendarSync(settingsDTO.getAllowCalendarSync());
+        settings.setTimezone(settingsDTO.getTimezone());
+        settings.setTwoFactorEnabled(settingsDTO.getTwoFactorEnabled());
+
+        userRepository.save(user);
+
+        log.info("Successfully updated settings for user: {}", username);
+
+        return mapSettingsToDTO(user.getSettings());
+    }
+
+    /**
      * Map domain UserPreferences to generated DTO
      */
     private ch.batbern.companyuser.dto.generated.UserPreferences mapPreferencesToDTO(
@@ -564,7 +693,16 @@ public class UserService {
                     domain.getTheme().toUpperCase()))
                 .language(ch.batbern.companyuser.dto.generated.UserPreferences.LanguageEnum.valueOf(
                     domain.getLanguage().toUpperCase()))
-                .emailNotifications(domain.isEmailNotifications());
+                .emailNotifications(domain.isEmailNotifications())
+                .inAppNotifications(domain.isInAppNotifications())
+                .pushNotifications(domain.isPushNotifications())
+                .notificationFrequency(ch.batbern.companyuser.dto.generated
+                    .UserPreferences.NotificationFrequencyEnum.valueOf(
+                        domain.getNotificationFrequency().toUpperCase()))
+                .quietHoursStart(domain.getQuietHoursStart() != null
+                    ? domain.getQuietHoursStart().toString() : null)
+                .quietHoursEnd(domain.getQuietHoursEnd() != null
+                    ? domain.getQuietHoursEnd().toString() : null);
     }
 
     /**
@@ -573,9 +711,15 @@ public class UserService {
     private ch.batbern.companyuser.dto.generated.UserSettings mapSettingsToDTO(
             ch.batbern.companyuser.domain.UserSettings domain) {
         return new ch.batbern.companyuser.dto.generated.UserSettings()
-                .twoFactorEnabled(domain.isTwoFactorEnabled())
                 .profileVisibility(ch.batbern.companyuser.dto.generated.UserSettings.ProfileVisibilityEnum.valueOf(
-                    domain.getProfileVisibility().toUpperCase()));
+                    domain.getProfileVisibility().toUpperCase()))
+                .showEmail(domain.isShowEmail())
+                .showCompany(domain.isShowCompany())
+                .showActivityHistory(domain.isShowActivityHistory())
+                .allowMessaging(domain.isAllowMessaging())
+                .allowCalendarSync(domain.isAllowCalendarSync())
+                .timezone(domain.getTimezone())
+                .twoFactorEnabled(domain.isTwoFactorEnabled());
     }
 
     /**
