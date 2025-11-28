@@ -21,7 +21,7 @@
 - **Communication**: AWS SES for invitation and reminder emails
 - **Frontend**: React speaker portal components
 
-**Duration**: 8 weeks (Weeks 42-49, after Epic 5 complete)
+**Duration**: 10.5 weeks (Weeks 42-52.5, after Epic 5 complete) - includes Story 6.0 prerequisite (2.5 weeks)
 
 **What Changed:**
 - **Epic 5 First**: Organizer-driven workflow operational before Epic 6
@@ -65,6 +65,94 @@
 ---
 
 ## Epic 6 Stories (Enhancement Features)
+
+### Story 6.0: Speaker Coordination Service Foundation + API Consolidation (PREREQUISITE)
+**(Moved from Epic 2, Story 2.3 - formerly Story 1.19, includes 1.15a.3 Speakers API Consolidation)**
+
+**Status:** Not Started (moved from Epic 2)
+
+**User Story:**
+As an **organizer**, I want the foundational Speaker Coordination Service with consolidated RESTful APIs, so that I can manage speaker profiles efficiently and enable self-service features in Epic 6.
+
+**Why This is Story 6.0:**
+Speaker Coordination Service was moved from Epic 2 to Epic 6 because:
+1. **Better Cohesion**: All speaker-related functionality consolidated in Epic 6
+2. **Epic 5 Independence**: Epic 5 organizer workflows don't require speaker service (organizers manage speakers manually in notes/spreadsheets)
+3. **Direct Dependency**: Stories 6.1-6.5 (speaker self-service) all depend on this foundation
+4. **Reduced Epic 2 Scope**: Epic 2 focuses on core operational entities (Company, User, Event, Partner)
+
+**Architecture Integration:**
+- **Service**: `speaker-coordination-service/` (Java 21 + Spring Boot 3.2)
+- **Database**: PostgreSQL with speaker domain schema
+- **Storage**: S3 for speaker photos and CVs
+- **Cache**: Caffeine for speaker session data (10min TTL for expanded resources)
+- **API Foundation**: Uses Story 1.15a utilities for filtering, sorting, pagination
+- **HTTP Clients**: Integration with User/Company services (ADR-003 pattern)
+
+**Key Functionality:**
+1. Speaker CRUD operations with consolidated API patterns
+2. Speaker profile management (name, bio, expertise, company affiliation)
+3. Speaker-event associations tracking
+4. Speaker photo and CV storage with S3 presigned URLs
+5. **Resource Expansion**: `?include=events,sessions,companies` for speaker history in single call
+6. **Advanced Search**: Filter speakers by expertise, company, past participation
+7. **Performance**: Speaker detail with history <300ms P95
+8. **Domain Events**: SpeakerCreatedEvent, SpeakerUpdatedEvent, SpeakerInvitedEvent
+
+**Acceptance Criteria:**
+
+**Backend Service:**
+- [ ] Speaker aggregate with DDD patterns (Speaker entity, SpeakerRepository)
+- [ ] SpeakerController with CRUD endpoints
+- [ ] SpeakerService with business logic
+- [ ] **Consolidated REST API** implementing Story 1.15a.3 patterns:
+  - `GET /api/v1/speakers?filter={}&include=events,sessions,companies&sort=name&page=1&size=20`
+  - `GET /api/v1/speakers/{speakerId}?include=events,sessions,companies`
+  - `POST /api/v1/speakers` (create speaker profile)
+  - `PATCH /api/v1/speakers/{speakerId}` (update speaker)
+  - `DELETE /api/v1/speakers/{speakerId}` (soft delete)
+  - `GET /api/v1/speakers/search?q={query}` (autocomplete search)
+- [ ] OpenAPI documentation for all endpoints
+- [ ] Database schema with Flyway migrations (speakers, speaker_events, speaker_materials tables)
+- [ ] S3 integration for photos/CVs with presigned URL upload pattern (ADR-002)
+- [ ] **HTTP Client Integration**: UserServiceClient, CompanyServiceClient for enrichment (ADR-003)
+- [ ] **API Consolidation**: Support `?include=events,sessions,companies,topics,materials` for resource expansion
+- [ ] **Advanced Search**: Filter by expertise, company, availability, past_events with JSON filter syntax
+- [ ] **Performance**: List <100ms, detail <150ms, detail+includes <300ms (all P95)
+- [ ] Domain events publishing to EventBridge (SpeakerCreatedEvent, SpeakerUpdatedEvent)
+- [ ] Integration tests covering all workflows including consolidated APIs
+- [ ] Extends `ch.batbern.shared.test.AbstractIntegrationTest` from testFixtures
+- [ ] @MockBean pattern for HTTP clients (NOT WireMock)
+
+**Architecture Compliance:**
+- [ ] OpenAPI spec imports shared-kernel types (NO local ErrorResponse/PaginationMetadata)
+- [ ] Controllers implement generated API interfaces from openApiGenerate task
+- [ ] Exceptions extend shared-kernel hierarchy (SpeakerNotFoundException extends NotFoundException)
+- [ ] GlobalExceptionHandler uses ch.batbern.shared.dto.ErrorResponse
+- [ ] Inject DomainEventPublisher from shared-kernel
+- [ ] Use FilterParser, SortParser, IncludeParser, FieldSelector from shared-kernel
+- [ ] NO cross-service database joins (stores username/companyName, not UUIDs)
+
+**Testing Requirements:**
+- [ ] Unit tests with >85% coverage
+- [ ] Integration tests with PostgreSQL via Testcontainers
+- [ ] HTTP client mocking via @MockBean with Mockito
+- [ ] Performance tests verify <300ms P95 for detail+includes
+- [ ] OpenAPI contract tests verify spec matches implementation
+
+**Estimated Duration:** 2.5 weeks (includes API consolidation implementation + HTTP client integration)
+
+**References:**
+- Original story: Epic 2, Story 2.3
+- Core functionality: `docs/prd/epic-1-foundation-stories.md` Story 1.19
+- API consolidation: `docs/stories/1.15a.3.speakers-api-consolidation.md`
+- ADR-003: `docs/architecture/ADR-003-meaningful-identifiers-public-apis.md`
+- Event-management-service: Reference implementation for HTTP clients with JWT propagation
+- Partner-coordination-service: Reference implementation for HTTP enrichment pattern
+
+**Important:** This story must be completed BEFORE Stories 6.1-6.5, as they all depend on the Speaker Coordination Service foundation.
+
+---
 
 ### Story 6.1: Automated Speaker Invitation System
 
@@ -320,6 +408,7 @@ As an **organizer**, I want automated deadline reminders sent to speakers, so th
 - ✅ Epic 5 complete and operational (all 16 workflow steps working with organizer-driven approach)
 - ✅ Organizer feedback collected on Epic 5 workflows
 - ✅ ROI analysis confirms Epic 6 value justifies development cost
+- ⚠️ **Story 6.0 (Speaker Coordination Service)** must be complete before Stories 6.1-6.5
 
 ### Backward Compatibility
 
@@ -332,10 +421,11 @@ As an **organizer**, I want automated deadline reminders sent to speakers, so th
 ### Rollout Strategy
 
 **Recommended Approach:**
-1. **Phase 1**: Deploy to single event as pilot (Week 42-43)
-2. **Phase 2**: Gather feedback, iterate on UX (Week 44)
-3. **Phase 3**: Gradual rollout to all events (Week 45-49)
-4. **Phase 4**: Make self-service default, organizer-driven fallback (Phase 3+)
+1. **Phase 0**: Implement Story 6.0 - Speaker Coordination Service Foundation (Week 42-44.5)
+2. **Phase 1**: Deploy Stories 6.1-6.5 to single event as pilot (Week 45-46)
+3. **Phase 2**: Gather feedback, iterate on UX (Week 47)
+4. **Phase 3**: Gradual rollout to all events (Week 48-52.5)
+5. **Phase 4**: Make self-service default, organizer-driven fallback (Phase 3+)
 
 ---
 
