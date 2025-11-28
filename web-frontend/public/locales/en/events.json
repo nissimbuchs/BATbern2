@@ -17,6 +17,8 @@
     "loadingEvents": "Loading events...",
     "eventCount": "{{count}} event",
     "eventCount_plural": "{{count}} events",
+    "eventWord": "event",
+    "eventWord_plural": "events",
     "status": {
       "active": "Active",
       "published": "Published",

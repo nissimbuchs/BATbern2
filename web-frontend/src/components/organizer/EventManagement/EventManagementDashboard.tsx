@@ -27,6 +27,7 @@ import { CriticalTasksList } from './CriticalTasksList';
 import { TeamActivityFeed } from './TeamActivityFeed';
 import { EventForm } from './EventForm';
 import { EventBatchImportModal } from '@/components/shared/Event/EventBatchImportModal';
+import { EventPagination } from './EventPagination';
 import type { EventFilters } from '@/types/event.types';
 
 export const EventManagementDashboard: React.FC = () => {
@@ -36,6 +37,9 @@ export const EventManagementDashboard: React.FC = () => {
   const {
     filters,
     setFilters,
+    pagination,
+    setPage,
+    setLimit,
     isCreateModalOpen,
     openCreateModal,
     closeCreateModal,
@@ -44,7 +48,6 @@ export const EventManagementDashboard: React.FC = () => {
     closeEditModal,
   } = useEventStore();
 
-  const [pagination] = useState({ page: 1, limit: 20 });
   const [isBatchImportOpen, setIsBatchImportOpen] = useState(false);
 
   // Fetch data with React Query hooks
@@ -146,8 +149,10 @@ export const EventManagementDashboard: React.FC = () => {
             <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
               <Typography variant="h5">{t('dashboard.activeEvents')}</Typography>
               <Typography variant="body2" color="text.secondary">
-                {eventsData?.data?.length || 0}{' '}
-                {t('dashboard.eventCount', { count: eventsData?.data?.length || 0 })}
+                {eventsData?.data?.length || 0}/{eventsData?.pagination?.totalItems || 0}{' '}
+                {(eventsData?.pagination?.totalItems || 0) === 1
+                  ? t('dashboard.eventWord')
+                  : t('dashboard.eventWord_plural')}
               </Typography>
             </Stack>
             <EventList
@@ -156,6 +161,17 @@ export const EventManagementDashboard: React.FC = () => {
               onEventEdit={handleEventEdit}
               onEventClick={handleEventClick}
             />
+
+            {/* Pagination */}
+            {eventsData?.pagination && (
+              <EventPagination
+                page={eventsData.pagination.page}
+                totalPages={eventsData.pagination.totalPages}
+                limit={eventsData.pagination.limit}
+                onPageChange={(newPage) => setPage(newPage)}
+                onLimitChange={(newLimit) => setLimit(newLimit)}
+              />
+            )}
           </Paper>
         </Grid>
 

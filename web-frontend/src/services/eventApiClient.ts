@@ -51,7 +51,7 @@ class EventApiClient {
       params.append('limit', pagination.limit.toString());
 
       // Build JSON filter object
-      const filterObj: Record<string, string | number | string[]> = {};
+      const filterObj: Record<string, unknown> = {};
       if (filters?.status && filters.status.length > 0) {
         filterObj.status = filters.status.join(','); // Convert array to comma-separated string
       }
@@ -59,7 +59,8 @@ class EventApiClient {
         filterObj.year = filters.year;
       }
       if (filters?.search) {
-        params.append('search', filters.search); // Add search as query param
+        // Use CONTAINS operator on title field for text search
+        filterObj.title = { $contains: filters.search };
       }
 
       // Add filter parameter if we have filters
