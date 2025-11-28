@@ -407,12 +407,12 @@ class LogoControllerTest {
         // Arrange
         Map<String, String> requestBody = Map.of("url", "https://example.com/logo.png");
 
-        // Act & Assert - will fail to fetch external URL in test environment with 500 error
+        // Act & Assert - external URL fetch will return the actual HTTP status (e.g., 404 for non-existent URL)
         mockMvc.perform(post("/api/v1/logos/fetch-from-url")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestBody)))
-                .andExpect(status().is5xxServerError()); // Network error from external URL fetch
+                .andExpect(status().isNotFound()); // Returns actual HTTP status from external server
     }
 
     @Test
@@ -471,12 +471,12 @@ class LogoControllerTest {
                 "filename", "company-logo.png"
         );
 
-        // Act & Assert - will fail to fetch external URL in test environment with 500 error
+        // Act & Assert - external URL fetch will return the actual HTTP status (e.g., 404 for non-existent URL)
         mockMvc.perform(post("/api/v1/logos/upload-from-url")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestBody)))
-                .andExpect(status().is5xxServerError()); // Network error from external URL fetch
+                .andExpect(status().isNotFound()); // Returns actual HTTP status from external server
     }
 
     @Test
