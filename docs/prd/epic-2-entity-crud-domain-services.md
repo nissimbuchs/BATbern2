@@ -1,7 +1,7 @@
 # Epic 2: Entity CRUD & Domain Services
 
 ## Status
-In progress
+✅ **COMPLETE** (8/8 stories done - Story 2.3 moved to Epic 6)
 
 ## Epic Overview
 
@@ -25,7 +25,7 @@ In progress
 
 ## 📋 Epic 2 Status Summary
 
-**✅ Completed Stories:**
+**✅ ALL STORIES COMPLETE:**
 - ✅ **Story 2.1**: Company Management Service Foundation + API Consolidation (1.15a.6)
 - ✅ **Story 2.1b**: User Management Service Foundation + API Consolidation (1.15a.7, 1.15a.8)
 - ✅ **Story 2.2**: Event Management Service Core + Architecture Compliance (refactored from 1.15a.1) - **Done**
@@ -39,12 +39,12 @@ In progress
 
 - ✅ **Story 2.6**: User Account Management Frontend (Basic Profile + Settings) - **Accepted**
 - ✅ **Story 2.7**: Partner Coordination Service Foundation + API Consolidation (1.15a.2) - **Done**
+- ✅ **Story 2.8**: Partner Management Frontend (Stories 2.8.1-2.8.4) - **Done**
 
-**📝 Not Started:**
-- **Story 2.3**: Speaker Coordination Service Foundation + API Consolidation (1.15a.3)
-- **Story 2.8**: Partner Management Frontend (NEW - completes CRUD pattern for all core entities)
+**📦 Moved to Epic 6:**
+- **Story 2.3**: Speaker Coordination Service Foundation + API Consolidation (1.15a.3) → **Moved to Epic 6 as prerequisite**
 
-**Progress:** 7/9 stories complete (77.8%)
+**Progress:** 8/8 stories complete (100%) - Epic 2 COMPLETE ✅
 
 ---
 
@@ -55,12 +55,12 @@ This epic consolidates stories originally in Epic 1 (1.14-1.20, 1.17) that provi
 - ✅ **Story 2.1 (formerly 1.14)**: Company Management Service Foundation **+ API Consolidation (1.15a.6, 1.15a.2)** - **Done**
 - ✅ **Story 2.1b (formerly 1.14-2)**: User Management Service Foundation **+ API Consolidation (1.15a.7, 1.15a.8)** - **Done**
 - ✅ **Story 2.2 (formerly 1.16)**: Event Management Service Core **+ Architecture Compliance (refactored from 1.15a.1)** - **Done**
-- **Story 2.3 (formerly 1.19)**: Speaker Coordination Service Foundation **+ API Consolidation (1.15a.3)** - **Not Started**
 - ✅ **Story 2.4 (formerly 1.20)**: User Role Management **+ API Consolidation** - **Done** (implemented via Stories 2.1b + 2.5.2)
 - ✅ **Story 2.5 (formerly 1.17 partial)**: React Frontend CRUD Foundation (consuming consolidated APIs) - **Done**
 - ✅ **Story 2.6**: User Account Management Frontend (Basic Profile + Settings) - **Accepted** (consolidates story-1.20 + story-5.2 basic features)
 - ✅ **Story 2.7**: Partner Coordination Service Foundation **+ API Consolidation (1.15a.2)** - **Done**
-- **Story 2.8**: Partner Management Frontend - **Not Started** (NEW - uses wireframes story-6.3-partner-directory.md, story-6.3-partner-detail.md)
+- ✅ **Story 2.8**: Partner Management Frontend - **Done** (Stories 2.8.1-2.8.4 complete)
+- 📦 **Story 2.3 (formerly 1.19)**: Speaker Coordination Service Foundation **+ API Consolidation (1.15a.3)** - **Moved to Epic 6** (prerequisite for speaker self-service features)
 
 **API Consolidation Integration:** Each microservice story includes its domain-specific API consolidation (1.15a.x), using the foundation from Story 1.15a (already complete in Epic 1). This ensures RESTful patterns are implemented from the start, avoiding technical debt and future refactoring.
 
@@ -305,45 +305,18 @@ As an **organizer**, I want to access and manage events through consolidated RES
 ## Story 2.3: Speaker Coordination Service Foundation + API Consolidation
 **(Formerly Story 1.19, includes 1.15a.3 Speakers API Consolidation)**
 
-**User Story:**
-As an **organizer**, I want the foundational Speaker Coordination Service with consolidated RESTful APIs, so that I can manage speaker profiles efficiently without multiple API calls.
+**Status:** 📦 **MOVED TO EPIC 6 (Story 6.0 - Prerequisite)**
 
-**Architecture Integration:**
-- **Service**: `speaker-coordination-service/` (Java 21 + Spring Boot 3.2)
-- **Database**: PostgreSQL with speaker domain schema
-- **Storage**: S3 for speaker photos and CVs
-- **Cache**: Caffeine for speaker session data (10min TTL for expanded resources)
-- **API Foundation**: Uses Story 1.15a utilities for filtering, sorting, pagination
+**Rationale for Move:**
+Speaker Coordination Service is tightly coupled with Epic 6 (Speaker Portal & Self-Service). Moving it to Epic 6 as a prerequisite story provides:
+1. **Better Cohesion**: All speaker-related functionality in one epic
+2. **Reduced Scope for Epic 2**: Epic 2 focuses on core operational entities (Company, User, Event, Partner)
+3. **Logical Dependency**: Speaker service implementation directly supports Epic 6 self-service features
+4. **Epic 5 Compatibility**: Epic 5 organizer workflows can manage speakers manually without speaker service (organizer records speaker info in notes/spreadsheets)
 
-**Key Functionality:**
-1. Speaker CRUD operations with consolidated API patterns
-2. Speaker profile management
-3. Basic speaker-event associations
-4. Speaker photo and CV storage
-5. **Resource Expansion**: `?include=events,sessions,companies` for speaker history in single call
-6. **Advanced Search**: Filter speakers by expertise, company, past participation
-7. **Performance**: Speaker detail with history <300ms P95
-8. **EXCLUDES**: Invitation workflows, material submission portal (deferred to Epic 6)
+**New Location:** Epic 6, Story 6.0 (prerequisite before Stories 6.1-6.5)
 
-**Acceptance Criteria Summary:**
-- [ ] Speaker aggregate with profile management
-- [ ] **Consolidated REST API** implementing Story 1.15a.3 patterns
-- [ ] OpenAPI documentation for all consolidated endpoints
-- [ ] Database schema with Flyway migrations
-- [ ] S3 integration for photos/CVs
-- [ ] **API Consolidation**: Support `?include=events,sessions,companies,topics` for resource expansion
-- [ ] **Advanced Search**: Filter by expertise, company, availability with JSON filter syntax
-- [ ] **Performance**: List <100ms, detail <150ms, detail+includes <300ms (all P95)
-- [ ] Domain events publishing
-- [ ] Integration tests covering main workflows including consolidated APIs
-
-**Estimated Duration:** 2.5 weeks (includes API consolidation implementation)
-
-**References:**
-- Core functionality: `docs/prd/epic-1-foundation-stories.md` Story 1.19
-- API consolidation: `docs/stories/1.15a.3.speakers-api-consolidation.md`
-
-**Important Scope Note:** This story provides speaker entity CRUD with consolidated APIs. Invitation emails, material submission workflows, and speaker portal are deferred to Epic 6 (Speaker Portal & Support).
+**See:** `docs/prd/epic-6-speaker-portal-support.md` for updated story details
 
 ---
 
@@ -855,7 +828,7 @@ Story 2.8 was split into four focused stories for better manageability, clearer 
 - **Epic 3**: Historical Data Migration (requires entity APIs to import data)
 - **Epic 4**: Public Website (requires Event Management APIs for public display)
 - **Epic 5**: Enhanced Organizer Workflows (builds on Event Management Service)
-- **Epic 6**: Speaker Portal (builds on Speaker Coordination Service)
+- **Epic 6**: Speaker Portal (Story 2.3 moved to Epic 6 as Story 6.0 - prerequisite for speaker self-service)
 - **Epic 8**: Partner Coordination (builds on Story 2.7 backend + Story 2.8 frontend for advanced partner portal features)
 
 ---
@@ -866,35 +839,34 @@ Story 2.8 was split into four focused stories for better manageability, clearer 
 - Story 2.1: Company Management Service + API Consolidation (2.5 weeks) ✅ Done
 - Story 2.1b: User Management Service + API Consolidation (2 weeks) ✅ Done
 - Story 2.2: Event Management Service + Architecture Compliance (refactoring) ✅ Done
-- Story 2.3: Speaker Coordination Service + API Consolidation (2.5 weeks) - Not Started
 - Story 2.7: Partner Coordination Service + API Consolidation (2.5 weeks) ✅ Done
 
 **Week 13: User Role Management & Integration**
 - Story 2.4: User Role Management + API Consolidation (2 weeks) ✅ Done
-- Integration testing across all backend services (0.5 weeks)
+- Integration testing across all backend services (0.5 weeks) ✅ Done
 
 **Week 14-18: Frontend Development**
 - Story 2.5: React Frontend CRUD Foundation consuming consolidated APIs (3 weeks) ✅ Done
   - Story 2.5.1: Company Management Frontend ✅ Done
   - Story 2.5.2: User Management Frontend ✅ Done
   - Story 2.5.3: Event Management Frontend ✅ Done
-- Story 2.6: User Account Management Frontend (2 weeks) ✅ Accepted
-- Story 2.8: Partner Management Frontend (1.5 weeks) - Not Started
-- End-to-end testing and bug fixes (2 weeks)
+- Story 2.6: User Account Management Frontend (2 weeks) ✅ Done
+- Story 2.8: Partner Management Frontend (1.5 weeks) ✅ Done
+- End-to-end testing and bug fixes (2 weeks) ✅ Done
 
 **Rationale:**
-- Backend services can be developed in parallel by different developers
-- Story 2.1b (User Management) can be developed parallel to Story 2.1 (Company Management)
-- Story 2.7 (Partner Coordination) depends on Story 2.1 + 2.1b (requires Company/User services for HTTP integration) - ✅ Complete
-- Story 2.4 (User Role Management) depends on Story 2.1b completion - ✅ Complete
-- API consolidation adds ~0.5 weeks per service (worth it to avoid future refactoring)
-- Frontend development benefits from consolidated APIs (fewer integration points)
-- Extra time for frontend reflects complexity of consuming resource expansion APIs
+- Backend services developed in parallel by different developers
+- Story 2.1b (User Management) developed parallel to Story 2.1 (Company Management)
+- Story 2.7 (Partner Coordination) depended on Story 2.1 + 2.1b (Company/User services for HTTP integration) - ✅ Complete
+- Story 2.4 (User Role Management) depended on Story 2.1b completion - ✅ Complete
+- API consolidation added ~0.5 weeks per service (worth it to avoid future refactoring)
+- Frontend development benefited from consolidated APIs (fewer integration points)
+- Story 2.3 (Speaker Coordination Service) moved to Epic 6 as prerequisite (better cohesion with speaker portal features)
 
-**Current Status (Updated):**
-- 7 out of 9 stories complete (77.8% progress)
-- Remaining stories: 2.3 (Speaker Coordination Service Foundation), 2.8 (Partner Management Frontend - NEW)
-- Epic 2 backend services nearly complete (4/5), frontend CRUD pattern needs Partner UI to be complete
+**Final Status:**
+- ✅ **8 out of 8 stories complete (100% progress)**
+- ✅ **Epic 2 COMPLETE**
+- 📦 Story 2.3 moved to Epic 6 (Story 6.0 - Speaker Coordination Service Foundation)
 
 ---
 
@@ -923,26 +895,25 @@ Story 2.8 was split into four focused stories for better manageability, clearer 
 - [x] Story 2.1 (Company Management Service) - Complete ✅
 - [x] Story 2.1b (User Management Service) - Complete ✅
 - [x] Story 2.2 (Event Management Service Core + Architecture Compliance) - Complete ✅
-- [ ] Story 2.3 (Speaker Coordination Service) - Not Started
 - [x] Story 2.4 (User Role Management) - Complete ✅
 - [x] Story 2.5 (React Frontend CRUD Foundation) - Complete ✅
   - [x] Story 2.5.1 (Company Management Frontend) ✅
   - [x] Story 2.5.2 (User Management Frontend) ✅
   - [x] Story 2.5.3 (Event Management Frontend) ✅
-- [x] Story 2.6 (User Account Management Frontend) - Accepted ✅
+- [x] Story 2.6 (User Account Management Frontend) - Complete ✅
 - [x] Story 2.7 (Partner Coordination Service) - Complete ✅
-- [ ] Story 2.8 (Partner Management Frontend) - Not Started (NEW)
-- [x] All completed acceptance criteria verified ✅
-- [x] Integration tests passing for completed services ✅
+- [x] Story 2.8 (Partner Management Frontend) - Complete ✅
+- [x] All acceptance criteria verified ✅
+- [x] Integration tests passing for all services ✅
 - [x] Frontend deployed and accessible ✅
-- [x] Performance benchmarks met for completed features ✅
+- [x] Performance benchmarks met ✅
 - [x] Security scan showing zero critical vulnerabilities ✅
-- [x] All completed services follow ADR-003 microservices pattern ✅
+- [x] All services follow ADR-003 microservices pattern ✅
 
-**Progress: 7/9 stories complete (77.8%)**
-**Remaining:**
-- Speaker Coordination Service Foundation (2.3)
-- Partner Management Frontend (2.8) - NEW story to complete CRUD pattern for all entities
+**Progress: 8/8 stories complete (100%)**
+**Epic 2 Status: ✅ COMPLETE**
+
+**Note:** Story 2.3 (Speaker Coordination Service) moved to Epic 6 as Story 6.0 (prerequisite for speaker portal features)
 
 **Handoff to Epic 3 (Historical Data Migration):**
 - Entity CRUD APIs operational and ready to receive migrated data
