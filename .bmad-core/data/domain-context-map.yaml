@@ -59,14 +59,24 @@ domains:
       - file: 06-backend-architecture.md
         sections: ["Event Service Architecture", "Workflow State Machine", "Publishing Engine"]
     wireframes:
-      - file: docs/wireframes/wireframes-organizer.md
+      - file: docs/wireframes/story-1.16-event-management-dashboard.md
+        components:
+          - Event Management Dashboard
+          - Event List View
+      - file: docs/wireframes/story-1.16-event-detail-edit.md
+        components:
+          - Event Detail/Edit Screen
+          - Event Type Selector
+          - Workflow Progress
+      - file: docs/wireframes/story-3.5-event-timeline.md
         components:
           - Event Timeline View
-          - Speaker Pipeline
-          - Task Management
+      - file: docs/wireframes/story-2.3-basic-publishing-engine.md
+        components:
           - Publishing Controls
-          - Multi-organizer Features
-          - Real-time Sync
+      - file: docs/wireframes/story-1.16-workflow-visualization.md
+        components:
+          - Workflow State Machine Visualization
     functional_requirements: [FR2, FR5, FR7, FR12, FR17, FR18, FR19, FR20, FR21]  # Event workflow, publishing, notifications, planning
     workflow_steps: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
 
@@ -192,12 +202,20 @@ domains:
       - file: 08-operations-security.md
         sections: ["Security Architecture", "Monitoring", "Compliance"]
     wireframes:
-      - file: docs/wireframes/wireframes-organizer.md
+      - file: docs/wireframes/story-1.17-main-navigation.md
         components:
           - Navigation Bar
-          - User Menu
           - Role Switcher
+      - file: docs/wireframes/story-1.20-user-profile.md
+        components:
+          - User Menu
+          - User Profile
+      - file: docs/wireframes/story-1.20-notification-center.md
+        components:
           - Notification Center
+      - file: docs/wireframes/story-1.14-company-management-screen.md
+        components:
+          - Company Management
     functional_requirements: [FR1]  # Role-based authentication
     non_functional_requirements: [NFR1, NFR2, NFR3, NFR4]  # Responsive, search, integrations, i18n
     compatibility_requirements: [CR1, CR2, CR3, CR4]  # Data migration, integrations, URLs, exports
