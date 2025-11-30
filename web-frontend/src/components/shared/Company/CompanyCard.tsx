@@ -10,8 +10,10 @@
  */
 
 import React from 'react';
-import { Card, CardContent, CardActionArea, Typography, Box, Chip } from '@mui/material';
+import { Card, CardContent, CardActionArea, Typography, Box, Chip, Link } from '@mui/material';
 import BusinessIcon from '@mui/icons-material/Business';
+import LanguageIcon from '@mui/icons-material/Language';
+import CategoryIcon from '@mui/icons-material/Category';
 import { useTranslation } from 'react-i18next';
 import type { CompanyListItem } from '@/types/company.types';
 
@@ -152,9 +154,36 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({
 
           {/* Industry */}
           {company.industry && (
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-              {company.industry}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+              <CategoryIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+              <Typography variant="body2" color="text.secondary">
+                {company.industry}
+              </Typography>
+            </Box>
+          )}
+
+          {/* Website */}
+          {company.website && (
+            <Box
+              sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <LanguageIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+              <Link
+                href={company.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                variant="body2"
+                sx={{
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {company.website.replace(/^https?:\/\/(www\.)?/, '')}
+              </Link>
+            </Box>
           )}
         </CardContent>
       </CardActionArea>
