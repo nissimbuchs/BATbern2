@@ -442,9 +442,15 @@ export const CompanyBatchImportModal: React.FC<CompanyBatchImportModalProps> = (
                           icon={getStatusIcon(candidate.importStatus)}
                           label={
                             candidate.errorMessage ||
-                            t(`company.batchImport.status.${candidate.importStatus}`)
+                            (candidate.importStatus === 'pending' && candidate.existingCompanyName
+                              ? t('company.batchImport.status.willUpdate')
+                              : t(`company.batchImport.status.${candidate.importStatus}`))
                           }
-                          color={getStatusColor(candidate.importStatus)}
+                          color={
+                            candidate.importStatus === 'pending' && candidate.existingCompanyName
+                              ? 'info'
+                              : getStatusColor(candidate.importStatus)
+                          }
                           size="small"
                           variant={candidate.importStatus === 'pending' ? 'outlined' : 'filled'}
                         />

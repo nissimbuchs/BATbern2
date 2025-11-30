@@ -3,6 +3,7 @@ package ch.batbern.companyuser.config;
 import ch.batbern.companyuser.service.CognitoIntegrationService;
 import ch.batbern.companyuser.service.UserSearchService;
 import ch.batbern.shared.service.EmailService;
+import ch.batbern.shared.service.SlugGenerationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -23,8 +24,10 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 /**
@@ -113,15 +116,8 @@ public class TestAwsConfig {
         return mockService;
     }
 
-    @Bean
-    @Primary
-    public UserSearchService userSearchService() {
-        UserSearchService mockService = Mockito.mock(UserSearchService.class);
-
-        // invalidateCache is void, no need to configure
-
-        return mockService;
-    }
+    // Note: UserSearchService should NOT be mocked - it needs to perform actual searches
+    // Removed mock bean to allow real implementation to be used
 
     /**
      * Mock EmailService for testing email functionality
@@ -133,5 +129,29 @@ public class TestAwsConfig {
         EmailService mockEmailService = Mockito.mock(EmailService.class);
         // sendEmail is void, no need to configure
         return mockEmailService;
+    }
+
+    /**
+     * Mock SlugGenerationService for testing username generation
+     * Story 1.16.2: Username generation from first/last name
+     */
+    @Bean
+    @Primary
+    public SlugGenerationService slugGenerationService() {
+        SlugGenerationService mockService = Mockito.mock(SlugGenerationService.class);
+
+        // Mock generateUsername to return a predictable username format
+        when(mockService.generateUsername(anyString(), anyString()))
+                .thenAnswer(invocation -> {
+                    String firstName = invocation.getArgument(0);
+                    String lastName = invocation.getArgument(1);
+                    return firstName.toLowerCase() + "." + lastName.toLowerCase();
+                });
+
+        // Mock ensureUniqueUsername to return the base username (assume unique in tests)
+        when(mockService.ensureUniqueUsername(anyString(), any(Function.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        return mockService;
     }
 }

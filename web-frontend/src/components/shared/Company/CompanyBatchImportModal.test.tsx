@@ -27,6 +27,7 @@ vi.mock('react-i18next', () => ({
         'company.batchImport.status.importing': 'Importing...',
         'company.batchImport.status.success': 'Imported',
         'company.batchImport.status.updated': 'Updated',
+        'company.batchImport.status.willUpdate': 'Will Update',
         'company.batchImport.status.error': 'Error',
         'company.batchImport.status.skipped': 'Skipped (exists)',
         'company.batchImport.progress': `Importing ${params?.current || 0} of ${params?.total || 0}...`,

@@ -6,7 +6,8 @@
     "url": "https://www.sbb.ch",
     "speakerCount": 36,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/42/sbb.jpg",
-    "status": "complete"
+    "status": "complete",
+    "industry": "Transportation"
   },
   {
     "id": "mobiliar",
@@ -15,7 +16,8 @@
     "url": "https://www.mobiliar.ch",
     "speakerCount": 22,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/42/mobiliar.jpg",
-    "status": "complete"
+    "status": "complete",
+    "industry": "Insurance"
   },
   {
     "id": "swisscom",
@@ -24,7 +26,8 @@
     "url": "https://www.swisscom.ch",
     "speakerCount": 20,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/43/swisscom.jpg",
-    "status": "complete"
+    "status": "complete",
+    "industry": "Telecommunications"
   },
   {
     "id": "postfinance",
@@ -33,7 +36,8 @@
     "url": "https://www.postfinance.ch",
     "speakerCount": 17,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/43/postfinance.jpg",
-    "status": "complete"
+    "status": "complete",
+    "industry": "Financial Services"
   },
   {
     "id": "elca",
@@ -42,7 +46,8 @@
     "url": "https://www.elca.ch",
     "speakerCount": 10,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/43/elca.jpg",
-    "status": "complete"
+    "status": "complete",
+    "industry": "IT Consulting"
   },
   {
     "id": "rtc",
@@ -50,10 +55,11 @@
     "logo": "logo-rtc.jpg",
     "url": "https://de.wikipedia.org/wiki/RTC_Real-Time_Center",
     "speakerCount": 9,
-    "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/assets/bilder/logo-rtc.jpg",
+    "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/bilder/logo-rtc.jpg",
     "has_logo": true,
     "status": "complete",
-    "note": "Logo added by user"
+    "note": "Logo added by user",
+    "industry": "Banking Software"
   },
   {
     "id": "bkw",
@@ -63,7 +69,8 @@
     "speakerCount": 8,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/53/bkw.jpg",
     "has_logo": true,
-    "status": "complete"
+    "status": "complete",
+    "industry": "Energy"
   },
   {
     "id": "mtrail",
@@ -73,7 +80,8 @@
     "speakerCount": 5,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/42/mtrail.jpg",
     "has_logo": true,
-    "status": "complete"
+    "status": "complete",
+    "industry": "IT Consulting"
   },
   {
     "id": "ipt",
@@ -83,7 +91,8 @@
     "speakerCount": 5,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/56/ipt.png",
     "has_logo": false,
-    "status": "complete"
+    "status": "complete",
+    "industry": "Healthcare"
   },
   {
     "id": "isc-ejpd",
@@ -93,7 +102,8 @@
     "speakerCount": 4,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/48/isc-ejpd.png",
     "has_logo": true,
-    "status": "complete"
+    "status": "complete",
+    "industry": "Government"
   },
   {
     "id": "bls",
@@ -103,7 +113,8 @@
     "speakerCount": 4,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/assets/partners/logo-bls.jpg",
     "has_logo": false,
-    "status": "needs_logo"
+    "status": "complete",
+    "industry": "Transportation"
   },
   {
     "id": "aws",
@@ -113,7 +124,8 @@
     "speakerCount": 3,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/47/aws-logo.png",
     "has_logo": true,
-    "status": "complete"
+    "status": "complete",
+    "industry": "Cloud Provider"
   },
   {
     "id": "post",
@@ -123,7 +135,8 @@
     "speakerCount": 3,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/43/postfinance.jpg",
     "has_logo": true,
-    "status": "complete"
+    "status": "complete",
+    "industry": "Logistics"
   },
   {
     "id": "zühlke",
@@ -133,7 +146,8 @@
     "speakerCount": 3,
     "logoFilePath": null,
     "has_logo": false,
-    "status": "needs_logo"
+    "status": "needs_logo",
+    "industry": "IT Consulting"
   },
   {
     "id": "puzzle",
@@ -144,7 +158,8 @@
     "logoFilePath": null,
     "has_logo": false,
     "status": "complete",
-    "logoUrl": "https://www.puzzle.ch/app/themes/wly.wp.theme/assets/images/logo-white.svg"
+    "logoUrl": "https://www.puzzle.ch/app/themes/wly.wp.theme/assets/images/logo-white.svg",
+    "industry": "IT Consulting"
   },
   {
     "id": "hp",
@@ -154,7 +169,8 @@
     "speakerCount": 3,
     "logoFilePath": null,
     "has_logo": false,
-    "status": "needs_logo"
+    "status": "needs_logo",
+    "industry": "IT Consulting"
   },
   {
     "id": "bit",
@@ -164,17 +180,19 @@
     "speakerCount": 3,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/47/nuvibit-logo.png",
     "has_logo": false,
-    "status": "needs_logo"
+    "status": "complete",
+    "industry": "Government"
   },
   {
     "id": "googlecloud",
     "displayName": "googleCloud.png",
     "logo": "googleCloud.png",
-    "url": null,
+    "url": "https://cloud.google.com",
     "speakerCount": 2,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/56/googleCloud.png",
     "has_logo": true,
-    "status": "pending_url"
+    "status": "complete",
+    "industry": "Cloud Provider"
   },
   {
     "id": "ibm",
@@ -184,7 +202,8 @@
     "speakerCount": 2,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/50/ibm.jpg",
     "has_logo": true,
-    "status": "complete"
+    "status": "complete",
+    "industry": "IT Consulting"
   },
   {
     "id": "raiffeisen",
@@ -194,7 +213,8 @@
     "speakerCount": 2,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/49/raiffeisen.jpg",
     "has_logo": true,
-    "status": "complete"
+    "status": "complete",
+    "industry": "Financial Services"
   },
   {
     "id": "syncier",
@@ -204,7 +224,8 @@
     "speakerCount": 2,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/46/syncier.JPG",
     "has_logo": true,
-    "status": "complete"
+    "status": "complete",
+    "industry": "IT Consulting"
   },
   {
     "id": "insel",
@@ -215,7 +236,8 @@
     "logoFilePath": null,
     "has_logo": false,
     "status": "complete",
-    "logoUrl": "https://www.insel.ch/_assets/416389da18307aab69792cdc90d53b2d/Images/Hospitals/Inselspital/Logo.svg"
+    "logoUrl": "https://www.insel.ch/_assets/416389da18307aab69792cdc90d53b2d/Images/Hospitals/Inselspital/Logo.svg",
+    "industry": "Healthcare"
   },
   {
     "id": "amanox",
@@ -226,7 +248,8 @@
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/51/amanox.png",
     "has_logo": true,
     "status": "complete",
-    "logoUrl": "https://www.amanox.ch/wp-content/uploads/amanox-solution-logo-lang-neu.jpg"
+    "logoUrl": "https://www.amanox.ch/wp-content/uploads/amanox-solution-logo-lang-neu.jpg",
+    "industry": "IT Consulting"
   },
   {
     "id": "spoud",
@@ -237,17 +260,19 @@
     "logoFilePath": null,
     "has_logo": false,
     "status": "complete",
-    "logoUrl": "https://www.spoud.io/wp-content/uploads/2022/03/spoud-landscape-positive.svg"
+    "logoUrl": "https://www.spoud.io/wp-content/uploads/2022/03/spoud-landscape-positive.svg",
+    "industry": "IT Consulting"
   },
   {
     "id": "afca",
     "displayName": "afca",
     "logo": "afca.jpg",
-    "url": null,
+    "url": "https://afca.ch",
     "speakerCount": 2,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/42/afca.jpg",
     "has_logo": true,
-    "status": "pending_url"
+    "status": "complete",
+    "industry": "IT Consulting"
   },
   {
     "id": "opendatach",
@@ -258,7 +283,8 @@
     "logoFilePath": null,
     "has_logo": false,
     "status": "complete",
-    "logoUrl": "https://opendata.ch/wordpress/files/2021/11/opendata-logo-RGB-full-large.png"
+    "logoUrl": "https://opendata.ch/wordpress/files/2021/11/opendata-logo-RGB-full-large.png",
+    "industry": "Non-profit Organization"
   },
   {
     "id": "glue",
@@ -269,17 +295,19 @@
     "logoFilePath": null,
     "has_logo": false,
     "status": "complete",
-    "logoUrl": "https://www.glue.ch/wp-content/themes/gluesite_(squarex-lite_childtheme)/assets/img/logos/glue-logo.svg"
+    "logoUrl": "https://www.glue.ch/wp-content/themes/gluesite_(squarex-lite_childtheme)/assets/img/logos/glue-logo.svg",
+    "industry": "IT Consulting"
   },
   {
     "id": "bei",
     "displayName": "BEI.png",
     "logo": "BEI.png",
-    "url": null,
+    "url": "https://www.bei-sg.ch",
     "speakerCount": 2,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/46/BEI.png",
     "has_logo": true,
-    "status": "pending_url"
+    "status": "complete",
+    "industry": "Higher Education"
   },
   {
     "id": "hslu",
@@ -290,7 +318,8 @@
     "logoFilePath": null,
     "has_logo": false,
     "status": "complete",
-    "logoUrl": "https://www.hslu.ch/-/media/campus/common/images/header/hslu-logo.svg"
+    "logoUrl": "https://www.hslu.ch/-/media/campus/common/images/header/hslu-logo.svg",
+    "industry": "Higher Education"
   },
   {
     "id": "swisstopo",
@@ -300,7 +329,8 @@
     "speakerCount": 2,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/46/swisstopo.JPG",
     "has_logo": true,
-    "status": "complete"
+    "status": "complete",
+    "industry": "Government"
   },
   {
     "id": "dvbern",
@@ -311,7 +341,8 @@
     "logoFilePath": null,
     "has_logo": false,
     "status": "complete",
-    "logoUrl": "https://www.dvbern.ch/art/dvbern/logo-dvbern-dark.svg"
+    "logoUrl": "https://www.dvbern.ch/art/dvbern/logo-dvbern-dark.svg",
+    "industry": "IT Consulting"
   },
   {
     "id": "microsoft",
@@ -321,17 +352,19 @@
     "speakerCount": 2,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/48/microsoft.png",
     "has_logo": true,
-    "status": "complete"
+    "status": "complete",
+    "industry": "IT Consulting"
   },
   {
     "id": "isbbund",
     "displayName": "ISB (Informatiksteuerungsorgan Bund)",
-    "logo": "sbb.jpg",
+    "logo": null,
     "url": "https://www.isb.admin.ch",
     "speakerCount": 2,
     "logoFilePath": null,
     "has_logo": false,
-    "status": "needs_logo"
+    "status": "needs_logo",
+    "industry": "Government"
   },
   {
     "id": "vshn",
@@ -340,7 +373,8 @@
     "url": "https://www.vshn.ch",
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/47/vshn.png",
-    "status": "complete"
+    "status": "complete",
+    "industry": "IT Consulting"
   },
   {
     "id": "twint",
@@ -349,7 +383,8 @@
     "url": "https://www.twint.ch",
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/55/twint-logo.png",
-    "status": "complete"
+    "status": "complete",
+    "industry": "Financial Services"
   },
   {
     "id": "ti8m",
@@ -358,7 +393,8 @@
     "url": "https://www.ti8m.com",
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/47/ti8m.jpg",
-    "status": "complete"
+    "status": "complete",
+    "industry": "IT Consulting"
   },
   {
     "id": "swissport",
@@ -367,7 +403,8 @@
     "url": "https://www.swissport.com",
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/43/swissport.jpg",
-    "status": "complete"
+    "status": "complete",
+    "industry": "Logistics"
   },
   {
     "id": "sqooba",
@@ -377,34 +414,38 @@
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/43/sqooba.jpg",
     "status": "complete",
-    "note": "Acquired by Open Systems in 2020"
+    "note": "Acquired by Open Systems in 2020",
+    "industry": "IT Consulting"
   },
   {
     "id": "smg",
     "displayName": "smg.png",
     "logo": "smg.png",
-    "url": null,
+    "url": "https://swissmarketplace.group/de/",
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/51/smg.png",
-    "status": "pending_url"
+    "status": "complete",
+    "industry": "IT Consulting"
   },
   {
     "id": "pragmaticsol",
     "displayName": "pragmaticsolutions.png",
     "logo": "pragmaticsolutions.png",
-    "url": null,
+    "url": "https://pragmatic-solutions.ch",
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/47/pragmaticsolutions.png",
-    "status": "pending_url"
+    "status": "complete",
+    "industry": "IT Consulting"
   },
   {
     "id": "lifestage",
     "displayName": "lifestage.png",
     "logo": "lifestage.png",
-    "url": null,
+    "url": "https://www.lifestage-solutions.ch",
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/51/lifestage.png",
-    "status": "pending_url"
+    "status": "complete",
+    "industry": "IT Consulting"
   },
   {
     "id": "bjb",
@@ -413,7 +454,8 @@
     "url": "https://www.juliusbaer.com",
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/47/JB_LA_RGB_blue.jpg",
-    "status": "complete"
+    "status": "complete",
+    "industry": "Financial Services"
   },
   {
     "id": "innoq",
@@ -422,7 +464,8 @@
     "url": "https://www.innoq.com",
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/52/innoq.png",
-    "status": "complete"
+    "status": "complete",
+    "industry": "IT Consulting"
   },
   {
     "id": "finnova",
@@ -431,7 +474,8 @@
     "url": "https://finnova.ch",
     "speakerCount": 1,
     "logoFilePath": null,
-    "status": "pending_logo"
+    "status": "pending_logo",
+    "industry": "Banking Software"
   },
   {
     "id": "feenk",
@@ -440,7 +484,8 @@
     "url": "https://feenk.com",
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/50/feenk.png",
-    "status": "complete"
+    "status": "complete",
+    "industry": "IT Consulting"
   },
   {
     "id": "ethz",
@@ -449,7 +494,8 @@
     "url": "https://ethz.ch",
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/53/ethz.jpg",
-    "status": "complete"
+    "status": "complete",
+    "industry": "Higher Education"
   },
   {
     "id": "epfl",
@@ -458,7 +504,8 @@
     "url": "https://www.epfl.ch",
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/53/epfl-logo.jpg",
-    "status": "complete"
+    "status": "complete",
+    "industry": "Higher Education"
   },
   {
     "id": "dxc",
@@ -467,7 +514,8 @@
     "url": "https://dxc.com",
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/46/DXC Logo.png",
-    "status": "complete"
+    "status": "complete",
+    "industry": "IT Consulting"
   },
   {
     "id": "dartfish",
@@ -476,7 +524,8 @@
     "url": "https://www.dartfish.com",
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/49/dartfish.jpg",
-    "status": "complete"
+    "status": "complete",
+    "industry": "IT Consulting"
   },
   {
     "id": "cslbehring",
@@ -485,16 +534,18 @@
     "url": "https://www.cslbehring.ch",
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/42/cslbehring.jpg",
-    "status": "complete"
+    "status": "complete",
+    "industry": "Pharmaceutical"
   },
   {
     "id": "coop",
     "displayName": "Coop",
     "logo": "cooprechtsschutz.jpg",
-    "url": null,
+    "url": "https://cooprecht.ch",
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/44/cooprechtsschutz.jpg",
-    "status": "pending_url"
+    "status": "complete",
+    "industry": "Wholesale"
   },
   {
     "id": "confluent",
@@ -503,7 +554,8 @@
     "url": "https://www.confluent.io",
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/43/confluent.jpg",
-    "status": "complete"
+    "status": "complete",
+    "industry": "IT Consulting"
   },
   {
     "id": "bcge",
@@ -512,25 +564,28 @@
     "url": "https://www.bcge.ch",
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/46/bcge.jpg",
-    "status": "complete"
+    "status": "complete",
+    "industry": "Financial Services"
   },
   {
     "id": "bafu",
     "displayName": "BAFU",
     "logo": null,
-    "url": null,
+    "url": "https://www.bafu.admin.ch/de",
     "speakerCount": 1,
     "logoFilePath": null,
-    "status": "pending_url"
+    "status": "pending_url",
+    "industry": "Government"
   },
   {
     "id": "avega",
     "displayName": "avega.png",
     "logo": "avega.png",
-    "url": null,
+    "url": "https://www.avega.ch",
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/47/avega.png",
-    "status": "pending_url"
+    "status": "pending_url",
+    "industry": "IT Consulting"
   },
   {
     "id": "ariolilaw",
@@ -539,6 +594,7 @@
     "url": "https://www.arioli-law.ch",
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/56/ariolilaw.png",
-    "status": "complete"
+    "status": "complete",
+    "industry": "Legal"
   }
 ]
