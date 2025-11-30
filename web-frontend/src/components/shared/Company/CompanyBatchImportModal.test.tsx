@@ -35,6 +35,7 @@ vi.mock('react-i18next', () => ({
         'company.batchImport.columns.logo': 'Logo',
         'company.batchImport.columns.displayName': 'Display Name',
         'company.batchImport.columns.name': 'API Name',
+        'company.batchImport.columns.industry': 'Industry',
         'company.batchImport.columns.website': 'Website',
         'company.batchImport.columns.status': 'Status',
         'company.batchImport.errors.invalidFile': 'Invalid file type. Please upload a JSON file.',
@@ -97,6 +98,7 @@ const validCompaniesJson = JSON.stringify([
     speakerCount: 36,
     logoFilePath: '/path/to/sbb.jpg',
     status: 'complete',
+    industry: 'Transportation',
   },
   {
     id: 'mobiliar',
@@ -106,6 +108,7 @@ const validCompaniesJson = JSON.stringify([
     speakerCount: 22,
     logoFilePath: '/path/to/mobiliar.jpg',
     status: 'complete',
+    industry: 'Insurance',
   },
 ]);
 

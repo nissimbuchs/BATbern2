@@ -33,6 +33,8 @@ export interface SourceCompany {
   note?: string;
   /** External logo URL (alternative to local file) */
   logoUrl?: string;
+  /** Industry category (e.g., "Transportation", "Financial Services") */
+  industry?: string;
 }
 
 /**

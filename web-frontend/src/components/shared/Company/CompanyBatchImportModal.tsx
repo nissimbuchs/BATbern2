@@ -356,6 +356,7 @@ export const CompanyBatchImportModal: React.FC<CompanyBatchImportModalProps> = (
                     <TableCell width={60}>{t('company.batchImport.columns.logo')}</TableCell>
                     <TableCell>{t('company.batchImport.columns.displayName')}</TableCell>
                     <TableCell>{t('company.batchImport.columns.name')}</TableCell>
+                    <TableCell>{t('company.batchImport.columns.industry')}</TableCell>
                     <TableCell>{t('company.batchImport.columns.website')}</TableCell>
                     <TableCell width={150}>{t('company.batchImport.columns.status')}</TableCell>
                   </TableRow>
@@ -391,6 +392,19 @@ export const CompanyBatchImportModal: React.FC<CompanyBatchImportModalProps> = (
                         <Typography variant="body2" fontFamily="monospace">
                           {candidate.apiPayload.name}
                         </Typography>
+                      </TableCell>
+                      <TableCell>
+                        {candidate.apiPayload.industry ? (
+                          <Chip
+                            label={candidate.apiPayload.industry}
+                            size="small"
+                            variant="outlined"
+                          />
+                        ) : (
+                          <Typography variant="body2" color="textSecondary">
+                            -
+                          </Typography>
+                        )}
                       </TableCell>
                       <TableCell>
                         {candidate.apiPayload.website ? (
