@@ -14,7 +14,7 @@
       {
         "name": "Thomas Goetz, Die Mobiliar",
         "bio": "Thomas Goetz studierte an der Universität Bern Chemie und Informatik. Danach unterrichtete er an der Fachhochschule Bern an einem Nachdiplomstudium (Software-Schule Schweiz)im Bereich Technische Informatik. Nach Stellen im Finanzdienstleistungs- und Telecombereich als IT Architekt und technischer Projektleiter arbeitet Thomas Goetz nun in der Unternehmensarchitektur der Mobiliar Versicherungsgesellschaft und ist verantwortlich für die Technische Architektur, insbesondere die Integration der Mainframe- mit der J2EE Plattform.",
-        "company": "mobiliar",
+        "company": "Mobiliar",
         "portrait": "thomas.goetz.jpg"
       }
     ]
@@ -28,7 +28,7 @@
       {
         "name": "Volkert Barr, PostFinance",
         "bio": "Volkert Barr erlangte sein Informatik-Diplom an der Carl-Von-Ossietzky Universität Oldenburg/Deutschland. Nach einem Industrieaufenthalt in der Softwareentwicklung wechselte er 2000 an das Institut für Softwaretechnik der Technischen Universität Berlin und arbeitete dort als wissenschaftlicher Mitarbeiter. Seit 2003 ist Volkert Barr als Informatik-Spezialist und Enterprise Architekt im Bereich Core-Systeme bei PostFinance tätig. Derzeit beschäftigt er sich mit Konzepten der Customer Data Integration sowie mit Rich Client GUIs für Bankenarbeitsplätze auf der Basis von Eclipse.",
-        "company": "postfinance",
+        "company": "PostFinance",
         "portrait": "volkert.barr.jpg"
       }
     ]
@@ -90,13 +90,13 @@
       {
         "name": "Beat M. Stöckli, PostMail",
         "bio": "Ausbildung als Organisator mit Weiterbildung zum IT-Projektleiter und dipl. Wirtschaftsinformatiker. Langjährige Tätigkeit in entsprechenden Funktionen bei Schweiz. Volksbank, Crédit Suisse, Unisys (Schweiz) AG und RTC AG. Seit 2005 verantwortlich für die Enterprise Architecture PostMail. Besonderes Anliegen ist mir die ganzheitliche Betrachtung von Wechselwirkungen zwischen Prozessen und anwendungsorientierter Informatik.",
-        "company": "postmail",
+        "company": "Post",
         "portrait": "beat.stöckli.jpg"
       },
       {
         "name": "Alain Jacot-Guillarmod, PostMail",
         "bio": "Informaticien de gestion, j'ai travaillé dans la réalisation de logiciel dans l'industrie pour ensuite devenir responsable de la documentation en trois langues dans une entreprise de services de progiciels. A la Poste Suisse, j'ai occupé diverses fonctions, de développement, de support, de gestion de projets et d'analyse.",
-        "company": "postmail",
+        "company": "Post",
         "portrait": "alain.jacot-guillarmod.jpg"
       }
     ]
@@ -116,7 +116,7 @@
       {
         "name": "Stefan Meichtry, SBB AG",
         "bio": "Stefan Meichtry ist Dipl.-Ing. und arbeitet als Software-Architekt und Senior IT Quality Manager bei der SBB AG. Er ist für den Aufbau und die Durchsetzung von zentralen Architekturprinzipien verantwortlich. Sein Interesse gilt darüber hinaus der Einführung von CMMI in der SBB-Informatik.",
-        "company": "sbb",
+        "company": "SBB",
         "portrait": "stefan.meichtry.jpg"
       },
       {
@@ -136,7 +136,7 @@
       {
         "name": "Harald Aust, PostFinance",
         "bio": "Harald Aust ist Dr. rer. nat. und Dipl.-Informatiker. Verschiedene Tätigkeiten von Forschung über Software-Entwicklung und Projektleitung bis Geschäftsführung in diversen Unternehmen. Seit 2002 bei der Schweizerischen Post - PostFinance in Bern verantwortlich für technische Infrastruktur, Middleware und EAI.",
-        "company": "postfinance",
+        "company": "PostFinance",
         "portrait": "harald.aust.jpg"
       }
     ]
@@ -150,7 +150,7 @@
       {
         "name": "Walter Grolimund, Swisscom Fixnet",
         "bio": "Walter Grolimund leitet seit 2 Jahren den Bereich Informatik Strategie und Architektur bei Swisscom Fixnet. Im Rahmen dieser Funktion führt er den IT-Strategieprozess und leitete im 2004 ein Projekt, welches das Ziel hatte, die IT-Landschaft von Swisscom Fixnet für das Jahr 2010 zu beschreiben. Seit Anfang 2005 zeichnet er sich verantwortlich, diese Zielarchitektur 2010 mit entsprechenden Massnahmen Wirklichkeit werden zu lassen.",
-        "company": "swisscom",
+        "company": "Swisscom",
         "portrait": "walter.grolimund.jpg"
       }
     ]
@@ -218,13 +218,13 @@
       {
         "name": "Dr. Thomas Wettstein, BKW FMB Energie AG",
         "bio": "Dr. Thomas Wettstein ist seit 2002 bei der BKW. Vor der aktuellen Funktion war er als Leiter der Abteilung Informatik-Strategie und -Einsatz tätig. Davor als Berater, Projektleiter und Bereichsleiter im Bereich ERP-Systeme. Studium der Betriebswirtschaft, Dissertation am Departement für Informatik der Universität Fribourg.",
-        "company": "bkw",
+        "company": "BKW",
         "portrait": "thomas.wettstein.jpg"
       },
       {
         "name": "Christian Hürlimann, BKW FMB Energie AG",
         "bio": "Christian Hürlimann ist seit 2006 bei der BKW. Vorher war er als Geschäftsfeldleiter für die Akquisition und Abwicklung von Projekten im Bereich Individualentwicklungen für Kunden der öffentlichen Verwaltung tätig. Zuvor war er als Projektleiter und Organisationsberater im Umfeld von Standard- und Individuallösungen tätig. BWL- und VWL-Studium mit Schwerpunkt Wirtschaftsinformatik an den Universitäten Bern und Manchester.",
-        "company": "bkw",
+        "company": "BKW",
         "portrait": "christian.hürlimann.jpg"
       }
     ]
@@ -272,7 +272,7 @@
       {
         "name": "Dr. Andreas Dietzsch, Mobiliar",
         "bio": "Dr. Andreas Dietzsch promovierte an der TU Dresden auf dem Gebiet der Wirtschaftsinformatik. Er arbeitet seit 2001 für die Schweizerische Mobiliar mit den Schwerpunkten Business Process Engineering, Architekturmanagement und Methodenentwicklung. Er ist verantwortlich für die Methode zum Business Engineering und wirkte in Projekten in den Vertriebs-, Schaden- und administrativen Prozessen mit. Als Mitglied des Kernteams erarbeitet er die IT Strategie der Mobiliar.",
-        "company": "mobiliar",
+        "company": "Mobiliar",
         "portrait": "andreas.dietzsch.jpg"
       },
       {
@@ -292,7 +292,7 @@
       {
         "name": "Andreas Spichiger, PostFinance",
         "bio": "Andreas Spichiger ist Dr. phil.-nat. und Diplominformatiker. Verschiedenste Tätigkeiten in den Bereichen Methodik, Applikations- und Unternehmensarchitektur, Entwicklungsleitung, IT-Strategie und Beratung in versch. Unternehmen. Seit 2003 bei der Schweiz. Post, PostFinance Informatik; verantwortlich für Architekturmanagement.",
-        "company": "postfinance",
+        "company": "PostFinance",
         "portrait": "andreas.spichiger.jpg"
       }
     ]
@@ -374,7 +374,7 @@
       {
         "name": "Matthias Stutz, Universität St. Gallen",
         "bio": "Matthias Stutz ist wissenschaftlicher Mitarbeiter und Doktorand am Institut für Wirtschaftsinformatik der Universität St. Gallen (IWI-HSG). Zuvor studierte er Wirtschaftswissenschaften an der Universität St. Gallen mit Vertiefung des Informationsmanagements. Heute ist er in diverse praxisnahe Forschungs-projekte involviert und beschäftigt sich insbesondere mit den Themen IT-Governance, Enterprise Architecture und serviceorientierte Architekturen. Daneben ist er aktiv in die Lehre an der Universität St. Gallen eingebunden.",
-        "company": "universität",
+        "company": "unibe",
         "portrait": "matthias.stutz.jpg"
       }
     ]
@@ -456,7 +456,7 @@
       {
         "name": "Elmar Boschung, PostFinance",
         "bio": "Elmar Boschung hat seine Dissertation in Festkörperphysik an der Universität Freiburg im Jahr 1998 abgeschlossen. Anschliessend hat er bis 2003 als Software-Entwickler und Applikationsverantwortlicher im Team Data Warehouse bei PostFinance gearbeitet. Nach dreijähriger Tätigkeit als Teamleiter Anti Money Laundering (AML) ist er seit 2006 Domänenleiter und verantwortlich für die Applikationen im Umfeld CRM, DWH und AML.",
-        "company": "postfinance",
+        "company": "PostFinance",
         "portrait": "elmar.boschung.jpg"
       },
       {
@@ -564,7 +564,7 @@
       {
         "name": "Sascha P. Corti (Microsoft)",
         "bio": "Sascha P. Corti arbeitet seit dem Jahr 2000 für Microsoft Schweiz als 'System Engineer' mit Fokus auf die Microsoft System Plattform und auf die Software-Entwicklungswerkzeuge von Microsoft. Seine Ausbildung beinhaltet die Studiengänge Informatik-Ingenieur an der ETH Zürich und Wirtschafts-Informatik an der Universität Zürich. Seine praktischen Erfahrungen umfassen 7 Jahre Tätigkeit als Software-Entwickler und -Architekt bei einer Schweizer Bank und Anstellungen als Systems Engineer bei mehreren amerikanischen HiTech Firmen, darunter Silicon Graphics und Microsoft.",
-        "company": "microsoft",
+        "company": "Microsoft",
         "portrait": "sascha.corti.jpg"
       }
     ]
@@ -610,7 +610,7 @@
       {
         "name": "Rudolf Oppliger, PostFinance",
         "bio": "Rudolf Oppliger ist MAS-IT und leitet das Team PFGUI, welches die Umsetzung der GUI-Strategie koordiniert und das Framework PFGUI-OCP basierend auf Eclipse RCP bereitstellt.",
-        "company": "postfinance",
+        "company": "PostFinance",
         "portrait": "rudolf.oppliger.jpg"
       }
     ]
@@ -638,7 +638,7 @@
       {
         "name": "Ernst Kammermann-Gerber, Schweizerische Bundesbahnen SBB",
         "bio": "Ernst Kammermann-Gerber ist seit einem Jahr bei der SBB Informatik im Bereich Architektur und Qualität tätig. Innerhalb des Projektes AQUA, welches zum Ziel hat, die heute in der SBB eingesetzten Clientplattform OPUS weiterzuentwickeln, hat er die Rolle des Lead-Architekten inne. Er ist als Plattformarchitekt im Bereich Clientplattformen tätig.",
-        "company": "sbb",
+        "company": "SBB",
         "portrait": "ernst.kammermann-gerber.jpg"
       }
     ]
@@ -686,7 +686,7 @@
       {
         "name": "Christian Beyeler, BKW FMB Energie AG",
         "bio": "Christian Beyeler ist seit 2003 bei der BKW. Vor der aktuellen Funktion als Leiter ICT-Architecture war er als ICT-Architekt tätig. Davor als Projektleiter und Entwickler von Individuallösungen in den Bereichen E-Commerce und Data Warehousing. BWL-Studium an der Wirtschafts- und Sozialwissenschaftlichen Fakultät der Universität Freiburg.",
-        "company": "bkw",
+        "company": "BKW",
         "portrait": "christian.beyeler.jpg"
       }
     ]
@@ -714,7 +714,7 @@
       {
         "name": "Hans-Jakob Gfeller, SBB Informatik",
         "bio": "Hans-Jakob Gfeller ist Software-Ingenieur FH (Software-Schule Schweiz). Seit 8 Jahren ist er in unterschiedlichen Funktionen bei der SBB IT tätig. Seit 2 Jahren ist er Enterprise Architekt mit Verantwortung für die Domäne 'Marketing und Vertrieb Personenverkehr' und führt das Projekt 'Bebauungsplan' als Projektleiter.",
-        "company": "sbb",
+        "company": "SBB",
         "portrait": "hans-jakob.gfeller.jpg"
       }
     ]
@@ -734,7 +734,7 @@
       {
         "name": "Prof. Dr. Alain Wegmann, Ecole Polytechnique Fédérale de Lausanne (EPFL)",
         "bio": "Alain Wegmann worked 14 years at Logitech in engineering, manfacturing and marketing. In 1997, he joined EPFL as professor and develops, with his team, methods for business and IT alignment.",
-        "company": "ecole",
+        "company": "epfl",
         "portrait": "alain.wegmann.jpg"
       }
     ]
@@ -748,7 +748,7 @@
       {
         "name": "Dierk Matthäus, Universität Bern",
         "bio": "Nach dem Informatik-Studium an der Universität Bern arbeitete Dierk Matthäus als Mitarbeiter, Team- oder Projektleiter und MfA an verschiedenen Orten in der Verwaltung und Privatwirtschaft. Seit 2003 ist er bei der Medizinischen Fakultät der Universität Bern, seit 2007 auch für deren Informatikdienste tätig für die Bereitstellung von vernetzten Softwarelösungen zur Unterstützung der Administration, Lehre und Forschung.",
-        "company": "unibern",
+        "company": "unibe",
         "portrait": ""
       }
     ]
@@ -776,7 +776,7 @@
       {
         "name": "Prof. Dr. Robert Winter, Universität St. Gallen",
         "bio": "Prof. Dr. Robert Winter ist Ordinarius für Wirtschaftsinformatik an der Universität St. Gallen (HSG), Direktor des dortigen Instituts für Wirtschaftsinformatik (IWI-HSG) und akademischer Direktor des Executive Master of Business Engineering (EMBE HSG). Nach dem Studium der Betriebswirtschaft und Wirtschaftspädagogik in Frankfurt am Main war er zehn Jahre am dortigen Institut für Wirtschaftsinformatik als wissenschaftlicher Mitarbeiter tätig. Seit 1996 lehrt und forscht er an der Universität St. Gallen. Prof. Winter baute das 1998 erstmals durchgeführte Executive Master-Programm in Business Engineering auf und leitet es seitdem. Er ist regelmässiger Keynoter bzw. Referent an Veranstaltungen im In- und Ausland, wissenschaftlicher Beirat verschiedener Institutionen, Autor bzw. Herausgeber von mehr als fünfzehn Büchern und Autor bzw. Koautor von mehr als 100 wissenschaftlichen Publikationen in den Bereichen Informationslogistik (seit 1999), Architekturen (seit 2000), Integration (seit 2002), Healthcare (seit 2005) und Unternehmenssteuerung (seit 2007).",
-        "company": "universität",
+        "company": "unibe",
         "portrait": "robert.winter.jpg"
       }
     ]
@@ -804,7 +804,7 @@
       {
         "name": "Willy Müller, Eidg. Finanzdepartement EFD",
         "bio": "Willy Müller arbeitet als Enterprise Architect beim Informatikstrategieorgan Bund (ISB). Der Schwerpunkt seiner Arbeiten sind E-Government-Architektur und SOA. Er ist Gründer des Vereins eCH, welcher Standards für E-Government in der Schweiz herausgibt.",
-        "company": "eidg",
+        "company": "evd",
         "portrait": "willy.müller.jpg"
       }
     ]
@@ -830,7 +830,7 @@
       {
         "name": "Bruno Linder, Schweizerische Bundesbahnen SBB",
         "bio": "Bruno Linder ist seit Herbst 2007 Leiter der Testfactory in der SBB IT. Davor leitete er das Quality- & Releasemanagement einer Versicherung und war 20 Jahre im Informatikdienstleistungsgeschäft für Kunden (Banken, Versicherungen) tätig.",
-        "company": "sbb",
+        "company": "SBB",
         "portrait": "bruno.linder.jpg"
       },
       {
@@ -956,7 +956,7 @@
       {
         "name": "Urs Bürge, Urs Bürge Beratung GmbH",
         "bio": "Inhaber Urs Bürge Beratung GmbH für Informatik und Geschäftsprozess-Management in der öffentlichen Verwaltung. Seit Herbst 2006 selbständiger Berater mit Spezialisierung in den Bereichen eGovernment, eJustice, Digitale Identitäten. Früher IT-Führungsaufgaben im Bundesamt für Justiz, bei Unisys und im Generalsekretariat EJPD als CIO EJPD.",
-        "company": "urs"
+        "company": "urscorp"
       }
     ]
   },
@@ -1002,7 +1002,7 @@
       {
         "name": "Markus Siffert, PostFinance",
         "bio": "Sicherheitsbeauftragter Informatik PostFinance. Herr Siffert ist seit dem Januar 2007 in der IT-Sicherheit PF zuständig für Erstellung und Pflege des IT-Sicherheits-Frameworks, Planung und Durchführung von Sicherheitsaudits und berät die IT-Architektur PF in Sicherheitsfragen. Er ist diplomierter Informatiker und Absolvent des MAS Informationssicherheit. Als Berater, Projektleiter und Linienvorgesetzter hat Herr Siffert in den vergangenen 10 Jahren bei verschiedenen Unternehmen den Aufbau und Betrieb von Informationssicherheitsmanagementsystemen und -lösungen massgeblich mitgestaltet.",
-        "company": "postfinance"
+        "company": "PostFinance"
       }
     ]
   },
@@ -1060,7 +1060,7 @@
       {
         "name": "Vivian Cina, PostFinance",
         "bio": "IT-Architekt Card Issuing & Acquiring. Vivian Cina studierte an der ETH Lausanne Elektrotechnik. Nach dem Studium war er mehrere Jahre als Software-Entwickler und Teamleiter bei ABB tätig. Danach arbeitete er als IT-Berater im In- und Ausland in verschiedenen Projekten bei grossen Dienstleistungsunternehmen im Bereich Customer Relationship Management. Seit 2006 ist er bei PostFinance als IT-Architekt angestellt und ist heute für den Bereich Kartengeld verantwortlich.",
-        "company": "postfinance"
+        "company": "PostFinance"
       }
     ]
   },
@@ -1124,7 +1124,7 @@
       {
         "name": "Hans Ulrich Wiedmer, Information Service Center ISCeco, Eidgenössisches Volkswirtschaftsdepartement",
         "bio": "SOA-Architekt. Hans Ulrich Wiedmer studierte Informatik an der ETH Zürich. Nach Tätigkeiten in der Internationalen Normung, als Software-Entwickler und als Dozent arbeitet er seit 2003 in der Bundesinformatik. Als SOA-Architekt befasst er sich im EVD u.a. mit der Informations-Architektur.",
-        "company": "information",
+        "company": "infoag",
         "portrait": "hans.wiedmer.jpg"
       }
     ]
@@ -1152,7 +1152,7 @@
       {
         "name": "Hansueli Locher, Schweizerische Nationalbibliothek NB, Eidgenössisches Departement des Innern",
         "bio": "Leiter Digitale Dienste. Nach seiner Ausbildung zum Primarlehrer und einigen Jahren Berufspraxis machte Hansueli Locher sein Hobby, die Informatik, zum Beruf und arbeitete fortan im Bundesamt für Statistik, wo er für Datenbankbearbeitungen zuständig war. Er entwickelte in dieser Zeit auch ein Bibliotheksprogramm für das Amt und begleitete Projekte an der Schnittstelle zwischen Informatik und Information. Heute ist Hansueli Locher als Leiter der Digitalen Dienste in der Schweizerischen Nationalbibliothek tätig und befasst sich unter anderem mit den technischen Aspekten der Langzeitarchivierung von digitalen Publikationen.",
-        "company": "schweizerische",
+        "company": "SNB",
         "portrait": "hansueli.locher.jpg"
       }
     ]
@@ -1178,7 +1178,7 @@
       {
         "name": "Dr. Pascal Kurtansky, ZKB",
         "bio": "IT-Architekt. Pascal Kurtansky arbeitet seit vier Jahren bei der ZKB als IT-Architekt. In der strategischen IT-Architektur erarbeitet er Zielarchitekturen an der Schnittstelle zwischen Business und IT. Vor seiner Tätigkeit bei der ZKB promovierte er an der ETH Zürich, wo er auch sein Informatikstudium abgeschlossen hatte.",
-        "company": "zkb",
+        "company": "ZKB",
         "portrait": "pascal.kurtansky.jpg"
       }
     ]
@@ -1192,13 +1192,13 @@
       {
         "name": "Dr. Felix Grimm, BKW FMB Energie AG",
         "bio": "Dr. phil.-nat., ICT Architekt. Felix Grimm hat an der Universität Bern im Bereich Künstliche Intelligenz promoviert. Er hat bei der Mobiliar verschiedene Aufgaben in der IT-Entwicklung und Unternehmensarchitektur und bei der RTC in der Lösungs- und Applikationsarchitektur wahrgenommen. Seit 2011 ist er bei der BKW als ICT-Architekt tätig.",
-        "company": "bkw",
+        "company": "BKW",
         "portrait": "felix.grimm.jpg"
       },
       {
         "name": "Baltisar Oswald, BKW FMB Energie AG",
         "bio": "lic. phil.-nat., Applikationsentwickler Java. Baltisar Oswald hat an der Universität Bern Mathematik und Informatik studiert. Parallel dazu hat er als Entwickler bei eInsurance Agency AG gearbeitet sowie verschiedene Lehrtätigkeiten ausgeübt. Seit 2006 ist er Entwickler bei der BKW mit den Schwerpunkten Java und Integration.",
-        "company": "bkw",
+        "company": "BKW",
         "portrait": "baltisar.oswald.jpg"
       }
     ]
@@ -1260,13 +1260,13 @@
       {
         "name": "Peter Moosmann, SBB",
         "bio": "Peter Moosmann (Ing. FH) hat über fünf Jahre am Aufbau der Unternehmensarchitektur der SBB mitgewirkt. Seit 2010 leitet er diesen Bereich. Zuvor war er in verschiedenen Rollen als Entwickler, Softwarearchitekt und Projektleiter bei einem Informatikdienstleister tätig.",
-        "company": "sbb",
+        "company": "SBB",
         "portrait": ""
       },
       {
         "name": "Jakob Erber, SBB",
         "bio": "Jakob Erber (M.Sc.) ist seit 3 Jahren als Unternehmensarchitekt bei der SBB tätig. Seit 2010 leitet er das Team Architekturmanagement. Zudem ist er als Domänenarchitekt Planung und Produktion Trasse für die betreffende Anwendung verantwortlich. Zuvor war er in verschiedenen Rollen als Entwickler und Softwarearchitekt bei verschiedenen Informatikdienstleistern tätig.",
-        "company": "sbb",
+        "company": "SBB",
         "portrait": ""
       }
     ]
@@ -1298,7 +1298,7 @@
       {
         "name": "Dr. Andreas Kronawitter, BLS",
         "bio": "Seit 2010 arbeitet Andreas Kronawitter bei der BLS Informatik als Chef-Architekt für die Strategieentwicklung, Architekturbebauungsplanung, Projektportfolio- und Projektmanagement. Davor war er bei der SBB als Projektleiter, Unternehmensarchitekt und Bereichsleiter tätig. Er ist ausgebildeter Astrophysiker.",
-        "company": "bls",
+        "company": "BLS",
         "portrait": "andreas.kronawitter.jpg"
       }
     ]
@@ -1338,7 +1338,7 @@
       {
         "name": "Gerhard Schedler, Swisscom",
         "bio": "Bevor Gerhard Schedler anfangs 2012 zur Swisscom wechselte, baute er das Unternehmen IDENTEC SOLUTIONS in Lustenau (Österreich) zu einem der weltweit führenden Anbieter von wireless Sensor basierten Tracking- und Tracinglösungen auf. Gerhard Schedler studierte an der Interstaatlichen Hochschule für Technik in Buchs (Schweiz) und absolvierte sein MBA-Studium an der führenden schottischen Wirtschaftsuniversität in Glasgow (Schottland).",
-        "company": "swisscom",
+        "company": "Swisscom",
         "portrait": "gerhard.schedler.jpg"
       }
     ]
@@ -1352,7 +1352,7 @@
       {
         "name": "Philip Büchler, SBB",
         "bio": "Philip Büchler ist als Technologiemanager Mobile bei der SBB für den Einsatz und den Lifecycle mobiler Technolgien zuständig. Als Leiter Fachgruppe Mobile koordiniert er die Bedarfsplanung und den Betrieb mobiler Clients, Anwendungen und Integrationssysteme.",
-        "company": "sbb",
+        "company": "SBB",
         "portrait": "philip.büchler.jpg"
       }
     ]
@@ -1366,7 +1366,7 @@
       {
         "name": "Marco Knaeple, BLS",
         "bio": "Seit Oktober 2011 hat Marco Knaeple die technische Führung des Projektes FISZ (Fahrgastinformation zentral) bei den BLS inne. Davor war er bei der Firma Steria angestellt und übernahm verschiedene Mandate bei den SBB. Unter anderem führte er das KISZ (Kundeninformation zentral) der SBB als Gesamtprojektleiter zum Erfolg.",
-        "company": "bls",
+        "company": "BLS",
         "portrait": "marco.knaeple.jpg"
       }
     ]
@@ -1418,7 +1418,7 @@
       {
         "name": "Martin Kochert, BKW FMB Energie AG",
         "bio": "Martin Kochert ist Diplom-Betriebswirt mit Fachrichtung Wirtschaftsinformatik. Er verfügt über eine langjährige Berufserfahrung in diversen leitenden Funktionen, u.a. als Consultant, Projektleiter, Leiter SAP Technology & Architecture, Leiter SAP CC und zuletzt Outsourcing Transition Executive. Er war u.a. für IMG Information Management Group AG, resource informatik ag und CSC Switzerland GmbH tätig. Seit 2011 leitet er das ICT-Architecture-Management bei der BKW-Gruppe.",
-        "company": "bkw",
+        "company": "BKW",
         "portrait": ""
       }
     ]
@@ -1452,13 +1452,13 @@
       {
         "name": "Hans-Jakob Gfeller, SBB",
         "bio": "Hans-Jakob Gfeller (Ing. FH) hat über fünf Jahre am Aufbau der Unternehmensarchitektur der SBB mitgewirkt. Seit 2010 leitet er das Team «Domänenarchitektur». Zuvor war er in verschiedenen Rollen als Entwickler, Softwarearchitekt, Domänenarchitekt und Projektleiter tätig.",
-        "company": "sbb",
+        "company": "SBB",
         "portrait": "hans-jakob.gfeller.jpg"
       },
       {
         "name": "Stephan Hofstetter, SBB",
         "bio": "Stephan Hofstetter war mehrere Jahre im Account-Management tätig und ist seit dem 01.01.11 strategischer IT-Projektportfoliomanager. Seine Hauptaufgabe besteht darin, eine koordinierte IT-Projektportfolio-Steuerung, -Finanzplanung und -Bewirtschaftung gegenüber dem CIO sicherzustellen. Zuvor war er im Lösungsverkauf und in der Beratung tätig.",
-        "company": "sbb",
+        "company": "SBB",
         "portrait": "stephan.hofstetter.jpg"
       }
     ]
@@ -1518,7 +1518,7 @@
       {
         "name": "Dr. Matthias Stürmer, /ch/open",
         "bio": "Matthias Stürmer ist Manager bei Ernst & Young Schweiz mit Spezialisierung auf Open Source Software, Open Government Data und Social Media Governance. Er studierte an der Universität Bern Betriebswirtschaft und Informatik und schloss 2005 mit einer Lizenziatsarbeit zu «Open Source Community Building» ab. Bis 2009 doktorierte er an der ETH Zürich am Lehrstuhl für Strategisches Management und Innovation und erforschte die Zusammenarbeit zwischen Open Source Communities und Technologie-Unternehmen. Danach arbeitete er beim Schweizer Software-Unternehmen Liip AG und ist seit 2010 bei Ernst & Young in Bern tätig. Matthias Stürmer ist Vorstandsmitglied von /ch/open, Geschäftsleiter der Parlamentarischen Gruppe Digitale Nachhaltigkeit und Mitgründer des Open Government Data Vereins Opendata.ch. Zudem ist er Leiter der Working Group Office Interoperability bei der Open Source Business Alliance OSBA und gehört als Stadtrat dem Parlament der Stadt Bern an.",
-        "company": "/ch/open",
+        "company": "chopen",
         "portrait": "matthias.stürmer.jpg"
       }
     ]
@@ -1544,7 +1544,7 @@
       {
         "name": "Willy Müller, Informatiksteuerungsorgan des Bundes ISB",
         "bio": "Willy Müller arbeitet beim Informatiksteuerungsorgan Bund ISB. Er studierte Psychologie und Informatik und hat den Verein eCH ins Leben gerufen, der E-Government-Standards für die Schweizer Behörden herausgibt. Als Leiter der Arbeiten zur E-Government-Architektur Schweiz, einem priorisierten E-Government-Vorhaben der E-Government-Strategie, war er verantwortlich für die Erarbeitung der Cloud-Strategie der Schweizer Behörden.",
-        "company": "isb",
+        "company": "isbbund",
         "portrait": ""
       }
     ]
@@ -1586,13 +1586,13 @@
       {
         "name": "Zacharias Laïbi, Swisscom (Schweiz) AG",
         "bio": "Zacharias Laïbi ist seit über 15 Jahren in der Telekommunikationsbranche tätig. In seiner Funktion als Unit-Leiter verantwortet er die Entwicklung verschiedener Applikationen im Umfeld des Customer Experience Management. Als Führungskraft bei Swisscom (Schweiz) AG hat er die Entwicklung der Online-Kanäle massgebend geprägt. In den letzten Jahren wurde aus dem Online-Spezialist ein Evangelist für Cross-Channel Management.",
-        "company": "swisscom",
+        "company": "Swisscom",
         "portrait": "zacharias.laïbi.jpg"
       },
       {
         "name": "Wolfgang Giersche, Zühlke Engineering AG",
         "bio": "Wolfgang Giersche ist als Software Architekt und Business Unit Leiter bei der Zühlke Engineering AG verantwortlich für die Umsetzung komplexer Entwicklungsprojekte. Er begleitet derzeit ein grosses Engineering Team bei der Übergabe der Projektverantwortung von der Swisscom zur Zühlke.",
-        "company": "zühlke",
+        "company": "zuehlke",
         "portrait": "wolfgang.giersche.jpg"
       }
     ]
@@ -1606,13 +1606,13 @@
       {
         "name": "Zacharias Laïbi, Swisscom (Schweiz) AG",
         "bio": "Zacharias Laïbi ist seit über 15 Jahren in der Telekommunikationsbranche tätig. In seiner Funktion als Unit-Leiter verantwortet er die Entwicklung verschiedener Applikationen im Umfeld des Customer Experience Management. Als Führungskraft bei Swisscom (Schweiz) AG hat er die Entwicklung der Online-Kanäle massgebend geprägt. In den letzten Jahren wurde aus dem Online-Spezialist ein Evangelist für Cross-Channel Management.",
-        "company": "swisscom",
+        "company": "Swisscom",
         "portrait": "zacharias.laïbi.jpg"
       },
       {
         "name": "Wolfgang Giersche, Zühlke Engineering AG",
         "bio": "Wolfgang Giersche ist als Software Architekt und Business Unit Leiter bei der Zühlke Engineering AG verantwortlich für die Umsetzung komplexer Entwicklungsprojekte. Er begleitet derzeit ein grosses Engineering Team bei der Übergabe der Projektverantwortung von der Swisscom zur Zühlke.",
-        "company": "zühlke",
+        "company": "zuehlke",
         "portrait": "wolfgang.giersche.jpg"
       }
     ]
@@ -1640,13 +1640,13 @@
       {
         "name": "Hans Ulrich Wiedmer, Eidgenössisches Departement für Wirtschaft, Bildung und Forschung",
         "bio": "Hans Ulrich Wiedmer studierte Informatik an der ETH Zürich und arbeitete dort einige Jahre am Institut für Werkzeugmaschinen und Fertigung IWF, wo er u.a. an einem ISO/IEC Standard für den Austausch von Normteildaten mitwirkte. Er arbeitet seit 2003 in der Bundesinformatik. Als SOA-Architekt befasst er sich u.a. mit dem Management des SOA-Service-Portfolios WBF und der Unterstützung der Service-Anbieter.",
-        "company": "eidgenössisches",
+        "company": "evd",
         "portrait": "hans.wiedmer.jpg"
       },
       {
         "name": "Stephan Sutter, ti&m AG",
         "bio": "Stephan Sutter studierte an der HTL Elektro-Ingenieurwesen in Industrie-Elektronik und erwarb den Master of Science in Telematics (ICT) Management. Während 18 Jahren sammelte er in der Industrie Erfahrungen als Software-Entwickler (Multimedia, Telekom, Mechatronic), Projektleiter und IT-Verantwortlicher. Seit rund 10 Jahren ist er als IT-Architekt und seit 6 Jahren in der ICT-Management-Beratung bei Banken und Versicherungen tätig.",
-        "company": "ti&m",
+        "company": "ti8m",
         "portrait": "stephan.sutter.jpg"
       }
     ]
@@ -1672,7 +1672,7 @@
       {
         "name": "Erich Helwin, PostAuto Schweiz AG",
         "bio": "Seine Karriere im Bereich ICT begann Erich Helwin als Computertechniker bei Nixdorf. Weitere Stationen waren Ascom Hasler, Wang, Unisys - Positionen in Technik, Customer Care, Marketing und Verkauf, wie Global Account Director und Mitglied der erweiterten Geschäftsleitung (Unisys Schweiz). Er hat Innovationen wie die Bankomaten-Einführung in der Schweiz oder das INFNET Telecom LAN für Telecom PTT initiiert und vorangetrieben. Weitere Highlights sind die Mobile Payment Lösung von PostFinance, der Mobile Boarding Pass, Anwendungen von Augmented Reality, Mobile Tagging und Mobile Apps – darunter auch die PostAuto App.",
-        "company": "postauto",
+        "company": "Post",
         "portrait": "erich.helwin.jpg"
       },
       {
@@ -1692,7 +1692,7 @@
       {
         "name": "Erich Helwin, PostAuto Schweiz AG",
         "bio": "Seine Karriere im Bereich ICT begann Erich Helwin als Computertechniker bei Nixdorf. Weitere Stationen waren Ascom Hasler, Wang, Unisys - Positionen in Technik, Customer Care, Marketing und Verkauf, wie Global Account Director und Mitglied der erweiterten Geschäftsleitung (Unisys Schweiz). Er hat Innovationen wie die Bankomaten-Einführung in der Schweiz oder das INFNET Telecom LAN für Telecom PTT initiiert und vorangetrieben. Weitere Highlights sind die Mobile Payment Lösung von PostFinance, der Mobile Boarding Pass, Anwendungen von Augmented Reality, Mobile Tagging und Mobile Apps – darunter auch die PostAuto App.",
-        "company": "postauto",
+        "company": "Post",
         "portrait": "erich.helwin.jpg"
       },
       {
@@ -1712,13 +1712,13 @@
       {
         "name": "Tobias Röthlisberger, SBB IT",
         "bio": "Tobias Röthlisberger ist seit 2010 als Teamleiter Technologiemanagement in der SBB IT tätig. In dieser Architektursteuerungsfunktion definiert er die Technologien und Plattformen für sämtliche Geschäftsbereiche der SBB IT. Aktuell ist er als Auftraggeber der Mobile Enterprise Application Plattform (MEAP) für deren architektonische und organisatorische Positionierung zuständig.",
-        "company": "sbb",
+        "company": "SBB",
         "portrait": ""
       },
       {
         "name": "Erich Siegrist, SBB IT",
         "bio": "Erich Siegrist gestaltet seit 2005 als IT-Architekt die Technologielandschaft der SBB IT. 2011 erarbeitete er eine \"Bring Your Own Device\"-Strategie für die SBB und verantwortete deren technische Umsetzung. Aktuell ist er als Leiter Technologiearchitektur für die strategische Weiterentwicklung von «Mobile Computing» bei der SBB IT verantwortlich.",
-        "company": "sbb",
+        "company": "SBB",
         "portrait": ""
       }
     ]
@@ -1764,7 +1764,7 @@
       {
         "name": "Max Klaus, Melde- und Analysestelle Informationssicherung MELANI, Informatiksteuerungsorgan Bund ISB",
         "bio": "Max Klaus trat 2002 in die Bundesverwaltung ein, wo er zunächst im Projekt 'Guichet Virtuel' der Schweizerischen Bundeskanzlei tätig war, bevor er ins Projekt „Vote électronique' wechselte. Dort war er insbesondere für die Umsetzung der Bundesvorgaben im Zürcher E-Voting-Projekt zuständig. Seit September 2008 ist er stellvertretender Leiter der Melde- und Analysestelle Informationssicherung MELANI. Zu seinen Hauptaufgaben gehören die strategische Ausrichtung, die Bearbeitung parlamentarischer Geschäfte und die Medienarbeit.",
-        "company": "melde-",
+        "company": "isbbund",
         "portrait": "max.klaus.jpg"
       }
     ]
@@ -1778,7 +1778,7 @@
       {
         "name": "Ernst Kammermann-Gerber, SBB IT",
         "bio": "Ernst Kammermann-Gerber ist seit 2007 als IT-Architekt bei der SBB tätig. Seit November 2009 ist er verantwortlicher Technologie Manager für die Technologie Gruppe Network & Security. Er hat 2012 seine Masterarbeit zum Thema Netzwerkzonierung geschrieben. Im Projekt «GNWP – Netzwerkzonierung» hat er seit Beginn der Studie die Rolle des Lead-Architekten inne.",
-        "company": "sbb",
+        "company": "SBB",
         "portrait": "ernst.kammermann-gerber.jpg"
       },
       {
@@ -1798,7 +1798,7 @@
       {
         "name": "Peter Andres, Informatik Service Center EJPD",
         "bio": "Peter Andres arbeitet seit 2003 beim EJPD als ICT-Architekt und ist seit 2007 Leiter der Abteilung Technologie des Informatik Service Center (ISC). Er hat mehrjährige Erfahrung in verteilten, sicherheitskritischen Softwarearchitekturen und spezialisierte Kenntnisse im Bereich Java EE-Anwendungen. Er absolvierte mehrere Weiterbildungen rund um das Thema der IT-Sicherheit und erlangte 2011 den CISSP (Certified Information Systems Security Professional). Aktuell ist er als Auftraggeber und Solution-Architekt der MobileID SSO-Portal.",
-        "company": "isc-ejpd",
+        "company": "iscejpd",
         "portrait": ""
       }
     ]
@@ -1824,7 +1824,7 @@
       {
         "name": "David Kauer, PostFinance AG",
         "bio": "David Kauer arbeitet seit 14 Jahren bei PostFinance. Er hat als Teilprojektleiter bei der Einführung der ersten vollständig inhouse realisierten E-Commerce-Lösung von PostFinance im 2003 mitgewirkt und als Produktmanager und Projektleiter E-Payment im 2008 u. a. das einfache Zahlen ohne Lesegerät mit PostFinance Card im Internetshop realisiert. 2011 führte er gemeinsam mit den SBB und Datatrans One-Touch-Payments mit der PostFinance Card im SBB Mobile Ticketshop basierend auf einer Alias-Lösung ein. Heute arbeitet David Kauer als Senior Produktmanager an der Konzeption, Realisierung und Weiterentwicklung neuer digitaler Geschäftsmodelle wie z. B. Digital Wallet und Digital Goods.",
-        "company": "postfinance",
+        "company": "PostFinance",
         "portrait": "david.kauer.jpg"
       }
     ]
@@ -1858,7 +1858,7 @@
       {
         "name": "Victor Schlegel, Swisscom Schweiz AG",
         "bio": "Victor Schlegel begann seine Karriere in Japan bei Fujitsu Inc., Global Marketing Department. Nach den Zwischenstationen bei T-Systems und Credit Suisse, wo er als Black Belt die Effizienzsteigerungsprojekte vorantrieb, hat er die Führung von BigData Themas bei Swisscom Schweiz AG übernommen.",
-        "company": "swisscom",
+        "company": "Swisscom",
         "portrait": "victor.schlegel.jpg"
       }
     ]
@@ -1872,7 +1872,7 @@
       {
         "name": "Eric Müller, PostFinance AG",
         "bio": "Nach Informatik Studium in der Schweiz und Schottland hat sich Eric Müller erst mit Maschinensteuerungen und Realtime Systemen auseinandergesetzt. Später folgte der Wechsel in die Finanzindustrie. Bei der UBS in Zürich war Eric Müller ein paar Jahre im Online-Bereich tätig, bevor er zu Paine Webber in New York wechselte, wo er den Online-Arbeitsplatz für die Kundenberater einführte. Zurück in Zürich führte er Marktdatenprojekte für die Schweiz und APAC, sowie Sales Tools für Strukturierte Produkte. Bei PostFinance ist Eric Müller nun im Distributionsbereich tätig. Das Aufgabenfeld umfasst u.a. die digitalen Kanäle.",
-        "company": "postfinance"
+        "company": "PostFinance"
       }
     ]
   },
@@ -1885,13 +1885,13 @@
       {
         "name": "Bernhard Rytz, SBB IT",
         "bio": "Bernhard Rytz, Dipl. Inf. Ing. ETH und EMBA HSG hat als Entwickler, Projektleiter und Architekt über 12 Jahre Informatikdienstleistungen in den Bereichen Finance, Aerospace und Telecom erbracht. 2005 hat er begonnen, die Unternehmensarchitektur bei den Schweizerischen Bundesbahnen SBB aufzubauen. Seit 2010 ist er Chef IT Architekt der SBB und führt im Auftrag der Konzernleitung die Umsetzung der Datenstrategie.",
-        "company": "sbb",
+        "company": "SBB",
         "portrait": ""
       },
       {
         "name": "Jürg Frühauf, SBB IT",
         "bio": "Jürg Frühauf nahm im Oktober 2008 seine Tätigkeit im Bereich Business Intelligence und Data Warehousing der SBB Informatik auf. Seit 2014 ist er als Leiter Business Information Management bei der SBB IT für die Erstellung von BI/DWH-Lösungen mit SAP und Non-SAP Technologien zuständig. Seit gut zwei Jahren setzt er sich zudem mit Big Data Ansätzen und deren Nutzen für das Unternehmen auseinander.",
-        "company": "sbb",
+        "company": "SBB",
         "portrait": ""
       }
     ]
@@ -1931,7 +1931,7 @@
       {
         "name": "Werner Schäfer, PostFinance AG",
         "bio": "Werner Schäfer ist seit mehr als 30 Jahren in der Softwareentwicklung tätig. Er arbeitete als Architekt in unterschiedlichen Firmen wie die Roche, Galenica, SBB und nun als Chef-Architekt bei der PostFinance. Bei seinen Tätigkeiten hatte er immer einen Fuss in der Business-Analyse und der Methodik.",
-        "company": "postfinance",
+        "company": "PostFinance",
         "portrait": "werner.schäfer.jpg"
       }
     ]
@@ -1945,7 +1945,7 @@
       {
         "name": "Andreas Fuhrer, SBB Informatik",
         "bio": "Andreas Fuhrer studierte Physik und Mathematik an der Universität Bern und bildete sich an der HSG in Business Engineering weiter. Nach Stationen in der physikalischen und medizinischen Forschung setzt er seit fünfzehn Jahren Technologie- und IT-Projekte für die SBB um und bekleidete verschiedene Linienfunktionen im den Bereichen Innovation und IT. Aktuell ist er verantwortlich für das interdisziplinäre Branchenprogramm 'Zukünftiges Preissystem öV Schweiz', welches eine neue Ticket-Vertriebsplattform für die über 200 Transportunternehmen des öV Schweiz einführt.",
-        "company": "sbb",
+        "company": "SBB",
         "portrait": "andreas.fuhrer.jpg"
       }
     ]
@@ -1971,7 +1971,7 @@
       {
         "name": "André Golliez, Opendata.ch",
         "bio": "André Golliez hat nach mehreren Jahren Berufstätigkeit in der IT-Industrie Anfang der 80er Jahre an der ETH Zürich Informatik studiert und anschliessend über zehn Jahre im IT Management der UBS gearbeitet. 1999 hat er zusammen mit vier Partnern die IT-Beratungsfirma itopia gegründet. Ab Juli 2015 wird er unter dem Namen Golliez Open Data Consulting als Berater für die Publikation und Nutzung offener Daten tätig sein. Von 2004 bis 2009 war André Golliez Präsident der Schweizer Informatik Gesellschaft. Seit 2010 hat er zusammen mit Kollegen die Open Data Bewegung in der Schweiz aufgebaut und ist Präsident des 2012 gegründeten Vereins opendata.ch, Swiss Chapter der Open Knowledge Foundation. Seit Juli 2014 leitet André Golliez im Auftrag von Swissuniversities, der Rektorenkonferenz der Schweizer Hochschulen, das Pilotprojekt 'Open Research Data Plattform Schweiz'.",
-        "company": "opendata",
+        "company": "opendatach",
         "portrait": ""
       }
     ]
@@ -1991,7 +1991,7 @@
       {
         "name": "Christian Trachsel, SBB",
         "bio": "Christian Trachsel ist seit Dezember 2011 im Bereich Architektur & Qualität für die Datenarchitektur verantwortlich. Davor hat er 15 Jahre lang die Datenarchitektur eines Finanzdienstleisters geprägt und geleitet. Die drei Themen Datenaustausch mit Dritten, Dateninventar und Datenstrategie beschäftigen ihn aktuell.",
-        "company": "sbb",
+        "company": "SBB",
         "portrait": "christian.trachsel.jpg"
       }
     ]
@@ -2005,7 +2005,7 @@
       {
         "name": "Dr. Matthias Stürmer, Universität Bern",
         "bio": "Matthias Stürmer ist Leiter der Forschungsstelle Digitale Nachhaltigkeit am Institut für Wirtschaftsinformatik der Universität Bern. Dort befasst er sich als Oberassistent in der Lehre, Forschung und Beratung mit Open Data, Open Government, Open Source Software und ICT-Beschaffung. Er hat die Vorlesung \"Open Data\" entwickelt und ist Dozent in dieser und weiteren Veranstaltungen. Vorgängig arbeitete er bis 2013 als Manager bei EY (Ernst & Young) sowie als Projektleiter beim Schweizer Software-Unternehmen Liip AG. Bis 2009 doktorierte er an der ETH Zürich am Lehrstuhl für Strategisches Management und Innovation und hat zuvor an der Universität Bern Betriebswirtschaft und Informatik studiert. Matthias Stürmer ist ausserdem Geschäftsleiter der Parlamentarischen Gruppe Digitale Nachhaltigkeit sowie Mitgründer und Vorstandsmitglied des Vereins Opendata.ch.",
-        "company": "universität"
+        "company": "unibe"
       }
     ]
   },
@@ -2024,7 +2024,7 @@
       {
         "name": "Christian Trachsel, SBB",
         "bio": "Christian Trachsel ist seit Dezember 2011 im Bereich Architektur & Qualität für die Datenarchitektur verantwortlich. Davor hat er 15 Jahre lang die Datenarchitektur eines Finanzdienstleisters geprägt und geleitet. Die drei Themen Datenaustausch mit Dritten, Dateninventar und Datenstrategie beschäftigen ihn aktuell.",
-        "company": "sbb",
+        "company": "SBB",
         "portrait": "christian.trachsel.jpg"
       }
     ]
@@ -2065,12 +2065,12 @@
       {
         "name": "Kirsten Dolfus, SBB AG",
         "bio": "Kirsten Dolfus ist seit 2010 bei der SBB tätig. Sie arbeitete zunächst in der Flottentechnik des Personenverkehr als Systemingenieurin für Fahrzeuginformatik und als Projektleiterin, bevor sie im August 2015 zur SBB IT wechselte. Netzwerkthemen wie Ubiquitous Computing und IoT fühlt sich Kirsten schon seit geraumer Zeit verbunden, da sie im Kontext der drahtlosen Sensornetzwerke an der FU Berlin promovierte, und als PostDoc an der Universität Bern im Bereich Mesh-Netzwerke arbeitete.",
-        "company": "sbb"
+        "company": "SBB"
       },
       {
         "name": "Markus Basler, SBB AG",
         "bio": "Markus Basler arbeitet seit September 2014 bei der SBB und kümmert sich um strategische Themen im Kontext der IT. Davor hat er als Unternehmensberater firmeninterne ICT Service Provider bei ihrer Weiterentwicklung und Repositionierung unterstützt. Markus prägt aktuell die Digitale Transformation der SBB.",
-        "company": "sbb"
+        "company": "SBB"
       }
     ]
   },
@@ -2103,7 +2103,7 @@
       {
         "name": "Stephan Haller, Berner Fachhochschule",
         "bio": "Stephan Haller ist Dozent am E-Government-Institut der Berner Fachhochschule in den Bereichen Linked Open Data und e-Business. Vorher arbeitete er über 14 Jahre für die SAP im Bereich Internet der Dinge. So initiierte er 1998 die Forschungs- und Entwicklungsaktivitäten der SAP im Bereich RFID, war als Berater und Technologieexperte sowohl in der Produktentwicklung wie auch in Kundenprojekten tätig und trieb die RFID Standardisierung bei EPCglobal voran. Ab 2004 war Stephan für SAP Research verantwortlich für die Akquisition und Ausführung von Europäischen Forschungsprojekten zu den Themen RFID, Sensornetze, Internet der Dinge und Future Internet und wurde von der Europäischen Kommission in verschiedene Expertengruppen diesbezüglich berufen. Seit 2012 agiert Stephan ausserdem für die Europäische Kommission als Evaluator und Reviewer von Forschungsprojekten in den Bereichen Internet der Dinge und Cloud.",
-        "company": "berner"
+        "company": "bfh"
       }
     ]
   },
@@ -2141,7 +2141,7 @@
       {
         "name": "Ralf Leipner, PostFinance AG",
         "bio": "Ralf Leipner ist Leitender Architekt der Domäne Analytics & Risk Management der PostFinance AG. Er ist verantwortlich für Architektur und Design der DWH / BI Umgebung basierend auf In-Memory- und Hadoop-Technologie mit Datenintegration in Echtzeit. Zusätzlich zur Erstellung und Kommunikation von Zielarchitektur und Roadmaps für seine Domäne führt er Solution Architects, berät Fachabteilungen und unterstützt Projekte und Beschaffungen. Vor seinem Engagement bei der PostFinance AG arbeitete Ralf als leitender Architekt für SOA & Systemintegration, Business Intelligence und CRM bei Swisscom Schweiz AG und Swisscom Mobile AG. Parallel dazu wirkte er als Dozent und Fachbereichsleiter Wirtschaftsinformatik an der Privaten Hochschule für Wirtschaft in Bern. Davor arbeitete er in unterschiedlichen Positionen als IT-Berater und -Architekt. Sein Studium absolvierte Ralf an der Freien Universität Berlin in den Hauptfächern Wirtschaftsinformatik und Organisation & Führung.",
-        "company": "postfinance",
+        "company": "PostFinance",
         "portrait": ""
       }
     ]
@@ -2199,7 +2199,7 @@
       {
         "name": "Markus Basler, SBB AG",
         "bio": "Markus Basler arbeitet seit September 2014 bei der SBB und kümmert sich um strategische Fragestellungen im Kontext der Digitalisierung der SBB. Davor hat er als Unternehmensberater firmeninterne ICT Service Provider bei ihrer Weiterentwicklung und dem Schärfen ihres Profils gegenüber dem Business unterstützt. Markus prägt aktuell als stv. Programmleiter die Digitale Transformation der SBB. Hierbei legt er zur Zeit sein Augenmerk auf digitale Geschäftsmodelle/digitales Ökosystem sowie auf die Auswirkungen der Digitalisierung auf die Mitarbeitenden.",
-        "company": "sbb",
+        "company": "SBB",
         "portrait": "markus.basler.jpg"
       }
     ]
@@ -2233,7 +2233,7 @@
       {
         "name": "Andreas Grütter, Die Mobiliar",
         "bio": "Andreas Grütter arbeitet seit November 2012 bei der Mobiliar. Er ist eingestiegen als Software Architekt, hat danach die Applikationsarchitektur aufgebaut, leitet seit April 2015 die gesamte IT Architektur und ist Mitglied der IT Führung. Mit seinem Team kümmert er sich vorwiegend um die Modernisierung und Transformation der IT Landschaft, mit dem Ziel der Mobiliar den Weg in die digitale Zukunft zu ermöglichen. Zuvor war Andreas Leiter der IT Architektur in der Bank Julius Bär und im HP BSC (vormals RTC). Er hatte während 10 Jahren als Software Engineer, IT Architekt und technischer Projektleiter Kernbankenlösungen entwickelt und migriert.",
-        "company": "mobiliar",
+        "company": "Mobiliar",
         "portrait": ""
       }
     ]
@@ -2247,7 +2247,7 @@
       {
         "name": "Erich Helwin, PostAuto Schweiz AG",
         "bio": "Seine Karriere im Bereich ICT begann Erich Helwin als Computertechniker bei Nixdorf. Weitere Stationen waren Ascom Hasler, Wang, Unisys – Positionen in Technik, Customer Care, Marketing und Verkauf, wie Global Account Director und Mitglied der erweiterten Geschäftsleitung (Unisys Schweiz). Er hat Innovationen wie die Bankomaten-Einführung in der Schweiz oder das INFNET Telecom LAN für Telecom PTT initiiert und vorangetrieben. Weitere Highlights sind die Mobile Payment Lösung von PostFinance, der Mobile Boarding Pass, Anwendungen von Augmented Reality, Mobile Tagging und Mobile Apps – darunter auch die PostAuto App.",
-        "company": "postauto",
+        "company": "Post",
         "portrait": "erich.helwin.jpg"
       }
     ]
@@ -2275,7 +2275,7 @@
       {
         "name": "Prof. Dr. Gerhard Knolmayer, Universität Bern",
         "bio": "Gerhard Knolmayer promovierte an der Wirtschaftsuniversität Wien und wurde an der Universität Wien für Betriebswirtschaftslehre und Betriebsinformatik habilitiert. 1980 wurde er ord. Professor an der Universität Kiel, 1988 an das Institut für Wirtschaftsinformatik der Universität Bern berufen, an dem er 25 Jahre lang tätig war. Einer breiteren Öffentlichkeit wurde Knolmayer als Leiter der Arbeitsgruppe CHIG2000 (Swiss Interest Group in Solving the Year 2000 Problem) bekannt. Forschungsaufenthalte führten ihn u.a. an das International Computer Science Institute (ICSI) der University of California, Berkeley, und an das Centre for Information Technology Innovation (CITI) der Queensland University of Technology. In den letzten Jahren beschäftigt sich Knolmayer insbesondere mit der Gestaltung benutzerfreundlicher Schnittstellen bei webbasierten Systemen. Er ist Fellow der Gesellschaft für Informatik; die Universität Freiburg im Breisgau verlieh ihm ein Ehrendoktorat.",
-        "company": "universität",
+        "company": "unibe",
         "portrait": "gerhard.knolmayer.jpg"
       }
     ]
@@ -2289,13 +2289,13 @@
       {
         "name": "Dr. Andreas Kronawitter, BLS AG",
         "bio": "Nach Studium an der LMU München und Promotion in Basel in 'computational astrophysics' stieg Andreas Kronawitter 2000 in die Welt des öffentlichen Verkehrs um, zuerst als Projektleiter und später Manager für IT- und Unternehmensarchitektur bei der SBB. Nach 10 Jahren wechselte er zur BLS und baute dort die Planungs- und Steuerungsfunktionen der IT auf. Daneben ist er in nationalen Gremien des öffentlichen Verkehrs tätig.",
-        "company": "bls",
+        "company": "BLS",
         "portrait": "andreas.kronawitter.jpg"
       },
       {
         "name": "Marcel Edel, BLS Netz AG",
         "bio": "Seit rund anderthalb Jahren ist Marcel Edel bei der BLS Infrastruktur im Bereich Strategie und Unternehmensentwicklung tätig, mit aktuellem Fokus auf 'Digitalisierung der Infrastruktur'. Zuvor war er in verschiedenen internationalen Beratungshäusern als Business Consultant tätig. Marcel Edel verfügt über abgeschlossene Masterstudien in Betriebspsychologie und Betriebswissenschaft.",
-        "company": "bls",
+        "company": "BLS",
         "portrait": "marcel.edel.jpg"
       }
     ]
@@ -2321,7 +2321,7 @@
       {
         "name": "Roman Stalder, Post AG",
         "bio": "Roman Stalder ist Leiter CIO Office, ICT-Prozesse & Servicemanagement bei der Schweizerischen Post. Er arbeitet in einem kleinen Team an der Neuausrichtung der Informatiksteuerung und -planung der Post. Vorher war Roman in verschiedenen Funktionen für die Post tätig, bei der internationalen Logistik, der Konzernentwicklung und der Unternehmensentwicklung im internationalen Bereich. Er hat beim IT Serviceprovider das Strategie- und Risikomanagement aufgebaut und führte als Mitglied der Bereichsleitung einige Jahre das Prozess- und Qualitätsmanagement. Schliesslich folgte der Wechsel in den Konzern, wo er die Koordination des ICT-Boardes übernahm und damit verbunden auch Governance- und Architekturaufgaben. Sein Studium absolvierte Roman an der Universität Bern in Betriebswirtschaft mit Schwerpunkt Strategie & Marketing sowie Aufenthalten an Universitäten in Tokyo und Paris. Berufsbegleitend hat er eine Weiterbildung im Bereich Applikationsentwicklung absolviert.",
-        "company": "post",
+        "company": "Post",
         "portrait": "roman.stalder.jpg"
       }
     ]
@@ -2349,7 +2349,7 @@
       {
         "name": "Peter Andres, Informatik Service Center ISC-EJPD",
         "bio": "Peter Andres arbeitet seit 2003 beim EJPD als ICT-Architekt und ist seit 2007 Leiter der Abteilung Technologie des Informatik Service Center EJPD. Er hat mehrjährige Erfahrung in verteilten, sicherheitskritischen Softwarearchitekturen und spezialisierte Kenntnisse im Bereich Java EE-Anwendungen. Er absolvierte mehrere Weiterbildungen rund um das Thema der IT-Sicherheit und erlangte 2011 den CISSP (Certified Information Systems Security Professional).",
-        "company": "informatik",
+        "company": "iscejpd",
         "portrait": "peter.andres.jpg"
       }
     ]
@@ -2363,7 +2363,7 @@
       {
         "name": "Harald Aust, PostFinance AG",
         "bio": "Harald Aust ist Dr. rer. nat. und Dipl.-Informatiker und seit 2002 bei der PostFinance AG mit verschiedenen Aufgaben, unter anderem IT-Architektur und Projektleitung, in den Bereichen IT-Infrastruktur, Middleware und EAI tätig. Im Projekt 'Disaster Tolerance', in dem vor einigen Jahren ein zusätzliches Rechenzentrum in Betrieb genommen wurde, war er für den standortübergreifenden Aufbau der PostFinance-Applikationen verantwortlich.",
-        "company": "postfinance",
+        "company": "PostFinance",
         "portrait": "harald.aust.jpg"
       }
     ]
@@ -2403,7 +2403,7 @@
       {
         "name": "John Hutchison, Die Mobiliar",
         "bio": "John Hutchison hat an der Universität Bern Informatik studiert und kam im Juli 2006 zu der Mobiliar als Applikationsentwickler. Er hat in den letzten zwei Jahren mitgeholfen Continuous Delivery in der Mobiliar einzuführen. Seit kurzem unterstützt er als CD Architekt die agilen Teams bei ihrer Arbeit durch Automatisation und Tooling zeitraubender Tätigkeiten und Abläufe.",
-        "company": "mobiliar",
+        "company": "Mobiliar",
         "portrait": "john.hutchison.jpg"
       }
     ]
@@ -2423,7 +2423,7 @@
       {
         "name": "Mathias Herzog, PostFinance AG",
         "bio": "Mathias Herzog ist seit mehreren Jahren bei PostFinance AG in unterschiedlichen Bereichen im Unix/Linux System-Engineering tätig. Das Linux Team ist verantwortlich für die Konzeption, den Aufbau und den Betrieb der höchstverfügbaren und verteilten Applikationssysteme von PostFinance sowie für das Engineering der Virtualisierungsumgebungen und BigData Plattformen.",
-        "company": "postfinance",
+        "company": "PostFinance",
         "portrait": "mathias.herzog.jpg"
       }
     ]
@@ -2443,13 +2443,13 @@
       {
         "name": "Baltisar Oswald, SBB AG",
         "bio": "Nach seinem Studium in Mathematik und Informatik an der Universität Bern arbeitete Baltisar Oswald als Software-Entwickler / Software Architekt bei mehreren Firmen. Vor dem Wechsel zur SBB war er Leiter des Teams Integration der BKW. In den letzten 2 Jahren leitete er das Projekt New Cloud Stack mit dem Ziel, eine container-basierten Cloud-Plattform aufzubauen und in Betrieb zu überführen. Seit Anfang dieses Jahres ist er Product Owner und Leiter des Cloud-Stacks der SBB.",
-        "company": "sbb",
+        "company": "SBB",
         "portrait": "baltisar.oswald.jpg"
       },
       {
         "name": "Szabolcs Szádeczky-Kardoss, SBB AG",
         "bio": "Szabolcs Szádeczky-Kardoss arbeitet seit Anfang 2015 als IT-Architekt bei der SBB. Neben der Betreuung der Technologiegruppen Entwicklungswerkzeuge und Middleware hat er in Cloud-bezogenen Themen und insbesondere beim Aufbau der neuen container-basierten Cloud-Plattform mitgearbeite. Er besitzt langjährige Erfahrung als Senior bzw. Lead Software Entwickler im Java Umfeld.",
-        "company": "sbb",
+        "company": "SBB",
         "portrait": "szabolcs.szádeczky-kardoss.jpg"
       }
     ]
@@ -2462,8 +2462,7 @@
     "referenten": [
       {
         "name": "Jonas Bandi, Trainer und Freelancer",
-        "bio": "Jonas Bandi arbeitet als Trainer und Freelancer in verschiedenen Entwicklungs- und Beratungsmandaten. Er hat 15 Jahre Erfahrung als Entwickler im Enterprise-Umfeld. Sein Fokus liegt aktuell bei der Einführung von modernen Web-Technologien in traditionellen Geschäftsanwendungen. Ausserdem unterrichtet seit 9 Jahren an der Berner Fachhochschule unter anderem im CAS \"Applikationsentwicklung mit JavaScript & HTML5\".",
-        "company": "trainer"
+        "bio": "Jonas Bandi arbeitet als Trainer und Freelancer in verschiedenen Entwicklungs- und Beratungsmandaten. Er hat 15 Jahre Erfahrung als Entwickler im Enterprise-Umfeld. Sein Fokus liegt aktuell bei der Einführung von modernen Web-Technologien in traditionellen Geschäftsanwendungen. Ausserdem unterrichtet seit 9 Jahren an der Berner Fachhochschule unter anderem im CAS \"Applikationsentwicklung mit JavaScript & HTML5\"."
       }
     ]
   },
@@ -2476,7 +2475,7 @@
       {
         "name": "Michael Faes, ETH Zürich",
         "bio": "Michael Faes ist Doktorand in der Software Group an der ETH Zürich. Seine Forschungsschwerpunkte sind Programmiersprachen für sicheres paralleles Programmieren und Tools für das Finden und Analysieren von Concurrency Bugs. Er hat seinen Master in Informatik an der ETH Zürich gemacht und in seiner Master-Arbeit eine automatische Deadlock-Analyse für Java-Bibliotheken entwickelt.",
-        "company": "eth",
+        "company": "ethz",
         "portrait": "michael.faes.jpg"
       }
     ]
@@ -2509,7 +2508,7 @@
       {
         "name": "Barbara Marti, PostFinance AG",
         "bio": "Barbara Marti arbeitet seit 28 Jahren in der IT PostFinance AG – zu Beginn als Ausbildnerin in DELTA/Cobol und Datenmodellierung, DB-Programmierung und CASE-Toolentwicklung. Seit 1996 führte sie IT-Entwicklungs- und Projektteams und ab 2003 ist sie als Mitglied der Führung der IT verantwortlich für den Aufbau der Disziplin Architektur, später als Leiterin verschiedener Organisationseinheiten mehrheitlich bestehend aus SW-Entwicklung und –Integration. Heute ist sie verantwortlich für das Application Management der gesamten Applikationslandschaft. Neben den verschiedenen fachlichen Ausbildungen hat sie das MBA/eMBA Rochester/Bern absolviert.",
-        "company": "postfinance",
+        "company": "PostFinance",
         "portrait": "barbara.marti.jpg"
       }
     ]
@@ -2529,19 +2528,19 @@
       {
         "name": "Nagib Aouini, ELCA Informatique SA",
         "bio": "Nagib Aouini holds a Master's Degree in Computer Science, Applied Mathematics and Cryptography from the French university ENSIMAG. He is in charge of the Cybersecurity Services division of ELCA and manages a group of cybersecurity experts. Nagib has more than 20 years of experience in the field of digital identity and smartcards.",
-        "company": "elca",
+        "company": "ELCA",
         "portrait": "nagib.aouini.jpg"
       },
       {
         "name": "Dr. Sonia Bogos, ELCA Informatique SA",
         "bio": "Sonia is a cryptography engineer who joined ELCA this summer. She has a PhD in Computer Science from the Swiss Federal Institute of Technology at Lausanne EPFL. Her PhD thesis focused on the algorithmic study of the Learning Parity with Noise (LPN), a quantum resistant hard problem used in cryptography.",
-        "company": "elca",
+        "company": "ELCA",
         "portrait": "sonia.bogos.jpg"
       },
       {
         "name": "Jorge Alvarado, ELCA Informatique SA",
         "bio": "Jorge Alvarado holds a position as Blockchain Solutions Architect at ELCA. He has 9+ years of international working experience in software engineering, systems administration and architecture; recently focusing on the latest blockchain stacks Ethereum, Hyperledger Fabric and IOTA.",
-        "company": "elca",
+        "company": "ELCA",
         "portrait": "jorge.alvarado.jpg"
       }
     ]
@@ -2555,17 +2554,17 @@
       {
         "name": "Dr. Stephan Fischli, Berner Fachhochschule",
         "bio": "Dr. Stephan Fischli hat an der Universität Bern Mathematik und Informatik studiert. Seit 1993 arbeitet er als Informatik-Dozent an der Berner Fachhochschule, wo er seit 2008 Mitglied der E-Voting-Forschungsgruppe ist. Von 2012 bis 2017 war er zudem als Software-Architekt im Informatik Service Center des EJPD tätig.",
-        "company": "berner"
+        "company": "bfh"
       },
       {
         "name": "Dr. Philipp Locher, Berner Fachhochschule",
         "bio": "Dr. Philipp Locher studierte an der Fachhochschule Aargau und an der Universität Freiburg Informatik. In seiner Doktorarbeit befasste er sich mit dem Problem des bedingungslosen Schutzes der Privatsphäre im Umfeld der elektronischen Stimmabgabe. Seit 2015 ist er Professor für Informatik an der Berner Fachhochschule und ist Mitglied der E-Voting-Forschungsgruppe.",
-        "company": "berner"
+        "company": "bfh"
       },
       {
         "name": "Benjamin Fankhauser, Berner Fachhochschule",
         "bio": "Benjamin Fankhauser hat bei der SBB eine Informatiker-Lehre absolviert und zwei Jahre als Entwickler gearbeitet. Danach hat er an der Berner Fachhochschule Informatik mit Schwerpunkt Security studiert. Seit 2016 ist er als Assistent in der E-Voting-Forschungsgruppe der Berner Fachhochschule tätig.",
-        "company": "berner"
+        "company": "bfh"
       }
     ]
   },
@@ -2578,7 +2577,7 @@
       {
         "name": "Thomas Goetz, PostFinance AG",
         "bio": "Thomas Goetz arbeitet bei PostFinance AG als IT-Architekt und Teamleiter. Er begann vor 2 Jahren ein interdisziplinäres Blockchain-Team zusammen mit Mitarbeitenden aus Innovation und Fachbereichen aufzubauen. Weitere Themen seiner Tätigkeit ist Architektur an der Schnittstelle von Fachbereich und IT, sowie Anwendungsintegration.",
-        "company": "postfinance",
+        "company": "PostFinance",
         "portrait": "thomas.goetz.jpg"
       }
     ]
@@ -2644,7 +2643,7 @@
       {
         "name": "Szabolcs Szádeczky-Kardoss, SBB AG",
         "bio": "Szabolcs Szádeczky-Kardoss arbeitet seit Anfang 2015 als IT-Architekt bei der SBB. Neben der Betreuung und Mitgestaltung von vielen Cloud-Themen ist er auch zuständig für Monitoring und Logging und unterstützt die interessierten Projekte beim Onboarding auf AWS. Er besitzt langjährige Erfahrung als Senior bzw. Lead Software Entwickler im Java Umfeld.",
-        "company": "sbb",
+        "company": "SBB",
         "portrait": "szabolcs.szádeczky-kardoss.jpg"
       }
     ]
@@ -2678,7 +2677,7 @@
       {
         "name": "Edy Portmann, HUMAN-IST Institut, Universität Freiburg",
         "bio": "Edy Portmann ist Professor für Informatik und Förderprofessor der Schweizerischen Post am Human-IST Institut der Universität Freiburg i.Üe. Zu seinen transdisziplinären Forschungsschwerpunkten zählt das Thema Cognitive Computing sowie die Anwendung dessen auf Städte. Er studierte Wirtschaftsinformatik, Betriebs- und Volkswirtschaftslehre und promovierte in Informatik. Er war u.a. bei Swisscom, PwC und EY tätig. Zudem forschte Edy Portmann an den Universitäten Singapur, Berkeley und Bern. Heute wohnt er mit seiner Frau und ihren drei Kindern glücklich verheiratet in Bern.",
-        "company": "human-ist",
+        "company": "humanist",
         "portrait": "edy.portmann.jpg"
       }
     ]
@@ -2692,12 +2691,12 @@
       {
         "name": "Thomas Zerndt, Business Engineering Institute St. Gallen",
         "bio": "Thomas Zerndt leitet die BEI. Als CFO ist er für den ersten Spin-off aus der BEI verantwortlich für die finanziellen Aspekte der CDQ AG. Nach 12 Jahren Beratung im Bereich der Finanzindustrie hat er 2004 das CC Sourcing aufgebaut. 2008 hat er die Geschäftsführung der BEI übernommen. Gestaltung der Wertschöpfung, neue Technologien, Digitalisierung und Aufbau von Ecosystemen sind Themen, die er sowohl im Bereich der angewandten Forschung wie auch in der Beratung mitprägt.",
-        "company": "business"
+        "company": "bei"
       },
       {
         "name": "Stefanie Auge-Dickhut, Business Engineering Institute St. Gallen",
         "bio": "Stefanie Auge ist Leiterin des Competence Center Ecosysteme des Business Engineering Institute St. Gallen. Themenschwerpunkte des Competence Center sind Ecosysteme & Geschäftsmodelle, Unternehmenstrans-formation vor dem Hintergrund der Digitalisierung und der Einfluss innovativer Technologien wie DLT und AI auf Kundenbedürfnisse und Kernwertversprechen von Ecosysteme. Sie ist Referentin an verschiedenen Universitäten (u.a. Management Center Innsbruck MCI) fachliche Leiterin des CAS Digital Banking der Kalaidos FH Zürich und Board Mitglied bei verschiedenen Konferenzen und Awards im deutschsprachigen Raum.",
-        "company": "business"
+        "company": "bei"
       }
     ]
   },
@@ -2722,7 +2721,7 @@
       {
         "name": "Tomas Dikk, Zühlke Engineering",
         "bio": "Tomas Dikk hat an der ETH ein Master-Studium in Informatik absolviert und war danach als wissenschaftlicher Mitarbeiter in der Maschine Learning Forschungsgruppe der ETH tätig, wo er zum Thema Speech Enhancement gearbeitet hat. Er ist als Data Scientist seit einem Jahr bei Zühlke Engineering.",
-        "company": "zühlke",
+        "company": "zuehlke",
         "portrait": "tomas.dikk.jpg"
       }
     ]
@@ -2736,13 +2735,13 @@
       {
         "name": "Andreas Mösching, Die Mobiliar",
         "bio": "Seit über 20 Jahren ist Andreas im In- und Ausland in unterschiedlichen Rollen und Disziplinen in der Informatik tätig. Er leitet seit 2011 die Technologie Architektur und beeinflusst massgeblich, die Art und Weise wie in der Mobiliar Software entwickelt und betrieben wird. Als Visionär treibt er die technologische Vision der Mobiliar. Zusammen mit seinem Team lebt und fördert Andreas die konsequente Automation der Softwareentwicklungsprozesse. Als verantwortlicher Architekt von Pythagoras, der kognitiven Entwicklungsplattform der Mobiliar, verbindet er die neuen AI Entwicklungsmöglichkeiten mit den bewährten Prinzipien der traditionellen Softwareentwicklung.",
-        "company": "mobiliar",
+        "company": "Mobiliar",
         "portrait": "andreas.mösching.jpg"
       },
       {
         "name": "Jérôme Koller, Die Mobiliar",
         "bio": "",
-        "company": "mobiliar"
+        "company": "Mobiliar"
       }
     ]
   },
@@ -2755,7 +2754,7 @@
       {
         "name": "Lothar Jöckel, SBB",
         "bio": "Lothar Jöckel arbeitet seit 1983 als Software-Entwickler und Architekt in unterschiedlichen Branchen wie Health-Care, Banking, Telecom, Defense+Intelligence sowie Travel. Hierbei konnten wichtige Erfahrungen in Unternehmen wie McDonnellDouglas, IBM, Dresdner Bank, Bundeswehr/BND und Deutsches Reisebüro (DER) gesammelt werden. Seit 2012 ist er bei der SBB in der Informatik der SBB-Infrastruktur als Business-Analyst tätig. Seit 2015 ist er für «Plattform für Forschung und Innovation» tätig und unterstützt in den Themenbereichen Optimierung und Machine Learning.",
-        "company": "sbb",
+        "company": "SBB",
         "portrait": "lothar.jöckel.jpg"
       }
     ]
@@ -2788,7 +2787,7 @@
       {
         "name": "Pascal Auderset, Die Mobiliar",
         "bio": "Pascal Auderset arbeitet seit 1999 als Software Entwickler, IT Architekt und Programmleiter in der Finanzindustrie. In diesen Positionen hatte er immer mit verteilten Systemen in verschiedensten Ausprägungen (Tuxedo mit CORBA, J2EE mit WLS (SOA), JEE mit EAP (SOA), JEE mit EAP (Microservice)) zu tun und gestaltete diese aktiv mit. In der Mobiliar stellt er mit seinem Team die Plattform inkl. Prozesse zur Verfügung um über 450 MicroServices zu planen, entwickeln, betreiben und ausser Betrieb zu nehmen.",
-        "company": "mobiliar",
+        "company": "Mobiliar",
         "portrait": "pascal.auderset.jpg"
       }
     ]
@@ -2816,7 +2815,7 @@
       {
         "name": "Florian Seidel, SBB CFF FFS",
         "bio": "Florian Seidl ist Architect ICT bei der SBB, hat einen MSc in IT der University of Liverpool und ist seit über 10 Jahren Softwareentwickler und Softwarearchitekt bei der SBB. Er beschäftigt sich aktuell neben der Softwareentwickung unter anderem mit agilem Vorgehen (CSP), Architekturen von Microservicesystemen im Enterpriseumfeld und der Automatisierung von Deployment- und Betriebsprozessen.",
-        "company": "sbb",
+        "company": "SBB",
         "portrait": "florian.seidel.jpg"
       }
     ]
@@ -2837,7 +2836,7 @@
         "name": "Emanuel Indermühle, Die Mobiliar",
         "bio": "Emanuel Indermühle arbeitet in der Technologie Architektur der Mobiliar und verantwortet Techstacks für Angular und Node.js. In dieser Rolle treibt er die Modularisierung im Frontend und die LifeCycle Migration nach Angular voran. Zuvor arbeitete er beim Softwaredienstleister Mimacom und studierte Informatik an der Universität Bern.",
         "portrait": "Emanuel_Indermuehle.jpg",
-        "company": "mobiliar.jpg"
+        "company": "Mobiliar"
       }
     ]
   },
@@ -2851,19 +2850,19 @@
         "name": "Christoph Bühlmann, SBB AG",
         "bio": "Christoph Bühlmann arbeitet als Software Ingenieur bei SBB AG. Zu seinem Glück ist seine Vergangenheit mit RCP und JEE nicht ganz so lang. Aktuell beschäftigt er sich als Full-Stack Entwickler, Architekt und DevOps Evangelist mit der Automatisierung der Infrastruktur-Planung.",
         "portrait": "Christoph_Buehlmann.jpg",
-        "company": "sbb.jpg"
+        "company": "SBB"
       },
       {
         "name": "Daniel Wiehl, mtrail GmbH",
         "bio": "Daniel Wiehl arbeitet als Software Ingenieur bei der mtrail GmbH. Daniel ist Projektlead der SCION Workbench. Er kommt aus einem Java- und Eclipse-RCP-Hintergrund. Sein Schwerpunkt liegt nun auf der Entwicklung moderner Webanwendungen auf Basis von Angular.",
         "portrait": "Daniel_Wiehl.jpg",
-        "company": "mtrail.jpg"
+        "company": "mtrail"
       },
       {
         "name": "Simon Eggler, mtrail GmbH",
         "bio": "Simon Eggler arbeitet als Software Ingenieur bei mtrail GmbH. Unglaublich viele Jahre lang hat er für die Postfinance und die SBB Rich Clients programmiert. Aktuell liegt sein Fokus als Full-Stack Entwickler auf der Umsetzung von Optimierungs-Algorithmen für die Planungsautomatisierung.",
         "portrait": "Simon_Eggler.jpg",
-        "company": "mtrail.jpg"
+        "company": "mtrail"
       }
     ]
   },
@@ -2877,13 +2876,13 @@
         "name": "Simon Scheidegger, CSL Behring",
         "bio": "Simon Scheidegger arbeitet als Leiter Fraktionierung bei der CSL Behring. Ursprünglich Biochemiker beschäftigt er sich heute intensiv mit der prozessseitigen und technischen Entwicklung des Produktionsbereiches.",
         "portrait": "Simon_Scheidegger.jpg",
-        "company": "cslbehring.jpg"
+        "company": "cslbehring"
       },
       {
         "name": "Paul Affentranger, afca.",
         "bio": "Paul Affentranger arbeitet als Software Architekt und Entwickler bei afca. ag. Sein primärer Fokus ist das Zusammenspiel von Mixed- und Augmented Reality mit AI und Cloud Services.",
         "portrait": "Paul_Affentranger.jpg",
-        "company": "afca.jpg"
+        "company": "afca"
       }
     ]
   },
@@ -2903,7 +2902,7 @@
         "name": "Beat Winistörfer, Die Mobiliar",
         "bio": "Beat Winistörfer arbeitet seit über 5 Jahren in der Applikationsarchitektur der Mobiliar als Domänenarchitekt Partner und Basisdienste sowie als Systemarchitekt in einem der Release Trains der agilen Software Delivery Organisation. In diesen Rollen beschäftigt er sich intensiv mit der Umsetzung von Business Prozessen und den damit einhergehenden Anforderungen an die Arbeitsorganisation. Zuvor war er bei hp und rtc für die BEKB tätig, auch dort mit Schwerpunkt Business Transaktionen. Er hat an der Universität Zürich Wirtschaftsinformatik studiert.",
         "portrait": "Beat_Winistoerfer.png",
-        "company": "mobiliar.jpg"
+        "company": "Mobiliar"
       }
     ]
   },
@@ -2930,7 +2929,7 @@
         "name": "Konstantine Karantasis, Confluent",
         "bio": "Konstantine Karantasis is a software engineer at Confluent. He’s a main contributor to Apache Kafka and its Connect API, and an author of widely used software, such as Confluent’s S3 and Replicator connectors, class loading isolation in Kafka Connect, Incremental Cooperative Rebalancing in Kafka, the Confluent CLI and more. Previously, he built scalable open source web services at Yahoo! and researched high-performance computing at the University of Illinois at Urbana-Champaign. Konstantine holds a Ph.D. from the University of Patras.",
         "portrait": "Konstantine_Karantasis.png",
-        "company": "confluent.jpg"
+        "company": "confluent"
       }
     ]
   },
@@ -2944,13 +2943,13 @@
         "name": "Stefan Brock, Swissport",
         "bio": "Head of IT Architecture Swissport, davor Head Production Architecture bei Swisscom und CTO bei mehreren Startups.",
         "portrait": "Stefan_Brock.png",
-        "company": "swissport.jpg"
+        "company": "swissport"
       },
       {
         "name": "Markus Ehrenmann, Sqooba",
         "bio": "Co-Creator bei sqooba, davor Lead Architect AI, Head BI & Big Data Architecture bei Swisscom.",
         "portrait": "Markus_Ehrenmann.png",
-        "company": "sqooba.jpg"
+        "company": "sqooba"
       }
     ]
   },
@@ -2964,7 +2963,7 @@
         "name": "Christoph Meier, Swisscom",
         "bio": "Christoph Meier ist gelernter Physiker und arbeitet seit 13 Jahren bei Swisscom in diversen Architekturrollen. Seit Sommer 2018 leitet er das Team Architecture Vision in der Abteilung Enterprise Architecture und Innovation.",
         "portrait": "Christoph_Meier.png",
-        "company": "swisscom.jpg"
+        "company": "Swisscom"
       }
     ]
   },
@@ -2978,13 +2977,13 @@
         "name": "Marc Hoffmann, mtrail",
         "bio": "Marc beschäftigt sich seit über 10 Jahren als Softwareentwickler und Architekt mit Lösungen für die Bahnproduktion. Der regelmässige Sprecher auf Konferenzen und Open Source Autor wurde er 2014 als Java Champion ausgezeichnet. Marc ist CTO bei der mtrail GmbH in Bern. Auf Twitter ist Marc unter @marcandsweep zu finden.",
         "portrait": "Marc_Hoffmann.png",
-        "company": "mtrail.jpg"
+        "company": "mtrail"
       },
       {
         "name": "Erwann Wernli, SBB",
         "bio": "Erwann Wernli arbeitet als Software Architekt bei der SBB und begleitet die Weiterentwicklung der Gesamtarchitektur RCS in einem dezentralisierten agilen Umfeld. Er hat früher an die Universität geforscht und Lösungen für Enterprise Content Management entwickelt. Online kann er auf Twitter unter @wrnli gefunden werden.",
         "portrait": "Erwann_Wernli.png",
-        "company": "sbb.jpg"
+        "company": "SBB"
       }
     ]
   },
@@ -2998,13 +2997,13 @@
         "name": "Matej Ilicic, PostFinance",
         "bio": "Matej Ilicic hat 2011 den Master of Science in Software Engineering an der Universität Zagreb abgeschlossen, war 5 Jahre als Software-Engineer tätig, und ist in den letzten 2,5 Jahren bei der PostFinance als Solution Architekt hauptsächlich in Compliance & Risk Bereich tätig.",
         "portrait": "Matej_Ilicic.png",
-        "company": "postfinance.jpg"
+        "company": "Post"
       },
       {
         "name": "Zacharias Kull, ELCA",
         "bio": "Zacharias Kull hat Software Entwicklung studiert und ist Datenexperte bei ELCA. Er ist fasziniert von den Möglichkeiten neuer Technologien wie Kafka und Spark und wie dadurch verschiedene Disziplinen wie Batch, Streaming und DevOps zusammenkommen.",
         "portrait": "Zacharias_Kull.png",
-        "company": "elca.jpg"
+        "company": "ELCA"
       }
     ]
   },
@@ -3018,13 +3017,13 @@
         "name": "Sammy Ramareddy, Swisscom",
         "bio": "Sammy Ramareddy is a system architect at Swisscom, where he started on the initial engineering big data platform team. He has a mixed software and system engineering background, which makes him feel home when it’s about platforms and infrastructure. For the last three years, he has been building the self-service big data platform within Swisscom.",
         "portrait": "Sammy_Ramareddy.png",
-        "company": "swisscom.jpg"
+        "company": "Swisscom"
       },
       {
         "name": "Thibaud Chardonnens, Swisscom",
         "bio": "Thibaud Chardonnens is a technical product owner at Swisscom where he was one of the first engineers involved in the development of the big data platform. For the last five years, he was mainly building streaming applications and integrating the Kafka ecosystem within Swisscom.",
         "portrait": "Thibaud_Chardonnens.png",
-        "company": "swisscom.jpg"
+        "company": "Swisscom"
       }
     ]
   },
@@ -3044,7 +3043,7 @@
         "name": "Ioannis Martinis, Coop Rechtsschutz",
         "bio": "Ioannis Martinis - Head of Legal Tech der Coop Rechtsschutz AG, Kommunikationsverantwortlicher bei YLEX, Executive Board Member der Swiss LegalTech Association, Mitgründer der Digital Minds Society und Dozent für Recht im digitalen Zeitalter an der Hochschule für Wirtschaft Zürich.",
         "portrait": "Ioannis_Martinis.png",
-        "company": "cooprechtsschutz.jpg"
+        "company": "coop"
       }
     ]
   },
@@ -3058,13 +3057,13 @@
         "name": "Dominic Spalinger, PostFinance",
         "bio": "Dominic Spalinger ist als Product Owner Chatbot tätig. Zuvor arbeitete er als Scrum Master und Projektleiter. Er besitzt einen MSc. in Business Information Systems, sowie einen BSc. in Engineering and Management.",
         "portrait": "Dominic_Spalinger.png",
-        "company": "logo-pf.jpg"
+        "company": "PostFinance"
       },
       {
         "name": "Andreas Hess, ELCA",
         "bio": "Andreas Hess, lic. rer. pol. Universität Basel ist als Business Consultant und Projekt Manager bei ELCA Informatik AG tätig. Er verfügt über 18 Jahre Erfahrung in Beratung und Projekt Management in der IT-, Retail- und Finanz-Industrie.",
         "portrait": "Andreas_Hess.png",
-        "company": "elca.jpg"
+        "company": "ELCA"
       }
     ]
   },
@@ -3078,13 +3077,13 @@
         "name": "Philipp Egolf, Swisscom",
         "bio": "Philipp Egolf ist Principal Product Manager für Daten, Analytik und KI bei Swisscom. Er ist verantwortlich für die Entdeckung neuer Geschäftsfelder im Bereich Künstliche Intelligenz und die Produktentwicklung rund um Robotic Process Automation, Chatbots und Spracherkennung. Philipp Egolf verfügt über mehrjährige Erfahrung im Umfeld der Künstlichen Intelligenz mit einem Hintergrund im Maschinenbau, der Entwicklung von Produktvisionen und -strategien und Human Centered Design Thinking.",
         "portrait": "Philipp_Egolf.png",
-        "company": "swisscom.jpg"
+        "company": "Swisscom"
       },
       {
         "name": "Mario Paonessa, Swisscom",
         "bio": "Mario Paonessa ist System Architekt für Daten, Analytik und KI bei Swisscom. Er ist verantwortlich für die technische Entwicklung der Dialogplattform Plato. Er hat einen Hintergrund in Informatik und verfügt neben Erfahrungen im Bereich der künstlichen Intelligenz über langjährige und fundierte Kenntnisse im Bereich der Softwareentwicklung und Geschäftsprozessautomatisierung. Er hat neben KI-Services erfolgreich verschiedene Systeme rund um Contact Center Lösungen aufgebaut.",
         "portrait": "Mario_Paonessa.png",
-        "company": "swisscom.jpg"
+        "company": "Swisscom"
       }
     ]
   },
@@ -3098,7 +3097,7 @@
         "name": "Andreas Grütter, Die Mobiliar",
         "bio": "Arbeitet seit 2013 bei der Mobiliar und hat die IT Architektur inklusive der notwendigen Prozesse und Praktiken für die digitale Transformation Mobiliar neu aufgebaut. Zusammen mit seinem Team hat er diese auf die strategischen Geschäftsziele ausgerichtet und in der Organisation etabliert. Zuvor arbeitete er u.a. als IT Architekt, Projektleiter und Software Engineer bei RTC, HP und der Bank Julius Bär. Sein Spezialgebiet ist die IT Modernisierung, damit die digitale Transformation gemeistert werden kann. Andreas Grütter hat an der Fachhochschule Nordwestschweiz Informatik studiert und besitzt einen EMBA in Innovation Management der Berner Fachhochschule.",
         "portrait": "andreas_gruetter.png",
-        "company": "mobiliar.jpg"
+        "company": "Mobiliar"
       }
     ]
   },
@@ -3112,7 +3111,7 @@
         "name": "Baltisar Oswald, SBB CFF FFS",
         "bio": "Baltisar Oswald ist als Stackverantwortlicher (PO) Cloud Stack, sowie Teamleiter Delivery für die Umsetzung der Cloud Strategie der SBB verantwortlich. Davor war er als Software Architekt und Methodik Leiter der Software Entwicklung bei der SBB, sowie als Software Entwickler und Architekt in diversen Firmen im Raum Bern tätig. Baltisar Oswald hat an der Universität Bern Mathematik und Informatik studiert.",
         "portrait": "ok_baltisar_oswald.jpg",
-        "company": "sbb.jpg"
+        "company": "SBB"
       }
     ]
   },
@@ -3126,7 +3125,7 @@
         "name": "Andres Koch, Object Engineering",
         "bio": "Andres Koch promovierte 1976 als Elektro-Ingenieur an der Ingenieurschule des Interkantonalen Technikums in Rapperswil und 1981 mit dem Master Degree in Computer Science der University of Waterloo, Kanada. Mehrere Jahre arbeitete er als Software-Ingenieur in der Industrie, darauf als Entwicklungsleiter eines mittleren Softwarehauses im kommerziellen Softwarebereich. Seit 1989 ist er als lehrbeauftragter Dozent am Nachdiplom-Studium (MAS) für Software-Engineering der Hochschule für Technik, Rapperswil tätig. Er ist Geschäftsführer der Object Engineering GmbH, welche seit 26 Jahren auf die Modernisierung von Software-Systemen spezialisiert ist. Andres Koch befasste sich viele Jahre mit Software-Architektur objektorientierter und verteilter Systeme und hat mehrere Migrations- und Modernisierungs-Projekte und servicebasierte Systeme in der Praxis realisiert. Er veröffentlichte verschiedene Vorträge und Artikel zum Thema Legacy-Modernisierung.",
         "portrait": "AKOPortrait.jpeg",
-        "company": "oe_logo.png"
+        "company": "objecteng"
       }
     ]
   },
@@ -3140,7 +3139,7 @@
         "name": "Gilbert Jeiziner, swisstopo",
         "bio": "Gilbert Jeiziner ist gelernter Geomatiker und ist seit knapp 10 Jahren in verschiedenen Rollen im Bereich API Entwicklung und Betrieb tätig. Er ist ein Open Source, Open Data und Open Standards Advokat und zeigt mit seinem Geodaten Team, dass Innovation und agiles Vorgehen auch in der öffentlichen Verwaltung möglich ist.",
         "portrait": "Jeiziner_Gilbert 1.jpg",
-        "company": "swisstopo.JPG"
+        "company": "swisstopo"
       }
     ]
   },
@@ -3154,13 +3153,13 @@
         "name": "Wolfgang Heinz, Syncier",
         "bio": "Wolfgang Heinz ist seit 2019 als Product Owner verantwortlich für die Produktstrategie des Syncier Marketplace als API-Ökosystem sowie der dazugehörigen Software-as-a-Service Plattform. Er verfügt über langjährige Erfahrung im Aufbau und der Entwicklung von B2B und B2C SaaS-Produkten im E-Commerce und bei globalen Finanzdienstleistern.",
         "portrait": "WolfgangHeinz.jpeg",
-        "company": "syncier.JPG"
+        "company": "syncier"
       },
       {
         "name": "Fabian Kolbe, Syncier",
         "bio": "Fabian Kolbe ist als IT Consultant für das Onboarding von API Services in den Syncier Marketplace und das Ausrollen und die technische Integration der API Services in Unternehmen verantwortlich. Er ist seit dem Start des Syncier Marketplace 2018 dabei und hat die Plattform und das Ecosystem ausgebaut. Zuvor arbeitete er für die Allianz in München und Bangkok als IT-Trainee und IT Consultant. Er hat in München und Stockholm studiert und besitzt einen Master Wirtschaftsinformatik der TU München.",
         "portrait": "FabianKolbe.jpeg",
-        "company": "syncier.JPG"
+        "company": "syncier"
       }
     ]
   },
@@ -3174,13 +3173,13 @@
         "name": "Frédéric Maye, Banque Cantonale de Genève",
         "bio": "Frédéric Maye joined BCGE in 2018 as an IT project manager. In 2019, he moved to the IT architecture section within the IT department. The IT architecture section is in charge of providing upstream support for all projects that have an impact on the bank's information systems to ensure consistency, integration and compliance with the guiding principles. Before joining BCGE, he acquired over 15 years of banking experience as a developer, project manager and development manager.",
         "portrait": "FredericMaye.png",
-        "company": "bcge.jpg"
+        "company": "BCGE"
       },
       {
         "name": "Florent Martin, ELCA",
         "bio": "Florent Martin joined ELCA in 2017 as a solution Architect. He developed a strong expertise on modern integration strategy (API management, IPaaS, decentralized integration) and cybersecurity (API security, IAM/IdP). With more than 20 years of professional experience in IT,  he has proven practice in API management training, API governance, API best practices, product selection, architecture design and implementation.",
         "portrait": "FlorentMartin.png",
-        "company": "elca.jpg"
+        "company": "ELCA"
       }
     ]
   },
@@ -3194,19 +3193,19 @@
         "name": "Simon Bleher, Business Engineering Institute St. Gallen",
         "bio": "Simon Bleher ist Projektleiter der Initiative OpenBankingProject.ch. Als Senior Consultant des Business Engineering Institute St. Gallen unterstützt er Unternehmen von der Gestaltung ihrer Strategien bis zu deren konkreter Umsetzung mit Fokus auf Geschäftsarchitekturen und Digitalisierung in der Finanzindustrie.",
         "portrait": "Simon Bleher.jpg",
-        "company": "BEI.png"
+        "company": "bei"
       },
       {
         "name": "Sven Biellmann, Finnova",
         "bio": "Sven Biellmann arbeitet seit gut 4 Jahren als Product Manager Open Finance bei der finnova AG Bankware. In dieser Funktion beschäftigt er sich intensiv mit den Themen Open Finance, Wertschöpfungsintegration und digitale Ökosysteme und deren Auswirkung auf die Finanzindustrie und die Anbieter von Bankensoftware. Vor seinem Wechsel zu Finnova war Sven über 10 Jahre bei der UBS AG in verschiedenen Bereichen als IT Service & Product Manager tätig. Zwischenzeitliche Abstecher in die (Rück-)Versicherungsindustrie sowie in den Energiehandel haben es ihm ermöglicht Erfahrung ausserhalb der Finanzdienstleistungsbranche zu sammeln. Sven hält einen Master of Science Abschluss in Communication Systems der ETH Lausanne.",
         "portrait": "Sven Biellmann.jpg",
-        "company": "Finnova_Logo.jpg"
+        "company": "Finnova"
       },
       {
         "name": "Olivier Châtelain, DXC Technology",
         "bio": "Olivier Chatelain arbeitet seit 20 Jahren in der Bankinformatik, in den letzten 10 Jahren mit Fokus auf Electronic- & Internet-Banking als Business Analyst mit Fokus auf technische Integrationen. In dieser Funktion beschäftigt er sich die letzten 2 Jahre intensiv mit dem Thema Open Banking und steht er im regen Kontakt und Austausch zu nationalen und internationalen Normierungsgremien, wie dem Open-Banking Project, der Berlin-Group Advisory Group, SIF, der SIX und dem SFTI. Olivier hält einen Abschluss als Informatikingenieur der EPFL",
         "portrait": "Olivier Chatelain.jpg",
-        "company": "DXC Logo.png"
+        "company": "dxc"
       }
     ]
   },
@@ -3226,7 +3225,7 @@
         "name": "Rainer Grau, pragmatic solutions",
         "bio": "Rainer Grau begleitet seit über zwanzig Jahren Unternehmen auf dem Weg fokussiert, schlank und wertorientiert zu agieren. Vom Software Nerd über den IT-Architect sind weitere Stationen seines Werdeganges: Distinguished Consultant und Partner bei Zühlke Engineering, Head Business Development bei Digitec Galaxus, Aufbau und Durchführung von Lehrgängen in den Themen Innovation, Business Agility, Lean Portfolio Management an Fachhochschulen, Gründer des Swiss Agile Leaders Circle, Vorstand des IREB und noch ein paar mehr. Rainer ist Mit-Inhaber und Think Tank der pragmatic solutions GmbH. Die anderen 24h des Tages verbringt Rainer Grau gerne mit seiner Familie, bei Sport und mit seiner Gibson Les Paul.",
         "portrait": "Rainer_Grau.png",
-        "company": "pragmaticsolutions.png"
+        "company": "pragmaticsol"
       }
     ]
   },
@@ -3240,7 +3239,7 @@
         "name": "Matthias Fritschi, avega IT",
         "bio": "Matthias ist seit vielen Jahren in der Software-Entwicklung in verschiedenen Rollen tätig. Am liebsten arbeitet er in der Nähe des Maschinenraums, fährt aber mit dem Architektur-Lift auch gerne mal ins Penthouse, um den Blick etwas weiter schweifen zu lassen und über Methoden und Prozesse nachzudenken, um möglichst nahe an den Kund:innen „Working Software” zu produzieren. Neben der Arbeit als IT-Architekt und Consultant bei avega IT AG ist er auch an der BFH Bern als Dozent tätig und einer der Mitgründer des Berner DevOps Meetups.",
         "portrait": "Matthias_Fritschi.jpg",
-        "company": "avega.png"
+        "company": "avega"
       }
     ]
   },
@@ -3254,7 +3253,7 @@
         "name": "Florian Kammermann, Swisscom",
         "bio": "In my professional life so far, I have worked in many different IT areas. I am interested in everything (practices, technology, human aspects) that makes software development and system engineering faster, more valuable, more reliable and more transparent. At the moment I work at Swisscom as Reliability Enterprise Architect. I help the company to shape modern Operation. I am also part of the SRE Community of Practice, where we try to implement SRE practices in Swisscom.",
         "portrait": "Florian_Kammermann.jpg",
-        "company": "swisscom.jpg"
+        "company": "Swisscom"
       }
     ]
   },
@@ -3268,13 +3267,13 @@
         "name": "Stefan Johner, die Mobiliar",
         "bio": "Stefan Johner, Mathias Schnydrig und Christof Leuenberger führen zusammen den agilen Release Train 'Skywalker'. Dieser entwickelt und betreibt die System- und Applikationsplattform der Mobiliar in der Cloud. Alle drei sind Ende 2018 bei der Mobiliar eingestiegen und kombinieren ihre Erfahrungen aus den Bereichen Infrastruktur, Public Cloud und Softwareentwicklung um die Entwickler:innen der Mobiliar die Plattform der Zukunft zur Verfügung zu stellen.",
         "portrait": "Stefan_Johner.png",
-        "company": "mobiliar.jpg"
+        "company": "Mobiliar"
       },
       {
         "name": "Christof Leuenberger, die Mobiliar",
         "bio": "",
         "portrait": "Christof_Leuenberger.png",
-        "company": "mobiliar.jpg"
+        "company": "Mobiliar"
       }
     ]
   },
@@ -3288,19 +3287,19 @@
         "name": "Michael Ullrich, Nuvibit",
         "bio": "Michael ist Experte, wenn es um Sicherheit und Compliance in der Cloud geht und verfügt über mehr als 25 Jahre Beratungserfahrung! Er ist Diplomingenieur, hat einen MBA, ist zertifizierter AWS Solutions Architect Professional und AWS DevOps Engineer Professional.",
         "portrait": "Michael Ullrich.jpg",
-        "company": "nuvibit-logo.png"
+        "company": "bit"
       },
       {
         "name": "Jann Wild, AWS",
         "bio": "Solutions Architect bei AWS in der Schweiz. Unterstützt Kunden seit 4 Jahren in der effizienten Nutzung der AWS Services, mit einem Fokus auf Sicherheit und Compliance. Im früheren Leben als Consultant und Software Architekt für regulierte Unternehmen tätig.",
         "portrait": "Jann_Wild.jpg",
-        "company": "aws-logo.png"
+        "company": "aws"
       },
       {
         "name": "Simon Messerli, AWS",
         "bio": "Solutions Architect bei AWS in der Schweiz. Unterstützt Kunden auf der Cloud Journey mit Best Practices & Erfahrungen. Hintergrund in System- & Software Engineering, sowie als AWS Trainer",
         "portrait": "Simon_Messerli.jpg",
-        "company": "aws-logo.png"
+        "company": "aws"
       }
     ]
   },
@@ -3314,7 +3313,7 @@
         "name": "Jürg Haldimann, Bank Julius Baer",
         "bio": "Jürg Haldimann is leading the global Software Architecture discipline as part of the Architecture Center of Excellence at Bank Julius Baer. He has been passionate about creating customer value by automating and standardizing the software delivery value chain across technologies and locations in order to deliver quality software in a fast way. He studied Computer Science at Bern University of Applied Sciences and holds a Master in Advanced Studies ETH in Management, Technology, and Economics.",
         "portrait": "Jürg_Haldimann.png",
-        "company": "JB_LA_RGB_blue.jpg"
+        "company": "BJB"
       }
     ]
   },
@@ -3328,7 +3327,7 @@
         "name": "Iris Hunkeler, ti&m",
         "bio": "Iris Hunkeler arbeitet als Lead Engineer bei der ti&m. Davor war sie auch als Requirements Engineer und Projektleiterin tätig. Sie ist gelernte Softwareentwicklerin und studierte Wirtschaftsinformatik an der ZHAW (BSc) und FHNW (MSc).",
         "portrait": "Iris Hunkeler.jpg",
-        "company": "ti8m.jpg"
+        "company": "ti8m"
       }
     ]
   },
@@ -3342,7 +3341,7 @@
         "name": "Adrian Kosmaczewski, VSHN",
         "bio": "Adrian Kosmaczewski is a writer, a software developer and a trainer. He is a published author, and has worked as a professional software developer since 1996. Adrian holds a Master in Information Technology from the University of Liverpool.",
         "portrait": "Adrian_Kosmaczewski.png",
-        "company": "vshn.png"
+        "company": "vshn"
       }
     ]
   },
@@ -3356,13 +3355,13 @@
         "name": "Peter Andres, ISC-EJPD",
         "bio": "Peter Andres ein Software-Architekt, welcher versucht Management, Politik und Technologie zusammenzubringen, so dass innovative, sichere und nachhaltige Lösungen gebaut werden können.",
         "portrait": "peter_andres.jpg",
-        "company": "isc-ejpd.png"
+        "company": "iscejpd"
       },
       {
         "name": "Matthias Germann, ISC-EJPD",
         "bio": "Matthias Germann ist der Leiter der Architektur und Architekt aus Leidenschaft. In der Architektur sind Konzepte wie Security by design und by default, sowie eine Zero Trust Architektur zentrale Pfeiler der Gesamtarchitektur.",
         "portrait": "matthias_germann.jpeg",
-        "company": "isc-ejpd.png"
+        "company": "iscejpd"
       }
     ]
   },
@@ -3376,7 +3375,7 @@
         "name": "Nathalie Mombelli, Microsoft",
         "bio": "Nathalie Mombelli has been active in the field of security over the past 20 years, both at the corporate and governmental level. Among others she used to work for the Federal Criminal Police as investigator and then immersed herself into the exciting world of cybersecurity as a consultant and now as a Security Executive at Microsoft, supporting Public Sector organizations to shape their cybersecurity strategy and implement overall resilience to cyber threats.",
         "portrait": "nathalie_mombelli.jpg",
-        "company": "microsoft.png"
+        "company": "Microsoft"
       }
     ]
   },
@@ -3390,7 +3389,7 @@
         "name": "Michael Gerber, SBB",
         "bio": "Michael Gerber ist Senior Systemarchitekt bei der SBB im Bereich Customer Identity and Access Management (CIAM). Im SwissPass Ökosystem mit über 5 Millionen online Kunden und den vielen beteiligten Transportunternehmen ist Sicherheit ein zentrales Thema.",
         "portrait": "michael_gerber.jpg",
-        "company": "sbb.jpg"
+        "company": "SBB"
       }
     ]
   },
@@ -3410,13 +3409,13 @@
         "name": "Tobias Egli, die Mobiliar",
         "bio": "Tobias Egli arbeitet als Data Scientist und Product Owner für MLOps bei der Mobiliar. Davor war er als Analytics Consultant und wissenschaftlicher Forscher (PhD in molekularen Neurowissenschaften) tätig.",
         "portrait": "TobiasEgli.jpg",
-        "company": "mobiliar.jpg"
+        "company": "Mobiliar"
       },
       {
         "name": "Thomas Baumann, die Mobiliar",
         "bio": "Thomas Baumann ist Teamleiter im Prozess Schaden der Mobiliar und Product Owner eines interdisziplinären agilen Teams welches datengetriebene Lösungen entwickelt. Früher arbeitete er als IT Projektleiter in der Bundesverwaltung.",
         "portrait": "ThomasBaumann.jpg",
-        "company": "mobiliar.jpg"
+        "company": "Mobiliar"
       }
     ]
   },
@@ -3430,7 +3429,7 @@
         "name": "Jean Sebastien Merieux, Dartfish",
         "bio": "Jean Sebastien joined Dartfish in 2015 and was appointed CEO in June 2017 after 2 years as Head of Product & CTO. In addition to this mission, he leads Dartfish's efforts in the development of products and offerings based on Computer Vision technology and dedicated to sports performance and fan engagement. Prior to joining Dartfish, Jean Sebastien had a 15-year career in Telecom and IT industry in different positions.  Jean Sebastien has a Master in Mechanical Engineering from INSA Lyon and a Master in Marketing from HEC Paris.",
         "portrait": "jean-sebastien_merieux.jpg",
-        "company": "dartfish.jpg"
+        "company": "dartfish"
       }
     ]
   },
@@ -3444,13 +3443,13 @@
         "name": "Philipp Thomann, D One",
         "bio": "Philipp received his Ph.D. in Mathematics from the University of Zurich in 2013. Afterwards he served as a postdoctoral researcher at the University of Stuttgart, Germany. His areas of expertise are machine learning, natural language processing, search, distributed computation, and ML Ops. Philipp is Managing Consultant at D ONE and in the team since 2017.",
         "portrait": "PhilippThomann.jpg",
-        "company": "done.jpg"
+        "company": "done"
       },
       {
         "name": "Philipp Thomas, Raiffeisen",
         "bio": "Philipp joined the customer analytics team of Raiffeisen Schweiz in 2018. In his role as Data Scientist, he focuses on gaining business insights via statistical methods. He received his PhD in Psychology from the University of Bern in 2017.",
         "portrait": "PhilippThomas.jpg",
-        "company": "raiffeisen.jpg"
+        "company": "raiffeisen"
       }
     ]
   },
@@ -3464,13 +3463,13 @@
         "name": "Joana Soares Machado, Swisscom",
         "bio": "Joana is a Senior Data Scientist at Swisscom. As part of the Data, Analytics and AI department, she develops ML solutions to automate the real-time monitoring of Swisscom’s business processes and IT services. Joana holds a Master’s degree in Communication Systems from EPFL, where she previously worked as a research scientist in the domain of applied machine learning in privacy and security.",
         "portrait": "JoanaSoaresMachado.jpg",
-        "company": "swisscom.jpg"
+        "company": "Swisscom"
       },
       {
         "name": "Maxime Darçot, Swisscom",
         "bio": "Maxime has been a Data Scientist for 7 years at Swisscom where he worked on diverse projects mostly related to improving customer service. He is also helping coordinate several aspects related to how we deal with Machine Learning at Swisscom. Previously, he graduated from Ecole Centrale Paris (former CentraleSupelec) and UMPC in France and cofounded a startup at EPFL after his studies.",
         "portrait": "MaximeDarcot.jpg",
-        "company": "swisscom.jpg"
+        "company": "Swisscom"
       }
     ]
   },
@@ -3484,7 +3483,7 @@
         "name": "Peter Kummer, Leiter Infrastruktur SBB",
         "bio": "Peter Kummer leitet seit 2020 die Division Infrastruktur und ist Mitglied der Konzernleitung der SBB. Die Division Infrastruktur gewährleistet eine optimale Auslastung und Steuerung des Personen- und Güterverkehrs und ist für den Unterhalt, die Entwicklung und den Ausbau des Telekom-  Strom- und Schienennetzes der SBB zuständig. Peter Kummer stiess 2007 als Chief IT Architect zu den Schweizerischen Bundesbahnen SBB. 2009 wurde er zum CIO und Mitglied der Konzernleitung der SBB ernannt. Vor dem Eintritt bei der SBB war Peter Kummer “Head of Enterprise Architecture & IT Strategy” bei der  Versicherungsgesellschaft Die Mobiliar.",
         "portrait": "peter.kummer.jpg",
-        "company": "sbb.jpg"
+        "company": "SBB"
       }
     ]
   },
@@ -3498,7 +3497,7 @@
         "name": "Stephan Sigrist, W.I.R.E",
         "bio": "Stephan Sigrist ist Gründer und Leiter des Zürcher Thinktanks W.I.R.E. Er ist zudem Herausgeber der Buchreihe ABSTRAKT. Sigrist studierte an der ETH Zürich Biochemie und promovierte am Collegium Helveticum. Anschliessend arbeitete er als Beratur für Roland Berger sowie am Gottlieb Duttweiler Institut.",
         "portrait": "stephan_sigrist.jpg",
-        "company": "wire_minilogo.png"
+        "company": "wire"
       }
     ]
   },
@@ -3512,7 +3511,7 @@
         "name": "Manuel Proissl, IBM",
         "bio": "Dr. Manuel Proissl ist IBM Quantum Industry Applications Lead for Financial Services in EMEA mit Sitz in der Schweiz, wo er Institutionen aktiv dabei unterstützt, Quantenanwendungsfälle zu untersuchen und sie quantentauglich zu machen. Zuvor war er für Tier-1-Banken in verschiedenen leitenden, beratenden und hands-on Funktionen tätig, um digitale Innovationen und die Monetarisierung von Daten, KI und neuen Technologien voranzutreiben, wobei er hauptsächlich dem COO, CRO oder CIO unterstellt war. Darunter war Manuel tätig als Quantum Strategy and R&D Lead, als Head of AI in Banking and Quantum Computing, als Lead Data Scientist für quantitatives Risikomanagement und Compliance-Transformation für Banken weltweit und als Senior Advisor für Finanzaufsichtsbehörden (FED, EZB, FINMA, MAS), Regierungen (US DOE, Europäische Kommission) und verschiedene Konsortien der europäischen KI- und Quantenindustrie. Davor war er als Quantenphysiker in der Forschung, wobei er zu mehreren wissenschaftlichen Durchbrüchen beitragen konnte, darunter einer, der mit dem Nobelpreis ausgezeichnet wurde.",
         "portrait": "manuel_proissl.jpg",
-        "company": "ibm.jpg"
+        "company": "ibm"
       }
     ]
   },
@@ -3526,7 +3525,7 @@
         "name": "Marco Brenner, IBM",
         "bio": "Marco Brenner arbeitet als Program Executive bei IBM Quantum in der Schweiz, mit besonderem Fokus auf Kryptographie und modernste Datenschutzlösungen zur Unterstützung von Vertraulichkeit und Compliance. Er arbeitet eng mit IBM Research an innovativen Lösungen und ist für deren Umsetzung bei Kunden in ganz Europa verantwortlich. Marco hat einen Master-Abschluss der ETH Zürich in Informatik mit Spezialisierung auf Kryptographie und Informationssicherheit und einen MBA des Henley Management College/University of Reading.",
         "portrait": "marco_brenner.jpg",
-        "company": "ibm.jpg"
+        "company": "ibm"
       }
     ]
   },
@@ -3540,7 +3539,7 @@
         "name": "Oscar Nierstrasz, Prof. em. UniBe and feenk",
         "bio": "Oscar Nierstrasz is Professor emeritus of Computer Science at the University of Bern, where he founded the Software Composition Group in 1994. He retired from the University at the end of 2021, and is currently working at feenk.com to support onboarding and teaching of moldable development. He is co-author of over 400 publications, including the open-source books Object-Oriented Reengineering Patterns and Pharo by Example.",
         "portrait": "oscar_nierstrasz.jpg",
-        "company": "feenk.png"
+        "company": "feenk"
       }
     ]
   },
@@ -3568,7 +3567,7 @@
         "name": "Gregor Hohpe, AWS",
         "bio": "Gregor helps enterprises with their architecture strategy and cloud transformation journey by connecting the penthouse with the engine room. Ex-Google, Allianz, ThoughtWorks, Deloitte.",
         "portrait": "gregor.jpg",
-        "company": "aws.png"
+        "company": "aws"
       }
     ]
   },
@@ -3582,7 +3581,7 @@
         "name": "Andrea Gariboldi, Lifestage",
         "bio": "Andrea has been CTO at Lifestage Solutions AG since 2016, between 2000 and 2009 he built systems and consulted for various enterprises based on Oracle databases and application servers. Since then he has been helping several startups to scale their systems on the AWS cloud in the US, Asia, and Europe.",
         "portrait": "andrea.png",
-        "company": "lifestage.png"
+        "company": "lifestage"
       }
     ]
   },
@@ -3596,13 +3595,13 @@
         "name": "Michael Brülisauer, Raiffeisen",
         "bio": "Michael Brülisauer ist Produkt Verantwortlicher und hat den technischen Lead bei der Integration des Raiffeisen Translation Portals.",
         "portrait": "michael.png",
-        "company": "raiffeisen.png"
+        "company": "raiffeisen"
       },
       {
         "name": "Matthias Imsand, Amanox",
         "bio": "Matthias Imsand ist CTO und Gründer der Firma Axians Amanox. In seiner Rolle leitet er die technische und strategische Ausrichtung der cloud native DevOps Organisation, die individualisierte Cloud Software Projekte plant, entwickelt und betreibt.",
         "portrait": "matthias.png",
-        "company": "amanox.png"
+        "company": "amanox"
       }
     ]
   },
@@ -3616,7 +3615,7 @@
         "name": "Roland Krummenacher, Swisscom",
         "bio": "Roland Krummenacher begleitet als Cloud Advisor bei Swisscom B2B Kunden auf ihrem Weg in die Cloud. Er ist seit 13 Jahren in den verschiedensten Rollen auf der Azure Cloud unterwegs, zuletzt mit einem Fokus auf Cost Optimization und FinOps.",
         "portrait": "roland.jpg",
-        "company": "swisscom.jpg"
+        "company": "Swisscom"
       }
     ]
   },
@@ -3630,7 +3629,7 @@
         "name": "Guido Trüeb, SMG - Swiss Marketplace Group",
         "bio": "Building and breaking software since 2005, I've embraced serverless architectures at homegate.ch since 2019. A firm believer in simplicity and compassionate teamwork, I relish optimizing software and collaboration - particularly fondly of removing code.",
         "portrait": "guido.png",
-        "company": "smg.png"
+        "company": "smg"
       }
     ]
   },
@@ -3644,7 +3643,7 @@
         "name": "Simon Harrer, INNOQ",
         "bio": "Dr. Simon Harrer ist Berater bei INNOQ. Er ist Softwareentwickler im Herzen, der sich mittlerweile zur dunklen Seite, nämlich der Welt der Daten, zugewandt hat. Er hat datamesh-architecture.com mit ins Leben gerufen und das Data Mesh Buch von Zhamak Dehghani ins Deutsche übersetzt. Neben der tagtäglichen Data Mesh Beratung arbeitet er an dem Data Mesh Manager - ein SaaS Produkt, das Data Mesh Initiativen auf die Überholspur setzt.",
         "portrait": "simon_harrer.jpg",
-        "company": "innoq.png"
+        "company": "innoq"
       }
     ]
   },
@@ -3658,13 +3657,13 @@
         "name": "Bruno Russiniello, die Mobiliar",
         "bio": "Bruno Russiniello verfügt über eine langjährige Erfahrung als Software-Entwickler und Architekt in verschiedenen Branchen, zuletzt als Lead Entwickler für Basel II-Projekte bei der Credit Suisse. Seit 2009 prägt er als IT-Architekt die Entwicklung der Mobiliar in verschiedenen Bereichen. Seit 2018 liegt sein Fokus auf der Datenarchitektur, wo er innovative Ansätze nach Data Mesh-Prinzipien verfolgt. Dabei setzt er sich besonders für die Transparenz von Daten und die Reduktion der Gesamtkomplexität durch semantische Modelle und moderne Technologien ein.",
         "portrait": "bruno_russiniello.jpg",
-        "company": "mobiliar.jpg"
+        "company": "Mobiliar"
       },
       {
         "name": "Lukas Feuz, die Mobiliar",
         "bio": "Lukas Feuz ist seit 2009 in verschiedenen Branchen und Firmen als Software-Entwickler und Architekt tätig, zuletzt bei der Post CH AG als Enterprise Cloud Architekt. Seit 2019 ist er als System Architekt bei der Mobiliar im Bereich BI & Analytics, verantwortet als Domänenarchitekt die Domäne Underwriting & Versicherungsrisiko und führt die Applikationsplattformarchitektur mit dem Ziel, die Feature Teams effizienter zu machen.​",
         "portrait": "Lukas_Feuz.jpg",
-        "company": "mobiliar.jpg"
+        "company": "Mobiliar"
       }
     ]
   },
@@ -3678,7 +3677,7 @@
         "name": "André Rogger, SBB",
         "bio": "André Rogger hat an der EPFL in Operations Research promoviert und bei unterschiedlichen Transport- und High-Tech-Unternehmen Algorithmen für die Revenue- und Prozessoptimierung entwickelt. Er war über 10 Jahre an der FHNW und der Hochschule Luzern als Professor für Wirtschaftsinformatik tätig und hat sich hier auf IT-Architekturen und das Daten- und Analytics-Management spezialisiert. Anschliessend führte ihn sein Weg weg vom Lehr- und Forschungsbetrieb zur SBB, wo er in unterschiedlichen Tätigkeitsfeldern als Enterprise Architect tätig ist. Sein aktueller Fokus liegt in der Governance und Anwendung von Analytics und AI.",
         "portrait": "andre_rogger.png",
-        "company": "sbb.jpg"
+        "company": "SBB"
       }
     ]
   },
@@ -3692,7 +3691,7 @@
         "name": "Mirela Navodaru, Swisscom",
         "bio": "Mirela joined Swisscom at the end of 2021, where she is leading the enterprise architecture domain for data, analytics, and AI. With almost 20 years of experience transforming data into information and insights, she worked in industries like telco (Sirti SpA - Italy) and manufacturing (ABB Group and Hitachi Energy). Mirela is passionate about using technology and data, embracing innovation, and having a sustainable and future-proof mindset to ensure data-driven business success. Always with people and for the people!",
         "portrait": "mirela_navodaru.jpg",
-        "company": "swisscom.jpg"
+        "company": "Swisscom"
       }
     ]
   },
@@ -3706,7 +3705,7 @@
         "name": "Cyrille Favreau, EPFL",
         "bio": "Cyrille Favreau is a high-performance architect with a specialization in visualization and a science communicator at EPFL's Blue Brain Project since 2014. He creates and develops software tools, combining technical expertise with artistic skills to produce high-quality videos and images of the in-silico rodent brain. Cyrille specializes in real-time rendering of large-scale datasets using ray-tracing techniques and high-performance technologies. He is the creator of Blue Brain Brayns, an interactive rendering platform dedicated to high-quality and high-fidelity rendering of large datasets. In 2020, he developed Blue Brain BioExplorer within the Simulation Neuroscience Division, merging visualization with scientific exploration and contributing to significant publications and educational media. Previously, Cyrille led a team in the technical architecture department at Lombard Odier Darier Hentsch & Cie, focusing on low-level library design and technical solution implementation. He holds a Bachelor of Science in Computer Studies from Glyndŵr University, Wrexham. Outside of work, he enjoys playing music, acting, and marathon swimming.",
         "portrait": "Cyrille_Favreau.jpg",
-        "company": "epfl-logo.jpg"
+        "company": "epfl"
       }
     ]
   },
@@ -3720,7 +3719,7 @@
         "name": "Ana Klimovic, ETH Zürich",
         "bio": "Ana Klimovic is an Assistant Professor in the Systems Group of the Computer Science Department at ETH Zurich. Her research interests span operating systems, computer architecture, and their intersection with machine learning. Ana's work focuses on computer system design for large-scale applications such as cloud computing services, data analytics, and machine learning. Before joining ETH in August 2020, Ana was a Research Scientist at Google Brain and completed her Ph.D. in Electrical Engineering at Stanford University.",
         "portrait": "Ana_Klimovic.jpg",
-        "company": "ethz.jpg"
+        "company": "ethz"
       }
     ]
   },
@@ -3734,7 +3733,7 @@
         "name": "Yann Allandit, AWS",
         "bio": "Yann is a senor database solution architect in AWS based out of Geneva. He has 25+ years of experience in IT. This time was mostly spent in database and infrastructure architecture activities. Yann was involved in many database transformation projects addressing concerns related to the availability, security, business continuity and performance of the data stack.",
         "portrait": "Yann_Allandit.png",
-        "company": "aws.png"
+        "company": "aws"
       }
     ]
   },
@@ -3748,7 +3747,7 @@
         "name": "Thomas Baumann, die Mobiliar",
         "bio": "Computer scientist by training, data scientist by practice, query tuner by spirit: Thomas arbeitet aktuell als IT Architekt bei der Mobiliar. Wenn er nicht gerade in seinem Büro sitzt und die letzten Reserven aus den Datenbanken kitzelt, ist er womöglich als Referent an einer Konferenz unterwegs – wie heute am BAT. Thomas schloss sein Studium 1992 als Informatikingenieur an der ETH Zürich mit dem Nebenfach Wahrscheinlichkeitstheorie und Statistik ab – heute würde man das einfach Big Data nennen.",
         "portrait": "Thomas_Baumann.jpg",
-        "company": "mobiliar.jpg"
+        "company": "Mobiliar"
       }
     ]
   },
@@ -3762,7 +3761,7 @@
         "name": "Mark Lantz, IBM Research",
         "bio": "Dr. Mark Lantz is a distinguished research scientist in the IBM Research – Zurich laboratory, an IEEE Fellow and the manager of the IBM –Zurich Tape Research Group. Dr. Lantz has more than twenty years of experience in storage technology research. He became an IBM Master Inventor in 2011, is co-inventor on over 200 patents and is a co-author of over 130 publications. His current research interests include storage technology, nanotechnology, and storage system reliability and performance modeling.",
         "portrait": "Mark_Lantz.jpg",
-        "company": "IBM-8bar-logo.jpg"
+        "company": "ibm"
       }
     ]
   },
@@ -3776,13 +3775,13 @@
         "name": "Kuno Baeriswyl, ELCA",
         "bio": "Kuno Baeriswyl ist seit 2001 in verschiedenen Branchen und Firmen als Software-Entwickler und Architekt tätig, zuletzt bei der ELCA Schweiz als Data Engineer / Architect. Seit 2017 liegt sein Fokus in der datengetriebenen Software-Entwicklung im Apache Spark Ecosystem, wo er sich zuletzt der Verifizierung von Diagnosedaten für die Instandhaltung des Schweizer Schienennetzes widmete und aktuell ein Data Lakehouse mit Apache Spark sowie Iceberg Tables aufbaut.",
         "portrait": "Kuno.png",
-        "company": "elca.jpg"
+        "company": "ELCA"
       },
       {
         "name": "Zacharias Kull, ELCA",
         "bio": "Zacharias Kull ist Datenarchitekt und Teamlead Data Engineering bei ELCA. Er hat viel Projekterfahrung im Aufbau von Cloud-Datenplatformen und den Möglichkeiten moderner Technologien wie Spark, Databricks und AWS. Mit SmartDataLakeBuilder engagiert er sich in ein open-source Projekt um entsprechende Vorhaben einfacher zu automatisieren und zu betreiben.",
         "portrait": "Zach.jpg",
-        "company": "elca.jpg"
+        "company": "ELCA"
       }
     ]
   },
@@ -3796,13 +3795,13 @@
         "name": "Meinrad Jean-Richard, Post",
         "bio": "Meinrad Jean-Richard works as a Solution Architect at Swiss Post, where his primary focus lies in envisioning the software ecosystem for parcel and mail sorting over the next fifteen years. With two decades of experience as a developer and software architect, he is adept at crafting technically robust and forward-thinking solutions to complex challenges. His approach, characterized by a balance between quality assurance and pragmatism, is fortified by a profound understanding of software engineering principles and the intricacies of human dynamics within the development process.",
         "portrait": "Jean-Richard Meinrad.png",
-        "company": "post.jpg"
+        "company": "Post"
       },
       {
         "name": "David Riedo, Post",
         "bio": "David Riedo, DevOps Engineer at Swiss Post in charge of designing, building, and maintaining software solutions. Working in the mailing and parcel sorting ecosystem he uses his 10+ years of experience as a .NET developer to meet the hight demands for quality and stability.As a DevOps enthusiast he stands for implementing something correct the first time and knows that speed and quality in software delivery are no trade-offs.",
         "portrait": "David_Riedo.jpg",
-        "company": "post.jpg"
+        "company": "Post"
       }
     ]
   },
@@ -3816,7 +3815,7 @@
         "name": "Hozelito Vajcek, BKW",
         "bio": "Hozelito Vajcek ist seit über 20 Jahren als Spezialist für Microsoft Systeme basierend auf der .NET Plattform tätig. Bereits mit 11 Jahren hat er mit dem Programmieren begonnen und auch heute, wenn er nicht gerade in Meetings festhängt, schreibt er die eine oder andere Codezeile. Er ist sowohl TOGAF® 9.2 als auch iSAQB® CPSA Advanced Level zertifiziert. Bei der BKW ist er zuständig für den gesamten Integrations-Layer aller internen und externen Handelssysteme. Er hat bei der BKW erfolgreich eine Software Architektur eingeführt, welche es erlaubt in kürzester Zeit sowohl neue Services zu entwickeln als auch bestehende Services mit neuen Funktionalitäten zu erweitern.",
         "portrait": "Hozelito.jpg",
-        "company": "bkw.jpg"
+        "company": "BKW"
       }
     ]
   },
@@ -3830,19 +3829,19 @@
         "name": "Thomas Bomatter, SBB",
         "bio": "Thomas ist ein Mobile Software Engineer bei der SBB mit mehr als einem Jahrzehnt Erfahrung auf dem Gebiet. Seine Reise in die Welt der App-Entwicklung begann mit der Mobility Carsharing-App im Jahr 2011. Im Laufe der Jahre hat er Apps mit native Technologien von Android und iOS sowie plattformübergreifenden Framework wie Flutter entwickelt.",
         "portrait": "Thomas_Bomatter.png",
-        "company": "sbb.jpg"
+        "company": "SBB"
       },
       {
         "name": "Jonas Rüttimann, SBB",
         "bio": "Jonas rutschte während der Dotcom-Blase als Filme- und Webseitenmacher in die IT. In der angewandten Forschung und und Entwicklung lernte er die Agilen Prinzipien erfolgreich einzusetzen. Er liebt es, mit dem Zug zu reisen und für eines der ehrgeizigsten Bahnunternehmen der Welt resiliente Software-Architekturen zu entwickeln.",
         "portrait": "Jonas_Ruettimann.jpeg",
-        "company": "sbb.jpg"
+        "company": "SBB"
       },
       {
         "name": "Patrick Bönzli, SBB",
         "bio": "Patrick Bönzli war in den letzten zehn Jahren in Startups tätig und arbeitet heute bei der SBB, wo er für Databases as a Service verantwortlich ist. Vor seiner Zeit in Startups arbeitete er als Software Engineer.",
         "portrait": "Patrick_Boenzli.png",
-        "company": "sbb.jpg"
+        "company": "SBB"
       }
     ]
   },
@@ -3856,7 +3855,7 @@
         "name": "Pascal Auderset, die Mobiliar",
         "bio": "Pascal Auderset ist seit 2012 bei der Mobiliar und hat im Laufe der Jahre in verschiedenen Funktionen wertvolle Erfahrungen gesammelt. Derzeit bekleidet er die Position des Enterprise Architect, wo er maßgeblich an der Modernisierung der Nicht-Leben-Versicherungsplattform beteiligt ist. In dieser Rolle bringt er seine Expertise ein, um innovative Lösungen zu entwickeln und die Effizienz der Plattform zu steigern. Seit vielen Jahren beschäftigt sich Pascal intensiv mit Themen wie agilen Methodiken, DevSecOps und softwarebasierten Plattformen. Sein umfassendes Wissen in diesen Bereichen ermöglicht es ihm, moderne Ansätze in der Softwareentwicklung zu fördern und die Zusammenarbeit zwischen den Teams zu optimieren. Durch seine engagierte Arbeit trägt er dazu bei, die digitale Transformation der Mobiliar voranzutreiben und zukunftsorientierte Lösungen für die Versicherungsbranche zu entwickeln.",
         "portrait": "PascalAuderset.jpg",
-        "company": "mobiliar.jpg"
+        "company": "Mobiliar"
       }
     ]
   },
@@ -3870,7 +3869,7 @@
         "name": "Mathias Schnydrig, die Mobiliar",
         "bio": "Mathias Schnydrig ist seit 2012 in verschiedenen Branchen und Bereichen tätig. Anfangs beschäftigte er sich mit modernen Data Center Technologien (Software Defined Networking, Software Defined Storage, verschiedenen Virtualisierungstechnologien, …) Danach orientierte er sich in Richtung Public Cloud und war als AWS Instructor tätig. Seit 2019 ist er bei der Mobiliar als Cloud Architekt tätig und verantwortet die interne Developer Plattform.",
         "portrait": "MathiasSchnydrig.jpg",
-        "company": "mobiliar.jpg"
+        "company": "Mobiliar"
       }
     ]
   },
@@ -3884,13 +3883,13 @@
         "name": "Fabian Nicollier, ELCA",
         "bio": "Fabian Nicollier is a Senior Solutions Architect at ELCA Group with over 20 years of experience designing and building software solutions. Since joining ELCA in 2018, he has focused on delivering solutions on the Azure public cloud for customers in diverse industries. He also coaches customers and colleagues on cloud practices while promoting cloud adoption.",
         "portrait": "FabianNicollier.jpg",
-        "company": "elca.jpg"
+        "company": "ELCA"
       },
       {
         "name": "Michele Monforte, ELCA",
         "bio": " Michele Monforte is a Senior DevOps Expert at ELCA group. Passionate about technology, he loves building software. His experience spans the whole Software Development Lifecycle and allows him to tackle issues from different perspectives. His current focus is on platform engineering as he actively coaches and supports teams while promoting DevOps and Agile.",
         "portrait": "michele_monforte.jpg",
-        "company": "elca.jpg"
+        "company": "ELCA"
       }
     ]
   },
@@ -3904,7 +3903,7 @@
         "name": "Rudolf Strijkers, Swisscom",
         "bio": "Dr. Rudolf Strijkers is Enterprise Architect at Swisscom where he leads the re-architecting of Swisscom’s IT. As the initiator and lead architect of Swisscom Digital Architecture, he has been instrumental in the design of the IT Framework that coordinates digital transformation across the company. In previous roles at Swisscom, he led network operations, the transition from traditional Network Development and Operations to Agile as Solution Train Engineer, and he was in charge of technical strategy of Networks and Infrastructure IT. Before Swisscom, Rudolf worked as research scientist for TNO in the Netherlands. He led several research projects around Software Defined Networks. He holds several patents in Mobile Networks and Cloud Computing, an MSc and PhD in Computer Science from the University of Amsterdam, and he is a candidate International Executive MBA at the University of St. Gallen.",
         "portrait": "RudolfStrijkers.jpg",
-        "company": "swisscom.jpg"
+        "company": "Swisscom"
       }
     ]
   },
@@ -3918,7 +3917,7 @@
         "name": "Sandro Montanari, TWINT",
         "bio": "Sandro Montanari obtained a master’s degree in Robotics and Automation at EPFL in 2012. Starting his professional career as a software developer at Swisscom, he transitioned into the field of BigData and finally Product Owner at Swisscom. As the 5th member in an IT (cryptographic) startup working in Switzerland and the US he honed his skills in… well everything… startup life. With the start of Covid, he moved back to Switzerland and joined TWINT as lead enterprise architect, before taking over as head of technology and architecture.",
         "portrait": "SandroMontanari.jpg",
-        "company": "twint-logo.png"
+        "company": "TWINT"
       }
     ]
   },
@@ -3932,13 +3931,13 @@
         "name": "Dominik Wüst, PostFinance",
         "bio": "Dominik Wüst leitet seit mehreren Jahren die Enterprise Architektur von PostFinance. Davor war er in den letzten 15 Jahren in verschiedenen Rollen bei PostFinance unterwegs. Dominik sein Fokus liegt auf der Schnittstelle zwischen Fach und IT. Dabei beschäftigt er sich intensiv mit der Disziplin Enterprise Design und des Einflusses von agilen Veränderungen auf die Architekturprozesse und Entscheide.",
         "portrait": "DominikWuest.jpg",
-        "company": "logo-pf.jpg"
+        "company": "PostFinance"
       },
       {
         "name": "Mustapha Bouaaoud, PostFinance",
         "bio": "Mustapha Bouaaoud leitet die IT-Architektur bei PostFinance und verantwortet zentrale Architekturthemen in den Bereichen Technologie, IT-Betrieb, Security, Integration, Cloud, Softwareentwicklung und KI. In seiner früheren Rolle als Lead Architekt leitete er die Modernisierung grosser Applikationen und den Übergang von monolithischen zu Microservice-Architekturen. Sein Fokus liegt auf nachhaltiger Modernisierung, technologischem und strategischem Wandel sowie der Einführung neuer Technologie-Stacks in komplexen IT-Landschaften.",
         "portrait": "MustaphaBouaaoud.jpg",
-        "company": "logo-pf.jpg"
+        "company": "PostFinance"
       }
     ]
   },
@@ -3952,13 +3951,13 @@
         "name": "Marcel Trümpy, Google Cloud",
         "bio": "Marcel ist ein erfahrener IT Experte, der seit 2019 als Customer Engineer für Google Cloud tätig ist. Mit einem Fokus auf die Handels- und Konsumgüterbranche hilft er Unternehmen, ihre digitale Transformation durch die Modernisierung ihrer Anwendungs- und SAP-Landschaften in der Cloud zu beschleunigen. Seine über 35-jährige Karriere begann als Wirtschaftsinformatiker in der Softwareentwicklung für Banken und führte ihn über strategische Positionen bei Technologieführern wie Sun Microsystems, Microsoft und SAP zu seiner heutigen Rolle bei Google.",
         "portrait": "MarcelTruempy.jpeg",
-        "company": "googleCloud.png"
+        "company": "googlecloud"
       },
       {
         "name": "Sam Kruklis, Google Cloud",
         "bio": "Sam hat einen Background in Computer Engineering sowie einen Master-Abschluss in Wirtschaftsinformatik. Nach einigen Jahren in der Industrie, wechselte er in den Bereich Datentechnik und künstliche Intelligenz. Bei Roche leitete er zum Beispiel Data Analytics Projekte, wo KI Modelle im Rahmen der Produktentwicklung zum Einsatz kamen. 2019 wechselte er zu Google und ist seitdem Teil des Enterprise Cloud Engineering Teams und trägt signifikant zur Data Analytics AI & ML Practice von Google Cloud bei.",
         "portrait": "SamKruklis.jpeg",
-        "company": "googleCloud.png"
+        "company": "googlecloud"
       }
     ]
   },
@@ -3972,7 +3971,7 @@
         "name": "Alex Meier, die Mobiliar",
         "bio": "Alexander Meier ist ein erfahrener Cloud ML DevOps Engineer bei der Mobiliar und Experte im Bereich Generative KI. Seine Laufbahn umfasst Stationen im Big Data Engineering sowie eine Spezialisierung auf Generative KI, in der er seine Expertise in führenden Technologieunternehmen unter Beweis gestellt hat. Er ist spezialisiert auf Data Engineering, Data Analysis, Apache Kafka und Big Data Technologien. Als gefragter Speaker zu Themen wie GenAI und KI-Technologien bietet Alexander wertvolle Impulse zur Nutzung innovativer Cloud- und KI-Lösungen in der Geschäftswelt. Zusätzlich engagiert sich Alexander als Snowboardcross-Trainer und Renn-Organisator im Leistungssport bei der Boarding Association Berne - BABE.",
         "portrait": "AlexanderMeier.jpg",
-        "company": "mobiliar.jpg"
+        "company": "Mobiliar"
       }
     ]
   },
@@ -3986,13 +3985,13 @@
         "name": "Patrick Koller, Bundesamt für Umwelt BAFU",
         "bio": "Patrick Koller hat einen M.Sc. in Umwelt- und Atmosphärenwissenschaften mit dem Schwerpunkt Meteorologie/Hydrogeologie/Fernerkundung abgeschlossen – ein Anwendungsgebiet, in dem DataSciene eine zentrale Rolle spielt. Im Verlauf seiner beruflichen Entwicklung wirkte er verschiedenen DataScience und DevOps Projekten mit. Er interessiert sich für Cloud- und Kubernetes-Technologien, sowie Anwendungen in Analytics, Machine Learning, Künstlicher Intelligenz und das Monitoring und die Modellierung von komplexen Prozessen in der Umwelt. Aktuell ist er als Senior Data Scientist beim Bundesamt für Umwelt (BAFU) tätig. Zuvor war er in Funktionen beim Bundesamt für Informatik und Telekommunikation (BIT), bei MeteoSwiss, der ETH Zürich und bei Swiss Re in technologieorientierten Bereichen tätig.",
         "portrait": "PatrickKoller.jpg",
-        "company": "bafu_logo.png"
+        "company": "bafu"
       },
       {
         "name": "Philipp Knecht, Amazon Web Services (AWS) Schweiz",
         "bio": "Philipp Knecht ist ein Manager Solutions Architecture bei Amazon Web Services (AWS) Schweiz. Er leitet ein Team von Solution Architects (SAs) mit einem Fokus auf Public Sector Kunden. Die SAs im Team unterstützen die Kunden auf ihrem Weg in die Cloud, beraten bezüglich AWS Services oder Partner Lösungen, und stellen sicher, dass die Kunden mit den Services von AWS langfristig zufrieden sind. Philipp hat einen Abschluss in Informatik, Computer-, und Nachrichtentechnik am Tech Rapperswil (heute Ostschweizer Fachhochschule) und ein Nachdiplomstudium in Wirtschaft. Vor seiner Zeit bei AWS war Philipp viele Jahre als Consultant, Architekt, und Manager in diversen Rollen bei Kunden unterwegs.",
         "portrait": "PhilippKnecht.jpg",
-        "company": "aws-logo.png"
+        "company": "aws"
       }
     ]
   },
@@ -4006,7 +4005,7 @@
         "name": "Martina Arioli, Arioli Law",
         "bio": "Martina Arioli ist bernische Fürsprecherin und Partnerin bei Arioli Law, Zurich. Arioli Law bietet Unternehmen und dem öffentlichen Sektor Rechtsberatung im Technologiesektor und in der Datenwirtschaft. Martina Arioli unterstützt Projekte in den Bereichen IT-Sourcing, Outsourcing, Cloud, Datenschutz und Datenrecht, sowie Beschaffung künstlicher Intelligenz. Sie doziert an der Universität Zürich sowie der ZHAW und ist Beirätin des CAS Datenschutz des Europa Instituts.",
         "portrait": "MartinaArioli.jpg",
-        "company": "ariolilaw.png"
+        "company": "ariolilaw"
       }
     ]
   },
@@ -4020,7 +4019,7 @@
         "name": "Peter Andres, ISC-EJPD",
         "bio": "Peter Andres ist CTO des Informatik Service Centers im EJPD (ISC-EJPD) und gestaltet seit über 20 Jahren die IT-Infrastruktur der inneren Sicherheit der Schweiz mit. Als Initiator der KI-Initiative „KI in der Praxis erleben“ verbindet er technologische Innovationskraft mit pragmatischer Umsetzung – stets mit Blick auf Sicherheit, Nachhaltigkeit und Mehrwert für die öffentliche Verwaltung. Neben seiner Rolle im ISC ist er als Dozent an der BFH aktiv und bringt komplexe Themen wie Zero-Trust, Mobile-ID und KI verständlich und praxisnah auf den Punkt. Fazit – ich bin ein Techniker, welcher versucht Management, Politik und Technologie zusammenzubringen, so dass innovative, sichere und nachhaltige Lösungen gebaut werden können.",
         "portrait": "PeterAndres.jpg",
-        "company": "isc-ejpd.png"
+        "company": "iscejpd"
       }
     ]
   },
@@ -4034,13 +4033,13 @@
         "name": "Marco Sommerfeld, mtrail",
         "bio": "Marco Sommerfeld hat Mathematik in Berlin studiert und über 15 Jahre hinweg seine Expertise in der Travel- und Transportbranche aufgebaut. Bei mtrail hat er das Machine-Learning-Team aufgebaut und leitet es heute. Vor vier Jahren entdeckte er im Rahmen eines CAS im Bereich Machine Learning seine Leidenschaft für Computer Vision – ein Thema, das ihn seither nicht mehr loslässt.",
         "portrait": "MarcoSommerfeld.jpg",
-        "company": "mtrail.jpg"
+        "company": "mtrail"
       },
       {
         "name": "Aeneas Grüter, mtrail",
         "bio": "Aeneas Grüter ist Softwareentwickler mit Masterabschluss in Computer Science und fundierter Erfahrung in der Entwicklung komplexer Webapplikationen. Seine technische Bandbreite reicht von Java über TypeScript bis hin zu Kubernetes, wobei er stets den Fokus auf saubere Architektur, Skalierbarkeit und agile Arbeitsweisen legt. Vor seiner IT-Laufbahn hat er Geografie in Bern studiert.",
         "portrait": "AeneasGrueter.jpg",
-        "company": "mtrail.jpg"
+        "company": "mtrail"
       }
     ]
   },
@@ -4054,7 +4053,7 @@
         "name": "Simon Sax, Swisscom",
         "bio": "Tagsüber leitet Simon Sax ein Team von Solution Architekten in der Cloud Advisory Division von Swisscom und berät Geschäftskunden bei Cloud- und Migrationsprojekten. Nachts widmet er sich leidenschaftlich seinen App- und Raspberry Pi-Projekten. Im vergangenen Jahr übernahm Simon die Verantwortung für die Gesamtarchitektur und den Aufbau der Datacenter-Infrastruktur der Swiss AI Platform. In früheren Positionen unterstützte er als Product Owner die Einführung des 5G-Mobilfunkstandards und war als technischer Stratege im CTO Office von Swisscom B2B tätig. Davor engagierte sich Simon in einem eigenen Startup und arbeitete in verschiedenen technischen Positionen bei Postfinance.",
         "portrait": "SimonSax.jpg",
-        "company": "swisscom.jpg"
+        "company": "Swisscom"
       }
     ]
   },
@@ -4068,7 +4067,7 @@
         "name": "Nikola Novoselec, die Schweizerische Post",
         "bio": ".",
         "portrait": "NikolaNovoselec.png",
-        "company": "logo_post.bmp"
+        "company": "Post"
       }
     ]
   },
@@ -4082,7 +4081,7 @@
         "name": "Igor Masen, SBB",
         "bio": "Igor Masen ist seit 2011 bei den SBB und hat in dieser Zeit diverse Positionen im Unternehmen eingenommen. Derzeit ist er der verantwortliche Architekt für die IT-Infrastruktur- und Plattformen der SBB und führt in dieser Position das Vorhaben rund um die Secure Access Architecture.",
         "portrait": "IgorMasen.jpg",
-        "company": "sbb.jpg"
+        "company": "SBB"
       }
     ]
   },
@@ -4096,7 +4095,7 @@
         "name": "Davide Cavadini, die Mobiliar",
         "bio": "Davide Cavadini ist Leiter Sicherheitsarchitektur & Records Mgmt bei der Mobiliar, wo unter anderem die Themen Identity & Access Management, Zero Trust-Architektur, Records Management und DSG-Löschen behandelt und weiterentwickelt werden. Davide Cavadini hat das Sicherheitskonzept der Mobiliar massgeblich beeinflusst und über 15 Jahre Erfahrung in den Bereichen Security, Compliance und Risk Management gesammelt.",
         "portrait": "DavideCavadini.jpg",
-        "company": "mobiliar.jpg"
+        "company": "Mobiliar"
       }
     ]
   },
@@ -4110,13 +4109,13 @@
         "name": "Philippe Halbeisen, PostFinance",
         "bio": "Philippe Halbeisen ist als IT-Architekt verantwortlich für die Definition sowie die optimale Einführung in betroffenen Vorhaben der Gesamten Security-Architektur innerhalb PostFinance.\nSeit 3 Jahren ist er unter anderem in der Zero Trust-Initiative mit dem Erstellen einer 5 Jahren Zielbild sowie die Begleitung der Mikrosegmentierung und SSE Evaluation und POC stark involviert.",
         "portrait": "PhilippeHalbeisen.jpg",
-        "company": "logo-pf.jpg"
+        "company": "PostFinance"
       },
       {
         "name": "Mustapha Bouaaoud, PostFinance",
         "bio": "Mustapha Bouaaoud leitet die IT-Architektur bei PostFinance und verantwortet zentrale Architekturthemen in den Bereichen Technologie, IT-Betrieb, Security, Integration, Cloud, Softwareentwicklung und KI. In seiner früheren Rolle als Lead Architekt leitete er die Modernisierung grosser Applikationen und den Übergang von monolithischen zu Microservice-Architekturen. Sein Fokus liegt auf nachhaltiger Modernisierung, technologischem und strategischem Wandel sowie der Einführung neuer Technologie-Stacks in komplexen IT-Landschaften.",
         "portrait": "MustaphaBouaaoud.jpg",
-        "company": "logo-pf.jpg"
+        "company": "PostFinance"
       }
     ]
   }

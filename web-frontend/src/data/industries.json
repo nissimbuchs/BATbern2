@@ -1,4 +1,5 @@
 {
+  "_note": "KEEP IN SYNC with apps/BATspa-old/src/api/industries.json",
   "industries": [
     {
       "id": "transportation",
@@ -111,10 +112,31 @@
         "en": "Legal",
         "de": "Legal"
       }
+    },
+    {
+      "id": "media",
+      "name": {
+        "en": "Media",
+        "de": "Media"
+      }
+    },
+    {
+      "id": "defense",
+      "name": {
+        "en": "Defense",
+        "de": "Defense"
+      }
+    },
+    {
+      "id": "technology",
+      "name": {
+        "en": "Technology",
+        "de": "Technology"
+      }
     }
   ],
   "meta": {
-    "totalIndustries": 16,
+    "totalIndustries": 19,
     "lastUpdated": "2025-11-30"
   }
 }
