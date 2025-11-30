@@ -77,6 +77,7 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({
               src={company.logo.url}
               alt={`${company.name} logo`}
               crossOrigin="anonymous"
+              loading="lazy"
               data-testid="company-logo"
               sx={{
                 maxWidth: viewMode === 'grid' ? 150 : 100,
