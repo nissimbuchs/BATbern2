@@ -1,6 +1,6 @@
 [
   {
-    "id": "sbb",
+    "id": "SBB",
     "displayName": "SBB CFF FFS",
     "logo": "sbb.jpg",
     "url": "https://www.sbb.ch",
@@ -10,7 +10,7 @@
     "industry": "Transportation"
   },
   {
-    "id": "mobiliar",
+    "id": "Mobiliar",
     "displayName": "Die Mobiliar",
     "logo": "mobiliar.jpg",
     "url": "https://www.mobiliar.ch",
@@ -20,7 +20,7 @@
     "industry": "Insurance"
   },
   {
-    "id": "swisscom",
+    "id": "Swisscom",
     "displayName": "Swisscom AG",
     "logo": "swisscom.jpg",
     "url": "https://www.swisscom.ch",
@@ -30,7 +30,7 @@
     "industry": "Telecommunications"
   },
   {
-    "id": "postfinance",
+    "id": "PostFinance",
     "displayName": "PostFinance AG",
     "logo": "postfinance.jpg",
     "url": "https://www.postfinance.ch",
@@ -40,7 +40,7 @@
     "industry": "Financial Services"
   },
   {
-    "id": "elca",
+    "id": "ELCA",
     "displayName": "ELCA Informatique SA",
     "logo": "elca.jpg",
     "url": "https://www.elca.ch",
@@ -62,7 +62,7 @@
     "industry": "Banking Software"
   },
   {
-    "id": "bkw",
+    "id": "BKW",
     "displayName": "BKW AG",
     "logo": "bkw.jpg",
     "url": "https://www.bkw.ch",
@@ -95,7 +95,7 @@
     "industry": "Healthcare"
   },
   {
-    "id": "isc-ejpd",
+    "id": "iscejpd",
     "displayName": "ISC-EJPD (Informatiksteuerungsorgan des Bundes)",
     "logo": "isc-ejpd.png",
     "url": "https://www.isc.admin.ch",
@@ -106,7 +106,7 @@
     "industry": "Government"
   },
   {
-    "id": "bls",
+    "id": "BLS",
     "displayName": "BLS AG",
     "logo": null,
     "url": "https://www.bls.ch",
@@ -128,7 +128,7 @@
     "industry": "Cloud Provider"
   },
   {
-    "id": "post",
+    "id": "Post",
     "displayName": "Die Schweizerische Post",
     "logo": "postfinance.jpg",
     "url": "https://www.post.ch",
@@ -139,7 +139,7 @@
     "industry": "Logistics"
   },
   {
-    "id": "zühlke",
+    "id": "zuehlke",
     "displayName": "Zühlke Engineering AG",
     "logo": null,
     "url": "https://www.zuehlke.com",
@@ -333,7 +333,7 @@
     "industry": "Government"
   },
   {
-    "id": "dvbern",
+    "id": "DVBern",
     "displayName": "DV Bern AG",
     "logo": null,
     "url": "https://www.dvbern.ch",
@@ -345,7 +345,7 @@
     "industry": "IT Consulting"
   },
   {
-    "id": "microsoft",
+    "id": "Microsoft",
     "displayName": "Microsoft",
     "logo": "microsoft.png",
     "url": "https://www.microsoft.com",
@@ -377,7 +377,7 @@
     "industry": "IT Consulting"
   },
   {
-    "id": "twint",
+    "id": "TWINT",
     "displayName": "TWINT",
     "logo": "twint-logo.png",
     "url": "https://www.twint.ch",
@@ -448,7 +448,7 @@
     "industry": "IT Consulting"
   },
   {
-    "id": "bjb",
+    "id": "BJB",
     "displayName": "Bank Julius Baer",
     "logo": "JB_LA_RGB_blue.jpg",
     "url": "https://www.juliusbaer.com",
@@ -468,7 +468,7 @@
     "industry": "IT Consulting"
   },
   {
-    "id": "finnova",
+    "id": "Finnova",
     "displayName": "Finnova",
     "logo": null,
     "url": "https://finnova.ch",
@@ -558,7 +558,7 @@
     "industry": "IT Consulting"
   },
   {
-    "id": "bcge",
+    "id": "BCGE",
     "displayName": "BCGE (Banque Cantonale de Genève)",
     "logo": "bcge.jpg",
     "url": "https://www.bcge.ch",
