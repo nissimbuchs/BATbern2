@@ -26,12 +26,13 @@ vi.mock('react-i18next', () => ({
         'company.batchImport.status.pending': 'Pending',
         'company.batchImport.status.importing': 'Importing...',
         'company.batchImport.status.success': 'Imported',
+        'company.batchImport.status.updated': 'Updated',
         'company.batchImport.status.error': 'Error',
         'company.batchImport.status.skipped': 'Skipped (exists)',
         'company.batchImport.progress': `Importing ${params?.current || 0} of ${params?.total || 0}...`,
-        'company.batchImport.complete': `Import complete: ${params?.success || 0} succeeded, ${params?.failed || 0} failed, ${params?.skipped || 0} skipped`,
-        'company.batchImport.checkingDuplicates': 'Checking for existing companies...',
-        'company.batchImport.duplicatesFound': `${params?.count || 0} of ${params?.total || 0} companies already exist and will be skipped.`,
+        'company.batchImport.complete': `Import complete: ${params?.success || 0} created, ${params?.updated || 0} updated, ${params?.failed || 0} failed, ${params?.skipped || 0} skipped`,
+        'company.batchImport.checkingExisting': 'Checking for existing companies...',
+        'company.batchImport.existingFound': `${params?.count || 0} of ${params?.total || 0} companies already exist and will be updated.`,
         'company.batchImport.columns.logo': 'Logo',
         'company.batchImport.columns.displayName': 'Display Name',
         'company.batchImport.columns.name': 'API Name',
@@ -51,6 +52,7 @@ vi.mock('react-i18next', () => ({
 vi.mock('@/services/api/companyApi', () => ({
   companyApiClient: {
     createCompany: vi.fn(),
+    updateCompany: vi.fn(),
     getCompanies: vi.fn(),
   },
 }));
@@ -321,15 +323,33 @@ describe('CompanyBatchImportModal', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/Import complete: 2 succeeded, 0 failed, 0 skipped/)
+        screen.getByText(/Import complete: 2 created, 0 updated, 0 failed, 0 skipped/)
       ).toBeInTheDocument();
     });
   });
 
-  it('should_showSkippedStatus_when_companyAlreadyExists', async () => {
-    (companyApiClient.createCompany as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
-      new Error('409: Company already exists')
-    );
+  it('should_updateExistingCompany_when_companyAlreadyExists', async () => {
+    // Mock useCompanies to return an existing company
+    (useCompanies as ReturnType<typeof vi.fn>).mockReturnValue({
+      data: {
+        data: [{ name: 'sbb', displayName: 'SBB Old' }],
+        pagination: {
+          page: 1,
+          limit: 1000,
+          totalItems: 1,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false,
+        },
+      },
+      isLoading: false,
+      error: null,
+    });
+
+    (companyApiClient.updateCompany as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      name: 'sbb',
+      displayName: 'SBB',
+    });
 
     const singleCompanyJson = JSON.stringify([
       {
@@ -363,12 +383,19 @@ describe('CompanyBatchImportModal', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/Import complete: 0 succeeded, 0 failed, 1 skipped/)
+        screen.getByText(/Import complete: 0 created, 1 updated, 0 failed, 0 skipped/)
       ).toBeInTheDocument();
+    });
+
+    // Verify updateCompany was called
+    expect(companyApiClient.updateCompany).toHaveBeenCalledWith('sbb', {
+      name: 'sbb',
+      displayName: 'SBB',
+      website: 'https://sbb.ch',
     });
   });
 
-  it('should_preSkipDuplicates_when_companiesAlreadyExist', async () => {
+  it('should_detectExistingCompanies_when_companiesAlreadyExist', async () => {
     // Mock useCompanies to return existing companies
     (useCompanies as ReturnType<typeof vi.fn>).mockReturnValue({
       data: {
@@ -400,16 +427,20 @@ describe('CompanyBatchImportModal', () => {
       fireEvent.change(input, { target: { files: [file] } });
     });
 
-    // Should show 1 company to import (mobiliar), sbb is pre-skipped
+    // Should show 2 companies to import (sbb will be updated, mobiliar will be created)
     await waitFor(() => {
-      expect(screen.getByText('Import 1 Companies')).toBeInTheDocument();
+      expect(screen.getByText('Import 2 Companies')).toBeInTheDocument();
     });
 
-    // Should show duplicates found alert
-    expect(screen.getByText(/1 of 2 companies already exist/)).toBeInTheDocument();
+    // Should show existing companies alert
+    await waitFor(() => {
+      expect(
+        screen.getByText(/1 of 2 companies already exist and will be updated/)
+      ).toBeInTheDocument();
+    });
   });
 
-  it('should_showAllSkipped_when_allCompaniesExist', async () => {
+  it('should_importAllAsUpdates_when_allCompaniesExist', async () => {
     // Mock useCompanies to return all companies as existing
     (useCompanies as ReturnType<typeof vi.fn>).mockReturnValue({
       data: {
@@ -448,11 +479,18 @@ describe('CompanyBatchImportModal', () => {
       fireEvent.change(input, { target: { files: [file] } });
     });
 
-    // Button should show "All Skipped" and be disabled
+    // Button should show "Import 2 Companies" (all will be updated)
     await waitFor(() => {
-      const button = screen.getByText('All Skipped');
+      const button = screen.getByText('Import 2 Companies');
       expect(button).toBeInTheDocument();
-      expect(button.closest('button')).toBeDisabled();
+      expect(button.closest('button')).not.toBeDisabled();
+    });
+
+    // Should show existing companies alert
+    await waitFor(() => {
+      expect(
+        screen.getByText(/2 of 2 companies already exist and will be updated/)
+      ).toBeInTheDocument();
     });
   });
 });

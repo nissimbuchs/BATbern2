@@ -40,7 +40,7 @@ export interface SourceCompany {
 /**
  * Import status for each company during batch import
  */
-export type ImportStatus = 'pending' | 'importing' | 'success' | 'error' | 'skipped';
+export type ImportStatus = 'pending' | 'importing' | 'success' | 'updated' | 'error' | 'skipped';
 
 /**
  * Candidate for import with transformation and status tracking
@@ -56,6 +56,8 @@ export interface ImportCandidate {
   importStatus: ImportStatus;
   /** Error message if import failed */
   errorMessage?: string;
+  /** Existing company name if it already exists (for update operations) */
+  existingCompanyName?: string;
 }
 
 /**
@@ -64,11 +66,13 @@ export interface ImportCandidate {
 export interface BatchImportResult {
   /** Total companies processed */
   total: number;
-  /** Successfully imported */
+  /** Successfully created (new companies) */
   success: number;
+  /** Successfully updated (existing companies) */
+  updated: number;
   /** Failed to import */
   failed: number;
-  /** Skipped (already exists) */
+  /** Skipped (no changes needed) */
   skipped: number;
 }
 

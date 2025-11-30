@@ -41,6 +41,7 @@ import {
   HourglassEmpty as PendingIcon,
   SkipNext as SkipIcon,
   Close as CloseIcon,
+  Update as UpdateIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useCompanyBatchImport } from '@/hooks/useCompanyBatchImport';
@@ -60,6 +61,8 @@ function getStatusIcon(status: ImportStatus) {
   switch (status) {
     case 'success':
       return <CheckCircleIcon color="success" fontSize="small" />;
+    case 'updated':
+      return <UpdateIcon color="info" fontSize="small" />;
     case 'error':
       return <ErrorIcon color="error" fontSize="small" />;
     case 'skipped':
@@ -76,10 +79,12 @@ function getStatusIcon(status: ImportStatus) {
  */
 function getStatusColor(
   status: ImportStatus
-): 'default' | 'primary' | 'success' | 'error' | 'warning' {
+): 'default' | 'primary' | 'success' | 'info' | 'error' | 'warning' {
   switch (status) {
     case 'success':
       return 'success';
+    case 'updated':
+      return 'info';
     case 'error':
       return 'error';
     case 'skipped':
@@ -124,23 +129,24 @@ export const CompanyBatchImportModal: React.FC<CompanyBatchImportModalProps> = (
     },
   });
 
-  // Get set of existing company names for fast lookup
-  const existingCompanyNames = useMemo(
-    () => new Set((existingCompaniesData?.data || []).map((c) => c.name.toLowerCase())),
+  // Get map of existing company names for fast lookup (lowercase -> actual name)
+  const existingCompanyNamesMap = useMemo(
+    () => new Map((existingCompaniesData?.data || []).map((c) => [c.name.toLowerCase(), c.name])),
     [existingCompaniesData]
   );
 
-  // Mark duplicates when candidates change or existing companies load
+  // Mark existing companies when candidates change or existing companies load
   useEffect(() => {
     if (importCandidates.length > 0 && !isLoadingCompanies && existingCompaniesData) {
       setIsCheckingDuplicates(true);
       const updatedCandidates = importCandidates.map((candidate) => {
-        const nameExists = existingCompanyNames.has(candidate.apiPayload.name.toLowerCase());
-        if (nameExists && candidate.importStatus === 'pending') {
+        const existingName = existingCompanyNamesMap.get(candidate.apiPayload.name.toLowerCase());
+        if (existingName && candidate.importStatus === 'pending') {
+          // Company exists - mark for update instead of skip
           return {
             ...candidate,
-            importStatus: 'skipped' as const,
-            errorMessage: t('company.batchImport.status.skipped'),
+            existingCompanyName: existingName,
+            // Keep status as pending - will be updated during import
           };
         }
         return candidate;
@@ -148,7 +154,8 @@ export const CompanyBatchImportModal: React.FC<CompanyBatchImportModalProps> = (
 
       // Only update if there are actual changes
       const hasChanges = updatedCandidates.some(
-        (updated, index) => updated.importStatus !== importCandidates[index].importStatus
+        (updated, index) =>
+          updated.existingCompanyName !== importCandidates[index].existingCompanyName
       );
 
       if (hasChanges) {
@@ -156,14 +163,14 @@ export const CompanyBatchImportModal: React.FC<CompanyBatchImportModalProps> = (
       }
       setIsCheckingDuplicates(false);
     }
-  }, [existingCompaniesData, isLoadingCompanies, t, existingCompanyNames, importCandidates]);
+  }, [existingCompaniesData, isLoadingCompanies, t, existingCompanyNamesMap, importCandidates]);
 
   // Use updated candidates from hook during import, otherwise use local state
   const displayCandidates = isImporting || importResult ? updatedCandidates : importCandidates;
 
-  // Count how many are pending (not pre-skipped)
+  // Count how many are pending
   const pendingCount = displayCandidates.filter((c) => c.importStatus === 'pending').length;
-  const preSkippedCount = displayCandidates.filter((c) => c.importStatus === 'skipped').length;
+  const existingCount = displayCandidates.filter((c) => c.existingCompanyName).length;
 
   const handleFileDrop = useCallback(
     (acceptedFiles: File[]) => {
@@ -316,27 +323,28 @@ export const CompanyBatchImportModal: React.FC<CompanyBatchImportModalProps> = (
           <Alert severity={importResult.failed > 0 ? 'warning' : 'success'} sx={{ mb: 2 }}>
             {t('company.batchImport.complete', {
               success: importResult.success,
+              updated: importResult.updated,
               failed: importResult.failed,
               skipped: importResult.skipped,
             })}
           </Alert>
         )}
 
-        {/* Loading indicator while checking duplicates */}
+        {/* Loading indicator while checking existing companies */}
         {(isLoadingCompanies || isCheckingDuplicates) && importCandidates.length > 0 && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
             <CircularProgress size={20} />
             <Typography variant="body2" color="textSecondary">
-              {t('company.batchImport.checkingDuplicates')}
+              {t('company.batchImport.checkingExisting')}
             </Typography>
           </Box>
         )}
 
-        {/* Pre-skip info alert */}
-        {!isLoadingCompanies && !isCheckingDuplicates && preSkippedCount > 0 && !importResult && (
+        {/* Existing companies info alert */}
+        {!isLoadingCompanies && !isCheckingDuplicates && existingCount > 0 && !importResult && (
           <Alert severity="info" sx={{ mb: 2 }}>
-            {t('company.batchImport.duplicatesFound', {
-              count: preSkippedCount,
+            {t('company.batchImport.existingFound', {
+              count: existingCount,
               total: displayCandidates.length,
             })}
           </Alert>

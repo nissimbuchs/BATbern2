@@ -113,7 +113,7 @@
     "speakerCount": 4,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/assets/partners/logo-bls.jpg",
     "has_logo": false,
-    "status": "needs_logo",
+    "status": "complete",
     "industry": "Transportation"
   },
   {
@@ -180,18 +180,18 @@
     "speakerCount": 3,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/47/nuvibit-logo.png",
     "has_logo": false,
-    "status": "needs_logo",
+    "status": "complete",
     "industry": "Government"
   },
   {
     "id": "googlecloud",
     "displayName": "googleCloud.png",
     "logo": "googleCloud.png",
-    "url": null,
+    "url": "https://cloud.google.com",
     "speakerCount": 2,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/56/googleCloud.png",
     "has_logo": true,
-    "status": "pending_url",
+    "status": "complete",
     "industry": "Cloud Provider"
   },
   {
@@ -267,11 +267,11 @@
     "id": "afca",
     "displayName": "afca",
     "logo": "afca.jpg",
-    "url": null,
+    "url": "https://afca.ch",
     "speakerCount": 2,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/42/afca.jpg",
     "has_logo": true,
-    "status": "pending_url",
+    "status": "complete",
     "industry": "IT Consulting"
   },
   {
@@ -302,11 +302,11 @@
     "id": "bei",
     "displayName": "BEI.png",
     "logo": "BEI.png",
-    "url": null,
+    "url": "https://www.bei-sg.ch",
     "speakerCount": 2,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/46/BEI.png",
     "has_logo": true,
-    "status": "pending_url",
+    "status": "complete",
     "industry": "Higher Education"
   },
   {
@@ -358,7 +358,7 @@
   {
     "id": "isbbund",
     "displayName": "ISB (Informatiksteuerungsorgan Bund)",
-    "logo": "sbb.jpg",
+    "logo": null,
     "url": "https://www.isb.admin.ch",
     "speakerCount": 2,
     "logoFilePath": null,
@@ -421,30 +421,30 @@
     "id": "smg",
     "displayName": "smg.png",
     "logo": "smg.png",
-    "url": null,
+    "url": "https://swissmarketplace.group/de/",
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/51/smg.png",
-    "status": "pending_url",
+    "status": "complete",
     "industry": "IT Consulting"
   },
   {
     "id": "pragmaticsol",
     "displayName": "pragmaticsolutions.png",
     "logo": "pragmaticsolutions.png",
-    "url": null,
+    "url": "https://pragmatic-solutions.ch",
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/47/pragmaticsolutions.png",
-    "status": "pending_url",
+    "status": "complete",
     "industry": "IT Consulting"
   },
   {
     "id": "lifestage",
     "displayName": "lifestage.png",
     "logo": "lifestage.png",
-    "url": null,
+    "url": "https://www.lifestage-solutions.ch",
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/51/lifestage.png",
-    "status": "pending_url",
+    "status": "complete",
     "industry": "IT Consulting"
   },
   {
@@ -541,10 +541,10 @@
     "id": "coop",
     "displayName": "Coop",
     "logo": "cooprechtsschutz.jpg",
-    "url": null,
+    "url": "https://cooprecht.ch",
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/44/cooprechtsschutz.jpg",
-    "status": "pending_url",
+    "status": "complete",
     "industry": "Wholesale"
   },
   {
@@ -571,7 +571,7 @@
     "id": "bafu",
     "displayName": "BAFU",
     "logo": null,
-    "url": null,
+    "url": "https://www.bafu.admin.ch/de",
     "speakerCount": 1,
     "logoFilePath": null,
     "status": "pending_url",
@@ -581,7 +581,7 @@
     "id": "avega",
     "displayName": "avega.png",
     "logo": "avega.png",
-    "url": null,
+    "url": "https://www.avega.ch",
     "speakerCount": 1,
     "logoFilePath": "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/47/avega.png",
     "status": "pending_url",

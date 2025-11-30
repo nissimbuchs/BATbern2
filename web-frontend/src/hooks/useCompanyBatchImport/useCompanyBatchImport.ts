@@ -95,6 +95,7 @@ export function useCompanyBatchImport(
       const result: BatchImportResult = {
         total: importCandidates.length,
         success: 0,
+        updated: 0,
         failed: 0,
         skipped: 0,
       };
@@ -109,58 +110,64 @@ export function useCompanyBatchImport(
         updateCandidate(i, { importStatus: 'importing' });
 
         try {
-          // Step 1: Upload logo if logoUrl exists (ADR-002 3-step process)
-          let logoUploadId: string | undefined;
-          if (candidate.logoUrl) {
-            try {
-              console.log(
-                `[BatchImport] Uploading logo for ${candidate.apiPayload.name} from ${candidate.logoUrl}`
-              );
-              logoUploadId = await uploadLogo(candidate.logoUrl, candidate.apiPayload.name);
-              console.log(
-                `[BatchImport] Successfully uploaded logo for ${candidate.apiPayload.name}, uploadId: ${logoUploadId}`
-              );
-            } catch (logoError) {
-              console.error(
-                `[BatchImport] Failed to upload logo for ${candidate.apiPayload.name}:`,
-                logoError
-              );
-              // Continue without logo rather than failing the entire import
-            }
-          }
+          // Check if company exists
+          const isUpdate = !!candidate.existingCompanyName;
 
-          // Step 2: Create company with logo upload ID if available
-          const createRequest = {
-            ...candidate.apiPayload,
-            ...(logoUploadId ? { logoUploadId } : {}),
-          };
+          if (isUpdate) {
+            // Update existing company (exclude logo from updates)
+            // Cast to any to allow destructuring logoUploadId which may or may not exist
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
+            const { logoUploadId, ...updatePayload } = candidate.apiPayload as any;
 
-          await companyApiClient.createCompany(createRequest);
+            console.log(
+              `[BatchImport] Updating existing company: ${candidate.existingCompanyName}`
+            );
 
-          // Success
-          updateCandidate(i, { importStatus: 'success' });
-          result.success++;
-        } catch (error) {
-          // Check if it's a conflict (company already exists)
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          const isConflict =
-            errorMessage.includes('409') ||
-            errorMessage.toLowerCase().includes('already exists') ||
-            errorMessage.toLowerCase().includes('conflict');
+            await companyApiClient.updateCompany(candidate.existingCompanyName!, updatePayload);
 
-          if (isConflict) {
-            updateCandidate(i, {
-              importStatus: 'skipped',
-              errorMessage: 'Company already exists',
-            });
-            result.skipped++;
+            // Success - updated
+            updateCandidate(i, { importStatus: 'updated' });
+            result.updated++;
           } else {
-            updateCandidate(i, {
-              importStatus: 'error',
-              errorMessage: errorMessage,
-            });
-            result.failed++;
+            // Step 1: Upload logo if logoUrl exists (ADR-002 3-step process)
+            let logoUploadId: string | undefined;
+            if (candidate.logoUrl) {
+              try {
+                console.log(
+                  `[BatchImport] Uploading logo for ${candidate.apiPayload.name} from ${candidate.logoUrl}`
+                );
+                logoUploadId = await uploadLogo(candidate.logoUrl, candidate.apiPayload.name);
+                console.log(
+                  `[BatchImport] Successfully uploaded logo for ${candidate.apiPayload.name}, uploadId: ${logoUploadId}`
+                );
+              } catch (logoError) {
+                console.error(
+                  `[BatchImport] Failed to upload logo for ${candidate.apiPayload.name}:`,
+                  logoError
+                );
+                // Continue without logo rather than failing the entire import
+              }
+            }
+
+            // Step 2: Create company with logo upload ID if available
+            const createRequest = {
+              ...candidate.apiPayload,
+              ...(logoUploadId ? { logoUploadId } : {}),
+            };
+
+            await companyApiClient.createCompany(createRequest);
+
+            // Success - created
+            updateCandidate(i, { importStatus: 'success' });
+            result.success++;
           }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          updateCandidate(i, {
+            importStatus: 'error',
+            errorMessage: errorMessage,
+          });
+          result.failed++;
         }
       }
 
