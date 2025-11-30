@@ -109,10 +109,11 @@ export const CompanyBatchImportModal: React.FC<CompanyBatchImportModalProps> = (
 
   // Fetch all existing companies to check for duplicates
   // Using a high limit to get all companies for duplicate checking
+  // Only fetch when modal is open to avoid unnecessary API calls
   const { data: existingCompaniesData, isLoading: isLoadingCompanies } = useCompanies(
     { page: 1, limit: 1000 },
     {},
-    { expand: [] }
+    { expand: [], enabled: open }
   );
 
   const {
