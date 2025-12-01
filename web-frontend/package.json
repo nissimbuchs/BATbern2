@@ -57,7 +57,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.0",
-    "i18next": "^25.5.3",
+    "i18next": "^25.7.0",
     "i18next-browser-languagedetector": "^8.2.0",
     "ics": "^3.8.1",
     "lucide-react": "^0.554.0",
