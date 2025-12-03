@@ -183,6 +183,7 @@
     "errors": {
       "loadFailed": "Failed to load company",
       "saveFailed": "An error occurred while saving the company",
+      "deleteFailed": "Failed to delete company",
       "retry": "Retry"
     },
     "search": {
@@ -226,6 +227,14 @@
         "parseError": "Failed to parse JSON file: {{error}}",
         "importFailed": "Failed to import {{name}}: {{error}}"
       }
+    },
+    "delete": {
+      "title": "Delete Company",
+      "message": "Are you sure you want to delete this company?",
+      "dataWarning": "This action will permanently delete the company and cannot be undone.",
+      "cascadeWarning": "All associated data (users, partnerships, speakers, events) may be affected.",
+      "deleting": "Deleting...",
+      "success": "Company deleted successfully"
     }
   },
   "event": {

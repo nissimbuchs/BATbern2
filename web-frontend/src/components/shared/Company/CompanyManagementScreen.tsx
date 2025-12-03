@@ -69,6 +69,7 @@ const CompanyDetailWrapper: React.FC<{
       isLoading={isLoading}
       error={error?.message}
       canEdit={true}
+      canDelete={true}
       onEdit={() => company && onEdit(company)}
       onBack={onBack}
       onRetry={refetch}

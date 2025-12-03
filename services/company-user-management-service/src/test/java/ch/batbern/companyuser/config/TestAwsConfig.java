@@ -1,7 +1,6 @@
 package ch.batbern.companyuser.config;
 
 import ch.batbern.companyuser.service.CognitoIntegrationService;
-import ch.batbern.companyuser.service.UserSearchService;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.service.SlugGenerationService;
 import com.fasterxml.jackson.databind.ObjectMapper;

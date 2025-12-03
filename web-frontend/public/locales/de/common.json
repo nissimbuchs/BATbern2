@@ -183,6 +183,7 @@
     "errors": {
       "loadFailed": "Fehler beim Laden des Unternehmens",
       "saveFailed": "Fehler beim Speichern des Unternehmens",
+      "deleteFailed": "Fehler beim Löschen des Unternehmens",
       "retry": "Wiederholen"
     },
     "search": {
@@ -226,6 +227,14 @@
         "parseError": "JSON-Datei konnte nicht gelesen werden: {{error}}",
         "importFailed": "Import von {{name}} fehlgeschlagen: {{error}}"
       }
+    },
+    "delete": {
+      "title": "Unternehmen löschen",
+      "message": "Sind Sie sicher, dass Sie dieses Unternehmen löschen möchten?",
+      "dataWarning": "Diese Aktion löscht das Unternehmen dauerhaft und kann nicht rückgängig gemacht werden.",
+      "cascadeWarning": "Alle zugehörigen Daten (Benutzer, Partnerschaften, Sprecher, Veranstaltungen) können betroffen sein.",
+      "deleting": "Wird gelöscht...",
+      "success": "Unternehmen erfolgreich gelöscht"
     }
   },
   "event": {

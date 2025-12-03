@@ -19,7 +19,6 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.UserNotFoun
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
 import software.amazon.awssdk.services.cognitoidentityprovider.paginators.ListUsersIterable;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -146,9 +145,9 @@ class UserReconciliationServiceTest {
         assertThat(report.getErrors()).isEmpty();
 
         verify(userRepository, times(2)).save(argThat(user ->
-                user.getCognitoUserId() != null &&
-                        user.getRoles().contains(Role.ATTENDEE) &&
-                        user.isActive()
+                user.getCognitoUserId() != null
+                        && user.getRoles().contains(Role.ATTENDEE)
+                        && user.isActive()
         ));
         verify(metricsService, times(2)).recordUserCreated("RECONCILIATION");
         verify(metricsService, times(2)).recordDriftDetected(1);
@@ -184,8 +183,8 @@ class UserReconciliationServiceTest {
         assertThat(report.getErrors()).isEmpty();
 
         verify(userRepository, times(2)).save(argThat(user ->
-                !user.isActive() &&
-                        "Cognito user deleted".equals(user.getDeactivationReason())
+                !user.isActive()
+                        && "Cognito user deleted".equals(user.getDeactivationReason())
         ));
         verify(metricsService, times(2)).recordDriftDetected(1);
     }
