@@ -47,6 +47,9 @@ class ProfilePictureServiceTest {
     private S3Presigner s3Presigner;
 
     @Mock
+    private software.amazon.awssdk.services.s3.S3Client s3Client;
+
+    @Mock
     private UserRepository userRepository;
 
     private ProfilePictureService profilePictureService;
@@ -58,6 +61,7 @@ class ProfilePictureServiceTest {
     void setUp() {
         profilePictureService = new ProfilePictureService(
             s3Presigner,
+            s3Client,
             userRepository,
             BUCKET_NAME,
             CLOUDFRONT_DOMAIN

@@ -953,8 +953,9 @@ public class EventController {
         if (event.getTitle() == null || event.getTitle().trim().isEmpty()) {
             throw new BusinessValidationException("Event title is required for publishing");
         }
-        // Check that event date is in the future
-        if (event.getDate().isBefore(Instant.now())) {
+        // Check that event date is in the future (unless event is archived)
+        // Historical events can have past dates when imported with archived status
+        if (!"archived".equals(event.getStatus()) && event.getDate().isBefore(Instant.now())) {
             throw new BusinessValidationException("Event date must be in the future");
         }
     }

@@ -51,7 +51,7 @@ class EventApiClient {
       params.append('limit', pagination.limit.toString());
 
       // Build JSON filter object
-      const filterObj: Record<string, string | number | string[]> = {};
+      const filterObj: Record<string, unknown> = {};
       if (filters?.status && filters.status.length > 0) {
         filterObj.status = filters.status.join(','); // Convert array to comma-separated string
       }
@@ -59,7 +59,8 @@ class EventApiClient {
         filterObj.year = filters.year;
       }
       if (filters?.search) {
-        params.append('search', filters.search); // Add search as query param
+        // Use CONTAINS operator on title field for text search
+        filterObj.title = { $contains: filters.search };
       }
 
       // Add filter parameter if we have filters
@@ -110,7 +111,7 @@ class EventApiClient {
   async createEvent(data: CreateEventRequest): Promise<Event> {
     try {
       // Client-side validation
-      this.validateEventDate(data.date);
+      this.validateEventDate(data.date, data.status);
       this.validateRegistrationDeadline(data.date, data.registrationDeadline);
       this.validateVenueCapacity(data.venueCapacity);
 
@@ -129,7 +130,7 @@ class EventApiClient {
     try {
       // Client-side validation if dates are being updated
       if (data.date) {
-        this.validateEventDate(data.date);
+        this.validateEventDate(data.date, data.status);
       }
       if (data.date && data.registrationDeadline) {
         this.validateRegistrationDeadline(data.date, data.registrationDeadline);
@@ -150,7 +151,7 @@ class EventApiClient {
     try {
       // Validate dates if they're being updated
       if (data.date) {
-        this.validateEventDate(data.date);
+        this.validateEventDate(data.date, data.status);
       }
 
       const response = await apiClient.patch<Event>(`${EVENT_API_PATH}/${eventCode}`, data);
@@ -331,8 +332,14 @@ class EventApiClient {
 
   /**
    * Client-side validation: Event date must be in the future
+   * Skip validation for archived events (historical imports)
    */
-  private validateEventDate(eventDate: string): void {
+  private validateEventDate(eventDate: string, status?: string): void {
+    // Skip validation for archived events (historical imports)
+    if (status === 'archived') {
+      return;
+    }
+
     const eventDateTime = new Date(eventDate);
     const now = new Date();
 
