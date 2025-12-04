@@ -318,4 +318,78 @@ public class GenericLogoService {
         }
         return filename.substring(filename.lastIndexOf('.') + 1).toLowerCase();
     }
+
+    /**
+     * Upload logo directly to S3 (server-side only)
+     * Used by uploadImageFromUrl endpoint to bypass frontend entirely
+     * This avoids binary data corruption issues with JPEG/BMP files
+     *
+     * @param imageData Binary image data
+     * @param fileName Original filename with extension
+     * @param mimeType MIME type (image/png, image/jpeg, etc.)
+     * @return Upload ID for use in company creation
+     * @throws FileSizeExceededException if file size exceeds 5MB
+     * @throws InvalidFileTypeException if file type is not allowed
+     */
+    public String uploadLogoDirectly(byte[] imageData, String fileName, String mimeType) {
+        log.info("Uploading logo directly to S3: {}, size: {} bytes", fileName, imageData.length);
+
+        // Validate file size (max 5MB)
+        if (imageData.length > MAX_FILE_SIZE_BYTES) {
+            throw new FileSizeExceededException("Logo file size exceeds 5MB limit");
+        }
+
+        // Validate file type
+        String fileExtension = getFileExtension(fileName);
+        if (!ALLOWED_FILE_EXTENSIONS.contains(fileExtension)) {
+            throw new InvalidFileTypeException("Invalid file type. Allowed types: PNG, JPG, JPEG, SVG");
+        }
+
+        if (!ALLOWED_MIME_TYPES.contains(mimeType)) {
+            throw new InvalidFileTypeException("Invalid MIME type. Allowed: image/png, image/jpeg, image/svg+xml");
+        }
+
+        // Generate unique identifiers
+        String uploadId = UUID.randomUUID().toString();
+        String fileId = UUID.randomUUID().toString();
+
+        // Generate temp S3 key
+        String tempS3Key = generateTempS3Key(uploadId, fileId, fileExtension);
+
+        // Upload directly to S3
+        try {
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(tempS3Key)
+                    .contentType(mimeType)
+                    .contentLength((long) imageData.length)
+                    .build();
+
+            s3Client.putObject(putObjectRequest,
+                    software.amazon.awssdk.core.sync.RequestBody.fromBytes(imageData));
+
+            log.info("Uploaded file to S3: {}", tempS3Key);
+
+        } catch (Exception e) {
+            log.error("Failed to upload file to S3: {}", tempS3Key, e);
+            throw new RuntimeException("Failed to upload file to S3", e);
+        }
+
+        // Create Logo entity with CONFIRMED status (skip PENDING since upload is complete)
+        Logo logo = Logo.builder()
+                .uploadId(uploadId)
+                .s3Key(tempS3Key)
+                .fileExtension(fileExtension)
+                .fileSize((long) imageData.length)
+                .mimeType(mimeType)
+                .status(LogoStatus.CONFIRMED)
+                .expiresAt(Instant.now().plus(7, ChronoUnit.DAYS)) // Expires in 7 days
+                .build();
+
+        logoRepository.save(logo);
+
+        log.info("Logo uploaded directly with uploadId: {}", uploadId);
+
+        return uploadId;
+    }
 }

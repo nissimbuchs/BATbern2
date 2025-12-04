@@ -359,11 +359,11 @@ public class EventController {
     }
 
     // SPEAKER can update their own proposals
-    @PutMapping("/{eventId}/proposals/{proposalId}")
+    @PutMapping("/{eventCode}/proposals/{proposalSlug}")
     @PreAuthorize("hasRole('SPEAKER')")
     public ResponseEntity<ProposalDTO> updateProposal(
-        @PathVariable UUID eventId,
-        @PathVariable UUID proposalId,
+        @PathVariable String eventCode,
+        @PathVariable String proposalSlug,
         @RequestBody ProposalDTO proposal
     ) {
         // Additional check: proposal.speakerId == currentUser.id

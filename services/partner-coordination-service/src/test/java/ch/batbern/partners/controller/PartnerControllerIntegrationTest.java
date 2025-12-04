@@ -177,12 +177,11 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
         request.put("partnershipLevel", "GOLD");
         request.put("partnershipStartDate", LocalDate.now().toString());
 
-        // When/Then
+        // When/Then - ADR-003: companyName is the meaningful ID, no UUID in response
         mockMvc.perform(post("/api/v1/partners")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.companyName").value("GoogleZH"))
                 .andExpect(jsonPath("$.partnershipLevel").value("GOLD"))
                 .andExpect(jsonPath("$.isActive").value(true));

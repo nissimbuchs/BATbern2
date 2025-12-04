@@ -10,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
@@ -38,16 +40,19 @@ import java.util.UUID;
 public class ProfilePictureService {
 
     private final S3Presigner s3Presigner;
+    private final S3Client s3Client;
     private final UserRepository userRepository;
     private final String bucketName;
     private final String cloudFrontDomain;
 
     public ProfilePictureService(
             S3Presigner s3Presigner,
+            S3Client s3Client,
             UserRepository userRepository,
             @Value("${aws.s3.bucket-name:batbern-development-company-logos}") String bucketName,
             @Value("${aws.cloudfront.domain:https://cdn.batbern.ch}") String cloudFrontDomain) {
         this.s3Presigner = s3Presigner;
+        this.s3Client = s3Client;
         this.userRepository = userRepository;
         this.bucketName = bucketName;
         this.cloudFrontDomain = cloudFrontDomain;
@@ -216,5 +221,71 @@ public class ProfilePictureService {
     private String findS3KeyByFileId(String username, String fileId, String fileExtension) {
         int currentYear = LocalDate.now().getYear();
         return String.format("profile-pictures/%d/%s/profile-%s.%s", currentYear, username, fileId, fileExtension);
+    }
+
+    /**
+     * Upload profile picture directly to S3 and associate with user (server-side only)
+     * Used by upload-from-url endpoint to bypass frontend entirely
+     * This avoids binary data corruption issues with JPEG/PNG files
+     *
+     * @param username User's username
+     * @param imageData Binary image data
+     * @param fileName Original filename with extension
+     * @param mimeType MIME type (image/png, image/jpeg, etc.)
+     * @return CloudFront URL of the uploaded profile picture
+     * @throws FileSizeExceededException if file size exceeds 5MB
+     * @throws InvalidFileTypeException if file type is not allowed
+     * @throws UserNotFoundException if user not found
+     */
+    public String uploadProfilePictureDirectly(String username, byte[] imageData, String fileName, String mimeType) {
+        log.info("Uploading profile picture directly to S3 for user: {}, file: {}, size: {} bytes",
+                username, fileName, imageData.length);
+
+        // Validate file size (max 5MB)
+        if (imageData.length > MAX_FILE_SIZE_BYTES) {
+            throw new FileSizeExceededException("Profile picture file size exceeds 5MB limit");
+        }
+
+        // Validate file type
+        String fileExtension = getFileExtension(fileName);
+        if (!ALLOWED_FILE_EXTENSIONS.contains(fileExtension)) {
+            throw new InvalidFileTypeException("Invalid file type. Allowed types: PNG, JPG, JPEG, SVG");
+        }
+
+        // Get user
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException(username));
+
+        // Generate unique file ID and S3 key
+        String fileId = UUID.randomUUID().toString();
+        String s3Key = generateS3Key(username, fileId, fileExtension);
+
+        // Upload directly to S3
+        try {
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(s3Key)
+                    .contentType(mimeType)
+                    .contentLength((long) imageData.length)
+                    .build();
+
+            s3Client.putObject(putObjectRequest, RequestBody.fromBytes(imageData));
+
+            log.info("Uploaded profile picture to S3: {}", s3Key);
+
+        } catch (Exception e) {
+            log.error("Failed to upload profile picture to S3: {}", s3Key, e);
+            throw new RuntimeException("Failed to upload profile picture to S3", e);
+        }
+
+        // Build CloudFront URL and update user
+        String cloudFrontUrl = buildCloudFrontUrl(s3Key);
+        user.setProfilePictureUrl(cloudFrontUrl);
+        user.setProfilePictureS3Key(s3Key);
+        userRepository.save(user);
+
+        log.info("Profile picture uploaded directly for user: {}, CloudFront URL: {}", username, cloudFrontUrl);
+
+        return cloudFrontUrl;
     }
 }

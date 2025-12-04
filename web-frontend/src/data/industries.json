@@ -1,0 +1,142 @@
+{
+  "_note": "KEEP IN SYNC with apps/BATspa-old/src/api/industries.json",
+  "industries": [
+    {
+      "id": "transportation",
+      "name": {
+        "en": "Transportation",
+        "de": "Transportation"
+      }
+    },
+    {
+      "id": "insurance",
+      "name": {
+        "en": "Insurance",
+        "de": "Insurance"
+      }
+    },
+    {
+      "id": "telecommunications",
+      "name": {
+        "en": "Telecommunications",
+        "de": "Telecommunications"
+      }
+    },
+    {
+      "id": "financial-services",
+      "name": {
+        "en": "Financial Services",
+        "de": "Financial Services"
+      }
+    },
+    {
+      "id": "it-consulting",
+      "name": {
+        "en": "IT Consulting",
+        "de": "IT Consulting"
+      }
+    },
+    {
+      "id": "banking",
+      "name": {
+        "en": "Banking Software",
+        "de": "Banking Software"
+      }
+    },
+    {
+      "id": "energy",
+      "name": {
+        "en": "Energy",
+        "de": "Energy"
+      }
+    },
+    {
+      "id": "healthcare",
+      "name": {
+        "en": "Healthcare",
+        "de": "Healthcare"
+      }
+    },
+    {
+      "id": "government",
+      "name": {
+        "en": "Government",
+        "de": "Government"
+      }
+    },
+    {
+      "id": "cloud-provider",
+      "name": {
+        "en": "Cloud Provider",
+        "de": "Cloud Provider"
+      }
+    },
+    {
+      "id": "logistics",
+      "name": {
+        "en": "Logistics",
+        "de": "Logistics"
+      }
+    },
+    {
+      "id": "non-profit",
+      "name": {
+        "en": "Non-profit Organization",
+        "de": "Non-profit Organization"
+      }
+    },
+    {
+      "id": "higher-education",
+      "name": {
+        "en": "Higher Education",
+        "de": "Higher Education"
+      }
+    },
+    {
+      "id": "pharmaceutical",
+      "name": {
+        "en": "Pharmaceutical",
+        "de": "Pharmaceutical"
+      }
+    },
+    {
+      "id": "wholesale",
+      "name": {
+        "en": "Wholesale",
+        "de": "Wholesale"
+      }
+    },
+    {
+      "id": "legal",
+      "name": {
+        "en": "Legal",
+        "de": "Legal"
+      }
+    },
+    {
+      "id": "media",
+      "name": {
+        "en": "Media",
+        "de": "Media"
+      }
+    },
+    {
+      "id": "defense",
+      "name": {
+        "en": "Defense",
+        "de": "Defense"
+      }
+    },
+    {
+      "id": "technology",
+      "name": {
+        "en": "Technology",
+        "de": "Technology"
+      }
+    }
+  ],
+  "meta": {
+    "totalIndustries": 19,
+    "lastUpdated": "2025-11-30"
+  }
+}

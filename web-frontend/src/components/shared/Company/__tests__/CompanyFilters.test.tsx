@@ -89,10 +89,10 @@ describe('CompanyFilters Component', () => {
       const industrySelect = screen.getByRole('combobox', { name: /industry/i });
       await user.click(industrySelect);
 
-      // Should show industry options
+      // Should show industry options (from industries.json)
       await waitFor(() => {
-        expect(screen.getByRole('option', { name: /cloud computing/i })).toBeInTheDocument();
-        expect(screen.getByRole('option', { name: /devops/i })).toBeInTheDocument();
+        expect(screen.getByRole('option', { name: /cloud provider/i })).toBeInTheDocument();
+        expect(screen.getByRole('option', { name: /it consulting/i })).toBeInTheDocument();
         expect(screen.getByRole('option', { name: /financial services/i })).toBeInTheDocument();
       });
     });
@@ -104,12 +104,12 @@ describe('CompanyFilters Component', () => {
       const industrySelect = screen.getByRole('combobox', { name: /industry/i });
       await user.click(industrySelect);
 
-      const cloudOption = await screen.findByRole('option', { name: /cloud computing/i });
+      const cloudOption = await screen.findByRole('option', { name: /cloud provider/i });
       await user.click(cloudOption);
 
       expect(mockOnFilterChange).toHaveBeenCalledWith(
         expect.objectContaining({
-          industry: 'Cloud Computing',
+          industry: 'Cloud Provider',
         })
       );
     });
@@ -121,7 +121,7 @@ describe('CompanyFilters Component', () => {
       render(
         <CompanyFilters
           onFilterChange={mockOnFilterChange}
-          initialFilters={{ isVerified: true, industry: 'Cloud Computing' }}
+          initialFilters={{ isVerified: true, industry: 'Cloud Provider' }}
         />
       );
 
@@ -167,7 +167,7 @@ describe('CompanyFilters Component', () => {
     it('should_loadFiltersFromURL_when_componentMounted', () => {
       const searchParams = new URLSearchParams();
       searchParams.set('isVerified', 'true');
-      searchParams.set('industry', 'Cloud Computing');
+      searchParams.set('industry', 'Cloud Provider');
 
       vi.mocked(useSearchParams).mockReturnValue([searchParams, vi.fn()]);
 

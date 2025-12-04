@@ -183,7 +183,95 @@
     "errors": {
       "loadFailed": "Failed to load company",
       "saveFailed": "An error occurred while saving the company",
+      "deleteFailed": "Failed to delete company",
       "retry": "Retry"
+    },
+    "search": {
+      "placeholder": "Search companies..."
+    },
+    "batchImport": {
+      "button": "Batch Import",
+      "title": "Import Companies from JSON",
+      "dropzone": "Drop JSON file here or click to upload",
+      "dropzoneActive": "Drop the JSON file here",
+      "invalidJson": "Invalid JSON file. Please check the format.",
+      "noCompanies": "No companies found in the JSON file.",
+      "preview": "Preview ({{count}} companies)",
+      "importButton": "Import All",
+      "cancelButton": "Cancel",
+      "status": {
+        "pending": "Pending",
+        "importing": "Importing...",
+        "success": "Imported",
+        "updated": "Updated",
+        "willUpdate": "Will Update",
+        "error": "Error",
+        "skipped": "Skipped (exists)"
+      },
+      "progress": "Importing {{current}} of {{total}}...",
+      "complete": "Import complete: {{success}} created, {{updated}} updated, {{failed}} failed, {{skipped}} skipped",
+      "checkingExisting": "Checking for existing companies...",
+      "existingFound": "{{count}} of {{total}} companies already exist and will be updated.",
+      "allSkipped": "All Skipped",
+      "importButtonWithCount": "Import {{count}} Companies",
+      "columns": {
+        "logo": "Logo",
+        "displayName": "Display Name",
+        "name": "API Name",
+        "industry": "Industry",
+        "website": "Website",
+        "status": "Status"
+      },
+      "errors": {
+        "invalidFile": "Invalid file type. Please upload a JSON file.",
+        "parseError": "Failed to parse JSON file: {{error}}",
+        "importFailed": "Failed to import {{name}}: {{error}}"
+      }
+    },
+    "delete": {
+      "title": "Delete Company",
+      "message": "Are you sure you want to delete this company?",
+      "dataWarning": "This action will permanently delete the company and cannot be undone.",
+      "cascadeWarning": "All associated data (users, partnerships, speakers, events) may be affected.",
+      "deleting": "Deleting...",
+      "success": "Company deleted successfully"
+    }
+  },
+  "event": {
+    "batchImport": {
+      "button": "Import Historical Events",
+      "title": "Import Events from topics.json",
+      "dropzone": "Drop topics.json file here or click to upload",
+      "dropzoneActive": "Drop the JSON file here",
+      "dropzoneHint": "Upload the pre-processed topics.json file (with parsedDate, description, and moderator fields)",
+      "invalidJson": "Invalid JSON file. Please check the format.",
+      "noEvents": "No events found in the JSON file.",
+      "preview": "Preview ({{count}} events)",
+      "importButton": "Import All",
+      "cancelButton": "Cancel",
+      "status": {
+        "pending": "Pending",
+        "importing": "Importing...",
+        "success": "Imported",
+        "error": "Error",
+        "skipped": "Skipped (exists)"
+      },
+      "progress": "Importing {{current}} of {{total}}...",
+      "complete": "Import complete: {{success}} succeeded, {{failed}} failed, {{skipped}} skipped",
+      "allSkipped": "All Skipped",
+      "importButtonWithCount": "Import {{count}} Events",
+      "columns": {
+        "eventNumber": "#",
+        "title": "Title",
+        "date": "Date",
+        "organizer": "Organizer",
+        "status": "Status"
+      },
+      "errors": {
+        "invalidFile": "Invalid file type. Please upload a JSON file.",
+        "parseError": "Failed to parse JSON file: {{error}}",
+        "importFailed": "Failed to import event {{number}}: {{error}}"
+      }
     }
   },
   "fileUpload": {

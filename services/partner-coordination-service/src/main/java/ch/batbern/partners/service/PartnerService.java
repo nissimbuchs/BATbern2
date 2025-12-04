@@ -219,7 +219,7 @@ public class PartnerService {
 
     private PartnerResponse mapToResponse(Partner partner) {
         PartnerResponse response = new PartnerResponse();
-        response.setId(partner.getId());  // UUID, not String
+        // ADR-003: companyName is the meaningful ID, no UUID exposed in API
         response.setCompanyName(partner.getCompanyName());
         response.setPartnershipLevel(mapPartnershipLevelToDto(partner.getPartnershipLevel()));
         response.setPartnershipStartDate(partner.getPartnershipStartDate());
