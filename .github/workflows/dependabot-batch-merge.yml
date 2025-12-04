@@ -1,0 +1,58 @@
+name: Dependabot Batch Merge
+
+# Automatically batch-merge dependabot PRs on a monthly schedule
+# Runs on first Monday of each month at 10:00 AM (after dependabot creates PRs at 3-4 AM)
+
+on:
+  # Scheduled run: First Monday of each month at 10:00 AM
+  schedule:
+    - cron: '0 10 1-7 * 1'  # First Monday of month
+
+  # Manual trigger for testing or emergency runs
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run mode (do not actually merge)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  batch-merge:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up GitHub CLI
+        run: |
+          # gh CLI is pre-installed on ubuntu-latest
+          gh --version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run batch merge script
+        run: |
+          bash scripts/ci/dependabot-batch-merge.sh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+
+      - name: Post summary to workflow
+        if: always()
+        run: |
+          if [ -f /tmp/dependabot-batch-merge-summary.md ]; then
+            cat /tmp/dependabot-batch-merge-summary.md >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ No summary file found" >> $GITHUB_STEP_SUMMARY
+          fi
