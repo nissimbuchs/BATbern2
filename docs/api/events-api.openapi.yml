@@ -36,6 +36,8 @@ servers:
 tags:
   - name: Events
     description: Event CRUD and listing operations
+  - name: Event Types
+    description: Event type configuration management (Story 5.1)
   - name: Event Actions
     description: Event publishing and workflow operations
   - name: Sessions
@@ -1529,6 +1531,176 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /events/types:
+    get:
+      tags:
+        - Event Types
+      summary: List all event type configurations
+      description: |
+        Retrieve all event type configurations (FULL_DAY, AFTERNOON, EVENING).
+
+        **Story**: 5.1 - Event Type Definition
+        **Acceptance Criteria**: AC1
+
+        Event types define slot requirements and templates for different event formats.
+        This endpoint returns cached configurations (Caffeine cache, 1 hour TTL).
+
+        **Performance**: <50ms (P95) - cached response
+      operationId: listEventTypes
+      responses:
+        '200':
+          description: Event types retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventSlotConfigurationResponse'
+              example:
+                - type: FULL_DAY
+                  minSlots: 6
+                  maxSlots: 8
+                  slotDuration: 45
+                  theoreticalSlotsAM: true
+                  breakSlots: 2
+                  lunchSlots: 1
+                  defaultCapacity: 200
+                  typicalStartTime: "09:00"
+                  typicalEndTime: "17:00"
+                - type: AFTERNOON
+                  minSlots: 6
+                  maxSlots: 8
+                  slotDuration: 30
+                  theoreticalSlotsAM: false
+                  breakSlots: 1
+                  lunchSlots: 0
+                  defaultCapacity: 150
+                  typicalStartTime: "13:00"
+                  typicalEndTime: "18:00"
+                - type: EVENING
+                  minSlots: 3
+                  maxSlots: 4
+                  slotDuration: 45
+                  theoreticalSlotsAM: false
+                  breakSlots: 1
+                  lunchSlots: 0
+                  defaultCapacity: 100
+                  typicalStartTime: "18:00"
+                  typicalEndTime: "21:00"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /events/types/{type}:
+    get:
+      tags:
+        - Event Types
+      summary: Get specific event type configuration
+      description: |
+        Retrieve configuration for a specific event type.
+
+        **Story**: 5.1 - Event Type Definition
+        **Acceptance Criteria**: AC2
+
+        Returns slot configuration details for the specified event type.
+        Cached response (Caffeine cache, 1 hour TTL).
+
+        **Performance**: <50ms (P95) - cached response
+      operationId: getEventType
+      parameters:
+        - name: type
+          in: path
+          required: true
+          description: Event type identifier
+          schema:
+            $ref: '#/components/schemas/EventType'
+          example: FULL_DAY
+      responses:
+        '200':
+          description: Event type configuration retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventSlotConfigurationResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+    put:
+      tags:
+        - Event Types
+      summary: Update event type configuration (ORGANIZER only)
+      description: |
+        Update configuration for a specific event type.
+
+        **Story**: 5.1 - Event Type Definition
+        **Acceptance Criteria**: AC3, AC8
+
+        **Authorization**: Requires ORGANIZER role
+
+        Updates slot configuration for the event type template.
+        Cache is automatically invalidated after successful update.
+
+        **Validation**:
+        - minSlots must be > 0
+        - maxSlots must be >= minSlots
+        - slotDuration must be >= 15 minutes
+        - defaultCapacity must be > 0
+      operationId: updateEventType
+      parameters:
+        - name: type
+          in: path
+          required: true
+          description: Event type identifier
+          schema:
+            $ref: '#/components/schemas/EventType'
+          example: FULL_DAY
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEventSlotConfigurationRequest'
+            example:
+              minSlots: 6
+              maxSlots: 8
+              slotDuration: 45
+              theoreticalSlotsAM: true
+              breakSlots: 2
+              lunchSlots: 1
+              defaultCapacity: 200
+              typicalStartTime: "09:00"
+              typicalEndTime: "17:00"
+      responses:
+        '200':
+          description: Event type configuration updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventSlotConfigurationResponse'
+        '400':
+          description: Validation error (e.g., minSlots > maxSlots)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - requires ORGANIZER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
 components:
   schemas:
     Event:
@@ -2280,6 +2452,140 @@ components:
                 format: date
               count:
                 type: integer
+
+    EventType:
+      type: string
+      description: |
+        Event type identifier (Story 5.1 - Event Type Definition).
+        Matches EventType enum from architecture (03-data-architecture.md:547-551).
+      enum:
+        - FULL_DAY
+        - AFTERNOON
+        - EVENING
+      example: FULL_DAY
+
+    EventSlotConfigurationResponse:
+      type: object
+      description: |
+        Event slot configuration for an event type (Story 5.1).
+        Defines slot requirements and scheduling parameters.
+      required:
+        - type
+        - minSlots
+        - maxSlots
+        - slotDuration
+        - theoreticalSlotsAM
+        - breakSlots
+        - lunchSlots
+        - defaultCapacity
+      properties:
+        type:
+          $ref: '#/components/schemas/EventType'
+        minSlots:
+          type: integer
+          minimum: 1
+          description: Minimum number of session slots
+          example: 6
+        maxSlots:
+          type: integer
+          minimum: 1
+          description: Maximum number of session slots
+          example: 8
+        slotDuration:
+          type: integer
+          minimum: 15
+          description: Duration of each slot in minutes
+          example: 45
+        theoreticalSlotsAM:
+          type: boolean
+          description: Whether theoretical presentations are scheduled in morning slots
+          example: true
+        breakSlots:
+          type: integer
+          minimum: 0
+          description: Number of break slots included in event
+          example: 2
+        lunchSlots:
+          type: integer
+          minimum: 0
+          description: Number of lunch slots included in event
+          example: 1
+        defaultCapacity:
+          type: integer
+          minimum: 1
+          description: Default attendee capacity for this event type
+          example: 200
+        typicalStartTime:
+          type: string
+          format: time
+          description: Typical start time for this event type
+          example: "09:00"
+        typicalEndTime:
+          type: string
+          format: time
+          description: Typical end time for this event type
+          example: "17:00"
+
+    UpdateEventSlotConfigurationRequest:
+      type: object
+      description: |
+        Request to update event slot configuration (Story 5.1).
+        All fields are required for update operation.
+      required:
+        - minSlots
+        - maxSlots
+        - slotDuration
+        - theoreticalSlotsAM
+        - breakSlots
+        - lunchSlots
+        - defaultCapacity
+      properties:
+        minSlots:
+          type: integer
+          minimum: 1
+          description: Minimum number of session slots
+          example: 6
+        maxSlots:
+          type: integer
+          minimum: 1
+          description: Maximum number of session slots (must be >= minSlots)
+          example: 8
+        slotDuration:
+          type: integer
+          minimum: 15
+          description: Duration of each slot in minutes
+          example: 45
+        theoreticalSlotsAM:
+          type: boolean
+          description: Whether theoretical presentations are scheduled in morning slots
+          example: true
+        breakSlots:
+          type: integer
+          minimum: 0
+          description: Number of break slots included in event
+          example: 2
+        lunchSlots:
+          type: integer
+          minimum: 0
+          description: Number of lunch slots included in event
+          example: 1
+        defaultCapacity:
+          type: integer
+          minimum: 1
+          description: Default attendee capacity for this event type
+          example: 200
+        typicalStartTime:
+          type: string
+          format: time
+          description: Typical start time for this event type
+          example: "09:00"
+          nullable: true
+        typicalEndTime:
+          type: string
+          format: time
+          description: Typical end time for this event type
+          example: "17:00"
+          nullable: true
 
     PaginationMetadata:
       type: object
