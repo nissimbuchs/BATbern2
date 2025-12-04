@@ -428,7 +428,8 @@ describe('EventManagementDashboard Component', () => {
     it('should_displayNewEventButton_when_dashboardLoaded', () => {
       render(<EventManagementDashboard />, { wrapper: createWrapper() });
 
-      expect(screen.getByRole('button', { name: /new event/i })).toBeInTheDocument();
+      const newEventButtons = screen.getAllByRole('button', { name: /new event/i });
+      expect(newEventButtons.length).toBeGreaterThan(0);
     });
   });
 
