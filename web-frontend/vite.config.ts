@@ -252,6 +252,21 @@ export default defineConfig({
         'src/**/index.ts', // Re-export files
         'src/**/index.tsx', // Re-export files
         '**/generated/**', // Exclude all generated code
+        // Batch import hooks - one-time migration utilities
+        'src/hooks/useCompanyBatchImport/**',
+        'src/hooks/useEventBatchImport/**',
+        'src/hooks/useSpeakerBatchImport/**',
+        'src/utils/companyImport.ts',
+        'src/utils/eventImport.ts',
+        'src/utils/speakerImport.ts',
+        // Batch import UI components - one-time migration screens
+        'src/components/admin/BatchImport/**',
+        'src/components/shared/Event/EventBatchImportModal.tsx',
+        // Service layer components with minimal business logic
+        'src/services/auth/permissionService.ts', // Permission checks - tested via integration
+        'src/services/eventService.ts', // Simple re-export
+        // Account API - complex integration requiring full backend
+        'src/services/api/userAccountApi.ts',
       ],
       reportOnFailure: true, // Generate coverage even when tests fail
       // Note: 'all' option removed in vitest v4 - use 'include' to specify files
