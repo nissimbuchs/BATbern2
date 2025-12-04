@@ -20,13 +20,13 @@ import type { CompanyFilters, PaginationParams } from '@/types/company.types';
  *
  * @param pagination - Page and limit parameters
  * @param filters - Optional filters (partner status, verified, industry, search query)
- * @param options - Optional resource expansion (e.g., { expand: ['logo', 'statistics'] })
+ * @param options - Optional resource expansion and React Query options (e.g., { expand: ['logo'], enabled: true })
  * @returns React Query result with company list data
  */
 export const useCompanies = (
   pagination: PaginationParams,
   filters?: CompanyFilters,
-  options?: { expand?: string[] }
+  options?: { expand?: string[]; enabled?: boolean }
 ) => {
   return useQuery({
     queryKey: ['companies', pagination, filters, options?.expand],
@@ -34,5 +34,6 @@ export const useCompanies = (
     staleTime: 5 * 60 * 1000, // 5 minutes (AC 10 - Performance requirement)
     gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
     refetchOnWindowFocus: true, // AC 14 - State Management requirement
+    enabled: options?.enabled ?? true, // Allow disabling the query (e.g., when modal is closed)
   });
 };

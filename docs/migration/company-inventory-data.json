@@ -1,0 +1,2866 @@
+{
+  "total_companies": 137,
+  "companies": [
+    {
+      "normalized_name": "sbb",
+      "display_name": "SBB",
+      "variations": [
+        "SBB",
+        "sbb",
+        "sbb.jpg"
+      ],
+      "speaker_count": 36,
+      "unique_speakers": 33,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Andreas Fuhrer, SBB Informatik",
+        "Andr\u00e9 Rogger, SBB",
+        "Baltisar Oswald, SBB AG",
+        "Baltisar Oswald, SBB CFF FFS",
+        "Bernhard Rytz (SBB)"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/42/sbb.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/43/sbb.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/45/sbb.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/47/sbb.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/48/sbb.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/50/sbb.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/52/sbb.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/53/sbb.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/54/sbb.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/57/sbb.jpg"
+      ]
+    },
+    {
+      "normalized_name": "mobiliar",
+      "display_name": "Mobiliar",
+      "variations": [
+        "Mobiliar",
+        "mobiliar",
+        "mobiliar.jpg"
+      ],
+      "speaker_count": 22,
+      "unique_speakers": 20,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Alex Meier, die Mobiliar",
+        "Andreas Gr\u00fctter, Die Mobiliar",
+        "Andreas M\u00f6sching, Die Mobiliar",
+        "Beat Winist\u00f6rfer, Die Mobiliar",
+        "Bruno Russiniello, die Mobiliar"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/42/mobiliar.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/43/mobiliar.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/45/mobiliar.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/47/mobiliar.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/49/mobiliar.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/52/mobiliar.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/53/mobiliar.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/54/mobiliar.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/56/mobiliar.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/57/mobiliar.jpg"
+      ]
+    },
+    {
+      "normalized_name": "swisscom",
+      "display_name": "Swisscom",
+      "variations": [
+        "Swisscom",
+        "swisscom",
+        "swisscom.jpg"
+      ],
+      "speaker_count": 20,
+      "unique_speakers": 18,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Andreas R. Lehmann (Swisscom)",
+        "Christoph Meier, Swisscom",
+        "Florian Kammermann, Swisscom",
+        "Gerhard Schedler, Swisscom",
+        "Joana Soares Machado, Swisscom"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/43/swisscom.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/44/swisscom.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/47/swisscom.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/49/swisscom.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/51/swisscom.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/52/swisscom.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/55/swisscom.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/56/swisscom.jpg"
+      ]
+    },
+    {
+      "normalized_name": "postfinance",
+      "display_name": "PostFinance",
+      "variations": [
+        "PostFinance",
+        "postfinance",
+        "postfinance.jpg"
+      ],
+      "speaker_count": 17,
+      "unique_speakers": 17,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Andreas Spichiger, PostFinance",
+        "Barbara Marti, PostFinance AG",
+        "David Kauer, PostFinance AG",
+        "Elmar Boschung, PostFinance",
+        "Eric M\u00fcller, PostFinance AG"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/43/postfinance.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/53/post.jpg"
+      ]
+    },
+    {
+      "normalized_name": "elca",
+      "display_name": "elca",
+      "variations": [
+        "elca",
+        "elca.jpg"
+      ],
+      "speaker_count": 10,
+      "unique_speakers": 9,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Andreas Hess, ELCA",
+        "Dr. Sonia Bogos, ELCA Informatique SA",
+        "Fabian Nicollier, ELCA",
+        "Florent Martin, ELCA",
+        "Jorge Alvarado, ELCA Informatique SA"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/43/elca.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/44/elca.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/46/elca.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/53/elca.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/54/elca.jpg"
+      ]
+    },
+    {
+      "normalized_name": "rtc",
+      "display_name": "rtc",
+      "variations": [
+        "rtc"
+      ],
+      "speaker_count": 9,
+      "unique_speakers": 9,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Andreas Gr\u00fctter, RTC AG",
+        "Dr. Nissim J. Buchs, RTC AG",
+        "Felix Grimm, RTC AG",
+        "Guido Steiner, RTC AG",
+        "Jean-Marc Terrettaz, RTC AG"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "bkw",
+      "display_name": "BKW",
+      "variations": [
+        "BKW",
+        "bkw",
+        "bkw.jpg"
+      ],
+      "speaker_count": 8,
+      "unique_speakers": 8,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Baltisar Oswald, BKW FMB Energie AG",
+        "Christian Beyeler, BKW FMB Energie AG",
+        "Christian H\u00fcrlimann, BKW FMB Energie AG",
+        "Dr. Felix Grimm, BKW FMB Energie AG",
+        "Dr. Thomas Wettstein, BKW FMB Energie AG"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/53/bkw.jpg"
+      ]
+    },
+    {
+      "normalized_name": "ipt",
+      "display_name": "ipt",
+      "variations": [
+        "ipt"
+      ],
+      "speaker_count": 5,
+      "unique_speakers": 3,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Dr. Stefan H\u00fcsemann, innovation process technology [ipt]",
+        "Marco Venzi, IPT",
+        "Michael Schwendimann, IPT"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/56/ipt.png"
+      ]
+    },
+    {
+      "normalized_name": "mtrail",
+      "display_name": "mtrail.jpg",
+      "variations": [
+        "mtrail.jpg"
+      ],
+      "speaker_count": 5,
+      "unique_speakers": 5,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Aeneas Gr\u00fcter, mtrail",
+        "Daniel Wiehl, mtrail GmbH",
+        "Marc Hoffmann, mtrail",
+        "Marco Sommerfeld, mtrail",
+        "Simon Eggler, mtrail GmbH"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/42/mtrail.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/43/mtrail.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/56/mtrail.jpg"
+      ]
+    },
+    {
+      "normalized_name": "logo-pf",
+      "display_name": "logo-pf.jpg",
+      "variations": [
+        "logo-pf.jpg"
+      ],
+      "speaker_count": 5,
+      "unique_speakers": 4,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Dominic Spalinger, PostFinance",
+        "Dominik W\u00fcst, PostFinance",
+        "Mustapha Bouaaoud, PostFinance",
+        "Philippe Halbeisen, PostFinance"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/44/logo-pf.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/55/logo-pf.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/57/logo-pf.jpg"
+      ]
+    },
+    {
+      "normalized_name": "universit\u00e4t",
+      "display_name": "universit\u00e4t",
+      "variations": [
+        "universit\u00e4t"
+      ],
+      "speaker_count": 4,
+      "unique_speakers": 4,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Dr. Matthias St\u00fcrmer, Universit\u00e4t Bern",
+        "Matthias Stutz, Universit\u00e4t St. Gallen",
+        "Prof. Dr. Gerhard Knolmayer, Universit\u00e4t Bern",
+        "Prof. Dr. Robert Winter, Universit\u00e4t St. Gallen"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "bls",
+      "display_name": "bls",
+      "variations": [
+        "bls"
+      ],
+      "speaker_count": 4,
+      "unique_speakers": 4,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Dr. Andreas Kronawitter, BLS",
+        "Dr. Andreas Kronawitter, BLS AG",
+        "Marcel Edel, BLS Netz AG",
+        "Marco Knaeple, BLS"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "isc-ejpd",
+      "display_name": "isc-ejpd",
+      "variations": [
+        "isc-ejpd",
+        "isc-ejpd.png"
+      ],
+      "speaker_count": 4,
+      "unique_speakers": 3,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Matthias Germann, ISC-EJPD",
+        "Peter Andres, ISC-EJPD",
+        "Peter Andres, Informatik Service Center EJPD"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/48/isc-ejpd.png",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/56/isc-ejpd.png"
+      ]
+    },
+    {
+      "normalized_name": "berner",
+      "display_name": "berner",
+      "variations": [
+        "berner"
+      ],
+      "speaker_count": 4,
+      "unique_speakers": 4,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Benjamin Fankhauser, Berner Fachhochschule",
+        "Dr. Philipp Locher, Berner Fachhochschule",
+        "Dr. Stephan Fischli, Berner Fachhochschule",
+        "Stephan Haller, Berner Fachhochschule"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "bit",
+      "display_name": "bit",
+      "variations": [
+        "bit"
+      ],
+      "speaker_count": 3,
+      "unique_speakers": 3,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Gion Sialm, BIT",
+        "Reto Inversini, Bundesamt f\u00fcr Informatik und Telekommunikation BIT",
+        "Thierry Perroud, Bundesamt f\u00fcr Informatik und Telekommunikation BIT"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/47/nuvibit-logo.png"
+      ]
+    },
+    {
+      "normalized_name": "hp",
+      "display_name": "hp",
+      "variations": [
+        "hp"
+      ],
+      "speaker_count": 3,
+      "unique_speakers": 3,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "J\u00e9r\u00e9mie Granat, HP Banking Service Center",
+        "Markus Gerber, HP BSC (Banking Service Center)",
+        "Michael Held, HP BSC (Banking Service Center)"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "puzzle",
+      "display_name": "puzzle",
+      "variations": [
+        "puzzle"
+      ],
+      "speaker_count": 3,
+      "unique_speakers": 3,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Mark Waber, Puzzle ITC",
+        "Pascal Zumkehr, Puzzle ITC",
+        "Philippe Schmid, Puzzle ITC"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "z\u00fchlke",
+      "display_name": "z\u00fchlke",
+      "variations": [
+        "z\u00fchlke"
+      ],
+      "speaker_count": 3,
+      "unique_speakers": 2,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Tomas Dikk, Z\u00fchlke Engineering",
+        "Wolfgang Giersche, Z\u00fchlke Engineering AG"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "postauto",
+      "display_name": "postauto",
+      "variations": [
+        "postauto"
+      ],
+      "speaker_count": 3,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Erich Helwin, PostAuto Schweiz AG"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/53/post.jpg"
+      ]
+    },
+    {
+      "normalized_name": "post",
+      "display_name": "post",
+      "variations": [
+        "post",
+        "post.jpg"
+      ],
+      "speaker_count": 3,
+      "unique_speakers": 3,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "David Riedo, Post",
+        "Meinrad Jean-Richard, Post",
+        "Roman Stalder, Post AG"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/43/postfinance.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/53/post.jpg"
+      ]
+    },
+    {
+      "normalized_name": "aws-logo",
+      "display_name": "aws-logo.png",
+      "variations": [
+        "aws-logo.png"
+      ],
+      "speaker_count": 3,
+      "unique_speakers": 3,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Jann Wild, AWS",
+        "Philipp Knecht, Amazon Web Services (AWS) Schweiz",
+        "Simon Messerli, AWS"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/47/aws-logo.png",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/51/aws.png",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/53/aws.png",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/56/aws-logo.png"
+      ]
+    },
+    {
+      "normalized_name": "postmail",
+      "display_name": "postmail",
+      "variations": [
+        "postmail"
+      ],
+      "speaker_count": 2,
+      "unique_speakers": 2,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Alain Jacot-Guillarmod, PostMail",
+        "Beat M. St\u00f6ckli, PostMail"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/53/post.jpg"
+      ]
+    },
+    {
+      "normalized_name": "isbbund",
+      "display_name": "isbbund",
+      "variations": [
+        "isbbund"
+      ],
+      "speaker_count": 2,
+      "unique_speakers": 2,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Marc Schaffroth, Informationstrategieorgan Bund ISB",
+        "Richard Sch\u00e4ren (Informatikstrategieorgan Bund ISB)"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/42/sbb.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/43/sbb.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/45/sbb.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/47/sbb.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/48/sbb.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/50/sbb.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/52/sbb.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/53/sbb.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/54/sbb.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/57/sbb.jpg"
+      ]
+    },
+    {
+      "normalized_name": "zuehlke",
+      "display_name": "zuehlke",
+      "variations": [
+        "zuehlke"
+      ],
+      "speaker_count": 2,
+      "unique_speakers": 2,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Hansj\u00fcrg Inniger, Z\u00fchlke Engineering AG",
+        "Ulrich Brawand (Z\u00fchlke Engineering)"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "microsoft",
+      "display_name": "microsoft",
+      "variations": [
+        "microsoft",
+        "microsoft.png"
+      ],
+      "speaker_count": 2,
+      "unique_speakers": 2,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Nathalie Mombelli, Microsoft",
+        "Sascha P. Corti (Microsoft)"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/48/microsoft.png"
+      ]
+    },
+    {
+      "normalized_name": "dvbern",
+      "display_name": "DVBern",
+      "variations": [
+        "DVBern"
+      ],
+      "speaker_count": 2,
+      "unique_speakers": 2,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Matthias Germann, DV Bern",
+        "Thomas Meister, DB Bern"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "swisstopo",
+      "display_name": "swisstopo",
+      "variations": [
+        "swisstopo",
+        "swisstopo.JPG"
+      ],
+      "speaker_count": 2,
+      "unique_speakers": 2,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Gilbert Jeiziner, swisstopo",
+        "Hans Ulrich Wiedmer, swisstopo"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/46/swisstopo.JPG"
+      ]
+    },
+    {
+      "normalized_name": "hslu",
+      "display_name": "hslu",
+      "variations": [
+        "hslu"
+      ],
+      "speaker_count": 2,
+      "unique_speakers": 2,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Prof. Dr. Bernhard H\u00e4mmerli, Hochschule Luzern, Technik & Architektur",
+        "Stefan Fraefel, Hochschule Luzern HSLU"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "bei",
+      "display_name": "BEI.png",
+      "variations": [
+        "BEI.png",
+        "bei"
+      ],
+      "speaker_count": 2,
+      "unique_speakers": 2,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Simon Bleher, Business Engineering Institute St. Gallen",
+        "Thomas Zerndt, Business Engineering Institute St. Gallen"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/46/BEI.png",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/57/PhilippeHalbeisen.jpg"
+      ]
+    },
+    {
+      "normalized_name": "glue",
+      "display_name": "glue",
+      "variations": [
+        "glue"
+      ],
+      "speaker_count": 2,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Roland Loser, Glue Software Engineering AG"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "opendatach",
+      "display_name": "opendatach",
+      "variations": [
+        "opendatach"
+      ],
+      "speaker_count": 2,
+      "unique_speakers": 2,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Andr\u00e9 Golliez, Opendata.ch",
+        "Hannes Gassert, Opendata.ch"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "afca",
+      "display_name": "afca",
+      "variations": [
+        "afca",
+        "afca.jpg"
+      ],
+      "speaker_count": 2,
+      "unique_speakers": 2,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Paul Affentranger, afca",
+        "Paul Affentranger, afca."
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/42/afca.jpg"
+      ]
+    },
+    {
+      "normalized_name": "spoud",
+      "display_name": "spoud",
+      "variations": [
+        "spoud"
+      ],
+      "speaker_count": 2,
+      "unique_speakers": 2,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Lukas Zaugg, SPOUD",
+        "Patrick B\u00f6nzli, SPOUD"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "amanox",
+      "display_name": "amanox",
+      "variations": [
+        "amanox",
+        "amanox.png"
+      ],
+      "speaker_count": 2,
+      "unique_speakers": 2,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Matthias Imsand, Amanox",
+        "Matthias Imsand, Amanox Solutions"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/51/amanox.png"
+      ]
+    },
+    {
+      "normalized_name": "business",
+      "display_name": "business",
+      "variations": [
+        "business"
+      ],
+      "speaker_count": 2,
+      "unique_speakers": 2,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Stefanie Auge-Dickhut, Business Engineering Institute St. Gallen",
+        "Thomas Zerndt, Business Engineering Institute St. Gallen"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "insel",
+      "display_name": "insel",
+      "variations": [
+        "insel"
+      ],
+      "speaker_count": 2,
+      "unique_speakers": 2,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Matthias K\u00e4mpf, Insel Gruppe",
+        "Olga Endrich, Insel Gruppe"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "syncier",
+      "display_name": "syncier.JPG",
+      "variations": [
+        "syncier.JPG"
+      ],
+      "speaker_count": 2,
+      "unique_speakers": 2,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Fabian Kolbe, Syncier",
+        "Wolfgang Heinz, Syncier"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/46/syncier.JPG"
+      ]
+    },
+    {
+      "normalized_name": "raiffeisen",
+      "display_name": "raiffeisen.jpg",
+      "variations": [
+        "raiffeisen.jpg",
+        "raiffeisen.png"
+      ],
+      "speaker_count": 2,
+      "unique_speakers": 2,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Michael Br\u00fclisauer, Raiffeisen",
+        "Philipp Thomas, Raiffeisen"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/49/raiffeisen.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/51/raiffeisen.png"
+      ]
+    },
+    {
+      "normalized_name": "ibm",
+      "display_name": "ibm.jpg",
+      "variations": [
+        "ibm.jpg"
+      ],
+      "speaker_count": 2,
+      "unique_speakers": 2,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Manuel Proissl, IBM",
+        "Marco Brenner, IBM"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/50/ibm.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/53/IBM-8bar-logo.jpg"
+      ]
+    },
+    {
+      "normalized_name": "aws",
+      "display_name": "aws.png",
+      "variations": [
+        "aws.png"
+      ],
+      "speaker_count": 2,
+      "unique_speakers": 2,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Gregor Hohpe, AWS",
+        "Yann Allandit, AWS"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/47/aws-logo.png",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/51/aws.png",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/53/aws.png",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/56/aws-logo.png"
+      ]
+    },
+    {
+      "normalized_name": "googlecloud",
+      "display_name": "googleCloud.png",
+      "variations": [
+        "googleCloud.png"
+      ],
+      "speaker_count": 2,
+      "unique_speakers": 2,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Marcel Tr\u00fcmpy, Google Cloud",
+        "Sam Kruklis, Google Cloud"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/56/googleCloud.png"
+      ]
+    },
+    {
+      "normalized_name": "creditsuisse",
+      "display_name": "creditsuisse",
+      "variations": [
+        "creditsuisse"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Matilda Anello, Credit Suisse"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "network",
+      "display_name": "network",
+      "variations": [
+        "network"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Stefan Becker, Network 24/7 AG"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "anaptecs",
+      "display_name": "anaptecs",
+      "variations": [
+        "anaptecs"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Tillmann Schall (anaptecs GmbH)"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "semture",
+      "display_name": "semture",
+      "variations": [
+        "semture"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Dr. Steffen Greiffenberg, semture GmbH"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "softmetaware",
+      "display_name": "softmetaware",
+      "variations": [
+        "softmetaware"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Jorn Bettin, SoftMetaWare"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "csc",
+      "display_name": "csc",
+      "variations": [
+        "csc"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Daniel Bernasconi, CSC Switzerland"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "tumuenchen",
+      "display_name": "tumuenchen",
+      "variations": [
+        "tumuenchen"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Josef Lankes (TU M\u00fcnchen)"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "innovations",
+      "display_name": "innovations",
+      "variations": [
+        "innovations"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Thomas Fries, Innovations Softwaretechnologie GmbH"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "syngenio",
+      "display_name": "syngenio",
+      "variations": [
+        "syngenio"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Michael Frandsen, syngenio AG"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "captaincasa",
+      "display_name": "captaincasa",
+      "variations": [
+        "captaincasa"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Bj\u00f6rn M\u00fcller (CaptainCasa)"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "innoopract",
+      "display_name": "Innoopract",
+      "variations": [
+        "Innoopract"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Frank Appel (Innoopract)"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "ktbernstv",
+      "display_name": "KtBernSTV",
+      "variations": [
+        "KtBernSTV"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Hans Frauchiger, kant. Steuerverw."
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "ecole",
+      "display_name": "ecole",
+      "variations": [
+        "ecole"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Prof. Dr. Alain Wegmann, Ecole Polytechnique F\u00e9d\u00e9rale de Lausanne (EPFL)"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "unibern",
+      "display_name": "unibern",
+      "variations": [
+        "unibern"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Dierk Matth\u00e4us, Universit\u00e4t Bern"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "unisg",
+      "display_name": "unisg",
+      "variations": [
+        "unisg"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Dr. Stephan Aier, Universit\u00e4t St. Gallen"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "eidg",
+      "display_name": "eidg",
+      "variations": [
+        "eidg"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Willy M\u00fcller, Eidg. Finanzdepartement EFD"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "pilawaag",
+      "display_name": "pilawaag",
+      "variations": [
+        "pilawaag"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Michael T. Pilawa, PILAWA.AG"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "ige",
+      "display_name": "ige",
+      "variations": [
+        "ige"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Eric Lewis, IGE"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "alpiq",
+      "display_name": "alpiq",
+      "variations": [
+        "alpiq"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Dr. Christian Wilhelmi, Alpiq AG"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "urs",
+      "display_name": "urs",
+      "variations": [
+        "urs"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Urs B\u00fcrge, Urs B\u00fcrge Beratung GmbH"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "switch",
+      "display_name": "switch",
+      "variations": [
+        "switch"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Thomas Lenggenhager, SWITCH"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "bekb",
+      "display_name": "bekb",
+      "variations": [
+        "bekb"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Stefan Wyss, BEKB | BCBE"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "axsionics",
+      "display_name": "axsionics",
+      "variations": [
+        "axsionics"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Alain Rollier, AXSionics"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "vr2swiss",
+      "display_name": "vr2swiss",
+      "variations": [
+        "vr2swiss"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Cuno Vuillemin, VR2Swiss AG"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/17/Logo_VR2swiss_RGB.gif"
+      ]
+    },
+    {
+      "normalized_name": "canoo",
+      "display_name": "canoo",
+      "variations": [
+        "canoo"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Dr. Stephan Gillmeier, Canoo Engineering AG"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "axelspringer",
+      "display_name": "axelspringer",
+      "variations": [
+        "axelspringer"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Reinhard Kronenberg, Axel Springer Schweiz AG"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "information",
+      "display_name": "information",
+      "variations": [
+        "information"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Hans Ulrich Wiedmer, Information Service Center ISCeco, Eidgen\u00f6ssisches Volkswirtschaftsdepartement"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "ruag",
+      "display_name": "ruag",
+      "variations": [
+        "ruag"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Philippe Chammartin, RUAG Defence"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "schweizerische",
+      "display_name": "schweizerische",
+      "variations": [
+        "schweizerische"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Hansueli Locher, Schweizerische Nationalbibliothek NB, Eidgen\u00f6ssisches Departement des Innern"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "zkb",
+      "display_name": "zkb",
+      "variations": [
+        "zkb"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Dr. Pascal Kurtansky, ZKB"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "bedag",
+      "display_name": "bedag",
+      "variations": [
+        "bedag"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Stefan Haller, Bedag Informatik AG"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "itserve",
+      "display_name": "itserve",
+      "variations": [
+        "itserve"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Anton B\u00f6hm, itServe"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "tirsus",
+      "display_name": "tirsus",
+      "variations": [
+        "tirsus"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Ursula Deriu, Tirsus GmbH, Olten"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "guerlet",
+      "display_name": "guerlet",
+      "variations": [
+        "guerlet"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "David C. G\u00fcrlet, guerlet consulting"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "bafu",
+      "display_name": "bafu",
+      "variations": [
+        "bafu"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Dr. Thomas Klingl, Bundesamt f\u00fcr Umwelt BAFU"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "evd",
+      "display_name": "evd",
+      "variations": [
+        "evd"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Hans Ulrich Wiedmer, Eidgen\u00f6ssisches Volkswirtschaftsdepartement"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "nationalpark",
+      "display_name": "nationalpark",
+      "variations": [
+        "nationalpark"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Dr. Ruedi Haller, Schweizer Nationalpark"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "entris",
+      "display_name": "entris",
+      "variations": [
+        "entris"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Thomas Spahr, Entris Banking AG"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "jungwacht",
+      "display_name": "jungwacht",
+      "variations": [
+        "jungwacht"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Martin Zust, Jungwacht Blauring Kanton Luzern"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "/ch/open",
+      "display_name": "/ch/open",
+      "variations": [
+        "/ch/open"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Dr. Matthias St\u00fcrmer, /ch/open"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "isb",
+      "display_name": "isb",
+      "variations": [
+        "isb"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Willy M\u00fcller, Informatiksteuerungsorgan des Bundes ISB"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "centro",
+      "display_name": "centro",
+      "variations": [
+        "centro"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Dr. Michele De Lorenzi, Centro Svizzero di Calcolo Scientifico"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "simas",
+      "display_name": "simas",
+      "variations": [
+        "simas"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Simon Martinelli, simas GmbH"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "eidgen\u00f6ssisches",
+      "display_name": "eidgen\u00f6ssisches",
+      "variations": [
+        "eidgen\u00f6ssisches"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Hans Ulrich Wiedmer, Eidgen\u00f6ssisches Departement f\u00fcr Wirtschaft, Bildung und Forschung"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "ti&m",
+      "display_name": "ti&m",
+      "variations": [
+        "ti&m"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Stephan Sutter, ti&m AG"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "netcetera",
+      "display_name": "netcetera",
+      "variations": [
+        "netcetera"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Angela B\u00fchler, Netcetera AG"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "melde-",
+      "display_name": "melde-",
+      "variations": [
+        "melde-"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Max Klaus, Melde- und Analysestelle Informationssicherung MELANI, Informatiksteuerungsorgan Bund ISB"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "probit",
+      "display_name": "probit",
+      "variations": [
+        "probit"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Thomas Ragaz, ProBIT AG"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "inventiquenet",
+      "display_name": "inventiquenet",
+      "variations": [
+        "inventiquenet"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Marcel Altherr, Inventique.Net"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "gnostx",
+      "display_name": "gnostx",
+      "variations": [
+        "gnostx"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Matthias G\u00fcnter, GnostX GmbH"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "opendata",
+      "display_name": "opendata",
+      "variations": [
+        "opendata"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Andr\u00e9 Golliez, Opendata.ch"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "bfh",
+      "display_name": "bfh",
+      "variations": [
+        "bfh"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Adrian Gschwend, BFH"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "securiton",
+      "display_name": "securiton",
+      "variations": [
+        "securiton"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "J\u00f6rg Furrer, Securiton AG"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "tripons",
+      "display_name": "tripons",
+      "variations": [
+        "tripons"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Andreas Esser, Tripons GmbH"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "pentag",
+      "display_name": "pentag",
+      "variations": [
+        "pentag"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Pirmin Suter, PENTAG Informatik AG"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "trivadis",
+      "display_name": "trivadis",
+      "variations": [
+        "trivadis"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Johannes Mangold, Trivadis AG"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "iot",
+      "display_name": "iot",
+      "variations": [
+        "iot"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Thomas Amberg, IoT Z\u00fcrich Meetup / Yaler.net"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "soom-it",
+      "display_name": "soom-it",
+      "variations": [
+        "soom-it"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Patrick B\u00f6nzli, soom-it GmbH"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "noser",
+      "display_name": "noser",
+      "variations": [
+        "noser"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Manuel Linder, Noser Group"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "vivai",
+      "display_name": "vivai",
+      "variations": [
+        "vivai"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Dr. Bettina Horster, VIVAI Software AG"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "informatik",
+      "display_name": "informatik",
+      "variations": [
+        "informatik"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Peter Andres, Informatik Service Center ISC-EJPD"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "trainer",
+      "display_name": "trainer",
+      "variations": [
+        "trainer"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Jonas Bandi, Trainer und Freelancer"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "eth",
+      "display_name": "eth",
+      "variations": [
+        "eth"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Michael Faes, ETH Z\u00fcrich"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/53/ethz.jpg"
+      ]
+    },
+    {
+      "normalized_name": "linkyard",
+      "display_name": "linkyard",
+      "variations": [
+        "linkyard"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Mario Siegenthaler, linkyard ag"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "zhaw",
+      "display_name": "zhaw",
+      "variations": [
+        "zhaw"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Thilo Stadelmann, ZHAW School of Engineering"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "human-ist",
+      "display_name": "human-ist",
+      "variations": [
+        "human-ist"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Edy Portmann, HUMAN-IST Institut, Universit\u00e4t Freiburg"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "nvidia",
+      "display_name": "nvidia",
+      "variations": [
+        "nvidia"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": false,
+      "sample_speakers": [
+        "Marc Stampfli, NVIDIA"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "cslbehring",
+      "display_name": "cslbehring.jpg",
+      "variations": [
+        "cslbehring.jpg"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Simon Scheidegger, CSL Behring"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/42/cslbehring.jpg"
+      ]
+    },
+    {
+      "normalized_name": "confluent",
+      "display_name": "confluent.jpg",
+      "variations": [
+        "confluent.jpg"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Konstantine Karantasis, Confluent"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/43/confluent.jpg"
+      ]
+    },
+    {
+      "normalized_name": "swissport",
+      "display_name": "swissport.jpg",
+      "variations": [
+        "swissport.jpg"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Stefan Brock, Swissport"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/43/swissport.jpg"
+      ]
+    },
+    {
+      "normalized_name": "sqooba",
+      "display_name": "sqooba.jpg",
+      "variations": [
+        "sqooba.jpg"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Markus Ehrenmann, Sqooba"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/43/sqooba.jpg"
+      ]
+    },
+    {
+      "normalized_name": "cooprechtsschutz",
+      "display_name": "cooprechtsschutz.jpg",
+      "variations": [
+        "cooprechtsschutz.jpg"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Ioannis Martinis, Coop Rechtsschutz"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/44/cooprechtsschutz.jpg"
+      ]
+    },
+    {
+      "normalized_name": "oe_logo",
+      "display_name": "oe_logo.png",
+      "variations": [
+        "oe_logo.png"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Andres Koch, Object Engineering"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "bcge",
+      "display_name": "bcge.jpg",
+      "variations": [
+        "bcge.jpg"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Fr\u00e9d\u00e9ric Maye, Banque Cantonale de Gen\u00e8ve"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/46/bcge.jpg"
+      ]
+    },
+    {
+      "normalized_name": "finnova_logo",
+      "display_name": "Finnova_Logo.jpg",
+      "variations": [
+        "Finnova_Logo.jpg"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Sven Biellmann, Finnova"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "dxc logo",
+      "display_name": "DXC Logo.png",
+      "variations": [
+        "DXC Logo.png"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Olivier Ch\u00e2telain, DXC Technology"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/46/DXC Logo.png"
+      ]
+    },
+    {
+      "normalized_name": "pragmaticsolutions",
+      "display_name": "pragmaticsolutions.png",
+      "variations": [
+        "pragmaticsolutions.png"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Rainer Grau, pragmatic solutions"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/47/pragmaticsolutions.png"
+      ]
+    },
+    {
+      "normalized_name": "avega",
+      "display_name": "avega.png",
+      "variations": [
+        "avega.png"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Matthias Fritschi, avega IT"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/47/avega.png"
+      ]
+    },
+    {
+      "normalized_name": "nuvibit-logo",
+      "display_name": "nuvibit-logo.png",
+      "variations": [
+        "nuvibit-logo.png"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Michael Ullrich, Nuvibit"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/47/nuvibit-logo.png"
+      ]
+    },
+    {
+      "normalized_name": "jb_la_rgb_blue",
+      "display_name": "JB_LA_RGB_blue.jpg",
+      "variations": [
+        "JB_LA_RGB_blue.jpg"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "J\u00fcrg Haldimann, Bank Julius Baer"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/47/JB_LA_RGB_blue.jpg"
+      ]
+    },
+    {
+      "normalized_name": "ti8m",
+      "display_name": "ti8m.jpg",
+      "variations": [
+        "ti8m.jpg"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Iris Hunkeler, ti&m"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/47/ti8m.jpg"
+      ]
+    },
+    {
+      "normalized_name": "vshn",
+      "display_name": "vshn.png",
+      "variations": [
+        "vshn.png"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Adrian Kosmaczewski, VSHN"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/47/vshn.png"
+      ]
+    },
+    {
+      "normalized_name": "dartfish",
+      "display_name": "dartfish.jpg",
+      "variations": [
+        "dartfish.jpg"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Jean Sebastien Merieux, Dartfish"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/49/dartfish.jpg"
+      ]
+    },
+    {
+      "normalized_name": "done",
+      "display_name": "done.jpg",
+      "variations": [
+        "done.jpg"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Philipp Thomann, D One"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/49/done.jpg"
+      ]
+    },
+    {
+      "normalized_name": "wire_minilogo",
+      "display_name": "wire_minilogo.png",
+      "variations": [
+        "wire_minilogo.png"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Stephan Sigrist, W.I.R.E"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "feenk",
+      "display_name": "feenk.png",
+      "variations": [
+        "feenk.png"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Oscar Nierstrasz, Prof. em. UniBe and feenk"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/50/feenk.png"
+      ]
+    },
+    {
+      "normalized_name": "lifestage",
+      "display_name": "lifestage.png",
+      "variations": [
+        "lifestage.png"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Andrea Gariboldi, Lifestage"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/51/lifestage.png"
+      ]
+    },
+    {
+      "normalized_name": "smg",
+      "display_name": "smg.png",
+      "variations": [
+        "smg.png"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Guido Tr\u00fceb, SMG - Swiss Marketplace Group"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/51/smg.png"
+      ]
+    },
+    {
+      "normalized_name": "innoq",
+      "display_name": "innoq.png",
+      "variations": [
+        "innoq.png"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Simon Harrer, INNOQ"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/52/innoq.png"
+      ]
+    },
+    {
+      "normalized_name": "epfl-logo",
+      "display_name": "epfl-logo.jpg",
+      "variations": [
+        "epfl-logo.jpg"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Cyrille Favreau, EPFL"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/53/epfl-logo.jpg"
+      ]
+    },
+    {
+      "normalized_name": "ethz",
+      "display_name": "ethz.jpg",
+      "variations": [
+        "ethz.jpg"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Ana Klimovic, ETH Z\u00fcrich"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/53/ethz.jpg"
+      ]
+    },
+    {
+      "normalized_name": "ibm-8bar-logo",
+      "display_name": "IBM-8bar-logo.jpg",
+      "variations": [
+        "IBM-8bar-logo.jpg"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Mark Lantz, IBM Research"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/50/ibm.jpg",
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/53/IBM-8bar-logo.jpg"
+      ]
+    },
+    {
+      "normalized_name": "twint-logo",
+      "display_name": "twint-logo.png",
+      "variations": [
+        "twint-logo.png"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Sandro Montanari, TWINT"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/55/twint-logo.png"
+      ]
+    },
+    {
+      "normalized_name": "bafu_logo",
+      "display_name": "bafu_logo.png",
+      "variations": [
+        "bafu_logo.png"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Patrick Koller, Bundesamt f\u00fcr Umwelt BAFU"
+      ],
+      "logo_files": []
+    },
+    {
+      "normalized_name": "ariolilaw",
+      "display_name": "ariolilaw.png",
+      "variations": [
+        "ariolilaw.png"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Martina Arioli, Arioli Law"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/56/ariolilaw.png"
+      ]
+    },
+    {
+      "normalized_name": "logo_post",
+      "display_name": "logo_post.bmp",
+      "variations": [
+        "logo_post.bmp"
+      ],
+      "speaker_count": 1,
+      "unique_speakers": 1,
+      "events": [
+        "unknown"
+      ],
+      "first_event": "unknown",
+      "last_event": "unknown",
+      "has_logo_in_data": true,
+      "sample_speakers": [
+        "Nikola Novoselec, die Schweizerische Post"
+      ],
+      "logo_files": [
+        "/Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/53/post.jpg"
+      ]
+    }
+  ]
+}
