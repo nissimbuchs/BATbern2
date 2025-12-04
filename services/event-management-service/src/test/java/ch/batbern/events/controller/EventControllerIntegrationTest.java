@@ -22,6 +22,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -1145,18 +1147,27 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                         .content(lateRegistration))
                 .andExpect(status().isCreated());
 
-        // Request analytics for specific timeframe (December 2025 - includes registration created "now")
+        // Calculate current month timeframe to ensure test works regardless of when it's run
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+        LocalDateTime startOfMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime endOfMonth = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
+                .withHour(23).withMinute(59).withSecond(59).withNano(0);
+
+        String timeframeStart = startOfMonth.atZone(ZoneOffset.UTC).toInstant().toString();
+        String timeframeEnd = endOfMonth.atZone(ZoneOffset.UTC).toInstant().toString();
+
+        // Request analytics for specific timeframe (current month - includes registrations created "now")
         mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode() + "/analytics")
                         .param("metrics", "registrations")
-                        .param("timeframe", "2025-12-01T00:00:00Z,2025-12-31T23:59:59Z")
+                        .param("timeframe", timeframeStart + "," + timeframeEnd)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.eventCode").value(savedEvent.getEventCode()))
                 .andExpect(jsonPath("$.timeframe").exists())
-                .andExpect(jsonPath("$.timeframe.start").value("2025-12-01T00:00:00Z"))
-                .andExpect(jsonPath("$.timeframe.end").value("2025-12-31T23:59:59Z"))
+                .andExpect(jsonPath("$.timeframe.start").value(timeframeStart))
+                .andExpect(jsonPath("$.timeframe.end").value(timeframeEnd))
                 .andExpect(jsonPath("$.metrics.registrations").exists())
-                // Should count both registrations created in December 2025
+                // Should count both registrations created in current month
                 .andExpect(jsonPath("$.metrics.registrations.total").value(greaterThanOrEqualTo(2)));
     }
 
