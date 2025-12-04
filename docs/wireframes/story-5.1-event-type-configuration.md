@@ -33,6 +33,61 @@ Story 5.1 enhances the existing EventForm component (lines 570-603) by:
 
 ---
 
+## Screen 0: Quick Actions Sidebar - Event Management Dashboard
+
+**Context**: Quick Actions sidebar on Event Management Dashboard (right column) provides access to Event Type Configuration
+
+**Implementation**: `web-frontend/src/components/organizer/EventManagement/EventManagementDashboard.tsx`
+
+**New Component**: QuickActions.tsx in sidebar (lines 151-172 area)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│ Event Management Dashboard                                                           │
+├─────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                       │
+│  ┌──────────────── ACTIVE EVENTS ──────────────┬──── QUICK ACTIONS ────────────┐   │
+│  │                                              │                                │   │
+│  │  Spring Conference 2025                      │ [+ New Event]                 │   │
+│  │  ███████████░░░░░ 65%                        │                                │   │
+│  │                                              │ [⚙️ Event Types]              │   │
+│  │  Summer Workshop 2025                        │                                │   │
+│  │  ██░░░░░░░░░░░░░ 15%                        │ ℹ️  Configure event type      │   │
+│  │                                              │    templates (Admin)           │   │
+│  │                                              │                                │   │
+│  │                                              │ [📊 Analytics] (Future)       │   │
+│  │                                              │ [👥 Speakers] (Future)        │   │
+│  │                                              │ [🏢 Partners] (Future)        │   │
+│  └──────────────────────────────────────────────┴────────────────────────────────┘   │
+│                                                                                       │
+│  ┌──────────── CRITICAL TASKS ─────────────────┬──── TEAM ACTIVITY ─────────────┐   │
+│  │ ⚠️ 3 pending tasks...                       │ Recent activity...             │   │
+│  └──────────────────────────────────────────────┴────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Quick Actions Section Details**:
+- Located in sidebar (Grid size={{ xs: 12, md: 4 }})
+- First card above Critical Tasks
+- [+ New Event] button: Opens EventForm modal
+- [⚙️ Event Types] button: Navigates to `/organizer/event-types` route
+- Helper text shown below Event Types button for admin-only context
+- Future buttons grayed out with "(Future)" label
+
+**Material-UI Components**:
+- `Paper` wrapper with `sx={{ p: 3 }}`
+- `Typography variant="h6"` for section header
+- `Stack spacing={1}` for button list
+- `Button fullWidth startIcon={<SettingsIcon />}` for Event Types
+- `Typography variant="caption" color="text.secondary"` for helper text
+
+**Access Control**:
+- All organizers can see [+ New Event]
+- [⚙️ Event Types] visible to all organizers, but only ORGANIZER role can modify configurations
+- Non-organizer roles (SPEAKER, PARTNER, ATTENDEE) don't see Quick Actions sidebar
+
+---
+
 ## Screen 1: Event Type Selector in Event Form Modal (CURRENT IMPLEMENTATION)
 
 **Context**: Organizer clicks "Create Event" or "Edit Event" which opens a modal dialog with the EventForm component. The event type selector is integrated into this form.
@@ -253,11 +308,11 @@ interface SlotTemplatePreviewProps {
 
 ## Screen 4: Event Type Configuration Admin Screen
 
-**Context**: Admin-only screen for configuring event type templates (accessed via System Settings)
+**Context**: Admin-only screen for configuring event type templates (accessed via Quick Actions sidebar on Event Management Dashboard)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│ ← System Settings    Event Type Configuration                    [ADMIN ONLY]   │
+│ ← Back to Dashboard    Event Type Configuration                  [ADMIN ONLY]   │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                  │
 │  📋 Event Type Templates                                                        │
@@ -539,6 +594,18 @@ interface EventCreationStore {
 ## Component Hierarchy
 
 ```
+EventManagementDashboard
+├── QuickActions (NEW - Story 5.1)
+│   ├── Paper (Material-UI)
+│   ├── Typography (header)
+│   └── Stack (button list)
+│       ├── Button [+ New Event]
+│       ├── Button [⚙️ Event Types] → Navigate to /organizer/event-types
+│       ├── Typography (helper text)
+│       └── Button [Future actions] (disabled)
+│
+└── [Rest of dashboard components]
+
 EventCreationForm
 ├── EventTypeSelector
 │   ├── FormControl (Material-UI)
@@ -558,7 +625,7 @@ EventCreationForm
     │   └── Alert (info message)
     └── CardActions (optional)
 
-EventTypeConfigurationAdmin
+EventTypeConfigurationAdmin (Route: /organizer/event-types)
 ├── Card x3 (one per event type)
 │   ├── CardHeader
 │   ├── CardContent

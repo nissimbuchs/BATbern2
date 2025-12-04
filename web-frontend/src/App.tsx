@@ -57,6 +57,9 @@ const EventManagementDashboard = React.lazy(() => import('@pages/EventManagement
 const EventCreate = React.lazy(() => import('@pages/EventCreate'));
 const EventTimeline = React.lazy(() => import('@pages/EventTimeline'));
 const EventDetailEdit = React.lazy(() => import('@pages/EventDetailEdit')); // Comprehensive edit page with Tasks 9-13
+const EventTypeConfigurationAdmin = React.lazy(
+  () => import('@pages/organizer/EventTypeConfigurationAdmin')
+); // Story 5.1
 
 // Public Pages - Story 4.1.2, 4.1.3, 4.1.5, 4.1.6
 const HomePage = React.lazy(() => import('@pages/public/HomePage'));
@@ -332,6 +335,16 @@ function App() {
                       <ProtectedRoute>
                         <AuthLayout>
                           <EventDetailEdit />
+                        </AuthLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/organizer/event-types"
+                    element={
+                      <ProtectedRoute>
+                        <AuthLayout>
+                          <EventTypeConfigurationAdmin />
                         </AuthLayout>
                       </ProtectedRoute>
                     }
