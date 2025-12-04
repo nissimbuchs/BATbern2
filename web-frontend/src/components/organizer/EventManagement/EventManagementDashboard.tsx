@@ -28,6 +28,7 @@ import { TeamActivityFeed } from './TeamActivityFeed';
 import { EventForm } from './EventForm';
 import { EventBatchImportModal } from '@/components/shared/Event/EventBatchImportModal';
 import { EventPagination } from './EventPagination';
+import { QuickActions } from './QuickActions';
 import type { EventFilters } from '@/types/event.types';
 
 export const EventManagementDashboard: React.FC = () => {
@@ -178,6 +179,9 @@ export const EventManagementDashboard: React.FC = () => {
         {/* Sidebar (4/12) */}
         <Grid size={{ xs: 12, md: 4 }}>
           <Stack spacing={3}>
+            {/* Quick Actions - Story 5.1 */}
+            <QuickActions />
+
             {/* Critical Tasks */}
             <Paper sx={{ p: 3 }}>
               <CriticalTasksList

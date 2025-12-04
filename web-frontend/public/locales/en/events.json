@@ -53,6 +53,8 @@
       "viewDetails": "View Details",
       "edit": "Edit",
       "newEvent": "New Event",
+      "eventTypes": "Event Types",
+      "eventTypesHelp": "Configure event type templates (Admin)",
       "analytics": "Analytics",
       "speakers": "Speakers"
     },
@@ -118,9 +120,22 @@
     "close": "Close",
     "noVenue": "No venue selected",
     "eventTypes": {
-      "fullDay": "Full Day",
-      "afternoon": "Afternoon",
-      "evening": "Evening"
+      "fullDay": "Full Day Event",
+      "afternoon": "Afternoon Event",
+      "evening": "Evening Event"
+    },
+    "eventTypeConfig": {
+      "title": "Event Type Configuration",
+      "description": "Configure slot requirements and timing templates for each event type",
+      "minSlots": "Minimum Slots",
+      "maxSlots": "Maximum Slots",
+      "slotDuration": "Slot Duration (minutes)",
+      "theoreticalSlotsAM": "Theoretical Slots in Morning",
+      "breakSlots": "Break Slots",
+      "lunchSlots": "Lunch Slots",
+      "defaultCapacity": "Default Capacity",
+      "accessDenied": "Access Denied",
+      "organizerOnly": "Only organizers can access this page"
     },
     "statusValues": {
       "planning": "Planning",
@@ -137,12 +152,23 @@
     "themeImage": "Event Theme Image",
     "themeImageHelp": "Upload a theme image for this event (PNG, JPEG, or SVG, max 5MB). Recommended size: 1920x400px.",
     "themeImageAlt": "Theme image for event",
-    "removeThemeImage": "Remove theme image"
+    "removeThemeImage": "Remove theme image",
+    "errors": {
+      "failedToLoadEventTypes": "Failed to load event types"
+    }
   },
   "eventTypes": {
     "full_day": "Full Day",
     "afternoon": "Afternoon",
     "evening": "Evening"
+  },
+  "slotPreview": {
+    "title": "{{type}} Preview",
+    "slots": "Slots",
+    "duration": "Duration",
+    "capacity": "Capacity",
+    "timing": "Typical Timing",
+    "exampleTimeline": "Example Timeline"
   },
   "status": {
     "draft": "Draft",
@@ -191,7 +217,14 @@
     "capacityPositive": "Capacity must be a positive number",
     "venueRequired": "Venue is required",
     "venueNameRequired": "Venue name is required",
-    "venueAddressRequired": "Venue address is required"
+    "venueAddressRequired": "Venue address is required",
+    "minSlotsRequired": "Minimum slots is required",
+    "maxSlotsRequired": "Maximum slots is required",
+    "slotDurationRequired": "Slot duration is required",
+    "slotDurationMinimum": "Slot duration must be at least 15 minutes",
+    "minSlotsLessThanMax": "Minimum slots must be less than or equal to maximum slots",
+    "defaultCapacityRequired": "Default capacity is required",
+    "defaultCapacityPositive": "Default capacity must be a positive number"
   },
   "errors": {
     "loadFailed": "Failed to load events",

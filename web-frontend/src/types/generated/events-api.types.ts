@@ -561,6 +561,80 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/types': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List all event type configurations
+     * @description Retrieve all event type configurations (FULL_DAY, AFTERNOON, EVENING).
+     *
+     *     **Story**: 5.1 - Event Type Definition
+     *     **Acceptance Criteria**: AC1
+     *
+     *     Event types define slot requirements and templates for different event formats.
+     *     This endpoint returns cached configurations (Caffeine cache, 1 hour TTL).
+     *
+     *     **Performance**: <50ms (P95) - cached response
+     */
+    get: operations['listEventTypes'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/types/{type}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get specific event type configuration
+     * @description Retrieve configuration for a specific event type.
+     *
+     *     **Story**: 5.1 - Event Type Definition
+     *     **Acceptance Criteria**: AC2
+     *
+     *     Returns slot configuration details for the specified event type.
+     *     Cached response (Caffeine cache, 1 hour TTL).
+     *
+     *     **Performance**: <50ms (P95) - cached response
+     */
+    get: operations['getEventType'];
+    /**
+     * Update event type configuration (ORGANIZER only)
+     * @description Update configuration for a specific event type.
+     *
+     *     **Story**: 5.1 - Event Type Definition
+     *     **Acceptance Criteria**: AC3, AC8
+     *
+     *     **Authorization**: Requires ORGANIZER role
+     *
+     *     Updates slot configuration for the event type template.
+     *     Cache is automatically invalidated after successful update.
+     *
+     *     **Validation**:
+     *     - minSlots must be > 0
+     *     - maxSlots must be >= minSlots
+     *     - slotDuration must be >= 15 minutes
+     *     - defaultCapacity must be > 0
+     */
+    put: operations['updateEventType'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1118,6 +1192,120 @@ export interface components {
         date?: string;
         count?: number;
       }[];
+    };
+    /**
+     * @description Event type identifier (Story 5.1 - Event Type Definition).
+     *     Matches EventType enum from architecture (03-data-architecture.md:547-551).
+     * @example FULL_DAY
+     * @enum {string}
+     */
+    EventType: 'FULL_DAY' | 'AFTERNOON' | 'EVENING';
+    /**
+     * @description Event slot configuration for an event type (Story 5.1).
+     *     Defines slot requirements and scheduling parameters.
+     */
+    EventSlotConfigurationResponse: {
+      type: components['schemas']['EventType'];
+      /**
+       * @description Minimum number of session slots
+       * @example 6
+       */
+      minSlots: number;
+      /**
+       * @description Maximum number of session slots
+       * @example 8
+       */
+      maxSlots: number;
+      /**
+       * @description Duration of each slot in minutes
+       * @example 45
+       */
+      slotDuration: number;
+      /**
+       * @description Whether theoretical presentations are scheduled in morning slots
+       * @example true
+       */
+      theoreticalSlotsAM: boolean;
+      /**
+       * @description Number of break slots included in event
+       * @example 2
+       */
+      breakSlots: number;
+      /**
+       * @description Number of lunch slots included in event
+       * @example 1
+       */
+      lunchSlots: number;
+      /**
+       * @description Default attendee capacity for this event type
+       * @example 200
+       */
+      defaultCapacity: number;
+      /**
+       * Format: time
+       * @description Typical start time for this event type
+       * @example 09:00
+       */
+      typicalStartTime?: string;
+      /**
+       * Format: time
+       * @description Typical end time for this event type
+       * @example 17:00
+       */
+      typicalEndTime?: string;
+    };
+    /**
+     * @description Request to update event slot configuration (Story 5.1).
+     *     All fields are required for update operation.
+     */
+    UpdateEventSlotConfigurationRequest: {
+      /**
+       * @description Minimum number of session slots
+       * @example 6
+       */
+      minSlots: number;
+      /**
+       * @description Maximum number of session slots (must be >= minSlots)
+       * @example 8
+       */
+      maxSlots: number;
+      /**
+       * @description Duration of each slot in minutes
+       * @example 45
+       */
+      slotDuration: number;
+      /**
+       * @description Whether theoretical presentations are scheduled in morning slots
+       * @example true
+       */
+      theoreticalSlotsAM: boolean;
+      /**
+       * @description Number of break slots included in event
+       * @example 2
+       */
+      breakSlots: number;
+      /**
+       * @description Number of lunch slots included in event
+       * @example 1
+       */
+      lunchSlots: number;
+      /**
+       * @description Default attendee capacity for this event type
+       * @example 200
+       */
+      defaultCapacity: number;
+      /**
+       * Format: time
+       * @description Typical start time for this event type
+       * @example 09:00
+       */
+      typicalStartTime?: string | null;
+      /**
+       * Format: time
+       * @description Typical end time for this event type
+       * @example 17:00
+       */
+      typicalEndTime?: string | null;
     };
     /** @description Pagination metadata from shared-kernel */
     PaginationMetadata: Record<string, never>;
@@ -2068,6 +2256,158 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['EventAnalytics'];
+        };
+      };
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  listEventTypes: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Event types retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example [
+           *       {
+           *         "type": "FULL_DAY",
+           *         "minSlots": 6,
+           *         "maxSlots": 8,
+           *         "slotDuration": 45,
+           *         "theoreticalSlotsAM": true,
+           *         "breakSlots": 2,
+           *         "lunchSlots": 1,
+           *         "defaultCapacity": 200,
+           *         "typicalStartTime": "09:00",
+           *         "typicalEndTime": "17:00"
+           *       },
+           *       {
+           *         "type": "AFTERNOON",
+           *         "minSlots": 6,
+           *         "maxSlots": 8,
+           *         "slotDuration": 30,
+           *         "theoreticalSlotsAM": false,
+           *         "breakSlots": 1,
+           *         "lunchSlots": 0,
+           *         "defaultCapacity": 150,
+           *         "typicalStartTime": "13:00",
+           *         "typicalEndTime": "18:00"
+           *       },
+           *       {
+           *         "type": "EVENING",
+           *         "minSlots": 3,
+           *         "maxSlots": 4,
+           *         "slotDuration": 45,
+           *         "theoreticalSlotsAM": false,
+           *         "breakSlots": 1,
+           *         "lunchSlots": 0,
+           *         "defaultCapacity": 100,
+           *         "typicalStartTime": "18:00",
+           *         "typicalEndTime": "21:00"
+           *       }
+           *     ]
+           */
+          'application/json': components['schemas']['EventSlotConfigurationResponse'][];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  getEventType: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /**
+         * @description Event type identifier
+         * @example FULL_DAY
+         */
+        type: components['schemas']['EventType'];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Event type configuration retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EventSlotConfigurationResponse'];
+        };
+      };
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  updateEventType: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /**
+         * @description Event type identifier
+         * @example FULL_DAY
+         */
+        type: components['schemas']['EventType'];
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "minSlots": 6,
+         *       "maxSlots": 8,
+         *       "slotDuration": 45,
+         *       "theoreticalSlotsAM": true,
+         *       "breakSlots": 2,
+         *       "lunchSlots": 1,
+         *       "defaultCapacity": 200,
+         *       "typicalStartTime": "09:00",
+         *       "typicalEndTime": "17:00"
+         *     }
+         */
+        'application/json': components['schemas']['UpdateEventSlotConfigurationRequest'];
+      };
+    };
+    responses: {
+      /** @description Event type configuration updated successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EventSlotConfigurationResponse'];
+        };
+      };
+      /** @description Validation error (e.g., minSlots > maxSlots) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Forbidden - requires ORGANIZER role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
         };
       };
       404: components['responses']['NotFound'];
