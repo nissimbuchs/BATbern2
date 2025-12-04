@@ -10,6 +10,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import UserTable from './UserTable';
 import '@testing-library/jest-dom';
 import i18n from '@/i18n/config';
@@ -39,6 +40,21 @@ const mockUsers: User[] = [
   },
 ];
 
+const createTestQueryClient = () =>
+  new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+        cacheTime: 0,
+      },
+    },
+  });
+
+const renderWithQueryClient = (component: React.ReactElement) => {
+  const queryClient = createTestQueryClient();
+  return render(<QueryClientProvider client={queryClient}>{component}</QueryClientProvider>);
+};
+
 describe('UserTable', () => {
   beforeEach(async () => {
     await i18n.changeLanguage('de');
@@ -48,7 +64,9 @@ describe('UserTable', () => {
     const onRowClick = vi.fn();
     const onAction = vi.fn();
 
-    render(<UserTable users={mockUsers} onRowClick={onRowClick} onAction={onAction} />);
+    renderWithQueryClient(
+      <UserTable users={mockUsers} onRowClick={onRowClick} onAction={onAction} />
+    );
 
     expect(screen.getByText('Name')).toBeInTheDocument();
     expect(screen.getByText('E-Mail')).toBeInTheDocument();
@@ -59,7 +77,9 @@ describe('UserTable', () => {
     const onRowClick = vi.fn();
     const onAction = vi.fn();
 
-    render(<UserTable users={mockUsers} onRowClick={onRowClick} onAction={onAction} />);
+    renderWithQueryClient(
+      <UserTable users={mockUsers} onRowClick={onRowClick} onAction={onAction} />
+    );
 
     expect(screen.getByText('John Doe')).toBeInTheDocument();
     expect(screen.getByText('Jane Smith')).toBeInTheDocument();
@@ -71,7 +91,9 @@ describe('UserTable', () => {
     const onRowClick = vi.fn();
     const onAction = vi.fn();
 
-    render(<UserTable users={mockUsers} onRowClick={onRowClick} onAction={onAction} />);
+    renderWithQueryClient(
+      <UserTable users={mockUsers} onRowClick={onRowClick} onAction={onAction} />
+    );
 
     expect(screen.getByText('ATTENDEE')).toBeInTheDocument();
     expect(screen.getByText('ORGANIZER')).toBeInTheDocument();
@@ -83,7 +105,9 @@ describe('UserTable', () => {
     const onRowClick = vi.fn();
     const onAction = vi.fn();
 
-    render(<UserTable users={mockUsers} onRowClick={onRowClick} onAction={onAction} />);
+    renderWithQueryClient(
+      <UserTable users={mockUsers} onRowClick={onRowClick} onAction={onAction} />
+    );
 
     const firstRow = screen.getByText('John Doe').closest('tr');
     if (firstRow) {
@@ -96,7 +120,7 @@ describe('UserTable', () => {
     const onRowClick = vi.fn();
     const onAction = vi.fn();
 
-    render(<UserTable users={[]} onRowClick={onRowClick} onAction={onAction} />);
+    renderWithQueryClient(<UserTable users={[]} onRowClick={onRowClick} onAction={onAction} />);
 
     expect(screen.getByText(/Keine Benutzer gefunden/i)).toBeInTheDocument();
   });
