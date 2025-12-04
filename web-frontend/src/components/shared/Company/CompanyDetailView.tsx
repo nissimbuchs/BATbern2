@@ -16,12 +16,14 @@ import Grid from '@mui/material/Grid';
 import {
   ArrowBack as ArrowBackIcon,
   Edit as EditIcon,
+  Delete as DeleteIcon,
   CheckCircle as CheckCircleIcon,
   Business as BusinessIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import type { components } from '@/types/generated/company-api.types';
 import { AssociatedUsersPanel } from '@/components/shared/Company/AssociatedUsersPanel';
+import DeleteCompanyDialog from '@/components/shared/Company/DeleteCompanyDialog';
 
 type CompanyDetail = components['schemas']['CompanyResponse'];
 import { CompanyStatistics } from '@/components/shared/Company/CompanyStatistics';
@@ -51,6 +53,7 @@ interface CompanyDetailViewProps {
   isLoading?: boolean;
   error?: string;
   canEdit?: boolean;
+  canDelete?: boolean;
   onEdit: (companyId: string) => void;
   onBack: () => void;
   onRetry?: () => void;
@@ -61,12 +64,14 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
   isLoading = false,
   error,
   canEdit = true,
+  canDelete = false,
   onEdit,
   onBack,
   onRetry,
 }) => {
   const { t } = useTranslation('common');
   const [activeTab, setActiveTab] = useState(0);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
@@ -75,6 +80,12 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
   const handleEdit = () => {
     if (company) {
       onEdit(company.name);
+    }
+  };
+
+  const handleDelete = () => {
+    if (company) {
+      setIsDeleteDialogOpen(true);
     }
   };
 
@@ -145,15 +156,24 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
         <Button startIcon={<ArrowBackIcon />} onClick={onBack}>
           {t('company.backToList')}
         </Button>
-        {canEdit && (
-          <Button
-            variant="contained"
-            startIcon={<EditIcon />}
-            onClick={handleEdit}
-            sx={{ ml: 'auto' }}
-          >
-            {t('actions.edit')}
-          </Button>
+        {(canEdit || canDelete) && (
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ ml: 'auto' }}>
+            {canDelete && (
+              <Button
+                variant="outlined"
+                color="error"
+                startIcon={<DeleteIcon />}
+                onClick={handleDelete}
+              >
+                {t('actions.delete')}
+              </Button>
+            )}
+            {canEdit && (
+              <Button variant="contained" startIcon={<EditIcon />} onClick={handleEdit}>
+                {t('actions.edit')}
+              </Button>
+            )}
+          </Stack>
         )}
       </Box>
 
@@ -325,6 +345,14 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
       <TabPanel value={activeTab} index={3}>
         <ActivityTimeline companyId={company.name} />
       </TabPanel>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteCompanyDialog
+        company={company}
+        open={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onSuccess={onBack}
+      />
     </Box>
   );
 };

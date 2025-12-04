@@ -25,8 +25,8 @@ MINIO_CONSOLE_PORT="${MINIO_CONSOLE_PORT:-8451}"
 
 # Configuration
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-# MinIO is shared across all instances and all BATbern projects - use /tmp
-MINIO_DATA_DIR="/tmp/.minio/data"
+# MinIO is shared across all instances and all BATbern projects - use persistent directory
+MINIO_DATA_DIR="${HOME}/.minio/data"
 MINIO_PID_FILE="/tmp/batbern-shared-minio.pid"
 MINIO_LOG_FILE="/tmp/batbern-shared-minio.log"
 

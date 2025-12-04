@@ -14,7 +14,9 @@ import org.springframework.web.client.HttpStatusCodeException;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.util.StreamUtils;
+import org.springframework.web.util.UriComponentsBuilder;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -132,20 +134,6 @@ public class DomainRouter {
 
         log.info("Routing {} request to service: {} for path: {}", method, targetService, requestUri);
 
-        // Build query string from decoded parameters to avoid double-encoding
-        // HttpServletRequest.getQueryString() returns already-encoded string,
-        // which causes issues when forwarded (commas encoded as %2C won't be decoded properly)
-        StringBuilder queryStringBuilder = new StringBuilder();
-        request.getParameterMap().forEach((key, values) -> {
-            for (String value : values) {
-                if (queryStringBuilder.length() > 0) {
-                    queryStringBuilder.append("&");
-                }
-                queryStringBuilder.append(key).append("=").append(value);
-            }
-        });
-        String queryString = queryStringBuilder.length() > 0 ? queryStringBuilder.toString() : null;
-
         // Read request body BEFORE async execution (input stream can only be read once)
         String requestBody = null;
         try {
@@ -166,11 +154,21 @@ public class DomainRouter {
                 // Get target service URL
                 String serviceUrl = getServiceUrl(targetService);
 
-                // Build full target URL with query parameters
-                String targetUrl = serviceUrl + requestUri;
-                if (queryString != null && !queryString.isEmpty()) {
-                    targetUrl += "?" + queryString;
-                }
+                // Build URI using UriComponentsBuilder to properly handle query parameters
+                // This prevents double-encoding and URI template variable expansion issues
+                UriComponentsBuilder uriBuilder = UriComponentsBuilder
+                        .fromHttpUrl(serviceUrl + requestUri);
+
+                // Add query parameters from request (already decoded by servlet container)
+                // UriComponentsBuilder will encode them properly
+                request.getParameterMap().forEach((key, values) -> {
+                    for (String value : values) {
+                        uriBuilder.queryParam(key, value);
+                    }
+                });
+
+                // build() encodes the parameters, toUri() creates the URI object
+                URI targetUri = uriBuilder.build().toUri();
 
                 // Copy headers from original request (excluding Host header)
                 HttpHeaders headers = new HttpHeaders();
@@ -185,11 +183,11 @@ public class DomainRouter {
                 // Create HTTP entity with headers and body
                 HttpEntity<String> entity = new HttpEntity<>(finalRequestBody, headers);
 
-                // Forward request to target service
+                // Forward request to target service using URI (not String) to avoid template expansion
                 log.debug("Forwarding {} request to: {} (body: {} bytes)",
-                    method, targetUrl, finalRequestBody != null ? finalRequestBody.length() : 0);
+                    method, targetUri, finalRequestBody != null ? finalRequestBody.length() : 0);
                 ResponseEntity<String> response = restTemplate.exchange(
-                    targetUrl,
+                    targetUri,
                     HttpMethod.valueOf(method),
                     entity,
                     String.class

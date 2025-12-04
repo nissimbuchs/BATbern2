@@ -179,5 +179,43 @@
     "indicator": "Offline",
     "message": "You are offline. Some features may not be available.",
     "viewingCache": "Viewing cached data"
+  },
+  "batchImport": {
+    "button": "Import Speakers",
+    "title": "Batch Import Speakers",
+    "dropzone": "Drop speakers.json here or click to browse",
+    "dropzoneActive": "Drop the file here...",
+    "dropzoneHint": "Upload speakers.json from apps/BATspa-old/src/api/",
+    "preview": "{{count}} speakers to import",
+    "progress": "Importing speaker {{current}} of {{total}}...",
+    "complete": "Import complete: {{success}} created, {{updated}} updated, {{failed}} failed, {{skipped}} skipped",
+    "noSpeakers": "No speakers found in the file",
+    "checkingExisting": "Checking for existing users...",
+    "summary": "{{total}} speakers: {{new}} new, {{update}} to update, {{skip}} unchanged",
+    "cancelButton": "Cancel",
+    "importButton": "Create {{new}} / Update {{update}}",
+    "allSkipped": "No changes to import",
+    "columns": {
+      "name": "Name",
+      "email": "Email",
+      "company": "Company",
+      "status": "Status"
+    },
+    "status": {
+      "pending": "New",
+      "importing": "Importing...",
+      "success": "Created",
+      "updated": "Updated",
+      "error": "Error",
+      "skipped": "Skipped",
+      "noChanges": "No changes",
+      "willUpdate": "Will update: {{fields}}"
+    },
+    "errors": {
+      "invalidFile": "Invalid file. Please upload a JSON file.",
+      "parseError": "Failed to parse file: {{error}}"
+    },
+    "hasPortrait": "Has portrait image",
+    "noPortrait": "No portrait image"
   }
 }

@@ -179,5 +179,43 @@
     "indicator": "Offline",
     "message": "Sie sind offline. Einige Funktionen sind möglicherweise nicht verfügbar.",
     "viewingCache": "Zwischengespeicherte Daten werden angezeigt"
+  },
+  "batchImport": {
+    "button": "Referenten importieren",
+    "title": "Referenten Massenimport",
+    "dropzone": "speakers.json hier ablegen oder klicken zum Durchsuchen",
+    "dropzoneActive": "Datei hier ablegen...",
+    "dropzoneHint": "Laden Sie speakers.json aus apps/BATspa-old/src/api/ hoch",
+    "preview": "{{count}} Referenten zum Importieren",
+    "progress": "Importiere Referent {{current}} von {{total}}...",
+    "complete": "Import abgeschlossen: {{success}} erstellt, {{updated}} aktualisiert, {{failed}} fehlgeschlagen, {{skipped}} übersprungen",
+    "noSpeakers": "Keine Referenten in der Datei gefunden",
+    "checkingExisting": "Prüfe auf bestehende Benutzer...",
+    "summary": "{{total}} Referenten: {{new}} neu, {{update}} zu aktualisieren, {{skip}} unverändert",
+    "cancelButton": "Abbrechen",
+    "importButton": "{{new}} erstellen / {{update}} aktualisieren",
+    "allSkipped": "Keine Änderungen zu importieren",
+    "columns": {
+      "name": "Name",
+      "email": "E-Mail",
+      "company": "Firma",
+      "status": "Status"
+    },
+    "status": {
+      "pending": "Neu",
+      "importing": "Importiere...",
+      "success": "Erstellt",
+      "updated": "Aktualisiert",
+      "error": "Fehler",
+      "skipped": "Übersprungen",
+      "noChanges": "Keine Änderungen",
+      "willUpdate": "Wird aktualisiert: {{fields}}"
+    },
+    "errors": {
+      "invalidFile": "Ungültige Datei. Bitte laden Sie eine JSON-Datei hoch.",
+      "parseError": "Datei konnte nicht gelesen werden: {{error}}"
+    },
+    "hasPortrait": "Hat Portrait-Bild",
+    "noPortrait": "Kein Portrait-Bild"
   }
 }

@@ -1,0 +1,329 @@
+====================================================================================================
+COMPREHENSIVE COMPANY INVENTORY FOR BAT EVENTS 1-57 MIGRATION
+====================================================================================================
+
+EXECUTIVE SUMMARY
+----------------------------------------------------------------------------------------------------
+Total Unique Companies (normalized):      137
+Companies with Logo Files:                 53 (38.7%)
+Companies without Logo Files:              84 (61.3%)
+Total Speaker Mentions:                    310
+
+====================================================================================================
+SECTION 1: HIGH-PRIORITY COMPANIES (20+ speakers)
+====================================================================================================
+
+Count: 3 companies
+
+SBB                  |  36 speakers | HAS LOGO     | 10 logo file(s)
+  Display Name:  SBB
+  Variations:    SBB, sbb, sbb.jpg
+  Logo Paths:    /Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/42/sbb.jpg
+                 /Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/43/sbb.jpg
+                 /Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/45/sbb.jpg
+                 ... and 7 more
+  Sample Speakers: Andreas Fuhrer, SBB Informatik, André Rogger, SBB
+
+MOBILIAR             |  22 speakers | HAS LOGO     | 10 logo file(s)
+  Display Name:  Mobiliar
+  Variations:    Mobiliar, mobiliar, mobiliar.jpg
+  Logo Paths:    /Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/42/mobiliar.jpg
+                 /Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/43/mobiliar.jpg
+                 /Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/45/mobiliar.jpg
+                 ... and 7 more
+  Sample Speakers: Alex Meier, die Mobiliar, Andreas Grütter, Die Mobiliar
+
+SWISSCOM             |  20 speakers | HAS LOGO     | 8 logo file(s)
+  Display Name:  Swisscom
+  Variations:    Swisscom, swisscom, swisscom.jpg
+  Logo Paths:    /Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/43/swisscom.jpg
+                 /Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/44/swisscom.jpg
+                 /Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/47/swisscom.jpg
+                 ... and 5 more
+  Sample Speakers: Andreas R. Lehmann (Swisscom), Christoph Meier, Swisscom
+
+
+====================================================================================================
+SECTION 2: MEDIUM-PRIORITY COMPANIES (5-19 speakers)
+====================================================================================================
+
+Count: 7 companies (6 with logos, 1 need logos)
+
+WITH LOGOS:
+  postfinance          | 17 speakers | 2 logo file(s)
+  elca                 | 10 speakers | 5 logo file(s)
+  bkw                  |  8 speakers | 1 logo file(s)
+  ipt                  |  5 speakers | 1 logo file(s)
+  mtrail               |  5 speakers | 3 logo file(s)
+  logo-pf              |  5 speakers | 3 logo file(s)
+
+NEED LOGOS (Priority order):
+  rtc                  |  9 speakers | Display: rtc
+
+====================================================================================================
+SECTION 3: STANDARD-PRIORITY COMPANIES (2-4 speakers)
+====================================================================================================
+
+Count: 31 companies (17 with logos, 14 need logos)
+
+WITH LOGOS:
+  isc-ejpd                  | 4 speakers
+  bit                       | 3 speakers
+  postauto                  | 3 speakers
+  post                      | 3 speakers
+  aws-logo                  | 3 speakers
+  postmail                  | 2 speakers
+  isbbund                   | 2 speakers
+  microsoft                 | 2 speakers
+  swisstopo                 | 2 speakers
+  bei                       | 2 speakers
+  afca                      | 2 speakers
+  amanox                    | 2 speakers
+  syncier                   | 2 speakers
+  raiffeisen                | 2 speakers
+  ibm                       | 2 speakers
+  aws                       | 2 speakers
+  googlecloud               | 2 speakers
+
+NEED LOGOS:
+  universität               | 4 speakers | universität
+  bls                       | 4 speakers | bls
+  berner                    | 4 speakers | berner
+  hp                        | 3 speakers | hp
+  puzzle                    | 3 speakers | puzzle
+  zühlke                    | 3 speakers | zühlke
+  zuehlke                   | 2 speakers | zuehlke
+  dvbern                    | 2 speakers | DVBern
+  hslu                      | 2 speakers | hslu
+  glue                      | 2 speakers | glue
+  opendatach                | 2 speakers | opendatach
+  spoud                     | 2 speakers | spoud
+  business                  | 2 speakers | business
+  insel                     | 2 speakers | insel
+
+====================================================================================================
+SECTION 4: LOW-PRIORITY COMPANIES (1 speaker)
+====================================================================================================
+
+Count: 96 companies (27 with logos, 69 need logos)
+
+These single-speaker companies can be collected opportunistically or requested when needed.
+
+WITH LOGOS (alphabetical):
+  ariolilaw
+  avega
+  bcge
+  confluent
+  cooprechtsschutz
+  cslbehring
+  dartfish
+  done
+  dxc logo
+  epfl-logo
+  eth
+  ethz
+  feenk
+  ibm-8bar-logo
+  innoq
+  jb_la_rgb_blue
+  lifestage
+  logo_post
+  nuvibit-logo
+  pragmaticsolutions
+  smg
+  sqooba
+  swissport
+  ti8m
+  twint-logo
+  vr2swiss
+  vshn
+
+NEED LOGOS (69 companies - listing first 30):
+  /ch/open                  | /ch/open
+  alpiq                     | alpiq
+  anaptecs                  | anaptecs
+  axelspringer              | axelspringer
+  axsionics                 | axsionics
+  bafu                      | bafu
+  bafu_logo                 | bafu_logo.png
+  bedag                     | bedag
+  bekb                      | bekb
+  bfh                       | bfh
+  canoo                     | canoo
+  captaincasa               | captaincasa
+  centro                    | centro
+  creditsuisse              | creditsuisse
+  csc                       | csc
+  ecole                     | ecole
+  eidg                      | eidg
+  eidgenössisches           | eidgenössisches
+  entris                    | entris
+  evd                       | evd
+  finnova_logo              | Finnova_Logo.jpg
+  gnostx                    | gnostx
+  guerlet                   | guerlet
+  human-ist                 | human-ist
+  ige                       | ige
+  informatik                | informatik
+  information               | information
+  innoopract                | Innoopract
+  innovations               | innovations
+  inventiquenet             | inventiquenet
+  ... and 39 more
+
+====================================================================================================
+SECTION 5: DATA QUALITY ISSUES
+====================================================================================================
+
+Companies with logo file extensions in 'company' field: 50
+These need to be cleaned during migration - company name should not include file extensions.
+
+  sbb                  | Variations: SBB, sbb, sbb.jpg
+  mobiliar             | Variations: Mobiliar, mobiliar, mobiliar.jpg
+  swisscom             | Variations: Swisscom, swisscom, swisscom.jpg
+  postfinance          | Variations: PostFinance, postfinance, postfinance.jpg
+  elca                 | Variations: elca, elca.jpg
+  bkw                  | Variations: BKW, bkw, bkw.jpg
+  mtrail               | Variations: mtrail.jpg
+  logo-pf              | Variations: logo-pf.jpg
+  isc-ejpd             | Variations: isc-ejpd, isc-ejpd.png
+  post                 | Variations: post, post.jpg
+  aws-logo             | Variations: aws-logo.png
+  microsoft            | Variations: microsoft, microsoft.png
+  swisstopo            | Variations: swisstopo, swisstopo.JPG
+  bei                  | Variations: BEI.png, bei
+  afca                 | Variations: afca, afca.jpg
+  amanox               | Variations: amanox, amanox.png
+  syncier              | Variations: syncier.JPG
+  raiffeisen           | Variations: raiffeisen.jpg, raiffeisen.png
+  ibm                  | Variations: ibm.jpg
+  aws                  | Variations: aws.png
+
+====================================================================================================
+SECTION 6: SUGGESTED MIGRATION BATCHES
+====================================================================================================
+
+BATCH 1: Immediate Priority (Complete Data)
+These have logos and high speaker counts - migrate first
+  ✓ sbb                  |  36 speakers | /Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/42/sbb.jpg
+  ✓ mobiliar             |  22 speakers | /Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/42/mobiliar.jpg
+  ✓ swisscom             |  20 speakers | /Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/43/swisscom.jpg
+  ✓ postfinance          |  17 speakers | /Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/43/postfinance.jpg
+  ✓ elca                 |  10 speakers | /Users/nissim/dev/bat/BATbern-main/apps/BATspa-old/src/archiv/43/elca.jpg
+
+BATCH 2: High Priority - Need Logos
+Collect logos for these before migration
+
+BATCH 3: Medium Priority Groups
+
+  3A. Swiss Transport & Logistics (4 companies)
+      ✓ sbb             | 36 speakers
+      ⚠ bls             |  4 speakers
+      ✓ postauto        |  3 speakers
+      ✓ isbbund         |  2 speakers
+
+  3B. Swiss Financial Services (6 companies)
+      ✓ mobiliar        | 22 speakers
+      ✓ postfinance     | 17 speakers
+      ✓ raiffeisen      |  2 speakers
+      ⚠ bekb            |  1 speakers
+      ⚠ zkb             |  1 speakers
+      ✓ bcge            |  1 speakers
+
+  3C. Swiss Telecom & Postal (6 companies)
+      ✓ swisscom        | 20 speakers
+      ✓ postfinance     | 17 speakers
+      ✓ postauto        |  3 speakers
+      ✓ post            |  3 speakers
+      ✓ postmail        |  2 speakers
+      ✓ logo_post       |  1 speakers
+
+  3D. IT Consulting & Services (5 companies)
+      ✓ elca            | 10 speakers
+      ⚠ puzzle          |  3 speakers
+      ⚠ zühlke          |  3 speakers
+      ⚠ ti&m            |  1 speakers
+      ⚠ trivadis        |  1 speakers
+
+  3E. Universities & Research (8 companies)
+      ⚠ universität     |  4 speakers
+      ⚠ berner          |  4 speakers
+      ⚠ hslu            |  2 speakers
+      ⚠ bfh             |  1 speakers
+      ✓ eth             |  1 speakers
+      ⚠ zhaw            |  1 speakers
+      ✓ epfl-logo       |  1 speakers
+      ✓ ethz            |  1 speakers
+
+  3F. Swiss Government/Public (10 companies)
+      ✓ isc-ejpd        |  4 speakers
+      ✓ bit             |  3 speakers
+      ✓ isbbund         |  2 speakers
+      ⚠ eidg            |  1 speakers
+      ⚠ bafu            |  1 speakers
+      ⚠ isb             |  1 speakers
+      ⚠ eidgenössisches |  1 speakers
+      ⚠ probit          |  1 speakers
+      ✓ nuvibit-logo    |  1 speakers
+      ⚠ bafu_logo       |  1 speakers
+
+  3G. Global Cloud/Tech (6 companies)
+      ✓ aws-logo        |  3 speakers
+      ✓ microsoft       |  2 speakers
+      ✓ ibm             |  2 speakers
+      ✓ aws             |  2 speakers
+      ✓ googlecloud     |  2 speakers
+      ✓ ibm-8bar-logo   |  1 speakers
+
+====================================================================================================
+SECTION 7: RECOMMENDED ACTION PLAN
+====================================================================================================
+
+PHASE 1: Data Cleanup (Week 1)
+--------------------------------------------------
+1. Clean company field - remove file extensions (.jpg, .png, etc)
+2. Standardize company names (e.g., 'sbb', 'SBB', 'sbb.jpg' → 'SBB')
+3. Create normalized company IDs (e.g., 'sbb', 'mobiliar', 'postfinance')
+4. Map all variations to canonical names
+
+PHASE 2: Logo Collection - Priority 1 (Week 2)
+--------------------------------------------------
+Collect logos for companies with 10+ speakers that don't have logos:
+
+PHASE 3: Logo Collection - Priority 2 (Week 3)
+--------------------------------------------------
+Collect logos for companies with 5-9 speakers that don't have logos:
+1. rtc             ( 9 speakers)
+
+PHASE 4: Entity Migration (Week 4)
+--------------------------------------------------
+1. Create company entities in database
+2. Upload logos to S3
+3. Link speakers to companies
+4. Validate all relationships
+
+PHASE 5: Opportunistic Collection (Ongoing)
+--------------------------------------------------
+- Remaining 83 companies with <5 speakers
+- Collect as opportunities arise or when needed
+- Consider whether all single-speaker companies need logos
+
+====================================================================================================
+MIGRATION STATISTICS
+====================================================================================================
+
+Priority Distribution:
+  High (10+ speakers):       5 companies |  105 speaker mentions
+  Medium (5-9 speakers):     5 companies |   32 speaker mentions
+  Standard (2-4 speakers):  31 companies |   77 speaker mentions
+  Low (1 speaker):          96 companies |   96 speaker mentions
+
+Logo Collection Workload:
+  Phase 2 (High Priority):       0 logos to collect
+  Phase 3 (Medium Priority):     1 logos to collect
+  Phase 4+ (Standard Priority):  14 logos to collect
+  Total Priority Logos Needed:  15
+
+====================================================================================================
+END OF REPORT
+====================================================================================================

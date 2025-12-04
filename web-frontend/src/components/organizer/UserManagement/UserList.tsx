@@ -12,11 +12,12 @@
  * - User detail modal
  * - Role management
  * - User deletion (GDPR compliant)
+ * - Batch import speakers from legacy JSON
  */
 
 import React, { useState } from 'react';
 import { Box, Typography, Button, CircularProgress, Alert, Container } from '@mui/material';
-import { Add as AddIcon } from '@mui/icons-material';
+import { Add as AddIcon, Upload as UploadIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useUserManagementStore } from '@/stores/userManagementStore';
 import { useUserList } from '@/hooks/useUserManagement';
@@ -27,6 +28,7 @@ import UserCreateEditModal from './UserCreateEditModal';
 import RoleManagerModal from './RoleManagerModal';
 import DeleteUserDialog from './DeleteUserDialog';
 import UserPagination from './UserPagination';
+import SpeakerBatchImportModal from './SpeakerBatchImportModal';
 // import UserSyncPanel from './UserSyncPanel'; // TODO: Re-enable when AWS credentials configured (Story 1.2.5)
 import type { User } from '@/types/user.types';
 
@@ -38,6 +40,7 @@ const UserList: React.FC = () => {
   const [editUser, setEditUser] = useState<User | null>(null);
   const [roleManagerUser, setRoleManagerUser] = useState<User | null>(null);
   const [deleteDialogUser, setDeleteDialogUser] = useState<User | null>(null);
+  const [batchImportModalOpen, setBatchImportModalOpen] = useState(false);
 
   // Fetch user list with React Query
   const { data, isLoading, isError, refetch } = useUserList({
@@ -110,14 +113,24 @@ const UserList: React.FC = () => {
           <Typography variant="h4" component="h1">
             {t('title')}
           </Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<AddIcon />}
-            onClick={handleOpenCreateModal}
-          >
-            {t('addUser')}
-          </Button>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button
+              variant="outlined"
+              color="primary"
+              startIcon={<UploadIcon />}
+              onClick={() => setBatchImportModalOpen(true)}
+            >
+              {t('batchImport.button')}
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<AddIcon />}
+              onClick={handleOpenCreateModal}
+            >
+              {t('addUser')}
+            </Button>
+          </Box>
         </Box>
 
         {/* User Sync Panel - Story 1.2.5 */}
@@ -185,6 +198,11 @@ const UserList: React.FC = () => {
           open={!!deleteDialogUser}
           onClose={() => setDeleteDialogUser(null)}
           onSuccess={() => refetch()}
+        />
+        <SpeakerBatchImportModal
+          open={batchImportModalOpen}
+          onClose={() => setBatchImportModalOpen(false)}
+          onImportComplete={() => refetch()}
         />
       </Box>
     </Container>

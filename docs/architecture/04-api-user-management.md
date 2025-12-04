@@ -133,7 +133,7 @@ description: |
   **Filter Syntax Examples**:
   - Single filter: {"role":"SPEAKER"}
   - Multiple fields: {"role":"SPEAKER","isActive":true}
-  - Company filter: {"companyId":"550e8400-e29b-41d4-a716-446655440000"}
+  - Company filter: {"companyName":"GoogleZH"}
   - Logical operators: {"$or":[{"role":"SPEAKER"},{"role":"PARTNER"}]}
 
   **Sort Syntax**:
@@ -941,7 +941,7 @@ UserResponse:
       type: string
 
       description: Meaningful identifier (see ADR-003)
-      example: 550e8400-e29b-41d4-a716-446655440000
+      example: john.doe
     cognitoUserId:
       type: string
       example: cognito-user-123
@@ -962,7 +962,7 @@ UserResponse:
       type: string
 
       description: Meaningful identifier (see ADR-003)
-      example: 550e8400-e29b-41d4-a716-446655440001
+      example: GoogleZH
     roles:
       type: array
       items:
@@ -1296,10 +1296,10 @@ PaginationMetadata:
 **Event Schema Example**:
 ```json
 {
-  "userId": "550e8400-e29b-41d4-a716-446655440000",
+  "username": "john.doe",
   "email": "john.doe@example.com",
   "roles": ["SPEAKER", "ATTENDEE"],
-  "companyId": "550e8400-e29b-41d4-a716-446655440001",
+  "companyName": "GoogleZH",
   "eventTimestamp": "2025-01-15T10:00:00Z"
 }
 ```
@@ -1318,7 +1318,7 @@ PaginationMetadata:
 {
   "role": "SPEAKER",
   "isActive": true,
-  "companyId": "550e8400-e29b-41d4-a716-446655440000"
+  "companyName": "GoogleZH"
 }
 ```
 
