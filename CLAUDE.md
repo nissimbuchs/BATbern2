@@ -289,6 +289,49 @@ make test-coverage  # Generate coverage reports
 # - web-frontend/coverage/index.html (Frontend)
 ```
 
+## Dependency Management
+
+### Automated Dependabot Updates
+
+Dependencies are automatically updated monthly by Dependabot with zero maintenance required.
+
+**Schedule**: First Monday of each month
+- 3:00-4:30 AM: Dependabot creates grouped PRs
+- 10:00 AM: Automated batch merge workflow processes PRs
+
+**Configuration**: `.github/dependabot.yml`
+- **Frequency**: Monthly (reduced from weekly to prevent PR accumulation)
+- **Grouping**: Related dependencies bundled together (AWS SDK, Spring Boot, Vitest, etc.)
+- **PR Limit**: 3-5 PRs per ecosystem (reduced from 10+ to minimize conflicts)
+
+**Automated Merge**: `.github/workflows/dependabot-batch-merge.yml`
+- Automatically rebases and merges non-conflicting PRs
+- Closes conflicting PRs (will be recreated next month with latest versions)
+- Runs full CI before merge (tests, lint, security scans)
+- Zero manual intervention required
+
+**Manual Intervention**:
+```bash
+# Trigger batch merge manually (dry-run)
+gh workflow run dependabot-batch-merge.yml -f dry_run=true
+
+# Trigger batch merge manually (live)
+gh workflow run dependabot-batch-merge.yml -f dry_run=false
+
+# Check dependabot PRs status
+gh pr list --label dependencies
+
+# Manually merge a specific PR (if needed)
+gh pr merge <PR_NUMBER> --auto --squash
+```
+
+**Monitoring**:
+- Workflow runs: [Actions → Dependabot Batch Merge](../../actions/workflows/dependabot-batch-merge.yml)
+- PR summary: Check workflow run output for merge statistics
+- Failed runs: Review workflow logs, may require manual intervention
+
+**Expected PR Volume**: ~10-15 PRs per month (down from 40+ with weekly schedule)
+
 ## Troubleshooting
 
 ### Docker Issues

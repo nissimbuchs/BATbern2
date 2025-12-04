@@ -5,7 +5,10 @@
 # This configuration enables GitHub Dependabot to:
 # - Automatically check for vulnerable dependencies
 # - Create pull requests for security updates
-# - Keep dependencies up to date
+# - Keep dependencies up to date with monthly batched updates
+#
+# Schedule: Monthly on first Monday at 3:00-4:30 AM
+# Automated merge: dependabot-batch-merge.yml workflow runs at 10:00 AM same day
 #
 # More info: https://docs.github.com/en/code-security/dependabot
 
@@ -15,10 +18,24 @@ updates:
   - package-ecosystem: "gradle"
     directory: "/api-gateway"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
       day: "monday"
       time: "03:00"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
+    groups:
+      aws-sdk:
+        patterns:
+          - "software.amazon.awssdk:*"
+      spring-boot:
+        patterns:
+          - "org.springframework.boot:*"
+          - "org.springframework.cloud:*"
+      testing:
+        patterns:
+          - "org.junit.*:*"
+          - "org.mockito:*"
+          - "org.assertj:*"
+          - "org.testcontainers:*"
     reviewers:
       - "nissimbuchs"
     labels:
@@ -33,10 +50,25 @@ updates:
   - package-ecosystem: "gradle"
     directory: "/shared-kernel"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
       day: "monday"
       time: "03:00"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
+    groups:
+      aws-sdk:
+        patterns:
+          - "software.amazon.awssdk:*"
+      spring-boot:
+        patterns:
+          - "org.springframework.boot:*"
+      flyway:
+        patterns:
+          - "org.flywaydb:*"
+          - "org.flywaydb.flyway:*"
+      testing:
+        patterns:
+          - "org.junit.*:*"
+          - "org.testcontainers:*"
     reviewers:
       - "nissimbuchs"
     labels:
@@ -51,10 +83,23 @@ updates:
   - package-ecosystem: "npm"
     directory: "/infrastructure"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
       day: "monday"
       time: "03:30"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
+    groups:
+      aws-sdk:
+        patterns:
+          - "@aws-sdk/*"
+      aws-cdk:
+        patterns:
+          - "aws-cdk-lib"
+          - "aws-cdk"
+          - "constructs"
+      dev-dependencies:
+        dependency-type: "development"
+        exclude-patterns:
+          - "@aws-sdk/*"
     reviewers:
       - "nissimbuchs"
     labels:
@@ -70,10 +115,38 @@ updates:
   - package-ecosystem: "npm"
     directory: "/web-frontend"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
       day: "monday"
       time: "04:00"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
+    groups:
+      vitest-ecosystem:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+      react-ecosystem:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "react-router-dom"
+          - "react-hook-form"
+          - "@hookform/*"
+      ui-libraries:
+        patterns:
+          - "@mui/*"
+          - "lucide-react"
+      build-tools:
+        patterns:
+          - "vite"
+          - "vite-*"
+          - "@vitejs/*"
+      dev-dependencies:
+        dependency-type: "development"
+        exclude-patterns:
+          - "vitest"
+          - "@vitest/*"
+          - "vite"
+          - "vite-*"
     reviewers:
       - "nissimbuchs"
     labels:
@@ -97,10 +170,10 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
       day: "monday"
       time: "04:30"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     reviewers:
       - "nissimbuchs"
     labels:
