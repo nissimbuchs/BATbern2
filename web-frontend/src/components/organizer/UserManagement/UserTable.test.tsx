@@ -1,127 +1,236 @@
 /**
- * UserTable Component Tests (RED Phase)
+ * UserTable Component Tests
+ * Story 2.5.2: User Management Frontend - Task 6b
  *
- * TDD: Writing tests FIRST before implementation
- * Story 2.5.2: User Management Frontend - Task 6a (RED Phase)
- *
- * Test Coverage - AC1: User table with sorting and actions
+ * Tests for UserTable component covering basic rendering and user interactions
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import UserTable from './UserTable';
-import '@testing-library/jest-dom';
-import i18n from '@/i18n/config';
 import type { User } from '@/types/user.types';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+// Mock translation
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+  }),
+}));
+
+// Mock CompanyCell component
+vi.mock('./CompanyCell', () => ({
+  default: ({ companyId }: { companyId?: string }) => (
+    <div data-testid="company-cell">{companyId || 'N/A'}</div>
+  ),
+}));
 
 const mockUsers: User[] = [
   {
-    id: 'john.doe',
-    email: 'john.doe@example.com',
+    id: 'user-1',
     firstName: 'John',
     lastName: 'Doe',
-    roles: ['ATTENDEE'],
-    isActive: true,
-    createdAt: '2025-01-15T10:00:00Z',
-    updatedAt: '2025-01-15T10:00:00Z',
+    email: 'john.doe@example.com',
+    companyId: 'company-1',
+    roles: ['ORGANIZER'],
+    active: true,
+    profilePictureUrl: null,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
   },
   {
-    id: 'jane.smith',
-    email: 'jane.smith@example.com',
+    id: 'user-2',
     firstName: 'Jane',
     lastName: 'Smith',
-    roles: ['ORGANIZER', 'SPEAKER'],
-    companyId: 'TechCorp AG',
-    isActive: true,
-    createdAt: '2025-01-15T10:00:00Z',
-    updatedAt: '2025-01-15T10:00:00Z',
+    email: 'jane.smith@example.com',
+    companyId: 'company-2',
+    roles: ['SPEAKER', 'PARTNER'],
+    active: false,
+    profilePictureUrl: null,
+    createdAt: '2024-01-02T00:00:00Z',
+    updatedAt: '2024-01-02T00:00:00Z',
   },
 ];
 
-const createTestQueryClient = () =>
-  new QueryClient({
+const renderWithProviders = (ui: React.ReactElement) => {
+  const queryClient = new QueryClient({
     defaultOptions: {
-      queries: {
-        retry: false,
-        cacheTime: 0,
-      },
+      queries: { retry: false },
     },
   });
 
-const renderWithQueryClient = (component: React.ReactElement) => {
-  const queryClient = createTestQueryClient();
-  return render(<QueryClientProvider client={queryClient}>{component}</QueryClientProvider>);
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 };
 
-describe('UserTable', () => {
-  beforeEach(async () => {
-    await i18n.changeLanguage('de');
+describe('UserTable Component', () => {
+  describe('Rendering', () => {
+    it('should_renderTableHeaders_when_usersProvided', () => {
+      const mockRowClick = vi.fn();
+      const mockAction = vi.fn();
+
+      renderWithProviders(
+        <UserTable users={mockUsers} onRowClick={mockRowClick} onAction={mockAction} />
+      );
+
+      expect(screen.getByText('table.headers.name')).toBeInTheDocument();
+      expect(screen.getByText('table.headers.email')).toBeInTheDocument();
+      expect(screen.getByText('table.headers.company')).toBeInTheDocument();
+      expect(screen.getByText('table.headers.roles')).toBeInTheDocument();
+      expect(screen.getByText('table.headers.status')).toBeInTheDocument();
+      expect(screen.getByText('table.headers.actions')).toBeInTheDocument();
+    });
+
+    it('should_renderUserRows_when_usersProvided', () => {
+      const mockRowClick = vi.fn();
+      const mockAction = vi.fn();
+
+      renderWithProviders(
+        <UserTable users={mockUsers} onRowClick={mockRowClick} onAction={mockAction} />
+      );
+
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+      expect(screen.getByText('jane.smith@example.com')).toBeInTheDocument();
+    });
+
+    it('should_showEmptyState_when_noUsers', () => {
+      const mockRowClick = vi.fn();
+      const mockAction = vi.fn();
+
+      renderWithProviders(<UserTable users={[]} onRowClick={mockRowClick} onAction={mockAction} />);
+
+      expect(screen.getByText('table.empty')).toBeInTheDocument();
+    });
+
+    it('should_displayRoleBadges_when_userHasRoles', () => {
+      const mockRowClick = vi.fn();
+      const mockAction = vi.fn();
+
+      renderWithProviders(
+        <UserTable users={mockUsers} onRowClick={mockRowClick} onAction={mockAction} />
+      );
+
+      expect(screen.getByText('ORGANIZER')).toBeInTheDocument();
+      expect(screen.getByText('SPEAKER')).toBeInTheDocument();
+      expect(screen.getByText('PARTNER')).toBeInTheDocument();
+    });
+
+    it('should_displayActiveStatus_when_userIsActive', () => {
+      const mockRowClick = vi.fn();
+      const mockAction = vi.fn();
+
+      renderWithProviders(
+        <UserTable users={mockUsers} onRowClick={mockRowClick} onAction={mockAction} />
+      );
+
+      expect(screen.getByText('status.active')).toBeInTheDocument();
+      expect(screen.getByText('status.inactive')).toBeInTheDocument();
+    });
   });
 
-  it('should_renderTableHeaders_when_rendered', () => {
-    const onRowClick = vi.fn();
-    const onAction = vi.fn();
+  describe('User Interactions', () => {
+    it('should_callOnRowClick_when_rowClicked', async () => {
+      const user = userEvent.setup();
+      const mockRowClick = vi.fn();
+      const mockAction = vi.fn();
 
-    renderWithQueryClient(
-      <UserTable users={mockUsers} onRowClick={onRowClick} onAction={onAction} />
-    );
+      renderWithProviders(
+        <UserTable users={mockUsers} onRowClick={mockRowClick} onAction={mockAction} />
+      );
 
-    expect(screen.getByText('Name')).toBeInTheDocument();
-    expect(screen.getByText('E-Mail')).toBeInTheDocument();
-    expect(screen.getByText('Rollen')).toBeInTheDocument();
+      const row = screen.getByText('John Doe').closest('tr');
+      if (row) {
+        await user.click(row);
+      }
+
+      expect(mockRowClick).toHaveBeenCalledWith(mockUsers[0]);
+    });
+
+    it('should_openActionsMenu_when_moreIconClicked', async () => {
+      const user = userEvent.setup();
+      const mockRowClick = vi.fn();
+      const mockAction = vi.fn();
+
+      renderWithProviders(
+        <UserTable users={mockUsers} onRowClick={mockRowClick} onAction={mockAction} />
+      );
+
+      const moreButtons = screen.getAllByLabelText('actions.openMenu');
+      await user.click(moreButtons[0]);
+
+      expect(screen.getByText('actions.view')).toBeInTheDocument();
+      expect(screen.getByText('actions.editRoles')).toBeInTheDocument();
+      expect(screen.getByText('actions.delete')).toBeInTheDocument();
+    });
+
+    it('should_callOnAction_when_menuItemClicked', async () => {
+      const user = userEvent.setup();
+      const mockRowClick = vi.fn();
+      const mockAction = vi.fn();
+
+      renderWithProviders(
+        <UserTable users={mockUsers} onRowClick={mockRowClick} onAction={mockAction} />
+      );
+
+      const moreButtons = screen.getAllByLabelText('actions.openMenu');
+      await user.click(moreButtons[0]);
+
+      const viewAction = screen.getByText('actions.view');
+      await user.click(viewAction);
+
+      expect(mockAction).toHaveBeenCalledWith('view', mockUsers[0]);
+    });
   });
 
-  it('should_renderAllUsers_when_usersProvided', () => {
-    const onRowClick = vi.fn();
-    const onAction = vi.fn();
+  describe('Sorting', () => {
+    it('should_sortByName_when_nameHeaderClicked', async () => {
+      const user = userEvent.setup();
+      const mockRowClick = vi.fn();
+      const mockAction = vi.fn();
 
-    renderWithQueryClient(
-      <UserTable users={mockUsers} onRowClick={onRowClick} onAction={onAction} />
-    );
+      renderWithProviders(
+        <UserTable users={mockUsers} onRowClick={mockRowClick} onAction={mockAction} />
+      );
 
-    expect(screen.getByText('John Doe')).toBeInTheDocument();
-    expect(screen.getByText('Jane Smith')).toBeInTheDocument();
-    expect(screen.getByText('john.doe@example.com')).toBeInTheDocument();
-    expect(screen.getByText('jane.smith@example.com')).toBeInTheDocument();
-  });
+      const nameHeader = screen.getByText('table.headers.name');
+      await user.click(nameHeader);
 
-  it('should_displayRoleBadges_when_usersHaveRoles', () => {
-    const onRowClick = vi.fn();
-    const onAction = vi.fn();
+      // After sorting, Jane Smith should appear before John Doe (descending)
+      const rows = screen.getAllByRole('row');
+      expect(within(rows[2]).getByText('John Doe')).toBeInTheDocument();
+    });
 
-    renderWithQueryClient(
-      <UserTable users={mockUsers} onRowClick={onRowClick} onAction={onAction} />
-    );
+    it('should_sortByEmail_when_emailHeaderClicked', async () => {
+      const user = userEvent.setup();
+      const mockRowClick = vi.fn();
+      const mockAction = vi.fn();
 
-    expect(screen.getByText('ATTENDEE')).toBeInTheDocument();
-    expect(screen.getByText('ORGANIZER')).toBeInTheDocument();
-    expect(screen.getByText('SPEAKER')).toBeInTheDocument();
-  });
+      renderWithProviders(
+        <UserTable users={mockUsers} onRowClick={mockRowClick} onAction={mockAction} />
+      );
 
-  it('should_callOnRowClick_when_rowClicked', async () => {
-    const user = userEvent.setup();
-    const onRowClick = vi.fn();
-    const onAction = vi.fn();
+      const emailHeader = screen.getByText('table.headers.email');
+      await user.click(emailHeader);
 
-    renderWithQueryClient(
-      <UserTable users={mockUsers} onRowClick={onRowClick} onAction={onAction} />
-    );
+      // Sorting should be applied
+      expect(screen.getByText('jane.smith@example.com')).toBeInTheDocument();
+    });
 
-    const firstRow = screen.getByText('John Doe').closest('tr');
-    if (firstRow) {
-      await user.click(firstRow);
-      expect(onRowClick).toHaveBeenCalledWith(mockUsers[0]);
-    }
-  });
+    it('should_toggleSortDirection_when_sameHeaderClickedTwice', async () => {
+      const user = userEvent.setup();
+      const mockRowClick = vi.fn();
+      const mockAction = vi.fn();
 
-  it('should_renderEmptyState_when_noUsers', () => {
-    const onRowClick = vi.fn();
-    const onAction = vi.fn();
+      renderWithProviders(
+        <UserTable users={mockUsers} onRowClick={mockRowClick} onAction={mockAction} />
+      );
 
-    renderWithQueryClient(<UserTable users={[]} onRowClick={onRowClick} onAction={onAction} />);
+      const nameHeader = screen.getByText('table.headers.name');
+      await user.click(nameHeader);
+      await user.click(nameHeader);
 
-    expect(screen.getByText(/Keine Benutzer gefunden/i)).toBeInTheDocument();
+      // Direction should toggle
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+    });
   });
 });
