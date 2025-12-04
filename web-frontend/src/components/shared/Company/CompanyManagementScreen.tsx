@@ -19,16 +19,24 @@ import {
   Stack,
   ToggleButtonGroup,
   ToggleButton,
+  TextField,
+  InputAdornment,
   useTheme,
   useMediaQuery,
 } from '@mui/material';
-import { Add as AddIcon, ViewModule as GridIcon, ViewList as ListIcon } from '@mui/icons-material';
+import { Search as SearchIcon } from '@mui/icons-material';
+import {
+  Add as AddIcon,
+  ViewModule as GridIcon,
+  ViewList as ListIcon,
+  UploadFile as UploadFileIcon,
+} from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { CompanyList } from '@/components/shared/Company/CompanyList';
-import { CompanySearch } from '@/components/shared/Company/CompanySearch';
 import CompanyFilters from '@/components/shared/Company/CompanyFilters';
 import { CompanyForm } from '@/components/shared/Company/CompanyForm';
 import { CompanyDetailView } from '@/components/shared/Company/CompanyDetailView';
+import { CompanyBatchImportModal } from '@/components/shared/Company/CompanyBatchImportModal';
 import {
   useCreateCompany,
   useUpdateCompany,
@@ -61,6 +69,7 @@ const CompanyDetailWrapper: React.FC<{
       isLoading={isLoading}
       error={error?.message}
       canEdit={true}
+      canDelete={true}
       onEdit={() => company && onEdit(company)}
       onBack={onBack}
       onRetry={refetch}
@@ -78,15 +87,26 @@ const CompanyManagementScreen: React.FC = () => {
 
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [filters, setFilters] = useState<CompanyFiltersType>({});
-  const [, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isBatchImportOpen, setIsBatchImportOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
-  const [pagination] = useState({ page: 1, limit: 20 });
+  const [pagination] = useState({ page: 1, limit: 100 });
 
-  // Fetch companies list with filters and logo expansion
-  const { data: companiesData, isLoading: isLoadingCompanies } = useCompanies(pagination, filters, {
-    expand: ['logo'],
-  });
+  // Combine filters with search query
+  const combinedFilters: CompanyFiltersType = {
+    ...filters,
+    ...(searchQuery ? { searchQuery } : {}),
+  };
+
+  // Fetch companies list with filters (including search) and logo expansion
+  const { data: companiesData, isLoading: isLoadingCompanies } = useCompanies(
+    pagination,
+    combinedFilters,
+    {
+      expand: ['logo'],
+    }
+  );
 
   const handleViewModeChange = (
     _: React.MouseEvent<HTMLElement>,
@@ -104,10 +124,6 @@ const CompanyManagementScreen: React.FC = () => {
   const handleFilterChange = useCallback((newFilters: CompanyFiltersType) => {
     setFilters(newFilters);
   }, []);
-
-  const handleSearchSelect = (companyId: string) => {
-    navigate(`/companies/${companyId}`);
-  };
 
   const handleCreateCompany = useCallback(() => {
     setIsCreateModalOpen(true);
@@ -181,6 +197,16 @@ const CompanyManagementScreen: React.FC = () => {
               </ToggleButton>
             </ToggleButtonGroup>
 
+            {/* Batch Import Button */}
+            <Button
+              variant="outlined"
+              startIcon={<UploadFileIcon />}
+              onClick={() => setIsBatchImportOpen(true)}
+              aria-label={t('company.batchImport.button')}
+            >
+              {t('company.batchImport.button')}
+            </Button>
+
             {/* Create Button */}
             <Button
               variant="contained"
@@ -195,9 +221,23 @@ const CompanyManagementScreen: React.FC = () => {
 
         {/* Search and Filter Section */}
         <Stack direction={isMobile ? 'column' : 'row'} spacing={2} mb={3}>
-          {/* Search Bar */}
+          {/* Search Bar - Simple text field for filtering the list */}
           <Box flex={1}>
-            <CompanySearch onSelect={handleSearchSelect} onSearchChange={setSearchQuery} />
+            <TextField
+              fullWidth
+              placeholder={t('company.search.placeholder')}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon color="action" />
+                  </InputAdornment>
+                ),
+              }}
+              size="small"
+              aria-label={t('company.search.placeholder')}
+            />
           </Box>
         </Stack>
 
@@ -253,6 +293,12 @@ const CompanyManagementScreen: React.FC = () => {
             userRole="organizer"
           />
         )}
+
+        {/* Batch Import Modal */}
+        <CompanyBatchImportModal
+          open={isBatchImportOpen}
+          onClose={() => setIsBatchImportOpen(false)}
+        />
       </Container>
     </Box>
   );

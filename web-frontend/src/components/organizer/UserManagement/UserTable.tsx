@@ -33,6 +33,7 @@ import { MoreVert as MoreVertIcon, Person as PersonIcon } from '@mui/icons-mater
 import { useTranslation } from 'react-i18next';
 import type { User, Role } from '@/types/user.types';
 import { ROLE_ICONS } from '@/types/user.types';
+import CompanyCell from './CompanyCell';
 
 interface UserTableProps {
   users: User[];
@@ -186,9 +187,7 @@ const UserTable: React.FC<UserTableProps> = ({ users, onRowClick, onAction }) =>
                 </Typography>
               </TableCell>
               <TableCell>
-                <Typography variant="body2" color="text.secondary">
-                  {user.companyId || '-'}
-                </Typography>
+                <CompanyCell companyId={user.companyId} />
               </TableCell>
               <TableCell>
                 <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>

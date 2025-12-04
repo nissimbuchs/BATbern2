@@ -286,9 +286,9 @@ As a **platform stakeholder**, I want all 20+ years of historical BATbern event 
 - Individual story file: `docs/stories/1.15-*.md`
 
 **Data Sources:**
-- Existing Angular website data location: [TBD - specify actual path]
-- JSON schema documentation: [TBD]
-- Sample data for testing: [TBD]
+- Existing Angular website data location: [(../../apps/BATspa-old)]
+- JSON schema documentation: [(../../apps/BATspa-old/src/api)]
+- Sample data for testing: [(../../apps/BATspa-old/src/api)]
 
 **Epic Reorganization Context:**
 - Date: 2025-10-12

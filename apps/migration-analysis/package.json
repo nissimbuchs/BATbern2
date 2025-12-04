@@ -1,0 +1,43 @@
+{
+  "name": "@batbern/migration-analysis",
+  "version": "1.0.0",
+  "description": "Historical data migration analysis tool for BATbern platform",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "inventory": "ts-node src/inventory.ts",
+    "schema": "ts-node src/schema-analyzer.ts",
+    "quality": "ts-node src/quality-checker.ts",
+    "metrics": "ts-node src/metrics-calculator.ts",
+    "validate": "ts-node src/sample-validator.ts",
+    "analyze:all": "npm run inventory && npm run schema && npm run metrics && npm run quality && npm run validate",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix"
+  },
+  "keywords": [
+    "batbern",
+    "migration",
+    "analysis"
+  ],
+  "author": "BATbern Team",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/glob": "^8.1.0",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.11.24",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.2"
+  },
+  "dependencies": {
+    "fs-extra": "^11.2.0",
+    "glob": "^10.3.10"
+  }
+}

@@ -17,6 +17,8 @@
     "loadingEvents": "Veranstaltungen werden geladen...",
     "eventCount": "{{count}} Veranstaltung",
     "eventCount_plural": "{{count}} Veranstaltungen",
+    "eventWord": "Veranstaltung",
+    "eventWord_plural": "Veranstaltungen",
     "status": {
       "active": "Aktiv",
       "published": "Veröffentlicht",

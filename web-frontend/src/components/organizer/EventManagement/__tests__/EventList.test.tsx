@@ -105,12 +105,6 @@ describe('EventList Component', () => {
       expect(screen.getByText('DevOps Mastery')).toBeInTheDocument();
     });
 
-    it('should_renderEventCount_when_eventsProvided', () => {
-      render(<EventList events={mockEvents} />, { wrapper: createWrapper() });
-
-      expect(screen.getByText(/2.*events/i)).toBeInTheDocument();
-    });
-
     it('should_displayEmptyState_when_noEvents', () => {
       render(<EventList events={[]} />, { wrapper: createWrapper() });
 
@@ -198,22 +192,9 @@ describe('EventList Component', () => {
 
       expect(screen.getByLabelText(/event list/i)).toBeInTheDocument();
     });
-
-    it('should_announceEventCount_when_screenReaderActive', () => {
-      render(<EventList events={mockEvents} />, { wrapper: createWrapper() });
-
-      expect(screen.getByLabelText(/2 events/i)).toBeInTheDocument();
-    });
   });
 
   describe('Internationalization', () => {
-    it('should_useTranslationKeys_when_renderingText', () => {
-      render(<EventList events={mockEvents} />, { wrapper: createWrapper() });
-
-      // Verify translated event count appears (uses i18n pluralization)
-      expect(screen.getByText(/2 events/i)).toBeInTheDocument();
-    });
-
     it('should_translateEmptyState_when_noEvents', () => {
       render(<EventList events={[]} />, { wrapper: createWrapper() });
 

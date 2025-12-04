@@ -21,6 +21,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import jakarta.persistence.criteria.Expression;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -200,6 +201,18 @@ public class EventSearchService {
         String field = filter.getField();
         FilterOperator operator = filter.getOperator();
         Object value = filter.getValue();
+
+        // Special handling for virtual 'year' field - extract year from date column
+        if ("year".equals(field) && operator == FilterOperator.EQUALS) {
+            return (root, query, criteriaBuilder) -> {
+                Integer year = ((Number) value).intValue();
+                // Use Hibernate 6's year() method via HibernateCriteriaBuilder
+                org.hibernate.query.criteria.HibernateCriteriaBuilder hcb =
+                    (org.hibernate.query.criteria.HibernateCriteriaBuilder) criteriaBuilder;
+                Expression<Integer> yearExpression = hcb.year(root.get("date"));
+                return criteriaBuilder.equal(yearExpression, year);
+            };
+        }
 
         return (root, query, criteriaBuilder) -> {
             switch (operator) {
