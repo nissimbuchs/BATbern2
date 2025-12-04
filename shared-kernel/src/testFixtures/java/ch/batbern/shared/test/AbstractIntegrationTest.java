@@ -44,14 +44,14 @@ public abstract class AbstractIntegrationTest {
      *
      * PostgreSQL 16 Alpine is used to match production environment.
      */
-    private static final PostgreSQLContainer<?> postgres;
+    private static final PostgreSQLContainer<?> POSTGRES;
 
     static {
-        postgres = new PostgreSQLContainer<>("postgres:16-alpine")
+        POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine")
                 .withDatabaseName("testdb")
                 .withUsername("test")
                 .withPassword("test");
-        postgres.start();
+        POSTGRES.start();
     }
 
     /**
@@ -60,8 +60,8 @@ public abstract class AbstractIntegrationTest {
      */
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
+        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
+        registry.add("spring.datasource.username", POSTGRES::getUsername);
+        registry.add("spring.datasource.password", POSTGRES::getPassword);
     }
 }
