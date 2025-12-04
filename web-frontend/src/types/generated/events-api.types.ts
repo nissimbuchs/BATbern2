@@ -19,9 +19,20 @@ export interface paths {
      *
      *     **Filter Syntax Examples**:
      *     - Single filter: `{"status":"published"}`
-     *     - Multiple operators: `{"date":{"$gte":"2025-01-01","$lte":"2025-12-31"}}`
+     *     - Year filter: `{"year":2025}`
+     *     - Text search: `{"title":{"$contains":"Cloud"}}`
+     *     - Date range: `{"date":{"$gte":"2025-01-01T00:00:00Z","$lt":"2026-01-01T00:00:00Z"}}`
+     *     - Multiple filters: `{"status":"published","year":2025}`
+     *     - Search with filter: `{"status":"published","title":{"$contains":"Cloud"}}`
      *     - Logical operators: `{"$or":[{"status":"published"},{"status":"archived"}]}`
      *     - In operator: `{"status":{"$in":["published","archived"]}}`
+     *
+     *     **Supported Filter Fields**:
+     *     - `year`: Integer (convenience filter, matches events from Jan 1 - Dec 31 of given year)
+     *     - `date`: ISO 8601 timestamp (supports $gte, $lte, $gt, $lt operators for date ranges)
+     *     - `status`: String (single status) or use `$in` operator for multiple statuses
+     *     - `eventNumber`: Integer (event number)
+     *     - `title`: String (supports $contains, $startsWith, $endsWith operators for text search)
      *
      *     **Sort Syntax**:
      *     - Ascending: `date`
