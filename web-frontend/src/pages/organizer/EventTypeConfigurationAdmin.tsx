@@ -26,8 +26,9 @@ import {
   Box,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { Edit as EditIcon } from '@mui/icons-material';
+import { Edit as EditIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useEventTypes, useUpdateEventType } from '@/hooks/useEventTypes';
 import { EventTypeConfigurationForm } from '@/components/organizer/EventTypeConfigurationForm/EventTypeConfigurationForm';
@@ -41,12 +42,17 @@ type UpdateEventSlotConfigurationRequest =
 
 export const EventTypeConfigurationAdmin: React.FC = () => {
   const { t } = useTranslation('events');
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { data: eventTypes, isLoading, error } = useEventTypes();
   const updateMutation = useUpdateEventType();
 
   const [editingType, setEditingType] = useState<EventType | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleBack = () => {
+    navigate('/organizer/events');
+  };
 
   // Role-based access control - ORGANIZER only
   if (user?.role !== 'organizer') {
@@ -95,6 +101,13 @@ export const EventTypeConfigurationAdmin: React.FC = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      {/* Back button header */}
+      <Box sx={{ mb: 3 }}>
+        <Button startIcon={<ArrowBackIcon />} onClick={handleBack}>
+          {t('actions.back')}
+        </Button>
+      </Box>
+
       <Typography variant="h4" component="h1" gutterBottom>
         {t('form.eventTypeConfig.title')}
       </Typography>
