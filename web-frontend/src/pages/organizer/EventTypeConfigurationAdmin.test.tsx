@@ -72,14 +72,26 @@ vi.mock('@/services/eventTypeService', () => ({
   },
 }));
 
-// Mock authStore (ORGANIZER role by default)
-const mockAuthStore = vi.fn(() => ({
+// Mock useAuth hook (ORGANIZER role by default)
+const mockUseAuth = vi.fn(() => ({
   user: { username: 'admin', role: 'organizer' },
   isAuthenticated: true,
+  isLoading: false,
+  error: null,
+  accessToken: null,
+  signIn: vi.fn(),
+  signOut: vi.fn(),
+  signUp: vi.fn(),
+  refreshToken: vi.fn(),
+  clearError: vi.fn(),
+  hasRole: vi.fn(),
+  hasPermission: vi.fn(),
+  canAccess: vi.fn(),
+  isTokenExpired: vi.fn(),
 }));
 
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: () => mockAuthStore(),
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: () => mockUseAuth(),
 }));
 
 describe('EventTypeConfigurationAdmin Page', () => {
@@ -229,13 +241,25 @@ describe('EventTypeConfigurationAdmin Page', () => {
 
   /**
    * Test 7.8g: should_requireOrganizerRole_when_accessAttempted
-   * AC7: Page requires ORGANIZER role (tested via authStore mock)
+   * AC7: Page requires ORGANIZER role (tested via useAuth mock)
    */
   it('should_requireOrganizerRole_when_accessAttempted', async () => {
     // Mock non-organizer user
-    mockAuthStore.mockReturnValueOnce({
+    mockUseAuth.mockReturnValueOnce({
       user: { username: 'speaker', role: 'speaker' },
       isAuthenticated: true,
+      isLoading: false,
+      error: null,
+      accessToken: null,
+      signIn: vi.fn(),
+      signOut: vi.fn(),
+      signUp: vi.fn(),
+      refreshToken: vi.fn(),
+      clearError: vi.fn(),
+      hasRole: vi.fn(),
+      hasPermission: vi.fn(),
+      canAccess: vi.fn(),
+      isTokenExpired: vi.fn(),
     });
 
     render(<EventTypeConfigurationAdmin />, { wrapper: createWrapper() });
