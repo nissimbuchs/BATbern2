@@ -78,17 +78,6 @@ describe('QuickActions Component', () => {
   });
 
   /**
-   * Test 7.1d: should_displayHelperText_when_eventTypesButtonRendered
-   * AC7: Component displays helper text below Event Types button
-   */
-  it('should_displayHelperText_when_eventTypesButtonRendered', () => {
-    render(<QuickActions />, { wrapper: createWrapper() });
-
-    // Helper text from translation key: events.dashboard.actions.eventTypesHelp
-    expect(screen.getByText(/configure event type templates/i)).toBeInTheDocument();
-  });
-
-  /**
    * Test 7.2a: should_navigateToEventTypes_when_eventTypesButtonClicked
    * AC7: Clicking Event Types button navigates to /organizer/event-types
    */

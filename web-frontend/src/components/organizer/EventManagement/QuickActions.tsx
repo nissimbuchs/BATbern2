@@ -5,18 +5,26 @@
  * Features:
  * - New Event button
  * - Event Types configuration button (navigates to admin page)
- * - Helper text for Event Types (admin-only feature)
- * - Future placeholder buttons (disabled)
+ * - Batch Import button
  * - i18n compliance (all text uses react-i18next)
  */
 
 import React from 'react';
 import { Paper, Typography, Button, Stack } from '@mui/material';
-import { Add as AddIcon, Settings as SettingsIcon } from '@mui/icons-material';
+import {
+  Add as AddIcon,
+  Settings as SettingsIcon,
+  UploadFile as UploadFileIcon,
+} from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
-export const QuickActions: React.FC = () => {
+interface QuickActionsProps {
+  onNewEvent?: () => void;
+  onBatchImport?: () => void;
+}
+
+export const QuickActions: React.FC<QuickActionsProps> = ({ onNewEvent, onBatchImport }) => {
   const { t } = useTranslation('events');
   const navigate = useNavigate();
 
@@ -36,6 +44,7 @@ export const QuickActions: React.FC = () => {
           variant="contained"
           startIcon={<AddIcon />}
           fullWidth
+          onClick={onNewEvent}
           aria-label={t('dashboard.actions.newEvent')}
         >
           {t('dashboard.actions.newEvent')}
@@ -52,10 +61,16 @@ export const QuickActions: React.FC = () => {
           {t('dashboard.actions.eventTypes')}
         </Button>
 
-        {/* Helper text for Event Types */}
-        <Typography variant="caption" color="text.secondary" sx={{ pl: 1 }}>
-          {t('dashboard.actions.eventTypesHelp')}
-        </Typography>
+        {/* Batch Import Button */}
+        <Button
+          variant="outlined"
+          startIcon={<UploadFileIcon />}
+          fullWidth
+          onClick={onBatchImport}
+          aria-label="Import historical events"
+        >
+          {t('common:event.batchImport.button')}
+        </Button>
       </Stack>
     </Paper>
   );
