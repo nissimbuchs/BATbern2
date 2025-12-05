@@ -112,11 +112,14 @@ build: build-java build-node ## Build all projects
 build-java: ## Build all Java/Gradle projects
 	@echo "🔨 Building Java projects..."
 	@echo "→ Building with Gradle (shared-kernel, api-gateway, services)..."
-	@./gradlew build compileTestJava -x test --parallel
+	@echo "→ Running checkstyle validation..."
+	@./gradlew build compileTestJava checkstyleMain checkstyleTest -x test --parallel
 	@echo "✓ Java build complete"
 
 build-node: ## Build all Node.js projects
 	@echo "🔨 Building Node.js projects..."
+	@echo "→ Linting web-frontend..."
+	@cd web-frontend && npm run lint
 	@echo "→ Building infrastructure..."
 	@cd infrastructure && npm run build
 	@echo "→ Building web-frontend..."
