@@ -19,7 +19,7 @@ import { Add as AddIcon, UploadFile as UploadFileIcon } from '@mui/icons-materia
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useEvents, useCriticalTasks, useTeamActivity } from '@/hooks/useEvents';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/hooks/useAuth';
 import { useEventStore } from '@/stores/eventStore';
 import { EventList } from './EventList';
 import { EventSearch } from './EventSearch';
@@ -34,7 +34,7 @@ import type { EventFilters } from '@/types/event.types';
 export const EventManagementDashboard: React.FC = () => {
   const { t } = useTranslation('events');
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user } = useAuth();
   const {
     filters,
     setFilters,
