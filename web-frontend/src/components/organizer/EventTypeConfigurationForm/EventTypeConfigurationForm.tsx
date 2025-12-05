@@ -10,9 +10,10 @@
  * - Generated types from OpenAPI spec (ADR-006)
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TextField, Button, Stack, FormControlLabel, Switch, Alert } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { useEventType } from '@/hooks/useEventTypes';
 import type { components } from '@/types/generated/events-api.types';
 
 // Import generated types from OpenAPI spec (ADR-006 compliance)
@@ -37,11 +38,14 @@ interface ValidationErrors {
 }
 
 export const EventTypeConfigurationForm: React.FC<EventTypeConfigurationFormProps> = ({
-  // eventType reserved for future pre-population feature
+  eventType,
   onSave,
   onCancel,
 }) => {
   const { t } = useTranslation('events');
+
+  // Fetch current configuration for the event type
+  const { data: currentConfig, isLoading } = useEventType(eventType!);
 
   const [formData, setFormData] = useState<FormData>({
     minSlots: 6,
@@ -55,6 +59,21 @@ export const EventTypeConfigurationForm: React.FC<EventTypeConfigurationFormProp
 
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Populate form with current configuration when loaded
+  useEffect(() => {
+    if (currentConfig) {
+      setFormData({
+        minSlots: currentConfig.minSlots,
+        maxSlots: currentConfig.maxSlots,
+        slotDuration: currentConfig.slotDuration,
+        theoreticalSlotsAM: currentConfig.theoreticalSlotsAM,
+        breakSlots: currentConfig.breakSlots,
+        lunchSlots: currentConfig.lunchSlots,
+        defaultCapacity: currentConfig.defaultCapacity,
+      });
+    }
+  }, [currentConfig]);
 
   const validateForm = (): boolean => {
     const newErrors: ValidationErrors = {};
@@ -116,6 +135,15 @@ export const EventTypeConfigurationForm: React.FC<EventTypeConfigurationFormProp
       });
     }
   };
+
+  // Show loading state while fetching current configuration
+  if (isLoading) {
+    return (
+      <Stack spacing={3}>
+        <Alert severity="info">{t('common:loading')}</Alert>
+      </Stack>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit}>

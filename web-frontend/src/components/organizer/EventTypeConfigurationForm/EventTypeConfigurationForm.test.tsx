@@ -18,6 +18,7 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/i18n/config';
 import { EventTypeConfigurationForm } from './EventTypeConfigurationForm';
@@ -26,6 +27,29 @@ import type { components } from '@/types/generated/events-api.types';
 type EventType = components['schemas']['EventType'];
 type UpdateEventSlotConfigurationRequest =
   components['schemas']['UpdateEventSlotConfigurationRequest'];
+type EventSlotConfigurationResponse = components['schemas']['EventSlotConfigurationResponse'];
+
+// Mock useEventType hook to return test data
+const mockEventTypeData: EventSlotConfigurationResponse = {
+  type: 'FULL_DAY',
+  minSlots: 6,
+  maxSlots: 8,
+  slotDuration: 45,
+  theoreticalSlotsAM: true,
+  breakSlots: 2,
+  lunchSlots: 1,
+  defaultCapacity: 200,
+  typicalStartTime: '09:00',
+  typicalEndTime: '17:00',
+};
+
+vi.mock('@/hooks/useEventTypes', () => ({
+  useEventType: vi.fn(() => ({
+    data: mockEventTypeData,
+    isLoading: false,
+    error: null,
+  })),
+}));
 
 describe('EventTypeConfigurationForm Component', () => {
   const mockOnSave = vi.fn(() => Promise.resolve());
@@ -34,8 +58,17 @@ describe('EventTypeConfigurationForm Component', () => {
   const mockEventType: EventType = 'FULL_DAY';
 
   const createWrapper = () => {
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+
     return ({ children }: { children: React.ReactNode }) => (
-      <I18nextProvider i18n={i18n}>{children}</I18nextProvider>
+      <QueryClientProvider client={queryClient}>
+        <I18nextProvider i18n={i18n}>{children}</I18nextProvider>
+      </QueryClientProvider>
     );
   };
 
