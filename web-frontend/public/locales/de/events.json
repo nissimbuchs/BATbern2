@@ -53,6 +53,8 @@
       "viewDetails": "Details anzeigen",
       "edit": "Bearbeiten",
       "newEvent": "Neue Veranstaltung",
+      "eventTypes": "Veranstaltungstypen",
+      "eventTypesHelp": "Veranstaltungstyp-Vorlagen konfigurieren (Admin)",
       "analytics": "Analytics",
       "speakers": "Referenten"
     },
@@ -122,6 +124,19 @@
       "afternoon": "Nachmittag",
       "evening": "Abend"
     },
+    "eventTypeConfig": {
+      "title": "Veranstaltungstyp-Konfiguration",
+      "description": "Konfigurieren Sie die Slot-Anforderungen und Zeitvorlagen für jeden Veranstaltungstyp",
+      "minSlots": "Mindest-Slots",
+      "maxSlots": "Maximale Slots",
+      "slotDuration": "Slot-Dauer (Minuten)",
+      "theoreticalSlotsAM": "Theoretische Slots am Vormittag",
+      "breakSlots": "Pausen-Slots",
+      "lunchSlots": "Mittagspausen-Slots",
+      "defaultCapacity": "Standard-Kapazität",
+      "accessDenied": "Zugriff verweigert",
+      "organizerOnly": "Nur Organisatoren können auf diese Seite zugreifen"
+    },
     "statusValues": {
       "planning": "Planung",
       "topicDefined": "Thema definiert",
@@ -143,6 +158,14 @@
     "full_day": "Ganztägig",
     "afternoon": "Nachmittag",
     "evening": "Abend"
+  },
+  "slotPreview": {
+    "title": "{{type}} Vorschau",
+    "slots": "Slots",
+    "duration": "Dauer",
+    "capacity": "Kapazität",
+    "timing": "Typische Zeitplanung",
+    "exampleTimeline": "Beispiel-Zeitplan"
   },
   "status": {
     "draft": "Entwurf",
