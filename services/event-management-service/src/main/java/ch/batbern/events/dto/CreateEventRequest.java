@@ -1,6 +1,8 @@
 package ch.batbern.events.dto;
 
+import ch.batbern.events.dto.generated.EventType;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -51,6 +53,9 @@ public class CreateEventRequest {
 
     @Size(max = 5000, message = "Description must not exceed 5000 characters")
     private String description;
+
+    @NotNull(message = "Event type is required")
+    private EventType eventType;
 
     private String themeImageUploadId;
 }

@@ -6,6 +6,7 @@ import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
+import ch.batbern.events.dto.generated.EventType;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.repository.EventRepository;
@@ -101,6 +102,7 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
                 .organizerUsername("test.organizer")
                 .currentAttendeeCount(0)
                 .description("Test event for registration")
+                .eventType(EventType.EVENING)
                 .build();
         testEvent = eventRepository.save(testEvent);
 
@@ -354,6 +356,7 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
                 .status("published")
                 .organizerUsername("test.organizer")
                 .currentAttendeeCount(0)
+                .eventType(EventType.EVENING)
                 .build();
         otherEvent = eventRepository.save(otherEvent);
 

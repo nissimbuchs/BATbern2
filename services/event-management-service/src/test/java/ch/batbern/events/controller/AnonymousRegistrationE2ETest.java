@@ -2,6 +2,7 @@ package ch.batbern.events.controller;
 
 import ch.batbern.events.AbstractIntegrationTest;
 import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.dto.generated.EventType;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
@@ -93,6 +94,7 @@ public class AnonymousRegistrationE2ETest extends AbstractIntegrationTest {
                 .organizerUsername("test.organizer")
                 .currentAttendeeCount(0)
                 .description("Test event for E2E registration")
+                .eventType(EventType.EVENING)
                 .build();
         testEvent = eventRepository.save(testEvent);
 
@@ -253,6 +255,7 @@ public class AnonymousRegistrationE2ETest extends AbstractIntegrationTest {
                 .status("published")
                 .organizerUsername("test.organizer")
                 .currentAttendeeCount(0)
+                .eventType(EventType.EVENING)
                 .build();
         eventRepository.save(secondEvent);
 

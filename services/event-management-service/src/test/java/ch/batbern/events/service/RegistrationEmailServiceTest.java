@@ -2,6 +2,7 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
+import ch.batbern.events.dto.generated.EventType;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.service.IcsCalendarService;
@@ -97,6 +98,7 @@ class RegistrationEmailServiceTest {
                 .date(Instant.now().plus(30, java.time.temporal.ChronoUnit.DAYS))
                 .venueName("Kornhausforum")
                 .venueAddress("Kornhausplatz 18, 3011 Bern")
+                .eventType(EventType.EVENING)
                 .build();
 
         byte[] mockIcsFile = "mock-ics-content".getBytes();
@@ -171,6 +173,7 @@ class RegistrationEmailServiceTest {
                 .date(Instant.now().plus(30, java.time.temporal.ChronoUnit.DAYS))
                 .venueName("Kornhausforum")
                 .venueAddress("Kornhausplatz 18, 3011 Bern")
+                .eventType(EventType.EVENING)
                 .build();
 
         byte[] mockIcsFile = "mock-ics-content".getBytes();
@@ -222,6 +225,7 @@ class RegistrationEmailServiceTest {
                 .date(eventDate)
                 .venueName("Test Venue")
                 .venueAddress("Test Address")
+                .eventType(EventType.EVENING)
                 .build();
 
         byte[] mockIcsFile = "mock-ics-content".getBytes();
@@ -271,6 +275,7 @@ class RegistrationEmailServiceTest {
                 .date(Instant.now().plus(30, java.time.temporal.ChronoUnit.DAYS))
                 .venueName("Test Venue")
                 .venueAddress("Test Address")
+                .eventType(EventType.EVENING)
                 .build();
 
         byte[] mockIcsFile = "mock-ics-content".getBytes();

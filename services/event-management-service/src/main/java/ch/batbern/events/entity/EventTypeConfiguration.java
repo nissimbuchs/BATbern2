@@ -1,10 +1,10 @@
 package ch.batbern.events.entity;
 
+import ch.batbern.events.converter.EventTypeConverter;
 import ch.batbern.events.dto.generated.EventType;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -47,9 +47,9 @@ public class EventTypeConfiguration {
 
     /**
      * Event type enum: FULL_DAY, AFTERNOON, EVENING.
-     * Stored as VARCHAR(20) in database with CHECK constraint.
+     * Stored as lowercase_snake_case in database (full_day, afternoon, evening) per ADR-003.
      */
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = EventTypeConverter.class)
     @Column(nullable = false, unique = true, length = 20)
     private EventType type;
 

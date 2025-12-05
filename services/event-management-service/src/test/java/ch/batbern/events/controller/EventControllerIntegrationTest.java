@@ -5,6 +5,7 @@ import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.dto.generated.EventType;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
@@ -187,6 +188,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .organizerUsername("test.organizer")
                 .currentAttendeeCount(0)
                 .description("Test event for " + title)
+                .eventType(EventType.EVENING)
                 .build();
         return eventRepository.save(event);
     }
@@ -625,7 +627,8 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                     "title": "BATbern 2027",
                     "date": "2027-08-15T09:00:00Z",
                     "status": "planning",
-                    "description": "Annual tech conference 2027"
+                    "description": "Annual tech conference 2027",
+                    "eventType": "EVENING"
                 }
                 """;
 
@@ -776,6 +779,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .venueAddress("123 Test St")
                 .venueCapacity(100)
                 .organizerUsername("test.organizer")
+                .eventType(EventType.EVENING)
                 .build();
         Event savedInvalidEvent = eventRepository.save(invalidEvent);
 
@@ -1470,7 +1474,8 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                     "venueCapacity": 500,
                     "status": "planning",
                     "organizerUsername": "john.doe",
-                    "description": "Annual BATbern conference"
+                    "description": "Annual BATbern conference",
+                    "eventType": "EVENING"
                 }
                 """;
 
@@ -1565,7 +1570,8 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                     "venueName": "Test Venue",
                     "venueAddress": "Test Address",
                     "venueCapacity": 100,
-                    "organizerUsername": "test.user"
+                    "organizerUsername": "test.user",
+                    "eventType": "EVENING"
                 }
                 """;
 
@@ -1599,7 +1605,8 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                     "venueName": "Test Venue",
                     "venueAddress": "Test Address",
                     "venueCapacity": 100,
-                    "organizerUsername": "test.user"
+                    "organizerUsername": "test.user",
+                    "eventType": "EVENING"
                 }
                 """;
 
@@ -1748,6 +1755,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                     "organizerUsername": "john.doe",
                     "currentAttendeeCount": 0,
                     "description": "A conference about cloud technologies",
+                    "eventType": "EVENING",
                     "themeImageUploadId": "%s"
                 }
                 """.formatted(uploadId);
@@ -1780,7 +1788,8 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                     "status": "published",
                     "organizerUsername": "jane.smith",
                     "currentAttendeeCount": 0,
-                    "description": "Traditional architecture conference"
+                    "description": "Traditional architecture conference",
+                    "eventType": "EVENING"
                 }
                 """;
 
