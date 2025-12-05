@@ -49,6 +49,39 @@ export class NetworkStack extends cdk.Stack {
     this.cacheSecurityGroup = vpcConstruct.cacheSecurityGroup;
     this.lambdaTriggersSecurityGroup = vpcConstruct.lambdaTriggersSecurityGroup;
 
+    // Add VPC Endpoints for cost optimization (Priority 3)
+    // Gateway endpoints (free) - no additional cost
+    // Interface endpoints reduce NAT Gateway data transfer costs
+
+    // S3 Gateway Endpoint (FREE) - reduces NAT data transfer for ECR image pulls
+    this.vpc.addGatewayEndpoint('S3Endpoint', {
+      service: ec2.GatewayVpcEndpointAwsService.S3,
+    });
+
+    // ECR API Interface Endpoint - for Docker registry API calls
+    this.vpc.addInterfaceEndpoint('ECRApiEndpoint', {
+      service: ec2.InterfaceVpcEndpointAwsService.ECR,
+      privateDnsEnabled: true,
+    });
+
+    // ECR Docker Interface Endpoint - for Docker image layer pulls
+    this.vpc.addInterfaceEndpoint('ECRDockerEndpoint', {
+      service: ec2.InterfaceVpcEndpointAwsService.ECR_DOCKER,
+      privateDnsEnabled: true,
+    });
+
+    // Secrets Manager Interface Endpoint - for ECS task secrets
+    this.vpc.addInterfaceEndpoint('SecretsManagerEndpoint', {
+      service: ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER,
+      privateDnsEnabled: true,
+    });
+
+    // CloudWatch Logs Interface Endpoint - for application logging
+    this.vpc.addInterfaceEndpoint('CloudWatchLogsEndpoint', {
+      service: ec2.InterfaceVpcEndpointAwsService.CLOUDWATCH_LOGS,
+      privateDnsEnabled: true,
+    });
+
     // Apply tags to all resources
     cdk.Tags.of(this.vpc).add('Environment', props.config.envName);
     cdk.Tags.of(this.vpc).add('Project', 'BATbern');
