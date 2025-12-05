@@ -27,9 +27,9 @@
       "archived": "Archiviert"
     },
     "eventType": {
-      "full_day": "Ganztägig",
-      "afternoon": "Nachmittag",
-      "evening": "Abend"
+      "FULL_DAY": "Ganztägig",
+      "AFTERNOON": "Nachmittag",
+      "EVENING": "Abend"
     },
     "workflowProgress": "Workflow-Fortschritt",
     "workflowStep": "Schritt {{current}}/{{total}}",
@@ -155,9 +155,9 @@
     "removeThemeImage": "Themenbild entfernen"
   },
   "eventTypes": {
-    "full_day": "Ganztägig",
-    "afternoon": "Nachmittag",
-    "evening": "Abend"
+    "FULL_DAY": "Ganztägig",
+    "AFTERNOON": "Nachmittag",
+    "EVENING": "Abend"
   },
   "slotPreview": {
     "title": "{{type}} Vorschau",

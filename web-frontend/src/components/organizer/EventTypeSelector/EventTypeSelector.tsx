@@ -117,9 +117,9 @@ export const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
       >
         {eventTypes?.map((config) => (
           <MenuItem key={config.type} value={config.type}>
-            <Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', gap: 2 }}>
               <Typography variant="body1">{formatEventTypeName(config.type, t)}</Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
                 {config.minSlots}-{config.maxSlots} {t('slotPreview.slots')} • {config.slotDuration}{' '}
                 min each
               </Typography>

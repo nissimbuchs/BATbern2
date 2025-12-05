@@ -27,9 +27,9 @@
       "archived": "Archived"
     },
     "eventType": {
-      "full_day": "Full Day",
-      "afternoon": "Afternoon",
-      "evening": "Evening"
+      "FULL_DAY": "Full Day",
+      "AFTERNOON": "Afternoon",
+      "EVENING": "Evening"
     },
     "workflowProgress": "Workflow Progress",
     "workflowStep": "Step {{current}}/{{total}}",
@@ -158,9 +158,9 @@
     }
   },
   "eventTypes": {
-    "full_day": "Full Day",
-    "afternoon": "Afternoon",
-    "evening": "Evening"
+    "FULL_DAY": "Full Day",
+    "AFTERNOON": "Afternoon",
+    "EVENING": "Evening"
   },
   "slotPreview": {
     "title": "{{type}} Preview",

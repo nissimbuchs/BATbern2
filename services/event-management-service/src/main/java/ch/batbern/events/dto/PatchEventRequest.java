@@ -52,4 +52,8 @@ public class PatchEventRequest {
     private String description;
 
     private String themeImageUploadId;
+
+    @Pattern(regexp = "AFTERNOON|EVENING|FULL_DAY",
+             message = "Event type must be AFTERNOON, EVENING, or FULL_DAY")
+    private String eventType;
 }
