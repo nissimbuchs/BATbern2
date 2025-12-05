@@ -156,14 +156,14 @@ def handler(event, context):
       event: events.RuleTargetInput.fromObject({ action: 'shutdown' }),
     }));
 
-    // Schedule: Shutdown at 23:59 UTC on Friday (early weekend start)
+    // Schedule: Shutdown at 23:59 UTC on Friday to Sunday (early weekend start)
     const shutdownFridayRule = new events.Rule(this, 'ShutdownFridayRule', {
       schedule: events.Schedule.cron({
         minute: '59',
         hour: '23',
-        weekDay: 'FRI',
+        weekDay: 'FRI-SUN',
       }),
-      description: 'Shutdown dev environment at 23:59 UTC on Friday',
+      description: 'Shutdown dev environment at 23:59 UTC on Friday to Sunday',
     });
 
     shutdownFridayRule.addTarget(new targets.LambdaFunction(ecsScalerFunction, {
@@ -192,12 +192,12 @@ def handler(event, context):
     });
 
     new cdk.CfnOutput(this, 'ShutdownSchedule', {
-      value: 'Mon-Thu: 20:00 UTC, Fri: 18:00 UTC, Weekend: Off',
+      value: 'Mon-Sun: 23:59 UTC',
       description: 'Shutdown schedule for dev environment',
     });
 
     new cdk.CfnOutput(this, 'StartupSchedule', {
-      value: 'Mon-Fri: 08:00 UTC',
+      value: 'Mon-Sun: 08:00 UTC',
       description: 'Startup schedule for dev environment',
     });
 
