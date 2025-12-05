@@ -13,9 +13,8 @@
  */
 
 import React, { useState } from 'react';
-import { Paper, Typography, Button, Stack, Box, CircularProgress, Alert } from '@mui/material';
+import { Paper, Typography, Box, Stack, CircularProgress, Alert } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { Add as AddIcon, UploadFile as UploadFileIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useEvents, useCriticalTasks, useTeamActivity } from '@/hooks/useEvents';
@@ -111,31 +110,11 @@ export const EventManagementDashboard: React.FC = () => {
   return (
     <Box data-testid="dashboard-container">
       {/* Header */}
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
+      <Box mb={3}>
         <Typography variant="h4" component="h1">
           {t('dashboard.title')}
         </Typography>
-
-        {/* Quick Actions */}
-        <Stack direction="row" spacing={2}>
-          <Button
-            variant="outlined"
-            startIcon={<UploadFileIcon />}
-            onClick={() => setIsBatchImportOpen(true)}
-            aria-label="Import historical events"
-          >
-            {t('common:event.batchImport.button')}
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleNewEvent}
-            aria-label="Create new event"
-          >
-            {t('dashboard.actions.newEvent')}
-          </Button>
-        </Stack>
-      </Stack>
+      </Box>
 
       {/* Search and Filters */}
       <Paper sx={{ p: 3, mb: 3 }}>
@@ -180,7 +159,10 @@ export const EventManagementDashboard: React.FC = () => {
         <Grid size={{ xs: 12, md: 4 }}>
           <Stack spacing={3}>
             {/* Quick Actions - Story 5.1 */}
-            <QuickActions />
+            <QuickActions
+              onNewEvent={handleNewEvent}
+              onBatchImport={() => setIsBatchImportOpen(true)}
+            />
 
             {/* Critical Tasks */}
             <Paper sx={{ p: 3 }}>
