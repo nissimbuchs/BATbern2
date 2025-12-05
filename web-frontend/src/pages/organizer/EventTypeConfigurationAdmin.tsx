@@ -54,6 +54,16 @@ export const EventTypeConfigurationAdmin: React.FC = () => {
     navigate('/organizer/events');
   };
 
+  // Helper function to get translated event type name
+  const getEventTypeName = (type: EventType): string => {
+    const typeMap: Record<EventType, string> = {
+      FULL_DAY: t('form.eventTypes.fullDay'),
+      AFTERNOON: t('form.eventTypes.afternoon'),
+      EVENING: t('form.eventTypes.evening'),
+    };
+    return typeMap[type] || type;
+  };
+
   // Role-based access control - ORGANIZER only
   if (user?.role !== 'organizer') {
     return (
@@ -140,7 +150,7 @@ export const EventTypeConfigurationAdmin: React.FC = () => {
       {/* Edit Modal */}
       <Dialog open={isModalOpen} onClose={handleCloseModal} maxWidth="sm" fullWidth>
         <DialogTitle>
-          {t('dashboard.actions.edit')} {editingType}
+          {t('dashboard.actions.edit')} {editingType && getEventTypeName(editingType)}
         </DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2 }}>
