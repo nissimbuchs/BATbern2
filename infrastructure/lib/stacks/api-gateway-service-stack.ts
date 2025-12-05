@@ -73,7 +73,7 @@ export class ApiGatewayServiceStack extends cdk.Stack {
     // Create task definition
     const taskDefinition = new ecs.FargateTaskDefinition(this, 'TaskDef', {
       cpu: 512,
-      memoryLimitMiB: 1024,
+      memoryLimitMiB: 512, // Reduced from 1024 MB (Priority 4: ECS Right-Sizing - was at 32% utilization)
       runtimePlatform: {
         operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
         cpuArchitecture: ecs.CpuArchitecture.ARM64,
