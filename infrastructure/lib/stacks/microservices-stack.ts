@@ -119,7 +119,7 @@ export class MicroservicesStack extends cdk.Stack {
     services.forEach(serviceConfig => {
       serviceLogGroups[serviceConfig.name] = new logs.LogGroup(this, `${serviceConfig.name}-log-group`, {
         logGroupName: `/aws/ecs/BATbern-${envName}/${serviceConfig.name}`,
-        retention: isProd ? logs.RetentionDays.SIX_MONTHS : logs.RetentionDays.ONE_MONTH,
+        retention: isProd ? logs.RetentionDays.SIX_MONTHS : logs.RetentionDays.ONE_WEEK,
         removalPolicy: cdk.RemovalPolicy.DESTROY,
       });
     });
@@ -230,7 +230,7 @@ export class MicroservicesStack extends cdk.Stack {
     // Create stable log group for API Gateway
     const apiGatewayLogGroup = new logs.LogGroup(this, 'api-gateway-log-group', {
       logGroupName: `/aws/ecs/BATbern-${envName}/api-gateway`,
-      retention: isProd ? logs.RetentionDays.SIX_MONTHS : logs.RetentionDays.ONE_MONTH,
+      retention: isProd ? logs.RetentionDays.SIX_MONTHS : logs.RetentionDays.ONE_WEEK,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 

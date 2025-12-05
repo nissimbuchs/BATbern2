@@ -84,7 +84,7 @@ export function createDomainService(
     // Create stable log group
     const logGroup = new logs.LogGroup(scope, 'LogGroup', {
       logGroupName: `/aws/ecs/BATbern-${envName}/${serviceName}`,
-      retention: isProd ? logs.RetentionDays.SIX_MONTHS : logs.RetentionDays.ONE_MONTH,
+      retention: isProd ? logs.RetentionDays.SIX_MONTHS : logs.RetentionDays.ONE_WEEK,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 

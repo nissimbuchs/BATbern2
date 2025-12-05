@@ -56,7 +56,7 @@ export class EcsService extends Construct {
     // Create log group for the service
     const logGroup = new logs.LogGroup(this, 'LogGroup', {
       logGroupName: `/aws/ecs/${props.envName}/${props.serviceName}`,
-      retention: isProd ? logs.RetentionDays.SIX_MONTHS : logs.RetentionDays.ONE_MONTH,
+      retention: isProd ? logs.RetentionDays.SIX_MONTHS : logs.RetentionDays.ONE_WEEK,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
