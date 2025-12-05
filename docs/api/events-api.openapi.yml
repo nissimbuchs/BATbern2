@@ -1564,19 +1564,19 @@ paths:
                   theoreticalSlotsAM: true
                   breakSlots: 2
                   lunchSlots: 1
-                  defaultCapacity: 200
+                  defaultCapacity: 300
                   typicalStartTime: "09:00"
-                  typicalEndTime: "17:00"
+                  typicalEndTime: "16:00"
                 - type: AFTERNOON
                   minSlots: 6
                   maxSlots: 8
-                  slotDuration: 30
+                  slotDuration: 45
                   theoreticalSlotsAM: false
                   breakSlots: 1
                   lunchSlots: 0
-                  defaultCapacity: 150
+                  defaultCapacity: 200
                   typicalStartTime: "13:00"
-                  typicalEndTime: "18:00"
+                  typicalEndTime: "19:00"
                 - type: EVENING
                   minSlots: 3
                   maxSlots: 4
@@ -1584,9 +1584,9 @@ paths:
                   theoreticalSlotsAM: false
                   breakSlots: 1
                   lunchSlots: 0
-                  defaultCapacity: 100
-                  typicalStartTime: "18:00"
-                  typicalEndTime: "21:00"
+                  defaultCapacity: 200
+                  typicalStartTime: "16:00"
+                  typicalEndTime: "19:00"
         '500':
           $ref: '#/components/responses/InternalServerError'
       security:
@@ -2092,6 +2092,7 @@ components:
         - venueCapacity
         - status
         - organizerUsername
+        - eventType
       properties:
         title:
           type: string
@@ -2134,6 +2135,8 @@ components:
         description:
           type: string
           maxLength: 5000
+        eventType:
+          $ref: '#/components/schemas/EventType'
         themeImageUploadId:
           type: string
           nullable: true
@@ -2155,6 +2158,7 @@ components:
         - venueCapacity
         - status
         - organizerUsername
+        - eventType
       properties:
         title:
           type: string
@@ -2194,6 +2198,8 @@ components:
         description:
           type: string
           maxLength: 5000
+        eventType:
+          $ref: '#/components/schemas/EventType'
         themeImageUploadId:
           type: string
           nullable: true

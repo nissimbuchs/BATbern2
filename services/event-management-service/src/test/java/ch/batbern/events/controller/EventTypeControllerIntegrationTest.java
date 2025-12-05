@@ -58,9 +58,9 @@ class EventTypeControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$[?(@.type == 'FULL_DAY')].minSlots", contains(6)))
                 .andExpect(jsonPath("$[?(@.type == 'FULL_DAY')].maxSlots", contains(8)))
                 .andExpect(jsonPath("$[?(@.type == 'FULL_DAY')].slotDuration", contains(45)))
-                .andExpect(jsonPath("$[?(@.type == 'FULL_DAY')].defaultCapacity", contains(200)))
+                .andExpect(jsonPath("$[?(@.type == 'FULL_DAY')].defaultCapacity", contains(300)))
                 .andExpect(jsonPath("$[?(@.type == 'FULL_DAY')].typicalStartTime", contains("09:00")))
-                .andExpect(jsonPath("$[?(@.type == 'FULL_DAY')].typicalEndTime", contains("17:00")));
+                .andExpect(jsonPath("$[?(@.type == 'FULL_DAY')].typicalEndTime", contains("16:00")));
     }
 
     // ==================== AC2 Tests: Get specific event type ====================
@@ -82,9 +82,9 @@ class EventTypeControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.theoreticalSlotsAM").value(true))
                 .andExpect(jsonPath("$.breakSlots").value(2))
                 .andExpect(jsonPath("$.lunchSlots").value(1))
-                .andExpect(jsonPath("$.defaultCapacity").value(200))
+                .andExpect(jsonPath("$.defaultCapacity").value(300))
                 .andExpect(jsonPath("$.typicalStartTime").value("09:00"))
-                .andExpect(jsonPath("$.typicalEndTime").value("17:00"));
+                .andExpect(jsonPath("$.typicalEndTime").value("16:00"));
     }
 
     /**
@@ -244,11 +244,11 @@ class EventTypeControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.type").value("AFTERNOON"))
                 .andExpect(jsonPath("$.minSlots").value(6))
                 .andExpect(jsonPath("$.maxSlots").value(8))
-                .andExpect(jsonPath("$.slotDuration").value(30))
+                .andExpect(jsonPath("$.slotDuration").value(45))
                 .andExpect(jsonPath("$.theoreticalSlotsAM").value(false))
-                .andExpect(jsonPath("$.defaultCapacity").value(150))
+                .andExpect(jsonPath("$.defaultCapacity").value(200))
                 .andExpect(jsonPath("$.typicalStartTime").value("13:00"))
-                .andExpect(jsonPath("$.typicalEndTime").value("18:00"));
+                .andExpect(jsonPath("$.typicalEndTime").value("19:00"));
     }
 
     /**
@@ -265,8 +265,8 @@ class EventTypeControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.maxSlots").value(4))
                 .andExpect(jsonPath("$.slotDuration").value(45))
                 .andExpect(jsonPath("$.theoreticalSlotsAM").value(false))
-                .andExpect(jsonPath("$.defaultCapacity").value(100))
+                .andExpect(jsonPath("$.defaultCapacity").value(200))
                 .andExpect(jsonPath("$.typicalStartTime").value("18:00"))
-                .andExpect(jsonPath("$.typicalEndTime").value("21:00"));
+                .andExpect(jsonPath("$.typicalEndTime").value("19:00"));
     }
 }

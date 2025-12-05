@@ -485,6 +485,7 @@ public class EventController {
                 .publishedAt(request.getPublishedAt() != null ? parseDate(request.getPublishedAt()) : null)
                 .metadata(request.getMetadata())
                 .description(request.getDescription())
+                .eventType(request.getEventType())
                 .themeImageUploadId(request.getThemeImageUploadId())
                 .build();
 

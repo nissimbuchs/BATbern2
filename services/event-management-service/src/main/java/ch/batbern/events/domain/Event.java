@@ -1,6 +1,9 @@
 package ch.batbern.events.domain;
 
+import ch.batbern.events.converter.EventTypeConverter;
+import ch.batbern.events.dto.generated.EventType;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -113,6 +116,11 @@ public class Event {
 
     @Column(name = "theme_image_upload_id", length = 100)
     private String themeImageUploadId;
+
+    @NotNull(message = "Event type is required")
+    @Convert(converter = EventTypeConverter.class)
+    @Column(name = "event_type", nullable = false, length = 20)
+    private EventType eventType;
 
     @PrePersist
     protected void onCreate() {
