@@ -230,6 +230,23 @@ export class ApiGatewayServiceStack extends cdk.Stack {
       }],
     });
 
+    // Use Fargate Spot for non-prod environments (70% Spot / 30% On-Demand)
+    // This provides ~20-30% cost savings with acceptable interruption risk
+    if (!isProd) {
+      cfnService.addPropertyOverride('CapacityProviderStrategy', [
+        {
+          CapacityProvider: 'FARGATE_SPOT',
+          Weight: 70,
+          Base: 0,
+        },
+        {
+          CapacityProvider: 'FARGATE',
+          Weight: 30,
+          Base: 1, // Ensure at least 1 task on On-Demand for stability
+        },
+      ]);
+    }
+
     // Output Service Connect DNS name for debugging
     new cdk.CfnOutput(this, 'ServiceConnectDNS', {
       value: 'http://api-gateway:8080',
