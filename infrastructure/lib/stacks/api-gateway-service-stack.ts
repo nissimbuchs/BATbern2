@@ -66,7 +66,7 @@ export class ApiGatewayServiceStack extends cdk.Stack {
     // Create stable log group for API Gateway
     const logGroup = new logs.LogGroup(this, 'LogGroup', {
       logGroupName: `/aws/ecs/BATbern-${envName}/api-gateway`,
-      retention: isProd ? logs.RetentionDays.SIX_MONTHS : logs.RetentionDays.ONE_MONTH,
+      retention: isProd ? logs.RetentionDays.SIX_MONTHS : logs.RetentionDays.ONE_WEEK,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 

@@ -58,18 +58,18 @@ export class MonitoringStack extends cdk.Stack {
     }
 
     // Application log group
-    // Reduced to 30 days for cost optimization (low traffic application)
+    // Cost optimization: 7 days for non-prod, 30 days for production
     this.applicationLogGroup = new logs.LogGroup(this, 'ApplicationLogGroup', {
       logGroupName: `/aws/logs/BATbern-${props.config.envName}/application`,
-      retention: logs.RetentionDays.ONE_MONTH, // 30 days for all environments
+      retention: isProd ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     // Infrastructure log group
-    // Reduced to 30 days for cost optimization (low traffic application)
+    // Cost optimization: 7 days for non-prod, 30 days for production
     this.infrastructureLogGroup = new logs.LogGroup(this, 'InfrastructureLogGroup', {
       logGroupName: `/aws/logs/BATbern-${props.config.envName}/infrastructure`,
-      retention: logs.RetentionDays.ONE_MONTH, // 30 days for all environments
+      retention: isProd ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
