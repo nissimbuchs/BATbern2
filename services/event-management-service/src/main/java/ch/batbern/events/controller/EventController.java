@@ -236,6 +236,10 @@ public class EventController {
         response.put("currentAttendeeCount", event.getCurrentAttendeeCount());
         response.put("publishedAt", event.getPublishedAt());
         response.put("metadata", event.getMetadata());
+        // Story 5.1: Include eventType if present
+        if (event.getEventType() != null) {
+            response.put("eventType", event.getEventType().getValue());
+        }
         // Story 2.5.3a: Include theme image fields if present
         if (event.getThemeImageUrl() != null) {
             response.put("themeImageUrl", event.getThemeImageUrl());
@@ -596,6 +600,9 @@ public class EventController {
         event.setPublishedAt(request.getPublishedAt() != null ? parseDate(request.getPublishedAt()) : null);
         event.setMetadata(request.getMetadata());
         event.setDescription(request.getDescription());
+        if (request.getEventType() != null) {
+            event.setEventType(ch.batbern.events.dto.generated.EventType.fromValue(request.getEventType()));
+        }
 
         // Set theme image upload ID before save (Story 2.5.3a)
         if (request.getThemeImageUploadId() != null && !request.getThemeImageUploadId().isBlank()) {
@@ -1064,6 +1071,9 @@ public class EventController {
         }
         if (request.getDescription() != null) {
             event.setDescription(request.getDescription());
+        }
+        if (request.getEventType() != null) {
+            event.setEventType(ch.batbern.events.dto.generated.EventType.fromValue(request.getEventType()));
         }
         // Story 2.5.3a: Set theme image upload ID (association happens after save in PATCH handler)
         if (request.getThemeImageUploadId() != null && !request.getThemeImageUploadId().isBlank()) {
