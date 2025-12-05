@@ -28,7 +28,7 @@ import {
 import Grid from '@mui/material/Grid';
 import { Edit as EditIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/hooks/useAuth';
 import { useEventTypes, useUpdateEventType } from '@/hooks/useEventTypes';
 import { EventTypeConfigurationForm } from '@/components/organizer/EventTypeConfigurationForm/EventTypeConfigurationForm';
 import { SlotTemplatePreview } from '@/components/organizer/SlotTemplatePreview/SlotTemplatePreview';
@@ -41,7 +41,7 @@ type UpdateEventSlotConfigurationRequest =
 
 export const EventTypeConfigurationAdmin: React.FC = () => {
   const { t } = useTranslation('events');
-  const { user } = useAuthStore();
+  const { user } = useAuth();
   const { data: eventTypes, isLoading, error } = useEventTypes();
   const updateMutation = useUpdateEventType();
 
