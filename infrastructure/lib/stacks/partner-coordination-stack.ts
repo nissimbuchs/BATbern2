@@ -54,7 +54,7 @@ export class PartnerCoordinationStack extends cdk.Stack {
         componentTag: 'PartnerCoordination-Service',
         routePattern: '/api/v1/partners',
         cpu: 256,
-        memoryLimitMiB: 512,
+        memoryLimitMiB: 1024, // Increased from 512 MB (Priority 4: ECS Right-Sizing - was at 87-90% utilization)
         additionalEnvironment,
       },
       cluster: props.cluster,

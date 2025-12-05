@@ -104,7 +104,7 @@ export class NetworkStack extends cdk.Stack {
       this.apiCertificate = new certificatemanager.Certificate(this, 'ApiCertificate', {
         domainName: props.config.domain.apiDomain,
         validation: certificatemanager.CertificateValidation.fromDns(hostedZone),
-      });
+      }) as certificatemanager.ICertificate;
 
       new cdk.CfnOutput(this, 'ApiCertificateArn', {
         value: this.apiCertificate.certificateArn,

@@ -42,6 +42,7 @@ export class AlarmConstruct extends Construct {
     const alarms: cloudwatch.Alarm[] = [];
 
     // Budget Overage Alarm
+    // Note: alarmName/alarmDescription/evaluationPeriods are valid per AWS CDK docs but TypeScript types are incomplete
     const budgetAlarm = new cloudwatch.Alarm(this, 'BudgetAlarm', {
       alarmName: `batbern-${props.environment}-budget-overage`,
       alarmDescription: 'Alert when AWS costs exceed budget threshold',
