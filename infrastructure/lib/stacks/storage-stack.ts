@@ -51,7 +51,13 @@ export class StorageStack extends cdk.Stack {
           enabled: true,
           transitions: [
             {
+              // Priority 8: Transition to IA after 7 days for immediate savings (logs rarely accessed)
               storageClass: s3.StorageClass.INFREQUENT_ACCESS,
+              transitionAfter: cdk.Duration.days(7),
+            },
+            {
+              // Priority 8: Further transition to Glacier Instant Retrieval after 30 days
+              storageClass: s3.StorageClass.GLACIER_INSTANT_RETRIEVAL,
               transitionAfter: cdk.Duration.days(30),
             },
           ],
@@ -93,10 +99,21 @@ export class StorageStack extends cdk.Stack {
           enabled: true,
           transitions: [
             {
+              // Priority 8: Transition to Intelligent Tiering after 30 days (optimized from 90)
               storageClass: s3.StorageClass.INTELLIGENT_TIERING,
-              transitionAfter: cdk.Duration.days(90),
+              transitionAfter: cdk.Duration.days(30),
             },
           ],
+          // Priority 8: Delete non-current versions after 90 days for versioned buckets
+          ...(isProd && {
+            noncurrentVersionExpiration: cdk.Duration.days(90),
+            noncurrentVersionTransitions: [
+              {
+                storageClass: s3.StorageClass.GLACIER,
+                transitionAfter: cdk.Duration.days(30),
+              },
+            ],
+          }),
         },
       ],
       removalPolicy: isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,

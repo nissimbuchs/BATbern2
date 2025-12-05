@@ -12,7 +12,7 @@ export const devConfig: EnvironmentConfig = {
   vpc: {
     cidr: '10.0.0.0/16',
     maxAzs: 2, // Minimum 2 AZs required for RDS subnet groups
-    natGateways: 1, // Single NAT Gateway for cost optimization
+    natGateways: 0, // Priority 7: NAT Gateway removed - VPC Endpoints handle all traffic (~$40/month savings)
   },
   rds: {
     instanceClass: ec2.InstanceClass.T4G, // ARM-based for better price/performance

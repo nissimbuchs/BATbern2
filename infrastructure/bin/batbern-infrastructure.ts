@@ -21,6 +21,7 @@ import { PartnerCoordinationStack } from '../lib/stacks/partner-coordination-sta
 import { AttendeeExperienceStack } from '../lib/stacks/attendee-experience-stack';
 import { CompanyManagementStack } from '../lib/stacks/company-management-stack';
 import { BastionStack } from '../lib/stacks/bastion-stack';
+import { AutoShutdownStack } from '../lib/stacks/auto-shutdown-stack';
 import { devConfig } from '../lib/config/dev-config';
 import { stagingConfig } from '../lib/config/staging-config';
 import { prodConfig } from '../lib/config/prod-config';
@@ -403,6 +404,21 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   if (dnsStack) {
     frontendStack.addDependency(dnsStack); // Depends on DNS stack for certificate
   }
+}
+
+// 13. Auto-Shutdown Stack (Development only - Priority 5: Cost Optimization)
+// Automatically scales ECS services to 0 outside business hours for dev environment
+// Expected savings: ~70% of dev costs (~$66/month)
+if (clusterStack) {
+  const autoShutdownStack = new AutoShutdownStack(app, `${stackPrefix}-AutoShutdown`, {
+    config,
+    clusterName: clusterStack.cluster.clusterName,
+    rdsClusterIdentifier: config.envName === 'development' ? `batbern-${config.envName}-postgres` : undefined,
+    env,
+    description: `BATbern Auto-Shutdown - ${config.envName} (Priority 5: Cost Optimization)`,
+    tags: config.tags,
+  });
+  autoShutdownStack.addDependency(clusterStack);
 }
 
 // Add stack tags
