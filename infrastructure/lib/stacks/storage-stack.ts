@@ -51,14 +51,14 @@ export class StorageStack extends cdk.Stack {
           enabled: true,
           transitions: [
             {
-              // Priority 8: Transition to IA after 7 days for immediate savings (logs rarely accessed)
+              // Priority 8: Transition to IA after 30 days (AWS minimum for STANDARD_IA)
               storageClass: s3.StorageClass.INFREQUENT_ACCESS,
-              transitionAfter: cdk.Duration.days(7),
+              transitionAfter: cdk.Duration.days(30),
             },
             {
-              // Priority 8: Further transition to Glacier Instant Retrieval after 30 days
+              // Priority 8: Further transition to Glacier Instant Retrieval after 60 days
               storageClass: s3.StorageClass.GLACIER_INSTANT_RETRIEVAL,
-              transitionAfter: cdk.Duration.days(30),
+              transitionAfter: cdk.Duration.days(60),
             },
           ],
         },

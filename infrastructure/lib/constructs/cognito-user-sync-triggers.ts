@@ -96,7 +96,7 @@ export class CognitoUserSyncTriggers extends Construct {
       functionName: `batbern-${props.envName}-pre-token-generation-trigger`,
       entry: path.join(__dirname, '../lambda/triggers/pre-token-generation.ts'),
       handler: 'handler',
-      timeout: cdk.Duration.seconds(5),
+      timeout: cdk.Duration.seconds(15), // Increased from 5s for VPC cold starts + DB query
       logGroup: preTokenGenerationLogGroup,
     });
 
@@ -112,7 +112,7 @@ export class CognitoUserSyncTriggers extends Construct {
       functionName: `batbern-${props.envName}-pre-authentication-trigger`,
       entry: path.join(__dirname, '../lambda/triggers/pre-authentication.ts'),
       handler: 'handler',
-      timeout: cdk.Duration.seconds(5),
+      timeout: cdk.Duration.seconds(15), // Increased from 5s for VPC cold starts + DB query
       logGroup: preAuthenticationLogGroup,
     });
 
