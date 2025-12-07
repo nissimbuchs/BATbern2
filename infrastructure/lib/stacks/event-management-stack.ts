@@ -47,7 +47,7 @@ export class EventManagementStack extends cdk.Stack {
         serviceName,
         componentTag: 'EventManagement-Service',
         routePattern: '/api/v1/events',
-        cpu: 512,
+        cpu: 256,
         memoryLimitMiB: 512, // Reduced from 1024 MB (Priority 4: ECS Right-Sizing - was at 46% utilization)
         additionalEnvironment: {
           JPA_DDL_AUTO: 'none', // Let Flyway handle all schema management
