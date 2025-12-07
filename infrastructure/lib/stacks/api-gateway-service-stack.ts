@@ -72,8 +72,8 @@ export class ApiGatewayServiceStack extends cdk.Stack {
 
     // Create task definition
     const taskDefinition = new ecs.FargateTaskDefinition(this, 'TaskDef', {
-      cpu: 512,
-      memoryLimitMiB: 512, // Reduced from 1024 MB (Priority 4: ECS Right-Sizing - was at 32% utilization)
+      cpu: 256,
+      memoryLimitMiB: 512, // Fargate valid CPU/Memory: 256 CPU requires 512-2048 MB
       runtimePlatform: {
         operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
         cpuArchitecture: ecs.CpuArchitecture.ARM64,
@@ -232,20 +232,23 @@ export class ApiGatewayServiceStack extends cdk.Stack {
 
     // Use Fargate Spot for non-prod environments (70% Spot / 30% On-Demand)
     // This provides ~20-30% cost savings with acceptable interruption risk
-    if (!isProd) {
-      cfnService.addPropertyOverride('CapacityProviderStrategy', [
-        {
-          CapacityProvider: 'FARGATE_SPOT',
-          Weight: 70,
-          Base: 0,
-        },
-        {
-          CapacityProvider: 'FARGATE',
-          Weight: 30,
-          Base: 1, // Ensure at least 1 task on On-Demand for stability
-        },
-      ]);
-    }
+    // NOTE: Disabled because ApplicationLoadBalancedFargateService implicitly sets launchType
+    // which conflicts with capacity provider strategy. To use Spot, would need to use
+    // FargateService construct directly instead of ApplicationLoadBalancedFargateService
+    // if (!isProd) {
+    //   cfnService.addPropertyOverride('CapacityProviderStrategy', [
+    //     {
+    //       CapacityProvider: 'FARGATE_SPOT',
+    //       Weight: 70,
+    //       Base: 0,
+    //     },
+    //     {
+    //       CapacityProvider: 'FARGATE',
+    //       Weight: 30,
+    //       Base: 1, // Ensure at least 1 task on On-Demand for stability
+    //     },
+    //   ]);
+    // }
 
     // Output Service Connect DNS name for debugging
     new cdk.CfnOutput(this, 'ServiceConnectDNS', {

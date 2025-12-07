@@ -137,3 +137,48 @@ security-reports/
 # Database import scripts with credentials (never commit these!)
 scripts/data/run-*-import*.sh
 scripts/data/*.sql
+
+# Secrets and credentials (NEVER commit these!)
+*.pem
+*.key
+*_rsa
+*_dsa
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+secrets.yml
+secrets.yaml
+credentials.json
+credentials.yml
+*secret*
+*password*
+*passwd*
+*.keystore
+*.jks
+*.truststore
+
+# Private keys and certificates
+ssh_host_*key
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+*.ppk
+
+# Environment and configuration files with secrets
+.env.production
+.env.staging
+.env.development
+config/secrets.*
+config/credentials.*
+
+# Backup files that might contain sensitive data
+*.bak
+*.backup
+*.old
+*~
+
+# BFG Repo-Cleaner reports
+*.bfg-report/

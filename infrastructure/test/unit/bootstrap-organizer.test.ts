@@ -37,7 +37,7 @@ describe('BootstrapOrganizer', () => {
   test('should_createBootstrapUser_when_stackDeployed', () => {
     // Given: Bootstrap organizer configuration
     const email = 'nissim@buchs.be';
-    const password = '******';
+    const password = 'test-password-for-unit-tests';
 
     // When: Bootstrap organizer construct is created
     new BootstrapOrganizer(stack, 'BootstrapOrganizer', {
@@ -73,7 +73,7 @@ describe('BootstrapOrganizer', () => {
   test('should_assignOrganizerRole_when_bootstrapUserCreated', () => {
     // Given: Bootstrap organizer configuration
     const email = 'nissim@buchs.be';
-    const password = '******';
+    const password = 'test-password-for-unit-tests';
 
     // When: Bootstrap organizer construct is created
     new BootstrapOrganizer(stack, 'BootstrapOrganizer', {
@@ -104,7 +104,7 @@ describe('BootstrapOrganizer', () => {
   test('should_setPermanentPassword_when_bootstrapUserCreated', () => {
     // Given: Bootstrap organizer configuration
     const email = 'nissim@buchs.be';
-    const password = '******';
+    const password = 'test-password-for-unit-tests';
 
     // When: Bootstrap organizer construct is created
     new BootstrapOrganizer(stack, 'BootstrapOrganizer', {
@@ -130,7 +130,7 @@ describe('BootstrapOrganizer', () => {
   test('should_allowImmediateLogin_when_bootstrapUserCreated', () => {
     // Given: Bootstrap organizer configuration
     const email = 'nissim@buchs.be';
-    const password = '******';
+    const password = 'test-password-for-unit-tests';
 
     // When: Bootstrap organizer construct is created
     new BootstrapOrganizer(stack, 'BootstrapOrganizer', {
@@ -159,7 +159,7 @@ describe('BootstrapOrganizer', () => {
   test('should_beIdempotent_when_stackDeployedMultipleTimes', () => {
     // Given: Bootstrap organizer configuration
     const email = 'nissim@buchs.be';
-    const password = '******';
+    const password = 'test-password-for-unit-tests';
 
     // When: Bootstrap organizer construct is created
     new BootstrapOrganizer(stack, 'BootstrapOrganizer', {
@@ -184,7 +184,7 @@ describe('BootstrapOrganizer', () => {
   test('should_handleUpdateGracefully_when_stackUpdated', () => {
     // Given: Bootstrap organizer configuration
     const email = 'nissim@buchs.be';
-    const password = '******';
+    const password = 'test-password-for-unit-tests';
 
     // When: Bootstrap organizer construct is created
     new BootstrapOrganizer(stack, 'BootstrapOrganizer', {
@@ -209,7 +209,7 @@ describe('BootstrapOrganizer', () => {
   test('should_createIAMRole_when_customResourceDeployed', () => {
     // Given: Bootstrap organizer configuration
     const email = 'nissim@buchs.be';
-    const password = '******';
+    const password = 'test-password-for-unit-tests';
 
     // When: Bootstrap organizer construct is created
     new BootstrapOrganizer(stack, 'BootstrapOrganizer', {
@@ -245,7 +245,7 @@ describe('BootstrapOrganizer', () => {
   test('should_setDependency_when_passwordSetAfterUserCreation', () => {
     // Given: Bootstrap organizer configuration
     const email = 'nissim@buchs.be';
-    const password = '******';
+    const password = 'test-password-for-unit-tests';
 
     // When: Bootstrap organizer construct is created
     const construct = new BootstrapOrganizer(stack, 'BootstrapOrganizer', {
