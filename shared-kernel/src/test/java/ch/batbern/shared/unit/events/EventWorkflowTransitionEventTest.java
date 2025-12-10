@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Story 5.1a - Task 1: Test for EventWorkflowTransitionEvent (AC2)
