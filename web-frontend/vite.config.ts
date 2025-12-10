@@ -126,6 +126,7 @@ export default defineConfig({
         navigateFallback: '/offline.html',
         navigateFallbackDenylist: [
           /^\/api/,
+          /^\/auth/, // All auth routes (login, register, verify-email, reset-password, etc.)
           /^\/login/,
           /^\/register/,
           /^\/forgot-password/,
