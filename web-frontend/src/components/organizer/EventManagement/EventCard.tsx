@@ -108,6 +108,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
   const workflowState = event.workflowState || 'CREATED';
   const progress = getWorkflowProgress(workflowState);
   const workflowLabel = getWorkflowStateLabel(workflowState, t);
+  const workflowStep = WORKFLOW_STATE_ORDER.indexOf(workflowState) + 1;
   const capacity = eventUI.capacity || event.venueCapacity || 0;
   const attendeePercentage =
     capacity > 0 ? Math.round((event.currentAttendeeCount / capacity) * 100) : 0;

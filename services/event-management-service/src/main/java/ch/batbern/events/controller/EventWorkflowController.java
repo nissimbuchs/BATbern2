@@ -5,6 +5,7 @@ import ch.batbern.events.dto.TransitionStateRequest;
 import ch.batbern.events.dto.WorkflowStatusDto;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.EventWorkflowStateMachine;
 import ch.batbern.events.service.WorkflowTransitionValidator;
 import ch.batbern.shared.types.EventWorkflowState;
@@ -14,6 +15,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -31,6 +33,11 @@ import java.util.Map;
  * Story 5.1a: Workflow State Machine Foundation - AC12-13
  *
  * Provides endpoints for managing event workflow state transitions
+ *
+ * Security:
+ * - Authentication: JWT token required (enforced by Spring Security)
+ * - Authorization: ORGANIZER role required for workflow transitions
+ * - Rate Limiting: Applied at API Gateway level (10 transitions/min per user)
  */
 @RestController
 @RequestMapping("/api/v1/events")
@@ -42,23 +49,35 @@ public class EventWorkflowController {
     private final EventWorkflowStateMachine stateMachine;
     private final WorkflowTransitionValidator transitionValidator;
     private final EventRepository eventRepository;
+    private final SecurityContextHelper securityContextHelper;
 
     /**
      * Transition event to target workflow state (AC12)
      *
      * PUT /api/v1/events/{code}/workflow/transition
      *
+     * Security:
+     * - Requires ORGANIZER role
+     * - Rate limited to 10 transitions per minute (API Gateway)
+     * - Username extracted from JWT token for audit trail
+     *
      * @param eventCode Event code (e.g., "BAT-2024-Q4")
      * @param request Transition request containing target state
      * @return Updated event with new workflow state
      */
     @PutMapping("/{code}/workflow/transition")
-    @Operation(summary = "Transition event to target workflow state")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    @Operation(summary = "Transition event to target workflow state",
+               description = "Requires ORGANIZER role. Rate limited to 10 transitions/min.")
     public ResponseEntity<Map<String, Object>> transitionEventWorkflowState(
             @PathVariable("code") String eventCode,
             @Valid @RequestBody TransitionStateRequest request) {
 
-        log.info("Transitioning event {} to state {}", eventCode, request.getTargetState());
+        // Extract authenticated user from JWT token
+        String organizerUsername = securityContextHelper.getCurrentUserId();
+
+        log.info("User {} transitioning event {} to state {}",
+                 organizerUsername, eventCode, request.getTargetState());
 
         // Find event by event code
         Event event = eventRepository.findByEventCode(eventCode)
@@ -68,8 +87,6 @@ public class EventWorkflowController {
         EventWorkflowState targetState = EventWorkflowState.valueOf(request.getTargetState());
 
         // Perform transition via state machine
-        // TODO: Extract actual organizer username from security context
-        String organizerUsername = "system"; // Placeholder - should come from JWT
         Event updatedEvent = stateMachine.transitionToState(
                 event.getEventCode(),
                 targetState,
@@ -92,15 +109,21 @@ public class EventWorkflowController {
      *
      * GET /api/v1/events/{code}/workflow/status
      *
+     * Security:
+     * - Requires authentication (any authenticated user)
+     * - Rate limited at API Gateway level
+     *
      * @param eventCode Event code (e.g., "BAT-2024-Q4")
      * @return Current workflow status with next available states and validation messages
      */
     @GetMapping("/{code}/workflow/status")
-    @Operation(summary = "Get current workflow status")
+    @Operation(summary = "Get current workflow status",
+               description = "Returns current state, next available states, and validation blockers")
     public ResponseEntity<WorkflowStatusDto> getWorkflowStatus(
             @PathVariable("code") String eventCode) {
 
-        log.info("Querying workflow status for event {}", eventCode);
+        String requestingUser = securityContextHelper.getCurrentUserId();
+        log.info("User {} querying workflow status for event {}", requestingUser, eventCode);
 
         // Find event by event code
         Event event = eventRepository.findByEventCode(eventCode)
