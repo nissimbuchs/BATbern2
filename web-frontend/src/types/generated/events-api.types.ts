@@ -227,6 +227,88 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/{eventCode}/workflow/transition': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Transition event to target workflow state
+     * @description Transition an event to a specific target workflow state.
+     *
+     *     **Story**: 5.1a - Workflow State Machine Foundation
+     *     **Acceptance Criteria**: AC12
+     *     **Authorization**: Requires ORGANIZER role
+     *
+     *     **16-Step Workflow**:
+     *     1. CREATED - Initial state
+     *     2. TOPIC_SELECTION - Topics being selected
+     *     3. SPEAKER_BRAINSTORMING - Identifying potential speakers
+     *     4. SPEAKER_OUTREACH - Contacting speakers
+     *     5. SPEAKER_CONFIRMATION - Confirming speaker participation
+     *     6. CONTENT_COLLECTION - Collecting presentations and materials
+     *     7. QUALITY_REVIEW - Reviewing content quality
+     *     8. THRESHOLD_CHECK - Checking minimum speaker threshold
+     *     9. OVERFLOW_MANAGEMENT - Managing speaker overflow
+     *     10. SLOT_ASSIGNMENT - Assigning speakers to time slots
+     *     11. AGENDA_PUBLISHED - Publishing agenda
+     *     12. AGENDA_FINALIZED - Finalizing agenda
+     *     13. NEWSLETTER_SENT - Newsletter sent to attendees
+     *     14. EVENT_READY - Event ready to start
+     *     15. PARTNER_MEETING_COMPLETE - Partner meetings completed
+     *     16. ARCHIVED - Event archived
+     *
+     *     **Validation**:
+     *     - Some transitions require business rule validation (e.g., minimum speakers for SPEAKER_OUTREACH)
+     *     - Invalid transitions return 400 Bad Request
+     *     - Validation failures return 422 Unprocessable Entity
+     *
+     *     **Cache Invalidation**: All event caches cleared on state transition
+     */
+    put: operations['transitionEventWorkflowState'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/workflow/status': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get current workflow status
+     * @description Retrieve the current workflow status including current state, next available states,
+     *     and validation messages.
+     *
+     *     **Story**: 5.1a - Workflow State Machine Foundation
+     *     **Acceptance Criteria**: AC13
+     *     **Authorization**: Requires ORGANIZER role
+     *
+     *     **Response includes**:
+     *     - Current workflow state
+     *     - Next available states (states that can be transitioned to)
+     *     - Blocked transitions (states that cannot be transitioned to due to business rules)
+     *     - Validation messages (reasons why certain transitions are blocked)
+     *
+     *     **Performance**: <100ms (P95)
+     */
+    get: operations['getWorkflowStatus'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/sessions': {
     parameters: {
       query?: never;
@@ -967,6 +1049,7 @@ export interface components {
       publishedAt?: string;
       metadata?: string;
       description?: string;
+      eventType: components['schemas']['EventType'];
       /**
        * @description Upload ID from /logos/presigned-url for event theme image.
        *     Story 2.5.3a: Event Theme Image Upload
@@ -1007,6 +1090,7 @@ export interface components {
       publishedAt?: string;
       metadata?: string;
       description?: string;
+      eventType: components['schemas']['EventType'];
       /** @description Upload ID from /logos/presigned-url for event theme image */
       themeImageUploadId?: string | null;
     };
@@ -1311,6 +1395,64 @@ export interface components {
     PaginationMetadata: Record<string, never>;
     /** @description Standard error response from shared-kernel */
     ErrorResponse: Record<string, never>;
+    /**
+     * @description Event workflow state for 16-step workflow (Story 5.1a).
+     *     Defines the current state of an event in the organizer workflow.
+     * @example SPEAKER_BRAINSTORMING
+     * @enum {string}
+     */
+    EventWorkflowState:
+      | 'CREATED'
+      | 'TOPIC_SELECTION'
+      | 'SPEAKER_BRAINSTORMING'
+      | 'SPEAKER_OUTREACH'
+      | 'SPEAKER_CONFIRMATION'
+      | 'CONTENT_COLLECTION'
+      | 'QUALITY_REVIEW'
+      | 'THRESHOLD_CHECK'
+      | 'OVERFLOW_MANAGEMENT'
+      | 'SLOT_ASSIGNMENT'
+      | 'AGENDA_PUBLISHED'
+      | 'AGENDA_FINALIZED'
+      | 'NEWSLETTER_SENT'
+      | 'EVENT_READY'
+      | 'PARTNER_MEETING_COMPLETE'
+      | 'ARCHIVED';
+    /**
+     * @description Request to transition event to target workflow state (Story 5.1a - AC12).
+     *     The target state must be a valid transition from the current state.
+     */
+    TransitionStateRequest: {
+      targetState: components['schemas']['EventWorkflowState'];
+    };
+    /**
+     * @description Current workflow status including available and blocked transitions (Story 5.1a - AC13).
+     *     Provides organizers with visibility into what transitions are possible and why.
+     */
+    WorkflowStatusDto: {
+      currentState: components['schemas']['EventWorkflowState'];
+      /**
+       * @description List of states that can be transitioned to from current state
+       * @example [
+       *       "SPEAKER_OUTREACH"
+       *     ]
+       */
+      nextAvailableStates: components['schemas']['EventWorkflowState'][];
+      /**
+       * @description List of states that are blocked due to validation failures
+       * @example [
+       *       "SPEAKER_OUTREACH"
+       *     ]
+       */
+      blockedTransitions: components['schemas']['EventWorkflowState'][];
+      /**
+       * @description Validation messages explaining why certain transitions are blocked
+       * @example [
+       *       "Cannot transition to SPEAKER_OUTREACH: Insufficient speakers identified (need 6, have 3)"
+       *     ]
+       */
+      validationMessages: string[];
+    };
   };
   responses: {
     /** @description Bad request - validation error */
@@ -1689,6 +1831,85 @@ export interface operations {
       };
       404: components['responses']['NotFound'];
       422: components['responses']['UnprocessableEntity'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  transitionEventWorkflowState: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['TransitionStateRequest'];
+      };
+    };
+    responses: {
+      /** @description Workflow transition successful */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @example BATbern142 */
+            eventCode?: string;
+            /** @example TOPIC_SELECTION */
+            workflowState?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+          };
+        };
+      };
+      /** @description Invalid state transition */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      404: components['responses']['NotFound'];
+      /** @description Validation failure (business rules not met) */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  getWorkflowStatus: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Workflow status retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WorkflowStatusDto'];
+        };
+      };
+      404: components['responses']['NotFound'];
       500: components['responses']['InternalServerError'];
     };
   };
@@ -2287,21 +2508,21 @@ export interface operations {
            *         "theoreticalSlotsAM": true,
            *         "breakSlots": 2,
            *         "lunchSlots": 1,
-           *         "defaultCapacity": 200,
+           *         "defaultCapacity": 300,
            *         "typicalStartTime": "09:00",
-           *         "typicalEndTime": "17:00"
+           *         "typicalEndTime": "16:00"
            *       },
            *       {
            *         "type": "AFTERNOON",
            *         "minSlots": 6,
            *         "maxSlots": 8,
-           *         "slotDuration": 30,
+           *         "slotDuration": 45,
            *         "theoreticalSlotsAM": false,
            *         "breakSlots": 1,
            *         "lunchSlots": 0,
-           *         "defaultCapacity": 150,
+           *         "defaultCapacity": 200,
            *         "typicalStartTime": "13:00",
-           *         "typicalEndTime": "18:00"
+           *         "typicalEndTime": "19:00"
            *       },
            *       {
            *         "type": "EVENING",
@@ -2311,9 +2532,9 @@ export interface operations {
            *         "theoreticalSlotsAM": false,
            *         "breakSlots": 1,
            *         "lunchSlots": 0,
-           *         "defaultCapacity": 100,
-           *         "typicalStartTime": "18:00",
-           *         "typicalEndTime": "21:00"
+           *         "defaultCapacity": 200,
+           *         "typicalStartTime": "16:00",
+           *         "typicalEndTime": "19:00"
            *       }
            *     ]
            */

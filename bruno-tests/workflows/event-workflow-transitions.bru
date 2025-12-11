@@ -1,0 +1,222 @@
+meta {
+  name: Event Workflow State Transitions (Story 5.1a)
+  type: http
+  seq: 1
+}
+
+# Story 5.1a - AC18-20: E2E Tests for Event Workflow State Machine
+#
+# Test Cases:
+# 1. Valid state transition (CREATED → TOPIC_SELECTION) - expect 200
+# 2. Invalid state transition (CREATED → ARCHIVED) - expect 400
+# 3. Validation failure (insufficient speakers) - expect 422
+# 4. Get workflow status - expect 200 with correct state
+
+### Test 1: Get Workflow Status (Initial State)
+get {
+  url: {{baseUrl}}/events/{{createdEventCode}}/workflow/status
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.currentState: isDefined
+  res.body.nextAvailableStates: isDefined
+  res.body.blockedTransitions: isDefined
+  res.body.validationMessages: isDefined
+}
+
+tests {
+  test("should return 200 status for workflow status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return workflow status with current state", function() {
+    const status = res.getBody();
+    expect(status.currentState).to.be.a('string');
+    expect(status.nextAvailableStates).to.be.an('array');
+    expect(status.blockedTransitions).to.be.an('array');
+    expect(status.validationMessages).to.be.an('array');
+  });
+
+  test("should have CREATED as initial state", function() {
+    const status = res.getBody();
+    expect(status.currentState).to.equal('CREATED');
+  });
+}
+
+---
+
+### Test 2: Valid State Transition (CREATED → TOPIC_SELECTION)
+put {
+  url: {{baseUrl}}/events/{{createdEventCode}}/workflow/transition
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "targetState": "TOPIC_SELECTION"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.workflowState: eq TOPIC_SELECTION
+}
+
+tests {
+  test("should return 200 status for valid transition", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should transition to TOPIC_SELECTION state", function() {
+    const event = res.getBody();
+    expect(event.workflowState).to.equal('TOPIC_SELECTION');
+  });
+
+  test("should return updated event with eventCode", function() {
+    const event = res.getBody();
+    expect(event.eventCode).to.equal(bru.getVar("createdEventCode"));
+    expect(event.title).to.be.a('string');
+  });
+}
+
+---
+
+### Test 3: Invalid State Transition (CREATED → ARCHIVED)
+put {
+  url: {{baseUrl}}/events/{{createdEventCode}}/workflow/transition
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "targetState": "ARCHIVED"
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.message: isDefined
+}
+
+tests {
+  test("should return 400 status for invalid transition", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("should return error message for invalid transition", function() {
+    const error = res.getBody();
+    expect(error.message).to.be.a('string');
+    expect(error.message.toLowerCase()).to.include('invalid');
+  });
+
+  test("should have error code INVALID_STATE_TRANSITION", function() {
+    const error = res.getBody();
+    expect(error.code).to.equal('INVALID_STATE_TRANSITION');
+  });
+}
+
+---
+
+### Test 4: Validation Failure (Insufficient Speakers)
+# Note: This test attempts to transition to SPEAKER_OUTREACH without meeting validation criteria
+put {
+  url: {{baseUrl}}/events/{{createdEventCode}}/workflow/transition
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "targetState": "SPEAKER_OUTREACH"
+  }
+}
+
+assert {
+  res.status: eq 422
+  res.body.message: isDefined
+  res.body.details: isDefined
+}
+
+tests {
+  test("should return 422 status for validation failure", function() {
+    expect(res.getStatus()).to.equal(422);
+  });
+
+  test("should return validation error message", function() {
+    const error = res.getBody();
+    expect(error.message).to.be.a('string');
+    expect(error.message.toLowerCase()).to.match(/insufficient|minimum|validation/);
+  });
+
+  test("should have error code WORKFLOW_VALIDATION_FAILED", function() {
+    const error = res.getBody();
+    expect(error.code).to.equal('WORKFLOW_VALIDATION_FAILED');
+  });
+
+  test("should include validation details context", function() {
+    const error = res.getBody();
+    expect(error.details).to.be.an('object');
+    // Details may include required/identified counts
+  });
+}
+
+---
+
+### Test 5: Get Workflow Status After Transition
+get {
+  url: {{baseUrl}}/events/{{createdEventCode}}/workflow/status
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.currentState: eq TOPIC_SELECTION
+}
+
+tests {
+  test("should return 200 status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should reflect updated workflow state", function() {
+    const status = res.getBody();
+    expect(status.currentState).to.equal('TOPIC_SELECTION');
+  });
+
+  test("should include next available states", function() {
+    const status = res.getBody();
+    expect(status.nextAvailableStates).to.be.an('array');
+    expect(status.nextAvailableStates.length).to.be.greaterThan(0);
+  });
+
+  test("should have validation messages array (may be empty)", function() {
+    const status = res.getBody();
+    expect(status.validationMessages).to.be.an('array');
+  });
+}
