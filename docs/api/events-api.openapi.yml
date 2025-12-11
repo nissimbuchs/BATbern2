@@ -650,6 +650,8 @@ paths:
         **Story**: 5.1a - Workflow State Machine Foundation
         **Acceptance Criteria**: AC12
         **Authorization**: Requires ORGANIZER role
+        **Rate Limiting**: 10 transitions per minute per user (API Gateway)
+        **Performance**: <200ms (P95)
 
         **16-Step Workflow**:
         1. CREATED - Initial state
@@ -773,7 +775,8 @@ paths:
 
         **Story**: 5.1a - Workflow State Machine Foundation
         **Acceptance Criteria**: AC13
-        **Authorization**: Requires ORGANIZER role
+        **Authorization**: Requires authentication (any authenticated user)
+        **Rate Limiting**: Applied at API Gateway level
 
         **Response includes**:
         - Current workflow state
