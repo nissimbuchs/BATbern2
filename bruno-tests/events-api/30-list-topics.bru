@@ -1,0 +1,57 @@
+meta {
+  name: List Topics
+  type: http
+  seq: 30
+}
+
+get {
+  url: {{baseUrl}}/topics
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+params:query {
+  filter: {"category":"technical","status":"available"}
+  sort: -stalenessScore
+  page: 1
+  limit: 50
+}
+
+assert {
+  res.status: eq 200
+  res.body.data: isDefined
+  res.body.pagination: isDefined
+}
+
+tests {
+  test("should return 200 status - Story 5.2 AC1", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return topics array with pagination - Story 5.2 AC1", function() {
+    const response = res.getBody();
+    expect(response.data).to.be.an('array');
+    expect(response.pagination).to.be.an('object');
+    expect(response.pagination.page).to.be.a('number');
+    expect(response.pagination.limit).to.be.a('number');
+    expect(response.pagination.total).to.be.a('number');
+  });
+
+  test("should return topics with required fields - Story 5.2 AC1, AC6", function() {
+    const response = res.getBody();
+    if (response.data.length > 0) {
+      const topic = response.data[0];
+      expect(topic.id).to.be.a('string');
+      expect(topic.title).to.be.a('string');
+      expect(topic.category).to.be.a('string');
+      expect(topic.stalenessScore).to.be.a('number');
+      expect(topic.stalenessScore).to.be.at.least(0);
+      expect(topic.stalenessScore).to.be.at.most(100);
+      expect(topic.status).to.be.oneOf(['available', 'in-use', 'archived']);
+    }
+  });
+}
