@@ -1,0 +1,165 @@
+# QA Gate: Story 5.3 - Speaker Outreach Tracking
+# Status: Draft (Validation Complete)
+# Version: 1.1
+
+story_id: "5.3"
+story_title: "Speaker Outreach Tracking"
+status: "draft"
+version: "1.1"
+last_updated: "2025-12-11"
+
+# Consistency Validation Results
+consistency_check:
+  date: "2025-12-11"
+  status: "✅ PASSED (with fixes applied)"
+  issues_found: 3
+  issues_fixed: 3
+
+  issues:
+    - id: "5.3-CONSISTENCY-001"
+      type: "migration_version_conflict"
+      severity: "critical"
+      status: "✅ FIXED"
+      description: "Migration version conflict - Story said V14, but V13 already exists from Story 5.1a"
+      details:
+        - "Story 5.1a created V12__add_workflow_state_to_events.sql (workflow_state column)"
+        - "Story 5.1a created V13__add_version_to_events.sql (optimistic locking)"
+        - "Story 5.2 needs V14__add_topic_speaker_pool_tables.sql (was incorrectly labeled V13)"
+        - "Story 5.3 should be V15__add_speaker_outreach_history_table.sql (was incorrectly labeled V14)"
+      fix_applied:
+        - "Updated Story 5.3 migration version from V14 → V15"
+        - "Updated Story 5.2 migration version from V13 → V14"
+        - "Added explicit migration history list to both stories"
+      files_modified:
+        - "docs/stories/5.2-topic-selection-speaker-brainstorming.md (lines 114-121)"
+        - "docs/stories/5.3-speaker-outreach-tracking.md (lines 113-123)"
+
+    - id: "5.3-CONSISTENCY-002"
+      type: "wrong_service_location"
+      severity: "critical"
+      status: "✅ FIXED"
+      description: "Migration location specified speaker-coordination-service, but should be event-management-service"
+      details:
+        - "speaker_pool table exists in event-management-service (Story 5.2)"
+        - "speaker_outreach_history has FK to speaker_pool"
+        - "speaker-coordination-service has NO migration directory"
+        - "Migration should be colocated with speaker_pool for FK constraint consistency"
+      fix_applied:
+        - "Changed migration location from speaker-coordination-service → event-management-service"
+        - "Added explicit note: 'speaker_outreach_history table lives in event-management-service'"
+        - "Updated Task 0 to check migrations in event-management-service"
+        - "Added FK constraint requirement in Task 0"
+      files_modified:
+        - "docs/stories/5.3-speaker-outreach-tracking.md (lines 25-33, 119, 321-330)"
+
+    - id: "5.3-CONSISTENCY-003"
+      type: "architecture_clarification"
+      severity: "medium"
+      status: "✅ FIXED"
+      description: "Unclear service ownership split between data layer and service layer"
+      details:
+        - "Story listed services but didn't clarify data vs. API layer ownership"
+        - "Could cause confusion about where to implement repositories vs. controllers"
+      fix_applied:
+        - "Added Architecture Note section explaining data/service layer split"
+        - "Clarified: Data layer in event-management-service (tables, repositories)"
+        - "Clarified: Service layer in speaker-coordination-service (controllers, business logic)"
+        - "Explained rationale: Colocating data simplifies FK constraints, service boundaries maintain domain separation"
+      files_modified:
+        - "docs/stories/5.3-speaker-outreach-tracking.md (lines 30-33)"
+
+# Validation Checklist
+validation_checks:
+  database_schemas:
+    status: "✅ PASSED"
+    checks:
+      - name: "Migration version sequence"
+        status: "✅ PASSED"
+        details: "Correct sequence: V12 → V13 → V14 → V15"
+      - name: "Migration location consistency"
+        status: "✅ PASSED"
+        details: "Migration in event-management-service (colocated with speaker_pool)"
+      - name: "FK constraint reference"
+        status: "✅ PASSED"
+        details: "speaker_outreach_history.speaker_pool_id → speaker_pool.id"
+
+  frontend_patterns:
+    status: "✅ PASSED"
+    checks:
+      - name: "Service class pattern"
+        status: "✅ PASSED"
+        details: "Story 5.3 uses class-based service pattern (matches workflowService, eventTypeService)"
+      - name: "i18n structure"
+        status: "✅ PASSED"
+        details: "German/English translations with namespace-based keys"
+      - name: "Component patterns"
+        status: "✅ PASSED"
+        details: "Material-UI, React Query, date-fns patterns consistent with existing components"
+
+  backend_patterns:
+    status: "✅ PASSED"
+    checks:
+      - name: "Story 5.1a integration"
+        status: "✅ PASSED"
+        details: "Uses SpeakerWorkflowService from Story 5.1a (documented in 06a-workflow-state-machines.md)"
+      - name: "Shared-kernel usage"
+        status: "✅ PASSED"
+        details: "SpeakerWorkflowState enum, DomainEventPublisher, exception hierarchy"
+      - name: "Enum naming convention"
+        status: "✅ PASSED"
+        details: "Java UPPER_CASE → Database lowercase_snake_case via @Converter"
+
+# Migration Version History (Reference)
+migration_history:
+  event_management_service:
+    - version: "V12"
+      file: "V12__add_workflow_state_to_events.sql"
+      story: "5.1a"
+      description: "Add workflow_state column (16 states)"
+      status: "✅ EXISTS"
+    - version: "V13"
+      file: "V13__add_version_to_events.sql"
+      story: "5.1a"
+      description: "Add version column for optimistic locking"
+      status: "✅ EXISTS"
+    - version: "V14"
+      file: "V14__add_topic_speaker_pool_tables.sql"
+      story: "5.2"
+      description: "Add topics, topic_usage_history, speaker_pool tables"
+      status: "❌ PENDING (Story 5.2 not yet implemented)"
+    - version: "V15"
+      file: "V15__add_speaker_outreach_history_table.sql"
+      story: "5.3"
+      description: "Add speaker_outreach_history table with FK to speaker_pool"
+      status: "❌ PENDING (Story 5.3 not yet implemented)"
+
+# Story Dependencies
+dependencies:
+  blocking:
+    - story: "5.1a"
+      title: "Workflow State Machine Foundation"
+      status: "✅ DONE"
+      components_needed:
+        - "SpeakerWorkflowService"
+        - "SpeakerWorkflowState enum"
+        - "DomainEventPublisher"
+    - story: "5.2"
+      title: "Topic Selection & Speaker Brainstorming"
+      status: "❌ PENDING"
+      components_needed:
+        - "speaker_pool table (V14 migration)"
+        - "SpeakerPool entity"
+        - "SpeakerPoolRepository"
+
+# Approval Status
+approval:
+  technical_review:
+    reviewer: "Claude (Automated Validation)"
+    date: "2025-12-11"
+    status: "✅ APPROVED"
+    notes: "All consistency issues fixed. Migration versioning corrected. Service architecture clarified."
+
+  ready_for_implementation:
+    status: "✅ YES"
+    blockers: "Story 5.2 must be completed first (speaker_pool table dependency)"
+    version: "1.1"
