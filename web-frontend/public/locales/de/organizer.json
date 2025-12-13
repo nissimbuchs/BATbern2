@@ -49,6 +49,21 @@
       "statusRed": "Zu aktuell - innerhalb von 6 Monaten verwendet, hohes Duplikationsrisiko",
       "similarityWarning": "{{count}} ähnliche Themen erkannt (>70% Ähnlichkeit)"
     },
+    "heatMap": {
+      "title": "Nutzungsverlauf",
+      "description": "Themenutzungshäufigkeit über die letzten 24 Monate (nach Quartalen gruppiert)",
+      "quarter": "Quartal",
+      "usageCount": "Verwendungshäufigkeit",
+      "totalAttendance": "Gesamtteilnahme",
+      "avgEngagement": "Durchschnittliches Engagement",
+      "events": "Veranstaltungen",
+      "noData": "Keine Nutzungshistorie für dieses Thema verfügbar.",
+      "tooltip": "Klicken Sie auf ein Quartal, um Details zu Veranstaltungen anzuzeigen, die dieses Thema verwendet haben",
+      "hint": "Bewegen Sie die Maus über Datenpunkte für weitere Informationen",
+      "low": "Niedrige Nutzung",
+      "medium": "Mittlere Nutzung",
+      "high": "Hohe Nutzung"
+    },
     "dialogs": {
       "similar": {
         "title": "Ähnliche Themen erkannt",

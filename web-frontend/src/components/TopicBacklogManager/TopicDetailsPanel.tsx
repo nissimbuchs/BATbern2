@@ -29,7 +29,8 @@ import {
 } from '@mui/material';
 import { Warning as WarningIcon, CheckCircle as CheckIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { useSimilarTopics, useSelectTopicForEvent } from '@/hooks/useTopics';
+import { useSimilarTopics, useSelectTopicForEvent, useTopicUsageHistory } from '@/hooks/useTopics';
+import { TopicHeatMap } from '@/components/TopicHeatMap';
 import type { Topic } from '@/types/topic.types';
 
 export interface TopicDetailsPanelProps {
@@ -50,6 +51,9 @@ export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
 
   // Fetch similar topics for duplicate detection (AC5)
   const { data: similarTopics } = useSimilarTopics(topic.id);
+
+  // Fetch usage history for heat map visualization (AC2)
+  const { data: usageHistory } = useTopicUsageHistory(topic.id);
 
   // Mutation for selecting topic
   const selectTopicMutation = useSelectTopicForEvent();
@@ -178,6 +182,13 @@ export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
             </Typography>
           )}
         </Box>
+
+        {/* Usage History Heat Map (AC2) */}
+        {usageHistory && usageHistory.length > 0 && (
+          <Box sx={{ mb: 2 }}>
+            <TopicHeatMap topicId={topic.id} usageHistory={usageHistory} />
+          </Box>
+        )}
 
         {/* Action Buttons */}
         {eventCode && (
