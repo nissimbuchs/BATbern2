@@ -1,6 +1,8 @@
 package ch.batbern.events.repository;
 
 import ch.batbern.events.domain.Topic;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -48,4 +50,21 @@ public interface TopicRepository extends JpaRepository<Topic, UUID> {
      */
     @Query("SELECT t FROM Topic t WHERE t.active = true")
     List<Topic> findAllForSimilarityCalculation();
+
+    /**
+     * Find topics with optional category and status filters, with pagination support.
+     * Used for topic backlog with database-level pagination (AC1).
+     *
+     * @param category Optional category filter (null to skip)
+     * @param active Optional active status filter (null to skip)
+     * @param pageable Pagination and sort parameters
+     * @return Page of topics matching filters
+     */
+    @Query("SELECT t FROM Topic t WHERE "
+            + "(:category IS NULL OR t.category = :category) "
+            + "AND (:active IS NULL OR t.active = :active)")
+    Page<Topic> findByFilters(
+            @Param("category") String category,
+            @Param("active") Boolean active,
+            Pageable pageable);
 }

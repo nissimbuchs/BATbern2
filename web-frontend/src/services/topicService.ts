@@ -21,6 +21,7 @@ import type {
   OverrideStalenesRequest,
   TopicFilters,
   SelectTopicForEventRequest,
+  TopicUsageHistory,
 } from '@/types/topic.types';
 
 // API base paths
@@ -134,6 +135,21 @@ class TopicService {
    */
   async getSimilarTopics(id: string): Promise<Topic[]> {
     const response = await apiClient.get<Topic[]>(`${TOPICS_API_PATH}/${id}/similar`);
+
+    return response.data;
+  }
+
+  /**
+   * Get topic usage history for heat map visualization (AC2)
+   *
+   * @param id Topic UUID
+   * @returns List of usage history records ordered by date descending
+   * @throws Error if topic not found or network failure
+   */
+  async getTopicUsageHistory(id: string): Promise<TopicUsageHistory[]> {
+    const response = await apiClient.get<TopicUsageHistory[]>(
+      `${TOPICS_API_PATH}/${id}/usage-history`
+    );
 
     return response.data;
   }

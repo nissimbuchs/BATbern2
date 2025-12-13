@@ -2,9 +2,13 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Topic;
+import ch.batbern.events.domain.TopicUsageHistory;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.TopicRepository;
+import ch.batbern.events.repository.TopicUsageHistoryRepository;
 import ch.batbern.shared.types.EventWorkflowState;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +34,7 @@ import java.util.stream.Collectors;
 public class TopicService {
 
     private final TopicRepository topicRepository;
+    private final TopicUsageHistoryRepository topicUsageHistoryRepository;
     private final StalenessScoreService stalenessScoreService;
     private final SimilarityCalculationService similarityCalculationService;
     private final EventRepository eventRepository;
@@ -37,11 +42,13 @@ public class TopicService {
 
     public TopicService(
             TopicRepository topicRepository,
+            TopicUsageHistoryRepository topicUsageHistoryRepository,
             StalenessScoreService stalenessScoreService,
             SimilarityCalculationService similarityCalculationService,
             EventRepository eventRepository,
             EventWorkflowStateMachine eventWorkflowStateMachine) {
         this.topicRepository = topicRepository;
+        this.topicUsageHistoryRepository = topicUsageHistoryRepository;
         this.stalenessScoreService = stalenessScoreService;
         this.similarityCalculationService = similarityCalculationService;
         this.eventRepository = eventRepository;
@@ -49,7 +56,31 @@ public class TopicService {
     }
 
     /**
-     * Get all active topics with optional category filter.
+     * Get all topics with optional category and status filters, with pagination support.
+     *
+     * @param category Optional category filter
+     * @param status Optional status filter ("active", "inactive", or null for all)
+     * @param pageable Pagination and sort parameters
+     * @return Page of topics matching filters
+     */
+    @Transactional(readOnly = true)
+    public Page<Topic> getAllTopics(String category, String status, Pageable pageable) {
+        // Convert status string to Boolean
+        Boolean active = null;
+        if (status != null && !status.isBlank()) {
+            if (status.equalsIgnoreCase("active")) {
+                active = true;
+            } else if (status.equalsIgnoreCase("inactive")) {
+                active = false;
+            }
+        }
+
+        // Use repository method with database-level filtering and pagination
+        return topicRepository.findByFilters(category, active, pageable);
+    }
+
+    /**
+     * Get all active topics (legacy method for backward compatibility).
      *
      * @param category Optional category filter
      * @return List of topics sorted by staleness score (descending)
@@ -82,6 +113,18 @@ public class TopicService {
     @Transactional(readOnly = true)
     public Optional<Topic> getTopicById(UUID id) {
         return topicRepository.findById(id);
+    }
+
+    /**
+     * Get usage history for a specific topic.
+     * Used for heat map visualization (AC2) and usage pattern analysis.
+     *
+     * @param topicId Topic ID
+     * @return List of usage history records, ordered by usage date descending
+     */
+    @Transactional(readOnly = true)
+    public List<TopicUsageHistory> getUsageHistory(UUID topicId) {
+        return topicUsageHistoryRepository.findByTopicIdOrderByUsedDateDesc(topicId);
     }
 
     /**

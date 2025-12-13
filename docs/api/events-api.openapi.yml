@@ -48,6 +48,8 @@ tags:
     description: Event analytics and metrics
   - name: Bulk Operations
     description: Batch operations on multiple events
+  - name: Topics
+    description: Topic management and backlog operations (Story 5.2)
 
 paths:
   /events:
@@ -2070,6 +2072,484 @@ paths:
       security:
         - BearerAuth: []
 
+  /topics:
+    get:
+      tags:
+        - Topics
+      summary: List all topics with filters and pagination
+      description: |
+        Retrieve topic backlog with optional category and status filters.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Acceptance Criteria**: AC1, AC2, AC6
+        **Authorization**: Requires ORGANIZER role
+        **Performance**: <150ms (P95) with database-level pagination
+
+        **Filtering**:
+        - Category filter: `?filter={"category":"technical"}`
+        - Status filter: `?filter={"status":"active"}` or `"inactive"`
+        - Combined: `?filter={"category":"technical","status":"active"}`
+
+        **Sorting**:
+        - Default: staleness score descending (safest topics first)
+        - Custom: `?sort=-stalenessScore` or `?sort=stalenessScore,desc`
+        - Supports: title, category, stalenessScore, usageCount, createdDate
+
+        **Pagination**:
+        - Default: page=1, limit=50
+        - Database-level pagination for performance
+
+        **Staleness Zones**:
+        - Green (83-100): Safe to use, recommended
+        - Yellow (50-82): Use with caution
+        - Red (0-49): Too recent, avoid reuse
+      operationId: listTopics
+      parameters:
+        - name: filter
+          in: query
+          description: JSON filter object
+          required: false
+          schema:
+            type: string
+            example: '{"category":"technical","status":"active"}'
+        - name: page
+          in: query
+          description: Page number (1-based)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            example: 1
+        - name: limit
+          in: query
+          description: Items per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+            example: 50
+        - name: sort
+          in: query
+          description: Sort parameter (e.g., "-stalenessScore" or "stalenessScore,desc")
+          schema:
+            type: string
+            example: "-stalenessScore"
+      responses:
+        '200':
+          description: Topics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicListResponse'
+              example:
+                data:
+                  - id: "123e4567-e89b-12d3-a456-426614174000"
+                    title: "Cloud Native Architecture Patterns"
+                    description: "Modern cloud-native design patterns and best practices"
+                    category: "technical"
+                    createdDate: "2023-01-15T10:00:00Z"
+                    lastUsedDate: "2024-03-20T14:30:00Z"
+                    usageCount: 3
+                    stalenessScore: 92
+                    colorZone: "green"
+                    status: "available"
+                    similarityScores: []
+                    active: true
+                    createdAt: "2023-01-15T10:00:00Z"
+                    updatedAt: "2024-03-20T14:30:00Z"
+                pagination:
+                  page: 1
+                  limit: 50
+                  total: 150
+        '400':
+          description: Invalid filter JSON
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+    post:
+      tags:
+        - Topics
+      summary: Create new topic
+      description: |
+        Add new topic to backlog. Automatically calculates similarity scores.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Acceptance Criteria**: AC8
+        **Authorization**: Requires ORGANIZER role
+
+        **Automatic Processing**:
+        - Staleness score initialized to 100 (safe to use immediately)
+        - Similarity scores calculated against all existing topics using TF-IDF
+        - Only similarity scores >30% are stored
+
+        **Duplicate Detection**:
+        - If similarity >70% to existing topic, warning is flagged
+        - Organizer can still create but should review similar topics first
+      operationId: createTopic
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TopicRequest'
+            example:
+              title: "Kubernetes Security Best Practices"
+              description: "Deep dive into securing K8s clusters in production"
+              category: "technical"
+      responses:
+        '201':
+          description: Topic created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicResponse'
+              example:
+                id: "456e7890-e89b-12d3-a456-426614174001"
+                title: "Kubernetes Security Best Practices"
+                description: "Deep dive into securing K8s clusters in production"
+                category: "technical"
+                createdDate: "2025-12-13T10:00:00Z"
+                lastUsedDate: null
+                usageCount: 0
+                stalenessScore: 100
+                colorZone: "green"
+                status: "available"
+                similarityScores:
+                  - topicId: "123e4567-e89b-12d3-a456-426614174000"
+                    score: 0.65
+                active: true
+                createdAt: "2025-12-13T10:00:00Z"
+                updatedAt: "2025-12-13T10:00:00Z"
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /topics/{id}:
+    get:
+      tags:
+        - Topics
+      summary: Get topic by ID
+      description: |
+        Retrieve topic details including similarity scores.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Acceptance Criteria**: AC2, AC5
+        **Authorization**: Requires ORGANIZER role
+
+        **Optional Includes**:
+        - `?include=similarity` - Recalculates similarity scores on-demand
+      operationId: getTopicById
+      parameters:
+        - name: id
+          in: path
+          description: Topic UUID
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: "123e4567-e89b-12d3-a456-426614174000"
+        - name: include
+          in: query
+          description: Comma-separated list of fields to include
+          schema:
+            type: string
+            example: "similarity"
+      responses:
+        '200':
+          description: Topic retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /topics/{id}/override-staleness:
+    put:
+      tags:
+        - Topics
+      summary: Override staleness score with justification
+      description: |
+        Manually override staleness score for exceptional cases.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Acceptance Criteria**: AC7
+        **Authorization**: Requires ORGANIZER role
+
+        **Use Cases**:
+        - Evergreen content that's always relevant (set to 100)
+        - Time-sensitive topics that shouldn't be reused (set to 0)
+        - Special exceptions requiring organizer judgment
+
+        **Audit Trail**:
+        - Justification is required for compliance
+        - Override should be logged in audit system (future enhancement)
+
+        **Validation**:
+        - Score must be 0-100
+        - Justification must be non-empty
+      operationId: overrideTopicStaleness
+      parameters:
+        - name: id
+          in: path
+          description: Topic UUID
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: "123e4567-e89b-12d3-a456-426614174000"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OverrideStalenesRequest'
+            example:
+              stalenessScore: 100
+              justification: "Evergreen content - fundamentals of software architecture never go out of date"
+      responses:
+        '200':
+          description: Staleness score overridden successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /topics/{id}/similar:
+    get:
+      tags:
+        - Topics
+      summary: Get similar topics (duplicate detection)
+      description: |
+        Retrieve topics with >70% similarity for duplicate detection.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Acceptance Criteria**: AC5
+        **Authorization**: Requires ORGANIZER role
+
+        **Similarity Algorithm**:
+        - TF-IDF vectorization of title + description
+        - Cosine similarity calculation
+        - >70% threshold indicates potential duplicate
+
+        **Frontend Integration**:
+        - Display warning when creating/selecting topics with high similarity
+        - Helps organizers avoid redundant content across events
+      operationId: getSimilarTopics
+      parameters:
+        - name: id
+          in: path
+          description: Topic UUID
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: "123e4567-e89b-12d3-a456-426614174000"
+      responses:
+        '200':
+          description: Similar topics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TopicResponse'
+              example:
+                - id: "789e0123-e89b-12d3-a456-426614174002"
+                  title: "Cloud Architecture Best Practices"
+                  description: "Cloud-native architectural patterns for modern applications"
+                  category: "technical"
+                  stalenessScore: 78
+                  colorZone: "yellow"
+                  status: "caution"
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /topics/{id}/usage-history:
+    get:
+      tags:
+        - Topics
+      summary: Get topic usage history
+      description: |
+        Retrieve the usage history for a specific topic over the last 24 months.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Acceptance Criteria**: AC2
+        **Authorization**: Requires ORGANIZER role
+
+        **Usage**:
+        - Returns historical usage data for heat map visualization
+        - Grouped by event with attendance and engagement metrics
+        - Used to identify usage patterns and staleness trends
+
+        **Frontend Integration**:
+        - Powers the TopicHeatMap component
+        - Displays quarterly aggregated usage patterns
+        - Helps organizers make informed topic selection decisions
+      operationId: getTopicUsageHistory
+      parameters:
+        - name: id
+          in: path
+          description: Topic UUID
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: "123e4567-e89b-12d3-a456-426614174000"
+      responses:
+        '200':
+          description: Usage history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TopicUsageHistory'
+              example:
+                - eventId: "event-abc-123"
+                  usedDate: "2024-01-15T10:00:00Z"
+                  attendance: 150
+                  engagementScore: 0.85
+                - eventId: "event-def-456"
+                  usedDate: "2024-04-20T10:00:00Z"
+                  attendance: 200
+                  engagementScore: 0.92
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /topics/recalculate-staleness:
+    post:
+      tags:
+        - Topics
+      summary: Recalculate staleness scores for all topics
+      description: |
+        Maintenance endpoint to recalculate staleness for all topics.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Acceptance Criteria**: AC3
+        **Authorization**: Requires ORGANIZER role
+
+        **Scheduling**:
+        - Should be run periodically (e.g., monthly batch job)
+        - Updates staleness based on time since last use
+        - Does NOT override manual staleness adjustments
+
+        **Performance**:
+        - Runs asynchronously for large backlogs
+        - Returns immediately with count of topics queued
+      operationId: recalculateTopicStaleness
+      responses:
+        '200':
+          description: Staleness recalculation started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Staleness scores recalculated for 150 topics"
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /topics/calculate-similarities:
+    post:
+      tags:
+        - Topics
+      summary: Calculate similarity scores for all topics
+      description: |
+        Maintenance endpoint to recalculate TF-IDF similarity matrix.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Acceptance Criteria**: AC4
+        **Authorization**: Requires ORGANIZER role
+
+        **Use Cases**:
+        - Initial data migration
+        - After bulk topic imports
+        - Periodic refresh of similarity scores
+
+        **Algorithm**:
+        - TF-IDF vectorization across all active topics
+        - Pairwise cosine similarity calculation
+        - Only stores scores >30% to save space
+
+        **Performance**:
+        - O(n²) complexity - expensive for large backlogs
+        - Should be run during off-peak hours
+      operationId: calculateTopicSimilarities
+      responses:
+        '200':
+          description: Similarity calculation started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Similarity scores calculated for all topics"
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
 components:
   schemas:
     Event:
@@ -3161,6 +3641,209 @@ components:
           format: date-time
           description: Timestamp of last update
           example: 2025-12-13T10:15:00Z
+
+    TopicResponse:
+      type: object
+      description: Topic response with staleness score and similarity information
+      required:
+        - id
+        - title
+        - category
+        - stalenessScore
+        - colorZone
+        - status
+        - active
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Topic unique identifier
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        title:
+          type: string
+          maxLength: 500
+          description: Topic title
+          example: "Cloud Native Architecture Patterns"
+        description:
+          type: string
+          nullable: true
+          maxLength: 5000
+          description: Detailed topic description
+          example: "Modern cloud-native design patterns and best practices"
+        category:
+          type: string
+          description: Topic category (e.g., technical, business, soft-skills)
+          example: "technical"
+        createdDate:
+          type: string
+          format: date-time
+          description: When the topic was created
+          example: "2023-01-15T10:00:00Z"
+        lastUsedDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the topic was last used in an event
+          example: "2024-03-20T14:30:00Z"
+        usageCount:
+          type: integer
+          minimum: 0
+          description: Number of times topic has been used
+          example: 3
+        stalenessScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: |
+            Staleness score (0-100) based on time since last use.
+            Higher = safer to reuse.
+            Green zone (83-100): Safe to use
+            Yellow zone (50-82): Use with caution
+            Red zone (0-49): Too recent, avoid
+          example: 92
+        colorZone:
+          type: string
+          enum: [green, yellow, red, gray]
+          description: Visual indicator based on staleness score
+          example: "green"
+        status:
+          type: string
+          enum: [available, caution, unavailable]
+          description: Usability status derived from staleness score
+          example: "available"
+        similarityScores:
+          type: array
+          description: List of similar topics with similarity scores >30%
+          items:
+            $ref: '#/components/schemas/SimilarityScore'
+          example:
+            - topicId: "789e0123-e89b-12d3-a456-426614174002"
+              score: 0.65
+        active:
+          type: boolean
+          description: Whether the topic is active in the backlog
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: Audit timestamp - when record was created
+          example: "2023-01-15T10:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Audit timestamp - when record was last updated
+          example: "2024-03-20T14:30:00Z"
+
+    SimilarityScore:
+      type: object
+      description: Similarity score between two topics (TF-IDF + cosine similarity)
+      required:
+        - topicId
+        - score
+      properties:
+        topicId:
+          type: string
+          format: uuid
+          description: UUID of the similar topic
+          example: "789e0123-e89b-12d3-a456-426614174002"
+        score:
+          type: number
+          format: double
+          minimum: 0.0
+          maximum: 1.0
+          description: Cosine similarity score (0.0-1.0). >0.7 indicates potential duplicate.
+          example: 0.65
+
+    TopicUsageHistory:
+      type: object
+      description: Historical usage record of a topic in a specific event
+      required:
+        - eventId
+        - usedDate
+        - attendance
+        - engagementScore
+      properties:
+        eventId:
+          type: string
+          format: uuid
+          description: UUID of the event where this topic was used
+          example: "event-abc-123"
+        usedDate:
+          type: string
+          format: date-time
+          description: When the topic was used in the event
+          example: "2024-01-15T10:00:00Z"
+        attendance:
+          type: integer
+          minimum: 0
+          description: Number of attendees at the event
+          example: 150
+        engagementScore:
+          type: number
+          format: double
+          minimum: 0.0
+          maximum: 1.0
+          description: Engagement score for the topic (0.0-1.0). Higher indicates better audience engagement.
+          example: 0.85
+
+    TopicRequest:
+      type: object
+      description: Request to create a new topic
+      required:
+        - title
+        - category
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Topic title
+          example: "Kubernetes Security Best Practices"
+        description:
+          type: string
+          nullable: true
+          maxLength: 5000
+          description: Detailed topic description
+          example: "Deep dive into securing K8s clusters in production"
+        category:
+          type: string
+          minLength: 1
+          description: Topic category
+          example: "technical"
+
+    TopicListResponse:
+      type: object
+      description: Paginated list of topics with metadata
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          description: List of topics for current page
+          items:
+            $ref: '#/components/schemas/TopicResponse'
+        pagination:
+          $ref: '#/components/schemas/PaginationMetadata'
+
+    OverrideStalenesRequest:
+      type: object
+      description: Request to manually override staleness score
+      required:
+        - stalenessScore
+        - justification
+      properties:
+        stalenessScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: New staleness score (0-100)
+          example: 100
+        justification:
+          type: string
+          minLength: 1
+          description: Required justification for override (for audit trail)
+          example: "Evergreen content - fundamentals of software architecture never go out of date"
 
   responses:
     BadRequest:

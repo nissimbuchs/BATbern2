@@ -1,12 +1,21 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.events.domain.Topic;
+import ch.batbern.events.domain.TopicUsageHistory;
 import ch.batbern.events.dto.OverrideStalenesRequest;
+import ch.batbern.events.dto.TopicFilterRequest;
 import ch.batbern.events.dto.TopicListResponse;
 import ch.batbern.events.dto.TopicRequest;
 import ch.batbern.events.dto.TopicResponse;
+import ch.batbern.events.dto.TopicUsageHistoryResponse;
 import ch.batbern.events.service.TopicService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -39,17 +48,20 @@ import java.util.stream.Collectors;
 public class TopicController {
 
     private final TopicService topicService;
+    private final ObjectMapper objectMapper;
 
-    public TopicController(TopicService topicService) {
+    public TopicController(TopicService topicService, ObjectMapper objectMapper) {
         this.topicService = topicService;
+        this.objectMapper = objectMapper;
     }
 
     /**
      * List all topics with optional filters (AC1).
      *
      * @param filter Optional JSON filter string (e.g., {"category":"technical"})
-     * @param page Page number (default 1)
+     * @param page Page number (default 0 for Spring Data, but 1 for API consistency)
      * @param limit Page size (default 50)
+     * @param sort Optional sort parameter (e.g., "stalenessScore,desc")
      * @return Paginated list of topics
      */
     @GetMapping
@@ -57,43 +69,73 @@ public class TopicController {
     public ResponseEntity<TopicListResponse> getAllTopics(
             @RequestParam(required = false) String filter,
             @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "50") Integer limit) {
+            @RequestParam(defaultValue = "50") Integer limit,
+            @RequestParam(required = false) String sort) {
 
-        // Parse filter JSON if provided
+        // Parse filter JSON using Jackson ObjectMapper
         String category = null;
+        String status = null;
         if (filter != null && !filter.isBlank()) {
-            // Simple JSON parsing for category filter
-            // Expected format: {"category":"technical"}
-            if (filter.contains("\"category\"")) {
-                String[] parts = filter.split("\"category\"\\s*:\\s*\"");
-                if (parts.length > 1) {
-                    category = parts[1].split("\"")[0];
-                }
+            try {
+                TopicFilterRequest filterRequest = objectMapper.readValue(filter, TopicFilterRequest.class);
+                category = filterRequest.getCategory();
+                status = filterRequest.getStatus();
+            } catch (JsonProcessingException e) {
+                // Log warning and proceed with null filters
+                System.err.println("Invalid filter JSON: " + e.getMessage());
             }
         }
 
-        List<Topic> topics = topicService.getAllTopics(category);
+        // Create Pageable for database-level pagination
+        // Convert 1-based page to 0-based for Spring Data
+        Pageable pageable = createPageable(page - 1, limit, sort);
 
-        // Apply pagination (simple in-memory pagination for now)
-        int start = (page - 1) * limit;
-        int end = Math.min(start + limit, topics.size());
-        List<Topic> paginatedTopics = topics.subList(
-            Math.min(start, topics.size()),
-            Math.min(end, topics.size())
-        );
+        // Fetch paginated topics from service
+        Page<Topic> topicPage = topicService.getAllTopics(category, status, pageable);
 
         // Convert to DTOs
-        List<TopicResponse> topicResponses = paginatedTopics.stream()
+        List<TopicResponse> topicResponses = topicPage.getContent().stream()
                 .map(TopicResponse::from)
                 .collect(Collectors.toList());
 
-        // Build response with pagination metadata
+        // Build response with pagination metadata (1-based for API)
         TopicListResponse response = new TopicListResponse(
                 topicResponses,
-                new TopicListResponse.PaginationMetadata(page, limit, (long) topics.size())
+                new TopicListResponse.PaginationMetadata(page, limit, topicPage.getTotalElements())
         );
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Create Pageable from page, limit, and sort parameters.
+     *
+     * @param page Zero-based page number
+     * @param limit Page size
+     * @param sort Optional sort string (e.g., "stalenessScore,desc" or "-stalenessScore")
+     * @return Pageable for database query
+     */
+    private Pageable createPageable(int page, int limit, String sort) {
+        if (sort == null || sort.isBlank()) {
+            return PageRequest.of(page, limit);
+        }
+
+        // Handle both formats: "stalenessScore,desc" and "-stalenessScore"
+        Sort.Direction direction = Sort.Direction.ASC;
+        String property = sort;
+
+        if (sort.startsWith("-")) {
+            direction = Sort.Direction.DESC;
+            property = sort.substring(1);
+        } else if (sort.contains(",")) {
+            String[] parts = sort.split(",");
+            property = parts[0];
+            if (parts.length > 1 && parts[1].equalsIgnoreCase("desc")) {
+                direction = Sort.Direction.DESC;
+            }
+        }
+
+        return PageRequest.of(page, limit, Sort.by(direction, property));
     }
 
     /**
@@ -180,6 +222,33 @@ public class TopicController {
 
         List<TopicResponse> response = similarTopics.stream()
                 .map(TopicResponse::from)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get usage history for a topic (AC2).
+     * Returns historical usage data for heat map visualization.
+     *
+     * @param id Topic ID
+     * @return List of usage history records
+     */
+    @GetMapping("/{id}/usage-history")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<List<TopicUsageHistoryResponse>> getUsageHistory(@PathVariable UUID id) {
+        // Verify topic exists
+        Optional<Topic> topic = topicService.getTopicById(id);
+        if (topic.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Fetch usage history
+        List<TopicUsageHistory> usageHistory = topicService.getUsageHistory(id);
+
+        // Convert to DTOs
+        List<TopicUsageHistoryResponse> response = usageHistory.stream()
+                .map(TopicUsageHistoryResponse::from)
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(response);

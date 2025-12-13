@@ -28,6 +28,7 @@ export const topicKeys = {
   details: () => [...topicKeys.all, 'detail'] as const,
   detail: (id: string) => [...topicKeys.details(), id] as const,
   similar: (id: string) => [...topicKeys.all, 'similar', id] as const,
+  usageHistory: (id: string) => [...topicKeys.all, 'usage-history', id] as const,
 };
 
 /**
@@ -78,6 +79,23 @@ export function useSimilarTopics(id: string) {
     queryFn: () => topicService.getSimilarTopics(id),
     enabled: !!id,
     staleTime: 1000 * 60 * 60, // 1 hour - similarity scores change rarely
+  });
+}
+
+/**
+ * Hook to fetch topic usage history for heat map visualization (AC2)
+ *
+ * @param id Topic UUID
+ * @returns Query result with array of usage history records
+ * @example
+ * const { data: usageHistory } = useTopicUsageHistory('uuid');
+ */
+export function useTopicUsageHistory(id: string) {
+  return useQuery({
+    queryKey: topicKeys.usageHistory(id),
+    queryFn: () => topicService.getTopicUsageHistory(id),
+    enabled: !!id,
+    staleTime: 1000 * 60 * 60, // 1 hour - usage history changes rarely
   });
 }
 
