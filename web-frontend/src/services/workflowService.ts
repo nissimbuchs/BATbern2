@@ -16,7 +16,7 @@ import type { components } from '@/types/generated/events-api.types';
 export type WorkflowStatusDto = components['schemas']['WorkflowStatusDto'];
 export type TransitionStateRequest = components['schemas']['TransitionStateRequest'];
 export type EventWorkflowState = components['schemas']['EventWorkflowState'];
-export type EventDto = components['schemas']['EventDto'];
+export type Event = components['schemas']['Event'];
 
 // API base path for workflow endpoints
 const WORKFLOW_API_PATH = '/events';
@@ -47,18 +47,18 @@ class WorkflowService {
    *
    * @param eventCode The event code (e.g., "BATbern56")
    * @param targetState The target workflow state (e.g., "TOPIC_SELECTION")
-   * @returns Updated EventDto with new workflow state
+   * @returns Updated Event with new workflow state
    * @throws Error if invalid transition, validation fails, or unauthorized
    */
   async transitionWorkflowState(
     eventCode: string,
     targetState: EventWorkflowState
-  ): Promise<EventDto> {
+  ): Promise<Event> {
     const requestBody: TransitionStateRequest = {
       targetState,
     };
 
-    const response = await apiClient.put<EventDto>(
+    const response = await apiClient.put<Event>(
       `${WORKFLOW_API_PATH}/${eventCode}/workflow/transition`,
       requestBody
     );

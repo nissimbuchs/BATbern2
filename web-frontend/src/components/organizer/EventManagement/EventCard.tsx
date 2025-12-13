@@ -27,7 +27,7 @@ import {
   Stack,
 } from '@mui/material';
 import { Edit as EditIcon, Event as EventIcon, People as PeopleIcon } from '@mui/icons-material';
-import { useTranslation } from 'react-i18next';
+import { useTranslation, type TFunction } from 'react-i18next';
 import { format } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
 import type { Event, EventUI } from '@/types/event.types';
@@ -66,10 +66,7 @@ const getWorkflowProgress = (workflowState: string): number => {
 };
 
 // Get i18n key for workflow state
-const getWorkflowStateLabel = (
-  state: string,
-  t: (key: string, defaultValue?: string) => string
-): string => {
+const getWorkflowStateLabel = (state: string, t: TFunction): string => {
   return t(`workflow.states.${state.toLowerCase()}`, state);
 };
 

@@ -168,6 +168,7 @@ export function transformEventForApi(event: LegacyEvent): CreateEventRequest {
     currentAttendeeCount: 0,
     description: event.description,
     metadata: JSON.stringify(metadata),
+    eventType: 'AFTERNOON', // Default for historical events
   };
 }
 

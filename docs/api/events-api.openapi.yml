@@ -829,6 +829,185 @@ paths:
       security:
         - BearerAuth: []
 
+  /events/{eventCode}/topics:
+    post:
+      tags:
+        - Event Actions
+      summary: Select topic for event
+      description: |
+        Assign a topic to an event and transition workflow state to TOPIC_SELECTION.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Acceptance Criteria**: AC14
+        **Authorization**: Requires ORGANIZER role
+        **Rate Limiting**: Applied at API Gateway level
+
+        **Workflow State Transition**:
+        - Valid source states: CREATED, TOPIC_SELECTION
+        - Target state: TOPIC_SELECTION
+        - Publishes EventWorkflowTransitionEvent domain event
+
+        **Business Rules**:
+        - Event must exist
+        - Topic must exist in topic backlog
+        - Event must be in CREATED or TOPIC_SELECTION state
+        - Organizer can change topic while in TOPIC_SELECTION state
+
+        **Performance**: <200ms (P95)
+
+      operationId: selectTopicForEvent
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern56
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - topicId
+              properties:
+                topicId:
+                  type: string
+                  format: uuid
+                  description: UUID of the topic to assign
+                  example: 123e4567-e89b-12d3-a456-426614174000
+      responses:
+        '200':
+          description: Topic selected successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  eventCode:
+                    type: string
+                    example: BATbern56
+                  topicId:
+                    type: string
+                    format: uuid
+                    example: 123e4567-e89b-12d3-a456-426614174000
+                  workflowState:
+                    type: string
+                    enum: [TOPIC_SELECTION]
+                    example: TOPIC_SELECTION
+                  message:
+                    type: string
+                    example: Topic selected successfully
+        '400':
+          description: Invalid state transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Invalid state transition"
+                timestamp: "2025-12-13T10:00:00Z"
+                path: "/api/v1/events/BATbern56/topics"
+                status: 400
+                error: "Bad Request"
+        '404':
+          description: Event or topic not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Event not found: BATbern56"
+                timestamp: "2025-12-13T10:00:00Z"
+                path: "/api/v1/events/BATbern56/topics"
+                status: 404
+                error: "Not Found"
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/speakers/pool:
+    post:
+      tags:
+        - Event Actions
+      summary: Add speaker to event speaker pool
+      description: |
+        Add a potential speaker to the event speaker pool during brainstorming phase.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Acceptance Criteria**: AC9-13
+        **Authorization**: Requires ORGANIZER role
+        **Rate Limiting**: Applied at API Gateway level
+
+        **Business Rules**:
+        - Event must exist
+        - Speaker name is required
+        - Company, expertise, and notes are optional
+        - Organizer assignment is optional (can be assigned later)
+        - Initial status is automatically set to 'identified'
+
+        **Performance**: <150ms (P95)
+
+      operationId: addSpeakerToPool
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern56
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddSpeakerToPoolRequest'
+      responses:
+        '201':
+          description: Speaker added to pool successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerPoolResponse'
+        '400':
+          description: Validation error (e.g., speaker name missing)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Speaker name is required"
+                timestamp: "2025-12-13T10:00:00Z"
+                path: "/api/v1/events/BATbern56/speakers/pool"
+                status: 400
+                error: "Bad Request"
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Event not found: BATbern56"
+                timestamp: "2025-12-13T10:00:00Z"
+                path: "/api/v1/events/BATbern56/speakers/pool"
+                status: 404
+                error: "Not Found"
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
   /events/{eventCode}/sessions:
     get:
       tags:
@@ -1991,6 +2170,16 @@ components:
             Upload ID from three-phase upload pattern (internal reference).
             Story 2.5.3a: Event Theme Image Upload
             This is returned so the frontend can track what was uploaded.
+        eventType:
+          $ref: '#/components/schemas/EventType'
+          description: |
+            Event type (FULL_DAY, AFTERNOON, EVENING).
+            Story 5.1: Event Type Definition
+        workflowState:
+          $ref: '#/components/schemas/EventWorkflowState'
+          description: |
+            Current workflow state (16-step workflow).
+            Story 5.1a: Event Workflow State Machine
 
     EventDetail:
       allOf:
@@ -2865,6 +3054,114 @@ components:
           example:
             - "Cannot transition to SPEAKER_OUTREACH: Insufficient speakers identified (need 6, have 3)"
 
+    AddSpeakerToPoolRequest:
+      type: object
+      description: |
+        Request to add a potential speaker to the event speaker pool during brainstorming phase.
+        Story 5.2 - AC9-12: Speaker Pool Management
+      required:
+        - speakerName
+      properties:
+        speakerName:
+          type: string
+          maxLength: 255
+          description: Name of the potential speaker (required)
+          example: Jane Smith
+        company:
+          type: string
+          maxLength: 255
+          description: Company or organization of the speaker (optional)
+          example: Tech Corp AG
+        expertise:
+          type: string
+          description: Areas of expertise (optional)
+          example: Cloud Architecture, Kubernetes, DevOps
+        assignedOrganizerId:
+          type: string
+          maxLength: 255
+          description: Username of organizer assigned for outreach (optional)
+          example: alice.mueller
+        notes:
+          type: string
+          description: Free-text notes about the speaker (optional)
+          example: Met at KubeCon 2024. Very enthusiastic about BATbern. Follow up next week.
+
+    SpeakerPoolResponse:
+      type: object
+      description: |
+        Response representing a speaker pool entry.
+        Story 5.2 - AC9-13: Speaker Pool Management
+      required:
+        - id
+        - eventId
+        - speakerName
+        - status
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the speaker pool entry
+          example: 123e4567-e89b-12d3-a456-426614174000
+        eventId:
+          type: string
+          format: uuid
+          description: UUID of the event this speaker is associated with
+          example: 789e4567-e89b-12d3-a456-426614174111
+        speakerName:
+          type: string
+          description: Name of the potential speaker
+          example: Jane Smith
+        company:
+          type: string
+          nullable: true
+          description: Company or organization of the speaker
+          example: Tech Corp AG
+        expertise:
+          type: string
+          nullable: true
+          description: Areas of expertise
+          example: Cloud Architecture, Kubernetes, DevOps
+        assignedOrganizerId:
+          type: string
+          nullable: true
+          description: Username of organizer assigned for outreach
+          example: alice.mueller
+        status:
+          type: string
+          enum:
+            - identified
+            - contacted
+            - ready
+            - accepted
+            - declined
+            - content_submitted
+            - quality_reviewed
+            - slot_assigned
+            - confirmed
+            - withdrew
+            - overflow
+          description: |
+            Current status of the speaker in the pool workflow.
+            Story 5.2 - AC13: Initial status = 'identified'
+          example: identified
+        notes:
+          type: string
+          nullable: true
+          description: Free-text notes about the speaker
+          example: Met at KubeCon 2024. Very enthusiastic about BATbern.
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when speaker was added to pool
+          example: 2025-12-13T10:00:00Z
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp of last update
+          example: 2025-12-13T10:15:00Z
+
   responses:
     BadRequest:
       description: Bad request - validation error
@@ -2927,6 +3224,20 @@ components:
                 errorCode: INTERNAL_ERROR
                 message: An unexpected error occurred
                 timestamp: 2025-01-15T10:30:00Z
+
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            forbiddenError:
+              value:
+                error: FORBIDDEN
+                errorCode: FORBIDDEN
+                message: "Insufficient permissions to perform this action"
+                timestamp: "2025-01-15T10:30:00Z"
 
   securitySchemes:
     BearerAuth:

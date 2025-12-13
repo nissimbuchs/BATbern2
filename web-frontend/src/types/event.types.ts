@@ -60,11 +60,10 @@ export interface EventUI extends Event {
 
   // UI-only fields (Phase 2 features - not in backend API yet)
   venueCode?: string; // Venue identifier for dropdown selection
-  eventType?: 'full_day' | 'afternoon' | 'evening'; // Event duration type
   theme?: string; // Event theme/category
-  workflowState?: string; // Current workflow state for progress tracking
   version?: number; // Version number for optimistic concurrency control
   createdBy?: string; // Username who created the event
+  // Note: eventType and workflowState are now in base Event type from API
 }
 
 /**
@@ -78,10 +77,8 @@ export interface EventDetailUI extends EventDetail {
 
   // Additional UI-only fields for dashboard and detail view (Phase 2 features)
   eventDate?: string; // Alias for 'date' field
-  eventType?: 'full_day' | 'afternoon' | 'evening'; // Event duration type
   topics?: string[]; // List of topic IDs/names
   workflowStep?: number; // Current workflow step number
-  workflowState?: string; // Current workflow state name
   confirmedSpeakersCount?: number;
   assignedTopicsCount?: number;
   pendingMaterialsCount?: number;
@@ -90,6 +87,7 @@ export interface EventDetailUI extends EventDetail {
     spent?: number;
     currency?: string;
   };
+  // Note: eventType and workflowState are now in base Event type from API
 }
 
 // ============================================================================
