@@ -20,7 +20,7 @@ CREATE TABLE topics (
     usage_count INTEGER DEFAULT 0,
     staleness_score INTEGER DEFAULT 100 CHECK (staleness_score >= 0 AND staleness_score <= 100),
     calculated_wait_period INTEGER, -- in months
-    partner_influence_score NUMERIC(5,2),
+    partner_influence_score DOUBLE PRECISION,
     similarity_scores JSONB DEFAULT '[]', -- Array of {topicId: UUID, score: number}
     is_active BOOLEAN DEFAULT TRUE,
     title_vector tsvector GENERATED ALWAYS AS (to_tsvector('english', title)) STORED,
@@ -36,8 +36,8 @@ CREATE TABLE topic_usage_history (
     event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
     used_date TIMESTAMP WITH TIME ZONE NOT NULL,
     attendee_count INTEGER,
-    feedback_score NUMERIC(3,2),
-    engagement_score NUMERIC(3,2), -- 0.00 to 1.00
+    feedback_score DOUBLE PRECISION,
+    engagement_score DOUBLE PRECISION, -- 0.00 to 1.00
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
