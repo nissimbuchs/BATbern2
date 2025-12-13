@@ -16,6 +16,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
 import jakarta.servlet.http.HttpServletRequest;
+import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -63,9 +64,9 @@ class RequestRoutingIntegrationTest {
             .companyId("company-456")
             .build();
 
-        // Mock RestTemplate response
+        // Mock RestTemplate response - now accepts URI instead of String
         when(restTemplate.exchange(
-            anyString(),
+            any(URI.class),
             any(),
             any(),
             eq(String.class)
