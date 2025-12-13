@@ -32,24 +32,19 @@ import {
 import { FilterList as FilterIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import type { CompanyFilters as CompanyFiltersType } from '@/types/company.types';
+import type { IndustriesData } from '@/types/industry.types';
+import industriesDataJson from '@/data/industries.json';
 
 interface CompanyFiltersProps {
   onFilterChange: (filters: CompanyFiltersType) => void;
   initialFilters?: CompanyFiltersType;
 }
 
-const INDUSTRIES = [
-  'Cloud Computing',
-  'DevOps',
-  'Financial Services',
-  'Healthcare',
-  'Manufacturing',
-  'Retail',
-  'Education',
-  'Government',
-  'Technology',
-  'Consulting',
-];
+// Type-cast the imported JSON to IndustriesData
+const industriesData = industriesDataJson as IndustriesData;
+
+// Get industries from JSON file (English names), sorted alphabetically
+const INDUSTRIES = industriesData.industries.map((i) => i.name.en).sort();
 
 const CompanyFilters: React.FC<CompanyFiltersProps> = ({ onFilterChange, initialFilters = {} }) => {
   const { t } = useTranslation('common');

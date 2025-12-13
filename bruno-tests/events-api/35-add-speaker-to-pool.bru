@@ -1,0 +1,54 @@
+meta {
+  name: Add Speaker To Pool
+  type: http
+  seq: 35
+}
+
+post {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/pool
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "speakerName": "Dr. Maria Schmidt",
+    "company": "Zühlke Engineering AG",
+    "expertise": "Cloud architecture, Kubernetes, DevOps practices",
+    "assignedOrganizerId": "{{organizerUsername}}",
+    "notes": "Excellent speaker, presented at previous BATbern events"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.id: isDefined
+  res.body.speakerName: isDefined
+  res.body.status: eq identified
+}
+
+tests {
+  test("should return 201 status - Story 5.2 AC9", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("should return speaker pool entry with IDENTIFIED status - Story 5.2 AC9, AC13, AC15", function() {
+    const speaker = res.getBody();
+    expect(speaker.id).to.be.a('string');
+    expect(speaker.eventId).to.be.a('string');
+    expect(speaker.speakerName).to.equal('Dr. Maria Schmidt');
+    expect(speaker.company).to.equal('Zühlke Engineering AG');
+    expect(speaker.expertise).to.be.a('string');
+    expect(speaker.assignedOrganizerId).to.equal(bru.getVar("organizerUsername"));
+    expect(speaker.status).to.equal('identified'); // Initial status per AC13, AC15
+    expect(speaker.notes).to.be.a('string');
+  });
+
+  test("should save speaker pool ID for later tests", function() {
+    bru.setVar("createdSpeakerPoolId", res.getBody().id);
+  });
+}

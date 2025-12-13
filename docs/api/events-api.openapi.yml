@@ -36,6 +36,8 @@ servers:
 tags:
   - name: Events
     description: Event CRUD and listing operations
+  - name: Event Types
+    description: Event type configuration management (Story 5.1)
   - name: Event Actions
     description: Event publishing and workflow operations
   - name: Sessions
@@ -46,6 +48,8 @@ tags:
     description: Event analytics and metrics
   - name: Bulk Operations
     description: Batch operations on multiple events
+  - name: Topics
+    description: Topic management and backlog operations (Story 5.2)
 
 paths:
   /events:
@@ -60,9 +64,20 @@ paths:
 
         **Filter Syntax Examples**:
         - Single filter: `{"status":"published"}`
-        - Multiple operators: `{"date":{"$gte":"2025-01-01","$lte":"2025-12-31"}}`
+        - Year filter: `{"year":2025}`
+        - Text search: `{"title":{"$contains":"Cloud"}}`
+        - Date range: `{"date":{"$gte":"2025-01-01T00:00:00Z","$lt":"2026-01-01T00:00:00Z"}}`
+        - Multiple filters: `{"status":"published","year":2025}`
+        - Search with filter: `{"status":"published","title":{"$contains":"Cloud"}}`
         - Logical operators: `{"$or":[{"status":"published"},{"status":"archived"}]}`
         - In operator: `{"status":{"$in":["published","archived"]}}`
+
+        **Supported Filter Fields**:
+        - `year`: Integer (convenience filter, matches events from Jan 1 - Dec 31 of given year)
+        - `date`: ISO 8601 timestamp (supports $gte, $lte, $gt, $lt operators for date ranges)
+        - `status`: String (single status) or use `$in` operator for multiple statuses
+        - `eventNumber`: Integer (event number)
+        - `title`: String (supports $contains, $startsWith, $endsWith operators for text search)
 
         **Sort Syntax**:
         - Ascending: `date`
@@ -625,6 +640,375 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
         '500':
           $ref: '#/components/responses/InternalServerError'
+
+  /events/{eventCode}/workflow/transition:
+    put:
+      tags:
+        - Event Actions
+      summary: Transition event to target workflow state
+      description: |
+        Transition an event to a specific target workflow state.
+
+        **Story**: 5.1a - Workflow State Machine Foundation
+        **Acceptance Criteria**: AC12
+        **Authorization**: Requires ORGANIZER role
+        **Rate Limiting**: 10 transitions per minute per user (API Gateway)
+        **Performance**: <200ms (P95)
+
+        **16-Step Workflow**:
+        1. CREATED - Initial state
+        2. TOPIC_SELECTION - Topics being selected
+        3. SPEAKER_BRAINSTORMING - Identifying potential speakers
+        4. SPEAKER_OUTREACH - Contacting speakers
+        5. SPEAKER_CONFIRMATION - Confirming speaker participation
+        6. CONTENT_COLLECTION - Collecting presentations and materials
+        7. QUALITY_REVIEW - Reviewing content quality
+        8. THRESHOLD_CHECK - Checking minimum speaker threshold
+        9. OVERFLOW_MANAGEMENT - Managing speaker overflow
+        10. SLOT_ASSIGNMENT - Assigning speakers to time slots
+        11. AGENDA_PUBLISHED - Publishing agenda
+        12. AGENDA_FINALIZED - Finalizing agenda
+        13. NEWSLETTER_SENT - Newsletter sent to attendees
+        14. EVENT_READY - Event ready to start
+        15. PARTNER_MEETING_COMPLETE - Partner meetings completed
+        16. ARCHIVED - Event archived
+
+        **Validation**:
+        - Some transitions require business rule validation (e.g., minimum speakers for SPEAKER_OUTREACH)
+        - Invalid transitions return 400 Bad Request
+        - Validation failures return 422 Unprocessable Entity
+
+        **Cache Invalidation**: All event caches cleared on state transition
+
+      operationId: transitionEventWorkflowState
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransitionStateRequest'
+            examples:
+              validTransition:
+                summary: Valid transition from CREATED to TOPIC_SELECTION
+                value:
+                  targetState: TOPIC_SELECTION
+      responses:
+        '200':
+          description: Workflow transition successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  eventCode:
+                    type: string
+                    example: BATbern142
+                  workflowState:
+                    type: string
+                    example: TOPIC_SELECTION
+                  updatedAt:
+                    type: string
+                    format: date-time
+        '400':
+          description: Invalid state transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidTransition:
+                  summary: Invalid transition (e.g., CREATED → ARCHIVED)
+                  value:
+                    timestamp: "2025-12-11T10:00:00Z"
+                    path: "/api/v1/events/BATbern142/workflow/transition"
+                    status: 400
+                    error: "Bad Request"
+                    message: "Invalid transition from CREATED to ARCHIVED"
+                    correlationId: "abc-123-def"
+                    severity: "MEDIUM"
+                    details:
+                      fromState: CREATED
+                      toState: ARCHIVED
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Validation failure (business rules not met)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                insufficientSpeakers:
+                  summary: Insufficient speakers for transition
+                  value:
+                    timestamp: "2025-12-11T10:00:00Z"
+                    path: "/api/v1/events/BATbern142/workflow/transition"
+                    status: 422
+                    error: "Unprocessable Entity"
+                    message: "Insufficient speakers identified"
+                    correlationId: "abc-123-def"
+                    severity: "HIGH"
+                    details:
+                      required: 6
+                      identified: 3
+                      placeholder: true
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/workflow/status:
+    get:
+      tags:
+        - Event Actions
+      summary: Get current workflow status
+      description: |
+        Retrieve the current workflow status including current state, next available states,
+        and validation messages.
+
+        **Story**: 5.1a - Workflow State Machine Foundation
+        **Acceptance Criteria**: AC13
+        **Authorization**: Requires authentication (any authenticated user)
+        **Rate Limiting**: Applied at API Gateway level
+
+        **Response includes**:
+        - Current workflow state
+        - Next available states (states that can be transitioned to)
+        - Blocked transitions (states that cannot be transitioned to due to business rules)
+        - Validation messages (reasons why certain transitions are blocked)
+
+        **Performance**: <100ms (P95)
+
+      operationId: getWorkflowStatus
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
+      responses:
+        '200':
+          description: Workflow status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowStatusDto'
+              examples:
+                createdState:
+                  summary: Event in CREATED state
+                  value:
+                    currentState: CREATED
+                    nextAvailableStates:
+                      - TOPIC_SELECTION
+                    blockedTransitions: []
+                    validationMessages: []
+                speakerBrainstormingState:
+                  summary: Event in SPEAKER_BRAINSTORMING state with validation blocker
+                  value:
+                    currentState: SPEAKER_BRAINSTORMING
+                    nextAvailableStates:
+                      - SPEAKER_OUTREACH
+                    blockedTransitions:
+                      - SPEAKER_OUTREACH
+                    validationMessages:
+                      - "Cannot transition to SPEAKER_OUTREACH: Insufficient speakers identified"
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/topics:
+    post:
+      tags:
+        - Event Actions
+      summary: Select topic for event
+      description: |
+        Assign a topic to an event and transition workflow state to TOPIC_SELECTION.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Acceptance Criteria**: AC14
+        **Authorization**: Requires ORGANIZER role
+        **Rate Limiting**: Applied at API Gateway level
+
+        **Workflow State Transition**:
+        - Valid source states: CREATED, TOPIC_SELECTION
+        - Target state: TOPIC_SELECTION
+        - Publishes EventWorkflowTransitionEvent domain event
+
+        **Business Rules**:
+        - Event must exist
+        - Topic must exist in topic backlog
+        - Event must be in CREATED or TOPIC_SELECTION state
+        - Organizer can change topic while in TOPIC_SELECTION state
+
+        **Performance**: <200ms (P95)
+
+      operationId: selectTopicForEvent
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern56
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - topicId
+              properties:
+                topicId:
+                  type: string
+                  format: uuid
+                  description: UUID of the topic to assign
+                  example: 123e4567-e89b-12d3-a456-426614174000
+      responses:
+        '200':
+          description: Topic selected successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  eventCode:
+                    type: string
+                    example: BATbern56
+                  topicId:
+                    type: string
+                    format: uuid
+                    example: 123e4567-e89b-12d3-a456-426614174000
+                  workflowState:
+                    type: string
+                    enum: [TOPIC_SELECTION]
+                    example: TOPIC_SELECTION
+                  message:
+                    type: string
+                    example: Topic selected successfully
+        '400':
+          description: Invalid state transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Invalid state transition"
+                timestamp: "2025-12-13T10:00:00Z"
+                path: "/api/v1/events/BATbern56/topics"
+                status: 400
+                error: "Bad Request"
+        '404':
+          description: Event or topic not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Event not found: BATbern56"
+                timestamp: "2025-12-13T10:00:00Z"
+                path: "/api/v1/events/BATbern56/topics"
+                status: 404
+                error: "Not Found"
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/speakers/pool:
+    post:
+      tags:
+        - Event Actions
+      summary: Add speaker to event speaker pool
+      description: |
+        Add a potential speaker to the event speaker pool during brainstorming phase.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Acceptance Criteria**: AC9-13
+        **Authorization**: Requires ORGANIZER role
+        **Rate Limiting**: Applied at API Gateway level
+
+        **Business Rules**:
+        - Event must exist
+        - Speaker name is required
+        - Company, expertise, and notes are optional
+        - Organizer assignment is optional (can be assigned later)
+        - Initial status is automatically set to 'identified'
+
+        **Performance**: <150ms (P95)
+
+      operationId: addSpeakerToPool
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern56
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddSpeakerToPoolRequest'
+      responses:
+        '201':
+          description: Speaker added to pool successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerPoolResponse'
+        '400':
+          description: Validation error (e.g., speaker name missing)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Speaker name is required"
+                timestamp: "2025-12-13T10:00:00Z"
+                path: "/api/v1/events/BATbern56/speakers/pool"
+                status: 400
+                error: "Bad Request"
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Event not found: BATbern56"
+                timestamp: "2025-12-13T10:00:00Z"
+                path: "/api/v1/events/BATbern56/speakers/pool"
+                status: 404
+                error: "Not Found"
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
 
   /events/{eventCode}/sessions:
     get:
@@ -1518,6 +1902,654 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /events/types:
+    get:
+      tags:
+        - Event Types
+      summary: List all event type configurations
+      description: |
+        Retrieve all event type configurations (FULL_DAY, AFTERNOON, EVENING).
+
+        **Story**: 5.1 - Event Type Definition
+        **Acceptance Criteria**: AC1
+
+        Event types define slot requirements and templates for different event formats.
+        This endpoint returns cached configurations (Caffeine cache, 1 hour TTL).
+
+        **Performance**: <50ms (P95) - cached response
+      operationId: listEventTypes
+      responses:
+        '200':
+          description: Event types retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventSlotConfigurationResponse'
+              example:
+                - type: FULL_DAY
+                  minSlots: 6
+                  maxSlots: 8
+                  slotDuration: 45
+                  theoreticalSlotsAM: true
+                  breakSlots: 2
+                  lunchSlots: 1
+                  defaultCapacity: 300
+                  typicalStartTime: "09:00"
+                  typicalEndTime: "16:00"
+                - type: AFTERNOON
+                  minSlots: 6
+                  maxSlots: 8
+                  slotDuration: 45
+                  theoreticalSlotsAM: false
+                  breakSlots: 1
+                  lunchSlots: 0
+                  defaultCapacity: 200
+                  typicalStartTime: "13:00"
+                  typicalEndTime: "19:00"
+                - type: EVENING
+                  minSlots: 3
+                  maxSlots: 4
+                  slotDuration: 45
+                  theoreticalSlotsAM: false
+                  breakSlots: 1
+                  lunchSlots: 0
+                  defaultCapacity: 200
+                  typicalStartTime: "16:00"
+                  typicalEndTime: "19:00"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /events/types/{type}:
+    get:
+      tags:
+        - Event Types
+      summary: Get specific event type configuration
+      description: |
+        Retrieve configuration for a specific event type.
+
+        **Story**: 5.1 - Event Type Definition
+        **Acceptance Criteria**: AC2
+
+        Returns slot configuration details for the specified event type.
+        Cached response (Caffeine cache, 1 hour TTL).
+
+        **Performance**: <50ms (P95) - cached response
+      operationId: getEventType
+      parameters:
+        - name: type
+          in: path
+          required: true
+          description: Event type identifier
+          schema:
+            $ref: '#/components/schemas/EventType'
+          example: FULL_DAY
+      responses:
+        '200':
+          description: Event type configuration retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventSlotConfigurationResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+    put:
+      tags:
+        - Event Types
+      summary: Update event type configuration (ORGANIZER only)
+      description: |
+        Update configuration for a specific event type.
+
+        **Story**: 5.1 - Event Type Definition
+        **Acceptance Criteria**: AC3, AC8
+
+        **Authorization**: Requires ORGANIZER role
+
+        Updates slot configuration for the event type template.
+        Cache is automatically invalidated after successful update.
+
+        **Validation**:
+        - minSlots must be > 0
+        - maxSlots must be >= minSlots
+        - slotDuration must be >= 15 minutes
+        - defaultCapacity must be > 0
+      operationId: updateEventType
+      parameters:
+        - name: type
+          in: path
+          required: true
+          description: Event type identifier
+          schema:
+            $ref: '#/components/schemas/EventType'
+          example: FULL_DAY
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEventSlotConfigurationRequest'
+            example:
+              minSlots: 6
+              maxSlots: 8
+              slotDuration: 45
+              theoreticalSlotsAM: true
+              breakSlots: 2
+              lunchSlots: 1
+              defaultCapacity: 200
+              typicalStartTime: "09:00"
+              typicalEndTime: "17:00"
+      responses:
+        '200':
+          description: Event type configuration updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventSlotConfigurationResponse'
+        '400':
+          description: Validation error (e.g., minSlots > maxSlots)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - requires ORGANIZER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /topics:
+    get:
+      tags:
+        - Topics
+      summary: List all topics with filters and pagination
+      description: |
+        Retrieve topic backlog with optional category and status filters.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Acceptance Criteria**: AC1, AC2, AC6
+        **Authorization**: Requires ORGANIZER role
+        **Performance**: <150ms (P95) with database-level pagination
+
+        **Filtering**:
+        - Category filter: `?filter={"category":"technical"}`
+        - Status filter: `?filter={"status":"active"}` or `"inactive"`
+        - Combined: `?filter={"category":"technical","status":"active"}`
+
+        **Sorting**:
+        - Default: staleness score descending (safest topics first)
+        - Custom: `?sort=-stalenessScore` or `?sort=stalenessScore,desc`
+        - Supports: title, category, stalenessScore, usageCount, createdDate
+
+        **Pagination**:
+        - Default: page=1, limit=50
+        - Database-level pagination for performance
+
+        **Staleness Zones**:
+        - Green (83-100): Safe to use, recommended
+        - Yellow (50-82): Use with caution
+        - Red (0-49): Too recent, avoid reuse
+      operationId: listTopics
+      parameters:
+        - name: filter
+          in: query
+          description: JSON filter object
+          required: false
+          schema:
+            type: string
+            example: '{"category":"technical","status":"active"}'
+        - name: page
+          in: query
+          description: Page number (1-based)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            example: 1
+        - name: limit
+          in: query
+          description: Items per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+            example: 50
+        - name: sort
+          in: query
+          description: Sort parameter (e.g., "-stalenessScore" or "stalenessScore,desc")
+          schema:
+            type: string
+            example: "-stalenessScore"
+      responses:
+        '200':
+          description: Topics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicListResponse'
+              example:
+                data:
+                  - id: "123e4567-e89b-12d3-a456-426614174000"
+                    title: "Cloud Native Architecture Patterns"
+                    description: "Modern cloud-native design patterns and best practices"
+                    category: "technical"
+                    createdDate: "2023-01-15T10:00:00Z"
+                    lastUsedDate: "2024-03-20T14:30:00Z"
+                    usageCount: 3
+                    stalenessScore: 92
+                    colorZone: "green"
+                    status: "available"
+                    similarityScores: []
+                    active: true
+                    createdAt: "2023-01-15T10:00:00Z"
+                    updatedAt: "2024-03-20T14:30:00Z"
+                pagination:
+                  page: 1
+                  limit: 50
+                  total: 150
+        '400':
+          description: Invalid filter JSON
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+    post:
+      tags:
+        - Topics
+      summary: Create new topic
+      description: |
+        Add new topic to backlog. Automatically calculates similarity scores.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Acceptance Criteria**: AC8
+        **Authorization**: Requires ORGANIZER role
+
+        **Automatic Processing**:
+        - Staleness score initialized to 100 (safe to use immediately)
+        - Similarity scores calculated against all existing topics using TF-IDF
+        - Only similarity scores >30% are stored
+
+        **Duplicate Detection**:
+        - If similarity >70% to existing topic, warning is flagged
+        - Organizer can still create but should review similar topics first
+      operationId: createTopic
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TopicRequest'
+            example:
+              title: "Kubernetes Security Best Practices"
+              description: "Deep dive into securing K8s clusters in production"
+              category: "technical"
+      responses:
+        '201':
+          description: Topic created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicResponse'
+              example:
+                id: "456e7890-e89b-12d3-a456-426614174001"
+                title: "Kubernetes Security Best Practices"
+                description: "Deep dive into securing K8s clusters in production"
+                category: "technical"
+                createdDate: "2025-12-13T10:00:00Z"
+                lastUsedDate: null
+                usageCount: 0
+                stalenessScore: 100
+                colorZone: "green"
+                status: "available"
+                similarityScores:
+                  - topicId: "123e4567-e89b-12d3-a456-426614174000"
+                    score: 0.65
+                active: true
+                createdAt: "2025-12-13T10:00:00Z"
+                updatedAt: "2025-12-13T10:00:00Z"
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /topics/{id}:
+    get:
+      tags:
+        - Topics
+      summary: Get topic by ID
+      description: |
+        Retrieve topic details including similarity scores.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Acceptance Criteria**: AC2, AC5
+        **Authorization**: Requires ORGANIZER role
+
+        **Optional Includes**:
+        - `?include=similarity` - Recalculates similarity scores on-demand
+      operationId: getTopicById
+      parameters:
+        - name: id
+          in: path
+          description: Topic UUID
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: "123e4567-e89b-12d3-a456-426614174000"
+        - name: include
+          in: query
+          description: Comma-separated list of fields to include
+          schema:
+            type: string
+            example: "similarity"
+      responses:
+        '200':
+          description: Topic retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /topics/{id}/override-staleness:
+    put:
+      tags:
+        - Topics
+      summary: Override staleness score with justification
+      description: |
+        Manually override staleness score for exceptional cases.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Acceptance Criteria**: AC7
+        **Authorization**: Requires ORGANIZER role
+
+        **Use Cases**:
+        - Evergreen content that's always relevant (set to 100)
+        - Time-sensitive topics that shouldn't be reused (set to 0)
+        - Special exceptions requiring organizer judgment
+
+        **Audit Trail**:
+        - Justification is required for compliance
+        - Override should be logged in audit system (future enhancement)
+
+        **Validation**:
+        - Score must be 0-100
+        - Justification must be non-empty
+      operationId: overrideTopicStaleness
+      parameters:
+        - name: id
+          in: path
+          description: Topic UUID
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: "123e4567-e89b-12d3-a456-426614174000"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OverrideStalenesRequest'
+            example:
+              stalenessScore: 100
+              justification: "Evergreen content - fundamentals of software architecture never go out of date"
+      responses:
+        '200':
+          description: Staleness score overridden successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /topics/{id}/similar:
+    get:
+      tags:
+        - Topics
+      summary: Get similar topics (duplicate detection)
+      description: |
+        Retrieve topics with >70% similarity for duplicate detection.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Acceptance Criteria**: AC5
+        **Authorization**: Requires ORGANIZER role
+
+        **Similarity Algorithm**:
+        - TF-IDF vectorization of title + description
+        - Cosine similarity calculation
+        - >70% threshold indicates potential duplicate
+
+        **Frontend Integration**:
+        - Display warning when creating/selecting topics with high similarity
+        - Helps organizers avoid redundant content across events
+      operationId: getSimilarTopics
+      parameters:
+        - name: id
+          in: path
+          description: Topic UUID
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: "123e4567-e89b-12d3-a456-426614174000"
+      responses:
+        '200':
+          description: Similar topics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TopicResponse'
+              example:
+                - id: "789e0123-e89b-12d3-a456-426614174002"
+                  title: "Cloud Architecture Best Practices"
+                  description: "Cloud-native architectural patterns for modern applications"
+                  category: "technical"
+                  stalenessScore: 78
+                  colorZone: "yellow"
+                  status: "caution"
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /topics/{id}/usage-history:
+    get:
+      tags:
+        - Topics
+      summary: Get topic usage history
+      description: |
+        Retrieve the usage history for a specific topic over the last 24 months.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Acceptance Criteria**: AC2
+        **Authorization**: Requires ORGANIZER role
+
+        **Usage**:
+        - Returns historical usage data for heat map visualization
+        - Grouped by event with attendance and engagement metrics
+        - Used to identify usage patterns and staleness trends
+
+        **Frontend Integration**:
+        - Powers the TopicHeatMap component
+        - Displays quarterly aggregated usage patterns
+        - Helps organizers make informed topic selection decisions
+      operationId: getTopicUsageHistory
+      parameters:
+        - name: id
+          in: path
+          description: Topic UUID
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: "123e4567-e89b-12d3-a456-426614174000"
+      responses:
+        '200':
+          description: Usage history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TopicUsageHistory'
+              example:
+                - eventId: "event-abc-123"
+                  usedDate: "2024-01-15T10:00:00Z"
+                  attendance: 150
+                  engagementScore: 0.85
+                - eventId: "event-def-456"
+                  usedDate: "2024-04-20T10:00:00Z"
+                  attendance: 200
+                  engagementScore: 0.92
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /topics/recalculate-staleness:
+    post:
+      tags:
+        - Topics
+      summary: Recalculate staleness scores for all topics
+      description: |
+        Maintenance endpoint to recalculate staleness for all topics.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Acceptance Criteria**: AC3
+        **Authorization**: Requires ORGANIZER role
+
+        **Scheduling**:
+        - Should be run periodically (e.g., monthly batch job)
+        - Updates staleness based on time since last use
+        - Does NOT override manual staleness adjustments
+
+        **Performance**:
+        - Runs asynchronously for large backlogs
+        - Returns immediately with count of topics queued
+      operationId: recalculateTopicStaleness
+      responses:
+        '200':
+          description: Staleness recalculation started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Staleness scores recalculated for 150 topics"
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /topics/calculate-similarities:
+    post:
+      tags:
+        - Topics
+      summary: Calculate similarity scores for all topics
+      description: |
+        Maintenance endpoint to recalculate TF-IDF similarity matrix.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Acceptance Criteria**: AC4
+        **Authorization**: Requires ORGANIZER role
+
+        **Use Cases**:
+        - Initial data migration
+        - After bulk topic imports
+        - Periodic refresh of similarity scores
+
+        **Algorithm**:
+        - TF-IDF vectorization across all active topics
+        - Pairwise cosine similarity calculation
+        - Only stores scores >30% to save space
+
+        **Performance**:
+        - O(n²) complexity - expensive for large backlogs
+        - Should be run during off-peak hours
+      operationId: calculateTopicSimilarities
+      responses:
+        '200':
+          description: Similarity calculation started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Similarity scores calculated for all topics"
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
 components:
   schemas:
     Event:
@@ -1618,6 +2650,16 @@ components:
             Upload ID from three-phase upload pattern (internal reference).
             Story 2.5.3a: Event Theme Image Upload
             This is returned so the frontend can track what was uploaded.
+        eventType:
+          $ref: '#/components/schemas/EventType'
+          description: |
+            Event type (FULL_DAY, AFTERNOON, EVENING).
+            Story 5.1: Event Type Definition
+        workflowState:
+          $ref: '#/components/schemas/EventWorkflowState'
+          description: |
+            Current workflow state (16-step workflow).
+            Story 5.1a: Event Workflow State Machine
 
     EventDetail:
       allOf:
@@ -1909,6 +2951,7 @@ components:
         - venueCapacity
         - status
         - organizerUsername
+        - eventType
       properties:
         title:
           type: string
@@ -1951,6 +2994,8 @@ components:
         description:
           type: string
           maxLength: 5000
+        eventType:
+          $ref: '#/components/schemas/EventType'
         themeImageUploadId:
           type: string
           nullable: true
@@ -1972,6 +3017,7 @@ components:
         - venueCapacity
         - status
         - organizerUsername
+        - eventType
       properties:
         title:
           type: string
@@ -2011,6 +3057,8 @@ components:
         description:
           type: string
           maxLength: 5000
+        eventType:
+          $ref: '#/components/schemas/EventType'
         themeImageUploadId:
           type: string
           nullable: true
@@ -2270,6 +3318,140 @@ components:
               count:
                 type: integer
 
+    EventType:
+      type: string
+      description: |
+        Event type identifier (Story 5.1 - Event Type Definition).
+        Matches EventType enum from architecture (03-data-architecture.md:547-551).
+      enum:
+        - FULL_DAY
+        - AFTERNOON
+        - EVENING
+      example: FULL_DAY
+
+    EventSlotConfigurationResponse:
+      type: object
+      description: |
+        Event slot configuration for an event type (Story 5.1).
+        Defines slot requirements and scheduling parameters.
+      required:
+        - type
+        - minSlots
+        - maxSlots
+        - slotDuration
+        - theoreticalSlotsAM
+        - breakSlots
+        - lunchSlots
+        - defaultCapacity
+      properties:
+        type:
+          $ref: '#/components/schemas/EventType'
+        minSlots:
+          type: integer
+          minimum: 1
+          description: Minimum number of session slots
+          example: 6
+        maxSlots:
+          type: integer
+          minimum: 1
+          description: Maximum number of session slots
+          example: 8
+        slotDuration:
+          type: integer
+          minimum: 15
+          description: Duration of each slot in minutes
+          example: 45
+        theoreticalSlotsAM:
+          type: boolean
+          description: Whether theoretical presentations are scheduled in morning slots
+          example: true
+        breakSlots:
+          type: integer
+          minimum: 0
+          description: Number of break slots included in event
+          example: 2
+        lunchSlots:
+          type: integer
+          minimum: 0
+          description: Number of lunch slots included in event
+          example: 1
+        defaultCapacity:
+          type: integer
+          minimum: 1
+          description: Default attendee capacity for this event type
+          example: 200
+        typicalStartTime:
+          type: string
+          format: time
+          description: Typical start time for this event type
+          example: "09:00"
+        typicalEndTime:
+          type: string
+          format: time
+          description: Typical end time for this event type
+          example: "17:00"
+
+    UpdateEventSlotConfigurationRequest:
+      type: object
+      description: |
+        Request to update event slot configuration (Story 5.1).
+        All fields are required for update operation.
+      required:
+        - minSlots
+        - maxSlots
+        - slotDuration
+        - theoreticalSlotsAM
+        - breakSlots
+        - lunchSlots
+        - defaultCapacity
+      properties:
+        minSlots:
+          type: integer
+          minimum: 1
+          description: Minimum number of session slots
+          example: 6
+        maxSlots:
+          type: integer
+          minimum: 1
+          description: Maximum number of session slots (must be >= minSlots)
+          example: 8
+        slotDuration:
+          type: integer
+          minimum: 15
+          description: Duration of each slot in minutes
+          example: 45
+        theoreticalSlotsAM:
+          type: boolean
+          description: Whether theoretical presentations are scheduled in morning slots
+          example: true
+        breakSlots:
+          type: integer
+          minimum: 0
+          description: Number of break slots included in event
+          example: 2
+        lunchSlots:
+          type: integer
+          minimum: 0
+          description: Number of lunch slots included in event
+          example: 1
+        defaultCapacity:
+          type: integer
+          minimum: 1
+          description: Default attendee capacity for this event type
+          example: 200
+        typicalStartTime:
+          type: string
+          format: time
+          description: Typical start time for this event type
+          example: "09:00"
+          nullable: true
+        typicalEndTime:
+          type: string
+          format: time
+          description: Typical end time for this event type
+          example: "17:00"
+          nullable: true
+
     PaginationMetadata:
       type: object
       description: Pagination metadata from shared-kernel
@@ -2281,6 +3463,387 @@ components:
       description: Standard error response from shared-kernel
       x-java-type: ch.batbern.shared.dto.ErrorResponse
       x-java-type-import: ch.batbern.shared.dto.ErrorResponse
+
+    EventWorkflowState:
+      type: string
+      description: |
+        Event workflow state for 16-step workflow (Story 5.1a).
+        Defines the current state of an event in the organizer workflow.
+      enum:
+        - CREATED
+        - TOPIC_SELECTION
+        - SPEAKER_BRAINSTORMING
+        - SPEAKER_OUTREACH
+        - SPEAKER_CONFIRMATION
+        - CONTENT_COLLECTION
+        - QUALITY_REVIEW
+        - THRESHOLD_CHECK
+        - OVERFLOW_MANAGEMENT
+        - SLOT_ASSIGNMENT
+        - AGENDA_PUBLISHED
+        - AGENDA_FINALIZED
+        - NEWSLETTER_SENT
+        - EVENT_READY
+        - PARTNER_MEETING_COMPLETE
+        - ARCHIVED
+      example: SPEAKER_BRAINSTORMING
+
+    TransitionStateRequest:
+      type: object
+      description: |
+        Request to transition event to target workflow state (Story 5.1a - AC12).
+        The target state must be a valid transition from the current state.
+      required:
+        - targetState
+      properties:
+        targetState:
+          $ref: '#/components/schemas/EventWorkflowState'
+
+    WorkflowStatusDto:
+      type: object
+      description: |
+        Current workflow status including available and blocked transitions (Story 5.1a - AC13).
+        Provides organizers with visibility into what transitions are possible and why.
+      required:
+        - currentState
+        - nextAvailableStates
+        - blockedTransitions
+        - validationMessages
+      properties:
+        currentState:
+          $ref: '#/components/schemas/EventWorkflowState'
+        nextAvailableStates:
+          type: array
+          description: List of states that can be transitioned to from current state
+          items:
+            $ref: '#/components/schemas/EventWorkflowState'
+          example:
+            - SPEAKER_OUTREACH
+        blockedTransitions:
+          type: array
+          description: List of states that are blocked due to validation failures
+          items:
+            $ref: '#/components/schemas/EventWorkflowState'
+          example:
+            - SPEAKER_OUTREACH
+        validationMessages:
+          type: array
+          description: Validation messages explaining why certain transitions are blocked
+          items:
+            type: string
+          example:
+            - "Cannot transition to SPEAKER_OUTREACH: Insufficient speakers identified (need 6, have 3)"
+
+    AddSpeakerToPoolRequest:
+      type: object
+      description: |
+        Request to add a potential speaker to the event speaker pool during brainstorming phase.
+        Story 5.2 - AC9-12: Speaker Pool Management
+      required:
+        - speakerName
+      properties:
+        speakerName:
+          type: string
+          maxLength: 255
+          description: Name of the potential speaker (required)
+          example: Jane Smith
+        company:
+          type: string
+          maxLength: 255
+          description: Company or organization of the speaker (optional)
+          example: Tech Corp AG
+        expertise:
+          type: string
+          description: Areas of expertise (optional)
+          example: Cloud Architecture, Kubernetes, DevOps
+        assignedOrganizerId:
+          type: string
+          maxLength: 255
+          description: Username of organizer assigned for outreach (optional)
+          example: alice.mueller
+        notes:
+          type: string
+          description: Free-text notes about the speaker (optional)
+          example: Met at KubeCon 2024. Very enthusiastic about BATbern. Follow up next week.
+
+    SpeakerPoolResponse:
+      type: object
+      description: |
+        Response representing a speaker pool entry.
+        Story 5.2 - AC9-13: Speaker Pool Management
+      required:
+        - id
+        - eventId
+        - speakerName
+        - status
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the speaker pool entry
+          example: 123e4567-e89b-12d3-a456-426614174000
+        eventId:
+          type: string
+          format: uuid
+          description: UUID of the event this speaker is associated with
+          example: 789e4567-e89b-12d3-a456-426614174111
+        speakerName:
+          type: string
+          description: Name of the potential speaker
+          example: Jane Smith
+        company:
+          type: string
+          nullable: true
+          description: Company or organization of the speaker
+          example: Tech Corp AG
+        expertise:
+          type: string
+          nullable: true
+          description: Areas of expertise
+          example: Cloud Architecture, Kubernetes, DevOps
+        assignedOrganizerId:
+          type: string
+          nullable: true
+          description: Username of organizer assigned for outreach
+          example: alice.mueller
+        status:
+          type: string
+          enum:
+            - identified
+            - contacted
+            - ready
+            - accepted
+            - declined
+            - content_submitted
+            - quality_reviewed
+            - slot_assigned
+            - confirmed
+            - withdrew
+            - overflow
+          description: |
+            Current status of the speaker in the pool workflow.
+            Story 5.2 - AC13: Initial status = 'identified'
+          example: identified
+        notes:
+          type: string
+          nullable: true
+          description: Free-text notes about the speaker
+          example: Met at KubeCon 2024. Very enthusiastic about BATbern.
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when speaker was added to pool
+          example: 2025-12-13T10:00:00Z
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp of last update
+          example: 2025-12-13T10:15:00Z
+
+    TopicResponse:
+      type: object
+      description: Topic response with staleness score and similarity information
+      required:
+        - id
+        - title
+        - category
+        - stalenessScore
+        - colorZone
+        - status
+        - active
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Topic unique identifier
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        title:
+          type: string
+          maxLength: 500
+          description: Topic title
+          example: "Cloud Native Architecture Patterns"
+        description:
+          type: string
+          nullable: true
+          maxLength: 5000
+          description: Detailed topic description
+          example: "Modern cloud-native design patterns and best practices"
+        category:
+          type: string
+          description: Topic category (e.g., technical, business, soft-skills)
+          example: "technical"
+        createdDate:
+          type: string
+          format: date-time
+          description: When the topic was created
+          example: "2023-01-15T10:00:00Z"
+        lastUsedDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the topic was last used in an event
+          example: "2024-03-20T14:30:00Z"
+        usageCount:
+          type: integer
+          minimum: 0
+          description: Number of times topic has been used
+          example: 3
+        stalenessScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: |
+            Staleness score (0-100) based on time since last use.
+            Higher = safer to reuse.
+            Green zone (83-100): Safe to use
+            Yellow zone (50-82): Use with caution
+            Red zone (0-49): Too recent, avoid
+          example: 92
+        colorZone:
+          type: string
+          enum: [green, yellow, red, gray]
+          description: Visual indicator based on staleness score
+          example: "green"
+        status:
+          type: string
+          enum: [available, caution, unavailable]
+          description: Usability status derived from staleness score
+          example: "available"
+        similarityScores:
+          type: array
+          description: List of similar topics with similarity scores >30%
+          items:
+            $ref: '#/components/schemas/SimilarityScore'
+          example:
+            - topicId: "789e0123-e89b-12d3-a456-426614174002"
+              score: 0.65
+        active:
+          type: boolean
+          description: Whether the topic is active in the backlog
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: Audit timestamp - when record was created
+          example: "2023-01-15T10:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Audit timestamp - when record was last updated
+          example: "2024-03-20T14:30:00Z"
+
+    SimilarityScore:
+      type: object
+      description: Similarity score between two topics (TF-IDF + cosine similarity)
+      required:
+        - topicId
+        - score
+      properties:
+        topicId:
+          type: string
+          format: uuid
+          description: UUID of the similar topic
+          example: "789e0123-e89b-12d3-a456-426614174002"
+        score:
+          type: number
+          format: double
+          minimum: 0.0
+          maximum: 1.0
+          description: Cosine similarity score (0.0-1.0). >0.7 indicates potential duplicate.
+          example: 0.65
+
+    TopicUsageHistory:
+      type: object
+      description: Historical usage record of a topic in a specific event
+      required:
+        - eventId
+        - usedDate
+        - attendance
+        - engagementScore
+      properties:
+        eventId:
+          type: string
+          format: uuid
+          description: UUID of the event where this topic was used
+          example: "event-abc-123"
+        usedDate:
+          type: string
+          format: date-time
+          description: When the topic was used in the event
+          example: "2024-01-15T10:00:00Z"
+        attendance:
+          type: integer
+          minimum: 0
+          description: Number of attendees at the event
+          example: 150
+        engagementScore:
+          type: number
+          format: double
+          minimum: 0.0
+          maximum: 1.0
+          description: Engagement score for the topic (0.0-1.0). Higher indicates better audience engagement.
+          example: 0.85
+
+    TopicRequest:
+      type: object
+      description: Request to create a new topic
+      required:
+        - title
+        - category
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Topic title
+          example: "Kubernetes Security Best Practices"
+        description:
+          type: string
+          nullable: true
+          maxLength: 5000
+          description: Detailed topic description
+          example: "Deep dive into securing K8s clusters in production"
+        category:
+          type: string
+          minLength: 1
+          description: Topic category
+          example: "technical"
+
+    TopicListResponse:
+      type: object
+      description: Paginated list of topics with metadata
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          description: List of topics for current page
+          items:
+            $ref: '#/components/schemas/TopicResponse'
+        pagination:
+          $ref: '#/components/schemas/PaginationMetadata'
+
+    OverrideStalenesRequest:
+      type: object
+      description: Request to manually override staleness score
+      required:
+        - stalenessScore
+        - justification
+      properties:
+        stalenessScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: New staleness score (0-100)
+          example: 100
+        justification:
+          type: string
+          minLength: 1
+          description: Required justification for override (for audit trail)
+          example: "Evergreen content - fundamentals of software architecture never go out of date"
 
   responses:
     BadRequest:
@@ -2344,6 +3907,20 @@ components:
                 errorCode: INTERNAL_ERROR
                 message: An unexpected error occurred
                 timestamp: 2025-01-15T10:30:00Z
+
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            forbiddenError:
+              value:
+                error: FORBIDDEN
+                errorCode: FORBIDDEN
+                message: "Insufficient permissions to perform this action"
+                timestamp: "2025-01-15T10:30:00Z"
 
   securitySchemes:
     BearerAuth:

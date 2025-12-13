@@ -44,14 +44,14 @@ export class DnsStack extends cdk.Stack {
     this.certificate = new certificatemanager.Certificate(this, 'Certificate', {
       domainName: props.config.domain!.frontendDomain,
       validation: certificatemanager.CertificateValidation.fromDns(this.hostedZone),
-    });
+    }) as certificatemanager.ICertificate;
 
     // Create ACM certificate for CDN domain (CloudFront for static assets)
     // Must be in us-east-1 for CloudFront
     this.cdnCertificate = new certificatemanager.Certificate(this, 'CdnCertificate', {
       domainName: props.config.domain!.cdnDomain,
       validation: certificatemanager.CertificateValidation.fromDns(this.hostedZone),
-    });
+    }) as certificatemanager.ICertificate;
 
     // Outputs
     new cdk.CfnOutput(this, 'HostedZoneId', {

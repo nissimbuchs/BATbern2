@@ -339,7 +339,7 @@ CompanyResponse:
       type: string
 
       description: Meaningful identifier (see ADR-003)
-      example: 550e8400-e29b-41d4-a716-446655440000
+      example: SwissITSolutions
     name:
       type: string
       maxLength: 255
@@ -418,11 +418,11 @@ CompanyLogo:
       type: string
       format: uri
       description: CloudFront CDN URL for logo (cdn.batbern.ch for production, cdn.staging.batbern.ch for staging)
-      example: https://cdn.batbern.ch/logos/2025/550e8400-e29b-41d4-a716-446655440000/logo.png
+      example: https://cdn.batbern.ch/logos/2025/companies/SwissITSolutions/logo.png
     s3Key:
       type: string
-      description: S3 object key
-      example: logos/2025/550e8400-e29b-41d4-a716-446655440000/logo.png
+      description: S3 object key (internal path, uses company name per ADR-003)
+      example: logos/2025/companies/SwissITSolutions/logo.png
     fileId:
       type: string
       description: Internal file identifier
@@ -443,7 +443,7 @@ CompanySearchResponse:
       type: string
 
       description: Meaningful identifier (see ADR-003)
-      example: 550e8400-e29b-41d4-a716-446655440000
+      example: SwissITSolutions
     name:
       type: string
       example: Swiss IT Solutions AG
@@ -639,7 +639,7 @@ PaginationMetadata:
 **Event Schema Example**:
 ```json
 {
-  "companyId": "550e8400-e29b-41d4-a716-446655440000",
+  "companyName": "SwissITSolutions",
   "name": "Swiss IT Solutions AG",
   "industry": "Technology",
   "isVerified": true,

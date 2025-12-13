@@ -1,0 +1,56 @@
+meta {
+  name: Create Topic
+  type: http
+  seq: 31
+}
+
+post {
+  url: {{baseUrl}}/topics
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "title": "Cloud Native Architecture {{timestamp}}",
+    "description": "Exploring cloud-native patterns and best practices for modern applications",
+    "category": "technical",
+    "keywords": ["cloud", "kubernetes", "microservices"],
+    "relatedTopics": []
+  }
+}
+
+vars:pre-request {
+  timestamp: Date.now()
+}
+
+assert {
+  res.status: eq 201
+  res.body.id: isDefined
+  res.body.title: isDefined
+  res.body.stalenessScore: isDefined
+}
+
+tests {
+  test("should return 201 status - Story 5.2 AC8", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("should return created topic with initial staleness score 100 - Story 5.2 AC8", function() {
+    const topic = res.getBody();
+    expect(topic.id).to.be.a('string');
+    expect(topic.title).to.include('Cloud Native Architecture');
+    expect(topic.description).to.be.a('string');
+    expect(topic.category).to.equal('technical');
+    expect(topic.stalenessScore).to.equal(100); // New topics have max staleness (safe to use)
+    expect(topic.status).to.equal('available');
+  });
+
+  test("should save topic ID for later tests", function() {
+    bru.setVar("createdTopicId", res.getBody().id);
+  });
+}

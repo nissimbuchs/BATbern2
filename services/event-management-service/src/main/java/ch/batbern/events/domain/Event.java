@@ -1,6 +1,11 @@
 package ch.batbern.events.domain;
 
+import ch.batbern.events.converter.EventTypeConverter;
+import ch.batbern.events.converter.EventWorkflowStateConverter;
+import ch.batbern.events.dto.generated.EventType;
+import ch.batbern.shared.types.EventWorkflowState;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -8,6 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -113,6 +119,23 @@ public class Event {
 
     @Column(name = "theme_image_upload_id", length = 100)
     private String themeImageUploadId;
+
+    @NotNull(message = "Event type is required")
+    @Convert(converter = EventTypeConverter.class)
+    @Column(name = "event_type", nullable = false, length = 20)
+    private EventType eventType;
+
+    @NotNull(message = "Workflow state is required")
+    @Convert(converter = EventWorkflowStateConverter.class)
+    @Column(name = "workflow_state", nullable = false, length = 50)
+    private EventWorkflowState workflowState;
+
+    @Column(name = "topic_id", columnDefinition = "UUID")
+    private UUID topicId;
+
+    @Version
+    @Column(name = "version")
+    private Long version;
 
     @PrePersist
     protected void onCreate() {

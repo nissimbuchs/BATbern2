@@ -13,28 +13,33 @@
  */
 
 import React, { useState } from 'react';
-import { Paper, Typography, Button, Stack, Box, CircularProgress, Alert } from '@mui/material';
+import { Paper, Typography, Box, Stack, CircularProgress, Alert } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { Add as AddIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useEvents, useCriticalTasks, useTeamActivity } from '@/hooks/useEvents';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/hooks/useAuth';
 import { useEventStore } from '@/stores/eventStore';
 import { EventList } from './EventList';
 import { EventSearch } from './EventSearch';
 import { CriticalTasksList } from './CriticalTasksList';
 import { TeamActivityFeed } from './TeamActivityFeed';
 import { EventForm } from './EventForm';
+import { EventBatchImportModal } from '@/components/shared/Event/EventBatchImportModal';
+import { EventPagination } from './EventPagination';
+import { QuickActions } from './QuickActions';
 import type { EventFilters } from '@/types/event.types';
 
 export const EventManagementDashboard: React.FC = () => {
   const { t } = useTranslation('events');
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user } = useAuth();
   const {
     filters,
     setFilters,
+    pagination,
+    setPage,
+    setLimit,
     isCreateModalOpen,
     openCreateModal,
     closeCreateModal,
@@ -43,7 +48,7 @@ export const EventManagementDashboard: React.FC = () => {
     closeEditModal,
   } = useEventStore();
 
-  const [pagination] = useState({ page: 1, limit: 20 });
+  const [isBatchImportOpen, setIsBatchImportOpen] = useState(false);
 
   // Fetch data with React Query hooks
   const {
@@ -105,21 +110,11 @@ export const EventManagementDashboard: React.FC = () => {
   return (
     <Box data-testid="dashboard-container">
       {/* Header */}
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
+      <Box mb={3}>
         <Typography variant="h4" component="h1">
           {t('dashboard.title')}
         </Typography>
-
-        {/* Quick Actions */}
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleNewEvent}
-          aria-label="Create new event"
-        >
-          {t('dashboard.actions.newEvent')}
-        </Button>
-      </Stack>
+      </Box>
 
       {/* Search and Filters */}
       <Paper sx={{ p: 3, mb: 3 }}>
@@ -134,8 +129,10 @@ export const EventManagementDashboard: React.FC = () => {
             <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
               <Typography variant="h5">{t('dashboard.activeEvents')}</Typography>
               <Typography variant="body2" color="text.secondary">
-                {eventsData?.data?.length || 0}{' '}
-                {t('dashboard.eventCount', { count: eventsData?.data?.length || 0 })}
+                {eventsData?.data?.length || 0}/{eventsData?.pagination?.totalItems || 0}{' '}
+                {(eventsData?.pagination?.totalItems || 0) === 1
+                  ? t('dashboard.eventWord')
+                  : t('dashboard.eventWord_plural')}
               </Typography>
             </Stack>
             <EventList
@@ -144,12 +141,29 @@ export const EventManagementDashboard: React.FC = () => {
               onEventEdit={handleEventEdit}
               onEventClick={handleEventClick}
             />
+
+            {/* Pagination */}
+            {eventsData?.pagination && (
+              <EventPagination
+                page={eventsData.pagination.page}
+                totalPages={eventsData.pagination.totalPages}
+                limit={eventsData.pagination.limit}
+                onPageChange={(newPage) => setPage(newPage)}
+                onLimitChange={(newLimit) => setLimit(newLimit)}
+              />
+            )}
           </Paper>
         </Grid>
 
         {/* Sidebar (4/12) */}
         <Grid size={{ xs: 12, md: 4 }}>
           <Stack spacing={3}>
+            {/* Quick Actions - Story 5.1 */}
+            <QuickActions
+              onNewEvent={handleNewEvent}
+              onBatchImport={() => setIsBatchImportOpen(true)}
+            />
+
             {/* Critical Tasks */}
             <Paper sx={{ p: 3 }}>
               <CriticalTasksList
@@ -198,6 +212,16 @@ export const EventManagementDashboard: React.FC = () => {
           }}
         />
       )}
+
+      {/* Batch Import Modal */}
+      <EventBatchImportModal
+        open={isBatchImportOpen}
+        onClose={() => setIsBatchImportOpen(false)}
+        onImportComplete={(result) => {
+          console.log('Import complete:', result);
+          // The useEvents hook will automatically refetch due to query invalidation
+        }}
+      />
     </Box>
   );
 };

@@ -4,11 +4,14 @@ import ch.batbern.shared.dto.ErrorResponse;
 import ch.batbern.shared.exception.ValidationException;
 import ch.batbern.shared.util.CorrelationIdGenerator;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -99,6 +102,41 @@ public class GlobalExceptionHandler {
                 .collect(Collectors.joining(", "));
 
         log.warn("Validation error: {}", errors);
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Bad Request")
+                .message("Validation failed: " + errors)
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("MEDIUM")
+                .details(details)
+                .build();
+
+        return ResponseEntity.badRequest().body(error);
+    }
+
+    /**
+     * Handle ConstraintViolationException (JPA/Hibernate entity validation errors)
+     * Returns HTTP 400 Bad Request
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConstraintViolationException(
+            ConstraintViolationException ex,
+            HttpServletRequest request) {
+
+        Map<String, Object> details = new HashMap<>();
+        for (ConstraintViolation<?> violation : ex.getConstraintViolations()) {
+            String propertyPath = violation.getPropertyPath().toString();
+            details.put(propertyPath, violation.getMessage());
+        }
+
+        String errors = ex.getConstraintViolations().stream()
+                .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
+                .collect(Collectors.joining(", "));
+
+        log.warn("Constraint violation: {}", errors);
 
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
@@ -279,6 +317,30 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle AuthorizationDeniedException (access denied)
+     * Returns HTTP 403 Forbidden
+     * Story 5.1: Event Type Definition (AC8 - ORGANIZER role required)
+     */
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAuthorizationDeniedException(
+            AuthorizationDeniedException ex,
+            HttpServletRequest request) {
+        log.warn("Authorization denied: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.FORBIDDEN.value())
+                .error("Forbidden")
+                .message("Access denied - insufficient permissions")
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("MEDIUM")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
+    /**
      * Handle WorkflowException (invalid workflow state transition)
      * Returns HTTP 422 Unprocessable Entity with WORKFLOW_ERROR code
      */
@@ -296,6 +358,60 @@ public class GlobalExceptionHandler {
                 .message(ex.getMessage())
                 .correlationId(CorrelationIdGenerator.generate())
                 .severity("HIGH")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
+    }
+
+    /**
+     * Handle InvalidStateTransitionException (invalid workflow state transition attempt)
+     * Returns HTTP 400 Bad Request
+     * Story 5.1a: Workflow State Machine Foundation - AC12
+     */
+    @ExceptionHandler(InvalidStateTransitionException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidStateTransitionException(
+            InvalidStateTransitionException ex,
+            HttpServletRequest request) {
+        log.warn("Invalid state transition: {}", ex.getMessage());
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("fromState", ex.getFromState().name());
+        details.put("toState", ex.getToState().name());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Bad Request")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("MEDIUM")
+                .details(details)
+                .build();
+
+        return ResponseEntity.badRequest().body(error);
+    }
+
+    /**
+     * Handle WorkflowValidationException (business rule validation failure for workflow transition)
+     * Returns HTTP 422 Unprocessable Entity
+     * Story 5.1a: Workflow State Machine Foundation - AC12
+     */
+    @ExceptionHandler(WorkflowValidationException.class)
+    public ResponseEntity<ErrorResponse> handleWorkflowValidationException(
+            WorkflowValidationException ex,
+            HttpServletRequest request) {
+        log.warn("Workflow validation error: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
+                .error("Unprocessable Entity")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("HIGH")
+                .details(ex.getContext())
                 .build();
 
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);

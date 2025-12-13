@@ -178,6 +178,7 @@ function handler(event) {
             originAccessControl: oac,
           }),
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          compress: true, // Priority 9: Enable compression for static assets
           cachePolicy: staticAssetsCachePolicy,
           responseHeadersPolicy,
         },
@@ -186,6 +187,7 @@ function handler(event) {
             originAccessControl: oac,
           }),
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          compress: true, // Priority 9: Enable compression for assets
           cachePolicy: staticAssetsCachePolicy,
           responseHeadersPolicy,
         },
@@ -194,6 +196,7 @@ function handler(event) {
             originAccessControl: oac,
           }),
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          compress: true, // Priority 9: Enable compression for JS files
           cachePolicy: staticAssetsCachePolicy,
           responseHeadersPolicy,
         },
@@ -202,6 +205,7 @@ function handler(event) {
             originAccessControl: oac,
           }),
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          compress: true, // Priority 9: Enable compression for CSS files
           cachePolicy: staticAssetsCachePolicy,
           responseHeadersPolicy,
         },
@@ -224,9 +228,10 @@ function handler(event) {
       enableLogging: true,
       logBucket: props.logsBucket,
       logFilePrefix: `frontend-cloudfront/${envName}/`,
+      // Priority 9: Optimize price class - use cheapest for non-prod (Europe/US only)
       priceClass: isProd
         ? cloudfront.PriceClass.PRICE_CLASS_ALL
-        : cloudfront.PriceClass.PRICE_CLASS_100,
+        : cloudfront.PriceClass.PRICE_CLASS_100, // Europe & US only - cheapest option
       minimumProtocolVersion: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
       comment: `BATbern Frontend Distribution - ${envName}`,
       certificate,

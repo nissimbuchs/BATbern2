@@ -42,8 +42,8 @@ export class AttendeeExperienceStack extends cdk.Stack {
         serviceName,
         componentTag: 'AttendeeExperience-Service',
         routePattern: '/api/v1/content',
-        cpu: 512,
-        memoryLimitMiB: 1024,
+        cpu: 256,
+        memoryLimitMiB: 512, // Reduced from 1024 MB (Priority 4: ECS Right-Sizing - was at 23% utilization)
       },
       cluster: props.cluster,
       vpc: props.vpc,

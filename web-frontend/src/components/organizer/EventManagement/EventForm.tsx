@@ -42,6 +42,27 @@ import { useCreateEvent, useUpdateEvent } from '@/hooks/useEvents';
 import type { Event, EventUI, CreateEventRequest, PatchEventRequest } from '@/types/event.types';
 import { useDebounce } from '@/hooks/useDebounce';
 import { FileUpload } from '@/components/shared/FileUpload/FileUpload';
+import { EventTypeSelector } from '@/components/organizer/EventTypeSelector/EventTypeSelector';
+import type { components } from '@/types/generated/events-api.types';
+
+/**
+ * Converts legacy lowercase snake_case event types to UPPER_CASE enum values
+ * Handles migration from old format (full_day) to new format (FULL_DAY)
+ */
+function normalizeEventType(eventType: string | undefined): components['schemas']['EventType'] {
+  if (!eventType) return 'FULL_DAY';
+
+  const typeMap: Record<string, components['schemas']['EventType']> = {
+    full_day: 'FULL_DAY',
+    afternoon: 'AFTERNOON',
+    evening: 'EVENING',
+    FULL_DAY: 'FULL_DAY',
+    AFTERNOON: 'AFTERNOON',
+    EVENING: 'EVENING',
+  };
+
+  return typeMap[eventType] || 'FULL_DAY';
+}
 
 // Validation schema factory function (needs t function for translations)
 const createEventSchema = (t: (key: string) => string) =>
@@ -76,7 +97,7 @@ const createEventSchema = (t: (key: string) => string) =>
       ]),
       // UI-only fields (will be stored in metadata)
       theme: z.string().optional().or(z.literal('')),
-      eventType: z.enum(['full_day', 'afternoon', 'evening']).optional(),
+      eventType: z.enum(['FULL_DAY', 'AFTERNOON', 'EVENING']).optional(),
     })
     .refine(
       (data) => {
@@ -113,7 +134,7 @@ interface EventFormData {
     | 'completed'
     | 'archived';
   theme?: string;
-  eventType?: 'full_day' | 'afternoon' | 'evening';
+  eventType?: components['schemas']['EventType'];
 }
 
 // Type for partial updates (all fields optional)
@@ -186,7 +207,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
           venueCapacity: event.venueCapacity || 200,
           status: event.status || 'planning',
           theme: (event as EventUI).theme || '',
-          eventType: (event as EventUI).eventType || 'full_day',
+          eventType: normalizeEventType((event as EventUI).eventType),
         }
       : {
           eventNumber: 1,
@@ -199,7 +220,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
           venueCapacity: 200,
           status: 'planning' as const,
           theme: '',
-          eventType: 'full_day',
+          eventType: 'FULL_DAY',
         },
   });
 
@@ -226,7 +247,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         venueCapacity: 200,
         status: 'planning',
         theme: '',
-        eventType: 'full_day',
+        eventType: 'FULL_DAY',
       });
     }
   }, [open, mode, reset]);
@@ -245,7 +266,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         venueCapacity: event.venueCapacity || 200,
         status: event.status || 'planning',
         theme: (event as EventUI).theme || '',
-        eventType: (event as EventUI).eventType || 'full_day',
+        eventType: normalizeEventType((event as EventUI).eventType),
       });
     }
   }, [event]);
@@ -572,17 +593,15 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                 name="eventType"
                 control={control}
                 render={({ field }) => (
-                  <FormControl fullWidth margin="normal" error={!!errors.eventType}>
-                    <InputLabel>{t('form.eventType')}</InputLabel>
-                    <Select {...field} label={t('form.eventType')}>
-                      <MenuItem value="full_day">{t('form.eventTypes.fullDay')}</MenuItem>
-                      <MenuItem value="afternoon">{t('form.eventTypes.afternoon')}</MenuItem>
-                      <MenuItem value="evening">{t('form.eventTypes.evening')}</MenuItem>
-                    </Select>
-                    {errors.eventType && (
-                      <FormHelperText>{errors.eventType.message}</FormHelperText>
-                    )}
-                  </FormControl>
+                  <Box sx={{ flex: 1, mt: 2 }}>
+                    <EventTypeSelector
+                      value={field.value || 'FULL_DAY'}
+                      onChange={field.onChange}
+                      disabled={!hasEditPermission}
+                      error={!!errors.eventType}
+                      helperText={errors.eventType?.message}
+                    />
+                  </Box>
                 )}
               />
               <Controller

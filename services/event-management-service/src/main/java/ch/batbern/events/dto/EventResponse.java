@@ -37,6 +37,7 @@ public class EventResponse {
     private String updatedBy;
     private String themeImageUrl;
     private String themeImageUploadId;
+    private String eventType;
 
     /**
      * Convert Event entity to EventResponse DTO
@@ -63,6 +64,7 @@ public class EventResponse {
                 .updatedBy(event.getUpdatedBy())
                 .themeImageUrl(event.getThemeImageUrl())
                 .themeImageUploadId(event.getThemeImageUploadId())
+                .eventType(event.getEventType() != null ? event.getEventType().getValue() : null)
                 .build();
     }
 }

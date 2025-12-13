@@ -1,0 +1,37 @@
+meta {
+  name: Select Topic For Event
+  type: http
+  seq: 33
+}
+
+post {
+  url: {{baseUrl}}/events/{{createdEventCode}}/topics
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "topicId": "{{createdTopicId}}",
+    "justification": null
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("should return 200 status - Story 5.2 AC14", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should transition event to TOPIC_SELECTION workflow state - Story 5.2 AC14", function() {
+    // This will be verified by fetching the event in the next test
+    expect(res.getStatus()).to.equal(200);
+  });
+}

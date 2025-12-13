@@ -462,15 +462,11 @@ components:
     PartnerResponse:
       type: object
       required:
-        - id
         - companyName
         - partnershipLevel
         - partnershipStartDate
         - isActive
       properties:
-        id:
-          type: string
-          format: uuid
         companyName:
           type: string
           maxLength: 12
@@ -540,14 +536,10 @@ components:
     PartnerContactResponse:
       type: object
       required:
-        - id
         - username
         - contactRole
         - isPrimary
       properties:
-        id:
-          type: string
-          format: uuid
         username:
           type: string
           description: Meaningful ID per ADR-003
@@ -632,8 +624,9 @@ components:
       properties:
         topicId:
           type: string
-          format: uuid
-          description: Topic ID from Event Management Service
+          pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+          description: Topic slug identifier from Event Management Service (meaningful ID per ADR-003)
+          example: cloud-native-architecture
         voteValue:
           type: integer
           minimum: 1
@@ -650,7 +643,9 @@ components:
       properties:
         topicId:
           type: string
-          format: uuid
+          pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+          description: Topic slug identifier (meaningful ID per ADR-003)
+          example: cloud-native-architecture
         voteValue:
           type: integer
           description: Vote value (1-5)
@@ -704,7 +699,9 @@ components:
           format: date-time
         reviewedBy:
           type: string
-          format: uuid
+          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          description: Username of the reviewer (meaningful ID per ADR-003)
+          example: john.doe
 
     SuggestionStatus:
       type: string

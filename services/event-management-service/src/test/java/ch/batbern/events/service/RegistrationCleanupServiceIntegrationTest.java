@@ -3,6 +3,7 @@ package ch.batbern.events.service;
 import ch.batbern.events.AbstractIntegrationTest;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
+import ch.batbern.events.dto.generated.EventType;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import jakarta.persistence.EntityManager;
@@ -64,6 +65,7 @@ class RegistrationCleanupServiceIntegrationTest extends AbstractIntegrationTest 
                 .venueAddress("Test Address 123, Bern")
                 .venueCapacity(100)
                 .status("published")
+                .eventType(EventType.EVENING)
                 .build();
         testEvent = eventRepository.save(testEvent);
     }

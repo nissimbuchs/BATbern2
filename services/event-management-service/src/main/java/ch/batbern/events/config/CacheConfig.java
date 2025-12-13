@@ -12,15 +12,17 @@ import java.util.concurrent.TimeUnit;
 /**
  * Cache Configuration for Event Management Service
  * Story 1.15a.1: Events API Consolidation (AC15)
+ * Story 5.1: Event Type Definition (eventTypes cache)
  *
  * Uses Caffeine in-memory caching for:
  * - Expanded event resources
  * - User API responses (minimize service-to-service calls)
+ * - Event type configurations (read-heavy, rarely change)
  *
  * Configuration:
- * - TTL: 15 minutes
+ * - TTL: 15 minutes (events), 1 hour (event types)
  * - Max size: 1000 entries per cache
- * - Cache invalidation on event updates
+ * - Cache invalidation on updates
  */
 @Configuration
 @EnableCaching
@@ -29,13 +31,15 @@ public class CacheConfig {
     public static final String EVENT_CACHE = "events";
     public static final String EVENT_WITH_INCLUDES_CACHE = "eventWithIncludes";
     public static final String USER_API_CACHE = "userApiCache";
+    public static final String EVENT_TYPES_CACHE = "eventTypes";
 
     @Bean
     public CacheManager cacheManager() {
         CaffeineCacheManager cacheManager = new CaffeineCacheManager(
                 EVENT_CACHE,
                 EVENT_WITH_INCLUDES_CACHE,
-                USER_API_CACHE
+                USER_API_CACHE,
+                EVENT_TYPES_CACHE
         );
 
         cacheManager.setCaffeine(Caffeine.newBuilder()

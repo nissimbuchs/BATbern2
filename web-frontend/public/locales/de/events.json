@@ -17,6 +17,8 @@
     "loadingEvents": "Veranstaltungen werden geladen...",
     "eventCount": "{{count}} Veranstaltung",
     "eventCount_plural": "{{count}} Veranstaltungen",
+    "eventWord": "Veranstaltung",
+    "eventWord_plural": "Veranstaltungen",
     "status": {
       "active": "Aktiv",
       "published": "Veröffentlicht",
@@ -25,9 +27,9 @@
       "archived": "Archiviert"
     },
     "eventType": {
-      "full_day": "Ganztägig",
-      "afternoon": "Nachmittag",
-      "evening": "Abend"
+      "FULL_DAY": "Ganztägig",
+      "AFTERNOON": "Nachmittag",
+      "EVENING": "Abend"
     },
     "workflowProgress": "Workflow-Fortschritt",
     "workflowStep": "Schritt {{current}}/{{total}}",
@@ -51,6 +53,8 @@
       "viewDetails": "Details anzeigen",
       "edit": "Bearbeiten",
       "newEvent": "Neue Veranstaltung",
+      "eventTypes": "Veranstaltungstypen",
+      "eventTypesHelp": "Veranstaltungstyp-Vorlagen konfigurieren (Admin)",
       "analytics": "Analytics",
       "speakers": "Referenten"
     },
@@ -120,6 +124,19 @@
       "afternoon": "Nachmittag",
       "evening": "Abend"
     },
+    "eventTypeConfig": {
+      "title": "Veranstaltungstyp-Konfiguration",
+      "description": "Konfigurieren Sie die Slot-Anforderungen und Zeitvorlagen für jeden Veranstaltungstyp",
+      "minSlots": "Mindest-Slots",
+      "maxSlots": "Maximale Slots",
+      "slotDuration": "Slot-Dauer (Minuten)",
+      "theoreticalSlotsAM": "Theoretische Slots am Vormittag",
+      "breakSlots": "Pausen-Slots",
+      "lunchSlots": "Mittagspausen-Slots",
+      "defaultCapacity": "Standard-Kapazität",
+      "accessDenied": "Zugriff verweigert",
+      "organizerOnly": "Nur Organisatoren können auf diese Seite zugreifen"
+    },
     "statusValues": {
       "planning": "Planung",
       "topicDefined": "Thema definiert",
@@ -138,9 +155,17 @@
     "removeThemeImage": "Themenbild entfernen"
   },
   "eventTypes": {
-    "full_day": "Ganztägig",
-    "afternoon": "Nachmittag",
-    "evening": "Abend"
+    "FULL_DAY": "Ganztägig",
+    "AFTERNOON": "Nachmittag",
+    "EVENING": "Abend"
+  },
+  "slotPreview": {
+    "title": "{{type}} Vorschau",
+    "slots": "Slots",
+    "duration": "Dauer",
+    "capacity": "Kapazität",
+    "timing": "Typische Zeitplanung",
+    "exampleTimeline": "Beispiel-Zeitplan"
   },
   "status": {
     "draft": "Entwurf",

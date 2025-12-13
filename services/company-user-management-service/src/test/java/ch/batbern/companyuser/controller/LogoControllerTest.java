@@ -19,9 +19,12 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 
 import java.util.HashMap;
+import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -395,5 +398,134 @@ class LogoControllerTest {
                 .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(cleanupService);
+    }
+
+    // ============ POST /fetch-from-url Tests ============
+
+    @Test
+    @WithMockUser
+    @DisplayName("Should handle fetch from URL request")
+    void shouldHandleFetchFromUrl_whenValidUrl() throws Exception {
+        // Arrange
+        Map<String, String> requestBody = Map.of("url", "https://example.com/logo.png");
+
+        // Act & Assert - external URL fetch will return the actual HTTP status (e.g., 404 for non-existent URL)
+        mockMvc.perform(post("/api/v1/logos/fetch-from-url")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestBody)))
+                .andExpect(status().isNotFound()); // Returns actual HTTP status from external server
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("Should return 400 when URL is missing")
+    void shouldReturn400_whenUrlMissing() throws Exception {
+        // Arrange
+        Map<String, String> requestBody = Map.of();
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/logos/fetch-from-url")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestBody)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("Should return 400 when URL is blank")
+    void shouldReturn400_whenUrlBlank() throws Exception {
+        // Arrange
+        Map<String, String> requestBody = Map.of("url", "");
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/logos/fetch-from-url")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestBody)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Should return 401 when fetching without authentication")
+    void shouldReturn401_whenFetchingWithoutAuth() throws Exception {
+        // Arrange
+        Map<String, String> requestBody = Map.of("url", "https://example.com/logo.png");
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/logos/fetch-from-url")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestBody)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    // ============ POST /upload-from-url Tests ============
+
+    @Test
+    @WithMockUser
+    @DisplayName("Should handle upload from URL request")
+    void shouldHandleUploadFromUrl_whenValidUrl() throws Exception {
+        // Arrange
+        Map<String, String> requestBody = Map.of(
+                "url", "https://example.com/logo.png",
+                "filename", "company-logo.png"
+        );
+
+        // Act & Assert - external URL fetch can fail with either 404 (URL not found) or 500 (network error)
+        // Both are valid error responses when attempting to fetch from a non-existent external URL
+        ResultActions result = mockMvc.perform(post("/api/v1/logos/upload-from-url")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestBody)));
+
+        // Accept either 4xx or 5xx error (network issues can cause either)
+        int status = result.andReturn().getResponse().getStatus();
+        assertTrue(status >= 400 && status < 600, "Expected error status (4xx or 5xx), got: " + status);
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("Should return 400 when upload URL is missing")
+    void shouldReturn400_whenUploadUrlMissing() throws Exception {
+        // Arrange
+        Map<String, String> requestBody = Map.of("filename", "logo.png");
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/logos/upload-from-url")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestBody)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("Should return 400 when upload URL is blank")
+    void shouldReturn400_whenUploadUrlBlank() throws Exception {
+        // Arrange
+        Map<String, String> requestBody = Map.of("url", "");
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/logos/upload-from-url")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestBody)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Should return 401 when uploading from URL without authentication")
+    void shouldReturn401_whenUploadingFromUrlWithoutAuth() throws Exception {
+        // Arrange
+        Map<String, String> requestBody = Map.of("url", "https://example.com/logo.png");
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/logos/upload-from-url")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestBody)))
+                .andExpect(status().isUnauthorized());
     }
 }

@@ -1,0 +1,109 @@
+{
+  "topicBacklog": {
+    "pageTitle": "Themenverwaltung",
+    "pageDescription": "Verwalten Sie Themen im Rückstand, wählen Sie Themen für Veranstaltungen und analysieren Sie Nutzungsmuster",
+    "title": "Themenrückstand-Manager",
+    "subtitle": "Wählen Sie Themen aus dem Rückstand mit intelligenten Vorschlägen und Veraltetheitserkennung",
+    "selectPrompt": "Wählen Sie ein Thema aus, um Details anzuzeigen",
+    "noTopics": "Keine Themen gefunden, die Ihren Filtern entsprechen",
+    "lastUsed": "Zuletzt verwendet",
+    "usageCount": "{{count}}-mal verwendet",
+    "error": {
+      "loadFailed": "Fehler beim Laden der Themen"
+    },
+    "filters": {
+      "title": "Filter",
+      "category": "Kategorie",
+      "status": "Status",
+      "sort": "Sortieren nach",
+      "all": "Alle Kategorien",
+      "allStatuses": "Alle Status",
+      "categories": {
+        "technical": "Technisch",
+        "business": "Business",
+        "architecture": "Architektur",
+        "cloudNative": "Cloud Native",
+        "security": "Sicherheit"
+      },
+      "statuses": {
+        "available": "Verfügbar (Grün)",
+        "caution": "Mit Vorsicht verwenden (Gelb)",
+        "unavailable": "Zu aktuell (Rot)"
+      },
+      "sortOptions": {
+        "safestFirst": "Sicherste zuerst (Veraltet ↓)",
+        "recentFirst": "Aktuellste zuerst (Veraltet ↑)",
+        "titleAZ": "Titel (A-Z)",
+        "mostUsed": "Meist verwendet"
+      }
+    },
+    "details": {
+      "metrics": "Metriken",
+      "lastUsed": "Zuletzt verwendet",
+      "usageCount": "Verwendungshäufigkeit",
+      "selectButton": "Für Veranstaltung auswählen",
+      "selecting": "Wird ausgewählt...",
+      "overrideButton": "Warnung überschreiben",
+      "statusGreen": "Sicher wiederzuverwenden - zuletzt vor über 12 Monaten verwendet",
+      "statusYellow": "Mit Vorsicht verwenden - vor 6-12 Monaten zuletzt verwendet",
+      "statusRed": "Zu aktuell - innerhalb von 6 Monaten verwendet, hohes Duplikationsrisiko",
+      "similarityWarning": "{{count}} ähnliche Themen erkannt (>70% Ähnlichkeit)"
+    },
+    "heatMap": {
+      "title": "Nutzungsverlauf",
+      "description": "Themenutzungshäufigkeit über die letzten 24 Monate (nach Quartalen gruppiert)",
+      "quarter": "Quartal",
+      "usageCount": "Verwendungshäufigkeit",
+      "totalAttendance": "Gesamtteilnahme",
+      "avgEngagement": "Durchschnittliches Engagement",
+      "events": "Veranstaltungen",
+      "noData": "Keine Nutzungshistorie für dieses Thema verfügbar.",
+      "tooltip": "Klicken Sie auf ein Quartal, um Details zu Veranstaltungen anzuzeigen, die dieses Thema verwendet haben",
+      "hint": "Bewegen Sie die Maus über Datenpunkte für weitere Informationen",
+      "low": "Niedrige Nutzung",
+      "medium": "Mittlere Nutzung",
+      "high": "Hohe Nutzung"
+    },
+    "dialogs": {
+      "similar": {
+        "title": "Ähnliche Themen erkannt",
+        "message": "Die folgenden Themen weisen eine hohe Ähnlichkeit (>70%) mit Ihrer Auswahl auf. Möchten Sie wirklich fortfahren?",
+        "similarity": "Ähnlichkeit",
+        "justification": "Begründung (optional)",
+        "cancel": "Abbrechen",
+        "confirm": "Trotzdem auswählen"
+      },
+      "override": {
+        "title": "Veraltetheitwarnung überschreiben",
+        "message": "Dieses Thema wurde kürzlich verwendet (Veraltetheitsgrad: {{score}}%). Bitte geben Sie eine Begründung an, um es erneut zu verwenden.",
+        "justification": "Begründung",
+        "helper": "Erklären Sie, warum dieses Thema trotz seiner Aktualität wiederverwendet werden sollte",
+        "cancel": "Abbrechen",
+        "confirm": "Überschreiben und auswählen"
+      }
+    }
+  },
+  "speakerBrainstorm": {
+    "title": "Referenten-Brainstorming",
+    "subtitle": "Fügen Sie potenzielle Referenten zum Veranstaltungspool hinzu und weisen Sie sie Organisatoren zur Kontaktaufnahme zu",
+    "form": {
+      "speakerName": "Referent Name",
+      "company": "Unternehmen",
+      "expertise": "Fachgebiet",
+      "assignOrganizer": "Organisator zuweisen (Optional)",
+      "unassigned": "Nicht zugewiesen",
+      "notes": "Notizen (Optional)",
+      "addButton": "Zum Pool hinzufügen",
+      "adding": "Wird hinzugefügt...",
+      "error": "Fehler beim Hinzufügen des Referenten"
+    },
+    "pool": {
+      "title": "Referenten-Pool",
+      "empty": "Noch keine Referenten im Pool. Fügen Sie oben welche hinzu!",
+      "expertise": "Fachgebiet",
+      "assigned": "Zugewiesen an",
+      "notes": "Notizen",
+      "error": "Fehler beim Laden des Referenten-Pools"
+    }
+  }
+}
