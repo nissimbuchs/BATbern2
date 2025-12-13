@@ -84,7 +84,7 @@ export function createDomainService(
     // Create stable log group
     const logGroup = new logs.LogGroup(scope, 'LogGroup', {
       logGroupName: `/aws/ecs/BATbern-${envName}/${serviceName}`,
-      retention: isProd ? logs.RetentionDays.SIX_MONTHS : logs.RetentionDays.ONE_MONTH,
+      retention: isProd ? logs.RetentionDays.SIX_MONTHS : logs.RetentionDays.ONE_WEEK,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
@@ -209,6 +209,22 @@ export function createDomainService(
       maxHealthyPercent: 200, // Allow temporary extra tasks during deployments
       securityGroups: [serviceSecurityGroup], // Use explicit security group
       enableExecuteCommand: true, // Allow ECS Exec for debugging
+      // Use Fargate Spot for non-prod environments (70% Spot / 30% On-Demand)
+      // This provides ~20-30% cost savings with acceptable interruption risk
+      ...(!isProd && {
+        capacityProviderStrategies: [
+          {
+            capacityProvider: 'FARGATE_SPOT',
+            weight: 70,
+            base: 0,
+          },
+          {
+            capacityProvider: 'FARGATE',
+            weight: 30,
+            base: 1, // Ensure at least 1 task on On-Demand for stability
+          },
+        ],
+      }),
     });
 
     // Enable Service Connect for service-to-service communication

@@ -1273,8 +1273,8 @@ INSERT INTO event_registrations (
     id, event_id, anonymous_email, anonymous_first_name, anonymous_last_name,
     anonymous_company, anonymous_role, confirmation_code, status
 ) VALUES (
-    '550e8400-e29b-41d4-a716-446655440000',
-    'BAT-025',
+    '550e8400-e29b-41d4-a716-446655440000',  -- internal UUID (not exposed in API)
+    'BATbern25',  -- eventCode per ADR-003 (meaningful ID, not UUID)
     'john@example.com',
     'John',
     'Doe',

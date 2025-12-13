@@ -1,112 +1,251 @@
 /**
- * UserList Component Tests (RED Phase)
+ * UserList Component Tests
+ * Story 2.5.2: User Management Frontend - Task 5b
  *
- * TDD: Writing tests FIRST before implementation
- * Story 2.5.2: User Management Frontend - Task 5a (RED Phase)
- *
- * Test Coverage - AC1: User Management Screen
+ * Tests for UserList component covering rendering and basic interactions
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter } from 'react-router-dom';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import userEvent from '@testing-library/user-event';
 import UserList from './UserList';
-import '@testing-library/jest-dom';
-import i18n from '@/i18n/config';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { User } from '@/types/user.types';
 
-// Mock the API
-vi.mock('@/services/api/userManagementApi', () => ({
-  listUsers: vi.fn(() =>
-    Promise.resolve({
-      data: [
-        {
-          id: 'john.doe',
-          email: 'john.doe@example.com',
-          firstName: 'John',
-          lastName: 'Doe',
-          roles: ['ATTENDEE'],
-          isActive: true,
-          createdAt: '2025-01-15T10:00:00Z',
-          updatedAt: '2025-01-15T10:00:00Z',
-        },
-        {
-          id: 'jane.smith',
-          email: 'jane.smith@example.com',
-          firstName: 'Jane',
-          lastName: 'Smith',
-          roles: ['ORGANIZER', 'SPEAKER'],
-          companyId: 'TechCorp AG',
-          isActive: true,
-          createdAt: '2025-01-15T10:00:00Z',
-          updatedAt: '2025-01-15T10:00:00Z',
-        },
-      ],
-      pagination: {
-        page: 1,
-        limit: 20,
-        totalItems: 2,
-        totalPages: 1,
-        hasNext: false,
-        hasPrev: false,
-      },
-    })
-  ),
-  searchUsers: vi.fn(() => Promise.resolve([])),
+// Mock translation
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+  }),
 }));
 
-const createWrapper = () => {
+// Mock store
+const mockSetSelectedUser = vi.fn();
+const mockSetPage = vi.fn();
+const mockSetLimit = vi.fn();
+
+vi.mock('@/stores/userManagementStore', () => ({
+  useUserManagementStore: () => ({
+    filters: {},
+    pagination: { page: 1, limit: 10 },
+    selectedUser: null,
+    setSelectedUser: mockSetSelectedUser,
+    setPage: mockSetPage,
+    setLimit: mockSetLimit,
+  }),
+}));
+
+// Mock useUserList hook
+const mockRefetch = vi.fn();
+let mockData = {
+  data: [] as User[],
+  pagination: {
+    page: 1,
+    totalPages: 1,
+    limit: 10,
+    total: 0,
+  },
+};
+let mockIsLoading = false;
+let mockIsError = false;
+
+vi.mock('@/hooks/useUserManagement', () => ({
+  useUserList: () => ({
+    data: mockData,
+    isLoading: mockIsLoading,
+    isError: mockIsError,
+    refetch: mockRefetch,
+  }),
+}));
+
+// Mock child components
+vi.mock('./UserTable', () => ({
+  default: ({ users, onRowClick }: { users: User[]; onRowClick: (user: User) => void }) => (
+    <div data-testid="user-table">
+      {users.map((user) => (
+        <div key={user.id} onClick={() => onRowClick(user)}>
+          {user.firstName} {user.lastName}
+        </div>
+      ))}
+    </div>
+  ),
+}));
+
+vi.mock('./UserFilters', () => ({
+  default: () => <div data-testid="user-filters">Filters</div>,
+}));
+
+vi.mock('./UserDetailModal', () => ({
+  default: () => <div data-testid="user-detail-modal">Detail Modal</div>,
+}));
+
+vi.mock('./UserCreateEditModal', () => ({
+  default: () => <div data-testid="user-create-edit-modal">Create/Edit Modal</div>,
+}));
+
+vi.mock('./RoleManagerModal', () => ({
+  default: () => <div data-testid="role-manager-modal">Role Manager</div>,
+}));
+
+vi.mock('./DeleteUserDialog', () => ({
+  default: () => <div data-testid="delete-user-dialog">Delete Dialog</div>,
+}));
+
+vi.mock('./UserPagination', () => ({
+  default: () => <div data-testid="user-pagination">Pagination</div>,
+}));
+
+vi.mock('./SpeakerBatchImportModal', () => ({
+  default: () => <div data-testid="speaker-batch-import-modal">Batch Import</div>,
+}));
+
+const mockUsers: User[] = [
+  {
+    id: 'user-1',
+    firstName: 'John',
+    lastName: 'Doe',
+    email: 'john.doe@example.com',
+    companyId: 'company-1',
+    roles: ['ORGANIZER'],
+    active: true,
+    profilePictureUrl: null,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+];
+
+const renderWithProviders = (ui: React.ReactElement) => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
-      mutations: { retry: false },
     },
   });
 
-  return ({ children }: { children: React.ReactNode }) => (
-    <BrowserRouter>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    </BrowserRouter>
-  );
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 };
 
-describe('UserList', () => {
-  beforeEach(async () => {
+describe('UserList Component', () => {
+  beforeEach(() => {
     vi.clearAllMocks();
-    await i18n.changeLanguage('de');
+    mockIsLoading = false;
+    mockIsError = false;
+    mockData = {
+      data: mockUsers,
+      pagination: {
+        page: 1,
+        totalPages: 1,
+        limit: 10,
+        total: 1,
+      },
+    };
   });
 
-  it('should_renderUserListTable_when_componentMounts', async () => {
-    render(<UserList />, { wrapper: createWrapper() });
+  describe('Loading State', () => {
+    it('should_showLoadingIndicator_when_dataIsLoading', () => {
+      mockIsLoading = true;
 
-    await waitFor(() => {
-      expect(screen.getByText(/Benutzerverwaltung/i)).toBeInTheDocument();
+      renderWithProviders(<UserList />);
+
+      expect(screen.getByText('loading.users')).toBeInTheDocument();
     });
   });
 
-  it('should_displayUserColumns_when_usersLoaded', async () => {
-    render(<UserList />, { wrapper: createWrapper() });
+  describe('Error State', () => {
+    it('should_showErrorMessage_when_loadFails', () => {
+      mockIsError = true;
 
-    await waitFor(() => {
-      expect(screen.getByText('John Doe')).toBeInTheDocument();
-      expect(screen.getByText('Jane Smith')).toBeInTheDocument();
-      expect(screen.getByText('john.doe@example.com')).toBeInTheDocument();
+      renderWithProviders(<UserList />);
+
+      expect(screen.getByText('error.loadFailed')).toBeInTheDocument();
+    });
+
+    it('should_showRetryButton_when_loadFails', async () => {
+      const user = userEvent.setup();
+      mockIsError = true;
+
+      renderWithProviders(<UserList />);
+
+      const retryButton = screen.getByText('actions.retry');
+      await user.click(retryButton);
+
+      expect(mockRefetch).toHaveBeenCalled();
     });
   });
 
-  it('should_showAddUserButton_when_rendered', async () => {
-    render(<UserList />, { wrapper: createWrapper() });
+  describe('Rendering', () => {
+    it('should_renderTitle_when_componentMounts', () => {
+      renderWithProviders(<UserList />);
 
-    await waitFor(() => {
-      const addButton = screen.getByRole('button', { name: /Benutzer hinzufügen/i });
-      expect(addButton).toBeInTheDocument();
+      expect(screen.getByText('title')).toBeInTheDocument();
+    });
+
+    it('should_renderAddUserButton_when_componentMounts', () => {
+      renderWithProviders(<UserList />);
+
+      expect(screen.getByText('addUser')).toBeInTheDocument();
+    });
+
+    it('should_renderBatchImportButton_when_componentMounts', () => {
+      renderWithProviders(<UserList />);
+
+      expect(screen.getByText('batchImport.button')).toBeInTheDocument();
+    });
+
+    it('should_renderUserTable_when_dataLoaded', () => {
+      renderWithProviders(<UserList />);
+
+      expect(screen.getByTestId('user-table')).toBeInTheDocument();
+    });
+
+    it('should_renderFilters_when_componentMounts', () => {
+      renderWithProviders(<UserList />);
+
+      expect(screen.getByTestId('user-filters')).toBeInTheDocument();
+    });
+
+    it('should_renderPagination_when_dataHasPagination', () => {
+      renderWithProviders(<UserList />);
+
+      expect(screen.getByTestId('user-pagination')).toBeInTheDocument();
     });
   });
 
-  it('should_showLoadingState_when_dataFetching', () => {
-    render(<UserList />, { wrapper: createWrapper() });
+  describe('User Interactions', () => {
+    it('should_openCreateModal_when_addUserClicked', async () => {
+      const user = userEvent.setup();
 
-    // Loading state should be visible initially
-    expect(screen.getByText(/Benutzer werden geladen/i)).toBeInTheDocument();
+      renderWithProviders(<UserList />);
+
+      const addButton = screen.getByText('addUser');
+      await user.click(addButton);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('user-create-edit-modal')).toBeInTheDocument();
+      });
+    });
+
+    it('should_openBatchImportModal_when_batchImportClicked', async () => {
+      const user = userEvent.setup();
+
+      renderWithProviders(<UserList />);
+
+      const batchImportButton = screen.getByText('batchImport.button');
+      await user.click(batchImportButton);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('speaker-batch-import-modal')).toBeInTheDocument();
+      });
+    });
+
+    it('should_setSelectedUser_when_userRowClicked', async () => {
+      const user = userEvent.setup();
+
+      renderWithProviders(<UserList />);
+
+      const userRow = screen.getByText('John Doe');
+      await user.click(userRow);
+
+      expect(mockSetSelectedUser).toHaveBeenCalledWith(mockUsers[0]);
+    });
   });
 });

@@ -19,9 +19,20 @@ export interface paths {
      *
      *     **Filter Syntax Examples**:
      *     - Single filter: `{"status":"published"}`
-     *     - Multiple operators: `{"date":{"$gte":"2025-01-01","$lte":"2025-12-31"}}`
+     *     - Year filter: `{"year":2025}`
+     *     - Text search: `{"title":{"$contains":"Cloud"}}`
+     *     - Date range: `{"date":{"$gte":"2025-01-01T00:00:00Z","$lt":"2026-01-01T00:00:00Z"}}`
+     *     - Multiple filters: `{"status":"published","year":2025}`
+     *     - Search with filter: `{"status":"published","title":{"$contains":"Cloud"}}`
      *     - Logical operators: `{"$or":[{"status":"published"},{"status":"archived"}]}`
      *     - In operator: `{"status":{"$in":["published","archived"]}}`
+     *
+     *     **Supported Filter Fields**:
+     *     - `year`: Integer (convenience filter, matches events from Jan 1 - Dec 31 of given year)
+     *     - `date`: ISO 8601 timestamp (supports $gte, $lte, $gt, $lt operators for date ranges)
+     *     - `status`: String (single status) or use `$in` operator for multiple statuses
+     *     - `eventNumber`: Integer (event number)
+     *     - `title`: String (supports $contains, $startsWith, $endsWith operators for text search)
      *
      *     **Sort Syntax**:
      *     - Ascending: `date`
@@ -210,6 +221,163 @@ export interface paths {
      *     **Cache Invalidation**: All event caches cleared on workflow advance
      */
     post: operations['advanceWorkflow'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/workflow/transition': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Transition event to target workflow state
+     * @description Transition an event to a specific target workflow state.
+     *
+     *     **Story**: 5.1a - Workflow State Machine Foundation
+     *     **Acceptance Criteria**: AC12
+     *     **Authorization**: Requires ORGANIZER role
+     *     **Rate Limiting**: 10 transitions per minute per user (API Gateway)
+     *     **Performance**: <200ms (P95)
+     *
+     *     **16-Step Workflow**:
+     *     1. CREATED - Initial state
+     *     2. TOPIC_SELECTION - Topics being selected
+     *     3. SPEAKER_BRAINSTORMING - Identifying potential speakers
+     *     4. SPEAKER_OUTREACH - Contacting speakers
+     *     5. SPEAKER_CONFIRMATION - Confirming speaker participation
+     *     6. CONTENT_COLLECTION - Collecting presentations and materials
+     *     7. QUALITY_REVIEW - Reviewing content quality
+     *     8. THRESHOLD_CHECK - Checking minimum speaker threshold
+     *     9. OVERFLOW_MANAGEMENT - Managing speaker overflow
+     *     10. SLOT_ASSIGNMENT - Assigning speakers to time slots
+     *     11. AGENDA_PUBLISHED - Publishing agenda
+     *     12. AGENDA_FINALIZED - Finalizing agenda
+     *     13. NEWSLETTER_SENT - Newsletter sent to attendees
+     *     14. EVENT_READY - Event ready to start
+     *     15. PARTNER_MEETING_COMPLETE - Partner meetings completed
+     *     16. ARCHIVED - Event archived
+     *
+     *     **Validation**:
+     *     - Some transitions require business rule validation (e.g., minimum speakers for SPEAKER_OUTREACH)
+     *     - Invalid transitions return 400 Bad Request
+     *     - Validation failures return 422 Unprocessable Entity
+     *
+     *     **Cache Invalidation**: All event caches cleared on state transition
+     */
+    put: operations['transitionEventWorkflowState'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/workflow/status': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get current workflow status
+     * @description Retrieve the current workflow status including current state, next available states,
+     *     and validation messages.
+     *
+     *     **Story**: 5.1a - Workflow State Machine Foundation
+     *     **Acceptance Criteria**: AC13
+     *     **Authorization**: Requires authentication (any authenticated user)
+     *     **Rate Limiting**: Applied at API Gateway level
+     *
+     *     **Response includes**:
+     *     - Current workflow state
+     *     - Next available states (states that can be transitioned to)
+     *     - Blocked transitions (states that cannot be transitioned to due to business rules)
+     *     - Validation messages (reasons why certain transitions are blocked)
+     *
+     *     **Performance**: <100ms (P95)
+     */
+    get: operations['getWorkflowStatus'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/topics': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Select topic for event
+     * @description Assign a topic to an event and transition workflow state to TOPIC_SELECTION.
+     *
+     *     **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+     *     **Acceptance Criteria**: AC14
+     *     **Authorization**: Requires ORGANIZER role
+     *     **Rate Limiting**: Applied at API Gateway level
+     *
+     *     **Workflow State Transition**:
+     *     - Valid source states: CREATED, TOPIC_SELECTION
+     *     - Target state: TOPIC_SELECTION
+     *     - Publishes EventWorkflowTransitionEvent domain event
+     *
+     *     **Business Rules**:
+     *     - Event must exist
+     *     - Topic must exist in topic backlog
+     *     - Event must be in CREATED or TOPIC_SELECTION state
+     *     - Organizer can change topic while in TOPIC_SELECTION state
+     *
+     *     **Performance**: <200ms (P95)
+     */
+    post: operations['selectTopicForEvent'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/speakers/pool': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Add speaker to event speaker pool
+     * @description Add a potential speaker to the event speaker pool during brainstorming phase.
+     *
+     *     **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+     *     **Acceptance Criteria**: AC9-13
+     *     **Authorization**: Requires ORGANIZER role
+     *     **Rate Limiting**: Applied at API Gateway level
+     *
+     *     **Business Rules**:
+     *     - Event must exist
+     *     - Speaker name is required
+     *     - Company, expertise, and notes are optional
+     *     - Organizer assignment is optional (can be assigned later)
+     *     - Initial status is automatically set to 'identified'
+     *
+     *     **Performance**: <150ms (P95)
+     */
+    post: operations['addSpeakerToPool'];
     delete?: never;
     options?: never;
     head?: never;
@@ -550,6 +718,80 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/types': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List all event type configurations
+     * @description Retrieve all event type configurations (FULL_DAY, AFTERNOON, EVENING).
+     *
+     *     **Story**: 5.1 - Event Type Definition
+     *     **Acceptance Criteria**: AC1
+     *
+     *     Event types define slot requirements and templates for different event formats.
+     *     This endpoint returns cached configurations (Caffeine cache, 1 hour TTL).
+     *
+     *     **Performance**: <50ms (P95) - cached response
+     */
+    get: operations['listEventTypes'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/types/{type}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get specific event type configuration
+     * @description Retrieve configuration for a specific event type.
+     *
+     *     **Story**: 5.1 - Event Type Definition
+     *     **Acceptance Criteria**: AC2
+     *
+     *     Returns slot configuration details for the specified event type.
+     *     Cached response (Caffeine cache, 1 hour TTL).
+     *
+     *     **Performance**: <50ms (P95) - cached response
+     */
+    get: operations['getEventType'];
+    /**
+     * Update event type configuration (ORGANIZER only)
+     * @description Update configuration for a specific event type.
+     *
+     *     **Story**: 5.1 - Event Type Definition
+     *     **Acceptance Criteria**: AC3, AC8
+     *
+     *     **Authorization**: Requires ORGANIZER role
+     *
+     *     Updates slot configuration for the event type template.
+     *     Cache is automatically invalidated after successful update.
+     *
+     *     **Validation**:
+     *     - minSlots must be > 0
+     *     - maxSlots must be >= minSlots
+     *     - slotDuration must be >= 15 minutes
+     *     - defaultCapacity must be > 0
+     */
+    put: operations['updateEventType'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -638,6 +880,16 @@ export interface components {
        * @example abc123-def456
        */
       themeImageUploadId?: string | null;
+      /**
+       * @description Event type (FULL_DAY, AFTERNOON, EVENING).
+       *     Story 5.1: Event Type Definition
+       */
+      eventType?: components['schemas']['EventType'];
+      /**
+       * @description Current workflow state (16-step workflow).
+       *     Story 5.1a: Event Workflow State Machine
+       */
+      workflowState?: components['schemas']['EventWorkflowState'];
     };
     EventDetail: components['schemas']['Event'] & {
       venue?: components['schemas']['Venue'];
@@ -882,6 +1134,7 @@ export interface components {
       publishedAt?: string;
       metadata?: string;
       description?: string;
+      eventType: components['schemas']['EventType'];
       /**
        * @description Upload ID from /logos/presigned-url for event theme image.
        *     Story 2.5.3a: Event Theme Image Upload
@@ -922,6 +1175,7 @@ export interface components {
       publishedAt?: string;
       metadata?: string;
       description?: string;
+      eventType: components['schemas']['EventType'];
       /** @description Upload ID from /logos/presigned-url for event theme image */
       themeImageUploadId?: string | null;
     };
@@ -1108,10 +1362,286 @@ export interface components {
         count?: number;
       }[];
     };
+    /**
+     * @description Event type identifier (Story 5.1 - Event Type Definition).
+     *     Matches EventType enum from architecture (03-data-architecture.md:547-551).
+     * @example FULL_DAY
+     * @enum {string}
+     */
+    EventType: 'FULL_DAY' | 'AFTERNOON' | 'EVENING';
+    /**
+     * @description Event slot configuration for an event type (Story 5.1).
+     *     Defines slot requirements and scheduling parameters.
+     */
+    EventSlotConfigurationResponse: {
+      type: components['schemas']['EventType'];
+      /**
+       * @description Minimum number of session slots
+       * @example 6
+       */
+      minSlots: number;
+      /**
+       * @description Maximum number of session slots
+       * @example 8
+       */
+      maxSlots: number;
+      /**
+       * @description Duration of each slot in minutes
+       * @example 45
+       */
+      slotDuration: number;
+      /**
+       * @description Whether theoretical presentations are scheduled in morning slots
+       * @example true
+       */
+      theoreticalSlotsAM: boolean;
+      /**
+       * @description Number of break slots included in event
+       * @example 2
+       */
+      breakSlots: number;
+      /**
+       * @description Number of lunch slots included in event
+       * @example 1
+       */
+      lunchSlots: number;
+      /**
+       * @description Default attendee capacity for this event type
+       * @example 200
+       */
+      defaultCapacity: number;
+      /**
+       * Format: time
+       * @description Typical start time for this event type
+       * @example 09:00
+       */
+      typicalStartTime?: string;
+      /**
+       * Format: time
+       * @description Typical end time for this event type
+       * @example 17:00
+       */
+      typicalEndTime?: string;
+    };
+    /**
+     * @description Request to update event slot configuration (Story 5.1).
+     *     All fields are required for update operation.
+     */
+    UpdateEventSlotConfigurationRequest: {
+      /**
+       * @description Minimum number of session slots
+       * @example 6
+       */
+      minSlots: number;
+      /**
+       * @description Maximum number of session slots (must be >= minSlots)
+       * @example 8
+       */
+      maxSlots: number;
+      /**
+       * @description Duration of each slot in minutes
+       * @example 45
+       */
+      slotDuration: number;
+      /**
+       * @description Whether theoretical presentations are scheduled in morning slots
+       * @example true
+       */
+      theoreticalSlotsAM: boolean;
+      /**
+       * @description Number of break slots included in event
+       * @example 2
+       */
+      breakSlots: number;
+      /**
+       * @description Number of lunch slots included in event
+       * @example 1
+       */
+      lunchSlots: number;
+      /**
+       * @description Default attendee capacity for this event type
+       * @example 200
+       */
+      defaultCapacity: number;
+      /**
+       * Format: time
+       * @description Typical start time for this event type
+       * @example 09:00
+       */
+      typicalStartTime?: string | null;
+      /**
+       * Format: time
+       * @description Typical end time for this event type
+       * @example 17:00
+       */
+      typicalEndTime?: string | null;
+    };
     /** @description Pagination metadata from shared-kernel */
     PaginationMetadata: Record<string, never>;
     /** @description Standard error response from shared-kernel */
     ErrorResponse: Record<string, never>;
+    /**
+     * @description Event workflow state for 16-step workflow (Story 5.1a).
+     *     Defines the current state of an event in the organizer workflow.
+     * @example SPEAKER_BRAINSTORMING
+     * @enum {string}
+     */
+    EventWorkflowState:
+      | 'CREATED'
+      | 'TOPIC_SELECTION'
+      | 'SPEAKER_BRAINSTORMING'
+      | 'SPEAKER_OUTREACH'
+      | 'SPEAKER_CONFIRMATION'
+      | 'CONTENT_COLLECTION'
+      | 'QUALITY_REVIEW'
+      | 'THRESHOLD_CHECK'
+      | 'OVERFLOW_MANAGEMENT'
+      | 'SLOT_ASSIGNMENT'
+      | 'AGENDA_PUBLISHED'
+      | 'AGENDA_FINALIZED'
+      | 'NEWSLETTER_SENT'
+      | 'EVENT_READY'
+      | 'PARTNER_MEETING_COMPLETE'
+      | 'ARCHIVED';
+    /**
+     * @description Request to transition event to target workflow state (Story 5.1a - AC12).
+     *     The target state must be a valid transition from the current state.
+     */
+    TransitionStateRequest: {
+      targetState: components['schemas']['EventWorkflowState'];
+    };
+    /**
+     * @description Current workflow status including available and blocked transitions (Story 5.1a - AC13).
+     *     Provides organizers with visibility into what transitions are possible and why.
+     */
+    WorkflowStatusDto: {
+      currentState: components['schemas']['EventWorkflowState'];
+      /**
+       * @description List of states that can be transitioned to from current state
+       * @example [
+       *       "SPEAKER_OUTREACH"
+       *     ]
+       */
+      nextAvailableStates: components['schemas']['EventWorkflowState'][];
+      /**
+       * @description List of states that are blocked due to validation failures
+       * @example [
+       *       "SPEAKER_OUTREACH"
+       *     ]
+       */
+      blockedTransitions: components['schemas']['EventWorkflowState'][];
+      /**
+       * @description Validation messages explaining why certain transitions are blocked
+       * @example [
+       *       "Cannot transition to SPEAKER_OUTREACH: Insufficient speakers identified (need 6, have 3)"
+       *     ]
+       */
+      validationMessages: string[];
+    };
+    /**
+     * @description Request to add a potential speaker to the event speaker pool during brainstorming phase.
+     *     Story 5.2 - AC9-12: Speaker Pool Management
+     */
+    AddSpeakerToPoolRequest: {
+      /**
+       * @description Name of the potential speaker (required)
+       * @example Jane Smith
+       */
+      speakerName: string;
+      /**
+       * @description Company or organization of the speaker (optional)
+       * @example Tech Corp AG
+       */
+      company?: string;
+      /**
+       * @description Areas of expertise (optional)
+       * @example Cloud Architecture, Kubernetes, DevOps
+       */
+      expertise?: string;
+      /**
+       * @description Username of organizer assigned for outreach (optional)
+       * @example alice.mueller
+       */
+      assignedOrganizerId?: string;
+      /**
+       * @description Free-text notes about the speaker (optional)
+       * @example Met at KubeCon 2024. Very enthusiastic about BATbern. Follow up next week.
+       */
+      notes?: string;
+    };
+    /**
+     * @description Response representing a speaker pool entry.
+     *     Story 5.2 - AC9-13: Speaker Pool Management
+     */
+    SpeakerPoolResponse: {
+      /**
+       * Format: uuid
+       * @description Unique identifier for the speaker pool entry
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /**
+       * Format: uuid
+       * @description UUID of the event this speaker is associated with
+       * @example 789e4567-e89b-12d3-a456-426614174111
+       */
+      eventId: string;
+      /**
+       * @description Name of the potential speaker
+       * @example Jane Smith
+       */
+      speakerName: string;
+      /**
+       * @description Company or organization of the speaker
+       * @example Tech Corp AG
+       */
+      company?: string | null;
+      /**
+       * @description Areas of expertise
+       * @example Cloud Architecture, Kubernetes, DevOps
+       */
+      expertise?: string | null;
+      /**
+       * @description Username of organizer assigned for outreach
+       * @example alice.mueller
+       */
+      assignedOrganizerId?: string | null;
+      /**
+       * @description Current status of the speaker in the pool workflow.
+       *     Story 5.2 - AC13: Initial status = 'identified'
+       * @example identified
+       * @enum {string}
+       */
+      status:
+        | 'identified'
+        | 'contacted'
+        | 'ready'
+        | 'accepted'
+        | 'declined'
+        | 'content_submitted'
+        | 'quality_reviewed'
+        | 'slot_assigned'
+        | 'confirmed'
+        | 'withdrew'
+        | 'overflow';
+      /**
+       * @description Free-text notes about the speaker
+       * @example Met at KubeCon 2024. Very enthusiastic about BATbern.
+       */
+      notes?: string | null;
+      /**
+       * Format: date-time
+       * @description Timestamp when speaker was added to pool
+       * @example 2025-12-13T10:00:00Z
+       */
+      createdAt: string;
+      /**
+       * Format: date-time
+       * @description Timestamp of last update
+       * @example 2025-12-13T10:15:00Z
+       */
+      updatedAt: string;
+    };
   };
   responses: {
     /** @description Bad request - validation error */
@@ -1143,6 +1673,15 @@ export interface components {
     };
     /** @description Internal server error */
     InternalServerError: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': components['schemas']['ErrorResponse'];
+      };
+    };
+    /** @description Forbidden - insufficient permissions */
+    Forbidden: {
       headers: {
         [name: string]: unknown;
       };
@@ -1490,6 +2029,237 @@ export interface operations {
       };
       404: components['responses']['NotFound'];
       422: components['responses']['UnprocessableEntity'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  transitionEventWorkflowState: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['TransitionStateRequest'];
+      };
+    };
+    responses: {
+      /** @description Workflow transition successful */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @example BATbern142 */
+            eventCode?: string;
+            /** @example TOPIC_SELECTION */
+            workflowState?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+          };
+        };
+      };
+      /** @description Invalid state transition */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      404: components['responses']['NotFound'];
+      /** @description Validation failure (business rules not met) */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  getWorkflowStatus: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Workflow status retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WorkflowStatusDto'];
+        };
+      };
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  selectTopicForEvent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /**
+           * Format: uuid
+           * @description UUID of the topic to assign
+           * @example 123e4567-e89b-12d3-a456-426614174000
+           */
+          topicId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Topic selected successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @example BATbern56 */
+            eventCode?: string;
+            /**
+             * Format: uuid
+             * @example 123e4567-e89b-12d3-a456-426614174000
+             */
+            topicId?: string;
+            /**
+             * @example TOPIC_SELECTION
+             * @enum {string}
+             */
+            workflowState?: 'TOPIC_SELECTION';
+            /** @example Topic selected successfully */
+            message?: string;
+          };
+        };
+      };
+      /** @description Invalid state transition */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "message": "Invalid state transition",
+           *       "timestamp": "2025-12-13T10:00:00Z",
+           *       "path": "/api/v1/events/BATbern56/topics",
+           *       "status": 400,
+           *       "error": "Bad Request"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      403: components['responses']['Forbidden'];
+      /** @description Event or topic not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "message": "Event not found: BATbern56",
+           *       "timestamp": "2025-12-13T10:00:00Z",
+           *       "path": "/api/v1/events/BATbern56/topics",
+           *       "status": 404,
+           *       "error": "Not Found"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  addSpeakerToPool: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AddSpeakerToPoolRequest'];
+      };
+    };
+    responses: {
+      /** @description Speaker added to pool successfully */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SpeakerPoolResponse'];
+        };
+      };
+      /** @description Validation error (e.g., speaker name missing) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "message": "Speaker name is required",
+           *       "timestamp": "2025-12-13T10:00:00Z",
+           *       "path": "/api/v1/events/BATbern56/speakers/pool",
+           *       "status": 400,
+           *       "error": "Bad Request"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      403: components['responses']['Forbidden'];
+      /** @description Event not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "message": "Event not found: BATbern56",
+           *       "timestamp": "2025-12-13T10:00:00Z",
+           *       "path": "/api/v1/events/BATbern56/speakers/pool",
+           *       "status": 404,
+           *       "error": "Not Found"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
       500: components['responses']['InternalServerError'];
     };
   };
@@ -2057,6 +2827,158 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['EventAnalytics'];
+        };
+      };
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  listEventTypes: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Event types retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example [
+           *       {
+           *         "type": "FULL_DAY",
+           *         "minSlots": 6,
+           *         "maxSlots": 8,
+           *         "slotDuration": 45,
+           *         "theoreticalSlotsAM": true,
+           *         "breakSlots": 2,
+           *         "lunchSlots": 1,
+           *         "defaultCapacity": 300,
+           *         "typicalStartTime": "09:00",
+           *         "typicalEndTime": "16:00"
+           *       },
+           *       {
+           *         "type": "AFTERNOON",
+           *         "minSlots": 6,
+           *         "maxSlots": 8,
+           *         "slotDuration": 45,
+           *         "theoreticalSlotsAM": false,
+           *         "breakSlots": 1,
+           *         "lunchSlots": 0,
+           *         "defaultCapacity": 200,
+           *         "typicalStartTime": "13:00",
+           *         "typicalEndTime": "19:00"
+           *       },
+           *       {
+           *         "type": "EVENING",
+           *         "minSlots": 3,
+           *         "maxSlots": 4,
+           *         "slotDuration": 45,
+           *         "theoreticalSlotsAM": false,
+           *         "breakSlots": 1,
+           *         "lunchSlots": 0,
+           *         "defaultCapacity": 200,
+           *         "typicalStartTime": "16:00",
+           *         "typicalEndTime": "19:00"
+           *       }
+           *     ]
+           */
+          'application/json': components['schemas']['EventSlotConfigurationResponse'][];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  getEventType: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /**
+         * @description Event type identifier
+         * @example FULL_DAY
+         */
+        type: components['schemas']['EventType'];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Event type configuration retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EventSlotConfigurationResponse'];
+        };
+      };
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  updateEventType: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /**
+         * @description Event type identifier
+         * @example FULL_DAY
+         */
+        type: components['schemas']['EventType'];
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "minSlots": 6,
+         *       "maxSlots": 8,
+         *       "slotDuration": 45,
+         *       "theoreticalSlotsAM": true,
+         *       "breakSlots": 2,
+         *       "lunchSlots": 1,
+         *       "defaultCapacity": 200,
+         *       "typicalStartTime": "09:00",
+         *       "typicalEndTime": "17:00"
+         *     }
+         */
+        'application/json': components['schemas']['UpdateEventSlotConfigurationRequest'];
+      };
+    };
+    responses: {
+      /** @description Event type configuration updated successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EventSlotConfigurationResponse'];
+        };
+      };
+      /** @description Validation error (e.g., minSlots > maxSlots) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Forbidden - requires ORGANIZER role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
         };
       };
       404: components['responses']['NotFound'];

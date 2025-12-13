@@ -1,0 +1,44 @@
+meta {
+  name: List Speaker Pool
+  type: http
+  seq: 36
+}
+
+get {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/pool
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body: isArray
+}
+
+tests {
+  test("should return 200 status - Story 5.2 AC9", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return speaker pool array for event - Story 5.2 AC9, AC11, AC12", function() {
+    const pool = res.getBody();
+    expect(pool).to.be.an('array');
+    expect(pool.length).to.be.at.least(1); // We added one speaker
+
+    const speaker = pool.find(s => s.id === bru.getVar("createdSpeakerPoolId"));
+    expect(speaker).to.be.an('object');
+    expect(speaker.speakerName).to.equal('Dr. Maria Schmidt');
+    expect(speaker.assignedOrganizerId).to.equal(bru.getVar("organizerUsername"));
+    expect(speaker.status).to.equal('identified');
+  });
+
+  test("should show contact distribution - Story 5.2 AC12", function() {
+    const pool = res.getBody();
+    const assignedToOrganizer = pool.filter(s => s.assignedOrganizerId === bru.getVar("organizerUsername"));
+    expect(assignedToOrganizer.length).to.be.at.least(1);
+  });
+}

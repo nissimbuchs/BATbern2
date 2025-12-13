@@ -1,0 +1,44 @@
+meta {
+  name: Get Topic By ID
+  type: http
+  seq: 32
+}
+
+get {
+  url: {{baseUrl}}/topics/{{createdTopicId}}?include=history,metrics,insights
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.id: eq {{createdTopicId}}
+  res.body.stalenessScore: isDefined
+}
+
+tests {
+  test("should return 200 status - Story 5.2 AC1", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return topic with detailed metrics - Story 5.2 AC2, AC6", function() {
+    const topic = res.getBody();
+    expect(topic.id).to.equal(bru.getVar("createdTopicId"));
+    expect(topic.title).to.be.a('string');
+    expect(topic.description).to.be.a('string');
+    expect(topic.category).to.be.a('string');
+    expect(topic.stalenessScore).to.be.a('number');
+  });
+
+  test("should include usage history when requested - Story 5.2 AC2", function() {
+    const topic = res.getBody();
+    // Usage history might be empty for newly created topic
+    if (topic.usageHistory) {
+      expect(topic.usageHistory).to.be.an('array');
+    }
+  });
+}

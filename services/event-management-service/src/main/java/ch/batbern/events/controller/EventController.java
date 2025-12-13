@@ -88,6 +88,8 @@ public class EventController {
     private final ch.batbern.events.repository.RegistrationRepository registrationRepository;
     private final ch.batbern.events.service.ConfirmationTokenService confirmationTokenService;
     private final ch.batbern.events.service.RegistrationEmailService registrationEmailService;
+    private final ch.batbern.events.service.TopicService topicService;
+    private final ch.batbern.events.service.SpeakerPoolService speakerPoolService;
 
     /**
      * List/Search Events (AC1)
@@ -236,6 +238,10 @@ public class EventController {
         response.put("currentAttendeeCount", event.getCurrentAttendeeCount());
         response.put("publishedAt", event.getPublishedAt());
         response.put("metadata", event.getMetadata());
+        // Story 5.1: Include eventType if present
+        if (event.getEventType() != null) {
+            response.put("eventType", event.getEventType().getValue());
+        }
         // Story 2.5.3a: Include theme image fields if present
         if (event.getThemeImageUrl() != null) {
             response.put("themeImageUrl", event.getThemeImageUrl());
@@ -485,6 +491,7 @@ public class EventController {
                 .publishedAt(request.getPublishedAt() != null ? parseDate(request.getPublishedAt()) : null)
                 .metadata(request.getMetadata())
                 .description(request.getDescription())
+                .eventType(request.getEventType())
                 .themeImageUploadId(request.getThemeImageUploadId())
                 .build();
 
@@ -595,6 +602,9 @@ public class EventController {
         event.setPublishedAt(request.getPublishedAt() != null ? parseDate(request.getPublishedAt()) : null);
         event.setMetadata(request.getMetadata());
         event.setDescription(request.getDescription());
+        if (request.getEventType() != null) {
+            event.setEventType(ch.batbern.events.dto.generated.EventType.fromValue(request.getEventType()));
+        }
 
         // Set theme image upload ID before save (Story 2.5.3a)
         if (request.getThemeImageUploadId() != null && !request.getThemeImageUploadId().isBlank()) {
@@ -953,8 +963,9 @@ public class EventController {
         if (event.getTitle() == null || event.getTitle().trim().isEmpty()) {
             throw new BusinessValidationException("Event title is required for publishing");
         }
-        // Check that event date is in the future
-        if (event.getDate().isBefore(Instant.now())) {
+        // Check that event date is in the future (unless event is archived)
+        // Historical events can have past dates when imported with archived status
+        if (!"archived".equals(event.getStatus()) && event.getDate().isBefore(Instant.now())) {
             throw new BusinessValidationException("Event date must be in the future");
         }
     }
@@ -1062,6 +1073,9 @@ public class EventController {
         }
         if (request.getDescription() != null) {
             event.setDescription(request.getDescription());
+        }
+        if (request.getEventType() != null) {
+            event.setEventType(ch.batbern.events.dto.generated.EventType.fromValue(request.getEventType()));
         }
         // Story 2.5.3a: Set theme image upload ID (association happens after save in PATCH handler)
         if (request.getThemeImageUploadId() != null && !request.getThemeImageUploadId().isBlank()) {
@@ -1496,5 +1510,110 @@ public class EventController {
                     event.getEventCode(), uploadId, e.getMessage(), e);
             // Don't fail event creation - theme image is optional
         }
+    }
+
+    /**
+     * Select topic for event (Story 5.2 AC14-16).
+     *
+     * POST /api/v1/events/{eventCode}/topics
+     *
+     * This endpoint:
+     * - Validates event and topic exist
+     * - Validates event is in valid state (CREATED or TOPIC_SELECTION)
+     * - Assigns topic to event
+     * - Transitions event workflow state to TOPIC_SELECTION
+     * - Publishes EventWorkflowTransitionEvent domain event
+     *
+     * @param eventCode Event code (e.g., "BATbern56")
+     * @param request Request body with topicId
+     * @return Event with selected topic
+     */
+    @PostMapping("/{eventCode}/topics")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ORGANIZER')")
+    @Operation(summary = "Select topic for event",
+            description = "Assign a topic to an event and transition to TOPIC_SELECTION state")
+    public ResponseEntity<Map<String, Object>> selectTopicForEvent(
+            @PathVariable String eventCode,
+            @RequestBody Map<String, String> request) {
+
+        try {
+            // Extract topicId from request
+            String topicIdStr = request.get("topicId");
+            if (topicIdStr == null || topicIdStr.isBlank()) {
+                return ResponseEntity.badRequest().body(
+                    Map.of("message", "topicId is required")
+                );
+            }
+
+            UUID topicId = UUID.fromString(topicIdStr);
+
+            // Get current user from security context
+            String organizerUsername = securityContextHelper.getCurrentUserId();
+
+            // Select topic for event (calls workflow state machine)
+            Event updatedEvent = topicService.selectTopicForEvent(eventCode, topicId, organizerUsername);
+
+            // Build response
+            Map<String, Object> response = Map.of(
+                "eventCode", updatedEvent.getEventCode(),
+                "topicId", updatedEvent.getTopicId().toString(),
+                "workflowState", updatedEvent.getWorkflowState().name(),
+                "message", "Topic selected successfully"
+            );
+
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalArgumentException e) {
+            // Event or topic not found
+            log.warn("Topic selection failed for event {}: {}", eventCode, e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                Map.of("message", e.getMessage())
+            );
+        } catch (IllegalStateException e) {
+            // Invalid state transition
+            log.warn("Topic selection rejected for event {}: {}", eventCode, e.getMessage());
+            return ResponseEntity.badRequest().body(
+                Map.of("message", "Invalid state transition")
+            );
+        } catch (Exception e) {
+            // Unexpected error
+            System.out.println("=== ERROR IN selectTopicForEvent ===");
+            System.out.println("Event: " + eventCode);
+            System.out.println("Exception: " + e.getClass().getName());
+            System.out.println("Message: " + e.getMessage());
+            e.printStackTrace(System.out);
+            System.out.println("====================================");
+            log.error("Unexpected error selecting topic for event {}: {}",
+                    eventCode, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    Map.of("message", "Internal server error",
+                            "error", e.getMessage(),
+                            "type", e.getClass().getSimpleName())
+            );
+        }
+    }
+
+    /**
+     * Add speaker to event speaker pool (Story 5.2 AC9-13).
+     *
+     * POST /api/v1/events/{eventCode}/speakers/pool
+     *
+     * Allows organizers to brainstorm and add potential speakers during event planning.
+     */
+    @PostMapping("/{eventCode}/speakers/pool")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ORGANIZER')")
+    @Operation(summary = "Add speaker to pool",
+            description = "Add a potential speaker to the event speaker pool during brainstorming phase")
+    public ResponseEntity<ch.batbern.events.dto.SpeakerPoolResponse> addSpeakerToPool(
+            @PathVariable String eventCode,
+            @RequestBody ch.batbern.events.dto.AddSpeakerToPoolRequest request) {
+
+        // Add speaker to pool
+        // Exceptions are handled by GlobalExceptionHandler:
+        // - EventNotFoundException → HTTP 404
+        // - IllegalArgumentException → HTTP 400
+        ch.batbern.events.dto.SpeakerPoolResponse response = speakerPoolService.addSpeakerToPool(eventCode, request);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }

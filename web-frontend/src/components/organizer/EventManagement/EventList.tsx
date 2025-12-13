@@ -65,16 +65,6 @@ export const EventList: React.FC<EventListProps> = ({
   // Event grid
   return (
     <Box>
-      {/* Event count */}
-      <Typography
-        variant="body2"
-        color="text.secondary"
-        mb={2}
-        aria-label={`${events.length} events`}
-      >
-        {t('dashboard.eventCount', { count: events.length })}
-      </Typography>
-
       {/* Event cards grid */}
       <Grid container spacing={3} data-testid="event-list-container" aria-label="Event list">
         {events.map((event) => (

@@ -18,12 +18,10 @@ export type { components } from './generated/company-api.types';
 // ============================================================================
 
 /**
- * CompanyListItem - Simplified type for list views
- * Extends search response with optional logo for display
+ * CompanyListItem - Type for list views
+ * Based on CompanyResponse which includes all fields including website
  */
-export type CompanyListItem = components['schemas']['CompanySearchResponse'] & {
-  logo?: components['schemas']['CompanyLogo'];
-};
+export type CompanyListItem = components['schemas']['CompanyResponse'];
 
 /**
  * Company Filters - Frontend filter state
@@ -31,6 +29,7 @@ export type CompanyListItem = components['schemas']['CompanySearchResponse'] & {
 export interface CompanyFilters {
   isVerified?: boolean;
   industry?: string;
+  searchQuery?: string;
 }
 
 /**

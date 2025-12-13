@@ -1,0 +1,21 @@
+# .gitallowed - Whitelisted patterns for git-secrets
+# These are false positives that should not be flagged as secrets
+
+# Aria labels and accessibility text
+aria-label="Toggle password visibility"
+
+# AWS Account IDs in cdk.context.json (not secrets)
+availability-zones:account=.*:region=
+
+# Environment variable references (not actual passwords)
+password=\$\{DB_PASSWORD\}
+password=\$\{DATABASE_PASSWORD\}
+
+# Gradle build.gradle password configuration lines
+password = System\.getProperty\('flyway\.password'
+
+# Script variables using environment variables
+DATABASE_URL="jdbc:postgresql://.*password=\$\{DB_PASSWORD\}"
+
+# Code comparing password fields
+if \(signUpData\.password !== signUpData\.confirmPassword\)

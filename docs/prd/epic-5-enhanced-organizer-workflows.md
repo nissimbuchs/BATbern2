@@ -22,11 +22,13 @@
 - **Infrastructure**: AWS SES for newsletters, CloudFront CDN, Caffeine caching
 - **Database**: PostgreSQL with workflow state tracking
 
-**Duration**: 12-15 weeks (Weeks 27-41, adjusted from original 8 weeks)
+**Duration**: 13-16 weeks (Weeks 27-42, adjusted from original 12-15 weeks to include Story 5.1a)
 
 **Dependencies**:
 - Epic 2 complete (CRUD APIs operational)
 - Story 2.7 complete (Partner Coordination Service)
+- Story 5.1 complete (Event Type Definition)
+- **Story 5.1a complete (Workflow State Machine Foundation) ← CRITICAL DEPENDENCY FOR ALL STORIES 5.2-5.15**
 
 **What's Different**:
 - Epic 5 no longer depends on Epic 6 (Speaker Portal) or Epic 8 (Partner Portal)
@@ -40,6 +42,7 @@
 
 | Step | Workflow Stage | Story | Phase |
 |------|---|---|---|
+| **FOUNDATION** | State Machine Infrastructure | 5.1a (Workflow Engine) | A |
 | **1** | Topic Selection & Event Type Definition | 5.1 (Event Type) + 5.2 (Topic Selection) | A |
 | **2** | Speaker Brainstorming & Research | 5.2 (Speaker Brainstorming) | A |
 | **3** | Speaker Assignment & Contact Strategy | 5.2 (Assignment Strategy) | A |
@@ -59,7 +62,7 @@
 
 ---
 
-## Phase A: Event Setup (Stories 5.1-5.2)
+## Phase A: Event Setup (Stories 5.1, 5.1a, 5.2)
 
 ### Story 5.1: Event Type Definition (Workflow Step 1 - Partial)
 
@@ -101,6 +104,80 @@ As an **organizer**, I want to define event types with slot requirements, so tha
 
 ---
 
+### Story 5.1a: Workflow State Machine Foundation (NEW - Technical Infrastructure)
+
+**User Story:**
+As a **platform architect**, I want to implement the workflow state machine infrastructure, so that all Epic 5 stories can track event and speaker lifecycle states with proper validation and business rule enforcement.
+
+**Architecture Integration:**
+- **Service**: Event Management Service + Speaker Coordination Service
+- **Database**: PostgreSQL with workflow_state columns in events and session_users tables
+- **Shared Kernel**: EventWorkflowState and SpeakerWorkflowState enums
+- **Domain Events**: EventWorkflowTransitionEvent, SpeakerWorkflowStateChangeEvent
+
+**Story Reference:** Full specification at `docs/prd/story-5.1a-workflow-state-machine-foundation.md`
+
+**Acceptance Criteria:**
+
+**Phase 1: State Enums (Day 1)**
+1. **EventWorkflowState Enum**: 16 states for complete event lifecycle (CREATED → ARCHIVED)
+2. **SpeakerWorkflowState Enum**: 11 states for speaker workflow (OPEN → OVERFLOW)
+3. **Domain Events**: EventWorkflowTransitionEvent, SpeakerWorkflowStateChangeEvent
+4. **Unit Tests**: Verify enum values and event serialization
+
+**Phase 2: Event Workflow State Machine (Days 2-3)**
+5. **EventWorkflowStateMachine Service**: Core orchestrator with transitionToState() method
+6. **Validation Logic**: validateMinimumSpeakersIdentified(), validateAllContentSubmitted(), validateMinimumThresholdMet(), validateAllSlotsAssigned(), validateQualityReviewComplete()
+7. **WorkflowTransitionValidator**: State transition matrix and business rule enforcement
+8. **Database Migration**: Add workflow_state column to events table with index
+9. **JPA Converter**: EventWorkflowStateConverter for enum ↔ VARCHAR conversion
+10. **Event Entity Update**: Change status field to workflowState with proper annotations
+11. **Unit Tests**: >90% coverage for state machine logic
+12. **Integration Tests**: Complete workflow sequence with Testcontainers PostgreSQL
+
+**Phase 3: Speaker Workflow Service (Days 4-5)**
+13. **SpeakerWorkflowService**: Speaker state management with updateSpeakerWorkflowState() method
+14. **State-Specific Logic**: CONTACTED (set timestamp, send notification), ACCEPTED (check overflow), DECLINED (handle decline), SLOT_ASSIGNED (validate assignment)
+15. **Database Migration**: Add workflow_state column to session_users table with index
+16. **SessionUser Update**: Add workflowState field, keep existing fields for backwards compatibility
+17. **Overflow Detection**: checkForOverflow() detects when speakers exceed max slots
+18. **Unit Tests**: >90% coverage for speaker state transitions
+19. **Integration Tests**: Complete speaker workflow with overflow detection
+
+**Phase 4: REST API Integration (Day 6)**
+20. **EventWorkflowController**: PUT /api/v1/events/{code}/workflow/transition, GET /api/v1/events/{code}/workflow/status
+21. **SpeakerWorkflowController**: PUT /api/v1/events/{id}/speakers/{id}/status
+22. **OpenAPI Specs**: Update event-management-api.openapi.yml and speaker-coordination-api.openapi.yml
+23. **Integration Tests**: API endpoints with success/error scenarios
+
+**Phase 5: Frontend Integration (Day 7)**
+24. **WorkflowProgressBar Update**: Connect to backend API, display current state, show validation blockers
+25. **SpeakerStatusDashboard Component**: Kanban-style lanes for speaker states with drag-and-drop
+26. **TypeScript Generation**: Run npm run generate:api-types
+27. **Manual Testing**: Verify UI updates in real-time
+
+**Phase 6: E2E Testing (Day 7)**
+28. **Integration Test**: Complete workflow transition sequence CREATED → ARCHIVED
+29. **Bruno API Tests**: bruno-tests/workflows/event-workflow-transitions.bru with 5+ test cases
+30. **Performance Testing**: State transitions <200ms P95, workflow status <100ms P95
+
+**Definition of Done:**
+- [ ] EventWorkflowState and SpeakerWorkflowState enums operational
+- [ ] EventWorkflowStateMachine service with full validation
+- [ ] SpeakerWorkflowService with state management
+- [ ] REST APIs operational and documented
+- [ ] Database migrations applied successfully
+- [ ] Frontend components connected and working
+- [ ] Unit tests >90%, integration tests >80%
+- [ ] All Bruno API tests pass
+- [ ] Performance requirements met
+
+**Estimated Duration:** 1 week (7 days)
+
+**CRITICAL NOTE**: This story is a **dependency for ALL Stories 5.2-5.15**. Without the state machine, subsequent stories cannot track workflow progression, validate transitions, or enforce business rules.
+
+---
+
 ### Story 5.2: Topic Selection & Speaker Brainstorming (Workflow Steps 1-3)
 
 **User Story:**
@@ -134,12 +211,17 @@ As an **organizer**, I want to select topics from our backlog with intelligent s
 12. **Contact Distribution**: Track which organizer will contact which speaker
 13. **Speaker Status**: Initial status = "OPEN" (not yet contacted)
 
+**Workflow Engine Integration:**
+14. **Event State Transition**: When topic selected, call `eventWorkflowStateMachine.transitionToState(eventId, EventWorkflowState.TOPIC_SELECTION, organizerId)`
+15. **Speaker Pool State**: When speaker added to pool, call `speakerWorkflowService.updateSpeakerWorkflowState(sessionId, speakerId, SpeakerWorkflowState.IDENTIFIED, organizerId)`
+16. **Validation**: Ensure event can transition to TOPIC_SELECTION state before allowing topic selection
+
 **Technical Implementation:**
-14. **Topic Entity Enhancement**: Add staleness tracking, similarity scores, usage history
-15. **Speaker Pool Table**: event_speaker_pool (event_id, speaker_name, company, expertise, assigned_organizer_id, status, notes)
-16. **REST API**: GET /api/topics, POST /api/events/{id}/speakers/pool
-17. **React Components**: TopicSelector, SpeakerBrainstormingPanel
-18. **Domain Events**: TopicSelectedEvent, SpeakerAddedToPoolEvent
+17. **Topic Entity Enhancement**: Add staleness tracking, similarity scores, usage history
+18. **Speaker Pool Table**: event_speaker_pool (event_id, speaker_name, company, expertise, assigned_organizer_id, status, notes)
+19. **REST API**: GET /api/topics, POST /api/events/{id}/speakers/pool
+20. **React Components**: TopicSelector, SpeakerBrainstormingPanel
+21. **Domain Events**: TopicSelectedEvent, SpeakerAddedToPoolEvent
 
 **Definition of Done:**
 - [ ] Topic backlog displays all historical topics with heat map
@@ -179,11 +261,16 @@ As an **organizer**, I want to track my speaker outreach activities, so that I c
 6. **Bulk Actions**: Mark multiple speakers as contacted at once
 7. **Reminder System**: Show speakers not yet contacted with days elapsed since assignment
 
+**Workflow Engine Integration:**
+8. **State Transition**: When speaker marked as contacted, call `speakerWorkflowService.updateSpeakerWorkflowState(sessionId, speakerId, SpeakerWorkflowState.CONTACTED, organizerId)`
+9. **Validation**: Ensure speaker is in IDENTIFIED or OPEN state before allowing transition to CONTACTED
+10. **Event Listener**: Listen for SpeakerWorkflowStateChangeEvent to update UI with real-time status changes
+
 **Technical Implementation:**
-8. **Outreach History Entity**: Track date, method (email/phone/in-person), notes, organizer
-9. **REST API**: POST /api/events/{id}/speakers/{speakerId}/outreach
-10. **React Component**: SpeakerOutreachDashboard with inline editing
-11. **Domain Event**: SpeakerContactedEvent
+11. **Outreach History Entity**: Track date, method (email/phone/in-person), notes, organizer
+12. **REST API**: POST /api/events/{id}/speakers/{speakerId}/outreach
+13. **React Component**: SpeakerOutreachDashboard with inline editing
+14. **Domain Event**: SpeakerContactedEvent
 
 **Definition of Done:**
 - [ ] Organizers can mark speakers as contacted with notes
@@ -222,12 +309,18 @@ As an **organizer**, I want to track speaker status transitions, so that I know 
 8. **Progress Bar**: Overall event progress based on speaker statuses
 9. **Notifications**: Notify organizers when speaker status changes (if multiple organizers)
 
+**Workflow Engine Integration:**
+10. **State Transition**: Manual status updates call `speakerWorkflowService.updateSpeakerWorkflowState(sessionId, speakerId, newState, organizerId)`
+11. **Event Listener**: Listen for SpeakerWorkflowStateChangeEvent to update UI in real-time
+12. **Validation**: Enforce valid state transitions (CONTACTED → READY → ACCEPTED/DECLINED)
+13. **Acceptance Check**: When speaker moves to ACCEPTED, trigger overflow detection via EventWorkflowStateMachine
+
 **Technical Implementation:**
-10. **Status Enum**: SpeakerWorkflowState enum in shared-kernel
-11. **Status History Table**: Track all status transitions with timestamp, organizer, reason
-12. **REST API**: PUT /api/events/{id}/speakers/{speakerId}/status
-13. **React Component**: SpeakerStatusDashboard with drag-and-drop status lanes
-14. **Domain Event**: SpeakerStatusChangedEvent
+14. **Status Enum**: SpeakerWorkflowState enum in shared-kernel (created in Story 5.1a)
+15. **Status History Table**: Track all status transitions with timestamp, organizer, reason
+16. **REST API**: PUT /api/events/{id}/speakers/{speakerId}/status
+17. **React Component**: SpeakerStatusDashboard with drag-and-drop status lanes
+18. **Domain Event**: SpeakerStatusChangedEvent
 
 **Definition of Done:**
 - [ ] Status transitions follow workflow (OPEN → CONTACTED → READY → ACCEPTED/DECLINED)
@@ -270,12 +363,17 @@ As an **organizer**, I want to collect speaker content (title, abstract, CV, pho
 9. **Submission Notification**: Notify organizer when speaker submits content
 10. **Review Before Acceptance**: Organizer reviews and approves submitted content
 
+**Workflow Engine Integration:**
+11. **Content Submitted State**: When content collected (title, abstract, CV, photo), call `speakerWorkflowService.updateSpeakerWorkflowState(sessionId, speakerId, SpeakerWorkflowState.CONTENT_SUBMITTED, organizerId)`
+12. **Event State Update**: When all accepted speakers have content, enable transition to CONTENT_COLLECTION complete state
+13. **Validation**: Ensure all required materials submitted before allowing state transition
+
 **Technical Implementation:**
-11. **Speaker Materials Entity**: Store title, abstract, cv_url, photo_url, status
-12. **S3 Integration**: Presigned URLs for direct uploads (ADR-002 pattern)
-13. **REST API**: POST /api/events/{id}/speakers/{speakerId}/materials
-14. **React Components**: ContentCollectionChecklist, SimpleSpeakerSubmissionForm
-15. **Domain Event**: SpeakerMaterialsSubmittedEvent
+14. **Speaker Materials Entity**: Store title, abstract, cv_url, photo_url, status
+15. **S3 Integration**: Presigned URLs for direct uploads (ADR-002 pattern)
+16. **REST API**: POST /api/events/{id}/speakers/{speakerId}/materials
+17. **React Components**: ContentCollectionChecklist, SimpleSpeakerSubmissionForm
+18. **Domain Event**: SpeakerMaterialsSubmittedEvent
 
 **Definition of Done:**
 - [ ] Organizer can upload CV, photo on behalf of speaker
@@ -319,11 +417,16 @@ As a **moderator**, I want to review speaker abstracts and materials for quality
 10. **Photo Quality Check**: Manual check for appropriate photo (headshot, professional)
 11. **CV Validation**: Ensure CV uploaded and readable
 
+**Workflow Engine Integration:**
+12. **Review Approved**: When content approved, call `speakerWorkflowService.updateSpeakerWorkflowState(sessionId, speakerId, SpeakerWorkflowState.QUALITY_REVIEWED, moderatorId)`
+13. **Event State Update**: When all content reviews approved, enable event transition to QUALITY_REVIEW complete state
+14. **Validation**: Use QualityReviewService from EventWorkflowStateMachine to enforce review completion before publishing
+
 **Technical Implementation:**
-12. **Content Review Entity**: Track reviewer, status, feedback, review_date
-13. **REST API**: GET /api/events/{id}/materials/pending, POST /api/materials/{id}/review
-14. **React Component**: ModeratorReviewQueue with approve/reject actions
-15. **Domain Event**: MaterialsReviewedEvent
+15. **Content Review Entity**: Track reviewer, status, feedback, review_date
+16. **REST API**: GET /api/events/{id}/materials/pending, POST /api/materials/{id}/review
+17. **React Component**: ModeratorReviewQueue with approve/reject actions
+18. **Domain Event**: MaterialsReviewedEvent
 
 **Definition of Done:**
 - [ ] Moderator review queue displays all pending materials
@@ -362,11 +465,16 @@ As an **organizer**, I want automatic threshold checks to prevent proceeding wit
 8. **Email Reminder**: Automatic reminder to organizers if threshold not met 2 weeks before event
 9. **Override Capability**: Admin can override threshold requirement with justification
 
+**Workflow Engine Integration:**
+10. **Threshold Validation**: Use `EventWorkflowStateMachine.validateMinimumThresholdMet(event)` before allowing progression to SLOT_ASSIGNMENT state
+11. **State Transition**: When threshold met, enable transition to SLOT_ASSIGNMENT state via `eventWorkflowStateMachine.transitionToState(eventId, EventWorkflowState.SLOT_ASSIGNMENT, organizerId)`
+12. **Blocking Validation**: State machine enforces threshold check - cannot proceed without minimum speakers
+
 **Technical Implementation:**
-10. **Threshold Validation Service**: Check accepted speaker count vs minimum for event type
-11. **REST API**: GET /api/events/{id}/threshold-status
-12. **React Component**: ThresholdIndicator widget on event dashboard
-13. **Domain Event**: ThresholdMetEvent, ThresholdNotMetWarningEvent
+13. **Threshold Validation Service**: Check accepted speaker count vs minimum for event type
+14. **REST API**: GET /api/events/{id}/threshold-status
+15. **React Component**: ThresholdIndicator widget on event dashboard
+16. **Domain Event**: ThresholdMetEvent, ThresholdNotMetWarningEvent
 
 **Definition of Done:**
 - [ ] Threshold indicator shows current vs minimum speaker count
@@ -413,12 +521,18 @@ As an **organizer**, I want to vote on speaker selection when we have more speak
 11. **Manual Override**: Organizers can manually select from overflow pool
 12. **Notification**: Notify speakers of selection/overflow status after voting complete
 
+**Workflow Engine Integration:**
+13. **Overflow Detection**: Use `OverflowManagementService.checkForOverflow(eventId)` when accepted speakers > max_slots
+14. **Voting Complete**: When voting done, call `OverflowManagementService.selectFinalSpeakers(overflowId)` to finalize selection
+15. **State Update**: Selected speakers transition to ACCEPTED state, unselected speakers transition to OVERFLOW state via `speakerWorkflowService.updateSpeakerWorkflowState()`
+16. **Domain Event**: Listen for SpeakerOverflowDetectedEvent to trigger voting workflow
+
 **Technical Implementation:**
-13. **Overflow Entity**: Track overflow speakers with vote counts, priority ranking
-14. **Speaker Vote Entity**: Track organizer_id, speaker_id, vote (approve/reject), reason
-15. **REST API**: POST /api/events/{id}/speakers/overflow/vote, GET /api/events/{id}/overflow
-16. **React Component**: OverflowVotingInterface with speaker cards and voting buttons
-17. **Domain Events**: OverflowDetectedEvent, VotingCompleteEvent, SpeakerSelectedEvent
+17. **Overflow Entity**: Track overflow speakers with vote counts, priority ranking (uses OverflowManagementService from Story 5.1a)
+18. **Speaker Vote Entity**: Track organizer_id, speaker_id, vote (approve/reject), reason
+19. **REST API**: POST /api/events/{id}/speakers/overflow/vote, GET /api/events/{id}/overflow
+20. **React Component**: OverflowVotingInterface with speaker cards and voting buttons
+21. **Domain Events**: OverflowDetectedEvent, VotingCompleteEvent, SpeakerSelectedEvent
 
 **Definition of Done:**
 - [ ] System automatically detects overflow when speakers > max slots
@@ -464,12 +578,18 @@ As an **organizer**, I want to assign speakers to specific time slots considerin
 12. **Unassigned Speakers**: Show list of speakers not yet assigned to slots
 13. **Bulk Assignment**: Auto-suggest assignments based on preferences and flow
 
+**Workflow Engine Integration:**
+14. **Assignment State**: When slot assigned to speaker, call `speakerWorkflowService.updateSpeakerWorkflowState(sessionId, speakerId, SpeakerWorkflowState.SLOT_ASSIGNED, organizerId)`
+15. **Event State**: When all slots assigned, transition event via `eventWorkflowStateMachine.transitionToState(eventId, EventWorkflowState.AGENDA_PUBLISHED, organizerId)`
+16. **Use SlotAssignmentService**: Use `SlotAssignmentService.assignSpeakersToSlots(eventId, useAutomaticAssignment)` from Story 5.1a for automatic assignment
+17. **Validation**: State machine enforces that all quality reviews must be complete before slot assignment
+
 **Technical Implementation:**
-14. **Event Slot Entity**: slot_number, start_time, end_time, slot_type, assigned_speaker_id
-15. **Slot Assignment Entity**: slot_id, speaker_id, assignment_date, assigned_by, match_score
-16. **REST API**: POST /api/events/{id}/slots, PUT /api/events/{id}/slots/{slotId}/assign
-17. **React Component**: DragDropSlotAssignment with timeline visualization
-18. **Domain Events**: SlotCreatedEvent, SpeakerAssignedToSlotEvent
+18. **Event Slot Entity**: slot_number, start_time, end_time, slot_type, assigned_speaker_id
+19. **Slot Assignment Entity**: slot_id, speaker_id, assignment_date, assigned_by, match_score
+20. **REST API**: POST /api/events/{id}/slots, PUT /api/events/{id}/slots/{slotId}/assign
+21. **React Component**: DragDropSlotAssignment with timeline visualization
+22. **Domain Events**: SlotCreatedEvent, SpeakerAssignedToSlotEvent
 
 **Definition of Done:**
 - [ ] Slots automatically generated based on event type
@@ -520,13 +640,19 @@ As an **organizer**, I want to progressively publish event information (topic im
 11. **Update Notifications**: Notify subscribers when new phase publishes
 12. **CDN Cache Management**: Invalidate CloudFront cache on publish/update
 
+**Workflow Engine Integration:**
+13. **Publishing States**: Call `eventWorkflowStateMachine.transitionToState(eventId, EventWorkflowState.AGENDA_PUBLISHED, organizerId)` per publishing phase
+14. **Scheduled Jobs**: Cron jobs call state machine for auto-publish at 1 month and 2 weeks before event
+15. **Validation**: State machine validates all slots assigned and quality reviews complete before allowing AGENDA_PUBLISHED transition
+16. **Event Listener**: Listen for EventWorkflowTransitionEvent to trigger CDN cache invalidation
+
 **Technical Implementation:**
-13. **Publishing Phase Enum**: TOPIC_PUBLISHED, SPEAKERS_PUBLISHED, AGENDA_PUBLISHED
-14. **Scheduled Tasks**: Cron jobs to auto-publish at 1 month and 2 weeks before
-15. **REST API**: POST /api/events/{id}/publish/{phase}, DELETE /api/events/{id}/publish/{phase}
-16. **React Components**: PublishingControls, EventPreview, PublicEventPage
-17. **CDN Integration**: CloudFront invalidation API calls
-18. **Domain Events**: PhasePublishedEvent, EventUpdatedEvent
+17. **Publishing Phase Enum**: TOPIC_PUBLISHED, SPEAKERS_PUBLISHED, AGENDA_PUBLISHED (integrated with EventWorkflowState from Story 5.1a)
+18. **Scheduled Tasks**: Cron jobs to auto-publish at 1 month and 2 weeks before
+19. **REST API**: POST /api/events/{id}/publish/{phase}, DELETE /api/events/{id}/publish/{phase}
+20. **React Components**: PublishingControls, EventPreview, PublicEventPage
+21. **CDN Integration**: CloudFront invalidation API calls
+22. **Domain Events**: PhasePublishedEvent, EventUpdatedEvent
 
 **Definition of Done:**
 - [ ] Topic published immediately when event created
@@ -574,13 +700,19 @@ As an **organizer**, I want to finalize the event agenda 2 weeks before the even
 13. **Unlock Workflow**: Admin can unlock agenda with justification
 14. **Change Log**: Track all changes after finalization with timestamp and reason
 
+**Workflow Engine Integration:**
+15. **Finalization State**: When agenda finalized, call `eventWorkflowStateMachine.transitionToState(eventId, EventWorkflowState.AGENDA_FINALIZED, organizerId)`
+16. **Lock Validation**: State machine enforces lock after finalization - major changes require unlock workflow
+17. **Dropout Handling**: Promote overflow speaker via `OverflowManagementService.promoteFromOverflow(eventId, droppedSpeakerId, replacementSpeakerId)`
+18. **Validation**: State machine validates all slots assigned before allowing AGENDA_FINALIZED transition
+
 **Technical Implementation:**
-15. **Agenda Status Enum**: DRAFT, FINALIZED, LOCKED_PRINT
-16. **Dropout Entity**: Track speaker_id, dropout_date, reason, replacement_speaker_id
-17. **REST API**: POST /api/events/{id}/finalize, POST /api/events/{id}/unlock
-18. **React Component**: AgendaFinalizationPanel with dropout handling
-19. **PDF Generation**: Generate printable agenda using PDF library
-20. **Domain Events**: AgendaFinalizedEvent, SpeakerDroppedOutEvent, AgendaUnlockedEvent
+19. **Agenda Status Enum**: DRAFT, FINALIZED, LOCKED_PRINT (integrated with EventWorkflowState from Story 5.1a)
+20. **Dropout Entity**: Track speaker_id, dropout_date, reason, replacement_speaker_id
+21. **REST API**: POST /api/events/{id}/finalize, POST /api/events/{id}/unlock
+22. **React Component**: AgendaFinalizationPanel with dropout handling
+23. **PDF Generation**: Generate printable agenda using PDF library
+24. **Domain Events**: AgendaFinalizedEvent, SpeakerDroppedOutEvent, AgendaUnlockedEvent
 
 **Definition of Done:**
 - [ ] Finalize button marks agenda as finalized with lock

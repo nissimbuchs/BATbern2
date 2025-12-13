@@ -17,15 +17,24 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { EventFilters } from '@/types/event.types';
 
+export interface EventPagination {
+  page: number;
+  limit: number;
+}
+
 export interface EventStore {
   // State
   filters: EventFilters;
+  pagination: EventPagination;
   selectedEventCode?: string;
   isCreateModalOpen: boolean;
   isEditModalOpen: boolean;
 
   // Actions
   setFilters: (filters: EventFilters) => void;
+  setPagination: (pagination: Partial<EventPagination>) => void;
+  setPage: (page: number) => void;
+  setLimit: (limit: number) => void;
   setSelectedEventCode: (eventCode?: string) => void;
   openCreateModal: () => void;
   closeCreateModal: () => void;
@@ -33,17 +42,44 @@ export interface EventStore {
   closeEditModal: () => void;
 }
 
+const DEFAULT_PAGINATION: EventPagination = {
+  page: 1,
+  limit: 20,
+};
+
 export const useEventStore = create<EventStore>()(
   persist(
     (set) => ({
       // Initial state
       filters: {},
+      pagination: DEFAULT_PAGINATION,
       selectedEventCode: undefined,
       isCreateModalOpen: false,
       isEditModalOpen: false,
 
       // Filter management
-      setFilters: (filters: EventFilters) => set({ filters }),
+      setFilters: (filters: EventFilters) =>
+        set((state) => ({
+          filters,
+          // Reset to page 1 when filters change
+          pagination: { ...state.pagination, page: 1 },
+        })),
+
+      // Pagination management
+      setPagination: (pagination: Partial<EventPagination>) =>
+        set((state) => ({
+          pagination: { ...state.pagination, ...pagination },
+        })),
+
+      setPage: (page: number) =>
+        set((state) => ({
+          pagination: { ...state.pagination, page },
+        })),
+
+      setLimit: (limit: number) =>
+        set((state) => ({
+          pagination: { ...state.pagination, limit, page: 1 }, // Reset to page 1 when limit changes
+        })),
 
       // Selected event management (Story 1.16.2: uses eventCode as identifier)
       setSelectedEventCode: (eventCode?: string) => set({ selectedEventCode: eventCode }),
@@ -66,7 +102,7 @@ export const useEventStore = create<EventStore>()(
     }),
     {
       name: 'event-store', // localStorage key
-      // Partial persist: only persist filters (NOT modals or selectedEventCode)
+      // Partial persist: only persist filters (NOT modals, pagination, or selectedEventCode)
       partialize: (state) => ({
         filters: state.filters,
       }),

@@ -183,7 +183,95 @@
     "errors": {
       "loadFailed": "Fehler beim Laden des Unternehmens",
       "saveFailed": "Fehler beim Speichern des Unternehmens",
+      "deleteFailed": "Fehler beim Löschen des Unternehmens",
       "retry": "Wiederholen"
+    },
+    "search": {
+      "placeholder": "Unternehmen suchen..."
+    },
+    "batchImport": {
+      "button": "Batch-Import",
+      "title": "Unternehmen aus JSON importieren",
+      "dropzone": "JSON-Datei hier ablegen oder klicken zum Hochladen",
+      "dropzoneActive": "JSON-Datei hier ablegen",
+      "invalidJson": "Ungültige JSON-Datei. Bitte überprüfen Sie das Format.",
+      "noCompanies": "Keine Unternehmen in der JSON-Datei gefunden.",
+      "preview": "Vorschau ({{count}} Unternehmen)",
+      "importButton": "Alle importieren",
+      "cancelButton": "Abbrechen",
+      "status": {
+        "pending": "Ausstehend",
+        "importing": "Wird importiert...",
+        "success": "Importiert",
+        "updated": "Aktualisiert",
+        "willUpdate": "Wird aktualisiert",
+        "error": "Fehler",
+        "skipped": "Übersprungen (existiert)"
+      },
+      "progress": "Importiere {{current}} von {{total}}...",
+      "complete": "Import abgeschlossen: {{success}} erstellt, {{updated}} aktualisiert, {{failed}} fehlgeschlagen, {{skipped}} übersprungen",
+      "checkingExisting": "Prüfe auf bestehende Unternehmen...",
+      "existingFound": "{{count}} von {{total}} Unternehmen existieren bereits und werden aktualisiert.",
+      "allSkipped": "Alle übersprungen",
+      "importButtonWithCount": "{{count}} Unternehmen importieren",
+      "columns": {
+        "logo": "Logo",
+        "displayName": "Anzeigename",
+        "name": "API-Name",
+        "industry": "Branche",
+        "website": "Website",
+        "status": "Status"
+      },
+      "errors": {
+        "invalidFile": "Ungültiger Dateityp. Bitte laden Sie eine JSON-Datei hoch.",
+        "parseError": "JSON-Datei konnte nicht gelesen werden: {{error}}",
+        "importFailed": "Import von {{name}} fehlgeschlagen: {{error}}"
+      }
+    },
+    "delete": {
+      "title": "Unternehmen löschen",
+      "message": "Sind Sie sicher, dass Sie dieses Unternehmen löschen möchten?",
+      "dataWarning": "Diese Aktion löscht das Unternehmen dauerhaft und kann nicht rückgängig gemacht werden.",
+      "cascadeWarning": "Alle zugehörigen Daten (Benutzer, Partnerschaften, Sprecher, Veranstaltungen) können betroffen sein.",
+      "deleting": "Wird gelöscht...",
+      "success": "Unternehmen erfolgreich gelöscht"
+    }
+  },
+  "event": {
+    "batchImport": {
+      "button": "Historische Events importieren",
+      "title": "Events aus topics.json importieren",
+      "dropzone": "topics.json-Datei hier ablegen oder klicken zum Hochladen",
+      "dropzoneActive": "JSON-Datei hier ablegen",
+      "dropzoneHint": "Die vorverarbeitete topics.json-Datei hochladen (mit parsedDate, description und moderator Feldern)",
+      "invalidJson": "Ungültige JSON-Datei. Bitte überprüfen Sie das Format.",
+      "noEvents": "Keine Events in der JSON-Datei gefunden.",
+      "preview": "Vorschau ({{count}} Events)",
+      "importButton": "Alle importieren",
+      "cancelButton": "Abbrechen",
+      "status": {
+        "pending": "Ausstehend",
+        "importing": "Wird importiert...",
+        "success": "Importiert",
+        "error": "Fehler",
+        "skipped": "Übersprungen (existiert)"
+      },
+      "progress": "Importiere {{current}} von {{total}}...",
+      "complete": "Import abgeschlossen: {{success}} erfolgreich, {{failed}} fehlgeschlagen, {{skipped}} übersprungen",
+      "allSkipped": "Alle übersprungen",
+      "importButtonWithCount": "{{count}} Events importieren",
+      "columns": {
+        "eventNumber": "Nr.",
+        "title": "Titel",
+        "date": "Datum",
+        "organizer": "Organisator",
+        "status": "Status"
+      },
+      "errors": {
+        "invalidFile": "Ungültiger Dateityp. Bitte laden Sie eine JSON-Datei hoch.",
+        "parseError": "JSON-Datei konnte nicht gelesen werden: {{error}}",
+        "importFailed": "Import von Event {{number}} fehlgeschlagen: {{error}}"
+      }
     }
   },
   "fileUpload": {

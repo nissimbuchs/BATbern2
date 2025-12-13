@@ -155,24 +155,61 @@ make build-node        # Node.js projects only
 
 **Testing:**
 ```bash
-make test              # Run all tests
-make test-java         # Java tests only
-make test-node         # Node.js tests only
-make test-coverage     # Tests with coverage reports
+make test              # Run all tests with coverage reports
+make test-java         # Java tests only (with coverage)
+make test-node         # Node.js tests only (with coverage)
 ```
 
 **Code Quality:**
 ```bash
 make lint              # Run all linters
 make format            # Format all code
+make format-check      # Check code formatting
 make verify            # Pre-commit checks
+make audit-security    # Run security audits and scans
+```
+
+**Dependency Management:**
+```bash
+make check-outdated    # Check for outdated dependencies
+make update-deps       # Update safe dependencies (patch/minor)
 ```
 
 **Docker:**
 ```bash
-make docker-up         # Start services (same as docker-compose up -d)
-make docker-down       # Stop services
-make docker-build      # Build Docker images
+make docker-up            # Start services (same as docker-compose up -d)
+make docker-down          # Stop services
+make docker-restart       # Restart all Docker services
+make docker-build         # Build Docker images
+make docker-tunnel-stop   # Stop database tunnel
+make docker-tunnel-logs   # View database tunnel logs
+```
+
+**Native Development (No Docker - 60-70% Less Resources):**
+```bash
+make dev-native-up            # Start all services natively
+make dev-native-down          # Stop all native services
+make dev-native-status        # Show service status
+make dev-native-logs          # Tail all service logs
+make dev-native-restart       # Restart all services
+```
+
+**Parallel Instances (Multiple Dev Environments):**
+```bash
+# Start instance 2 on different ports
+make dev-native-up-instance BASE_PORT=9000
+
+# Stop specific instance
+make dev-native-down-instance BASE_PORT=9000
+
+# List all running instances
+make dev-native-list
+
+# View status of all instances
+make dev-native-status-all
+
+# View logs from specific instance
+make dev-native-logs-instance BASE_PORT=9000
 ```
 
 **Cleanup:**
@@ -266,15 +303,12 @@ Version: v1.2.3
 
 **Unified Commands (Recommended):**
 ```bash
-# Run all tests (Java + Node.js)
+# Run all tests (Java + Node.js) with coverage reports
 make test
 
-# Run specific technology tests
+# Run specific technology tests with coverage
 make test-java         # Java/Gradle tests only
 make test-node         # Node.js tests only
-
-# Run with coverage reports
-make test-coverage
 ```
 
 **Individual Component Tests:**

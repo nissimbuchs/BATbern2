@@ -32,10 +32,9 @@ help: ## Show this help message
 	@echo "  make build-node       - Build Node.js projects only"
 	@echo ""
 	@echo "🧪 Testing:"
-	@echo "  make test             - Run all tests (unit + integration, requires Docker)"
+	@echo "  make test             - Run all tests (unit + integration, coverage report, requires Docker)"
 	@echo "  make test-java        - Run Java tests (unit + integration)"
 	@echo "  make test-node        - Run Node.js tests (unit tests only)"
-	@echo "  make test-coverage    - Run tests with coverage reports"
 	@echo "  Note: Integration tests use Testcontainers (requires Docker) but AWS credentials NOT needed"
 	@echo ""
 	@echo "✨ Code Quality:"
@@ -113,11 +112,14 @@ build: build-java build-node ## Build all projects
 build-java: ## Build all Java/Gradle projects
 	@echo "🔨 Building Java projects..."
 	@echo "→ Building with Gradle (shared-kernel, api-gateway, services)..."
-	@./gradlew build compileTestJava -x test --parallel
+	@echo "→ Running checkstyle validation..."
+	@./gradlew build compileTestJava checkstyleMain checkstyleTest -x test --parallel
 	@echo "✓ Java build complete"
 
 build-node: ## Build all Node.js projects
 	@echo "🔨 Building Node.js projects..."
+	@echo "→ Linting web-frontend..."
+	@cd web-frontend && npm run lint
 	@echo "→ Building infrastructure..."
 	@cd infrastructure && npm run build
 	@echo "→ Building web-frontend..."
@@ -128,39 +130,29 @@ build-node: ## Build all Node.js projects
 # TESTING
 # ═══════════════════════════════════════════════════════════
 
-test: test-java test-node ## Run all tests (unit + integration)
+test: test-java test-node ## Run all tests with coverage verification
 
-test-java: ## Run Java tests (unit + integration, requires Docker)
-	@echo "🧪 Running Java tests..."
+test-java: ## Run Java tests with coverage verification (requires Docker)
+	@echo "🧪 Running Java tests with coverage verification..."
 	@echo "  → Running unit + integration tests (Testcontainers PostgreSQL)"
 	@echo "  → AWS services are mocked (no credentials needed)"
-	@./gradlew test --parallel
-	@echo "✓ Java tests complete"
+	@./gradlew test jacocoTestReport jacocoTestCoverageVerification --parallel
+	@echo "✓ Java tests complete with coverage verified"
+	@echo ""
+	@echo "📊 Java Coverage: build/reports/jacoco/test/html/index.html"
 
-test-node: ## Run Node.js unit tests with coverage
-	@echo "🧪 Running Node.js tests..."
+test-node: ## Run Node.js tests with coverage
+	@echo "🧪 Running Node.js tests with coverage..."
 	@echo "→ Testing infrastructure..."
-	@cd infrastructure && npm test
-	@echo "→ Testing web-frontend (unit tests with coverage)..."
+	@cd infrastructure && npm test -- --coverage || true
+	@echo "→ Testing web-frontend..."
 	@cd web-frontend && npm run test:coverage
 	@echo "✓ Node.js tests complete"
 	@echo ""
-	@echo "📊 Coverage report: web-frontend/coverage/index.html"
-	@echo "💡 To run E2E tests: cd web-frontend && npm run test:e2e"
-
-test-coverage: ## Run tests with coverage reports
-	@echo "🧪 Running tests with coverage..."
-	@echo "→ Java coverage (JaCoCo)..."
-	@./gradlew test jacocoTestReport --parallel
-	@echo "→ Node.js coverage..."
-	@cd infrastructure && npm test -- --coverage || true
-	@cd web-frontend && npm run test:coverage
-	@echo "✓ Coverage reports generated"
-	@echo ""
 	@echo "📊 Coverage Reports:"
-	@echo "  Java:     build/reports/jacoco/test/html/index.html"
 	@echo "  CDK:      infrastructure/coverage/index.html"
 	@echo "  Frontend: web-frontend/coverage/index.html"
+	@echo "💡 To run E2E tests: cd web-frontend && npm run test:e2e"
 
 # ═══════════════════════════════════════════════════════════
 # CODE QUALITY

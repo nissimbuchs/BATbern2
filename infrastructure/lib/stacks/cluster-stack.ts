@@ -40,6 +40,10 @@ export class ClusterStack extends cdk.Stack {
         name: `batbern.local`,
         useForServiceConnect: true,
       },
+      // Enable Fargate capacity providers (Spot + On-Demand)
+      // Spot provides 70% cost savings but can be interrupted
+      // Using 70/30 split for cost optimization while maintaining stability
+      enableFargateCapacityProviders: true,
     });
 
     // Apply tags

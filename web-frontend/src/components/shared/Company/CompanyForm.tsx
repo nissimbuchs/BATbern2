@@ -24,11 +24,7 @@ import {
   DialogActions,
   TextField,
   Button,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  FormHelperText,
+  Autocomplete,
   Alert,
   Box,
   Typography,
@@ -37,6 +33,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import type { components } from '@/types/generated/company-api.types';
 import { FileUpload } from '@/components/shared/FileUpload/FileUpload';
+import industriesData from '@/data/industries.json';
 
 type Company = components['schemas']['CompanyResponse'];
 type CreateCompanyRequest = components['schemas']['CreateCompanyRequest'];
@@ -98,6 +95,9 @@ interface CompanyFormProps {
   userRole?: 'organizer' | 'speaker';
   userCompanyId?: string;
 }
+
+// Extract industry names from industries.json (using 'en' locale for now)
+const INDUSTRY_OPTIONS = industriesData.industries.map((ind) => ind.name.en).sort();
 
 export const CompanyForm: React.FC<CompanyFormProps> = ({
   open,
@@ -411,39 +411,30 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
           <Controller
             name="industry"
             control={control}
-            render={({ field }) => (
-              <FormControl
-                fullWidth
-                margin="normal"
-                error={!!errors.industry}
+            render={({ field: { onChange, value, ...field } }) => (
+              <Autocomplete
+                {...field}
+                options={INDUSTRY_OPTIONS}
+                value={value || null}
+                onChange={(_, newValue) => onChange(newValue || '')}
+                freeSolo
                 disabled={!hasEditPermission}
-              >
-                <InputLabel id="industry-label">{t('company.fields.industry')}</InputLabel>
-                <Select
-                  {...field}
-                  labelId="industry-label"
-                  label={t('company.fields.industry')}
-                  aria-label={t('company.fields.industry')}
-                >
-                  <MenuItem value="">
-                    <em>{t('company.industries.selectIndustry')}</em>
-                  </MenuItem>
-                  <MenuItem value="Technology">{t('company.industries.technology')}</MenuItem>
-                  <MenuItem value="Cloud Computing">
-                    {t('company.industries.cloudComputing')}
-                  </MenuItem>
-                  <MenuItem value="DevOps">{t('company.industries.devOps')}</MenuItem>
-                  <MenuItem value="Financial Services">
-                    {t('company.industries.financialServices')}
-                  </MenuItem>
-                  <MenuItem value="Healthcare">{t('company.industries.healthcare')}</MenuItem>
-                  <MenuItem value="Manufacturing">{t('company.industries.manufacturing')}</MenuItem>
-                  <MenuItem value="Consulting">{t('company.industries.consulting')}</MenuItem>
-                  <MenuItem value="Education">{t('company.industries.education')}</MenuItem>
-                  <MenuItem value="Other">{t('company.industries.other')}</MenuItem>
-                </Select>
-                {errors.industry && <FormHelperText>{errors.industry.message}</FormHelperText>}
-              </FormControl>
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label={t('company.fields.industry')}
+                    placeholder={t('company.industries.selectIndustry')}
+                    error={!!errors.industry}
+                    helperText={errors.industry?.message}
+                    margin="normal"
+                    inputProps={{
+                      ...params.inputProps,
+                      'aria-label': t('company.fields.industry'),
+                    }}
+                  />
+                )}
+                sx={{ width: '100%' }}
+              />
             )}
           />
 

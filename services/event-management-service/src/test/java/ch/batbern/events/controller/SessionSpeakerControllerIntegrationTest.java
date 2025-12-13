@@ -6,6 +6,7 @@ import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
+import ch.batbern.events.dto.generated.EventType;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.repository.EventRepository;
@@ -93,6 +94,7 @@ public class SessionSpeakerControllerIntegrationTest extends AbstractIntegration
                 .venueCapacity(100)
                 .status("published")
                 .organizerUsername("test.organizer")
+                .eventType(EventType.EVENING)
                 .build();
         testEvent = eventRepository.save(testEvent);
 

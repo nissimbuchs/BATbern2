@@ -17,6 +17,20 @@ import { userEvent } from '@testing-library/user-event';
 import { CompanyForm } from '@/components/shared/Company/CompanyForm';
 import type { Company } from '@/types/company.types';
 
+// Mock industries data
+vi.mock('@/data/industries.json', () => ({
+  default: {
+    industries: [
+      { id: 'financial-services', name: { en: 'Financial Services', de: 'Financial Services' } },
+      { id: 'it-consulting', name: { en: 'IT Consulting', de: 'IT Consulting' } },
+      { id: 'healthcare', name: { en: 'Healthcare', de: 'Healthcare' } },
+      { id: 'transportation', name: { en: 'Transportation', de: 'Transportation' } },
+      { id: 'energy', name: { en: 'Energy', de: 'Energy' } },
+    ],
+    meta: { totalIndustries: 5, lastUpdated: '2025-11-30' },
+  },
+}));
+
 // Updated to match backend CompanyResponse schema
 const mockCompany: Company = {
   id: 'company-123',
@@ -286,10 +300,10 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
       await user.type(screen.getByLabelText(/website/i), 'https://newco.com');
       await user.type(screen.getByLabelText(/description/i), 'A new company');
 
-      // Select industry (optional field)
-      const industrySelect = screen.getAllByLabelText(/industry/i)[0];
-      await user.click(industrySelect);
-      await user.click(screen.getByRole('option', { name: /technology/i }));
+      // Select industry (optional field) using Autocomplete
+      const industryField = screen.getByLabelText(/industry/i);
+      await user.click(industryField);
+      await user.click(screen.getByText('IT Consulting'));
 
       // Sector and location removed - no longer in backend schema
 
@@ -304,7 +318,7 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
             displayName: 'New Company',
             swissUID: 'CHE-987.654.321',
             website: 'https://newco.com',
-            industry: 'Technology',
+            industry: 'IT Consulting',
             description: 'A new company',
             // Removed: sector, location (not in backend schema)
           }),
@@ -917,6 +931,141 @@ describe('CompanyForm Component - AC5 Logo Upload', () => {
       // Logo section should show empty dropzone (not preview)
       expect(screen.getByTestId('file-dropzone')).toBeInTheDocument();
       expect(screen.getByText(/drag and drop a file here/i)).toBeInTheDocument();
+    });
+  });
+
+  describe('Industry Autocomplete Field', () => {
+    it('should_displayAutocompleteWithIndustries_when_industryFieldFocused', async () => {
+      // Test that Autocomplete renders with industry options from industries.json
+      const user = userEvent.setup();
+
+      render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={vi.fn()} />);
+
+      const industryField = screen.getByLabelText(/industry/i);
+      expect(industryField).toBeInTheDocument();
+
+      // Click to open autocomplete
+      await user.click(industryField);
+
+      // Should show options from mocked industries.json (sorted alphabetically)
+      await waitFor(() => {
+        expect(screen.getByText('Energy')).toBeInTheDocument();
+        expect(screen.getByText('Financial Services')).toBeInTheDocument();
+        expect(screen.getByText('Healthcare')).toBeInTheDocument();
+        expect(screen.getByText('IT Consulting')).toBeInTheDocument();
+        expect(screen.getByText('Transportation')).toBeInTheDocument();
+      });
+    });
+
+    it('should_filterIndustries_when_userTypesInAutocomplete', async () => {
+      // Test that typing filters the industry options
+      const user = userEvent.setup();
+
+      render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={vi.fn()} />);
+
+      const industryField = screen.getByLabelText(/industry/i);
+
+      // Type to filter
+      await user.type(industryField, 'Financial');
+
+      // Should show filtered results
+      await waitFor(() => {
+        expect(screen.getByText('Financial Services')).toBeInTheDocument();
+      });
+
+      // Should not show non-matching options
+      expect(screen.queryByText('Energy')).not.toBeInTheDocument();
+      expect(screen.queryByText('Healthcare')).not.toBeInTheDocument();
+    });
+
+    it('should_allowCustomIndustry_when_freeSoloEnabled', async () => {
+      // Test that freeSolo allows custom industry values
+      const user = userEvent.setup();
+      const onSubmit = vi.fn();
+
+      render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={onSubmit} />);
+
+      // Fill in required fields
+      const nameField = screen.getByLabelText(/company name/i);
+      await user.type(nameField, 'TestCorp');
+
+      // Type custom industry value not in the list
+      const industryField = screen.getByLabelText(/industry/i);
+      await user.type(industryField, 'Custom Tech Industry');
+
+      // Press Enter to confirm the freeSolo value
+      await user.keyboard('{Enter}');
+
+      // Submit form
+      await user.click(screen.getByRole('button', { name: /save & create/i }));
+
+      // Should accept custom value (freeSolo behavior)
+      await waitFor(() => {
+        expect(onSubmit).toHaveBeenCalledWith(
+          expect.objectContaining({
+            name: 'TestCorp',
+            industry: 'Custom Tech Industry',
+          }),
+          expect.objectContaining({
+            isDraft: false,
+          })
+        );
+      });
+    });
+
+    it('should_preserveExistingIndustry_when_editingCompany', async () => {
+      // Test that existing industry values are preserved even if not in new list
+      const companyWithOldIndustry: Company = {
+        ...mockCompany,
+        industry: 'Technology', // Old industry not in new 16-industry list
+      };
+
+      render(
+        <CompanyForm
+          open={true}
+          mode="edit"
+          initialData={companyWithOldIndustry}
+          onClose={vi.fn()}
+          onSubmit={vi.fn()}
+        />
+      );
+
+      const industryField = screen.getByLabelText(/industry/i);
+
+      // Should display the old industry value
+      await waitFor(() => {
+        expect(industryField).toHaveValue('Technology');
+      });
+
+      // User should be able to change to a new industry from the list
+      const user = userEvent.setup();
+      await user.clear(industryField);
+      await user.type(industryField, 'IT Consulting');
+      await user.click(screen.getByText('IT Consulting'));
+
+      await waitFor(() => {
+        expect(industryField).toHaveValue('IT Consulting');
+      });
+    });
+
+    it('should_sortIndustries_alphabetically_when_displayed', async () => {
+      // Test that industry options are sorted alphabetically
+      const user = userEvent.setup();
+
+      render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={vi.fn()} />);
+
+      const industryField = screen.getByLabelText(/industry/i);
+      await user.click(industryField);
+
+      // Get all option elements
+      await waitFor(() => {
+        const options = screen.getAllByRole('option');
+        const industryTexts = options.map((opt) => opt.textContent);
+
+        // Should be alphabetically sorted
+        const sortedIndustries = [...industryTexts].sort();
+        expect(industryTexts).toEqual(sortedIndustries);
+      });
     });
   });
 });

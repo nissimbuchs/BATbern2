@@ -543,4 +543,504 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                         .content(requestBody))
                 .andExpect(status().isUnauthorized());
     }
+
+    // AC4: POST /api/v1/users creates new user (Organizer only)
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_createUser_when_validDataProvided")
+    void should_createUser_when_validDataProvided() throws Exception {
+        String createRequest = """
+                {
+                    "email": "new.user@example.com",
+                    "firstName": "New",
+                    "lastName": "User",
+                    "companyId": "GoogleZH",
+                    "bio": "New user bio"
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createRequest))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value("new.user"))
+                .andExpect(jsonPath("$.email").value("new.user@example.com"))
+                .andExpect(jsonPath("$.firstName").value("New"))
+                .andExpect(jsonPath("$.lastName").value("User"))
+                .andExpect(jsonPath("$.companyId").value("GoogleZH"))
+                .andExpect(jsonPath("$.bio").value("New user bio"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_return400_when_createUserWithInvalidEmail")
+    void should_return400_when_createUserWithInvalidEmail() throws Exception {
+        String invalidRequest = """
+                {
+                    "email": "invalid-email",
+                    "firstName": "Invalid",
+                    "lastName": "User",
+                    "companyId": "GoogleZH"
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(invalidRequest))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(containsString("email")));
+    }
+
+    @Test
+    @WithMockUser(username = "attendee", roles = {"ATTENDEE"})
+    @DisplayName("should_return403_when_nonOrganizerCreatesUser")
+    void should_return403_when_nonOrganizerCreatesUser() throws Exception {
+        String createRequest = """
+                {
+                    "email": "new.user@example.com",
+                    "firstName": "New",
+                    "lastName": "User",
+                    "companyId": "GoogleZH"
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createRequest))
+                .andExpect(status().isForbidden());
+    }
+
+    // PUT /api/v1/users/{username} updates user by username (Organizer/Admin only)
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_updateUserByUsername_when_organizerUpdates")
+    void should_updateUserByUsername_when_organizerUpdates() throws Exception {
+        String updateRequest = """
+                {
+                    "firstName": "Updated",
+                    "lastName": "Name",
+                    "bio": "Updated by admin"
+                }
+                """;
+
+        mockMvc.perform(put("/api/v1/users/{username}", "john.doe")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateRequest))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("john.doe"))
+                .andExpect(jsonPath("$.firstName").value("Updated"))
+                .andExpect(jsonPath("$.lastName").value("Name"))
+                .andExpect(jsonPath("$.bio").value("Updated by admin"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_return404_when_updateNonExistentUser")
+    void should_return404_when_updateNonExistentUser() throws Exception {
+        String updateRequest = """
+                {
+                    "firstName": "Updated",
+                    "lastName": "Name"
+                }
+                """;
+
+        mockMvc.perform(put("/api/v1/users/{username}", "nonexistent.user")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateRequest))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value(containsString("not found")));
+    }
+
+    @Test
+    @WithMockUser(username = "attendee", roles = {"ATTENDEE"})
+    @DisplayName("should_return403_when_nonAdminUpdatesUser")
+    void should_return403_when_nonAdminUpdatesUser() throws Exception {
+        String updateRequest = """
+                {
+                    "firstName": "Hacker",
+                    "lastName": "Attempt"
+                }
+                """;
+
+        mockMvc.perform(put("/api/v1/users/{username}", "john.doe")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateRequest))
+                .andExpect(status().isForbidden());
+    }
+
+    // AC12: POST /api/v1/users/get-or-create (for domain service integration)
+
+    @Test
+    @DisplayName("should_returnExistingUser_when_userExists")
+    void should_returnExistingUser_when_userExists() throws Exception {
+        String getOrCreateRequest = """
+                {
+                    "email": "john.doe@example.com",
+                    "firstName": "John",
+                    "lastName": "Doe",
+                    "companyId": "GoogleZH"
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/users/get-or-create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(getOrCreateRequest))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("john.doe"))
+                .andExpect(jsonPath("$.created").value(false))
+                .andExpect(jsonPath("$.user.id").value("john.doe"))
+                .andExpect(jsonPath("$.user.email").value("john.doe@example.com"));
+    }
+
+    @Test
+    @DisplayName("should_createNewUser_when_userDoesNotExist")
+    void should_createNewUser_when_userDoesNotExist() throws Exception {
+        String getOrCreateRequest = """
+                {
+                    "email": "brand.new@example.com",
+                    "firstName": "Brand",
+                    "lastName": "New",
+                    "companyId": "GoogleZH"
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/users/get-or-create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(getOrCreateRequest))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.created").value(true))
+                .andExpect(jsonPath("$.user.email").value("brand.new@example.com"))
+                .andExpect(jsonPath("$.user.firstName").value("Brand"))
+                .andExpect(jsonPath("$.user.lastName").value("New"));
+    }
+
+    // AC4: GET /api/v1/users/search (autocomplete with caching)
+
+    @Test
+    @WithMockUser(username = "john.doe")
+    @DisplayName("should_searchUsers_when_queryProvided")
+    void should_searchUsers_when_queryProvided() throws Exception {
+        // Create additional users for search
+        User user2 = User.builder()
+                .username("jane.smith")
+                .email("jane.smith@example.com")
+                .firstName("Jane")
+                .lastName("Smith")
+                .cognitoUserId("cognito-jane")
+                .companyId("GoogleZH")
+                .roles(new HashSet<>(Set.of(Role.ORGANIZER)))
+                .build();
+        userRepository.save(user2);
+
+        mockMvc.perform(get("/api/v1/users/search")
+                        .param("query", "Jane")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[0].firstName").value("Jane"))
+                .andExpect(jsonPath("$[0].lastName").value("Smith"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_filterByRole_when_roleParameterProvided")
+    void should_filterByRole_when_roleParameterProvided() throws Exception {
+        // Create organizer
+        User organizer = User.builder()
+                .username("jane.organizer")
+                .email("jane.organizer@example.com")
+                .firstName("Jane")
+                .lastName("Organizer")
+                .cognitoUserId("cognito-org")
+                .companyId("GoogleZH")
+                .roles(new HashSet<>(Set.of(Role.ORGANIZER)))
+                .build();
+        userRepository.save(organizer);
+
+        mockMvc.perform(get("/api/v1/users/search")
+                        .param("query", "Jane")
+                        .param("role", "ORGANIZER")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].roles", hasItem("ORGANIZER")));
+    }
+
+    // AC11: DELETE /api/v1/users/{username} (GDPR compliance)
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_deleteUser_when_organizerRequests")
+    void should_deleteUser_when_organizerRequests() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/v1/users/{username}", "john.doe")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+
+        // Verify user is deleted
+        mockMvc.perform(get("/api/v1/users/{username}", "john.doe")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_return404_when_deleteNonExistentUser")
+    void should_return404_when_deleteNonExistentUser() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/v1/users/{username}", "nonexistent.user")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value(containsString("not found")));
+    }
+
+    @Test
+    @WithMockUser(username = "attendee", roles = {"ATTENDEE"})
+    @DisplayName("should_return403_when_nonOrganizerDeletesUser")
+    void should_return403_when_nonOrganizerDeletesUser() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/v1/users/{username}", "john.doe")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+    }
+
+    // AC8: Role Management Tests
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_getUserRoles_when_organizerRequests")
+    void should_getUserRoles_when_organizerRequests() throws Exception {
+        mockMvc.perform(get("/api/v1/users/{username}/roles", "john.doe")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("john.doe"))
+                .andExpect(jsonPath("$.roles").isArray())
+                .andExpect(jsonPath("$.roles", hasSize(1)))
+                .andExpect(jsonPath("$.roles[0]").value("ATTENDEE"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_return404_when_getRolesForNonExistentUser")
+    void should_return404_when_getRolesForNonExistentUser() throws Exception {
+        mockMvc.perform(get("/api/v1/users/{username}/roles", "nonexistent.user")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value(containsString("not found")));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_updateUserRoles_when_organizerAddsRole")
+    void should_updateUserRoles_when_organizerAddsRole() throws Exception {
+        String updateRequest = """
+                {
+                    "roles": ["ATTENDEE", "SPEAKER"]
+                }
+                """;
+
+        mockMvc.perform(put("/api/v1/users/{username}/roles", "john.doe")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateRequest))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("john.doe"))
+                .andExpect(jsonPath("$.roles").isArray())
+                .andExpect(jsonPath("$.roles", hasSize(2)))
+                .andExpect(jsonPath("$.roles", hasItem("ATTENDEE")))
+                .andExpect(jsonPath("$.roles", hasItem("SPEAKER")));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_updateUserRoles_when_organizerRemovesRole")
+    void should_updateUserRoles_when_organizerRemovesRole() throws Exception {
+        // First add multiple roles
+        testUser.setRoles(new HashSet<>(Set.of(Role.ATTENDEE, Role.SPEAKER)));
+        userRepository.save(testUser);
+
+        // Now remove SPEAKER role
+        String updateRequest = """
+                {
+                    "roles": ["ATTENDEE"]
+                }
+                """;
+
+        mockMvc.perform(put("/api/v1/users/{username}/roles", "john.doe")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateRequest))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("john.doe"))
+                .andExpect(jsonPath("$.roles").isArray())
+                .andExpect(jsonPath("$.roles", hasSize(1)))
+                .andExpect(jsonPath("$.roles[0]").value("ATTENDEE"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_updateUserRoles_when_organizerSetsMultipleRoles")
+    void should_updateUserRoles_when_organizerSetsMultipleRoles() throws Exception {
+        String updateRequest = """
+                {
+                    "roles": ["ATTENDEE", "SPEAKER", "PARTNER"]
+                }
+                """;
+
+        mockMvc.perform(put("/api/v1/users/{username}/roles", "john.doe")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateRequest))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("john.doe"))
+                .andExpect(jsonPath("$.roles").isArray())
+                .andExpect(jsonPath("$.roles", hasSize(3)))
+                .andExpect(jsonPath("$.roles", hasItem("ATTENDEE")))
+                .andExpect(jsonPath("$.roles", hasItem("SPEAKER")))
+                .andExpect(jsonPath("$.roles", hasItem("PARTNER")));
+    }
+
+    @Test
+    @WithMockUser(username = "attendee", roles = {"ATTENDEE"})
+    @DisplayName("should_return403_when_nonOrganizerUpdatesRoles")
+    void should_return403_when_nonOrganizerUpdatesRoles() throws Exception {
+        String updateRequest = """
+                {
+                    "roles": ["ORGANIZER"]
+                }
+                """;
+
+        mockMvc.perform(put("/api/v1/users/{username}/roles", "john.doe")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateRequest))
+                .andExpect(status().isForbidden());
+    }
+
+    // Admin Profile Picture Management Tests
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_generatePresignedUrlForUser_when_organizerRequests")
+    void should_generatePresignedUrlForUser_when_organizerRequests() throws Exception {
+        String requestBody = """
+            {
+                "fileName": "profile.png",
+                "fileSize": 2097152,
+                "mimeType": "image/png"
+            }
+            """;
+
+        mockMvc.perform(post("/api/v1/users/{username}/picture/presigned-url", "john.doe")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.uploadUrl").isNotEmpty())
+                .andExpect(jsonPath("$.fileId").isNotEmpty())
+                .andExpect(jsonPath("$.s3Key").isNotEmpty())
+                .andExpect(jsonPath("$.s3Key").value(startsWith("profile-pictures/")))
+                .andExpect(jsonPath("$.s3Key").value(containsString("john.doe")))
+                .andExpect(jsonPath("$.fileExtension").value("png"))
+                .andExpect(jsonPath("$.expiresInMinutes").value(15))
+                .andExpect(jsonPath("$.requiredHeaders.Content-Type").value("image/png"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_return404_when_generateUrlForNonExistentUser")
+    void should_return404_when_generateUrlForNonExistentUser() throws Exception {
+        String requestBody = """
+            {
+                "fileName": "profile.png",
+                "fileSize": 2097152,
+                "mimeType": "image/png"
+            }
+            """;
+
+        mockMvc.perform(post("/api/v1/users/{username}/picture/presigned-url", "nonexistent.user")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value(containsString("nonexistent.user")));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_confirmUploadForUser_when_organizerConfirms")
+    void should_confirmUploadForUser_when_organizerConfirms() throws Exception {
+        String fileId = "admin-test-file-id-67890";
+        String requestBody = String.format("""
+            {
+                "fileId": "%s",
+                "fileExtension": "png"
+            }
+            """, fileId);
+
+        mockMvc.perform(post("/api/v1/users/{username}/picture/confirm", "john.doe")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.profilePictureUrl").isNotEmpty())
+                .andExpect(jsonPath("$.profilePictureUrl").value(containsString("cdn.batbern.ch")))
+                .andExpect(jsonPath("$.profilePictureUrl").value(containsString("/profile-pictures/")))
+                .andExpect(jsonPath("$.profilePictureUrl").value(containsString("john.doe")))
+                .andExpect(jsonPath("$.profilePictureUrl").value(containsString(fileId)));
+
+        // Verify user entity was updated
+        User updatedUser = userRepository.findByUsername("john.doe").orElseThrow();
+        assert updatedUser.getProfilePictureUrl() != null;
+        assert updatedUser.getProfilePictureUrl().contains("cdn.batbern.ch");
+        assert updatedUser.getProfilePictureS3Key() != null;
+        assert updatedUser.getProfilePictureS3Key().contains(fileId);
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_return404_when_confirmUploadForNonExistentUser")
+    void should_return404_when_confirmUploadForNonExistentUser() throws Exception {
+        String requestBody = """
+            {
+                "fileId": "test-file-id",
+                "fileExtension": "png"
+            }
+            """;
+
+        mockMvc.perform(post("/api/v1/users/{username}/picture/confirm", "nonexistent.user")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value(containsString("nonexistent.user")));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_removeProfilePictureForUser_when_organizerRequests")
+    void should_removeProfilePictureForUser_when_organizerRequests() throws Exception {
+        // First set a profile picture for john.doe
+        testUser.setProfilePictureUrl("https://cdn.batbern.ch/profile-pictures/john.doe/test-file.png");
+        testUser.setProfilePictureS3Key("profile-pictures/john.doe/test-file.png");
+        userRepository.save(testUser);
+
+        // Verify it was set
+        User userBeforeDelete = userRepository.findByUsername("john.doe").orElseThrow();
+        assert userBeforeDelete.getProfilePictureUrl() != null;
+
+        // Now remove it via admin endpoint
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete(
+                        "/api/v1/users/{username}/picture", "john.doe")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+
+        // Verify profile picture was cleared
+        User updatedUser = userRepository.findByUsername("john.doe").orElseThrow();
+        assert updatedUser.getProfilePictureUrl() == null;
+        assert updatedUser.getProfilePictureS3Key() == null;
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_return404_when_removeProfilePictureForNonExistentUser")
+    void should_return404_when_removeProfilePictureForNonExistentUser() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete(
+                        "/api/v1/users/{username}/picture", "nonexistent.user")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value(containsString("nonexistent.user")));
+    }
 }

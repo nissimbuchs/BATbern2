@@ -779,10 +779,15 @@ export interface components {
       cognitoUserId?: string;
       user: components['schemas']['UserResponse'];
     };
+    /**
+     * @description Activity history record for audit purposes.
+     *     Note: id field uses internal UUID format (exception to ADR-003) as activity records
+     *     are internal audit entries and are not referenced across services.
+     */
     ActivityHistory: {
       /**
        * Format: uuid
-       * @description Activity ID (internal UUID preserved for activity history)
+       * @description Activity ID (internal UUID preserved for audit purposes - ADR-003 exception for internal audit records)
        */
       id?: string;
       /**

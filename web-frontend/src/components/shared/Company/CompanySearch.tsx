@@ -10,7 +10,7 @@
  * Story: 2.5.1 - Company Management Frontend
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   TextField,
   Autocomplete,
@@ -22,6 +22,7 @@ import {
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
+import { companyApiClient } from '@/services/api/companyApi';
 
 export interface CompanySearchProps {
   onSearch?: (query: string) => void;
@@ -61,28 +62,33 @@ export const CompanySearch: React.FC<CompanySearchProps> = ({
     }
   }, [debouncedValue, onSearch, onSearchChange]);
 
-  // Mock options for testing (in real app, this would come from API)
-  useEffect(() => {
-    if (debouncedValue.length > 0) {
-      setIsLoading(true);
-      // Simulate API call
-      setTimeout(() => {
-        if (debouncedValue.toLowerCase().includes('test')) {
-          setOptions([
-            { id: '1', name: 'Test Company 1' },
-            { id: '2', name: 'Test Company 2' },
-          ]);
-        } else if (debouncedValue.toLowerCase().includes('acme')) {
-          setOptions([{ id: '3', name: 'Acme Corporation' }]);
-        } else {
-          setOptions([]);
-        }
-        setIsLoading(false);
-      }, 100);
-    } else {
+  // Fetch companies from API when search value changes
+  const fetchCompanies = useCallback(async (query: string) => {
+    if (query.length === 0) {
       setOptions([]);
+      return;
     }
-  }, [debouncedValue]);
+
+    setIsLoading(true);
+    try {
+      const results = await companyApiClient.searchCompanies(query, 10);
+      setOptions(
+        results.map((company) => ({
+          id: company.name, // Use name as ID (Story 1.16.2)
+          name: company.displayName || company.name,
+        }))
+      );
+    } catch (error) {
+      console.error('Failed to search companies:', error);
+      setOptions([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCompanies(debouncedValue);
+  }, [debouncedValue, fetchCompanies]);
 
   const handleInputChange = (_event: React.SyntheticEvent, newValue: string) => {
     setInputValue(newValue);

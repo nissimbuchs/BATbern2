@@ -38,28 +38,39 @@ interface EventCardProps {
   onCardClick?: (eventCode: string) => void;
 }
 
-// Workflow state to step number mapping (16 steps total)
-const WORKFLOW_STEPS: Record<string, number> = {
-  topic_selection: 1,
-  topic_approval: 2,
-  venue_booking: 3,
-  save_the_date: 4,
-  speaker_research: 7,
-  speaker_invitation: 8,
-  abstracts_submission: 9,
-  abstracts_moderation: 10,
-  speaker_assignment: 11,
-  speaker_materials: 12,
-  registration_open: 13,
-  event_promotion: 14,
-  event_execution: 15,
-  post_event: 16,
+// NEW 16-step workflow states (Story 5.1a)
+const WORKFLOW_STATE_ORDER = [
+  'CREATED',
+  'TOPIC_SELECTION',
+  'SPEAKER_BRAINSTORMING',
+  'SPEAKER_OUTREACH',
+  'SPEAKER_CONFIRMATION',
+  'CONTENT_COLLECTION',
+  'QUALITY_REVIEW',
+  'THRESHOLD_CHECK',
+  'OVERFLOW_MANAGEMENT',
+  'SLOT_ASSIGNMENT',
+  'AGENDA_PUBLISHED',
+  'AGENDA_FINALIZED',
+  'NEWSLETTER_SENT',
+  'EVENT_READY',
+  'PARTNER_MEETING_COMPLETE',
+  'ARCHIVED',
+];
+
+// Calculate progress percentage from workflow state (Story 5.1a)
+const getWorkflowProgress = (workflowState: string): number => {
+  const currentIndex = WORKFLOW_STATE_ORDER.indexOf(workflowState);
+  if (currentIndex === -1) return 0;
+  return Math.round(((currentIndex + 1) / WORKFLOW_STATE_ORDER.length) * 100);
 };
 
-// Calculate progress percentage from workflow step
-const getWorkflowProgress = (workflowState: string): number => {
-  const step = WORKFLOW_STEPS[workflowState] || 1;
-  return Math.round((step / 16) * 100);
+// Get i18n key for workflow state
+const getWorkflowStateLabel = (
+  state: string,
+  t: ReturnType<typeof useTranslation>['t']
+): string => {
+  return t(`workflow.states.${state.toLowerCase()}`, state);
 };
 
 // Get progress bar color based on completion
@@ -93,8 +104,11 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
   const [isHovered, setIsHovered] = useState(false);
 
   const eventUI = event as EventUI;
-  const workflowStep = WORKFLOW_STEPS[eventUI.workflowState || ''] || 1;
-  const progress = getWorkflowProgress(eventUI.workflowState || '');
+  // Use new workflowState from Story 5.1a (fallback to 'CREATED')
+  const workflowState = event.workflowState || 'CREATED';
+  const progress = getWorkflowProgress(workflowState);
+  const workflowLabel = getWorkflowStateLabel(workflowState, t);
+  const workflowStep = WORKFLOW_STATE_ORDER.indexOf(workflowState) + 1;
   const capacity = eventUI.capacity || event.venueCapacity || 0;
   const attendeePercentage =
     capacity > 0 ? Math.round((event.currentAttendeeCount / capacity) * 100) : 0;
@@ -188,11 +202,11 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
           </Stack>
         </Stack>
 
-        {/* Workflow Progress */}
+        {/* Workflow Progress (Story 5.1a) */}
         <Box mb={1}>
           <Stack direction="row" justifyContent="space-between" alignItems="center" mb={0.5}>
             <Typography variant="caption" color="text.secondary">
-              {t('dashboard.workflowProgress')}
+              {workflowLabel}
             </Typography>
             <Typography variant="caption" fontWeight="bold">
               {progress}%

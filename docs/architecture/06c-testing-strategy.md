@@ -157,7 +157,7 @@ class EventControllerIntegrationTest extends AbstractIntegrationTest {
                         "venueName": "Kornhausforum",
                         "venueAddress": "Kornhausplatz 18, 3011 Bern",
                         "venueCapacity": 200,
-                        "organizerId": "550e8400-e29b-41d4-a716-446655440000",
+                        "organizerUsername": "john.doe",
                         "metadata": {"theme": "cloud-native"}
                     }
                     """))
