@@ -1,5 +1,7 @@
 {
   "topicBacklog": {
+    "pageTitle": "Themenverwaltung",
+    "pageDescription": "Verwalten Sie Themen im Rückstand, wählen Sie Themen für Veranstaltungen und analysieren Sie Nutzungsmuster",
     "title": "Themenrückstand-Manager",
     "subtitle": "Wählen Sie Themen aus dem Rückstand mit intelligenten Vorschlägen und Veraltetheitserkennung",
     "selectPrompt": "Wählen Sie ein Thema aus, um Details anzuzeigen",

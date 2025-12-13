@@ -38,37 +38,6 @@ export interface TopicDetailsPanelProps {
   onTopicConfirm?: (topicId: string) => void;
 }
 
-/**
- * Get status message based on staleness score (AC6)
- */
-const getStatusMessage = (score: number, t: (key: string, defaultValue?: string) => string) => {
-  if (score >= 83) {
-    return {
-      severity: 'success' as const,
-      message: t(
-        'topicBacklog.details.statusGreen',
-        'Safe to reuse - last used over 12 months ago'
-      ),
-    };
-  } else if (score >= 50) {
-    return {
-      severity: 'warning' as const,
-      message: t(
-        'topicBacklog.details.statusYellow',
-        'Use with caution - last used 6-12 months ago'
-      ),
-    };
-  } else {
-    return {
-      severity: 'error' as const,
-      message: t(
-        'topicBacklog.details.statusRed',
-        'Too recent - last used within 6 months, high duplication risk'
-      ),
-    };
-  }
-};
-
 export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
   topic,
   eventCode,
@@ -85,7 +54,38 @@ export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
   // Mutation for selecting topic
   const selectTopicMutation = useSelectTopicForEvent();
 
-  const status = getStatusMessage(topic.stalenessScore, t);
+  /**
+   * Get status message based on staleness score (AC6)
+   */
+  const getStatusMessage = (score: number) => {
+    if (score >= 83) {
+      return {
+        severity: 'success' as const,
+        message: t(
+          'topicBacklog.details.statusGreen',
+          'Safe to reuse - last used over 12 months ago'
+        ),
+      };
+    } else if (score >= 50) {
+      return {
+        severity: 'warning' as const,
+        message: t(
+          'topicBacklog.details.statusYellow',
+          'Use with caution - last used 6-12 months ago'
+        ),
+      };
+    } else {
+      return {
+        severity: 'error' as const,
+        message: t(
+          'topicBacklog.details.statusRed',
+          'Too recent - last used within 6 months, high duplication risk'
+        ),
+      };
+    }
+  };
+
+  const status = getStatusMessage(topic.stalenessScore);
 
   // Check if there are high similarity warnings (>70%) - AC5
   const highSimilarityTopics =
