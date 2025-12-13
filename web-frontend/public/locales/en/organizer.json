@@ -1,5 +1,7 @@
 {
   "topicBacklog": {
+    "pageTitle": "Topic Management",
+    "pageDescription": "Manage backlog topics, select topics for events, and analyze usage patterns",
     "title": "Topic Backlog Manager",
     "subtitle": "Select topics from the backlog with intelligent suggestions and staleness detection",
     "selectPrompt": "Select a topic to view details",

@@ -61,6 +61,9 @@ const EventTypeConfigurationAdmin = React.lazy(
   () => import('@pages/organizer/EventTypeConfigurationAdmin')
 ); // Story 5.1
 
+// Topic Management Page - Story 5.2
+const TopicManagementPage = React.lazy(() => import('@pages/organizer/TopicManagementPage'));
+
 // Public Pages - Story 4.1.2, 4.1.3, 4.1.5, 4.1.6
 const HomePage = React.lazy(() => import('@pages/public/HomePage'));
 const PublicRegistrationPage = React.lazy(() => import('@pages/public/RegistrationPage'));
@@ -345,6 +348,16 @@ function App() {
                       <ProtectedRoute>
                         <AuthLayout>
                           <EventTypeConfigurationAdmin />
+                        </AuthLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/organizer/topics"
+                    element={
+                      <ProtectedRoute>
+                        <AuthLayout>
+                          <TopicManagementPage />
                         </AuthLayout>
                       </ProtectedRoute>
                     }
