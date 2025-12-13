@@ -1,0 +1,92 @@
+{
+  "topicBacklog": {
+    "title": "Topic Backlog Manager",
+    "subtitle": "Select topics from the backlog with intelligent suggestions and staleness detection",
+    "selectPrompt": "Select a topic to view details",
+    "noTopics": "No topics found matching your filters",
+    "lastUsed": "Last used",
+    "usageCount": "Used {{count}} times",
+    "error": {
+      "loadFailed": "Failed to load topics"
+    },
+    "filters": {
+      "title": "Filters",
+      "category": "Category",
+      "status": "Status",
+      "sort": "Sort By",
+      "all": "All Categories",
+      "allStatuses": "All Statuses",
+      "categories": {
+        "technical": "Technical",
+        "business": "Business",
+        "architecture": "Architecture",
+        "cloudNative": "Cloud Native",
+        "security": "Security"
+      },
+      "statuses": {
+        "available": "Available (Green)",
+        "caution": "Use with Caution (Yellow)",
+        "unavailable": "Too Recent (Red)"
+      },
+      "sortOptions": {
+        "safestFirst": "Safest First (Staleness ↓)",
+        "recentFirst": "Recent First (Staleness ↑)",
+        "titleAZ": "Title (A-Z)",
+        "mostUsed": "Most Used"
+      }
+    },
+    "details": {
+      "metrics": "Metrics",
+      "lastUsed": "Last Used",
+      "usageCount": "Usage Count",
+      "selectButton": "Select for Event",
+      "selecting": "Selecting...",
+      "overrideButton": "Override Warning",
+      "statusGreen": "Safe to reuse - last used over 12 months ago",
+      "statusYellow": "Use with caution - last used 6-12 months ago",
+      "statusRed": "Too recent - last used within 6 months, high duplication risk",
+      "similarityWarning": "{{count}} similar topics detected (>70% similarity)"
+    },
+    "dialogs": {
+      "similar": {
+        "title": "Similar Topics Detected",
+        "message": "The following topics have high similarity (>70%) with your selection. Are you sure you want to proceed?",
+        "similarity": "Similarity",
+        "justification": "Justification (optional)",
+        "cancel": "Cancel",
+        "confirm": "Select Anyway"
+      },
+      "override": {
+        "title": "Override Staleness Warning",
+        "message": "This topic was used recently (staleness score: {{score}}%). Please provide justification for using it again.",
+        "justification": "Justification",
+        "helper": "Explain why this topic should be reused despite being recent",
+        "cancel": "Cancel",
+        "confirm": "Override and Select"
+      }
+    }
+  },
+  "speakerBrainstorm": {
+    "title": "Speaker Brainstorming",
+    "subtitle": "Add potential speakers to the event pool and assign them to organizers for outreach",
+    "form": {
+      "speakerName": "Speaker Name",
+      "company": "Company",
+      "expertise": "Expertise",
+      "assignOrganizer": "Assign to Organizer (Optional)",
+      "unassigned": "Unassigned",
+      "notes": "Notes (Optional)",
+      "addButton": "Add to Pool",
+      "adding": "Adding...",
+      "error": "Failed to add speaker"
+    },
+    "pool": {
+      "title": "Speaker Pool",
+      "empty": "No speakers in pool yet. Add some above!",
+      "expertise": "Expertise",
+      "assigned": "Assigned to",
+      "notes": "Notes",
+      "error": "Failed to load speaker pool"
+    }
+  }
+}
