@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -13,6 +14,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -133,9 +135,9 @@ class DomainRouterTest {
         request.setRequestURI("/api/v1/events/list");
         request.setMethod("GET");
 
-        // Mock RestTemplate response
+        // Mock RestTemplate response - now accepts URI instead of String
         when(restTemplate.exchange(
-            anyString(),
+            any(URI.class),
             any(),
             any(),
             eq(String.class)
@@ -192,5 +194,53 @@ class DomainRouterTest {
         assertThatThrownBy(() -> domainRouter.determineTargetService(""))
             .isInstanceOf(RoutingException.class)
             .hasMessageContaining("Request path cannot be null or empty");
+    }
+
+    @Test
+    @DisplayName("should_handleJsonInQueryParameters_when_filterParameterProvided")
+    void should_handleJsonInQueryParameters_when_filterParameterProvided() {
+        // Given - simulate the actual frontend request:
+        // http://localhost:8000/api/v1/events?page=1&limit=20&filter=%7B%22year%22%3A2025%7D
+        String targetService = "event-management-service";
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/api/v1/events");
+        request.setMethod("GET");
+
+        // Servlet container decodes URL parameters, so getParameterMap() returns decoded values
+        request.setParameter("page", "1");
+        request.setParameter("limit", "20");
+        request.setParameter("filter", "{\"year\":2025}");  // Decoded by servlet from %7B%22year%22%3A2025%7D
+
+        // Mock RestTemplate to capture the actual URI being called
+        ArgumentCaptor<URI> uriCaptor = ArgumentCaptor.forClass(URI.class);
+        when(restTemplate.exchange(
+            uriCaptor.capture(),
+            any(),
+            any(),
+            eq(String.class)
+        )).thenReturn(ResponseEntity.ok("{\"data\":[]}"));
+
+        // When
+        CompletableFuture<ResponseEntity<String>> response =
+            domainRouter.routeRequest(targetService, request);
+
+        // Then
+        assertThat(response.join().getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        // Verify the URI is properly encoded and RestTemplate doesn't treat {} as template variables
+        URI capturedUri = uriCaptor.getValue();
+        String queryString = capturedUri.getRawQuery();
+
+        // Should be URL-encoded: {"year":2025} -> %7B%22year%22:2025%7D
+        // Note: colon doesn't need encoding in query params, so : not %3A
+        assertThat(queryString).contains("filter=%7B%22year%22:2025%7D");
+        assertThat(queryString).contains("page=1");
+        assertThat(queryString).contains("limit=20");
+
+        // Should NOT be double-encoded: %7B -> %257B
+        assertThat(queryString).doesNotContain("%257B");
+
+        // Verify full target URL is correct
+        assertThat(capturedUri.toString()).startsWith("http://localhost:8081/api/v1/events?");
     }
 }

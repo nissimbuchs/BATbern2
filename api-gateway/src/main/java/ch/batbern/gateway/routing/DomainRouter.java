@@ -166,11 +166,21 @@ public class DomainRouter {
                 // Get target service URL
                 String serviceUrl = getServiceUrl(targetService);
 
-                // Build full target URL with query parameters
-                String targetUrl = serviceUrl + requestUri;
-                if (queryString != null && !queryString.isEmpty()) {
-                    targetUrl += "?" + queryString;
-                }
+                // Build URI using UriComponentsBuilder to properly handle query parameters
+                // This prevents double-encoding and URI template variable expansion issues
+                UriComponentsBuilder uriBuilder = UriComponentsBuilder
+                        .fromHttpUrl(serviceUrl + requestUri);
+
+                // Add query parameters from request (already decoded by servlet container)
+                // UriComponentsBuilder will encode them properly
+                request.getParameterMap().forEach((key, values) -> {
+                    for (String value : values) {
+                        uriBuilder.queryParam(key, value);
+                    }
+                });
+
+                // build() encodes the parameters, toUri() creates the URI object
+                URI targetUri = uriBuilder.build().toUri();
 
                 // Copy headers from original request (excluding Host header)
                 HttpHeaders headers = new HttpHeaders();
@@ -189,7 +199,7 @@ public class DomainRouter {
                 log.debug("Forwarding {} request to: {} (body: {} bytes)",
                     method, targetUrl, finalRequestBody != null ? finalRequestBody.length() : 0);
                 ResponseEntity<String> response = restTemplate.exchange(
-                    targetUrl,
+                    targetUri,
                     HttpMethod.valueOf(method),
                     entity,
                     String.class
