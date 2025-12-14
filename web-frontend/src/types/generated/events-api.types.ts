@@ -792,6 +792,269 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/topics': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List all topics with filters and pagination
+     * @description Retrieve topic backlog with optional category and status filters.
+     *
+     *     **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+     *     **Acceptance Criteria**: AC1, AC2, AC6
+     *     **Authorization**: Requires ORGANIZER role
+     *     **Performance**: <150ms (P95) with database-level pagination
+     *
+     *     **Filtering**:
+     *     - Category filter: `?filter={"category":"technical"}`
+     *     - Status filter: `?filter={"status":"active"}` or `"inactive"`
+     *     - Combined: `?filter={"category":"technical","status":"active"}`
+     *
+     *     **Sorting**:
+     *     - Default: staleness score descending (safest topics first)
+     *     - Custom: `?sort=-stalenessScore` or `?sort=stalenessScore,desc`
+     *     - Supports: title, category, stalenessScore, usageCount, createdDate
+     *
+     *     **Pagination**:
+     *     - Default: page=1, limit=50
+     *     - Database-level pagination for performance
+     *
+     *     **Staleness Zones**:
+     *     - Green (83-100): Safe to use, recommended
+     *     - Yellow (50-82): Use with caution
+     *     - Red (0-49): Too recent, avoid reuse
+     */
+    get: operations['listTopics'];
+    put?: never;
+    /**
+     * Create new topic
+     * @description Add new topic to backlog. Automatically calculates similarity scores.
+     *
+     *     **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+     *     **Acceptance Criteria**: AC8
+     *     **Authorization**: Requires ORGANIZER role
+     *
+     *     **Automatic Processing**:
+     *     - Staleness score initialized to 100 (safe to use immediately)
+     *     - Similarity scores calculated against all existing topics using TF-IDF
+     *     - Only similarity scores >30% are stored
+     *
+     *     **Duplicate Detection**:
+     *     - If similarity >70% to existing topic, warning is flagged
+     *     - Organizer can still create but should review similar topics first
+     */
+    post: operations['createTopic'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/topics/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get topic by ID
+     * @description Retrieve topic details including similarity scores.
+     *
+     *     **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+     *     **Acceptance Criteria**: AC2, AC5
+     *     **Authorization**: Requires ORGANIZER role
+     *
+     *     **Optional Includes**:
+     *     - `?include=similarity` - Recalculates similarity scores on-demand
+     */
+    get: operations['getTopicById'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/topics/{id}/override-staleness': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Override staleness score with justification
+     * @description Manually override staleness score for exceptional cases.
+     *
+     *     **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+     *     **Acceptance Criteria**: AC7
+     *     **Authorization**: Requires ORGANIZER role
+     *
+     *     **Use Cases**:
+     *     - Evergreen content that's always relevant (set to 100)
+     *     - Time-sensitive topics that shouldn't be reused (set to 0)
+     *     - Special exceptions requiring organizer judgment
+     *
+     *     **Audit Trail**:
+     *     - Justification is required for compliance
+     *     - Override should be logged in audit system (future enhancement)
+     *
+     *     **Validation**:
+     *     - Score must be 0-100
+     *     - Justification must be non-empty
+     */
+    put: operations['overrideTopicStaleness'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/topics/{id}/similar': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get similar topics (duplicate detection)
+     * @description Retrieve topics with >70% similarity for duplicate detection.
+     *
+     *     **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+     *     **Acceptance Criteria**: AC5
+     *     **Authorization**: Requires ORGANIZER role
+     *
+     *     **Similarity Algorithm**:
+     *     - TF-IDF vectorization of title + description
+     *     - Cosine similarity calculation
+     *     - >70% threshold indicates potential duplicate
+     *
+     *     **Frontend Integration**:
+     *     - Display warning when creating/selecting topics with high similarity
+     *     - Helps organizers avoid redundant content across events
+     */
+    get: operations['getSimilarTopics'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/topics/{id}/usage-history': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get topic usage history
+     * @description Retrieve the usage history for a specific topic over the last 24 months.
+     *
+     *     **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+     *     **Acceptance Criteria**: AC2
+     *     **Authorization**: Requires ORGANIZER role
+     *
+     *     **Usage**:
+     *     - Returns historical usage data for heat map visualization
+     *     - Grouped by event with attendance and engagement metrics
+     *     - Used to identify usage patterns and staleness trends
+     *
+     *     **Frontend Integration**:
+     *     - Powers the TopicHeatMap component
+     *     - Displays quarterly aggregated usage patterns
+     *     - Helps organizers make informed topic selection decisions
+     */
+    get: operations['getTopicUsageHistory'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/topics/recalculate-staleness': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Recalculate staleness scores for all topics
+     * @description Maintenance endpoint to recalculate staleness for all topics.
+     *
+     *     **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+     *     **Acceptance Criteria**: AC3
+     *     **Authorization**: Requires ORGANIZER role
+     *
+     *     **Scheduling**:
+     *     - Should be run periodically (e.g., monthly batch job)
+     *     - Updates staleness based on time since last use
+     *     - Does NOT override manual staleness adjustments
+     *
+     *     **Performance**:
+     *     - Runs asynchronously for large backlogs
+     *     - Returns immediately with count of topics queued
+     */
+    post: operations['recalculateTopicStaleness'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/topics/calculate-similarities': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Calculate similarity scores for all topics
+     * @description Maintenance endpoint to recalculate TF-IDF similarity matrix.
+     *
+     *     **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+     *     **Acceptance Criteria**: AC4
+     *     **Authorization**: Requires ORGANIZER role
+     *
+     *     **Use Cases**:
+     *     - Initial data migration
+     *     - After bulk topic imports
+     *     - Periodic refresh of similarity scores
+     *
+     *     **Algorithm**:
+     *     - TF-IDF vectorization across all active topics
+     *     - Pairwise cosine similarity calculation
+     *     - Only stores scores >30% to save space
+     *
+     *     **Performance**:
+     *     - O(n²) complexity - expensive for large backlogs
+     *     - Should be run during off-peak hours
+     */
+    post: operations['calculateTopicSimilarities'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1641,6 +1904,173 @@ export interface components {
        * @example 2025-12-13T10:15:00Z
        */
       updatedAt: string;
+    };
+    /** @description Topic response with staleness score and similarity information */
+    TopicResponse: {
+      /**
+       * Format: uuid
+       * @description Topic unique identifier
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /**
+       * @description Topic title
+       * @example Cloud Native Architecture Patterns
+       */
+      title: string;
+      /**
+       * @description Detailed topic description
+       * @example Modern cloud-native design patterns and best practices
+       */
+      description?: string | null;
+      /**
+       * @description Topic category (e.g., technical, business, soft-skills)
+       * @example technical
+       */
+      category: string;
+      /**
+       * Format: date-time
+       * @description When the topic was created
+       * @example 2023-01-15T10:00:00Z
+       */
+      createdDate?: string;
+      /**
+       * Format: date-time
+       * @description When the topic was last used in an event
+       * @example 2024-03-20T14:30:00Z
+       */
+      lastUsedDate?: string | null;
+      /**
+       * @description Number of times topic has been used
+       * @example 3
+       */
+      usageCount?: number;
+      /**
+       * @description Staleness score (0-100) based on time since last use.
+       *     Higher = safer to reuse.
+       *     Green zone (83-100): Safe to use
+       *     Yellow zone (50-82): Use with caution
+       *     Red zone (0-49): Too recent, avoid
+       * @example 92
+       */
+      stalenessScore: number;
+      /**
+       * @description Visual indicator based on staleness score
+       * @example green
+       * @enum {string}
+       */
+      colorZone: 'green' | 'yellow' | 'red' | 'gray';
+      /**
+       * @description Usability status derived from staleness score
+       * @example available
+       * @enum {string}
+       */
+      status: 'available' | 'caution' | 'unavailable';
+      /**
+       * @description List of similar topics with similarity scores >30%
+       * @example [
+       *       {
+       *         "topicId": "789e0123-e89b-12d3-a456-426614174002",
+       *         "score": 0.65
+       *       }
+       *     ]
+       */
+      similarityScores?: components['schemas']['SimilarityScore'][];
+      /**
+       * @description Whether the topic is active in the backlog
+       * @example true
+       */
+      active: boolean;
+      /**
+       * Format: date-time
+       * @description Audit timestamp - when record was created
+       * @example 2023-01-15T10:00:00Z
+       */
+      createdAt?: string;
+      /**
+       * Format: date-time
+       * @description Audit timestamp - when record was last updated
+       * @example 2024-03-20T14:30:00Z
+       */
+      updatedAt?: string;
+    };
+    /** @description Similarity score between two topics (TF-IDF + cosine similarity) */
+    SimilarityScore: {
+      /**
+       * Format: uuid
+       * @description UUID of the similar topic
+       * @example 789e0123-e89b-12d3-a456-426614174002
+       */
+      topicId: string;
+      /**
+       * Format: double
+       * @description Cosine similarity score (0.0-1.0). >0.7 indicates potential duplicate.
+       * @example 0.65
+       */
+      score: number;
+    };
+    /** @description Historical usage record of a topic in a specific event */
+    TopicUsageHistory: {
+      /**
+       * Format: uuid
+       * @description UUID of the event where this topic was used
+       * @example event-abc-123
+       */
+      eventId: string;
+      /**
+       * Format: date-time
+       * @description When the topic was used in the event
+       * @example 2024-01-15T10:00:00Z
+       */
+      usedDate: string;
+      /**
+       * @description Number of attendees at the event
+       * @example 150
+       */
+      attendance: number;
+      /**
+       * Format: double
+       * @description Engagement score for the topic (0.0-1.0). Higher indicates better audience engagement.
+       * @example 0.85
+       */
+      engagementScore: number;
+    };
+    /** @description Request to create a new topic */
+    TopicRequest: {
+      /**
+       * @description Topic title
+       * @example Kubernetes Security Best Practices
+       */
+      title: string;
+      /**
+       * @description Detailed topic description
+       * @example Deep dive into securing K8s clusters in production
+       */
+      description?: string | null;
+      /**
+       * @description Topic category
+       * @example technical
+       */
+      category: string;
+    };
+    /** @description Paginated list of topics with metadata */
+    TopicListResponse: {
+      /** @description List of topics for current page */
+      data: components['schemas']['TopicResponse'][];
+      pagination: components['schemas']['PaginationMetadata'];
+    };
+    /** @description Request to manually override staleness score */
+    OverrideStalenesRequest: {
+      /**
+       * @description New staleness score (0-100)
+       * @example 100
+       */
+      stalenessScore: number;
+      /**
+       * @description Required justification for override (for audit trail)
+       * @example Evergreen content - fundamentals of software architecture never go out of date
+       */
+      justification: string;
     };
   };
   responses: {
@@ -2982,6 +3412,343 @@ export interface operations {
         };
       };
       404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  listTopics: {
+    parameters: {
+      query?: {
+        /** @description JSON filter object */
+        filter?: string;
+        /** @description Page number (1-based) */
+        page?: number;
+        /** @description Items per page */
+        limit?: number;
+        /** @description Sort parameter (e.g., "-stalenessScore" or "stalenessScore,desc") */
+        sort?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Topics retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "data": [
+           *         {
+           *           "id": "123e4567-e89b-12d3-a456-426614174000",
+           *           "title": "Cloud Native Architecture Patterns",
+           *           "description": "Modern cloud-native design patterns and best practices",
+           *           "category": "technical",
+           *           "createdDate": "2023-01-15T10:00:00Z",
+           *           "lastUsedDate": "2024-03-20T14:30:00Z",
+           *           "usageCount": 3,
+           *           "stalenessScore": 92,
+           *           "colorZone": "green",
+           *           "status": "available",
+           *           "similarityScores": [],
+           *           "active": true,
+           *           "createdAt": "2023-01-15T10:00:00Z",
+           *           "updatedAt": "2024-03-20T14:30:00Z"
+           *         }
+           *       ],
+           *       "pagination": {
+           *         "page": 1,
+           *         "limit": 50,
+           *         "total": 150
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['TopicListResponse'];
+        };
+      };
+      /** @description Invalid filter JSON */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      403: components['responses']['Forbidden'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  createTopic: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "title": "Kubernetes Security Best Practices",
+         *       "description": "Deep dive into securing K8s clusters in production",
+         *       "category": "technical"
+         *     }
+         */
+        'application/json': components['schemas']['TopicRequest'];
+      };
+    };
+    responses: {
+      /** @description Topic created successfully */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "id": "456e7890-e89b-12d3-a456-426614174001",
+           *       "title": "Kubernetes Security Best Practices",
+           *       "description": "Deep dive into securing K8s clusters in production",
+           *       "category": "technical",
+           *       "createdDate": "2025-12-13T10:00:00Z",
+           *       "lastUsedDate": null,
+           *       "usageCount": 0,
+           *       "stalenessScore": 100,
+           *       "colorZone": "green",
+           *       "status": "available",
+           *       "similarityScores": [
+           *         {
+           *           "topicId": "123e4567-e89b-12d3-a456-426614174000",
+           *           "score": 0.65
+           *         }
+           *       ],
+           *       "active": true,
+           *       "createdAt": "2025-12-13T10:00:00Z",
+           *       "updatedAt": "2025-12-13T10:00:00Z"
+           *     }
+           */
+          'application/json': components['schemas']['TopicResponse'];
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      403: components['responses']['Forbidden'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  getTopicById: {
+    parameters: {
+      query?: {
+        /** @description Comma-separated list of fields to include */
+        include?: string;
+      };
+      header?: never;
+      path: {
+        /** @description Topic UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Topic retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TopicResponse'];
+        };
+      };
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  overrideTopicStaleness: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Topic UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "stalenessScore": 100,
+         *       "justification": "Evergreen content - fundamentals of software architecture never go out of date"
+         *     }
+         */
+        'application/json': components['schemas']['OverrideStalenesRequest'];
+      };
+    };
+    responses: {
+      /** @description Staleness score overridden successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TopicResponse'];
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  getSimilarTopics: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Topic UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Similar topics retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example [
+           *       {
+           *         "id": "789e0123-e89b-12d3-a456-426614174002",
+           *         "title": "Cloud Architecture Best Practices",
+           *         "description": "Cloud-native architectural patterns for modern applications",
+           *         "category": "technical",
+           *         "stalenessScore": 78,
+           *         "colorZone": "yellow",
+           *         "status": "caution"
+           *       }
+           *     ]
+           */
+          'application/json': components['schemas']['TopicResponse'][];
+        };
+      };
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  getTopicUsageHistory: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Topic UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Usage history retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example [
+           *       {
+           *         "eventId": "event-abc-123",
+           *         "usedDate": "2024-01-15T10:00:00Z",
+           *         "attendance": 150,
+           *         "engagementScore": 0.85
+           *       },
+           *       {
+           *         "eventId": "event-def-456",
+           *         "usedDate": "2024-04-20T10:00:00Z",
+           *         "attendance": 200,
+           *         "engagementScore": 0.92
+           *       }
+           *     ]
+           */
+          'application/json': components['schemas']['TopicUsageHistory'][];
+        };
+      };
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  recalculateTopicStaleness: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Staleness recalculation started */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @example Staleness scores recalculated for 150 topics */
+            message?: string;
+          };
+        };
+      };
+      403: components['responses']['Forbidden'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  calculateTopicSimilarities: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Similarity calculation started */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @example Similarity scores calculated for all topics */
+            message?: string;
+          };
+        };
+      };
+      403: components['responses']['Forbidden'];
       500: components['responses']['InternalServerError'];
     };
   };
