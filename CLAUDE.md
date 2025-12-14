@@ -417,4 +417,4 @@ These guides consolidate implementation patterns from across all BATbern microse
 - Update OpenAPI specs when changing APIs
 - Regenerate types after API changes
 - instead of running the test suites several times and grep the output, dump the output to a temp file and grep that file. this saves time
-- whenever you run make, gradlew output result via tee to a temp file and then analyse or grep that one
+- whenever you run make, gradlew or push, output result via tee to a temp file and then analyse or grep that one
