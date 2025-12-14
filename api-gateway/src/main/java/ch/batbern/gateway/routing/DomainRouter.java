@@ -159,7 +159,7 @@ public class DomainRouter {
                 // Build URI using UriComponentsBuilder to properly handle query parameters
                 // This prevents double-encoding and URI template variable expansion issues
                 UriComponentsBuilder uriBuilder = UriComponentsBuilder
-                        .fromHttpUrl(serviceUrl + requestUri);
+                        .fromUriString(serviceUrl + requestUri);
 
                 // Add query parameters from request (already decoded by servlet container)
                 // UriComponentsBuilder will encode them properly

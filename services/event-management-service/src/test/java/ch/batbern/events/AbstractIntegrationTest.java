@@ -35,10 +35,12 @@ public abstract class AbstractIntegrationTest {
 
     static {
         // Initialize singleton container once for entire test suite
-        POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine")
+        @SuppressWarnings("resource") // Container managed by Testcontainers Ryuk lifecycle
+        PostgreSQLContainer<?> container = new PostgreSQLContainer<>("postgres:16-alpine")
                 .withDatabaseName("testdb")
                 .withUsername("test")
                 .withPassword("test");
+        POSTGRES = container;
 
         // Start container once
         POSTGRES.start();

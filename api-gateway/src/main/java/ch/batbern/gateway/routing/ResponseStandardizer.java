@@ -74,17 +74,4 @@ public class ResponseStandardizer {
 
         return headers;
     }
-
-    // Add data size to metadata for large responses
-    private Map<String, Object> addDataSizeMetadata(Object data) {
-        Map<String, Object> metadata = new HashMap<>();
-
-        if (data != null) {
-            // Simple estimation of data size
-            String dataString = data.toString();
-            metadata.put("dataSize", dataString.length() + " characters");
-        }
-
-        return metadata;
-    }
 }

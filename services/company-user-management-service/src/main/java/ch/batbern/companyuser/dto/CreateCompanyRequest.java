@@ -22,7 +22,11 @@ public class CreateCompanyRequest {
 
     @NotBlank(message = "Company name is required")
     @Size(min = 2, max = 255, message = "Company name must be between 2 and 255 characters")
-    @Schema(description = "Unique company name (used as identifier)", example = "Swisscom AG", required = true)
+    @Schema(
+            description = "Unique company name (used as identifier)",
+            example = "Swisscom AG",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
     private String name;
 
     @Size(max = 255, message = "Display name must not exceed 255 characters")

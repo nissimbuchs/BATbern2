@@ -80,6 +80,7 @@ public class EventTypeConfiguration {
      * Whether theoretical presentations are scheduled in morning slots.
      */
     @Column(name = "theoretical_slots_am", nullable = false)
+    @Builder.Default
     private Boolean theoreticalSlotsAM = true;
 
     /**
@@ -87,6 +88,7 @@ public class EventTypeConfiguration {
      */
     @Column(name = "break_slots", nullable = false)
     @Min(0)
+    @Builder.Default
     private Integer breakSlots = 0;
 
     /**
@@ -94,6 +96,7 @@ public class EventTypeConfiguration {
      */
     @Column(name = "lunch_slots", nullable = false)
     @Min(0)
+    @Builder.Default
     private Integer lunchSlots = 0;
 
     /**

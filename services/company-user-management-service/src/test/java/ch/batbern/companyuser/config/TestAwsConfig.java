@@ -21,6 +21,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequ
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -72,7 +73,7 @@ public class TestAwsConfig {
 
         // Configure mock to return a presigned URL for profile picture uploads
         try {
-            URL mockPresignedUrl = new URL("https://s3.amazonaws.com/test-bucket/presigned-url");
+            URL mockPresignedUrl = URI.create("https://s3.amazonaws.com/test-bucket/presigned-url").toURL();
             PresignedPutObjectRequest mockPresignedRequest = Mockito.mock(PresignedPutObjectRequest.class);
             when(mockPresignedRequest.url()).thenReturn(mockPresignedUrl);
             when(mockPresigner.presignPutObject(any(PutObjectPresignRequest.class)))

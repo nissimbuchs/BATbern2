@@ -1,9 +1,23 @@
 {
     "git.ignoreLimitWarning": true,
-    "java.compile.nullAnalysis.mode": "automatic",
+    "java.compile.nullAnalysis.mode": "disabled",
     "java.configuration.updateBuildConfiguration": "automatic",
     "makefile.configureOnOpen": false,
     "files.associations": {
         "*.sql": "postgres"
-    }
+    },
+    // Exclude only test files from Java diagnostics
+    "java.import.exclusions": [
+        "**/node_modules/**",
+        "**/.git/**",
+        "**/src/test/**",
+        "**/build/**/test/**"
+    ],
+    "java.project.resourceFilters": [
+        "node_modules",
+        ".git"
+    ],
+    // Reduce noise
+    "java.errors.incompleteClasspath.severity": "ignore",
+    "java.maxConcurrentBuilds": 1
 }

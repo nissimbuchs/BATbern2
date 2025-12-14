@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
+@SuppressWarnings({"FieldCanBeLocal", "unused"}) // NO-OP implementation - fields kept for future Cognito sync feature
 public class CognitoIntegrationServiceImpl implements CognitoIntegrationService {
 
     private final CognitoIdentityProviderClient cognitoClient;

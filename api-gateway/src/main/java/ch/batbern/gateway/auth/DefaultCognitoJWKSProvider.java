@@ -7,7 +7,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import lombok.extern.slf4j.Slf4j;
 
-import java.net.URL;
+import java.net.URI;
 import java.security.interfaces.RSAPublicKey;
 
 @Slf4j
@@ -17,7 +17,7 @@ public class DefaultCognitoJWKSProvider implements CognitoJWKSProvider {
 
     public DefaultCognitoJWKSProvider(String jwksUrl) {
         try {
-            this.jwkProvider = new UrlJwkProvider(new URL(jwksUrl));
+            this.jwkProvider = new UrlJwkProvider(URI.create(jwksUrl).toURL());
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize JWKS provider", e);
         }

@@ -80,11 +80,14 @@ public class RestClientConfig {
                     duration);
 
             if (log.isTraceEnabled()) {
-                String responseBody = new BufferedReader(
-                        new InputStreamReader(response.getBody(), StandardCharsets.UTF_8))
-                        .lines()
-                        .collect(Collectors.joining("\n"));
-                log.trace("Response body: {}", responseBody);
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(response.getBody(), StandardCharsets.UTF_8))) {
+                    String responseBody = reader.lines()
+                            .collect(Collectors.joining("\n"));
+                    log.trace("Response body: {}", responseBody);
+                } catch (IOException e) {
+                    log.warn("Failed to read response body for logging", e);
+                }
             }
 
             return response;

@@ -113,16 +113,4 @@ public class UserContextExtractor {
             return new HashMap<>();
         }
     }
-
-    /**
-     * DEPRECATED: Additional roles are now extracted from custom:role claim inline
-     * Story 1.2.6: Migrated to database-centric roles (ADR-001)
-     * This method is kept for backward compatibility but is no longer used
-     */
-    @Deprecated
-    private List<String> extractAdditionalRoles(DecodedJWT jwt) {
-        // All roles now come from custom:role claim (comma-separated)
-        // This method is no longer called
-        return new ArrayList<>();
-    }
 }
