@@ -31,7 +31,9 @@ vi.mock('recharts', () => ({
   YAxis: () => <div data-testid="y-axis" />,
   ZAxis: () => <div data-testid="z-axis" />,
   Tooltip: () => <div data-testid="tooltip" />,
-  Legend: () => <div data-testid="legend" />,
+  Legend: ({ content }: { content?: () => React.ReactElement }) => (
+    <div data-testid="legend">{content && content()}</div>
+  ),
   Cell: () => <div data-testid="cell" />,
 }));
 

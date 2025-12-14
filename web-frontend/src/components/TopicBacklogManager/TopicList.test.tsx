@@ -77,8 +77,8 @@ describe('TopicList', () => {
         onPageChange={vi.fn()}
       />
     );
-    const selectedItem = screen.getByText('Cloud Native').closest('div');
-    expect(selectedItem).toHaveClass('Mui-selected');
+    const selectedButton = screen.getByText('Cloud Native').closest('[role="button"]');
+    expect(selectedButton).toHaveClass('Mui-selected');
   });
 
   it('should display staleness scores with color coding', () => {
@@ -90,8 +90,8 @@ describe('TopicList', () => {
         onPageChange={vi.fn()}
       />
     );
-    expect(screen.getByText('85')).toBeInTheDocument(); // High staleness = safe
-    expect(screen.getByText('50')).toBeInTheDocument(); // Medium staleness
+    expect(screen.getByText('85%')).toBeInTheDocument(); // High staleness = safe
+    expect(screen.getByText('50%')).toBeInTheDocument(); // Medium staleness
   });
 
   it('should handle pagination', async () => {

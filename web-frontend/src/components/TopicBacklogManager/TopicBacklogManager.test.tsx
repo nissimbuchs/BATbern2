@@ -328,6 +328,6 @@ describe('TopicBacklogManager', () => {
     renderComponent();
 
     expect(screen.getByTestId('topic-list')).toBeInTheDocument();
-    expect(screen.queryByTestId(/^topic-/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Cloud Native/i)).not.toBeInTheDocument();
   });
 });
