@@ -95,7 +95,7 @@ const OutreachHistoryTimeline: React.FC<OutreachHistoryTimelineProps> = ({
         {t('speakerOutreach.contactHistory')}
       </Typography>
 
-      <Timeline position="right">
+      <Timeline position="right" data-testid="outreach-timeline">
         {history.map((item, index) => (
           <TimelineItem key={item.id}>
             <TimelineOppositeContent color="text.secondary" sx={{ flex: 0.3 }}>

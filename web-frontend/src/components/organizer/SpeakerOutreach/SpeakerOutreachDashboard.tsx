@@ -120,7 +120,7 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
   }
 
   return (
-    <Box>
+    <Box data-testid="speaker-outreach-dashboard">
       <Box mb={3} display="flex" justifyContent="space-between" alignItems="center">
         <Box>
           <Typography variant="h5" gutterBottom>
@@ -206,7 +206,7 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
               const isOverdue = daysSince > 7;
 
               return (
-                <TableRow key={speaker.id} hover>
+                <TableRow key={speaker.id} hover data-testid="speaker-row">
                   <TableCell padding="checkbox">
                     <Checkbox
                       checked={selectedSpeakers.has(speaker.id)}
@@ -233,6 +233,7 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
                       label={speaker.status}
                       size="small"
                       color={speaker.status === 'contacted' ? 'success' : 'default'}
+                      data-testid="outreach-status"
                     />
                   </TableCell>
                   <TableCell>
@@ -240,6 +241,7 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
                       label={`${daysSince} days`}
                       size="small"
                       color={isOverdue ? 'error' : 'default'}
+                      data-testid="days-since-assignment"
                     />
                   </TableCell>
                   <TableCell align="right">

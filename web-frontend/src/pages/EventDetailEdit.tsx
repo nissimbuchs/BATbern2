@@ -120,6 +120,10 @@ const EventDetailEdit: React.FC = () => {
     navigate(`/organizer/events/${eventCode}/speakers`);
   };
 
+  const handleManageSpeakerOutreach = (eventCode: string) => {
+    navigate(`/organizer/events/${eventCode}/speakers/outreach`);
+  };
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleAutoAssignSpeakers = (_eventCode: string) => {
     // TODO: Implement AI auto-assign logic
@@ -422,6 +426,7 @@ const EventDetailEdit: React.FC = () => {
             onViewMaterials={handleViewMaterials}
             onViewFullAgenda={handleViewFullAgenda}
             onManageSpeakerAssignments={handleManageSpeakerAssignments}
+            onManageSpeakerOutreach={handleManageSpeakerOutreach}
             onAutoAssignSpeakers={handleAutoAssignSpeakers}
           />
         </Paper>

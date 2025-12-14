@@ -139,7 +139,13 @@ const MarkContactedModal: React.FC<MarkContactedModalProps> = ({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      data-testid="mark-contacted-modal"
+    >
       <DialogTitle>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           {t('speakerOutreach.markContactedModal.title')}
@@ -168,6 +174,7 @@ const MarkContactedModal: React.FC<MarkContactedModalProps> = ({
               value={formData.contactMethod}
               onChange={(e) => handleContactMethodChange(e.target.value)}
               label={t('speakerOutreach.contactMethod')}
+              data-testid="contact-method-select"
             >
               <MenuItem value="email">
                 {t('speakerOutreach.markContactedModal.method.email')}
@@ -196,6 +203,7 @@ const MarkContactedModal: React.FC<MarkContactedModalProps> = ({
             required
             fullWidth
             InputLabelProps={{ shrink: true }}
+            data-testid="contact-date"
           />
 
           <TextField
@@ -206,6 +214,7 @@ const MarkContactedModal: React.FC<MarkContactedModalProps> = ({
             rows={4}
             fullWidth
             placeholder={t('speakerOutreach.markContactedModal.notesPlaceholder')}
+            data-testid="contact-notes"
           />
         </Box>
       </DialogContent>
