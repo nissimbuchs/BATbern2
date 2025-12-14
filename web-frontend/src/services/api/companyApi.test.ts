@@ -59,10 +59,10 @@ describe('Company API Client', () => {
         };
 
         // If validation passes, the function should attempt to make the API call
-        // In test environment without backend, this will fail with network/timeout error or 500
+        // In test environment without backend, this will fail with network/timeout error or 404/500
         // We expect network/server/timeout error (not validation error)
         await expect(companyApiClient.createCompany(validCompany)).rejects.toThrow(
-          /(Network Error|status code 500|timeout)/
+          /(Network Error|status code 404|status code 500|timeout)/
         );
       });
     });
@@ -85,7 +85,7 @@ describe('Company API Client', () => {
 
         // Expect network/server/timeout error (not validation error)
         await expect(companyApiClient.updateCompany('test-id', updates)).rejects.toThrow(
-          /(Network Error|status code 500|timeout)/
+          /(Network Error|status code 404|status code 500|timeout)/
         );
       });
     });
@@ -97,7 +97,7 @@ describe('Company API Client', () => {
       it('should attempt to delete company', async () => {
         // Expect network/server/timeout error (not validation error)
         await expect(companyApiClient.deleteCompany('test-company')).rejects.toThrow(
-          /(Network Error|status code 500|timeout)/
+          /(Network Error|status code 404|status code 500|timeout)/
         );
       });
     });
