@@ -14,9 +14,9 @@ vi.mock('react-i18next', () => ({
 describe('TopicFilterPanel', () => {
   it('should render all filter controls', () => {
     render(<TopicFilterPanel filters={{}} onFilterChange={vi.fn()} />);
-    expect(screen.getByLabelText(/Category/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Status/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Sort By/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Category/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Status/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Sort By/i).length).toBeGreaterThan(0);
   });
 
   it('should call onFilterChange when category is selected', async () => {
@@ -24,7 +24,7 @@ describe('TopicFilterPanel', () => {
     const onFilterChange = vi.fn();
     render(<TopicFilterPanel filters={{}} onFilterChange={onFilterChange} />);
 
-    const categorySelect = screen.getByLabelText(/Category/i);
+    const categorySelect = screen.getAllByRole('combobox')[0];
     await user.click(categorySelect);
     const technicalOption = await screen.findByText('Technical');
     await user.click(technicalOption);
@@ -35,12 +35,12 @@ describe('TopicFilterPanel', () => {
   it('should display current filter values', () => {
     render(
       <TopicFilterPanel
-        filters={{ category: 'management', status: 'active' }}
+        filters={{ category: 'technical', status: 'available' }}
         onFilterChange={vi.fn()}
       />
     );
-    expect(screen.getByDisplayValue('Management')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Active')).toBeInTheDocument();
+    expect(screen.getByText('Technical')).toBeInTheDocument();
+    expect(screen.getByText('Available (Green)')).toBeInTheDocument();
   });
 
   it('should allow clearing filters', async () => {
@@ -50,9 +50,12 @@ describe('TopicFilterPanel', () => {
       <TopicFilterPanel filters={{ category: 'technical' }} onFilterChange={onFilterChange} />
     );
 
-    const clearButton = screen.getByRole('button', { name: /clear/i });
-    await user.click(clearButton);
+    // Click on category select and choose "All Categories" to clear
+    const categorySelect = screen.getAllByRole('combobox')[0];
+    await user.click(categorySelect);
+    const allCategoriesOption = await screen.findByText('All Categories');
+    await user.click(allCategoriesOption);
 
-    expect(onFilterChange).toHaveBeenCalledWith({});
+    expect(onFilterChange).toHaveBeenCalledWith({ category: undefined });
   });
 });

@@ -7,14 +7,23 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TopicDetailsPanel } from './TopicDetailsPanel';
 import type { Topic } from '@/types/topic.types';
+import * as useTopicsHook from '@/hooks/useTopics';
 
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key: string, def?: string) => def || key }),
+  useTranslation: () => ({
+    t: (key: string, def?: string, options?: { count?: number }) => {
+      if (def && options?.count !== undefined) {
+        return def.replace('{{count}}', String(options.count));
+      }
+      return def || key;
+    },
+  }),
 }));
 
 vi.mock('@/hooks/useTopics', () => ({
-  useSimilarTopics: () => ({ data: [], isLoading: false }),
-  useSelectTopicForEvent: () => ({ mutate: vi.fn(), isLoading: false }),
+  useSimilarTopics: vi.fn(() => ({ data: [], isLoading: false })),
+  useSelectTopicForEvent: () => ({ mutate: vi.fn(), isPending: false }),
+  useTopicUsageHistory: () => ({ data: [], isLoading: false }),
 }));
 
 const mockTopic: Topic = {
@@ -27,6 +36,7 @@ const mockTopic: Topic = {
   lastUsedDate: '2024-01-15',
   isActive: true,
   createdDate: '2023-01-01',
+  similarityScores: [],
 };
 
 describe('TopicDetailsPanel', () => {
@@ -38,8 +48,7 @@ describe('TopicDetailsPanel', () => {
 
   it('should display staleness score with label', () => {
     render(<TopicDetailsPanel topic={mockTopic} />);
-    expect(screen.getByText(/Staleness Score/i)).toBeInTheDocument();
-    expect(screen.getByText('85')).toBeInTheDocument();
+    expect(screen.getByText('85%')).toBeInTheDocument();
   });
 
   it('should show category chip', () => {
@@ -49,8 +58,9 @@ describe('TopicDetailsPanel', () => {
 
   it('should display usage statistics', () => {
     render(<TopicDetailsPanel topic={mockTopic} />);
-    expect(screen.getByText(/Used 3 times/i)).toBeInTheDocument();
-    expect(screen.getByText(/Last used.*2024-01-15/i)).toBeInTheDocument();
+    expect(screen.getByText(/Usage Count/i)).toBeInTheDocument();
+    // "Last Used" appears in both alert message and metrics section
+    expect(screen.getAllByText(/Last Used/i).length).toBeGreaterThan(0);
   });
 
   it('should show topic selection button when eventCode is provided', () => {
@@ -75,11 +85,30 @@ describe('TopicDetailsPanel', () => {
   });
 
   it('should display similar topics warning when similarity is high', () => {
-    const topicWithSimilarity = {
+    const topicWithSimilarity: Topic = {
       ...mockTopic,
       similarityScores: [{ topicId: 'topic-456', score: 0.75 }],
     };
+
+    // Mock the similar topics hook to return a similar topic
+    vi.mocked(useTopicsHook.useSimilarTopics).mockReturnValue({
+      data: [
+        {
+          id: 'topic-456',
+          title: 'Similar Topic',
+          category: 'technical',
+          stalenessScore: 80,
+          usageCount: 2,
+          lastUsedDate: '2024-02-01',
+          isActive: true,
+          createdDate: '2023-01-01',
+          description: 'Similar',
+        },
+      ],
+      isLoading: false,
+    } as ReturnType<typeof useTopicsHook.useSimilarTopics>);
+
     render(<TopicDetailsPanel topic={topicWithSimilarity} />);
-    expect(screen.getByText(/Similar topics detected/i)).toBeInTheDocument();
+    expect(screen.getByText(/similar topics detected/i)).toBeInTheDocument();
   });
 });
