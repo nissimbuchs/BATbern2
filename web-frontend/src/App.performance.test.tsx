@@ -167,9 +167,8 @@ describe('Performance Optimization - React.memo', () => {
   }, 10000); // 10s timeout for slow imports
 
   it('should_memoizeNotificationDropdown_when_propsDoNotChange', async () => {
-    const { NotificationDropdown } = await import(
-      './components/shared/Notifications/NotificationDropdown'
-    );
+    const { NotificationDropdown } =
+      await import('./components/shared/Notifications/NotificationDropdown');
 
     // React.memo components are objects with $$typeof, type, and compare properties
     expect(typeof NotificationDropdown).toBe('object');

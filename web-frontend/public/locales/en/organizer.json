@@ -105,5 +105,37 @@
       "notes": "Notes",
       "error": "Failed to load speaker pool"
     }
+  },
+  "speakerOutreach": {
+    "title": "Speaker Outreach",
+    "subtitle": "Track your speaker outreach activities and coordinate with other organizers",
+    "speakerName": "Speaker",
+    "contactMethod": "Contact Method",
+    "contactDate": "Contact Date",
+    "notes": "Notes",
+    "markContacted": "Mark as Contacted",
+    "filterByOrganizer": "Filter by Organizer",
+    "contactHistory": "Contact History",
+    "daysSinceAssignment": "Days Since Assignment",
+    "overdue": "Overdue",
+    "lastContact": "Last Contact",
+    "markContactedModal": {
+      "title": "Mark Speaker as Contacted",
+      "method": {
+        "email": "Email",
+        "phone": "Phone",
+        "inPerson": "In Person"
+      },
+      "notesPlaceholder": "Notes about the conversation...",
+      "error": {
+        "methodRequired": "Contact method is required",
+        "dateRequired": "Contact date is required",
+        "failed": "Failed to record outreach"
+      }
+    },
+    "bulkAction": {
+      "title": "Mark Multiple as Contacted",
+      "confirm": "Mark {{count}} speakers as contacted?"
+    }
   }
 }

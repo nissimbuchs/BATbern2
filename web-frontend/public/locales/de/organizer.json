@@ -105,5 +105,37 @@
       "notes": "Notizen",
       "error": "Fehler beim Laden des Referenten-Pools"
     }
+  },
+  "speakerOutreach": {
+    "title": "Referenten-Kontaktierung",
+    "subtitle": "Verfolgen Sie Ihre Kontaktversuche mit Referenten und koordinieren Sie mit anderen Organisatoren",
+    "speakerName": "Referent",
+    "contactMethod": "Kontaktmethode",
+    "contactDate": "Kontaktdatum",
+    "notes": "Notizen",
+    "markContacted": "Als kontaktiert markieren",
+    "filterByOrganizer": "Nach Organisator filtern",
+    "contactHistory": "Kontaktverlauf",
+    "daysSinceAssignment": "Tage seit Zuweisung",
+    "overdue": "Überfällig",
+    "lastContact": "Letzter Kontakt",
+    "markContactedModal": {
+      "title": "Referent als kontaktiert markieren",
+      "method": {
+        "email": "E-Mail",
+        "phone": "Telefon",
+        "inPerson": "Persönlich"
+      },
+      "notesPlaceholder": "Notizen zum Gespräch...",
+      "error": {
+        "methodRequired": "Kontaktmethode ist erforderlich",
+        "dateRequired": "Kontaktdatum ist erforderlich",
+        "failed": "Fehler beim Aufzeichnen der Kontaktierung"
+      }
+    },
+    "bulkAction": {
+      "title": "Mehrere als kontaktiert markieren",
+      "confirm": "{{count}} Referenten als kontaktiert markieren?"
+    }
   }
 }
