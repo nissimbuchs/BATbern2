@@ -6,8 +6,8 @@
 ## Architecture & Development
 - [ ] topics have UUID in api, against ADR-003
 - [ ] not all ids are translated in topics backlog
-- [ ] event has dto and generated dto in backend, should only use generated dto's
-- [ ] event has status and workflow state redundant?
+- [ ] event has dto and generated dto in backend, should only use generated dto's.
+- [ ] event has status and workflow state. redundant?
 - [ ] event has metadate for thema and event_type that are both obsolete
 
 Accessing the PostgeSQL through the tunnel:
