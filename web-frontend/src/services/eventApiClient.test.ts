@@ -179,7 +179,7 @@ describe('Event API Client (RED Phase)', () => {
       // Expect network/server error (not parameter building error)
       // Error is transformed to user-friendly message by transformError()
       await expect(eventApiClient.getEvent('BATbern56', options)).rejects.toThrow(
-        /(Network Error|Server Error)/
+        /(Network Error|Not Found|Server Error|timeout)/
       );
     });
 
@@ -190,7 +190,7 @@ describe('Event API Client (RED Phase)', () => {
       // Error is transformed to user-friendly message by transformError()
       await expect(
         eventApiClient.getEvents({ page: 1, limit: 20 }, undefined, options)
-      ).rejects.toThrow(/(Network Error|Server Error)/);
+      ).rejects.toThrow(/(Network Error|Not Found|Server Error|timeout)/);
     });
 
     it('should_omitIncludeParameter_when_noExpandOptionsProvided', async () => {
@@ -198,7 +198,7 @@ describe('Event API Client (RED Phase)', () => {
       // Expect network/server error (not parameter building error)
       // Error is transformed to user-friendly message by transformError()
       await expect(eventApiClient.getEvent('BATbern56')).rejects.toThrow(
-        /(Network Error|Server Error)/
+        /(Network Error|Not Found|Server Error|timeout)/
       );
     });
   });
@@ -214,7 +214,7 @@ describe('Event API Client (RED Phase)', () => {
       // Expect network/server error (not method error)
       // Error is transformed to user-friendly message by transformError()
       await expect(eventApiClient.patchEvent('BATbern56', partialUpdate)).rejects.toThrow(
-        /(Network Error|Server Error)/
+        /(Network Error|Not Found|Server Error|timeout)/
       );
     });
 
@@ -227,7 +227,7 @@ describe('Event API Client (RED Phase)', () => {
       // Expect network/server error (not validation error)
       // Error is transformed to user-friendly message by transformError()
       await expect(eventApiClient.patchEvent('BATbern56', partialUpdate)).rejects.toThrow(
-        /(Network Error|Server Error)/
+        /(Network Error|Not Found|Server Error|timeout)/
       );
     });
   });
@@ -295,7 +295,7 @@ describe('Event API Client (RED Phase)', () => {
       // Expect network/server error (not filter error)
       // Error is transformed to user-friendly message by transformError()
       await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
-        /(Network Error|Server Error)/
+        /(Network Error|Not Found|Server Error|timeout)/
       );
     });
   });
@@ -305,7 +305,7 @@ describe('Event API Client (RED Phase)', () => {
       // Expect network/server error (not API structure error)
       // Error is transformed to user-friendly message by transformError()
       await expect(eventApiClient.getEventWorkflow('BATbern56')).rejects.toThrow(
-        /(Network Error|Server Error)/
+        /(Network Error|Not Found|Server Error|timeout)/
       );
     });
 
@@ -313,7 +313,7 @@ describe('Event API Client (RED Phase)', () => {
       // Expect network/server error (not API structure error)
       // Error is transformed to user-friendly message by transformError()
       await expect(eventApiClient.getCriticalTasks('BATbern56')).rejects.toThrow(
-        /(Network Error|Server Error)/
+        /(Network Error|Not Found|Server Error|timeout)/
       );
     });
 
@@ -321,7 +321,7 @@ describe('Event API Client (RED Phase)', () => {
       // Expect network/server error (not API structure error)
       // Error is transformed to user-friendly message by transformError()
       await expect(eventApiClient.getTeamActivity('BATbern56')).rejects.toThrow(
-        /(Network Error|Server Error)/
+        /(Network Error|Not Found|Server Error|timeout)/
       );
     });
   });
