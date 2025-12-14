@@ -103,6 +103,7 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
                 .currentAttendeeCount(0)
                 .description("Test event for registration")
                 .eventType(EventType.EVENING)
+                .workflowState(ch.batbern.shared.types.EventWorkflowState.CREATED)
                 .build();
         testEvent = eventRepository.save(testEvent);
 
@@ -357,6 +358,7 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
                 .organizerUsername("test.organizer")
                 .currentAttendeeCount(0)
                 .eventType(EventType.EVENING)
+                .workflowState(ch.batbern.shared.types.EventWorkflowState.CREATED)
                 .build();
         otherEvent = eventRepository.save(otherEvent);
 

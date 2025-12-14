@@ -66,6 +66,7 @@ class RegistrationCleanupServiceIntegrationTest extends AbstractIntegrationTest 
                 .venueCapacity(100)
                 .status("published")
                 .eventType(EventType.EVENING)
+                .workflowState(ch.batbern.shared.types.EventWorkflowState.CREATED)
                 .build();
         testEvent = eventRepository.save(testEvent);
     }

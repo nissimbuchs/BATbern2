@@ -142,6 +142,10 @@ public class Event {
         Instant now = Instant.now();
         createdAt = now;
         updatedAt = now;
+        // Set default workflow state if not already set
+        if (workflowState == null) {
+            workflowState = EventWorkflowState.CREATED;
+        }
     }
 
     @PreUpdate
