@@ -189,6 +189,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .currentAttendeeCount(0)
                 .description("Test event for " + title)
                 .eventType(EventType.EVENING)
+                .workflowState(ch.batbern.shared.types.EventWorkflowState.CREATED)
                 .build();
         return eventRepository.save(event);
     }
@@ -780,6 +781,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .venueCapacity(100)
                 .organizerUsername("test.organizer")
                 .eventType(EventType.EVENING)
+                .workflowState(ch.batbern.shared.types.EventWorkflowState.CREATED)
                 .build();
         Event savedInvalidEvent = eventRepository.save(invalidEvent);
 

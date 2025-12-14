@@ -59,6 +59,7 @@ class SessionUserRepositoryIntegrationTest extends AbstractIntegrationTest {
                 .status("published")
                 .organizerUsername("test.organizer")
                 .eventType(EventType.EVENING)
+                .workflowState(ch.batbern.shared.types.EventWorkflowState.CREATED)
                 .build();
         testEvent = eventRepository.save(testEvent);
 

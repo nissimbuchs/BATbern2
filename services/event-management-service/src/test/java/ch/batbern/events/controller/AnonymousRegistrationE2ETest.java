@@ -95,6 +95,7 @@ public class AnonymousRegistrationE2ETest extends AbstractIntegrationTest {
                 .currentAttendeeCount(0)
                 .description("Test event for E2E registration")
                 .eventType(EventType.EVENING)
+                .workflowState(ch.batbern.shared.types.EventWorkflowState.CREATED)
                 .build();
         testEvent = eventRepository.save(testEvent);
 
@@ -256,6 +257,7 @@ public class AnonymousRegistrationE2ETest extends AbstractIntegrationTest {
                 .organizerUsername("test.organizer")
                 .currentAttendeeCount(0)
                 .eventType(EventType.EVENING)
+                .workflowState(ch.batbern.shared.types.EventWorkflowState.CREATED)
                 .build();
         eventRepository.save(secondEvent);
 
