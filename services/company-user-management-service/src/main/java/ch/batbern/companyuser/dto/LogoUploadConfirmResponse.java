@@ -20,7 +20,7 @@ public class LogoUploadConfirmResponse {
     @Schema(
             description = "CloudFront CDN URL for the uploaded logo",
             example = "https://cdn.batbern.ch/logos/2024/company-789/logo-f3e8d1a4.png",
-            required = true
+            requiredMode = Schema.RequiredMode.REQUIRED
     )
     private String logoUrl;
 }

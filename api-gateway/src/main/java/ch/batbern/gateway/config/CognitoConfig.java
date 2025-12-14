@@ -62,7 +62,7 @@ public class CognitoConfig {
     public CognitoIdentityProviderClient cognitoIdentityProviderClient() {
         return CognitoIdentityProviderClient.builder()
             .region(Region.of(region))
-            .credentialsProvider(DefaultCredentialsProvider.create())
+            .credentialsProvider(DefaultCredentialsProvider.builder().build())
             .build();
     }
 
@@ -73,7 +73,7 @@ public class CognitoConfig {
     public SesClient sesClient() {
         return SesClient.builder()
             .region(Region.of(region))
-            .credentialsProvider(DefaultCredentialsProvider.create())
+            .credentialsProvider(DefaultCredentialsProvider.builder().build())
             .build();
     }
 

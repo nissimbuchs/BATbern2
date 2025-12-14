@@ -42,7 +42,8 @@ public class RegistrationService {
     private final RegistrationRepository registrationRepository;
     private final EventRepository eventRepository;
     private final UserApiClient userApiClient;
-    private final RegistrationEmailService registrationEmailService; // Story 2.2a Task B12
+    @SuppressWarnings("unused") // Story 2.2a Task B12 - Will be used when email confirmation is implemented
+    private final RegistrationEmailService registrationEmailService;
 
     /**
      * Create a new anonymous registration for an event (ADR-005).

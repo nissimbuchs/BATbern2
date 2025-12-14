@@ -29,7 +29,7 @@ public class AwsConfig {
         log.info("Creating S3Client for AWS region: eu-central-1");
         return S3Client.builder()
                 .region(Region.EU_CENTRAL_1) // Bern, Switzerland region
-                .credentialsProvider(DefaultCredentialsProvider.create())
+                .credentialsProvider(DefaultCredentialsProvider.builder().build())
                 .build();
     }
 }

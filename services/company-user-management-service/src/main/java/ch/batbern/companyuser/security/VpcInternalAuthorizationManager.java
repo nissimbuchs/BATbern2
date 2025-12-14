@@ -32,7 +32,6 @@ import java.util.function.Supplier;
 @Slf4j
 public class VpcInternalAuthorizationManager implements AuthorizationManager<RequestAuthorizationContext> {
 
-    private final String vpcCidr;
     private final long networkAddress;
     private final long networkMask;
 
@@ -42,8 +41,6 @@ public class VpcInternalAuthorizationManager implements AuthorizationManager<Req
      * @param vpcCidr VPC CIDR notation (e.g., "10.1.0.0/16")
      */
     public VpcInternalAuthorizationManager(String vpcCidr) {
-        this.vpcCidr = vpcCidr;
-
         String[] parts = vpcCidr.split("/");
         if (parts.length != 2) {
             throw new IllegalArgumentException("Invalid CIDR format: " + vpcCidr);

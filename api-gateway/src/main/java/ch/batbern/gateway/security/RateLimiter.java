@@ -7,7 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import jakarta.servlet.http.HttpServletRequest;
-import java.util.Map;
 
 @Slf4j
 @Component
@@ -15,24 +14,6 @@ import java.util.Map;
 public class RateLimiter {
 
     private final RateLimitStorage rateLimitStorage;
-
-    // Rate limits per role (requests per minute)
-    private static final Map<String, Integer> ROLE_RATE_LIMITS = Map.of(
-        "organizer", 1000,
-        "speaker", 500,
-        "partner", 500,
-        "attendee", 200,
-        "anonymous", 50
-    );
-
-    // Burst limits per role (requests per 10 seconds)
-    private static final Map<String, Integer> ROLE_BURST_LIMITS = Map.of(
-        "organizer", 200,
-        "speaker", 100,
-        "partner", 100,
-        "attendee", 50,
-        "anonymous", 20
-    );
 
     public boolean isRequestAllowed(UserContext userContext, HttpServletRequest request) {
         String userId = userContext.getUserId();

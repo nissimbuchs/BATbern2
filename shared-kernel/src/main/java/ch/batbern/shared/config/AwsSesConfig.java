@@ -43,7 +43,7 @@ public class AwsSesConfig {
 
         return SesClient.builder()
                 .region(Region.of(awsRegion))
-                .credentialsProvider(DefaultCredentialsProvider.create())
+                .credentialsProvider(DefaultCredentialsProvider.builder().build())
                 .build();
     }
 

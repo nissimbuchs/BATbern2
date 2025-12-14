@@ -128,8 +128,10 @@ describe('NetworkStack', () => {
       // Assert
       const template = Template.fromStack(stack);
 
-      // Verify security groups for database, cache, application, and lambda triggers tiers
-      template.resourceCountIs('AWS::EC2::SecurityGroup', 4);
+      // Verify security groups for:
+      // - 4 base: database, cache, application, and lambda triggers tiers
+      // - 4 VPC endpoints: ECR API, ECR Docker, Secrets Manager, CloudWatch Logs
+      template.resourceCountIs('AWS::EC2::SecurityGroup', 8);
     });
   });
 });

@@ -6,7 +6,6 @@ import ch.batbern.companyuser.dto.CompanySearchResponse;
 import ch.batbern.companyuser.dto.PaginatedCompanyResponse;
 import ch.batbern.companyuser.dto.UIDValidationResponse;
 import ch.batbern.companyuser.dto.UpdateCompanyRequest;
-import ch.batbern.companyuser.repository.CompanyRepository;
 import ch.batbern.companyuser.service.CompanyQueryService;
 import ch.batbern.companyuser.service.CompanySearchService;
 import ch.batbern.companyuser.service.CompanyService;
@@ -55,7 +54,6 @@ public class CompanyController {
     private final CompanySearchService searchService;
     private final SwissUIDValidationService uidValidationService;
     private final CompanyQueryService queryService;
-    private final CompanyRepository companyRepository;  // Story 1.16.2: For looking up companies by name
 
     /**
      * Create a new company

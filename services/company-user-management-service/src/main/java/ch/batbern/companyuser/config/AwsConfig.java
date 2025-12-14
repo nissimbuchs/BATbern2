@@ -32,7 +32,7 @@ public class AwsConfig {
     @Bean
     @ConditionalOnMissingBean
     public AwsCredentialsProvider awsCredentialsProvider() {
-        return DefaultCredentialsProvider.create();
+        return DefaultCredentialsProvider.builder().build();
     }
 
     @Bean

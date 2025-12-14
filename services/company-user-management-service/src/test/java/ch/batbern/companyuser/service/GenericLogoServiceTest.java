@@ -21,7 +21,7 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
-import java.net.URL;
+import java.net.URI;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
@@ -79,7 +79,7 @@ class GenericLogoServiceTest {
         String mimeType = "image/png";
 
         PresignedPutObjectRequest mockPresignedRequest = mock(PresignedPutObjectRequest.class);
-        when(mockPresignedRequest.url()).thenReturn(new URL("https://s3.amazonaws.com/test-bucket/key"));
+        when(mockPresignedRequest.url()).thenReturn(URI.create("https://s3.amazonaws.com/test-bucket/key").toURL());
         when(s3Presigner.presignPutObject(any(PutObjectPresignRequest.class)))
                 .thenReturn(mockPresignedRequest);
         when(logoRepository.save(any(Logo.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -113,7 +113,7 @@ class GenericLogoServiceTest {
         String mimeType = "image/jpeg";
 
         PresignedPutObjectRequest mockPresignedRequest = mock(PresignedPutObjectRequest.class);
-        when(mockPresignedRequest.url()).thenReturn(new URL("https://s3.amazonaws.com/test"));
+        when(mockPresignedRequest.url()).thenReturn(URI.create("https://s3.amazonaws.com/test").toURL());
         when(s3Presigner.presignPutObject(any(PutObjectPresignRequest.class)))
                 .thenReturn(mockPresignedRequest);
         when(logoRepository.save(any(Logo.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -174,7 +174,7 @@ class GenericLogoServiceTest {
         String mimeType = "image/png";
 
         PresignedPutObjectRequest mockPresignedRequest = mock(PresignedPutObjectRequest.class);
-        when(mockPresignedRequest.url()).thenReturn(new URL("https://s3.amazonaws.com/test"));
+        when(mockPresignedRequest.url()).thenReturn(URI.create("https://s3.amazonaws.com/test").toURL());
         when(s3Presigner.presignPutObject(any(PutObjectPresignRequest.class)))
                 .thenReturn(mockPresignedRequest);
         when(logoRepository.save(any(Logo.class))).thenAnswer(invocation -> invocation.getArgument(0));

@@ -173,7 +173,7 @@ public class FilterParser {
      */
     private static FilterCriteria parseObject(JsonNode node) {
         List<FilterCriteria> criteria = new ArrayList<>();
-        Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
+        Iterator<Map.Entry<String, JsonNode>> fields = node.properties().iterator();
 
         while (fields.hasNext()) {
             Map.Entry<String, JsonNode> entry = fields.next();
@@ -229,7 +229,7 @@ public class FilterParser {
      * Multiple operators: {"date": {"$gte": "2024-01-01", "$lte": "2024-12-31"}}
      */
     private static FilterCriteria parseFieldWithOperators(String fieldName, JsonNode operatorNode) {
-        Iterator<Map.Entry<String, JsonNode>> fields = operatorNode.fields();
+        Iterator<Map.Entry<String, JsonNode>> fields = operatorNode.properties().iterator();
 
         if (!fields.hasNext()) {
             throw new ValidationException("Empty operator object for field: " + fieldName);

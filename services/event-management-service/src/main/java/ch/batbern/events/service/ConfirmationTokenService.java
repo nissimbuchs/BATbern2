@@ -2,7 +2,6 @@ package ch.batbern.events.service;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -33,7 +32,7 @@ public class ConfirmationTokenService {
     public ConfirmationTokenService(@Value("${jwt.secret}") String secret) {
         // Use provided secret or generate a secure random key for dev/test
         if (secret == null || secret.isEmpty() || "changeme".equals(secret)) {
-            this.signingKey = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+            this.signingKey = Jwts.SIG.HS256.key().build();
             System.err.println("WARNING: Using randomly generated JWT secret. Configure jwt.secret in production!");
         } else {
             // Use configured secret (must be at least 256 bits for HS256)

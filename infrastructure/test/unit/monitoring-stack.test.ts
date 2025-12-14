@@ -91,9 +91,9 @@ describe('MonitoringStack', () => {
       // Assert
       const template = Template.fromStack(stack);
 
-      // Verify log retention is configured (30 days for dev)
+      // Verify log retention is configured (7 days for dev, cost optimization)
       template.hasResourceProperties('AWS::Logs::LogGroup', {
-        RetentionInDays: 30,
+        RetentionInDays: 7,
       });
     });
 
@@ -291,9 +291,9 @@ describe('MonitoringStack', () => {
       const devTemplate = Template.fromStack(devStack);
       const prodTemplate = Template.fromStack(prodStack);
 
-      // Both dev and prod use 30 days retention for cost optimization
+      // Dev uses 7 days retention, prod uses 30 days for cost optimization
       devTemplate.hasResourceProperties('AWS::Logs::LogGroup', {
-        RetentionInDays: 30,
+        RetentionInDays: 7,
       });
 
       prodTemplate.hasResourceProperties('AWS::Logs::LogGroup', {

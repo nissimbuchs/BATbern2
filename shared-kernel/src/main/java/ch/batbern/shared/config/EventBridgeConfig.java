@@ -49,7 +49,7 @@ public class EventBridgeConfig {
     @Bean
     @ConditionalOnMissingBean
     public AwsCredentialsProvider awsCredentialsProvider() {
-        return DefaultCredentialsProvider.create();
+        return DefaultCredentialsProvider.builder().build();
     }
 
     @Bean

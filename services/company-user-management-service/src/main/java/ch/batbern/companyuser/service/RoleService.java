@@ -36,6 +36,7 @@ public class RoleService {
     private static final int MINIMUM_ORGANIZERS = 2;
 
     private final UserRepository userRepository;
+    @SuppressWarnings("unused") // TODO: Will be used when UserRoleChangedEvent is implemented (Task 6 deferred)
     private final DomainEventPublisher eventPublisher;
 
     /**

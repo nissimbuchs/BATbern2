@@ -47,10 +47,12 @@ public abstract class AbstractIntegrationTest {
     private static final PostgreSQLContainer<?> POSTGRES;
 
     static {
-        POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine")
+        @SuppressWarnings("resource") // Container managed by Testcontainers Ryuk lifecycle
+        PostgreSQLContainer<?> container = new PostgreSQLContainer<>("postgres:16-alpine")
                 .withDatabaseName("testdb")
                 .withUsername("test")
                 .withPassword("test");
+        POSTGRES = container;
         POSTGRES.start();
     }
 

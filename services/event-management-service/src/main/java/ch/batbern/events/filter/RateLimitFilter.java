@@ -38,17 +38,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class RateLimitFilter extends OncePerRequestFilter {
 
     private static final int MAX_REQUESTS_PER_IP_PER_MINUTE = 10;
-    private static final int MAX_REQUESTS_PER_EMAIL_PER_MINUTE = 5;
     private static final Duration RATE_LIMIT_WINDOW = Duration.ofMinutes(1);
 
     // Cache for tracking requests by IP
     private final Cache<String, AtomicInteger> ipRequestCache = Caffeine.newBuilder()
-            .expireAfterWrite(RATE_LIMIT_WINDOW)
-            .maximumSize(10_000)
-            .build();
-
-    // Cache for tracking requests by email (extracted from request body)
-    private final Cache<String, AtomicInteger> emailRequestCache = Caffeine.newBuilder()
             .expireAfterWrite(RATE_LIMIT_WINDOW)
             .maximumSize(10_000)
             .build();

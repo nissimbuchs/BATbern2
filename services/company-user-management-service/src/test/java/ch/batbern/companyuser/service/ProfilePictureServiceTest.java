@@ -17,6 +17,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequ
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.Optional;
 import java.util.UUID;
@@ -77,7 +78,7 @@ class ProfilePictureServiceTest {
         long fileSizeBytes = 2 * 1024 * 1024; // 2 MB
 
         // Mock S3 Presigner
-        URL mockPresignedUrl = new URL("https://s3.amazonaws.com/test-bucket/presigned-url");
+        URL mockPresignedUrl = URI.create("https://s3.amazonaws.com/test-bucket/presigned-url").toURL();
         PresignedPutObjectRequest mockPresignedRequest = mock(PresignedPutObjectRequest.class);
         when(mockPresignedRequest.url()).thenReturn(mockPresignedUrl);
         when(s3Presigner.presignPutObject(any(PutObjectPresignRequest.class)))
@@ -142,7 +143,7 @@ class ProfilePictureServiceTest {
         String[] validFilenames = {"pic.png", "pic.jpg", "pic.jpeg", "pic.svg"};
 
         // Mock S3 Presigner
-        URL mockPresignedUrl = new URL("https://s3.amazonaws.com/test-bucket/presigned-url");
+        URL mockPresignedUrl = URI.create("https://s3.amazonaws.com/test-bucket/presigned-url").toURL();
         PresignedPutObjectRequest mockPresignedRequest = mock(PresignedPutObjectRequest.class);
         when(mockPresignedRequest.url()).thenReturn(mockPresignedUrl);
         when(s3Presigner.presignPutObject(any(PutObjectPresignRequest.class)))
@@ -214,7 +215,7 @@ class ProfilePictureServiceTest {
         long fileSizeBytes = 1 * 1024 * 1024;
 
         // Mock S3 Presigner
-        URL mockPresignedUrl = new URL("https://s3.amazonaws.com/test-bucket/presigned-url");
+        URL mockPresignedUrl = URI.create("https://s3.amazonaws.com/test-bucket/presigned-url").toURL();
         PresignedPutObjectRequest mockPresignedRequest = mock(PresignedPutObjectRequest.class);
         when(mockPresignedRequest.url()).thenReturn(mockPresignedUrl);
         when(s3Presigner.presignPutObject(any(PutObjectPresignRequest.class)))
