@@ -59,7 +59,8 @@ public class SpeakerPoolService {
         speakerPool.setExpertise(request.getExpertise());
         speakerPool.setAssignedOrganizerId(request.getAssignedOrganizerId());
         speakerPool.setNotes(request.getNotes());
-        speakerPool.setStatus("identified"); // AC13: Initial status = 'identified'
+        // AC13: Initial status = 'identified'
+        speakerPool.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.IDENTIFIED);
 
         // Persist speaker pool entry (AC18)
         SpeakerPool saved = speakerPoolRepository.save(speakerPool);

@@ -176,6 +176,30 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle SpeakerNotFoundException (speaker not found in speaker pool)
+     * Returns HTTP 404 Not Found
+     * Story 5.3: Speaker Outreach Tracking
+     */
+    @ExceptionHandler(SpeakerNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleSpeakerNotFoundException(
+            SpeakerNotFoundException ex,
+            HttpServletRequest request) {
+        log.warn("Speaker not found: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("Not Found")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    /**
      * Handle UserNotFoundException (user not found via API)
      * Returns HTTP 404 Not Found
      */

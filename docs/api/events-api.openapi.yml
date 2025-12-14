@@ -50,6 +50,8 @@ tags:
     description: Batch operations on multiple events
   - name: Topics
     description: Topic management and backlog operations (Story 5.2)
+  - name: Speaker Outreach
+    description: Speaker outreach tracking and history (Story 5.3)
 
 paths:
   /events:
@@ -1001,6 +1003,173 @@ paths:
                 message: "Event not found: BATbern56"
                 timestamp: "2025-12-13T10:00:00Z"
                 path: "/api/v1/events/BATbern56/speakers/pool"
+                status: 404
+                error: "Not Found"
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/speakers/{speakerId}/outreach:
+    post:
+      tags:
+        - Speaker Outreach
+      summary: Record speaker outreach attempt
+      description: |
+        Record a contact attempt with a potential speaker during outreach phase.
+
+        **Story**: 5.3 - Speaker Outreach Tracking
+        **Acceptance Criteria**: AC1-4
+        **Authorization**: Requires ORGANIZER role
+        **Rate Limiting**: Applied at API Gateway level
+
+        **Business Rules**:
+        - Speaker must exist in speaker pool
+        - Speaker must be in IDENTIFIED, CONTACTED, or READY state
+        - Contact method must be email, phone, or in_person
+        - Automatically transitions speaker from IDENTIFIED → CONTACTED on first outreach
+        - Subsequent outreach attempts are logged without status change
+        - Organizer username is captured from authentication context
+
+        **State Transitions**:
+        - IDENTIFIED → CONTACTED (first outreach)
+        - CONTACTED → CONTACTED (additional outreach)
+        - READY → READY (follow-up outreach)
+
+        **Performance**: <200ms (P95)
+
+      operationId: recordSpeakerOutreach
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern56
+        - name: speakerId
+          in: path
+          description: UUID of the speaker in the speaker pool
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 550e8400-e29b-41d4-a716-446655440000
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordOutreachRequest'
+      responses:
+        '201':
+          description: Outreach attempt recorded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutreachHistoryResponse'
+        '400':
+          description: Validation error (e.g., invalid contact method)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Invalid contact method: sms. Must be one of: email, phone, in_person"
+                timestamp: "2025-12-14T10:00:00Z"
+                path: "/api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000/outreach"
+                status: 400
+                error: "Bad Request"
+        '404':
+          description: Speaker or event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Speaker not found: 550e8400-e29b-41d4-a716-446655440000"
+                timestamp: "2025-12-14T10:00:00Z"
+                path: "/api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000/outreach"
+                status: 404
+                error: "Not Found"
+        '409':
+          description: Invalid state transition (speaker not in valid state for outreach)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Cannot record outreach for speaker 550e8400-e29b-41d4-a716-446655440000 in state DECLINED. Speaker must be in IDENTIFIED, CONTACTED, or READY state."
+                timestamp: "2025-12-14T10:00:00Z"
+                path: "/api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000/outreach"
+                status: 409
+                error: "Conflict"
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+    get:
+      tags:
+        - Speaker Outreach
+      summary: Get speaker outreach history
+      description: |
+        Retrieve all outreach attempts for a speaker, ordered by most recent first.
+
+        **Story**: 5.3 - Speaker Outreach Tracking
+        **Acceptance Criteria**: AC6
+        **Authorization**: Requires ORGANIZER role
+        **Rate Limiting**: Applied at API Gateway level
+
+        **Response**:
+        - Returns chronological history of all contact attempts
+        - Includes contact method, date, notes, and organizer
+        - Ordered by contact date descending (most recent first)
+
+        **Performance**: <150ms (P95)
+
+      operationId: getSpeakerOutreachHistory
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern56
+        - name: speakerId
+          in: path
+          description: UUID of the speaker in the speaker pool
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '200':
+          description: Outreach history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OutreachHistoryResponse'
+        '404':
+          description: Speaker or event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Speaker not found: 550e8400-e29b-41d4-a716-446655440000"
+                timestamp: "2025-12-14T10:00:00Z"
+                path: "/api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000/outreach"
                 status: 404
                 error: "Not Found"
         '403':
@@ -3641,6 +3810,101 @@ components:
           format: date-time
           description: Timestamp of last update
           example: 2025-12-13T10:15:00Z
+
+    RecordOutreachRequest:
+      type: object
+      description: |
+        Request to record a speaker outreach attempt.
+        Story 5.3 - AC1-4: Speaker Outreach Tracking
+      required:
+        - contactDate
+        - contactMethod
+      properties:
+        contactDate:
+          type: string
+          format: date-time
+          description: Date and time when contact was made
+          example: 2025-12-14T14:30:00Z
+        contactMethod:
+          type: string
+          enum:
+            - email
+            - phone
+            - in_person
+          description: |
+            Method of contact used to reach the speaker.
+            Valid values: email, phone, in_person
+          example: email
+        notes:
+          type: string
+          maxLength: 5000
+          description: |
+            Free-text notes about the conversation.
+            Organizers record speaker response, next steps, availability, etc.
+          example: |
+            Spoke with Jane about presenting on Kubernetes security.
+            She's interested but needs to check her calendar.
+            Follow up next Tuesday.
+
+    OutreachHistoryResponse:
+      type: object
+      description: |
+        Response representing a speaker outreach attempt.
+        Story 5.3 - AC5-6: Speaker Outreach History
+      required:
+        - id
+        - speakerPoolId
+        - contactDate
+        - contactMethod
+        - organizerUsername
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for this outreach record
+          example: 550e8400-e29b-41d4-a716-446655440000
+        speakerPoolId:
+          type: string
+          format: uuid
+          description: UUID of the speaker in the speaker pool
+          example: 123e4567-e89b-12d3-a456-426614174000
+        contactDate:
+          type: string
+          format: date-time
+          description: Date and time when contact was made
+          example: 2025-12-14T14:30:00Z
+        contactMethod:
+          type: string
+          enum:
+            - email
+            - phone
+            - in_person
+          description: Method of contact used
+          example: email
+        notes:
+          type: string
+          nullable: true
+          description: Notes about the conversation
+          example: |
+            Spoke with Jane about presenting on Kubernetes security.
+            She's interested but needs to check her calendar.
+            Follow up next Tuesday.
+        organizerUsername:
+          type: string
+          description: Username of the organizer who made the contact
+          example: alice.mueller
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when outreach record was created
+          example: 2025-12-14T14:35:00Z
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp of last update
+          example: 2025-12-14T14:35:00Z
 
     TopicResponse:
       type: object
