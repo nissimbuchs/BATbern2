@@ -231,7 +231,8 @@ export default defineConfig({
     reporters: [
       'default', // Console output
       ['junit', { outputFile: 'test-results/junit.xml' }], // JUnit XML for CI/CD and report aggregation
-      ['html', { outputFile: 'test-results/index.html' }], // HTML test report for documentation portal
+      // HTML reporter disabled in CI due to module graph issues (only enabled locally)
+      ...(process.env.CI ? [] : [['html', { outputFile: 'test-results/index.html' }]]),
     ],
     coverage: {
       provider: 'v8',
