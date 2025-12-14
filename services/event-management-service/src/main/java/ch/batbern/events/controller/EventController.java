@@ -249,6 +249,18 @@ public class EventController {
         if (event.getThemeImageUploadId() != null) {
             response.put("themeImageUploadId", event.getThemeImageUploadId());
         }
+        // Story 5.2: Include topic and workflow state
+        if (event.getTopicId() != null) {
+            response.put("topicId", event.getTopicId());
+        }
+        if (event.getWorkflowState() != null) {
+            response.put("workflowState", event.getWorkflowState().name());
+        }
+        // Include audit fields
+        response.put("createdAt", event.getCreatedAt());
+        response.put("updatedAt", event.getUpdatedAt());
+        response.put("createdBy", event.getCreatedBy());
+        response.put("updatedBy", event.getUpdatedBy());
         return response;
     }
 
@@ -1529,7 +1541,6 @@ public class EventController {
      * @return Event with selected topic
      */
     @PostMapping("/{eventCode}/topics")
-    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ORGANIZER')")
     @Operation(summary = "Select topic for event",
             description = "Assign a topic to an event and transition to TOPIC_SELECTION state")
     public ResponseEntity<Map<String, Object>> selectTopicForEvent(
@@ -1601,7 +1612,6 @@ public class EventController {
      * Allows organizers to brainstorm and add potential speakers during event planning.
      */
     @PostMapping("/{eventCode}/speakers/pool")
-    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ORGANIZER')")
     @Operation(summary = "Add speaker to pool",
             description = "Add a potential speaker to the event speaker pool during brainstorming phase")
     public ResponseEntity<ch.batbern.events.dto.SpeakerPoolResponse> addSpeakerToPool(

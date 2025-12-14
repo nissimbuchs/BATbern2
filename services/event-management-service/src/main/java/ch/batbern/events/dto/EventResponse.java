@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.Instant;
+import java.util.UUID;
 
 /**
  * Event Response DTO
@@ -38,6 +39,8 @@ public class EventResponse {
     private String themeImageUrl;
     private String themeImageUploadId;
     private String eventType;
+    private UUID topicId;
+    private String workflowState;
 
     /**
      * Convert Event entity to EventResponse DTO
@@ -65,6 +68,8 @@ public class EventResponse {
                 .themeImageUrl(event.getThemeImageUrl())
                 .themeImageUploadId(event.getThemeImageUploadId())
                 .eventType(event.getEventType() != null ? event.getEventType().getValue() : null)
+                .topicId(event.getTopicId())
+                .workflowState(event.getWorkflowState() != null ? event.getWorkflowState().name() : null)
                 .build();
     }
 }

@@ -6,13 +6,13 @@
  * - Task 9: EventForm (create/edit with auto-save)
  * - Task 10: Workflow & Metrics
  * - Task 11: VenueLogistics
- * - Task 12: TopicsList
+ * - Task 12: Topic display (moved to Event Information card)
  * - Task 13: SpeakersSessionsTable
  *
  * Wireframe: docs/wireframes/story-1.16-event-detail-edit.md v1.1
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -39,11 +39,12 @@ import { useEvent } from '@/hooks/useEvents';
 import {
   EventForm,
   VenueLogistics,
-  TopicsList,
   SpeakersSessionsTable,
   WorkflowProgressBar,
 } from '@/components/organizer/EventManagement';
-import type { SessionUI, SessionSpeaker, Topic, WorkflowStep } from '@/types/event.types';
+import type { SessionUI, SessionSpeaker, WorkflowStep } from '@/types/event.types';
+import { topicService } from '@/services/topicService';
+import type { TopicResponse } from '@/types/generated/events-api.types';
 
 const EventDetailEdit: React.FC = () => {
   const { eventCode } = useParams<{ eventCode: string }>();
@@ -53,12 +54,37 @@ const EventDetailEdit: React.FC = () => {
   // State for edit mode
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
 
+  // State for topic details
+  const [topic, setTopic] = useState<TopicResponse | null>(null);
+  const [topicLoading, setTopicLoading] = useState(false);
+
   // Fetch event data with resource expansion
   const {
     data: event,
     isLoading,
     error,
   } = useEvent(eventCode, ['venue', 'topics', 'sessions', 'team', 'workflow', 'metrics']);
+
+  // Fetch topic details when topicId changes
+  useEffect(() => {
+    if (event?.topicId) {
+      setTopicLoading(true);
+      topicService
+        .getTopicById(event.topicId)
+        .then((topicData) => {
+          setTopic(topicData);
+        })
+        .catch((err) => {
+          console.error('Failed to fetch topic:', err);
+          setTopic(null);
+        })
+        .finally(() => {
+          setTopicLoading(false);
+        });
+    } else {
+      setTopic(null);
+    }
+  }, [event?.topicId]);
 
   const handleBack = () => {
     navigate('/organizer/events');
@@ -83,17 +109,6 @@ const EventDetailEdit: React.FC = () => {
   const handleVenueUpdate = async (_updates: Partial<typeof event>) => {
     // TODO: Implement venue update API call
     // This would typically call useUpdateEvent mutation
-  };
-
-  // Topics handlers
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleViewTopic = (_topicId: string) => {
-    // TODO: Implement topic details modal
-  };
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleRemoveTopic = (_eventCode: string, _topicId: string) => {
-    // TODO: Implement topic removal API call
   };
 
   // Speakers & Sessions handlers
@@ -122,6 +137,10 @@ const EventDetailEdit: React.FC = () => {
 
   const handleManageSpeakerOutreach = (eventCode: string) => {
     navigate(`/organizer/events/${eventCode}/speakers/outreach`);
+  };
+
+  const handleSelectTopic = (eventCode: string) => {
+    navigate(`/organizer/topics?eventCode=${eventCode}`);
   };
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -174,10 +193,6 @@ const EventDetailEdit: React.FC = () => {
       </Box>
     );
   }
-
-  // Use real data from event or fallback to empty arrays
-  // Note: topics is string[] in Phase 2, will be Topic[] when backend implements it
-  const topics: Topic[] = [];
 
   // Transform API sessions to SessionUI format for the component
   const sessions: SessionUI[] = (event.sessions || []).map((session, index) => {
@@ -317,6 +332,45 @@ const EventDetailEdit: React.FC = () => {
                   : '-'}
               </Typography>
             </Grid>
+
+            <Grid size={{ xs: 12 }}>
+              <Typography variant="subtitle2" color="text.secondary">
+                {t('form.topic', 'Topic')}
+              </Typography>
+              {event.topicId ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  {topicLoading ? (
+                    <CircularProgress size={20} />
+                  ) : topic ? (
+                    <Typography variant="body1">{topic.title}</Typography>
+                  ) : (
+                    <Typography variant="body1" color="text.secondary">
+                      {t('topics.loadingError', 'Error loading topic')}
+                    </Typography>
+                  )}
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => handleSelectTopic(eventCode!)}
+                  >
+                    {t('topics.change', 'Change Topic')}
+                  </Button>
+                </Box>
+              ) : (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="body1" color="text.secondary">
+                    {t('topics.noTopic', 'No topic selected')}
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={() => handleSelectTopic(eventCode!)}
+                  >
+                    {t('topics.addFromBacklog', 'Add Topic from Backlog')}
+                  </Button>
+                </Box>
+              )}
+            </Grid>
           </Grid>
 
           <Button variant="outlined" size="small" sx={{ mt: 2 }} onClick={handleEditEvent}>
@@ -368,6 +422,16 @@ const EventDetailEdit: React.FC = () => {
               <Button variant="text" size="small" sx={{ mt: 2 }}>
                 {t('workflow.viewDetails', 'View Workflow Details')}
               </Button>
+              {(event.workflowState === 'CREATED' || event.workflowState === 'TOPIC_SELECTION') && (
+                <Button
+                  variant="outlined"
+                  size="small"
+                  sx={{ mt: 2, ml: 1 }}
+                  onClick={() => handleSelectTopic(eventCode!)}
+                >
+                  {t('workflow.actions.selectTopic', 'Select Topic')}
+                </Button>
+              )}
             </Paper>
           </Grid>
 
@@ -405,16 +469,6 @@ const EventDetailEdit: React.FC = () => {
 
         {/* VENUE & LOGISTICS - Task 11 */}
         <VenueLogistics event={event} onUpdate={handleVenueUpdate} />
-
-        {/* ASSIGNED TOPICS - Task 12 */}
-        <Paper sx={{ p: 3 }}>
-          <TopicsList
-            topics={topics}
-            eventCode={eventCode!}
-            onViewTopic={handleViewTopic}
-            onRemoveTopic={handleRemoveTopic}
-          />
-        </Paper>
 
         {/* SPEAKERS & SESSIONS - Task 13 */}
         <Paper sx={{ p: 3 }}>

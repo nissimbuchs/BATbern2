@@ -86,6 +86,11 @@ public class SecurityConfig {
                 // Note: Actual JWT validation happens at API Gateway layer
                 // Services trust requests from API Gateway (VPC-internal communication)
                 .anyRequest().permitAll()
+            )
+            // Configure OAuth2 resource server to parse JWT tokens
+            // Required even in local mode for SecurityContextHelper to extract user context
+            .oauth2ResourceServer(oauth2 -> oauth2
+                .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
             );
 
         return http.build();

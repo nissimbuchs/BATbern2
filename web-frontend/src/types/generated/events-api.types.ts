@@ -1200,6 +1200,13 @@ export interface components {
        */
       themeImageUploadId?: string | null;
       /**
+       * Format: uuid
+       * @description UUID of the selected topic for this event.
+       *     Story 5.2: Topic Selection & Speaker Brainstorming
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      topicId?: string | null;
+      /**
        * @description Event type (FULL_DAY, AFTERNOON, EVENING).
        *     Story 5.1: Event Type Definition
        */
