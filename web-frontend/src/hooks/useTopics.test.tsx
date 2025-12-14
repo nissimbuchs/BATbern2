@@ -373,11 +373,10 @@ describe('useTopics hooks', () => {
     it('should invalidate topic lists cache after creation', async () => {
       vi.mocked(topicService.createTopic).mockResolvedValue(mockCreatedTopic);
 
+      const wrapper = createWrapper();
       const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
-      const { result } = renderHook(() => useCreateTopic(), {
-        wrapper: createWrapper(),
-      });
+      const { result } = renderHook(() => useCreateTopic(), { wrapper });
 
       const request: CreateTopicRequest = {
         title: 'New Topic',
@@ -450,11 +449,10 @@ describe('useTopics hooks', () => {
     it('should invalidate topic detail and lists cache after override', async () => {
       vi.mocked(topicService.overrideStaleness).mockResolvedValue(mockUpdatedTopic);
 
+      const wrapper = createWrapper();
       const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
-      const { result } = renderHook(() => useOverrideStaleness(), {
-        wrapper: createWrapper(),
-      });
+      const { result } = renderHook(() => useOverrideStaleness(), { wrapper });
 
       const request: OverrideStalenesRequest = {
         stalenessScore: 50,
@@ -531,11 +529,10 @@ describe('useTopics hooks', () => {
     it('should invalidate event and topic caches after selection', async () => {
       vi.mocked(topicService.selectTopicForEvent).mockResolvedValue();
 
+      const wrapper = createWrapper();
       const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
-      const { result } = renderHook(() => useSelectTopicForEvent(), {
-        wrapper: createWrapper(),
-      });
+      const { result } = renderHook(() => useSelectTopicForEvent(), { wrapper });
 
       const request: SelectTopicForEventRequest = {
         topicId: 'topic-123',

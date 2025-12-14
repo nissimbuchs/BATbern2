@@ -61,7 +61,7 @@ describe('EventCard Component', () => {
     eventDate: '2025-03-15T18:00:00Z',
     eventType: 'full_day',
     status: 'active',
-    workflowState: 'speaker_research',
+    workflowState: 'QUALITY_REVIEW', // Step 7 of 16 = 44% progress
     registrationDeadline: '2025-03-08T23:59:59Z',
     capacity: 200,
     currentAttendeeCount: 50,
@@ -136,7 +136,7 @@ describe('EventCard Component', () => {
     });
 
     it('should_colorProgressBar_when_progressBelow30', () => {
-      const earlyEvent = { ...mockEvent, workflowState: 'topic_selection' as const };
+      const earlyEvent = { ...mockEvent, workflowState: 'TOPIC_SELECTION' as const }; // Step 2 = 13%
       render(<EventCard event={earlyEvent} />, { wrapper: createWrapper() });
 
       const progressBar = screen.getByRole('progressbar');
@@ -144,7 +144,7 @@ describe('EventCard Component', () => {
     });
 
     it('should_colorProgressBar_when_progressAbove70', () => {
-      const advancedEvent = { ...mockEvent, workflowState: 'event_execution' as const };
+      const advancedEvent = { ...mockEvent, workflowState: 'NEWSLETTER_SENT' as const }; // Step 13 = 81%
       render(<EventCard event={advancedEvent} />, { wrapper: createWrapper() });
 
       const progressBar = screen.getByRole('progressbar');
@@ -163,8 +163,11 @@ describe('EventCard Component', () => {
     it('should_displayWorkflowStepName_when_rendered', () => {
       render(<EventCard event={mockEvent} />, { wrapper: createWrapper() });
 
-      // Should display workflow state name (e.g., "Speaker Research")
-      expect(screen.getByText(/speaker research/i)).toBeInTheDocument();
+      // Should display workflow state name (e.g., "QUALITY_REVIEW")
+      // The i18n key is workflow.states.quality_review
+      // Using getAllByText since it may appear in multiple places
+      const elements = screen.getAllByText(/quality.?review/i);
+      expect(elements.length).toBeGreaterThan(0);
     });
 
     it('should_updateStep_when_differentWorkflowState', () => {
@@ -172,7 +175,7 @@ describe('EventCard Component', () => {
 
       expect(screen.getByText(/step.*7.*16/i)).toBeInTheDocument();
 
-      const updatedEvent = { ...mockEvent, workflowState: 'venue_booking' as const };
+      const updatedEvent = { ...mockEvent, workflowState: 'SPEAKER_BRAINSTORMING' as const }; // Step 3
       rerender(<EventCard event={updatedEvent} />);
 
       expect(screen.getByText(/step.*3.*16/i)).toBeInTheDocument();
@@ -338,8 +341,8 @@ describe('EventCard Component', () => {
     it('should_translateWorkflowState_when_rendered', () => {
       render(<EventCard event={mockEvent} />, { wrapper: createWrapper() });
 
-      // Workflow state should be translated
-      expect(screen.getByText(/speaker research/i)).toBeInTheDocument();
+      // Workflow state should be translated (QUALITY_REVIEW)
+      expect(screen.getAllByText(/quality.?review/i).length).toBeGreaterThan(0);
     });
 
     it('should_translateEventType_when_rendered', () => {

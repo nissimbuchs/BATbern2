@@ -312,11 +312,10 @@ describe('useSpeakerPool hooks', () => {
     it('should invalidate speaker pool cache after adding speaker', async () => {
       vi.mocked(speakerPoolService.addSpeakerToPool).mockResolvedValue(mockResponse);
 
+      const wrapper = createWrapper();
       const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
-      const { result } = renderHook(() => useAddSpeakerToPool(), {
-        wrapper: createWrapper(),
-      });
+      const { result } = renderHook(() => useAddSpeakerToPool(), { wrapper });
 
       const request: AddSpeakerToPoolRequest = {
         speakerName: 'New Speaker',
