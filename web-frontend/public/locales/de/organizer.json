@@ -8,8 +8,27 @@
     "noTopics": "Keine Themen gefunden, die Ihren Filtern entsprechen",
     "lastUsed": "Zuletzt verwendet",
     "usageCount": "{{count}}-mal verwendet",
+    "createNew": "Neues Thema erstellen",
     "error": {
       "loadFailed": "Fehler beim Laden der Themen"
+    },
+    "createModal": {
+      "title": "Neues Thema erstellen",
+      "fields": {
+        "title": "Titel",
+        "description": "Beschreibung",
+        "category": "Kategorie",
+        "categoryHint": "z.B. technisch, business, design"
+      },
+      "errors": {
+        "titleRequired": "Titel ist erforderlich",
+        "titleTooLong": "Titel muss 255 Zeichen oder weniger sein",
+        "descriptionRequired": "Beschreibung ist erforderlich",
+        "categoryRequired": "Kategorie ist erforderlich",
+        "createFailed": "Fehler beim Erstellen des Themas. Bitte versuchen Sie es erneut."
+      },
+      "create": "Thema erstellen",
+      "creating": "Wird erstellt..."
     },
     "filters": {
       "title": "Filter",
@@ -20,10 +39,10 @@
       "allStatuses": "Alle Status",
       "categories": {
         "technical": "Technisch",
-        "business": "Business",
-        "architecture": "Architektur",
-        "cloudNative": "Cloud Native",
-        "security": "Sicherheit"
+        "management": "Management",
+        "softSkills": "Soft Skills",
+        "industryTrends": "Branchentrends",
+        "toolsPlatforms": "Tools & Plattformen"
       },
       "statuses": {
         "available": "Verfügbar (Grün)",
@@ -104,6 +123,10 @@
       "assigned": "Zugewiesen an",
       "notes": "Notizen",
       "error": "Fehler beim Laden des Referenten-Pools"
+    },
+    "actions": {
+      "skipForNow": "Vorerst überspringen",
+      "continue": "Weiter zur Kontaktierung"
     }
   },
   "speakerOutreach": {

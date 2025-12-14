@@ -36,11 +36,13 @@ import type { AddSpeakerToPoolRequest } from '@/types/speakerPool.types';
 export interface SpeakerBrainstormingPanelProps {
   eventCode: string;
   organizers?: Array<{ id: string; name: string }>; // List of available organizers
+  onContinue?: () => void; // Callback when workflow should continue
 }
 
 export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps> = ({
   eventCode,
   organizers = [],
+  onContinue,
 }) => {
   const { t } = useTranslation('organizer');
 
@@ -275,6 +277,22 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
             </ListItem>
           ))}
         </List>
+      )}
+
+      {/* Action Buttons */}
+      {onContinue && (
+        <Box sx={{ mt: 3, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+          <Button variant="outlined" onClick={() => onContinue()}>
+            {t('speakerBrainstorm.actions.skipForNow', 'Skip for Now')}
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => onContinue()}
+            disabled={!speakerPool || speakerPool.length === 0}
+          >
+            {t('speakerBrainstorm.actions.continue', 'Continue to Outreach')}
+          </Button>
+        </Box>
       )}
     </Paper>
   );

@@ -77,7 +77,8 @@ export const TopicsList: React.FC<TopicsListProps> = ({
   };
 
   const handleAddTopic = () => {
-    navigate(`/organizer/events/${eventCode}/topics/backlog`);
+    console.log('[TopicsList] handleAddTopic clicked', { eventCode });
+    navigate(`/organizer/topics?eventCode=${eventCode}`);
   };
 
   const formatLastUsed = (topic: Topic): string => {

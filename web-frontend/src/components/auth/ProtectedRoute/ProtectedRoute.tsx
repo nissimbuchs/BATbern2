@@ -19,6 +19,14 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { isAuthenticated, isLoading, user, canAccess } = useAuth();
   const location = useLocation();
 
+  console.log('[ProtectedRoute]', {
+    pathname: location.pathname,
+    isAuthenticated,
+    isLoading,
+    userRole: user?.role,
+    allowedRoles,
+  });
+
   // Show loading spinner while checking authentication
   if (isLoading) {
     return (
@@ -68,7 +76,14 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     }
 
     // Check path-based access control
-    if (!canAccess(location.pathname)) {
+    const hasAccess = canAccess(location.pathname);
+    console.log('[ProtectedRoute] Access check', {
+      pathname: location.pathname,
+      hasAccess,
+      userRole: user.role,
+    });
+    if (!hasAccess) {
+      console.warn('[ProtectedRoute] Access denied, redirecting to /dashboard');
       // Redirect to dashboard instead of showing error
       return <Navigate to="/dashboard" replace />;
     }

@@ -26,8 +26,14 @@ import {
   Box,
   Stack,
 } from '@mui/material';
-import { Edit as EditIcon, Event as EventIcon, People as PeopleIcon } from '@mui/icons-material';
+import {
+  Edit as EditIcon,
+  Event as EventIcon,
+  People as PeopleIcon,
+  Topic as TopicIcon,
+} from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
 import type { Event, EventUI } from '@/types/event.types';
@@ -101,6 +107,7 @@ const getStatusColor = (
 
 export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick }) => {
   const { t, i18n } = useTranslation('events');
+  const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
 
   const eventUI = event as EventUI;
@@ -121,6 +128,18 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
     e.preventDefault();
     e.stopPropagation();
     onEdit?.(event.eventCode);
+  };
+
+  const handleSelectTopic = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const targetUrl = `/organizer/topics?eventCode=${event.eventCode}`;
+    console.log('[EventCard] handleSelectTopic called', {
+      eventCode: event.eventCode,
+      targetUrl,
+      event: event.title,
+    });
+    navigate(targetUrl);
   };
 
   const handleCardClick = () => {
@@ -232,14 +251,26 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
       {/* Quick Actions */}
       <CardActions sx={{ justifyContent: 'flex-end', px: 2, pb: 2 }}>
         {isHovered && (
-          <IconButton
-            size="small"
-            onClick={handleEdit}
-            aria-label={`Edit ${event.title}`}
-            color="primary"
-          >
-            <EditIcon />
-          </IconButton>
+          <>
+            {(workflowState === 'CREATED' || workflowState === 'TOPIC_SELECTION') && (
+              <IconButton
+                size="small"
+                onClick={handleSelectTopic}
+                aria-label={`Select topic for ${event.title}`}
+                color="primary"
+              >
+                <TopicIcon />
+              </IconButton>
+            )}
+            <IconButton
+              size="small"
+              onClick={handleEdit}
+              aria-label={`Edit ${event.title}`}
+              color="primary"
+            >
+              <EditIcon />
+            </IconButton>
+          </>
         )}
       </CardActions>
     </Card>

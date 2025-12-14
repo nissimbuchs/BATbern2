@@ -53,6 +53,7 @@
       "viewDetails": "Details anzeigen",
       "edit": "Bearbeiten",
       "newEvent": "Neue Veranstaltung",
+      "topics": "Themenauswahl",
       "eventTypes": "Veranstaltungstypen",
       "eventTypesHelp": "Veranstaltungstyp-Vorlagen konfigurieren (Admin)",
       "analytics": "Analytics",
@@ -260,7 +261,13 @@
     "inProgress": "In Arbeit",
     "pending": "Ausstehend",
     "blocked": "Blockiert",
-    "progressBarLabel": "Klicken Sie hier, um Workflow-Details anzuzeigen. {{percentage}}% abgeschlossen"
+    "progressBarLabel": "Klicken Sie hier, um Workflow-Details anzuzeigen. {{percentage}}% abgeschlossen",
+    "actions": {
+      "selectTopic": "Thema auswählen"
+    }
+  },
+  "topicSelection": {
+    "success": "Thema erfolgreich ausgewählt"
   },
   "autoSave": {
     "saving": "Speichern...",

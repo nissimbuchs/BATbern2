@@ -8,8 +8,27 @@
     "noTopics": "No topics found matching your filters",
     "lastUsed": "Last used",
     "usageCount": "Used {{count}} times",
+    "createNew": "Create New Topic",
     "error": {
       "loadFailed": "Failed to load topics"
+    },
+    "createModal": {
+      "title": "Create New Topic",
+      "fields": {
+        "title": "Title",
+        "description": "Description",
+        "category": "Category",
+        "categoryHint": "e.g., technical, business, design"
+      },
+      "errors": {
+        "titleRequired": "Title is required",
+        "titleTooLong": "Title must be 255 characters or less",
+        "descriptionRequired": "Description is required",
+        "categoryRequired": "Category is required",
+        "createFailed": "Failed to create topic. Please try again."
+      },
+      "create": "Create Topic",
+      "creating": "Creating..."
     },
     "filters": {
       "title": "Filters",
@@ -20,10 +39,10 @@
       "allStatuses": "All Statuses",
       "categories": {
         "technical": "Technical",
-        "business": "Business",
-        "architecture": "Architecture",
-        "cloudNative": "Cloud Native",
-        "security": "Security"
+        "management": "Management",
+        "softSkills": "Soft Skills",
+        "industryTrends": "Industry Trends",
+        "toolsPlatforms": "Tools & Platforms"
       },
       "statuses": {
         "available": "Available (Green)",
@@ -104,6 +123,10 @@
       "assigned": "Assigned to",
       "notes": "Notes",
       "error": "Failed to load speaker pool"
+    },
+    "actions": {
+      "skipForNow": "Skip for Now",
+      "continue": "Continue to Outreach"
     }
   },
   "speakerOutreach": {

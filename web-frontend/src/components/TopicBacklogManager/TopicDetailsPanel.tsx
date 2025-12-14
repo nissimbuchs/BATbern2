@@ -109,16 +109,23 @@ export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
 
   const confirmTopicSelection = () => {
     if (eventCode) {
-      selectTopicMutation.mutate({
-        eventCode,
-        request: {
-          topicId: topic.id,
-          justification: justification || undefined,
+      selectTopicMutation.mutate(
+        {
+          eventCode,
+          request: {
+            topicId: topic.id,
+            justification: justification || undefined,
+          },
         },
-      });
-    }
-    if (onTopicConfirm) {
-      onTopicConfirm(topic.id);
+        {
+          onSuccess: () => {
+            // Call parent callback to show speaker brainstorming panel
+            if (onTopicConfirm) {
+              onTopicConfirm(topic.id);
+            }
+          },
+        }
+      );
     }
     setShowSimilarDialog(false);
   };

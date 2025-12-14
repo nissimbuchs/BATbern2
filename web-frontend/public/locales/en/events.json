@@ -53,6 +53,7 @@
       "viewDetails": "View Details",
       "edit": "Edit",
       "newEvent": "New Event",
+      "topics": "Topic Selection",
       "eventTypes": "Event Types",
       "eventTypesHelp": "Configure event type templates (Admin)",
       "analytics": "Analytics",
@@ -270,7 +271,13 @@
     "inProgress": "In Progress",
     "pending": "Pending",
     "blocked": "Blocked",
-    "progressBarLabel": "Click to view workflow details. {{percentage}}% complete"
+    "progressBarLabel": "Click to view workflow details. {{percentage}}% complete",
+    "actions": {
+      "selectTopic": "Select Topic"
+    }
+  },
+  "topicSelection": {
+    "success": "Topic selected successfully"
   },
   "autoSave": {
     "saving": "Saving...",

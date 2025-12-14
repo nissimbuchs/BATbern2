@@ -53,8 +53,24 @@ const OutreachHistoryTimeline: React.FC<OutreachHistoryTimelineProps> = ({
     }
   };
 
-  // Get color for contact method
-  const getContactMethodColor = (method: ContactMethod) => {
+  // Get color for TimelineDot (supports 'grey' but not 'default')
+  const getTimelineDotColor = (
+    method: ContactMethod
+  ): 'primary' | 'secondary' | 'success' | 'grey' => {
+    switch (method) {
+      case 'email':
+        return 'primary';
+      case 'phone':
+        return 'secondary';
+      case 'in_person':
+        return 'success';
+      default:
+        return 'grey';
+    }
+  };
+
+  // Get color for Chip (supports 'default' but not 'grey')
+  const getChipColor = (method: ContactMethod): 'primary' | 'secondary' | 'success' | 'default' => {
     switch (method) {
       case 'email':
         return 'primary';
@@ -108,7 +124,7 @@ const OutreachHistoryTimeline: React.FC<OutreachHistoryTimelineProps> = ({
             </TimelineOppositeContent>
 
             <TimelineSeparator>
-              <TimelineDot color={getContactMethodColor(item.contactMethod)}>
+              <TimelineDot color={getTimelineDotColor(item.contactMethod)}>
                 {getContactMethodIcon(item.contactMethod)}
               </TimelineDot>
               {index < history.length - 1 && <TimelineConnector />}
@@ -122,7 +138,7 @@ const OutreachHistoryTimeline: React.FC<OutreachHistoryTimelineProps> = ({
                       `speakerOutreach.markContactedModal.method.${item.contactMethod === 'in_person' ? 'inPerson' : item.contactMethod}`
                     )}
                     size="small"
-                    color={getContactMethodColor(item.contactMethod)}
+                    color={getChipColor(item.contactMethod)}
                   />
                   <Typography variant="caption" color="text.secondary">
                     by {item.organizerUsername}

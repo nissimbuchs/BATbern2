@@ -10,12 +10,25 @@
  */
 
 import React, { useState } from 'react';
-import { Container, Grid, Paper, Typography, Box, CircularProgress, Alert } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import {
+  Container,
+  Grid,
+  Paper,
+  Typography,
+  Box,
+  CircularProgress,
+  Alert,
+  Button,
+} from '@mui/material';
+import { Add as AddIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useTopics } from '@/hooks/useTopics';
 import { TopicFilterPanel } from './TopicFilterPanel';
 import { TopicList } from './TopicList';
 import { TopicDetailsPanel } from './TopicDetailsPanel';
+import { CreateTopicModal } from './CreateTopicModal';
+import { SpeakerBrainstormingPanel } from '@/components/SpeakerBrainstormingPanel/SpeakerBrainstormingPanel';
 import type { Topic, TopicFilters } from '@/types/topic.types';
 
 export interface TopicBacklogManagerProps {
@@ -28,12 +41,15 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
   onTopicSelected,
 }) => {
   const { t } = useTranslation('organizer');
+  const navigate = useNavigate();
   const [filters, setFilters] = useState<TopicFilters>({
     page: 1,
     limit: 20,
     sort: '-stalenessScore', // Default: sort by staleness descending (safest first)
   });
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
+  const [topicConfirmed, setTopicConfirmed] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
 
   // Fetch topics with current filters
   const { data, isLoading, isError, error } = useTopics(filters);
@@ -50,28 +66,52 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
     if (onTopicSelected) {
       onTopicSelected(topicId);
     }
+    setTopicConfirmed(true); // Show speaker brainstorming panel
+  };
+
+  const handleSpeakerBrainstormComplete = () => {
+    // Navigate back to event details if eventCode exists, otherwise to events dashboard
+    if (eventCode) {
+      navigate(`/organizer/events/${eventCode}`);
+    } else {
+      navigate('/organizer/events');
+    }
   };
 
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        {t('topicBacklog.title', 'Topic Backlog Manager')}
-      </Typography>
-      <Typography variant="body1" color="text.secondary" paragraph>
-        {t(
-          'topicBacklog.subtitle',
-          'Select topics from the backlog with intelligent suggestions and staleness detection'
-        )}
-      </Typography>
+      <Box
+        sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}
+      >
+        <Box>
+          <Typography variant="h4" gutterBottom>
+            {t('topicBacklog.title', 'Topic Backlog Manager')}
+          </Typography>
+          <Typography variant="body1" color="text.secondary" paragraph>
+            {t(
+              'topicBacklog.subtitle',
+              'Select topics from the backlog with intelligent suggestions and staleness detection'
+            )}
+          </Typography>
+        </Box>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => setCreateModalOpen(true)}
+          sx={{ mt: 1 }}
+        >
+          {t('topicBacklog.createNew', 'Create New Topic')}
+        </Button>
+      </Box>
 
       <Grid container spacing={3}>
-        {/* Left Panel: Filters */}
-        <Grid size={{ xs: 12, md: 3 }}>
+        {/* Left Panel: Filters (3 cols → 2 cols when speaker panel visible) */}
+        <Grid size={{ xs: 12, md: eventCode && topicConfirmed ? 2 : 3 }}>
           <TopicFilterPanel filters={filters} onFilterChange={handleFilterChange} />
         </Grid>
 
-        {/* Center Panel: Topic List */}
-        <Grid size={{ xs: 12, md: 5 }}>
+        {/* Center Panel: Topic List (5 cols → 4 cols when speaker panel visible) */}
+        <Grid size={{ xs: 12, md: eventCode && topicConfirmed ? 4 : 5 }}>
           <Paper sx={{ p: 2, height: '70vh', overflow: 'auto' }}>
             {isLoading && (
               <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
@@ -97,8 +137,8 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
           </Paper>
         </Grid>
 
-        {/* Right Panel: Topic Details */}
-        <Grid size={{ xs: 12, md: 4 }}>
+        {/* Right Panel: Topic Details (4 cols → 3 cols when speaker panel visible) */}
+        <Grid size={{ xs: 12, md: eventCode && topicConfirmed ? 3 : 4 }}>
           {selectedTopic ? (
             <TopicDetailsPanel
               topic={selectedTopic}
@@ -113,7 +153,27 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
             </Paper>
           )}
         </Grid>
+
+        {/* NEW: Speaker Brainstorming Panel (3 cols, only shown when topic confirmed) */}
+        {eventCode && topicConfirmed && selectedTopic && (
+          <Grid size={{ xs: 12, md: 3 }}>
+            <SpeakerBrainstormingPanel
+              eventCode={eventCode}
+              organizers={[]} // Can fetch from event details if needed
+              onContinue={handleSpeakerBrainstormComplete}
+            />
+          </Grid>
+        )}
       </Grid>
+
+      {/* Create Topic Modal */}
+      <CreateTopicModal
+        open={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        onSuccess={() => {
+          // Topics list will auto-refresh via query invalidation
+        }}
+      />
     </Container>
   );
 };

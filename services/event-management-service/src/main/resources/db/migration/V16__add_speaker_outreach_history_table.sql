@@ -9,7 +9,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- Speaker outreach history table (tracks all contact attempts)
 -- Note: Table lives in event-management-service DB (colocated with speaker_pool from Story 5.2)
 -- Accessed by speaker-coordination-service via service layer for domain separation
-CREATE TABLE speaker_outreach_history (
+CREATE TABLE IF NOT EXISTS speaker_outreach_history (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     speaker_pool_id UUID NOT NULL,
     contact_date TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -30,9 +30,9 @@ CREATE TABLE speaker_outreach_history (
 );
 
 -- Indexes for speaker_outreach_history table (performance optimization)
-CREATE INDEX idx_speaker_outreach_history_speaker_pool_id ON speaker_outreach_history(speaker_pool_id);
-CREATE INDEX idx_speaker_outreach_history_contact_date ON speaker_outreach_history(contact_date DESC);
-CREATE INDEX idx_speaker_outreach_history_organizer ON speaker_outreach_history(organizer_username);
+CREATE INDEX IF NOT EXISTS idx_speaker_outreach_history_speaker_pool_id ON speaker_outreach_history(speaker_pool_id);
+CREATE INDEX IF NOT EXISTS idx_speaker_outreach_history_contact_date ON speaker_outreach_history(contact_date DESC);
+CREATE INDEX IF NOT EXISTS idx_speaker_outreach_history_organizer ON speaker_outreach_history(organizer_username);
 
 -- Trigger for automatic updated_at timestamp
 DROP TRIGGER IF EXISTS update_speaker_outreach_history_updated_at ON speaker_outreach_history;

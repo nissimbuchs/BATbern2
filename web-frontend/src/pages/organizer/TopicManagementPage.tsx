@@ -22,6 +22,12 @@ const TopicManagementPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const eventCode = searchParams.get('eventCode');
 
+  console.log('[TopicManagementPage] Rendering', {
+    eventCode,
+    searchParamsKeys: Array.from(searchParams.keys()),
+    fullUrl: window.location.href,
+  });
+
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       <Box sx={{ mb: 4 }}>
