@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -38,24 +39,26 @@ public interface EventRepository extends JpaRepository<Event, UUID>, JpaSpecific
     boolean existsByEventCode(String eventCode);
 
     /**
-     * Find the first published event ordered by date ascending
+     * Find the first event with given workflow state ordered by date ascending
      * Used for getting the current/next upcoming event for the public website
      * Story 4.1.3: Public event landing page
+     * V17 Migration: Changed from status to workflowState
      *
-     * @param status The event status (e.g., "published")
-     * @return Optional containing the next published event if found
+     * @param workflowState The event workflow state (e.g., AGENDA_PUBLISHED)
+     * @return Optional containing the next event with this workflow state if found
      */
-    Optional<Event> findFirstByStatusOrderByDateAsc(String status);
+    Optional<Event> findFirstByWorkflowStateOrderByDateAsc(ch.batbern.shared.types.EventWorkflowState workflowState);
 
     /**
-     * Find the first event matching any of the given statuses, ordered by date ascending
+     * Find the first event matching any of the given workflow states, ordered by date ascending
      * Used for getting the current/next upcoming event for the public website
-     * Includes multiple statuses: published, registration_open, registration_closed
+     * V17 Migration: Changed from statuses to workflowStates
      *
-     * @param statuses List of event statuses to match
-     * @return Optional containing the next event matching any status if found
+     * @param workflowStates List of workflow states to match
+     * @return Optional containing the next event matching any workflow state if found
      */
-    Optional<Event> findFirstByStatusInOrderByDateAsc(java.util.List<String> statuses);
+    Optional<Event> findFirstByWorkflowStateInOrderByDateAsc(
+            List<ch.batbern.shared.types.EventWorkflowState> workflowStates);
 
     /**
      * Find an event by its event number

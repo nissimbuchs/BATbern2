@@ -37,6 +37,9 @@ public class SecurityContextHelper {
             // In test environment with @WithMockUser, use username as user ID
             User user = (User) authentication.getPrincipal();
             return user.getUsername();
+        } else if (authentication.getPrincipal() instanceof String) {
+            // Fallback for simple test authentication with String principal
+            return (String) authentication.getPrincipal();
         } else {
             log.error("Unsupported principal type: {}", authentication.getPrincipal().getClass());
             throw new SecurityException("Unsupported authentication principal type");
@@ -58,6 +61,9 @@ public class SecurityContextHelper {
             // In test environment with @WithMockUser, use username as email
             User user = (User) authentication.getPrincipal();
             return user.getUsername();
+        } else if (authentication.getPrincipal() instanceof String) {
+            // Fallback for simple test authentication with String principal
+            return (String) authentication.getPrincipal();
         } else {
             log.error("Unsupported principal type: {}", authentication.getPrincipal().getClass());
             throw new SecurityException("Unsupported authentication principal type");
@@ -91,6 +97,13 @@ public class SecurityContextHelper {
         } else if (authentication.getPrincipal() instanceof User) {
             // In test environment with @WithMockUser, extract roles from authorities
             // @WithMockUser(roles = {"ORGANIZER"}) creates authority "ROLE_ORGANIZER"
+            return authentication.getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .map(auth -> auth.startsWith("ROLE_") ? auth.substring(5) : auth)
+                    .collect(Collectors.toList());
+        } else if (authentication.getPrincipal() instanceof String) {
+            // Fallback for simple test authentication with String principal
+            // Return empty roles list (test can set authorities directly if roles are needed)
             return authentication.getAuthorities().stream()
                     .map(GrantedAuthority::getAuthority)
                     .map(auth -> auth.startsWith("ROLE_") ? auth.substring(5) : auth)

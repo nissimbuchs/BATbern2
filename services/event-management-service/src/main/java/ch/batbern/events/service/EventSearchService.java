@@ -215,40 +215,53 @@ public class EventSearchService {
         }
 
         return (root, query, criteriaBuilder) -> {
+            // Convert value to enum if the field is an enum type
+            Object convertedValue = convertValueForField(root, field, value);
+
             switch (operator) {
                 case EQUALS:
-                    return criteriaBuilder.equal(root.get(field), value);
+                    return criteriaBuilder.equal(root.get(field), convertedValue);
 
                 case NOT_EQUALS:
-                    return criteriaBuilder.notEqual(root.get(field), value);
+                    return criteriaBuilder.notEqual(root.get(field), convertedValue);
 
                 case GREATER_THAN:
                     return criteriaBuilder.greaterThan(root.get(field),
-                        (Comparable) parseComparableValue(value));
+                        (Comparable) parseComparableValue(convertedValue));
 
                 case GREATER_THAN_OR_EQUAL:
                     return criteriaBuilder.greaterThanOrEqualTo(root.get(field),
-                        (Comparable) parseComparableValue(value));
+                        (Comparable) parseComparableValue(convertedValue));
 
                 case LESS_THAN:
                     return criteriaBuilder.lessThan(root.get(field),
-                        (Comparable) parseComparableValue(value));
+                        (Comparable) parseComparableValue(convertedValue));
 
                 case LESS_THAN_OR_EQUAL:
                     return criteriaBuilder.lessThanOrEqualTo(root.get(field),
-                        (Comparable) parseComparableValue(value));
+                        (Comparable) parseComparableValue(convertedValue));
 
                 case IN:
                     if (value instanceof List) {
-                        return root.get(field).in((List<?>) value);
+                        List<?> listValue = (List<?>) value;
+                        List<Object> convertedList = new ArrayList<>();
+                        for (Object item : listValue) {
+                            convertedList.add(convertValueForField(root, field, item));
+                        }
+                        return root.get(field).in(convertedList);
                     }
-                    return root.get(field).in(value);
+                    return root.get(field).in(convertedValue);
 
                 case NOT_IN:
                     if (value instanceof List) {
-                        return criteriaBuilder.not(root.get(field).in((List<?>) value));
+                        List<?> listValue = (List<?>) value;
+                        List<Object> convertedList = new ArrayList<>();
+                        for (Object item : listValue) {
+                            convertedList.add(convertValueForField(root, field, item));
+                        }
+                        return criteriaBuilder.not(root.get(field).in(convertedList));
                     }
-                    return criteriaBuilder.not(root.get(field).in(value));
+                    return criteriaBuilder.not(root.get(field).in(convertedValue));
 
                 case CONTAINS:
                     return criteriaBuilder.like(
@@ -287,5 +300,38 @@ public class EventSearchService {
             return Instant.parse((String) value);
         }
         return value;
+    }
+
+    /**
+     * Convert filter value to match the field type
+     * Handles enum conversions when filtering by enum fields
+     *
+     * @param root JPA Root for accessing field metadata
+     * @param field Field name
+     * @param value Filter value (may be String representation of enum)
+     * @return Converted value matching the field type
+     */
+    @SuppressWarnings("rawtypes")
+    private Object convertValueForField(jakarta.persistence.criteria.Root<Event> root, String field, Object value) {
+        if (value == null) {
+            return null;
+        }
+
+        try {
+            // Get the Java type of the field
+            Class<?> fieldType = root.get(field).getJavaType();
+
+            // If field is an enum and value is a String, convert to enum
+            if (fieldType.isEnum() && value instanceof String) {
+                @SuppressWarnings("unchecked")
+                Class<? extends Enum> enumType = (Class<? extends Enum>) fieldType;
+                return Enum.valueOf(enumType, (String) value);
+            }
+
+            return value;
+        } catch (IllegalArgumentException e) {
+            log.warn("Failed to convert value '{}' for field '{}': {}", value, field, e.getMessage());
+            return value;
+        }
     }
 }
