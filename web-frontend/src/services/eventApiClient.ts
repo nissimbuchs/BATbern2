@@ -324,6 +324,55 @@ class EventApiClient {
   }
 
   /**
+   * Assign topic to event (Story 5.2a - Event Batch Import)
+   *
+   * Assigns a topic to an event by calling POST /events/{eventCode}/topics
+   *
+   * @param eventCode Event code identifier (e.g., "BATbern56")
+   * @param topicId Topic UUID to assign
+   * @returns Success response
+   * @throws Error if event/topic not found or unauthorized
+   */
+  async assignTopicToEvent(eventCode: string, topicId: string): Promise<void> {
+    try {
+      await apiClient.post(`${EVENT_API_PATH}/${eventCode}/topics`, { topicId });
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Check if event exists by event number (Story 5.2a - Event Batch Import)
+   *
+   * Queries the API to check if an event with the given number exists.
+   * Used during batch import to determine create vs update mode.
+   *
+   * @param eventNumber Event number (e.g., 56 for "BATbern56")
+   * @returns true if event exists, false otherwise
+   * @throws Error if network failure or unauthorized
+   */
+  async checkEventExists(eventNumber: number): Promise<boolean> {
+    try {
+      // Query by event number using filter parameter
+      const response = await this.getEvents({ page: 1, limit: 1 }, {
+        eventNumber: eventNumber,
+      } as unknown as {
+        status?: string[];
+        year?: number;
+        search?: string;
+      });
+
+      return response.data.length > 0;
+    } catch (error) {
+      // If 404 or other error, assume doesn't exist
+      if (this.isAxiosError(error) && error.response?.status === 404) {
+        return false;
+      }
+      throw this.transformError(error);
+    }
+  }
+
+  /**
    * Type guard for Axios errors
    */
   private isAxiosError(error: unknown): error is AxiosError {

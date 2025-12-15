@@ -326,6 +326,36 @@ describe('Event API Client (RED Phase)', () => {
     });
   });
 
+  describe('Topic Assignment (Story 5.2a)', () => {
+    it('should_assignTopicToEvent_when_topicIdProvided', async () => {
+      const topicId = '123e4567-e89b-12d3-a456-426614174000';
+
+      // Expect network/server error (not API structure error)
+      await expect(eventApiClient.assignTopicToEvent('BATbern56', topicId)).rejects.toThrow(
+        /(Network Error|Not Found|Server Error|timeout)/
+      );
+    });
+
+    it('should_haveCorrectMethodSignature_when_assigningTopic', () => {
+      expect(eventApiClient).toHaveProperty('assignTopicToEvent');
+      expect(typeof eventApiClient.assignTopicToEvent).toBe('function');
+    });
+  });
+
+  describe('Event Existence Check (Story 5.2a)', () => {
+    it('should_checkEventExists_when_eventNumberProvided', async () => {
+      // Expect network/server error (not API structure error)
+      await expect(eventApiClient.checkEventExists(56)).rejects.toThrow(
+        /(Network Error|Not Found|Server Error|timeout)/
+      );
+    });
+
+    it('should_haveCorrectMethodSignature_when_checkingExistence', () => {
+      expect(eventApiClient).toHaveProperty('checkEventExists');
+      expect(typeof eventApiClient.checkEventExists).toBe('function');
+    });
+  });
+
   describe('Auth Token Injection', () => {
     it('should_includeAuthHeader_when_makingApiCalls', async () => {
       // This test verifies that the API client uses the shared apiClient
