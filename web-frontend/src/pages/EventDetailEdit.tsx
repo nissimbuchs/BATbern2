@@ -420,6 +420,7 @@ const EventDetailEdit: React.FC = () => {
                   blockers: [],
                 }}
                 eventCode={eventCode || ''}
+                workflowState={event.workflowState || 'CREATED'}
                 compact
               />
               <Button variant="text" size="small" sx={{ mt: 2 }}>

@@ -33,10 +33,11 @@ vi.mock('react-i18next', () => ({
         'dashboard.eventType.half_day': 'Half Day',
         'dashboard.eventType.evening': 'Evening',
         'dashboard.workflowProgress': 'Workflow Progress',
-        'dashboard.workflowState.speaker_research': 'Speaker Research',
-        'dashboard.workflowState.venue_booking': 'Venue Booking',
-        'dashboard.workflowState.topic_selection': 'Topic Selection',
-        'dashboard.workflowState.event_execution': 'Event Execution',
+        'workflow.states.created': 'Created',
+        'workflow.states.topic_selection': 'Topic Selection',
+        'workflow.states.speaker_brainstorming': 'Speaker Brainstorming',
+        'workflow.states.speaker_outreach': 'Speaker Outreach',
+        'workflow.states.agenda_published': 'Agenda Published',
       };
 
       // Handle parameterized translations like workflowStep
@@ -179,38 +180,6 @@ describe('EventCard Component', () => {
       rerender(<EventCard event={updatedEvent} />);
 
       expect(screen.getByText(/step.*3.*16/i)).toBeInTheDocument();
-    });
-  });
-
-  describe('Status Badge (AC1)', () => {
-    it('should_displayStatusBadge_when_statusActive', () => {
-      render(<EventCard event={mockEvent} />, { wrapper: createWrapper() });
-
-      expect(screen.getByText(/active/i)).toBeInTheDocument();
-    });
-
-    it('should_useSuccessColor_when_statusPublished', () => {
-      const publishedEvent = { ...mockEvent, status: 'published' as const };
-      render(<EventCard event={publishedEvent} />, { wrapper: createWrapper() });
-
-      const badge = screen.getByText(/published/i).closest('.MuiChip-root');
-      expect(badge).toHaveClass('MuiChip-colorSuccess');
-    });
-
-    it('should_useWarningColor_when_statusDraft', () => {
-      const draftEvent = { ...mockEvent, status: 'draft' as const };
-      render(<EventCard event={draftEvent} />, { wrapper: createWrapper() });
-
-      const badge = screen.getByText(/draft/i).closest('.MuiChip-root');
-      expect(badge).toHaveClass('MuiChip-colorWarning');
-    });
-
-    it('should_useDefaultColor_when_statusCompleted', () => {
-      const completedEvent = { ...mockEvent, status: 'completed' as const };
-      render(<EventCard event={completedEvent} />, { wrapper: createWrapper() });
-
-      const badge = screen.getByText(/completed/i).closest('.MuiChip-root');
-      expect(badge).toHaveClass('MuiChip-colorDefault');
     });
   });
 

@@ -83,17 +83,23 @@ const createEventSchema = (t: (key: string) => string) =>
       venueCapacity: z.coerce
         .number({ message: t('validation.capacityRequired') })
         .positive(t('validation.capacityPositive')),
-      status: z.enum([
-        'planning',
-        'topic_defined',
-        'speakers_invited',
-        'agenda_draft',
-        'published',
-        'registration_open',
-        'registration_closed',
-        'in_progress',
-        'completed',
-        'archived',
+      workflowState: z.enum([
+        'CREATED',
+        'TOPIC_SELECTION',
+        'SPEAKER_BRAINSTORMING',
+        'SPEAKER_OUTREACH',
+        'SPEAKER_CONFIRMATION',
+        'CONTENT_COLLECTION',
+        'QUALITY_REVIEW',
+        'THRESHOLD_CHECK',
+        'OVERFLOW_MANAGEMENT',
+        'SLOT_ASSIGNMENT',
+        'AGENDA_PUBLISHED',
+        'AGENDA_FINALIZED',
+        'NEWSLETTER_SENT',
+        'EVENT_READY',
+        'PARTNER_MEETING_COMPLETE',
+        'ARCHIVED',
       ]),
       // UI-only fields (will be stored in metadata)
       theme: z.string().optional().or(z.literal('')),
@@ -357,7 +363,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         venueName: data.venueName,
         venueAddress: data.venueAddress,
         venueCapacity: data.venueCapacity,
-        status: isDraft ? 'planning' : data.workflowState,
+        workflowState: isDraft ? 'CREATED' : data.workflowState,
         organizerUsername: user.username, // Use username (e.g., "john.doe")
         currentAttendeeCount: 0,
         description: data.description || undefined,
@@ -616,30 +622,50 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
               control={control}
               render={({ field }) => (
                 <FormControl fullWidth margin="normal" error={!!errors.workflowState}>
-                  <InputLabel>{t('form.workflowState')}</InputLabel>
-                  <Select {...field} label={t('form.workflowState')}>
-                    <MenuItem value="planning">{t('form.workflowStateValues.planning')}</MenuItem>
-                    <MenuItem value="topic_defined">
-                      {t('form.workflowStateValues.topicDefined')}
+                  <InputLabel>{t('form.status')}</InputLabel>
+                  <Select {...field} label={t('form.status')}>
+                    <MenuItem value="CREATED">{t('workflow.states.created')}</MenuItem>
+                    <MenuItem value="TOPIC_SELECTION">
+                      {t('workflow.states.topic_selection')}
                     </MenuItem>
-                    <MenuItem value="speakers_invited">
-                      {t('form.workflowStateValues.speakersInvited')}
+                    <MenuItem value="SPEAKER_BRAINSTORMING">
+                      {t('workflow.states.speaker_brainstorming')}
                     </MenuItem>
-                    <MenuItem value="agenda_draft">
-                      {t('form.workflowStateValues.agendaDraft')}
+                    <MenuItem value="SPEAKER_OUTREACH">
+                      {t('workflow.states.speaker_outreach')}
                     </MenuItem>
-                    <MenuItem value="published">{t('form.workflowStateValues.published')}</MenuItem>
-                    <MenuItem value="registration_open">
-                      {t('form.workflowStateValues.registrationOpen')}
+                    <MenuItem value="SPEAKER_CONFIRMATION">
+                      {t('workflow.states.speaker_confirmation')}
                     </MenuItem>
-                    <MenuItem value="registration_closed">
-                      {t('form.workflowStateValues.registrationClosed')}
+                    <MenuItem value="CONTENT_COLLECTION">
+                      {t('workflow.states.content_collection')}
                     </MenuItem>
-                    <MenuItem value="in_progress">
-                      {t('form.workflowStateValues.inProgress')}
+                    <MenuItem value="QUALITY_REVIEW">
+                      {t('workflow.states.quality_review')}
                     </MenuItem>
-                    <MenuItem value="completed">{t('form.workflowStateValues.completed')}</MenuItem>
-                    <MenuItem value="archived">{t('form.workflowStateValues.archived')}</MenuItem>
+                    <MenuItem value="THRESHOLD_CHECK">
+                      {t('workflow.states.threshold_check')}
+                    </MenuItem>
+                    <MenuItem value="OVERFLOW_MANAGEMENT">
+                      {t('workflow.states.overflow_management')}
+                    </MenuItem>
+                    <MenuItem value="SLOT_ASSIGNMENT">
+                      {t('workflow.states.slot_assignment')}
+                    </MenuItem>
+                    <MenuItem value="AGENDA_PUBLISHED">
+                      {t('workflow.states.agenda_published')}
+                    </MenuItem>
+                    <MenuItem value="AGENDA_FINALIZED">
+                      {t('workflow.states.agenda_finalized')}
+                    </MenuItem>
+                    <MenuItem value="NEWSLETTER_SENT">
+                      {t('workflow.states.newsletter_sent')}
+                    </MenuItem>
+                    <MenuItem value="EVENT_READY">{t('workflow.states.event_ready')}</MenuItem>
+                    <MenuItem value="PARTNER_MEETING_COMPLETE">
+                      {t('workflow.states.partner_meeting_complete')}
+                    </MenuItem>
+                    <MenuItem value="ARCHIVED">{t('workflow.states.archived')}</MenuItem>
                   </Select>
                   {errors.workflowState && (
                     <FormHelperText>{errors.workflowState.message}</FormHelperText>

@@ -51,12 +51,6 @@ const EventDetail: React.FC = () => {
     console.log('Edit event:', eventCode);
   };
 
-  // Debug logging
-  console.log('[EventDetail] eventCode:', eventCode);
-  console.log('[EventDetail] isLoading:', isLoading);
-  console.log('[EventDetail] error:', error);
-  console.log('[EventDetail] event:', event);
-
   if (isLoading) {
     return (
       <Box

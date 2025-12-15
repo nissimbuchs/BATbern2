@@ -40,7 +40,29 @@ interface WorkflowProgressBarProps {
   workflow: WorkflowState;
   eventCode: string;
   compact?: boolean;
+  /** Optional: Explicit workflow state (overrides derivation from currentStep) */
+  workflowState?: string;
 }
+
+// NEW 16-step workflow states (Story 5.1a)
+const WORKFLOW_STATE_ORDER = [
+  'CREATED',
+  'TOPIC_SELECTION',
+  'SPEAKER_BRAINSTORMING',
+  'SPEAKER_OUTREACH',
+  'SPEAKER_CONFIRMATION',
+  'CONTENT_COLLECTION',
+  'QUALITY_REVIEW',
+  'THRESHOLD_CHECK',
+  'OVERFLOW_MANAGEMENT',
+  'SLOT_ASSIGNMENT',
+  'AGENDA_PUBLISHED',
+  'AGENDA_FINALIZED',
+  'NEWSLETTER_SENT',
+  'EVENT_READY',
+  'PARTNER_MEETING_COMPLETE',
+  'ARCHIVED',
+];
 
 // Get progress bar color based on completion percentage
 const getProgressColor = (progress: number): 'warning' | 'primary' | 'success' => {
@@ -53,6 +75,7 @@ export const WorkflowProgressBar: React.FC<WorkflowProgressBarProps> = ({
   workflow,
   eventCode,
   compact = false,
+  workflowState: explicitWorkflowState,
 }) => {
   const { t } = useTranslation('events');
   const navigate = useNavigate();
@@ -68,11 +91,22 @@ export const WorkflowProgressBar: React.FC<WorkflowProgressBarProps> = ({
     blockers: [],
   };
 
-  const { currentStep, totalSteps, completionPercentage, steps, blockers } = safeWorkflow;
+  const { currentStep, totalSteps, completionPercentage, blockers } = safeWorkflow;
 
-  // Find current step details
-  const currentStepDetail = steps.find((s) => s.stepNumber === currentStep);
-  const stepName = currentStepDetail?.name || '';
+  // Use explicit workflow state if provided, otherwise derive from step number (Story 5.1a)
+  let derivedWorkflowState: string;
+  if (explicitWorkflowState) {
+    derivedWorkflowState = explicitWorkflowState;
+  } else {
+    const workflowStateIndex = Math.max(
+      0,
+      Math.min(currentStep - 1, WORKFLOW_STATE_ORDER.length - 1)
+    );
+    derivedWorkflowState = WORKFLOW_STATE_ORDER[workflowStateIndex];
+  }
+
+  // Get translated workflow state name
+  const stepName = t(`workflow.states.${derivedWorkflowState.toLowerCase()}`, derivedWorkflowState);
 
   // Check for critical blockers
   const hasCriticalBlockers = blockers.some((b) => b.severity === 'critical');
@@ -122,23 +156,23 @@ export const WorkflowProgressBar: React.FC<WorkflowProgressBarProps> = ({
     >
       {/* Progress Bar Section */}
       <Box sx={{ flex: 1 }}>
-        <Stack spacing={1}>
-          {/* Current Step Indicator */}
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 1,
-            }}
-          >
+        {/* Status and Step Indicator */}
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={0.5}
+          spacing={1}
+        >
+          <Typography variant="body2" color="text.secondary">
+            {stepName || (currentStep === totalSteps ? t('workflow.completed') : '')}
+          </Typography>
+          <Stack direction="row" spacing={1} alignItems="center">
             <Typography variant="body2" color="text.secondary">
               {currentStep === totalSteps
-                ? t('workflow.completed')
+                ? ''
                 : t('workflow.stepIndicator', { current: currentStep, total: totalSteps })}
-              {stepName && `: ${stepName}`}
             </Typography>
-
             {/* Blocker Warning Indicator */}
             {blockers.length > 0 && (
               <Tooltip title={blockerTooltipContent} arrow>
@@ -156,9 +190,11 @@ export const WorkflowProgressBar: React.FC<WorkflowProgressBarProps> = ({
                 />
               </Tooltip>
             )}
-          </Box>
+          </Stack>
+        </Stack>
 
-          {/* Clickable Progress Bar */}
+        {/* Progress Bar with Percentage */}
+        <Stack direction="row" alignItems="center" spacing={1}>
           <Box
             role="progressbar"
             aria-valuenow={completionPercentage}
@@ -171,6 +207,7 @@ export const WorkflowProgressBar: React.FC<WorkflowProgressBarProps> = ({
             onClick={handleNavigateToWorkflow}
             onKeyDown={handleKeyDown}
             sx={{
+              flex: 1,
               cursor: 'pointer',
               borderRadius: 1,
               overflow: 'hidden',
@@ -195,9 +232,7 @@ export const WorkflowProgressBar: React.FC<WorkflowProgressBarProps> = ({
               }}
             />
           </Box>
-
-          {/* Percentage Display */}
-          <Typography variant="caption" color="text.secondary" textAlign="right">
+          <Typography variant="body2" fontWeight="bold" sx={{ minWidth: '40px' }}>
             {completionPercentage}%
           </Typography>
         </Stack>

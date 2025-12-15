@@ -21,7 +21,6 @@ import {
   CardActions,
   Typography,
   LinearProgress,
-  Chip,
   IconButton,
   Box,
   Stack,
@@ -84,25 +83,6 @@ const getProgressColor = (progress: number): 'warning' | 'primary' | 'success' =
   if (progress < 30) return 'warning';
   if (progress < 70) return 'primary';
   return 'success';
-};
-
-// Get status chip color
-const getStatusColor = (
-  status: string
-): 'default' | 'primary' | 'success' | 'warning' | 'error' => {
-  switch (status) {
-    case 'published':
-      return 'success';
-    case 'active':
-      return 'primary';
-    case 'draft':
-      return 'warning';
-    case 'completed':
-    case 'archived':
-      return 'default';
-    default:
-      return 'default';
-  }
 };
 
 export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick }) => {
@@ -183,15 +163,10 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
       )}
 
       <CardContent data-testid="event-card-content" sx={{ flexGrow: 1 }}>
-        {/* Header with Status and Event Code */}
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-          <Chip
-            label={t(`status.${workflowState}`)}
-            color={getStatusColor(workflowState)}
-            size="small"
-          />
-          <Typography variant="caption" color="text.secondary">
-            {event.eventCode}
+        {/* Header with Event Code */}
+        <Stack direction="row" justifyContent="flex-start" alignItems="center" mb={2}>
+          <Typography variant="caption" color="text.secondary" fontWeight="medium">
+            #{event.eventCode}
           </Typography>
         </Stack>
 
@@ -222,30 +197,31 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
         </Stack>
 
         {/* Workflow Progress (Story 5.1a) */}
-        <Box mb={1}>
+        <Box>
+          {/* Status and Step Indicator */}
           <Stack direction="row" justifyContent="space-between" alignItems="center" mb={0.5}>
             <Typography variant="caption" color="text.secondary">
               {workflowLabel}
             </Typography>
-            <Typography variant="caption" fontWeight="bold">
+            <Typography variant="caption" color="text.secondary">
+              {t('dashboard.workflowStep', { current: workflowStep, total: 16 })}
+            </Typography>
+          </Stack>
+          {/* Progress Bar with Percentage */}
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <LinearProgress
+              variant="determinate"
+              value={progress}
+              color={getProgressColor(progress)}
+              aria-label={`Workflow progress ${progress}%`}
+              aria-valuenow={progress}
+              sx={{ height: 8, borderRadius: 1, flex: 1 }}
+            />
+            <Typography variant="caption" fontWeight="bold" sx={{ minWidth: '35px' }}>
               {progress}%
             </Typography>
           </Stack>
-          <LinearProgress
-            variant="determinate"
-            value={progress}
-            color={getProgressColor(progress)}
-            aria-label={`Workflow progress ${progress}%`}
-            aria-valuenow={progress}
-            sx={{ height: 8, borderRadius: 1 }}
-          />
         </Box>
-
-        {/* Workflow Step */}
-        <Typography variant="caption" color="text.secondary">
-          {t('dashboard.workflowStep', { current: workflowStep, total: 16 })}
-          {eventUI.workflowState && ` • ${t(`dashboard.workflowState.${eventUI.workflowState}`)}`}
-        </Typography>
       </CardContent>
 
       {/* Quick Actions */}
