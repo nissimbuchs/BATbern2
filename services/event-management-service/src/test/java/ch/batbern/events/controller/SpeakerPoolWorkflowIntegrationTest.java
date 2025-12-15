@@ -289,7 +289,6 @@ class SpeakerPoolWorkflowIntegrationTest extends AbstractIntegrationTest {
         event.setVenueName("Test Venue");
         event.setVenueAddress("Test Address");
         event.setVenueCapacity(200);
-        event.setStatus("planning");
         event.setOrganizerUsername("john.doe");
         event.setEventType(ch.batbern.events.dto.generated.EventType.FULL_DAY);
         event.setWorkflowState(workflowState);

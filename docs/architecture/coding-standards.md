@@ -22,6 +22,7 @@
 | Database Tables | - | snake_case | `user_profiles` |
 | Company Entities | - | CompanyEntity | `CompanyEntity.java` |
 | Domain Events | - | PascalCase + Event | `EventCreatedEvent.java` |
+| Element | Frontend | Backend | Example |
 | Enums | UPPER_CASE | UPPER_CASE (Java) → lowercase_snake_case (DB via AttributeConverter) | `RegistrationStatus.CONFIRMED` → `'confirmed'` |
 
 ## Git Workflow

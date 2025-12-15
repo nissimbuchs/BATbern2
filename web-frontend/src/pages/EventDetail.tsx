@@ -131,7 +131,7 @@ const EventDetail: React.FC = () => {
           {/* Title and Status */}
           <Box>
             <Stack direction="row" spacing={2} alignItems="center" mb={1}>
-              <Chip label={t(`status.${event.status}`)} color="primary" />
+              <Chip label={t(`status.${event.workflowState}`)} color="primary" />
               <Typography variant="caption" color="text.secondary">
                 {event.eventCode}
               </Typography>

@@ -122,17 +122,7 @@ interface EventFormData {
   venueAddress: string;
   venueCapacity: number;
   registrationDeadline?: string;
-  status:
-    | 'planning'
-    | 'topic_defined'
-    | 'speakers_invited'
-    | 'agenda_draft'
-    | 'published'
-    | 'registration_open'
-    | 'registration_closed'
-    | 'in_progress'
-    | 'completed'
-    | 'archived';
+  workflowState?: components['schemas']['EventWorkflowState'];
   theme?: string;
   eventType?: components['schemas']['EventType'];
 }
@@ -205,7 +195,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
           venueName: event.venueName || '',
           venueAddress: event.venueAddress || '',
           venueCapacity: event.venueCapacity || 200,
-          status: event.status || 'planning',
+          workflowState: event.workflowState || 'CREATED',
           theme: (event as EventUI).theme || '',
           eventType: normalizeEventType((event as EventUI).eventType),
         }
@@ -218,7 +208,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
           venueName: '',
           venueAddress: '',
           venueCapacity: 200,
-          status: 'planning' as const,
+          workflowState: 'CREATED' as const,
           theme: '',
           eventType: 'FULL_DAY',
         },
@@ -245,7 +235,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         venueName: '',
         venueAddress: '',
         venueCapacity: 200,
-        status: 'planning',
+        workflowState: 'CREATED',
         theme: '',
         eventType: 'FULL_DAY',
       });
@@ -264,7 +254,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         venueName: event.venueName || '',
         venueAddress: event.venueAddress || '',
         venueCapacity: event.venueCapacity || 200,
-        status: event.status || 'planning',
+        workflowState: event.workflowState || 'CREATED',
         theme: (event as EventUI).theme || '',
         eventType: normalizeEventType((event as EventUI).eventType),
       });
@@ -367,7 +357,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         venueName: data.venueName,
         venueAddress: data.venueAddress,
         venueCapacity: data.venueCapacity,
-        status: isDraft ? 'planning' : data.status,
+        status: isDraft ? 'planning' : data.workflowState,
         organizerUsername: user.username, // Use username (e.g., "john.doe")
         currentAttendeeCount: 0,
         description: data.description || undefined,
@@ -622,30 +612,38 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
             </Box>
 
             <Controller
-              name="status"
+              name="workflowState"
               control={control}
               render={({ field }) => (
-                <FormControl fullWidth margin="normal" error={!!errors.status}>
-                  <InputLabel>{t('form.status')}</InputLabel>
-                  <Select {...field} label={t('form.status')}>
-                    <MenuItem value="planning">{t('form.statusValues.planning')}</MenuItem>
-                    <MenuItem value="topic_defined">{t('form.statusValues.topicDefined')}</MenuItem>
-                    <MenuItem value="speakers_invited">
-                      {t('form.statusValues.speakersInvited')}
+                <FormControl fullWidth margin="normal" error={!!errors.workflowState}>
+                  <InputLabel>{t('form.workflowState')}</InputLabel>
+                  <Select {...field} label={t('form.workflowState')}>
+                    <MenuItem value="planning">{t('form.workflowStateValues.planning')}</MenuItem>
+                    <MenuItem value="topic_defined">
+                      {t('form.workflowStateValues.topicDefined')}
                     </MenuItem>
-                    <MenuItem value="agenda_draft">{t('form.statusValues.agendaDraft')}</MenuItem>
-                    <MenuItem value="published">{t('form.statusValues.published')}</MenuItem>
+                    <MenuItem value="speakers_invited">
+                      {t('form.workflowStateValues.speakersInvited')}
+                    </MenuItem>
+                    <MenuItem value="agenda_draft">
+                      {t('form.workflowStateValues.agendaDraft')}
+                    </MenuItem>
+                    <MenuItem value="published">{t('form.workflowStateValues.published')}</MenuItem>
                     <MenuItem value="registration_open">
-                      {t('form.statusValues.registrationOpen')}
+                      {t('form.workflowStateValues.registrationOpen')}
                     </MenuItem>
                     <MenuItem value="registration_closed">
-                      {t('form.statusValues.registrationClosed')}
+                      {t('form.workflowStateValues.registrationClosed')}
                     </MenuItem>
-                    <MenuItem value="in_progress">{t('form.statusValues.inProgress')}</MenuItem>
-                    <MenuItem value="completed">{t('form.statusValues.completed')}</MenuItem>
-                    <MenuItem value="archived">{t('form.statusValues.archived')}</MenuItem>
+                    <MenuItem value="in_progress">
+                      {t('form.workflowStateValues.inProgress')}
+                    </MenuItem>
+                    <MenuItem value="completed">{t('form.workflowStateValues.completed')}</MenuItem>
+                    <MenuItem value="archived">{t('form.workflowStateValues.archived')}</MenuItem>
                   </Select>
-                  {errors.status && <FormHelperText>{errors.status.message}</FormHelperText>}
+                  {errors.workflowState && (
+                    <FormHelperText>{errors.workflowState.message}</FormHelperText>
+                  )}
                 </FormControl>
               )}
             />

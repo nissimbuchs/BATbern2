@@ -1147,21 +1147,6 @@ export interface components {
       /** @example 500 */
       venueCapacity: number;
       /**
-       * @example published
-       * @enum {string}
-       */
-      status:
-        | 'planning'
-        | 'topic_defined'
-        | 'speakers_invited'
-        | 'agenda_draft'
-        | 'published'
-        | 'registration_open'
-        | 'registration_closed'
-        | 'in_progress'
-        | 'completed'
-        | 'archived';
-      /**
        * @description Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
        *     Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.
        * @example john.doe

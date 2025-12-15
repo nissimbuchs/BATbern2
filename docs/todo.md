@@ -7,8 +7,10 @@
 - [ ] topics have UUID in api, against ADR-003
 - [ ] not all ids are translated in topics backlog
 - [ ] event has dto and generated dto in backend, should only use generated dto's.
-- [ ] event has status and workflow state. redundant?
-- [ ] event has metadate for thema and event_type that are both obsolete
+- [x] event has status and workflowState. redundant? ✅ COMPLETED: status field removed in V17 migration (2025-12-15)
+- [ ] event has metadata in api payload for theme and eventType that are both obsolete
+- [ ] history diagram not shown but implemented
+
 
 Accessing the PostgeSQL through the tunnel:
 PGPASSWORD from /Users/nissim/dev/bat/BATbern-feature/.env.native

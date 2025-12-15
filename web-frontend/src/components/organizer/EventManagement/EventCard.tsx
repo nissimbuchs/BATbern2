@@ -186,8 +186,8 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
         {/* Header with Status and Event Code */}
         <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
           <Chip
-            label={t(`status.${event.status}`)}
-            color={getStatusColor(event.status)}
+            label={t(`status.${workflowState}`)}
+            color={getStatusColor(workflowState)}
             size="small"
           />
           <Typography variant="caption" color="text.secondary">

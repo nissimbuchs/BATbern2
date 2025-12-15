@@ -86,7 +86,6 @@ public class SpeakerOutreachControllerIntegrationTest extends AbstractIntegratio
                 .venueName("Test Venue")
                 .venueAddress("Test Address")
                 .venueCapacity(100)
-                .status("published")
                 .organizerUsername("test.organizer")
                 .eventType(EventType.EVENING)
                 .workflowState(ch.batbern.shared.types.EventWorkflowState.CREATED)

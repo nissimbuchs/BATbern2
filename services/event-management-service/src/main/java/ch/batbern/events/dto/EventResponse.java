@@ -26,7 +26,6 @@ public class EventResponse {
     private String venueName;
     private String venueAddress;
     private Integer venueCapacity;
-    private String status;
     private String organizerUsername;
     private Integer currentAttendeeCount;
     private Instant publishedAt;
@@ -55,7 +54,6 @@ public class EventResponse {
                 .venueName(event.getVenueName())
                 .venueAddress(event.getVenueAddress())
                 .venueCapacity(event.getVenueCapacity())
-                .status(event.getStatus())
                 .organizerUsername(event.getOrganizerUsername())
                 .currentAttendeeCount(event.getCurrentAttendeeCount())
                 .publishedAt(event.getPublishedAt())

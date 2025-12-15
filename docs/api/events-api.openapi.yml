@@ -2732,7 +2732,6 @@ components:
         - venueName
         - venueAddress
         - venueCapacity
-        - status
         - organizerUsername
       properties:
         eventCode:
@@ -2769,10 +2768,6 @@ components:
         venueCapacity:
           type: integer
           example: 500
-        status:
-          type: string
-          enum: [planning, topic_defined, speakers_invited, agenda_draft, published, registration_open, registration_closed, in_progress, completed, archived]
-          example: published
         organizerUsername:
           type: string
           pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'

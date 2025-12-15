@@ -44,7 +44,7 @@ import {
 } from '@/components/organizer/EventManagement';
 import type { SessionUI, SessionSpeaker, WorkflowStep } from '@/types/event.types';
 import { topicService } from '@/services/topicService';
-import type { TopicResponse } from '@/types/generated/events-api.types';
+import type { Topic } from '@/types/topic.types';
 
 const EventDetailEdit: React.FC = () => {
   const { eventCode } = useParams<{ eventCode: string }>();
@@ -55,7 +55,7 @@ const EventDetailEdit: React.FC = () => {
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
 
   // State for topic details
-  const [topic, setTopic] = useState<TopicResponse | null>(null);
+  const [topic, setTopic] = useState<Topic | null>(null);
   const [topicLoading, setTopicLoading] = useState(false);
 
   // Fetch event data with resource expansion
@@ -238,7 +238,10 @@ const EventDetailEdit: React.FC = () => {
         <Box>
           <Stack direction="row" spacing={1} alignItems="center" mb={1}>
             <Chip
-              label={t(`dashboard.status.${event.status}`, event.status)}
+              label={t(
+                `dashboard.status.${event.workflowState || 'CREATED'}`,
+                event.workflowState || 'CREATED'
+              )}
               color="primary"
               size="small"
             />
