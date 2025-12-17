@@ -127,11 +127,16 @@ BATbern-main/
 **Prerequisites**: Java 21, Node.js 20+, Docker Desktop, AWS CLI v2, jq
 
 ```bash
-# Option 1: Docker Compose (includes AWS DEV environment connectivity)
+# Option 1: Local PostgreSQL (RECOMMENDED - Zero AWS costs)
+docker compose -f docker-compose-dev.yml up -d       # Start local PostgreSQL
+make dev-native-up                                   # Start services natively
+# First time: JWT_TOKEN='...' ./scripts/dev/sync-users-from-cognito.sh
+
+# Option 2: AWS DEV Environment (includes RDS connectivity)
 ./scripts/config/sync-backend-config.sh development  # Generate .env from AWS
 make docker-up                                       # Start all services
 
-# Option 2: Native development (more resource efficient)
+# Option 3: Native development with AWS DEV
 make dev-native-up                                   # 60-70% less resources
 
 # Services available at:
@@ -139,7 +144,16 @@ make dev-native-up                                   # 60-70% less resources
 # - Frontend: http://localhost:3000
 ```
 
-**Important**: Local development uses AWS DEV environment for infrastructure (RDS, Cognito). Only application containers run locally.
+**Local PostgreSQL Setup** (Option 1):
+- Uses Docker PostgreSQL instead of AWS RDS (**saves $600-720/year**)
+- Development Cognito for authentication (shared with AWS)
+- Local database is a read-only mirror synced from Cognito
+- See [Local Development Guide](docs/guides/local-development-setup.md) for details
+
+**AWS DEV Environment** (Options 2 & 3):
+- Uses AWS DEV environment for infrastructure (RDS, Cognito)
+- Only application containers run locally
+- Costs ~$50-60/month (with auto-shutdown active)
 
 ### Testing Strategy (4-Layer E2E Framework)
 
