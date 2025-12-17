@@ -17,6 +17,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -277,6 +278,69 @@ class SpeakerPoolWorkflowIntegrationTest extends AbstractIntegrationTest {
         // This will be verified in the GET endpoint test when implemented
     }
 
+    // ==================== GET Speaker Pool Tests ====================
+
+    /**
+     * Test: should_returnSpeakerPool_when_eventHasSpeakers
+     * Verifies that GET endpoint returns list of speakers in the pool.
+     */
+    @Test
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
+    void should_returnSpeakerPool_when_eventHasSpeakers() throws Exception {
+        // Given: Event with speakers in pool
+        Event event = createTestEvent("BATbern56", EventWorkflowState.SPEAKER_BRAINSTORMING);
+
+        // Add speakers to pool
+        Map<String, Object> speaker1 = new HashMap<>();
+        speaker1.put("speakerName", "Jane Smith");
+        speaker1.put("company", "Tech Corp");
+        speaker1.put("expertise", "Cloud");
+
+        Map<String, Object> speaker2 = new HashMap<>();
+        speaker2.put("speakerName", "John Doe");
+        speaker2.put("company", "Dev Inc");
+        speaker2.put("expertise", "Security");
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/pool", event.getEventCode())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(speaker1)))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/pool", event.getEventCode())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(speaker2)))
+                .andExpect(status().isCreated());
+
+        // When: Get speaker pool
+        mockMvc.perform(get("/api/v1/events/{eventCode}/speakers/pool", event.getEventCode()))
+                // Then: Returns list with both speakers
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].speakerName").value("Jane Smith"))
+                .andExpect(jsonPath("$[1].speakerName").value("John Doe"));
+    }
+
+    /**
+     * Test: should_returnEmptyList_when_noSpeakersInPool
+     * Verifies that GET endpoint returns empty list when no speakers added yet.
+     */
+    @Test
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
+    void should_returnEmptyList_when_noSpeakersInPool() throws Exception {
+        // Given: Event with no speakers in pool
+        Event event = createTestEvent("BATbern56", EventWorkflowState.SPEAKER_BRAINSTORMING);
+
+        // When: Get speaker pool
+        mockMvc.perform(get("/api/v1/events/{eventCode}/speakers/pool", event.getEventCode()))
+                // Then: Returns empty list
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
     // ==================== Helper Methods ====================
 
     private Event createTestEvent(String eventCode, EventWorkflowState workflowState) {
@@ -289,7 +353,6 @@ class SpeakerPoolWorkflowIntegrationTest extends AbstractIntegrationTest {
         event.setVenueName("Test Venue");
         event.setVenueAddress("Test Address");
         event.setVenueCapacity(200);
-        event.setStatus("planning");
         event.setOrganizerUsername("john.doe");
         event.setEventType(ch.batbern.events.dto.generated.EventType.FULL_DAY);
         event.setWorkflowState(workflowState);

@@ -14,6 +14,8 @@ import eventsDe from '../../public/locales/de/events.json';
 import eventsEn from '../../public/locales/en/events.json';
 import partnersDe from '../../public/locales/de/partners.json';
 import partnersEn from '../../public/locales/en/partners.json';
+import organizerDe from '../../public/locales/de/organizer.json';
+import organizerEn from '../../public/locales/en/organizer.json';
 
 const resources = {
   de: {
@@ -23,6 +25,7 @@ const resources = {
     userManagement: userManagementDe,
     events: eventsDe,
     partners: partnersDe,
+    organizer: organizerDe,
   },
   en: {
     common: commonEn,
@@ -31,6 +34,7 @@ const resources = {
     userManagement: userManagementEn,
     events: eventsEn,
     partners: partnersEn,
+    organizer: organizerEn,
   },
 } as const;
 
@@ -42,7 +46,7 @@ i18n
     lng: 'de', // Default language for first access
     fallbackLng: 'de', // Fallback if language not found
     defaultNS: 'common',
-    ns: ['common', 'auth', 'validation', 'userManagement', 'events', 'partners'],
+    ns: ['common', 'auth', 'validation', 'userManagement', 'events', 'partners', 'organizer'],
     detection: {
       order: ['localStorage', 'navigator', 'htmlTag'],
       caches: ['localStorage'],

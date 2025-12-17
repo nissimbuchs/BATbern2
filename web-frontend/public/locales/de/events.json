@@ -32,29 +32,14 @@
       "EVENING": "Abend"
     },
     "workflowProgress": "Workflow-Fortschritt",
-    "workflowStep": "Schritt {{current}}/{{total}}",
-    "workflowState": {
-      "topic_selection": "Themenauswahl",
-      "topic_approval": "Themengenehmigung",
-      "venue_booking": "Veranstaltungsortbuchung",
-      "save_the_date": "Save the Date",
-      "speaker_research": "Referenten-Recherche",
-      "speaker_invitation": "Referenten-Einladung",
-      "abstracts_submission": "Abstracts-Einreichung",
-      "abstracts_moderation": "Abstracts-Moderation",
-      "speaker_assignment": "Referenten-Zuweisung",
-      "speaker_materials": "Referenten-Materialien",
-      "registration_open": "Anmeldung offen",
-      "event_promotion": "Veranstaltungswerbung",
-      "event_execution": "Veranstaltungsdurchführung",
-      "post_event": "Nach der Veranstaltung"
-    },
     "actions": {
       "viewDetails": "Details anzeigen",
       "edit": "Bearbeiten",
       "newEvent": "Neue Veranstaltung",
+      "topics": "Themenauswahl",
       "eventTypes": "Veranstaltungstypen",
       "eventTypesHelp": "Veranstaltungstyp-Vorlagen konfigurieren (Admin)",
+      "manageTopics": "Themen verwalten",
       "analytics": "Analytics",
       "speakers": "Referenten"
     },
@@ -260,7 +245,31 @@
     "inProgress": "In Arbeit",
     "pending": "Ausstehend",
     "blocked": "Blockiert",
-    "progressBarLabel": "Klicken Sie hier, um Workflow-Details anzuzeigen. {{percentage}}% abgeschlossen"
+    "progressBarLabel": "Klicken Sie hier, um Workflow-Details anzuzeigen. {{percentage}}% abgeschlossen",
+    "actions": {
+      "selectTopic": "Thema auswählen"
+    },
+    "states": {
+      "created": "Erstellt",
+      "topic_selection": "Themenauswahl",
+      "speaker_brainstorming": "Referenten-Brainstorming",
+      "speaker_outreach": "Referenten-Kontaktaufnahme",
+      "speaker_confirmation": "Referenten-Bestätigung",
+      "content_collection": "Inhaltssammlung",
+      "quality_review": "Qualitätsprüfung",
+      "threshold_check": "Schwellenprüfung",
+      "overflow_management": "Überlaufverwaltung",
+      "slot_assignment": "Slot-Zuweisung",
+      "agenda_published": "Agenda veröffentlicht",
+      "agenda_finalized": "Agenda finalisiert",
+      "newsletter_sent": "Newsletter versendet",
+      "event_ready": "Veranstaltung bereit",
+      "partner_meeting_complete": "Partnertreffen abgeschlossen",
+      "archived": "Archiviert"
+    }
+  },
+  "topicSelection": {
+    "success": "Thema erfolgreich ausgewählt"
   },
   "autoSave": {
     "saving": "Speichern...",
@@ -300,8 +309,10 @@
     "neverUsed": "Nie",
     "partnerVotes": "Partner-Stimmen",
     "noTopics": "Keine Themen zugewiesen",
+    "noTopic": "Kein Thema ausgewählt",
     "emptyState": "Noch keine Themen zugewiesen",
     "loadError": "Fehler beim Laden der Themen",
+    "change": "Thema ändern",
     "removeConfirmTitle": "Thema entfernen?",
     "removeConfirmMessage": "Sind Sie sicher, dass Sie dieses Thema von der Veranstaltung entfernen möchten?"
   },

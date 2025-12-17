@@ -26,44 +26,17 @@ import { Warning as WarningIcon, Refresh as RefreshIcon } from '@mui/icons-mater
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { workflowService } from '@/services/workflowService';
+import {
+  getWorkflowProgress,
+  getWorkflowStateI18nKey,
+  getProgressColor,
+} from '@/utils/workflow/workflowState';
 
 interface WorkflowProgressBarWithQueryProps {
   eventCode: string;
   refetchInterval?: number; // Optional refetch interval in ms (default: 5000ms)
   compact?: boolean;
 }
-
-// Workflow state order for progress calculation
-const WORKFLOW_STATE_ORDER = [
-  'CREATED',
-  'TOPIC_SELECTION',
-  'SPEAKER_BRAINSTORMING',
-  'SPEAKER_OUTREACH',
-  'SPEAKER_CONFIRMATION',
-  'CONTENT_COLLECTION',
-  'QUALITY_REVIEW',
-  'THRESHOLD_CHECK',
-  'OVERFLOW_MANAGEMENT',
-  'SLOT_ASSIGNMENT',
-  'AGENDA_PUBLISHED',
-  'AGENDA_FINALIZED',
-  'NEWSLETTER_SENT',
-  'EVENT_READY',
-  'PARTNER_MEETING_COMPLETE',
-  'ARCHIVED',
-];
-
-// Calculate progress percentage based on workflow state
-const calculateProgress = (state: string): number => {
-  const currentIndex = WORKFLOW_STATE_ORDER.indexOf(state);
-  if (currentIndex === -1) return 0;
-  return Math.round(((currentIndex + 1) / WORKFLOW_STATE_ORDER.length) * 100);
-};
-
-// Get i18n key for workflow state
-const getWorkflowStateI18nKey = (state: string): string => {
-  return `workflow.states.${state.toLowerCase()}`;
-};
 
 export const WorkflowProgressBarWithQuery: React.FC<WorkflowProgressBarWithQueryProps> = ({
   eventCode,
@@ -121,12 +94,12 @@ export const WorkflowProgressBarWithQuery: React.FC<WorkflowProgressBarWithQuery
   const { currentState, validationMessages, blockedTransitions } = workflowStatus;
 
   // Calculate progress
-  const progress = calculateProgress(currentState);
+  const progress = getWorkflowProgress(currentState);
   // Get translated state label
   const stateLabel = t(getWorkflowStateI18nKey(currentState), currentState);
 
   // Determine progress bar color
-  const progressColor = progress < 30 ? 'warning' : progress < 70 ? 'primary' : 'success';
+  const progressColor = getProgressColor(progress);
 
   return (
     <Box sx={{ width: '100%' }}>

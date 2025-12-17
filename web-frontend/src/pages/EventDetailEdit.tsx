@@ -6,13 +6,13 @@
  * - Task 9: EventForm (create/edit with auto-save)
  * - Task 10: Workflow & Metrics
  * - Task 11: VenueLogistics
- * - Task 12: TopicsList
+ * - Task 12: Topic display (moved to Event Information card)
  * - Task 13: SpeakersSessionsTable
  *
  * Wireframe: docs/wireframes/story-1.16-event-detail-edit.md v1.1
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -24,8 +24,6 @@ import {
   CircularProgress,
   Alert,
   Divider,
-  Breadcrumbs,
-  Link,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {
@@ -36,14 +34,18 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useEvent } from '@/hooks/useEvents';
+import { Breadcrumbs } from '@/components/shared/Breadcrumbs';
 import {
   EventForm,
   VenueLogistics,
-  TopicsList,
   SpeakersSessionsTable,
   WorkflowProgressBar,
 } from '@/components/organizer/EventManagement';
-import type { SessionUI, SessionSpeaker, Topic, WorkflowStep } from '@/types/event.types';
+import type { SessionUI, SessionSpeaker, WorkflowStep } from '@/types/event.types';
+import type { BreadcrumbItem } from '@/components/shared/Breadcrumbs';
+import { topicService } from '@/services/topicService';
+import type { Topic } from '@/types/topic.types';
+import { isEarlyStage, getWorkflowStateLabel } from '@/utils/workflow/workflowState';
 
 const EventDetailEdit: React.FC = () => {
   const { eventCode } = useParams<{ eventCode: string }>();
@@ -53,12 +55,47 @@ const EventDetailEdit: React.FC = () => {
   // State for edit mode
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
 
+  // State for topic details
+  const [topic, setTopic] = useState<Topic | null>(null);
+  const [topicLoading, setTopicLoading] = useState(false);
+
   // Fetch event data with resource expansion
   const {
     data: event,
     isLoading,
     error,
   } = useEvent(eventCode, ['venue', 'topics', 'sessions', 'team', 'workflow', 'metrics']);
+
+  // Build breadcrumb items (memoized to prevent re-renders)
+  // Must be called before any conditional returns (Rules of Hooks)
+  const breadcrumbItems: BreadcrumbItem[] = useMemo(
+    () => [
+      { label: t('navigation.events', 'Events'), path: '/organizer/events' },
+      { label: event?.title || t('common.loading', 'Loading...') },
+    ],
+    [event?.title, t]
+  );
+
+  // Fetch topic details when topicId changes
+  useEffect(() => {
+    if (event?.topicId) {
+      setTopicLoading(true);
+      topicService
+        .getTopicById(event.topicId)
+        .then((topicData) => {
+          setTopic(topicData);
+        })
+        .catch((err) => {
+          console.error('Failed to fetch topic:', err);
+          setTopic(null);
+        })
+        .finally(() => {
+          setTopicLoading(false);
+        });
+    } else {
+      setTopic(null);
+    }
+  }, [event?.topicId]);
 
   const handleBack = () => {
     navigate('/organizer/events');
@@ -85,17 +122,6 @@ const EventDetailEdit: React.FC = () => {
     // This would typically call useUpdateEvent mutation
   };
 
-  // Topics handlers
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleViewTopic = (_topicId: string) => {
-    // TODO: Implement topic details modal
-  };
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleRemoveTopic = (_eventCode: string, _topicId: string) => {
-    // TODO: Implement topic removal API call
-  };
-
   // Speakers & Sessions handlers
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleViewSessionDetails = (_sessionId: string) => {
@@ -118,6 +144,14 @@ const EventDetailEdit: React.FC = () => {
 
   const handleManageSpeakerAssignments = (eventCode: string) => {
     navigate(`/organizer/events/${eventCode}/speakers`);
+  };
+
+  const handleManageSpeakerOutreach = (eventCode: string) => {
+    navigate(`/organizer/events/${eventCode}/speakers/outreach`);
+  };
+
+  const handleSelectTopic = (eventCode: string) => {
+    navigate(`/organizer/topics?eventCode=${eventCode}`);
   };
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -171,10 +205,6 @@ const EventDetailEdit: React.FC = () => {
     );
   }
 
-  // Use real data from event or fallback to empty arrays
-  // Note: topics is string[] in Phase 2, will be Topic[] when backend implements it
-  const topics: Topic[] = [];
-
   // Transform API sessions to SessionUI format for the component
   const sessions: SessionUI[] = (event.sessions || []).map((session, index) => {
     // Map speakers array to single speaker object (take primary speaker or first speaker)
@@ -201,12 +231,7 @@ const EventDetailEdit: React.FC = () => {
   return (
     <Box sx={{ p: 3 }}>
       {/* Breadcrumbs */}
-      <Breadcrumbs sx={{ mb: 2 }}>
-        <Link underline="hover" color="inherit" sx={{ cursor: 'pointer' }} onClick={handleBack}>
-          {t('navigation.events', 'Events')}
-        </Link>
-        <Typography color="text.primary">{event.title}</Typography>
-      </Breadcrumbs>
+      <Breadcrumbs items={breadcrumbItems} marginBottom={2} />
 
       {/* Header */}
       <Stack
@@ -219,7 +244,7 @@ const EventDetailEdit: React.FC = () => {
         <Box>
           <Stack direction="row" spacing={1} alignItems="center" mb={1}>
             <Chip
-              label={t(`dashboard.status.${event.status}`, event.status)}
+              label={getWorkflowStateLabel(event.workflowState || 'CREATED', t)}
               color="primary"
               size="small"
             />
@@ -313,11 +338,47 @@ const EventDetailEdit: React.FC = () => {
                   : '-'}
               </Typography>
             </Grid>
+
+            <Grid size={{ xs: 12 }}>
+              <Typography variant="subtitle2" color="text.secondary">
+                {t('form.topic', 'Topic')}
+              </Typography>
+              {event.topicId ? (
+                topicLoading ? (
+                  <CircularProgress size={20} />
+                ) : topic ? (
+                  <Typography variant="body1">{topic.title}</Typography>
+                ) : (
+                  <Typography variant="body1" color="text.secondary">
+                    {t('topics.loadError', 'Error loading topic')}
+                  </Typography>
+                )
+              ) : (
+                <Typography variant="body1" color="text.secondary">
+                  {t('topics.noTopic', 'No topic selected')}
+                </Typography>
+              )}
+            </Grid>
           </Grid>
 
-          <Button variant="outlined" size="small" sx={{ mt: 2 }} onClick={handleEditEvent}>
-            {t('dashboard.actions.edit', 'Edit')}
-          </Button>
+          <Stack direction="row" spacing={1} sx={{ mt: 2, justifyContent: 'flex-end' }}>
+            {event.topicId ? (
+              <Button variant="outlined" size="small" onClick={() => handleSelectTopic(eventCode!)}>
+                {t('topics.change', 'Change Topic')}
+              </Button>
+            ) : (
+              <Button
+                variant="contained"
+                size="small"
+                onClick={() => handleSelectTopic(eventCode!)}
+              >
+                {t('topics.addFromBacklog', 'Add Topic from Backlog')}
+              </Button>
+            )}
+            <Button variant="outlined" size="small" onClick={handleEditEvent}>
+              {t('dashboard.actions.edit', 'Edit')}
+            </Button>
+          </Stack>
         </Paper>
 
         {/* THEME IMAGE SECTION */}
@@ -359,11 +420,23 @@ const EventDetailEdit: React.FC = () => {
                   blockers: [],
                 }}
                 eventCode={eventCode || ''}
+                workflowState={event.workflowState || 'CREATED'}
                 compact
               />
-              <Button variant="text" size="small" sx={{ mt: 2 }}>
-                {t('workflow.viewDetails', 'View Workflow Details')}
-              </Button>
+              <Stack direction="row" spacing={1} sx={{ mt: 2, justifyContent: 'flex-end' }}>
+                <Button variant="text" size="small">
+                  {t('workflow.viewDetails', 'View Workflow Details')}
+                </Button>
+                {isEarlyStage(event.workflowState || 'CREATED') && (
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => handleSelectTopic(eventCode!)}
+                  >
+                    {t('workflow.actions.selectTopic', 'Select Topic')}
+                  </Button>
+                )}
+              </Stack>
             </Paper>
           </Grid>
 
@@ -402,16 +475,6 @@ const EventDetailEdit: React.FC = () => {
         {/* VENUE & LOGISTICS - Task 11 */}
         <VenueLogistics event={event} onUpdate={handleVenueUpdate} />
 
-        {/* ASSIGNED TOPICS - Task 12 */}
-        <Paper sx={{ p: 3 }}>
-          <TopicsList
-            topics={topics}
-            eventCode={eventCode!}
-            onViewTopic={handleViewTopic}
-            onRemoveTopic={handleRemoveTopic}
-          />
-        </Paper>
-
         {/* SPEAKERS & SESSIONS - Task 13 */}
         <Paper sx={{ p: 3 }}>
           <SpeakersSessionsTable
@@ -422,6 +485,7 @@ const EventDetailEdit: React.FC = () => {
             onViewMaterials={handleViewMaterials}
             onViewFullAgenda={handleViewFullAgenda}
             onManageSpeakerAssignments={handleManageSpeakerAssignments}
+            onManageSpeakerOutreach={handleManageSpeakerOutreach}
             onAutoAssignSpeakers={handleAutoAssignSpeakers}
           />
         </Paper>

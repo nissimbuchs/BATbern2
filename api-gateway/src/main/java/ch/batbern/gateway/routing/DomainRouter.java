@@ -59,6 +59,8 @@ public class DomainRouter {
         log.debug("Determining target service for path: {}", cleanPath);
 
         // Route based on path patterns - /api/v1/{domain}
+        // Note: /api/v1/events includes speaker pool and outreach endpoints (Story 5.2, 5.3)
+        // e.g., /api/v1/events/{eventCode}/speakers/{speakerId}/outreach
         if (cleanPath.startsWith("/api/v1/events")
                 || cleanPath.startsWith("/api/v1/registrations")
                 || cleanPath.startsWith("/api/v1/topics")) {

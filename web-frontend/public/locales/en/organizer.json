@@ -8,8 +8,49 @@
     "noTopics": "No topics found matching your filters",
     "lastUsed": "Last used",
     "usageCount": "Used {{count}} times",
+    "createNew": "Create New Topic",
+    "breadcrumbs": {
+      "home": "Home",
+      "events": "Events",
+      "topicSelection": "Topic Selection",
+      "manageTopics": "Manage Topics"
+    },
     "error": {
       "loadFailed": "Failed to load topics"
+    },
+    "createModal": {
+      "title": "Create New Topic",
+      "fields": {
+        "title": "Title",
+        "description": "Description",
+        "category": "Category",
+        "categoryHint": "e.g., technical, business, design"
+      },
+      "errors": {
+        "titleRequired": "Title is required",
+        "titleTooLong": "Title must be 255 characters or less",
+        "descriptionRequired": "Description is required",
+        "categoryRequired": "Category is required",
+        "createFailed": "Failed to create topic. Please try again."
+      },
+      "create": "Create Topic",
+      "creating": "Creating..."
+    },
+    "editModal": {
+      "title": "Edit Topic",
+      "fields": {
+        "title": "Title",
+        "description": "Description",
+        "category": "Category"
+      },
+      "errors": {
+        "titleRequired": "Title is required",
+        "titleTooLong": "Title must be 255 characters or less",
+        "categoryRequired": "Category is required",
+        "updateFailed": "Failed to update topic. Please try again."
+      },
+      "save": "Save Changes",
+      "saving": "Saving..."
     },
     "filters": {
       "title": "Filters",
@@ -20,10 +61,10 @@
       "allStatuses": "All Statuses",
       "categories": {
         "technical": "Technical",
-        "business": "Business",
-        "architecture": "Architecture",
-        "cloudNative": "Cloud Native",
-        "security": "Security"
+        "management": "Management",
+        "softSkills": "Soft Skills",
+        "industryTrends": "Industry Trends",
+        "toolsPlatforms": "Tools & Platforms"
       },
       "statuses": {
         "available": "Available (Green)",
@@ -41,6 +82,8 @@
       "metrics": "Metrics",
       "lastUsed": "Last Used",
       "usageCount": "Usage Count",
+      "editButton": "Edit Topic",
+      "deleteButton": "Delete Topic",
       "selectButton": "Select for Event",
       "selecting": "Selecting...",
       "overrideButton": "Override Warning",
@@ -49,20 +92,44 @@
       "statusRed": "Too recent - last used within 6 months, high duplication risk",
       "similarityWarning": "{{count}} similar topics detected (>70% similarity)"
     },
+    "viewMode": {
+      "label": "View mode",
+      "heatMap": "Heat Map",
+      "list": "List",
+      "board": "Board",
+      "boardComingSoon": "Board view coming soon..."
+    },
     "heatMap": {
-      "title": "Usage Heat Map",
+      "title": "Topic Usage Heat Map",
+      "subtitle": "Darker colors indicate more usage. Click a topic to view details.",
       "description": "Topic usage frequency over the last 24 months (grouped by quarter)",
       "quarter": "Quarter",
+      "spring": "Spring",
+      "summer": "Summer",
+      "autumn": "Autumn",
       "usageCount": "Usage Count",
       "totalAttendance": "Total Attendance",
       "avgEngagement": "Avg Engagement",
       "events": "Events",
       "noData": "No usage history available for this topic.",
+      "noTopics": "No topics available to display.",
       "tooltip": "Click on a quarter to see details about events that used this topic",
       "hint": "Hover over data points for more information",
-      "low": "Low Usage",
-      "medium": "Medium Usage",
-      "high": "High Usage"
+      "stale": "Stale - not used recently",
+      "trending": "Trending - used recently",
+      "legend": {
+        "noUsage": "No usage",
+        "low": "Low usage",
+        "medium": "Medium usage",
+        "high": "High usage",
+        "stale": "Stale",
+        "trending": "Trending"
+      },
+      "navigation": {
+        "previous": "Previous years",
+        "next": "Next years",
+        "atCurrent": "At current year"
+      }
     },
     "dialogs": {
       "similar": {
@@ -80,6 +147,16 @@
         "helper": "Explain why this topic should be reused despite being recent",
         "cancel": "Cancel",
         "confirm": "Override and Select"
+      },
+      "delete": {
+        "title": "Delete Topic",
+        "message": "Are you sure you want to delete \"{{title}}\"? This action cannot be undone.",
+        "cannotDelete": "Cannot delete this topic because it has been used in {{count}} event(s).",
+        "cancel": "Cancel",
+        "confirm": "Delete Topic",
+        "deleting": "Deleting...",
+        "success": "Topic deleted successfully",
+        "error": "Failed to delete topic. Please try again."
       }
     }
   },
@@ -104,6 +181,57 @@
       "assigned": "Assigned to",
       "notes": "Notes",
       "error": "Failed to load speaker pool"
+    },
+    "actions": {
+      "skipForNow": "Skip for Now",
+      "continue": "Continue to Outreach"
+    }
+  },
+  "speakerOutreach": {
+    "title": "Speaker Outreach",
+    "subtitle": "Track your speaker outreach activities and coordinate with other organizers",
+    "breadcrumbs": {
+      "home": "Home",
+      "speakerOutreach": "Speaker Outreach"
+    },
+    "emptyPool": {
+      "message": "You need to add speakers to the pool before starting outreach.",
+      "hint": "Go back to the event planning stage to add potential speakers.",
+      "addSpeakers": "Add Speakers to Pool"
+    },
+    "showBrainstorm": "Add Speakers",
+    "hideBrainstorm": "Hide Add Speakers",
+    "speakerName": "Speaker",
+    "contactMethod": "Contact Method",
+    "contactDate": "Contact Date",
+    "notes": "Notes",
+    "markContacted": "Mark as Contacted",
+    "filterByOrganizer": "Filter by Organizer",
+    "contactHistory": "Contact History",
+    "daysSinceAssignment": "Days Since Assignment",
+    "overdue": "Overdue",
+    "lastContact": "Last Contact",
+    "outreachDetails": "Outreach Details",
+    "noContactHistory": "No contact history yet",
+    "contactedBy": "Contacted by",
+    "markContactedModal": {
+      "title": "Mark Speaker as Contacted",
+      "method": {
+        "email": "Email",
+        "phone": "Phone",
+        "inPerson": "In Person"
+      },
+      "notesPlaceholder": "Notes about the conversation...",
+      "error": {
+        "methodRequired": "Contact method is required",
+        "dateRequired": "Contact date is required",
+        "failed": "Failed to record outreach",
+        "loadHistory": "Failed to load contact history"
+      }
+    },
+    "bulkAction": {
+      "title": "Mark Multiple as Contacted",
+      "confirm": "Mark {{count}} speakers as contacted?"
     }
   }
 }

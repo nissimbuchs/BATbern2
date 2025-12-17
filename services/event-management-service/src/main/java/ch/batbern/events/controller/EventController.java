@@ -17,12 +17,13 @@ import ch.batbern.events.event.EventPublishedEvent;
 import ch.batbern.events.event.EventUpdatedEvent;
 import ch.batbern.events.exception.BusinessValidationException;
 import ch.batbern.events.exception.EventNotFoundException;
-import ch.batbern.events.exception.WorkflowException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.LogoRepository;
 import ch.batbern.events.service.EventSearchService;
+import ch.batbern.events.service.EventWorkflowStateMachine;
 import jakarta.validation.Valid;
 import ch.batbern.shared.dto.PaginatedResponse;
+import ch.batbern.shared.types.EventWorkflowState;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -77,6 +78,7 @@ public class EventController {
     private final EventSearchService eventSearchService;
     private final EventRepository eventRepository;
     private final LogoRepository logoRepository;
+    private final EventWorkflowStateMachine eventWorkflowStateMachine;
     private final ch.batbern.events.repository.SessionRepository sessionRepository;
     private final ch.batbern.events.service.EventAnalyticsService eventAnalyticsService;
     private final ch.batbern.shared.events.DomainEventPublisher eventPublisher;
@@ -227,7 +229,7 @@ public class EventController {
         response.put("eventCode", event.getEventCode());
         response.put("title", event.getTitle());
         response.put("eventNumber", event.getEventNumber());
-        response.put("status", event.getStatus());
+        response.put("workflowState", event.getWorkflowState() != null ? event.getWorkflowState().name() : null);
         response.put("description", event.getDescription());
         response.put("date", event.getDate());
         response.put("registrationDeadline", event.getRegistrationDeadline());
@@ -249,6 +251,18 @@ public class EventController {
         if (event.getThemeImageUploadId() != null) {
             response.put("themeImageUploadId", event.getThemeImageUploadId());
         }
+        // Story 5.2: Include topic and workflow state
+        if (event.getTopicId() != null) {
+            response.put("topicId", event.getTopicId());
+        }
+        if (event.getWorkflowState() != null) {
+            response.put("workflowState", event.getWorkflowState().name());
+        }
+        // Include audit fields
+        response.put("createdAt", event.getCreatedAt());
+        response.put("updatedAt", event.getUpdatedAt());
+        response.put("createdBy", event.getCreatedBy());
+        response.put("updatedBy", event.getUpdatedBy());
         return response;
     }
 
@@ -420,19 +434,24 @@ public class EventController {
     ) {
         log.debug("GET /api/v1/events/current - include: {}", include);
 
-        // Find the next event with status: published, registration_open, or registration_closed
+        // Find the next event with active workflow states (V17: changed from status to workflowState)
         // Returns the event nearest to current date
-        List<String> activeStatuses = List.of("published", "registration_open", "registration_closed");
+        List<EventWorkflowState> activeWorkflowStates = List.of(
+                EventWorkflowState.AGENDA_PUBLISHED,
+                EventWorkflowState.NEWSLETTER_SENT,
+                EventWorkflowState.EVENT_READY
+        );
         Event currentEvent = eventRepository
-                .findFirstByStatusInOrderByDateAsc(activeStatuses)
+                .findFirstByWorkflowStateInOrderByDateAsc(activeWorkflowStates)
                 .orElse(null);
 
         if (currentEvent == null) {
-            log.debug("No current event found with statuses: {}", activeStatuses);
+            log.debug("No current event found with workflow states: {}", activeWorkflowStates);
             return ResponseEntity.notFound().build();
         }
 
-        log.debug("Found current event: {} with status: {}", currentEvent.getEventCode(), currentEvent.getStatus());
+        log.debug("Found current event: {} with workflowState: {}",
+                currentEvent.getEventCode(), currentEvent.getWorkflowState());
 
         // Build response with basic event data
         Map<String, Object> response = buildBasicEventResponse(currentEvent);
@@ -474,6 +493,18 @@ public class EventController {
                 "Event code already exists: " + eventCode);
         }
 
+        // Map status field to workflowState (Story 5.2a - batch import support)
+        // Status 'archived' → workflowState ARCHIVED (for historical event imports)
+        // If not specified, defaults to CREATED via @PrePersist
+        EventWorkflowState workflowState = null;
+        if (request.getStatus() != null) {
+            String status = request.getStatus().toLowerCase();
+            if ("archived".equals(status)) {
+                workflowState = EventWorkflowState.ARCHIVED;
+            }
+            // Future: map other status values to workflow states if needed
+        }
+
         // Create new event entity
         Event event = Event.builder()
                 .eventCode(eventCode)
@@ -485,7 +516,6 @@ public class EventController {
                 .venueName(request.getVenueName())
                 .venueAddress(request.getVenueAddress())
                 .venueCapacity(request.getVenueCapacity())
-                .status(request.getStatus() != null ? request.getStatus() : "planning")
                 .organizerUsername(request.getOrganizerUsername())
                 .currentAttendeeCount(request.getCurrentAttendeeCount() != null ? request.getCurrentAttendeeCount() : 0)
                 .publishedAt(request.getPublishedAt() != null ? parseDate(request.getPublishedAt()) : null)
@@ -493,6 +523,7 @@ public class EventController {
                 .description(request.getDescription())
                 .eventType(request.getEventType())
                 .themeImageUploadId(request.getThemeImageUploadId())
+                .workflowState(workflowState) // Set workflowState from status field
                 .build();
 
         // Save event
@@ -516,7 +547,7 @@ public class EventController {
                     savedEvent.getVenueName(),
                     savedEvent.getVenueAddress(),
                     savedEvent.getVenueCapacity(),
-                    savedEvent.getStatus(),
+                    savedEvent.getWorkflowState() != null ? savedEvent.getWorkflowState().name() : null,
                     savedEvent.getOrganizerUsername(),
                     savedEvent.getDescription(),
                     userId
@@ -596,7 +627,6 @@ public class EventController {
         event.setVenueName(request.getVenueName());
         event.setVenueAddress(request.getVenueAddress());
         event.setVenueCapacity(request.getVenueCapacity());
-        event.setStatus(request.getStatus());
         event.setOrganizerUsername(request.getOrganizerUsername());
         event.setCurrentAttendeeCount(request.getCurrentAttendeeCount());
         event.setPublishedAt(request.getPublishedAt() != null ? parseDate(request.getPublishedAt()) : null);
@@ -644,7 +674,7 @@ public class EventController {
                     updatedEvent.getVenueName(),
                     updatedEvent.getVenueAddress(),
                     updatedEvent.getVenueCapacity(),
-                    updatedEvent.getStatus(),
+                    updatedEvent.getWorkflowState() != null ? updatedEvent.getWorkflowState().name() : null,
                     updatedEvent.getOrganizerUsername(),
                     updatedEvent.getDescription(),
                     updatedEvent.getCurrentAttendeeCount(),
@@ -732,7 +762,7 @@ public class EventController {
                     patchedEvent.getVenueName(),
                     patchedEvent.getVenueAddress(),
                     patchedEvent.getVenueCapacity(),
-                    patchedEvent.getStatus(),
+                    patchedEvent.getWorkflowState() != null ? patchedEvent.getWorkflowState().name() : null,
                     patchedEvent.getOrganizerUsername(),
                     patchedEvent.getDescription(),
                     patchedEvent.getCurrentAttendeeCount(),
@@ -789,9 +819,6 @@ public class EventController {
                 }
                 if (request.getDate() != null) {
                     event.setDate(parseDate(request.getDate()));
-                }
-                if (request.getStatus() != null) {
-                    event.setStatus(request.getStatus());
                 }
                 if (request.getDescription() != null) {
                     event.setDescription(request.getDescription());
@@ -878,19 +905,23 @@ public class EventController {
         // Validate event can be published
         validateForPublishing(event);
 
-        // Store previous status for domain event
-        String previousStatus = event.getStatus();
+        // Store previous workflow state for domain event
+        EventWorkflowState previousWorkflowState = event.getWorkflowState();
 
-        // Change status to published
-        event.setStatus("published");
-        event.setPublishedAt(Instant.now());
+        // Transition to AGENDA_PUBLISHED workflow state
+        String userId = securityContextHelper.getCurrentUserId();
+        Event publishedEvent = eventWorkflowStateMachine.transitionToState(
+                eventCode,
+                EventWorkflowState.AGENDA_PUBLISHED,
+                userId
+        );
 
-        // Save updated event
-        Event publishedEvent = eventRepository.save(event);
+        // Set published timestamp
+        publishedEvent.setPublishedAt(Instant.now());
+        publishedEvent = eventRepository.save(publishedEvent);
 
         // Publish domain event (Story 2.2: Architecture Compliance)
         try {
-            String userId = securityContextHelper.getCurrentUserId();
             EventPublishedEvent domainEvent = new EventPublishedEvent(
                     publishedEvent.getId(),           // Internal UUID
                     publishedEvent.getEventCode(),    // Public business identifier
@@ -898,7 +929,7 @@ public class EventController {
                     publishedEvent.getEventNumber(),
                     publishedEvent.getDate(),
                     publishedEvent.getPublishedAt(),
-                    previousStatus,
+                    previousWorkflowState != null ? previousWorkflowState.name() : null,
                     userId
             );
             eventPublisher.publish(domainEvent);
@@ -911,40 +942,6 @@ public class EventController {
 
         // Build response
         Map<String, Object> response = buildBasicEventResponse(publishedEvent);
-
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * Advance Event Workflow (AC8 + AC15 cache invalidation)
-     * Story 1.16.2: Updated to use eventCode instead of UUID
-     *
-     * POST /api/v1/events/{eventCode}/workflow/advance
-     *
-     * Advances the event status through workflow stages
-     */
-    @PostMapping("/{eventCode}/workflow/advance")
-    @Operation(summary = "Advance Workflow", description = "Advance event to next workflow stage (Story 1.16.2)")
-    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
-    public ResponseEntity<Map<String, Object>> advanceWorkflow(@PathVariable String eventCode) {
-        log.debug("POST /api/v1/events/{}/workflow/advance", eventCode);
-
-        // Find event by eventCode
-        Event event = eventRepository.findByEventCode(eventCode)
-                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
-
-        // Validate workflow transition is valid and get next status
-        String nextStatus = getNextWorkflowStatus(event);
-
-        // Update status
-        event.setStatus(nextStatus);
-
-        // Save updated event
-        Event updatedEvent = eventRepository.save(event);
-
-        // Build response
-        Map<String, Object> response = buildBasicEventResponse(updatedEvent);
-        response.put("workflowState", nextStatus); // Add workflowState for test compatibility
 
         return ResponseEntity.ok(response);
     }
@@ -965,41 +962,8 @@ public class EventController {
         }
         // Check that event date is in the future (unless event is archived)
         // Historical events can have past dates when imported with archived status
-        if (!"archived".equals(event.getStatus()) && event.getDate().isBefore(Instant.now())) {
+        if (event.getWorkflowState() != EventWorkflowState.ARCHIVED && event.getDate().isBefore(Instant.now())) {
             throw new BusinessValidationException("Event date must be in the future");
-        }
-    }
-
-    /**
-     * Get next workflow status based on current status
-     *
-     * @param event Event to advance
-     * @return Next workflow status
-     * @throws WorkflowException if workflow cannot be advanced
-     */
-    private String getNextWorkflowStatus(Event event) {
-        // Check if workflow can be advanced based on current status
-        String currentStatus = event.getStatus();
-
-        // Cannot advance archived or cancelled events
-        if ("archived".equals(currentStatus)) {
-            throw new WorkflowException("Cannot advance workflow for archived events");
-        }
-        if ("cancelled".equals(currentStatus)) {
-            throw new WorkflowException("Cannot advance workflow for cancelled events");
-        }
-
-        // Simple workflow status progression
-        // planning -> published -> archived
-        if (currentStatus == null || currentStatus.isEmpty() || "planning".equals(currentStatus)) {
-            return "published";
-        }
-
-        switch (currentStatus) {
-            case "published":
-                return "archived";
-            default:
-                return "published";
         }
     }
 
@@ -1055,9 +1019,6 @@ public class EventController {
         }
         if (request.getVenueCapacity() != null) {
             event.setVenueCapacity(request.getVenueCapacity());
-        }
-        if (request.getStatus() != null) {
-            event.setStatus(request.getStatus());
         }
         if (request.getOrganizerUsername() != null) {
             event.setOrganizerUsername(request.getOrganizerUsername());
@@ -1529,9 +1490,9 @@ public class EventController {
      * @return Event with selected topic
      */
     @PostMapping("/{eventCode}/topics")
-    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ORGANIZER')")
     @Operation(summary = "Select topic for event",
             description = "Assign a topic to an event and transition to TOPIC_SELECTION state")
+    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     public ResponseEntity<Map<String, Object>> selectTopicForEvent(
             @PathVariable String eventCode,
             @RequestBody Map<String, String> request) {
@@ -1594,6 +1555,28 @@ public class EventController {
     }
 
     /**
+     * Get speaker pool for event (Story 5.2 AC9-13).
+     *
+     * GET /api/v1/events/{eventCode}/speakers/pool
+     *
+     * Returns list of potential speakers being brainstormed for the event.
+     */
+    @GetMapping("/{eventCode}/speakers/pool")
+    @Operation(summary = "Get speaker pool",
+            description = "Get list of potential speakers in the event speaker pool")
+    public ResponseEntity<java.util.List<ch.batbern.events.dto.SpeakerPoolResponse>> getSpeakerPool(
+            @PathVariable String eventCode) {
+
+        // Get speaker pool
+        // Exceptions are handled by GlobalExceptionHandler:
+        // - EventNotFoundException → HTTP 404
+        java.util.List<ch.batbern.events.dto.SpeakerPoolResponse> speakerPool =
+                speakerPoolService.getSpeakerPoolForEvent(eventCode);
+
+        return ResponseEntity.ok(speakerPool);
+    }
+
+    /**
      * Add speaker to event speaker pool (Story 5.2 AC9-13).
      *
      * POST /api/v1/events/{eventCode}/speakers/pool
@@ -1601,7 +1584,6 @@ public class EventController {
      * Allows organizers to brainstorm and add potential speakers during event planning.
      */
     @PostMapping("/{eventCode}/speakers/pool")
-    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ORGANIZER')")
     @Operation(summary = "Add speaker to pool",
             description = "Add a potential speaker to the event speaker pool during brainstorming phase")
     public ResponseEntity<ch.batbern.events.dto.SpeakerPoolResponse> addSpeakerToPool(
@@ -1615,5 +1597,28 @@ public class EventController {
         ch.batbern.events.dto.SpeakerPoolResponse response = speakerPoolService.addSpeakerToPool(eventCode, request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * Delete speaker from event speaker pool.
+     *
+     * DELETE /api/v1/events/{eventCode}/speakers/pool/{speakerId}
+     *
+     * Removes a speaker from the event speaker pool.
+     */
+    @DeleteMapping("/{eventCode}/speakers/pool/{speakerId}")
+    @Operation(summary = "Delete speaker from pool",
+            description = "Remove a speaker from the event speaker pool")
+    public ResponseEntity<Void> deleteSpeakerFromPool(
+            @PathVariable String eventCode,
+            @PathVariable String speakerId) {
+
+        // Delete speaker from pool
+        // Exceptions are handled by GlobalExceptionHandler:
+        // - EventNotFoundException → HTTP 404
+        // - IllegalArgumentException → HTTP 404 (speaker not found)
+        speakerPoolService.deleteSpeakerFromPool(eventCode, speakerId);
+
+        return ResponseEntity.noContent().build();
     }
 }

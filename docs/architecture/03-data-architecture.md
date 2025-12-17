@@ -515,8 +515,7 @@ interface Event {
   eventType: EventType;
   slotConfiguration: EventSlotConfiguration;
   venue: Venue;
-  status: EventStatus;
-  workflowState: EventWorkflowState;
+  workflowState: EventWorkflowState;  // V17 migration: removed legacy 'status' field
   organizerId: string;  // Story 1.16.2: organizer username (e.g., "john.doe"), not UUID
   capacity: number;
   currentAttendeeCount: number;
@@ -531,18 +530,8 @@ interface Event {
   metadata: EventMetadata;
 }
 
-enum EventStatus {
-  PLANNING = 'planning',
-  TOPIC_DEFINED = 'topic_defined',
-  SPEAKERS_INVITED = 'speakers_invited',
-  AGENDA_DRAFT = 'agenda_draft',
-  PUBLISHED = 'published',
-  REGISTRATION_OPEN = 'registration_open',
-  REGISTRATION_CLOSED = 'registration_closed',
-  IN_PROGRESS = 'in_progress',
-  COMPLETED = 'completed',
-  ARCHIVED = 'archived'
-}
+// EventStatus enum removed in V17 migration (2025-12-15)
+// Replaced by EventWorkflowState (16-step Epic 5 workflow)
 
 enum EventType {
   FULL_DAY = 'full_day',        // 6-8 slots
@@ -550,16 +539,25 @@ enum EventType {
   EVENING = 'evening'           // 3-4 slots
 }
 
+// Epic 5: 16-step Enhanced Organizer Workflow (Story 5.1a)
+// Introduced in V12 migration, became the sole state field in V17 migration
 enum EventWorkflowState {
-  TOPIC_SELECTION = 'topic_selection',
-  SPEAKER_BRAINSTORMING = 'speaker_brainstorming',
-  SPEAKER_ASSIGNMENT = 'speaker_assignment',
-  SPEAKER_OUTREACH = 'speaker_outreach',
-  CONTENT_COLLECTION = 'content_collection',
-  QUALITY_REVIEW = 'quality_review',
-  SLOT_ASSIGNMENT = 'slot_assignment',
-  AGENDA_FINALIZATION = 'agenda_finalization',
-  PUBLISHED = 'published'
+  CREATED = 'CREATED',
+  TOPIC_SELECTION = 'TOPIC_SELECTION',
+  SPEAKER_BRAINSTORMING = 'SPEAKER_BRAINSTORMING',
+  SPEAKER_OUTREACH = 'SPEAKER_OUTREACH',
+  SPEAKER_CONFIRMATION = 'SPEAKER_CONFIRMATION',
+  CONTENT_COLLECTION = 'CONTENT_COLLECTION',
+  QUALITY_REVIEW = 'QUALITY_REVIEW',
+  THRESHOLD_CHECK = 'THRESHOLD_CHECK',
+  OVERFLOW_MANAGEMENT = 'OVERFLOW_MANAGEMENT',
+  SLOT_ASSIGNMENT = 'SLOT_ASSIGNMENT',
+  AGENDA_PUBLISHED = 'AGENDA_PUBLISHED',
+  AGENDA_FINALIZED = 'AGENDA_FINALIZED',
+  NEWSLETTER_SENT = 'NEWSLETTER_SENT',
+  EVENT_READY = 'EVENT_READY',
+  PARTNER_MEETING_COMPLETE = 'PARTNER_MEETING_COMPLETE',
+  ARCHIVED = 'ARCHIVED'
 }
 
 interface EventSlotConfiguration {

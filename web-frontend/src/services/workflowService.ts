@@ -47,16 +47,32 @@ class WorkflowService {
    *
    * @param eventCode The event code (e.g., "BATbern56")
    * @param targetState The target workflow state (e.g., "TOPIC_SELECTION")
+   * @param override Optional flag to bypass workflow validation (defaults to false)
+   * @param reason Optional reason for overriding validation (for audit trail)
    * @returns Updated Event with new workflow state
    * @throws Error if invalid transition, validation fails, or unauthorized
    */
   async transitionWorkflowState(
     eventCode: string,
-    targetState: EventWorkflowState
+    targetState: EventWorkflowState,
+    override?: boolean,
+    reason?: string
   ): Promise<Event> {
-    const requestBody: TransitionStateRequest = {
+    // Type assertion to include override fields (not yet in generated types)
+    const requestBody: TransitionStateRequest & {
+      overrideValidation?: boolean;
+      overrideReason?: string;
+    } = {
       targetState,
     };
+
+    // Add override fields if override is true
+    if (override) {
+      requestBody.overrideValidation = true;
+      if (reason) {
+        requestBody.overrideReason = reason;
+      }
+    }
 
     const response = await apiClient.put<Event>(
       `${WORKFLOW_API_PATH}/${eventCode}/workflow/transition`,

@@ -58,12 +58,28 @@ public class EventWorkflowTransitionEvent extends DomainEvent<UUID> {
     @NonNull
     private Instant transitionedAt;
 
+    /**
+     * Override validation flag.
+     * When true, indicates that validation was bypassed for this transition.
+     */
+    @JsonProperty("override")
+    private boolean override;
+
+    /**
+     * Optional reason for overriding workflow validation.
+     * Used for audit trail when override is true.
+     */
+    @JsonProperty("overrideReason")
+    private String overrideReason;
+
     @JsonProperty("context")
     @NonNull
     private Map<String, Object> context;
 
     /**
-     * Creates a new EventWorkflowTransitionEvent.
+     * Creates a new EventWorkflowTransitionEvent (backward compatible).
+     *
+     * This constructor delegates to the full override-aware version with override=false.
      *
      * @param eventCode Event code (e.g., "BATbern56")
      * @param fromState Previous workflow state
@@ -77,6 +93,29 @@ public class EventWorkflowTransitionEvent extends DomainEvent<UUID> {
             EventWorkflowState toState,
             String organizerUsername,
             Instant transitionedAt
+    ) {
+        this(eventCode, fromState, toState, organizerUsername, transitionedAt, false, null);
+    }
+
+    /**
+     * Creates a new EventWorkflowTransitionEvent with override metadata.
+     *
+     * @param eventCode Event code (e.g., "BATbern56")
+     * @param fromState Previous workflow state
+     * @param toState New workflow state
+     * @param organizerUsername Username of organizer who triggered the transition
+     * @param transitionedAt Timestamp when the transition occurred
+     * @param override If true, indicates validation was bypassed
+     * @param overrideReason Optional reason for overriding validation (for audit trail)
+     */
+    public EventWorkflowTransitionEvent(
+            String eventCode,
+            EventWorkflowState fromState,
+            EventWorkflowState toState,
+            String organizerUsername,
+            Instant transitionedAt,
+            boolean override,
+            String overrideReason
     ) {
         super(UUID.randomUUID(), "EventWorkflowTransition", organizerUsername);
 
@@ -101,13 +140,17 @@ public class EventWorkflowTransitionEvent extends DomainEvent<UUID> {
         this.toState = toState;
         this.organizerUsername = organizerUsername;
         this.transitionedAt = transitionedAt;
+        this.override = override;
+        this.overrideReason = overrideReason;
 
-        // Build context map with transition details
+        // Build context map with transition details including override metadata
         this.context = Map.of(
             "eventCode", eventCode,
             "fromState", fromState.name(),
             "toState", toState.name(),
-            "organizer", organizerUsername
+            "organizer", organizerUsername,
+            "override", override,
+            "overrideReason", overrideReason != null ? overrideReason : "Not provided"
         );
     }
 

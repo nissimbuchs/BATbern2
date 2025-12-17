@@ -542,7 +542,8 @@ describe('useTopics hooks', () => {
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['events', 'BATbern56'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['event', 'BATbern56'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['events'] });
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: topicKeys.detail('topic-123') });
     });
 

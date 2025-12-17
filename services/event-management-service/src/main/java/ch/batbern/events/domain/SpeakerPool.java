@@ -1,6 +1,9 @@
 package ch.batbern.events.domain;
 
+import ch.batbern.events.converter.SpeakerWorkflowStateConverter;
+import ch.batbern.shared.types.SpeakerWorkflowState;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -43,21 +46,29 @@ public class SpeakerPool {
 
     /**
      * Status field representing speaker pool workflow state.
-     * Valid values (from V14 migration):
-     * - 'identified' (default) - potential speaker identified
-     * - 'contacted' - speaker has been contacted
-     * - 'ready' - speaker is ready to be invited
-     * - 'accepted' - speaker accepted invitation
-     * - 'declined' - speaker declined
-     * - 'content_submitted' - speaker submitted content
-     * - 'quality_reviewed' - content has been reviewed
-     * - 'slot_assigned' - speaker assigned to time slot
-     * - 'confirmed' - speaker confirmed attendance
-     * - 'withdrew' - speaker withdrew from event
-     * - 'overflow' - speaker added to overflow list
+     * Uses SpeakerWorkflowState enum with automatic conversion to database format.
+     *
+     * Database storage: lowercase_with_underscores (e.g., 'identified', 'contacted')
+     * Java representation: UPPER_CASE (e.g., IDENTIFIED, CONTACTED)
+     *
+     * Workflow states:
+     * - IDENTIFIED (default) - potential speaker identified
+     * - CONTACTED - speaker has been contacted
+     * - READY - speaker is ready to be invited
+     * - ACCEPTED - speaker accepted invitation
+     * - DECLINED - speaker declined
+     * - CONTENT_SUBMITTED - speaker submitted content
+     * - QUALITY_REVIEWED - content has been reviewed
+     * - SLOT_ASSIGNED - speaker assigned to time slot
+     * - CONFIRMED - speaker confirmed attendance
+     * - WITHDREW - speaker withdrew from event
+     * - OVERFLOW - speaker added to overflow list
+     *
+     * Story 5.3: Updated to use SpeakerWorkflowState enum with converter
      */
     @Column(name = "status", nullable = false, length = 50)
-    private String status = "identified";
+    @Convert(converter = SpeakerWorkflowStateConverter.class)
+    private SpeakerWorkflowState status = SpeakerWorkflowState.IDENTIFIED;
 
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
@@ -125,11 +136,11 @@ public class SpeakerPool {
         this.assignedOrganizerId = assignedOrganizerId;
     }
 
-    public String getStatus() {
+    public SpeakerWorkflowState getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(SpeakerWorkflowState status) {
         this.status = status;
     }
 

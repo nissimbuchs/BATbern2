@@ -161,8 +161,10 @@ export function useSelectTopicForEvent() {
       request: SelectTopicForEventRequest;
     }) => topicService.selectTopicForEvent(eventCode, request),
     onSuccess: (_data, variables) => {
-      // Invalidate event queries to refetch updated workflow state
-      queryClient.invalidateQueries({ queryKey: ['events', variables.eventCode] });
+      // Invalidate event detail query to refetch updated event with new topicId
+      queryClient.invalidateQueries({ queryKey: ['event', variables.eventCode] });
+      // Invalidate events list query to update list view
+      queryClient.invalidateQueries({ queryKey: ['events'] });
       // Update topic status if applicable
       queryClient.invalidateQueries({ queryKey: topicKeys.detail(variables.request.topicId) });
     },

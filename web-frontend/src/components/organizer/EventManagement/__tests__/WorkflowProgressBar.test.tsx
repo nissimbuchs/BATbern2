@@ -34,7 +34,7 @@ vi.mock('react-router-dom', async () => {
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, params?: Record<string, unknown>) => {
+    t: (key: string, params?: Record<string, unknown>, fallback?: string) => {
       if (key === 'workflow.stepIndicator') {
         return `Step ${params.current}/${params.total}`;
       }
@@ -49,6 +49,17 @@ vi.mock('react-i18next', () => ({
       }
       if (key === 'workflow.progressBarLabel') {
         return `Click to view workflow details. ${params.percentage}% complete`;
+      }
+      // Handle workflow state translations
+      if (key.startsWith('workflow.states.')) {
+        const stateTranslations: Record<string, string> = {
+          'workflow.states.created': 'Created',
+          'workflow.states.topic_selection': 'Topic Selection',
+          'workflow.states.speaker_brainstorming': 'Speaker Brainstorming',
+          'workflow.states.quality_review': 'Quality Review',
+          'workflow.states.archived': 'Archived',
+        };
+        return stateTranslations[key] || fallback || key;
       }
       return key;
     },
@@ -220,22 +231,23 @@ describe('WorkflowProgressBar Component', () => {
     it('should_showStepName_when_workflowInProgress', () => {
       render(<WorkflowProgressBar workflow={mockWorkflowInProgress} eventCode="BATbern56" />);
 
-      // Should display step name "Speaker Research"
-      expect(screen.getByText(/speaker research/i)).toBeInTheDocument();
+      // Should display workflow state name "Quality Review" (Step 7 corresponds to QUALITY_REVIEW)
+      expect(screen.getByText(/quality review/i)).toBeInTheDocument();
     });
 
     it('should_showCurrentStepFormat_when_rendered', () => {
       render(<WorkflowProgressBar workflow={mockWorkflowInProgress} eventCode="BATbern56" />);
 
-      // Should display "Step 7/16: Speaker Research"
-      expect(screen.getByText(/step 7\/16: speaker research/i)).toBeInTheDocument();
+      // Should display "Step 7/16" and workflow state name separately
+      expect(screen.getByText(/step 7\/16/i)).toBeInTheDocument();
+      expect(screen.getByText(/quality review/i)).toBeInTheDocument();
     });
 
     it('should_showCompletedStatus_when_workflowCompleted', () => {
       render(<WorkflowProgressBar workflow={mockWorkflowCompleted} eventCode="BATbern56" />);
 
-      // Should display "Completed" or "Step 16/16"
-      expect(screen.getByText(/completed|step 16\/16/i)).toBeInTheDocument();
+      // Should display workflow state "Archived" for completed workflow
+      expect(screen.getByText(/archived/i)).toBeInTheDocument();
     });
   });
 

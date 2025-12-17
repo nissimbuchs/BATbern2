@@ -32,29 +32,14 @@
       "EVENING": "Evening"
     },
     "workflowProgress": "Workflow Progress",
-    "workflowStep": "Step {{current}}/{{total}}",
-    "workflowState": {
-      "topic_selection": "Topic Selection",
-      "topic_approval": "Topic Approval",
-      "venue_booking": "Venue Booking",
-      "save_the_date": "Save the Date",
-      "speaker_research": "Speaker Research",
-      "speaker_invitation": "Speaker Invitation",
-      "abstracts_submission": "Abstracts Submission",
-      "abstracts_moderation": "Abstracts Moderation",
-      "speaker_assignment": "Speaker Assignment",
-      "speaker_materials": "Speaker Materials",
-      "registration_open": "Registration Open",
-      "event_promotion": "Event Promotion",
-      "event_execution": "Event Execution",
-      "post_event": "Post Event"
-    },
     "actions": {
       "viewDetails": "View Details",
       "edit": "Edit",
       "newEvent": "New Event",
+      "topics": "Topic Selection",
       "eventTypes": "Event Types",
       "eventTypesHelp": "Configure event type templates (Admin)",
+      "manageTopics": "Manage Topics",
       "analytics": "Analytics",
       "speakers": "Speakers"
     },
@@ -270,7 +255,31 @@
     "inProgress": "In Progress",
     "pending": "Pending",
     "blocked": "Blocked",
-    "progressBarLabel": "Click to view workflow details. {{percentage}}% complete"
+    "progressBarLabel": "Click to view workflow details. {{percentage}}% complete",
+    "actions": {
+      "selectTopic": "Select Topic"
+    },
+    "states": {
+      "created": "Created",
+      "topic_selection": "Topic Selection",
+      "speaker_brainstorming": "Speaker Brainstorming",
+      "speaker_outreach": "Speaker Outreach",
+      "speaker_confirmation": "Speaker Confirmation",
+      "content_collection": "Content Collection",
+      "quality_review": "Quality Review",
+      "threshold_check": "Threshold Check",
+      "overflow_management": "Overflow Management",
+      "slot_assignment": "Slot Assignment",
+      "agenda_published": "Agenda Published",
+      "agenda_finalized": "Agenda Finalized",
+      "newsletter_sent": "Newsletter Sent",
+      "event_ready": "Event Ready",
+      "partner_meeting_complete": "Partner Meeting Complete",
+      "archived": "Archived"
+    }
+  },
+  "topicSelection": {
+    "success": "Topic selected successfully"
   },
   "autoSave": {
     "saving": "Saving...",
@@ -310,8 +319,10 @@
     "neverUsed": "Never",
     "partnerVotes": "Partner votes",
     "noTopics": "No topics assigned",
+    "noTopic": "No topic selected",
     "emptyState": "No topics assigned yet",
     "loadError": "Failed to load topics",
+    "change": "Change Topic",
     "removeConfirmTitle": "Remove Topic?",
     "removeConfirmMessage": "Are you sure you want to remove this topic from the event?"
   },

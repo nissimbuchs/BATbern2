@@ -14,13 +14,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
 import { TopicBacklogManager } from './TopicBacklogManager';
 import * as useTopicsHook from '@/hooks/useTopics';
 import type { Topic, TopicListResponse } from '@/types/topic.types';
 
-// Mock the useTopics hook
+// Mock the useTopics hooks
 vi.mock('@/hooks/useTopics', () => ({
   useTopics: vi.fn(),
+  useTopic: vi.fn(),
 }));
 
 // Mock react-i18next
@@ -120,17 +122,27 @@ describe('TopicBacklogManager', () => {
       },
     });
     vi.clearAllMocks();
+
+    // Setup default mock for useTopic (returns undefined when no topic is preassigned)
+    vi.mocked(useTopicsHook.useTopic).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as ReturnType<typeof useTopicsHook.useTopic>);
   });
 
   const renderComponent = (props = {}) => {
     return render(
-      <QueryClientProvider client={queryClient}>
-        <TopicBacklogManager {...props} />
-      </QueryClientProvider>
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <TopicBacklogManager {...props} />
+        </QueryClientProvider>
+      </MemoryRouter>
     );
   };
 
-  it('should render with title and subtitle', () => {
+  it('should render with title', () => {
     vi.mocked(useTopicsHook.useTopics).mockReturnValue({
       data: mockTopicListResponse,
       isLoading: false,
@@ -141,9 +153,7 @@ describe('TopicBacklogManager', () => {
     renderComponent();
 
     expect(screen.getByText('Topic Backlog Manager')).toBeInTheDocument();
-    expect(
-      screen.getByText(/Select topics from the backlog with intelligent suggestions/)
-    ).toBeInTheDocument();
+    // Note: Subtitle is only shown when eventCode is provided (event selection mode)
   });
 
   it('should display loading state', () => {

@@ -24,6 +24,7 @@ export interface Topic {
   active?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  usageHistory?: TopicUsageHistory[]; // GitHub Issue #379: Populated when include=history
 }
 
 export interface SimilarityScore {
@@ -32,7 +33,9 @@ export interface SimilarityScore {
 }
 
 export interface TopicUsageHistory {
-  eventId: string;
+  eventNumber: number; // GitHub Issue #379: Event number (e.g., 56 for BATbern56) - no UUIDs in API
+  eventCode?: string; // GitHub Issue #379: Human-readable event code like "BATbern56"
+  eventDate?: string; // GitHub Issue #379: Actual event date (ISO 8601)
   usedDate: string;
   attendance: number;
   engagementScore: number; // 0-1

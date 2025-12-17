@@ -64,7 +64,6 @@ class RegistrationCleanupServiceIntegrationTest extends AbstractIntegrationTest 
                 .venueName("Test Venue")
                 .venueAddress("Test Address 123, Bern")
                 .venueCapacity(100)
-                .status("published")
                 .eventType(EventType.EVENING)
                 .workflowState(ch.batbern.shared.types.EventWorkflowState.CREATED)
                 .build();

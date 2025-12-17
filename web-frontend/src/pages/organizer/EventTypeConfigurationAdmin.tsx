@@ -10,7 +10,7 @@
  * - Generated types from OpenAPI spec (ADR-006)
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Container,
   Typography,
@@ -26,14 +26,15 @@ import {
   Box,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { Edit as EditIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
+import { Edit as EditIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { Breadcrumbs } from '@/components/shared/Breadcrumbs';
 import { useEventTypes, useUpdateEventType } from '@/hooks/useEventTypes';
 import { EventTypeConfigurationForm } from '@/components/organizer/EventTypeConfigurationForm/EventTypeConfigurationForm';
 import { SlotTemplatePreview } from '@/components/organizer/SlotTemplatePreview/SlotTemplatePreview';
 import type { components } from '@/types/generated/events-api.types';
+import type { BreadcrumbItem } from '@/components/shared/Breadcrumbs';
 
 // Import generated types from OpenAPI spec (ADR-006 compliance)
 type EventType = components['schemas']['EventType'];
@@ -42,7 +43,6 @@ type UpdateEventSlotConfigurationRequest =
 
 export const EventTypeConfigurationAdmin: React.FC = () => {
   const { t } = useTranslation('events');
-  const navigate = useNavigate();
   const { user } = useAuth();
   const { data: eventTypes, isLoading, error } = useEventTypes();
   const updateMutation = useUpdateEventType();
@@ -50,9 +50,14 @@ export const EventTypeConfigurationAdmin: React.FC = () => {
   const [editingType, setEditingType] = useState<EventType | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const handleBack = () => {
-    navigate('/organizer/events');
-  };
+  // Build breadcrumb items (memoized to prevent re-renders)
+  const breadcrumbItems: BreadcrumbItem[] = useMemo(
+    () => [
+      { label: t('navigation.events', 'Events'), path: '/organizer/events' },
+      { label: t('form.eventTypeConfig.title', 'Event Type Configuration') },
+    ],
+    [t]
+  );
 
   // Helper function to get translated event type name
   const getEventTypeName = (type: EventType): string => {
@@ -110,13 +115,9 @@ export const EventTypeConfigurationAdmin: React.FC = () => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      {/* Back button header */}
-      <Box sx={{ mb: 3 }}>
-        <Button startIcon={<ArrowBackIcon />} onClick={handleBack}>
-          {t('actions.back')}
-        </Button>
-      </Box>
+    <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+      {/* Breadcrumbs */}
+      <Breadcrumbs items={breadcrumbItems} />
 
       <Typography variant="h4" component="h1" gutterBottom>
         {t('form.eventTypeConfig.title')}
