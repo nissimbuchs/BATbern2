@@ -119,7 +119,6 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
     }
     return [
       { label: t('navigation.events', 'Events'), path: '/organizer/events' },
-      { label: t('topicBacklog.breadcrumbs.home', 'Home'), path: '/organizer/events' },
       { label: t('topicBacklog.breadcrumbs.manageTopics', 'Manage Topics') },
     ];
   }, [eventCode, eventData, t]);
@@ -140,9 +139,9 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
   };
 
   const handleSpeakerBrainstormComplete = () => {
-    // Navigate back to event details if eventCode exists, otherwise to events dashboard
+    // Navigate to speaker outreach if eventCode exists, otherwise to events dashboard
     if (eventCode) {
-      navigate(`/organizer/events/${eventCode}`);
+      navigate(`/organizer/events/${eventCode}/speakers/outreach`);
     } else {
       navigate('/organizer/events');
     }
