@@ -25,15 +25,18 @@ import type { CreateTopicRequest } from '@/types/topic.types';
 const topicCache = new Map<string, string>();
 
 /**
- * Get or create topic by category name
+ * Get or create topic by title
  *
  * This function:
  * 1. Checks cache first for performance
- * 2. Fetches from API if not cached
+ * 2. Fetches from API by title (not category) if not cached
  * 3. Creates new topic if not found
  * 4. Caches result for subsequent calls
  *
- * @param category Topic category name (e.g., "Frontend & UI", "Cloud & Infrastructure")
+ * NOTE: The JSON file's "category" field represents the topic TITLE, not the topic's category field.
+ * We filter by title to find existing topics.
+ *
+ * @param topicTitle Topic title (e.g., "Frontend & UI", "Cloud & Infrastructure")
  * @returns Topic ID (UUID)
  * @throws Error if API call fails or topic creation fails
  *
@@ -46,35 +49,39 @@ const topicCache = new Map<string, string>();
  * const id2 = await getOrCreateTopicByCategory('Security');
  * ```
  */
-export async function getOrCreateTopicByCategory(category: string): Promise<string> {
+export async function getOrCreateTopicByCategory(topicTitle: string): Promise<string> {
   // Check cache first
-  if (topicCache.has(category)) {
-    return topicCache.get(category)!;
+  if (topicCache.has(topicTitle)) {
+    return topicCache.get(topicTitle)!;
   }
 
-  // Fetch from API with category filter
+  // Fetch all topics and find by title (API doesn't support title filter yet)
   const response = await topicService.getTopics({
-    category,
+    limit: 100, // Get all topics to search by title
   });
 
-  // If topic exists, cache and return
-  if (response.data.length > 0) {
-    const topicId = response.data[0].id;
-    topicCache.set(category, topicId);
-    return topicId;
+  // Find topic by title (case-insensitive match)
+  const matchingTopic = response.data.find(
+    (topic) => topic.title.toLowerCase() === topicTitle.toLowerCase()
+  );
+
+  if (matchingTopic) {
+    topicCache.set(topicTitle, matchingTopic.id);
+    return matchingTopic.id;
   }
 
   // Topic doesn't exist - create it
+  // Use 'technical' as default category since we can't infer from title alone
   const createRequest: CreateTopicRequest = {
-    title: category,
-    category: category,
-    description: `Topic category: ${category}`,
+    title: topicTitle,
+    category: 'technical', // Default to technical category
+    description: `Topic: ${topicTitle}`,
   };
 
   const newTopic = await topicService.createTopic(createRequest);
 
   // Cache newly created topic
-  topicCache.set(category, newTopic.id);
+  topicCache.set(topicTitle, newTopic.id);
 
   return newTopic.id;
 }

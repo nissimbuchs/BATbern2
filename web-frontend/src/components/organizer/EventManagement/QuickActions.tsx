@@ -15,6 +15,7 @@ import {
   Add as AddIcon,
   Settings as SettingsIcon,
   UploadFile as UploadFileIcon,
+  Topic as TopicIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -30,6 +31,10 @@ export const QuickActions: React.FC<QuickActionsProps> = ({ onNewEvent, onBatchI
 
   const handleEventTypesClick = () => {
     navigate('/organizer/event-types');
+  };
+
+  const handleManageTopicsClick = () => {
+    navigate('/organizer/topics');
   };
 
   return (
@@ -70,6 +75,17 @@ export const QuickActions: React.FC<QuickActionsProps> = ({ onNewEvent, onBatchI
           aria-label="Import historical events"
         >
           {t('common:event.batchImport.button')}
+        </Button>
+
+        {/* Manage Topics Button */}
+        <Button
+          variant="outlined"
+          startIcon={<TopicIcon />}
+          fullWidth
+          onClick={handleManageTopicsClick}
+          aria-label={t('dashboard.actions.manageTopics')}
+        >
+          {t('dashboard.actions.manageTopics')}
         </Button>
       </Stack>
     </Paper>

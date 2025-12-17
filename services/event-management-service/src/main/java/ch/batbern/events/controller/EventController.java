@@ -493,6 +493,18 @@ public class EventController {
                 "Event code already exists: " + eventCode);
         }
 
+        // Map status field to workflowState (Story 5.2a - batch import support)
+        // Status 'archived' → workflowState ARCHIVED (for historical event imports)
+        // If not specified, defaults to CREATED via @PrePersist
+        EventWorkflowState workflowState = null;
+        if (request.getStatus() != null) {
+            String status = request.getStatus().toLowerCase();
+            if ("archived".equals(status)) {
+                workflowState = EventWorkflowState.ARCHIVED;
+            }
+            // Future: map other status values to workflow states if needed
+        }
+
         // Create new event entity
         Event event = Event.builder()
                 .eventCode(eventCode)
@@ -511,6 +523,7 @@ public class EventController {
                 .description(request.getDescription())
                 .eventType(request.getEventType())
                 .themeImageUploadId(request.getThemeImageUploadId())
+                .workflowState(workflowState) // Set workflowState from status field
                 .build();
 
         // Save event

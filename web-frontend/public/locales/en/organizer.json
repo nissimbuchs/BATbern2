@@ -9,6 +9,12 @@
     "lastUsed": "Last used",
     "usageCount": "Used {{count}} times",
     "createNew": "Create New Topic",
+    "breadcrumbs": {
+      "home": "Home",
+      "events": "Events",
+      "topicSelection": "Topic Selection",
+      "manageTopics": "Manage Topics"
+    },
     "error": {
       "loadFailed": "Failed to load topics"
     },
@@ -29,6 +35,22 @@
       },
       "create": "Create Topic",
       "creating": "Creating..."
+    },
+    "editModal": {
+      "title": "Edit Topic",
+      "fields": {
+        "title": "Title",
+        "description": "Description",
+        "category": "Category"
+      },
+      "errors": {
+        "titleRequired": "Title is required",
+        "titleTooLong": "Title must be 255 characters or less",
+        "categoryRequired": "Category is required",
+        "updateFailed": "Failed to update topic. Please try again."
+      },
+      "save": "Save Changes",
+      "saving": "Saving..."
     },
     "filters": {
       "title": "Filters",
@@ -60,6 +82,8 @@
       "metrics": "Metrics",
       "lastUsed": "Last Used",
       "usageCount": "Usage Count",
+      "editButton": "Edit Topic",
+      "deleteButton": "Delete Topic",
       "selectButton": "Select for Event",
       "selecting": "Selecting...",
       "overrideButton": "Override Warning",
@@ -99,6 +123,16 @@
         "helper": "Explain why this topic should be reused despite being recent",
         "cancel": "Cancel",
         "confirm": "Override and Select"
+      },
+      "delete": {
+        "title": "Delete Topic",
+        "message": "Are you sure you want to delete \"{{title}}\"? This action cannot be undone.",
+        "cannotDelete": "Cannot delete this topic because it has been used in {{count}} event(s).",
+        "cancel": "Cancel",
+        "confirm": "Delete Topic",
+        "deleting": "Deleting...",
+        "success": "Topic deleted successfully",
+        "error": "Failed to delete topic. Please try again."
       }
     }
   },

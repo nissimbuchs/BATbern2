@@ -19,6 +19,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -185,6 +186,44 @@ public class TopicController {
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(TopicResponse.from(topic));
+    }
+
+    /**
+     * Update existing topic (Story 5.2a - Edit Topic Feature).
+     *
+     * @param id Topic ID
+     * @param request Topic update request
+     * @return Updated topic
+     */
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<TopicResponse> updateTopic(
+            @PathVariable UUID id,
+            @Valid @RequestBody TopicRequest request) {
+
+        Topic topic = topicService.updateTopic(
+                id,
+                request.getTitle(),
+                request.getDescription(),
+                request.getCategory()
+        );
+
+        return ResponseEntity.ok(TopicResponse.from(topic));
+    }
+
+    /**
+     * Delete topic (Story 5.2a - Delete Topic Feature).
+     * Only allowed if topic has never been used (no events attached).
+     *
+     * @param id Topic ID
+     * @return 204 No Content on success
+     * @throws IllegalStateException if topic has been used
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<Void> deleteTopic(@PathVariable UUID id) {
+        topicService.deleteTopic(id);
+        return ResponseEntity.noContent().build();
     }
 
     /**

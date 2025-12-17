@@ -9,7 +9,7 @@
  * - Topic selection for events
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -24,12 +24,15 @@ import {
 import { Add as AddIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useTopics } from '@/hooks/useTopics';
+import { useEvent } from '@/hooks/useEvents';
+import { Breadcrumbs } from '@/components/shared/Breadcrumbs';
 import { TopicFilterPanel } from './TopicFilterPanel';
 import { TopicList } from './TopicList';
 import { TopicDetailsPanel } from './TopicDetailsPanel';
 import { CreateTopicModal } from './CreateTopicModal';
 import { SpeakerBrainstormingPanel } from '@/components/SpeakerBrainstormingPanel/SpeakerBrainstormingPanel';
 import type { Topic, TopicFilters } from '@/types/topic.types';
+import type { BreadcrumbItem } from '@/components/shared/Breadcrumbs';
 
 export interface TopicBacklogManagerProps {
   eventCode?: string; // Optional: if provided, enables topic selection for event
@@ -50,9 +53,29 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
   const [topicConfirmed, setTopicConfirmed] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
 
   // Fetch topics with current filters
   const { data, isLoading, isError, error } = useTopics(filters);
+
+  // Fetch event details if eventCode is provided
+  const { data: eventData } = useEvent(eventCode);
+
+  // Build breadcrumb items based on context (memoized to prevent re-renders)
+  // Must be called after all hooks but before handlers/returns
+  const breadcrumbItems: BreadcrumbItem[] = useMemo(() => {
+    if (eventCode && eventData) {
+      return [
+        { label: t('topicBacklog.breadcrumbs.home', 'Home'), path: '/organizer/events' },
+        { label: eventData.title, path: `/organizer/events/${eventCode}` },
+        { label: t('topicBacklog.breadcrumbs.topicSelection', 'Topic Selection') },
+      ];
+    }
+    return [
+      { label: t('topicBacklog.breadcrumbs.home', 'Home'), path: '/organizer/events' },
+      { label: t('topicBacklog.breadcrumbs.manageTopics', 'Manage Topics') },
+    ];
+  }, [eventCode, eventData, t]);
 
   const handleFilterChange = (newFilters: TopicFilters) => {
     setFilters((prev) => ({ ...prev, ...newFilters, page: 1 })); // Reset to page 1 on filter change
@@ -78,27 +101,47 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
     }
   };
 
+  const handleEditTopic = (topic: Topic) => {
+    setEditingTopic(topic);
+    setCreateModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setCreateModalOpen(false);
+    setEditingTopic(null);
+  };
+
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-      <Box
-        sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}
-      >
-        <Box>
-          <Typography variant="h4" gutterBottom>
-            {t('topicBacklog.title', 'Topic Backlog Manager')}
-          </Typography>
-          <Typography variant="body1" color="text.secondary" paragraph>
-            {t(
-              'topicBacklog.subtitle',
-              'Select topics from the backlog with intelligent suggestions and staleness detection'
-            )}
-          </Typography>
-        </Box>
+      {/* Breadcrumbs */}
+      <Breadcrumbs items={breadcrumbItems} />
+
+      {/* Title section - always visible, shows event context if available */}
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h4" gutterBottom>
+          {t('topicBacklog.title', 'Topic Backlog Manager')}
+        </Typography>
+        {eventCode && eventData && (
+          <>
+            <Typography variant="h6" color="primary" gutterBottom>
+              {eventData.title} ({eventData.eventCode})
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              {t(
+                'topicBacklog.subtitle',
+                'Select topics from the backlog with intelligent suggestions and staleness detection'
+              )}
+            </Typography>
+          </>
+        )}
+      </Box>
+
+      {/* Create Topic button */}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
           onClick={() => setCreateModalOpen(true)}
-          sx={{ mt: 1 }}
         >
           {t('topicBacklog.createNew', 'Create New Topic')}
         </Button>
@@ -144,6 +187,7 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
               topic={selectedTopic}
               eventCode={eventCode}
               onTopicConfirm={handleTopicConfirm}
+              onEditTopic={handleEditTopic}
             />
           ) : (
             <Paper sx={{ p: 3, textAlign: 'center' }}>
@@ -166,10 +210,11 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
         )}
       </Grid>
 
-      {/* Create Topic Modal */}
+      {/* Create/Edit Topic Modal */}
       <CreateTopicModal
         open={createModalOpen}
-        onClose={() => setCreateModalOpen(false)}
+        topic={editingTopic}
+        onClose={handleModalClose}
         onSuccess={() => {
           // Topics list will auto-refresh via query invalidation
         }}

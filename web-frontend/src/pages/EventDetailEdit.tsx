@@ -12,7 +12,7 @@
  * Wireframe: docs/wireframes/story-1.16-event-detail-edit.md v1.1
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -24,8 +24,6 @@ import {
   CircularProgress,
   Alert,
   Divider,
-  Breadcrumbs,
-  Link,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {
@@ -36,6 +34,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useEvent } from '@/hooks/useEvents';
+import { Breadcrumbs } from '@/components/shared/Breadcrumbs';
 import {
   EventForm,
   VenueLogistics,
@@ -43,6 +42,7 @@ import {
   WorkflowProgressBar,
 } from '@/components/organizer/EventManagement';
 import type { SessionUI, SessionSpeaker, WorkflowStep } from '@/types/event.types';
+import type { BreadcrumbItem } from '@/components/shared/Breadcrumbs';
 import { topicService } from '@/services/topicService';
 import type { Topic } from '@/types/topic.types';
 
@@ -64,6 +64,16 @@ const EventDetailEdit: React.FC = () => {
     isLoading,
     error,
   } = useEvent(eventCode, ['venue', 'topics', 'sessions', 'team', 'workflow', 'metrics']);
+
+  // Build breadcrumb items (memoized to prevent re-renders)
+  // Must be called before any conditional returns (Rules of Hooks)
+  const breadcrumbItems: BreadcrumbItem[] = useMemo(
+    () => [
+      { label: t('navigation.events', 'Events'), path: '/organizer/events' },
+      { label: event?.title || t('common.loading', 'Loading...') },
+    ],
+    [event?.title, t]
+  );
 
   // Fetch topic details when topicId changes
   useEffect(() => {
@@ -220,12 +230,7 @@ const EventDetailEdit: React.FC = () => {
   return (
     <Box sx={{ p: 3 }}>
       {/* Breadcrumbs */}
-      <Breadcrumbs sx={{ mb: 2 }}>
-        <Link underline="hover" color="inherit" sx={{ cursor: 'pointer' }} onClick={handleBack}>
-          {t('navigation.events', 'Events')}
-        </Link>
-        <Typography color="text.primary">{event.title}</Typography>
-      </Breadcrumbs>
+      <Breadcrumbs items={breadcrumbItems} marginBottom={2} />
 
       {/* Header */}
       <Stack

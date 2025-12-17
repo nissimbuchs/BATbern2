@@ -15,14 +15,14 @@ const SpeakerOutreachPage: React.FC = () => {
 
   if (!eventCode) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Container maxWidth="xl" sx={{ py: 4 }}>
         <Alert severity="error">Event code is required</Alert>
       </Container>
     );
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container maxWidth="xl" sx={{ py: 4 }}>
       <Box data-testid="speaker-outreach-page">
         <SpeakerOutreachDashboard eventCode={eventCode} />
       </Box>

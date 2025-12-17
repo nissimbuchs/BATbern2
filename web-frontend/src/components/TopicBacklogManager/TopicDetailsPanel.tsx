@@ -29,24 +29,46 @@ import {
 } from '@mui/material';
 import { Warning as WarningIcon, CheckCircle as CheckIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSimilarTopics, useSelectTopicForEvent, useTopicUsageHistory } from '@/hooks/useTopics';
 import { TopicHeatMap } from '@/components/TopicHeatMap';
+import { topicService } from '@/services/topicService';
 import type { Topic } from '@/types/topic.types';
 
 export interface TopicDetailsPanelProps {
   topic: Topic;
   eventCode?: string;
   onTopicConfirm?: (topicId: string) => void;
+  onEditTopic?: (topic: Topic) => void; // Callback to open edit modal
+  onTopicDeleted?: () => void; // Callback after topic is deleted
 }
+
+/**
+ * Map database category names (snake_case) to translation keys (camelCase)
+ */
+const getCategoryTranslationKey = (category: string): string => {
+  const categoryMap: Record<string, string> = {
+    technical: 'technical',
+    management: 'management',
+    soft_skills: 'softSkills',
+    industry_trends: 'industryTrends',
+    tools_platforms: 'toolsPlatforms',
+  };
+  return categoryMap[category] || category;
+};
 
 export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
   topic,
   eventCode,
   onTopicConfirm,
+  onEditTopic,
+  onTopicDeleted,
 }) => {
   const { t } = useTranslation('organizer');
+  const queryClient = useQueryClient();
   const [showOverrideDialog, setShowOverrideDialog] = useState(false);
   const [showSimilarDialog, setShowSimilarDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [justification, setJustification] = useState('');
 
   // Fetch similar topics for duplicate detection (AC5)
@@ -57,6 +79,24 @@ export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
 
   // Mutation for selecting topic
   const selectTopicMutation = useSelectTopicForEvent();
+
+  // Mutation for deleting topic
+  const deleteTopicMutation = useMutation({
+    mutationFn: (topicId: string) => topicService.deleteTopic(topicId),
+    onSuccess: () => {
+      // Invalidate topics query to refetch the list
+      queryClient.invalidateQueries({ queryKey: ['topics'] });
+
+      // Call parent callback
+      onTopicDeleted?.();
+
+      // Close dialog
+      setShowDeleteDialog(false);
+    },
+  });
+
+  // Check if topic can be deleted (never been used)
+  const canDelete = !topic.usageCount || topic.usageCount === 0;
 
   /**
    * Get status message based on staleness score (AC6)
@@ -138,7 +178,14 @@ export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
         </Typography>
 
         <Box sx={{ mb: 2 }}>
-          <Chip label={topic.category} size="small" sx={{ mr: 1 }} />
+          <Chip
+            label={t(
+              `topicBacklog.filters.categories.${getCategoryTranslationKey(topic.category)}`,
+              topic.category
+            )}
+            size="small"
+            sx={{ mr: 1 }}
+          />
           <Chip
             label={`${topic.stalenessScore}%`}
             size="small"
@@ -198,32 +245,59 @@ export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
         )}
 
         {/* Action Buttons */}
-        {eventCode && (
-          <Box sx={{ display: 'flex', gap: 1, flexDirection: 'column' }}>
-            <Button
-              variant="contained"
-              color="primary"
-              fullWidth
-              onClick={handleSelectTopic}
-              disabled={selectTopicMutation.isPending}
-            >
-              {selectTopicMutation.isPending
-                ? t('topicBacklog.details.selecting', 'Selecting...')
-                : t('topicBacklog.details.selectButton', 'Select for Event')}
-            </Button>
+        <Box sx={{ display: 'flex', gap: 1, flexDirection: 'column' }}>
+          {/* Edit Button - Always shown */}
+          <Button
+            variant="outlined"
+            fullWidth
+            onClick={() => onEditTopic?.(topic)}
+            disabled={selectTopicMutation.isPending || deleteTopicMutation.isPending}
+          >
+            {t('topicBacklog.details.editButton', 'Edit Topic')}
+          </Button>
 
-            {topic.stalenessScore < 50 && (
+          {/* Delete Button - Only shown if topic has never been used */}
+          {canDelete && (
+            <Button
+              variant="outlined"
+              color="error"
+              fullWidth
+              onClick={() => setShowDeleteDialog(true)}
+              disabled={selectTopicMutation.isPending || deleteTopicMutation.isPending}
+            >
+              {t('topicBacklog.details.deleteButton', 'Delete Topic')}
+            </Button>
+          )}
+
+          {/* Event-specific actions */}
+          {eventCode && (
+            <>
               <Button
-                variant="outlined"
-                color="warning"
+                variant="contained"
+                color="primary"
                 fullWidth
-                onClick={() => setShowOverrideDialog(true)}
+                onClick={handleSelectTopic}
+                disabled={selectTopicMutation.isPending || deleteTopicMutation.isPending}
               >
-                {t('topicBacklog.details.overrideButton', 'Override Warning')}
+                {selectTopicMutation.isPending
+                  ? t('topicBacklog.details.selecting', 'Selecting...')
+                  : t('topicBacklog.details.selectButton', 'Select for Event')}
               </Button>
-            )}
-          </Box>
-        )}
+
+              {topic.stalenessScore < 50 && (
+                <Button
+                  variant="outlined"
+                  color="warning"
+                  fullWidth
+                  onClick={() => setShowOverrideDialog(true)}
+                  disabled={selectTopicMutation.isPending || deleteTopicMutation.isPending}
+                >
+                  {t('topicBacklog.details.overrideButton', 'Override Warning')}
+                </Button>
+              )}
+            </>
+          )}
+        </Box>
       </Paper>
 
       {/* Similar Topics Warning Dialog (AC5) */}
@@ -320,6 +394,48 @@ export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
             disabled={!justification.trim()}
           >
             {t('topicBacklog.dialogs.override.confirm', 'Override and Select')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Topic Confirmation Dialog */}
+      <Dialog
+        open={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>{t('topicBacklog.dialogs.delete.title', 'Delete Topic')}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {t(
+              'topicBacklog.dialogs.delete.message',
+              'Are you sure you want to delete "{{title}}"? This action cannot be undone.',
+              { title: topic.title }
+            )}
+          </DialogContentText>
+          {deleteTopicMutation.isError && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {t('topicBacklog.dialogs.delete.error', 'Failed to delete topic. Please try again.')}
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setShowDeleteDialog(false)}
+            disabled={deleteTopicMutation.isPending}
+          >
+            {t('topicBacklog.dialogs.delete.cancel', 'Cancel')}
+          </Button>
+          <Button
+            onClick={() => deleteTopicMutation.mutate(topic.id)}
+            color="error"
+            variant="contained"
+            disabled={deleteTopicMutation.isPending}
+          >
+            {deleteTopicMutation.isPending
+              ? t('topicBacklog.dialogs.delete.deleting', 'Deleting...')
+              : t('topicBacklog.dialogs.delete.confirm', 'Delete Topic')}
           </Button>
         </DialogActions>
       </Dialog>

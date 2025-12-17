@@ -1,17 +1,19 @@
 /**
- * Create Topic Modal Component
+ * Create/Edit Topic Modal Component
  * Story 5.2: Topic Selection & Speaker Brainstorming
+ * Story 5.2a: Edit Topic Feature
  *
- * Modal dialog for creating new topics in the backlog.
+ * Modal dialog for creating new or editing existing topics in the backlog.
  * Features:
  * - Form with title, description, category fields
  * - Validation (required fields, max lengths)
  * - Duplicate detection warning (similarity >70%)
  * - Success/error feedback
  * - i18n support (German/English)
+ * - Edit mode when topic prop is provided
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -31,17 +33,24 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { topicService } from '@/services/topicService';
-import type { CreateTopicRequest } from '@/types/topic.types';
+import type { CreateTopicRequest, Topic } from '@/types/topic.types';
 
 export interface CreateTopicModalProps {
   open: boolean;
+  topic?: Topic | null; // If provided, modal is in edit mode
   onClose: () => void;
   onSuccess?: () => void;
 }
 
-export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({ open, onClose, onSuccess }) => {
-  const { t } = useTranslation('organizer');
+export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
+  open,
+  topic,
+  onClose,
+  onSuccess,
+}) => {
+  const { t } = useTranslation(['organizer', 'common']);
   const queryClient = useQueryClient();
+  const isEditMode = !!topic;
 
   const [formData, setFormData] = useState<CreateTopicRequest>({
     title: '',
@@ -51,9 +60,29 @@ export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({ open, onClos
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Mutation for creating topic
+  // Populate form when topic changes (edit mode)
+  useEffect(() => {
+    if (topic) {
+      setFormData({
+        title: topic.title,
+        description: topic.description || '',
+        category: topic.category,
+      });
+      setErrors({});
+    } else {
+      setFormData({ title: '', description: '', category: '' });
+      setErrors({});
+    }
+  }, [topic, open]);
+
+  // Mutation for creating/updating topic
   const createTopicMutation = useMutation({
-    mutationFn: (request: CreateTopicRequest) => topicService.createTopic(request),
+    mutationFn: (request: CreateTopicRequest) => {
+      if (isEditMode && topic) {
+        return topicService.updateTopic(topic.id, request);
+      }
+      return topicService.createTopic(request);
+    },
     onSuccess: () => {
       // Invalidate topics query to refetch the list
       queryClient.invalidateQueries({ queryKey: ['topics'] });
@@ -72,19 +101,20 @@ export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({ open, onClos
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
+    const modalPrefix = isEditMode ? 'editModal' : 'createModal';
 
     if (!formData.title.trim()) {
-      newErrors.title = t('topicBacklog.createModal.errors.titleRequired', 'Title is required');
+      newErrors.title = t(`topicBacklog.${modalPrefix}.errors.titleRequired`, 'Title is required');
     } else if (formData.title.length > 255) {
       newErrors.title = t(
-        'topicBacklog.createModal.errors.titleTooLong',
+        `topicBacklog.${modalPrefix}.errors.titleTooLong`,
         'Title must be 255 characters or less'
       );
     }
 
     if (!formData.category.trim()) {
       newErrors.category = t(
-        'topicBacklog.createModal.errors.categoryRequired',
+        `topicBacklog.${modalPrefix}.errors.categoryRequired`,
         'Category is required'
       );
     }
@@ -109,23 +139,27 @@ export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({ open, onClos
     }
   };
 
+  const modalPrefix = isEditMode ? 'editModal' : 'createModal';
+
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{t('topicBacklog.createModal.title', 'Create New Topic')}</DialogTitle>
+      <DialogTitle>
+        {t(`topicBacklog.${modalPrefix}.title`, isEditMode ? 'Edit Topic' : 'Create New Topic')}
+      </DialogTitle>
 
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
           {createTopicMutation.isError && (
             <Alert severity="error">
               {t(
-                'topicBacklog.createModal.errors.createFailed',
-                'Failed to create topic. Please try again.'
+                `topicBacklog.${modalPrefix}.errors.${isEditMode ? 'updateFailed' : 'createFailed'}`,
+                `Failed to ${isEditMode ? 'update' : 'create'} topic. Please try again.`
               )}
             </Alert>
           )}
 
           <TextField
-            label={t('topicBacklog.createModal.fields.title', 'Title')}
+            label={t(`topicBacklog.${modalPrefix}.fields.title`, 'Title')}
             value={formData.title}
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             error={!!errors.title}
@@ -137,7 +171,7 @@ export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({ open, onClos
           />
 
           <TextField
-            label={t('topicBacklog.createModal.fields.description', 'Description')}
+            label={t(`topicBacklog.${modalPrefix}.fields.description`, 'Description')}
             value={formData.description || ''}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             error={!!errors.description}
@@ -154,11 +188,11 @@ export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({ open, onClos
             error={!!errors.category}
             disabled={createTopicMutation.isPending}
           >
-            <InputLabel>{t('topicBacklog.createModal.fields.category', 'Category')}</InputLabel>
+            <InputLabel>{t(`topicBacklog.${modalPrefix}.fields.category`, 'Category')}</InputLabel>
             <Select
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              label={t('topicBacklog.createModal.fields.category', 'Category')}
+              label={t(`topicBacklog.${modalPrefix}.fields.category`, 'Category')}
             >
               <MenuItem value="technical">
                 {t('topicBacklog.filters.categories.technical', 'Technical')}
@@ -192,8 +226,14 @@ export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({ open, onClos
           startIcon={createTopicMutation.isPending ? <CircularProgress size={20} /> : undefined}
         >
           {createTopicMutation.isPending
-            ? t('topicBacklog.createModal.creating', 'Creating...')
-            : t('topicBacklog.createModal.create', 'Create Topic')}
+            ? t(
+                `topicBacklog.${modalPrefix}.${isEditMode ? 'saving' : 'creating'}`,
+                isEditMode ? 'Saving...' : 'Creating...'
+              )
+            : t(
+                `topicBacklog.${modalPrefix}.${isEditMode ? 'save' : 'create'}`,
+                isEditMode ? 'Save Changes' : 'Create Topic'
+              )}
         </Button>
       </DialogActions>
     </Dialog>

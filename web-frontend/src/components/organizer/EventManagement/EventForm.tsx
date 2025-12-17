@@ -46,6 +46,40 @@ import { EventTypeSelector } from '@/components/organizer/EventTypeSelector/Even
 import type { components } from '@/types/generated/events-api.types';
 
 /**
+ * Maps EventWorkflowState to CreateEventRequest status field
+ * Backend uses simplified status enum, frontend uses detailed workflow states
+ */
+function mapWorkflowStateToStatus(
+  workflowState: components['schemas']['EventWorkflowState'] | undefined
+): components['schemas']['CreateEventRequest']['status'] {
+  if (!workflowState) return 'planning';
+
+  const statusMap: Record<
+    components['schemas']['EventWorkflowState'],
+    components['schemas']['CreateEventRequest']['status']
+  > = {
+    CREATED: 'planning',
+    TOPIC_SELECTION: 'planning',
+    SPEAKER_BRAINSTORMING: 'topic_defined',
+    SPEAKER_OUTREACH: 'speakers_invited',
+    SPEAKER_CONFIRMATION: 'speakers_invited',
+    CONTENT_COLLECTION: 'agenda_draft',
+    QUALITY_REVIEW: 'agenda_draft',
+    THRESHOLD_CHECK: 'agenda_draft',
+    OVERFLOW_MANAGEMENT: 'agenda_draft',
+    SLOT_ASSIGNMENT: 'agenda_draft',
+    AGENDA_PUBLISHED: 'published',
+    AGENDA_FINALIZED: 'published',
+    NEWSLETTER_SENT: 'registration_open',
+    EVENT_READY: 'in_progress',
+    PARTNER_MEETING_COMPLETE: 'completed',
+    ARCHIVED: 'archived',
+  };
+
+  return statusMap[workflowState] || 'planning';
+}
+
+/**
  * Converts legacy lowercase snake_case event types to UPPER_CASE enum values
  * Handles migration from old format (full_day) to new format (FULL_DAY)
  */
@@ -353,7 +387,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
     try {
       // IMPORTANT: Backend expects organizerUsername (String) per Story 1.16.2
       // OpenAPI spec updated to use username as public identifier
-      const createData = {
+      const createData: CreateEventRequest = {
         title: data.title,
         eventNumber: data.eventNumber,
         date: new Date(data.date).toISOString(),
@@ -363,16 +397,14 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         venueName: data.venueName,
         venueAddress: data.venueAddress,
         venueCapacity: data.venueCapacity,
-        workflowState: isDraft ? 'CREATED' : data.workflowState,
+        status: mapWorkflowStateToStatus(isDraft ? 'CREATED' : data.workflowState),
+        eventType: data.eventType || 'FULL_DAY', // Required field with default
         organizerUsername: user.username, // Use username (e.g., "john.doe")
         currentAttendeeCount: 0,
         description: data.description || undefined,
-        metadata:
-          data.theme || data.eventType
-            ? JSON.stringify({ theme: data.theme, eventType: data.eventType })
-            : undefined,
+        metadata: data.theme ? JSON.stringify({ theme: data.theme }) : undefined,
         themeImageUploadId: themeImageUploadId || undefined, // Story 2.5.3a
-      } as CreateEventRequest;
+      };
 
       // Use mutation hook for proper cache management (MVC pattern)
       await createEventMutation.mutateAsync(createData);

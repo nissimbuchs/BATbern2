@@ -52,4 +52,11 @@ public class CreateEventRequest {
     private EventType eventType;
 
     private String themeImageUploadId;
+
+    /**
+     * Event status (maps to workflowState internally).
+     * Supported values: 'archived' (for historical event imports)
+     * Story 5.2a: Batch import with archived events
+     */
+    private String status;
 }

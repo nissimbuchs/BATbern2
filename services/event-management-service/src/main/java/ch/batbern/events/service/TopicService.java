@@ -59,13 +59,37 @@ public class TopicService {
      * Get all topics with optional category and status filters, with pagination support.
      *
      * @param category Optional category filter
-     * @param status Optional status filter ("active", "inactive", or null for all)
+     * @param status Optional status filter:
+     *               - "active"/"inactive" for active flag (legacy)
+     *               - "available" for staleness >= 70 (green zone)
+     *               - "caution" for staleness 40-69 (yellow zone)
+     *               - "unavailable" for staleness < 40 (red zone)
      * @param pageable Pagination and sort parameters
      * @return Page of topics matching filters
      */
     @Transactional(readOnly = true)
     public Page<Topic> getAllTopics(String category, String status, Pageable pageable) {
-        // Convert status string to Boolean
+        // Check if status is staleness-based filter (Story 5.2a - Fix #5)
+        if (status != null && !status.isBlank()) {
+            if (status.equalsIgnoreCase("available")) {
+                // Green zone: staleness >= 70 (safe to use)
+                return topicRepository.findByCategoryAndStalenessRange(
+                    category, 70, 100, pageable
+                );
+            } else if (status.equalsIgnoreCase("caution")) {
+                // Yellow zone: staleness 40-69 (use with caution)
+                return topicRepository.findByCategoryAndStalenessRange(
+                    category, 40, 69, pageable
+                );
+            } else if (status.equalsIgnoreCase("unavailable")) {
+                // Red zone: staleness < 40 (too recent)
+                return topicRepository.findByCategoryAndStalenessRange(
+                    category, 0, 39, pageable
+                );
+            }
+        }
+
+        // Legacy: Convert status string to Boolean for active flag
         Boolean active = null;
         if (status != null && !status.isBlank()) {
             if (status.equalsIgnoreCase("active")) {
@@ -151,6 +175,54 @@ public class TopicService {
         calculateSimilarityScoresForTopic(savedTopic);
 
         return savedTopic;
+    }
+
+    /**
+     * Update existing topic (Story 5.2a - Edit Topic Feature).
+     *
+     * @param topicId Topic ID
+     * @param title Updated title
+     * @param description Updated description
+     * @param category Updated category
+     * @return Updated topic
+     */
+    public Topic updateTopic(UUID topicId, String title, String description, String category) {
+        Topic topic = topicRepository.findById(topicId)
+                .orElseThrow(() -> new IllegalArgumentException("Topic not found: " + topicId));
+
+        topic.setTitle(title);
+        topic.setDescription(description);
+        topic.setCategory(category);
+
+        Topic savedTopic = topicRepository.save(topic);
+
+        // Recalculate similarity scores after update
+        calculateSimilarityScoresForTopic(savedTopic);
+
+        return savedTopic;
+    }
+
+    /**
+     * Delete topic (Story 5.2a - Delete Topic Feature).
+     * Only allowed if topic has never been used (no events attached).
+     *
+     * @param topicId Topic ID
+     * @throws IllegalArgumentException if topic not found
+     * @throws IllegalStateException if topic has been used (usageCount > 0 or lastUsedDate != null)
+     */
+    public void deleteTopic(UUID topicId) {
+        Topic topic = topicRepository.findById(topicId)
+                .orElseThrow(() -> new IllegalArgumentException("Topic not found: " + topicId));
+
+        // Safety check: prevent deletion if topic has been used
+        if (topic.getUsageCount() > 0 || topic.getLastUsedDate() != null) {
+            throw new IllegalStateException(
+                "Cannot delete topic that has been used in events. "
+                + "Topic has been used " + topic.getUsageCount() + " time(s)."
+            );
+        }
+
+        topicRepository.delete(topic);
     }
 
     /**
@@ -313,30 +385,59 @@ public class TopicService {
                 .orElseThrow(() -> new IllegalArgumentException("Topic not found: " + topicId));
 
         // Validate event state (AC16)
+        // Allow topic assignment for CREATED, TOPIC_SELECTION, and ARCHIVED states
+        // ARCHIVED state support added for Story 5.2a (historical event batch import)
         EventWorkflowState currentState = event.getWorkflowState();
         if (currentState != EventWorkflowState.CREATED
-                && currentState != EventWorkflowState.TOPIC_SELECTION) {
+                && currentState != EventWorkflowState.TOPIC_SELECTION
+                && currentState != EventWorkflowState.ARCHIVED) {
             throw new IllegalStateException(
                 "Invalid state transition: Cannot select topic when event is in " + currentState + " state"
             );
         }
 
-        // Transition workflow state FIRST (AC14)
-        // This will also publish EventWorkflowTransitionEvent
-        Event updatedEvent = eventWorkflowStateMachine.transitionToState(
-            eventCode,
-            EventWorkflowState.TOPIC_SELECTION,
-            organizerUsername
-        );
+        // Transition workflow state FIRST (AC14) - UNLESS event is already ARCHIVED
+        // For ARCHIVED events (historical imports), skip state transition to preserve archival status
+        Event updatedEvent;
+        if (currentState == EventWorkflowState.ARCHIVED) {
+            // Skip state transition for archived events - just update topic directly
+            updatedEvent = event;
+        } else {
+            // This will also publish EventWorkflowTransitionEvent
+            updatedEvent = eventWorkflowStateMachine.transitionToState(
+                eventCode,
+                EventWorkflowState.TOPIC_SELECTION,
+                organizerUsername
+            );
+        }
 
         // NOW assign topic to the event returned by state machine
         updatedEvent.setTopicId(topicId);
         updatedEvent.setUpdatedBy(organizerUsername);
         Event savedEvent = eventRepository.save(updatedEvent);
 
-        // Mark topic as used
-        markTopicAsUsed(topicId);
+        // Mark topic as used with event date (Story 5.2a - Fix #4)
+        markTopicAsUsed(topicId, savedEvent.getDate());
 
         return savedEvent;
+    }
+
+    /**
+     * Mark topic as used with specific date (overloaded for backward compatibility).
+     *
+     * @param topicId Topic ID
+     * @param eventDate Event date to set as lastUsedDate
+     * @return Updated topic
+     */
+    public Topic markTopicAsUsed(UUID topicId, java.time.Instant eventDate) {
+        Topic topic = topicRepository.findById(topicId)
+                .orElseThrow(() -> new IllegalArgumentException("Topic not found: " + topicId));
+
+        // Convert Instant to LocalDateTime in system timezone
+        topic.setLastUsedDate(LocalDateTime.ofInstant(eventDate, java.time.ZoneId.systemDefault()));
+        topic.setUsageCount(topic.getUsageCount() + 1);
+        topic.setStalenessScore(0); // Reset staleness to 0 when used
+
+        return topicRepository.save(topic);
     }
 }

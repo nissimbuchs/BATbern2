@@ -1,14 +1,20 @@
 {
   "topicBacklog": {
     "pageTitle": "Themenverwaltung",
-    "pageDescription": "Verwalten Sie Themen im Rückstand, wählen Sie Themen für Veranstaltungen und analysieren Sie Nutzungsmuster",
-    "title": "Themenrückstand-Manager",
-    "subtitle": "Wählen Sie Themen aus dem Rückstand mit intelligenten Vorschlägen und Veraltetheitserkennung",
+    "pageDescription": "Verwalten Sie Themen im Backlog, wählen Sie Themen für Veranstaltungen und analysieren Sie Nutzungsmuster",
+    "title": "Themen-Backlog-Manager",
+    "subtitle": "Wählen Sie Themen aus dem Backlog mit intelligenten Vorschlägen und Veraltetheitserkennung",
     "selectPrompt": "Wählen Sie ein Thema aus, um Details anzuzeigen",
     "noTopics": "Keine Themen gefunden, die Ihren Filtern entsprechen",
     "lastUsed": "Zuletzt verwendet",
     "usageCount": "{{count}}-mal verwendet",
     "createNew": "Neues Thema erstellen",
+    "breadcrumbs": {
+      "home": "Startseite",
+      "events": "Veranstaltungen",
+      "topicSelection": "Themenauswahl",
+      "manageTopics": "Themen verwalten"
+    },
     "error": {
       "loadFailed": "Fehler beim Laden der Themen"
     },
@@ -29,6 +35,22 @@
       },
       "create": "Thema erstellen",
       "creating": "Wird erstellt..."
+    },
+    "editModal": {
+      "title": "Thema bearbeiten",
+      "fields": {
+        "title": "Titel",
+        "description": "Beschreibung",
+        "category": "Kategorie"
+      },
+      "errors": {
+        "titleRequired": "Titel ist erforderlich",
+        "titleTooLong": "Titel muss 255 Zeichen oder weniger sein",
+        "categoryRequired": "Kategorie ist erforderlich",
+        "updateFailed": "Fehler beim Aktualisieren des Themas. Bitte versuchen Sie es erneut."
+      },
+      "save": "Änderungen speichern",
+      "saving": "Wird gespeichert..."
     },
     "filters": {
       "title": "Filter",
@@ -60,6 +82,8 @@
       "metrics": "Metriken",
       "lastUsed": "Zuletzt verwendet",
       "usageCount": "Verwendungshäufigkeit",
+      "editButton": "Thema bearbeiten",
+      "deleteButton": "Thema löschen",
       "selectButton": "Für Veranstaltung auswählen",
       "selecting": "Wird ausgewählt...",
       "overrideButton": "Warnung überschreiben",
@@ -99,6 +123,16 @@
         "helper": "Erklären Sie, warum dieses Thema trotz seiner Aktualität wiederverwendet werden sollte",
         "cancel": "Abbrechen",
         "confirm": "Überschreiben und auswählen"
+      },
+      "delete": {
+        "title": "Thema löschen",
+        "message": "Möchten Sie \"{{title}}\" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+        "cannotDelete": "Dieses Thema kann nicht gelöscht werden, da es in {{count}} Veranstaltung(en) verwendet wurde.",
+        "cancel": "Abbrechen",
+        "confirm": "Thema löschen",
+        "deleting": "Wird gelöscht...",
+        "success": "Thema erfolgreich gelöscht",
+        "error": "Fehler beim Löschen des Themas. Bitte versuchen Sie es erneut."
       }
     }
   },

@@ -64,17 +64,17 @@ export const TopicFilterPanel: React.FC<TopicFilterPanelProps> = ({ filters, onF
             <MenuItem value="technical">
               {t('topicBacklog.filters.categories.technical', 'Technical')}
             </MenuItem>
-            <MenuItem value="business">
-              {t('topicBacklog.filters.categories.business', 'Business')}
+            <MenuItem value="management">
+              {t('topicBacklog.filters.categories.management', 'Management')}
             </MenuItem>
-            <MenuItem value="architecture">
-              {t('topicBacklog.filters.categories.architecture', 'Architecture')}
+            <MenuItem value="soft_skills">
+              {t('topicBacklog.filters.categories.softSkills', 'Soft Skills')}
             </MenuItem>
-            <MenuItem value="cloud-native">
-              {t('topicBacklog.filters.categories.cloudNative', 'Cloud Native')}
+            <MenuItem value="industry_trends">
+              {t('topicBacklog.filters.categories.industryTrends', 'Industry Trends')}
             </MenuItem>
-            <MenuItem value="security">
-              {t('topicBacklog.filters.categories.security', 'Security')}
+            <MenuItem value="tools_platforms">
+              {t('topicBacklog.filters.categories.toolsPlatforms', 'Tools & Platforms')}
             </MenuItem>
           </Select>
         </FormControl>
