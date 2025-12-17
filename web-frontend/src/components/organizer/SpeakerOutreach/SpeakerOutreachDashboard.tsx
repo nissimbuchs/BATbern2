@@ -73,13 +73,18 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
   };
 
   // Get unique organizers for filter
-  const organizers = React.useMemo(() => {
+  const organizerIds = React.useMemo(() => {
     if (!speakerPool) return [];
     const uniqueOrganizers = new Set(
       speakerPool.map((s) => s.assignedOrganizerId).filter((id): id is string => !!id)
     );
     return Array.from(uniqueOrganizers);
   }, [speakerPool]);
+
+  // Transform organizer IDs to objects for SpeakerBrainstormingPanel
+  const organizers = React.useMemo(() => {
+    return organizerIds.map((id) => ({ id, name: id }));
+  }, [organizerIds]);
 
   // Filter speakers by organizer
   const filteredSpeakers = React.useMemo(() => {
@@ -212,7 +217,7 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
                   label={t('speakerOutreach.filterByOrganizer')}
                 >
                   <MenuItem value="all">All Organizers</MenuItem>
-                  {organizers.map((org) => (
+                  {organizerIds.map((org) => (
                     <MenuItem key={org} value={org}>
                       {org}
                     </MenuItem>
@@ -352,7 +357,7 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
               </Box>
               <SpeakerBrainstormingPanel
                 eventCode={eventCode}
-                organizers={[]}
+                organizers={organizers}
                 showPoolList={false}
               />
             </Paper>
