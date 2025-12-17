@@ -9,7 +9,7 @@
  * - Topic selection for events
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -30,7 +30,7 @@ import {
   ViewKanban as BoardIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { useTopics } from '@/hooks/useTopics';
+import { useTopics, useTopic } from '@/hooks/useTopics';
 import { useEvent, useEvents } from '@/hooks/useEvents';
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs';
 import type { Event } from '@/types/event.types';
@@ -73,6 +73,16 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
 
   // Fetch event details if eventCode is provided
   const { data: eventData } = useEvent(eventCode);
+
+  // Fetch pre-assigned topic if event has topicId (Story 5.2 - Topic preselection)
+  const { data: preassignedTopic } = useTopic(eventData?.topicId || '', 'history');
+
+  // Preselect topic when event loads with topicId
+  useEffect(() => {
+    if (preassignedTopic && !selectedTopic) {
+      setSelectedTopic(preassignedTopic);
+    }
+  }, [preassignedTopic, selectedTopic]);
 
   // Fetch all events for heat map (to show event numbers and titles)
   const { data: allEventsData } = useEvents({ page: 1, limit: 1000 }); // Fetch many events for lookup

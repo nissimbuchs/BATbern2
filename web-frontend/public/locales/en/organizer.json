@@ -194,6 +194,13 @@
       "home": "Home",
       "speakerOutreach": "Speaker Outreach"
     },
+    "emptyPool": {
+      "message": "You need to add speakers to the pool before starting outreach.",
+      "hint": "Go back to the event planning stage to add potential speakers.",
+      "addSpeakers": "Add Speakers to Pool"
+    },
+    "showBrainstorm": "Add Speakers",
+    "hideBrainstorm": "Hide Add Speakers",
     "speakerName": "Speaker",
     "contactMethod": "Contact Method",
     "contactDate": "Contact Date",

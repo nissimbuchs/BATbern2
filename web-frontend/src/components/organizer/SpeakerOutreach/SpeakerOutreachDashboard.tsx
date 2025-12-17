@@ -12,6 +12,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Paper,
@@ -31,12 +32,16 @@ import {
   CircularProgress,
   Alert,
   Checkbox,
+  Grid,
+  IconButton,
 } from '@mui/material';
+import { Add as AddIcon, ChevronRight } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useSpeakerPool } from '../../../hooks/useSpeakerPool';
 import { useEvent } from '../../../hooks/useEvents';
 import { Breadcrumbs } from '../../shared/Breadcrumbs';
 import type { BreadcrumbItem } from '../../shared/Breadcrumbs';
+import { SpeakerBrainstormingPanel } from '../../SpeakerBrainstormingPanel/SpeakerBrainstormingPanel';
 import MarkContactedModal from './MarkContactedModal';
 import SpeakerOutreachDetailsDrawer from './SpeakerOutreachDetailsDrawer';
 import type { SpeakerPoolEntry } from '../../../types/speakerPool.types';
@@ -47,6 +52,7 @@ interface SpeakerOutreachDashboardProps {
 
 const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eventCode }) => {
   const { t } = useTranslation('organizer');
+  const navigate = useNavigate();
   const { data: speakerPool, isLoading, isError } = useSpeakerPool(eventCode);
   const { data: eventData } = useEvent(eventCode);
 
@@ -55,6 +61,7 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
   const [markContactedModalOpen, setMarkContactedModalOpen] = useState(false);
   const [detailsDrawerOpen, setDetailsDrawerOpen] = useState(false);
   const [currentSpeaker, setCurrentSpeaker] = useState<SpeakerPoolEntry | null>(null);
+  const [showBrainstormPanel, setShowBrainstormPanel] = useState(false);
 
   // Calculate days since assignment
   const calculateDaysSinceAssignment = (createdAt: string): number => {
@@ -139,11 +146,30 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
 
   if (!speakerPool || speakerPool.length === 0) {
     return (
-      <Paper sx={{ p: 3 }}>
-        <Typography variant="body1" color="text.secondary">
-          {t('speakerBrainstorm.pool.empty')}
-        </Typography>
-      </Paper>
+      <Box data-testid="speaker-outreach-dashboard">
+        <Breadcrumbs items={breadcrumbItems} />
+        <Box sx={{ p: 3, textAlign: 'center' }}>
+          <Alert severity="info" sx={{ mb: 2 }}>
+            {t(
+              'speakerOutreach.emptyPool.message',
+              'You need to add speakers to the pool before starting outreach.'
+            )}
+          </Alert>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            {t(
+              'speakerOutreach.emptyPool.hint',
+              'Go back to the event planning stage to add potential speakers.'
+            )}
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => navigate(`/organizer/topics?eventCode=${eventCode}`)}
+          >
+            {t('speakerOutreach.emptyPool.addSpeakers', 'Add Speakers to Pool')}
+          </Button>
+        </Box>
+      </Box>
     );
   }
 
@@ -152,150 +178,187 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
       {/* Breadcrumbs */}
       <Breadcrumbs items={breadcrumbItems} />
 
-      <Box mb={3} display="flex" justifyContent="space-between" alignItems="center">
-        <Box>
-          <Typography variant="h5" gutterBottom>
-            {t('speakerOutreach.title')}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {t('speakerOutreach.subtitle')}
-          </Typography>
-        </Box>
+      <Grid container spacing={3}>
+        {/* Main Content Area */}
+        <Grid item xs={12} md={showBrainstormPanel ? 8 : 12}>
+          <Box mb={3} display="flex" justifyContent="space-between" alignItems="center">
+            <Box>
+              <Typography variant="h5" gutterBottom>
+                {t('speakerOutreach.title')}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {t('speakerOutreach.subtitle')}
+              </Typography>
+            </Box>
 
-        {/* Filter by Organizer */}
-        <FormControl sx={{ minWidth: 200 }}>
-          <InputLabel>{t('speakerOutreach.filterByOrganizer')}</InputLabel>
-          <Select
-            value={selectedOrganizer}
-            onChange={(e) => setSelectedOrganizer(e.target.value)}
-            label={t('speakerOutreach.filterByOrganizer')}
-          >
-            <MenuItem value="all">All Organizers</MenuItem>
-            {organizers.map((org) => (
-              <MenuItem key={org} value={org}>
-                {org}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Box>
+            {/* Toggle brainstorm panel button */}
+            <Box display="flex" gap={2} alignItems="center">
+              <Button
+                variant="outlined"
+                startIcon={showBrainstormPanel ? <ChevronRight /> : <AddIcon />}
+                onClick={() => setShowBrainstormPanel(!showBrainstormPanel)}
+              >
+                {showBrainstormPanel
+                  ? t('speakerOutreach.hideBrainstorm', 'Hide Add Speakers')
+                  : t('speakerOutreach.showBrainstorm', 'Add Speakers')}
+              </Button>
 
-      {/* Bulk Actions Bar */}
-      {selectedSpeakers.size > 0 && (
-        <Paper sx={{ p: 2, mb: 2, bgcolor: 'primary.50' }}>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="body2">
-              {selectedSpeakers.size} speaker{selectedSpeakers.size > 1 ? 's' : ''} selected
-            </Typography>
-            <Button
-              variant="contained"
-              onClick={() => {
-                // For now, just open modal for first selected speaker
-                // In full implementation, would use bulk action
-                const firstSpeakerId = Array.from(selectedSpeakers)[0];
-                const speaker = speakerPool.find((s) => s.id === firstSpeakerId);
-                if (speaker) handleMarkContacted(speaker);
-              }}
-            >
-              {t('speakerOutreach.markContacted')}
-            </Button>
-          </Box>
-        </Paper>
-      )}
-
-      {/* Speaker List Table */}
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell padding="checkbox">
-                <Checkbox
-                  checked={selectedSpeakers.size === filteredSpeakers.length}
-                  indeterminate={
-                    selectedSpeakers.size > 0 && selectedSpeakers.size < filteredSpeakers.length
-                  }
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedSpeakers(new Set(filteredSpeakers.map((s) => s.id)));
-                    } else {
-                      setSelectedSpeakers(new Set());
-                    }
-                  }}
-                />
-              </TableCell>
-              <TableCell>{t('speakerBrainstorm.form.speakerName')}</TableCell>
-              <TableCell>{t('speakerBrainstorm.form.company')}</TableCell>
-              <TableCell>{t('speakerBrainstorm.pool.assigned')}</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>{t('speakerOutreach.daysSinceAssignment')}</TableCell>
-              <TableCell align="right">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredSpeakers.map((speaker) => {
-              const daysSince = calculateDaysSinceAssignment(speaker.createdAt);
-              const isOverdue = daysSince > 7;
-
-              return (
-                <TableRow
-                  key={speaker.id}
-                  hover
-                  onClick={() => handleRowClick(speaker)}
-                  sx={{ cursor: 'pointer' }}
-                  data-testid="speaker-row"
+              {/* Filter by Organizer */}
+              <FormControl sx={{ minWidth: 200 }}>
+                <InputLabel>{t('speakerOutreach.filterByOrganizer')}</InputLabel>
+                <Select
+                  value={selectedOrganizer}
+                  onChange={(e) => setSelectedOrganizer(e.target.value)}
+                  label={t('speakerOutreach.filterByOrganizer')}
                 >
-                  <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
+                  <MenuItem value="all">All Organizers</MenuItem>
+                  {organizers.map((org) => (
+                    <MenuItem key={org} value={org}>
+                      {org}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+          </Box>
+
+          {/* Bulk Actions Bar */}
+          {selectedSpeakers.size > 0 && (
+            <Paper sx={{ p: 2, mb: 2, bgcolor: 'primary.50' }}>
+              <Box display="flex" justifyContent="space-between" alignItems="center">
+                <Typography variant="body2">
+                  {selectedSpeakers.size} speaker{selectedSpeakers.size > 1 ? 's' : ''} selected
+                </Typography>
+                <Button
+                  variant="contained"
+                  onClick={() => {
+                    // For now, just open modal for first selected speaker
+                    // In full implementation, would use bulk action
+                    const firstSpeakerId = Array.from(selectedSpeakers)[0];
+                    const speaker = speakerPool.find((s) => s.id === firstSpeakerId);
+                    if (speaker) handleMarkContacted(speaker);
+                  }}
+                >
+                  {t('speakerOutreach.markContacted')}
+                </Button>
+              </Box>
+            </Paper>
+          )}
+
+          {/* Speaker List Table */}
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell padding="checkbox">
                     <Checkbox
-                      checked={selectedSpeakers.has(speaker.id)}
-                      onChange={() => handleSelectSpeaker(speaker.id)}
+                      checked={selectedSpeakers.size === filteredSpeakers.length}
+                      indeterminate={
+                        selectedSpeakers.size > 0 && selectedSpeakers.size < filteredSpeakers.length
+                      }
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedSpeakers(new Set(filteredSpeakers.map((s) => s.id)));
+                        } else {
+                          setSelectedSpeakers(new Set());
+                        }
+                      }}
                     />
                   </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" fontWeight="medium">
-                      {speaker.speakerName}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {speaker.company || '-'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {speaker.assignedOrganizerId || t('speakerBrainstorm.form.unassigned')}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={speaker.status}
-                      size="small"
-                      color={speaker.status === 'contacted' ? 'success' : 'default'}
-                      data-testid="outreach-status"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={`${daysSince} days`}
-                      size="small"
-                      color={isOverdue ? 'error' : 'default'}
-                      data-testid="days-since-assignment"
-                    />
-                  </TableCell>
-                  <TableCell align="right">
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={(e) => handleMarkContacted(speaker, e)}
-                    >
-                      {t('speakerOutreach.markContacted')}
-                    </Button>
-                  </TableCell>
+                  <TableCell>{t('speakerBrainstorm.form.speakerName')}</TableCell>
+                  <TableCell>{t('speakerBrainstorm.form.company')}</TableCell>
+                  <TableCell>{t('speakerBrainstorm.pool.assigned')}</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>{t('speakerOutreach.daysSinceAssignment')}</TableCell>
+                  <TableCell align="right">Actions</TableCell>
                 </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </TableContainer>
+              </TableHead>
+              <TableBody>
+                {filteredSpeakers.map((speaker) => {
+                  const daysSince = calculateDaysSinceAssignment(speaker.createdAt);
+                  const isOverdue = daysSince > 7;
+
+                  return (
+                    <TableRow
+                      key={speaker.id}
+                      hover
+                      onClick={() => handleRowClick(speaker)}
+                      sx={{ cursor: 'pointer' }}
+                      data-testid="speaker-row"
+                    >
+                      <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={selectedSpeakers.has(speaker.id)}
+                          onChange={() => handleSelectSpeaker(speaker.id)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight="medium">
+                          {speaker.speakerName}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {speaker.company || '-'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {speaker.assignedOrganizerId || t('speakerBrainstorm.form.unassigned')}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={speaker.status}
+                          size="small"
+                          color={speaker.status === 'contacted' ? 'success' : 'default'}
+                          data-testid="outreach-status"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={`${daysSince} days`}
+                          size="small"
+                          color={isOverdue ? 'error' : 'default'}
+                          data-testid="days-since-assignment"
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={(e) => handleMarkContacted(speaker, e)}
+                        >
+                          {t('speakerOutreach.markContacted')}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Grid>
+
+        {/* Collapsible Speaker Brainstorming Panel */}
+        {showBrainstormPanel && (
+          <Grid item xs={12} md={4}>
+            <Paper sx={{ p: 2, position: 'sticky', top: 16 }}>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h6">{t('speakerBrainstorm.title')}</Typography>
+                <IconButton size="small" onClick={() => setShowBrainstormPanel(false)}>
+                  <ChevronRight />
+                </IconButton>
+              </Box>
+              <SpeakerBrainstormingPanel
+                eventCode={eventCode}
+                organizers={[]}
+                onContinue={() => setShowBrainstormPanel(false)}
+              />
+            </Paper>
+          </Grid>
+        )}
+      </Grid>
 
       {/* Mark Contacted Modal */}
       {currentSpeaker && (

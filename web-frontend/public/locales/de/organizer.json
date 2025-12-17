@@ -194,6 +194,13 @@
       "home": "Startseite",
       "speakerOutreach": "Referenten-Kontaktierung"
     },
+    "emptyPool": {
+      "message": "Sie müssen Referenten zum Pool hinzufügen, bevor Sie mit der Kontaktierung beginnen können.",
+      "hint": "Kehren Sie zur Veranstaltungsplanungsphase zurück, um potenzielle Referenten hinzuzufügen.",
+      "addSpeakers": "Referenten zum Pool hinzufügen"
+    },
+    "showBrainstorm": "Referenten hinzufügen",
+    "hideBrainstorm": "Hinzufügen ausblenden",
     "speakerName": "Referent",
     "contactMethod": "Kontaktmethode",
     "contactDate": "Kontaktdatum",
