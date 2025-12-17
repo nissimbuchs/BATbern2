@@ -39,6 +39,7 @@ import { Add as AddIcon, ChevronRight } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useSpeakerPool } from '../../../hooks/useSpeakerPool';
 import { useEvent } from '../../../hooks/useEvents';
+import { useUserList } from '../../../hooks/useUserManagement/useUserList';
 import { Breadcrumbs } from '../../shared/Breadcrumbs';
 import type { BreadcrumbItem } from '../../shared/Breadcrumbs';
 import { SpeakerBrainstormingPanel } from '../../SpeakerBrainstormingPanel/SpeakerBrainstormingPanel';
@@ -56,6 +57,12 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
   const { data: speakerPool, isLoading, isError } = useSpeakerPool(eventCode);
   const { data: eventData } = useEvent(eventCode);
 
+  // Fetch users with ORGANIZER role
+  const { data: organizersData } = useUserList({
+    filters: { role: ['ORGANIZER'] },
+    pagination: { page: 1, limit: 100 },
+  });
+
   const [selectedOrganizer, setSelectedOrganizer] = useState<string>('all');
   const [selectedSpeakers, setSelectedSpeakers] = useState<Set<string>>(new Set());
   const [markContactedModalOpen, setMarkContactedModalOpen] = useState(false);
@@ -72,19 +79,14 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
     return diffDays;
   };
 
-  // Get unique organizers for filter
-  const organizerIds = React.useMemo(() => {
-    if (!speakerPool) return [];
-    const uniqueOrganizers = new Set(
-      speakerPool.map((s) => s.assignedOrganizerId).filter((id): id is string => !!id)
-    );
-    return Array.from(uniqueOrganizers);
-  }, [speakerPool]);
-
-  // Transform organizer IDs to objects for SpeakerBrainstormingPanel
+  // Transform organizers from API to format needed by components
   const organizers = React.useMemo(() => {
-    return organizerIds.map((id) => ({ id, name: id }));
-  }, [organizerIds]);
+    if (!organizersData?.data) return [];
+    return organizersData.data.map((user) => ({
+      id: user.username,
+      name: `${user.firstName} ${user.lastName}`.trim() || user.username,
+    }));
+  }, [organizersData]);
 
   // Filter speakers by organizer
   const filteredSpeakers = React.useMemo(() => {
@@ -217,9 +219,9 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
                   label={t('speakerOutreach.filterByOrganizer')}
                 >
                   <MenuItem value="all">All Organizers</MenuItem>
-                  {organizerIds.map((org) => (
-                    <MenuItem key={org} value={org}>
-                      {org}
+                  {organizers.map((org) => (
+                    <MenuItem key={org.id} value={org.id}>
+                      {org.name}
                     </MenuItem>
                   ))}
                 </Select>
