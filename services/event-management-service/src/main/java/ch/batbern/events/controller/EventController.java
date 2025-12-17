@@ -1554,6 +1554,28 @@ public class EventController {
     }
 
     /**
+     * Get speaker pool for event (Story 5.2 AC9-13).
+     *
+     * GET /api/v1/events/{eventCode}/speakers/pool
+     *
+     * Returns list of potential speakers being brainstormed for the event.
+     */
+    @GetMapping("/{eventCode}/speakers/pool")
+    @Operation(summary = "Get speaker pool",
+            description = "Get list of potential speakers in the event speaker pool")
+    public ResponseEntity<java.util.List<ch.batbern.events.dto.SpeakerPoolResponse>> getSpeakerPool(
+            @PathVariable String eventCode) {
+
+        // Get speaker pool
+        // Exceptions are handled by GlobalExceptionHandler:
+        // - EventNotFoundException → HTTP 404
+        java.util.List<ch.batbern.events.dto.SpeakerPoolResponse> speakerPool =
+                speakerPoolService.getSpeakerPoolForEvent(eventCode);
+
+        return ResponseEntity.ok(speakerPool);
+    }
+
+    /**
      * Add speaker to event speaker pool (Story 5.2 AC9-13).
      *
      * POST /api/v1/events/{eventCode}/speakers/pool
