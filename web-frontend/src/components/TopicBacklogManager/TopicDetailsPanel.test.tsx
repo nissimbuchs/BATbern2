@@ -23,7 +23,7 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('@/hooks/useTopics', () => ({
   useSimilarTopics: vi.fn(() => ({ data: [], isLoading: false })),
-  useSelectTopicForEvent: () => ({ mutate: vi.fn(), isPending: false }),
+  useSelectTopicForEvent: vi.fn(),
   useTopicUsageHistory: () => ({ data: [], isLoading: false }),
 }));
 
@@ -50,6 +50,17 @@ describe('TopicDetailsPanel', () => {
       },
     });
     vi.clearAllMocks();
+
+    // Setup default mock for useSelectTopicForEvent that calls onSuccess immediately
+    vi.mocked(useTopicsHook.useSelectTopicForEvent).mockReturnValue({
+      mutate: vi.fn((variables, options) => {
+        // Call onSuccess callback immediately to simulate successful mutation
+        if (options?.onSuccess) {
+          options.onSuccess(undefined as any, variables, undefined);
+        }
+      }),
+      isPending: false,
+    } as any);
   });
 
   const renderWithProviders = (ui: React.ReactElement) => {
