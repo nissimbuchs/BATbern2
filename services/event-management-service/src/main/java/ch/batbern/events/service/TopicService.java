@@ -406,22 +406,26 @@ public class TopicService {
                 .orElseThrow(() -> new IllegalArgumentException("Topic not found: " + topicId));
 
         // Validate event state (AC16)
-        // Allow topic assignment for CREATED, TOPIC_SELECTION, and ARCHIVED states
+        // Allow topic assignment/update for CREATED, TOPIC_SELECTION, SPEAKER_BRAINSTORMING, and ARCHIVED states
+        // SPEAKER_BRAINSTORMING allows topic updates after initial selection (before speaker outreach starts)
         // ARCHIVED state support added for Story 5.2a (historical event batch import)
         EventWorkflowState currentState = event.getWorkflowState();
         if (currentState != EventWorkflowState.CREATED
                 && currentState != EventWorkflowState.TOPIC_SELECTION
+                && currentState != EventWorkflowState.SPEAKER_BRAINSTORMING
                 && currentState != EventWorkflowState.ARCHIVED) {
             throw new IllegalStateException(
                 "Invalid state transition: Cannot select topic when event is in " + currentState + " state"
             );
         }
 
-        // Transition workflow state FIRST (AC14) - UNLESS event is already ARCHIVED
+        // Transition workflow state FIRST (AC14) - UNLESS event is already ARCHIVED or SPEAKER_BRAINSTORMING
         // For ARCHIVED events (historical imports), skip state transition to preserve archival status
+        // For SPEAKER_BRAINSTORMING events, skip transition (already there, just updating topic)
         Event updatedEvent;
-        if (currentState == EventWorkflowState.ARCHIVED) {
-            // Skip state transition for archived events - just update topic directly
+        if (currentState == EventWorkflowState.ARCHIVED
+                || currentState == EventWorkflowState.SPEAKER_BRAINSTORMING) {
+            // Skip state transition - either already in correct state or preserving archival status
             updatedEvent = event;
         } else {
             // Transition to SPEAKER_BRAINSTORMING because topic selection is now complete
