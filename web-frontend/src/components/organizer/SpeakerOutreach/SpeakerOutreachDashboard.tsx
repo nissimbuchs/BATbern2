@@ -361,6 +361,7 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
                 eventCode={eventCode}
                 organizers={organizers}
                 showPoolList={false}
+                showHeader={false}
               />
             </Paper>
           </Grid>

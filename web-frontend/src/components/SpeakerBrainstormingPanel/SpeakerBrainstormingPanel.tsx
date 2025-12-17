@@ -38,6 +38,7 @@ export interface SpeakerBrainstormingPanelProps {
   organizers?: Array<{ id: string; name: string }>; // List of available organizers
   onContinue?: () => void; // Callback when workflow should continue
   showPoolList?: boolean; // Whether to show the speaker pool list (default: true)
+  showHeader?: boolean; // Whether to show Paper wrapper and header (default: true)
 }
 
 export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps> = ({
@@ -45,6 +46,7 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
   organizers = [],
   onContinue,
   showPoolList = true,
+  showHeader = true,
 }) => {
   const { t } = useTranslation('organizer');
 
@@ -89,18 +91,8 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
     );
   };
 
-  return (
-    <Paper sx={{ p: 3 }}>
-      <Typography variant="h6" gutterBottom>
-        {t('speakerBrainstorm.title', 'Speaker Brainstorming')}
-      </Typography>
-      <Typography variant="body2" color="text.secondary" paragraph>
-        {t(
-          'speakerBrainstorm.subtitle',
-          'Add potential speakers to the event pool and assign them to organizers for outreach'
-        )}
-      </Typography>
-
+  const formContent = (
+    <>
       {/* Add Speaker Form */}
       <Box
         component="form"
@@ -301,6 +293,25 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
           </Button>
         </Box>
       )}
+    </>
+  );
+
+  if (!showHeader) {
+    return formContent;
+  }
+
+  return (
+    <Paper sx={{ p: 3 }}>
+      <Typography variant="h6" gutterBottom>
+        {t('speakerBrainstorm.title', 'Speaker Brainstorming')}
+      </Typography>
+      <Typography variant="body2" color="text.secondary" paragraph>
+        {t(
+          'speakerBrainstorm.subtitle',
+          'Add potential speakers to the event pool and assign them to organizers for outreach'
+        )}
+      </Typography>
+      {formContent}
     </Paper>
   );
 };
