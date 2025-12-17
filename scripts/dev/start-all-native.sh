@@ -267,42 +267,65 @@ EOF
     echo ""
 }
 
-# Check if DB tunnel is running
-check_db_tunnel() {
-    # Shared DB tunnel - use "shared" prefix instead of instance-specific
-    local pid_file="${PID_DIR}/batbern-shared-db-tunnel.pid"
-    local log_file="${LOG_DIR}/batbern-shared-db-tunnel.log"
+# Check if local PostgreSQL is running
+check_local_postgres() {
+    echo -e "${CYAN}→ Checking local PostgreSQL (port 5432)...${NC}"
 
-    echo -e "${CYAN}→ Checking database tunnel (port ${DB_TUNNEL_PORT})...${NC}"
+    # Check if Docker is running
+    if ! docker info > /dev/null 2>&1; then
+        echo -e "${RED}  ✗ Docker is not running${NC}"
+        echo "    Start Docker Desktop and try again"
+        exit 1
+    fi
 
-    # Check if shared tunnel is already running
-    if [ -f "$pid_file" ]; then
-        local old_pid=$(cat "$pid_file")
-        if ps -p $old_pid > /dev/null 2>&1; then
-            echo -e "${GREEN}  ✓ Database tunnel is running (PID: $old_pid, Port: ${DB_TUNNEL_PORT})${NC}"
+    # Check if PostgreSQL container exists and is running
+    local container_status=$(docker ps -a --filter "name=batbern-dev-postgres" --format "{{.Status}}" 2>/dev/null)
+
+    if [[ $container_status == Up* ]]; then
+        # Container is running, check if it's healthy
+        local health_status=$(docker inspect --format='{{.State.Health.Status}}' batbern-dev-postgres 2>/dev/null || echo "none")
+
+        if [ "$health_status" == "healthy" ]; then
+            echo -e "${GREEN}  ✓ Local PostgreSQL is running and healthy${NC}"
             echo ""
             return 0
+        elif [ "$health_status" == "starting" ]; then
+            echo -e "${YELLOW}  ⏳ PostgreSQL is starting, waiting for health check...${NC}"
+            sleep 5
+            health_status=$(docker inspect --format='{{.State.Health.Status}}' batbern-dev-postgres 2>/dev/null || echo "none")
+            if [ "$health_status" == "healthy" ]; then
+                echo -e "${GREEN}  ✓ Local PostgreSQL is running and healthy${NC}"
+                echo ""
+                return 0
+            fi
         else
-            rm -f "$pid_file"
+            echo -e "${GREEN}  ✓ Local PostgreSQL is running (no health check)${NC}"
+            echo ""
+            return 0
         fi
     fi
 
-    echo -e "${YELLOW}  ⚠ Database tunnel not running (shared across all instances)${NC}"
-    echo -e "${CYAN}  → Starting database tunnel on port ${DB_TUNNEL_PORT}...${NC}"
+    # Container not running, start it
+    echo -e "${YELLOW}  ⚠ Local PostgreSQL not running${NC}"
+    echo -e "${CYAN}  → Starting local PostgreSQL with Docker Compose...${NC}"
 
-    DB_TUNNEL_PORT=${DB_TUNNEL_PORT} "${PROJECT_ROOT}/scripts/dev/start-db-tunnel.sh" > "$log_file" 2>&1 &
-    local tunnel_pid=$!
-    echo $tunnel_pid > "$pid_file"
-    disown  # Remove from job control so parent script can exit
+    cd "${PROJECT_ROOT}"
+    docker compose -f docker-compose-dev.yml up -d 2>&1 | sed 's/^/    /'
 
-    echo -e "${CYAN}  → Waiting for tunnel to be ready (15 seconds)...${NC}"
-    sleep 15
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}  ✗ Failed to start PostgreSQL container${NC}"
+        exit 1
+    fi
 
-    if ps -p $tunnel_pid > /dev/null 2>&1; then
-        echo -e "${GREEN}  ✓ Database tunnel started (PID: $tunnel_pid, Port: ${DB_TUNNEL_PORT})${NC}"
+    echo -e "${CYAN}  → Waiting for PostgreSQL to be ready (10 seconds)...${NC}"
+    sleep 10
+
+    # Verify it's healthy
+    if docker exec batbern-dev-postgres pg_isready -U postgres > /dev/null 2>&1; then
+        echo -e "${GREEN}  ✓ Local PostgreSQL started successfully${NC}"
     else
-        echo -e "${RED}  ✗ Database tunnel failed to start${NC}"
-        echo "    Check logs: cat $log_file"
+        echo -e "${RED}  ✗ PostgreSQL is running but not accepting connections${NC}"
+        echo "    Check logs: docker logs batbern-dev-postgres"
         exit 1
     fi
     echo ""
@@ -478,7 +501,7 @@ start_frontend() {
 main() {
     check_prerequisites
     create_env_native
-    check_db_tunnel
+    check_local_postgres
     check_minio
 
     echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
