@@ -1,0 +1,34 @@
+version: '3.8'
+
+# Local Development PostgreSQL
+# This provides a local database for development with staging Cognito
+# See: docs/architecture/local-dev-setup.md
+
+services:
+  postgres:
+    image: postgres:15.4
+    container_name: batbern-dev-postgres
+    environment:
+      POSTGRES_DB: batbern_development
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: devpass123
+    ports:
+      - "5432:5432"
+    volumes:
+      - batbern-dev-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - batbern-dev-network
+
+volumes:
+  batbern-dev-data:
+    name: batbern-dev-data
+
+networks:
+  batbern-dev-network:
+    name: batbern-dev-network
+    driver: bridge
