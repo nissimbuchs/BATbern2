@@ -17,8 +17,11 @@ NC='\033[0m' # No Color
 # Configuration
 PID_DIR="/tmp"
 
-# Service names
-SERVICES=("api-gateway" "company-user-management" "event-management" "speaker-coordination" "partner-coordination" "attendee-experience" "web-frontend" "db-tunnel" "minio")
+# Service names (per instance)
+SERVICES=("api-gateway" "company-user-management" "event-management" "speaker-coordination" "partner-coordination" "attendee-experience" "web-frontend")
+
+# Shared infrastructure services
+SHARED_SERVICES=("minio")
 
 echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${BLUE}║   BATbern Native Development - Instances Status Report    ║${NC}"
@@ -109,8 +112,6 @@ for instance in "${found_instances[@]}"; do
     echo -e "  ${CYAN}Endpoints:${NC}"
     echo -e "    API Gateway:    http://localhost:${api_port}"
     echo -e "    Frontend:       http://localhost:${frontend_port}"
-    echo -e "    DB Tunnel:      localhost:${db_port}"
-    echo -e "    MinIO Console:  http://localhost:${minio_console}"
 
     echo ""
     echo -e "${GREEN}╰────────────────────────────────────────────────────────────╯${NC}"
@@ -119,7 +120,48 @@ done
 
 echo -e "${CYAN}Total Active Instances: ${GREEN}${#found_instances[@]}${NC}"
 echo ""
+
+# Show shared infrastructure status
+echo -e "${BLUE}╭─ Shared Infrastructure ─────────────────────────────────────╮${NC}"
+echo ""
+
+# Check PostgreSQL (Docker container)
+if docker ps --filter "name=batbern-dev-postgres" --format "{{.Status}}" 2>/dev/null | grep -q "Up"; then
+    container_status=$(docker ps --filter "name=batbern-dev-postgres" --format "{{.Status}}" 2>/dev/null)
+    health_status=$(docker inspect --format='{{.State.Health.Status}}' batbern-dev-postgres 2>/dev/null || echo "none")
+
+    if [ "$health_status" == "healthy" ]; then
+        echo -e "  ${GREEN}●${NC} PostgreSQL: Running (${container_status})"
+        echo -e "     Health: ${GREEN}healthy${NC} | Port: 5432 | Docker Compose"
+    else
+        echo -e "  ${YELLOW}●${NC} PostgreSQL: Running (${container_status})"
+        echo -e "     Health: ${YELLOW}${health_status}${NC} | Port: 5432 | Docker Compose"
+    fi
+else
+    echo -e "  ${YELLOW}○${NC} PostgreSQL: Not running"
+    echo -e "     Start: docker compose -f docker-compose-dev.yml up -d"
+fi
+
+# Check MinIO
+minio_pid_file="${PID_DIR}/batbern-shared-minio.pid"
+if [ -f "$minio_pid_file" ]; then
+    minio_pid=$(cat "$minio_pid_file")
+    if ps -p $minio_pid > /dev/null 2>&1; then
+        echo -e "  ${GREEN}●${NC} MinIO: Running (PID: ${minio_pid})"
+        echo -e "     API: http://localhost:8450 | Console: http://localhost:8451"
+    else
+        echo -e "  ${YELLOW}○${NC} MinIO: Not running (stale PID)"
+    fi
+else
+    echo -e "  ${YELLOW}○${NC} MinIO: Not running"
+fi
+
+echo ""
+echo -e "${BLUE}╰────────────────────────────────────────────────────────────╯${NC}"
+echo ""
+
 echo -e "${CYAN}Useful commands:${NC}"
 echo -e "  ${YELLOW}List instances:${NC}   make dev-native-list"
 echo -e "  ${YELLOW}View logs:${NC}        make dev-native-logs-instance BASE_PORT=<port>"
+echo -e "  ${YELLOW}Stop PostgreSQL:${NC} docker compose -f docker-compose-dev.yml down"
 echo ""
