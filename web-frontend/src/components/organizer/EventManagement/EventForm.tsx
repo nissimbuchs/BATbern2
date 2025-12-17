@@ -35,6 +35,8 @@ import {
   Box,
   Typography,
   Chip,
+  Checkbox,
+  FormControlLabel,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
@@ -199,6 +201,8 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
   const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
   const [initialFormData, setInitialFormData] = useState<PartialEventFormData>({});
   const [themeImageUploadId, setThemeImageUploadId] = useState<string | undefined>(undefined);
+  const [overrideValidation, setOverrideValidation] = useState(false);
+  const [overrideReason, setOverrideReason] = useState('');
 
   // Check role-based access control
   const hasEditPermission = user?.role === 'organizer';
@@ -377,7 +381,12 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
 
       // Handle workflow state transition separately via workflow transition API
       if (workflowStateChanged && newWorkflowState) {
-        await workflowService.transitionWorkflowState(event.eventCode, newWorkflowState);
+        await workflowService.transitionWorkflowState(
+          event.eventCode,
+          newWorkflowState,
+          overrideValidation,
+          overrideReason || undefined
+        );
 
         // Invalidate React Query caches to reflect workflow state change in UI
         queryClient.invalidateQueries({ queryKey: ['events'] }); // List caches
@@ -480,7 +489,12 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
 
       // Handle workflow state transition separately via workflow transition API
       if (workflowStateChanged && newWorkflowState) {
-        await workflowService.transitionWorkflowState(event.eventCode, newWorkflowState);
+        await workflowService.transitionWorkflowState(
+          event.eventCode,
+          newWorkflowState,
+          overrideValidation,
+          overrideReason || undefined
+        );
 
         // Invalidate React Query caches to reflect workflow state change in UI
         queryClient.invalidateQueries({ queryKey: ['events'] }); // List caches
@@ -751,6 +765,42 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                 </FormControl>
               )}
             />
+
+            {/* Override Workflow Validation Checkbox */}
+            <Box
+              sx={{
+                mt: 2,
+                p: 2,
+                bgcolor: 'warning.light',
+                borderRadius: 1,
+                border: '1px solid',
+                borderColor: 'warning.main',
+              }}
+            >
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={overrideValidation}
+                    onChange={(e) => setOverrideValidation(e.target.checked)}
+                  />
+                }
+                label="Override workflow validation (allows any state transition)"
+              />
+
+              {overrideValidation && (
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={2}
+                  label="Override Reason (Optional)"
+                  value={overrideReason}
+                  onChange={(e) => setOverrideReason(e.target.value)}
+                  placeholder="Why are you overriding workflow validation?"
+                  sx={{ mt: 1 }}
+                  helperText="This will be logged for audit purposes"
+                />
+              )}
+            </Box>
 
             <Controller
               name="venueName"
