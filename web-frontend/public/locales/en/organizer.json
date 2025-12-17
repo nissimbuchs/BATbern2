@@ -190,6 +190,10 @@
   "speakerOutreach": {
     "title": "Speaker Outreach",
     "subtitle": "Track your speaker outreach activities and coordinate with other organizers",
+    "breadcrumbs": {
+      "home": "Home",
+      "speakerOutreach": "Speaker Outreach"
+    },
     "speakerName": "Speaker",
     "contactMethod": "Contact Method",
     "contactDate": "Contact Date",

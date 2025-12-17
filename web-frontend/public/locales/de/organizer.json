@@ -190,6 +190,10 @@
   "speakerOutreach": {
     "title": "Referenten-Kontaktierung",
     "subtitle": "Verfolgen Sie Ihre Kontaktversuche mit Referenten und koordinieren Sie mit anderen Organisatoren",
+    "breadcrumbs": {
+      "home": "Startseite",
+      "speakerOutreach": "Referenten-Kontaktierung"
+    },
     "speakerName": "Referent",
     "contactMethod": "Kontaktmethode",
     "contactDate": "Kontaktdatum",

@@ -11,7 +11,7 @@
  * - Bulk actions
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Box,
   Paper,
@@ -34,6 +34,9 @@ import {
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useSpeakerPool } from '../../../hooks/useSpeakerPool';
+import { useEvent } from '../../../hooks/useEvents';
+import { Breadcrumbs } from '../../shared/Breadcrumbs';
+import type { BreadcrumbItem } from '../../shared/Breadcrumbs';
 import MarkContactedModal from './MarkContactedModal';
 import SpeakerOutreachDetailsDrawer from './SpeakerOutreachDetailsDrawer';
 import type { SpeakerPoolEntry } from '../../../types/speakerPool.types';
@@ -45,6 +48,7 @@ interface SpeakerOutreachDashboardProps {
 const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eventCode }) => {
   const { t } = useTranslation('organizer');
   const { data: speakerPool, isLoading, isError } = useSpeakerPool(eventCode);
+  const { data: eventData } = useEvent(eventCode);
 
   const [selectedOrganizer, setSelectedOrganizer] = useState<string>('all');
   const [selectedSpeakers, setSelectedSpeakers] = useState<Set<string>>(new Set());
@@ -76,6 +80,21 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
     if (selectedOrganizer === 'all') return speakerPool;
     return speakerPool.filter((s) => s.assignedOrganizerId === selectedOrganizer);
   }, [speakerPool, selectedOrganizer]);
+
+  // Build breadcrumb items
+  const breadcrumbItems: BreadcrumbItem[] = useMemo(() => {
+    if (eventData) {
+      return [
+        { label: t('speakerOutreach.breadcrumbs.home'), path: '/organizer/events' },
+        { label: eventData.title, path: `/organizer/events/${eventCode}` },
+        { label: t('speakerOutreach.breadcrumbs.speakerOutreach') },
+      ];
+    }
+    return [
+      { label: t('speakerOutreach.breadcrumbs.home'), path: '/organizer/events' },
+      { label: t('speakerOutreach.breadcrumbs.speakerOutreach') },
+    ];
+  }, [eventData, eventCode, t]);
 
   // Handle speaker selection for bulk actions
   const handleSelectSpeaker = (speakerId: string) => {
@@ -130,6 +149,9 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
 
   return (
     <Box data-testid="speaker-outreach-dashboard">
+      {/* Breadcrumbs */}
+      <Breadcrumbs items={breadcrumbItems} />
+
       <Box mb={3} display="flex" justifyContent="space-between" alignItems="center">
         <Box>
           <Typography variant="h5" gutterBottom>
