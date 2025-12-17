@@ -88,13 +88,12 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
   // Fetch all events for heat map (to show event numbers and titles)
   const { data: allEventsData } = useEvents({ page: 1, limit: 1000 }); // Fetch many events for lookup
 
-  // Create event lookup map (eventId -> Event)
+  // Create event lookup map (eventNumber -> Event info)
   const eventLookup = useMemo(() => {
-    const map = new Map<string, { eventNumber: number; title: string }>();
+    const map = new Map<number, { title: string }>();
     if (allEventsData?.data) {
       allEventsData.data.forEach((event: Event) => {
-        map.set(event.eventCode, {
-          eventNumber: event.eventNumber,
+        map.set(event.eventNumber, {
           title: event.title,
         });
       });

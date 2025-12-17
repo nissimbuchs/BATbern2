@@ -31,7 +31,6 @@ import {
   MenuItem,
   CircularProgress,
   Alert,
-  Checkbox,
   Grid,
   IconButton,
   Dialog,
@@ -69,7 +68,6 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
   });
 
   const [selectedOrganizer, setSelectedOrganizer] = useState<string>('all');
-  const [selectedSpeakers, setSelectedSpeakers] = useState<Set<string>>(new Set());
   const [markContactedModalOpen, setMarkContactedModalOpen] = useState(false);
   const [detailsDrawerOpen, setDetailsDrawerOpen] = useState(false);
   const [currentSpeaker, setCurrentSpeaker] = useState<SpeakerPoolEntry | null>(null);
@@ -120,17 +118,6 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
     ];
   }, [eventData, eventCode, t]);
 
-  // Handle speaker selection for bulk actions
-  const handleSelectSpeaker = (speakerId: string) => {
-    const newSelection = new Set(selectedSpeakers);
-    if (newSelection.has(speakerId)) {
-      newSelection.delete(speakerId);
-    } else {
-      newSelection.add(speakerId);
-    }
-    setSelectedSpeakers(newSelection);
-  };
-
   // Handle mark contacted button click
   const handleMarkContacted = (speaker: SpeakerPoolEntry, event: React.MouseEvent) => {
     event.stopPropagation(); // Prevent row click from triggering
@@ -142,11 +129,6 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
   const handleRowClick = (speaker: SpeakerPoolEntry) => {
     setCurrentSpeaker(speaker);
     setDetailsDrawerOpen(true);
-  };
-
-  // Handle modal close and success
-  const handleModalSuccess = () => {
-    setSelectedSpeakers(new Set()); // Clear selection after successful submission
   };
 
   // Handle delete button click
@@ -267,49 +249,11 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
             </Box>
           </Box>
 
-          {/* Bulk Actions Bar */}
-          {selectedSpeakers.size > 0 && (
-            <Paper sx={{ p: 2, mb: 2, bgcolor: 'primary.50' }}>
-              <Box display="flex" justifyContent="space-between" alignItems="center">
-                <Typography variant="body2">
-                  {selectedSpeakers.size} speaker{selectedSpeakers.size > 1 ? 's' : ''} selected
-                </Typography>
-                <Button
-                  variant="contained"
-                  onClick={() => {
-                    // For now, just open modal for first selected speaker
-                    // In full implementation, would use bulk action
-                    const firstSpeakerId = Array.from(selectedSpeakers)[0];
-                    const speaker = speakerPool.find((s) => s.id === firstSpeakerId);
-                    if (speaker) handleMarkContacted(speaker);
-                  }}
-                >
-                  {t('speakerOutreach.markContacted')}
-                </Button>
-              </Box>
-            </Paper>
-          )}
-
           {/* Speaker List Table */}
           <TableContainer component={Paper}>
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell padding="checkbox">
-                    <Checkbox
-                      checked={selectedSpeakers.size === filteredSpeakers.length}
-                      indeterminate={
-                        selectedSpeakers.size > 0 && selectedSpeakers.size < filteredSpeakers.length
-                      }
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedSpeakers(new Set(filteredSpeakers.map((s) => s.id)));
-                        } else {
-                          setSelectedSpeakers(new Set());
-                        }
-                      }}
-                    />
-                  </TableCell>
                   <TableCell>{t('speakerBrainstorm.form.speakerName')}</TableCell>
                   <TableCell>{t('speakerBrainstorm.form.company')}</TableCell>
                   <TableCell>{t('speakerBrainstorm.pool.assigned')}</TableCell>
@@ -331,12 +275,6 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
                       sx={{ cursor: 'pointer' }}
                       data-testid="speaker-row"
                     >
-                      <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
-                        <Checkbox
-                          checked={selectedSpeakers.has(speaker.id)}
-                          onChange={() => handleSelectSpeaker(speaker.id)}
-                        />
-                      </TableCell>
                       <TableCell>
                         <Typography variant="body2" fontWeight="medium">
                           {speaker.speakerName}
@@ -421,7 +359,7 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
         <MarkContactedModal
           open={markContactedModalOpen}
           onClose={() => setMarkContactedModalOpen(false)}
-          onSuccess={handleModalSuccess}
+          onSuccess={() => {}}
           eventCode={eventCode}
           speakerId={currentSpeaker.id}
           speakerName={currentSpeaker.speakerName}

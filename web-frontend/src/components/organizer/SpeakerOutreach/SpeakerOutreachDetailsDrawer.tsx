@@ -189,9 +189,9 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
                     />
                   )}
 
-                  {attempt.contactedBy && (
+                  {attempt.organizerUsername && (
                     <Typography variant="caption" color="text.secondary" mt={0.5}>
-                      {t('speakerOutreach.contactedBy')}: {attempt.contactedBy}
+                      {t('speakerOutreach.contactedBy')}: {attempt.organizerUsername}
                     </Typography>
                   )}
                 </ListItem>

@@ -14,6 +14,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
 import { TopicBacklogManager } from './TopicBacklogManager';
 import * as useTopicsHook from '@/hooks/useTopics';
 import type { Topic, TopicListResponse } from '@/types/topic.types';
@@ -124,9 +125,11 @@ describe('TopicBacklogManager', () => {
 
   const renderComponent = (props = {}) => {
     return render(
-      <QueryClientProvider client={queryClient}>
-        <TopicBacklogManager {...props} />
-      </QueryClientProvider>
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <TopicBacklogManager {...props} />
+        </QueryClientProvider>
+      </MemoryRouter>
     );
   };
 

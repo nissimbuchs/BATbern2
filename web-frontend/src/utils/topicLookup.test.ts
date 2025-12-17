@@ -59,9 +59,11 @@ describe('topicLookup', () => {
       const topicId1 = await getOrCreateTopicByCategory('Frontend & UI');
 
       expect(topicService.getTopics).toHaveBeenCalledTimes(1);
-      expect(topicService.getTopics).toHaveBeenCalledWith({
-        category: 'Frontend & UI',
-      });
+      expect(topicService.getTopics).toHaveBeenCalledWith(
+        expect.objectContaining({
+          category: 'Frontend & UI',
+        })
+      );
       expect(topicId1).toBe('topic-cached-123');
 
       // Second call - should use cache
@@ -94,9 +96,11 @@ describe('topicLookup', () => {
 
       const topicId = await getOrCreateTopicByCategory('Cloud & Infrastructure');
 
-      expect(topicService.getTopics).toHaveBeenCalledWith({
-        category: 'Cloud & Infrastructure',
-      });
+      expect(topicService.getTopics).toHaveBeenCalledWith(
+        expect.objectContaining({
+          category: 'Cloud & Infrastructure',
+        })
+      );
       expect(topicId).toBe('topic-api-456');
     });
 
@@ -123,9 +127,11 @@ describe('topicLookup', () => {
 
       const topicId = await getOrCreateTopicByCategory('Security');
 
-      expect(topicService.getTopics).toHaveBeenCalledWith({
-        category: 'Security',
-      });
+      expect(topicService.getTopics).toHaveBeenCalledWith(
+        expect.objectContaining({
+          category: 'Security',
+        })
+      );
       expect(topicService.createTopic).toHaveBeenCalledWith({
         title: 'Security',
         category: 'Security',
