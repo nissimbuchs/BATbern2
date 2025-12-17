@@ -98,8 +98,8 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
             String firstName = jwt.getClaimAsString("given_name");
             String lastName = jwt.getClaimAsString("family_name");
 
-            // Generate username from email (lowercase, before @)
-            String username = generateUsername(email);
+            // Generate username from first/last name or email (firstname.lastname format required)
+            String username = generateUsername(firstName, lastName, email);
 
             // Extract roles from authorities
             Set<Role> roles = extractRolesFromAuthorities(authentication.getAuthorities());
@@ -139,25 +139,50 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
     }
 
     /**
-     * Generate username from email
+     * Generate username from first name, last name, or email
      * <p>
-     * Format: lowercase.letters.optional.numeric.suffix
-     * Example: john.doe@example.com -> john.doe
+     * Format: firstname.lastname (lowercase, required by chk_username_format constraint)
+     * Example: John Doe -> john.doe
+     * Example: John Doe (duplicate) -> john.doe.2
+     * Example: nissim@buchs.be (no names) -> user.nissim
      *
-     * @param email User email
-     * @return Generated username
+     * @param firstName User first name from JWT (given_name)
+     * @param lastName  User last name from JWT (family_name)
+     * @param email     User email (fallback if names not available)
+     * @return Generated username matching pattern ^[a-z]+\.[a-z]+(\.[0-9]+)?$
      */
-    private String generateUsername(String email) {
-        if (email == null || email.isEmpty()) {
-            return "user." + System.currentTimeMillis();
+    private String generateUsername(String firstName, String lastName, String email) {
+        String username;
+
+        // Prefer first.last name if both available
+        if (firstName != null && !firstName.isEmpty() && lastName != null && !lastName.isEmpty()) {
+            username = firstName.toLowerCase().replaceAll("[^a-z]", "") + "." +
+                       lastName.toLowerCase().replaceAll("[^a-z]", "");
+        }
+        // Fall back to email local part if it contains a dot
+        else if (email != null && !email.isEmpty()) {
+            String emailLocal = email.split("@")[0].toLowerCase().replaceAll("[^a-z.]", "");
+            if (emailLocal.contains(".")) {
+                username = emailLocal;
+            } else {
+                // Email doesn't contain dot, prepend "user."
+                username = "user." + emailLocal;
+            }
+        }
+        // Last resort: generate timestamp-based username
+        else {
+            username = "user." + System.currentTimeMillis();
         }
 
-        // Extract part before @ and convert to lowercase
-        String username = email.split("@")[0].toLowerCase();
+        // Ensure username matches required pattern
+        if (!username.matches("^[a-z]+\\.[a-z]+(\\.[0-9]+)?$")) {
+            log.warn("Generated username '{}' doesn't match pattern, using fallback", username);
+            username = "user.unknown";
+        }
 
         // Check if username exists, add numeric suffix if needed
-        int suffix = 1;
         String finalUsername = username;
+        int suffix = 2;
         while (userRepository.existsByUsername(finalUsername)) {
             finalUsername = username + "." + suffix;
             suffix++;

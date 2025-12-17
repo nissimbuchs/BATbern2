@@ -170,25 +170,51 @@ SELECT email, username, is_active FROM user_profiles LIMIT 10;
 
 ### Approach: Local DB as Read-Only Mirror
 
-The local database is a **read-only mirror** of the development/staging Cognito users:
+The local database is a **read-only mirror** of **staging Cognito** users:
 
-1. **User Registration**: Users register via Cognito (dev/staging)
-2. **Lambda Triggers**: Cognito Lambda writes to dev/staging RDS
+1. **User Registration**: Users register via Staging Cognito
+2. **Lambda Triggers**: Cognito Lambda writes to staging RDS
 3. **Sync to Local**: Run sync script to copy users to local PostgreSQL
-4. **JWT Tokens**: Contain roles from dev/staging database
-5. **Local Services**: Read from local PostgreSQL (which matches JWT)
+4. **JWT Tokens**: Contain roles from staging database
+5. **Local Services**: Read from local PostgreSQL (which mirrors staging)
+
+**Important**: Local development always syncs with **staging Cognito** (not development).
+
+### Syncing Users from Staging Cognito
+
+The sync script automatically loads authentication tokens from `~/.batbern/staging.json`:
+
+```bash
+# First, get a staging authentication token (one-time setup)
+./scripts/auth/get-token.sh staging your-email@example.com your-password
+
+# Then sync users from staging (automatically uses stored token)
+./scripts/dev/sync-users-from-cognito.sh
+```
+
+**How it works**:
+1. Script automatically loads token from `~/.batbern/staging.json`
+2. Auto-refreshes token if expired
+3. Connects to **staging Cognito** using AWS profile `batbern-staging`
+4. Calls local API Gateway on `localhost:8000` to trigger reconciliation
+5. Syncs all staging Cognito users to local PostgreSQL
+
+**Manual token override** (if needed):
+```bash
+JWT_TOKEN='your-token-here' ./scripts/dev/sync-users-from-cognito.sh
+```
 
 ### Managing User Roles
 
-**Important**: Since Lambda triggers write to dev/staging RDS, all user role changes must be done there:
+**Important**: Since Lambda triggers write to staging RDS, all user role changes must be done in **staging**:
 
-**Option 1**: Direct SQL (via SSH tunnel to dev/staging)
+**Option 1**: Direct SQL (via SSH tunnel to staging RDS)
 
 ```bash
-# Start tunnel to development RDS (if needed)
-./scripts/dev/start-db-tunnel.sh
+# Start tunnel to staging RDS (if needed)
+./scripts/dev/start-db-tunnel.sh staging
 
-# Connect to development database
+# Connect to staging database
 psql "postgresql://postgres:password@localhost:5433/batbern"
 
 # Assign ORGANIZER role
@@ -198,13 +224,13 @@ FROM user_profiles
 WHERE email = 'user@example.com'
 ON CONFLICT DO NOTHING;
 
-# Then sync to local
-JWT_TOKEN='...' ./scripts/dev/sync-users-from-cognito.sh
+# Then sync to local (uses stored staging token automatically)
+./scripts/dev/sync-users-from-cognito.sh
 ```
 
-**Option 2**: Use staging/dev web UI (if deployed)
+**Option 2**: Use staging web UI (if deployed)
 
-1. Login to staging/dev web app as admin
+1. Login to staging web app as admin
 2. Use Role Management UI to assign roles
 3. Sync to local: `./scripts/dev/sync-users-from-cognito.sh`
 
@@ -248,45 +274,48 @@ docker exec -it batbern-dev-postgres psql -U postgres -d batbern_development -c 
 ### User Sync Fails
 
 ```bash
-# Check service health
-curl http://localhost:8081/actuator/health
+# Check API Gateway health
+curl http://localhost:8000/actuator/health
 
-# Verify AWS credentials
-aws sts get-caller-identity --profile batbern-dev
+# Verify authentication token is valid
+cat ~/.batbern/staging.json | jq '.'
 
-# Check Cognito User Pool
+# Refresh token if expired
+./scripts/auth/refresh-token.sh staging
+
+# Verify AWS credentials (for staging Cognito access)
+aws sts get-caller-identity --profile batbern-staging
+
+# Check staging Cognito User Pool
 aws cognito-idp list-users \
   --user-pool-id eu-central-1_camJHQhZ8 \
-  --profile batbern-dev \
+  --profile batbern-staging \
   --max-results 10
+
+# Test sync with verbose output
+./scripts/dev/sync-users-from-cognito.sh
 ```
 
-## Switching to Staging Cognito
+## AWS Credentials Setup
 
-To use staging Cognito instead of development:
+To sync users from staging Cognito, you need AWS credentials for the `batbern-staging` profile:
 
-1. Update `.env`:
 ```bash
-# Get staging Cognito config
-./scripts/config/sync-backend-config.sh staging
+# Configure AWS CLI with staging credentials
+aws configure --profile batbern-staging
 
-# Manually update to keep local PostgreSQL
-DB_HOST=localhost
-DB_NAME=batbern_development
-DB_PASSWORD=devpass123
+# Verify credentials work
+aws sts get-caller-identity --profile batbern-staging
+
+# Expected output should show staging account (954163570305)
 ```
 
-2. Update `web-frontend/.env.local`:
-```bash
-VITE_COGNITO_USER_POOL_ID=<staging-pool-id>
-VITE_COGNITO_WEB_CLIENT_ID=<staging-client-id>
-VITE_COGNITO_DOMAIN=batbern-staging.auth.eu-central-1.amazoncognito.com
-```
+**Note**: The `.env` file should already be configured for staging Cognito (configured during initial setup). If not, update it:
 
-3. Update sync script to use staging profile:
 ```bash
-# Edit scripts/dev/sync-users-from-cognito.sh
-export AWS_PROFILE=batbern-staging  # Change from batbern-dev
+COGNITO_USER_POOL_ID=eu-central-1_camJHQhZ8
+COGNITO_CLIENT_ID=5h9421vo002bi7udjdu5orp7u3
+COGNITO_DOMAIN_URL=https://batbern-staging-auth.auth.eu-central-1.amazoncognito.com
 ```
 
 ## Cost Comparison
