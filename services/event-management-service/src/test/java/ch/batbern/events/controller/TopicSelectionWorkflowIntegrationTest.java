@@ -300,4 +300,50 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
         topic.setCreatedDate(LocalDateTime.now());
         return topicRepository.save(topic);
     }
+
+    // ==================== Topic Update Tests ====================
+
+    /**
+     * Test: should_updateTopicId_when_changingTopicInSpeakerBrainstormingState
+     * Reproduces bug where topic change doesn't persist when event is already in SPEAKER_BRAINSTORMING.
+     *
+     * Scenario:
+     * 1. Event is in SPEAKER_BRAINSTORMING state with Topic A assigned
+     * 2. Organizer changes to Topic B
+     * 3. Topic should be updated in database (not just in response)
+     */
+    @Test
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
+    void should_updateTopicId_when_changingTopicInSpeakerBrainstormingState() throws Exception {
+        // Given: Event in SPEAKER_BRAINSTORMING with initial topic
+        Topic initialTopic = createTestTopic("Cloud Architecture");
+        Topic newTopic = createTestTopic("Microservices Patterns");
+
+        Event event = createTestEvent("BATbern98", EventWorkflowState.SPEAKER_BRAINSTORMING);
+        event.setTopicId(initialTopic.getId());
+        event = eventRepository.save(event);
+
+        // When: Change topic to newTopic
+        Map<String, Object> request = new HashMap<>();
+        request.put("topicId", newTopic.getId().toString());
+
+        mockMvc.perform(post("/api/v1/events/{eventCode}/topics", event.getEventCode())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.topicId").value(newTopic.getId().toString()))
+                .andExpect(jsonPath("$.workflowState").value("SPEAKER_BRAINSTORMING"));
+
+        // Then: Verify topic was actually updated in database
+        Event updatedEvent = eventRepository.findByEventCode("BATbern98")
+                .orElseThrow(() -> new AssertionError("Event not found"));
+
+        assertThat(updatedEvent.getTopicId())
+                .as("Topic should be updated to new topic in database")
+                .isEqualTo(newTopic.getId());
+
+        assertThat(updatedEvent.getTopicId())
+                .as("Topic should not be the old topic")
+                .isNotEqualTo(initialTopic.getId());
+    }
 }

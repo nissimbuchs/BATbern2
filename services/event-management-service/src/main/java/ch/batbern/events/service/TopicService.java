@@ -426,7 +426,10 @@ public class TopicService {
         if (currentState == EventWorkflowState.ARCHIVED
                 || currentState == EventWorkflowState.SPEAKER_BRAINSTORMING) {
             // Skip state transition - either already in correct state or preserving archival status
-            updatedEvent = event;
+            // IMPORTANT: Reload the event to ensure we have a properly managed entity for update
+            // Without this, entity state management can cause save() to not persist changes
+            updatedEvent = eventRepository.findByEventCode(eventCode)
+                    .orElseThrow(() -> new IllegalArgumentException("Event not found: " + eventCode));
         } else {
             // Transition to SPEAKER_BRAINSTORMING because topic selection is now complete
             // Can transition from both CREATED and TOPIC_SELECTION states
