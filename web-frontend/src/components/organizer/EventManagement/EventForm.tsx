@@ -44,6 +44,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { FileUpload } from '@/components/shared/FileUpload/FileUpload';
 import { EventTypeSelector } from '@/components/organizer/EventTypeSelector/EventTypeSelector';
 import type { components } from '@/types/generated/events-api.types';
+import { workflowService } from '@/services/workflowService';
 
 /**
  * Maps EventWorkflowState to CreateEventRequest status field
@@ -353,15 +354,30 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
     setApiError(null);
 
     try {
-      // Transform dates to ISO 8601 format before sending to API
-      const patchData = transformDatesForApi(changedFields);
+      // Check if workflowState changed - handle separately via workflow transition API
+      const workflowStateChanged = 'workflowState' in changedFields;
+      const newWorkflowState = changedFields.workflowState as
+        | components['schemas']['EventWorkflowState']
+        | undefined;
 
-      // Use mutation hook for proper cache management (MVC pattern)
-      // This ensures all event caches (list, detail, current) are invalidated
-      await updateEventMutation.mutateAsync({
-        eventCode: event.eventCode,
-        data: patchData,
-      });
+      // Remove workflowState from patch data - it goes through separate API
+      const patchFields = { ...changedFields };
+      delete (patchFields as Partial<Record<string, unknown>>).workflowState;
+
+      // Update event fields (if any changed besides workflowState)
+      if (Object.keys(patchFields).length > 0) {
+        const patchData = transformDatesForApi(patchFields);
+        await updateEventMutation.mutateAsync({
+          eventCode: event.eventCode,
+          data: patchData,
+        });
+      }
+
+      // Handle workflow state transition separately via workflow transition API
+      if (workflowStateChanged && newWorkflowState) {
+        await workflowService.transitionWorkflowState(event.eventCode, newWorkflowState);
+      }
+
       setAutoSaveStatus('saved');
       setLastSavedAt(new Date());
       setInitialFormData(getValues()); // Update initial data after successful save
@@ -435,14 +451,30 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         return;
       }
 
-      // Transform dates to ISO 8601 format before sending to API
-      const patchData = transformDatesForApi(changedFields);
+      // Check if workflowState changed - handle separately via workflow transition API
+      const workflowStateChanged = 'workflowState' in changedFields;
+      const newWorkflowState = changedFields.workflowState as
+        | components['schemas']['EventWorkflowState']
+        | undefined;
 
-      // Use mutation hook for proper cache management (MVC pattern)
-      await updateEventMutation.mutateAsync({
-        eventCode: event.eventCode,
-        data: patchData,
-      });
+      // Remove workflowState from patch data - it goes through separate API
+      const patchFields = { ...changedFields };
+      delete (patchFields as Partial<Record<string, unknown>>).workflowState;
+
+      // Update event fields (if any changed besides workflowState)
+      if (Object.keys(patchFields).length > 0) {
+        const patchData = transformDatesForApi(patchFields);
+        await updateEventMutation.mutateAsync({
+          eventCode: event.eventCode,
+          data: patchData,
+        });
+      }
+
+      // Handle workflow state transition separately via workflow transition API
+      if (workflowStateChanged && newWorkflowState) {
+        await workflowService.transitionWorkflowState(event.eventCode, newWorkflowState);
+      }
+
       onSuccess?.();
       onClose();
     } catch (error: unknown) {
