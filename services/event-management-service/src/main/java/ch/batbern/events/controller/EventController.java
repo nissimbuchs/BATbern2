@@ -1597,4 +1597,27 @@ public class EventController {
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
+    /**
+     * Delete speaker from event speaker pool.
+     *
+     * DELETE /api/v1/events/{eventCode}/speakers/pool/{speakerId}
+     *
+     * Removes a speaker from the event speaker pool.
+     */
+    @DeleteMapping("/{eventCode}/speakers/pool/{speakerId}")
+    @Operation(summary = "Delete speaker from pool",
+            description = "Remove a speaker from the event speaker pool")
+    public ResponseEntity<Void> deleteSpeakerFromPool(
+            @PathVariable String eventCode,
+            @PathVariable String speakerId) {
+
+        // Delete speaker from pool
+        // Exceptions are handled by GlobalExceptionHandler:
+        // - EventNotFoundException → HTTP 404
+        // - IllegalArgumentException → HTTP 404 (speaker not found)
+        speakerPoolService.deleteSpeakerFromPool(eventCode, speakerId);
+
+        return ResponseEntity.noContent().build();
+    }
 }
