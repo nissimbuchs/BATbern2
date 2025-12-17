@@ -68,6 +68,14 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
       return;
     }
 
+    console.log('Form state:', {
+      speakerName,
+      company,
+      expertise,
+      assignedOrganizerId,
+      notes,
+    });
+
     const request: AddSpeakerToPoolRequest = {
       speakerName: speakerName.trim(),
       company: company.trim() || undefined,
@@ -75,6 +83,8 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
       assignedOrganizerId: assignedOrganizerId || undefined,
       notes: notes.trim() || undefined,
     };
+
+    console.log('Request payload:', request);
 
     addSpeakerMutation.mutate(
       { eventCode, request },

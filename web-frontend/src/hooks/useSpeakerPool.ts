@@ -64,3 +64,26 @@ export function useAddSpeakerToPool() {
     },
   });
 }
+
+/**
+ * Hook to delete speaker from event pool (ORGANIZER only)
+ *
+ * @returns Mutation object with mutate function
+ * @example
+ * const deleteMutation = useDeleteSpeakerFromPool();
+ * deleteMutation.mutate({ eventCode: 'BATbern56', speakerId: 'uuid-here' });
+ */
+export function useDeleteSpeakerFromPool() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ eventCode, speakerId }: { eventCode: string; speakerId: string }) =>
+      speakerPoolService.deleteSpeakerFromPool(eventCode, speakerId),
+    onSuccess: (_data, variables) => {
+      // Invalidate speaker pool list for this event to refetch
+      queryClient.invalidateQueries({
+        queryKey: speakerPoolKeys.list(variables.eventCode),
+      });
+    },
+  });
+}

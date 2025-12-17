@@ -1012,6 +1012,103 @@ paths:
       security:
         - BearerAuth: []
 
+    get:
+      tags:
+        - Event Actions
+      summary: Get speaker pool for event
+      description: |
+        Retrieve all speakers in the event's speaker pool.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Authorization**: Requires ORGANIZER role
+        **Rate Limiting**: Applied at API Gateway level
+
+        **Performance**: <150ms (P95)
+
+      operationId: getSpeakerPool
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern56
+      responses:
+        '200':
+          description: Speaker pool retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SpeakerPoolResponse'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/speakers/pool/{speakerId}:
+    delete:
+      tags:
+        - Event Actions
+      summary: Delete speaker from event pool
+      description: |
+        Remove a speaker from the event's speaker pool.
+
+        **Authorization**: Requires ORGANIZER role
+        **Rate Limiting**: Applied at API Gateway level
+
+        **Business Rules**:
+        - Event must exist
+        - Speaker must exist in the pool
+        - Can only delete speakers in IDENTIFIED or CONTACTED status
+
+        **Performance**: <150ms (P95)
+
+      operationId: deleteSpeakerFromPool
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern56
+        - name: speakerId
+          in: path
+          description: UUID of the speaker in the speaker pool
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '204':
+          description: Speaker deleted successfully
+        '404':
+          description: Event or speaker not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
   /events/{eventCode}/speakers/{speakerId}/outreach:
     post:
       tags:

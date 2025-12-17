@@ -34,10 +34,15 @@ import {
   Checkbox,
   Grid,
   IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
-import { Add as AddIcon, ChevronRight } from '@mui/icons-material';
+import { Add as AddIcon, ChevronRight, Delete as DeleteIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { useSpeakerPool } from '../../../hooks/useSpeakerPool';
+import { useSpeakerPool, useDeleteSpeakerFromPool } from '../../../hooks/useSpeakerPool';
 import { useEvent } from '../../../hooks/useEvents';
 import { useUserList } from '../../../hooks/useUserManagement/useUserList';
 import { Breadcrumbs } from '../../shared/Breadcrumbs';
@@ -69,6 +74,11 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
   const [detailsDrawerOpen, setDetailsDrawerOpen] = useState(false);
   const [currentSpeaker, setCurrentSpeaker] = useState<SpeakerPoolEntry | null>(null);
   const [showBrainstormPanel, setShowBrainstormPanel] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [speakerToDelete, setSpeakerToDelete] = useState<SpeakerPoolEntry | null>(null);
+
+  // Delete speaker mutation
+  const deleteSpeakerMutation = useDeleteSpeakerFromPool();
 
   // Calculate days since assignment
   const calculateDaysSinceAssignment = (createdAt: string): number => {
@@ -83,8 +93,8 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
   const organizers = React.useMemo(() => {
     if (!organizersData?.data) return [];
     return organizersData.data.map((user) => ({
-      id: user.username,
-      name: `${user.firstName} ${user.lastName}`.trim() || user.username,
+      id: user.id,
+      name: `${user.firstName} ${user.lastName}`.trim() || user.id,
     }));
   }, [organizersData]);
 
@@ -137,6 +147,34 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
   // Handle modal close and success
   const handleModalSuccess = () => {
     setSelectedSpeakers(new Set()); // Clear selection after successful submission
+  };
+
+  // Handle delete button click
+  const handleDeleteClick = (speaker: SpeakerPoolEntry, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent row click from triggering
+    setSpeakerToDelete(speaker);
+    setDeleteConfirmOpen(true);
+  };
+
+  // Handle delete confirmation
+  const handleDeleteConfirm = () => {
+    if (speakerToDelete) {
+      deleteSpeakerMutation.mutate(
+        { eventCode, speakerId: speakerToDelete.id },
+        {
+          onSuccess: () => {
+            setDeleteConfirmOpen(false);
+            setSpeakerToDelete(null);
+          },
+        }
+      );
+    }
+  };
+
+  // Handle delete cancel
+  const handleDeleteCancel = () => {
+    setDeleteConfirmOpen(false);
+    setSpeakerToDelete(null);
   };
 
   if (isLoading) {
@@ -331,13 +369,23 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
                         />
                       </TableCell>
                       <TableCell align="right">
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          onClick={(e) => handleMarkContacted(speaker, e)}
-                        >
-                          {t('speakerOutreach.markContacted')}
-                        </Button>
+                        <Box display="flex" gap={1} justifyContent="flex-end">
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={(e) => handleMarkContacted(speaker, e)}
+                          >
+                            {t('speakerOutreach.markContacted')}
+                          </Button>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={(e) => handleDeleteClick(speaker, e)}
+                            title="Delete speaker"
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Box>
                       </TableCell>
                     </TableRow>
                   );
@@ -387,6 +435,35 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
         speaker={currentSpeaker}
         eventCode={eventCode}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirmOpen} onClose={handleDeleteCancel}>
+        <DialogTitle>Delete Speaker</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete {speakerToDelete?.speakerName} from the speaker pool?
+            This action cannot be undone.
+          </DialogContentText>
+          {deleteSpeakerMutation.isError && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              Failed to delete speaker. Please try again.
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} disabled={deleteSpeakerMutation.isPending}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDeleteConfirm}
+            color="error"
+            variant="contained"
+            disabled={deleteSpeakerMutation.isPending}
+          >
+            {deleteSpeakerMutation.isPending ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
