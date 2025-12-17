@@ -20,19 +20,30 @@ import {
   CircularProgress,
   Alert,
   Button,
+  ToggleButtonGroup,
+  ToggleButton,
 } from '@mui/material';
-import { Add as AddIcon } from '@mui/icons-material';
+import {
+  Add as AddIcon,
+  ViewModule as HeatMapIcon,
+  ViewList as ListIcon,
+  ViewKanban as BoardIcon,
+} from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useTopics } from '@/hooks/useTopics';
-import { useEvent } from '@/hooks/useEvents';
+import { useEvent, useEvents } from '@/hooks/useEvents';
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs';
+import type { Event } from '@/types/event.types';
 import { TopicFilterPanel } from './TopicFilterPanel';
 import { TopicList } from './TopicList';
 import { TopicDetailsPanel } from './TopicDetailsPanel';
 import { CreateTopicModal } from './CreateTopicModal';
 import { SpeakerBrainstormingPanel } from '@/components/SpeakerBrainstormingPanel/SpeakerBrainstormingPanel';
+import { MultiTopicHeatMap } from '@/components/TopicHeatMap';
 import type { Topic, TopicFilters } from '@/types/topic.types';
 import type { BreadcrumbItem } from '@/components/shared/Breadcrumbs';
+
+type ViewMode = 'heatMap' | 'list' | 'board';
 
 export interface TopicBacklogManagerProps {
   eventCode?: string; // Optional: if provided, enables topic selection for event
@@ -49,17 +60,41 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
     page: 1,
     limit: 20,
     sort: '-stalenessScore', // Default: sort by staleness descending (safest first)
+    include: 'history', // Include usage history for heat map visualization
   });
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
   const [topicConfirmed, setTopicConfirmed] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
 
   // Fetch topics with current filters
   const { data, isLoading, isError, error } = useTopics(filters);
 
   // Fetch event details if eventCode is provided
   const { data: eventData } = useEvent(eventCode);
+
+  // Fetch all events for heat map (to show event numbers and titles)
+  const { data: allEventsData } = useEvents({ page: 1, limit: 1000 }); // Fetch many events for lookup
+
+  // Create event lookup map (eventId -> Event)
+  const eventLookup = useMemo(() => {
+    const map = new Map<string, { eventNumber: number; title: string }>();
+    if (allEventsData?.data) {
+      allEventsData.data.forEach((event: Event) => {
+        map.set(event.eventCode, {
+          eventNumber: event.eventNumber,
+          title: event.title,
+        });
+      });
+      const sampleKeys = Array.from(map.keys()).slice(0, 5);
+      console.debug(`✅ Event lookup map created with ${map.size} events`);
+      console.debug(`Sample eventCodes:`, sampleKeys);
+    } else {
+      console.debug('❌ No event data available for lookup map');
+    }
+    return map;
+  }, [allEventsData]);
 
   // Build breadcrumb items based on context (memoized to prevent re-renders)
   // Must be called after all hooks but before handlers/returns
@@ -136,8 +171,33 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
         )}
       </Box>
 
-      {/* Create Topic button */}
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+      {/* View Mode Toggle and Create Topic button */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <ToggleButtonGroup
+          value={viewMode}
+          exclusive
+          onChange={(_event, newMode) => {
+            if (newMode !== null) {
+              setViewMode(newMode);
+            }
+          }}
+          aria-label={t('topicBacklog.viewMode.label', 'View mode')}
+          size="small"
+        >
+          <ToggleButton value="heatMap" aria-label={t('topicBacklog.viewMode.heatMap', 'Heat Map')}>
+            <HeatMapIcon sx={{ mr: 0.5 }} />
+            {t('topicBacklog.viewMode.heatMap', 'Heat Map')}
+          </ToggleButton>
+          <ToggleButton value="list" aria-label={t('topicBacklog.viewMode.list', 'List')}>
+            <ListIcon sx={{ mr: 0.5 }} />
+            {t('topicBacklog.viewMode.list', 'List')}
+          </ToggleButton>
+          <ToggleButton value="board" aria-label={t('topicBacklog.viewMode.board', 'Board')}>
+            <BoardIcon sx={{ mr: 0.5 }} />
+            {t('topicBacklog.viewMode.board', 'Board')}
+          </ToggleButton>
+        </ToggleButtonGroup>
+
         <Button
           variant="contained"
           startIcon={<AddIcon />}
@@ -153,31 +213,73 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
           <TopicFilterPanel filters={filters} onFilterChange={handleFilterChange} />
         </Grid>
 
-        {/* Center Panel: Topic List (5 cols → 4 cols when speaker panel visible) */}
+        {/* Center Panel: Topic List/Heat Map/Board (5 cols → 4 cols when speaker panel visible) */}
         <Grid size={{ xs: 12, md: eventCode && topicConfirmed ? 4 : 5 }}>
-          <Paper sx={{ p: 2, height: '70vh', overflow: 'auto' }}>
-            {isLoading && (
-              <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
-                <CircularProgress />
-              </Box>
-            )}
+          {isLoading && (
+            <Paper
+              sx={{
+                p: 2,
+                height: '70vh',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              <CircularProgress />
+            </Paper>
+          )}
 
-            {isError && (
+          {isError && (
+            <Paper sx={{ p: 2, height: '70vh' }}>
               <Alert severity="error">
                 {t('topicBacklog.error.loadFailed', 'Failed to load topics')}: {error?.message}
               </Alert>
-            )}
+            </Paper>
+          )}
 
-            {data && (
-              <TopicList
-                topics={data.data}
-                selectedTopicId={selectedTopic?.id}
-                onTopicSelect={handleTopicSelect}
-                pagination={data.pagination}
-                onPageChange={(page) => setFilters((prev) => ({ ...prev, page }))}
-              />
-            )}
-          </Paper>
+          {data && (
+            <>
+              {/* Heat Map View */}
+              {viewMode === 'heatMap' && (
+                <MultiTopicHeatMap
+                  topics={data.data}
+                  selectedTopicId={selectedTopic?.id}
+                  onTopicSelect={handleTopicSelect}
+                  eventLookup={eventLookup}
+                />
+              )}
+
+              {/* List View */}
+              {viewMode === 'list' && (
+                <Paper sx={{ p: 2, height: '70vh', overflow: 'auto' }}>
+                  <TopicList
+                    topics={data.data}
+                    selectedTopicId={selectedTopic?.id}
+                    onTopicSelect={handleTopicSelect}
+                    pagination={data.pagination}
+                    onPageChange={(page) => setFilters((prev) => ({ ...prev, page }))}
+                  />
+                </Paper>
+              )}
+
+              {/* Board View (placeholder) */}
+              {viewMode === 'board' && (
+                <Paper
+                  sx={{
+                    p: 3,
+                    height: '70vh',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Typography variant="body1" color="text.secondary">
+                    {t('topicBacklog.viewMode.boardComingSoon', 'Board view coming soon...')}
+                  </Typography>
+                </Paper>
+              )}
+            </>
+          )}
         </Grid>
 
         {/* Right Panel: Topic Details (4 cols → 3 cols when speaker panel visible) */}

@@ -24,23 +24,7 @@
       "published": "Veröffentlicht",
       "draft": "Entwurf",
       "completed": "Abgeschlossen",
-      "archived": "Archiviert",
-      "CREATED": "Erstellt",
-      "TOPIC_SELECTION": "Themenauswahl",
-      "SPEAKER_BRAINSTORMING": "Referenten-Brainstorming",
-      "SPEAKER_OUTREACH": "Referenten-Kontaktierung",
-      "SPEAKER_CONFIRMATION": "Referenten-Bestätigung",
-      "CONTENT_COLLECTION": "Inhaltssammlung",
-      "QUALITY_REVIEW": "Qualitätsprüfung",
-      "THRESHOLD_CHECK": "Schwellenwert-Prüfung",
-      "OVERFLOW_MANAGEMENT": "Überlauf-Management",
-      "SLOT_ASSIGNMENT": "Slot-Zuweisung",
-      "AGENDA_PUBLISHED": "Agenda veröffentlicht",
-      "AGENDA_FINALIZED": "Agenda finalisiert",
-      "NEWSLETTER_SENT": "Newsletter versendet",
-      "EVENT_READY": "Veranstaltung bereit",
-      "PARTNER_MEETING_COMPLETE": "Partner-Meeting abgeschlossen",
-      "ARCHIVED": "Archiviert"
+      "archived": "Archiviert"
     },
     "eventType": {
       "FULL_DAY": "Ganztägig",
@@ -48,7 +32,6 @@
       "EVENING": "Abend"
     },
     "workflowProgress": "Workflow-Fortschritt",
-    "workflowStep": "Schritt {{current}}/{{total}}",
     "actions": {
       "viewDetails": "Details anzeigen",
       "edit": "Bearbeiten",
@@ -326,8 +309,10 @@
     "neverUsed": "Nie",
     "partnerVotes": "Partner-Stimmen",
     "noTopics": "Keine Themen zugewiesen",
+    "noTopic": "Kein Thema ausgewählt",
     "emptyState": "Noch keine Themen zugewiesen",
     "loadError": "Fehler beim Laden der Themen",
+    "change": "Thema ändern",
     "removeConfirmTitle": "Thema entfernen?",
     "removeConfirmMessage": "Sind Sie sicher, dass Sie dieses Thema von der Veranstaltung entfernen möchten?"
   },

@@ -35,6 +35,11 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { WorkflowState } from '@/types/event.types';
+import {
+  WORKFLOW_STATE_ORDER,
+  getProgressColor,
+  getWorkflowStateI18nKey,
+} from '@/utils/workflow/workflowState';
 
 interface WorkflowProgressBarProps {
   workflow: WorkflowState;
@@ -43,33 +48,6 @@ interface WorkflowProgressBarProps {
   /** Optional: Explicit workflow state (overrides derivation from currentStep) */
   workflowState?: string;
 }
-
-// NEW 16-step workflow states (Story 5.1a)
-const WORKFLOW_STATE_ORDER = [
-  'CREATED',
-  'TOPIC_SELECTION',
-  'SPEAKER_BRAINSTORMING',
-  'SPEAKER_OUTREACH',
-  'SPEAKER_CONFIRMATION',
-  'CONTENT_COLLECTION',
-  'QUALITY_REVIEW',
-  'THRESHOLD_CHECK',
-  'OVERFLOW_MANAGEMENT',
-  'SLOT_ASSIGNMENT',
-  'AGENDA_PUBLISHED',
-  'AGENDA_FINALIZED',
-  'NEWSLETTER_SENT',
-  'EVENT_READY',
-  'PARTNER_MEETING_COMPLETE',
-  'ARCHIVED',
-];
-
-// Get progress bar color based on completion percentage
-const getProgressColor = (progress: number): 'warning' | 'primary' | 'success' => {
-  if (progress < 30) return 'warning';
-  if (progress < 70) return 'primary';
-  return 'success';
-};
 
 export const WorkflowProgressBar: React.FC<WorkflowProgressBarProps> = ({
   workflow,
@@ -106,7 +84,7 @@ export const WorkflowProgressBar: React.FC<WorkflowProgressBarProps> = ({
   }
 
   // Get translated workflow state name
-  const stepName = t(`workflow.states.${derivedWorkflowState.toLowerCase()}`, derivedWorkflowState);
+  const stepName = t(getWorkflowStateI18nKey(derivedWorkflowState), derivedWorkflowState);
 
   // Check for critical blockers
   const hasCriticalBlockers = blockers.some((b) => b.severity === 'critical');

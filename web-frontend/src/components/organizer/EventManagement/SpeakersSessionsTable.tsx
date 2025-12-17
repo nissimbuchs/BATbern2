@@ -487,7 +487,7 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
       </TableContainer>
 
       {/* Footer Actions */}
-      <Stack direction="row" spacing={2} justifyContent="flex-start">
+      <Stack direction="row" spacing={2} justifyContent="flex-end">
         <Button
           variant="outlined"
           startIcon={<CalendarIcon />}

@@ -2304,6 +2304,24 @@ paths:
           schema:
             type: string
             example: "-stalenessScore"
+        - name: include
+          in: query
+          description: |
+            Comma-separated list of resources to include.
+            **GitHub Issue #379**: Added for heatmap visualization support.
+
+            **Supported values**:
+            - `history`: Embeds usage history with event details for each topic
+            - `similarity`: Recalculates similarity scores on-demand
+
+            **Performance impact**:
+            - Without includes: <150ms (P95)
+            - With `include=history`: <300ms (P95) - Single JOIN query
+            - With `include=similarity`: <500ms (P95) - TF-IDF recalculation
+          schema:
+            type: string
+            example: "history"
+          required: false
       responses:
         '200':
           description: Topics retrieved successfully
@@ -4000,6 +4018,21 @@ components:
           format: date-time
           description: Audit timestamp - when record was last updated
           example: "2024-03-20T14:30:00Z"
+        usageHistory:
+          type: array
+          description: |
+            **GitHub Issue #379**: Usage history for this topic (only populated when `include=history`)
+            Contains historical usage data with event details for heatmap visualization
+          nullable: true
+          items:
+            $ref: '#/components/schemas/TopicUsageHistory'
+          example:
+            - eventId: "456e7890-e89b-12d3-a456-426614174001"
+              eventCode: "BATbern56"
+              eventDate: "2024-01-15T18:00:00Z"
+              usedDate: "2024-01-15T10:00:00Z"
+              attendance: 150
+              engagementScore: 0.85
 
     SimilarityScore:
       type: object
@@ -4023,22 +4056,39 @@ components:
 
     TopicUsageHistory:
       type: object
-      description: Historical usage record of a topic in a specific event
+      description: |
+        Historical usage record of a topic in a specific event.
+        **GitHub Issue #379**: Enhanced with eventCode and eventDate for heatmap visualization.
+        Returns eventNumber instead of UUID per architectural requirement (no UUIDs in API).
       required:
-        - eventId
+        - eventNumber
+        - eventCode
+        - eventDate
         - usedDate
         - attendance
         - engagementScore
       properties:
-        eventId:
+        eventNumber:
+          type: integer
+          description: Event number (e.g., 56 for BATbern56) - no UUIDs in API
+          example: 56
+        eventCode:
           type: string
-          format: uuid
-          description: UUID of the event where this topic was used
-          example: "event-abc-123"
+          description: |
+            **GitHub Issue #379**: Human-readable event code (e.g., "BATbern56").
+            Provides meaningful event identification instead of UUID.
+          example: "BATbern56"
+        eventDate:
+          type: string
+          format: date-time
+          description: |
+            **GitHub Issue #379**: Actual date of the event.
+            Used for heatmap visualization and chronological sorting.
+          example: "2024-01-15T18:00:00Z"
         usedDate:
           type: string
           format: date-time
-          description: When the topic was used in the event
+          description: When the topic was used in the event (typically same as eventDate)
           example: "2024-01-15T10:00:00Z"
         attendance:
           type: integer

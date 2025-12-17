@@ -45,6 +45,7 @@ import type { SessionUI, SessionSpeaker, WorkflowStep } from '@/types/event.type
 import type { BreadcrumbItem } from '@/components/shared/Breadcrumbs';
 import { topicService } from '@/services/topicService';
 import type { Topic } from '@/types/topic.types';
+import { isEarlyStage, getWorkflowStateLabel } from '@/utils/workflow/workflowState';
 
 const EventDetailEdit: React.FC = () => {
   const { eventCode } = useParams<{ eventCode: string }>();
@@ -243,10 +244,7 @@ const EventDetailEdit: React.FC = () => {
         <Box>
           <Stack direction="row" spacing={1} alignItems="center" mb={1}>
             <Chip
-              label={t(
-                `dashboard.status.${event.workflowState || 'CREATED'}`,
-                event.workflowState || 'CREATED'
-              )}
+              label={getWorkflowStateLabel(event.workflowState || 'CREATED', t)}
               color="primary"
               size="small"
             />
@@ -353,7 +351,7 @@ const EventDetailEdit: React.FC = () => {
                     <Typography variant="body1">{topic.title}</Typography>
                   ) : (
                     <Typography variant="body1" color="text.secondary">
-                      {t('topics.loadingError', 'Error loading topic')}
+                      {t('topics.loadError', 'Error loading topic')}
                     </Typography>
                   )}
                   <Button
@@ -365,25 +363,27 @@ const EventDetailEdit: React.FC = () => {
                   </Button>
                 </Box>
               ) : (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="body1" color="text.secondary">
-                    {t('topics.noTopic', 'No topic selected')}
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    onClick={() => handleSelectTopic(eventCode!)}
-                  >
-                    {t('topics.addFromBacklog', 'Add Topic from Backlog')}
-                  </Button>
-                </Box>
+                <Typography variant="body1" color="text.secondary">
+                  {t('topics.noTopic', 'No topic selected')}
+                </Typography>
               )}
             </Grid>
           </Grid>
 
-          <Button variant="outlined" size="small" sx={{ mt: 2 }} onClick={handleEditEvent}>
-            {t('dashboard.actions.edit', 'Edit')}
-          </Button>
+          <Stack direction="row" spacing={1} sx={{ mt: 2, justifyContent: 'flex-end' }}>
+            <Button variant="outlined" size="small" onClick={handleEditEvent}>
+              {t('dashboard.actions.edit', 'Edit')}
+            </Button>
+            {!event.topicId && (
+              <Button
+                variant="contained"
+                size="small"
+                onClick={() => handleSelectTopic(eventCode!)}
+              >
+                {t('topics.addFromBacklog', 'Add Topic from Backlog')}
+              </Button>
+            )}
+          </Stack>
         </Paper>
 
         {/* THEME IMAGE SECTION */}
@@ -428,19 +428,20 @@ const EventDetailEdit: React.FC = () => {
                 workflowState={event.workflowState || 'CREATED'}
                 compact
               />
-              <Button variant="text" size="small" sx={{ mt: 2 }}>
-                {t('workflow.viewDetails', 'View Workflow Details')}
-              </Button>
-              {(event.workflowState === 'CREATED' || event.workflowState === 'TOPIC_SELECTION') && (
-                <Button
-                  variant="outlined"
-                  size="small"
-                  sx={{ mt: 2, ml: 1 }}
-                  onClick={() => handleSelectTopic(eventCode!)}
-                >
-                  {t('workflow.actions.selectTopic', 'Select Topic')}
+              <Stack direction="row" spacing={1} sx={{ mt: 2, justifyContent: 'flex-end' }}>
+                <Button variant="text" size="small">
+                  {t('workflow.viewDetails', 'View Workflow Details')}
                 </Button>
-              )}
+                {isEarlyStage(event.workflowState || 'CREATED') && (
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => handleSelectTopic(eventCode!)}
+                  >
+                    {t('workflow.actions.selectTopic', 'Select Topic')}
+                  </Button>
+                )}
+              </Stack>
             </Paper>
           </Grid>
 

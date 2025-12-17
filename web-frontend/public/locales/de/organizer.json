@@ -92,20 +92,44 @@
       "statusRed": "Zu aktuell - innerhalb von 6 Monaten verwendet, hohes Duplikationsrisiko",
       "similarityWarning": "{{count}} ähnliche Themen erkannt (>70% Ähnlichkeit)"
     },
+    "viewMode": {
+      "label": "Ansichtsmodus",
+      "heatMap": "Heatmap",
+      "list": "Liste",
+      "board": "Board",
+      "boardComingSoon": "Board-Ansicht demnächst verfügbar..."
+    },
     "heatMap": {
-      "title": "Nutzungsverlauf",
+      "title": "Themen-Nutzungs-Heatmap",
+      "subtitle": "Dunklere Farben zeigen mehr Nutzung an. Klicken Sie auf ein Thema, um Details anzuzeigen.",
       "description": "Themenutzungshäufigkeit über die letzten 24 Monate (nach Quartalen gruppiert)",
       "quarter": "Quartal",
+      "spring": "Frühling",
+      "summer": "Sommer",
+      "autumn": "Herbst",
       "usageCount": "Verwendungshäufigkeit",
       "totalAttendance": "Gesamtteilnahme",
       "avgEngagement": "Durchschnittliches Engagement",
       "events": "Veranstaltungen",
       "noData": "Keine Nutzungshistorie für dieses Thema verfügbar.",
+      "noTopics": "Keine Themen zum Anzeigen verfügbar.",
       "tooltip": "Klicken Sie auf ein Quartal, um Details zu Veranstaltungen anzuzeigen, die dieses Thema verwendet haben",
       "hint": "Bewegen Sie die Maus über Datenpunkte für weitere Informationen",
-      "low": "Niedrige Nutzung",
-      "medium": "Mittlere Nutzung",
-      "high": "Hohe Nutzung"
+      "stale": "Veraltet - kürzlich nicht verwendet",
+      "trending": "Im Trend - kürzlich verwendet",
+      "legend": {
+        "noUsage": "Keine Nutzung",
+        "low": "Niedrige Nutzung",
+        "medium": "Mittlere Nutzung",
+        "high": "Hohe Nutzung",
+        "stale": "Veraltet",
+        "trending": "Im Trend"
+      },
+      "navigation": {
+        "previous": "Vorherige Jahre",
+        "next": "Nächste Jahre",
+        "atCurrent": "Beim aktuellen Jahr"
+      }
     },
     "dialogs": {
       "similar": {

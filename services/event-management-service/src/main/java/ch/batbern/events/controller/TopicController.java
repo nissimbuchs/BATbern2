@@ -1,7 +1,6 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.events.domain.Topic;
-import ch.batbern.events.domain.TopicUsageHistory;
 import ch.batbern.events.dto.OverrideStalenesRequest;
 import ch.batbern.events.dto.TopicFilterRequest;
 import ch.batbern.events.dto.TopicListResponse;
@@ -63,6 +62,7 @@ public class TopicController {
      * @param page Page number (default 0 for Spring Data, but 1 for API consistency)
      * @param limit Page size (default 50)
      * @param sort Optional sort parameter (e.g., "stalenessScore,desc")
+     * @param include Optional comma-separated includes (e.g., "history,similarity") - GitHub Issue #379
      * @return Paginated list of topics
      */
     @GetMapping
@@ -71,7 +71,8 @@ public class TopicController {
             @RequestParam(required = false) String filter,
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "50") Integer limit,
-            @RequestParam(required = false) String sort) {
+            @RequestParam(required = false) String sort,
+            @RequestParam(required = false) String include) {
 
         // Parse filter JSON using Jackson ObjectMapper
         String category = null;
@@ -87,6 +88,10 @@ public class TopicController {
             }
         }
 
+        // Parse include parameter (comma-separated values)
+        boolean includeHistory = include != null && include.contains("history");
+        boolean includeSimilarity = include != null && include.contains("similarity");
+
         // Create Pageable for database-level pagination
         // Convert 1-based page to 0-based for Spring Data
         Pageable pageable = createPageable(page - 1, limit, sort);
@@ -96,8 +101,21 @@ public class TopicController {
 
         // Convert to DTOs
         List<TopicResponse> topicResponses = topicPage.getContent().stream()
-                .map(TopicResponse::from)
+                .map(topic -> {
+                    // If include=similarity, recalculate similarity scores on-demand
+                    if (includeSimilarity) {
+                        topicService.calculateSimilarityForTopic(topic);
+                        // Refresh topic from database to get updated similarity scores
+                        topic = topicService.getTopicById(topic.getId()).orElse(topic);
+                    }
+                    return TopicResponse.from(topic);
+                })
                 .collect(Collectors.toList());
+
+        // If include=history, fetch and attach usage history for all topics (GitHub Issue #379)
+        if (includeHistory) {
+            topicResponses = topicService.enrichTopicsWithUsageHistory(topicResponses);
+        }
 
         // Build response with pagination metadata (1-based for API)
         TopicListResponse response = new TopicListResponse(
@@ -282,13 +300,8 @@ public class TopicController {
             return ResponseEntity.notFound().build();
         }
 
-        // Fetch usage history
-        List<TopicUsageHistory> usageHistory = topicService.getUsageHistory(id);
-
-        // Convert to DTOs
-        List<TopicUsageHistoryResponse> response = usageHistory.stream()
-                .map(TopicUsageHistoryResponse::from)
-                .collect(Collectors.toList());
+        // Fetch usage history with event details (GitHub Issue #379: returns eventNumber, no UUIDs)
+        List<TopicUsageHistoryResponse> response = topicService.getUsageHistoryWithEventDetails(id);
 
         return ResponseEntity.ok(response);
     }

@@ -92,20 +92,44 @@
       "statusRed": "Too recent - last used within 6 months, high duplication risk",
       "similarityWarning": "{{count}} similar topics detected (>70% similarity)"
     },
+    "viewMode": {
+      "label": "View mode",
+      "heatMap": "Heat Map",
+      "list": "List",
+      "board": "Board",
+      "boardComingSoon": "Board view coming soon..."
+    },
     "heatMap": {
-      "title": "Usage Heat Map",
+      "title": "Topic Usage Heat Map",
+      "subtitle": "Darker colors indicate more usage. Click a topic to view details.",
       "description": "Topic usage frequency over the last 24 months (grouped by quarter)",
       "quarter": "Quarter",
+      "spring": "Spring",
+      "summer": "Summer",
+      "autumn": "Autumn",
       "usageCount": "Usage Count",
       "totalAttendance": "Total Attendance",
       "avgEngagement": "Avg Engagement",
       "events": "Events",
       "noData": "No usage history available for this topic.",
+      "noTopics": "No topics available to display.",
       "tooltip": "Click on a quarter to see details about events that used this topic",
       "hint": "Hover over data points for more information",
-      "low": "Low Usage",
-      "medium": "Medium Usage",
-      "high": "High Usage"
+      "stale": "Stale - not used recently",
+      "trending": "Trending - used recently",
+      "legend": {
+        "noUsage": "No usage",
+        "low": "Low usage",
+        "medium": "Medium usage",
+        "high": "High usage",
+        "stale": "Stale",
+        "trending": "Trending"
+      },
+      "navigation": {
+        "previous": "Previous years",
+        "next": "Next years",
+        "atCurrent": "At current year"
+      }
     },
     "dialogs": {
       "similar": {

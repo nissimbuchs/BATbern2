@@ -28,6 +28,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
+import { getWorkflowStateLabel } from '@/utils/workflow/workflowState';
 import { de, enUS } from 'date-fns/locale';
 import { useEvent } from '@/hooks/useEvents';
 import type { EventUI } from '@/types/event.types';
@@ -125,7 +126,10 @@ const EventDetail: React.FC = () => {
           {/* Title and Status */}
           <Box>
             <Stack direction="row" spacing={2} alignItems="center" mb={1}>
-              <Chip label={t(`status.${event.workflowState}`)} color="primary" />
+              <Chip
+                label={getWorkflowStateLabel(event.workflowState || 'CREATED', t)}
+                color="primary"
+              />
               <Typography variant="caption" color="text.secondary">
                 {event.eventCode}
               </Typography>

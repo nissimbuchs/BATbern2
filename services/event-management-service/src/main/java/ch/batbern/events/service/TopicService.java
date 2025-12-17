@@ -3,6 +3,8 @@ package ch.batbern.events.service;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Topic;
 import ch.batbern.events.domain.TopicUsageHistory;
+import ch.batbern.events.dto.TopicUsageHistoryResponse;
+import ch.batbern.events.dto.TopicUsageHistoryWithEventDetails;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.TopicRepository;
 import ch.batbern.events.repository.TopicUsageHistoryRepository;
@@ -149,6 +151,25 @@ public class TopicService {
     @Transactional(readOnly = true)
     public List<TopicUsageHistory> getUsageHistory(UUID topicId) {
         return topicUsageHistoryRepository.findByTopicIdOrderByUsedDateDesc(topicId);
+    }
+
+    /**
+     * Get usage history for a specific topic with event details.
+     * GitHub Issue #379: Returns eventNumber instead of UUID per architectural requirement.
+     *
+     * @param topicId Topic ID
+     * @return List of usage history with event details (eventNumber, eventCode, eventDate)
+     */
+    @Transactional(readOnly = true)
+    public List<TopicUsageHistoryResponse> getUsageHistoryWithEventDetails(UUID topicId) {
+        // Use the efficient single-query method
+        List<TopicUsageHistoryWithEventDetails> history =
+                topicUsageHistoryRepository.findUsageHistoryWithEventDetailsByTopicIds(List.of(topicId));
+
+        // Convert to response DTOs
+        return history.stream()
+                .map(TopicUsageHistoryWithEventDetails::toResponse)
+                .collect(Collectors.toList());
     }
 
     /**

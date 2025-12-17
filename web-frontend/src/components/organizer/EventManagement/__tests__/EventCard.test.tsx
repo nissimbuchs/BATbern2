@@ -37,11 +37,12 @@ vi.mock('react-i18next', () => ({
         'workflow.states.topic_selection': 'Topic Selection',
         'workflow.states.speaker_brainstorming': 'Speaker Brainstorming',
         'workflow.states.speaker_outreach': 'Speaker Outreach',
+        'workflow.states.quality_review': 'Quality Review',
         'workflow.states.agenda_published': 'Agenda Published',
       };
 
-      // Handle parameterized translations like workflowStep
-      if (key === 'dashboard.workflowStep' && params) {
+      // Handle parameterized translations like stepIndicator
+      if (key === 'workflow.stepIndicator' && params) {
         return `Step ${params.current}/${params.total}`;
       }
 

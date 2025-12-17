@@ -24,23 +24,7 @@
       "published": "Published",
       "draft": "Draft",
       "completed": "Completed",
-      "archived": "Archived",
-      "CREATED": "Created",
-      "TOPIC_SELECTION": "Topic Selection",
-      "SPEAKER_BRAINSTORMING": "Speaker Brainstorming",
-      "SPEAKER_OUTREACH": "Speaker Outreach",
-      "SPEAKER_CONFIRMATION": "Speaker Confirmation",
-      "CONTENT_COLLECTION": "Content Collection",
-      "QUALITY_REVIEW": "Quality Review",
-      "THRESHOLD_CHECK": "Threshold Check",
-      "OVERFLOW_MANAGEMENT": "Overflow Management",
-      "SLOT_ASSIGNMENT": "Slot Assignment",
-      "AGENDA_PUBLISHED": "Agenda Published",
-      "AGENDA_FINALIZED": "Agenda Finalized",
-      "NEWSLETTER_SENT": "Newsletter Sent",
-      "EVENT_READY": "Event Ready",
-      "PARTNER_MEETING_COMPLETE": "Partner Meeting Complete",
-      "ARCHIVED": "Archived"
+      "archived": "Archived"
     },
     "eventType": {
       "FULL_DAY": "Full Day",
@@ -48,7 +32,6 @@
       "EVENING": "Evening"
     },
     "workflowProgress": "Workflow Progress",
-    "workflowStep": "Step {{current}}/{{total}}",
     "actions": {
       "viewDetails": "View Details",
       "edit": "Edit",
@@ -336,8 +319,10 @@
     "neverUsed": "Never",
     "partnerVotes": "Partner votes",
     "noTopics": "No topics assigned",
+    "noTopic": "No topic selected",
     "emptyState": "No topics assigned yet",
     "loadError": "Failed to load topics",
+    "change": "Change Topic",
     "removeConfirmTitle": "Remove Topic?",
     "removeConfirmMessage": "Are you sure you want to remove this topic from the event?"
   },

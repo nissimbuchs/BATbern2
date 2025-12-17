@@ -36,54 +36,19 @@ import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
 import type { Event, EventUI } from '@/types/event.types';
+import {
+  getWorkflowProgress,
+  getProgressColor,
+  getWorkflowStateLabel,
+  getWorkflowStepNumber,
+  isEarlyStage,
+} from '@/utils/workflow/workflowState';
 
 interface EventCardProps {
   event: Event;
   onEdit?: (eventCode: string) => void;
   onCardClick?: (eventCode: string) => void;
 }
-
-// NEW 16-step workflow states (Story 5.1a)
-const WORKFLOW_STATE_ORDER = [
-  'CREATED',
-  'TOPIC_SELECTION',
-  'SPEAKER_BRAINSTORMING',
-  'SPEAKER_OUTREACH',
-  'SPEAKER_CONFIRMATION',
-  'CONTENT_COLLECTION',
-  'QUALITY_REVIEW',
-  'THRESHOLD_CHECK',
-  'OVERFLOW_MANAGEMENT',
-  'SLOT_ASSIGNMENT',
-  'AGENDA_PUBLISHED',
-  'AGENDA_FINALIZED',
-  'NEWSLETTER_SENT',
-  'EVENT_READY',
-  'PARTNER_MEETING_COMPLETE',
-  'ARCHIVED',
-];
-
-// Calculate progress percentage from workflow state (Story 5.1a)
-const getWorkflowProgress = (workflowState: string): number => {
-  const currentIndex = WORKFLOW_STATE_ORDER.indexOf(workflowState);
-  if (currentIndex === -1) return 0;
-  return Math.round(((currentIndex + 1) / WORKFLOW_STATE_ORDER.length) * 100);
-};
-
-// Get i18n key for workflow state
-const getWorkflowStateLabel = (
-  state: string,
-  t: ReturnType<typeof useTranslation>['t']
-): string => {
-  return t(`workflow.states.${state.toLowerCase()}`, state);
-};
-
-// Get progress bar color based on completion
-const getProgressColor = (progress: number): 'warning' | 'primary' | 'success' => {
-  if (progress < 30) return 'warning';
-  if (progress < 70) return 'primary';
-  return 'success';
-};
 
 export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick }) => {
   const { t, i18n } = useTranslation('events');
@@ -95,7 +60,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
   const workflowState = event.workflowState || 'CREATED';
   const progress = getWorkflowProgress(workflowState);
   const workflowLabel = getWorkflowStateLabel(workflowState, t);
-  const workflowStep = WORKFLOW_STATE_ORDER.indexOf(workflowState) + 1;
+  const workflowStep = getWorkflowStepNumber(workflowState);
   const capacity = eventUI.capacity || event.venueCapacity || 0;
   const attendeePercentage =
     capacity > 0 ? Math.round((event.currentAttendeeCount / capacity) * 100) : 0;
@@ -204,7 +169,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
               {workflowLabel}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              {t('dashboard.workflowStep', { current: workflowStep, total: 16 })}
+              {t('workflow.stepIndicator', { current: workflowStep, total: 16 })}
             </Typography>
           </Stack>
           {/* Progress Bar with Percentage */}
@@ -228,7 +193,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
       <CardActions sx={{ justifyContent: 'flex-end', px: 2, pb: 2 }}>
         {isHovered && (
           <>
-            {(workflowState === 'CREATED' || workflowState === 'TOPIC_SELECTION') && (
+            {isEarlyStage(workflowState) && (
               <IconButton
                 size="small"
                 onClick={handleSelectTopic}
