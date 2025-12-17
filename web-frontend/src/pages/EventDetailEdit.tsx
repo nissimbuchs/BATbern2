@@ -344,24 +344,15 @@ const EventDetailEdit: React.FC = () => {
                 {t('form.topic', 'Topic')}
               </Typography>
               {event.topicId ? (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  {topicLoading ? (
-                    <CircularProgress size={20} />
-                  ) : topic ? (
-                    <Typography variant="body1">{topic.title}</Typography>
-                  ) : (
-                    <Typography variant="body1" color="text.secondary">
-                      {t('topics.loadError', 'Error loading topic')}
-                    </Typography>
-                  )}
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={() => handleSelectTopic(eventCode!)}
-                  >
-                    {t('topics.change', 'Change Topic')}
-                  </Button>
-                </Box>
+                topicLoading ? (
+                  <CircularProgress size={20} />
+                ) : topic ? (
+                  <Typography variant="body1">{topic.title}</Typography>
+                ) : (
+                  <Typography variant="body1" color="text.secondary">
+                    {t('topics.loadError', 'Error loading topic')}
+                  </Typography>
+                )
               ) : (
                 <Typography variant="body1" color="text.secondary">
                   {t('topics.noTopic', 'No topic selected')}
@@ -371,10 +362,11 @@ const EventDetailEdit: React.FC = () => {
           </Grid>
 
           <Stack direction="row" spacing={1} sx={{ mt: 2, justifyContent: 'flex-end' }}>
-            <Button variant="outlined" size="small" onClick={handleEditEvent}>
-              {t('dashboard.actions.edit', 'Edit')}
-            </Button>
-            {!event.topicId && (
+            {event.topicId ? (
+              <Button variant="outlined" size="small" onClick={() => handleSelectTopic(eventCode!)}>
+                {t('topics.change', 'Change Topic')}
+              </Button>
+            ) : (
               <Button
                 variant="contained"
                 size="small"
@@ -383,6 +375,9 @@ const EventDetailEdit: React.FC = () => {
                 {t('topics.addFromBacklog', 'Add Topic from Backlog')}
               </Button>
             )}
+            <Button variant="outlined" size="small" onClick={handleEditEvent}>
+              {t('dashboard.actions.edit', 'Edit')}
+            </Button>
           </Stack>
         </Paper>
 

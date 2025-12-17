@@ -1492,6 +1492,7 @@ public class EventController {
     @PostMapping("/{eventCode}/topics")
     @Operation(summary = "Select topic for event",
             description = "Assign a topic to an event and transition to TOPIC_SELECTION state")
+    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     public ResponseEntity<Map<String, Object>> selectTopicForEvent(
             @PathVariable String eventCode,
             @RequestBody Map<String, String> request) {
