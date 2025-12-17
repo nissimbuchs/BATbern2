@@ -37,12 +37,14 @@ export interface SpeakerBrainstormingPanelProps {
   eventCode: string;
   organizers?: Array<{ id: string; name: string }>; // List of available organizers
   onContinue?: () => void; // Callback when workflow should continue
+  showPoolList?: boolean; // Whether to show the speaker pool list (default: true)
 }
 
 export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps> = ({
   eventCode,
   organizers = [],
   onContinue,
+  showPoolList = true,
 }) => {
   const { t } = useTranslation('organizer');
 
@@ -188,95 +190,100 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
         )}
       </Box>
 
-      <Divider sx={{ my: 2 }} />
+      {showPoolList && (
+        <>
+          <Divider sx={{ my: 2 }} />
 
-      {/* Speaker Pool List */}
-      <Typography variant="subtitle1" gutterBottom>
-        {t('speakerBrainstorm.pool.title', 'Speaker Pool')} ({speakerPool?.length || 0})
-      </Typography>
+          {/* Speaker Pool List */}
+          <Typography variant="subtitle1" gutterBottom>
+            {t('speakerBrainstorm.pool.title', 'Speaker Pool')} ({speakerPool?.length || 0})
+          </Typography>
 
-      {isLoading && (
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight={100}>
-          <CircularProgress />
-        </Box>
-      )}
+          {isLoading && (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight={100}>
+              <CircularProgress />
+            </Box>
+          )}
 
-      {isError && (
-        <Alert severity="error">
-          {t('speakerBrainstorm.pool.error', 'Failed to load speaker pool')}
-        </Alert>
-      )}
+          {isError && (
+            <Alert severity="error">
+              {t('speakerBrainstorm.pool.error', 'Failed to load speaker pool')}
+            </Alert>
+          )}
 
-      {speakerPool && speakerPool.length === 0 && (
-        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-          {t('speakerBrainstorm.pool.empty', 'No speakers in pool yet. Add some above!')}
-        </Typography>
-      )}
+          {speakerPool && speakerPool.length === 0 && (
+            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+              {t('speakerBrainstorm.pool.empty', 'No speakers in pool yet. Add some above!')}
+            </Typography>
+          )}
 
-      {speakerPool && speakerPool.length > 0 && (
-        <List>
-          {speakerPool.map((speaker) => (
-            <ListItem
-              key={speaker.id}
-              sx={{
-                border: 1,
-                borderColor: 'divider',
-                borderRadius: 1,
-                mb: 1,
-              }}
-            >
-              <ListItemText
-                primary={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography variant="subtitle2">{speaker.speakerName}</Typography>
-                    {speaker.status && (
-                      <Chip
-                        label={speaker.status}
-                        size="small"
-                        color={speaker.status === 'identified' ? 'default' : 'primary'}
-                      />
-                    )}
-                  </Box>
-                }
-                secondary={
-                  <>
-                    {speaker.company && (
-                      <Typography component="span" variant="body2" color="text.secondary">
-                        {speaker.company}
-                      </Typography>
-                    )}
-                    {speaker.expertise && (
+          {speakerPool && speakerPool.length > 0 && (
+            <List>
+              {speakerPool.map((speaker) => (
+                <ListItem
+                  key={speaker.id}
+                  sx={{
+                    border: 1,
+                    borderColor: 'divider',
+                    borderRadius: 1,
+                    mb: 1,
+                  }}
+                >
+                  <ListItemText
+                    primary={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="subtitle2">{speaker.speakerName}</Typography>
+                        {speaker.status && (
+                          <Chip
+                            label={speaker.status}
+                            size="small"
+                            color={speaker.status === 'identified' ? 'default' : 'primary'}
+                          />
+                        )}
+                      </Box>
+                    }
+                    secondary={
                       <>
-                        <br />
-                        <Typography component="span" variant="body2" color="text.secondary">
-                          {t('speakerBrainstorm.pool.expertise', 'Expertise')}: {speaker.expertise}
-                        </Typography>
+                        {speaker.company && (
+                          <Typography component="span" variant="body2" color="text.secondary">
+                            {speaker.company}
+                          </Typography>
+                        )}
+                        {speaker.expertise && (
+                          <>
+                            <br />
+                            <Typography component="span" variant="body2" color="text.secondary">
+                              {t('speakerBrainstorm.pool.expertise', 'Expertise')}:{' '}
+                              {speaker.expertise}
+                            </Typography>
+                          </>
+                        )}
+                        {speaker.assignedOrganizerId && (
+                          <>
+                            <br />
+                            <Typography component="span" variant="body2" color="text.secondary">
+                              {t('speakerBrainstorm.pool.assigned', 'Assigned to')}:{' '}
+                              {organizers.find((o) => o.id === speaker.assignedOrganizerId)?.name ||
+                                speaker.assignedOrganizerId}
+                            </Typography>
+                          </>
+                        )}
+                        {speaker.notes && (
+                          <>
+                            <br />
+                            <Typography component="span" variant="body2" color="text.secondary">
+                              {t('speakerBrainstorm.pool.notes', 'Notes')}: {speaker.notes}
+                            </Typography>
+                          </>
+                        )}
                       </>
-                    )}
-                    {speaker.assignedOrganizerId && (
-                      <>
-                        <br />
-                        <Typography component="span" variant="body2" color="text.secondary">
-                          {t('speakerBrainstorm.pool.assigned', 'Assigned to')}:{' '}
-                          {organizers.find((o) => o.id === speaker.assignedOrganizerId)?.name ||
-                            speaker.assignedOrganizerId}
-                        </Typography>
-                      </>
-                    )}
-                    {speaker.notes && (
-                      <>
-                        <br />
-                        <Typography component="span" variant="body2" color="text.secondary">
-                          {t('speakerBrainstorm.pool.notes', 'Notes')}: {speaker.notes}
-                        </Typography>
-                      </>
-                    )}
-                  </>
-                }
-              />
-            </ListItem>
-          ))}
-        </List>
+                    }
+                  />
+                </ListItem>
+              ))}
+            </List>
+          )}
+        </>
       )}
 
       {/* Action Buttons */}

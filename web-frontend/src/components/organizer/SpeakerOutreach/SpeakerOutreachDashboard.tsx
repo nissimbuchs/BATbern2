@@ -353,7 +353,7 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
               <SpeakerBrainstormingPanel
                 eventCode={eventCode}
                 organizers={[]}
-                onContinue={() => setShowBrainstormPanel(false)}
+                showPoolList={false}
               />
             </Paper>
           </Grid>
