@@ -45,6 +45,7 @@ import { FileUpload } from '@/components/shared/FileUpload/FileUpload';
 import { EventTypeSelector } from '@/components/organizer/EventTypeSelector/EventTypeSelector';
 import type { components } from '@/types/generated/events-api.types';
 import { workflowService } from '@/services/workflowService';
+import { useQueryClient } from '@tanstack/react-query';
 
 /**
  * Maps EventWorkflowState to CreateEventRequest status field
@@ -188,6 +189,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
   // Mutation hooks for proper cache management (MVC pattern)
   const createEventMutation = useCreateEvent();
   const updateEventMutation = useUpdateEvent();
+  const queryClient = useQueryClient();
 
   const [apiError, setApiError] = useState<string | null>(null);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>(
@@ -376,6 +378,12 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
       // Handle workflow state transition separately via workflow transition API
       if (workflowStateChanged && newWorkflowState) {
         await workflowService.transitionWorkflowState(event.eventCode, newWorkflowState);
+
+        // Invalidate React Query caches to reflect workflow state change in UI
+        queryClient.invalidateQueries({ queryKey: ['events'] }); // List caches
+        queryClient.invalidateQueries({ queryKey: ['event', event.eventCode] }); // Detail caches
+        queryClient.invalidateQueries({ queryKey: ['eventWorkflow', event.eventCode] }); // Workflow cache
+        queryClient.invalidateQueries({ queryKey: ['events', 'current'] }); // Current event cache
       }
 
       setAutoSaveStatus('saved');
@@ -473,6 +481,12 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
       // Handle workflow state transition separately via workflow transition API
       if (workflowStateChanged && newWorkflowState) {
         await workflowService.transitionWorkflowState(event.eventCode, newWorkflowState);
+
+        // Invalidate React Query caches to reflect workflow state change in UI
+        queryClient.invalidateQueries({ queryKey: ['events'] }); // List caches
+        queryClient.invalidateQueries({ queryKey: ['event', event.eventCode] }); // Detail caches
+        queryClient.invalidateQueries({ queryKey: ['eventWorkflow', event.eventCode] }); // Workflow cache
+        queryClient.invalidateQueries({ queryKey: ['events', 'current'] }); // Current event cache
       }
 
       onSuccess?.();
