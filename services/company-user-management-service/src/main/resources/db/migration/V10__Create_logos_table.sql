@@ -8,8 +8,12 @@
 -- PENDING: Upload URL generated, file may not yet be in S3 (expires after 24h)
 -- CONFIRMED: File successfully uploaded to S3 and verified (expires after 7 days if not associated)
 -- ASSOCIATED: File linked to an entity (company, user, event, etc.), kept indefinitely
+--
+-- Note: This is a SHARED TABLE accessed by multiple services (shared database pattern)
+-- Same schema exists in event-management-service (V5)
+-- Using CREATE TABLE IF NOT EXISTS to handle both services creating the table
 
-CREATE TABLE logos (
+CREATE TABLE IF NOT EXISTS logos (
     -- Primary key
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
@@ -47,10 +51,10 @@ CREATE TABLE logos (
     )
 );
 
--- Performance indexes
-CREATE INDEX idx_logos_upload_id ON logos(upload_id);
-CREATE INDEX idx_logos_status_expires ON logos(status, expires_at) WHERE expires_at IS NOT NULL;
-CREATE INDEX idx_logos_entity ON logos(associated_entity_type, associated_entity_id) WHERE status = 'ASSOCIATED';
+-- Performance indexes (IF NOT EXISTS for shared db pattern)
+CREATE INDEX IF NOT EXISTS idx_logos_upload_id ON logos(upload_id);
+CREATE INDEX IF NOT EXISTS idx_logos_status_expires ON logos(status, expires_at) WHERE expires_at IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_logos_entity ON logos(associated_entity_type, associated_entity_id) WHERE status = 'ASSOCIATED';
 
 -- Comments for documentation
 COMMENT ON TABLE logos IS 'Generic file upload storage with state machine pattern (PENDING -> CONFIRMED -> ASSOCIATED)';
