@@ -200,6 +200,9 @@
     "daysSinceAssignment": "Tage seit Zuweisung",
     "overdue": "Überfällig",
     "lastContact": "Letzter Kontakt",
+    "outreachDetails": "Kontaktdetails",
+    "noContactHistory": "Noch kein Kontaktverlauf vorhanden",
+    "contactedBy": "Kontaktiert von",
     "markContactedModal": {
       "title": "Referent als kontaktiert markieren",
       "method": {
@@ -211,7 +214,8 @@
       "error": {
         "methodRequired": "Kontaktmethode ist erforderlich",
         "dateRequired": "Kontaktdatum ist erforderlich",
-        "failed": "Fehler beim Aufzeichnen der Kontaktierung"
+        "failed": "Fehler beim Aufzeichnen der Kontaktierung",
+        "loadHistory": "Fehler beim Laden des Kontaktverlaufs"
       }
     },
     "bulkAction": {

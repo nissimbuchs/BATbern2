@@ -10,6 +10,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { speakerOutreachService } from '@/services/speakerOutreachService';
+import { speakerPoolKeys } from './useSpeakerPool';
 import type { RecordOutreachRequest } from '@/types/speakerOutreach.types';
 
 /**
@@ -70,6 +71,11 @@ export function useRecordOutreach() {
       // Invalidate outreach history for this specific speaker to refetch
       queryClient.invalidateQueries({
         queryKey: speakerOutreachKeys.history(variables.eventCode, variables.speakerId),
+      });
+
+      // Invalidate speaker pool to update status in the dashboard
+      queryClient.invalidateQueries({
+        queryKey: speakerPoolKeys.list(variables.eventCode),
       });
     },
   });

@@ -35,6 +35,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useSpeakerPool } from '../../../hooks/useSpeakerPool';
 import MarkContactedModal from './MarkContactedModal';
+import SpeakerOutreachDetailsDrawer from './SpeakerOutreachDetailsDrawer';
 import type { SpeakerPoolEntry } from '../../../types/speakerPool.types';
 
 interface SpeakerOutreachDashboardProps {
@@ -48,6 +49,7 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
   const [selectedOrganizer, setSelectedOrganizer] = useState<string>('all');
   const [selectedSpeakers, setSelectedSpeakers] = useState<Set<string>>(new Set());
   const [markContactedModalOpen, setMarkContactedModalOpen] = useState(false);
+  const [detailsDrawerOpen, setDetailsDrawerOpen] = useState(false);
   const [currentSpeaker, setCurrentSpeaker] = useState<SpeakerPoolEntry | null>(null);
 
   // Calculate days since assignment
@@ -87,9 +89,16 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
   };
 
   // Handle mark contacted button click
-  const handleMarkContacted = (speaker: SpeakerPoolEntry) => {
+  const handleMarkContacted = (speaker: SpeakerPoolEntry, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent row click from triggering
     setCurrentSpeaker(speaker);
     setMarkContactedModalOpen(true);
+  };
+
+  // Handle row click to view details
+  const handleRowClick = (speaker: SpeakerPoolEntry) => {
+    setCurrentSpeaker(speaker);
+    setDetailsDrawerOpen(true);
   };
 
   // Handle modal close and success
@@ -206,8 +215,14 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
               const isOverdue = daysSince > 7;
 
               return (
-                <TableRow key={speaker.id} hover data-testid="speaker-row">
-                  <TableCell padding="checkbox">
+                <TableRow
+                  key={speaker.id}
+                  hover
+                  onClick={() => handleRowClick(speaker)}
+                  sx={{ cursor: 'pointer' }}
+                  data-testid="speaker-row"
+                >
+                  <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
                     <Checkbox
                       checked={selectedSpeakers.has(speaker.id)}
                       onChange={() => handleSelectSpeaker(speaker.id)}
@@ -248,7 +263,7 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
                     <Button
                       size="small"
                       variant="outlined"
-                      onClick={() => handleMarkContacted(speaker)}
+                      onClick={(e) => handleMarkContacted(speaker, e)}
                     >
                       {t('speakerOutreach.markContacted')}
                     </Button>
@@ -271,6 +286,14 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
           speakerName={currentSpeaker.speakerName}
         />
       )}
+
+      {/* Speaker Outreach Details Drawer */}
+      <SpeakerOutreachDetailsDrawer
+        open={detailsDrawerOpen}
+        onClose={() => setDetailsDrawerOpen(false)}
+        speaker={currentSpeaker}
+        eventCode={eventCode}
+      />
     </Box>
   );
 };

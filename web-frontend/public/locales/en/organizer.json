@@ -200,6 +200,9 @@
     "daysSinceAssignment": "Days Since Assignment",
     "overdue": "Overdue",
     "lastContact": "Last Contact",
+    "outreachDetails": "Outreach Details",
+    "noContactHistory": "No contact history yet",
+    "contactedBy": "Contacted by",
     "markContactedModal": {
       "title": "Mark Speaker as Contacted",
       "method": {
@@ -211,7 +214,8 @@
       "error": {
         "methodRequired": "Contact method is required",
         "dateRequired": "Contact date is required",
-        "failed": "Failed to record outreach"
+        "failed": "Failed to record outreach",
+        "loadHistory": "Failed to load contact history"
       }
     },
     "bulkAction": {
