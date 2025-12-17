@@ -16,7 +16,7 @@ import java.util.Set;
  * The 16-step workflow follows a mostly sequential pattern with a few allowed skips.
  *
  * Valid Transitions:
- * 1. CREATED → TOPIC_SELECTION
+ * 1. CREATED → TOPIC_SELECTION or SPEAKER_BRAINSTORMING (can skip TOPIC_SELECTION if topic already selected)
  * 2. TOPIC_SELECTION → SPEAKER_BRAINSTORMING
  * 3. SPEAKER_BRAINSTORMING → SPEAKER_OUTREACH
  * 4. SPEAKER_OUTREACH → SPEAKER_CONFIRMATION
@@ -36,6 +36,7 @@ import java.util.Set;
  * - Idempotent transitions (same state to same state) are allowed
  * - ARCHIVED is a terminal state (no transitions out allowed)
  * - Backwards transitions are NOT allowed
+ * - Skipping TOPIC_SELECTION is allowed when topic is selected immediately
  * - Skipping OVERFLOW_MANAGEMENT is allowed when threshold not exceeded
  *
  * Story 5.1a: Workflow State Machine Foundation - AC6
@@ -53,7 +54,8 @@ public class WorkflowTransitionValidator {
     private static final Map<EventWorkflowState, Set<EventWorkflowState>> VALID_TRANSITIONS = Map.ofEntries(
             Map.entry(EventWorkflowState.CREATED, EnumSet.of(
                     EventWorkflowState.CREATED,          // Idempotent
-                    EventWorkflowState.TOPIC_SELECTION
+                    EventWorkflowState.TOPIC_SELECTION,
+                    EventWorkflowState.SPEAKER_BRAINSTORMING  // Can skip TOPIC_SELECTION if topic selected immediately
             )),
             Map.entry(EventWorkflowState.TOPIC_SELECTION, EnumSet.of(
                     EventWorkflowState.TOPIC_SELECTION,  // Idempotent

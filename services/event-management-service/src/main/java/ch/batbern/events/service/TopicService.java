@@ -365,7 +365,7 @@ public class TopicService {
      * 1. Validates event and topic exist
      * 2. Validates event is in valid state (CREATED or TOPIC_SELECTION)
      * 3. Assigns topic to event
-     * 4. Transitions event workflow state to TOPIC_SELECTION
+     * 4. Transitions event workflow state to SPEAKER_BRAINSTORMING (topic selection complete)
      * 5. Publishes EventWorkflowTransitionEvent
      *
      * @param eventCode Event code (e.g., "BATbern56")
@@ -403,10 +403,12 @@ public class TopicService {
             // Skip state transition for archived events - just update topic directly
             updatedEvent = event;
         } else {
+            // Transition to SPEAKER_BRAINSTORMING because topic selection is now complete
+            // Can transition from both CREATED and TOPIC_SELECTION states
             // This will also publish EventWorkflowTransitionEvent
             updatedEvent = eventWorkflowStateMachine.transitionToState(
                 eventCode,
-                EventWorkflowState.TOPIC_SELECTION,
+                EventWorkflowState.SPEAKER_BRAINSTORMING,
                 organizerUsername
             );
         }
@@ -439,5 +441,55 @@ public class TopicService {
         topic.setStalenessScore(0); // Reset staleness to 0 when used
 
         return topicRepository.save(topic);
+    }
+
+    /**
+     * Enrich topic responses with usage history (GitHub Issue #379).
+     * Uses a single JOIN query to fetch all usage history with event details efficiently.
+     *
+     * Performance: Single SQL query with JOIN instead of N+1 queries.
+     * For 100 topics with average 3 history records each:
+     * - Old approach: 1 + 100 + 300 = 401 queries
+     * - New approach: 1 query
+     *
+     * @param topicResponses List of topic responses to enrich
+     * @return List of topic responses with usageHistory populated
+     */
+    @Transactional(readOnly = true)
+    public List<ch.batbern.events.dto.TopicResponse> enrichTopicsWithUsageHistory(
+            List<ch.batbern.events.dto.TopicResponse> topicResponses) {
+
+        if (topicResponses.isEmpty()) {
+            return topicResponses;
+        }
+
+        // Extract all topic IDs
+        List<UUID> topicIds = topicResponses.stream()
+                .map(ch.batbern.events.dto.TopicResponse::getId)
+                .collect(Collectors.toList());
+
+        // Fetch ALL usage history for ALL topics in ONE query with JOIN
+        List<ch.batbern.events.dto.TopicUsageHistoryWithEventDetails> allHistories =
+                topicUsageHistoryRepository.findUsageHistoryWithEventDetailsByTopicIds(topicIds);
+
+        // Group histories by topicId for efficient lookup
+        java.util.Map<UUID, List<ch.batbern.events.dto.TopicUsageHistoryResponse>> historyByTopicId =
+                allHistories.stream()
+                        .collect(Collectors.groupingBy(
+                                ch.batbern.events.dto.TopicUsageHistoryWithEventDetails::getTopicId,
+                                Collectors.mapping(
+                                        ch.batbern.events.dto.TopicUsageHistoryWithEventDetails::toResponse,
+                                        Collectors.toList()
+                                )
+                        ));
+
+        // Attach usage history to each topic response
+        for (ch.batbern.events.dto.TopicResponse topicResponse : topicResponses) {
+            List<ch.batbern.events.dto.TopicUsageHistoryResponse> histories =
+                    historyByTopicId.getOrDefault(topicResponse.getId(), List.of());
+            topicResponse.setUsageHistory(histories);
+        }
+
+        return topicResponses;
     }
 }

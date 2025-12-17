@@ -30,7 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Integration tests for Topic Selection Workflow (Story 5.2 Task 3a).
  *
  * Tests verify AC14-16:
- * - AC14: Event state transition to TOPIC_SELECTION when topic selected
+ * - AC14: Event state transition to SPEAKER_BRAINSTORMING when topic selected (topic selection complete)
  * - AC15: Speaker pool state transition when speaker added (tested in SpeakerPoolWorkflowTest)
  * - AC16: Validation ensures event is in valid state before topic selection
  *
@@ -63,13 +63,13 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
     // ==================== AC14 Tests: Event State Transition ====================
 
     /**
-     * Test 3a.1: should_transitionToTopicSelection_when_topicSelected
+     * Test 3a.1: should_transitionToSpeakerBrainstorming_when_topicSelected
      * Verifies that selecting a topic triggers EventWorkflowStateMachine.transitionToState().
-     * Story 5.2 AC14: Event state transition to TOPIC_SELECTION
+     * Story 5.2 AC14: Event state transition to SPEAKER_BRAINSTORMING (topic selection complete)
      */
     @Test
     @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
-    void should_transitionToTopicSelection_when_topicSelected() throws Exception {
+    void should_transitionToSpeakerBrainstorming_when_topicSelected() throws Exception {
         // Given: Event in CREATED state and topic exists
         Event event = createTestEvent("BATbern56", EventWorkflowState.CREATED);
         Topic topic = createTestTopic("Cloud Native Architecture");
@@ -85,9 +85,9 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
                 .andDo(print())  // DEBUG: Print request/response
                 .andExpect(status().isOk());
 
-        // Verify: Event is now in TOPIC_SELECTION state
+        // Verify: Event is now in SPEAKER_BRAINSTORMING state (topic selection complete)
         Event updatedEvent = eventRepository.findByEventCode(event.getEventCode()).orElseThrow();
-        assertThat(updatedEvent.getWorkflowState()).isEqualTo(EventWorkflowState.TOPIC_SELECTION);
+        assertThat(updatedEvent.getWorkflowState()).isEqualTo(EventWorkflowState.SPEAKER_BRAINSTORMING);
     }
 
     /**
@@ -113,9 +113,9 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
 
-        // Then: Verify state machine was called by checking the event state changed
+        // Then: Verify state machine was called by checking the event state changed to SPEAKER_BRAINSTORMING
         Event updatedEvent = eventRepository.findByEventCode(event.getEventCode()).orElseThrow();
-        assertThat(updatedEvent.getWorkflowState()).isEqualTo(EventWorkflowState.TOPIC_SELECTION);
+        assertThat(updatedEvent.getWorkflowState()).isEqualTo(EventWorkflowState.SPEAKER_BRAINSTORMING);
     }
 
     /**
@@ -144,7 +144,7 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
 
         // Then: Verify the workflow transition occurred (event publishing happens in state machine)
         Event updatedEvent = eventRepository.findByEventCode(event.getEventCode()).orElseThrow();
-        assertThat(updatedEvent.getWorkflowState()).isEqualTo(EventWorkflowState.TOPIC_SELECTION);
+        assertThat(updatedEvent.getWorkflowState()).isEqualTo(EventWorkflowState.SPEAKER_BRAINSTORMING);
         assertThat(updatedEvent.getTopicId()).isEqualTo(topic.getId());
     }
 
