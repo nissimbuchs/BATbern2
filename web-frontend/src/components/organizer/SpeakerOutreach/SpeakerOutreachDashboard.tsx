@@ -180,7 +180,7 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
 
       <Grid container spacing={3}>
         {/* Main Content Area */}
-        <Grid item xs={12} md={showBrainstormPanel ? 8 : 12}>
+        <Grid size={{ xs: 12, md: showBrainstormPanel ? 8 : 12 }}>
           <Box mb={3} display="flex" justifyContent="space-between" alignItems="center">
             <Box>
               <Typography variant="h5" gutterBottom>
@@ -342,7 +342,7 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
 
         {/* Collapsible Speaker Brainstorming Panel */}
         {showBrainstormPanel && (
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Paper sx={{ p: 2, position: 'sticky', top: 16 }}>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Typography variant="h6">{t('speakerBrainstorm.title')}</Typography>
