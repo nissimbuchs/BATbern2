@@ -139,20 +139,13 @@ main() {
         # Stop MinIO
         stop_service "minio"
 
-        # Stop DB tunnel
-        stop_service "db-tunnel"
-
-        # Also try to kill any instance-specific AWS SSM session processes
-        # Note: We check for instance-specific tunnel by port
-        local db_tunnel_port=$((5432 + (INSTANCE - 1) * 1000))
-        if pgrep -f "localPortNumber=${db_tunnel_port}" > /dev/null; then
-            echo -e "${CYAN}  → Stopping instance ${INSTANCE} AWS SSM tunnel sessions...${NC}"
-            pkill -f "localPortNumber=${db_tunnel_port}" || true
-            echo -e "${GREEN}    ✓ SSM tunnel sessions stopped${NC}"
-        fi
+        # Note: PostgreSQL is managed by Docker Compose (docker-compose-dev.yml)
+        # It is NOT stopped by this script to preserve data between sessions
+        # To stop PostgreSQL: docker compose -f docker-compose-dev.yml down
+        echo -e "${CYAN}  ℹ  Local PostgreSQL is managed by Docker Compose (kept running)${NC}"
     else
         echo ""
-        echo -e "${YELLOW}  ⚠ Infrastructure services (DB tunnel, MinIO) kept running${NC}"
+        echo -e "${YELLOW}  ⚠ Infrastructure services (PostgreSQL, MinIO) kept running${NC}"
     fi
 
     echo ""
@@ -162,15 +155,13 @@ main() {
     echo -e "${GREEN}╚════════════════════════════════════════════════════════════╝${NC}"
     echo ""
 
+    echo -e "${CYAN}💡 Infrastructure services:${NC}"
+    echo -e "${CYAN}   - PostgreSQL: Managed by Docker Compose (kept running)${NC}"
+    echo -e "${CYAN}     Stop: docker compose -f docker-compose-dev.yml down${NC}"
     if [ "$KEEP_TUNNEL" = true ]; then
-        echo -e "${CYAN}💡 Infrastructure services (DB tunnel, MinIO) are still running${NC}"
-        if [ "$INSTANCE" = "1" ]; then
-            echo -e "${CYAN}   To stop them: make dev-native-down${NC}"
-        else
-            echo -e "${CYAN}   To stop them: make dev-native-down-instance BASE_PORT=${BASE_PORT}${NC}"
-        fi
-        echo ""
+        echo -e "${CYAN}   - MinIO: Still running${NC}"
     fi
+    echo ""
 }
 
 # Run main
