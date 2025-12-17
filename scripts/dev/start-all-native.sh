@@ -154,6 +154,16 @@ create_env_native() {
     source "${ENV_FILE}"
     set +a
 
+    # Override ports with instance-specific calculated values
+    # (These override any values from the base .env file)
+    API_GATEWAY_PORT=$BASE_PORT
+    COMPANY_USER_MGMT_PORT=$((BASE_PORT + 1))
+    EVENT_MGMT_PORT=$((BASE_PORT + 2))
+    SPEAKER_COORD_PORT=$((BASE_PORT + 3))
+    PARTNER_COORD_PORT=$((BASE_PORT + 4))
+    ATTENDEE_EXP_PORT=$((BASE_PORT + 5))
+    FRONTEND_PORT=$((BASE_PORT + 100))
+
     # Create .env.native.{INSTANCE} with localhost overrides and instance-specific ports
     cat > "${ENV_NATIVE_FILE}" << EOF
 # ==============================================

@@ -301,8 +301,8 @@ public class UserReconciliationService {
         String firstName = extractAttribute(cognitoUser, "given_name");
         String lastName = extractAttribute(cognitoUser, "family_name");
 
-        // Generate username from email
-        String username = generateUsername(email);
+        // Generate username from first/last name or email (firstname.lastname format required)
+        String username = generateUsername(firstName, lastName, email);
 
         // Assign default ATTENDEE role (per ADR-001: database is source of truth)
         Set<Role> roles = Set.of(Role.ATTENDEE);
@@ -335,17 +335,50 @@ public class UserReconciliationService {
     }
 
     /**
-     * Generate username from email
+     * Generate username from first name, last name, or email
+     * <p>
+     * Format: firstname.lastname (lowercase, required by chk_username_format constraint)
+     * Example: John Doe -> john.doe
+     * Example: John Doe (duplicate) -> john.doe.2
+     * Example: e2e-test@batbern.ch (no names) -> user.e2etest
+     *
+     * @param firstName User first name from Cognito (given_name)
+     * @param lastName  User last name from Cognito (family_name)
+     * @param email     User email (fallback if names not available)
+     * @return Generated username matching pattern ^[a-z]+\.[a-z]+(\.[0-9]+)?$
      */
-    private String generateUsername(String email) {
-        if (email == null || email.isEmpty()) {
-            return "user." + System.currentTimeMillis();
+    private String generateUsername(String firstName, String lastName, String email) {
+        String username;
+
+        // Prefer first.last name if both available
+        if (firstName != null && !firstName.isEmpty() && lastName != null && !lastName.isEmpty()) {
+            username = firstName.toLowerCase().replaceAll("[^a-z]", "") + "." +
+                       lastName.toLowerCase().replaceAll("[^a-z]", "");
+        }
+        // Fall back to email local part if it contains a dot
+        else if (email != null && !email.isEmpty()) {
+            String emailLocal = email.split("@")[0].toLowerCase().replaceAll("[^a-z.]", "");
+            if (emailLocal.contains(".")) {
+                username = emailLocal;
+            } else {
+                // Email doesn't contain dot, prepend "user."
+                username = "user." + emailLocal;
+            }
+        }
+        // Last resort: generate timestamp-based username
+        else {
+            username = "user." + System.currentTimeMillis();
         }
 
-        String username = email.split("@")[0].toLowerCase();
+        // Ensure username matches required pattern
+        if (!username.matches("^[a-z]+\\.[a-z]+(\\.[0-9]+)?$")) {
+            log.warn("Generated username '{}' doesn't match pattern, using fallback", username);
+            username = "user.unknown";
+        }
 
-        int suffix = 1;
+        // Check if username exists, add numeric suffix if needed
         String finalUsername = username;
+        int suffix = 2;
         while (userRepository.existsByUsername(finalUsername)) {
             finalUsername = username + "." + suffix;
             suffix++;

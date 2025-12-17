@@ -1,13 +1,17 @@
 #!/bin/bash
-# Sync users from Cognito to Database
+# Sync users from Cognito to Local Database
 # Story 1.2.5: Manual user reconciliation for dev testing
 #
-# This script triggers the reconciliation API to sync Cognito users to the database.
-# Useful for testing password reset flows when Lambda triggers aren't deployed.
+# This script syncs users from STAGING Cognito to local PostgreSQL.
+# The local database mirrors staging Cognito users for development.
 
 set -e
 
-export AWS_PROFILE=batbern-dev
+# Always use staging (local dev mirrors staging Cognito)
+ENVIRONMENT="staging"
+JWT_TOKEN=${1:-""}
+
+export AWS_PROFILE=batbern-staging
 export AWS_REGION=eu-central-1
 
 # Colors for output
@@ -17,91 +21,102 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-echo "🔄 Syncing users from Cognito to Database..."
+echo -e "${BLUE}================================${NC}"
+echo -e "${BLUE}Sync Users from Staging Cognito${NC}"
+echo -e "${BLUE}================================${NC}"
+echo ""
+echo "Source: Staging Cognito (batbern-staging)"
+echo "Target: Local PostgreSQL (localhost:5432)"
 echo ""
 
-# Get Cognito User Pool ID
+# Try to load token from local config if not provided
+if [ -z "$JWT_TOKEN" ]; then
+    echo -e "${BLUE}🔑 Loading authentication token...${NC}"
+
+    # Auto-refresh token if expired
+    if [ -f "./scripts/auth/refresh-token.sh" ]; then
+        ./scripts/auth/refresh-token.sh staging || true
+    fi
+
+    local_config=~/.batbern/staging.json
+    if [ -f "$local_config" ]; then
+        echo -e "${BLUE}Loading auth token from: $local_config${NC}"
+        # Use ID token (contains 'aud' claim required by JWT validator)
+        JWT_TOKEN=$(jq -r '.idToken' "$local_config" 2>/dev/null)
+
+        if [ "$JWT_TOKEN" = "null" ] || [ -z "$JWT_TOKEN" ]; then
+            echo -e "${RED}❌ Error: Failed to load token from local config${NC}"
+            echo ""
+            echo "Get a staging token first:"
+            echo "  ./scripts/auth/get-token.sh staging your-email your-password"
+            echo ""
+            echo "Or provide JWT_TOKEN manually:"
+            echo "  JWT_TOKEN='your-token' $0"
+            exit 1
+        else
+            # Check if token is expired
+            retrieved_at=$(jq -r '.retrievedAt' "$local_config" 2>/dev/null)
+            expires_in=$(jq -r '.expiresIn' "$local_config" 2>/dev/null)
+            echo -e "${GREEN}✓ Token loaded successfully${NC}"
+            echo "Retrieved at: $retrieved_at"
+            echo "Expires in: ~$(($expires_in / 60)) minutes from retrieval"
+        fi
+    else
+        echo -e "${RED}❌ Error: No auth token found${NC}"
+        echo ""
+        echo "Get a staging token first:"
+        echo "  ./scripts/auth/get-token.sh staging your-email your-password"
+        echo ""
+        echo "Or provide JWT_TOKEN manually:"
+        echo "  JWT_TOKEN='your-token' $0"
+        exit 1
+    fi
+fi
+echo ""
+
+# Get Staging Cognito User Pool ID
 USER_POOL_ID=$(aws cloudformation describe-stacks \
-  --stack-name BATbern-development-Cognito \
+  --stack-name BATbern-staging-Cognito \
   --query 'Stacks[0].Outputs[?OutputKey==`UserPoolId`].OutputValue' \
   --output text \
   --region $AWS_REGION 2>/dev/null)
 
 if [ -z "$USER_POOL_ID" ] || [ "$USER_POOL_ID" == "None" ]; then
-  echo -e "${RED}❌ Error: Cognito User Pool not found${NC}"
+  echo -e "${RED}❌ Error: Staging Cognito User Pool not found${NC}"
   echo ""
-  echo "Deploy Cognito stack first:"
+  echo "Ensure staging Cognito stack is deployed:"
   echo "  cd infrastructure"
-  echo "  npm run deploy:dev"
+  echo "  npm run deploy:staging"
   exit 1
 fi
 
 echo -e "${BLUE}📋 Configuration:${NC}"
-echo "   User Pool: $USER_POOL_ID"
-echo "   API URL: http://localhost:8081"
-echo "   Profile: $AWS_PROFILE"
-echo "   Region: $AWS_REGION"
+echo "   User Pool: $USER_POOL_ID (staging)"
+echo "   Local API Gateway: http://localhost:8000"
+echo "   AWS Profile: $AWS_PROFILE"
+echo "   AWS Region: $AWS_REGION"
 echo ""
 
-# Check if service is running
-echo -e "${BLUE}🔍 Checking if company-user-management-service is running...${NC}"
-if ! curl -s http://localhost:8081/actuator/health > /dev/null 2>&1; then
-  echo -e "${RED}❌ Error: company-user-management-service is not running${NC}"
+# Check if API Gateway is running
+echo -e "${BLUE}🔍 Checking if API Gateway is running...${NC}"
+if ! curl -s http://localhost:8000/actuator/health > /dev/null 2>&1; then
+  echo -e "${RED}❌ Error: API Gateway is not running on port 8000${NC}"
   echo ""
-  echo "Start Docker services first:"
+  echo "Start services first:"
+  echo "  make dev-native-up"
+  echo "  OR"
   echo "  docker compose up -d"
   exit 1
 fi
 
-echo -e "${GREEN}✅ Service is running${NC}"
-echo ""
-
-# Get credentials for organizer user (nissim@buchs.be)
-# First check if we can get the user
-ORGANIZER_EMAIL="nissim@buchs.be"
-echo -e "${BLUE}🔑 Getting authentication token for organizer user...${NC}"
-
-# We need to use admin API to get user info
-ADMIN_USER=$(aws cognito-idp admin-get-user \
-  --user-pool-id $USER_POOL_ID \
-  --username $ORGANIZER_EMAIL \
-  --region $AWS_REGION 2>/dev/null || echo "")
-
-if [ -z "$ADMIN_USER" ]; then
-  echo -e "${YELLOW}⚠️  Organizer user not found. Creating bootstrap user...${NC}"
-  echo ""
-  echo "Run deployment to create bootstrap organizer:"
-  echo "  cd infrastructure && npm run deploy:dev"
-  exit 1
-fi
-
-echo -e "${YELLOW}⚠️  Note: You need a valid JWT token with ORGANIZER role${NC}"
-echo ""
-echo "To get a token:"
-echo "  1. Login to web app: http://localhost:3000"
-echo "  2. Use organizer credentials (nissim@buchs.be)"
-echo "  3. Copy JWT from browser DevTools > Application > Local Storage"
-echo "  4. Set JWT_TOKEN environment variable"
-echo ""
-echo "OR run this script with JWT_TOKEN:"
-echo "  JWT_TOKEN='your-token-here' $0"
-echo ""
-
-# Check if JWT_TOKEN is provided
-if [ -z "$JWT_TOKEN" ]; then
-  echo -e "${RED}❌ Error: JWT_TOKEN environment variable not set${NC}"
-  echo ""
-  exit 1
-fi
-
-echo -e "${GREEN}✅ JWT token provided${NC}"
+echo -e "${GREEN}✅ API Gateway is running${NC}"
 echo ""
 
 # Check sync status first
 echo -e "${BLUE}📊 Checking current sync status...${NC}"
 echo ""
 
-SYNC_STATUS=$(curl -s -X GET http://localhost:8081/api/v1/users/admin/sync-status \
+SYNC_STATUS=$(curl -s -X GET http://localhost:8000/api/v1/users/admin/sync-status \
   -H "Authorization: Bearer $JWT_TOKEN" \
   -H "Content-Type: application/json")
 
@@ -135,7 +150,7 @@ fi
 echo -e "${BLUE}🔄 Triggering reconciliation...${NC}"
 echo ""
 
-RECONCILIATION_RESULT=$(curl -s -X POST http://localhost:8081/api/v1/users/admin/reconcile \
+RECONCILIATION_RESULT=$(curl -s -X POST http://localhost:8000/api/v1/users/admin/reconcile \
   -H "Authorization: Bearer $JWT_TOKEN" \
   -H "Content-Type: application/json")
 
