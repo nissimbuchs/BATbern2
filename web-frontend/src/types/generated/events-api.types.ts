@@ -357,7 +357,17 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get?: never;
+    /**
+     * Get speaker pool for event
+     * @description Retrieve all speakers in the event's speaker pool.
+     *
+     *     **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+     *     **Authorization**: Requires ORGANIZER role
+     *     **Rate Limiting**: Applied at API Gateway level
+     *
+     *     **Performance**: <150ms (P95)
+     */
+    get: operations['getSpeakerPool'];
     put?: never;
     /**
      * Add speaker to event speaker pool
@@ -379,6 +389,36 @@ export interface paths {
      */
     post: operations['addSpeakerToPool'];
     delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/speakers/pool/{speakerId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Delete speaker from event pool
+     * @description Remove a speaker from the event's speaker pool.
+     *
+     *     **Authorization**: Requires ORGANIZER role
+     *     **Rate Limiting**: Applied at API Gateway level
+     *
+     *     **Business Rules**:
+     *     - Event must exist
+     *     - Speaker must exist in the pool
+     *     - Can only delete speakers in IDENTIFIED or CONTACTED status
+     *
+     *     **Performance**: <150ms (P95)
+     */
+    delete: operations['deleteSpeakerFromPool'];
     options?: never;
     head?: never;
     patch?: never;
@@ -2122,6 +2162,21 @@ export interface components {
        * @example 2024-03-20T14:30:00Z
        */
       updatedAt?: string;
+      /**
+       * @description **GitHub Issue #379**: Usage history for this topic (only populated when `include=history`)
+       *     Contains historical usage data with event details for heatmap visualization
+       * @example [
+       *       {
+       *         "eventId": "456e7890-e89b-12d3-a456-426614174001",
+       *         "eventCode": "BATbern56",
+       *         "eventDate": "2024-01-15T18:00:00Z",
+       *         "usedDate": "2024-01-15T10:00:00Z",
+       *         "attendance": 150,
+       *         "engagementScore": 0.85
+       *       }
+       *     ]
+       */
+      usageHistory?: components['schemas']['TopicUsageHistory'][] | null;
     };
     /** @description Similarity score between two topics (TF-IDF + cosine similarity) */
     SimilarityScore: {
@@ -2138,17 +2193,33 @@ export interface components {
        */
       score: number;
     };
-    /** @description Historical usage record of a topic in a specific event */
+    /**
+     * @description Historical usage record of a topic in a specific event.
+     *     **GitHub Issue #379**: Enhanced with eventCode and eventDate for heatmap visualization.
+     *     Returns eventNumber instead of UUID per architectural requirement (no UUIDs in API).
+     */
     TopicUsageHistory: {
       /**
-       * Format: uuid
-       * @description UUID of the event where this topic was used
-       * @example event-abc-123
+       * @description Event number (e.g., 56 for BATbern56) - no UUIDs in API
+       * @example 56
        */
-      eventId: string;
+      eventNumber: number;
+      /**
+       * @description **GitHub Issue #379**: Human-readable event code (e.g., "BATbern56").
+       *     Provides meaningful event identification instead of UUID.
+       * @example BATbern56
+       */
+      eventCode: string;
       /**
        * Format: date-time
-       * @description When the topic was used in the event
+       * @description **GitHub Issue #379**: Actual date of the event.
+       *     Used for heatmap visualization and chronological sorting.
+       * @example 2024-01-15T18:00:00Z
+       */
+      eventDate: string;
+      /**
+       * Format: date-time
+       * @description When the topic was used in the event (typically same as eventDate)
        * @example 2024-01-15T10:00:00Z
        */
       usedDate: string;
@@ -2757,6 +2828,40 @@ export interface operations {
       500: components['responses']['InternalServerError'];
     };
   };
+  getSpeakerPool: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Speaker pool retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SpeakerPoolResponse'][];
+        };
+      };
+      403: components['responses']['Forbidden'];
+      /** @description Event not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
   addSpeakerToPool: {
     parameters: {
       query?: never;
@@ -2816,6 +2921,40 @@ export interface operations {
            *       "error": "Not Found"
            *     }
            */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  deleteSpeakerFromPool: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+        /** @description UUID of the speaker in the speaker pool */
+        speakerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Speaker deleted successfully */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      403: components['responses']['Forbidden'];
+      /** @description Event or speaker not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
           'application/json': components['schemas']['ErrorResponse'];
         };
       };
@@ -3685,6 +3824,20 @@ export interface operations {
         limit?: number;
         /** @description Sort parameter (e.g., "-stalenessScore" or "stalenessScore,desc") */
         sort?: string;
+        /**
+         * @description Comma-separated list of resources to include.
+         *     **GitHub Issue #379**: Added for heatmap visualization support.
+         *
+         *     **Supported values**:
+         *     - `history`: Embeds usage history with event details for each topic
+         *     - `similarity`: Recalculates similarity scores on-demand
+         *
+         *     **Performance impact**:
+         *     - Without includes: <150ms (P95)
+         *     - With `include=history`: <300ms (P95) - Single JOIN query
+         *     - With `include=similarity`: <500ms (P95) - TF-IDF recalculation
+         */
+        include?: string;
       };
       header?: never;
       path?: never;
