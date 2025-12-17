@@ -57,8 +57,8 @@ check_service_status() {
     local service_name=$1
     local port=$2
 
-    # Shared services (minio, db-tunnel) use "shared" prefix
-    if [ "$service_name" = "minio" ] || [ "$service_name" = "db-tunnel" ]; then
+    # Shared services use "shared" prefix
+    if [ "$service_name" = "minio" ]; then
         local pid_file="${PID_DIR}/batbern-shared-${service_name}.pid"
         local log_file="${LOG_DIR}/batbern-shared-${service_name}.log"
     else
@@ -100,13 +100,6 @@ check_service_status() {
             else
                 health_status="${YELLOW}UNHEALTHY${NC}"
             fi
-        elif [[ "$service_name" == "db-tunnel" ]]; then
-            # DB tunnel - check if port is accessible
-            if nc -z localhost ${port} 2>/dev/null; then
-                health_status="${GREEN}ACTIVE${NC}"
-            else
-                health_status="${YELLOW}INACTIVE${NC}"
-            fi
         elif [[ "$service_name" == "web-frontend" ]]; then
             # For frontend, check if port is listening
             if lsof -i:${port} -sTCP:LISTEN > /dev/null 2>&1; then
@@ -137,6 +130,38 @@ check_service_status() {
     return 0
 }
 
+# Check PostgreSQL Docker container status
+check_postgres_status() {
+    printf "%-30s" "postgresql (Docker)"
+
+    # Check if Docker is running
+    if ! docker info > /dev/null 2>&1; then
+        echo -e " ${RED}✗ DOCKER NOT RUNNING${NC}"
+        return 1
+    fi
+
+    # Check if PostgreSQL container is running
+    if docker ps --filter "name=batbern-dev-postgres" --format "{{.Status}}" 2>/dev/null | grep -q "Up"; then
+        local health_status=$(docker inspect --format='{{.State.Health.Status}}' batbern-dev-postgres 2>/dev/null || echo "none")
+        local container_status=$(docker ps --filter "name=batbern-dev-postgres" --format "{{.Status}}" 2>/dev/null | cut -d' ' -f2-)
+
+        if [ "$health_status" == "healthy" ]; then
+            echo -e " ${GREEN}✓ RUNNING${NC}   ${container_status}  Port: ${CYAN}5432${NC}  Health: ${GREEN}HEALTHY${NC}"
+            return 0
+        elif [ "$health_status" == "starting" ]; then
+            echo -e " ${YELLOW}⏳ STARTING${NC}  ${container_status}  Port: ${CYAN}5432${NC}  Health: ${YELLOW}STARTING${NC}"
+            return 1
+        else
+            echo -e " ${GREEN}✓ RUNNING${NC}   ${container_status}  Port: ${CYAN}5432${NC}  Health: N/A"
+            return 0
+        fi
+    else
+        echo -e " ${RED}✗ STOPPED${NC}    ${YELLOW}(container not running)${NC}"
+        echo -e "   ${CYAN}Start: docker compose -f docker-compose-dev.yml up -d${NC}"
+        return 1
+    fi
+}
+
 # Main execution
 main() {
     local all_running=true
@@ -154,7 +179,7 @@ main() {
 
     # Check shared infrastructure services
     echo -e "${CYAN}Shared Infrastructure (all instances):${NC}"
-    check_service_status "db-tunnel" ${DB_TUNNEL_PORT} || all_running=false
+    check_postgres_status || all_running=false
     check_service_status "minio" ${MINIO_API_PORT} || all_running=false
 
     echo ""
