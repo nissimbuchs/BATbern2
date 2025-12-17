@@ -111,13 +111,13 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
   const breadcrumbItems: BreadcrumbItem[] = useMemo(() => {
     if (eventCode && eventData) {
       return [
-        { label: t('navigation.events', 'Events'), path: '/organizer/events' },
+        { label: t('breadcrumbs.events', 'Events'), path: '/organizer/events' },
         { label: eventData.title, path: `/organizer/events/${eventCode}` },
         { label: t('topicBacklog.breadcrumbs.topicSelection', 'Topic Selection') },
       ];
     }
     return [
-      { label: t('navigation.events', 'Events'), path: '/organizer/events' },
+      { label: t('breadcrumbs.events', 'Events'), path: '/organizer/events' },
       { label: t('topicBacklog.breadcrumbs.manageTopics', 'Manage Topics') },
     ];
   }, [eventCode, eventData, t]);
