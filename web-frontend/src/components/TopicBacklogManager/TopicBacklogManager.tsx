@@ -81,6 +81,7 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
   useEffect(() => {
     if (preassignedTopic && !selectedTopic) {
       setSelectedTopic(preassignedTopic);
+      setTopicConfirmed(true); // Also confirm topic to show speaker panel
     }
   }, [preassignedTopic, selectedTopic]);
 
@@ -111,12 +112,13 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
   const breadcrumbItems: BreadcrumbItem[] = useMemo(() => {
     if (eventCode && eventData) {
       return [
-        { label: t('topicBacklog.breadcrumbs.home', 'Home'), path: '/organizer/events' },
+        { label: t('navigation.events', 'Events'), path: '/organizer/events' },
         { label: eventData.title, path: `/organizer/events/${eventCode}` },
         { label: t('topicBacklog.breadcrumbs.topicSelection', 'Topic Selection') },
       ];
     }
     return [
+      { label: t('navigation.events', 'Events'), path: '/organizer/events' },
       { label: t('topicBacklog.breadcrumbs.home', 'Home'), path: '/organizer/events' },
       { label: t('topicBacklog.breadcrumbs.manageTopics', 'Manage Topics') },
     ];
