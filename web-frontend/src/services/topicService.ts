@@ -110,6 +110,31 @@ class TopicService {
   }
 
   /**
+   * Update existing topic (Story 5.2a - Edit Topic Feature)
+   *
+   * @param id Topic UUID
+   * @param request Topic update request
+   * @returns Updated topic
+   * @throws Error if topic not found, validation fails, or unauthorized
+   */
+  async updateTopic(id: string, request: CreateTopicRequest): Promise<Topic> {
+    const response = await apiClient.put<Topic>(`${TOPICS_API_PATH}/${id}`, request);
+
+    return response.data;
+  }
+
+  /**
+   * Delete topic (Story 5.2a - Delete Topic Feature)
+   * Only allowed if topic has never been used (no events attached).
+   *
+   * @param id Topic UUID
+   * @throws Error if topic not found, has been used, or unauthorized
+   */
+  async deleteTopic(id: string): Promise<void> {
+    await apiClient.delete(`${TOPICS_API_PATH}/${id}`);
+  }
+
+  /**
    * Override staleness score with justification (AC7)
    *
    * @param id Topic UUID

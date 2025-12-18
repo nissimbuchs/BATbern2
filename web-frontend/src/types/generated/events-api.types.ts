@@ -357,7 +357,17 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get?: never;
+    /**
+     * Get speaker pool for event
+     * @description Retrieve all speakers in the event's speaker pool.
+     *
+     *     **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+     *     **Authorization**: Requires ORGANIZER role
+     *     **Rate Limiting**: Applied at API Gateway level
+     *
+     *     **Performance**: <150ms (P95)
+     */
+    get: operations['getSpeakerPool'];
     put?: never;
     /**
      * Add speaker to event speaker pool
@@ -378,6 +388,92 @@ export interface paths {
      *     **Performance**: <150ms (P95)
      */
     post: operations['addSpeakerToPool'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/speakers/pool/{speakerId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Delete speaker from event pool
+     * @description Remove a speaker from the event's speaker pool.
+     *
+     *     **Authorization**: Requires ORGANIZER role
+     *     **Rate Limiting**: Applied at API Gateway level
+     *
+     *     **Business Rules**:
+     *     - Event must exist
+     *     - Speaker must exist in the pool
+     *     - Can only delete speakers in IDENTIFIED or CONTACTED status
+     *
+     *     **Performance**: <150ms (P95)
+     */
+    delete: operations['deleteSpeakerFromPool'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/speakers/{speakerId}/outreach': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get speaker outreach history
+     * @description Retrieve all outreach attempts for a speaker, ordered by most recent first.
+     *
+     *     **Story**: 5.3 - Speaker Outreach Tracking
+     *     **Acceptance Criteria**: AC6
+     *     **Authorization**: Requires ORGANIZER role
+     *     **Rate Limiting**: Applied at API Gateway level
+     *
+     *     **Response**:
+     *     - Returns chronological history of all contact attempts
+     *     - Includes contact method, date, notes, and organizer
+     *     - Ordered by contact date descending (most recent first)
+     *
+     *     **Performance**: <150ms (P95)
+     */
+    get: operations['getSpeakerOutreachHistory'];
+    put?: never;
+    /**
+     * Record speaker outreach attempt
+     * @description Record a contact attempt with a potential speaker during outreach phase.
+     *
+     *     **Story**: 5.3 - Speaker Outreach Tracking
+     *     **Acceptance Criteria**: AC1-4
+     *     **Authorization**: Requires ORGANIZER role
+     *     **Rate Limiting**: Applied at API Gateway level
+     *
+     *     **Business Rules**:
+     *     - Speaker must exist in speaker pool
+     *     - Speaker must be in IDENTIFIED, CONTACTED, or READY state
+     *     - Contact method must be email, phone, or in_person
+     *     - Automatically transitions speaker from IDENTIFIED → CONTACTED on first outreach
+     *     - Subsequent outreach attempts are logged without status change
+     *     - Organizer username is captured from authentication context
+     *
+     *     **State Transitions**:
+     *     - IDENTIFIED → CONTACTED (first outreach)
+     *     - CONTACTED → CONTACTED (additional outreach)
+     *     - READY → READY (follow-up outreach)
+     *
+     *     **Performance**: <200ms (P95)
+     */
+    post: operations['recordSpeakerOutreach'];
     delete?: never;
     options?: never;
     head?: never;
@@ -1091,21 +1187,6 @@ export interface components {
       /** @example 500 */
       venueCapacity: number;
       /**
-       * @example published
-       * @enum {string}
-       */
-      status:
-        | 'planning'
-        | 'topic_defined'
-        | 'speakers_invited'
-        | 'agenda_draft'
-        | 'published'
-        | 'registration_open'
-        | 'registration_closed'
-        | 'in_progress'
-        | 'completed'
-        | 'archived';
-      /**
        * @description Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
        *     Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.
        * @example john.doe
@@ -1143,6 +1224,13 @@ export interface components {
        * @example abc123-def456
        */
       themeImageUploadId?: string | null;
+      /**
+       * Format: uuid
+       * @description UUID of the selected topic for this event.
+       *     Story 5.2: Topic Selection & Speaker Brainstorming
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      topicId?: string | null;
       /**
        * @description Event type (FULL_DAY, AFTERNOON, EVENING).
        *     Story 5.1: Event Type Definition
@@ -1905,6 +1993,87 @@ export interface components {
        */
       updatedAt: string;
     };
+    /**
+     * @description Request to record a speaker outreach attempt.
+     *     Story 5.3 - AC1-4: Speaker Outreach Tracking
+     */
+    RecordOutreachRequest: {
+      /**
+       * Format: date-time
+       * @description Date and time when contact was made
+       * @example 2025-12-14T14:30:00Z
+       */
+      contactDate: string;
+      /**
+       * @description Method of contact used to reach the speaker.
+       *     Valid values: email, phone, in_person
+       * @example email
+       * @enum {string}
+       */
+      contactMethod: 'email' | 'phone' | 'in_person';
+      /**
+       * @description Free-text notes about the conversation.
+       *     Organizers record speaker response, next steps, availability, etc.
+       * @example Spoke with Jane about presenting on Kubernetes security.
+       *     She's interested but needs to check her calendar.
+       *     Follow up next Tuesday.
+       */
+      notes?: string;
+    };
+    /**
+     * @description Response representing a speaker outreach attempt.
+     *     Story 5.3 - AC5-6: Speaker Outreach History
+     */
+    OutreachHistoryResponse: {
+      /**
+       * Format: uuid
+       * @description Unique identifier for this outreach record
+       * @example 550e8400-e29b-41d4-a716-446655440000
+       */
+      id: string;
+      /**
+       * Format: uuid
+       * @description UUID of the speaker in the speaker pool
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      speakerPoolId: string;
+      /**
+       * Format: date-time
+       * @description Date and time when contact was made
+       * @example 2025-12-14T14:30:00Z
+       */
+      contactDate: string;
+      /**
+       * @description Method of contact used
+       * @example email
+       * @enum {string}
+       */
+      contactMethod: 'email' | 'phone' | 'in_person';
+      /**
+       * @description Notes about the conversation
+       * @example Spoke with Jane about presenting on Kubernetes security.
+       *     She's interested but needs to check her calendar.
+       *     Follow up next Tuesday.
+       */
+      notes?: string | null;
+      /**
+       * @description Username of the organizer who made the contact
+       * @example alice.mueller
+       */
+      organizerUsername: string;
+      /**
+       * Format: date-time
+       * @description Timestamp when outreach record was created
+       * @example 2025-12-14T14:35:00Z
+       */
+      createdAt: string;
+      /**
+       * Format: date-time
+       * @description Timestamp of last update
+       * @example 2025-12-14T14:35:00Z
+       */
+      updatedAt: string;
+    };
     /** @description Topic response with staleness score and similarity information */
     TopicResponse: {
       /**
@@ -1993,6 +2162,21 @@ export interface components {
        * @example 2024-03-20T14:30:00Z
        */
       updatedAt?: string;
+      /**
+       * @description **GitHub Issue #379**: Usage history for this topic (only populated when `include=history`)
+       *     Contains historical usage data with event details for heatmap visualization
+       * @example [
+       *       {
+       *         "eventId": "456e7890-e89b-12d3-a456-426614174001",
+       *         "eventCode": "BATbern56",
+       *         "eventDate": "2024-01-15T18:00:00Z",
+       *         "usedDate": "2024-01-15T10:00:00Z",
+       *         "attendance": 150,
+       *         "engagementScore": 0.85
+       *       }
+       *     ]
+       */
+      usageHistory?: components['schemas']['TopicUsageHistory'][] | null;
     };
     /** @description Similarity score between two topics (TF-IDF + cosine similarity) */
     SimilarityScore: {
@@ -2009,17 +2193,33 @@ export interface components {
        */
       score: number;
     };
-    /** @description Historical usage record of a topic in a specific event */
+    /**
+     * @description Historical usage record of a topic in a specific event.
+     *     **GitHub Issue #379**: Enhanced with eventCode and eventDate for heatmap visualization.
+     *     Returns eventNumber instead of UUID per architectural requirement (no UUIDs in API).
+     */
     TopicUsageHistory: {
       /**
-       * Format: uuid
-       * @description UUID of the event where this topic was used
-       * @example event-abc-123
+       * @description Event number (e.g., 56 for BATbern56) - no UUIDs in API
+       * @example 56
        */
-      eventId: string;
+      eventNumber: number;
+      /**
+       * @description **GitHub Issue #379**: Human-readable event code (e.g., "BATbern56").
+       *     Provides meaningful event identification instead of UUID.
+       * @example BATbern56
+       */
+      eventCode: string;
       /**
        * Format: date-time
-       * @description When the topic was used in the event
+       * @description **GitHub Issue #379**: Actual date of the event.
+       *     Used for heatmap visualization and chronological sorting.
+       * @example 2024-01-15T18:00:00Z
+       */
+      eventDate: string;
+      /**
+       * Format: date-time
+       * @description When the topic was used in the event (typically same as eventDate)
        * @example 2024-01-15T10:00:00Z
        */
       usedDate: string;
@@ -2628,6 +2828,40 @@ export interface operations {
       500: components['responses']['InternalServerError'];
     };
   };
+  getSpeakerPool: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Speaker pool retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SpeakerPoolResponse'][];
+        };
+      };
+      403: components['responses']['Forbidden'];
+      /** @description Event not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
   addSpeakerToPool: {
     parameters: {
       query?: never;
@@ -2685,6 +2919,170 @@ export interface operations {
            *       "path": "/api/v1/events/BATbern56/speakers/pool",
            *       "status": 404,
            *       "error": "Not Found"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  deleteSpeakerFromPool: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+        /** @description UUID of the speaker in the speaker pool */
+        speakerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Speaker deleted successfully */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      403: components['responses']['Forbidden'];
+      /** @description Event or speaker not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  getSpeakerOutreachHistory: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+        /** @description UUID of the speaker in the speaker pool */
+        speakerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Outreach history retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OutreachHistoryResponse'][];
+        };
+      };
+      403: components['responses']['Forbidden'];
+      /** @description Speaker or event not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "message": "Speaker not found: 550e8400-e29b-41d4-a716-446655440000",
+           *       "timestamp": "2025-12-14T10:00:00Z",
+           *       "path": "/api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000/outreach",
+           *       "status": 404,
+           *       "error": "Not Found"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  recordSpeakerOutreach: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+        /** @description UUID of the speaker in the speaker pool */
+        speakerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RecordOutreachRequest'];
+      };
+    };
+    responses: {
+      /** @description Outreach attempt recorded successfully */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OutreachHistoryResponse'];
+        };
+      };
+      /** @description Validation error (e.g., invalid contact method) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "message": "Invalid contact method: sms. Must be one of: email, phone, in_person",
+           *       "timestamp": "2025-12-14T10:00:00Z",
+           *       "path": "/api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000/outreach",
+           *       "status": 400,
+           *       "error": "Bad Request"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      403: components['responses']['Forbidden'];
+      /** @description Speaker or event not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "message": "Speaker not found: 550e8400-e29b-41d4-a716-446655440000",
+           *       "timestamp": "2025-12-14T10:00:00Z",
+           *       "path": "/api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000/outreach",
+           *       "status": 404,
+           *       "error": "Not Found"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Invalid state transition (speaker not in valid state for outreach) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "message": "Cannot record outreach for speaker 550e8400-e29b-41d4-a716-446655440000 in state DECLINED. Speaker must be in IDENTIFIED, CONTACTED, or READY state.",
+           *       "timestamp": "2025-12-14T10:00:00Z",
+           *       "path": "/api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000/outreach",
+           *       "status": 409,
+           *       "error": "Conflict"
            *     }
            */
           'application/json': components['schemas']['ErrorResponse'];
@@ -3426,6 +3824,20 @@ export interface operations {
         limit?: number;
         /** @description Sort parameter (e.g., "-stalenessScore" or "stalenessScore,desc") */
         sort?: string;
+        /**
+         * @description Comma-separated list of resources to include.
+         *     **GitHub Issue #379**: Added for heatmap visualization support.
+         *
+         *     **Supported values**:
+         *     - `history`: Embeds usage history with event details for each topic
+         *     - `similarity`: Recalculates similarity scores on-demand
+         *
+         *     **Performance impact**:
+         *     - Without includes: <150ms (P95)
+         *     - With `include=history`: <300ms (P95) - Single JOIN query
+         *     - With `include=similarity`: <500ms (P95) - TF-IDF recalculation
+         */
+        include?: string;
       };
       header?: never;
       path?: never;

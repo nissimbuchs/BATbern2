@@ -59,6 +59,17 @@ class SpeakerPoolService {
 
     return response.data;
   }
+
+  /**
+   * Delete speaker from event speaker pool
+   *
+   * @param eventCode Event code (e.g., "BATbern56")
+   * @param speakerId Speaker UUID
+   * @throws Error if event or speaker not found, or unauthorized
+   */
+  async deleteSpeakerFromPool(eventCode: string, speakerId: string): Promise<void> {
+    await apiClient.delete(`${EVENTS_API_PATH}/${eventCode}/speakers/pool/${speakerId}`);
+  }
 }
 
 // Export singleton instance

@@ -1,7 +1,6 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.events.domain.Topic;
-import ch.batbern.events.domain.TopicUsageHistory;
 import ch.batbern.events.dto.OverrideStalenesRequest;
 import ch.batbern.events.dto.TopicFilterRequest;
 import ch.batbern.events.dto.TopicListResponse;
@@ -19,6 +18,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -62,6 +62,7 @@ public class TopicController {
      * @param page Page number (default 0 for Spring Data, but 1 for API consistency)
      * @param limit Page size (default 50)
      * @param sort Optional sort parameter (e.g., "stalenessScore,desc")
+     * @param include Optional comma-separated includes (e.g., "history,similarity") - GitHub Issue #379
      * @return Paginated list of topics
      */
     @GetMapping
@@ -70,7 +71,8 @@ public class TopicController {
             @RequestParam(required = false) String filter,
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "50") Integer limit,
-            @RequestParam(required = false) String sort) {
+            @RequestParam(required = false) String sort,
+            @RequestParam(required = false) String include) {
 
         // Parse filter JSON using Jackson ObjectMapper
         String category = null;
@@ -86,6 +88,10 @@ public class TopicController {
             }
         }
 
+        // Parse include parameter (comma-separated values)
+        boolean includeHistory = include != null && include.contains("history");
+        boolean includeSimilarity = include != null && include.contains("similarity");
+
         // Create Pageable for database-level pagination
         // Convert 1-based page to 0-based for Spring Data
         Pageable pageable = createPageable(page - 1, limit, sort);
@@ -95,8 +101,21 @@ public class TopicController {
 
         // Convert to DTOs
         List<TopicResponse> topicResponses = topicPage.getContent().stream()
-                .map(TopicResponse::from)
+                .map(topic -> {
+                    // If include=similarity, recalculate similarity scores on-demand
+                    if (includeSimilarity) {
+                        topicService.calculateSimilarityForTopic(topic);
+                        // Refresh topic from database to get updated similarity scores
+                        topic = topicService.getTopicById(topic.getId()).orElse(topic);
+                    }
+                    return TopicResponse.from(topic);
+                })
                 .collect(Collectors.toList());
+
+        // If include=history, fetch and attach usage history for all topics (GitHub Issue #379)
+        if (includeHistory) {
+            topicResponses = topicService.enrichTopicsWithUsageHistory(topicResponses);
+        }
 
         // Build response with pagination metadata (1-based for API)
         TopicListResponse response = new TopicListResponse(
@@ -188,6 +207,44 @@ public class TopicController {
     }
 
     /**
+     * Update existing topic (Story 5.2a - Edit Topic Feature).
+     *
+     * @param id Topic ID
+     * @param request Topic update request
+     * @return Updated topic
+     */
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<TopicResponse> updateTopic(
+            @PathVariable UUID id,
+            @Valid @RequestBody TopicRequest request) {
+
+        Topic topic = topicService.updateTopic(
+                id,
+                request.getTitle(),
+                request.getDescription(),
+                request.getCategory()
+        );
+
+        return ResponseEntity.ok(TopicResponse.from(topic));
+    }
+
+    /**
+     * Delete topic (Story 5.2a - Delete Topic Feature).
+     * Only allowed if topic has never been used (no events attached).
+     *
+     * @param id Topic ID
+     * @return 204 No Content on success
+     * @throws IllegalStateException if topic has been used
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<Void> deleteTopic(@PathVariable UUID id) {
+        topicService.deleteTopic(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
      * Override staleness score with justification (AC7).
      *
      * @param id Topic ID
@@ -243,13 +300,8 @@ public class TopicController {
             return ResponseEntity.notFound().build();
         }
 
-        // Fetch usage history
-        List<TopicUsageHistory> usageHistory = topicService.getUsageHistory(id);
-
-        // Convert to DTOs
-        List<TopicUsageHistoryResponse> response = usageHistory.stream()
-                .map(TopicUsageHistoryResponse::from)
-                .collect(Collectors.toList());
+        // Fetch usage history with event details (GitHub Issue #379: returns eventNumber, no UUIDs)
+        List<TopicUsageHistoryResponse> response = topicService.getUsageHistoryWithEventDetails(id);
 
         return ResponseEntity.ok(response);
     }

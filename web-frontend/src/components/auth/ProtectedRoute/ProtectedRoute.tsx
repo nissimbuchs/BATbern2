@@ -68,7 +68,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     }
 
     // Check path-based access control
-    if (!canAccess(location.pathname)) {
+    const hasAccess = canAccess(location.pathname);
+    if (!hasAccess) {
+      console.warn('[ProtectedRoute] Access denied, redirecting to /dashboard');
       // Redirect to dashboard instead of showing error
       return <Navigate to="/dashboard" replace />;
     }

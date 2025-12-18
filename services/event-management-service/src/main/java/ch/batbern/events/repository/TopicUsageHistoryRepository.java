@@ -1,6 +1,7 @@
 package ch.batbern.events.repository;
 
 import ch.batbern.events.domain.TopicUsageHistory;
+import ch.batbern.events.dto.TopicUsageHistoryWithEventDetails;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -37,4 +38,35 @@ public interface TopicUsageHistoryRepository extends JpaRepository<TopicUsageHis
      * @return List of usage history records
      */
     List<TopicUsageHistory> findByTopicId(UUID topicId);
+
+    /**
+     * Find all usage history for multiple topics with event details in a single JOIN query.
+     * GitHub Issue #379: Optimized query to avoid N+1 problem.
+     *
+     * This query JOINs topic_usage_history with events table to fetch:
+     * - topicId, eventNumber, eventCode, eventDate (from events)
+     * - usedDate, attendeeCount, engagementScore (from topic_usage_history)
+     *
+     * Returns eventNumber instead of UUID per architectural requirement.
+     *
+     * @param topicIds List of topic IDs to fetch usage history for
+     * @return List of usage history with event details, ordered by usedDate DESC
+     */
+    @Query("""
+        SELECT new ch.batbern.events.dto.TopicUsageHistoryWithEventDetails(
+            h.topicId,
+            e.eventNumber,
+            e.eventCode,
+            e.date,
+            h.usedDate,
+            h.attendeeCount,
+            h.engagementScore
+        )
+        FROM TopicUsageHistory h
+        JOIN Event e ON h.eventId = e.id
+        WHERE h.topicId IN :topicIds
+        ORDER BY h.topicId, h.usedDate DESC
+        """)
+    List<TopicUsageHistoryWithEventDetails> findUsageHistoryWithEventDetailsByTopicIds(
+            @Param("topicIds") List<UUID> topicIds);
 }

@@ -2,6 +2,7 @@ package ch.batbern.events.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -25,4 +26,18 @@ public class TransitionStateRequest {
         message = "Target state must be a valid EventWorkflowState"
     )
     private String targetState;
+
+    /**
+     * Override workflow validation flag.
+     * When true, allows any state transition bypassing validation rules.
+     * Defaults to false if not provided.
+     */
+    private Boolean overrideValidation;
+
+    /**
+     * Optional reason for overriding workflow validation.
+     * Used for audit trail when overrideValidation is true.
+     */
+    @Size(max = 500, message = "Override reason must not exceed 500 characters")
+    private String overrideReason;
 }

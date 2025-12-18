@@ -35,6 +35,8 @@ import {
   Box,
   Typography,
   Chip,
+  Checkbox,
+  FormControlLabel,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
@@ -44,6 +46,42 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { FileUpload } from '@/components/shared/FileUpload/FileUpload';
 import { EventTypeSelector } from '@/components/organizer/EventTypeSelector/EventTypeSelector';
 import type { components } from '@/types/generated/events-api.types';
+import { workflowService } from '@/services/workflowService';
+import { useQueryClient } from '@tanstack/react-query';
+
+/**
+ * Maps EventWorkflowState to CreateEventRequest status field
+ * Backend uses simplified status enum, frontend uses detailed workflow states
+ */
+function mapWorkflowStateToStatus(
+  workflowState: components['schemas']['EventWorkflowState'] | undefined
+): components['schemas']['CreateEventRequest']['status'] {
+  if (!workflowState) return 'planning';
+
+  const statusMap: Record<
+    components['schemas']['EventWorkflowState'],
+    components['schemas']['CreateEventRequest']['status']
+  > = {
+    CREATED: 'planning',
+    TOPIC_SELECTION: 'planning',
+    SPEAKER_BRAINSTORMING: 'topic_defined',
+    SPEAKER_OUTREACH: 'speakers_invited',
+    SPEAKER_CONFIRMATION: 'speakers_invited',
+    CONTENT_COLLECTION: 'agenda_draft',
+    QUALITY_REVIEW: 'agenda_draft',
+    THRESHOLD_CHECK: 'agenda_draft',
+    OVERFLOW_MANAGEMENT: 'agenda_draft',
+    SLOT_ASSIGNMENT: 'agenda_draft',
+    AGENDA_PUBLISHED: 'published',
+    AGENDA_FINALIZED: 'published',
+    NEWSLETTER_SENT: 'registration_open',
+    EVENT_READY: 'in_progress',
+    PARTNER_MEETING_COMPLETE: 'completed',
+    ARCHIVED: 'archived',
+  };
+
+  return statusMap[workflowState] || 'planning';
+}
 
 /**
  * Converts legacy lowercase snake_case event types to UPPER_CASE enum values
@@ -83,17 +121,23 @@ const createEventSchema = (t: (key: string) => string) =>
       venueCapacity: z.coerce
         .number({ message: t('validation.capacityRequired') })
         .positive(t('validation.capacityPositive')),
-      status: z.enum([
-        'planning',
-        'topic_defined',
-        'speakers_invited',
-        'agenda_draft',
-        'published',
-        'registration_open',
-        'registration_closed',
-        'in_progress',
-        'completed',
-        'archived',
+      workflowState: z.enum([
+        'CREATED',
+        'TOPIC_SELECTION',
+        'SPEAKER_BRAINSTORMING',
+        'SPEAKER_OUTREACH',
+        'SPEAKER_CONFIRMATION',
+        'CONTENT_COLLECTION',
+        'QUALITY_REVIEW',
+        'THRESHOLD_CHECK',
+        'OVERFLOW_MANAGEMENT',
+        'SLOT_ASSIGNMENT',
+        'AGENDA_PUBLISHED',
+        'AGENDA_FINALIZED',
+        'NEWSLETTER_SENT',
+        'EVENT_READY',
+        'PARTNER_MEETING_COMPLETE',
+        'ARCHIVED',
       ]),
       // UI-only fields (will be stored in metadata)
       theme: z.string().optional().or(z.literal('')),
@@ -122,17 +166,7 @@ interface EventFormData {
   venueAddress: string;
   venueCapacity: number;
   registrationDeadline?: string;
-  status:
-    | 'planning'
-    | 'topic_defined'
-    | 'speakers_invited'
-    | 'agenda_draft'
-    | 'published'
-    | 'registration_open'
-    | 'registration_closed'
-    | 'in_progress'
-    | 'completed'
-    | 'archived';
+  workflowState?: components['schemas']['EventWorkflowState'];
   theme?: string;
   eventType?: components['schemas']['EventType'];
 }
@@ -157,6 +191,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
   // Mutation hooks for proper cache management (MVC pattern)
   const createEventMutation = useCreateEvent();
   const updateEventMutation = useUpdateEvent();
+  const queryClient = useQueryClient();
 
   const [apiError, setApiError] = useState<string | null>(null);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>(
@@ -166,6 +201,8 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
   const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
   const [initialFormData, setInitialFormData] = useState<PartialEventFormData>({});
   const [themeImageUploadId, setThemeImageUploadId] = useState<string | undefined>(undefined);
+  const [overrideValidation, setOverrideValidation] = useState(false);
+  const [overrideReason, setOverrideReason] = useState('');
 
   // Check role-based access control
   const hasEditPermission = user?.role === 'organizer';
@@ -205,7 +242,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
           venueName: event.venueName || '',
           venueAddress: event.venueAddress || '',
           venueCapacity: event.venueCapacity || 200,
-          status: event.status || 'planning',
+          workflowState: event.workflowState || 'CREATED',
           theme: (event as EventUI).theme || '',
           eventType: normalizeEventType((event as EventUI).eventType),
         }
@@ -218,7 +255,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
           venueName: '',
           venueAddress: '',
           venueCapacity: 200,
-          status: 'planning' as const,
+          workflowState: 'CREATED' as const,
           theme: '',
           eventType: 'FULL_DAY',
         },
@@ -245,7 +282,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         venueName: '',
         venueAddress: '',
         venueCapacity: 200,
-        status: 'planning',
+        workflowState: 'CREATED',
         theme: '',
         eventType: 'FULL_DAY',
       });
@@ -264,7 +301,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         venueName: event.venueName || '',
         venueAddress: event.venueAddress || '',
         venueCapacity: event.venueCapacity || 200,
-        status: event.status || 'planning',
+        workflowState: event.workflowState || 'CREATED',
         theme: (event as EventUI).theme || '',
         eventType: normalizeEventType((event as EventUI).eventType),
       });
@@ -323,15 +360,41 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
     setApiError(null);
 
     try {
-      // Transform dates to ISO 8601 format before sending to API
-      const patchData = transformDatesForApi(changedFields);
+      // Check if workflowState changed - handle separately via workflow transition API
+      const workflowStateChanged = 'workflowState' in changedFields;
+      const newWorkflowState = changedFields.workflowState as
+        | components['schemas']['EventWorkflowState']
+        | undefined;
 
-      // Use mutation hook for proper cache management (MVC pattern)
-      // This ensures all event caches (list, detail, current) are invalidated
-      await updateEventMutation.mutateAsync({
-        eventCode: event.eventCode,
-        data: patchData,
-      });
+      // Remove workflowState from patch data - it goes through separate API
+      const patchFields = { ...changedFields };
+      delete (patchFields as Partial<Record<string, unknown>>).workflowState;
+
+      // Update event fields (if any changed besides workflowState)
+      if (Object.keys(patchFields).length > 0) {
+        const patchData = transformDatesForApi(patchFields);
+        await updateEventMutation.mutateAsync({
+          eventCode: event.eventCode,
+          data: patchData,
+        });
+      }
+
+      // Handle workflow state transition separately via workflow transition API
+      if (workflowStateChanged && newWorkflowState) {
+        await workflowService.transitionWorkflowState(
+          event.eventCode,
+          newWorkflowState,
+          overrideValidation,
+          overrideReason || undefined
+        );
+
+        // Invalidate React Query caches to reflect workflow state change in UI
+        queryClient.invalidateQueries({ queryKey: ['events'] }); // List caches
+        queryClient.invalidateQueries({ queryKey: ['event', event.eventCode] }); // Detail caches
+        queryClient.invalidateQueries({ queryKey: ['eventWorkflow', event.eventCode] }); // Workflow cache
+        queryClient.invalidateQueries({ queryKey: ['events', 'current'] }); // Current event cache
+      }
+
       setAutoSaveStatus('saved');
       setLastSavedAt(new Date());
       setInitialFormData(getValues()); // Update initial data after successful save
@@ -357,7 +420,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
     try {
       // IMPORTANT: Backend expects organizerUsername (String) per Story 1.16.2
       // OpenAPI spec updated to use username as public identifier
-      const createData = {
+      const createData: CreateEventRequest = {
         title: data.title,
         eventNumber: data.eventNumber,
         date: new Date(data.date).toISOString(),
@@ -367,16 +430,14 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         venueName: data.venueName,
         venueAddress: data.venueAddress,
         venueCapacity: data.venueCapacity,
-        status: isDraft ? 'planning' : data.status,
+        status: mapWorkflowStateToStatus(isDraft ? 'CREATED' : data.workflowState),
+        eventType: data.eventType || 'FULL_DAY', // Required field with default
         organizerUsername: user.username, // Use username (e.g., "john.doe")
         currentAttendeeCount: 0,
         description: data.description || undefined,
-        metadata:
-          data.theme || data.eventType
-            ? JSON.stringify({ theme: data.theme, eventType: data.eventType })
-            : undefined,
+        metadata: data.theme ? JSON.stringify({ theme: data.theme }) : undefined,
         themeImageUploadId: themeImageUploadId || undefined, // Story 2.5.3a
-      } as CreateEventRequest;
+      };
 
       // Use mutation hook for proper cache management (MVC pattern)
       await createEventMutation.mutateAsync(createData);
@@ -407,14 +468,41 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         return;
       }
 
-      // Transform dates to ISO 8601 format before sending to API
-      const patchData = transformDatesForApi(changedFields);
+      // Check if workflowState changed - handle separately via workflow transition API
+      const workflowStateChanged = 'workflowState' in changedFields;
+      const newWorkflowState = changedFields.workflowState as
+        | components['schemas']['EventWorkflowState']
+        | undefined;
 
-      // Use mutation hook for proper cache management (MVC pattern)
-      await updateEventMutation.mutateAsync({
-        eventCode: event.eventCode,
-        data: patchData,
-      });
+      // Remove workflowState from patch data - it goes through separate API
+      const patchFields = { ...changedFields };
+      delete (patchFields as Partial<Record<string, unknown>>).workflowState;
+
+      // Update event fields (if any changed besides workflowState)
+      if (Object.keys(patchFields).length > 0) {
+        const patchData = transformDatesForApi(patchFields);
+        await updateEventMutation.mutateAsync({
+          eventCode: event.eventCode,
+          data: patchData,
+        });
+      }
+
+      // Handle workflow state transition separately via workflow transition API
+      if (workflowStateChanged && newWorkflowState) {
+        await workflowService.transitionWorkflowState(
+          event.eventCode,
+          newWorkflowState,
+          overrideValidation,
+          overrideReason || undefined
+        );
+
+        // Invalidate React Query caches to reflect workflow state change in UI
+        queryClient.invalidateQueries({ queryKey: ['events'] }); // List caches
+        queryClient.invalidateQueries({ queryKey: ['event', event.eventCode] }); // Detail caches
+        queryClient.invalidateQueries({ queryKey: ['eventWorkflow', event.eventCode] }); // Workflow cache
+        queryClient.invalidateQueries({ queryKey: ['events', 'current'] }); // Current event cache
+      }
+
       onSuccess?.();
       onClose();
     } catch (error: unknown) {
@@ -622,33 +710,97 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
             </Box>
 
             <Controller
-              name="status"
+              name="workflowState"
               control={control}
               render={({ field }) => (
-                <FormControl fullWidth margin="normal" error={!!errors.status}>
+                <FormControl fullWidth margin="normal" error={!!errors.workflowState}>
                   <InputLabel>{t('form.status')}</InputLabel>
                   <Select {...field} label={t('form.status')}>
-                    <MenuItem value="planning">{t('form.statusValues.planning')}</MenuItem>
-                    <MenuItem value="topic_defined">{t('form.statusValues.topicDefined')}</MenuItem>
-                    <MenuItem value="speakers_invited">
-                      {t('form.statusValues.speakersInvited')}
+                    <MenuItem value="CREATED">{t('workflow.states.created')}</MenuItem>
+                    <MenuItem value="TOPIC_SELECTION">
+                      {t('workflow.states.topic_selection')}
                     </MenuItem>
-                    <MenuItem value="agenda_draft">{t('form.statusValues.agendaDraft')}</MenuItem>
-                    <MenuItem value="published">{t('form.statusValues.published')}</MenuItem>
-                    <MenuItem value="registration_open">
-                      {t('form.statusValues.registrationOpen')}
+                    <MenuItem value="SPEAKER_BRAINSTORMING">
+                      {t('workflow.states.speaker_brainstorming')}
                     </MenuItem>
-                    <MenuItem value="registration_closed">
-                      {t('form.statusValues.registrationClosed')}
+                    <MenuItem value="SPEAKER_OUTREACH">
+                      {t('workflow.states.speaker_outreach')}
                     </MenuItem>
-                    <MenuItem value="in_progress">{t('form.statusValues.inProgress')}</MenuItem>
-                    <MenuItem value="completed">{t('form.statusValues.completed')}</MenuItem>
-                    <MenuItem value="archived">{t('form.statusValues.archived')}</MenuItem>
+                    <MenuItem value="SPEAKER_CONFIRMATION">
+                      {t('workflow.states.speaker_confirmation')}
+                    </MenuItem>
+                    <MenuItem value="CONTENT_COLLECTION">
+                      {t('workflow.states.content_collection')}
+                    </MenuItem>
+                    <MenuItem value="QUALITY_REVIEW">
+                      {t('workflow.states.quality_review')}
+                    </MenuItem>
+                    <MenuItem value="THRESHOLD_CHECK">
+                      {t('workflow.states.threshold_check')}
+                    </MenuItem>
+                    <MenuItem value="OVERFLOW_MANAGEMENT">
+                      {t('workflow.states.overflow_management')}
+                    </MenuItem>
+                    <MenuItem value="SLOT_ASSIGNMENT">
+                      {t('workflow.states.slot_assignment')}
+                    </MenuItem>
+                    <MenuItem value="AGENDA_PUBLISHED">
+                      {t('workflow.states.agenda_published')}
+                    </MenuItem>
+                    <MenuItem value="AGENDA_FINALIZED">
+                      {t('workflow.states.agenda_finalized')}
+                    </MenuItem>
+                    <MenuItem value="NEWSLETTER_SENT">
+                      {t('workflow.states.newsletter_sent')}
+                    </MenuItem>
+                    <MenuItem value="EVENT_READY">{t('workflow.states.event_ready')}</MenuItem>
+                    <MenuItem value="PARTNER_MEETING_COMPLETE">
+                      {t('workflow.states.partner_meeting_complete')}
+                    </MenuItem>
+                    <MenuItem value="ARCHIVED">{t('workflow.states.archived')}</MenuItem>
                   </Select>
-                  {errors.status && <FormHelperText>{errors.status.message}</FormHelperText>}
+                  {errors.workflowState && (
+                    <FormHelperText>{errors.workflowState.message}</FormHelperText>
+                  )}
                 </FormControl>
               )}
             />
+
+            {/* Override Workflow Validation Checkbox */}
+            <Box
+              sx={{
+                mt: 2,
+                p: 2,
+                bgcolor: 'warning.light',
+                borderRadius: 1,
+                border: '1px solid',
+                borderColor: 'warning.main',
+              }}
+            >
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={overrideValidation}
+                    onChange={(e) => setOverrideValidation(e.target.checked)}
+                  />
+                }
+                label="Override workflow validation (allows any state transition)"
+              />
+
+              {overrideValidation && (
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={2}
+                  label="Override Reason (Optional)"
+                  value={overrideReason}
+                  onChange={(e) => setOverrideReason(e.target.value)}
+                  placeholder="Why are you overriding workflow validation?"
+                  sx={{ mt: 1 }}
+                  helperText="This will be logged for audit purposes"
+                />
+              )}
+            </Box>
 
             <Controller
               name="venueName"

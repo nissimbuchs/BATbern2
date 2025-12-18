@@ -1,16 +1,19 @@
 
 ✨ New Features:
+* Epic 5 Event management workflow
+- workflow state event engine implemented. started on 16 step organizer workflow. speaker workflow deferred to ewpic 6 (Andy might do it)
+- step 1: 5.1 event type done: you can edit the thre event types Ganztages, Nachmittags und Abend-BATbern and assign it to an event
+- step 2: 5.2 event topic backlog: all old events have now a topic assigned. you can now assign a topic to a new event and will see a nice heatmap of all tpics from the past.
+- step 3: 5.3 speaker brainstorming: you can add speakers you want to reach out to and define which organizer reaches out, ad notes on the status.
+
 * Epic 3 Historical Data Migration
-- Started on data quality of topic.json and session.json. Now also old sessions have abstract and correct speaker info
+- import of companies with logo, speakers with portraits and events work. only session import missing now
 
 * Epic 4 Public website
-- 4.1.3 public website now shows speakers with profile picture and bio
-- public website infinite marquee now shows partners on second row
-- 4.1.5 implemented for public registration workflow with eMail confirmation
-- 4.1.x in progress. Used shadcn and unicorn-studio for attractive look and feel
-- updated https://batbern.ch with a "coming soon..." teaser
+- Hero page implemented. view of historical events and sessions missing.
+- updated PROD: https://batbern.ch with a "coming soon..." teaser
 
-* Epic 2 on crud for main entities is in progress
+* Epic 2 on crud for main entities is now fully implemented.
 - 2.6 user can now edit his profile, and ORGANIZER can now edit profile of any user
 - 2.7/2.8 implemented partner coordination crud
 - 1.14/2.5.1 Company management fully working
@@ -23,18 +26,14 @@
 - 1.6 Local dev with make dev-native-up/down
 
 🚀 Next steps:
-- Epic-3: Migrate all old event data
+- Epic 3: Import sessions
+- Epic 5: Speaker status management
 - Update event detail/edit to show/manage registrations
 
 🐛 Bug Fixes:
-- still uuid in event interfaces. now fixed with meaningful ids (username)
-- Fixed login redirect issues
-- Fixed Cognito Registration hook to update user_profile db
-- Resolved CORS configuration problems
-- 1.16.3 refactored logoUpload to general fileUpload component, so it seemlessly works with company creation
+- see todo.md
 
 ⚡ Open topics:
-- SES is still in sandbox mode (can send registration eMails only to verifyed eMails).
 - We still have not solved and implemented notifications. per service or one for all
 - Refactor so that Company and Event are using the generated types from openapi in the backend and frontend
 - RateLimits are still set very narrow
@@ -42,4 +41,4 @@
 📝 Notes:
 - Report issues on github https://github.com/nissimbuchs/BATbern2/issues
 
-Last updated: 2025-10-26
+Last updated: 2025-12-17

@@ -67,4 +67,24 @@ public interface TopicRepository extends JpaRepository<Topic, UUID> {
             @Param("category") String category,
             @Param("active") Boolean active,
             Pageable pageable);
+
+    /**
+     * Find topics by category and staleness score range (Story 5.2a - Fix #5).
+     * Used for status-based filtering (available/caution/unavailable).
+     * Shows all topics regardless of active status (partners can add topics for future use).
+     *
+     * @param category Optional category filter (null to skip)
+     * @param minStaleness Minimum staleness score (inclusive)
+     * @param maxStaleness Maximum staleness score (inclusive)
+     * @param pageable Pagination and sort parameters
+     * @return Page of topics matching filters
+     */
+    @Query("SELECT t FROM Topic t WHERE "
+            + "(:category IS NULL OR t.category = :category) "
+            + "AND t.stalenessScore BETWEEN :minStaleness AND :maxStaleness")
+    Page<Topic> findByCategoryAndStalenessRange(
+            @Param("category") String category,
+            @Param("minStaleness") Integer minStaleness,
+            @Param("maxStaleness") Integer maxStaleness,
+            Pageable pageable);
 }

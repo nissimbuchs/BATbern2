@@ -302,7 +302,7 @@ jobs:
         if: steps.check-frontend.outputs.exists == 'true' && steps.frontend-changes.outputs.changed == 'true'
         working-directory: ./web-frontend
         run: npm test -- --coverage --run
-        # Coverage thresholds enforced: 80% for lines, functions, branches, and statements
+        # Coverage threshold enforced: 80% for statements
         # Configured in vite.config.ts - tests will fail if coverage drops below threshold
 
       - name: Build frontend

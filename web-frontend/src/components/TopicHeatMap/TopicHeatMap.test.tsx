@@ -42,25 +42,25 @@ describe('TopicHeatMap', () => {
 
   const mockUsageHistory: TopicUsageHistory[] = [
     {
-      eventId: 'event-1',
+      eventNumber: 56,
       usedDate: '2024-01-15T10:00:00Z',
       attendance: 150,
       engagementScore: 0.85,
     },
     {
-      eventId: 'event-2',
+      eventNumber: 57,
       usedDate: '2024-04-20T10:00:00Z',
       attendance: 200,
       engagementScore: 0.92,
     },
     {
-      eventId: 'event-3',
+      eventNumber: 58,
       usedDate: '2024-07-10T10:00:00Z',
       attendance: 180,
       engagementScore: 0.88,
     },
     {
-      eventId: 'event-4',
+      eventNumber: 55,
       usedDate: '2023-10-05T10:00:00Z',
       attendance: 160,
       engagementScore: 0.78,
@@ -121,7 +121,7 @@ describe('TopicHeatMap', () => {
   it('should handle single usage entry', () => {
     const singleUsage: TopicUsageHistory[] = [
       {
-        eventId: 'event-1',
+        eventNumber: 56,
         usedDate: '2024-01-15T10:00:00Z',
         attendance: 150,
         engagementScore: 0.85,
@@ -134,19 +134,19 @@ describe('TopicHeatMap', () => {
   it('should handle multiple events in same quarter', () => {
     const sameQuarterUsage: TopicUsageHistory[] = [
       {
-        eventId: 'event-1',
+        eventNumber: 56,
         usedDate: '2024-01-15T10:00:00Z',
         attendance: 150,
         engagementScore: 0.85,
       },
       {
-        eventId: 'event-2',
+        eventNumber: 57,
         usedDate: '2024-02-20T10:00:00Z',
         attendance: 200,
         engagementScore: 0.92,
       },
       {
-        eventId: 'event-3',
+        eventNumber: 58,
         usedDate: '2024-03-10T10:00:00Z',
         attendance: 180,
         engagementScore: 0.88,

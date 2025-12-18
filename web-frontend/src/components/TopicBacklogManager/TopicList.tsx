@@ -42,6 +42,20 @@ const getColorForStaleness = (score: number): 'error' | 'warning' | 'success' =>
   return 'success';
 };
 
+/**
+ * Map database category names (snake_case) to translation keys (camelCase)
+ */
+const getCategoryTranslationKey = (category: string): string => {
+  const categoryMap: Record<string, string> = {
+    technical: 'technical',
+    management: 'management',
+    soft_skills: 'softSkills',
+    industry_trends: 'industryTrends',
+    tools_platforms: 'toolsPlatforms',
+  };
+  return categoryMap[category] || category;
+};
+
 export const TopicList: React.FC<TopicListProps> = ({
   topics,
   selectedTopicId,
@@ -96,7 +110,10 @@ export const TopicList: React.FC<TopicListProps> = ({
                 secondary={
                   <>
                     <Typography component="span" variant="body2" color="text.secondary">
-                      {topic.category}
+                      {t(
+                        `topicBacklog.filters.categories.${getCategoryTranslationKey(topic.category)}`,
+                        topic.category
+                      )}
                       {topic.lastUsedDate && (
                         <>
                           {' • '}

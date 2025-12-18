@@ -55,7 +55,7 @@ public class SpeakerPoolResponse {
                 speakerPool.getCompany(),
                 speakerPool.getExpertise(),
                 speakerPool.getAssignedOrganizerId(),
-                speakerPool.getStatus(),
+                speakerPool.getStatus() != null ? speakerPool.getStatus().name().toLowerCase() : null,
                 speakerPool.getNotes(),
                 speakerPool.getCreatedAt(),
                 speakerPool.getUpdatedAt()

@@ -35,11 +35,6 @@ public class PatchEventRequest {
 
     private Integer venueCapacity;
 
-    @Pattern(regexp = "planning|topic_defined|speakers_invited|agenda_draft|published|"
-        + "registration_open|registration_closed|in_progress|completed|archived",
-             message = "Status must be a valid workflow state")
-    private String status;
-
     private String organizerUsername;
 
     private Integer currentAttendeeCount;

@@ -33,7 +33,7 @@ interface HeatMapDataPoint {
   usageCount: number;
   totalAttendance: number;
   avgEngagement: number;
-  events: string[]; // Event IDs for tooltip
+  events: number[]; // Event numbers for tooltip (GitHub Issue #379: no UUIDs in API)
   intensity: number; // 0-100 for color mapping
 }
 
@@ -67,7 +67,7 @@ const TopicHeatMap: React.FC<TopicHeatMapProps> = ({
         existing.avgEngagement =
           (existing.avgEngagement * (existing.usageCount - 1) + usage.engagementScore) /
           existing.usageCount;
-        existing.events.push(usage.eventId);
+        existing.events.push(usage.eventNumber);
       } else {
         quarterlyData.set(quarterKey, {
           quarter: quarterKey,
@@ -76,7 +76,7 @@ const TopicHeatMap: React.FC<TopicHeatMapProps> = ({
           usageCount: 1,
           totalAttendance: usage.attendance,
           avgEngagement: usage.engagementScore,
-          events: [usage.eventId],
+          events: [usage.eventNumber],
           intensity: 0, // Will calculate below
         });
       }
