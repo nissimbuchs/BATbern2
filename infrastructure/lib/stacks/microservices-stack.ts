@@ -180,6 +180,15 @@ export class MicroservicesStack extends cdk.Stack {
         resources: ['*'], // Allow all log groups - services will create their own
       }));
 
+      // Grant EventBridge permissions to event-management service for publishing domain events
+      if (serviceConfig.name === 'event-management') {
+        taskDefinition.taskRole.addToPrincipalPolicy(new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['events:PutEvents'],
+          resources: [`arn:aws:events:${props.config.region}:${cdk.Stack.of(this).account}:event-bus/batbern-events`],
+        }));
+      }
+
       // Create Fargate service with internal ALB
       const service = new ecsPatterns.ApplicationLoadBalancedFargateService(this, `${serviceConfig.name}-service`, {
         cluster: this.cluster,
