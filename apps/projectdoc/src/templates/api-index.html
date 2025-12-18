@@ -20,21 +20,25 @@
 
     <style>
         .api-index-hero {
-            background: linear-gradient(135deg, #1565C0 0%, #0D47A1 100%);
-            color: white;
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--foreground);
             padding: 4rem 2rem;
             text-align: center;
+            border-radius: var(--radius-lg);
+            margin: 2rem;
         }
 
         .api-index-hero h1 {
             font-size: 2.5rem;
             font-weight: 700;
             margin: 0 0 1rem 0;
+            color: var(--foreground);
         }
 
         .api-index-hero p {
             font-size: 1.2rem;
-            opacity: 0.95;
+            color: var(--muted-foreground);
             max-width: 800px;
             margin: 0 auto;
         }
@@ -49,17 +53,19 @@
         }
 
         .api-card {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: 0px 2px 5px 0px hsl(0 0% 0% / 0.57);
             padding: 2rem;
             transition: all 0.3s;
-            border: 1px solid #E0E0E0;
         }
 
         .api-card:hover {
-            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            box-shadow: 0px 8px 16px 0px hsl(0 0% 0% / 0.57);
             transform: translateY(-4px);
+            border-color: var(--primary);
+            background: var(--muted);
         }
 
         .api-card-header {
@@ -72,13 +78,13 @@
         .api-card-title {
             font-size: 1.5rem;
             font-weight: 700;
-            color: #212121;
+            color: var(--foreground);
             margin: 0;
         }
 
         .api-card-version {
-            background: #1565C0;
-            color: white;
+            background: var(--primary);
+            color: var(--primary-foreground);
             padding: 0.25rem 0.75rem;
             border-radius: 12px;
             font-size: 0.85rem;
@@ -86,7 +92,7 @@
         }
 
         .api-card-description {
-            color: #666;
+            color: var(--muted-foreground);
             line-height: 1.6;
             margin: 1rem 0;
         }
@@ -96,8 +102,8 @@
             gap: 1.5rem;
             margin: 1.5rem 0;
             padding: 1rem 0;
-            border-top: 1px solid #F0F0F0;
-            border-bottom: 1px solid #F0F0F0;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
         }
 
         .api-stat {
@@ -108,13 +114,13 @@
 
         .api-stat-label {
             font-size: 0.85rem;
-            color: #666;
+            color: var(--muted-foreground);
         }
 
         .api-stat-value {
             font-size: 1.25rem;
             font-weight: 700;
-            color: #1565C0;
+            color: var(--primary);
         }
 
         .api-card-tags {
@@ -125,11 +131,12 @@
         }
 
         .api-tag {
-            background: #F5F5F5;
-            color: #666;
+            background: var(--muted);
+            color: var(--muted-foreground);
             padding: 0.25rem 0.75rem;
             border-radius: 4px;
             font-size: 0.85rem;
+            border: 1px solid var(--border);
         }
 
         .api-card-actions {
@@ -141,7 +148,7 @@
         .api-action-button {
             flex: 1;
             padding: 0.75rem 1.5rem;
-            border-radius: 6px;
+            border-radius: var(--radius-md);
             text-decoration: none;
             text-align: center;
             font-weight: 600;
@@ -149,24 +156,23 @@
         }
 
         .api-action-button.primary {
-            background: #1565C0;
-            color: white;
-            border: 2px solid #1565C0;
+            background: var(--primary);
+            color: var(--primary-foreground);
+            border: 2px solid var(--primary);
         }
 
         .api-action-button.primary:hover {
-            background: #0D47A1;
-            border-color: #0D47A1;
+            opacity: 0.9;
         }
 
         .api-action-button.secondary {
-            background: white;
-            color: #1565C0;
-            border: 2px solid #1565C0;
+            background: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
         }
 
         .api-action-button.secondary:hover {
-            background: #F5F5F5;
+            background: var(--muted);
         }
 
         .api-info-section {
@@ -176,22 +182,31 @@
         }
 
         .info-box {
-            background: #F5F5F5;
-            border-left: 4px solid #1565C0;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--primary);
             padding: 1.5rem;
-            border-radius: 4px;
+            border-radius: var(--radius-md);
             margin-bottom: 2rem;
         }
 
         .info-box h3 {
             margin: 0 0 1rem 0;
-            color: #1565C0;
+            color: var(--primary);
         }
 
         .info-box p {
             margin: 0;
             line-height: 1.6;
-            color: #666;
+            color: var(--muted-foreground);
+        }
+
+        .info-box code {
+            background: var(--muted);
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: var(--font-family-mono);
+            color: var(--foreground);
         }
 
         @media (max-width: 768px) {
@@ -228,8 +243,7 @@
     <div class="api-index-hero">
         <h1>🔌 BATbern Platform APIs</h1>
         <p>
-            Comprehensive REST API documentation for all BATbern event management platform services.
-            Explore interactive API specifications with live examples and code snippets.
+            REST API documentation for the BATbern event management platform. Explore interactive specifications with examples.
         </p>
     </div>
 
@@ -316,7 +330,7 @@
     </main>
 
     <!-- Footer -->
-    <footer style="background: #F5F5F5; padding: 2rem; text-align: center; margin-top: 4rem; color: #666;">
+    <footer style="background: var(--card); border-top: 1px solid var(--border); padding: 2rem; text-align: center; margin-top: 4rem; color: var(--muted-foreground);">
         <p>BATbern Platform API Documentation • Last Updated: {{formatDate buildTime}}</p>
         <p style="font-size: 0.9rem;">Built with ❤️ by the BATbern Development Team</p>
     </footer>

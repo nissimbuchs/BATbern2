@@ -3,31 +3,20 @@
 /* Import shared base styles */
 @import 'base.css';
 
-/* Report-specific CSS variables */
+/* Report-specific CSS variables - Using dark theme from base.css */
 :root {
-  /* Additional report-specific colors */
-  --primary-blue: #1565C0;
-  --secondary-blue: #0D47A1;
-  --accent-orange: #FF6F00;
+  /* Additional report-specific colors (status colors) */
   --success-green: #4CAF50;
   --warning-yellow: #FFC107;
   --error-red: #F44336;
   --critical-red: #D32F2F;
   --info-blue: #2196F3;
-  --bg-light: #F5F7FA;
-  --bg-white: #FFFFFF;
-  --text-primary: #212121;
-  --text-secondary: #757575;
-  --border-color: #E0E0E0;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
-  --shadow-md: 0 4px 6px rgba(0,0,0,0.12);
-  --shadow-lg: 0 10px 20px rgba(0,0,0,0.15);
 }
 
 /* Layout */
 .reports-page {
   min-height: 100vh;
-  background: var(--bg-light);
+  background: var(--background);
   display: flex;
   flex-direction: column;
   padding-top: 4rem;  /* Account for fixed header */
@@ -52,12 +41,12 @@
   display: flex;
   gap: 0.5rem;
   align-items: center;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   font-size: 0.875rem;
 }
 
 .breadcrumbs a {
-  color: var(--primary-blue);
+  color: var(--primary);
   text-decoration: none;
 }
 
@@ -67,11 +56,12 @@
 
 /* Hero Section */
 .hero-section {
-  background: var(--bg-white);
-  border-radius: 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   padding: 2rem;
   margin-bottom: 2rem;
-  box-shadow: var(--shadow-md);
+  box-shadow: 0px 2px 5px 0px hsl(0 0% 0% / 0.57);
 }
 
 .health-badge {
@@ -87,11 +77,11 @@
 .health-info h1 {
   font-size: 2rem;
   margin: 0 0 0.5rem 0;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 
 .build-info {
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   font-size: 0.875rem;
   margin: 0;
 }
@@ -111,7 +101,7 @@
 .comparison-strip {
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--border);
   display: flex;
   gap: 1.5rem;
   align-items: center;
@@ -143,10 +133,11 @@
 }
 
 .metric-card {
-  background: var(--bg-white);
-  border-radius: 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   padding: 1.5rem;
-  box-shadow: var(--shadow-md);
+  box-shadow: 0px 2px 5px 0px hsl(0 0% 0% / 0.57);
   display: flex;
   gap: 1rem;
 }
@@ -162,7 +153,7 @@
 .metric-content h3 {
   margin: 0 0 0.5rem 0;
   font-size: 0.875rem;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -170,13 +161,13 @@
 .metric-value {
   font-size: 2rem;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--foreground);
   margin-bottom: 0.5rem;
 }
 
 .metric-label {
   font-size: 0.875rem;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
@@ -186,7 +177,7 @@
 .metric-breakdown {
   margin-top: 0.5rem;
   font-size: 0.75rem;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
 }
 
 /* Badges */
@@ -226,7 +217,7 @@
 
 /* Charts Section */
 .charts-section {
-  background: var(--bg-white);
+  background: var(--card);
   border-radius: 12px;
   padding: 2rem;
   margin-bottom: 2rem;
@@ -235,7 +226,7 @@
 
 .charts-section h2 {
   margin: 0 0 1.5rem 0;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 
 .charts-grid {
@@ -252,12 +243,12 @@
 .chart-container h3 {
   margin: 0 0 1rem 0;
   font-size: 1rem;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
 }
 
 /* Modules Section */
 .modules-section {
-  background: var(--bg-white);
+  background: var(--card);
   border-radius: 12px;
   padding: 2rem;
   margin-bottom: 2rem;
@@ -266,7 +257,7 @@
 
 .modules-section h2 {
   margin: 0 0 1.5rem 0;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 
 .table-container {
@@ -282,15 +273,15 @@
   text-align: left;
   padding: 0.75rem 1rem;
   background: var(--bg-light);
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   font-size: 0.875rem;
   font-weight: 600;
   text-transform: uppercase;
-  border-bottom: 2px solid var(--border-color);
+  border-bottom: 2px solid var(--border);
 }
 
 .modules-table tbody tr {
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border);
   transition: background 0.2s;
 }
 
@@ -333,7 +324,7 @@
 
 .status-badge.status-unknown {
   background: var(--bg-light);
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
 }
 
 /* Test Stats */
@@ -376,7 +367,7 @@
 
 .coverage-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--primary-blue), var(--accent-orange));
+  background: linear-gradient(90deg, var(--primary), var(--accent-orange));
   transition: width 0.3s;
 }
 
@@ -403,7 +394,7 @@
   transform: translate(-50%, -50%);
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 
 .coverage-bar-small {
@@ -436,14 +427,14 @@
 }
 
 .no-data {
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   font-style: italic;
 }
 
 /* Buttons */
 .btn-small {
   padding: 0.5rem 1rem;
-  background: var(--primary-blue);
+  background: var(--primary);
   color: white;
   border: none;
   border-radius: 4px;
@@ -460,7 +451,7 @@
 
 /* Quick Links */
 .quick-links {
-  background: var(--bg-white);
+  background: var(--card);
   border-radius: 12px;
   padding: 2rem;
   margin-bottom: 2rem;
@@ -469,7 +460,7 @@
 
 .quick-links h2 {
   margin: 0 0 1.5rem 0;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 
 .links-grid {
@@ -483,7 +474,7 @@
   background: var(--bg-light);
   border-radius: 8px;
   text-decoration: none;
-  color: var(--text-primary);
+  color: var(--foreground);
   transition: all 0.2s;
   border: 2px solid transparent;
 }
@@ -491,7 +482,7 @@
 .link-card:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-lg);
-  border-color: var(--primary-blue);
+  border-color: var(--primary);
 }
 
 .link-card .link-icon {
@@ -501,13 +492,13 @@
 
 .link-card h3 {
   margin: 0 0 0.5rem 0;
-  color: var(--primary-blue);
+  color: var(--primary);
 }
 
 .link-card p {
   margin: 0;
   font-size: 0.875rem;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
 }
 
 .link-card.external::after {
@@ -522,12 +513,12 @@
 
 .page-header h1 {
   margin: 0 0 0.5rem 0;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 
 .page-header p {
   margin: 0;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
 }
 
 /* Coverage-specific styles */
@@ -539,7 +530,7 @@
 }
 
 .summary-card {
-  background: var(--bg-white);
+  background: var(--card);
   border-radius: 12px;
   padding: 2rem;
   box-shadow: var(--shadow-md);
@@ -547,7 +538,7 @@
 
 .summary-card h3 {
   margin: 0 0 1.5rem 0;
-  color: var(--text-primary);
+  color: var(--foreground);
   text-align: center;
 }
 
@@ -571,14 +562,14 @@
 
 .circle {
   fill: none;
-  stroke: var(--primary-blue);
+  stroke: var(--primary);
   stroke-width: 2.8;
   stroke-linecap: round;
   animation: progress 1s ease-out forwards;
 }
 
 .percentage {
-  fill: var(--text-primary);
+  fill: var(--foreground);
   font-size: 0.5em;
   font-weight: bold;
   text-anchor: middle;
@@ -594,7 +585,7 @@
   gap: 0.5rem;
   text-align: center;
   font-size: 0.875rem;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
 }
 
 .metrics-list {
@@ -617,7 +608,7 @@
 
 /* Module Coverage Section */
 .module-coverage-section {
-  background: var(--bg-white);
+  background: var(--card);
   border-radius: 12px;
   padding: 2rem;
   margin-bottom: 2rem;
@@ -626,7 +617,7 @@
 
 .module-coverage-section h2 {
   margin: 0 0 1.5rem 0;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 
 .coverage-table {
@@ -638,15 +629,15 @@
   text-align: left;
   padding: 0.75rem 1rem;
   background: var(--bg-light);
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   font-size: 0.875rem;
   font-weight: 600;
   text-transform: uppercase;
-  border-bottom: 2px solid var(--border-color);
+  border-bottom: 2px solid var(--border);
 }
 
 .coverage-table tbody tr {
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border);
   transition: background 0.2s;
 }
 
@@ -660,7 +651,7 @@
 
 /* Frontend Coverage Section */
 .frontend-coverage-section {
-  background: var(--bg-white);
+  background: var(--card);
   border-radius: 12px;
   padding: 2rem;
   margin-bottom: 2rem;
@@ -669,12 +660,12 @@
 
 .frontend-coverage-section h2 {
   margin: 0 0 1.5rem 0;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 
 .frontend-coverage-section h3 {
   margin: 2rem 0 1rem 0;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 
 .uncovered-files-table,
@@ -689,16 +680,16 @@
   text-align: left;
   padding: 0.75rem 1rem;
   background: var(--bg-light);
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   font-size: 0.875rem;
   font-weight: 600;
   text-transform: uppercase;
-  border-bottom: 2px solid var(--border-color);
+  border-bottom: 2px solid var(--border);
 }
 
 .uncovered-files-table tbody tr,
 .directory-coverage-table tbody tr {
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border);
   transition: background 0.2s;
 }
 
@@ -716,12 +707,12 @@
 .dir-path {
   font-family: monospace;
   font-size: 0.875rem;
-  color: var(--primary-blue);
+  color: var(--primary);
 }
 
 /* Coverage Thresholds */
 .thresholds-section {
-  background: var(--bg-white);
+  background: var(--card);
   border-radius: 12px;
   padding: 2rem;
   margin-bottom: 2rem;
@@ -730,7 +721,7 @@
 
 .thresholds-section h2 {
   margin: 0 0 1.5rem 0;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 
 .thresholds-grid {
@@ -750,13 +741,13 @@
 
 .threshold-label {
   font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
 }
 
 .threshold-value {
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--primary-blue);
+  color: var(--primary);
 }
 
 .threshold-status {
@@ -789,7 +780,7 @@
 .severity-high { border-left: 4px solid var(--error-red); }
 .severity-medium { border-left: 4px solid var(--warning-yellow); }
 .severity-low { border-left: 4px solid var(--info-blue); }
-.severity-info { border-left: 4px solid var(--text-secondary); }
+.severity-info { border-left: 4px solid var(--muted-foreground); }
 
 .severity-icon {
   font-size: 2rem;
@@ -807,7 +798,7 @@
 .severity-label {
   font-size: 0.875rem;
   text-align: center;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -820,7 +811,7 @@
 }
 
 .overview-card {
-  background: var(--bg-white);
+  background: var(--card);
   border-radius: 12px;
   padding: 1.5rem;
   box-shadow: var(--shadow-md);
@@ -830,18 +821,18 @@
 .overview-card h3 {
   margin: 0 0 1rem 0;
   font-size: 0.875rem;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   text-transform: uppercase;
 }
 
 .overview-value {
   font-size: 2rem;
   font-weight: 700;
-  color: var(--primary-blue);
+  color: var(--primary);
 }
 
 .vulnerability-card {
-  background: var(--bg-white);
+  background: var(--card);
   border-radius: 8px;
   padding: 1.5rem;
   margin-bottom: 1rem;
@@ -887,20 +878,20 @@
 .vuln-rule {
   font-family: monospace;
   font-size: 0.875rem;
-  color: var(--text-primary);
+  color: var(--foreground);
   font-weight: 600;
 }
 
 .vuln-tool {
   font-size: 0.75rem;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   padding: 0.25rem 0.5rem;
   background: var(--bg-light);
   border-radius: 4px;
 }
 
 .vuln-message {
-  color: var(--text-primary);
+  color: var(--foreground);
   margin-bottom: 0.75rem;
 }
 
@@ -919,15 +910,15 @@
 
 .location-file {
   font-family: monospace;
-  color: var(--primary-blue);
+  color: var(--primary);
 }
 
 .location-line {
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
 }
 
 .vuln-link a {
-  color: var(--primary-blue);
+  color: var(--primary);
   font-size: 0.875rem;
   text-decoration: none;
 }
@@ -957,7 +948,7 @@
 .summary-content h3 {
   margin: 0 0 0.5rem 0;
   font-size: 0.875rem;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   text-transform: uppercase;
 }
 
@@ -969,7 +960,7 @@
 
 .summary-detail {
   font-size: 0.875rem;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
 }
 
 .card-error {
@@ -990,7 +981,7 @@
 
 /* Module Quality Table */
 .module-quality-section {
-  background: var(--bg-white);
+  background: var(--card);
   border-radius: 12px;
   padding: 2rem;
   margin-bottom: 2rem;
@@ -999,7 +990,7 @@
 
 .module-quality-section h2 {
   margin: 0 0 1.5rem 0;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 
 .module-quality-table {
@@ -1011,15 +1002,15 @@
   text-align: left;
   padding: 0.75rem 1rem;
   background: var(--bg-light);
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   font-size: 0.875rem;
   font-weight: 600;
   text-transform: uppercase;
-  border-bottom: 2px solid var(--border-color);
+  border-bottom: 2px solid var(--border);
 }
 
 .module-quality-table tbody tr {
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border);
   transition: background 0.2s;
 }
 
@@ -1036,7 +1027,7 @@
 .text-warning { color: var(--warning-yellow); }
 .text-error { color: var(--error-red); }
 .text-critical { color: var(--critical-red); }
-.text-muted { color: var(--text-secondary); }
+.text-muted { color: var(--muted-foreground); }
 
 /* Responsive Design */
 @media (max-width: 768px) {
