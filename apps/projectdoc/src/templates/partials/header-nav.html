@@ -1,8 +1,28 @@
 <nav class="header-nav">
-    <a href="/user-guide/README.html" class="nav-link {{#if (eq category 'user-guide')}}active{{/if}}">📖 User Guide</a>
-    <a href="/documentation/index.html" class="nav-link {{#unless (or isIndexPage (eq category 'user-guide') (eq category 'reports') (eq category 'api'))}}active{{/unless}}">📚 Documentation</a>
-    <a href="/reports/index.html" class="nav-link {{#if (eq category 'reports')}}active{{/if}}">📊 Reports</a>
-    <a href="/api/index.html" class="nav-link {{#if (eq category 'api')}}active{{/if}}">🔌 APIs</a>
+    <a href="/user-guide/README.html" class="nav-link {{#if (eq category 'user-guide')}}active{{/if}}">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 7v14m-9-3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4a4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3a3 3 0 0 0-3-3z"/>
+        </svg>
+        User Guide
+    </a>
+    <a href="/documentation/index.html" class="nav-link {{#unless (or isIndexPage (eq category 'user-guide') (eq category 'reports') (eq category 'api'))}}active{{/unless}}">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m16 6l4 14M12 6v14M8 8v12M4 4v16"/>
+        </svg>
+        Documentation
+    </a>
+    <a href="/reports/index.html" class="nav-link {{#if (eq category 'reports')}}active{{/if}}">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 3v16a2 2 0 0 0 2 2h16M7 16h8m-8-5h12M7 6h3"/>
+        </svg>
+        Reports
+    </a>
+    <a href="/api/index.html" class="nav-link {{#if (eq category 'api')}}active{{/if}}">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m16 18l6-6l-6-6M8 6l-6 6l6 6"/>
+        </svg>
+        APIs
+    </a>
     <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
         <span class="nav-toggle-icon"></span>
     </button>

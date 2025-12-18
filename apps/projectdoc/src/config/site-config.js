@@ -131,7 +131,7 @@ export const topLevelSections = [
     id: 'user-guide',
     title: 'User Guide',
     description: 'Organizer workflows and tutorials',
-    icon: '📖',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v14m-9-3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4a4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3a3 3 0 0 0-3-3z"/></svg>',
     path: '/user-guide/README.html',
     order: 1
   },
@@ -139,7 +139,7 @@ export const topLevelSections = [
     id: 'documentation',
     title: 'Documentation',
     description: 'Architecture, guides, and technical specs',
-    icon: '📚',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 6l4 14M12 6v14M8 8v12M4 4v16"/></svg>',
     path: '/documentation/index.html',
     categories: ['architecture', 'prd-enhanced', 'wireframes', 'epics', 'stories', 'project-docs'],
     order: 2
@@ -148,7 +148,7 @@ export const topLevelSections = [
     id: 'reports',
     title: 'Reports',
     description: 'Test results, coverage, and quality metrics',
-    icon: '📊',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16M7 16h8m-8-5h12M7 6h3"/></svg>',
     path: '/reports/index.html',
     order: 3
   },
@@ -156,7 +156,7 @@ export const topLevelSections = [
     id: 'apis',
     title: 'APIs',
     description: 'OpenAPI specifications and endpoints',
-    icon: '🔌',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 18l6-6l-6-6M8 6l-6 6l6 6"/></svg>',
     path: '/api/index.html',
     order: 4
   }
