@@ -718,10 +718,16 @@ blockquote p:last-child {
 }
 
 .section-icon {
-  font-size: 2.5rem;
+  width: 64px;
+  height: 64px;
   display: block;
-  margin-bottom: 0.75rem;
-  line-height: 1;
+  margin: 0 auto 0.75rem;
+  color: var(--primary-color);
+}
+
+.section-icon svg {
+  width: 100%;
+  height: 100%;
 }
 
 .section-box h2 {

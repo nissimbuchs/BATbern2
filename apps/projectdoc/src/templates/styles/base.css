@@ -230,6 +230,12 @@ a:hover {
   color: white;
 }
 
+.header-nav .nav-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
 .nav-toggle {
   display: none;
   background: none;
