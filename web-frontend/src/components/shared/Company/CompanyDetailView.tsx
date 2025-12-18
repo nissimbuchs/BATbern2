@@ -195,7 +195,6 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
                     component="img"
                     src={company.logo.url}
                     alt={`${company.displayName || company.name} logo`}
-                    crossOrigin="anonymous"
                     sx={{
                       maxWidth: 150,
                       maxHeight: 150,

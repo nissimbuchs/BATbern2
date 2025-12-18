@@ -131,7 +131,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             component="img"
             src={fileUrl}
             alt={translatedAltText}
-            crossOrigin="anonymous"
             sx={{
               maxWidth: '200px',
               maxHeight: '200px',
