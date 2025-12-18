@@ -4,17 +4,22 @@
 
 ### Multi-Environment Strategy
 
-BATbern uses a **hybrid deployment model** optimized for cost and developer productivity:
+BATbern uses a **local-first development model** optimized for cost and developer productivity:
 
 | Environment | Infrastructure | Services & Frontend | Rationale |
 |-------------|---------------|---------------------|-----------|
-| **Development** | AWS (RDS, Cognito, S3) | Docker Compose (local) | Cost optimization + fast iteration |
+| **Development** | Local PostgreSQL (Docker) | Native execution (Java + Vite) | Zero AWS costs + 60-70% less resources |
 | **Staging** | AWS (Full stack) | AWS ECS Fargate | Production-like testing |
 | **Production** | AWS (Full stack) | AWS ECS Fargate | Swiss hosting, GDPR compliance |
 
+**Development Environment Details:**
+- Uses staging Cognito for authentication (shared with AWS)
+- Uses staging S3 for file storage (shared with AWS)
+- **Saves $600-720/year** by eliminating dedicated development AWS environment
+
 ### AWS Account Architecture
 
-- **Development**: 954163570305 (Infrastructure only - RDS, Cognito, S3, EventBridge)
+- **Development**: No dedicated AWS account (uses local PostgreSQL + staging Cognito/S3)
 - **Staging**: 188701360969 (Full stack, delegated subdomain `staging.batbern.ch`)
 - **Production**: 422940799530 (Full stack, root domain `batbern.ch`)
 
@@ -143,64 +148,76 @@ The BATbern platform infrastructure has been optimized for cost-efficiency while
 | **Log Retention** | 30 days | Reduced from 90 days |
 | **Backup Retention** | 7 days | Testing-appropriate |
 
-#### Development Environment
+#### Development Environment (Local PostgreSQL)
 
 | Component | Configuration | Cost Optimization |
 |-----------|--------------|-------------------|
-| **VPC** | 2 AZ (eu-central-1a) | Reduced from 2 AZs |
-| **NAT Gateway** | 1 NAT Gateway | Already optimized |
-| **RDS Database** | db.t4g.micro (ARM-based), Single-AZ | ARM upgrade |
-| **Storage** | 20GB gp3 | Minimal storage |
-| **ElastiCache Redis** | Removed | Services run in Docker Compose |
-| **Log Retention** | 30 days | Standard |
-| **Note** | Services, API Gateway, Frontend run locally in Docker Compose | Only infrastructure deployed to AWS |
+| **PostgreSQL** | Docker container (localhost) | Fully local - no AWS costs |
+| **Cognito** | Staging Cognito (AWS) | Shared with staging environment |
+| **S3 Buckets** | Staging buckets (AWS) | Shared with staging environment |
+| **Services** | Native execution (Java processes) | 60-70% less resources than Docker |
+| **Frontend** | Vite dev server (localhost) | Hot reload development |
+| **Note** | **No AWS development environment** | **Saves $600-720/year** |
 
 ### Deployment Model Details
 
-#### Development Environment Architecture
-
-**What's Deployed to AWS:**
-- **RDS PostgreSQL** (db.t4g.micro) - Shared database for all services
-- **AWS Cognito** - User authentication and authorization
-- **S3 Buckets** - File storage (presentations, logos, profiles)
-- **EventBridge** - Event bus for domain events
-- **Bastion Host** - SSM-based secure database access for migrations
+#### Development Environment Architecture (Local-First)
 
 **What Runs Locally:**
+- **PostgreSQL 15** - Docker container with persistent volume
+- **All Microservices** - Native Java processes (ports 8080-8085)
+- **Frontend** - Vite dev server (port 3000)
+
+**What Uses AWS (Staging Environment):**
+- **AWS Cognito (Staging)** - Authentication (shared with staging)
+- **S3 Buckets (Staging)** - File storage (shared with staging)
+
+**Local Development Commands:**
 ```bash
-# Services run in Docker Compose on developer machines
-docker-compose up -d
+# 1. Start local PostgreSQL
+docker compose -f docker-compose-dev.yml up -d
+
+# 2. Start all services natively (recommended)
+make dev-native-up
+
+# 3. First time only: Sync users from staging Cognito
+./scripts/auth/get-token.sh staging your-email@example.com your-password
+./scripts/dev/sync-users-from-cognito.sh
 
 # Running services:
-# → api-gateway (Spring Boot) on http://localhost:8080
-# → event-management-service on http://localhost:8081
-# → speaker-coordination-service on http://localhost:8082
-# → partner-coordination-service on http://localhost:8083
-# → attendee-experience-service on http://localhost:8084
-# → company-user-management-service on http://localhost:8085
-# → React frontend on http://localhost:3000
+# → PostgreSQL on localhost:5432 (Docker)
+# → api-gateway on http://localhost:8080 (native)
+# → company-user-management on http://localhost:8081 (native)
+# → event-management on http://localhost:8082 (native)
+# → speaker-coordination on http://localhost:8083 (native)
+# → partner-coordination on http://localhost:8084 (native)
+# → attendee-experience on http://localhost:8085 (native)
+# → React frontend on http://localhost:3000 (Vite)
 ```
 
 **Benefits:**
-- ✅ Instant code changes (no deployment wait)
-- ✅ Uses real AWS RDS for data consistency testing
-- ✅ Cost savings: No ECS/ALB charges (~$75/month saved)
-- ✅ Full debugging capabilities (breakpoints, hot reload)
-- ✅ Isolated developer environments
+- ✅ **Zero AWS development environment costs** ($600-720/year savings)
+- ✅ Instant code changes with hot reload
+- ✅ 60-70% less resource usage than Docker Compose
+- ✅ Full debugging capabilities (breakpoints, profiling)
+- ✅ Local database with production-parity (PostgreSQL 15)
+- ✅ Uses staging Cognito for realistic authentication testing
+- ✅ Completely isolated developer environments
 
 **Developer Workflow:**
 ```bash
-# 1. Start local services
-docker-compose up -d
+# Morning: Start development environment
+docker compose -f docker-compose-dev.yml up -d  # PostgreSQL
+make dev-native-up                              # All services
 
-# 2. Services connect to shared development RDS
-#    (credentials from AWS Secrets Manager)
+# During development:
+# - Make code changes → services auto-reload
+# - Local PostgreSQL → instant database queries
+# - Staging Cognito → realistic auth testing
+# - View logs: make dev-native-logs
 
-# 3. Make code changes, services auto-reload
-
-# 4. Test against real AWS Cognito authentication
-
-# 5. Upload files to real S3 buckets for testing
+# Evening: Stop services
+make dev-native-down
 ```
 
 #### Staging/Production Architecture

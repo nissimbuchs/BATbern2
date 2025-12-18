@@ -124,36 +124,40 @@ BATbern-main/
 
 ### Local Development Setup
 
-**Prerequisites**: Java 21, Node.js 20+, Docker Desktop, AWS CLI v2, jq
+**Prerequisites**: Java 21, Node.js 20+, Docker Desktop, AWS CLI v2 (for staging Cognito), jq
 
 ```bash
-# Option 1: Local PostgreSQL (RECOMMENDED - Zero AWS costs)
+# Recommended: Local PostgreSQL + Native Services
 docker compose -f docker-compose-dev.yml up -d       # Start local PostgreSQL
-make dev-native-up                                   # Start services natively
-# First time: JWT_TOKEN='...' ./scripts/dev/sync-users-from-cognito.sh
+make dev-native-up                                   # Start services natively (60-70% less resources)
 
-# Option 2: AWS DEV Environment (includes RDS connectivity)
-./scripts/config/sync-backend-config.sh development  # Generate .env from AWS
-make docker-up                                       # Start all services
-
-# Option 3: Native development with AWS DEV
-make dev-native-up                                   # 60-70% less resources
+# First time only: Sync users from staging Cognito
+./scripts/auth/get-token.sh staging your-email@example.com your-password  # One-time setup
+./scripts/dev/sync-users-from-cognito.sh                                   # Sync users
 
 # Services available at:
 # - API Gateway: http://localhost:8080
+# - Company/User Management: http://localhost:8081
+# - Event Management: http://localhost:8082
+# - Speaker Coordination: http://localhost:8083
+# - Partner Coordination: http://localhost:8084
+# - Attendee Experience: http://localhost:8085
 # - Frontend: http://localhost:3000
 ```
 
-**Local PostgreSQL Setup** (Option 1):
-- Uses Docker PostgreSQL instead of AWS RDS (**saves $600-720/year**)
-- Development Cognito for authentication (shared with AWS)
-- Local database is a read-only mirror synced from Cognito
+**Local Development Architecture**:
+- ✅ PostgreSQL 15 runs in Docker (persistent volume)
+- ✅ All services run natively (Java processes + Vite dev server)
+- ✅ Uses staging Cognito for authentication (AWS)
+- ✅ Local database is read-only mirror synced from staging
+- ✅ **Zero AWS development environment costs** (saves $600-720/year)
+- ✅ 60-70% less resources than Docker Compose
 - See [Local Development Guide](docs/guides/local-development-setup.md) for details
 
-**AWS DEV Environment** (Options 2 & 3):
-- Uses AWS DEV environment for infrastructure (RDS, Cognito)
-- Only application containers run locally
-- Costs ~$50-60/month (with auto-shutdown active)
+**Alternative: Docker Compose** (for integration testing):
+```bash
+docker-compose up -d   # All services in containers
+```
 
 ### Testing Strategy (4-Layer E2E Framework)
 
