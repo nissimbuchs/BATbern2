@@ -150,6 +150,15 @@ export function createDomainService(
       resources: ['*'],
     }));
 
+    // Grant EventBridge permissions to event-management service for publishing domain events
+    if (serviceName === 'event-management') {
+      taskDefinition.taskRole.addToPrincipalPolicy(new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['events:PutEvents'],
+        resources: [`arn:aws:events:${props.config.region}:${cdk.Stack.of(scope).account}:event-bus/batbern-events`],
+      }));
+    }
+
     // Grant Secrets Manager permissions to task execution role
     if (props.databaseSecret) {
       props.databaseSecret.grantRead(taskDefinition.executionRole!);
