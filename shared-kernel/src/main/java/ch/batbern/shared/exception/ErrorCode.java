@@ -24,7 +24,8 @@ public enum ErrorCode {
     // Business logic errors (409, 422)
     ERR_DUPLICATE("Duplicate resource"),
     ERR_CONFLICT("Resource conflict"),
-    ERR_BUSINESS_RULE("Business rule violation");
+    ERR_BUSINESS_RULE("Business rule violation"),
+    ERR_INVALID_STATE_TRANSITION("Invalid state transition");
 
     private final String defaultMessage;
 

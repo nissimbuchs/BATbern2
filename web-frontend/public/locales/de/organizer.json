@@ -233,5 +233,36 @@
       "title": "Mehrere als kontaktiert markieren",
       "confirm": "{{count}} Referenten als kontaktiert markieren?"
     }
+  },
+  "speakerStatus": {
+    "title": "Sprecher-Status",
+    "statusSummary": "Status-Übersicht",
+    "open": "Offen",
+    "contacted": "Kontaktiert",
+    "ready": "Bereit",
+    "accepted": "Angenommen",
+    "declined": "Abgelehnt",
+    "slot_assigned": "Slot zugewiesen",
+    "quality_reviewed": "Qualität geprüft",
+    "final_agenda": "Finale Agenda",
+    "changeStatus": "Status ändern",
+    "changeReason": "Grund für Statusänderung (optional)",
+    "confirmChange": "Status ändern",
+    "cancelChange": "Abbrechen",
+    "statusChanged": "Status erfolgreich geändert",
+    "invalidTransition": "Ungültiger Statusübergang von {{from}} zu {{to}}",
+    "historyTitle": "Status-Verlauf",
+    "changedBy": "Geändert von",
+    "noHistory": "Kein Status-Verlauf verfügbar",
+    "acceptanceRate": "Annahmequote: {{rate}}%",
+    "progress": "{{accepted}} / {{required}} Sprecher angenommen",
+    "thresholdMet": "Mindestanzahl erreicht ✓",
+    "thresholdNotMet": "Mindestanzahl nicht erreicht ({{count}} / {{required}})",
+    "overflowDetected": "Überlauf erkannt ({{count}} > {{max}})",
+    "dragToChange": "Ziehen Sie Sprecher, um den Status zu ändern",
+    "confirmChangeMessage": "Status von {{speaker}} von {{from}} zu {{to}} ändern?",
+    "reasonHelperText": "Optional (max. {{max}} Zeichen)",
+    "reasonPlaceholder": "z.B. Sprecher hat per E-Mail zugesagt",
+    "reasonTooLong": "Grund ist zu lang ({{current}}/{{max}} Zeichen)"
   }
 }

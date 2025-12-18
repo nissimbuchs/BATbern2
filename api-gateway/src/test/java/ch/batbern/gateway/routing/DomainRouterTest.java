@@ -164,6 +164,46 @@ class DomainRouterTest {
         assertThat(targetService).isEqualTo("event-management-service");
     }
 
+    // Story 5.4: Speaker Status Management Routing Tests
+    @Test
+    @DisplayName("should_routeToSpeakerService_when_speakerStatusUpdateEndpointCalled")
+    void should_routeToSpeakerService_when_speakerStatusUpdateEndpointCalled() {
+        // Given - PUT /api/v1/events/{code}/speakers/{speakerId}/status
+        String requestPath = "/api/v1/events/BAT123/speakers/550e8400-e29b-41d4-a716-446655440000/status";
+
+        // When
+        String targetService = domainRouter.determineTargetService(requestPath);
+
+        // Then
+        assertThat(targetService).isEqualTo("speaker-coordination-service");
+    }
+
+    @Test
+    @DisplayName("should_routeToSpeakerService_when_speakerStatusHistoryEndpointCalled")
+    void should_routeToSpeakerService_when_speakerStatusHistoryEndpointCalled() {
+        // Given - GET /api/v1/events/{code}/speakers/{speakerId}/status/history
+        String requestPath = "/api/v1/events/BAT123/speakers/550e8400-e29b-41d4-a716-446655440000/status/history";
+
+        // When
+        String targetService = domainRouter.determineTargetService(requestPath);
+
+        // Then
+        assertThat(targetService).isEqualTo("speaker-coordination-service");
+    }
+
+    @Test
+    @DisplayName("should_routeToSpeakerService_when_statusSummaryEndpointCalled")
+    void should_routeToSpeakerService_when_statusSummaryEndpointCalled() {
+        // Given - GET /api/v1/events/{code}/speakers/status-summary
+        String requestPath = "/api/v1/events/BAT123/speakers/status-summary";
+
+        // When
+        String targetService = domainRouter.determineTargetService(requestPath);
+
+        // Then
+        assertThat(targetService).isEqualTo("speaker-coordination-service");
+    }
+
     @Test
     @DisplayName("should_handleQueryParameters_when_pathWithQueryProvided")
     void should_handleQueryParameters_when_pathWithQueryProvided() {

@@ -32,6 +32,7 @@ import { getWorkflowStateLabel } from '@/utils/workflow/workflowState';
 import { de, enUS } from 'date-fns/locale';
 import { useEvent } from '@/hooks/useEvents';
 import type { EventUI } from '@/types/event.types';
+import { SpeakerStatusDashboard } from '@/components/organizer/SpeakerStatus/SpeakerStatusDashboard';
 
 const EventDetail: React.FC = () => {
   const { eventCode } = useParams<{ eventCode: string }>();
@@ -243,6 +244,13 @@ const EventDetail: React.FC = () => {
           )}
         </Stack>
       </Paper>
+
+      {/* Speaker Status Dashboard - Story 5.4 */}
+      {eventCode && (
+        <Box sx={{ mt: 3 }}>
+          <SpeakerStatusDashboard eventCode={eventCode} />
+        </Box>
+      )}
     </Box>
   );
 };
