@@ -560,10 +560,19 @@ class HtmlGenerator {
    */
   async generateApiIndexPage(apiDocuments) {
     try {
+      // Truncate API descriptions to first sentence for card display
+      const apisWithShortDescriptions = apiDocuments.map(api => ({
+        ...api,
+        metadata: {
+          ...api.metadata,
+          description: this.truncateToFirstSentence(api.metadata.description)
+        }
+      }));
+
       const pageHtml = this.templates.apiIndex({
         title: 'API Documentation',
         description: 'BATbern Platform API Documentation',
-        apis: apiDocuments,
+        apis: apisWithShortDescriptions,
         siteConfig: this.config,
         buildTime: new Date().toISOString(),
         category: 'api'
@@ -574,6 +583,23 @@ class HtmlGenerator {
       console.error('Error generating API index page:', error);
       throw error;
     }
+  }
+
+  /**
+   * Truncate text to first sentence
+   * @param {string} text - Text to truncate
+   * @returns {string} First sentence only
+   */
+  truncateToFirstSentence(text) {
+    if (!text) return '';
+
+    // Remove leading/trailing whitespace and newlines
+    const cleaned = text.trim().replace(/\n/g, ' ');
+
+    // Find first sentence (ends with period, exclamation, or question mark)
+    const match = cleaned.match(/^[^.!?]+[.!?]/);
+
+    return match ? match[0].trim() : cleaned.split('\n')[0].trim();
   }
 }
 
