@@ -20,10 +20,10 @@ export interface ApiGatewayStackProps extends cdk.StackProps {
 }
 
 /**
- * API Gateway Stack - HTTP API with JWT Authorizer (OAuth2 Best Practice)
+ * API Gateway Stack - Simplified HTTP API (Backend Controls Authentication)
  *
  * Architecture:
- * Client → HTTP API (JWT Authorizer + Access Tokens) → Spring Boot API Gateway (ECS) → Microservices (ECS)
+ * Client → HTTP API (CORS, Throttling) → Spring Boot API Gateway (ECS) → Microservices (ECS)
  *
  * Migrated from REST API to HTTP API for:
  * - ✓ OAuth2 compliance - validates ACCESS TOKENS (not ID tokens)
@@ -32,10 +32,11 @@ export interface ApiGatewayStackProps extends cdk.StackProps {
  * - ✓ Automatic CORS handling
  * - ✓ Native HTTP/2 support
  *
- * Security Model:
- * - AC16: JWT Authorizer validates Cognito access tokens at the edge
- * - Validates issuer, audience (client_id), expiration, signature
- * - Backend services re-validate for defense-in-depth
+ * Security Model (ADR-008 - Simplified API Gateway):
+ * - Infrastructure: Handles edge concerns (CORS, throttling, DDoS protection)
+ * - Backend Services: Validate JWT tokens and enforce route-level authentication
+ * - Benefit: Adding routes never requires infrastructure deployment
+ * - All route security controlled by microservices via Spring Security
  */
 export class ApiGatewayStack extends cdk.Stack {
   public readonly api: apigatewayv2.HttpApi;
@@ -119,8 +120,19 @@ export class ApiGatewayStack extends cdk.Stack {
       }
     );
 
-    // Add authenticated routes with JWT authorizer
-    // Matches: /{proxy+} (all paths) and forwards full path to Spring Boot
+    /**
+     * Catch-all route - forwards ALL requests to backend
+     *
+     * ADR-008: Simplified API Gateway Routing
+     * - Infrastructure: Just proxies all requests (no JWT validation here)
+     * - Backend: Validates JWT tokens and enforces authentication/authorization
+     * - Benefit: Adding new routes never requires infrastructure deployment
+     *
+     * Security is enforced by:
+     * - Spring Boot API Gateway SecurityConfig
+     * - Individual microservice SecurityConfig files
+     * - @PreAuthorize annotations on controller methods
+     */
     this.api.addRoutes({
       path: '/{proxy+}',
       methods: [
@@ -131,218 +143,7 @@ export class ApiGatewayStack extends cdk.Stack {
         apigatewayv2.HttpMethod.PATCH,
       ],
       integration: httpIntegration,
-      authorizer: this.authorizer,
-    });
-
-    // Public config endpoint (no auth) for frontend bootstrap
-    const configIntegration = new apigatewayv2_integrations.HttpUrlIntegration(
-      'ConfigIntegration',
-      `${apiGatewayServiceUrl}/api/v1/config`,
-      {
-        method: apigatewayv2.HttpMethod.GET,
-      }
-    );
-
-    this.api.addRoutes({
-      path: '/api/v1/config',
-      methods: [apigatewayv2.HttpMethod.GET],
-      integration: configIntegration,
-      // No authorizer - public endpoint
-    });
-
-    // Public health check endpoint (no auth)
-    // Maps /health to /actuator/health on Spring Boot
-    const healthIntegration = new apigatewayv2_integrations.HttpUrlIntegration(
-      'HealthCheckIntegration',
-      `${apiGatewayServiceUrl}/actuator/health`,
-      {
-        method: apigatewayv2.HttpMethod.GET,
-      }
-    );
-
-    this.api.addRoutes({
-      path: '/health',
-      methods: [apigatewayv2.HttpMethod.GET],
-      integration: healthIntegration,
-      // No authorizer - public endpoint
-    });
-
-    // Public info endpoint (no auth)
-    // Maps /info to /actuator/info on Spring Boot
-    const infoIntegration = new apigatewayv2_integrations.HttpUrlIntegration(
-      'InfoIntegration',
-      `${apiGatewayServiceUrl}/actuator/info`,
-      {
-        method: apigatewayv2.HttpMethod.GET,
-      }
-    );
-
-    this.api.addRoutes({
-      path: '/info',
-      methods: [apigatewayv2.HttpMethod.GET],
-      integration: infoIntegration,
-      // No authorizer - public endpoint
-    });
-
-    // Public current event endpoint (no auth) - Story 4.1.3
-    const currentEventIntegration = new apigatewayv2_integrations.HttpUrlIntegration(
-      'CurrentEventIntegration',
-      `${apiGatewayServiceUrl}/api/v1/events/current`,
-      {
-        method: apigatewayv2.HttpMethod.GET,
-      }
-    );
-
-    this.api.addRoutes({
-      path: '/api/v1/events/current',
-      methods: [apigatewayv2.HttpMethod.GET],
-      integration: currentEventIntegration,
-      // No authorizer - public endpoint for public website
-    });
-
-    // Public partners endpoint (no auth) - Partner Showcase
-    const publicPartnersIntegration = new apigatewayv2_integrations.HttpUrlIntegration(
-      'PublicPartnersIntegration',
-      `${apiGatewayServiceUrl}/api/v1/partners`,
-      {
-        method: apigatewayv2.HttpMethod.GET,
-      }
-    );
-
-    this.api.addRoutes({
-      path: '/api/v1/partners',
-      methods: [apigatewayv2.HttpMethod.GET],
-      integration: publicPartnersIntegration,
-      // No authorizer - public endpoint for homepage partner showcase
-    });
-
-    // Story 4.1.5: Public registration endpoints (no auth required - anonymous registration per ADR-005)
-    // POST /api/v1/events/{eventCode}/registrations - Create registration
-    const createRegistrationIntegration = new apigatewayv2_integrations.HttpUrlIntegration(
-      'CreateRegistrationIntegration',
-      `${apiGatewayServiceUrl}/api/v1/events/{eventCode}/registrations`,
-      {
-        method: apigatewayv2.HttpMethod.POST,
-      }
-    );
-
-    this.api.addRoutes({
-      path: '/api/v1/events/{eventCode}/registrations',
-      methods: [apigatewayv2.HttpMethod.POST],
-      integration: createRegistrationIntegration,
-      // No authorizer - public endpoint for anonymous registration
-    });
-
-    // GET /api/v1/events/{eventCode}/registrations/{registrationCode} - Get registration by code
-    const getRegistrationIntegration = new apigatewayv2_integrations.HttpUrlIntegration(
-      'GetRegistrationIntegration',
-      `${apiGatewayServiceUrl}/api/v1/events/{eventCode}/registrations/{registrationCode}`,
-      {
-        method: apigatewayv2.HttpMethod.GET,
-      }
-    );
-
-    this.api.addRoutes({
-      path: '/api/v1/events/{eventCode}/registrations/{registrationCode}',
-      methods: [apigatewayv2.HttpMethod.GET],
-      integration: getRegistrationIntegration,
-      // No authorizer - public endpoint for viewing registration with confirmation code
-    });
-
-    // POST /api/v1/events/{eventCode}/registrations/confirm - Confirm registration via email link
-    const confirmRegistrationIntegration = new apigatewayv2_integrations.HttpUrlIntegration(
-      'ConfirmRegistrationIntegration',
-      `${apiGatewayServiceUrl}/api/v1/events/{eventCode}/registrations/confirm`,
-      {
-        method: apigatewayv2.HttpMethod.POST,
-      }
-    );
-
-    this.api.addRoutes({
-      path: '/api/v1/events/{eventCode}/registrations/confirm',
-      methods: [apigatewayv2.HttpMethod.POST],
-      integration: confirmRegistrationIntegration,
-      // No authorizer - public endpoint for email-based confirmation (JWT in query param)
-    });
-
-    // Story 4.1.3: Public event detail endpoint (no auth)
-    const getEventIntegration = new apigatewayv2_integrations.HttpUrlIntegration(
-      'GetEventIntegration',
-      `${apiGatewayServiceUrl}/api/v1/events/{eventCode}`,
-      {
-        method: apigatewayv2.HttpMethod.GET,
-      }
-    );
-
-    this.api.addRoutes({
-      path: '/api/v1/events/{eventCode}',
-      methods: [apigatewayv2.HttpMethod.GET],
-      integration: getEventIntegration,
-      // No authorizer - public endpoint for event details
-    });
-
-    // Public event sessions endpoint (no auth) - Story 4.1.3
-    const getEventSessionsIntegration = new apigatewayv2_integrations.HttpUrlIntegration(
-      'GetEventSessionsIntegration',
-      `${apiGatewayServiceUrl}/api/v1/events/{eventCode}/sessions`,
-      {
-        method: apigatewayv2.HttpMethod.GET,
-      }
-    );
-
-    this.api.addRoutes({
-      path: '/api/v1/events/{eventCode}/sessions',
-      methods: [apigatewayv2.HttpMethod.GET],
-      integration: getEventSessionsIntegration,
-      // No authorizer - public endpoint for event sessions
-    });
-
-    // Public single session endpoint (no auth)
-    const getSessionIntegration = new apigatewayv2_integrations.HttpUrlIntegration(
-      'GetSessionIntegration',
-      `${apiGatewayServiceUrl}/api/v1/events/{eventCode}/sessions/{sessionId}`,
-      {
-        method: apigatewayv2.HttpMethod.GET,
-      }
-    );
-
-    this.api.addRoutes({
-      path: '/api/v1/events/{eventCode}/sessions/{sessionId}',
-      methods: [apigatewayv2.HttpMethod.GET],
-      integration: getSessionIntegration,
-      // No authorizer - public endpoint for session details
-    });
-
-    // Public session speakers endpoint (no auth) - Story 1.15a.1b
-    const getSessionSpeakersIntegration = new apigatewayv2_integrations.HttpUrlIntegration(
-      'GetSessionSpeakersIntegration',
-      `${apiGatewayServiceUrl}/api/v1/events/{eventCode}/sessions/{sessionId}/speakers`,
-      {
-        method: apigatewayv2.HttpMethod.GET,
-      }
-    );
-
-    this.api.addRoutes({
-      path: '/api/v1/events/{eventCode}/sessions/{sessionId}/speakers',
-      methods: [apigatewayv2.HttpMethod.GET],
-      integration: getSessionSpeakersIntegration,
-      // No authorizer - public endpoint for speaker list
-    });
-
-    // Public company endpoint (no auth) - for partner showcase logo/website enrichment
-    const getCompanyIntegration = new apigatewayv2_integrations.HttpUrlIntegration(
-      'GetCompanyIntegration',
-      `${apiGatewayServiceUrl}/api/v1/companies/{companyIdentifier}`,
-      {
-        method: apigatewayv2.HttpMethod.GET,
-      }
-    );
-
-    this.api.addRoutes({
-      path: '/api/v1/companies/{companyIdentifier}',
-      methods: [apigatewayv2.HttpMethod.GET],
-      integration: getCompanyIntegration,
-      // No authorizer - public endpoint for company details
+      // No authorizer - backend handles all authentication
     });
 
     // Custom domain (if provided)
