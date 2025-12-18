@@ -1087,7 +1087,7 @@ blockquote p:last-child {
 
 .category-card {
   background: var(--card);
-  border-radius: var(--border-radius);
+  border-radius: var(--radius-lg);
   border: 1px solid var(--border);
   padding: var(--space-6);
   transition: all var(--transition-base);
