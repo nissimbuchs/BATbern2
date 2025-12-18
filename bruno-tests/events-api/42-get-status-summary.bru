@@ -1,0 +1,58 @@
+meta {
+  name: Get Speaker Status Summary
+  type: http
+  seq: 42
+}
+
+get {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/status-summary
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.eventCode: isDefined
+  res.body.statusCounts: isDefined
+  res.body.acceptanceRate: isDefined
+}
+
+tests {
+  test("should return 200 status - Story 5.4 AC5, AC6, AC16", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return status summary with counts - Story 5.4 AC5, AC6", function() {
+    const summary = res.getBody();
+    expect(summary.eventCode).to.equal(bru.getVar("createdEventCode"));
+    expect(summary.statusCounts).to.be.an('object');
+    expect(summary.totalSpeakers).to.be.a('number');
+    expect(summary.acceptedCount).to.be.a('number');
+    expect(summary.declinedCount).to.be.a('number');
+    expect(summary.pendingCount).to.be.a('number');
+  });
+
+  test("should calculate acceptance rate - Story 5.4 AC6", function() {
+    const summary = res.getBody();
+    expect(summary.acceptanceRate).to.be.a('number');
+    expect(summary.acceptanceRate).to.be.greaterThanOrEqual(0);
+    expect(summary.acceptanceRate).to.be.lessThanOrEqual(100);
+  });
+
+  test("should include threshold indicators - Story 5.4 AC8, AC13", function() {
+    const summary = res.getBody();
+    expect(summary.minSlotsRequired).to.be.a('number');
+    expect(summary.maxSlotsAllowed).to.be.a('number');
+    expect(summary.thresholdMet).to.be.a('boolean');
+    expect(summary.overflowDetected).to.be.a('boolean');
+  });
+
+  test("should have at least 1 accepted speaker - Story 5.4 AC6", function() {
+    const summary = res.getBody();
+    expect(summary.acceptedCount).to.be.greaterThanOrEqual(1);
+  });
+}

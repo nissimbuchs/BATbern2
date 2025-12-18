@@ -1,0 +1,52 @@
+meta {
+  name: Update Speaker Status
+  type: http
+  seq: 37
+}
+
+put {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/{{createdSpeakerPoolId}}/status
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "newStatus": "CONTACTED",
+    "reason": "Initial contact via email - speaker expressed interest"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.speakerId: isDefined
+  res.body.currentStatus: eq CONTACTED
+  res.body.previousStatus: eq IDENTIFIED
+}
+
+tests {
+  test("should return 200 status - Story 5.4 AC1, AC2", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should update speaker status to CONTACTED - Story 5.4 AC1, AC2", function() {
+    const response = res.getBody();
+    expect(response.speakerId).to.be.a('string');
+    expect(response.eventCode).to.equal(bru.getVar("createdEventCode"));
+    expect(response.currentStatus).to.equal('CONTACTED');
+    expect(response.previousStatus).to.equal('IDENTIFIED');
+    expect(response.changedByUsername).to.equal(bru.getVar("organizerUsername"));
+    expect(response.changeReason).to.equal('Initial contact via email - speaker expressed interest');
+    expect(response.changedAt).to.be.a('string');
+  });
+
+  test("should validate status transition - Story 5.4 AC10, AC12", function() {
+    const response = res.getBody();
+    // Valid transition: IDENTIFIED → CONTACTED (equivalent to OPEN → CONTACTED in workflow)
+    expect(response.currentStatus).to.equal('CONTACTED');
+  });
+}
