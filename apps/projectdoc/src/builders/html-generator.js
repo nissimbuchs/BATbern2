@@ -2,6 +2,7 @@ import handlebars from 'handlebars';
 import fs from 'fs-extra';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { topLevelSections } from '../config/site-config.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,8 +20,14 @@ class HtmlGenerator {
 
   async loadTemplates() {
     const templateDir = path.join(__dirname, '../templates');
+    const partialsDir = path.join(templateDir, 'partials');
 
     try {
+      // Load partials first
+      const headerNavContent = await fs.readFile(path.join(partialsDir, 'header-nav.html'), 'utf-8');
+      handlebars.registerPartial('headerNav', headerNavContent);
+
+      // Load main templates
       const layoutContent = await fs.readFile(path.join(templateDir, 'layout.html'), 'utf-8');
       this.templates.layout = handlebars.compile(layoutContent);
 
@@ -130,6 +137,24 @@ class HtmlGenerator {
       return options.inverse(this);
     });
 
+    // Equality helper (for use with unless)
+    handlebars.registerHelper('eq', function(a, b) {
+      return a === b;
+    });
+
+    // Logical helpers
+    handlebars.registerHelper('or', function() {
+      return Array.prototype.slice.call(arguments, 0, -1).some(Boolean);
+    });
+
+    handlebars.registerHelper('and', function() {
+      return Array.prototype.slice.call(arguments, 0, -1).every(Boolean);
+    });
+
+    handlebars.registerHelper('not', function(value) {
+      return !value;
+    });
+
     // Epic number helper
     handlebars.registerHelper('epicNumber', function(epicInfo) {
       return epicInfo ? `Epic ${epicInfo.number}` : '';
@@ -194,10 +219,124 @@ class HtmlGenerator {
     return indexHtml;
   }
 
+  async generateDocumentationIndexPage(categories, allDocuments) {
+    // Filter to only documentation categories (exclude user-guide, api, reports)
+    const docCategories = {};
+    Object.entries(categories).forEach(([key, category]) => {
+      if (!['user-guide', 'api', 'reports'].includes(key)) {
+        docCategories[key] = category;
+      }
+    });
+
+    const indexData = {
+      title: 'Project Documentation',
+      description: 'Architecture, requirements, designs, and development documentation',
+      categories: this.buildCategoryData(docCategories, allDocuments),
+      totalDocuments: allDocuments.filter(doc =>
+        !['user-guide', 'api', 'reports'].includes(doc.category)
+      ).length,
+      lastUpdated: this.getLastUpdatedDate(allDocuments),
+      config: this.config,
+      siteConfig: this.config,
+      buildTime: new Date().toISOString(),
+      isDocumentationIndex: true
+    };
+
+    // Use the original category-card layout
+    const indexContent = this.generateCategoryIndexContent(indexData);
+
+    const indexHtml = this.templates.layout({
+      ...indexData,
+      content: indexContent,
+      navigation: this.buildNavigationData(categories, allDocuments),
+      breadcrumbs: [],
+      category: 'documentation'
+    });
+
+    return indexHtml;
+  }
+
+  generateCategoryIndexContent(indexData) {
+    let content = `
+      <div class="index-hero">
+        <h1 class="hero-title">${indexData.title}</h1>
+        <p class="hero-description">${indexData.description}</p>
+        <div class="hero-stats">
+          <div class="stat">
+            <span class="stat-number">${indexData.totalDocuments}</span>
+            <span class="stat-label">Documents</span>
+          </div>
+          <div class="stat">
+            <span class="stat-number">${Object.keys(indexData.categories).length}</span>
+            <span class="stat-label">Categories</span>
+          </div>
+          <div class="stat">
+            <span class="stat-number">${this.getTotalStories(indexData.categories)}</span>
+            <span class="stat-label">User Stories</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="categories-grid-docs">
+    `;
+
+    // Sort categories by order
+    const sortedCategories = Object.entries(indexData.categories)
+      .sort(([,a], [,b]) => a.order - b.order);
+
+    sortedCategories.forEach(([key, category]) => {
+      content += `
+        <div class="category-card" data-category="${key}">
+          <div class="category-header">
+            <span class="category-icon">${category.icon}</span>
+            <h2 class="category-title">${category.title}</h2>
+          </div>
+          <p class="category-description">${category.description}</p>
+          <div class="category-meta">
+            <span class="document-count">${category.documentCount} document${category.documentCount !== 1 ? 's' : ''}</span>
+            ${category.lastUpdated ? `<span class="last-updated">Updated ${this.formatRelativeDate(category.lastUpdated)}</span>` : ''}
+          </div>
+          <div class="category-documents">
+      `;
+
+      // Show first 5 documents
+      category.documents.forEach((doc, index) => {
+        const isHidden = index >= 5;
+        content += `
+          <a href="${doc.urlPath}" class="document-link${isHidden ? ' hidden-document' : ''}" ${isHidden ? 'style="display: none;"' : ''}>
+            <span class="document-title">${doc.metadata.title}</span>
+            ${doc.metadata.epicInfo ? `<span class="epic-badge">Epic ${doc.metadata.epicInfo.number}</span>` : ''}
+          </a>
+        `;
+      });
+
+      if (category.documents.length > 5) {
+        content += `
+          <button class="expand-button" onclick="toggleCategoryDocuments('${key}')">
+            <span class="expand-text">Show ${category.documents.length - 5} more</span>
+            <span class="collapse-text" style="display: none;">Show less</span>
+          </button>
+        `;
+      }
+
+      content += `
+          </div>
+        </div>
+      `;
+    });
+
+    content += `
+      </div>
+    `;
+
+    return content;
+  }
+
   buildCategoryData(categories, allDocuments) {
     const result = {};
 
-    Object.entries(this.config.categories).forEach(([key, categoryConfig]) => {
+    // Use the provided categories parameter instead of all config.categories
+    Object.entries(categories).forEach(([key, categoryConfig]) => {
       const docs = allDocuments.filter(doc => doc.category === key);
 
       // Sort documents alphabetically by title
@@ -308,79 +447,50 @@ class HtmlGenerator {
   }
 
   generateIndexContent(indexData) {
-    let content = `
-      <div class="index-hero">
-        <h1 class="hero-title">${indexData.title}</h1>
-        <p class="hero-description">${indexData.description}</p>
-        <div class="hero-stats">
-          <div class="stat">
-            <span class="stat-number">${indexData.totalDocuments}</span>
-            <span class="stat-label">Documents</span>
-          </div>
-          <div class="stat">
-            <span class="stat-number">${Object.keys(indexData.categories).length}</span>
-            <span class="stat-label">Categories</span>
-          </div>
-          <div class="stat">
-            <span class="stat-number">${this.getTotalStories(indexData.categories)}</span>
-            <span class="stat-label">User Stories</span>
-          </div>
-        </div>
-      </div>
+    const { topLevelSections } = this.loadTopLevelSections();
 
-      <div class="categories-grid">
-    `;
+    return `
+    <div class="index-hero">
+      <img src="/assets/BATbern_color_logo.svg"
+           class="hero-logo"
+           alt="BATbern Platform">
+      <h1>BATbern Platform Documentation</h1>
+      <p>Choose a section to explore</p>
+    </div>
 
-    // Sort categories by order
-    const sortedCategories = Object.entries(indexData.categories)
-      .sort(([,a], [,b]) => a.order - b.order);
-
-    sortedCategories.forEach(([key, category]) => {
-      content += `
-        <div class="category-card" data-category="${key}">
-          <div class="category-header">
-            <span class="category-icon">${category.icon}</span>
-            <h2 class="category-title">${category.title}</h2>
-          </div>
-          <p class="category-description">${category.description}</p>
-          <div class="category-meta">
-            <span class="document-count">${category.documentCount} document${category.documentCount !== 1 ? 's' : ''}</span>
-            ${category.lastUpdated ? `<span class="last-updated">Updated ${this.formatRelativeDate(category.lastUpdated)}</span>` : ''}
-          </div>
-          <div class="category-documents">
-      `;
-
-      // Show all documents, mark the ones beyond 5 as hidden
-      category.documents.forEach((doc, index) => {
-        const isHidden = index >= 5;
-        content += `
-          <a href="${doc.urlPath}" class="document-link${isHidden ? ' hidden-document' : ''}" ${isHidden ? 'style="display: none;"' : ''}>
-            <span class="document-title">${doc.metadata.title}</span>
-            ${doc.metadata.epicInfo ? `<span class="epic-badge">Epic ${doc.metadata.epicInfo.number}</span>` : ''}
+    <div class="main-sections-grid">
+      ${topLevelSections
+        .sort((a, b) => a.order - b.order)
+        .map(section => `
+          <a href="${section.path}" class="section-box">
+            <span class="section-icon">${section.icon}</span>
+            <h2>${section.title}</h2>
+            <p>${section.description}</p>
+            ${section.id === 'user-guide' ? '<span class="section-badge">New</span>' : ''}
           </a>
-        `;
-      });
+        `).join('')}
+    </div>
 
-      if (category.documents.length > 5) {
-        content += `
-          <button class="expand-button" onclick="toggleCategoryDocuments('${key}')">
-            <span class="expand-text">Show ${category.documents.length - 5} more</span>
-            <span class="collapse-text" style="display: none;">Show less</span>
-          </button>
-        `;
-      }
-
-      content += `
-          </div>
-        </div>
-      `;
-    });
-
-    content += `
+    <div class="quick-links">
+      <h3>Quick Access</h3>
+      <div class="quick-links-grid">
+        <a href="/user-guide/index.html">Getting Started Guide</a>
+        <a href="/architecture/coding-standards.html">Coding Standards</a>
+        <a href="/reports/index.html">Latest Test Results</a>
+        <a href="/api/index.html">API Documentation</a>
       </div>
-    `;
+    </div>
+  `;
+  }
 
-    return content;
+  loadTopLevelSections() {
+    // Return imported topLevelSections from config
+    try {
+      return { topLevelSections };
+    } catch (error) {
+      console.warn('Failed to load topLevelSections from config:', error);
+      return { topLevelSections: [] };
+    }
   }
 
   getTotalStories(categories) {
@@ -432,7 +542,8 @@ class HtmlGenerator {
         specJson,
         downloadUrl,
         siteConfig: this.config,
-        buildTime: new Date().toISOString()
+        buildTime: new Date().toISOString(),
+        category: 'api'
       });
 
       return pageHtml;
@@ -454,7 +565,8 @@ class HtmlGenerator {
         description: 'BATbern Platform API Documentation',
         apis: apiDocuments,
         siteConfig: this.config,
-        buildTime: new Date().toISOString()
+        buildTime: new Date().toISOString(),
+        category: 'api'
       });
 
       return pageHtml;

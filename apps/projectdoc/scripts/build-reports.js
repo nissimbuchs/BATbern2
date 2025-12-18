@@ -116,6 +116,12 @@ class ReportsBuilder {
 
     // Load templates
     const templatesDir = path.join(__dirname, '../src/templates');
+    const partialsDir = path.join(templatesDir, 'partials');
+
+    // Register partials
+    const headerNavPartial = await fs.readFile(path.join(partialsDir, 'header-nav.html'), 'utf8');
+    Handlebars.registerPartial('headerNav', headerNavPartial);
+
     const dashboardTemplate = await fs.readFile(path.join(templatesDir, 'reports-dashboard.html'), 'utf8');
     const moduleTemplate = await fs.readFile(path.join(templatesDir, 'module-detail.html'), 'utf8');
     const coverageTemplate = await fs.readFile(path.join(templatesDir, 'coverage-report.html'), 'utf8');
@@ -142,7 +148,8 @@ class ReportsBuilder {
       modules: reportData.modules,
       trends: reportData.trends,
       comparison: reportData.comparison,
-      externalLinks: this.config.externalLinks
+      externalLinks: this.config.externalLinks,
+      category: 'reports'
     });
     await fs.writeFile(path.join(this.outputDir, 'index.html'), dashboardHtml);
 
@@ -457,6 +464,11 @@ class ReportsBuilder {
 
     // Logical AND
     Handlebars.registerHelper('and', (a, b) => a && b);
+
+    // Logical OR
+    Handlebars.registerHelper('or', function() {
+      return Array.prototype.slice.call(arguments, 0, -1).some(Boolean);
+    });
 
     // Add numbers
     Handlebars.registerHelper('add', (a, b) => a + b);

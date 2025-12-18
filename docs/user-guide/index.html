@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>BATbern Organizer Guide</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  <meta name="description" content="Comprehensive user documentation for BATbern event organizers">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+
+  <!-- Docsify Theme -->
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css">
+
+  <!-- Custom BATbern Styles -->
+  <link rel="stylesheet" href="assets/css/custom.css">
+  <link rel="stylesheet" href="assets/css/print.css" media="print">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="assets/images/logo.svg">
+</head>
+<body>
+  <div id="app">Loading BATbern Organizer Guide...</div>
+
+  <script>
+    window.$docsify = {
+      // Basic Configuration
+      name: 'BATbern Organizer Guide',
+      repo: 'nissimbuchs/BATbern2',
+      homepage: 'README.md',
+      loadSidebar: true,
+      loadNavbar: true,
+      auto2top: true,
+      maxLevel: 4,
+      subMaxLevel: 3,
+
+      // BATbern Logo & Theme
+      logo: 'assets/images/logo.svg',
+      themeColor: '#2C5F7C', // BATbern primary blue
+
+      // Search Plugin
+      search: {
+        maxAge: 86400000, // 1 day
+        paths: 'auto',
+        placeholder: 'Search organizer guide...',
+        noData: 'No results found',
+        depth: 6,
+        hideOtherSidebarContent: false,
+      },
+
+      // Pagination
+      pagination: {
+        previousText: 'Previous',
+        nextText: 'Next',
+        crossChapter: true,
+        crossChapterText: true,
+      },
+
+      // Copy Code Plugin
+      copyCode: {
+        buttonText: 'Copy',
+        errorText: 'Error',
+        successText: 'Copied'
+      },
+
+      // Tabs Plugin
+      tabs: {
+        persist: true,
+        sync: true,
+        theme: 'classic',
+        tabComments: true,
+        tabHeadings: true
+      },
+
+      // Zoom Image Plugin
+      zoom: {
+        background: 'rgba(44, 95, 124, 0.9)', // BATbern primary with opacity
+        hideScrollbar: true
+      },
+
+      // Mermaid Configuration for Workflow Diagrams
+      mermaid: {
+        theme: 'base',
+        themeVariables: {
+          primaryColor: '#2C5F7C',
+          primaryTextColor: '#FFFFFF',
+          primaryBorderColor: '#1A3A4D',
+          lineColor: '#4A90B8',
+          secondaryColor: '#E67E22',
+          tertiaryColor: '#27AE60',
+          fontSize: '16px',
+          fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif'
+        }
+      },
+
+      // Markdown Configuration
+      markdown: {
+        smartypants: true,
+        breaks: true
+      },
+
+      // Footer
+      plugins: [
+        function(hook, vm) {
+          hook.beforeEach(function(html) {
+            // Add "Last Updated" timestamp at top of each page
+            var lastUpdated = new Date().toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            });
+            return html;
+          });
+
+          hook.afterEach(function(html, next) {
+            // Add footer with copyright and version
+            var footer = [
+              '<hr/>',
+              '<footer style="text-align: center; color: #7F8C8D; font-size: 0.9em; margin-top: 2rem;">',
+              '<p>© ' + new Date().getFullYear() + ' Berner Architekten Treffen (BATbern). All rights reserved.</p>',
+              '<p>Platform Version: ' + (window.BATBERN_VERSION || 'Development') + '</p>',
+              '</footer>'
+            ].join('');
+            next(html + footer);
+          });
+        }
+      ]
+    }
+  </script>
+
+  <!-- Docsify Core -->
+  <script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
+
+  <!-- Docsify Plugins -->
+  <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/docsify-pagination/dist/docsify-pagination.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/docsify-copy-code@2"></script>
+  <script src="//cdn.jsdelivr.net/npm/docsify-tabs@1"></script>
+  <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/zoom-image.min.js"></script>
+
+  <!-- Mermaid for Workflow Diagrams -->
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({ startOnLoad: true });
+    window.mermaid = mermaid;
+  </script>
+  <script src="//cdn.jsdelivr.net/npm/docsify-mermaid@2/dist/docsify-mermaid.js"></script>
+
+  <!-- Syntax Highlighting (Java, TypeScript, Bash, SQL) -->
+  <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-java.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-typescript.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-bash.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-sql.min.js"></script>
+</body>
+</html>

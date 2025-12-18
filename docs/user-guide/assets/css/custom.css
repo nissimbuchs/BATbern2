@@ -1,0 +1,341 @@
+/*
+ * BATbern Organizer Guide - Custom Styles
+ * Swiss Design Principles: Clean, minimalist, grid-based, high contrast
+ * Based on Material-UI theme.ts color palette
+ */
+
+/* ==================== Color Palette Variables ==================== */
+:root {
+  /* Primary Colors */
+  --batbern-primary: #2C5F7C;          /* Professional blue (Organizer) */
+  --batbern-primary-light: #4A90B8;    /* Speaker blue */
+  --batbern-primary-dark: #1A3A4D;     /* Darker blue */
+  --batbern-primary-contrast: #FFFFFF;
+
+  /* Secondary & Accent */
+  --batbern-secondary: #4A90B8;        /* Speaker blue */
+  --batbern-accent: #E67E22;           /* Partner orange */
+
+  /* Status Colors */
+  --batbern-success: #27AE60;          /* Completed status */
+  --batbern-info: #3498DB;             /* Attendee blue */
+  --batbern-warning: #F39C12;          /* Pending status */
+  --batbern-error: #E74C3C;            /* Failed status */
+
+  /* Text Colors */
+  --batbern-text-primary: #34495E;     /* AAA contrast */
+  --batbern-text-secondary: #7F8C8D;   /* AA contrast */
+  --batbern-text-disabled: #BDC3C7;
+
+  /* Background Colors */
+  --batbern-bg-primary: #FFFFFF;
+  --batbern-bg-secondary: #F8F9FA;
+  --batbern-bg-tertiary: #ECF0F1;
+
+  /* Swiss Typography */
+  --batbern-font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --batbern-font-size-base: 16px;
+  --batbern-font-weight-light: 300;
+  --batbern-font-weight-regular: 400;
+  --batbern-font-weight-medium: 500;
+  --batbern-font-weight-bold: 700;
+  --batbern-line-height: 1.5;
+
+  /* Spacing (8px grid) */
+  --batbern-spacing-xs: 4px;
+  --batbern-spacing-sm: 8px;
+  --batbern-spacing-md: 16px;
+  --batbern-spacing-lg: 24px;
+  --batbern-spacing-xl: 32px;
+  --batbern-spacing-xxl: 48px;
+}
+
+/* ==================== Base Typography ==================== */
+body {
+  font-family: var(--batbern-font-family);
+  font-size: var(--batbern-font-size-base);
+  font-weight: var(--batbern-font-weight-regular);
+  line-height: var(--batbern-line-height);
+  color: var(--batbern-text-primary);
+  background-color: var(--batbern-bg-primary);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: var(--batbern-font-weight-medium);
+  color: var(--batbern-primary-dark);
+  margin-top: var(--batbern-spacing-xl);
+  margin-bottom: var(--batbern-spacing-md);
+  line-height: 1.25;
+}
+
+h1 { font-size: 2.5rem; font-weight: var(--batbern-font-weight-light); }
+h2 { font-size: 2rem; }
+h3 { font-size: 1.5rem; }
+h4 { font-size: 1.25rem; }
+h5 { font-size: 1rem; font-weight: var(--batbern-font-weight-bold); }
+h6 { font-size: 0.875rem; font-weight: var(--batbern-font-weight-bold); }
+
+p {
+  margin-bottom: var(--batbern-spacing-md);
+}
+
+a {
+  color: var(--batbern-primary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--batbern-secondary);
+  text-decoration: underline;
+}
+
+/* ==================== Docsify Overrides ==================== */
+.sidebar {
+  background-color: var(--batbern-bg-secondary);
+  border-right: 1px solid var(--batbern-bg-tertiary);
+}
+
+.sidebar-nav a {
+  color: var(--batbern-text-primary);
+}
+
+.sidebar-nav a:hover {
+  color: var(--batbern-primary);
+}
+
+.sidebar-nav .active {
+  border-right: 3px solid var(--batbern-primary);
+  font-weight: var(--batbern-font-weight-medium);
+  color: var(--batbern-primary);
+}
+
+.app-name {
+  font-size: 1.5rem;
+  font-weight: var(--batbern-font-weight-light);
+  color: var(--batbern-primary-dark);
+}
+
+.search input {
+  border: 1px solid var(--batbern-bg-tertiary);
+  border-radius: 4px;
+}
+
+.search input:focus {
+  border-color: var(--batbern-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(44, 95, 124, 0.1);
+}
+
+/* ==================== Workflow Phase Containers ==================== */
+.workflow-phase {
+  border-left: 4px solid var(--batbern-primary);
+  padding: var(--batbern-spacing-md) var(--batbern-spacing-lg);
+  margin: var(--batbern-spacing-lg) 0;
+  background-color: var(--batbern-bg-secondary);
+  border-radius: 4px;
+}
+
+.workflow-phase h3 {
+  margin-top: 0;
+}
+
+/* Phase-Specific Colors */
+.workflow-phase.phase-a { border-left-color: var(--batbern-primary); }      /* Setup */
+.workflow-phase.phase-b { border-left-color: var(--batbern-secondary); }    /* Outreach */
+.workflow-phase.phase-c { border-left-color: var(--batbern-success); }      /* Quality */
+.workflow-phase.phase-d { border-left-color: var(--batbern-warning); }      /* Assignment */
+.workflow-phase.phase-e { border-left-color: var(--batbern-info); }         /* Publishing */
+.workflow-phase.phase-f { border-left-color: var(--batbern-accent); }       /* Communication */
+
+/* ==================== Feature Status Badges ==================== */
+.feature-status {
+  display: inline-block;
+  padding: var(--batbern-spacing-xs) var(--batbern-spacing-sm);
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: var(--batbern-font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-left: var(--batbern-spacing-sm);
+}
+
+.feature-status.implemented {
+  background-color: var(--batbern-success);
+  color: white;
+}
+
+.feature-status.implemented::before {
+  content: '✓ ';
+}
+
+.feature-status.in-progress {
+  background-color: var(--batbern-warning);
+  color: white;
+}
+
+.feature-status.in-progress::before {
+  content: '⏱ ';
+}
+
+.feature-status.planned {
+  background-color: var(--batbern-info);
+  color: white;
+}
+
+.feature-status.planned::before {
+  content: '📋 ';
+}
+
+/* ==================== Wireframe Embeds ==================== */
+.wireframe-embed {
+  border: 1px solid var(--batbern-bg-tertiary);
+  border-radius: 8px;
+  padding: var(--batbern-spacing-lg);
+  margin: var(--batbern-spacing-lg) 0;
+  background-color: var(--batbern-bg-secondary);
+}
+
+.wireframe-embed img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.wireframe-embed figcaption {
+  margin-top: var(--batbern-spacing-sm);
+  font-size: 0.875rem;
+  color: var(--batbern-text-secondary);
+  font-style: italic;
+  text-align: center;
+}
+
+/* ==================== Code Blocks ==================== */
+pre {
+  background-color: var(--batbern-bg-secondary);
+  border: 1px solid var(--batbern-bg-tertiary);
+  border-radius: 4px;
+  padding: var(--batbern-spacing-md);
+  overflow-x: auto;
+}
+
+code {
+  font-family: 'Courier New', monospace;
+  background-color: var(--batbern-bg-tertiary);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+/* ==================== Tables ==================== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: var(--batbern-spacing-lg) 0;
+}
+
+th, td {
+  text-align: left;
+  padding: var(--batbern-spacing-sm) var(--batbern-spacing-md);
+  border-bottom: 1px solid var(--batbern-bg-tertiary);
+}
+
+th {
+  background-color: var(--batbern-primary);
+  color: white;
+  font-weight: var(--batbern-font-weight-medium);
+}
+
+tr:hover {
+  background-color: var(--batbern-bg-secondary);
+}
+
+/* ==================== Blockquotes ==================== */
+blockquote {
+  border-left: 4px solid var(--batbern-accent);
+  padding: var(--batbern-spacing-sm) var(--batbern-spacing-lg);
+  margin: var(--batbern-spacing-lg) 0;
+  background-color: var(--batbern-bg-secondary);
+  font-style: italic;
+  color: var(--batbern-text-secondary);
+}
+
+/* ==================== Alerts & Callouts ==================== */
+.alert {
+  padding: var(--batbern-spacing-md);
+  border-radius: 4px;
+  margin: var(--batbern-spacing-lg) 0;
+  border-left: 4px solid;
+}
+
+.alert.info {
+  background-color: rgba(52, 152, 219, 0.1);
+  border-left-color: var(--batbern-info);
+  color: var(--batbern-text-primary);
+}
+
+.alert.warning {
+  background-color: rgba(243, 156, 18, 0.1);
+  border-left-color: var(--batbern-warning);
+  color: var(--batbern-text-primary);
+}
+
+.alert.error {
+  background-color: rgba(231, 76, 60, 0.1);
+  border-left-color: var(--batbern-error);
+  color: var(--batbern-text-primary);
+}
+
+.alert.success {
+  background-color: rgba(39, 174, 96, 0.1);
+  border-left-color: var(--batbern-success);
+  color: var(--batbern-text-primary);
+}
+
+/* ==================== Step-by-Step Instructions ==================== */
+.step {
+  position: relative;
+  padding-left: var(--batbern-spacing-xxl);
+  margin-bottom: var(--batbern-spacing-lg);
+}
+
+.step::before {
+  content: attr(data-step);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 32px;
+  height: 32px;
+  background-color: var(--batbern-primary);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--batbern-font-weight-bold);
+}
+
+/* ==================== Responsive Design ==================== */
+@media screen and (max-width: 768px) {
+  :root {
+    --batbern-font-size-base: 14px;
+  }
+
+  h1 { font-size: 2rem; }
+  h2 { font-size: 1.5rem; }
+  h3 { font-size: 1.25rem; }
+
+  .workflow-phase {
+    padding: var(--batbern-spacing-sm) var(--batbern-spacing-md);
+  }
+
+  .step {
+    padding-left: var(--batbern-spacing-lg);
+  }
+}
