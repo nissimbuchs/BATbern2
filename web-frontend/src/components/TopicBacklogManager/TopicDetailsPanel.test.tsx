@@ -2,9 +2,10 @@
  * TopicDetailsPanel Tests - Focused component tests for topic details display
  */
 import React from 'react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TopicDetailsPanel } from './TopicDetailsPanel';
 import type { Topic } from '@/types/topic.types';
 import * as useTopicsHook from '@/hooks/useTopics';
@@ -22,7 +23,7 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('@/hooks/useTopics', () => ({
   useSimilarTopics: vi.fn(() => ({ data: [], isLoading: false })),
-  useSelectTopicForEvent: () => ({ mutate: vi.fn(), isPending: false }),
+  useSelectTopicForEvent: vi.fn(),
   useTopicUsageHistory: () => ({ data: [], isLoading: false }),
 }));
 
@@ -40,38 +41,66 @@ const mockTopic: Topic = {
 };
 
 describe('TopicDetailsPanel', () => {
+  let queryClient: QueryClient;
+
+  beforeEach(() => {
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false, gcTime: 0 },
+      },
+    });
+    vi.clearAllMocks();
+
+    // Setup default mock for useSelectTopicForEvent that calls onSuccess immediately
+    vi.mocked(useTopicsHook.useSelectTopicForEvent).mockReturnValue({
+      mutate: vi.fn((variables, options) => {
+        // Call onSuccess callback immediately to simulate successful mutation
+        if (options?.onSuccess) {
+          options.onSuccess(undefined as any, variables, undefined);
+        }
+      }),
+      isPending: false,
+    } as any);
+  });
+
+  const renderWithProviders = (ui: React.ReactElement) => {
+    return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+  };
+
   it('should render topic title and description', () => {
-    render(<TopicDetailsPanel topic={mockTopic} />);
+    renderWithProviders(<TopicDetailsPanel topic={mockTopic} />);
     expect(screen.getByText('Cloud Native Architecture')).toBeInTheDocument();
     expect(screen.getByText('Modern cloud patterns')).toBeInTheDocument();
   });
 
   it('should display staleness score with label', () => {
-    render(<TopicDetailsPanel topic={mockTopic} />);
+    renderWithProviders(<TopicDetailsPanel topic={mockTopic} />);
     expect(screen.getByText('85%')).toBeInTheDocument();
   });
 
   it('should show category chip', () => {
-    render(<TopicDetailsPanel topic={mockTopic} />);
+    renderWithProviders(<TopicDetailsPanel topic={mockTopic} />);
     expect(screen.getByText('technical')).toBeInTheDocument();
   });
 
   it('should display usage statistics', () => {
-    render(<TopicDetailsPanel topic={mockTopic} />);
+    renderWithProviders(<TopicDetailsPanel topic={mockTopic} />);
     expect(screen.getByText(/Usage Count/i)).toBeInTheDocument();
     // "Last Used" appears in both alert message and metrics section
     expect(screen.getAllByText(/Last Used/i).length).toBeGreaterThan(0);
   });
 
   it('should show topic selection button when eventCode is provided', () => {
-    render(<TopicDetailsPanel topic={mockTopic} eventCode="BATbern56" onTopicConfirm={vi.fn()} />);
+    renderWithProviders(
+      <TopicDetailsPanel topic={mockTopic} eventCode="BATbern56" onTopicConfirm={vi.fn()} />
+    );
     expect(screen.getByRole('button', { name: /Select for Event/i })).toBeInTheDocument();
   });
 
   it('should call onTopicConfirm when selection button is clicked', async () => {
     const user = userEvent.setup();
     const onTopicConfirm = vi.fn();
-    render(
+    renderWithProviders(
       <TopicDetailsPanel topic={mockTopic} eventCode="BATbern56" onTopicConfirm={onTopicConfirm} />
     );
 
@@ -80,7 +109,7 @@ describe('TopicDetailsPanel', () => {
   });
 
   it('should not show selection button when eventCode is not provided', () => {
-    render(<TopicDetailsPanel topic={mockTopic} />);
+    renderWithProviders(<TopicDetailsPanel topic={mockTopic} />);
     expect(screen.queryByRole('button', { name: /Select for Event/i })).not.toBeInTheDocument();
   });
 
@@ -108,7 +137,7 @@ describe('TopicDetailsPanel', () => {
       isLoading: false,
     } as ReturnType<typeof useTopicsHook.useSimilarTopics>);
 
-    render(<TopicDetailsPanel topic={topicWithSimilarity} />);
+    renderWithProviders(<TopicDetailsPanel topic={topicWithSimilarity} />);
     expect(screen.getByText(/similar topics detected/i)).toBeInTheDocument();
   });
 });

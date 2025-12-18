@@ -7,6 +7,7 @@ import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.dto.generated.EventType;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
+import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.repository.EventRepository;
@@ -98,9 +99,9 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         mockLogoRepository();
 
         // Create test data
-        createTestEvent("BATbern 2025", "2025-05-15T09:00:00Z", "published");
-        createTestEvent("BATbern 2024", "2024-06-20T09:00:00Z", "archived");
-        createTestEvent("BATbern 2026 Draft", "2026-07-01T09:00:00Z", "planning");
+        createTestEvent("BATbern 2025", "2025-05-15T09:00:00Z", "AGENDA_PUBLISHED");
+        createTestEvent("BATbern 2024", "2024-06-20T09:00:00Z", "ARCHIVED");
+        createTestEvent("BATbern 2026 Draft", "2026-07-01T09:00:00Z", "CREATED");
     }
 
     private void mockUserApiClient() {
@@ -171,9 +172,12 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         return str.substring(0, 1).toUpperCase() + str.substring(1);
     }
 
-    private Event createTestEvent(String title, String dateStr, String status) {
+    private Event createTestEvent(String title, String dateStr, String workflowStateStr) {
         int eventNumber = eventNumberCounter++;
         String eventCode = "BATbern" + eventNumber;
+
+        // Parse workflowState string to EventWorkflowState enum
+        EventWorkflowState workflowState = EventWorkflowState.valueOf(workflowStateStr);
 
         Event event = Event.builder()
                 .eventCode(eventCode)
@@ -184,12 +188,11 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .venueName("Test Venue")
                 .venueAddress("Test Address 123, Bern")
                 .venueCapacity(100)
-                .status(status)
                 .organizerUsername("test.organizer")
                 .currentAttendeeCount(0)
                 .description("Test event for " + title)
                 .eventType(EventType.EVENING)
-                .workflowState(ch.batbern.shared.types.EventWorkflowState.CREATED)
+                .workflowState(workflowState)
                 .build();
         return eventRepository.save(event);
     }
@@ -219,7 +222,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_filterByStatus_when_filterProvided")
     void should_filterByStatus_when_filterProvided() throws Exception {
-        String filter = "{\"status\":\"published\"}";
+        String filter = "{\"workflowState\":\"AGENDA_PUBLISHED\"}";
 
         mockMvc.perform(get("/api/v1/events")
                         .param("filter", filter)
@@ -227,14 +230,14 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data", hasSize(1)))
-                .andExpect(jsonPath("$.data[0].status").value("published"))
+                .andExpect(jsonPath("$.data[0].workflowState").value("AGENDA_PUBLISHED"))
                 .andExpect(jsonPath("$.data[0].title").value("BATbern 2025"));
     }
 
     @Test
     @DisplayName("should_filterByMultipleStatuses_when_inOperatorUsed")
     void should_filterByMultipleStatuses_when_inOperatorUsed() throws Exception {
-        String filter = "{\"status\":{\"$in\":[\"published\",\"planning\"]}}";
+        String filter = "{\"workflowState\":{\"$in\":[\"AGENDA_PUBLISHED\",\"CREATED\"]}}";
 
         mockMvc.perform(get("/api/v1/events")
                         .param("filter", filter)
@@ -292,7 +295,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_filterByStatusAndYear_when_bothProvided")
     void should_filterByStatusAndYear_when_bothProvided() throws Exception {
-        String filter = "{\"status\":\"published\",\"year\":2025}";
+        String filter = "{\"workflowState\":\"AGENDA_PUBLISHED\",\"year\":2025}";
 
         mockMvc.perform(get("/api/v1/events")
                         .param("filter", filter)
@@ -348,7 +351,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_combineFilters_when_titleAndStatusProvided")
     void should_combineFilters_when_titleAndStatusProvided() throws Exception {
-        String filter = "{\"title\":{\"$contains\":\"Draft\"},\"status\":\"planning\"}";
+        String filter = "{\"title\":{\"$contains\":\"Draft\"},\"workflowState\":\"CREATED\"}";
 
         mockMvc.perform(get("/api/v1/events")
                         .param("filter", filter)
@@ -400,7 +403,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         for (int i = 1; i <= 25; i++) {
             int month = (i % 12) + 1; // Cycle through months 1-12
             String monthStr = String.format("%02d", month); // Format as 01, 02, ..., 12
-            createTestEvent("Event " + i, "2025-" + monthStr + "-01T09:00:00Z", "planning");
+            createTestEvent("Event " + i, "2025-" + monthStr + "-01T09:00:00Z", "CREATED");
         }
 
         // Flush changes to ensure all events are persisted before pagination tests
@@ -472,11 +475,11 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_applyCombinedParams_when_filterSortAndPaginationProvided")
     void should_applyCombinedParams_when_filterSortAndPaginationProvided() throws Exception {
-        // Create more published events
-        createTestEvent("Published Event 1", "2025-03-01T09:00:00Z", "published");
-        createTestEvent("Published Event 2", "2025-02-01T09:00:00Z", "published");
+        // Create more AGENDA_PUBLISHED events
+        createTestEvent("Published Event 1", "2025-03-01T09:00:00Z", "AGENDA_PUBLISHED");
+        createTestEvent("Published Event 2", "2025-02-01T09:00:00Z", "AGENDA_PUBLISHED");
 
-        String filter = "{\"status\":\"published\"}";
+        String filter = "{\"workflowState\":\"AGENDA_PUBLISHED\"}";
 
         mockMvc.perform(get("/api/v1/events")
                         .param("filter", filter)
@@ -487,10 +490,10 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data", hasSize(2)))
-                .andExpect(jsonPath("$.data[0].status").value("published"))
-                .andExpect(jsonPath("$.data[0].title").value("BATbern 2025")) // Most recent published
+                .andExpect(jsonPath("$.data[0].workflowState").value("AGENDA_PUBLISHED"))
+                .andExpect(jsonPath("$.data[0].title").value("BATbern 2025")) // Most recent AGENDA_PUBLISHED
                 .andExpect(jsonPath("$.pagination.page").value(1))
-                .andExpect(jsonPath("$.pagination.totalItems").value(3)); // 3 published events total
+                .andExpect(jsonPath("$.pagination.totalItems").value(3)); // 3 AGENDA_PUBLISHED events total
     }
 
     // ============================================================================
@@ -544,7 +547,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 // Story 1.16.2: Event responses use eventCode, not id
                 .andExpect(jsonPath("$.eventCode").value(savedEvent.getEventCode()))
                 .andExpect(jsonPath("$.title").value(savedEvent.getTitle()))
-                .andExpect(jsonPath("$.status").value(savedEvent.getStatus()))
+                .andExpect(jsonPath("$.workflowState").value(savedEvent.getWorkflowState().name()))
                 .andExpect(jsonPath("$.description").value(savedEvent.getDescription()))
                 // Should NOT include expanded resources
                 .andExpect(jsonPath("$.venue").doesNotExist())
@@ -627,7 +630,6 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 {
                     "title": "BATbern 2027",
                     "date": "2027-08-15T09:00:00Z",
-                    "status": "planning",
                     "description": "Annual tech conference 2027",
                     "eventType": "EVENING"
                 }
@@ -640,7 +642,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 // Story 1.16.2: Event responses use eventCode, not id
                 .andExpect(jsonPath("$.eventCode").exists())
                 .andExpect(jsonPath("$.title").value("BATbern 2027"))
-                .andExpect(jsonPath("$.status").value("planning"))
+                .andExpect(jsonPath("$.workflowState").value("CREATED"))
                 .andExpect(jsonPath("$.description").value("Annual tech conference 2027"));
     }
 
@@ -650,7 +652,6 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         String invalidEvent = """
                 {
                     "title": "",
-                    "status": "invalid_status"
                 }
                 """;
 
@@ -673,7 +674,6 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 {
                     "title": "BATbern 2025 Updated",
                     "date": "2025-09-15T10:00:00Z",
-                    "status": "published",
                     "description": "Updated description"
                 }
                 """;
@@ -686,7 +686,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 // Story 1.16.2: Event responses use eventCode, not id
                 .andExpect(jsonPath("$.eventCode").value(savedEvent.getEventCode()))
                 .andExpect(jsonPath("$.title").value("BATbern 2025 Updated"))
-                .andExpect(jsonPath("$.status").value("published"))
+                .andExpect(jsonPath("$.workflowState").value("AGENDA_PUBLISHED"))
                 .andExpect(jsonPath("$.description").value("Updated description"));
     }
 
@@ -702,7 +702,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
         String patchData = """
                 {
-                    "status": "published"
+                    "description": "Updated via PATCH"
                 }
                 """;
 
@@ -714,7 +714,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 // Story 1.16.2: Event responses use eventCode, not id
                 .andExpect(jsonPath("$.eventCode").value(savedEvent.getEventCode()))
                 .andExpect(jsonPath("$.title").value(originalTitle)) // Title should remain unchanged
-                .andExpect(jsonPath("$.status").value("published")); // Status updated
+                .andExpect(jsonPath("$.description").value("Updated via PATCH")); // Description updated
     }
 
     // ============================================================================
@@ -752,15 +752,16 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_publishEvent_when_validationPasses")
     void should_publishEvent_when_validationPasses() throws Exception {
-        // Create a planning event that meets all publication requirements
-        Event draftEvent = createTestEvent("BATbern 2028", "2028-09-15T09:00:00Z", "planning");
+        // Create an event in SLOT_ASSIGNMENT state (ready to be published)
+        // The workflow requires SLOT_ASSIGNMENT → AGENDA_PUBLISHED transition
+        Event draftEvent = createTestEvent("BATbern 2028", "2028-09-15T09:00:00Z", "SLOT_ASSIGNMENT");
 
         mockMvc.perform(post("/api/v1/events/" + draftEvent.getEventCode() + "/publish")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 // Story 1.16.2: Event responses use eventCode, not id
                 .andExpect(jsonPath("$.eventCode").value(draftEvent.getEventCode()))
-                .andExpect(jsonPath("$.status").value("published"))
+                .andExpect(jsonPath("$.workflowState").value("AGENDA_PUBLISHED"))
                 .andExpect(jsonPath("$.title").value("BATbern 2028"));
     }
 
@@ -771,7 +772,6 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         // but should fail publish validation (e.g., past event date)
         Event invalidEvent = Event.builder()
                 .title("Incomplete Event")
-                .status("planning")
                 .eventCode("BATbern9999")
                 .eventNumber(9999)
                 .date(Instant.parse("2020-01-01T00:00:00Z")) // Past date - should fail publish validation
@@ -786,38 +786,6 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         Event savedInvalidEvent = eventRepository.save(invalidEvent);
 
         mockMvc.perform(post("/api/v1/events/" + savedInvalidEvent.getEventCode() + "/publish")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.error").value("Unprocessable Entity"))
-                .andExpect(jsonPath("$.message").exists());
-    }
-
-    // ============================================================================
-    // AC8: Workflow Advance
-    // ============================================================================
-
-    @Test
-    @DisplayName("should_advanceWorkflow_when_transitionValid")
-    void should_advanceWorkflow_when_transitionValid() throws Exception {
-        // Create event in "planning" status - should advance to next state
-        Event draftEvent = createTestEvent("BATbern 2029", "2029-10-15T09:00:00Z", "planning");
-
-        mockMvc.perform(post("/api/v1/events/" + draftEvent.getEventCode() + "/workflow/advance")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                // Story 1.16.2: Event responses use eventCode, not id
-                .andExpect(jsonPath("$.eventCode").value(draftEvent.getEventCode()))
-                .andExpect(jsonPath("$.workflowState").exists())
-                .andExpect(jsonPath("$.workflowState").isNotEmpty());
-    }
-
-    @Test
-    @DisplayName("should_return422_when_transitionInvalid")
-    void should_return422_when_transitionInvalid() throws Exception {
-        // Create event in "archived" status - cannot advance workflow
-        Event archivedEvent = createTestEvent("BATbern 2023", "2023-05-15T09:00:00Z", "archived");
-
-        mockMvc.perform(post("/api/v1/events/" + archivedEvent.getEventCode() + "/workflow/advance")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.error").value("Unprocessable Entity"))
@@ -1060,7 +1028,6 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         String invalidRegistration = """
                 {
                     "email": "invalid-email",
-                    "status": "invalid_status"
                 }
                 """;
 
@@ -1193,15 +1160,15 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 [
                     {
                         "eventCode": "%s",
-                        "status": "published"
+                        "title": "Updated Event 1"
                     },
                     {
                         "eventCode": "%s",
-                        "status": "published"
+                        "title": "Updated Event 2"
                     },
                     {
                         "eventCode": "%s",
-                        "status": "archived"
+                        "title": "Updated Event 3"
                     }
                 ]
                 """.formatted(event1.getEventCode(), event2.getEventCode(), event3.getEventCode());
@@ -1223,9 +1190,9 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         Event updatedEvent2 = eventRepository.findById(event2.getId()).orElseThrow();
         Event updatedEvent3 = eventRepository.findById(event3.getId()).orElseThrow();
 
-        assertThat(updatedEvent1.getStatus()).isEqualTo("published");
-        assertThat(updatedEvent2.getStatus()).isEqualTo("published");
-        assertThat(updatedEvent3.getStatus()).isEqualTo("archived");
+        assertThat(updatedEvent1.getTitle()).isEqualTo("Updated Event 1");
+        assertThat(updatedEvent2.getTitle()).isEqualTo("Updated Event 2");
+        assertThat(updatedEvent3.getTitle()).isEqualTo("Updated Event 3");
     }
 
     @Test
@@ -1238,11 +1205,11 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 [
                     {
                         "eventCode": "%s",
-                        "status": "published"
+                        "title": "Updated Valid Event"
                     },
                     {
                         "eventCode": "non-existent-code",
-                        "status": "published"
+                        "title": "This Should Fail"
                     }
                 ]
                 """.formatted(validEvent.getEventCode());
@@ -1263,7 +1230,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
         // Verify valid event was updated
         Event updatedEvent = eventRepository.findById(validEvent.getId()).orElseThrow();
-        assertThat(updatedEvent.getStatus()).isEqualTo("published");
+        assertThat(updatedEvent.getTitle()).isEqualTo("Updated Valid Event");
     }
 
     // ============================================================================
@@ -1438,7 +1405,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_getEventByCode_when_validEventCodeProvided")
     void should_getEventByCode_when_validEventCodeProvided() throws Exception {
         // Given - create test event
-        Event event = createTestEvent("Test Event for GET", "2025-06-15T09:00:00Z", "published");
+        Event event = createTestEvent("Test Event for GET", "2025-06-15T09:00:00Z", "AGENDA_PUBLISHED");
 
         // When/Then - retrieve by eventCode
         mockMvc.perform(get("/api/v1/events/" + event.getEventCode())
@@ -1447,7 +1414,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.eventCode").value(event.getEventCode()))
                 .andExpect(jsonPath("$.title").value("Test Event for GET"))
                 .andExpect(jsonPath("$.organizerUsername").value("test.organizer"))
-                .andExpect(jsonPath("$.status").value("published"))
+                .andExpect(jsonPath("$.workflowState").value("AGENDA_PUBLISHED"))
                 // Verify no UUID fields in response
                 .andExpect(jsonPath("$.id").doesNotExist())
                 .andExpect(jsonPath("$.organizerId").doesNotExist());
@@ -1474,7 +1441,6 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                     "venueName": "Bern Convention Center",
                     "venueAddress": "Mingerstrasse 6, 3014 Bern",
                     "venueCapacity": 500,
-                    "status": "planning",
                     "organizerUsername": "john.doe",
                     "description": "Annual BATbern conference",
                     "eventType": "EVENING"
@@ -1498,7 +1464,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_updateEvent_when_validPutRequestProvided")
     void should_updateEvent_when_validPutRequestProvided() throws Exception {
         // Given - create event
-        Event event = createTestEvent("Original Title", "2025-06-15T09:00:00Z", "planning");
+        Event event = createTestEvent("Original Title", "2025-06-15T09:00:00Z", "CREATED");
 
         String updateRequest = """
                 {
@@ -1509,8 +1475,8 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                     "venueName": "Updated Venue",
                     "venueAddress": "Updated Address",
                     "venueCapacity": 200,
-                    "status": "published",
-                    "organizerUsername": "jane.smith"
+                    "organizerUsername": "jane.smith",
+                    "eventType": "EVENING"
                 }
                 """.formatted(event.getEventNumber());
 
@@ -1521,8 +1487,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.eventCode").value(event.getEventCode()))
                 .andExpect(jsonPath("$.title").value("Updated Title"))
-                .andExpect(jsonPath("$.organizerUsername").value("jane.smith"))
-                .andExpect(jsonPath("$.status").value("published"));
+                .andExpect(jsonPath("$.organizerUsername").value("jane.smith"));
 
         // Verify persistence
         Event updated = eventRepository.findByEventCode(event.getEventCode()).orElseThrow();
@@ -1534,12 +1499,11 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_patchEvent_when_validPatchRequestProvided")
     void should_patchEvent_when_validPatchRequestProvided() throws Exception {
         // Given - create event
-        Event event = createTestEvent("Original Title", "2025-06-15T09:00:00Z", "planning");
+        Event event = createTestEvent("Original Title", "2025-06-15T09:00:00Z", "CREATED");
 
         String patchRequest = """
                 {
-                    "title": "Patched Title",
-                    "status": "published"
+                    "title": "Patched Title"
                 }
                 """;
 
@@ -1550,14 +1514,12 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.eventCode").value(event.getEventCode()))
                 .andExpect(jsonPath("$.title").value("Patched Title"))
-                .andExpect(jsonPath("$.status").value("published"))
                 // Verify unchanged fields remain
                 .andExpect(jsonPath("$.organizerUsername").value("test.organizer"));
 
         // Verify persistence
         Event patched = eventRepository.findByEventCode(event.getEventCode()).orElseThrow();
         assertThat(patched.getTitle()).isEqualTo("Patched Title");
-        assertThat(patched.getStatus()).isEqualTo("published");
         assertThat(patched.getOrganizerUsername()).isEqualTo("test.organizer");
     }
 
@@ -1596,7 +1558,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_rejectDuplicateEventCode_when_creatingEvent")
     void should_rejectDuplicateEventCode_when_creatingEvent() throws Exception {
         // Given - create an event with eventNumber 3000
-        createTestEvent("Existing Event", "2025-06-15T09:00:00Z", "planning");
+        createTestEvent("Existing Event", "2025-06-15T09:00:00Z", "CREATED");
 
         // When/Then - try to create another event with same number
         String requestBody = """
@@ -1625,44 +1587,44 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_returnPublishedEvent_when_onlyPublishedExists")
     void should_returnPublishedEvent_when_onlyPublishedExists() throws Exception {
-        // Given - clean all and create only one published event
+        // Given - clean all and create only one AGENDA_PUBLISHED event
         eventRepository.deleteAll();
-        Event publishedEvent = createTestEvent("Current Published Event", "2025-12-15T09:00:00Z", "published");
+        Event agendaPublishedEvent = createTestEvent("Current Published Event", "2025-12-15T09:00:00Z", "AGENDA_PUBLISHED");
 
         // When/Then
         mockMvc.perform(get("/api/v1/events/current"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.eventCode").value(publishedEvent.getEventCode()))
+                .andExpect(jsonPath("$.eventCode").value(agendaPublishedEvent.getEventCode()))
                 .andExpect(jsonPath("$.title").value("Current Published Event"))
-                .andExpect(jsonPath("$.status").value("published"));
+                .andExpect(jsonPath("$.workflowState").value("AGENDA_PUBLISHED"));
     }
 
     @Test
     @DisplayName("should_returnRegistrationOpenEvent_when_exists")
     void should_returnRegistrationOpenEvent_when_exists() throws Exception {
-        // Given - clean all and create registration_open event
+        // Given - clean all and create NEWSLETTER_SENT event (equivalent to registration_open)
         eventRepository.deleteAll();
-        Event registrationOpenEvent = createTestEvent("Registration Open Event", "2025-11-20T09:00:00Z", "registration_open");
+        Event registrationOpenEvent = createTestEvent("Registration Open Event", "2025-11-20T09:00:00Z", "NEWSLETTER_SENT");
 
         // When/Then
         mockMvc.perform(get("/api/v1/events/current"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.eventCode").value(registrationOpenEvent.getEventCode()))
-                .andExpect(jsonPath("$.status").value("registration_open"));
+                .andExpect(jsonPath("$.workflowState").value("NEWSLETTER_SENT"));
     }
 
     @Test
     @DisplayName("should_returnRegistrationClosedEvent_when_exists")
     void should_returnRegistrationClosedEvent_when_exists() throws Exception {
-        // Given - clean all and create registration_closed event
+        // Given - clean all and create EVENT_READY event (equivalent to registration_closed)
         eventRepository.deleteAll();
-        Event registrationClosedEvent = createTestEvent("Registration Closed Event", "2025-10-10T09:00:00Z", "registration_closed");
+        Event registrationClosedEvent = createTestEvent("Registration Closed Event", "2025-10-10T09:00:00Z", "EVENT_READY");
 
         // When/Then
         mockMvc.perform(get("/api/v1/events/current"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.eventCode").value(registrationClosedEvent.getEventCode()))
-                .andExpect(jsonPath("$.status").value("registration_closed"));
+                .andExpect(jsonPath("$.workflowState").value("EVENT_READY"));
     }
 
     @Test
@@ -1672,16 +1634,16 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         eventRepository.deleteAll();
 
         // Create events with different dates and statuses
-        createTestEvent("Future Event 1", "2026-12-15T09:00:00Z", "published");
-        Event nearestEvent = createTestEvent("Nearest Event", "2025-08-10T09:00:00Z", "registration_open");
-        createTestEvent("Future Event 2", "2027-01-20T09:00:00Z", "registration_closed");
+        createTestEvent("Future Event 1", "2026-12-15T09:00:00Z", "AGENDA_PUBLISHED");
+        Event nearestEvent = createTestEvent("Nearest Event", "2025-08-10T09:00:00Z", "NEWSLETTER_SENT");
+        createTestEvent("Future Event 2", "2027-01-20T09:00:00Z", "EVENT_READY");
 
         // When/Then - should return the event with the earliest date
         mockMvc.perform(get("/api/v1/events/current"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.eventCode").value(nearestEvent.getEventCode()))
                 .andExpect(jsonPath("$.title").value("Nearest Event"))
-                .andExpect(jsonPath("$.status").value("registration_open"));
+                .andExpect(jsonPath("$.workflowState").value("NEWSLETTER_SENT"));
     }
 
     @Test
@@ -1692,18 +1654,18 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         eventRepository.deleteAll();
 
         // Create events with non-active statuses (should be ignored)
-        createTestEvent("Planning Event", "2025-07-01T09:00:00Z", "planning");
-        createTestEvent("Archived Event", "2025-06-15T09:00:00Z", "archived");
+        createTestEvent("Planning Event", "2025-07-01T09:00:00Z", "CREATED");
+        createTestEvent("Archived Event", "2025-06-15T09:00:00Z", "ARCHIVED");
         createTestEvent("Cancelled Event", "2025-06-20T09:00:00Z", "cancelled");
 
         // Create one active event (should be returned)
-        Event activeEvent = createTestEvent("Active Event", "2025-12-01T09:00:00Z", "published");
+        Event activeEvent = createTestEvent("Active Event", "2025-12-01T09:00:00Z", "AGENDA_PUBLISHED");
 
-        // When/Then - should return the active event, ignoring planning/archived/cancelled
+        // When/Then - should return the active event, ignoring CREATED/ARCHIVED/cancelled
         mockMvc.perform(get("/api/v1/events/current"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.eventCode").value(activeEvent.getEventCode()))
-                .andExpect(jsonPath("$.status").value("published"));
+                .andExpect(jsonPath("$.workflowState").value("AGENDA_PUBLISHED"));
     }
 
     @Test
@@ -1711,8 +1673,8 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     void should_return404_when_noActiveEventsExist() throws Exception {
         // Given - clean all and create only non-active events
         eventRepository.deleteAll();
-        createTestEvent("Planning Event", "2025-08-01T09:00:00Z", "planning");
-        createTestEvent("Archived Event", "2024-06-15T09:00:00Z", "archived");
+        createTestEvent("Planning Event", "2025-08-01T09:00:00Z", "CREATED");
+        createTestEvent("Archived Event", "2024-06-15T09:00:00Z", "ARCHIVED");
 
         // When/Then - should return 404
         mockMvc.perform(get("/api/v1/events/current"))
@@ -1722,14 +1684,14 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_includeExpansions_when_includeParamProvided")
     void should_includeExpansions_when_includeParamProvided() throws Exception {
-        // Given - clean all and create a published event
+        // Given - clean all and create a AGENDA_PUBLISHED event
         eventRepository.deleteAll();
-        Event publishedEvent = createTestEvent("Event with Expansions", "2025-11-15T09:00:00Z", "published");
+        Event agendaPublishedEvent = createTestEvent("Event with Expansions", "2025-11-15T09:00:00Z", "AGENDA_PUBLISHED");
 
         // When/Then - request with include parameter
         mockMvc.perform(get("/api/v1/events/current?include=venue,speakers"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.eventCode").value(publishedEvent.getEventCode()))
+                .andExpect(jsonPath("$.eventCode").value(agendaPublishedEvent.getEventCode()))
                 .andExpect(jsonPath("$.venue").exists())
                 .andExpect(jsonPath("$.speakers").exists());
     }
@@ -1753,7 +1715,6 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                     "venueName": "Tech Hub Bern",
                     "venueAddress": "Bahnhofplatz 1, 3011 Bern",
                     "venueCapacity": 500,
-                    "status": "published",
                     "organizerUsername": "john.doe",
                     "currentAttendeeCount": 0,
                     "description": "A conference about cloud technologies",
@@ -1787,7 +1748,6 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                     "venueName": "Kornhausforum",
                     "venueAddress": "Kornhausplatz 18, 3011 Bern",
                     "venueCapacity": 200,
-                    "status": "published",
                     "organizerUsername": "jane.smith",
                     "currentAttendeeCount": 0,
                     "description": "Traditional architecture conference",
@@ -1808,7 +1768,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_updateThemeImageUploadId_when_patchingWithUploadId")
     void should_updateThemeImageUploadId_when_patchingWithUploadId() throws Exception {
         // Given - Create event without theme image
-        Event existingEvent = createTestEvent("Event to Update", "2025-08-10T09:00:00Z", "published");
+        Event existingEvent = createTestEvent("Event to Update", "2025-08-10T09:00:00Z", "AGENDA_PUBLISHED");
 
         String uploadId = "test-upload-update-456";
         String patchBody = """
@@ -1833,7 +1793,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("PATCH /api/v1/events/{eventCode} - Should regenerate eventCode when eventNumber changes")
     void should_regenerateEventCode_when_eventNumberChangedViaPatch() throws Exception {
         // Given - Create an event with event number 100
-        Event event = createTestEvent("Original Event", "2026-06-15T09:00:00Z", "planning");
+        Event event = createTestEvent("Original Event", "2026-06-15T09:00:00Z", "CREATED");
         // Update to use a known event number for testing
         event.setEventNumber(5000);
         event.setEventCode("BATbern5000");
@@ -1863,7 +1823,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("PUT /api/v1/events/{eventCode} - Should regenerate eventCode when eventNumber changes")
     void should_regenerateEventCode_when_eventNumberChangedViaPut() throws Exception {
         // Given - Create an event with event number 5001
-        Event event = createTestEvent("Original Event", "2026-06-15T09:00:00Z", "planning");
+        Event event = createTestEvent("Original Event", "2026-06-15T09:00:00Z", "CREATED");
         event.setEventNumber(5001);
         event.setEventCode("BATbern5001");
         Event savedEvent = eventRepository.save(event);
@@ -1878,9 +1838,9 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                     "venueName": "Bern TechHub",
                     "venueAddress": "Test Address",
                     "venueCapacity": 100,
-                    "status": "planning",
                     "organizerUsername": "john.doe",
-                    "currentAttendeeCount": 0
+                    "currentAttendeeCount": 0,
+                    "eventType": "EVENING"
                 }
                 """;
 
@@ -1901,12 +1861,12 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("PATCH /api/v1/events/{eventCode} - Should reject duplicate eventNumber")
     void should_rejectDuplicateEventNumber_when_patchingEvent() throws Exception {
         // Given - Create two events with different event numbers
-        Event event1 = createTestEvent("Event 5002", "2026-06-15T09:00:00Z", "planning");
+        Event event1 = createTestEvent("Event 5002", "2026-06-15T09:00:00Z", "CREATED");
         event1.setEventNumber(5002);
         event1.setEventCode("BATbern5002");
         eventRepository.save(event1);
 
-        Event event2 = createTestEvent("Event 5003", "2026-06-15T09:00:00Z", "planning");
+        Event event2 = createTestEvent("Event 5003", "2026-06-15T09:00:00Z", "CREATED");
         event2.setEventNumber(5003);
         event2.setEventCode("BATbern5003");
         eventRepository.save(event2);

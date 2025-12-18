@@ -139,7 +139,7 @@ if [ "$TEST_FRONTEND" = true ]; then
 
     if [ -d "web-frontend" ]; then
         cd web-frontend
-        npm run test:run || CHECKS_FAILED=1
+        CI=true npm run test:run || CHECKS_FAILED=1
         cd ..
     else
         echo -e "${RED}❌ web-frontend directory not found${NC}"

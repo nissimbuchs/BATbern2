@@ -43,10 +43,10 @@ GET /api/v1/events
 tags: [Events]
 summary: List all events
 parameters:
-  - name: status
+  - name: workflowState
     in: query
     schema:
-      $ref: '#/components/schemas/EventStatus'
+      $ref: '#/components/schemas/EventWorkflowState'
   - name: year
     in: query
     schema:
@@ -1448,32 +1448,14 @@ Event:
     eventDate:
       type: string
       format: date-time
-    status:
-      $ref: '#/components/schemas/EventStatus'
+    workflowState:
+      $ref: '#/components/schemas/EventWorkflowState'
     venue:
       $ref: 'common#/components/schemas/Venue'
     sessions:
       type: array
       items:
         $ref: 'common#/components/schemas/Session'
-```
-
-### Event Status
-
-```yaml
-EventStatus:
-  type: string
-  enum:
-    - planning
-    - topic_defined
-    - speakers_invited
-    - agenda_draft
-    - published
-    - registration_open
-    - registration_closed
-    - in_progress
-    - completed
-    - archived
 ```
 
 ### Event Workflow
@@ -1499,23 +1481,24 @@ EventWorkflow:
 
 EventWorkflowState:
   type: string
+  description: 16-step Epic 5 workflow (Story 5.1a - introduced in V12 migration, replaced legacy status field in V17)
   enum:
-    - topic_selection
-    - topic_approval
-    - speaker_identification
-    - speaker_outreach
-    - preference_collection
-    - slot_creation
-    - quality_review
-    - slot_assignment
-    - overflow_voting
-    - agenda_finalization
-    - content_submission
-    - final_review
-    - publication
-    - registration_open
-    - event_execution
-    - post_event_archive
+    - CREATED
+    - TOPIC_SELECTION
+    - SPEAKER_BRAINSTORMING
+    - SPEAKER_OUTREACH
+    - SPEAKER_CONFIRMATION
+    - CONTENT_COLLECTION
+    - QUALITY_REVIEW
+    - THRESHOLD_CHECK
+    - OVERFLOW_MANAGEMENT
+    - SLOT_ASSIGNMENT
+    - AGENDA_PUBLISHED
+    - AGENDA_FINALIZED
+    - NEWSLETTER_SENT
+    - EVENT_READY
+    - PARTNER_MEETING_COMPLETE
+    - ARCHIVED
 ```
 
 ### Event Slot

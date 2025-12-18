@@ -59,7 +59,8 @@ public class SpeakerPoolService {
         speakerPool.setExpertise(request.getExpertise());
         speakerPool.setAssignedOrganizerId(request.getAssignedOrganizerId());
         speakerPool.setNotes(request.getNotes());
-        speakerPool.setStatus("identified"); // AC13: Initial status = 'identified'
+        // AC13: Initial status = 'identified'
+        speakerPool.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.IDENTIFIED);
 
         // Persist speaker pool entry (AC18)
         SpeakerPool saved = speakerPoolRepository.save(speakerPool);
@@ -102,5 +103,33 @@ public class SpeakerPoolService {
         SpeakerPool updated = speakerPoolRepository.save(speakerPool);
 
         return SpeakerPoolResponse.fromEntity(updated);
+    }
+
+    /**
+     * Delete a speaker from the event speaker pool.
+     *
+     * @param eventCode the event code
+     * @param speakerId the speaker pool entry ID
+     * @throws EventNotFoundException if event not found
+     * @throws IllegalArgumentException if speaker not found
+     */
+    @Transactional
+    public void deleteSpeakerFromPool(String eventCode, String speakerId) {
+        // Validate event exists
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
+
+        // Validate speaker exists and belongs to this event
+        java.util.UUID speakerUuid = java.util.UUID.fromString(speakerId);
+        SpeakerPool speakerPool = speakerPoolRepository.findById(speakerUuid)
+                .orElseThrow(() -> new IllegalArgumentException("Speaker not found in pool: " + speakerId));
+
+        // Verify speaker belongs to this event
+        if (!speakerPool.getEventId().equals(event.getId())) {
+            throw new IllegalArgumentException("Speaker does not belong to event: " + eventCode);
+        }
+
+        // Delete speaker from pool
+        speakerPoolRepository.delete(speakerPool);
     }
 }

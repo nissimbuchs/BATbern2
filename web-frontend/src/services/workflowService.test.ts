@@ -253,5 +253,71 @@ describe('workflowService', () => {
         workflowService.transitionWorkflowState('BATbern56', 'TOPIC_SELECTION')
       ).rejects.toThrow();
     });
+
+    it('should_includeOverrideValidation_when_overrideIsTrue', async () => {
+      // Given: Mock successful transition with override
+      const mockResponse: AxiosResponse = {
+        data: {
+          eventCode: 'BATbern56',
+          title: 'BATbern 56',
+          workflowState: 'SPEAKER_OUTREACH',
+          status: 'planning',
+        },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: {} as any,
+      };
+
+      vi.mocked(apiClient.put).mockResolvedValue(mockResponse);
+
+      // When: Transitioning with override (no reason)
+      const result = await workflowService.transitionWorkflowState(
+        'BATbern56',
+        'SPEAKER_OUTREACH',
+        true
+      );
+
+      // Then: Should include overrideValidation field
+      expect(apiClient.put).toHaveBeenCalledWith('/events/BATbern56/workflow/transition', {
+        targetState: 'SPEAKER_OUTREACH',
+        overrideValidation: true,
+      });
+      expect(result.workflowState).toBe('SPEAKER_OUTREACH');
+    });
+
+    it('should_includeOverrideReason_when_overrideWithReason', async () => {
+      // Given: Mock successful transition with override and reason
+      const mockResponse: AxiosResponse = {
+        data: {
+          eventCode: 'BATbern56',
+          title: 'BATbern 56',
+          workflowState: 'SPEAKER_OUTREACH',
+          status: 'planning',
+        },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: {} as any,
+      };
+
+      vi.mocked(apiClient.put).mockResolvedValue(mockResponse);
+
+      // When: Transitioning with override and reason
+      const result = await workflowService.transitionWorkflowState(
+        'BATbern56',
+        'SPEAKER_OUTREACH',
+        true,
+        'Emergency speaker confirmation needed'
+      );
+
+      // Then: Should include both overrideValidation and overrideReason
+      expect(apiClient.put).toHaveBeenCalledWith('/events/BATbern56/workflow/transition', {
+        targetState: 'SPEAKER_OUTREACH',
+        overrideValidation: true,
+        overrideReason: 'Emergency speaker confirmation needed',
+      });
+      expect(result.workflowState).toBe('SPEAKER_OUTREACH');
+    });
   });
 });

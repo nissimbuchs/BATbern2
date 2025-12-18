@@ -31,8 +31,9 @@ vi.mock('react-i18next', () => ({
         'dashboard.eventType.full_day': 'Full Day',
         'dashboard.eventType.afternoon': 'Afternoon',
         'dashboard.workflowProgress': 'Workflow Progress',
-        'dashboard.workflowState.speaker_research': 'Speaker Research',
-        'dashboard.workflowState.topic_selection': 'Topic Selection',
+        'workflow.states.created': 'Created',
+        'workflow.states.topic_selection': 'Topic Selection',
+        'workflow.states.speaker_brainstorming': 'Speaker Brainstorming',
       };
 
       // Handle pluralization for eventCount

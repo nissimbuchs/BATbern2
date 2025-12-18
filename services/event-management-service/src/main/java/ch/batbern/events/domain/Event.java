@@ -80,10 +80,6 @@ public class Event {
     @Column(name = "venue_capacity", nullable = false)
     private Integer venueCapacity;
 
-    @NotBlank(message = "Status is required")
-    @Column(name = "status", nullable = false, length = 50)
-    private String status;
-
     @NotBlank(message = "Organizer username is required")
     @Column(name = "organizer_username", nullable = false, length = 100)
     private String organizerUsername;

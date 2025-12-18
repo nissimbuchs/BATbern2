@@ -7,7 +7,7 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Topics table with usage tracking and similarity scoring
-CREATE TABLE topics (
+CREATE TABLE IF NOT EXISTS topics (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title VARCHAR(500) NOT NULL,
     description TEXT,
@@ -30,7 +30,7 @@ CREATE TABLE topics (
 );
 
 -- Topic usage history tracking
-CREATE TABLE topic_usage_history (
+CREATE TABLE IF NOT EXISTS topic_usage_history (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     topic_id UUID NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
     event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
@@ -44,7 +44,7 @@ CREATE TABLE topic_usage_history (
 
 -- Speaker pool for event brainstorming (Step 2-3: Speaker Brainstorming)
 -- Note: This is for potential speakers during planning, not confirmed speakers
-CREATE TABLE speaker_pool (
+CREATE TABLE IF NOT EXISTS speaker_pool (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
     speaker_name VARCHAR(255) NOT NULL,
@@ -62,22 +62,22 @@ CREATE TABLE speaker_pool (
 );
 
 -- Indexes for topics table (performance optimization)
-CREATE INDEX idx_topics_title_vector ON topics USING GIN(title_vector);
-CREATE INDEX idx_topics_description_vector ON topics USING GIN(description_vector);
-CREATE INDEX idx_topics_last_used ON topics(last_used_date);
-CREATE INDEX idx_topics_staleness ON topics(staleness_score DESC);
-CREATE INDEX idx_topics_active ON topics(is_active);
-CREATE INDEX idx_topics_category ON topics(category);
+CREATE INDEX IF NOT EXISTS idx_topics_title_vector ON topics USING GIN(title_vector);
+CREATE INDEX IF NOT EXISTS idx_topics_description_vector ON topics USING GIN(description_vector);
+CREATE INDEX IF NOT EXISTS idx_topics_last_used ON topics(last_used_date);
+CREATE INDEX IF NOT EXISTS idx_topics_staleness ON topics(staleness_score DESC);
+CREATE INDEX IF NOT EXISTS idx_topics_active ON topics(is_active);
+CREATE INDEX IF NOT EXISTS idx_topics_category ON topics(category);
 
 -- Indexes for topic_usage_history table
-CREATE INDEX idx_topic_usage_history_topic_id ON topic_usage_history(topic_id);
-CREATE INDEX idx_topic_usage_history_event_id ON topic_usage_history(event_id);
-CREATE INDEX idx_topic_usage_history_used_date ON topic_usage_history(used_date DESC);
+CREATE INDEX IF NOT EXISTS idx_topic_usage_history_topic_id ON topic_usage_history(topic_id);
+CREATE INDEX IF NOT EXISTS idx_topic_usage_history_event_id ON topic_usage_history(event_id);
+CREATE INDEX IF NOT EXISTS idx_topic_usage_history_used_date ON topic_usage_history(used_date DESC);
 
 -- Indexes for speaker_pool table
-CREATE INDEX idx_speaker_pool_event_id ON speaker_pool(event_id);
-CREATE INDEX idx_speaker_pool_status ON speaker_pool(status);
-CREATE INDEX idx_speaker_pool_assigned_organizer ON speaker_pool(assigned_organizer_id);
+CREATE INDEX IF NOT EXISTS idx_speaker_pool_event_id ON speaker_pool(event_id);
+CREATE INDEX IF NOT EXISTS idx_speaker_pool_status ON speaker_pool(status);
+CREATE INDEX IF NOT EXISTS idx_speaker_pool_assigned_organizer ON speaker_pool(assigned_organizer_id);
 
 -- Triggers for automatic updated_at timestamps
 DROP TRIGGER IF EXISTS update_topics_updated_at ON topics;

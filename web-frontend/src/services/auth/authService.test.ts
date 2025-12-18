@@ -371,6 +371,56 @@ describe('AuthService', () => {
       expect(result.success).toBe(false);
       expect(result.error?.code).toBe('PASSWORD_MISMATCH');
     });
+
+    it('should_returnError_when_passwordDoesNotMeetRequirements', async () => {
+      // Test InvalidPasswordException error case
+      const signUpData: SignUpData = {
+        email: 'newuser@company.com',
+        password: 'weak',
+        confirmPassword: 'weak',
+        role: 'attendee',
+        firstName: 'John',
+        lastName: 'Doe',
+        acceptTerms: true,
+      };
+
+      // Mock InvalidPasswordException
+      mockAuth.signUp.mockRejectedValue({
+        name: 'InvalidPasswordException',
+        message: 'Password does not meet requirements',
+      });
+
+      const result = await authService.signUp(signUpData);
+
+      expect(result.success).toBe(false);
+      expect(result.error?.code).toBe('INVALID_PASSWORD');
+      expect(result.error?.message).toBe('Password does not meet requirements');
+    });
+
+    it('should_returnError_when_emailAlreadyExists', async () => {
+      // Test UsernameExistsException error case
+      const signUpData: SignUpData = {
+        email: 'existing@company.com',
+        password: 'ValidPassword123!',
+        confirmPassword: 'ValidPassword123!',
+        role: 'attendee',
+        firstName: 'John',
+        lastName: 'Doe',
+        acceptTerms: true,
+      };
+
+      // Mock UsernameExistsException
+      mockAuth.signUp.mockRejectedValue({
+        name: 'UsernameExistsException',
+        message: 'An account with the given email already exists.',
+      });
+
+      const result = await authService.signUp(signUpData);
+
+      expect(result.success).toBe(false);
+      expect(result.error?.code).toBe('EMAIL_EXISTS');
+      expect(result.error?.message).toBe('An account with this email already exists');
+    });
   });
 
   describe('getCurrentUser', () => {

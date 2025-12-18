@@ -31,6 +31,12 @@ import {
   LinearProgress,
   Alert,
   IconButton,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
+  FormControl,
+  FormLabel,
+  Divider,
 } from '@mui/material';
 import {
   CloudUpload as CloudUploadIcon,
@@ -48,6 +54,7 @@ import type {
   EventBatchImportModalProps,
   EventBatchImportResult,
   ImportStatus,
+  UpdateFieldSelection,
 } from '@/types/eventImport.types';
 
 /**
@@ -98,6 +105,16 @@ export const EventBatchImportModal: React.FC<EventBatchImportModalProps> = ({
   const [importCandidates, setImportCandidates] = useState<EventImportCandidate[]>([]);
   const [importResult, setImportResult] = useState<EventBatchImportResult | null>(null);
 
+  // Story 5.2a: Field selection (import = upsert, ignore = skip)
+  const [fieldSelection, setFieldSelection] = useState<UpdateFieldSelection>({
+    title: false, // ignore by default
+    description: false, // ignore by default
+    topic: true, // import by default (main purpose of this feature)
+    date: false, // ignore by default
+    venue: false, // ignore by default
+    organizer: false, // ignore by default
+  });
+
   const {
     importEvents,
     isImporting,
@@ -106,6 +123,7 @@ export const EventBatchImportModal: React.FC<EventBatchImportModalProps> = ({
     candidates: updatedCandidates,
     reset: resetImport,
   } = useEventBatchImport({
+    fieldSelection, // Import = upsert (update if exists, create if not), Ignore = skip
     onComplete: (result) => {
       setImportResult(result);
       onImportComplete?.(result);
@@ -278,6 +296,176 @@ export const EventBatchImportModal: React.FC<EventBatchImportModalProps> = ({
           </Alert>
         )}
 
+        {/* Story 5.2a: Field Selection (Import vs Ignore) */}
+        {displayCandidates.length > 0 && !isImporting && !importResult && (
+          <Box sx={{ mb: 3 }}>
+            <FormControl component="fieldset">
+              <FormLabel component="legend" sx={{ mb: 2 }}>
+                Field Selection (Import = create if new, update if exists | Ignore = skip field)
+              </FormLabel>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {/* Title Field */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Typography sx={{ width: 120, fontWeight: 500 }}>Title:</Typography>
+                  <RadioGroup
+                    row
+                    value={fieldSelection.title ? 'import' : 'ignore'}
+                    onChange={(e) =>
+                      setFieldSelection((prev) => ({
+                        ...prev,
+                        title: e.target.value === 'import',
+                      }))
+                    }
+                  >
+                    <FormControlLabel
+                      value="import"
+                      control={<Radio size="small" />}
+                      label="Import"
+                    />
+                    <FormControlLabel
+                      value="ignore"
+                      control={<Radio size="small" />}
+                      label="Ignore"
+                    />
+                  </RadioGroup>
+                </Box>
+
+                {/* Description Field */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Typography sx={{ width: 120, fontWeight: 500 }}>Description:</Typography>
+                  <RadioGroup
+                    row
+                    value={fieldSelection.description ? 'import' : 'ignore'}
+                    onChange={(e) =>
+                      setFieldSelection((prev) => ({
+                        ...prev,
+                        description: e.target.value === 'import',
+                      }))
+                    }
+                  >
+                    <FormControlLabel
+                      value="import"
+                      control={<Radio size="small" />}
+                      label="Import"
+                    />
+                    <FormControlLabel
+                      value="ignore"
+                      control={<Radio size="small" />}
+                      label="Ignore"
+                    />
+                  </RadioGroup>
+                </Box>
+
+                {/* Topic Field */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Typography sx={{ width: 120, fontWeight: 500 }}>Topic/Category:</Typography>
+                  <RadioGroup
+                    row
+                    value={fieldSelection.topic ? 'import' : 'ignore'}
+                    onChange={(e) =>
+                      setFieldSelection((prev) => ({
+                        ...prev,
+                        topic: e.target.value === 'import',
+                      }))
+                    }
+                  >
+                    <FormControlLabel
+                      value="import"
+                      control={<Radio size="small" />}
+                      label="Import"
+                    />
+                    <FormControlLabel
+                      value="ignore"
+                      control={<Radio size="small" />}
+                      label="Ignore"
+                    />
+                  </RadioGroup>
+                </Box>
+
+                {/* Date Field */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Typography sx={{ width: 120, fontWeight: 500 }}>Date:</Typography>
+                  <RadioGroup
+                    row
+                    value={fieldSelection.date ? 'import' : 'ignore'}
+                    onChange={(e) =>
+                      setFieldSelection((prev) => ({
+                        ...prev,
+                        date: e.target.value === 'import',
+                      }))
+                    }
+                  >
+                    <FormControlLabel
+                      value="import"
+                      control={<Radio size="small" />}
+                      label="Import"
+                    />
+                    <FormControlLabel
+                      value="ignore"
+                      control={<Radio size="small" />}
+                      label="Ignore"
+                    />
+                  </RadioGroup>
+                </Box>
+
+                {/* Venue Field */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Typography sx={{ width: 120, fontWeight: 500 }}>Venue:</Typography>
+                  <RadioGroup
+                    row
+                    value={fieldSelection.venue ? 'import' : 'ignore'}
+                    onChange={(e) =>
+                      setFieldSelection((prev) => ({
+                        ...prev,
+                        venue: e.target.value === 'import',
+                      }))
+                    }
+                  >
+                    <FormControlLabel
+                      value="import"
+                      control={<Radio size="small" />}
+                      label="Import"
+                    />
+                    <FormControlLabel
+                      value="ignore"
+                      control={<Radio size="small" />}
+                      label="Ignore"
+                    />
+                  </RadioGroup>
+                </Box>
+
+                {/* Organizer Field */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Typography sx={{ width: 120, fontWeight: 500 }}>Organizer:</Typography>
+                  <RadioGroup
+                    row
+                    value={fieldSelection.organizer ? 'import' : 'ignore'}
+                    onChange={(e) =>
+                      setFieldSelection((prev) => ({
+                        ...prev,
+                        organizer: e.target.value === 'import',
+                      }))
+                    }
+                  >
+                    <FormControlLabel
+                      value="import"
+                      control={<Radio size="small" />}
+                      label="Import"
+                    />
+                    <FormControlLabel
+                      value="ignore"
+                      control={<Radio size="small" />}
+                      label="Ignore"
+                    />
+                  </RadioGroup>
+                </Box>
+              </Box>
+            </FormControl>
+
+            <Divider sx={{ mt: 2 }} />
+          </Box>
+        )}
+
         {/* Preview Table */}
         {displayCandidates.length > 0 && (
           <>
@@ -291,6 +479,7 @@ export const EventBatchImportModal: React.FC<EventBatchImportModalProps> = ({
                   <TableRow>
                     <TableCell width={80}>{t('event.batchImport.columns.eventNumber')}</TableCell>
                     <TableCell>{t('event.batchImport.columns.title')}</TableCell>
+                    <TableCell width={180}>Category</TableCell>
                     <TableCell>{t('event.batchImport.columns.date')}</TableCell>
                     <TableCell>{t('event.batchImport.columns.organizer')}</TableCell>
                     <TableCell width={150}>{t('event.batchImport.columns.status')}</TableCell>
@@ -315,6 +504,20 @@ export const EventBatchImportModal: React.FC<EventBatchImportModalProps> = ({
                         <Typography variant="caption" color="textSecondary" noWrap>
                           {candidate.source.description.substring(0, 80)}...
                         </Typography>
+                      </TableCell>
+                      <TableCell>
+                        {candidate.topicCategory ? (
+                          <Chip
+                            label={candidate.topicCategory}
+                            size="small"
+                            variant="outlined"
+                            color="primary"
+                          />
+                        ) : (
+                          <Typography variant="caption" color="textSecondary">
+                            No category
+                          </Typography>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2">

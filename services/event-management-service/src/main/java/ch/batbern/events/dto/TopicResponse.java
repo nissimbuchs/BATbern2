@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 /**
  * Response DTO for topic data (Story 5.2).
+ * GitHub Issue #379: Added optional usageHistory field for heatmap visualization.
  */
 public class TopicResponse {
 
@@ -26,6 +27,7 @@ public class TopicResponse {
     private Boolean active;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private List<TopicUsageHistoryResponse> usageHistory; // Optional, populated when include=history (Issue #379)
 
     public TopicResponse() {
     }
@@ -191,6 +193,14 @@ public class TopicResponse {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public List<TopicUsageHistoryResponse> getUsageHistory() {
+        return usageHistory;
+    }
+
+    public void setUsageHistory(List<TopicUsageHistoryResponse> usageHistory) {
+        this.usageHistory = usageHistory;
     }
 
     /**

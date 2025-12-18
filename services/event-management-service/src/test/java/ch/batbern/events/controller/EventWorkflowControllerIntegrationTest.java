@@ -358,7 +358,6 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
         event.setVenueAddress("Test Address");
         event.setVenueCapacity(200);
         event.setOrganizerUsername("test-organizer");
-        event.setStatus("planning"); // Set status field to valid value per events_status_check constraint
         event.setWorkflowState(initialState);
         event.setCreatedAt(Instant.now());
         event.setUpdatedAt(Instant.now());

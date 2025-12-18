@@ -13,7 +13,7 @@
  */
 
 import React, { useState } from 'react';
-import { Paper, Typography, Box, Stack, CircularProgress, Alert } from '@mui/material';
+import { Paper, Typography, Box, Stack, CircularProgress, Alert, Container } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -108,120 +108,122 @@ export const EventManagementDashboard: React.FC = () => {
   }
 
   return (
-    <Box data-testid="dashboard-container">
-      {/* Header */}
-      <Box mb={3}>
-        <Typography variant="h4" component="h1">
-          {t('dashboard.title')}
-        </Typography>
-      </Box>
+    <Box component="main" role="main" sx={{ flexGrow: 1, p: 3 }} data-testid="dashboard-container">
+      <Container maxWidth="xl">
+        {/* Header */}
+        <Box mb={3}>
+          <Typography variant="h4" component="h1">
+            {t('dashboard.title')}
+          </Typography>
+        </Box>
 
-      {/* Search and Filters */}
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <EventSearch onFiltersChange={handleFiltersChange} filters={filters} />
-      </Paper>
+        {/* Search and Filters */}
+        <Paper sx={{ p: 3, mb: 3 }}>
+          <EventSearch onFiltersChange={handleFiltersChange} filters={filters} />
+        </Paper>
 
-      {/* Main Content Grid */}
-      <Grid container spacing={3}>
-        {/* Active Events (Main Column - 8/12) */}
-        <Grid size={{ xs: 12, md: 8 }}>
-          <Paper sx={{ p: 3 }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-              <Typography variant="h5">{t('dashboard.activeEvents')}</Typography>
-              <Typography variant="body2" color="text.secondary">
-                {eventsData?.data?.length || 0}/{eventsData?.pagination?.totalItems || 0}{' '}
-                {(eventsData?.pagination?.totalItems || 0) === 1
-                  ? t('dashboard.eventWord')
-                  : t('dashboard.eventWord_plural')}
-              </Typography>
+        {/* Main Content Grid */}
+        <Grid container spacing={3}>
+          {/* Active Events (Main Column - 8/12) */}
+          <Grid size={{ xs: 12, md: 8 }}>
+            <Paper sx={{ p: 3 }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h5">{t('dashboard.activeEvents')}</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {eventsData?.data?.length || 0}/{eventsData?.pagination?.totalItems || 0}{' '}
+                  {(eventsData?.pagination?.totalItems || 0) === 1
+                    ? t('dashboard.eventWord')
+                    : t('dashboard.eventWord_plural')}
+                </Typography>
+              </Stack>
+              <EventList
+                events={eventsData?.data || []}
+                isLoading={isLoadingEvents}
+                onEventEdit={handleEventEdit}
+                onEventClick={handleEventClick}
+              />
+
+              {/* Pagination */}
+              {eventsData?.pagination && (
+                <EventPagination
+                  page={eventsData.pagination.page}
+                  totalPages={eventsData.pagination.totalPages}
+                  limit={eventsData.pagination.limit}
+                  onPageChange={(newPage) => setPage(newPage)}
+                  onLimitChange={(newLimit) => setLimit(newLimit)}
+                />
+              )}
+            </Paper>
+          </Grid>
+
+          {/* Sidebar (4/12) */}
+          <Grid size={{ xs: 12, md: 4 }}>
+            <Stack spacing={3}>
+              {/* Quick Actions - Story 5.1 */}
+              <QuickActions
+                onNewEvent={handleNewEvent}
+                onBatchImport={() => setIsBatchImportOpen(true)}
+              />
+
+              {/* Critical Tasks */}
+              <Paper sx={{ p: 3 }}>
+                <CriticalTasksList
+                  tasks={criticalTasksData?.data || []}
+                  isLoading={isLoadingTasks}
+                  onAction={handleTaskAction}
+                />
+              </Paper>
+
+              {/* Team Activity Feed */}
+              <Paper sx={{ p: 3 }}>
+                <TeamActivityFeed
+                  activities={teamActivityData?.data || []}
+                  isLoading={isLoadingActivity}
+                  onReload={() => refetchActivity()}
+                  limit={5}
+                />
+              </Paper>
             </Stack>
-            <EventList
-              events={eventsData?.data || []}
-              isLoading={isLoadingEvents}
-              onEventEdit={handleEventEdit}
-              onEventClick={handleEventClick}
-            />
-
-            {/* Pagination */}
-            {eventsData?.pagination && (
-              <EventPagination
-                page={eventsData.pagination.page}
-                totalPages={eventsData.pagination.totalPages}
-                limit={eventsData.pagination.limit}
-                onPageChange={(newPage) => setPage(newPage)}
-                onLimitChange={(newLimit) => setLimit(newLimit)}
-              />
-            )}
-          </Paper>
+          </Grid>
         </Grid>
 
-        {/* Sidebar (4/12) */}
-        <Grid size={{ xs: 12, md: 4 }}>
-          <Stack spacing={3}>
-            {/* Quick Actions - Story 5.1 */}
-            <QuickActions
-              onNewEvent={handleNewEvent}
-              onBatchImport={() => setIsBatchImportOpen(true)}
-            />
-
-            {/* Critical Tasks */}
-            <Paper sx={{ p: 3 }}>
-              <CriticalTasksList
-                tasks={criticalTasksData?.data || []}
-                isLoading={isLoadingTasks}
-                onAction={handleTaskAction}
-              />
-            </Paper>
-
-            {/* Team Activity Feed */}
-            <Paper sx={{ p: 3 }}>
-              <TeamActivityFeed
-                activities={teamActivityData?.data || []}
-                isLoading={isLoadingActivity}
-                onReload={() => refetchActivity()}
-                limit={5}
-              />
-            </Paper>
-          </Stack>
-        </Grid>
-      </Grid>
-
-      {/* Create Event Modal */}
-      <EventForm
-        open={isCreateModalOpen}
-        mode="create"
-        onClose={closeCreateModal}
-        onSuccess={() => {
-          closeCreateModal();
-          // Refetch events after successful creation
-          // The useEvents hook will automatically refetch due to query invalidation
-        }}
-      />
-
-      {/* Edit Event Modal */}
-      {isEditModalOpen && selectedEventCode && (
+        {/* Create Event Modal */}
         <EventForm
-          open={isEditModalOpen}
-          mode="edit"
-          event={eventsData?.data?.find((e) => e.eventCode === selectedEventCode)}
-          onClose={closeEditModal}
+          open={isCreateModalOpen}
+          mode="create"
+          onClose={closeCreateModal}
           onSuccess={() => {
-            closeEditModal();
-            // Refetch events after successful update
+            closeCreateModal();
+            // Refetch events after successful creation
             // The useEvents hook will automatically refetch due to query invalidation
           }}
         />
-      )}
 
-      {/* Batch Import Modal */}
-      <EventBatchImportModal
-        open={isBatchImportOpen}
-        onClose={() => setIsBatchImportOpen(false)}
-        onImportComplete={(result) => {
-          console.log('Import complete:', result);
-          // The useEvents hook will automatically refetch due to query invalidation
-        }}
-      />
+        {/* Edit Event Modal */}
+        {isEditModalOpen && selectedEventCode && (
+          <EventForm
+            open={isEditModalOpen}
+            mode="edit"
+            event={eventsData?.data?.find((e) => e.eventCode === selectedEventCode)}
+            onClose={closeEditModal}
+            onSuccess={() => {
+              closeEditModal();
+              // Refetch events after successful update
+              // The useEvents hook will automatically refetch due to query invalidation
+            }}
+          />
+        )}
+
+        {/* Batch Import Modal */}
+        <EventBatchImportModal
+          open={isBatchImportOpen}
+          onClose={() => setIsBatchImportOpen(false)}
+          onImportComplete={(result) => {
+            console.log('Import complete:', result);
+            // The useEvents hook will automatically refetch due to query invalidation
+          }}
+        />
+      </Container>
     </Box>
   );
 };

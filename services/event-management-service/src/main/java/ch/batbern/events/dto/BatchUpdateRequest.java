@@ -23,6 +23,5 @@ public class BatchUpdateRequest {
 
     private String title;
     private String date;  // ISO-8601 format for event_date
-    private String status;
     private String description;
 }

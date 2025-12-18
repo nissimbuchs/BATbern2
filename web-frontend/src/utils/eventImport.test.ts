@@ -211,6 +211,7 @@ describe('parseEventsJson', () => {
         description: 'Test description',
         eventType: 'Abend-BAT',
         moderator: 'Thomas Goetz',
+        category: 'technical',
       },
     ]);
 
@@ -295,6 +296,7 @@ describe('parseEventsJson', () => {
         description: 'Test',
         eventType: 'Abend-BAT',
         moderator: 'Thomas Goetz',
+        category: 'technical',
       },
     ]);
 

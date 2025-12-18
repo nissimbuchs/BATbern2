@@ -68,7 +68,7 @@ class SchemaValidationTest extends AbstractIntegrationTest {
                 "venue_name",
                 "venue_address",
                 "venue_capacity",
-                "status",
+                "workflow_state",
                 "organizer_username",
                 "created_at",
                 "updated_at"

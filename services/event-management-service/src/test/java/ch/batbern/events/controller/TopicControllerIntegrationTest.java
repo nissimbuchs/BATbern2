@@ -387,11 +387,13 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
         // When: GET usage history
         mockMvc.perform(get("/api/v1/topics/{id}/usage-history", topic.getId())
                 .contentType(MediaType.APPLICATION_JSON))
-                // Then: Returns usage history
+                // Then: Returns usage history with eventNumber (no UUIDs in API)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[0].eventId").exists())
+                .andExpect(jsonPath("$[0].eventNumber").exists())
+                .andExpect(jsonPath("$[0].eventCode").exists())
+                .andExpect(jsonPath("$[0].eventDate").exists())
                 .andExpect(jsonPath("$[0].usedDate").exists())
                 .andExpect(jsonPath("$[0].attendance").exists())
                 .andExpect(jsonPath("$[0].engagementScore").exists())
@@ -436,6 +438,136 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    // ==================== GitHub Issue #379: Include History Parameter Tests ====================
+
+    /**
+     * Test: should_embedUsageHistory_when_includeHistoryParameter
+     * Verifies GET /api/v1/topics?include=history embeds usage history in each topic.
+     * GitHub Issue #379: Backend support for multi-topic heatmap visualization
+     */
+    @Test
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
+    void should_embedUsageHistory_when_includeHistoryParameter() throws Exception {
+        // Given: Two topics with usage history
+        Topic topic1 = createTestTopic("Cloud Architecture", "technical", 85);
+        Topic topic2 = createTestTopic("Leadership Skills", "management", 50);
+
+        Event event1 = createTestEvent("BATbern56", EventWorkflowState.ARCHIVED);
+        Event event2 = createTestEvent("BATbern57", EventWorkflowState.ARCHIVED);
+
+        createTopicUsageHistory(
+                topic1.getId(),
+                event1.getId(),
+                LocalDateTime.now().minusMonths(6),
+                150,
+                0.85
+        );
+
+        createTopicUsageHistory(
+                topic2.getId(),
+                event2.getId(),
+                LocalDateTime.now().minusMonths(3),
+                200,
+                0.92
+        );
+
+        // When: GET /api/v1/topics with include=history
+        mockMvc.perform(get("/api/v1/topics")
+                .param("include", "history")
+                .contentType(MediaType.APPLICATION_JSON))
+                // Then: Returns topics with embedded usage history
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(2)))
+                // Topic 1 should have usageHistory array
+                .andExpect(jsonPath("$.data[?(@.title == 'Cloud Architecture')].usageHistory").exists())
+                .andExpect(jsonPath("$.data[?(@.title == 'Cloud Architecture')].usageHistory", hasSize(1)))
+                .andExpect(jsonPath("$.data[?(@.title == 'Cloud Architecture')].usageHistory[0].eventCode").value("BATbern56"))
+                .andExpect(jsonPath("$.data[?(@.title == 'Cloud Architecture')].usageHistory[0].usedDate").exists())
+                .andExpect(jsonPath("$.data[?(@.title == 'Cloud Architecture')].usageHistory[0].attendance").value(150))
+                .andExpect(jsonPath("$.data[?(@.title == 'Cloud Architecture')].usageHistory[0].engagementScore").value(0.85))
+                // Topic 2 should have usageHistory array
+                .andExpect(jsonPath("$.data[?(@.title == 'Leadership Skills')].usageHistory").exists())
+                .andExpect(jsonPath("$.data[?(@.title == 'Leadership Skills')].usageHistory", hasSize(1)))
+                .andExpect(jsonPath("$.data[?(@.title == 'Leadership Skills')].usageHistory[0].eventCode").value("BATbern57"));
+    }
+
+    /**
+     * Test: should_notEmbedUsageHistory_when_includeParameterNotProvided
+     * Verifies GET /api/v1/topics without include parameter does not embed history.
+     */
+    @Test
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
+    void should_notEmbedUsageHistory_when_includeParameterNotProvided() throws Exception {
+        // Given: Topic with usage history
+        Topic topic = createTestTopic("Cloud Architecture", "technical", 85);
+        Event event = createTestEvent("BATbern56", EventWorkflowState.ARCHIVED);
+        createTopicUsageHistory(
+                topic.getId(),
+                event.getId(),
+                LocalDateTime.now().minusMonths(6),
+                150,
+                0.85
+        );
+
+        // When: GET /api/v1/topics without include parameter
+        mockMvc.perform(get("/api/v1/topics")
+                .contentType(MediaType.APPLICATION_JSON))
+                // Then: Returns topics without usageHistory field
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].usageHistory").doesNotExist());
+    }
+
+    /**
+     * Test: should_returnEmptyUsageHistory_when_topicNeverUsed
+     * Verifies topics without usage history return empty array when include=history.
+     */
+    @Test
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
+    void should_returnEmptyUsageHistory_when_topicNeverUsed() throws Exception {
+        // Given: Topic without usage history
+        createTestTopic("New Topic", "technical", 100);
+
+        // When: GET /api/v1/topics with include=history
+        mockMvc.perform(get("/api/v1/topics")
+                .param("include", "history")
+                .contentType(MediaType.APPLICATION_JSON))
+                // Then: Returns topic with empty usageHistory array
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].usageHistory").isArray())
+                .andExpect(jsonPath("$.data[0].usageHistory", hasSize(0)));
+    }
+
+    /**
+     * Test: should_supportCommaSeperatedIncludes_when_multipleIncludesProvided
+     * Verifies include parameter supports comma-separated values (e.g., "history,similarity").
+     */
+    @Test
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
+    void should_supportCommaSeperatedIncludes_when_multipleIncludesProvided() throws Exception {
+        // Given: Topic with usage history
+        Topic topic = createTestTopic("Cloud Architecture", "technical", 85);
+        Event event = createTestEvent("BATbern56", EventWorkflowState.ARCHIVED);
+        createTopicUsageHistory(
+                topic.getId(),
+                event.getId(),
+                LocalDateTime.now().minusMonths(6),
+                150,
+                0.85
+        );
+
+        // When: GET /api/v1/topics with include=history,similarity
+        mockMvc.perform(get("/api/v1/topics")
+                .param("include", "history,similarity")
+                .contentType(MediaType.APPLICATION_JSON))
+                // Then: Returns topics with both usageHistory and updated similarity scores
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].usageHistory").exists())
+                .andExpect(jsonPath("$.data[0].similarityScores").exists());
+    }
+
     // ==================== Helper Methods ====================
 
     private Topic createTestTopic(String title, String category, int stalenessScore) {
@@ -464,7 +596,6 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
         event.setVenueName("Test Venue");
         event.setVenueAddress("Test Address");
         event.setVenueCapacity(200);
-        event.setStatus("planning");
         event.setOrganizerUsername("john.doe");
         event.setEventType(ch.batbern.events.dto.generated.EventType.FULL_DAY);
         event.setWorkflowState(workflowState);

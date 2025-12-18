@@ -76,8 +76,18 @@ public class EventWorkflowController {
         // Extract authenticated user from JWT token
         String organizerUsername = securityContextHelper.getCurrentUserId();
 
-        log.info("User {} transitioning event {} to state {}",
-                 organizerUsername, eventCode, request.getTargetState());
+        // Extract override flag (defaults to false if not provided)
+        boolean override = Boolean.TRUE.equals(request.getOverrideValidation());
+
+        // Log override attempts for security auditing
+        if (override) {
+            log.warn("WORKFLOW OVERRIDE: user={}, event={}, target={}, reason='{}'",
+                     organizerUsername, eventCode, request.getTargetState(),
+                     request.getOverrideReason() != null ? request.getOverrideReason() : "Not provided");
+        } else {
+            log.info("User {} transitioning event {} to state {}",
+                     organizerUsername, eventCode, request.getTargetState());
+        }
 
         // Find event by event code
         Event event = eventRepository.findByEventCode(eventCode)
@@ -86,11 +96,13 @@ public class EventWorkflowController {
         // Parse target state
         EventWorkflowState targetState = EventWorkflowState.valueOf(request.getTargetState());
 
-        // Perform transition via state machine
+        // Perform transition via state machine with override flag
         Event updatedEvent = stateMachine.transitionToState(
                 event.getEventCode(),
                 targetState,
-                organizerUsername
+                organizerUsername,
+                override,
+                request.getOverrideReason()
         );
 
         // Build response

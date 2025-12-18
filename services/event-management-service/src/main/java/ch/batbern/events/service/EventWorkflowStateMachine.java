@@ -44,15 +44,9 @@ public class EventWorkflowStateMachine {
     private final DomainEventPublisher eventPublisher;
 
     /**
-     * Transitions an event to a target workflow state.
+     * Transitions an event to a target workflow state (backward compatible).
      *
-     * This method:
-     * 1. Fetches the event from database
-     * 2. Validates the state transition is allowed
-     * 3. Applies state-specific business logic validation
-     * 4. Updates the event state
-     * 5. Persists the change
-     * 6. Publishes a domain event
+     * This method delegates to the full override-aware version with override=false.
      *
      * @param eventCode Event code (e.g., "BATbern56")
      * @param targetState Target workflow state
@@ -63,17 +57,55 @@ public class EventWorkflowStateMachine {
      * @throws WorkflowValidationException if business rules not met
      */
     public Event transitionToState(String eventCode, EventWorkflowState targetState, String organizerUsername) {
+        return transitionToState(eventCode, targetState, organizerUsername, false, null);
+    }
+
+    /**
+     * Transitions an event to a target workflow state with optional validation override.
+     *
+     * This method:
+     * 1. Fetches the event from database
+     * 2. Optionally validates the state transition (skipped if override=true)
+     * 3. Optionally applies state-specific business logic validation (skipped if override=true)
+     * 4. Updates the event state
+     * 5. Persists the change
+     * 6. Publishes a domain event with override metadata
+     *
+     * @param eventCode Event code (e.g., "BATbern56")
+     * @param targetState Target workflow state
+     * @param organizerUsername Username of organizer triggering the transition
+     * @param override If true, skips all validation checks (allows any state transition)
+     * @param overrideReason Optional reason for overriding validation (for audit trail)
+     * @return Updated event with new workflow state
+     * @throws IllegalArgumentException if event not found
+     * @throws InvalidStateTransitionException if transition not allowed (when override=false)
+     * @throws WorkflowValidationException if business rules not met (when override=false)
+     */
+    public Event transitionToState(
+            String eventCode,
+            EventWorkflowState targetState,
+            String organizerUsername,
+            boolean override,
+            String overrideReason) {
+
         // Fetch event
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new IllegalArgumentException("Event not found: " + eventCode));
 
         EventWorkflowState currentState = event.getWorkflowState();
 
-        // Validate transition is allowed by state machine rules
-        transitionValidator.validateTransition(currentState, targetState, event);
-
-        // Apply state-specific business logic validation
-        validateBusinessRules(event, targetState);
+        // Conditional validation: skip if override=true
+        if (!override) {
+            // Normal path: validate transition and business rules
+            transitionValidator.validateTransition(currentState, targetState, event);
+            validateBusinessRules(event, targetState);
+            log.debug("Validation passed for {} → {}", currentState, targetState);
+        } else {
+            // Override path: skip ALL validation
+            log.warn("OVERRIDE MODE: Skipping validation for {} → {} (user: {}, reason: '{}')",
+                     currentState, targetState, organizerUsername,
+                     overrideReason != null ? overrideReason : "Not provided");
+        }
 
         // Update state
         event.setWorkflowState(targetState);
@@ -83,18 +115,20 @@ public class EventWorkflowStateMachine {
         // Persist
         Event savedEvent = eventRepository.save(event);
 
-        // Publish domain event
+        // Publish domain event with override metadata
         EventWorkflowTransitionEvent transitionEvent = new EventWorkflowTransitionEvent(
                 eventCode,
                 currentState,
                 targetState,
                 organizerUsername,
-                Instant.now()
+                Instant.now(),
+                override,
+                overrideReason
         );
         eventPublisher.publish(transitionEvent);
 
-        log.info("Event {} transitioned from {} to {} by organizer {}",
-                eventCode, currentState, targetState, organizerUsername);
+        log.info("Event {} transitioned from {} to {} by organizer {} (override={})",
+                eventCode, currentState, targetState, organizerUsername, override);
 
         return savedEvent;
     }

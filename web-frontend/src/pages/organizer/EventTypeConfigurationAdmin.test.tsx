@@ -230,7 +230,9 @@ describe('EventTypeConfigurationAdmin Page', () => {
 
     await waitFor(() => {
       // Page title from events.eventTypeConfig.title
-      expect(screen.getByText(/event type configuration/i)).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { name: /event type configuration/i })
+      ).toBeInTheDocument();
 
       // Event type names from events.form.eventTypes.*
       expect(screen.getByText(/full day event/i)).toBeInTheDocument();

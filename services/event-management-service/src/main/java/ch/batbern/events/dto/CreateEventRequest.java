@@ -3,7 +3,6 @@ package ch.batbern.events.dto;
 import ch.batbern.events.dto.generated.EventType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -38,11 +37,6 @@ public class CreateEventRequest {
 
     private Integer venueCapacity;
 
-    @Pattern(regexp = "planning|topic_defined|speakers_invited|agenda_draft|published|"
-        + "registration_open|registration_closed|in_progress|completed|archived",
-             message = "Status must be a valid workflow state")
-    private String status;
-
     private String organizerUsername;
 
     private Integer currentAttendeeCount;
@@ -58,4 +52,11 @@ public class CreateEventRequest {
     private EventType eventType;
 
     private String themeImageUploadId;
+
+    /**
+     * Event status (maps to workflowState internally).
+     * Supported values: 'archived' (for historical event imports)
+     * Story 5.2a: Batch import with archived events
+     */
+    private String status;
 }

@@ -238,6 +238,12 @@ export function parseEventsJson(jsonContent: string): LegacyEvent[] {
       );
     }
 
+    if (typeof item.category !== 'string' || !item.category) {
+      throw new Error(
+        `Event at index ${i} is missing required 'category' field (topic categorization required)`
+      );
+    }
+
     // Validate parsedDate is valid ISO 8601
     const parsedDate = new Date(item.parsedDate);
     if (isNaN(parsedDate.getTime())) {
@@ -299,6 +305,7 @@ export function parseSessionsJson(jsonContent: string): LegacySession[] {
  *
  * Transforms each legacy event to API format.
  * Moderator is extracted from the event.moderator field and transformed to username.
+ * Category is preserved for topic assignment during import.
  *
  * @param events - Array of legacy events from topics.json
  * @returns Array of import candidates ready for processing
@@ -308,6 +315,7 @@ export function createImportCandidates(events: LegacyEvent[]): EventImportCandid
     source: event,
     apiPayload: transformEventForApi(event),
     importStatus: 'pending' as const,
+    topicCategory: event.category, // Preserve category for topic assignment
   }));
 }
 
@@ -320,4 +328,64 @@ export function createImportCandidates(events: LegacyEvent[]): EventImportCandid
  */
 export function isDuplicateEventNumber(eventNumber: number, existingNumbers: Set<number>): boolean {
   return existingNumbers.has(eventNumber);
+}
+
+/**
+ * Builds partial payload for event update based on field selection.
+ *
+ * Only includes fields that are selected in the fieldSelection object.
+ * Used for batch update mode to selectively update specific fields.
+ *
+ * @param candidate - Event import candidate with source data and API payload
+ * @param fieldSelection - Object indicating which fields to include in update
+ * @returns Partial update payload with only selected fields
+ *
+ * @example
+ * ```typescript
+ * const payload = buildPartialPayload(candidate, {
+ *   title: true,
+ *   description: true,
+ *   topic: false,  // Not included
+ *   date: false,   // Not included
+ *   venue: false,  // Not included
+ *   organizer: false // Not included
+ * });
+ * // => { title: "...", description: "..." }
+ * ```
+ */
+export function buildPartialPayload(
+  candidate: EventImportCandidate,
+  fieldSelection: import('@/types/eventImport.types').UpdateFieldSelection
+): Partial<CreateEventRequest> {
+  const payload = candidate.apiPayload;
+  const partial: Partial<CreateEventRequest> = {};
+
+  // Only include selected fields
+  if (fieldSelection.title) {
+    partial.title = payload.title;
+  }
+
+  if (fieldSelection.description) {
+    partial.description = payload.description;
+  }
+
+  // Note: topic assignment is handled separately via assignTopicToEvent
+  // fieldSelection.topic controls whether to assign/update topic
+
+  if (fieldSelection.date) {
+    partial.date = payload.date;
+    partial.registrationDeadline = payload.registrationDeadline;
+  }
+
+  if (fieldSelection.venue) {
+    partial.venueName = payload.venueName;
+    partial.venueAddress = payload.venueAddress;
+    partial.venueCapacity = payload.venueCapacity;
+  }
+
+  if (fieldSelection.organizer) {
+    partial.organizerUsername = payload.organizerUsername;
+  }
+
+  return partial;
 }

@@ -7,28 +7,40 @@
 -- Note: Database stores lowercase_with_underscores (e.g., 'speaker_outreach')
 -- Java enum uses UPPER_CASE (e.g., SPEAKER_OUTREACH)
 -- EventWorkflowStateConverter handles the conversion
-ALTER TABLE events
-ADD COLUMN workflow_state VARCHAR(50) NOT NULL DEFAULT 'created'
-    CHECK (workflow_state IN (
-        'created',
-        'topic_selection',
-        'speaker_brainstorming',
-        'speaker_outreach',
-        'speaker_confirmation',
-        'content_collection',
-        'quality_review',
-        'threshold_check',
-        'overflow_management',
-        'slot_assignment',
-        'agenda_published',
-        'agenda_finalized',
-        'newsletter_sent',
-        'event_ready',
-        'partner_meeting_complete',
-        'archived'
-    ));
+
+-- Add column only if it doesn't exist (idempotent migration)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'events' AND column_name = 'workflow_state'
+    ) THEN
+        ALTER TABLE events
+        ADD COLUMN workflow_state VARCHAR(50) NOT NULL DEFAULT 'created'
+            CHECK (workflow_state IN (
+                'created',
+                'topic_selection',
+                'speaker_brainstorming',
+                'speaker_outreach',
+                'speaker_confirmation',
+                'content_collection',
+                'quality_review',
+                'threshold_check',
+                'overflow_management',
+                'slot_assignment',
+                'agenda_published',
+                'agenda_finalized',
+                'newsletter_sent',
+                'event_ready',
+                'partner_meeting_complete',
+                'archived'
+            ));
+    END IF;
+END $$;
 
 -- Index for workflow state queries (performance optimization)
+-- Drop and recreate to ensure idempotency
+DROP INDEX IF EXISTS idx_events_workflow_state;
 CREATE INDEX idx_events_workflow_state ON events(workflow_state);
 
 -- Documentation
