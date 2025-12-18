@@ -38,7 +38,10 @@ describe('useFileUpload Hook', () => {
     };
 
     xhrInstance = mockXHR;
-    global.XMLHttpRequest = vi.fn(() => xhrInstance) as unknown as typeof XMLHttpRequest;
+    // Vitest v4 requires constructor mocks to use 'function' or 'class'
+    global.XMLHttpRequest = vi.fn(function MockXMLHttpRequest(this: XMLHttpRequest) {
+      return Object.assign(this, xhrInstance);
+    }) as unknown as typeof XMLHttpRequest;
   });
 
   afterEach(() => {
