@@ -1860,6 +1860,18 @@ export interface components {
      */
     TransitionStateRequest: {
       targetState: components['schemas']['EventWorkflowState'];
+      /**
+       * @description Override workflow validation flag.
+       *     When true, allows any state transition bypassing validation rules.
+       *     Defaults to false if not provided.
+       * @default false
+       */
+      overrideValidation: boolean | null;
+      /**
+       * @description Optional reason for overriding workflow validation.
+       *     Used for audit trail when overrideValidation is true.
+       */
+      overrideReason?: string;
     };
     /**
      * @description Current workflow status including available and blocked transitions (Story 5.1a - AC13).
