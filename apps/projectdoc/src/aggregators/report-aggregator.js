@@ -482,15 +482,23 @@ export class ReportAggregator {
   determineHealthStatus(metrics) {
     const { testSuccessRate, overallCoverage, criticalSecurity, highSecurity, qualityErrors } = metrics;
 
-    // Failing conditions
-    if (testSuccessRate < 100) return 'failing';
-    if (criticalSecurity > 0) return 'failing';
-    if (qualityErrors > 0) return 'failing';
-
-    // Warning conditions
+    // Get thresholds from config
+    const coverageMinimum = this.config.thresholds?.coverage?.minimum || 60;
     const coverageTarget = this.config.thresholds?.coverage?.target || 85;
+    const minTestSuccessRate = this.config.thresholds?.tests?.minSuccessRate || 95;
+    const maxQualityErrors = this.config.thresholds?.quality?.errors || 10;
+
+    // Failing conditions (critical issues only)
+    if (testSuccessRate < minTestSuccessRate) return 'failing';
+    if (overallCoverage < coverageMinimum) return 'failing';
+    if (criticalSecurity > 0) return 'failing';
+    if (qualityErrors > maxQualityErrors) return 'failing';
+
+    // Warning conditions (below target but above minimum)
+    if (testSuccessRate < 100) return 'warning';
     if (overallCoverage < coverageTarget) return 'warning';
     if (highSecurity > 5) return 'warning';
+    if (qualityErrors > 0) return 'warning';
 
     return 'passing';
   }

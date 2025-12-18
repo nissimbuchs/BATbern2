@@ -90,8 +90,8 @@ export default {
     },
 
     tests: {
-      failureRate: 0,           // Maximum allowed test failure rate (0 = no failures)
-      minSuccessRate: 100       // Minimum test success rate percentage
+      failureRate: 0,           // Maximum allowed test failure rate (0 = no failures) - for "passing" status
+      minSuccessRate: 95        // Minimum test success rate for "warning" (< 95% = failing, 95-99% = warning, 100% = passing)
     },
 
     security: {
@@ -101,7 +101,7 @@ export default {
     },
 
     quality: {
-      errors: 0,     // Maximum quality errors (Checkstyle, ESLint errors)
+      errors: 10,    // Maximum quality errors for "warning" (> 10 = failing, 1-10 = warning, 0 = passing)
       warnings: 50   // Maximum quality warnings
     }
   },
