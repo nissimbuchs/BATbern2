@@ -59,6 +59,77 @@ describe('eventStore', () => {
     });
   });
 
+  describe('Pagination Management', () => {
+    it('should_setPagination_when_setPaginationCalled', () => {
+      const { result } = renderHook(() => useEventStore());
+
+      act(() => {
+        result.current.setPagination({ page: 2, limit: 50 });
+      });
+
+      expect(result.current.pagination.page).toBe(2);
+      expect(result.current.pagination.limit).toBe(50);
+    });
+
+    it('should_setPage_when_setPageCalled', () => {
+      const { result } = renderHook(() => useEventStore());
+
+      act(() => {
+        result.current.setPage(5);
+      });
+
+      expect(result.current.pagination.page).toBe(5);
+      expect(result.current.pagination.limit).toBe(20); // Default limit
+    });
+
+    it('should_setLimit_when_setLimitCalled', () => {
+      const { result } = renderHook(() => useEventStore());
+
+      act(() => {
+        result.current.setLimit(100);
+      });
+
+      expect(result.current.pagination.limit).toBe(100);
+      expect(result.current.pagination.page).toBe(1); // Reset to page 1 when limit changes
+    });
+
+    it('should_resetToPageOne_when_setLimitCalled', () => {
+      const { result } = renderHook(() => useEventStore());
+
+      // Set page to 5
+      act(() => {
+        result.current.setPage(5);
+      });
+
+      expect(result.current.pagination.page).toBe(5);
+
+      // Change limit - should reset to page 1
+      act(() => {
+        result.current.setLimit(50);
+      });
+
+      expect(result.current.pagination.page).toBe(1);
+      expect(result.current.pagination.limit).toBe(50);
+    });
+
+    it('should_preserveOtherPaginationValues_when_partialPaginationSet', () => {
+      const { result } = renderHook(() => useEventStore());
+
+      // Set page to 3
+      act(() => {
+        result.current.setPage(3);
+      });
+
+      // Partial update - only change limit
+      act(() => {
+        result.current.setPagination({ limit: 50 });
+      });
+
+      expect(result.current.pagination.page).toBe(3);
+      expect(result.current.pagination.limit).toBe(50);
+    });
+  });
+
   describe('Filter Management', () => {
     it('should_updateFilters_when_setFiltersCalled', () => {
       const { result } = renderHook(() => useEventStore());
