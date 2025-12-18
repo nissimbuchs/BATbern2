@@ -449,6 +449,9 @@ public class TopicService {
         // Mark topic as used with event date (Story 5.2a - Fix #4)
         markTopicAsUsed(topicId, savedEvent.getDate());
 
+        // Create usage history record for heatmap visualization (GitHub Issue #379)
+        createUsageHistoryRecord(topicId, savedEvent.getId(), savedEvent.getDate());
+
         return savedEvent;
     }
 
@@ -469,6 +472,24 @@ public class TopicService {
         topic.setStalenessScore(0); // Reset staleness to 0 when used
 
         return topicRepository.save(topic);
+    }
+
+    /**
+     * Create usage history record for topic (GitHub Issue #379).
+     * This creates a record in the topic_usage_history table that tracks when
+     * a topic was used for a specific event, enabling heatmap visualization.
+     *
+     * @param topicId Topic ID
+     * @param eventId Event ID
+     * @param eventDate Event date
+     */
+    private void createUsageHistoryRecord(UUID topicId, UUID eventId, java.time.Instant eventDate) {
+        TopicUsageHistory history = new TopicUsageHistory();
+        history.setTopicId(topicId);
+        history.setEventId(eventId);
+        history.setUsedDate(LocalDateTime.ofInstant(eventDate, java.time.ZoneId.systemDefault()));
+        // Note: attendeeCount and engagementScore are populated later after the event completes
+        topicUsageHistoryRepository.save(history);
     }
 
     /**
