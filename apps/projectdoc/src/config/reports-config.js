@@ -84,9 +84,9 @@ export default {
   // Quality thresholds
   thresholds: {
     coverage: {
-      target: 85,    // Target coverage percentage
-      minimum: 60,   // Minimum acceptable coverage
-      warning: 70    // Coverage below this shows warning
+      target: 85,    // Target coverage percentage (CLAUDE.md goal)
+      minimum: 60,   // Minimum enforced in Gradle (all Java modules)
+      warning: 75    // Frontend enforced threshold (Vitest statements)
     },
 
     tests: {
