@@ -508,6 +508,35 @@ describe('AuthService', () => {
       expect(result.accessToken).toBeDefined();
       expect(result.expiresIn).toBeGreaterThan(0);
     });
+
+    it('should_returnError_when_noTokenAvailable', async () => {
+      // Test line 288: no token case
+      const mockSession = {
+        tokens: null,
+      };
+
+      mockAuth.fetchAuthSession.mockResolvedValue(mockSession);
+
+      const result = await authService.refreshToken();
+
+      expect(result.success).toBe(false);
+      expect(result.error?.code).toBe('NO_TOKEN');
+      expect(result.error?.message).toBe('No access token available');
+    });
+
+    it('should_returnError_when_refreshFails', async () => {
+      // Test line 309: error catch block
+      mockAuth.fetchAuthSession.mockRejectedValue({
+        code: 'NotAuthorizedException',
+        message: 'Refresh token expired',
+      });
+
+      const result = await authService.refreshToken();
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBeDefined();
+      expect(result.error?.code).toBe('INVALID_CREDENTIALS');
+    });
   });
 
   describe('isTokenExpired', () => {
@@ -529,6 +558,37 @@ describe('AuthService', () => {
       const isExpired = authService.isTokenExpired(validToken);
 
       expect(isExpired).toBe(false);
+    });
+
+    it('should_returnTrue_when_tokenInvalid', () => {
+      // Test catch block in isTokenExpired - invalid token format
+      const invalidTokens = ['invalid-token', 'only.two', 'invalid.base64!@#.signature', ''];
+
+      invalidTokens.forEach((token) => {
+        const isExpired = authService.isTokenExpired(token);
+        expect(isExpired).toBe(true);
+      });
+    });
+  });
+
+  describe('Error Mapping', () => {
+    it('should_mapUserNotConfirmedException_when_userNotConfirmed', async () => {
+      // Test UserNotConfirmedException mapping (lines 389-392)
+      const credentials: LoginCredentials = {
+        email: 'unconfirmed@example.com',
+        password: 'Password123!',
+      };
+
+      mockAuth.signIn.mockRejectedValue({
+        code: 'UserNotConfirmedException',
+        message: 'User is not confirmed',
+      });
+
+      const result = await authService.signIn(credentials);
+
+      expect(result.success).toBe(false);
+      expect(result.error?.code).toBe('USER_NOT_CONFIRMED');
+      expect(result.error?.message).toBe('Please confirm your email address');
     });
   });
 });
