@@ -43,31 +43,46 @@ This guide covers **Native Execution**, a lightweight alternative to Docker Comp
 - **npm 10+** - Bundled with Node.js
 - **AWS CLI v2** - [Installation Guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
 
-### AWS Configuration
+### PostgreSQL Setup
 
-You must have AWS credentials configured for the development environment:
+Start local PostgreSQL in Docker:
 
 ```bash
-aws configure --profile batbern-dev
+docker compose -f docker-compose-dev.yml up -d
+
+# Verify it's running
+docker ps --filter "name=batbern-dev-postgres"
+docker exec batbern-dev-postgres pg_isready -U postgres
+```
+
+### AWS Configuration (for Cognito only)
+
+You need AWS credentials for staging Cognito access:
+
+```bash
+aws configure --profile batbern-staging
 # Enter your AWS Access Key ID
 # Enter your AWS Secret Access Key
 # Default region: eu-central-1
 # Default output format: json
 ```
 
-### Environment Sync
+### Environment Configuration
 
-Before starting services, sync your `.env` file from AWS:
+The `.env` file is pre-configured for local PostgreSQL:
 
 ```bash
-./scripts/config/sync-backend-config.sh development
-```
+# Review configuration
+cat .env
 
-This fetches:
-- Database credentials (from AWS Secrets Manager)
-- Cognito configuration (User Pool ID, Client ID)
-- RDS endpoint information
-- EventBridge configuration
+# Key values for local development:
+# DB_HOST=localhost
+# DB_PORT=5432
+# DB_NAME=batbern_development
+# DB_USER=postgres
+# DB_PASSWORD=devpass123
+# COGNITO_USER_POOL_ID=eu-central-1_camJHQhZ8  # Staging Cognito
+```
 
 ## Quick Start
 
@@ -78,9 +93,9 @@ make dev-native-up
 ```
 
 This will:
-1. Check prerequisites (Java, Node.js, etc.)
-2. Create `.env.native` with localhost overrides
-3. Start database tunnel to AWS RDS
+1. Check prerequisites (Java, Node.js, PostgreSQL, etc.)
+2. Verify local PostgreSQL is running
+3. Create `.env.native` with localhost configuration
 4. Start all 6 backend services + frontend
 5. Wait for health checks
 
@@ -157,38 +172,41 @@ make dev-native-down
 │         └─────────────────┴─────────────────┘              │
 │                           │                                │
 │                    localhost (HTTP)                        │
+│                           │                                │
+│                  ┌────────┴────────┐                       │
+│                  │  PostgreSQL 15  │                       │
+│                  │  (Docker)       │                       │
+│                  │  Port: 5432     │                       │
+│                  │  Persistent Vol │                       │
+│                  └─────────────────┘                       │
 │                                                             │
 └─────────────────────────┬───────────────────────────────────┘
-                          │
-                  ┌───────┴────────┐
-                  │  DB Tunnel     │
-                  │  (SSM Session) │
-                  │  Port: 5432    │
-                  └───────┬────────┘
                           │
                           ▼
                   ┌───────────────┐
                   │  AWS Cloud    │
-                  │  RDS, Cognito │
-                  │  EventBridge  │
+                  │  Staging      │
+                  │  Cognito only │
                   └───────────────┘
 ```
 
 ### Environment Configuration
 
 The startup script creates `.env.native` which:
-1. Sources the main `.env` file (synced from AWS)
-2. Overrides `DB_HOST` from `host.docker.internal` to `localhost`
+1. Sources the main `.env` file (pre-configured for local PostgreSQL)
+2. Ensures `DB_HOST=localhost` for local PostgreSQL container
 3. Sets microservice URLs to `http://localhost:808X`
+4. Configures staging Cognito for authentication
 
 **Key Differences from Docker:**
 
 | Configuration | Docker | Native |
 |--------------|--------|--------|
-| DB_HOST | `host.docker.internal` | `localhost` |
+| PostgreSQL | Container-to-container | Host to container (localhost:5432) |
 | Service URLs | `http://service-name:8080` | `http://localhost:808X` |
 | Networking | Docker bridge network | Localhost loopback |
 | Isolation | Container isolation | Process isolation |
+| Resources | Higher (~12-14GB) | Lower (~6-8GB) |
 
 ### Process Management
 
@@ -198,13 +216,15 @@ Services run as background processes:
 - **Graceful shutdown:** SIGTERM with 15-second timeout
 - **Force kill:** SIGKILL if graceful shutdown fails
 
-### Database Tunnel
+### Local PostgreSQL Container
 
-The AWS SSM Session Manager tunnel:
-- Connects via bastion host in AWS VPC
-- Forwards `localhost:5432` → AWS RDS PostgreSQL
-- Runs in background (PID tracked in `/tmp/batbern-dev-db-tunnel.pid`)
-- Auto-starts bastion instance if stopped
+The local PostgreSQL database:
+- Runs in Docker container (`batbern-dev-postgres`)
+- Persistent volume at Docker volume `batbern-dev-postgres-data`
+- Exposed on `localhost:5432`
+- Credentials: `postgres/devpass123`
+- Database name: `batbern_development`
+- Migrations run automatically via Flyway on service startup
 
 ## Common Workflows
 
@@ -307,25 +327,31 @@ make dev-native-up
 **Symptom:** Services fail with database connection errors
 
 **Solutions:**
-1. Check if DB tunnel is running:
+1. Check if PostgreSQL container is running:
    ```bash
-   pgrep -f "AWS-StartPortForwardingSessionToRemoteHost"
+   docker ps --filter "name=batbern-dev-postgres"
    ```
 
-2. Restart DB tunnel:
+2. Restart PostgreSQL container:
    ```bash
-   pkill -f "AWS-StartPortForwardingSessionToRemoteHost"
-   make dev-native-up
+   docker compose -f docker-compose-dev.yml restart
    ```
 
 3. Test database connectivity:
    ```bash
-   psql -h localhost -p 5432 -U postgres -d batbern
+   PGPASSWORD=devpass123 psql -h localhost -p 5432 -U postgres -d batbern_development -c "SELECT 1;"
    ```
 
-4. Check AWS credentials:
+4. Check if port 5432 is available (not used by another PostgreSQL):
    ```bash
-   aws sts get-caller-identity --profile batbern-dev
+   lsof -i :5432
+   # If another PostgreSQL is running, stop it:
+   brew services stop postgresql@15
+   ```
+
+5. View PostgreSQL logs:
+   ```bash
+   docker logs batbern-dev-postgres
    ```
 
 ### Port Already in Use
@@ -446,21 +472,24 @@ source .env.native
 ./gradlew :api-gateway:bootRun
 ```
 
-### Using Different Database
+### Using Different PostgreSQL Configuration
 
-To use a local PostgreSQL instead of AWS RDS:
+The default configuration uses Docker PostgreSQL. To customize:
 
 ```bash
-# Edit .env.native
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=batbern_local
-DB_USER=localuser
-DB_PASSWORD=localpass
-DATABASE_URL=jdbc:postgresql://localhost:5432/batbern_local?user=localuser&password=localpass
+# Edit .env or .env.native
+DB_HOST=localhost         # Already configured for local
+DB_PORT=5432              # Standard PostgreSQL port
+DB_NAME=batbern_development
+DB_USER=postgres
+DB_PASSWORD=devpass123
 
-# Don't start DB tunnel
-# Comment out the DB tunnel check in scripts/dev/start-all-native.sh
+# To use a different PostgreSQL instance (e.g., installed via Homebrew):
+DB_HOST=localhost
+DB_PORT=5433              # Different port if needed
+DB_NAME=your_database_name
+DB_USER=your_username
+DB_PASSWORD=your_password
 ```
 
 ## Comparison: Native vs Docker
@@ -479,10 +508,10 @@ DATABASE_URL=jdbc:postgresql://localhost:5432/batbern_local?user=localuser&passw
 
 ## Best Practices
 
-1. **Sync Environment Daily**
+1. **Start PostgreSQL Before Services**
    ```bash
    # Before starting work
-   ./scripts/config/sync-backend-config.sh development
+   docker compose -f docker-compose-dev.yml up -d
    make dev-native-up
    ```
 

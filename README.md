@@ -28,9 +28,9 @@ Enterprise event management platform for Berner Architekten Treffen (BATbern) co
 - jq (JSON processor: `brew install jq` on macOS)
 - AWS credentials configured (`~/.aws/credentials` with profile `batbern-mgmt`)
 
-### Local Development with Docker Compose (Recommended)
+### Local Development with Native Execution (Recommended)
 
-**Important:** Local development uses AWS DEV environment for infrastructure (RDS, Cognito). Only application containers run locally.
+**Important:** Local development uses Docker PostgreSQL (local) and staging Cognito (AWS) for authentication. **No AWS development environment required** - saves $600-720/year.
 
 ```bash
 # Clone repository
@@ -40,10 +40,50 @@ cd BATbern
 # Install git hooks (pre-commit, pre-push)
 ./.githooks/install-hooks.sh
 
-# Generate environment configuration from AWS
-./scripts/config/sync-backend-config.sh development
+# Start local PostgreSQL in Docker
+docker compose -f docker-compose-dev.yml up -d
 
-# Start all services with Docker Compose
+# Start all services natively (recommended - 60-70% less resources)
+make dev-native-up
+
+# View logs
+make dev-native-logs
+
+# Check service status
+make dev-native-status
+
+# Stop all services
+make dev-native-down
+```
+
+**What runs locally:**
+- ✅ PostgreSQL 15 (Docker container with persistent volume)
+- ✅ API Gateway (http://localhost:8080) - uses Caffeine in-memory cache
+- ✅ All microservices (ports 8081-8085) - native Java processes
+- ✅ Web Frontend (http://localhost:3000) - Vite dev server
+
+**What uses AWS (staging environment):**
+- ✅ Cognito User Pool (staging authentication)
+- ✅ S3 for file uploads (staging buckets)
+
+### First-Time Setup: Sync Users from Staging Cognito
+
+After starting services for the first time, sync existing Cognito users to your local database:
+
+```bash
+# Get staging authentication token (one-time setup)
+./scripts/auth/get-token.sh staging your-email@example.com your-password
+
+# Sync users from staging Cognito to local PostgreSQL
+./scripts/dev/sync-users-from-cognito.sh
+```
+
+### Alternative: Docker Compose (For Integration Testing)
+
+Use Docker Compose when you need to test containerized behavior:
+
+```bash
+# Start all services in containers
 docker-compose up -d
 
 # View logs
@@ -51,64 +91,31 @@ docker-compose logs -f
 
 # Stop all services
 docker-compose down
-
-# Stop and remove volumes (clean state)
-docker-compose down -v
 ```
 
-**What gets started locally:**
-- ✅ API Gateway (http://localhost:8080) - uses Caffeine in-memory cache
-- ✅ Web Frontend (http://localhost:3000)
-
-**What connects to AWS DEV environment:**
-- ✅ RDS PostgreSQL 15 (AWS managed database)
-- ✅ Cognito User Pool (AWS authentication)
-- ✅ S3, EventBridge (AWS services)
-
-### Alternative: Manual Setup (Advanced)
-
-```bash
-# Build shared kernel (foundation for all services)
-cd shared-kernel
-./gradlew build
-./gradlew publishToMavenLocal
-
-# Start services individually (in separate terminals)
-cd ../api-gateway
-./gradlew bootRun
-```
-
-> **Current Implementation Status**:
-> - ✅ Shared Kernel (complete)
-> - ✅ API Gateway & Authentication (complete)
-> - ✅ Multi-environment infrastructure (complete)
-> - ✅ CI/CD Pipeline (complete)
-> - ✅ **Docker Compose local setup (complete - Story 1.4a)**
-> - ⏳ Domain microservices (upcoming in Epic 1.14-1.19)
+**Note:** Docker Compose is useful for pre-PR integration testing, but native execution is recommended for daily development due to better performance and resource usage.
 
 ### Quick Commands
 
 ```bash
-# Start services in background
-docker-compose up -d
+# Native development (recommended)
+make dev-native-up           # Start all services natively
+make dev-native-status       # Check service health
+make dev-native-logs         # View service logs
+make dev-native-restart      # Restart all services
+make dev-native-down         # Stop all services
 
-# Rebuild specific service after code changes
-docker-compose up -d --build api-gateway
+# Access local PostgreSQL database
+docker exec -it batbern-dev-postgres psql -U postgres -d batbern_development
 
-# Check service health
-docker-compose ps
+# OR using psql from host
+PGPASSWORD=devpass123 psql -h localhost -p 5432 -U postgres -d batbern_development
 
-# View service logs
-docker-compose logs -f api-gateway
+# Sync users from staging Cognito (uses stored token)
+./scripts/dev/sync-users-from-cognito.sh
 
-# Access AWS RDS database (requires AWS credentials)
-AWS_PROFILE=batbern-mgmt psql -h $(grep DB_HOST .env | cut -d '=' -f2) -U postgres -d batbern
-
-# Regenerate .env from AWS (after infrastructure changes)
-./scripts/config/sync-backend-config.sh development
-
-# Clean up local services (keeps AWS infrastructure)
-docker-compose down -v
+# Clean up local database
+docker compose -f docker-compose-dev.yml down -v
 ```
 
 ## Build Commands

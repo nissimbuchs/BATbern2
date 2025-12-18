@@ -127,30 +127,34 @@ docker-compose up api-gateway
 
 ### Prerequisites
 
-- AWS CLI installed and configured
-- jq installed (`brew install jq`)
-- AWS credentials configured for development profile
+- Docker Desktop installed and running
+- Java 21 installed
+- Node.js 20+ installed
+- AWS CLI v2 configured (for staging Cognito access)
+- PostgreSQL client tools (psql) - optional but recommended
 
 ### Initial Setup
 
 ```bash
-# 1. Deploy infrastructure (if not done)
-cd infrastructure
-npx cdk deploy --all --profile batbern-dev
+# 1. Start local PostgreSQL in Docker
+docker compose -f docker-compose-dev.yml up -d
 
-# 2. Generate configuration from deployed resources
-cd ..
-./scripts/config/sync-backend-config.sh development
+# 2. Verify PostgreSQL is running
+docker ps --filter "name=batbern-dev-postgres"
+docker exec batbern-dev-postgres pg_isready -U postgres
 
-# 3. Review generated .env file
+# 3. Review local .env configuration (pre-configured)
 cat .env
 
-# 4. Start services
-docker-compose up -d
+# 4. Start services natively (recommended)
+make dev-native-up
 
-# 5. Verify services are running
-docker-compose ps
-docker-compose logs -f api-gateway
+# 5. First time only: Sync users from staging Cognito
+./scripts/auth/get-token.sh staging your-email@example.com your-password
+./scripts/dev/sync-users-from-cognito.sh
+
+# 6. Verify services are running
+make dev-native-status
 ```
 
 ### Configuration Files
@@ -203,19 +207,27 @@ Configuration Summary:
 
 ## Environment-Specific Configuration
 
-### Development
+### Development (Local PostgreSQL)
 
 **Characteristics:**
 - Caffeine in-memory caching (application-level)
-- AWS RDS database (shared dev)
-- AWS Cognito (dev user pool)
+- **Local PostgreSQL database** (Docker container)
+- AWS Cognito (staging user pool for authentication)
 - Spring Profile: `local`
 - Log Level: `DEBUG`
+- **Zero AWS development environment costs**
 
 ```bash
 APP_ENVIRONMENT=development
 SPRING_PROFILES_ACTIVE=local
 LOG_LEVEL=DEBUG
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=batbern_development
+DB_USER=postgres
+DB_PASSWORD=devpass123
+COGNITO_USER_POOL_ID=eu-central-1_camJHQhZ8  # Staging Cognito
+COGNITO_CLIENT_ID=5h9421vo002bi7udjdu5orp7u3
 ```
 
 ### Staging
@@ -349,21 +361,40 @@ aws cloudformation describe-stacks \
 
 **Symptoms:** Connection refused or authentication errors
 
-**Debug Steps:**
+**Debug Steps for Local PostgreSQL:**
 ```bash
-# 1. Check .env has correct values
-grep DB_HOST .env
+# 1. Check if PostgreSQL container is running
+docker ps --filter "name=batbern-dev-postgres"
 
-# 2. Test database connection
-docker-compose exec api-gateway env | grep DB_
+# 2. Test database connection directly
+PGPASSWORD=devpass123 psql -h localhost -p 5432 -U postgres -d batbern_development -c "SELECT 1;"
 
-# 3. Check security groups allow your IP
+# 3. Check .env has correct local values
+grep DB_ .env
+# Should show:
+# DB_HOST=localhost
+# DB_PORT=5432
+# DB_NAME=batbern_development
+
+# 4. Restart PostgreSQL container if needed
+docker compose -f docker-compose-dev.yml restart
+
+# 5. Check if port 5432 is available
+lsof -i :5432
+```
+
+**Debug Steps for Staging/Production (AWS RDS):**
+```bash
+# 1. Verify AWS credentials
+aws sts get-caller-identity --profile batbern-staging
+
+# 2. Check security groups allow your IP
 # AWS Console → RDS → Security Groups
 
-# 4. Verify credentials
+# 3. Verify credentials
 aws secretsmanager get-secret-value \
-  --secret-id BATbern-development-DBSecret-xxxxx \
-  --profile batbern-dev
+  --secret-id BATbern-staging-DBSecret-xxxxx \
+  --profile batbern-staging
 ```
 
 ---
