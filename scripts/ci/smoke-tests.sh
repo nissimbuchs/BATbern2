@@ -44,12 +44,12 @@ fi
 
 # Test 2: API Gateway health
 echo -e "\n${YELLOW}Test 2:${NC} API Gateway health"
-response=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/health" || echo "000")
+response=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/actuator/health" || echo "000")
 if [ "$response" = "200" ]; then
     echo -e "${GREEN}✓ PASS${NC}: API health endpoint returned $response"
 
     # Check health status
-    health_response=$(curl -s "$API_URL/health" || echo "{}")
+    health_response=$(curl -s "$API_URL/actuator/health" || echo "{}")
     status=$(echo "$health_response" | jq -r '.status' 2>/dev/null || echo "UNKNOWN")
     echo "  Health status: $status"
     ((passed++))
