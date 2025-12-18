@@ -132,9 +132,9 @@ class UserReconciliationServiceTest {
         when(userRepository.findByCognitoUserId("cognito1")).thenReturn(Optional.empty());
         when(userRepository.findByCognitoUserId("cognito2")).thenReturn(Optional.empty());
 
-        // Mock username generation (username is extracted from email prefix)
-        when(userRepository.existsByUsername("newuser1")).thenReturn(false);
-        when(userRepository.existsByUsername("newuser2")).thenReturn(false);
+        // Mock username generation (firstname.lastname format)
+        when(userRepository.existsByUsername("alice.johnson")).thenReturn(false);
+        when(userRepository.existsByUsername("bob.williams")).thenReturn(false);
 
         // When
         UserReconciliationService.ReconciliationReport report = reconciliationService.reconcileUsers();
@@ -209,7 +209,7 @@ class UserReconciliationServiceTest {
         when(cognitoClient.listUsersPaginator(any(ListUsersRequest.class))).thenReturn(paginator);
 
         when(userRepository.findByCognitoUserId("new-cognito")).thenReturn(Optional.empty());
-        when(userRepository.existsByUsername("new")).thenReturn(false);
+        when(userRepository.existsByUsername("new.user")).thenReturn(false);
 
         // When
         UserReconciliationService.ReconciliationReport report = reconciliationService.reconcileUsers();
@@ -332,8 +332,8 @@ class UserReconciliationServiceTest {
         when(cognitoClient.listUsersPaginator(any(ListUsersRequest.class))).thenReturn(paginator);
         when(userRepository.findByIsActive(true)).thenReturn(List.of());
         when(userRepository.findByCognitoUserId("user1")).thenReturn(Optional.empty());
-        // Username is email prefix "test" (from test@example.com)
-        when(userRepository.existsByUsername("test")).thenReturn(false);
+        // Username is firstname.lastname (firstname.lastname format)
+        when(userRepository.existsByUsername("firstname.lastname")).thenReturn(false);
 
         // When
         reconciliationService.reconcileUsers();
@@ -347,7 +347,7 @@ class UserReconciliationServiceTest {
         assertThat(savedUser.getFirstName()).isEqualTo("FirstName");
         assertThat(savedUser.getLastName()).isEqualTo("LastName");
         assertThat(savedUser.getCognitoUserId()).isEqualTo("user1");
-        assertThat(savedUser.getUsername()).isEqualTo("test");
+        assertThat(savedUser.getUsername()).isEqualTo("firstname.lastname");
     }
 
     /**
@@ -363,8 +363,8 @@ class UserReconciliationServiceTest {
         ListUsersIterable paginator = mockListUsersPaginator(cognitoUser);
         when(cognitoClient.listUsersPaginator(any(ListUsersRequest.class))).thenReturn(paginator);
         when(userRepository.findByCognitoUserId("new-user")).thenReturn(Optional.empty());
-        // Username is email prefix "new" (from new@example.com)
-        when(userRepository.existsByUsername("new")).thenReturn(false);
+        // Username is firstname.lastname (new.user)
+        when(userRepository.existsByUsername("new.user")).thenReturn(false);
 
         // When
         reconciliationService.reconcileUsers();
@@ -375,7 +375,7 @@ class UserReconciliationServiceTest {
 
         User savedUser = userCaptor.getValue();
         assertThat(savedUser.getCognitoUserId()).isEqualTo("new-user");
-        assertThat(savedUser.getUsername()).isEqualTo("new");
+        assertThat(savedUser.getUsername()).isEqualTo("new.user");
         assertThat(savedUser.getEmail()).isEqualTo("new@example.com");
         assertThat(savedUser.getFirstName()).isEqualTo("New");
         assertThat(savedUser.getLastName()).isEqualTo("User");
@@ -427,7 +427,7 @@ class UserReconciliationServiceTest {
 
         // Simulate username conflict
         when(userRepository.existsByUsername("john.doe")).thenReturn(true);
-        when(userRepository.existsByUsername("john.doe.1")).thenReturn(false);
+        when(userRepository.existsByUsername("john.doe.2")).thenReturn(false);
 
         // When
         reconciliationService.reconcileUsers();
@@ -437,7 +437,7 @@ class UserReconciliationServiceTest {
         verify(userRepository).save(userCaptor.capture());
 
         User savedUser = userCaptor.getValue();
-        assertThat(savedUser.getUsername()).isEqualTo("john.doe.1");
+        assertThat(savedUser.getUsername()).isEqualTo("john.doe.2");
     }
 
     /**

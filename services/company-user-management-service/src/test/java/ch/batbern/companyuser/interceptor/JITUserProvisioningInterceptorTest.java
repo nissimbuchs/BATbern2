@@ -249,7 +249,7 @@ class JITUserProvisioningInterceptorTest {
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
 
-        User savedUser = createUser(cognitoUserId, "newuser", email, Set.of(Role.ATTENDEE));
+        User savedUser = createUser(cognitoUserId, "jane.smith", email, Set.of(Role.ATTENDEE));
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
 
         // When: Interceptor pre-handle is called
@@ -267,7 +267,7 @@ class JITUserProvisioningInterceptorTest {
         assertThat(createdUser.getEmail()).isEqualTo(email);
         assertThat(createdUser.getFirstName()).isEqualTo("Jane");
         assertThat(createdUser.getLastName()).isEqualTo("Smith");
-        assertThat(createdUser.getUsername()).isEqualTo("newuser");
+        assertThat(createdUser.getUsername()).isEqualTo("jane.smith");
         assertThat(createdUser.isActive()).isTrue();
         assertThat(createdUser.getRoles()).contains(Role.ATTENDEE);
 
@@ -393,8 +393,8 @@ class JITUserProvisioningInterceptorTest {
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(userRepository.findByCognitoUserId(cognitoUserId)).thenReturn(Optional.empty());
-        when(userRepository.existsByUsername("duplicate")).thenReturn(true);
-        when(userRepository.existsByUsername("duplicate.1")).thenReturn(false);
+        when(userRepository.existsByUsername("duplicate.user")).thenReturn(true);
+        when(userRepository.existsByUsername("duplicate.user.2")).thenReturn(false);
 
         // When: Interceptor pre-handle is called
         interceptor.preHandle(request, response, new Object());
@@ -404,7 +404,7 @@ class JITUserProvisioningInterceptorTest {
         verify(userRepository).save(userCaptor.capture());
 
         User createdUser = userCaptor.getValue();
-        assertThat(createdUser.getUsername()).isEqualTo("duplicate.1");
+        assertThat(createdUser.getUsername()).isEqualTo("duplicate.user.2");
     }
 
     @Test
@@ -437,12 +437,12 @@ class JITUserProvisioningInterceptorTest {
         // When: Interceptor pre-handle is called
         interceptor.preHandle(request, response, new Object());
 
-        // Then: Username starts with "user."
+        // Then: Username is generated from first.last name (no.email)
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(userCaptor.capture());
 
         User createdUser = userCaptor.getValue();
-        assertThat(createdUser.getUsername()).startsWith("user.");
+        assertThat(createdUser.getUsername()).isEqualTo("no.email");
         assertThat(createdUser.getEmail()).isEmpty();
     }
 
