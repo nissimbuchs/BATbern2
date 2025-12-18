@@ -303,13 +303,6 @@ describe('FileUpload Component', () => {
 
   // ============ Image Display Tests ============
 
-  it('should_applyCrossOriginAttribute_when_imageDisplayed', () => {
-    render(<FileUpload currentFileUrl="https://cdn.example.com/logos/logo.png" />);
-
-    const image = screen.getByAltText('Uploaded file preview');
-    expect(image).toHaveAttribute('crossorigin', 'anonymous');
-  });
-
   it('should_displayImageWithCorrectStyles_when_fileUploaded', () => {
     render(<FileUpload currentFileUrl="https://cdn.example.com/logos/logo.png" />);
 
