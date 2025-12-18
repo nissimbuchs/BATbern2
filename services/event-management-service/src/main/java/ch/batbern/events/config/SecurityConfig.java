@@ -83,7 +83,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations/confirm").permitAll()
 
                 // All other requests require authentication
-                // JWT validation happens here for method-level security (@PreAuthorize)
+                // AWS API Gateway validates JWT; Spring Security parses it for @PreAuthorize
                 .anyRequest().authenticated()
             )
             // Configure OAuth2 resource server to parse JWT tokens
@@ -128,31 +128,17 @@ public class SecurityConfig {
     private static class CustomRolesToAuthoritiesConverter implements Converter<Jwt, Collection<GrantedAuthority>> {
         @Override
         public Collection<GrantedAuthority> convert(Jwt jwt) {
-            // DEBUG: Log all JWT claims to diagnose role extraction issue
-            System.out.println("=== JWT Claims Debug ===");
-            System.out.println("All claims: " + jwt.getClaims());
-            System.out.println("Subject: " + jwt.getSubject());
-            System.out.println("Token value (first 50 chars): " + jwt.getTokenValue().substring(0, Math.min(50, jwt.getTokenValue().length())));
-
             // Extract roles from custom:role claim (comma-separated string)
             String rolesString = jwt.getClaimAsString("custom:role");
-            System.out.println("custom:role claim value: " + rolesString);
 
             if (rolesString == null || rolesString.isEmpty()) {
-                System.out.println("WARNING: No custom:role claim found or empty! Returning empty authorities.");
-                System.out.println("Available claim names: " + jwt.getClaims().keySet());
                 return Collections.emptyList();
             }
 
             // Split comma-separated roles and map to ROLE_ authorities
-            Collection<GrantedAuthority> authorities = Arrays.stream(rolesString.split(","))
+            return Arrays.stream(rolesString.split(","))
                 .map(role -> new SimpleGrantedAuthority("ROLE_" + role.trim().toUpperCase()))
                 .collect(Collectors.toList());
-
-            System.out.println("Extracted authorities: " + authorities);
-            System.out.println("=== End JWT Claims Debug ===");
-
-            return authorities;
         }
     }
 }
