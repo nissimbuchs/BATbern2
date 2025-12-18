@@ -27,6 +27,7 @@ describe('eventStore', () => {
     const { result } = renderHook(() => useEventStore());
     act(() => {
       result.current.setFilters({});
+      result.current.setPagination({ page: 1, limit: 20 }); // Reset pagination to defaults
       result.current.closeCreateModal();
       result.current.closeEditModal();
       result.current.setSelectedEventCode(undefined);
