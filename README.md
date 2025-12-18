@@ -4,18 +4,46 @@ Enterprise event management platform for Berner Architekten Treffen (BATbern) co
 
 ## Project Status
 
-**Current Phase**: Epic 1 - Foundation & Core Infrastructure
+**Last Updated:** 2025-12-18
 
-| Component | Status | Story |
-|-----------|--------|-------|
-| Shared Kernel | ✅ Complete | Story 1.1 |
-| API Gateway & Auth | ✅ Complete | Story 1.2 |
-| Multi-Env Infrastructure | ✅ Complete | Story 1.3 |
-| CI/CD Pipeline | ✅ Complete | Story 1.4 |
-| Environment Automation | ✅ Complete | Story 1.5 |
-| Monitoring & Alerting | ✅ Complete | Story 1.6 |
-| Domain Services | ⏳ Upcoming | Stories 1.14-1.19 |
-| React Frontend | ⏳ Upcoming | Story 1.17 |
+**Current Phase:** Epics 1-2 Complete, Epic 4 Nearly Complete, Epic 5 in Progress
+
+### Epic Progress Summary
+
+| Epic | Status | Progress | Key Accomplishments |
+|------|--------|----------|---------------------|
+| **Epic 1: Foundation & Core Infrastructure** | ✅ Complete | 100% (27/27) | Shared Kernel, API Gateway, Auth (all flows), User Mgmt, CI/CD, Monitoring, API Consolidation |
+| **Epic 2: Entity CRUD & Domain Services** | ✅ Complete | 100% (8/8) | Company, User, Event, Partner Management (Backend + Frontend) |
+| **Epic 3: Historical Data Migration** | 🔄 In Progress | 33% (1/3) | Data Inventory Complete |
+| **Epic 4: Public Website & Content Discovery** | 🔄 In Progress | ~85% (8/15+) | Landing Page, Registration Flow Complete |
+| **Epic 5: Enhanced Organizer Workflows** | 🔄 In Progress | 25% (4/16) | Event Type, State Machine, Outreach Tracking, Heat Map |
+
+### Key Components Status
+
+| Component | Status | Stories |
+|-----------|--------|---------|
+| **Infrastructure Foundation** | ✅ Complete | 1.1-1.7, 1.9, 1.11 |
+| **API Gateway & Authentication** | ✅ Complete | 1.2 + sub-stories |
+| **Shared Kernel & Types** | ✅ Complete | 1.1, 1.15a |
+| **Company Management** | ✅ Complete | 1.14, 2.5.1 |
+| **User Management** | ✅ Complete | 1.14-2, 2.5.2 |
+| **Event Management** | ✅ Complete | 2.2, 2.5.3 |
+| **Partner Management** | ✅ Complete | 2.7, 2.8.1-2.8.4 |
+| **React Frontend Foundation** | ✅ Complete | 1.17 |
+| **Public Website - Registration** | ✅ Complete | 4.1.1-4.1.6 |
+| **Public Website - Backend** | 🔄 In Progress | 4.1.7, 2.2a |
+| **Event Type & Workflow** | ✅ Complete | 5.1, 5.1a, 5.3 |
+| **Topic Selection** | 🔄 Ready for Review | 5.2 |
+
+### Next Priorities
+
+1. Complete Epic 4 (Public Website) - ~2 weeks
+   - Finish backend integration (4.1.7, 2.2a)
+   - Testing, SEO, and deployment (4.1.8)
+2. Continue Epic 5 (Organizer Workflows) - Phase B
+   - Review and merge 5.2 (Topic Selection)
+   - Implement 5.4 (Speaker Status Management)
+   - Implement 5.5 (Speaker Content Collection)
 
 ## Quick Start
 
@@ -283,18 +311,30 @@ Version: v1.2.3
 
 ### Platform Components
 
-**Implemented:**
+**Foundation (Epic 1) - ✅ Complete:**
 - **Shared Kernel** - Common types, domain events, and utilities
 - **API Gateway** - Unified API entry point with authentication
 - **Infrastructure** - Multi-environment AWS CDK setup
 - **CI/CD Pipeline** - Automated build, test, and deployment
+- **Monitoring & Alerting** - CloudWatch dashboards and alarms
 
-**Planned (Epic 1):**
+**Domain Services (Epic 2) - ✅ Complete:**
+- **Company Management Service** - Company profiles and employee management
+- **User Management Service** - User profiles, roles, and settings
 - **Event Management Service** - Event lifecycle and coordination
-- **Speaker Coordination Service** - Speaker management and materials
-- **Partner Coordination Service** - Partner collaboration
-- **Attendee Experience Service** - Registration and attendee features
-- **Company Management Service** - Company profiles and sharing
+- **Partner Coordination Service** - Partner collaboration and directory
+- **React Frontend Foundation** - Role-adaptive UI components
+
+**Public Website (Epic 4) - 🔄 85% Complete:**
+- **Event Landing Pages** - Current event display with countdown
+- **Registration Flow** - 3-step wizard with session selection
+- **Email Confirmation** - AWS SES integration with QR codes
+- **Anonymous Registration** - Backend integration (in progress)
+
+**Organizer Workflows (Epic 5) - 🔄 19% Complete:**
+- **Event Type Definition** - Full-day, afternoon, evening formats
+- **Workflow State Machine** - Event and speaker lifecycle tracking
+- **Speaker Outreach** - Contact strategy and tracking
 
 ### Technology Stack
 - **Backend:** Java 21, Spring Boot 3.5+

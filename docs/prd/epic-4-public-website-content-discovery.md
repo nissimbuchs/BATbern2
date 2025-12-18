@@ -1,5 +1,33 @@
 # Epic 4: Public Website & Content Discovery
 
+## Status
+🔄 **IN PROGRESS** - Story 4.1 ~85% Complete
+
+**Last Updated:** 2025-12-18
+
+**Progress Summary:**
+- ✅ Story 4.1 Foundation (Setup, Layout, Hero, Content, Registration) - COMPLETE (8 sub-stories)
+- 🔄 Story 4.1 Backend Integration - IN PROGRESS (2 sub-stories)
+- ✔️ Story 4.1 Finalization - APPROVED (2 sub-stories ready to start)
+
+**Completed Stories (Story 4.1 sub-stories):**
+- ✅ 4.1.1 - Setup shadcn/ui & Dark Theme
+- ✅ 4.1.2 - Public Layout & Navigation
+- ✅ 4.1.3 - Event Landing Hero
+- ✅ 4.1.4 - Event Content Sections
+- ✅ 4.1.5 - Registration Wizard
+- ✅ 4.1.5a - Registration Architecture
+- ✅ 4.1.5c - Secure Email Confirmation
+- ✅ 4.1.6 - Registration Confirmation
+
+**In Progress:**
+- 🔄 4.1.7 - API Optimization & Performance
+- 🔄 2.2a - Backend Anonymous Registration (Ready for Review)
+
+**Approved/Ready to Start:**
+- ✔️ 4.1.8 - Testing, SEO & Deploy
+- ✔️ 5.2b - Heatmap (Frontend Complete)
+
 ## Epic Overview
 
 **Epic Goal**: Launch public-facing BATbern website with current event landing pages, event registration, historical archive browsing, and full-text content search, making 20+ years of BATbern content accessible to the public.
