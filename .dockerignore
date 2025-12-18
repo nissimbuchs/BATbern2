@@ -5,7 +5,7 @@
 
 # Documentation
 *.md
-docs/
+docs/*
 !docs/api/
 README.md
 CHANGELOG.md
