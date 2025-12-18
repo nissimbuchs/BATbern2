@@ -24,8 +24,8 @@
 /* Sidebar */
 .sidebar {
   width: var(--sidebar-width);
-  background: var(--surface-color);
-  border-right: 1px solid var(--border-color);
+  background: var(--card);
+  border-right: 1px solid var(--border);
   height: calc(100vh - var(--header-height));
   overflow-y: auto;
   position: fixed;
@@ -48,16 +48,17 @@
   width: 100%;
   padding: var(--space-3) var(--space-4);
   padding-right: var(--space-10);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
-  background: var(--background-color);
+  background: var(--muted);
+  color: var(--foreground);
 }
 
 .search-input:focus {
   outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(21, 101, 192, 0.1);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px oklch(0.685 0.169 237.323 / 0.2);
 }
 
 .search-button {
@@ -69,7 +70,7 @@
   border: none;
   cursor: pointer;
   padding: var(--space-2);
-  color: var(--text-muted);
+  color: var(--muted-foreground);
 }
 
 /* Navigation */
@@ -87,7 +88,7 @@
   gap: var(--space-2);
   font-size: var(--text-sm);
   font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: var(--space-3);
@@ -96,7 +97,7 @@
 }
 
 .nav-section-title:hover {
-  color: var(--primary-color);
+  color: var(--primary);
 }
 
 /* User Guide Primary Section */
@@ -601,9 +602,10 @@
 blockquote {
   margin: var(--space-6) 0;
   padding: var(--space-4) var(--space-6);
-  background: var(--surface-color);
-  border-left: 4px solid var(--primary-color);
+  background: var(--muted);
+  border-left: 4px solid var(--primary);
   border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  color: var(--foreground);
 }
 
 blockquote p:last-child {
@@ -637,8 +639,9 @@ blockquote p:last-child {
 .index-hero {
   text-align: center;
   padding: 2rem 2rem 1.5rem;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  border-radius: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   margin-bottom: 3rem;
 }
 
@@ -653,17 +656,13 @@ blockquote p:last-child {
 .index-hero h1 {
   font-size: 2.5rem;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--foreground);
   margin-bottom: 0.5rem;
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
 }
 
 .index-hero p {
   font-size: 1.25rem;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   margin: 0;
 }
 
@@ -679,9 +678,9 @@ blockquote p:last-child {
 
 .section-box {
   position: relative;
-  background: white;
-  border: 2px solid var(--border-color);
-  border-radius: 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   padding: 1.5rem 1rem;
   text-align: center;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -698,7 +697,7 @@ blockquote p:last-child {
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+  background: var(--primary);
   transform: scaleX(0);
   transition: transform 0.3s ease;
 }
@@ -709,8 +708,9 @@ blockquote p:last-child {
 
 .section-box:hover {
   transform: translateY(-8px);
-  box-shadow: 0 12px 24px rgba(21, 101, 192, 0.15);
-  border-color: var(--primary-color);
+  box-shadow: 0px 8px 16px 0px hsl(0 0% 0% / 0.57);
+  border-color: var(--primary);
+  background: var(--muted);
 }
 
 .section-box:active {
@@ -722,7 +722,7 @@ blockquote p:last-child {
   height: 64px;
   display: block;
   margin: 0 auto 0.75rem;
-  color: var(--primary-color);
+  color: var(--primary);
 }
 
 .section-icon svg {
@@ -731,14 +731,14 @@ blockquote p:last-child {
 }
 
 .section-box h2 {
-  color: var(--primary-color);
+  color: var(--foreground);
   font-size: 1.125rem;
   font-weight: 600;
   margin: 0 0 0.5rem;
 }
 
 .section-box p {
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   font-size: 0.875rem;
   margin: 0;
   line-height: 1.4;
