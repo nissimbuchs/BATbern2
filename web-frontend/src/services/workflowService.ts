@@ -58,20 +58,14 @@ class WorkflowService {
     override?: boolean,
     reason?: string
   ): Promise<Event> {
-    // Type assertion to include override fields (not yet in generated types)
-    const requestBody: TransitionStateRequest & {
-      overrideValidation?: boolean;
-      overrideReason?: string;
-    } = {
+    const requestBody: TransitionStateRequest = {
       targetState,
+      overrideValidation: override ?? false,
     };
 
-    // Add override fields if override is true
-    if (override) {
-      requestBody.overrideValidation = true;
-      if (reason) {
-        requestBody.overrideReason = reason;
-      }
+    // Add override reason if provided
+    if (reason) {
+      requestBody.overrideReason = reason;
     }
 
     const response = await apiClient.put<Event>(
