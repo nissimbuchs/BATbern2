@@ -97,6 +97,8 @@ public class SecurityConfig {
 
     /**
      * JWT decoder for AWS Cognito tokens
+     * Configured to accept both ID tokens and access tokens
+     * Frontend uses ID tokens because they contain custom:role attribute
      */
     @Bean
     @Profile("!test")
@@ -104,7 +106,18 @@ public class SecurityConfig {
         if (jwkSetUri == null || jwkSetUri.isEmpty()) {
             throw new IllegalArgumentException("JWT JWK Set URI must be configured");
         }
-        return NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
+        NimbusJwtDecoder decoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
+
+        // Accept both ID tokens (token_use=id) and access tokens (token_use=access)
+        // Frontend sends ID tokens to include custom:role attribute
+        // No audience validation - we validate signature and custom:role claim instead
+        decoder.setJwtValidator(token -> {
+            // Only validate that the token is not expired and has valid signature
+            // NimbusJwtDecoder already handles signature validation
+            return org.springframework.security.oauth2.jwt.JwtValidators.createDefault().validate(token);
+        });
+
+        return decoder;
     }
 
     /**
