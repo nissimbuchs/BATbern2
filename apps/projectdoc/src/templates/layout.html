@@ -43,20 +43,14 @@
                 </a>
             </div>
 
-            <nav class="header-nav">
-                <a href="/" class="nav-link active">📚 Documentation</a>
-                <a href="/reports/index.html" class="nav-link">📊 Reports</a>
-                <a href="/api/index.html" class="nav-link">🔌 APIs</a>
-                <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
-                    <span class="nav-toggle-icon"></span>
-                </button>
-            </nav>
+            {{> headerNav}}
         </div>
     </header>
 
     <!-- Main Layout -->
-    <div class="main-layout">
-        <!-- Sidebar -->
+    <div class="main-layout {{#if isIndexPage}}no-sidebar{{/if}}">
+        <!-- Sidebar (hidden on homepage) -->
+        {{#unless isIndexPage}}
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-content">
                 <!-- Search -->
@@ -65,18 +59,16 @@
                     <button class="search-button" aria-label="Search">🔍</button>
                 </div>
 
-                <!-- Navigation -->
+                <!-- Navigation (filtered by section) -->
                 <nav class="sidebar-nav">
-                    {{#if isIndexPage}}
-                    <div class="nav-section nav-section-expanded">
-                        <h3 class="nav-section-title">
-                            <span class="nav-section-icon">🏠</span>
-                            Overview
-                        </h3>
-                    </div>
-                    {{/if}}
-
                     {{#each navigation}}
+                    {{#if (or
+                        (and (eq @key 'user-guide') (eq ../category 'user-guide'))
+                        (and (eq @key 'api') (eq ../category 'api'))
+                        (and (eq @key 'reports') (eq ../category 'reports'))
+                        (and (not (or (eq @key 'user-guide') (eq @key 'api') (eq @key 'reports')))
+                             (not (or (eq ../category 'user-guide') (eq ../category 'api') (eq ../category 'reports'))))
+                    )}}
                     <div class="nav-section nav-section-expanded" data-category="{{@key}}">
                         {{#if isExternalLink}}
                         <!-- External link section (like Reports) -->
@@ -139,6 +131,7 @@
                         </ul>
                         {{/if}}
                     </div>
+                    {{/if}}
                     {{/each}}
                 </nav>
 
@@ -150,6 +143,7 @@
                 </div>
             </div>
         </aside>
+        {{/unless}}
 
         <!-- Main Content -->
         <main class="main-content">
@@ -251,7 +245,27 @@
                 </div>
 
                 <div class="content-navigation">
-                    <!-- Previous/Next navigation would be implemented here -->
+                    {{#if pagination}}
+                    <div class="pagination">
+                        {{#if pagination.prev}}
+                        <a href="{{pagination.prev.url}}" class="prev-page">
+                            <span class="arrow">←</span>
+                            <span class="page-title">{{pagination.prev.title}}</span>
+                        </a>
+                        {{else}}
+                        <div class="prev-page-placeholder"></div>
+                        {{/if}}
+
+                        {{#if pagination.next}}
+                        <a href="{{pagination.next.url}}" class="next-page">
+                            <span class="page-title">{{pagination.next.title}}</span>
+                            <span class="arrow">→</span>
+                        </a>
+                        {{else}}
+                        <div class="next-page-placeholder"></div>
+                        {{/if}}
+                    </div>
+                    {{/if}}
                 </div>
             </footer>
         </main>

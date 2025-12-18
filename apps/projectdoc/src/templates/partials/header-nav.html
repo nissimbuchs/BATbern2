@@ -1,0 +1,9 @@
+<nav class="header-nav">
+    <a href="/user-guide/README.html" class="nav-link {{#if (eq category 'user-guide')}}active{{/if}}">📖 User Guide</a>
+    <a href="/documentation/index.html" class="nav-link {{#unless (or isIndexPage (eq category 'user-guide') (eq category 'reports') (eq category 'api'))}}active{{/unless}}">📚 Documentation</a>
+    <a href="/reports/index.html" class="nav-link {{#if (eq category 'reports')}}active{{/if}}">📊 Reports</a>
+    <a href="/api/index.html" class="nav-link {{#if (eq category 'api')}}active{{/if}}">🔌 APIs</a>
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+        <span class="nav-toggle-icon"></span>
+    </button>
+</nav>

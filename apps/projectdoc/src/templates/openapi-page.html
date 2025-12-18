@@ -181,15 +181,16 @@
         <!-- Header -->
         <header class="api-page-header">
             <div class="header-container">
-                <a href="/" class="brand-link">
-                    <img src="/assets/BATbern_color_logo_transparent.png" alt="BATbern Logo" class="brand-logo">
-                    <span class="brand-text">{{siteConfig.siteName}}</span>
-                </a>
+                <div class="header-brand">
+                    <a href="/" class="brand-link">
+                        <img src="/assets/BATbern_color_logo_transparent.png" alt="BATbern Logo" class="brand-logo">
+                        <span class="brand-text">{{siteConfig.siteName}}</span>
+                    </a>
+                </div>
+
+                {{> headerNav}}
 
                 <div class="header-actions">
-                    <a href="/" class="action-button">📚 Documentation</a>
-                    <a href="/reports/index.html" class="action-button">📊 Reports</a>
-                    <a href="/api/index.html" class="action-button">🔌 APIs</a>
                     <a href="{{downloadUrl}}" class="action-button" download>⬇️ Download Spec</a>
                 </div>
             </div>

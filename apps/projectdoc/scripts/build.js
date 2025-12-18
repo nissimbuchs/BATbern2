@@ -271,6 +271,9 @@ class DocumentationBuilder {
     // Generate index page
     await this.generateIndexPage();
 
+    // Generate documentation index page (category cards for all non-top-level categories)
+    await this.generateDocumentationIndexPage();
+
     // Generate API index page if we have API documents
     if (this.apiDocuments.length > 0) {
       await this.generateApiIndexPage();
@@ -305,9 +308,25 @@ class DocumentationBuilder {
     console.log('   ✅ Index page generated');
   }
 
+  async generateDocumentationIndexPage() {
+    console.log('   Generating documentation index page...');
+
+    const indexHtml = await this.htmlGenerator.generateDocumentationIndexPage(
+      this.config.categories,
+      this.documents
+    );
+
+    const docDir = path.join(this.config.outputPath, 'documentation');
+    await fs.ensureDir(docDir);
+    await fs.writeFile(path.join(docDir, 'index.html'), indexHtml);
+
+    console.log('   ✅ Documentation index page generated');
+  }
+
   async generateDocumentPage(doc) {
     const breadcrumbs = this.generateBreadcrumbs(doc);
     const navigation = this.htmlGenerator.buildNavigationData(this.categories, this.documents);
+    const pagination = this.generatePagination(doc);
 
     const pageData = {
       metadata: doc.metadata,
@@ -315,7 +334,8 @@ class DocumentationBuilder {
       tableOfContents: doc.tableOfContents,
       category: doc.category,
       navigation,
-      breadcrumbs
+      breadcrumbs,
+      pagination
     };
 
     const pageHtml = await this.htmlGenerator.generatePage(pageData);
@@ -325,6 +345,31 @@ class DocumentationBuilder {
 
     // Write the page
     await fs.writeFile(doc.outputPath, pageHtml);
+  }
+
+  generatePagination(currentDoc) {
+    // Only generate pagination for documents in the same category
+    const categoryDocs = this.documents.filter(doc =>
+      doc.category === currentDoc.category && !doc.isOpenApi
+    );
+
+    if (categoryDocs.length <= 1) {
+      return null;
+    }
+
+    const currentIndex = categoryDocs.findIndex(doc => doc.relativePath === currentDoc.relativePath);
+
+    if (currentIndex === -1) {
+      return null;
+    }
+
+    const prevDoc = currentIndex > 0 ? categoryDocs[currentIndex - 1] : null;
+    const nextDoc = currentIndex < categoryDocs.length - 1 ? categoryDocs[currentIndex + 1] : null;
+
+    return {
+      prev: prevDoc ? { title: prevDoc.metadata.title, url: prevDoc.urlPath } : null,
+      next: nextDoc ? { title: nextDoc.metadata.title, url: nextDoc.urlPath } : null
+    };
   }
 
   async generateOpenApiPage(doc) {

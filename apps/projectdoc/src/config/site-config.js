@@ -13,71 +13,88 @@ export default {
 
   // Document categories and their configurations
   categories: {
+    'user-guide': {
+      title: 'User Guide',
+      description: 'Comprehensive organizer documentation and tutorials',
+      icon: '📖',
+      order: 1,
+      folder: 'user-guide',
+      pattern: '**/*.md',
+      isTopLevel: true
+    },
     'prd-enhanced': {
       title: 'Product Requirements (Enhanced)',
       description: 'Detailed product requirements and specifications',
       icon: '📋',
-      order: 1,
+      order: 2,
       files: [
         'prd-enhanced.md',
         'prd-wireframe-alignment-analysis.md',
-        'todo.md']
+        'todo.md'],
+      isTopLevel: true
     },
     'architecture': {
       title: 'Architecture',
       description: 'System architecture, coding standards, and technical documentation',
       icon: '🏗️',
-      order: 2,
-      folder: 'architecture'
+      order: 3,
+      folder: 'architecture',
+      isTopLevel: true
     },
     'wireframes': {
       title: 'Wireframes & UI Design',
       description: 'User interface wireframes and design specifications',
       icon: '🎨',
-      order: 3,
-      folder: 'wireframes'
+      order: 4,
+      folder: 'wireframes',
+      isTopLevel: true
     },
     'epics': {
       title: 'Development Epics',
       description: 'Development epics with detailed user stories',
       icon: '🚀',
-      order: 4,
+      order: 5,
       folder: 'prd',
-      pattern: 'epic-*.md'
+      pattern: 'epic-*.md',
+      isTopLevel: true
     },
     'stories': {
       title: 'User Stories',
       description: 'Individual user stories and detailed implementation guides',
       icon: '📝',
-      order: 5,
-      folder: 'stories'
+      order: 6,
+      folder: 'stories',
+      isTopLevel: true
     },
     'project-docs': {
       title: 'Project Documentation',
       description: 'General project documentation and guides',
       icon: '📚',
-      order: 6,
+      order: 7,
       files: [
         'front-end-spec.md',
         'test-enhanced-markdown.md',
         'brainstorming-session-results.md'
-      ]
+      ],
+      isTopLevel: true
     },
     'api': {
       title: 'API Documentation',
       description: 'OpenAPI specifications for all BATbern platform APIs',
       icon: '🔌',
-      order: 7,
+      order: 8,
       folder: 'api',
-      pattern: '*.openapi.yml'
+      pattern: '*.openapi.yml',
+      isTopLevel: true
     },
     'reports': {
       title: 'Test & Quality Reports',
       description: 'Comprehensive test results, coverage, security, and quality metrics dashboard',
       icon: '📊',
-      order: 8,
+      order: 9,
       externalLink: '/reports/index.html',
-      isExternal: true
+      isExternal: true,
+      isTopLevel: true
     }
   },
 
@@ -107,3 +124,40 @@ export default {
     linkColor: '#1565C0'          // Primary blue
   }
 };
+
+// Top-Level Sections for Homepage (4-box layout)
+export const topLevelSections = [
+  {
+    id: 'user-guide',
+    title: 'User Guide',
+    description: 'Organizer workflows and tutorials',
+    icon: '📖',
+    path: '/user-guide/README.html',
+    order: 1
+  },
+  {
+    id: 'documentation',
+    title: 'Documentation',
+    description: 'Architecture, guides, and technical specs',
+    icon: '📚',
+    path: '/documentation/index.html',
+    categories: ['architecture', 'prd-enhanced', 'wireframes', 'epics', 'stories', 'project-docs'],
+    order: 2
+  },
+  {
+    id: 'reports',
+    title: 'Reports',
+    description: 'Test results, coverage, and quality metrics',
+    icon: '📊',
+    path: '/reports/index.html',
+    order: 3
+  },
+  {
+    id: 'apis',
+    title: 'APIs',
+    description: 'OpenAPI specifications and endpoints',
+    icon: '🔌',
+    path: '/api/index.html',
+    order: 4
+  }
+];
