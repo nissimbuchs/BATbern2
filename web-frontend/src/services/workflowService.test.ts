@@ -162,6 +162,7 @@ describe('workflowService', () => {
       // Then: Should call correct endpoint with request body
       expect(apiClient.put).toHaveBeenCalledWith('/events/BATbern56/workflow/transition', {
         targetState: 'TOPIC_SELECTION',
+        overrideValidation: false,
       });
       expect(result.workflowState).toBe('TOPIC_SELECTION');
     });
