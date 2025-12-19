@@ -1,5 +1,6 @@
 package ch.batbern.events.dto;
 
+import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.events.dto.generated.EventType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -53,10 +54,5 @@ public class CreateEventRequest {
 
     private String themeImageUploadId;
 
-    /**
-     * Event status (maps to workflowState internally).
-     * Supported values: 'archived' (for historical event imports)
-     * Story 5.2a: Batch import with archived events
-     */
-    private String status;
+    private EventWorkflowState workflowState;
 }

@@ -1,6 +1,8 @@
 package ch.batbern.events.dto;
 
+import ch.batbern.shared.types.EventWorkflowState;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -52,4 +54,6 @@ public class UpdateEventRequest {
     @Pattern(regexp = "AFTERNOON|EVENING|FULL_DAY",
              message = "Event type must be AFTERNOON, EVENING, or FULL_DAY")
     private String eventType;
+
+    private EventWorkflowState workflowState;
 }
