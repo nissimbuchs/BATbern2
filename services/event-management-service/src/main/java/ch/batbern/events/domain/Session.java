@@ -59,13 +59,13 @@ public class Session {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "session_type", nullable = false, length = 50)
+    @Column(name = "session_type", length = 50)
     private String sessionType; // keynote, presentation, workshop, panel_discussion, networking, break, lunch
 
-    @Column(name = "start_time", nullable = false)
+    @Column(name = "start_time")
     private Instant startTime;
 
-    @Column(name = "end_time", nullable = false)
+    @Column(name = "end_time")
     private Instant endTime;
 
     @Column(length = 100)

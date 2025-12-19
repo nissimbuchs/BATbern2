@@ -2,11 +2,16 @@ package ch.batbern.events.service;
 
 import ch.batbern.shared.exception.NotFoundException;
 import ch.batbern.shared.types.SpeakerWorkflowState;
+import ch.batbern.events.domain.Event;
+import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.domain.SpeakerStatusHistory;
 import ch.batbern.events.dto.SpeakerStatusResponse;
 import ch.batbern.events.dto.StatusHistoryItem;
 import ch.batbern.events.dto.StatusSummaryResponse;
 import ch.batbern.events.dto.UpdateStatusRequest;
+import ch.batbern.events.dto.generated.EventSlotConfigurationResponse;
+import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
 import ch.batbern.events.validator.StatusTransitionValidator;
 import lombok.RequiredArgsConstructor;
@@ -43,11 +48,9 @@ public class SpeakerStatusService {
 
     private final SpeakerStatusHistoryRepository repository;
     private final StatusTransitionValidator validator;
-
-    // Speaker slot thresholds (Story 5.4 AC13)
-    // TODO: Move to event configuration when Event entity supports slot configuration
-    private static final int DEFAULT_MIN_SPEAKERS = 6;
-    private static final int DEFAULT_MAX_SPEAKERS = 8;
+    private final SpeakerPoolRepository speakerPoolRepository;
+    private final EventRepository eventRepository;
+    private final EventTypeService eventTypeService;
 
     /**
      * Update speaker status with validation
@@ -79,10 +82,20 @@ public class SpeakerStatusService {
         // Validate state transition - Story 5.4 AC12
         validator.validateTransition(currentStatus, request.getNewStatus());
 
+        // Get actual session ID from speaker pool - Story 5.4 IMPL-001
+        SpeakerPool speaker = speakerPoolRepository.findById(speakerId)
+                .orElseThrow(() -> new NotFoundException("Speaker not found: " + speakerId));
+
+        UUID sessionId = speaker.getSessionId();
+        if (sessionId == null) {
+            log.warn("Speaker {} has no linked session, using fallback UUID", speakerId);
+            sessionId = UUID.randomUUID();  // Fallback for legacy data
+        }
+
         // Create history record - Story 5.4 AC3-4
         SpeakerStatusHistory historyRecord = new SpeakerStatusHistory();
         historyRecord.setSpeakerPoolId(speakerId);
-        historyRecord.setSessionId(UUID.randomUUID()); // TODO: Get actual session ID
+        historyRecord.setSessionId(sessionId);  // Actual session ID from speaker pool
         historyRecord.setEventCode(eventCode);
         historyRecord.setPreviousStatus(currentStatus);
         historyRecord.setNewStatus(request.getNewStatus());
@@ -135,6 +148,18 @@ public class SpeakerStatusService {
     public StatusSummaryResponse getStatusSummary(String eventCode) {
         log.debug("Calculating status summary for event {}", eventCode);
 
+        // Load event to get its type - Story 5.4 IMPL-002
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new NotFoundException("Event not found: " + eventCode));
+
+        // Get slot configuration from event type - Story 5.4 IMPL-002
+        EventSlotConfigurationResponse typeConfig = eventTypeService.getEventType(event.getEventType());
+        int minSlots = typeConfig.getMinSlots();
+        int maxSlots = typeConfig.getMaxSlots();
+
+        log.debug("Event {} type {} has slot config: min={}, max={}",
+                eventCode, event.getEventType(), minSlots, maxSlots);
+
         // Get all speakers for the event (latest status for each)
         // Performance fix (PERF-001): Query by event code instead of loading entire table
         List<SpeakerStatusHistory> allHistory = repository.findByEventCode(eventCode);
@@ -163,10 +188,9 @@ public class SpeakerStatusService {
             ? (acceptedCount * 100.0 / totalSpeakers)
             : 0.0;
 
-        // Check thresholds and overflow - Story 5.4 AC13
-        // Using default constants until Event entity supports slot configuration
-        boolean thresholdMet = acceptedCount >= DEFAULT_MIN_SPEAKERS;
-        boolean overflowDetected = acceptedCount > DEFAULT_MAX_SPEAKERS;
+        // Check thresholds and overflow using event type configuration - Story 5.4 AC13, IMPL-002
+        boolean thresholdMet = acceptedCount >= minSlots;
+        boolean overflowDetected = acceptedCount > maxSlots;
 
         StatusSummaryResponse response = new StatusSummaryResponse();
         response.setEventCode(eventCode);
@@ -176,13 +200,14 @@ public class SpeakerStatusService {
         response.setDeclinedCount(declinedCount);
         response.setPendingCount(pendingCount);
         response.setAcceptanceRate(Math.round(acceptanceRate * 100.0) / 100.0);
-        response.setMinSlotsRequired(DEFAULT_MIN_SPEAKERS);
-        response.setMaxSlotsAllowed(DEFAULT_MAX_SPEAKERS);
+        response.setMinSlotsRequired(minSlots);  // From event type configuration
+        response.setMaxSlotsAllowed(maxSlots);   // From event type configuration
         response.setThresholdMet(thresholdMet);
         response.setOverflowDetected(overflowDetected);
 
-        log.info("Status summary for {}: {} total, {} accepted ({}%), overflow: {}",
-            eventCode, totalSpeakers, acceptedCount, response.getAcceptanceRate(), overflowDetected);
+        log.info("Status summary for {}: {} total, {} accepted ({}%), overflow: {}, min/max: {}/{}",
+            eventCode, totalSpeakers, acceptedCount, response.getAcceptanceRate(),
+            overflowDetected, minSlots, maxSlots);
 
         return response;
     }

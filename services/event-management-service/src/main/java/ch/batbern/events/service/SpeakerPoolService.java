@@ -1,12 +1,15 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.AddSpeakerToPoolRequest;
 import ch.batbern.events.dto.SpeakerPoolResponse;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,16 +22,20 @@ import java.util.stream.Collectors;
  * Handles business logic for adding potential speakers, assigning organizers for outreach,
  * and tracking speaker status.
  */
+@Slf4j
 @Service
 public class SpeakerPoolService {
 
     private final SpeakerPoolRepository speakerPoolRepository;
     private final EventRepository eventRepository;
+    private final SessionRepository sessionRepository;
 
     public SpeakerPoolService(SpeakerPoolRepository speakerPoolRepository,
-                              EventRepository eventRepository) {
+                              EventRepository eventRepository,
+                              SessionRepository sessionRepository) {
         this.speakerPoolRepository = speakerPoolRepository;
         this.eventRepository = eventRepository;
+        this.sessionRepository = sessionRepository;
     }
 
     /**
@@ -51,7 +58,24 @@ public class SpeakerPoolService {
             throw new IllegalArgumentException("Speaker name is required");
         }
 
-        // Create speaker pool entry
+        // Story 5.4 IMPL-001: Create empty session placeholder for this speaker
+        // This session will be updated with description and timing as planning progresses
+        Session session = new Session();
+        session.setEventId(event.getId());
+        session.setSessionSlug(generateSessionSlug(event.getEventCode(), request.getSpeakerName()));
+
+        // Set title to "SpeakerName - Company" format for identification
+        String sessionTitle = request.getSpeakerName();
+        if (request.getCompany() != null && !request.getCompany().isBlank()) {
+            sessionTitle += " - " + request.getCompany();
+        }
+        session.setTitle(sessionTitle);
+        // Leave description, timing, and other fields null - they will be filled during planning
+
+        Session savedSession = sessionRepository.save(session);
+        log.info("Created empty session {} for speaker {}", savedSession.getSessionSlug(), request.getSpeakerName());
+
+        // Create speaker pool entry linked to session
         SpeakerPool speakerPool = new SpeakerPool();
         speakerPool.setEventId(event.getId());
         speakerPool.setSpeakerName(request.getSpeakerName());
@@ -61,9 +85,12 @@ public class SpeakerPoolService {
         speakerPool.setNotes(request.getNotes());
         // AC13: Initial status = 'identified'
         speakerPool.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.IDENTIFIED);
+        // Story 5.4 IMPL-001: Link to created session
+        speakerPool.setSessionId(savedSession.getId());
 
         // Persist speaker pool entry (AC18)
         SpeakerPool saved = speakerPoolRepository.save(speakerPool);
+        log.info("Added speaker {} to pool with session link {}", saved.getSpeakerName(), savedSession.getId());
 
         // TODO: Publish SpeakerAddedToPoolEvent (AC21) when domain events are implemented
 
@@ -131,5 +158,24 @@ public class SpeakerPoolService {
 
         // Delete speaker from pool
         speakerPoolRepository.delete(speakerPool);
+    }
+
+    /**
+     * Generate a URL-friendly session slug from event code and speaker name.
+     * Story 5.4 IMPL-001: Creates unique session slugs for placeholder sessions
+     *
+     * Format: {eventCode}-speaker-{cleanName}-{timestamp}
+     * Example: bat2025-speaker-alice-johnson-12345
+     *
+     * @param eventCode Event code
+     * @param speakerName Speaker name
+     * @return URL-friendly slug
+     */
+    private String generateSessionSlug(String eventCode, String speakerName) {
+        String cleanName = speakerName.toLowerCase()
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("^-|-$", "");
+        String timestamp = String.valueOf(System.currentTimeMillis()).substring(8);
+        return String.format("%s-speaker-%s-%s", eventCode.toLowerCase(), cleanName, timestamp);
     }
 }
