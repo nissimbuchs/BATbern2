@@ -64,6 +64,7 @@
     "searchEvents": "Veranstaltungen suchen...",
     "filter": {
       "status": "Nach Status filtern",
+      "workflowState": "Nach Workflow-Status filtern",
       "year": "Nach Jahr filtern",
       "allYears": "Alle Jahre",
       "activeFilters": "{{count}} Filter aktiv",

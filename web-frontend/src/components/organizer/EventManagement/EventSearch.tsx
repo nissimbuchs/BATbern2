@@ -57,7 +57,6 @@ const WORKFLOW_STATE_OPTIONS = [
   'PARTNER_MEETING_COMPLETE',
   'ARCHIVED',
 ];
-const YEAR_OPTIONS = [2025, 2024, 2023, 2022];
 
 export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filters }) => {
   const { t } = useTranslation('events');
@@ -117,11 +116,6 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
   const handleWorkflowStateChange = (event: SelectChangeEvent<string[]>) => {
     const value = event.target.value as string[];
     onFiltersChange({ ...filters, workflowState: value });
-  };
-
-  const handleYearChange = (event: SelectChangeEvent<number>) => {
-    const value = event.target.value as number;
-    onFiltersChange({ ...filters, year: value });
   };
 
   const handleRemoveWorkflowState = (workflowStateToRemove: string) => {
@@ -186,11 +180,11 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
                 {selected.map((value) => (
                   <Chip
                     key={value}
-                    label={t(`workflow.state.${value}`)}
+                    label={t(`workflow.states.${value.toLowerCase()}`)}
                     size="small"
                     onDelete={() => handleRemoveWorkflowState(value)}
                     onMouseDown={(e) => e.stopPropagation()}
-                    aria-label={`Remove ${value} filter`}
+                    aria-label={`Remove ${t(`workflow.states.${value.toLowerCase()}`).toLowerCase()} filter`}
                   />
                 ))}
               </Box>
@@ -199,7 +193,7 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
           >
             {WORKFLOW_STATE_OPTIONS.map((workflowState) => (
               <MenuItem key={workflowState} value={workflowState}>
-                {t(`workflow.state.${workflowState}`)}
+                {t(`workflow.states.${workflowState.toLowerCase()}`)}
               </MenuItem>
             ))}
           </Select>
@@ -207,23 +201,22 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
 
         {/* Year Filter */}
         <FormControl sx={{ minWidth: 150 }}>
-          <InputLabel id="year-filter-label">{t('dashboard.filter.year')}</InputLabel>
-          <Select
-            labelId="year-filter-label"
-            value={filters.year || ''}
-            onChange={handleYearChange}
+          <TextField
+            type="number"
             label={t('dashboard.filter.year')}
-            aria-label="Filter by year"
-          >
-            <MenuItem value="">
-              <em>{t('dashboard.filter.allYears')}</em>
-            </MenuItem>
-            {YEAR_OPTIONS.map((year) => (
-              <MenuItem key={year} value={year}>
-                {year}
-              </MenuItem>
-            ))}
-          </Select>
+            placeholder={t('dashboard.filter.allYears')}
+            value={filters.year || ''}
+            onChange={(e) => {
+              const value = e.target.value ? parseInt(e.target.value, 10) : undefined;
+              onFiltersChange({ ...filters, year: value });
+            }}
+            inputProps={{
+              min: 2000,
+              max: 2100,
+              step: 1,
+              'aria-label': 'Filter by year',
+            }}
+          />
         </FormControl>
       </Stack>
 
