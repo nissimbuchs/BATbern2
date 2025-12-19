@@ -100,12 +100,12 @@ public class EventController {
      *
      * Examples:
      * - List all: GET /api/v1/events
-     * - Filter by status: GET /api/v1/events?filter={"status":"published"}
+     * - Filter by workflow state: GET /api/v1/events?filter={"workflowState":"PUBLISHED"}
      * - Filter by year: GET /api/v1/events?filter={"date":{"$gte":"2025-01-01T00:00:00Z",
      *   "$lt":"2026-01-01T00:00:00Z"}}
      * - Sort descending: GET /api/v1/events?sort=-date
      * - Paginate: GET /api/v1/events?page=2&limit=10
-     * - Combined: GET /api/v1/events?filter={"status":"published"}&sort=-date&page=1&limit=20
+     * - Combined: GET /api/v1/events?filter={"workflowState":"PUBLISHED"}&sort=-date&page=1&limit=20
      */
     @GetMapping
     @Operation(
@@ -493,18 +493,6 @@ public class EventController {
                 "Event code already exists: " + eventCode);
         }
 
-        // Map status field to workflowState (Story 5.2a - batch import support)
-        // Status 'archived' → workflowState ARCHIVED (for historical event imports)
-        // If not specified, defaults to CREATED via @PrePersist
-        EventWorkflowState workflowState = null;
-        if (request.getStatus() != null) {
-            String status = request.getStatus().toLowerCase();
-            if ("archived".equals(status)) {
-                workflowState = EventWorkflowState.ARCHIVED;
-            }
-            // Future: map other status values to workflow states if needed
-        }
-
         // Create new event entity
         Event event = Event.builder()
                 .eventCode(eventCode)
@@ -523,7 +511,7 @@ public class EventController {
                 .description(request.getDescription())
                 .eventType(request.getEventType())
                 .themeImageUploadId(request.getThemeImageUploadId())
-                .workflowState(workflowState) // Set workflowState from status field
+                .workflowState(request.getWorkflowState()) // Use workflowState from request directly
                 .build();
 
         // Save event

@@ -420,12 +420,12 @@ public class TopicService {
         }
 
         // Transition workflow state FIRST (AC14) - UNLESS event is already ARCHIVED or SPEAKER_BRAINSTORMING
-        // For ARCHIVED events (historical imports), skip state transition to preserve archival status
+        // For ARCHIVED events (historical imports), skip state transition to preserve archival workflowState
         // For SPEAKER_BRAINSTORMING events, skip transition (already there, just updating topic)
         Event updatedEvent;
         if (currentState == EventWorkflowState.ARCHIVED
                 || currentState == EventWorkflowState.SPEAKER_BRAINSTORMING) {
-            // Skip state transition - either already in correct state or preserving archival status
+            // Skip state transition - either already in correct state or preserving archival workflowState
             // IMPORTANT: Reload the event to ensure we have a properly managed entity for update
             // Without this, entity state management can cause save() to not persist changes
             updatedEvent = eventRepository.findByEventCode(eventCode)
