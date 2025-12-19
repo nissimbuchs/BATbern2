@@ -39,9 +39,9 @@ class SessionUserRepositoryIntegrationTest extends AbstractIntegrationTest {
     private Event testEvent;
     private Session testSession1;
     private Session testSession2;
-    private UUID userId1;
-    private UUID userId2;
-    private UUID userId3;
+    private String username1;
+    private String username2;
+    private String username3;
 
     @BeforeEach
     void setUp() {
@@ -83,10 +83,10 @@ class SessionUserRepositoryIntegrationTest extends AbstractIntegrationTest {
                 .build();
         testSession2 = sessionRepository.save(testSession2);
 
-        // Test user IDs (simulating users from user-profiles table)
-        userId1 = UUID.randomUUID();
-        userId2 = UUID.randomUUID();
-        userId3 = UUID.randomUUID();
+        // Test usernames (simulating users from user-profiles table)
+        username1 = "john.doe";
+        username2 = "jane.smith";
+        username3 = "bob.wilson";
     }
 
     @Test
@@ -94,7 +94,7 @@ class SessionUserRepositoryIntegrationTest extends AbstractIntegrationTest {
         // Given: Valid SessionUser
         SessionUser sessionUser = SessionUser.builder()
                 .session(testSession1)
-                .userId(userId1)
+                .username("test-user")
                 .speakerRole(SpeakerRole.PRIMARY_SPEAKER)
                 .presentationTitle("Test Presentation")
                 .isConfirmed(false)
@@ -106,35 +106,35 @@ class SessionUserRepositoryIntegrationTest extends AbstractIntegrationTest {
         // Then: Should be persisted with generated ID
         assertThat(saved.getId()).isNotNull();
         assertThat(saved.getSession().getId()).isEqualTo(testSession1.getId());
-        assertThat(saved.getUserId()).isEqualTo(userId1);
+        assertThat(saved.getUsername()).isEqualTo("test-user");
         assertThat(saved.getSpeakerRole()).isEqualTo(SpeakerRole.PRIMARY_SPEAKER);
     }
 
     @Test
     void should_findBySessionId_when_speakersAssigned() {
         // Given: Session with multiple speakers
-        createSessionUser(testSession1, userId1, SpeakerRole.PRIMARY_SPEAKER);
-        createSessionUser(testSession1, userId2, SpeakerRole.CO_SPEAKER);
-        createSessionUser(testSession2, userId3, SpeakerRole.MODERATOR);
+        createSessionUser(testSession1, username1, SpeakerRole.PRIMARY_SPEAKER);
+        createSessionUser(testSession1, username2, SpeakerRole.CO_SPEAKER);
+        createSessionUser(testSession2, username3, SpeakerRole.MODERATOR);
 
         // When: Finding by session1 ID
         List<SessionUser> speakers = sessionUserRepository.findBySessionId(testSession1.getId());
 
         // Then: Should return only session1 speakers
         assertThat(speakers).hasSize(2);
-        assertThat(speakers).extracting(SessionUser::getUserId)
-                .containsExactlyInAnyOrder(userId1, userId2);
+        assertThat(speakers).extracting(SessionUser::getUsername)
+                .containsExactlyInAnyOrder(username1, username2);
     }
 
     @Test
-    void should_findByUserId_when_userAssignedToMultipleSessions() {
+    void should_findByUsername_when_userAssignedToMultipleSessions() {
         // Given: User assigned to multiple sessions
-        createSessionUser(testSession1, userId1, SpeakerRole.PRIMARY_SPEAKER);
-        createSessionUser(testSession2, userId1, SpeakerRole.CO_SPEAKER);
-        createSessionUser(testSession2, userId2, SpeakerRole.MODERATOR);
+        createSessionUser(testSession1, username1, SpeakerRole.PRIMARY_SPEAKER);
+        createSessionUser(testSession2, username1, SpeakerRole.CO_SPEAKER);
+        createSessionUser(testSession2, username2, SpeakerRole.MODERATOR);
 
         // When: Finding by user1 ID
-        List<SessionUser> sessions = sessionUserRepository.findByUserId(userId1);
+        List<SessionUser> sessions = sessionUserRepository.findByUsername(username1);
 
         // Then: Should return all sessions for user1
         assertThat(sessions).hasSize(2);
@@ -145,14 +145,14 @@ class SessionUserRepositoryIntegrationTest extends AbstractIntegrationTest {
     @Test
     void should_findBySessionIdAndIsConfirmedTrue_when_onlyConfirmedSpeakers() {
         // Given: Session with confirmed and unconfirmed speakers
-        SessionUser confirmed1 = createSessionUser(testSession1, userId1, SpeakerRole.PRIMARY_SPEAKER);
+        SessionUser confirmed1 = createSessionUser(testSession1, username1, SpeakerRole.PRIMARY_SPEAKER);
         confirmed1.confirm();
         sessionUserRepository.save(confirmed1);
 
-        SessionUser unconfirmed = createSessionUser(testSession1, userId2, SpeakerRole.CO_SPEAKER);
+        SessionUser unconfirmed = createSessionUser(testSession1, username2, SpeakerRole.CO_SPEAKER);
         // Leave unconfirmed
 
-        SessionUser confirmed2 = createSessionUser(testSession1, userId3, SpeakerRole.PANELIST);
+        SessionUser confirmed2 = createSessionUser(testSession1, username3, SpeakerRole.PANELIST);
         confirmed2.confirm();
         sessionUserRepository.save(confirmed2);
 
@@ -162,35 +162,35 @@ class SessionUserRepositoryIntegrationTest extends AbstractIntegrationTest {
 
         // Then: Should return only confirmed speakers
         assertThat(confirmedSpeakers).hasSize(2);
-        assertThat(confirmedSpeakers).extracting(SessionUser::getUserId)
-                .containsExactlyInAnyOrder(userId1, userId3);
+        assertThat(confirmedSpeakers).extracting(SessionUser::getUsername)
+                .containsExactlyInAnyOrder(username1, username3);
         assertThat(confirmedSpeakers).allMatch(SessionUser::isConfirmed);
     }
 
     @Test
-    void should_findBySessionIdAndUserId_when_specificAssignmentExists() {
+    void should_findBySessionIdAndUsername_when_specificAssignmentExists() {
         // Given: Multiple speaker assignments
-        createSessionUser(testSession1, userId1, SpeakerRole.PRIMARY_SPEAKER);
-        createSessionUser(testSession1, userId2, SpeakerRole.CO_SPEAKER);
+        createSessionUser(testSession1, username1, SpeakerRole.PRIMARY_SPEAKER);
+        createSessionUser(testSession1, username2, SpeakerRole.CO_SPEAKER);
 
         // When: Finding specific assignment
         Optional<SessionUser> found = sessionUserRepository
-                .findBySessionIdAndUserId(testSession1.getId(), userId1);
+                .findBySessionIdAndUsername(testSession1.getId(), username1);
 
         // Then: Should return the specific assignment
         assertThat(found).isPresent();
-        assertThat(found.get().getUserId()).isEqualTo(userId1);
+        assertThat(found.get().getUsername()).isEqualTo(username1);
         assertThat(found.get().getSpeakerRole()).isEqualTo(SpeakerRole.PRIMARY_SPEAKER);
     }
 
     @Test
     void should_returnEmpty_when_assignmentDoesNotExist() {
         // Given: Session with speaker
-        createSessionUser(testSession1, userId1, SpeakerRole.PRIMARY_SPEAKER);
+        createSessionUser(testSession1, username1, SpeakerRole.PRIMARY_SPEAKER);
 
         // When: Finding non-existent assignment
         Optional<SessionUser> found = sessionUserRepository
-                .findBySessionIdAndUserId(testSession1.getId(), userId2);
+                .findBySessionIdAndUsername(testSession1.getId(), username2);
 
         // Then: Should return empty
         assertThat(found).isEmpty();
@@ -199,11 +199,11 @@ class SessionUserRepositoryIntegrationTest extends AbstractIntegrationTest {
     @Test
     void should_returnTrue_when_assignmentExists() {
         // Given: Speaker assignment
-        createSessionUser(testSession1, userId1, SpeakerRole.PRIMARY_SPEAKER);
+        createSessionUser(testSession1, username1, SpeakerRole.PRIMARY_SPEAKER);
 
         // When: Checking if assignment exists
         boolean exists = sessionUserRepository
-                .existsBySessionIdAndUserId(testSession1.getId(), userId1);
+                .existsBySessionIdAndUsername(testSession1.getId(), username1);
 
         // Then: Should return true
         assertThat(exists).isTrue();
@@ -212,11 +212,11 @@ class SessionUserRepositoryIntegrationTest extends AbstractIntegrationTest {
     @Test
     void should_returnFalse_when_assignmentDoesNotExist() {
         // Given: No assignment for user2
-        createSessionUser(testSession1, userId1, SpeakerRole.PRIMARY_SPEAKER);
+        createSessionUser(testSession1, username1, SpeakerRole.PRIMARY_SPEAKER);
 
         // When: Checking if assignment exists for user2
         boolean exists = sessionUserRepository
-                .existsBySessionIdAndUserId(testSession1.getId(), userId2);
+                .existsBySessionIdAndUsername(testSession1.getId(), username2);
 
         // Then: Should return false
         assertThat(exists).isFalse();
@@ -225,26 +225,26 @@ class SessionUserRepositoryIntegrationTest extends AbstractIntegrationTest {
     @Test
     void should_findAllByEventId_when_eventHasMultipleSessions() {
         // Given: Event with multiple sessions and speakers
-        createSessionUser(testSession1, userId1, SpeakerRole.PRIMARY_SPEAKER);
-        createSessionUser(testSession1, userId2, SpeakerRole.CO_SPEAKER);
-        createSessionUser(testSession2, userId2, SpeakerRole.MODERATOR);
-        createSessionUser(testSession2, userId3, SpeakerRole.PANELIST);
+        createSessionUser(testSession1, username1, SpeakerRole.PRIMARY_SPEAKER);
+        createSessionUser(testSession1, username2, SpeakerRole.CO_SPEAKER);
+        createSessionUser(testSession2, username2, SpeakerRole.MODERATOR);
+        createSessionUser(testSession2, username3, SpeakerRole.PANELIST);
 
         // When: Finding all speakers for event
         List<SessionUser> eventSpeakers = sessionUserRepository.findAllByEventId(testEvent.getId());
 
         // Then: Should return all speakers from all sessions
         assertThat(eventSpeakers).hasSize(4);
-        assertThat(eventSpeakers).extracting(SessionUser::getUserId)
-                .containsExactlyInAnyOrder(userId1, userId2, userId2, userId3);
+        assertThat(eventSpeakers).extracting(SessionUser::getUsername)
+                .containsExactlyInAnyOrder(username1, username2, username2, username3);
     }
 
     @Test
     void should_countBySessionId_when_multipleSpeakersAssigned() {
         // Given: Session with 3 speakers
-        createSessionUser(testSession1, userId1, SpeakerRole.PRIMARY_SPEAKER);
-        createSessionUser(testSession1, userId2, SpeakerRole.CO_SPEAKER);
-        createSessionUser(testSession1, userId3, SpeakerRole.MODERATOR);
+        createSessionUser(testSession1, username1, SpeakerRole.PRIMARY_SPEAKER);
+        createSessionUser(testSession1, username2, SpeakerRole.CO_SPEAKER);
+        createSessionUser(testSession1, username3, SpeakerRole.MODERATOR);
 
         // When: Counting speakers
         long count = sessionUserRepository.countBySessionId(testSession1.getId());
@@ -256,12 +256,12 @@ class SessionUserRepositoryIntegrationTest extends AbstractIntegrationTest {
     @Test
     void should_enforceUniqueConstraint_when_duplicateAssignment() {
         // Given: Existing assignment
-        createSessionUser(testSession1, userId1, SpeakerRole.PRIMARY_SPEAKER);
+        createSessionUser(testSession1, username1, SpeakerRole.PRIMARY_SPEAKER);
 
         // When: Attempting duplicate assignment
         SessionUser duplicate = SessionUser.builder()
                 .session(testSession1)
-                .userId(userId1)
+                .username("test-user")
                 .speakerRole(SpeakerRole.CO_SPEAKER)
                 .isConfirmed(false)
                 .build();
@@ -279,8 +279,8 @@ class SessionUserRepositoryIntegrationTest extends AbstractIntegrationTest {
     @Test
     void should_cascadeDelete_when_sessionDeleted() {
         // Given: Session with speakers - manually maintain bidirectional relationship for cascade
-        SessionUser su1 = createSessionUser(testSession1, userId1, SpeakerRole.PRIMARY_SPEAKER);
-        SessionUser su2 = createSessionUser(testSession1, userId2, SpeakerRole.CO_SPEAKER);
+        SessionUser su1 = createSessionUser(testSession1, username1, SpeakerRole.PRIMARY_SPEAKER);
+        SessionUser su2 = createSessionUser(testSession1, username2, SpeakerRole.CO_SPEAKER);
         testSession1.getSessionUsers().add(su1);
         testSession1.getSessionUsers().add(su2);
         sessionRepository.save(testSession1);
@@ -296,28 +296,28 @@ class SessionUserRepositoryIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void should_deleteBySessionIdAndUserId_when_removingSingleSpeaker() {
+    void should_deleteBySessionIdAndUsername_when_removingSingleSpeaker() {
         // Given: Session with multiple speakers
-        createSessionUser(testSession1, userId1, SpeakerRole.PRIMARY_SPEAKER);
-        createSessionUser(testSession1, userId2, SpeakerRole.CO_SPEAKER);
-        createSessionUser(testSession1, userId3, SpeakerRole.MODERATOR);
+        createSessionUser(testSession1, username1, SpeakerRole.PRIMARY_SPEAKER);
+        createSessionUser(testSession1, username2, SpeakerRole.CO_SPEAKER);
+        createSessionUser(testSession1, username3, SpeakerRole.MODERATOR);
 
         // When: Deleting specific speaker
-        sessionUserRepository.deleteBySessionIdAndUserId(testSession1.getId(), userId2);
+        sessionUserRepository.deleteBySessionIdAndUsername(testSession1.getId(), username2);
         sessionUserRepository.flush();
 
         // Then: Only target speaker should be deleted
         List<SessionUser> remaining = sessionUserRepository.findBySessionId(testSession1.getId());
         assertThat(remaining).hasSize(2);
-        assertThat(remaining).extracting(SessionUser::getUserId)
-                .containsExactlyInAnyOrder(userId1, userId3);
+        assertThat(remaining).extracting(SessionUser::getUsername)
+                .containsExactlyInAnyOrder(username1, username3);
     }
 
     // Helper method
-    private SessionUser createSessionUser(Session session, UUID userId, SpeakerRole role) {
+    private SessionUser createSessionUser(Session session, String username, SpeakerRole role) {
         SessionUser sessionUser = SessionUser.builder()
                 .session(session)
-                .userId(userId)
+                .username(username)
                 .speakerRole(role)
                 .isConfirmed(false)
                 .build();

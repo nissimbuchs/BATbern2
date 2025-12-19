@@ -17,7 +17,7 @@ class SessionUserTest {
 
     private SessionUser sessionUser;
     private UUID sessionId;
-    private UUID userId;
+    private String username;
 
     @BeforeEach
     void setUp() {
@@ -36,7 +36,7 @@ class SessionUserTest {
 
         sessionUser = SessionUser.builder()
                 .session(session)
-                .userId(userId)
+                .username("test-user")
                 .speakerRole(SpeakerRole.PRIMARY_SPEAKER)
                 .presentationTitle("Test Presentation")
                 .isConfirmed(false)
@@ -49,7 +49,7 @@ class SessionUserTest {
 
         // Then: all fields should be set correctly
         assertThat(sessionUser.getSession().getId()).isEqualTo(sessionId);
-        assertThat(sessionUser.getUserId()).isEqualTo(userId);
+        assertThat(sessionUser.getUsername()).isEqualTo(userId);
         assertThat(sessionUser.getSpeakerRole()).isEqualTo(SpeakerRole.PRIMARY_SPEAKER);
         assertThat(sessionUser.getPresentationTitle()).isEqualTo("Test Presentation");
         assertThat(sessionUser.isConfirmed()).isFalse();
@@ -174,7 +174,7 @@ class SessionUserTest {
         // Given: SessionUser without presentation title
         SessionUser sessionUserWithoutTitle = SessionUser.builder()
                 .session(sessionUser.getSession())
-                .userId(UUID.randomUUID())
+                .username("test-user")
                 .speakerRole(SpeakerRole.PRIMARY_SPEAKER)
                 .isConfirmed(false)
                 .build();
@@ -213,7 +213,7 @@ class SessionUserTest {
     private SessionUser createSessionUserWithRole(SpeakerRole role) {
         return SessionUser.builder()
                 .session(sessionUser.getSession())
-                .userId(UUID.randomUUID())
+                .username("test-user")
                 .speakerRole(role)
                 .isConfirmed(false)
                 .build();
