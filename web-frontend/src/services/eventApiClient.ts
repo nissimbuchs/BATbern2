@@ -52,8 +52,8 @@ class EventApiClient {
 
       // Build JSON filter object
       const filterObj: Record<string, unknown> = {};
-      if (filters?.status && filters.status.length > 0) {
-        filterObj.status = filters.status.join(','); // Convert array to comma-separated string
+      if (filters?.workflowState && filters.workflowState.length > 0) {
+        filterObj.workflowState = filters.workflowState.join(','); // Convert array to comma-separated string
       }
       if (filters?.year) {
         filterObj.year = filters.year;
@@ -111,7 +111,7 @@ class EventApiClient {
   async createEvent(data: CreateEventRequest): Promise<Event> {
     try {
       // Client-side validation
-      this.validateEventDate(data.date, data.status);
+      this.validateEventDate(data.date, data.workflowState);
       this.validateRegistrationDeadline(data.date, data.registrationDeadline);
       this.validateVenueCapacity(data.venueCapacity);
 
@@ -130,7 +130,7 @@ class EventApiClient {
     try {
       // Client-side validation if dates are being updated
       if (data.date) {
-        this.validateEventDate(data.date, data.status);
+        this.validateEventDate(data.date, data.workflowState);
       }
       if (data.date && data.registrationDeadline) {
         this.validateRegistrationDeadline(data.date, data.registrationDeadline);
@@ -151,7 +151,7 @@ class EventApiClient {
     try {
       // Validate dates if they're being updated
       if (data.date) {
-        this.validateEventDate(data.date, data.status);
+        this.validateEventDate(data.date, data.workflowState);
       }
 
       const response = await apiClient.patch<Event>(`${EVENT_API_PATH}/${eventCode}`, data);
@@ -357,7 +357,7 @@ class EventApiClient {
       const response = await this.getEvents({ page: 1, limit: 1 }, {
         eventNumber: eventNumber,
       } as unknown as {
-        status?: string[];
+        workflowState?: string[];
         year?: number;
         search?: string;
       });
@@ -383,9 +383,9 @@ class EventApiClient {
    * Client-side validation: Event date must be in the future
    * Skip validation for archived events (historical imports)
    */
-  private validateEventDate(eventDate: string, status?: string): void {
+  private validateEventDate(eventDate: string, workflowState?: string): void {
     // Skip validation for archived events (historical imports)
-    if (status === 'archived') {
+    if (workflowState === 'ARCHIVED') {
       return;
     }
 
