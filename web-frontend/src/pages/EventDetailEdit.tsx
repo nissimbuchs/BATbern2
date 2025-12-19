@@ -212,18 +212,32 @@ const EventDetailEdit: React.FC = () => {
       session.speakers?.find((s: SessionSpeaker) => s.speakerRole === 'PRIMARY_SPEAKER') ||
       session.speakers?.[0];
 
+    // Map all speakers from API to UI format
+    const speakersUI =
+      session.speakers?.map((s: SessionSpeaker) => ({
+        speakerSlug: s.username,
+        username: s.username,
+        name: `${s.firstName} ${s.lastName}`,
+        company: s.company,
+        email: s.username,
+        profilePictureUrl: s.profilePictureUrl,
+      })) || [];
+
     return {
       ...session,
       slotNumber: index + 1,
-      // Map speaker from API speakers array to UI speaker object
+      // Map speaker from API speakers array to UI speaker object (backward compatibility)
       speaker: primarySpeaker
         ? {
             speakerSlug: primarySpeaker.username,
             name: `${primarySpeaker.firstName} ${primarySpeaker.lastName}`,
             company: primarySpeaker.company,
             email: primarySpeaker.username, // username serves as email identifier per ADR-003
+            profilePictureUrl: primarySpeaker.profilePictureUrl,
           }
         : undefined,
+      // Map all speakers to speakers array
+      speakers: speakersUI.length > 0 ? speakersUI : undefined,
       materialsStatus: 'pending' as const,
     };
   });
