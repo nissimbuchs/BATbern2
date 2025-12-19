@@ -360,40 +360,28 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
     setApiError(null);
 
     try {
-      // Check if workflowState changed - handle separately via workflow transition API
-      const workflowStateChanged = 'workflowState' in changedFields;
-      const newWorkflowState = changedFields.workflowState as
-        | components['schemas']['EventWorkflowState']
-        | undefined;
-
-      // Remove workflowState from patch data - it goes through separate API
+      // CRITICAL: Exclude workflowState from auto-save - workflow transitions are critical operations
+      // that should ONLY happen on explicit user action (Save button), not via auto-save.
+      // Auto-saving workflow transitions causes:
+      // 1. Race conditions with manual save → optimistic locking conflicts (500 errors)
+      // 2. Unintended state transitions without user confirmation
+      // 3. Loss of override checkbox state context
       const patchFields = { ...changedFields };
       delete (patchFields as Partial<Record<string, unknown>>).workflowState;
 
-      // Update event fields (if any changed besides workflowState)
-      if (Object.keys(patchFields).length > 0) {
-        const patchData = transformDatesForApi(patchFields);
-        await updateEventMutation.mutateAsync({
-          eventCode: event.eventCode,
-          data: patchData,
-        });
+      // Only proceed if there are fields to update (besides workflowState)
+      if (Object.keys(patchFields).length === 0) {
+        // No fields to auto-save (only workflowState changed, which we exclude)
+        setAutoSaveStatus('saved');
+        return;
       }
 
-      // Handle workflow state transition separately via workflow transition API
-      if (workflowStateChanged && newWorkflowState) {
-        await workflowService.transitionWorkflowState(
-          event.eventCode,
-          newWorkflowState,
-          overrideValidation,
-          overrideReason || undefined
-        );
-
-        // Invalidate React Query caches to reflect workflow state change in UI
-        queryClient.invalidateQueries({ queryKey: ['events'] }); // List caches
-        queryClient.invalidateQueries({ queryKey: ['event', event.eventCode] }); // Detail caches
-        queryClient.invalidateQueries({ queryKey: ['eventWorkflow', event.eventCode] }); // Workflow cache
-        queryClient.invalidateQueries({ queryKey: ['events', 'current'] }); // Current event cache
-      }
+      // Update event fields via PATCH API
+      const patchData = transformDatesForApi(patchFields);
+      await updateEventMutation.mutateAsync({
+        eventCode: event.eventCode,
+        data: patchData,
+      });
 
       setAutoSaveStatus('saved');
       setLastSavedAt(new Date());
