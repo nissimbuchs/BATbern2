@@ -19,13 +19,6 @@
     "eventCount_plural": "{{count}} events",
     "eventWord": "event",
     "eventWord_plural": "events",
-    "status": {
-      "active": "Active",
-      "published": "Published",
-      "draft": "Draft",
-      "completed": "Completed",
-      "archived": "Archived"
-    },
     "eventType": {
       "FULL_DAY": "Full Day",
       "AFTERNOON": "Afternoon",
@@ -122,18 +115,6 @@
       "accessDenied": "Access Denied",
       "organizerOnly": "Only organizers can access this page"
     },
-    "statusValues": {
-      "planning": "Planning",
-      "topicDefined": "Topic Defined",
-      "speakersInvited": "Speakers Invited",
-      "agendaDraft": "Agenda Draft",
-      "published": "Published",
-      "registrationOpen": "Registration Open",
-      "registrationClosed": "Registration Closed",
-      "inProgress": "In Progress",
-      "completed": "Completed",
-      "archived": "Archived"
-    },
     "themeImage": "Event Theme Image",
     "themeImageHelp": "Upload a theme image for this event (PNG, JPEG, or SVG, max 5MB). Recommended size: 1920x400px.",
     "themeImageAlt": "Theme image for event",
@@ -154,20 +135,6 @@
     "capacity": "Capacity",
     "timing": "Typical Timing",
     "exampleTimeline": "Example Timeline"
-  },
-  "status": {
-    "draft": "Draft",
-    "planning": "Planning",
-    "topic_defined": "Topic Defined",
-    "speakers_invited": "Speakers Invited",
-    "agenda_draft": "Agenda Draft",
-    "published": "Published",
-    "registration_open": "Registration Open",
-    "registration_closed": "Registration Closed",
-    "in_progress": "In Progress",
-    "completed": "Completed",
-    "archived": "Archived",
-    "cancelled": "Cancelled"
   },
   "filters": {
     "status": "Status",
