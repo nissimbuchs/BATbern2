@@ -39,7 +39,24 @@ interface EventSearchProps {
   filters: EventFilters;
 }
 
-const STATUS_OPTIONS = ['active', 'published', 'completed', 'archived'];
+const WORKFLOW_STATE_OPTIONS = [
+  'CREATED',
+  'TOPIC_SELECTION',
+  'SPEAKER_BRAINSTORMING',
+  'SPEAKER_OUTREACH',
+  'SPEAKER_CONFIRMATION',
+  'CONTENT_COLLECTION',
+  'QUALITY_REVIEW',
+  'THRESHOLD_CHECK',
+  'OVERFLOW_MANAGEMENT',
+  'SLOT_ASSIGNMENT',
+  'AGENDA_PUBLISHED',
+  'AGENDA_FINALIZED',
+  'NEWSLETTER_SENT',
+  'EVENT_READY',
+  'PARTNER_MEETING_COMPLETE',
+  'ARCHIVED',
+];
 const YEAR_OPTIONS = [2025, 2024, 2023, 2022];
 
 export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filters }) => {
@@ -50,12 +67,12 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
 
   // Parse URL params on mount
   useEffect(() => {
-    const statusParam = searchParams.get('status');
+    const workflowStateParam = searchParams.get('workflowState');
     const yearParam = searchParams.get('year');
     const searchParam = searchParams.get('search');
 
     const urlFilters: EventFilters = {};
-    if (statusParam) urlFilters.status = statusParam.split(',');
+    if (workflowStateParam) urlFilters.workflowState = workflowStateParam.split(',');
     if (yearParam) urlFilters.year = parseInt(yearParam, 10);
     if (searchParam) urlFilters.search = searchParam;
 
@@ -68,8 +85,8 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
   // Update URL when filters change
   useEffect(() => {
     const params = new URLSearchParams();
-    if (filters.status && filters.status.length > 0) {
-      params.set('status', filters.status.join(','));
+    if (filters.workflowState && filters.workflowState.length > 0) {
+      params.set('workflowState', filters.workflowState.join(','));
     }
     if (filters.year) {
       params.set('year', filters.year.toString());
@@ -97,9 +114,9 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
     onFiltersChange({ ...filters, search: '' });
   };
 
-  const handleStatusChange = (event: SelectChangeEvent<string[]>) => {
+  const handleWorkflowStateChange = (event: SelectChangeEvent<string[]>) => {
     const value = event.target.value as string[];
-    onFiltersChange({ ...filters, status: value });
+    onFiltersChange({ ...filters, workflowState: value });
   };
 
   const handleYearChange = (event: SelectChangeEvent<number>) => {
@@ -107,9 +124,14 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
     onFiltersChange({ ...filters, year: value });
   };
 
-  const handleRemoveStatus = (statusToRemove: string) => {
-    const newStatus = (filters.status || []).filter((s) => s !== statusToRemove);
-    onFiltersChange({ ...filters, status: newStatus.length > 0 ? newStatus : undefined });
+  const handleRemoveWorkflowState = (workflowStateToRemove: string) => {
+    const newWorkflowStates = (filters.workflowState || []).filter(
+      (s) => s !== workflowStateToRemove
+    );
+    onFiltersChange({
+      ...filters,
+      workflowState: newWorkflowStates.length > 0 ? newWorkflowStates : undefined,
+    });
   };
 
   const handleClearAll = () => {
@@ -119,7 +141,7 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
 
   // Count active filters
   const activeFilterCount =
-    (filters.status?.length || 0) + (filters.year ? 1 : 0) + (filters.search ? 1 : 0);
+    (filters.workflowState?.length || 0) + (filters.year ? 1 : 0) + (filters.search ? 1 : 0);
 
   return (
     <Box data-testid="filter-container">
@@ -148,34 +170,36 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
           />
         </FormControl>
 
-        {/* Status Filter */}
+        {/* Workflow State Filter */}
         <FormControl sx={{ minWidth: 200 }}>
-          <InputLabel id="status-filter-label">{t('dashboard.filter.status')}</InputLabel>
+          <InputLabel id="workflow-state-filter-label">
+            {t('dashboard.filter.workflowState')}
+          </InputLabel>
           <Select
-            labelId="status-filter-label"
+            labelId="workflow-state-filter-label"
             multiple
-            value={filters.status || []}
-            onChange={handleStatusChange}
-            input={<OutlinedInput label={t('dashboard.filter.status')} />}
+            value={filters.workflowState || []}
+            onChange={handleWorkflowStateChange}
+            input={<OutlinedInput label={t('dashboard.filter.workflowState')} />}
             renderValue={(selected) => (
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                 {selected.map((value) => (
                   <Chip
                     key={value}
-                    label={t(`dashboard.status.${value}`)}
+                    label={t(`workflow.state.${value}`)}
                     size="small"
-                    onDelete={() => handleRemoveStatus(value)}
+                    onDelete={() => handleRemoveWorkflowState(value)}
                     onMouseDown={(e) => e.stopPropagation()}
                     aria-label={`Remove ${value} filter`}
                   />
                 ))}
               </Box>
             )}
-            aria-label="Filter by status"
+            aria-label="Filter by workflow state"
           >
-            {STATUS_OPTIONS.map((status) => (
-              <MenuItem key={status} value={status}>
-                {t(`dashboard.status.${status}`)}
+            {WORKFLOW_STATE_OPTIONS.map((workflowState) => (
+              <MenuItem key={workflowState} value={workflowState}>
+                {t(`workflow.state.${workflowState}`)}
               </MenuItem>
             ))}
           </Select>

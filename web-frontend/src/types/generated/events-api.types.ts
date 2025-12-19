@@ -18,19 +18,19 @@ export interface paths {
      *     **Acceptance Criteria**: AC1
      *
      *     **Filter Syntax Examples**:
-     *     - Single filter: `{"status":"published"}`
+     *     - Single filter: `{"workflowState":"PUBLISHED"}`
      *     - Year filter: `{"year":2025}`
      *     - Text search: `{"title":{"$contains":"Cloud"}}`
      *     - Date range: `{"date":{"$gte":"2025-01-01T00:00:00Z","$lt":"2026-01-01T00:00:00Z"}}`
-     *     - Multiple filters: `{"status":"published","year":2025}`
-     *     - Search with filter: `{"status":"published","title":{"$contains":"Cloud"}}`
-     *     - Logical operators: `{"$or":[{"status":"published"},{"status":"archived"}]}`
-     *     - In operator: `{"status":{"$in":["published","archived"]}}`
+     *     - Multiple filters: `{"workflowState":"PUBLISHED","year":2025}`
+     *     - Search with filter: `{"workflowState":"PUBLISHED","title":{"$contains":"Cloud"}}`
+     *     - Logical operators: `{"$or":[{"workflowState":"PUBLISHED"},{"workflowState":"ARCHIVED"}]}`
+     *     - In operator: `{"workflowState":{"$in":["PUBLISHED","ARCHIVED"]}}`
      *
      *     **Supported Filter Fields**:
      *     - `year`: Integer (convenience filter, matches events from Jan 1 - Dec 31 of given year)
      *     - `date`: ISO 8601 timestamp (supports $gte, $lte, $gt, $lt operators for date ranges)
-     *     - `status`: String (single status) or use `$in` operator for multiple statuses
+     *     - `workflowState`: String (single workflow state) or use `$in` operator for multiple states
      *     - `eventNumber`: Integer (event number)
      *     - `title`: String (supports $contains, $startsWith, $endsWith operators for text search)
      *
@@ -508,6 +508,36 @@ export interface paths {
      *     **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
      */
     post: operations['createSession'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/sessions/batch-import': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Batch import sessions from legacy JSON
+     * @description Import multiple sessions from sessions.json with speaker assignments.
+     *
+     *     **Features**:
+     *     - Duplicate detection by (event_id, title)
+     *     - Automatic speaker assignment via speakerId → username matching
+     *     - Sequential 45-minute time slot calculation
+     *     - Graceful error handling for missing speakers
+     *
+     *     **Note**: This endpoint is designed for historical data migration from
+     *     the legacy BATspa application. For normal session creation, use the
+     *     POST /events/{eventCode}/sessions endpoint.
+     */
+    post: operations['batchImportSessions'];
     delete?: never;
     options?: never;
     head?: never;
@@ -1392,6 +1422,116 @@ export interface components {
      */
     SessionResponse: components['schemas']['Session'];
     /**
+     * @description Request payload for batch import from legacy sessions.json.
+     *     Designed for historical data migration from BATspa application.
+     */
+    BatchImportSessionRequest: {
+      /**
+       * @description Event number (links to BATbern{bat})
+       * @example 142
+       */
+      bat: number;
+      /**
+       * @description Session title
+       * @example User Interface Design
+       */
+      title: string;
+      /**
+       * @description Session abstract/description
+       * @example Discussion on modern UI patterns
+       */
+      abstract?: string;
+      /**
+       * @description PDF filename for reference (appended to description)
+       * @example BAT142_UI_Design.pdf
+       */
+      pdf?: string;
+      /**
+       * @description Moderator name (for Moderation sessions)
+       * @example Thomas Goetz
+       */
+      authoren?: string;
+      /** @description List of speakers for this session */
+      referenten?: components['schemas']['LegacySpeaker'][];
+    };
+    /**
+     * @description Speaker data from legacy sessions.json.
+     *     speakerId is mapped to username for user lookup.
+     */
+    LegacySpeaker: {
+      /**
+       * @description Speaker full name
+       * @example Thomas Goetz, Die Mobiliar
+       */
+      name?: string;
+      /** @description Speaker biography */
+      bio?: string;
+      /**
+       * @description Company identifier
+       * @example mobiliar
+       */
+      company?: string;
+      /**
+       * @description Portrait filename
+       * @example thomas.goetz.jpg
+       */
+      portrait?: string;
+      /**
+       * @description Speaker ID (maps to username in user_profiles)
+       * @example thomas.goetz
+       */
+      speakerId?: string;
+    };
+    /** @description Result of batch import operation with success/skip/fail counts. */
+    BatchImportSessionResult: {
+      /**
+       * @description Total sessions processed
+       * @example 3
+       */
+      totalProcessed: number;
+      /**
+       * @description Successfully created sessions
+       * @example 2
+       */
+      successfullyCreated: number;
+      /**
+       * @description Skipped sessions (duplicates)
+       * @example 1
+       */
+      skipped: number;
+      /**
+       * @description Failed imports
+       * @example 0
+       */
+      failed: number;
+      /** @description Detailed results per session */
+      details: components['schemas']['SessionImportDetail'][];
+    };
+    /** @description Detail for a single session import result. */
+    SessionImportDetail: {
+      /**
+       * @description Session title
+       * @example User Interface Design
+       */
+      title: string;
+      /**
+       * @description Import status
+       * @example success
+       * @enum {string}
+       */
+      status: 'success' | 'skipped' | 'failed';
+      /**
+       * @description Status message
+       * @example Session created successfully
+       */
+      message: string;
+      /**
+       * @description Generated session slug (null if failed)
+       * @example user-interface-design-abc123
+       */
+      sessionSlug?: string | null;
+    };
+    /**
      * @description Story 4.1.5a: Unified user profile approach for anonymous and authenticated registrations (ADR-006)
      *     All users (anonymous + authenticated) are in user_profiles table. Anonymous users have cognito_user_id = NULL.
      */
@@ -1461,18 +1601,7 @@ export interface components {
       venueName: string;
       venueAddress: string;
       venueCapacity: number;
-      /** @enum {string} */
-      status:
-        | 'planning'
-        | 'topic_defined'
-        | 'speakers_invited'
-        | 'agenda_draft'
-        | 'published'
-        | 'registration_open'
-        | 'registration_closed'
-        | 'in_progress'
-        | 'completed'
-        | 'archived';
+      workflowState?: components['schemas']['EventWorkflowState'];
       /**
        * @description Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
        *     Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.
@@ -1503,18 +1632,7 @@ export interface components {
       venueName: string;
       venueAddress: string;
       venueCapacity: number;
-      /** @enum {string} */
-      status:
-        | 'planning'
-        | 'topic_defined'
-        | 'speakers_invited'
-        | 'agenda_draft'
-        | 'published'
-        | 'registration_open'
-        | 'registration_closed'
-        | 'in_progress'
-        | 'completed'
-        | 'archived';
+      workflowState?: components['schemas']['EventWorkflowState'];
       /**
        * @description Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
        *     Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.
@@ -1540,18 +1658,7 @@ export interface components {
       venueName?: string;
       venueAddress?: string;
       venueCapacity?: number;
-      /** @enum {string} */
-      status?:
-        | 'planning'
-        | 'topic_defined'
-        | 'speakers_invited'
-        | 'agenda_draft'
-        | 'published'
-        | 'registration_open'
-        | 'registration_closed'
-        | 'in_progress'
-        | 'completed'
-        | 'archived';
+      workflowState?: components['schemas']['EventWorkflowState'];
       /**
        * @description Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
        *     Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.
@@ -2452,7 +2559,7 @@ export interface operations {
            *       "eventCode": "BATbern57",
            *       "title": "Cloud-Native Architecture in Practice",
            *       "eventNumber": 57,
-           *       "status": "published",
+           *       "workflowState": "PUBLISHED",
            *       "description": "Join us for an evening exploring modern cloud-native architecture patterns and best practices.",
            *       "date": "2025-03-15T18:00:00Z",
            *       "registrationDeadline": "2025-03-10T23:59:59Z",
@@ -3163,6 +3270,90 @@ export interface operations {
       };
       400: components['responses']['BadRequest'];
       404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  batchImportSessions: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        /**
+         * @example [
+         *       {
+         *         "bat": 142,
+         *         "title": "User Interface Design",
+         *         "abstract": "Discussion on modern UI patterns",
+         *         "pdf": "BAT142_UI_Design.pdf",
+         *         "referenten": [
+         *           {
+         *             "name": "Thomas Goetz, Die Mobiliar",
+         *             "bio": "Expert in UI design",
+         *             "company": "mobiliar",
+         *             "portrait": "thomas.goetz.jpg",
+         *             "speakerId": "thomas.goetz"
+         *           }
+         *         ]
+         *       }
+         *     ]
+         */
+        'application/json': components['schemas']['BatchImportSessionRequest'][];
+      };
+    };
+    responses: {
+      /** @description Import completed (may include skipped/failed sessions) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "totalProcessed": 3,
+           *       "successfullyCreated": 2,
+           *       "skipped": 1,
+           *       "failed": 0,
+           *       "details": [
+           *         {
+           *           "title": "User Interface Design",
+           *           "status": "success",
+           *           "message": "Session created successfully",
+           *           "sessionSlug": "user-interface-design-abc123"
+           *         },
+           *         {
+           *           "title": "Backend Architecture",
+           *           "status": "skipped",
+           *           "message": "Session already exists with title 'Backend Architecture'"
+           *         },
+           *         {
+           *           "title": "Database Design",
+           *           "status": "success",
+           *           "message": "Session created successfully",
+           *           "sessionSlug": "database-design-def456"
+           *         }
+           *       ]
+           *     }
+           */
+          'application/json': components['schemas']['BatchImportSessionResult'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      /** @description Event not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
       500: components['responses']['InternalServerError'];
     };
   };

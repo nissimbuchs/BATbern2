@@ -49,39 +49,8 @@ import type { components } from '@/types/generated/events-api.types';
 import { workflowService } from '@/services/workflowService';
 import { useQueryClient } from '@tanstack/react-query';
 
-/**
- * Maps EventWorkflowState to CreateEventRequest status field
- * Backend uses simplified status enum, frontend uses detailed workflow states
- */
-function mapWorkflowStateToStatus(
-  workflowState: components['schemas']['EventWorkflowState'] | undefined
-): components['schemas']['CreateEventRequest']['status'] {
-  if (!workflowState) return 'planning';
-
-  const statusMap: Record<
-    components['schemas']['EventWorkflowState'],
-    components['schemas']['CreateEventRequest']['status']
-  > = {
-    CREATED: 'planning',
-    TOPIC_SELECTION: 'planning',
-    SPEAKER_BRAINSTORMING: 'topic_defined',
-    SPEAKER_OUTREACH: 'speakers_invited',
-    SPEAKER_CONFIRMATION: 'speakers_invited',
-    CONTENT_COLLECTION: 'agenda_draft',
-    QUALITY_REVIEW: 'agenda_draft',
-    THRESHOLD_CHECK: 'agenda_draft',
-    OVERFLOW_MANAGEMENT: 'agenda_draft',
-    SLOT_ASSIGNMENT: 'agenda_draft',
-    AGENDA_PUBLISHED: 'published',
-    AGENDA_FINALIZED: 'published',
-    NEWSLETTER_SENT: 'registration_open',
-    EVENT_READY: 'in_progress',
-    PARTNER_MEETING_COMPLETE: 'completed',
-    ARCHIVED: 'archived',
-  };
-
-  return statusMap[workflowState] || 'planning';
-}
+// mapWorkflowStateToStatus function removed - no longer needed
+// Backend now uses workflowState directly (Phase 1-2 migration complete)
 
 /**
  * Converts legacy lowercase snake_case event types to UPPER_CASE enum values
@@ -418,7 +387,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         venueName: data.venueName,
         venueAddress: data.venueAddress,
         venueCapacity: data.venueCapacity,
-        status: mapWorkflowStateToStatus(isDraft ? 'CREATED' : data.workflowState),
+        workflowState: isDraft ? 'CREATED' : data.workflowState,
         eventType: data.eventType || 'FULL_DAY', // Required field with default
         organizerUsername: user.username, // Use username (e.g., "john.doe")
         currentAttendeeCount: 0,

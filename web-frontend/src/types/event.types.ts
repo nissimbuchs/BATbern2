@@ -189,7 +189,7 @@ export interface EventFormData {
 
 // Filter State (UI-only)
 export interface EventFilters {
-  status?: string[];
+  workflowState?: string[];
   year?: number;
   search?: string;
 }
