@@ -208,19 +208,19 @@ public class SessionBatchImportIntegrationTest extends AbstractIntegrationTest {
         assertThat(session1.getSessionType()).isEqualTo("presentation");
         assertThat(session1.getLanguage()).isEqualTo("de");
 
-        // Verify: Time slots are sequential (45 minutes each)
+        // Verify: Time slots
         Session session2 = sessions.stream()
                 .filter(s -> s.getTitle().equals("Backend Architecture"))
                 .findFirst()
                 .orElseThrow();
 
-        // First session: 18:00 - 18:45
+        // First session (with speakers): 18:00 - 18:45 (45 minutes)
         assertThat(session1.getStartTime()).isEqualTo(Instant.parse("2024-12-15T18:00:00Z"));
         assertThat(session1.getEndTime()).isEqualTo(Instant.parse("2024-12-15T18:45:00Z"));
 
-        // Second session: 18:45 - 19:30
-        assertThat(session2.getStartTime()).isEqualTo(Instant.parse("2024-12-15T18:45:00Z"));
-        assertThat(session2.getEndTime()).isEqualTo(Instant.parse("2024-12-15T19:30:00Z"));
+        // Second session (no speakers): 18:00 - 18:10 (10 minutes, slot 0)
+        assertThat(session2.getStartTime()).isEqualTo(Instant.parse("2024-12-15T18:00:00Z"));
+        assertThat(session2.getEndTime()).isEqualTo(Instant.parse("2024-12-15T18:10:00Z"));
     }
 
     @Test
@@ -309,7 +309,7 @@ public class SessionBatchImportIntegrationTest extends AbstractIntegrationTest {
         assertThat(speakers).hasSize(1);
         assertThat(speakers.get(0).getUsername()).isEqualTo("thomas.goetz");
         assertThat(speakers.get(0).getSpeakerRole()).isEqualTo(SessionUser.SpeakerRole.PRIMARY_SPEAKER);
-        assertThat(speakers.get(0).isConfirmed()).isFalse();
+        assertThat(speakers.get(0).isConfirmed()).isTrue(); // Historical data: already confirmed
     }
 
     @Test
@@ -348,26 +348,41 @@ public class SessionBatchImportIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("Should calculate sequential times when multiple sessions imported")
     void should_calculateSequentialTimes_when_multipleSessionsImported() throws Exception {
-        // Given: Import 3 sessions
+        // Given: Import 3 sessions with speakers (so they get sequential 45-min slots)
         String requestBody = """
                 [
                     {
                         "bat": 142,
                         "title": "Session 1",
                         "abstract": "First session",
-                        "referenten": []
+                        "referenten": [
+                            {
+                                "name": "Thomas Goetz",
+                                "speakerId": "thomas.goetz"
+                            }
+                        ]
                     },
                     {
                         "bat": 142,
                         "title": "Session 2",
                         "abstract": "Second session",
-                        "referenten": []
+                        "referenten": [
+                            {
+                                "name": "John Doe",
+                                "speakerId": "john.doe"
+                            }
+                        ]
                     },
                     {
                         "bat": 142,
                         "title": "Session 3",
                         "abstract": "Third session",
-                        "referenten": []
+                        "referenten": [
+                            {
+                                "name": "Thomas Goetz",
+                                "speakerId": "thomas.goetz"
+                            }
+                        ]
                     }
                 ]
                 """;
