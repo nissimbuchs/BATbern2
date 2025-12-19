@@ -502,6 +502,38 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle ObjectOptimisticLockingFailureException (concurrent modification of same entity)
+     * Returns HTTP 409 Conflict
+     *
+     * This occurs when multiple requests try to modify the same entity simultaneously.
+     * Common causes:
+     * - Frontend making duplicate API calls (e.g., auto-save + manual save)
+     * - User double-clicking submit button
+     * - Multiple browser tabs modifying same resource
+     *
+     * Story bugfix: Workflow transitions were being triggered by BOTH auto-save and manual save,
+     * causing race conditions. Frontend fix excludes workflow transitions from auto-save.
+     */
+    @ExceptionHandler(org.springframework.orm.ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<ErrorResponse> handleObjectOptimisticLockingFailureException(
+            org.springframework.orm.ObjectOptimisticLockingFailureException ex,
+            HttpServletRequest request) {
+        log.warn("Concurrent modification detected: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message("The resource was modified by another request. Please refresh and try again.")
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("MEDIUM")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
      * Handle generic exceptions
      * Returns HTTP 500 Internal Server Error
      */
