@@ -54,13 +54,11 @@ class SessionUserServiceTest {
     private Session testSession;
     private UserResponse testUser;
     private UUID sessionId;
-    private UUID userId;
     private String username;
 
     @BeforeEach
     void setUp() {
         sessionId = UUID.randomUUID();
-        username = "test-user"randomUUID();
         username = "john.doe";
 
         testSession = Session.builder()
@@ -93,7 +91,6 @@ class SessionUserServiceTest {
         SessionUser savedSessionUser = SessionUser.builder()
                 .id(UUID.randomUUID())
                 .session(testSession)
-                .username("test-user")
                 .username(username)
                 .speakerRole(SpeakerRole.PRIMARY_SPEAKER)
                 .presentationTitle("Test Presentation")
@@ -115,9 +112,6 @@ class SessionUserServiceTest {
 
         SessionUser captured = captor.getValue();
         assertThat(captured.getSession()).isEqualTo(testSession);
-        // userId is generated deterministically from username for backward compat
-        UUID expectedUsername = UUID.nameUUIDFromBytes(("user:" + username).getBytes());
-        assertThat(captured.getUsername()).isEqualTo(expectedUsername);
         assertThat(captured.getUsername()).isEqualTo(username);
         assertThat(captured.getSpeakerRole()).isEqualTo(SpeakerRole.PRIMARY_SPEAKER);
         assertThat(captured.getPresentationTitle()).isEqualTo("Test Presentation");
@@ -185,7 +179,6 @@ class SessionUserServiceTest {
         SessionUser sessionUser = SessionUser.builder()
                 .id(UUID.randomUUID())
                 .session(testSession)
-                .username("test-user")
                 .username(username)
                 .speakerRole(SpeakerRole.PRIMARY_SPEAKER)
                 .build();
@@ -221,7 +214,6 @@ class SessionUserServiceTest {
         SessionUser sessionUser = SessionUser.builder()
                 .id(UUID.randomUUID())
                 .session(testSession)
-                .username("test-user")
                 .username(username)
                 .speakerRole(SpeakerRole.PRIMARY_SPEAKER)
                 .isConfirmed(false)
@@ -250,7 +242,6 @@ class SessionUserServiceTest {
         SessionUser sessionUser = SessionUser.builder()
                 .id(UUID.randomUUID())
                 .session(testSession)
-                .username("test-user")
                 .username(username)
                 .speakerRole(SpeakerRole.PRIMARY_SPEAKER)
                 .isConfirmed(false)
@@ -281,13 +272,11 @@ class SessionUserServiceTest {
         // Given: Session has multiple speakers
         SessionUser speaker1 = SessionUser.builder()
                 .id(UUID.randomUUID())
-                .username("test-user")
                 .username(username)
                 .speakerRole(SpeakerRole.PRIMARY_SPEAKER)
                 .isConfirmed(true)
                 .build();
 
-        UUID userId2 = UUID.randomUUID();
         String username2 = "jane.smith";
         UserResponse user2 = new UserResponse()
                 .id(username2)
@@ -300,7 +289,6 @@ class SessionUserServiceTest {
 
         SessionUser speaker2 = SessionUser.builder()
                 .id(UUID.randomUUID())
-                .username("test-user")
                 .username(username2)
                 .speakerRole(SpeakerRole.CO_SPEAKER)
                 .isConfirmed(false)
@@ -349,7 +337,6 @@ class SessionUserServiceTest {
         UUID eventId = UUID.randomUUID();
 
         SessionUser speaker1 = SessionUser.builder()
-                .username("test-user")
                 .username(username)
                 .speakerRole(SpeakerRole.PRIMARY_SPEAKER)
                 .build();
@@ -375,7 +362,6 @@ class SessionUserServiceTest {
         SessionUser savedSessionUser = SessionUser.builder()
                 .id(UUID.randomUUID())
                 .session(testSession)
-                .username("test-user")
                 .username(username)
                 .speakerRole(SpeakerRole.MODERATOR)
                 .presentationTitle(null)

@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -258,10 +257,10 @@ class SessionUserRepositoryIntegrationTest extends AbstractIntegrationTest {
         // Given: Existing assignment
         createSessionUser(testSession1, username1, SpeakerRole.PRIMARY_SPEAKER);
 
-        // When: Attempting duplicate assignment
+        // When: Attempting duplicate assignment with same username
         SessionUser duplicate = SessionUser.builder()
                 .session(testSession1)
-                .username("test-user")
+                .username(username1)
                 .speakerRole(SpeakerRole.CO_SPEAKER)
                 .isConfirmed(false)
                 .build();
@@ -271,8 +270,9 @@ class SessionUserRepositoryIntegrationTest extends AbstractIntegrationTest {
             sessionUserRepository.saveAndFlush(duplicate);
             assertThat(false).as("Should have thrown exception for duplicate assignment").isTrue();
         } catch (Exception e) {
-            assertThat(e).hasMessageContaining("unique_session_user")
-                    .describedAs("Should violate unique constraint on (session_id, user_id)");
+            assertThat(e.getMessage())
+                    .containsAnyOf("unique_session", "duplicate key")
+                    .describedAs("Should violate unique constraint on (session_id, username)");
         }
     }
 

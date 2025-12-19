@@ -11,6 +11,7 @@
 -- 2. Make username NOT NULL (ensure data integrity)
 -- 3. Drop user_id column
 -- 4. Drop user_id index
+-- 5. Add new unique constraint on (session_id, username)
 
 -- Drop old unique constraint that included user_id
 ALTER TABLE session_users
@@ -27,6 +28,11 @@ DROP INDEX IF EXISTS idx_session_users_user_id;
 -- Drop user_id column (no longer needed - username is the primary identifier)
 ALTER TABLE session_users
 DROP COLUMN IF EXISTS user_id;
+
+-- Create new unique constraint on (session_id, username)
+-- Ensures a user can only be assigned to a session once
+ALTER TABLE session_users
+ADD CONSTRAINT unique_session_username UNIQUE (session_id, username);
 
 -- Update table comment to reflect new architecture
 COMMENT ON TABLE session_users IS 'Many-to-many relationship between sessions and users (speakers) - ADR-003: uses username for API-based user data access';
