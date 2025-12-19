@@ -40,6 +40,8 @@ import {
   Stack,
   useMediaQuery,
   useTheme,
+  AvatarGroup,
+  Tooltip,
 } from '@mui/material';
 import {
   Visibility as ViewIcon,
@@ -53,6 +55,7 @@ import {
   People as PeopleIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { UserAvatar } from '@/components/shared/UserAvatar';
 import type { SessionUI } from '@/types/event.types';
 
 interface SpeakersSessionsTableProps {
@@ -268,11 +271,61 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
                   {formatTime(session.startTime)}-{formatTime(session.endTime)}
                 </Typography>
 
-                {session.speaker ? (
+                {session.speakers && session.speakers.length > 0 ? (
                   <>
-                    <Typography variant="body1" fontWeight="bold">
-                      {session.speaker.name} ({session.speaker.company})
-                    </Typography>
+                    {session.speakers.length === 1 ? (
+                      <UserAvatar
+                        name={session.speakers[0].name}
+                        company={session.speakers[0].company}
+                        profilePictureUrl={session.speakers[0].profilePictureUrl}
+                        size={48}
+                        showCompany={true}
+                        horizontal={true}
+                      />
+                    ) : (
+                      <Box>
+                        <AvatarGroup max={4} sx={{ justifyContent: 'flex-start', mb: 1 }}>
+                          {session.speakers.map((spk) => (
+                            <Tooltip
+                              key={spk.username}
+                              title={`${spk.name}${spk.company ? ` (${spk.company})` : ''}`}
+                              arrow
+                            >
+                              <Box>
+                                <UserAvatar
+                                  name={spk.name}
+                                  profilePictureUrl={spk.profilePictureUrl}
+                                  size={48}
+                                  showCompany={false}
+                                  showTooltip={false}
+                                />
+                              </Box>
+                            </Tooltip>
+                          ))}
+                        </AvatarGroup>
+                        <Typography variant="caption" color="text.secondary">
+                          {session.speakers.map((s) => s.name).join(', ')}
+                        </Typography>
+                      </Box>
+                    )}
+                    <Typography variant="body2">{session.title}</Typography>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      {getMaterialsStatusIcon(session.materialsStatus)}
+                      <Typography variant="caption">
+                        {getMaterialsStatusLabel(session.materialsStatus)}
+                      </Typography>
+                    </Stack>
+                  </>
+                ) : session.speaker ? (
+                  <>
+                    <UserAvatar
+                      name={session.speaker.name}
+                      company={session.speaker.company}
+                      profilePictureUrl={session.speaker.profilePictureUrl}
+                      size={48}
+                      showCompany={true}
+                      horizontal={true}
+                    />
                     <Typography variant="body2">{session.title}</Typography>
                     <Stack direction="row" spacing={1} alignItems="center">
                       {getMaterialsStatusIcon(session.materialsStatus)}
@@ -418,15 +471,51 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
                 </TableCell>
 
                 <TableCell>
-                  {session.speaker ? (
-                    <>
-                      <Typography variant="body2" fontWeight="medium">
-                        {session.speaker.name}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {session.speaker.company}
-                      </Typography>
-                    </>
+                  {session.speakers && session.speakers.length > 0 ? (
+                    session.speakers.length === 1 ? (
+                      <UserAvatar
+                        name={session.speakers[0].name}
+                        company={session.speakers[0].company}
+                        profilePictureUrl={session.speakers[0].profilePictureUrl}
+                        size={40}
+                        showCompany={true}
+                        horizontal={true}
+                      />
+                    ) : (
+                      <Box>
+                        <AvatarGroup max={4} sx={{ mb: 0.5 }}>
+                          {session.speakers.map((spk) => (
+                            <Tooltip
+                              key={spk.username}
+                              title={`${spk.name}${spk.company ? ` (${spk.company})` : ''}`}
+                              arrow
+                            >
+                              <Box>
+                                <UserAvatar
+                                  name={spk.name}
+                                  profilePictureUrl={spk.profilePictureUrl}
+                                  size={32}
+                                  showCompany={false}
+                                  showTooltip={false}
+                                />
+                              </Box>
+                            </Tooltip>
+                          ))}
+                        </AvatarGroup>
+                        <Typography variant="caption" color="text.secondary">
+                          {session.speakers.map((s) => s.name).join(', ')}
+                        </Typography>
+                      </Box>
+                    )
+                  ) : session.speaker ? (
+                    <UserAvatar
+                      name={session.speaker.name}
+                      company={session.speaker.company}
+                      profilePictureUrl={session.speaker.profilePictureUrl}
+                      size={40}
+                      showCompany={true}
+                      horizontal={true}
+                    />
                   ) : (
                     <Typography variant="body2" color="text.secondary" fontStyle="italic">
                       {t('speakers.notAssigned')}
