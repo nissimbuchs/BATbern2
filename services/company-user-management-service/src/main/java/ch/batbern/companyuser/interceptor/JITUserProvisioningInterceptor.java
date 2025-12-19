@@ -156,11 +156,11 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
 
         // Prefer first.last name if both available
         if (firstName != null && !firstName.isEmpty() && lastName != null && !lastName.isEmpty()) {
-            username = firstName.toLowerCase().replaceAll("[^a-z]", "") + "." +
-                       lastName.toLowerCase().replaceAll("[^a-z]", "");
-        }
-        // Fall back to email local part if it contains a dot
-        else if (email != null && !email.isEmpty()) {
+            username = firstName.toLowerCase().replaceAll("[^a-z]", "")
+                       + "."
+                       + lastName.toLowerCase().replaceAll("[^a-z]", "");
+        } else if (email != null && !email.isEmpty()) {
+            // Fall back to email local part if it contains a dot
             String emailLocal = email.split("@")[0].toLowerCase().replaceAll("[^a-z.]", "");
             if (emailLocal.contains(".")) {
                 username = emailLocal;
@@ -168,9 +168,8 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
                 // Email doesn't contain dot, prepend "user."
                 username = "user." + emailLocal;
             }
-        }
-        // Last resort: generate timestamp-based username
-        else {
+        } else {
+            // Last resort: generate timestamp-based username
             username = "user." + System.currentTimeMillis();
         }
 
