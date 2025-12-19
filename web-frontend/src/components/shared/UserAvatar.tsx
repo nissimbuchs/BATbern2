@@ -77,11 +77,11 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
   const fullName =
     name || (firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName || '');
 
-  // Generate initials
+  // Generate initials (fallback to '?' if no name)
   const initials = getInitials(firstName, lastName, name);
 
-  // Generate background color if not provided
-  const avatarBgColor = bgcolor || stringToColor(fullName);
+  // Generate background color if not provided (use '?' if no name for consistent color)
+  const avatarBgColor = bgcolor || stringToColor(fullName || '?');
 
   const avatarElement = (
     <Avatar
@@ -107,7 +107,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
       ) : (
         avatarElement
       )}
-      <Box>
+      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
         <Typography variant="body2" fontWeight="medium">
           {fullName}
         </Typography>
