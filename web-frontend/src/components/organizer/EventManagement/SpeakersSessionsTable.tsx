@@ -280,7 +280,7 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
                           profilePictureUrl={spk.profilePictureUrl}
                           size={48}
                           showCompany={true}
-                          horizontal={false}
+                          horizontal={true}
                         />
                       ))}
                     </Stack>
@@ -457,7 +457,7 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
                           profilePictureUrl={spk.profilePictureUrl}
                           size={40}
                           showCompany={true}
-                          horizontal={false}
+                          horizontal={true}
                         />
                       ))}
                     </Stack>
