@@ -1,7 +1,7 @@
-package ch.batbern.speakers.repository;
+package ch.batbern.events.repository;
 
-import ch.batbern.speakers.AbstractIntegrationTest;
-import ch.batbern.speakers.domain.SpeakerStatusHistory;
+import ch.batbern.events.AbstractIntegrationTest;
+import ch.batbern.events.domain.SpeakerStatusHistory;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

@@ -1,6 +1,6 @@
-package ch.batbern.speakers.controller;
+package ch.batbern.events.controller;
 
-import ch.batbern.speakers.AbstractIntegrationTest;
+import ch.batbern.events.AbstractIntegrationTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

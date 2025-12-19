@@ -1,9 +1,12 @@
-package ch.batbern.speakers.service;
+package ch.batbern.events.service;
 
 import ch.batbern.shared.types.SpeakerWorkflowState;
-import ch.batbern.speakers.dto.UpdateStatusRequest;
-import ch.batbern.speakers.repository.SpeakerStatusHistoryRepository;
-import ch.batbern.speakers.validator.StatusTransitionValidator;
+import ch.batbern.events.dto.UpdateStatusRequest;
+import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
+import ch.batbern.events.service.EventTypeService;
+import ch.batbern.events.validator.StatusTransitionValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,11 +39,20 @@ public class SpeakerStatusServiceTest {
     @Mock
     private StatusTransitionValidator validator;
 
+    @Mock
+    private SpeakerPoolRepository speakerPoolRepository;
+
+    @Mock
+    private EventRepository eventRepository;
+
+    @Mock
+    private EventTypeService eventTypeService;
+
     private SpeakerStatusService service;
 
     @BeforeEach
     void setUp() {
-        service = new SpeakerStatusService(repository, validator);
+        service = new SpeakerStatusService(repository, validator, speakerPoolRepository, eventRepository, eventTypeService);
     }
 
     /**
