@@ -15,9 +15,11 @@
  */
 
 import React from 'react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
+import { I18nextProvider } from 'react-i18next';
+import i18n from '@/i18n/config';
 import { EventSearch } from '../EventSearch';
 
 describe('EventSearch Component', () => {
@@ -30,7 +32,9 @@ describe('EventSearch Component', () => {
 
   const createWrapper = () => {
     return ({ children }: { children: React.ReactNode }) => (
-      <BrowserRouter>{children}</BrowserRouter>
+      <I18nextProvider i18n={i18n}>
+        <BrowserRouter>{children}</BrowserRouter>
+      </I18nextProvider>
     );
   };
 
@@ -117,71 +121,77 @@ describe('EventSearch Component', () => {
     it('should_displayStatusFilter_when_rendered', () => {
       render(<EventSearch {...defaultProps} />, { wrapper: createWrapper() });
 
-      expect(screen.getByRole('combobox', { name: /filter by status/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('combobox', { name: /filter by workflow state/i })
+      ).toBeInTheDocument();
     });
 
     it('should_displayStatusOptions_when_dropdownOpened', () => {
       render(<EventSearch {...defaultProps} />, { wrapper: createWrapper() });
 
-      fireEvent.mouseDown(screen.getByRole('combobox', { name: /filter by status/i }));
+      fireEvent.mouseDown(screen.getByRole('combobox', { name: /filter by workflow state/i }));
 
-      expect(screen.getByText(/active/i)).toBeInTheDocument();
-      expect(screen.getByText(/published/i)).toBeInTheDocument();
-      expect(screen.getByText(/completed/i)).toBeInTheDocument();
+      expect(screen.getByText(/created/i)).toBeInTheDocument();
       expect(screen.getByText(/archived/i)).toBeInTheDocument();
     });
 
     it('should_allowMultipleSelection_when_statusOptionsClicked', () => {
       const { rerender } = render(<EventSearch {...defaultProps} />, { wrapper: createWrapper() });
 
-      const statusSelect = screen.getByRole('combobox', { name: /filter by status/i });
+      const statusSelect = screen.getByRole('combobox', { name: /filter by workflow state/i });
 
       // Open dropdown and select first option
       fireEvent.mouseDown(statusSelect);
-      fireEvent.click(screen.getByText(/active/i));
+      fireEvent.click(screen.getByText(/created/i));
 
       // Verify first selection was called
       expect(mockOnFiltersChange).toHaveBeenCalledWith({
-        status: ['active'],
+        workflowState: ['CREATED'],
       });
 
       // Re-render with updated filters (simulating parent state update)
-      rerender(<EventSearch {...defaultProps} filters={{ status: ['active'] }} />);
+      rerender(<EventSearch {...defaultProps} filters={{ workflowState: ['CREATED'] }} />);
 
       // Dropdown is still open after first selection, just click second option
-      fireEvent.click(screen.getByText(/published/i));
+      fireEvent.click(screen.getByText(/archived/i));
 
       // Verify both selections were called
       expect(mockOnFiltersChange).toHaveBeenCalledWith({
-        status: ['active', 'published'],
+        workflowState: ['CREATED', 'ARCHIVED'],
       });
     });
 
     it('should_displaySelectedStatus_when_statusFiltered', () => {
-      render(<EventSearch {...defaultProps} filters={{ status: ['active', 'published'] }} />, {
-        wrapper: createWrapper(),
-      });
+      render(
+        <EventSearch {...defaultProps} filters={{ workflowState: ['CREATED', 'ARCHIVED'] }} />,
+        {
+          wrapper: createWrapper(),
+        }
+      );
 
-      // Multiple elements may contain "active" (status chip + filter count chip)
-      expect(screen.getAllByText(/active/i).length).toBeGreaterThan(0);
-      expect(screen.getByText(/published/i)).toBeInTheDocument();
+      // Multiple elements may contain "created" (workflowState chip + filter count chip)
+      expect(screen.getAllByText(/created/i).length).toBeGreaterThan(0);
+      expect(screen.getByText(/archived/i)).toBeInTheDocument();
     });
 
     it('should_removeStatus_when_chipDeleted', () => {
-      render(<EventSearch {...defaultProps} filters={{ status: ['active', 'published'] }} />, {
-        wrapper: createWrapper(),
-      });
+      render(
+        <EventSearch {...defaultProps} filters={{ workflowState: ['CREATED', 'ARCHIVED'] }} />,
+        {
+          wrapper: createWrapper(),
+        }
+      );
 
       // Find the chip by its aria-label and click its cancel icon
-      const activeChip = screen.getByLabelText(/remove active filter/i);
-      const cancelIcon = activeChip.querySelector('[data-testid="CancelIcon"]');
+      const createdChip = screen.getByLabelText(/remove created filter/i);
+      const cancelIcon = createdChip.querySelector('[data-testid="CancelIcon"]');
 
       if (cancelIcon) {
         fireEvent.click(cancelIcon);
       }
 
       expect(mockOnFiltersChange).toHaveBeenCalledWith({
-        status: ['published'],
+        workflowState: ['ARCHIVED'],
       });
     });
   });
@@ -190,25 +200,27 @@ describe('EventSearch Component', () => {
     it('should_displayYearFilter_when_rendered', () => {
       render(<EventSearch {...defaultProps} />, { wrapper: createWrapper() });
 
-      expect(screen.getByRole('combobox', { name: /filter by year/i })).toBeInTheDocument();
+      expect(screen.getByLabelText(/filter by year/i)).toBeInTheDocument();
     });
 
-    it('should_displayYearOptions_when_dropdownOpened', () => {
+    it('should_acceptYearInput_when_userTypes', () => {
       render(<EventSearch {...defaultProps} />, { wrapper: createWrapper() });
 
-      fireEvent.mouseDown(screen.getByRole('combobox', { name: /filter by year/i }));
-
-      expect(screen.getByText('2025')).toBeInTheDocument();
-      expect(screen.getByText('2024')).toBeInTheDocument();
-    });
-
-    it('should_selectYear_when_yearClicked', () => {
-      render(<EventSearch {...defaultProps} />, { wrapper: createWrapper() });
-
-      fireEvent.mouseDown(screen.getByRole('combobox', { name: /filter by year/i }));
-      fireEvent.click(screen.getByText('2025'));
+      const yearInput = screen.getByLabelText(/filter by year/i);
+      fireEvent.change(yearInput, { target: { value: '2025' } });
 
       expect(mockOnFiltersChange).toHaveBeenCalledWith({ year: 2025 });
+    });
+
+    it('should_clearYear_when_inputCleared', () => {
+      render(<EventSearch {...defaultProps} filters={{ year: 2025 }} />, {
+        wrapper: createWrapper(),
+      });
+
+      const yearInput = screen.getByLabelText(/filter by year/i);
+      fireEvent.change(yearInput, { target: { value: '' } });
+
+      expect(mockOnFiltersChange).toHaveBeenCalledWith({ year: undefined });
     });
 
     it('should_displaySelectedYear_when_yearFiltered', () => {
@@ -225,7 +237,7 @@ describe('EventSearch Component', () => {
       render(
         <EventSearch
           {...defaultProps}
-          filters={{ status: ['active'], year: 2025, search: 'Cloud' }}
+          filters={{ workflowState: ['CREATED'], year: 2025, search: 'Cloud' }}
         />,
         { wrapper: createWrapper() }
       );
@@ -245,7 +257,7 @@ describe('EventSearch Component', () => {
       render(
         <EventSearch
           {...defaultProps}
-          filters={{ status: ['active'], year: 2025, search: 'Cloud' }}
+          filters={{ workflowState: ['CREATED'], year: 2025, search: 'Cloud' }}
         />,
         { wrapper: createWrapper() }
       );
@@ -259,7 +271,10 @@ describe('EventSearch Component', () => {
   describe('Active Filter Count (AC2)', () => {
     it('should_displayActiveFilterCount_when_filtersActive', () => {
       render(
-        <EventSearch {...defaultProps} filters={{ status: ['active', 'published'], year: 2025 }} />,
+        <EventSearch
+          {...defaultProps}
+          filters={{ workflowState: ['CREATED', 'ARCHIVED'], year: 2025 }}
+        />,
         { wrapper: createWrapper() }
       );
 
@@ -268,13 +283,15 @@ describe('EventSearch Component', () => {
 
     it('should_updateCount_when_filtersChange', () => {
       const { rerender } = render(
-        <EventSearch {...defaultProps} filters={{ status: ['active'] }} />,
+        <EventSearch {...defaultProps} filters={{ workflowState: ['CREATED'] }} />,
         { wrapper: createWrapper() }
       );
 
       expect(screen.getByText(/1.*filter.*active/i)).toBeInTheDocument();
 
-      rerender(<EventSearch {...defaultProps} filters={{ status: ['active'], year: 2025 }} />);
+      rerender(
+        <EventSearch {...defaultProps} filters={{ workflowState: ['CREATED'], year: 2025 }} />
+      );
 
       expect(screen.getByText(/2.*filters?.*active/i)).toBeInTheDocument();
     });
@@ -300,12 +317,12 @@ describe('EventSearch Component', () => {
 
     it('should_parseURLParams_when_componentMounts', () => {
       // Set URL params before render
-      window.history.pushState({}, '', '?status=active&year=2025&search=Cloud');
+      window.history.pushState({}, '', '?workflowState=CREATED&year=2025&search=Cloud');
 
       render(<EventSearch {...defaultProps} />, { wrapper: createWrapper() });
 
       expect(mockOnFiltersChange).toHaveBeenCalledWith({
-        status: ['active'],
+        workflowState: ['CREATED'],
         year: 2025,
         search: 'Cloud',
       });
@@ -315,12 +332,12 @@ describe('EventSearch Component', () => {
       render(
         <EventSearch
           {...defaultProps}
-          filters={{ status: ['active'], year: 2025, search: 'Cloud' }}
+          filters={{ workflowState: ['CREATED'], year: 2025, search: 'Cloud' }}
         />,
         { wrapper: createWrapper() }
       );
 
-      expect(window.location.search).toContain('status=active');
+      expect(window.location.search).toContain('workflowState=CREATED');
       expect(window.location.search).toContain('year=2025');
       expect(window.location.search).toContain('search=Cloud');
     });
@@ -348,14 +365,19 @@ describe('EventSearch Component', () => {
       render(<EventSearch {...defaultProps} />, { wrapper: createWrapper() });
 
       expect(screen.getByLabelText(/search events/i)).toBeInTheDocument();
-      expect(screen.getByRole('combobox', { name: /filter by status/i })).toBeInTheDocument();
-      expect(screen.getByRole('combobox', { name: /filter by year/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('combobox', { name: /filter by workflow state/i })
+      ).toBeInTheDocument();
+      expect(screen.getByLabelText(/filter by year/i)).toBeInTheDocument();
     });
 
     it('should_announceFilterCount_when_filtersActive', () => {
-      render(<EventSearch {...defaultProps} filters={{ status: ['active'], year: 2025 }} />, {
-        wrapper: createWrapper(),
-      });
+      render(
+        <EventSearch {...defaultProps} filters={{ workflowState: ['CREATED'], year: 2025 }} />,
+        {
+          wrapper: createWrapper(),
+        }
+      );
 
       expect(screen.getByLabelText(/2 filters active/i)).toBeInTheDocument();
     });
@@ -366,18 +388,20 @@ describe('EventSearch Component', () => {
       render(<EventSearch {...defaultProps} />, { wrapper: createWrapper() });
 
       // Filter labels should be translated
-      expect(screen.getByRole('combobox', { name: /filter by status/i })).toBeInTheDocument();
-      expect(screen.getByRole('combobox', { name: /filter by year/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('combobox', { name: /filter by workflow state/i })
+      ).toBeInTheDocument();
+      expect(screen.getByLabelText(/filter by year/i)).toBeInTheDocument();
     });
 
     it('should_translateStatusOptions_when_dropdownOpened', () => {
       render(<EventSearch {...defaultProps} />, { wrapper: createWrapper() });
 
-      fireEvent.mouseDown(screen.getByRole('combobox', { name: /filter by status/i }));
+      fireEvent.mouseDown(screen.getByRole('combobox', { name: /filter by workflow state/i }));
 
-      // Status options should be translated
-      expect(screen.getByText(/active/i)).toBeInTheDocument();
-      expect(screen.getByText(/published/i)).toBeInTheDocument();
+      // Workflow state options should be translated
+      expect(screen.getByText(/created/i)).toBeInTheDocument();
+      expect(screen.getByText(/archived/i)).toBeInTheDocument();
     });
   });
 });

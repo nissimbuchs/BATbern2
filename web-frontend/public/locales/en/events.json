@@ -64,6 +64,7 @@
     "searchEvents": "Search events...",
     "filter": {
       "status": "Filter by status",
+      "workflowState": "Filter by workflow state",
       "year": "Filter by year",
       "allYears": "All Years",
       "activeFilters": "{{count}} filter active",
