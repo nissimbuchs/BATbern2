@@ -19,13 +19,6 @@
     "eventCount_plural": "{{count}} Veranstaltungen",
     "eventWord": "Veranstaltung",
     "eventWord_plural": "Veranstaltungen",
-    "status": {
-      "active": "Aktiv",
-      "published": "Veröffentlicht",
-      "draft": "Entwurf",
-      "completed": "Abgeschlossen",
-      "archived": "Archiviert"
-    },
     "eventType": {
       "FULL_DAY": "Ganztägig",
       "AFTERNOON": "Nachmittag",
@@ -122,18 +115,6 @@
       "accessDenied": "Zugriff verweigert",
       "organizerOnly": "Nur Organisatoren können auf diese Seite zugreifen"
     },
-    "statusValues": {
-      "planning": "Planung",
-      "topicDefined": "Thema definiert",
-      "speakersInvited": "Referenten eingeladen",
-      "agendaDraft": "Agenda Entwurf",
-      "published": "Veröffentlicht",
-      "registrationOpen": "Anmeldung offen",
-      "registrationClosed": "Anmeldung geschlossen",
-      "inProgress": "In Arbeit",
-      "completed": "Abgeschlossen",
-      "archived": "Archiviert"
-    },
     "themeImage": "Veranstaltungs-Themenbild",
     "themeImageHelp": "Laden Sie ein Themenbild für diese Veranstaltung hoch (PNG, JPEG oder SVG, max. 5MB). Empfohlene Größe: 1920x400px.",
     "themeImageAlt": "Themenbild für Veranstaltung",
@@ -151,20 +132,6 @@
     "capacity": "Kapazität",
     "timing": "Typische Zeitplanung",
     "exampleTimeline": "Beispiel-Zeitplan"
-  },
-  "status": {
-    "draft": "Entwurf",
-    "planning": "Planung",
-    "topic_defined": "Thema definiert",
-    "speakers_invited": "Referenten eingeladen",
-    "agenda_draft": "Agenda Entwurf",
-    "published": "Veröffentlicht",
-    "registration_open": "Anmeldung offen",
-    "registration_closed": "Anmeldung geschlossen",
-    "in_progress": "In Arbeit",
-    "completed": "Abgeschlossen",
-    "archived": "Archiviert",
-    "cancelled": "Abgesagt"
   },
   "filters": {
     "status": "Status",
