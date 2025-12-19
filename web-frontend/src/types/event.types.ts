@@ -47,15 +47,7 @@ export interface SessionUI extends Session {
     email?: string;
     profilePictureUrl?: string; // Speaker's profile picture
   };
-  // Multiple speakers support (when session has multiple speakers)
-  speakers?: Array<{
-    speakerSlug: string;
-    username: string;
-    name: string;
-    company?: string;
-    email?: string;
-    profilePictureUrl?: string;
-  }>;
+  // Note: speakers is inherited from base Session type (SessionSpeaker[])
   // Note: materialsStatus is now defined in base Session type from OpenAPI spec
 }
 

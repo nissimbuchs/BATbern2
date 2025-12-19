@@ -275,7 +275,8 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
                       {session.speakers.map((spk) => (
                         <UserAvatar
                           key={spk.username}
-                          name={spk.name}
+                          firstName={spk.firstName}
+                          lastName={spk.lastName}
                           company={spk.company}
                           profilePictureUrl={spk.profilePictureUrl}
                           size={48}
@@ -452,7 +453,8 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
                       {session.speakers.map((spk) => (
                         <UserAvatar
                           key={spk.username}
-                          name={spk.name}
+                          firstName={spk.firstName}
+                          lastName={spk.lastName}
                           company={spk.company}
                           profilePictureUrl={spk.profilePictureUrl}
                           size={40}

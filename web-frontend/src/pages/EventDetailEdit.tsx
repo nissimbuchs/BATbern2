@@ -212,17 +212,6 @@ const EventDetailEdit: React.FC = () => {
       session.speakers?.find((s: SessionSpeaker) => s.speakerRole === 'PRIMARY_SPEAKER') ||
       session.speakers?.[0];
 
-    // Map all speakers from API to UI format
-    const speakersUI =
-      session.speakers?.map((s: SessionSpeaker) => ({
-        speakerSlug: s.username,
-        username: s.username,
-        name: `${s.firstName} ${s.lastName}`,
-        company: s.company,
-        email: s.username,
-        profilePictureUrl: s.profilePictureUrl,
-      })) || [];
-
     return {
       ...session,
       slotNumber: index + 1,
@@ -236,9 +225,8 @@ const EventDetailEdit: React.FC = () => {
             profilePictureUrl: primarySpeaker.profilePictureUrl,
           }
         : undefined,
-      // Map all speakers to speakers array
-      speakers: speakersUI.length > 0 ? speakersUI : undefined,
       materialsStatus: 'pending' as const,
+      // Note: speakers array is inherited from base Session type
     };
   });
 
