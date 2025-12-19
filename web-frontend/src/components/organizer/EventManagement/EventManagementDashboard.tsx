@@ -26,6 +26,7 @@ import { CriticalTasksList } from './CriticalTasksList';
 import { TeamActivityFeed } from './TeamActivityFeed';
 import { EventForm } from './EventForm';
 import { EventBatchImportModal } from '@/components/shared/Event/EventBatchImportModal';
+import { SessionBatchImportModal } from '@/components/shared/Session/SessionBatchImportModal';
 import { EventPagination } from './EventPagination';
 import { QuickActions } from './QuickActions';
 import type { EventFilters } from '@/types/event.types';
@@ -49,6 +50,7 @@ export const EventManagementDashboard: React.FC = () => {
   } = useEventStore();
 
   const [isBatchImportOpen, setIsBatchImportOpen] = useState(false);
+  const [isSessionBatchImportOpen, setIsSessionBatchImportOpen] = useState(false);
 
   // Fetch data with React Query hooks
   const {
@@ -163,6 +165,7 @@ export const EventManagementDashboard: React.FC = () => {
               <QuickActions
                 onNewEvent={handleNewEvent}
                 onBatchImport={() => setIsBatchImportOpen(true)}
+                onBatchImportSessions={() => setIsSessionBatchImportOpen(true)}
               />
 
               {/* Critical Tasks */}
@@ -220,6 +223,16 @@ export const EventManagementDashboard: React.FC = () => {
           onClose={() => setIsBatchImportOpen(false)}
           onImportComplete={(result) => {
             console.log('Import complete:', result);
+            // The useEvents hook will automatically refetch due to query invalidation
+          }}
+        />
+
+        {/* Session Batch Import Modal */}
+        <SessionBatchImportModal
+          open={isSessionBatchImportOpen}
+          onClose={() => setIsSessionBatchImportOpen(false)}
+          onImportComplete={(result) => {
+            console.log('Session import complete:', result);
             // The useEvents hook will automatically refetch due to query invalidation
           }}
         />

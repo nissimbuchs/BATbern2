@@ -1,7 +1,7 @@
 {
   "app": {
-    "name": "BATbern",
-    "tagline": "Event Management Platform"
+    "title": "BATbern Event Management Platform",
+    "name": "BATbern"
   },
   "navigation": {
     "home": "Home",
@@ -285,10 +285,6 @@
       "multipleFiles": "Only one file can be uploaded at a time"
     }
   },
-  "app": {
-    "title": "BATbern Event Management Platform",
-    "name": "BATbern"
-  },
   "registration": {
     "success": {
       "title": "Registration Submitted!",
@@ -308,6 +304,38 @@
       "title": "You're Registered!",
       "pending": "Registration pending for",
       "checkEmail": "Check your email to confirm"
+    }
+  },
+  "session": {
+    "batchImport": {
+      "button": "Import Sessions",
+      "title": "Session Batch Import",
+      "dropzone": "Drop sessions.json here or click to upload",
+      "dropzoneActive": "Drop sessions.json here",
+      "dropzoneHint": "Only sessions.json is accepted",
+      "preview": "{{count}} sessions to import",
+      "progress": "{{current}} of {{total}} imported",
+      "complete": "Import complete: {{success}} successful, {{skipped}} skipped, {{failed}} failed",
+      "noSessions": "No sessions found in file",
+      "importButtonWithCount": "Import {{count}} sessions",
+      "cancelButton": "Cancel",
+      "columns": {
+        "event": "Event",
+        "title": "Title",
+        "speakers": "Speakers",
+        "status": "Status"
+      },
+      "status": {
+        "pending": "Pending",
+        "importing": "Importing...",
+        "success": "Success",
+        "skipped": "Skipped",
+        "error": "Error"
+      },
+      "errors": {
+        "invalidFile": "Invalid file. Only sessions.json is allowed.",
+        "parseError": "Parse error: {{error}}"
+      }
     }
   }
 }

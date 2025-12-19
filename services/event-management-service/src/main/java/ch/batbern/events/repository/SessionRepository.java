@@ -43,4 +43,9 @@ public interface SessionRepository extends JpaRepository<Session, UUID>, JpaSpec
      * Delete all sessions for a specific event
      */
     void deleteByEventId(UUID eventId);
+
+    /**
+     * Find a session by event ID and title (for duplicate detection during batch import)
+     */
+    Optional<Session> findByEventIdAndTitle(UUID eventId, String title);
 }

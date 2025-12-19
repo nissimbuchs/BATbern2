@@ -1377,6 +1377,91 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /events/{eventCode}/sessions/batch-import:
+    post:
+      tags:
+        - Sessions
+        - Bulk Operations
+      summary: Batch import sessions from legacy JSON
+      description: |
+        Import multiple sessions from sessions.json with speaker assignments.
+
+        **Features**:
+        - Duplicate detection by (event_id, title)
+        - Automatic speaker assignment via speakerId → username matching
+        - Sequential 45-minute time slot calculation
+        - Graceful error handling for missing speakers
+
+        **Note**: This endpoint is designed for historical data migration from
+        the legacy BATspa application. For normal session creation, use the
+        POST /events/{eventCode}/sessions endpoint.
+
+      operationId: batchImportSessions
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/BatchImportSessionRequest'
+            example:
+              - bat: 142
+                title: "User Interface Design"
+                abstract: "Discussion on modern UI patterns"
+                pdf: "BAT142_UI_Design.pdf"
+                referenten:
+                  - name: "Thomas Goetz, Die Mobiliar"
+                    bio: "Expert in UI design"
+                    company: "mobiliar"
+                    portrait: "thomas.goetz.jpg"
+                    speakerId: "thomas.goetz"
+      responses:
+        '200':
+          description: Import completed (may include skipped/failed sessions)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchImportSessionResult'
+              example:
+                totalProcessed: 3
+                successfullyCreated: 2
+                skipped: 1
+                failed: 0
+                details:
+                  - title: "User Interface Design"
+                    status: "success"
+                    message: "Session created successfully"
+                    sessionSlug: "user-interface-design-abc123"
+                  - title: "Backend Architecture"
+                    status: "skipped"
+                    message: "Session already exists with title 'Backend Architecture'"
+                  - title: "Database Design"
+                    status: "success"
+                    message: "Session created successfully"
+                    sessionSlug: "database-design-def456"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
   /events/{eventCode}/sessions/{sessionSlug}:
     get:
       tags:
@@ -3138,6 +3223,129 @@ components:
         Same as Session schema but used specifically for API responses
       allOf:
         - $ref: '#/components/schemas/Session'
+
+    BatchImportSessionRequest:
+      type: object
+      description: |
+        Request payload for batch import from legacy sessions.json.
+        Designed for historical data migration from BATspa application.
+      required:
+        - bat
+        - title
+      properties:
+        bat:
+          type: integer
+          description: Event number (links to BATbern{bat})
+          example: 142
+        title:
+          type: string
+          description: Session title
+          maxLength: 255
+          example: "User Interface Design"
+        abstract:
+          type: string
+          description: Session abstract/description
+          example: "Discussion on modern UI patterns"
+        pdf:
+          type: string
+          description: PDF filename for reference (appended to description)
+          example: "BAT142_UI_Design.pdf"
+        authoren:
+          type: string
+          description: Moderator name (for Moderation sessions)
+          example: "Thomas Goetz"
+        referenten:
+          type: array
+          description: List of speakers for this session
+          items:
+            $ref: '#/components/schemas/LegacySpeaker'
+
+    LegacySpeaker:
+      type: object
+      description: |
+        Speaker data from legacy sessions.json.
+        speakerId is mapped to username for user lookup.
+      properties:
+        name:
+          type: string
+          description: Speaker full name
+          example: "Thomas Goetz, Die Mobiliar"
+        bio:
+          type: string
+          description: Speaker biography
+        company:
+          type: string
+          description: Company identifier
+          example: "mobiliar"
+        portrait:
+          type: string
+          description: Portrait filename
+          example: "thomas.goetz.jpg"
+        speakerId:
+          type: string
+          description: Speaker ID (maps to username in user_profiles)
+          example: "thomas.goetz"
+
+    BatchImportSessionResult:
+      type: object
+      description: |
+        Result of batch import operation with success/skip/fail counts.
+      required:
+        - totalProcessed
+        - successfullyCreated
+        - skipped
+        - failed
+        - details
+      properties:
+        totalProcessed:
+          type: integer
+          description: Total sessions processed
+          example: 3
+        successfullyCreated:
+          type: integer
+          description: Successfully created sessions
+          example: 2
+        skipped:
+          type: integer
+          description: Skipped sessions (duplicates)
+          example: 1
+        failed:
+          type: integer
+          description: Failed imports
+          example: 0
+        details:
+          type: array
+          description: Detailed results per session
+          items:
+            $ref: '#/components/schemas/SessionImportDetail'
+
+    SessionImportDetail:
+      type: object
+      description: |
+        Detail for a single session import result.
+      required:
+        - title
+        - status
+        - message
+      properties:
+        title:
+          type: string
+          description: Session title
+          example: "User Interface Design"
+        status:
+          type: string
+          enum: [success, skipped, failed]
+          description: Import status
+          example: "success"
+        message:
+          type: string
+          description: Status message
+          example: "Session created successfully"
+        sessionSlug:
+          type: string
+          description: Generated session slug (null if failed)
+          nullable: true
+          example: "user-interface-design-abc123"
 
     Registration:
       type: object
