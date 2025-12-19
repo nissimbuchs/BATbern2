@@ -61,7 +61,7 @@ export function createSessionImportCandidates(sessions: LegacySession[]): Sessio
   return sessions.map((session) => {
     const apiPayload: BatchImportSessionRequest = {
       title: session.title,
-      description: session.abstract || '',
+      abstract: session.abstract || '',
       pdf: session.pdf,
       bat: session.bat,
       referenten: session.referenten,
