@@ -1030,6 +1030,10 @@ public class EventController {
         if (request.getThemeImageUploadId() != null && !request.getThemeImageUploadId().isBlank()) {
             event.setThemeImageUploadId(request.getThemeImageUploadId());
         }
+        // Update workflowState if provided
+        if (request.getWorkflowState() != null) {
+            event.setWorkflowState(request.getWorkflowState());
+        }
     }
 
     /**
