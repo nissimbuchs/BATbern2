@@ -60,10 +60,11 @@ public class DomainRouter {
 
         // Route based on path patterns - /api/v1/{domain}
         // Note: Check speaker-specific endpoints BEFORE general events pattern
-        // Story 5.4: Speaker status management endpoints go to speaker-coordination-service
+        // Story 5.4: Speaker status management endpoints go to event-management-service
+        // (moved from speaker-coordination-service for Epic 5 architecture alignment)
         if (cleanPath.matches("/api/v1/events/[^/]+/speakers/[^/]+/status(/.*)?")
                 || cleanPath.matches("/api/v1/events/[^/]+/speakers/status-summary")) {
-            return "speaker-coordination-service";
+            return "event-management-service";
         } else if (cleanPath.startsWith("/api/v1/events")
                 || cleanPath.startsWith("/api/v1/registrations")
                 || cleanPath.startsWith("/api/v1/topics")) {
