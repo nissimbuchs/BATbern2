@@ -33,15 +33,16 @@ case "${ENVIRONMENT}" in
 esac
 
 # Set AWS profile and region based on environment
+# Force profile based on environment (ignore existing AWS_PROFILE)
 case "${ENVIRONMENT}" in
     development)
-        AWS_PROFILE="${AWS_PROFILE:-batbern-dev}"
+        AWS_PROFILE="batbern-dev"
         ;;
     staging)
-        AWS_PROFILE="${AWS_PROFILE:-batbern-staging}"
+        AWS_PROFILE="batbern-staging"
         ;;
     production)
-        AWS_PROFILE="${AWS_PROFILE:-batbern-prod}"
+        AWS_PROFILE="batbern-prod"
         ;;
 esac
 

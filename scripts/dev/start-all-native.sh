@@ -188,20 +188,26 @@ BASE_PORT=${BASE_PORT}
 # ==============================================
 # Database Configuration (Native Execution)
 # ==============================================
-# Override: Use localhost with instance-specific tunnel port
+# Override: Use local PostgreSQL (docker-compose-dev.yml credentials)
+# NOTE: These match the credentials in docker-compose-dev.yml, NOT AWS RDS
 DB_HOST=localhost
 DB_PORT=${DB_TUNNEL_PORT}
-DB_NAME=${DB_NAME}
-DB_USER=${DB_USER}
-DB_PASSWORD=${DB_PASSWORD}
-DATABASE_URL="jdbc:postgresql://localhost:${DB_TUNNEL_PORT}/${DB_NAME}?user=${DB_USER}&password=${DB_PASSWORD}"
+DB_NAME=batbern_development
+DB_USER=postgres
+DB_PASSWORD=devpass123
+DATABASE_URL="jdbc:postgresql://localhost:${DB_TUNNEL_PORT}/batbern_development"
+DATABASE_USERNAME=postgres
+DATABASE_PASSWORD=devpass123
 
 # ==============================================
 # Application Configuration
 # ==============================================
-APP_ENVIRONMENT=${APP_ENVIRONMENT:-development}
-SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-local}
-LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+# Force local development settings (ignore values from .env)
+APP_ENVIRONMENT=development
+SPRING_PROFILES_ACTIVE=local
+LOG_LEVEL=DEBUG
+# Override API base URL for local development
+API_BASE_URL=http://localhost:${API_GATEWAY_PORT}
 
 # ==============================================
 # AWS Configuration
