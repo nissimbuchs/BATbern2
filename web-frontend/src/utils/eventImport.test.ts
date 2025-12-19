@@ -163,7 +163,7 @@ describe('transformEventForApi', () => {
     expect(result.title).toBe('GUI Frameworks'); // Trimmed
     expect(result.eventNumber).toBe(11);
     expect(result.date).toBe('2005-06-24T16:00:00+02:00');
-    expect(result.status).toBe('archived');
+    expect(result.workflowState).toBe('ARCHIVED');
     expect(result.organizerUsername).toBe('thomas.goetz');
     expect(result.currentAttendeeCount).toBe(0);
     expect(result.description).toBe('Test event description about GUI frameworks');

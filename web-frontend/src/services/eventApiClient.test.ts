@@ -377,7 +377,7 @@ describe('Event API Client (RED Phase)', () => {
         venueName: 'Historical Venue',
         venueAddress: 'Historical Address',
         venueCapacity: 100,
-        status: 'archived', // Archived status bypasses date validation
+        workflowState: 'ARCHIVED', // Archived workflow state bypasses date validation
       };
 
       // Should not throw validation error for past date when archived
