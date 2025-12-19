@@ -163,7 +163,7 @@ export function transformEventForApi(event: LegacyEvent): CreateEventRequest {
     venueName: venue.name,
     venueAddress: venue.address,
     venueCapacity: venue.capacity,
-    status: 'archived', // All historical events are archived
+    workflowState: 'ARCHIVED', // All historical events are archived
     organizerUsername,
     currentAttendeeCount: 0,
     description: event.description,
@@ -359,6 +359,11 @@ export function buildPartialPayload(
 ): Partial<CreateEventRequest> {
   const payload = candidate.apiPayload;
   const partial: Partial<CreateEventRequest> = {};
+
+  // Always include workflowState for archived events to bypass date validation
+  if (payload.workflowState === 'ARCHIVED') {
+    partial.workflowState = 'ARCHIVED';
+  }
 
   // Only include selected fields
   if (fieldSelection.title) {

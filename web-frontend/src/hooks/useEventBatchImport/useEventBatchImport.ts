@@ -180,7 +180,7 @@ export function useEventBatchImport(
 
       return result;
     },
-    [queryClient, onProgress, onComplete, updateCandidate]
+    [queryClient, onProgress, onComplete, updateCandidate, fieldSelection]
   );
 
   return {
