@@ -54,8 +54,8 @@ export interface LegacySpeaker {
 export interface BatchImportSessionRequest {
   /** Session title */
   title: string;
-  /** Session description (from abstract field) */
-  description: string;
+  /** Session description (using "abstract" to match backend @JsonProperty) */
+  abstract: string;
   /** PDF filename for reference */
   pdf?: string;
   /** Event number (bat field) */
