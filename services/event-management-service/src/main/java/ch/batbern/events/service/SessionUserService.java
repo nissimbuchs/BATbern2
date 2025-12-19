@@ -71,15 +71,10 @@ public class SessionUserService {
             );
         }
 
-        // Use placeholder UUID for userId (backward compat field - username is primary identifier)
-        // Per ADR-003: Username is the API identifier; userId kept for backward compat only
-        UUID userId = UUID.nameUUIDFromBytes(("user:" + username).getBytes());
-
-        // Create SessionUser entity with both userId (placeholder) and username (API identifier)
+        // Create SessionUser entity (ADR-003: username is the primary identifier)
         SessionUser sessionUser = SessionUser.builder()
                 .session(session)
-                .userId(userId)  // Required for FK constraint
-                .username(username)  // ADR-003: meaningful identifier
+                .username(username)
                 .speakerRole(speakerRole)
                 .presentationTitle(presentationTitle)
                 .isConfirmed(false)
@@ -204,34 +199,21 @@ public class SessionUserService {
      * Enrich SessionUser with User data to create SessionSpeakerResponse
      * Fetches user profile data from User Management Service API
      *
-     * Handles transition period where username might not be populated:
-     * - If username is set: use it for API lookup (preferred)
-     * - If username is null: fetch by userId and populate username for next time
-     *
-     * @param sessionUser SessionUser entity
+     * @param sessionUser SessionUser entity (must have username populated)
      * @return SessionSpeakerResponse with combined data
      * @throws UserNotFoundException if user not found via API
      */
     private SessionSpeakerResponse enrichWithUserData(SessionUser sessionUser) {
-        UserResponse user;
-
-        if (sessionUser.getUsername() != null) {
-            // Preferred path: fetch user data via API using username (cached for 15 minutes)
-            user = userApiClient.getUserByUsername(sessionUser.getUsername());
-        } else {
-            // Fallback for transition period: lookup by userId
-            // This shouldn't happen in normal flow since assignSpeakerToSession sets username,
-            // but handles cases where old data exists or manual DB inserts occurred
-            log.warn("SessionUser {} has null username, using userId fallback lookup", sessionUser.getId());
-
-            // We need to fetch user by any username to get the UUID match
-            // For now, this is a limitation - in practice, tests should ensure username is set
+        // ADR-003: username is required for API-based user lookup
+        if (sessionUser.getUsername() == null) {
             throw new IllegalStateException(
                 "SessionUser must have username populated for API-based user lookup. "
-                + "SessionUser ID: " + sessionUser.getId() + ", UserId: " + sessionUser.getUserId()
+                + "SessionUser ID: " + sessionUser.getId()
             );
         }
 
+        // Fetch user data via API using username (cached for 15 minutes)
+        UserResponse user = userApiClient.getUserByUsername(sessionUser.getUsername());
         return enrichWithUserData(sessionUser, user);
     }
 

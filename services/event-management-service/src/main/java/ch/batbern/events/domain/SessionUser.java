@@ -57,22 +57,11 @@ public class SessionUser {
     private Session session;
 
     /**
-     * Foreign key to user_profiles.id in company-user-management-service
-     * ADR-004: Domain entities reference User directly via userId
-     * NOT a @ManyToOne because User is in a different database/service
-     *
-     * NOTE: This field is kept for backward compatibility during migration.
-     * New code should use username field for API-based user data access.
-     */
-    @Column(name = "user_id", nullable = false, columnDefinition = "UUID")
-    private UUID userId;
-
-    /**
      * Username - public identifier for API-based user data access
      * Used to fetch user profile data from User Management Service API.
-     * Replaces direct database dependency on user_profiles table.
+     * ADR-003: Use meaningful identifiers instead of UUIDs
      */
-    @Column(name = "username", length = 100)
+    @Column(name = "username", nullable = false, length = 100)
     private String username;
 
     /**

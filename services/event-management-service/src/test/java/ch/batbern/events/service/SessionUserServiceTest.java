@@ -60,7 +60,7 @@ class SessionUserServiceTest {
     @BeforeEach
     void setUp() {
         sessionId = UUID.randomUUID();
-        userId = UUID.randomUUID();
+        username = "test-user"randomUUID();
         username = "john.doe";
 
         testSession = Session.builder()
@@ -93,7 +93,7 @@ class SessionUserServiceTest {
         SessionUser savedSessionUser = SessionUser.builder()
                 .id(UUID.randomUUID())
                 .session(testSession)
-                .userId(userId)
+                .username("test-user")
                 .username(username)
                 .speakerRole(SpeakerRole.PRIMARY_SPEAKER)
                 .presentationTitle("Test Presentation")
@@ -116,8 +116,8 @@ class SessionUserServiceTest {
         SessionUser captured = captor.getValue();
         assertThat(captured.getSession()).isEqualTo(testSession);
         // userId is generated deterministically from username for backward compat
-        UUID expectedUserId = UUID.nameUUIDFromBytes(("user:" + username).getBytes());
-        assertThat(captured.getUserId()).isEqualTo(expectedUserId);
+        UUID expectedUsername = UUID.nameUUIDFromBytes(("user:" + username).getBytes());
+        assertThat(captured.getUsername()).isEqualTo(expectedUsername);
         assertThat(captured.getUsername()).isEqualTo(username);
         assertThat(captured.getSpeakerRole()).isEqualTo(SpeakerRole.PRIMARY_SPEAKER);
         assertThat(captured.getPresentationTitle()).isEqualTo("Test Presentation");
@@ -185,7 +185,7 @@ class SessionUserServiceTest {
         SessionUser sessionUser = SessionUser.builder()
                 .id(UUID.randomUUID())
                 .session(testSession)
-                .userId(userId)
+                .username("test-user")
                 .username(username)
                 .speakerRole(SpeakerRole.PRIMARY_SPEAKER)
                 .build();
@@ -221,7 +221,7 @@ class SessionUserServiceTest {
         SessionUser sessionUser = SessionUser.builder()
                 .id(UUID.randomUUID())
                 .session(testSession)
-                .userId(userId)
+                .username("test-user")
                 .username(username)
                 .speakerRole(SpeakerRole.PRIMARY_SPEAKER)
                 .isConfirmed(false)
@@ -250,7 +250,7 @@ class SessionUserServiceTest {
         SessionUser sessionUser = SessionUser.builder()
                 .id(UUID.randomUUID())
                 .session(testSession)
-                .userId(userId)
+                .username("test-user")
                 .username(username)
                 .speakerRole(SpeakerRole.PRIMARY_SPEAKER)
                 .isConfirmed(false)
@@ -281,7 +281,7 @@ class SessionUserServiceTest {
         // Given: Session has multiple speakers
         SessionUser speaker1 = SessionUser.builder()
                 .id(UUID.randomUUID())
-                .userId(userId)
+                .username("test-user")
                 .username(username)
                 .speakerRole(SpeakerRole.PRIMARY_SPEAKER)
                 .isConfirmed(true)
@@ -300,7 +300,7 @@ class SessionUserServiceTest {
 
         SessionUser speaker2 = SessionUser.builder()
                 .id(UUID.randomUUID())
-                .userId(userId2)
+                .username("test-user")
                 .username(username2)
                 .speakerRole(SpeakerRole.CO_SPEAKER)
                 .isConfirmed(false)
@@ -349,7 +349,7 @@ class SessionUserServiceTest {
         UUID eventId = UUID.randomUUID();
 
         SessionUser speaker1 = SessionUser.builder()
-                .userId(userId)
+                .username("test-user")
                 .username(username)
                 .speakerRole(SpeakerRole.PRIMARY_SPEAKER)
                 .build();
@@ -375,7 +375,7 @@ class SessionUserServiceTest {
         SessionUser savedSessionUser = SessionUser.builder()
                 .id(UUID.randomUUID())
                 .session(testSession)
-                .userId(userId)
+                .username("test-user")
                 .username(username)
                 .speakerRole(SpeakerRole.MODERATOR)
                 .presentationTitle(null)

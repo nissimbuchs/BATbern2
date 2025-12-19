@@ -24,7 +24,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Service for batch importing sessions from legacy JSON data (sessions.json)
@@ -303,9 +302,6 @@ public class SessionBatchImportService {
                 return;
             }
 
-            // Create placeholder UUID for userId (backward compat field)
-            UUID userId = UUID.nameUUIDFromBytes(("user:" + username).getBytes());
-
             // Calculate invitation date: 4 weeks before event
             Instant invitedAt = eventDate != null
                     ? eventDate.minus(Duration.ofDays(28))
@@ -315,7 +311,6 @@ public class SessionBatchImportService {
             // For historical data: isConfirmed = true (sessions already happened)
             SessionUser sessionUser = SessionUser.builder()
                     .session(session)
-                    .userId(userId)
                     .username(username)
                     .speakerRole(role)
                     .isConfirmed(true)

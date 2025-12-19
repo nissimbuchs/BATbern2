@@ -40,7 +40,7 @@ class SessionTest {
 
         // And: SessionUser to add
         SessionUser sessionUser = SessionUser.builder()
-                .userId(UUID.randomUUID())
+                .username("test-user")
                 .speakerRole(SpeakerRole.PRIMARY_SPEAKER)
                 .isConfirmed(false)
                 .build();
@@ -198,7 +198,7 @@ class SessionTest {
     // Helper method
     private SessionUser createSessionUser(SpeakerRole role) {
         return SessionUser.builder()
-                .userId(UUID.randomUUID())
+                .username("test-user")
                 .speakerRole(role)
                 .isConfirmed(false)
                 .build();

@@ -14,7 +14,7 @@ import java.util.UUID;
  * Repository for SessionUser entity (many-to-many session-speaker relationship).
  *
  * Story 4.1.4: Homepage Event Content Sections - supports querying speakers for sessions
- * ADR-004: References User entities via userId
+ * ADR-003: Uses username as primary identifier for user references
  */
 @Repository
 public interface SessionUserRepository extends JpaRepository<SessionUser, UUID> {
@@ -28,38 +28,12 @@ public interface SessionUserRepository extends JpaRepository<SessionUser, UUID> 
     List<SessionUser> findBySessionId(UUID sessionId);
 
     /**
-     * Find all sessions for a specific user (speaker)
-     *
-     * @param userId the user UUID
-     * @return list of SessionUser associations for the user
-     */
-    List<SessionUser> findByUserId(UUID userId);
-
-    /**
      * Find all confirmed speakers for a specific session
      *
      * @param sessionId the session UUID
      * @return list of confirmed SessionUser associations
      */
     List<SessionUser> findBySessionIdAndIsConfirmedTrue(UUID sessionId);
-
-    /**
-     * Find a specific speaker assignment for a session
-     *
-     * @param sessionId the session UUID
-     * @param userId the user UUID
-     * @return optional SessionUser association
-     */
-    Optional<SessionUser> findBySessionIdAndUserId(UUID sessionId, UUID userId);
-
-    /**
-     * Check if a user is assigned to a session
-     *
-     * @param sessionId the session UUID
-     * @param userId the user UUID
-     * @return true if user is assigned to session
-     */
-    boolean existsBySessionIdAndUserId(UUID sessionId, UUID userId);
 
     /**
      * Find all session speakers for an event (for homepage display)
@@ -87,14 +61,6 @@ public interface SessionUserRepository extends JpaRepository<SessionUser, UUID> 
      * @param sessionId the session UUID
      */
     void deleteBySessionId(UUID sessionId);
-
-    /**
-     * Delete a specific speaker assignment
-     *
-     * @param sessionId the session UUID
-     * @param userId the user UUID
-     */
-    void deleteBySessionIdAndUserId(UUID sessionId, UUID userId);
 
     // ========================================================================
     // Username-based methods (ADR-003: Meaningful Identifiers)
