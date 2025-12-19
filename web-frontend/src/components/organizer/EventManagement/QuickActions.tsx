@@ -23,9 +23,14 @@ import { useNavigate } from 'react-router-dom';
 interface QuickActionsProps {
   onNewEvent?: () => void;
   onBatchImport?: () => void;
+  onBatchImportSessions?: () => void;
 }
 
-export const QuickActions: React.FC<QuickActionsProps> = ({ onNewEvent, onBatchImport }) => {
+export const QuickActions: React.FC<QuickActionsProps> = ({
+  onNewEvent,
+  onBatchImport,
+  onBatchImportSessions,
+}) => {
   const { t } = useTranslation('events');
   const navigate = useNavigate();
 
@@ -75,6 +80,17 @@ export const QuickActions: React.FC<QuickActionsProps> = ({ onNewEvent, onBatchI
           aria-label="Import historical events"
         >
           {t('common:event.batchImport.button')}
+        </Button>
+
+        {/* Session Batch Import Button */}
+        <Button
+          variant="outlined"
+          startIcon={<UploadFileIcon />}
+          fullWidth
+          onClick={onBatchImportSessions}
+          aria-label="Import historical sessions"
+        >
+          {t('common:session.batchImport.button')}
         </Button>
 
         {/* Manage Topics Button */}

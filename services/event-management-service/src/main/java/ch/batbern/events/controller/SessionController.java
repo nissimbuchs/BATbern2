@@ -1,12 +1,15 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.events.domain.Session;
+import ch.batbern.events.dto.BatchImportSessionRequest;
+import ch.batbern.events.dto.BatchImportSessionResult;
 import ch.batbern.events.dto.CreateSessionRequest;
 import ch.batbern.events.dto.SessionResponse;
 import ch.batbern.events.dto.UpdateSessionRequest;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.events.service.SessionBatchImportService;
 import ch.batbern.events.service.SessionService;
 import ch.batbern.shared.api.FilterCriteria;
 import ch.batbern.shared.api.FilterOperator;
@@ -66,6 +69,9 @@ public class SessionController {
 
     @Autowired
     private SessionService sessionService;
+
+    @Autowired
+    private SessionBatchImportService sessionBatchImportService;
 
     /**
      * AC9: List sessions for an event with optional filtering
@@ -269,6 +275,30 @@ public class SessionController {
         sessionRepository.deleteById(session.getId());
 
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Batch import sessions from legacy JSON (sessions.json)
+     * POST /api/v1/events/{eventCode}/sessions/batch-import
+     *
+     * Imports multiple sessions from historical data with:
+     * - Duplicate detection by (event_id, title)
+     * - Sequential 45-minute time slots
+     * - Speaker assignment by matching speakerId to username
+     * - Event organizer as moderator when no speakers
+     *
+     * @param eventCode Event code (e.g., "BATbern142")
+     * @param requests List of session import requests from legacy JSON
+     * @return BatchImportSessionResult with statistics and details
+     */
+    @PostMapping("/batch-import")
+    public ResponseEntity<BatchImportSessionResult> batchImportSessions(
+            @PathVariable String eventCode,
+            @Valid @RequestBody List<BatchImportSessionRequest> requests) {
+
+        BatchImportSessionResult result = sessionBatchImportService.importSessions(eventCode, requests);
+
+        return ResponseEntity.ok(result);
     }
 
     /**

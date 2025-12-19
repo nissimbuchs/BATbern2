@@ -8,7 +8,6 @@
 - [ ] event has dto and generated dto in backend, should only use generated dto's.
 - [ ] event has metadata in api payload for theme and eventType that are both obsolete
 - [ ] TODO: story-1.16-workflow-visualisation wirframe was never implemented. shows up when you press on the progress bar
-- [ ] errors from the statemachine dont use the shared kernel format
 - [ ] event dashboard status filter has wrong stati. change year filter to be a textbox that allows any year
 
 Accessing the PostgeSQL through the tunnel:
