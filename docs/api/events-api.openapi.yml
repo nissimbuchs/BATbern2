@@ -65,19 +65,19 @@ paths:
         **Acceptance Criteria**: AC1
 
         **Filter Syntax Examples**:
-        - Single filter: `{"status":"published"}`
+        - Single filter: `{"workflowState":"PUBLISHED"}`
         - Year filter: `{"year":2025}`
         - Text search: `{"title":{"$contains":"Cloud"}}`
         - Date range: `{"date":{"$gte":"2025-01-01T00:00:00Z","$lt":"2026-01-01T00:00:00Z"}}`
-        - Multiple filters: `{"status":"published","year":2025}`
-        - Search with filter: `{"status":"published","title":{"$contains":"Cloud"}}`
-        - Logical operators: `{"$or":[{"status":"published"},{"status":"archived"}]}`
-        - In operator: `{"status":{"$in":["published","archived"]}}`
+        - Multiple filters: `{"workflowState":"PUBLISHED","year":2025}`
+        - Search with filter: `{"workflowState":"PUBLISHED","title":{"$contains":"Cloud"}}`
+        - Logical operators: `{"$or":[{"workflowState":"PUBLISHED"},{"workflowState":"ARCHIVED"}]}`
+        - In operator: `{"workflowState":{"$in":["PUBLISHED","ARCHIVED"]}}`
 
         **Supported Filter Fields**:
         - `year`: Integer (convenience filter, matches events from Jan 1 - Dec 31 of given year)
         - `date`: ISO 8601 timestamp (supports $gte, $lte, $gt, $lt operators for date ranges)
-        - `status`: String (single status) or use `$in` operator for multiple statuses
+        - `workflowState`: String (single workflow state) or use `$in` operator for multiple states
         - `eventNumber`: Integer (event number)
         - `title`: String (supports $contains, $startsWith, $endsWith operators for text search)
 
@@ -95,7 +95,7 @@ paths:
           required: false
           schema:
             type: string
-            example: '{"status":"published","year":2025}'
+            example: '{"workflowState":"PUBLISHED","year":2025}'
         - name: sort
           in: query
           description: Sort field (prefix with - for descending)
@@ -154,7 +154,7 @@ paths:
                         venueName: Kursaal Bern
                         venueAddress: Kornhausstrasse 3, 3013 Bern
                         venueCapacity: 200
-                        status: published
+                        workflowState: PUBLISHED
                         organizerUsername: john.doe
                         currentAttendeeCount: 187
                         description: Cloud Native Architecture
@@ -197,7 +197,7 @@ paths:
                   venueName: Kursaal Bern
                   venueAddress: Kornhausstrasse 3, 3013 Bern
                   venueCapacity: 150
-                  status: planning
+                  workflowState: CREATED
                   organizerUsername: john.doe
                   currentAttendeeCount: 0
                   description: AI/ML in Production
@@ -285,7 +285,7 @@ paths:
                 eventCode: BATbern57
                 title: Cloud-Native Architecture in Practice
                 eventNumber: 57
-                status: published
+                workflowState: PUBLISHED
                 description: Join us for an evening exploring modern cloud-native architecture patterns and best practices.
                 date: '2025-03-15T18:00:00Z'
                 registrationDeadline: '2025-03-10T23:59:59Z'
@@ -401,7 +401,7 @@ paths:
                     venueName: Kursaal Bern
                     venueAddress: Kornhausstrasse 3, 3013 Bern
                     venueCapacity: 500
-                    status: published
+                    workflowState: PUBLISHED
                     organizerUsername: john.doe
                     currentAttendeeCount: 187
                     description: Cloud Native Architecture
@@ -416,7 +416,7 @@ paths:
                     venueName: Kursaal Bern
                     venueAddress: Kornhausstrasse 3, 3013 Bern
                     venueCapacity: 500
-                    status: published
+                    workflowState: PUBLISHED
                     organizerUsername: john.doe
                     currentAttendeeCount: 187
                     description: Cloud Native Architecture
@@ -3444,7 +3444,6 @@ components:
         - venueName
         - venueAddress
         - venueCapacity
-        - status
         - organizerUsername
         - eventType
       properties:
@@ -3468,9 +3467,8 @@ components:
         venueCapacity:
           type: integer
           minimum: 1
-        status:
-          type: string
-          enum: [planning, topic_defined, speakers_invited, agenda_draft, published, registration_open, registration_closed, in_progress, completed, archived]
+        workflowState:
+          $ref: '#/components/schemas/EventWorkflowState'
         organizerUsername:
           type: string
           pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
@@ -3510,7 +3508,6 @@ components:
         - venueName
         - venueAddress
         - venueCapacity
-        - status
         - organizerUsername
         - eventType
       properties:
@@ -3532,9 +3529,8 @@ components:
           type: string
         venueCapacity:
           type: integer
-        status:
-          type: string
-          enum: [planning, topic_defined, speakers_invited, agenda_draft, published, registration_open, registration_closed, in_progress, completed, archived]
+        workflowState:
+          $ref: '#/components/schemas/EventWorkflowState'
         organizerUsername:
           type: string
           pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
@@ -3581,9 +3577,8 @@ components:
           type: string
         venueCapacity:
           type: integer
-        status:
-          type: string
-          enum: [planning, topic_defined, speakers_invited, agenda_draft, published, registration_open, registration_closed, in_progress, completed, archived]
+        workflowState:
+          $ref: '#/components/schemas/EventWorkflowState'
         organizerUsername:
           type: string
           pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
