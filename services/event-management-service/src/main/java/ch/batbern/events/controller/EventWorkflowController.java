@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -67,6 +68,7 @@ public class EventWorkflowController {
      */
     @PutMapping("/{code}/workflow/transition")
     @PreAuthorize("hasRole('ORGANIZER')")
+    @CacheEvict(value = "eventWithIncludes", allEntries = true)
     @Operation(summary = "Transition event to target workflow state",
                description = "Requires ORGANIZER role. Rate limited to 10 transitions/min.")
     public ResponseEntity<Map<String, Object>> transitionEventWorkflowState(
