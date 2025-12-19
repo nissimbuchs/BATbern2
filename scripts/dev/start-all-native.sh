@@ -317,14 +317,25 @@ check_local_postgres() {
 
     # Container not running, start it
     echo -e "${YELLOW}  ⚠ Local PostgreSQL not running${NC}"
-    echo -e "${CYAN}  → Starting local PostgreSQL with Docker Compose...${NC}"
 
-    cd "${PROJECT_ROOT}"
-    docker compose -f docker-compose-dev.yml up -d 2>&1 | sed 's/^/    /'
-
-    if [ $? -ne 0 ]; then
-        echo -e "${RED}  ✗ Failed to start PostgreSQL container${NC}"
-        exit 1
+    # Check if container exists but is stopped
+    if [ -n "$container_status" ]; then
+        # Container exists but is stopped - just start it
+        echo -e "${CYAN}  → Starting existing PostgreSQL container...${NC}"
+        docker start batbern-dev-postgres > /dev/null 2>&1
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}  ✗ Failed to start PostgreSQL container${NC}"
+            exit 1
+        fi
+    else
+        # Container doesn't exist - create and start with docker compose
+        echo -e "${CYAN}  → Creating PostgreSQL container with Docker Compose...${NC}"
+        cd "${PROJECT_ROOT}"
+        docker compose -f docker-compose-dev.yml up -d 2>&1 | sed 's/^/    /'
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}  ✗ Failed to start PostgreSQL container${NC}"
+            exit 1
+        fi
     fi
 
     echo -e "${CYAN}  → Waiting for PostgreSQL to be ready (10 seconds)...${NC}"
