@@ -1,6 +1,7 @@
 package ch.batbern.events.exception;
 
 import ch.batbern.shared.dto.ErrorResponse;
+import ch.batbern.shared.exception.InvalidStateTransitionException;
 import ch.batbern.shared.exception.ValidationException;
 import ch.batbern.shared.util.CorrelationIdGenerator;
 import jakarta.servlet.http.HttpServletRequest;
@@ -389,8 +390,9 @@ public class GlobalExceptionHandler {
 
     /**
      * Handle InvalidStateTransitionException (invalid workflow state transition attempt)
-     * Returns HTTP 400 Bad Request
+     * Returns HTTP 422 Unprocessable Entity
      * Story 5.1a: Workflow State Machine Foundation - AC12
+     * Story 5.4: Speaker Status Management - AC12 (cannot un-accept)
      */
     @ExceptionHandler(InvalidStateTransitionException.class)
     public ResponseEntity<ErrorResponse> handleInvalidStateTransitionException(
@@ -398,22 +400,17 @@ public class GlobalExceptionHandler {
             HttpServletRequest request) {
         log.warn("Invalid state transition: {}", ex.getMessage());
 
-        Map<String, Object> details = new HashMap<>();
-        details.put("fromState", ex.getFromState().name());
-        details.put("toState", ex.getToState().name());
-
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .path(request.getRequestURI())
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error("Bad Request")
+                .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
+                .error("InvalidStateTransitionException")
                 .message(ex.getMessage())
                 .correlationId(CorrelationIdGenerator.generate())
                 .severity("MEDIUM")
-                .details(details)
                 .build();
 
-        return ResponseEntity.badRequest().body(error);
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
     }
 
     /**

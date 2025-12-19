@@ -47,14 +47,66 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private ch.batbern.events.repository.EventRepository eventRepository;
+
+    @Autowired
+    private ch.batbern.events.repository.SessionRepository sessionRepository;
+
+    @Autowired
+    private ch.batbern.events.repository.SpeakerPoolRepository speakerPoolRepository;
+
+    @Autowired
+    private ch.batbern.events.repository.SpeakerStatusHistoryRepository statusHistoryRepository;
+
     private static final String TEST_EVENT_CODE = "BATbern997";
-    private static final String TEST_SPEAKER_ID = "550e8400-e29b-41d4-a716-446655440000";
     private static final String ORGANIZER_USERNAME = "john.doe";
+
+    private ch.batbern.events.domain.Event testEvent;
+    private ch.batbern.events.domain.Session testSession;
+    private ch.batbern.events.domain.SpeakerPool testSpeaker;
 
     @BeforeEach
     void setUp() {
-        // Test data will be created in GREEN phase
-        // For now, these tests will fail with 404/500 errors (RED phase)
+        // Clean database (reverse FK order)
+        statusHistoryRepository.deleteAll();
+        speakerPoolRepository.deleteAll();
+        sessionRepository.deleteAll();
+        eventRepository.deleteAll();
+
+        // Step 1: Create Event (for event_code FK)
+        testEvent = ch.batbern.events.domain.Event.builder()
+                .eventCode(TEST_EVENT_CODE)
+                .eventNumber(997)
+                .title("Test Event for Controller Tests")
+                .description("Integration test event")
+                .date(java.time.Instant.now().plusSeconds(86400))
+                .registrationDeadline(java.time.Instant.now())
+                .venueName("Test Venue")
+                .venueAddress("123 Test Street, Bern")
+                .venueCapacity(100)
+                .organizerUsername(ORGANIZER_USERNAME)
+                .eventType(ch.batbern.events.dto.generated.EventType.EVENING)
+                .workflowState(ch.batbern.shared.types.EventWorkflowState.CREATED)
+                .build();
+        testEvent = eventRepository.save(testEvent);
+
+        // Step 2: Create Session (for session_id FK)
+        testSession = ch.batbern.events.domain.Session.builder()
+                .sessionSlug("test-session-controller")
+                .eventId(testEvent.getId())
+                .title("Test Session for Controller")
+                .build();
+        testSession = sessionRepository.save(testSession);
+
+        // Step 3: Create SpeakerPool (for speaker_pool_id FK)
+        testSpeaker = new ch.batbern.events.domain.SpeakerPool();
+        testSpeaker.setEventId(testEvent.getId());
+        testSpeaker.setSpeakerName("Test Speaker");
+        testSpeaker.setCompany("Test Company");
+        testSpeaker.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.IDENTIFIED);
+        testSpeaker.setSessionId(testSession.getId());
+        testSpeaker = speakerPoolRepository.save(testSpeaker);
     }
 
     /**
@@ -75,14 +127,14 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
 
         // When: PUT /api/v1/events/{code}/speakers/{speakerId}/status
         mockMvc.perform(put("/api/v1/events/{code}/speakers/{speakerId}/status",
-                        TEST_EVENT_CODE, TEST_SPEAKER_ID)
+                        TEST_EVENT_CODE, testSpeaker.getId().toString())
                         .with(user(ORGANIZER_USERNAME).roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(updateRequest))
                 .andDo(print())
                 // Then: Should return 200 with updated status
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.speakerId", is(TEST_SPEAKER_ID)))
+                .andExpect(jsonPath("$.speakerId", is(testSpeaker.getId().toString())))
                 .andExpect(jsonPath("$.eventCode", is(TEST_EVENT_CODE)))
                 .andExpect(jsonPath("$.currentStatus", is("CONTACTED")))
                 .andExpect(jsonPath("$.previousStatus", is("IDENTIFIED")))
@@ -109,7 +161,7 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
 
         // First update status
         mockMvc.perform(put("/api/v1/events/{code}/speakers/{speakerId}/status",
-                        TEST_EVENT_CODE, TEST_SPEAKER_ID)
+                        TEST_EVENT_CODE, testSpeaker.getId().toString())
                         .with(user(ORGANIZER_USERNAME).roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(updateRequest))
@@ -117,7 +169,7 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
 
         // When: GET /api/v1/events/{code}/speakers/{speakerId}/status/history
         mockMvc.perform(get("/api/v1/events/{code}/speakers/{speakerId}/status/history",
-                        TEST_EVENT_CODE, TEST_SPEAKER_ID)
+                        TEST_EVENT_CODE, testSpeaker.getId().toString())
                         .with(user(ORGANIZER_USERNAME).roles("ORGANIZER")))
                 .andDo(print())
                 // Then: Should return history with latest change
@@ -149,7 +201,7 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
 
         // When: PUT /api/v1/events/{code}/speakers/{speakerId}/status
         mockMvc.perform(put("/api/v1/events/{code}/speakers/{speakerId}/status",
-                        TEST_EVENT_CODE, TEST_SPEAKER_ID)
+                        TEST_EVENT_CODE, testSpeaker.getId().toString())
                         .with(user(ORGANIZER_USERNAME).roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(updateRequest))
@@ -202,7 +254,7 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
                 }
                 """;
         mockMvc.perform(put("/api/v1/events/{code}/speakers/{speakerId}/status",
-                        TEST_EVENT_CODE, TEST_SPEAKER_ID)
+                        TEST_EVENT_CODE, testSpeaker.getId().toString())
                         .with(user(ORGANIZER_USERNAME).roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toContactedRequest))
@@ -215,7 +267,7 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
                 }
                 """;
         mockMvc.perform(put("/api/v1/events/{code}/speakers/{speakerId}/status",
-                        TEST_EVENT_CODE, TEST_SPEAKER_ID)
+                        TEST_EVENT_CODE, testSpeaker.getId().toString())
                         .with(user(ORGANIZER_USERNAME).roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toReadyRequest))
@@ -228,7 +280,7 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
                 }
                 """;
         mockMvc.perform(put("/api/v1/events/{code}/speakers/{speakerId}/status",
-                        TEST_EVENT_CODE, TEST_SPEAKER_ID)
+                        TEST_EVENT_CODE, testSpeaker.getId().toString())
                         .with(user(ORGANIZER_USERNAME).roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toAcceptedRequest))
@@ -244,7 +296,7 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
 
         // When: PUT /api/v1/events/{code}/speakers/{speakerId}/status
         mockMvc.perform(put("/api/v1/events/{code}/speakers/{speakerId}/status",
-                        TEST_EVENT_CODE, TEST_SPEAKER_ID)
+                        TEST_EVENT_CODE, testSpeaker.getId().toString())
                         .with(user(ORGANIZER_USERNAME).roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(invalidRequest))
@@ -273,7 +325,7 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
                 """;
 
         mockMvc.perform(put("/api/v1/events/{code}/speakers/{speakerId}/status",
-                        TEST_EVENT_CODE, TEST_SPEAKER_ID)
+                        TEST_EVENT_CODE, testSpeaker.getId().toString())
                         .with(user(ORGANIZER_USERNAME).roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(contactedRequest))
@@ -289,7 +341,7 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
                 """;
 
         mockMvc.perform(put("/api/v1/events/{code}/speakers/{speakerId}/status",
-                        TEST_EVENT_CODE, TEST_SPEAKER_ID)
+                        TEST_EVENT_CODE, testSpeaker.getId().toString())
                         .with(user(ORGANIZER_USERNAME).roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(readyRequest))
@@ -305,7 +357,7 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
                 """;
 
         mockMvc.perform(put("/api/v1/events/{code}/speakers/{speakerId}/status",
-                        TEST_EVENT_CODE, TEST_SPEAKER_ID)
+                        TEST_EVENT_CODE, testSpeaker.getId().toString())
                         .with(user(ORGANIZER_USERNAME).roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(acceptedRequest))

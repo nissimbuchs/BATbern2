@@ -34,15 +34,63 @@ public class SpeakerStatusHistoryRepositoryIntegrationTest extends AbstractInteg
     @Autowired
     private SpeakerStatusHistoryRepository repository;
 
+    @Autowired
+    private EventRepository eventRepository;
+
+    @Autowired
+    private SessionRepository sessionRepository;
+
+    @Autowired
+    private SpeakerPoolRepository speakerPoolRepository;
+
     private static final String TEST_EVENT_CODE = "BATbern998";
-    private static final UUID TEST_SPEAKER_POOL_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440001");
-    private static final UUID TEST_SESSION_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440002");
     private static final String ORGANIZER_USERNAME = "jane.organizer";
+
+    private ch.batbern.events.domain.Event testEvent;
+    private ch.batbern.events.domain.Session testSession;
+    private ch.batbern.events.domain.SpeakerPool testSpeaker;
 
     @BeforeEach
     void setUp() {
-        // Data will be created in test methods
-        // For RED phase, repository doesn't exist yet so tests will fail
+        // Clean database (reverse FK order)
+        repository.deleteAll();
+        speakerPoolRepository.deleteAll();
+        sessionRepository.deleteAll();
+        eventRepository.deleteAll();
+
+        // Step 1: Create Event (for event_code FK)
+        testEvent = ch.batbern.events.domain.Event.builder()
+                .eventCode(TEST_EVENT_CODE)
+                .eventNumber(998)
+                .title("Test Event for Speaker Status")
+                .description("Integration test event")
+                .date(Instant.now().plusSeconds(86400))
+                .registrationDeadline(Instant.now())
+                .venueName("Test Venue")
+                .venueAddress("123 Test Street, Bern")
+                .venueCapacity(100)
+                .organizerUsername(ORGANIZER_USERNAME)
+                .eventType(ch.batbern.events.dto.generated.EventType.EVENING)
+                .workflowState(ch.batbern.shared.types.EventWorkflowState.CREATED)
+                .build();
+        testEvent = eventRepository.save(testEvent);
+
+        // Step 2: Create Session (for session_id FK)
+        testSession = ch.batbern.events.domain.Session.builder()
+                .sessionSlug("test-session-speaker-status")
+                .eventId(testEvent.getId())
+                .title("Test Session")  // NOT NULL requirement
+                .build();
+        testSession = sessionRepository.save(testSession);
+
+        // Step 3: Create SpeakerPool (for speaker_pool_id FK)
+        testSpeaker = new ch.batbern.events.domain.SpeakerPool();
+        testSpeaker.setEventId(testEvent.getId());
+        testSpeaker.setSpeakerName("Jane Smith");
+        testSpeaker.setCompany("Tech Corp AG");
+        testSpeaker.setStatus(SpeakerWorkflowState.IDENTIFIED);
+        testSpeaker.setSessionId(testSession.getId());
+        testSpeaker = speakerPoolRepository.save(testSpeaker);
     }
 
     /**
@@ -54,7 +102,7 @@ public class SpeakerStatusHistoryRepositoryIntegrationTest extends AbstractInteg
     void should_findHistoryBySpeakerId_when_orderByChangedAtDesc() {
         // Given: Multiple status changes for a speaker
         SpeakerStatusHistory history1 = createStatusHistory(
-            TEST_SPEAKER_POOL_ID,
+            testSpeaker.getId(),
             SpeakerWorkflowState.IDENTIFIED,
             SpeakerWorkflowState.CONTACTED,
             Instant.now().minusSeconds(3600),
@@ -63,7 +111,7 @@ public class SpeakerStatusHistoryRepositoryIntegrationTest extends AbstractInteg
         repository.save(history1);
 
         SpeakerStatusHistory history2 = createStatusHistory(
-            TEST_SPEAKER_POOL_ID,
+            testSpeaker.getId(),
             SpeakerWorkflowState.CONTACTED,
             SpeakerWorkflowState.READY,
             Instant.now().minusSeconds(1800),
@@ -72,7 +120,7 @@ public class SpeakerStatusHistoryRepositoryIntegrationTest extends AbstractInteg
         repository.save(history2);
 
         SpeakerStatusHistory history3 = createStatusHistory(
-            TEST_SPEAKER_POOL_ID,
+            testSpeaker.getId(),
             SpeakerWorkflowState.READY,
             SpeakerWorkflowState.ACCEPTED,
             Instant.now(),
@@ -81,7 +129,7 @@ public class SpeakerStatusHistoryRepositoryIntegrationTest extends AbstractInteg
         repository.save(history3);
 
         // When: Find history by speaker pool ID
-        List<SpeakerStatusHistory> result = repository.findBySpeakerPoolIdOrderByChangedAtDesc(TEST_SPEAKER_POOL_ID);
+        List<SpeakerStatusHistory> result = repository.findBySpeakerPoolIdOrderByChangedAtDesc(testSpeaker.getId());
 
         // Then: Should return all history records in descending order
         assertThat(result).hasSize(3);
@@ -98,13 +146,13 @@ public class SpeakerStatusHistoryRepositoryIntegrationTest extends AbstractInteg
     @DisplayName("Should find history by event code and new status")
     void should_findHistoryByEventCodeAndStatus_when_queryExecuted() {
         // Given: Multiple speakers with different statuses
-        UUID speaker1 = UUID.randomUUID();
-        UUID speaker2 = UUID.randomUUID();
-        UUID speaker3 = UUID.randomUUID();
+        ch.batbern.events.domain.SpeakerPool speaker1 = createTestSpeaker("Speaker 1", "Company 1");
+        ch.batbern.events.domain.SpeakerPool speaker2 = createTestSpeaker("Speaker 2", "Company 2");
+        ch.batbern.events.domain.SpeakerPool speaker3 = createTestSpeaker("Speaker 3", "Company 3");
 
-        repository.save(createStatusHistory(speaker1, SpeakerWorkflowState.IDENTIFIED, SpeakerWorkflowState.ACCEPTED, Instant.now(), "Accepted 1"));
-        repository.save(createStatusHistory(speaker2, SpeakerWorkflowState.IDENTIFIED, SpeakerWorkflowState.ACCEPTED, Instant.now(), "Accepted 2"));
-        repository.save(createStatusHistory(speaker3, SpeakerWorkflowState.IDENTIFIED, SpeakerWorkflowState.DECLINED, Instant.now(), "Declined"));
+        repository.save(createStatusHistory(speaker1.getId(), SpeakerWorkflowState.IDENTIFIED, SpeakerWorkflowState.ACCEPTED, Instant.now(), "Accepted 1"));
+        repository.save(createStatusHistory(speaker2.getId(), SpeakerWorkflowState.IDENTIFIED, SpeakerWorkflowState.ACCEPTED, Instant.now(), "Accepted 2"));
+        repository.save(createStatusHistory(speaker3.getId(), SpeakerWorkflowState.IDENTIFIED, SpeakerWorkflowState.DECLINED, Instant.now(), "Declined"));
 
         // When: Find history by event code and ACCEPTED status
         List<SpeakerStatusHistory> result = repository.findByEventCodeAndNewStatus(TEST_EVENT_CODE, SpeakerWorkflowState.ACCEPTED);
@@ -124,7 +172,7 @@ public class SpeakerStatusHistoryRepositoryIntegrationTest extends AbstractInteg
     void should_saveStatusHistory_when_validDataProvided() {
         // Given: Status history record with all fields
         SpeakerStatusHistory history = createStatusHistory(
-            TEST_SPEAKER_POOL_ID,
+            testSpeaker.getId(),
             SpeakerWorkflowState.IDENTIFIED,
             SpeakerWorkflowState.CONTACTED,
             Instant.now(),
@@ -133,11 +181,12 @@ public class SpeakerStatusHistoryRepositoryIntegrationTest extends AbstractInteg
 
         // When: Save to repository
         SpeakerStatusHistory saved = repository.save(history);
+        repository.flush(); // Force persistence to trigger @CreationTimestamp
 
         // Then: Should persist with ID and all fields
         assertThat(saved.getId()).isNotNull();
-        assertThat(saved.getSpeakerPoolId()).isEqualTo(TEST_SPEAKER_POOL_ID);
-        assertThat(saved.getSessionId()).isEqualTo(TEST_SESSION_ID);
+        assertThat(saved.getSpeakerPoolId()).isEqualTo(testSpeaker.getId());
+        assertThat(saved.getSessionId()).isEqualTo(testSession.getId());
         assertThat(saved.getEventCode()).isEqualTo(TEST_EVENT_CODE);
         assertThat(saved.getPreviousStatus()).isEqualTo(SpeakerWorkflowState.IDENTIFIED);
         assertThat(saved.getNewStatus()).isEqualTo(SpeakerWorkflowState.CONTACTED);
@@ -157,7 +206,7 @@ public class SpeakerStatusHistoryRepositoryIntegrationTest extends AbstractInteg
         // Given: Status history with reason exceeding 2000 characters
         String longReason = "a".repeat(2001);
         SpeakerStatusHistory history = createStatusHistory(
-            TEST_SPEAKER_POOL_ID,
+            testSpeaker.getId(),
             SpeakerWorkflowState.IDENTIFIED,
             SpeakerWorkflowState.CONTACTED,
             Instant.now(),
@@ -180,6 +229,19 @@ public class SpeakerStatusHistoryRepositoryIntegrationTest extends AbstractInteg
     }
 
     /**
+     * Helper: Create test speaker in pool
+     */
+    private ch.batbern.events.domain.SpeakerPool createTestSpeaker(String name, String company) {
+        ch.batbern.events.domain.SpeakerPool speaker = new ch.batbern.events.domain.SpeakerPool();
+        speaker.setEventId(testEvent.getId());
+        speaker.setSessionId(testSession.getId());
+        speaker.setSpeakerName(name);
+        speaker.setCompany(company);
+        speaker.setStatus(SpeakerWorkflowState.IDENTIFIED);
+        return speakerPoolRepository.save(speaker);
+    }
+
+    /**
      * Helper: Create test status history record
      */
     private SpeakerStatusHistory createStatusHistory(
@@ -191,7 +253,7 @@ public class SpeakerStatusHistoryRepositoryIntegrationTest extends AbstractInteg
     ) {
         SpeakerStatusHistory history = new SpeakerStatusHistory();
         history.setSpeakerPoolId(speakerPoolId);
-        history.setSessionId(TEST_SESSION_ID);
+        history.setSessionId(testSession.getId());
         history.setEventCode(TEST_EVENT_CODE);
         history.setPreviousStatus(previousStatus);
         history.setNewStatus(newStatus);
