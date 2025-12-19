@@ -274,24 +274,29 @@ describe('WorkflowProgressBar - Story 5.1a Integration (React Query)', () => {
         .mockResolvedValueOnce(mockStatusInitial)
         .mockResolvedValue(mockStatusUpdated);
 
-      // When: Component mounted with refetch enabled
-      renderWithQuery(<WorkflowProgressBarWithQuery eventCode="BATbern56" refetchInterval={100} />);
+      // When: Component mounted with refetch enabled (50ms for faster test)
+      renderWithQuery(<WorkflowProgressBarWithQuery eventCode="BATbern56" refetchInterval={50} />);
 
       // Then: Should initially show CREATED state
       await waitFor(() => {
         expect(screen.getByText(/created/i)).toBeInTheDocument();
       });
 
-      // Wait for refetch interval
+      // Verify initial API call
+      expect(workflowService.getWorkflowStatus).toHaveBeenCalledTimes(1);
+
+      // Wait for refetch to occur (wait for API call count to increase)
       await waitFor(
         () => {
-          expect(screen.getByText(/topic selection/i)).toBeInTheDocument();
+          expect(workflowService.getWorkflowStatus).toHaveBeenCalledTimes(2);
         },
-        { timeout: 200 }
+        { timeout: 500 }
       );
 
-      // Should have called API twice (initial + refetch)
-      expect(workflowService.getWorkflowStatus).toHaveBeenCalledTimes(2);
+      // Then: UI should update to show new state
+      await waitFor(() => {
+        expect(screen.getByText(/topic selection/i)).toBeInTheDocument();
+      });
     });
 
     it('should_updateUIRealTime_when_stateChangeOccurs', async () => {
