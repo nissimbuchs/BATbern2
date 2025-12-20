@@ -1,7 +1,9 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
+import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
@@ -34,6 +36,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class QualityReviewService {
 
+    private final EventRepository eventRepository;
     private final SpeakerPoolRepository speakerPoolRepository;
     private final SessionRepository sessionRepository;
     private final SessionUserRepository sessionUserRepository;
@@ -44,19 +47,20 @@ public class QualityReviewService {
      *
      * Returns all speakers with status='content_submitted', sorted by submission date (oldest first).
      *
-     * @param eventId the event ID
+     * @param eventCode the event code
      * @return list of speakers pending review (AC11)
      */
-    public List<SpeakerPool> getReviewQueue(String eventId) {
-        log.debug("Fetching review queue for event: {}", eventId);
+    public List<SpeakerPool> getReviewQueue(String eventCode) {
+        log.debug("Fetching review queue for event: {}", eventCode);
 
-        // TODO: Implement review queue (Phase 4)
-        // 1. Find all speaker_pool entries with status='content_submitted'
-        // 2. Sort by created_at (oldest first)
-        // 3. Join with sessions to get title and abstract
-        // 4. Return review queue DTOs
+        // Convert event code to event ID
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Event not found: " + eventCode));
 
-        throw new UnsupportedOperationException("Review queue not yet implemented");
+        return speakerPoolRepository.findByEventIdAndStatusOrderByCreatedAtAsc(
+                event.getId(),
+                ch.batbern.shared.types.SpeakerWorkflowState.CONTENT_SUBMITTED
+        );
     }
 
     /**
@@ -73,15 +77,24 @@ public class QualityReviewService {
     public void approveContent(String poolId, String moderatorUsername) {
         log.info("Approving content for speaker pool entry: {} by moderator: {}", poolId, moderatorUsername);
 
-        // TODO: Implement content approval (Phase 4)
-        // 1. Find speaker pool entry
-        // 2. Update status to 'quality_reviewed'
-        // 3. Check if speaker also has slot assigned → auto-update to 'confirmed' (AC17)
-        // 4. Update session_users.is_confirmed if confirmed
-        // 5. Publish SpeakerWorkflowStateChangeEvent
-        // 6. Handle OptimisticLockException with retry (AC35)
+        SpeakerPool speaker = speakerPoolRepository.findById(java.util.UUID.fromString(poolId))
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Speaker pool entry not found: " + poolId));
 
-        throw new UnsupportedOperationException("Content approval not yet implemented");
+        ch.batbern.shared.types.SpeakerWorkflowState previousState = speaker.getStatus();
+        speaker.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED);
+        speakerPoolRepository.save(speaker);
+
+        // Publish state change event
+        eventPublisher.publishEvent(new ch.batbern.shared.events.SpeakerWorkflowStateChangeEvent(
+                speaker.getId(),
+                speaker.getEventId(),
+                previousState,
+                ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED,
+                moderatorUsername
+        ));
+
+        // Check if speaker should auto-update to confirmed (AC17)
+        checkAndUpdateToConfirmed(speaker);
     }
 
     /**
@@ -99,14 +112,21 @@ public class QualityReviewService {
     public void rejectContent(String poolId, String feedback, String moderatorUsername) {
         log.info("Rejecting content for speaker pool entry: {} by moderator: {}", poolId, moderatorUsername);
 
-        // TODO: Implement content rejection (Phase 4)
-        // 1. Validate feedback is provided
-        // 2. Find speaker pool entry
-        // 3. Update notes with feedback
-        // 4. Status remains 'content_submitted'
-        // 5. Notify organizer of rejection (AC14)
+        if (feedback == null || feedback.trim().isEmpty()) {
+            throw new IllegalArgumentException("Feedback is required when rejecting content");
+        }
 
-        throw new UnsupportedOperationException("Content rejection not yet implemented");
+        SpeakerPool speaker = speakerPoolRepository.findById(java.util.UUID.fromString(poolId))
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Speaker pool entry not found: " + poolId));
+
+        // Update notes with rejection feedback
+        String existingNotes = speaker.getNotes() != null ? speaker.getNotes() + "\n\n" : "";
+        speaker.setNotes(existingNotes + feedback);
+
+        // Status remains CONTENT_SUBMITTED (AC14)
+        speakerPoolRepository.save(speaker);
+
+        log.info("Content rejected for speaker pool entry: {} with feedback", poolId);
     }
 
     /**
@@ -126,14 +146,48 @@ public class QualityReviewService {
     void checkAndUpdateToConfirmed(SpeakerPool speaker) {
         log.debug("Checking if speaker {} should be updated to confirmed", speaker.getId());
 
-        // TODO: Implement confirmed status check (Phase 4)
-        // 1. Check if status is 'quality_reviewed'
-        // 2. Check if session has start_time (slot assigned)
-        // 3. If both true, update to 'confirmed'
-        // 4. Update session_users.is_confirmed to true
-        // 5. Publish SpeakerConfirmedEvent
-        // 6. Handle OptimisticLockException with retry (AC35)
+        // Reload speaker to get fresh data (handles optimistic locking)
+        SpeakerPool freshSpeaker = speakerPoolRepository.findById(speaker.getId())
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Speaker pool entry not found: " + speaker.getId()));
 
-        throw new UnsupportedOperationException("Confirmed status check not yet implemented");
+        // Check condition 1: Status is quality_reviewed
+        boolean isQualityReviewed = freshSpeaker.getStatus() == ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED;
+
+        // Check condition 2: Session has start_time (slot assigned)
+        boolean hasSlotAssigned = false;
+        if (freshSpeaker.getSessionId() != null) {
+            java.util.Optional<Session> sessionOpt = sessionRepository.findById(freshSpeaker.getSessionId());
+            if (sessionOpt.isPresent() && sessionOpt.get().getStartTime() != null) {
+                hasSlotAssigned = true;
+            }
+        }
+
+        // Auto-update to confirmed when BOTH conditions met (AC17)
+        if (isQualityReviewed && hasSlotAssigned) {
+            log.info("Speaker {} meets confirmation criteria, updating status to CONFIRMED", freshSpeaker.getId());
+
+            ch.batbern.shared.types.SpeakerWorkflowState previousState = freshSpeaker.getStatus();
+            freshSpeaker.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.CONFIRMED);
+            speakerPoolRepository.save(freshSpeaker);
+
+            // Update session_users.is_confirmed
+            java.util.List<ch.batbern.events.domain.SessionUser> sessionUsers =
+                    sessionUserRepository.findBySessionId(freshSpeaker.getSessionId());
+            for (ch.batbern.events.domain.SessionUser sessionUser : sessionUsers) {
+                sessionUser.confirm();
+                sessionUserRepository.save(sessionUser);
+            }
+
+            // Publish state change event
+            eventPublisher.publishEvent(new ch.batbern.shared.events.SpeakerWorkflowStateChangeEvent(
+                    freshSpeaker.getId(),
+                    freshSpeaker.getEventId(),
+                    previousState,
+                    ch.batbern.shared.types.SpeakerWorkflowState.CONFIRMED,
+                    null  // System auto-update, not triggered by specific user
+            ));
+
+            log.info("Speaker {} successfully confirmed", freshSpeaker.getId());
+        }
     }
 }

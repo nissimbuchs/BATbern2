@@ -29,6 +29,8 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { speakerStatusService } from '@/services/speakerStatusService';
 import { StatusChangeDialog } from './StatusChangeDialog';
+import { ContentSubmissionDrawer } from './ContentSubmissionDrawer';
+import { QualityReviewDrawer } from './QualityReviewDrawer';
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
 import type { components } from '@/types/generated/speakers-api.types';
 
@@ -40,21 +42,27 @@ export interface SpeakerStatusLanesProps {
   onStatusChange?: (speakerId: string, newStatus: SpeakerWorkflowState) => void;
 }
 
-// Status color mapping
+// Status color mapping (Story 5.5 - Extended to 7 lanes)
 const STATUS_COLORS: Record<string, string> = {
-  IDENTIFIED: '#9e9e9e',
-  CONTACTED: '#ffc107',
-  READY: '#ff9800',
-  ACCEPTED: '#4caf50',
-  DECLINED: '#f44336',
+  IDENTIFIED: '#9e9e9e', // Grey
+  CONTACTED: '#ffc107', // Amber
+  READY: '#ff9800', // Orange
+  ACCEPTED: '#4caf50', // Green
+  CONTENT_SUBMITTED: '#fbc02d', // Yellow (NEW - Story 5.5)
+  QUALITY_REVIEWED: '#7cb342', // Light Green (NEW - Story 5.5)
+  CONFIRMED: '#2e7d32', // Dark Green (NEW - Story 5.5)
+  DECLINED: '#f44336', // Red
 };
 
-// Status lanes to display
+// Status lanes to display (Story 5.5 - Extended from 5 to 7 lanes)
 const STATUS_LANES: SpeakerWorkflowState[] = [
   'IDENTIFIED',
   'CONTACTED',
   'READY',
   'ACCEPTED',
+  'CONTENT_SUBMITTED', // NEW - Story 5.5
+  'QUALITY_REVIEWED', // NEW - Story 5.5
+  'CONFIRMED', // NEW - Story 5.5
   'DECLINED',
 ];
 
@@ -73,6 +81,14 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
   }>({ open: false });
 
   const [activeSpeaker, setActiveSpeaker] = useState<SpeakerPoolEntry | null>(null);
+
+  // Content submission drawer state (Story 5.5)
+  const [contentDrawerOpen, setContentDrawerOpen] = useState(false);
+  const [currentSpeaker, setCurrentSpeaker] = useState<SpeakerPoolEntry | null>(null);
+
+  // Quality review drawer state (Story 5.5 Phase 4)
+  const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
+  const [reviewSpeaker, setReviewSpeaker] = useState<SpeakerPoolEntry | null>(null);
 
   // Drag-and-drop sensors
   const sensors = useSensors(
@@ -124,12 +140,18 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
     const speaker = speakers.find((s) => s.id === speakerId);
 
     if (speaker && speaker.status !== newStatus) {
-      // Open confirmation dialog
-      setDialogState({
-        open: true,
-        speaker,
-        newStatus,
-      });
+      // Special handling for CONTENT_SUBMITTED - open drawer instead of dialog
+      if (newStatus === 'CONTENT_SUBMITTED') {
+        setCurrentSpeaker(speaker);
+        setContentDrawerOpen(true);
+      } else {
+        // Open confirmation dialog for other status changes
+        setDialogState({
+          open: true,
+          speaker,
+          newStatus,
+        });
+      }
     }
   };
 
@@ -146,6 +168,20 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
 
   const handleCancelStatusChange = () => {
     setDialogState({ open: false });
+  };
+
+  // Handle speaker card click (Story 5.5)
+  const handleSpeakerClick = (speaker: SpeakerPoolEntry) => {
+    // Open content submission drawer for ACCEPTED speakers
+    if (speaker.status === 'ACCEPTED') {
+      setCurrentSpeaker(speaker);
+      setContentDrawerOpen(true);
+    }
+    // Open quality review drawer for CONTENT_SUBMITTED speakers (Story 5.5 Phase 4)
+    else if (speaker.status === 'CONTENT_SUBMITTED') {
+      setReviewSpeaker(speaker);
+      setReviewDrawerOpen(true);
+    }
   };
 
   // Group speakers by status
@@ -174,11 +210,12 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
       >
         <Grid container spacing={2} sx={{ width: '100%' }}>
           {STATUS_LANES.map((status) => (
-            <Grid size={{ xs: 12, md: 2.4 }} key={status}>
+            <Grid size={{ xs: 12, sm: 6, md: 3, lg: 1.5 }} key={status}>
               <StatusLane
                 status={status}
                 speakers={speakersByStatus[status] || []}
                 color={STATUS_COLORS[status]}
+                onSpeakerClick={handleSpeakerClick}
               />
             </Grid>
           ))}
@@ -200,6 +237,22 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
           onCancel={handleCancelStatusChange}
         />
       )}
+
+      {/* Content Submission Drawer (Story 5.5) */}
+      <ContentSubmissionDrawer
+        open={contentDrawerOpen}
+        onClose={() => setContentDrawerOpen(false)}
+        speaker={currentSpeaker}
+        eventCode={eventCode}
+      />
+
+      {/* Quality Review Drawer (Story 5.5 Phase 4) */}
+      <QualityReviewDrawer
+        open={reviewDrawerOpen}
+        onClose={() => setReviewDrawerOpen(false)}
+        speaker={reviewSpeaker}
+        eventCode={eventCode}
+      />
     </Box>
   );
 };
@@ -209,9 +262,10 @@ interface StatusLaneProps {
   status: SpeakerWorkflowState;
   speakers: SpeakerPoolEntry[];
   color: string;
+  onSpeakerClick?: (speaker: SpeakerPoolEntry) => void;
 }
 
-const StatusLane: React.FC<StatusLaneProps> = ({ status, speakers, color }) => {
+const StatusLane: React.FC<StatusLaneProps> = ({ status, speakers, color, onSpeakerClick }) => {
   const { t } = useTranslation(['organizer']);
   const { setNodeRef } = useDroppable({
     id: status,
@@ -242,7 +296,7 @@ const StatusLane: React.FC<StatusLaneProps> = ({ status, speakers, color }) => {
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
         {speakers.map((speaker) => (
-          <SpeakerCard key={speaker.id} speaker={speaker} />
+          <SpeakerCard key={speaker.id} speaker={speaker} onSpeakerClick={onSpeakerClick} />
         ))}
       </Box>
     </Paper>
@@ -253,9 +307,14 @@ const StatusLane: React.FC<StatusLaneProps> = ({ status, speakers, color }) => {
 interface SpeakerCardProps {
   speaker: SpeakerPoolEntry;
   isDragging?: boolean;
+  onSpeakerClick?: (speaker: SpeakerPoolEntry) => void;
 }
 
-const SpeakerCard: React.FC<SpeakerCardProps> = ({ speaker, isDragging = false }) => {
+const SpeakerCard: React.FC<SpeakerCardProps> = ({
+  speaker,
+  isDragging = false,
+  onSpeakerClick,
+}) => {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: speaker.id,
   });
@@ -266,11 +325,20 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({ speaker, isDragging = false }
       }
     : undefined;
 
+  const handleClick = (e: React.MouseEvent) => {
+    // Only trigger click if not dragging
+    if (!transform && onSpeakerClick) {
+      e.stopPropagation();
+      onSpeakerClick(speaker);
+    }
+  };
+
   return (
     <Card
       ref={setNodeRef}
       {...listeners}
       {...attributes}
+      onClick={handleClick}
       sx={{
         p: 2,
         cursor: 'grab',

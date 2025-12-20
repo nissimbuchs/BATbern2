@@ -283,9 +283,9 @@ export interface components {
      *     - READY: Speaker confirmed availability and interest
      *     - DECLINED: Speaker declined invitation
      *     - ACCEPTED: Speaker accepted invitation and confirmed participation
-     *     - SLOT_ASSIGNED: Speaker assigned to specific time slot
-     *     - QUALITY_REVIEWED: Speaker's content passed quality review
-     *     - FINAL_AGENDA: Speaker finalized in published agenda
+     *     - CONTENT_SUBMITTED: Speaker submitted presentation content (title, abstract) [Story 5.5]
+     *     - QUALITY_REVIEWED: Speaker's content passed quality review [Story 5.5]
+     *     - CONFIRMED: Speaker has both quality-reviewed content and assigned slot [Story 5.5]
      * @enum {string}
      */
     SpeakerWorkflowState:
@@ -294,9 +294,9 @@ export interface components {
       | 'READY'
       | 'DECLINED'
       | 'ACCEPTED'
-      | 'SLOT_ASSIGNED'
+      | 'CONTENT_SUBMITTED'
       | 'QUALITY_REVIEWED'
-      | 'FINAL_AGENDA';
+      | 'CONFIRMED';
     SpeakerSlotPreferences: {
       /**
        * @description Speaker username (ADR-003)

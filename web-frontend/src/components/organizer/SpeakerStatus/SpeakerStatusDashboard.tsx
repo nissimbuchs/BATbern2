@@ -13,7 +13,6 @@
 
 import React from 'react';
 import {
-  Container,
   Paper,
   Card,
   CardContent,
@@ -34,16 +33,16 @@ export interface SpeakerStatusDashboardProps {
   eventCode: string;
 }
 
-// Status color mapping (AC7)
+// Status color mapping (Story 5.5 - Extended to 8 lanes)
 const STATUS_COLORS: Record<string, string> = {
   IDENTIFIED: '#9e9e9e', // Gray
   CONTACTED: '#ffc107', // Amber/Yellow
   READY: '#ff9800', // Orange
   ACCEPTED: '#4caf50', // Green
+  CONTENT_SUBMITTED: '#fbc02d', // Yellow (NEW - Story 5.5)
+  QUALITY_REVIEWED: '#7cb342', // Light Green (NEW - Story 5.5)
+  CONFIRMED: '#2e7d32', // Dark Green (NEW - Story 5.5)
   DECLINED: '#f44336', // Red
-  SLOT_ASSIGNED: '#2196f3', // Blue
-  QUALITY_REVIEWED: '#00bcd4', // Cyan
-  FINAL_AGENDA: '#9c27b0', // Purple
 };
 
 export const SpeakerStatusDashboard: React.FC<SpeakerStatusDashboardProps> = ({ eventCode }) => {
@@ -71,17 +70,17 @@ export const SpeakerStatusDashboard: React.FC<SpeakerStatusDashboardProps> = ({ 
 
   if (isLoading || speakersLoading) {
     return (
-      <Container>
+      <Box>
         <LinearProgress />
-      </Container>
+      </Box>
     );
   }
 
   if (error) {
     return (
-      <Container>
+      <Box>
         <Alert severity="error">{t('common:errors.loadFailed')}</Alert>
-      </Container>
+      </Box>
     );
   }
 
@@ -95,7 +94,7 @@ export const SpeakerStatusDashboard: React.FC<SpeakerStatusDashboardProps> = ({ 
       : 0;
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Box sx={{ mt: 4, mb: 4 }}>
       <Typography variant="h4" gutterBottom>
         {t('organizer:speakerStatus.title')}
       </Typography>
@@ -177,7 +176,7 @@ export const SpeakerStatusDashboard: React.FC<SpeakerStatusDashboardProps> = ({ 
       <SpeakerStatusLanes eventCode={eventCode} speakers={speakers} />
 
       {/* Status History Timeline - AC15 - TODO: Implement in speaker detail view with speakerId */}
-    </Container>
+    </Box>
   );
 };
 

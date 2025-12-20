@@ -204,7 +204,11 @@ public class SpeakerStatusService {
             .collect(Collectors.groupingBy(s -> s, Collectors.counting()));
 
         long totalSpeakers = speakerStatuses.size();
-        long acceptedCount = statusCounts.getOrDefault(SpeakerWorkflowState.ACCEPTED, 0L);
+        // Count speakers in ACCEPTED and all subsequent states (Story 5.5)
+        long acceptedCount = statusCounts.getOrDefault(SpeakerWorkflowState.ACCEPTED, 0L)
+            + statusCounts.getOrDefault(SpeakerWorkflowState.CONTENT_SUBMITTED, 0L)
+            + statusCounts.getOrDefault(SpeakerWorkflowState.QUALITY_REVIEWED, 0L)
+            + statusCounts.getOrDefault(SpeakerWorkflowState.CONFIRMED, 0L);
         long declinedCount = statusCounts.getOrDefault(SpeakerWorkflowState.DECLINED, 0L);
         long pendingCount = totalSpeakers - acceptedCount - declinedCount;
 
