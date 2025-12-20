@@ -7,7 +7,11 @@
 - update prd with new flow
 - ask ux expert to reorganize better the user-guide.
 - ask user expert to use playwright on localhost to get screenshots of all the major screens and pages
-- company
+- company list has double grid-table buttons
+- company detail has no breadcrumb
+- user management has no breadcrumb
+- company logos on list does not show, but on detail shows. again the origin problem?
+
 
 ## Documentation & Website
 - [ ] Think on a migration strategy, to smoothly transition from the current website to the new one
