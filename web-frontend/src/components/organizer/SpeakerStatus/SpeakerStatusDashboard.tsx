@@ -27,6 +27,8 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { speakerStatusService } from '@/services/speakerStatusService';
+import { speakerPoolService } from '@/services/speakerPoolService';
+import { SpeakerStatusLanes } from './SpeakerStatusLanes';
 
 export interface SpeakerStatusDashboardProps {
   eventCode: string;
@@ -34,14 +36,14 @@ export interface SpeakerStatusDashboardProps {
 
 // Status color mapping (AC7)
 const STATUS_COLORS: Record<string, string> = {
-  open: '#9e9e9e', // Gray
-  contacted: '#ffc107', // Amber/Yellow
-  ready: '#ff9800', // Orange
-  accepted: '#4caf50', // Green
-  declined: '#f44336', // Red
-  slot_assigned: '#2196f3', // Blue
-  quality_reviewed: '#00bcd4', // Cyan
-  final_agenda: '#9c27b0', // Purple
+  IDENTIFIED: '#9e9e9e', // Gray
+  CONTACTED: '#ffc107', // Amber/Yellow
+  READY: '#ff9800', // Orange
+  ACCEPTED: '#4caf50', // Green
+  DECLINED: '#f44336', // Red
+  SLOT_ASSIGNED: '#2196f3', // Blue
+  QUALITY_REVIEWED: '#00bcd4', // Cyan
+  FINAL_AGENDA: '#9c27b0', // Purple
 };
 
 export const SpeakerStatusDashboard: React.FC<SpeakerStatusDashboardProps> = ({ eventCode }) => {
@@ -59,7 +61,18 @@ export const SpeakerStatusDashboard: React.FC<SpeakerStatusDashboardProps> = ({ 
     staleTime: 15000, // Consider data stale after 15 seconds
   });
 
-  if (isLoading) {
+  // Fetch speaker pool data for lanes
+  const {
+    data: speakers,
+    isLoading: speakersLoading,
+  } = useQuery({
+    queryKey: ['speakerPool', eventCode],
+    queryFn: () => speakerPoolService.getSpeakerPool(eventCode),
+    refetchInterval: 30000, // Poll every 30 seconds
+    staleTime: 15000,
+  });
+
+  if (isLoading || speakersLoading) {
     return (
       <Container>
         <LinearProgress />
@@ -75,7 +88,7 @@ export const SpeakerStatusDashboard: React.FC<SpeakerStatusDashboardProps> = ({ 
     );
   }
 
-  if (!summary) {
+  if (!summary || !speakers) {
     return null;
   }
 
@@ -143,7 +156,7 @@ export const SpeakerStatusDashboard: React.FC<SpeakerStatusDashboardProps> = ({ 
         {/* Status Counts (AC5) */}
         <Grid container spacing={2}>
           {Object.entries(summary.statusCounts || {}).map(([status, count]) => (
-            <Grid item xs={6} sm={4} md={3} key={status}>
+            <Grid size={{ xs: 6, sm: 4, md: 3 }} key={status}>
               <Card variant="outlined">
                 <CardContent>
                   <Chip
@@ -162,6 +175,11 @@ export const SpeakerStatusDashboard: React.FC<SpeakerStatusDashboardProps> = ({ 
           ))}
         </Grid>
       </Paper>
+
+      {/* Speaker Status Lanes (Kanban Board) - AC4 */}
+      <SpeakerStatusLanes eventCode={eventCode} speakers={speakers} />
+
+      {/* Status History Timeline - AC15 - TODO: Implement in speaker detail view with speakerId */}
     </Container>
   );
 };

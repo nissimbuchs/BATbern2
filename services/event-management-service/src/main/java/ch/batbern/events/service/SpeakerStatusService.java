@@ -51,6 +51,7 @@ public class SpeakerStatusService {
     private final SpeakerPoolRepository speakerPoolRepository;
     private final EventRepository eventRepository;
     private final EventTypeService eventTypeService;
+    private final ch.batbern.events.repository.SessionRepository sessionRepository;
 
     /**
      * Update speaker status with validation
@@ -73,24 +74,51 @@ public class SpeakerStatusService {
         log.info("Updating speaker {} status to {} for event {} by {}",
             speakerId, request.getNewStatus(), eventCode, organizerUsername);
 
-        // Get current status from latest history record
-        List<SpeakerStatusHistory> history = repository.findBySpeakerPoolIdOrderByChangedAtDesc(speakerId);
-        SpeakerWorkflowState currentStatus = history.isEmpty()
-            ? SpeakerWorkflowState.IDENTIFIED
-            : history.get(0).getNewStatus();
+        // Get speaker from pool
+        SpeakerPool speaker = speakerPoolRepository.findById(speakerId)
+                .orElseThrow(() -> new NotFoundException("Speaker not found: " + speakerId));
+
+        // Get current status from speaker_pool entity (source of truth)
+        SpeakerWorkflowState currentStatus = speaker.getStatus() != null
+            ? speaker.getStatus()
+            : SpeakerWorkflowState.IDENTIFIED;
 
         // Validate state transition - Story 5.4 AC12
         validator.validateTransition(currentStatus, request.getNewStatus());
 
-        // Get actual session ID from speaker pool - Story 5.4 IMPL-001
-        SpeakerPool speaker = speakerPoolRepository.findById(speakerId)
-                .orElseThrow(() -> new NotFoundException("Speaker not found: " + speakerId));
+        // BUG FIX: Update speaker_pool status column
+        speaker.setStatus(request.getNewStatus());
 
+        // BUG FIX: Create session when speaker accepts (if no session exists)
         UUID sessionId = speaker.getSessionId();
-        if (sessionId == null) {
-            log.warn("Speaker {} has no linked session, using fallback UUID", speakerId);
-            sessionId = UUID.randomUUID();  // Fallback for legacy data
+        if (request.getNewStatus() == SpeakerWorkflowState.ACCEPTED && sessionId == null) {
+            Event event = eventRepository.findByEventCode(eventCode)
+                    .orElseThrow(() -> new NotFoundException("Event not found: " + eventCode));
+
+            // Create session for accepted speaker
+            ch.batbern.events.domain.Session session = new ch.batbern.events.domain.Session();
+            session.setEventId(event.getId());
+            session.setSessionSlug(generateSessionSlug(eventCode, speaker.getSpeakerName()));
+
+            // Set title to "SpeakerName - Company" format
+            String sessionTitle = speaker.getSpeakerName();
+            if (speaker.getCompany() != null && !speaker.getCompany().isBlank()) {
+                sessionTitle += " - " + speaker.getCompany();
+            }
+            session.setTitle(sessionTitle);
+
+            ch.batbern.events.domain.Session savedSession = sessionRepository.save(session);
+            sessionId = savedSession.getId();
+            speaker.setSessionId(sessionId);
+            log.info("Created session {} for accepted speaker {}",
+                    savedSession.getSessionSlug(), speaker.getSpeakerName());
+        } else if (sessionId == null) {
+            // No session yet (speaker not accepted)
+            sessionId = UUID.randomUUID();  // Fallback for history record
         }
+
+        // Save updated speaker pool entry
+        speakerPoolRepository.save(speaker);
 
         // Create history record - Story 5.4 AC3-4
         SpeakerStatusHistory historyRecord = new SpeakerStatusHistory();
@@ -160,18 +188,15 @@ public class SpeakerStatusService {
         log.debug("Event {} type {} has slot config: min={}, max={}",
                 eventCode, event.getEventType(), minSlots, maxSlots);
 
-        // Get all speakers for the event (latest status for each)
-        // Performance fix (PERF-001): Query by event code instead of loading entire table
-        List<SpeakerStatusHistory> allHistory = repository.findByEventCode(eventCode);
+        // Get all speakers for the event from speaker_pool table (BUG FIX)
+        // Query speaker_pool directly to get current status, not speaker_status_history
+        List<SpeakerPool> speakers = speakerPoolRepository.findByEventId(event.getId());
 
-        // Group by speaker and get latest status
-        Map<UUID, SpeakerWorkflowState> speakerStatuses = allHistory.stream()
-            .collect(Collectors.groupingBy(
-                SpeakerStatusHistory::getSpeakerPoolId,
-                Collectors.collectingAndThen(
-                    Collectors.maxBy((h1, h2) -> h1.getChangedAt().compareTo(h2.getChangedAt())),
-                    opt -> opt.map(SpeakerStatusHistory::getNewStatus).orElse(SpeakerWorkflowState.IDENTIFIED)
-                )
+        // Extract current status from each speaker
+        Map<UUID, SpeakerWorkflowState> speakerStatuses = speakers.stream()
+            .collect(Collectors.toMap(
+                SpeakerPool::getId,
+                SpeakerPool::getStatus
             ));
 
         // Calculate counts - Story 5.4 AC5
@@ -239,5 +264,16 @@ public class SpeakerStatusService {
         item.setChangeReason(history.getChangeReason());
         item.setChangedAt(history.getChangedAt());
         return item;
+    }
+
+    /**
+     * Generate unique session slug for accepted speaker
+     */
+    private String generateSessionSlug(String eventCode, String speakerName) {
+        String cleanName = speakerName.toLowerCase()
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("^-|-$", "");
+        String timestamp = String.valueOf(System.currentTimeMillis()).substring(8);
+        return String.format("%s-speaker-%s-%s", eventCode.toLowerCase(), cleanName, timestamp);
     }
 }

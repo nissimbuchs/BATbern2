@@ -33,14 +33,14 @@ export interface StatusHistoryTimelineProps {
 
 // Status color mapping
 const STATUS_COLORS: Record<string, string> = {
-  open: '#9e9e9e',
-  contacted: '#ffc107',
-  ready: '#ff9800',
-  accepted: '#4caf50',
-  declined: '#f44336',
-  slot_assigned: '#2196f3',
-  quality_reviewed: '#00bcd4',
-  final_agenda: '#9c27b0',
+  IDENTIFIED: '#9e9e9e',
+  CONTACTED: '#ffc107',
+  READY: '#ff9800',
+  ACCEPTED: '#4caf50',
+  DECLINED: '#f44336',
+  SLOT_ASSIGNED: '#2196f3',
+  QUALITY_REVIEWED: '#00bcd4',
+  FINAL_AGENDA: '#9c27b0',
 };
 
 export const StatusHistoryTimeline: React.FC<StatusHistoryTimelineProps> = ({
@@ -91,7 +91,7 @@ export const StatusHistoryTimeline: React.FC<StatusHistoryTimelineProps> = ({
       <Timeline position="alternate">
         {history.map((item, index) => {
           const isLast = index === history.length - 1;
-          const statusColor = STATUS_COLORS[item.newStatus || 'open'];
+          const statusColor = STATUS_COLORS[item.newStatus || 'IDENTIFIED'];
 
           return (
             <TimelineItem key={item.id}>
@@ -111,7 +111,7 @@ export const StatusHistoryTimeline: React.FC<StatusHistoryTimelineProps> = ({
                       label={t(`organizer:speakerStatus.${item.previousStatus}`)}
                       size="small"
                       sx={{
-                        backgroundColor: STATUS_COLORS[item.previousStatus || 'open'],
+                        backgroundColor: STATUS_COLORS[item.previousStatus || 'IDENTIFIED'],
                         color: 'white',
                       }}
                     />

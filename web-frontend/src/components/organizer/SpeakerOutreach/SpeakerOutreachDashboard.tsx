@@ -294,7 +294,7 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
                         <Chip
                           label={speaker.status}
                           size="small"
-                          color={speaker.status === 'contacted' ? 'success' : 'default'}
+                          color={speaker.status === 'CONTACTED' ? 'success' : 'default'}
                           data-testid="outreach-status"
                         />
                       </TableCell>

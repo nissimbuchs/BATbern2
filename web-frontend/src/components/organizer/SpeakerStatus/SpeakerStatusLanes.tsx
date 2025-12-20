@@ -17,45 +17,40 @@ import { useTranslation } from 'react-i18next';
 import {
   DndContext,
   DragEndEvent,
+  DragStartEvent,
   DragOverlay,
   closestCenter,
   useSensor,
   useSensors,
   PointerSensor,
+  useDraggable,
+  useDroppable,
 } from '@dnd-kit/core';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { speakerStatusService } from '@/services/speakerStatusService';
 import { StatusChangeDialog } from './StatusChangeDialog';
+import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
 import type { components } from '@/types/generated/speakers-api.types';
 
 type SpeakerWorkflowState = components['schemas']['SpeakerWorkflowState'];
 
-export interface Speaker {
-  id: string;
-  speakerName: string;
-  company?: string;
-  expertise?: string;
-  status: SpeakerWorkflowState;
-  assignedOrganizerId?: string;
-}
-
 export interface SpeakerStatusLanesProps {
   eventCode: string;
-  speakers: Speaker[];
+  speakers: SpeakerPoolEntry[];
   onStatusChange?: (speakerId: string, newStatus: SpeakerWorkflowState) => void;
 }
 
 // Status color mapping
 const STATUS_COLORS: Record<string, string> = {
-  open: '#9e9e9e',
-  contacted: '#ffc107',
-  ready: '#ff9800',
-  accepted: '#4caf50',
-  declined: '#f44336',
+  IDENTIFIED: '#9e9e9e',
+  CONTACTED: '#ffc107',
+  READY: '#ff9800',
+  ACCEPTED: '#4caf50',
+  DECLINED: '#f44336',
 };
 
 // Status lanes to display
-const STATUS_LANES: SpeakerWorkflowState[] = ['open', 'contacted', 'ready', 'accepted', 'declined'];
+const STATUS_LANES: SpeakerWorkflowState[] = ['IDENTIFIED', 'CONTACTED', 'READY', 'ACCEPTED', 'DECLINED'];
 
 export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
   eventCode,
@@ -67,11 +62,11 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
 
   const [dialogState, setDialogState] = useState<{
     open: boolean;
-    speaker?: Speaker;
+    speaker?: SpeakerPoolEntry;
     newStatus?: SpeakerWorkflowState;
   }>({ open: false });
 
-  const [activeSpeaker, setActiveSpeaker] = useState<Speaker | null>(null);
+  const [activeSpeaker, setActiveSpeaker] = useState<SpeakerPoolEntry | null>(null);
 
   // Drag-and-drop sensors
   const sensors = useSensors(
@@ -104,8 +99,8 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
     },
   });
 
-  const handleDragStart = (event: { active: { id: string } }) => {
-    const speakerId = event.active.id;
+  const handleDragStart = (event: DragStartEvent) => {
+    const speakerId = event.active.id as string;
     const speaker = speakers.find((s) => s.id === speakerId);
     setActiveSpeaker(speaker || null);
   };
@@ -153,11 +148,14 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
       acc[status] = speakers.filter((s) => s.status === status);
       return acc;
     },
-    {} as Record<SpeakerWorkflowState, Speaker[]>
+    {} as Record<SpeakerWorkflowState, SpeakerPoolEntry[]>
   );
 
   return (
-    <>
+    <Box sx={{ width: '100%', mb: 3 }}>
+      <Typography variant="h6" gutterBottom>
+        {t('organizer:speakerStatus.lanes')}
+      </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         {t('organizer:speakerStatus.dragToChange')}
       </Typography>
@@ -168,9 +166,9 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <Grid container spacing={2}>
+        <Grid container spacing={2} sx={{ width: '100%' }}>
           {STATUS_LANES.map((status) => (
-            <Grid item xs={12} md={2.4} key={status}>
+            <Grid size={{ xs: 12, md: 2.4 }} key={status}>
               <StatusLane
                 status={status}
                 speakers={speakersByStatus[status] || []}
@@ -196,26 +194,31 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
           onCancel={handleCancelStatusChange}
         />
       )}
-    </>
+    </Box>
   );
 };
 
 // Status Lane Component
 interface StatusLaneProps {
   status: SpeakerWorkflowState;
-  speakers: Speaker[];
+  speakers: SpeakerPoolEntry[];
   color: string;
 }
 
 const StatusLane: React.FC<StatusLaneProps> = ({ status, speakers, color }) => {
   const { t } = useTranslation(['organizer']);
+  const { setNodeRef } = useDroppable({
+    id: status,
+  });
 
   return (
     <Paper
-      id={status}
+      ref={setNodeRef}
       sx={{
         p: 2,
-        minHeight: '500px',
+        minHeight: '300px',
+        display: 'flex',
+        flexDirection: 'column',
         backgroundColor: 'background.default',
         borderTop: `4px solid ${color}`,
       }}
@@ -242,14 +245,26 @@ const StatusLane: React.FC<StatusLaneProps> = ({ status, speakers, color }) => {
 
 // Speaker Card Component
 interface SpeakerCardProps {
-  speaker: Speaker;
+  speaker: SpeakerPoolEntry;
   isDragging?: boolean;
 }
 
 const SpeakerCard: React.FC<SpeakerCardProps> = ({ speaker, isDragging = false }) => {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+    id: speaker.id,
+  });
+
+  const style = transform
+    ? {
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+      }
+    : undefined;
+
   return (
     <Card
-      id={speaker.id}
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
       sx={{
         p: 2,
         cursor: 'grab',
@@ -257,6 +272,7 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({ speaker, isDragging = false }
         '&:hover': {
           boxShadow: 3,
         },
+        ...style,
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
