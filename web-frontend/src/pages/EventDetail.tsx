@@ -5,7 +5,7 @@
  * Accessed via /organizer/events/:eventCode
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -33,6 +33,8 @@ import { de, enUS } from 'date-fns/locale';
 import { useEvent } from '@/hooks/useEvents';
 import type { EventUI } from '@/types/event.types';
 import { SpeakerStatusDashboard } from '@/components/organizer/SpeakerStatus/SpeakerStatusDashboard';
+import { Breadcrumbs } from '@/components/shared/Breadcrumbs';
+import type { BreadcrumbItem } from '@/components/shared/Breadcrumbs';
 
 const EventDetail: React.FC = () => {
   const { eventCode } = useParams<{ eventCode: string }>();
@@ -43,6 +45,15 @@ const EventDetail: React.FC = () => {
   const { data: event, isLoading, error } = useEvent(eventCode);
 
   const locale = i18n.language === 'de' ? de : enUS;
+
+  // Build breadcrumb items (memoized to prevent re-renders)
+  const breadcrumbItems: BreadcrumbItem[] = useMemo(
+    () => [
+      { label: t('navigation.events', 'Events'), path: '/organizer/events' },
+      { label: event?.title || t('common.loading', 'Loading...') },
+    ],
+    [event?.title, t]
+  );
 
   const handleBack = () => {
     navigate('/organizer/events');
@@ -97,6 +108,9 @@ const EventDetail: React.FC = () => {
 
   return (
     <Box sx={{ p: 3 }}>
+      {/* Breadcrumbs */}
+      <Breadcrumbs items={breadcrumbItems} marginBottom={2} />
+
       {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
         <Button startIcon={<ArrowBackIcon />} onClick={handleBack}>

@@ -1,4 +1,9 @@
 {
+  "navigation": {
+    "partners": "Partner",
+    "speakerOutreach": "Sprecher-Kontaktierung",
+    "topicManagement": "Themenverwaltung"
+  },
   "topicBacklog": {
     "pageTitle": "Themenverwaltung",
     "pageDescription": "Verwalten Sie Themen im Backlog, wählen Sie Themen für Veranstaltungen und analysieren Sie Nutzungsmuster",
@@ -242,10 +247,10 @@
     "CONTACTED": "Kontaktiert",
     "READY": "Bereit",
     "ACCEPTED": "Angenommen",
-    "DECLINED": "Abgelehnt",
-    "SLOT_ASSIGNED": "Slot zugewiesen",
+    "CONTENT_SUBMITTED": "Inhalt eingereicht",
     "QUALITY_REVIEWED": "Qualität geprüft",
-    "FINAL_AGENDA": "Finale Agenda",
+    "CONFIRMED": "Bestätigt",
+    "DECLINED": "Abgelehnt",
     "changeStatus": "Status ändern",
     "changeReason": "Grund für Statusänderung (optional)",
     "confirmChange": "Status ändern",
@@ -265,5 +270,27 @@
     "reasonHelperText": "Optional (max. {{max}} Zeichen)",
     "reasonPlaceholder": "z.B. Sprecher hat per E-Mail zugesagt",
     "reasonTooLong": "Grund ist zu lang ({{current}}/{{max}} Zeichen)"
+  },
+  "speakerContent": {
+    "submitContent": "Sprecher-Inhalt einreichen",
+    "presentationDetails": "Präsentationsdetails",
+    "speakerInformation": "Sprecher-Informationen",
+    "submitting": "Wird eingereicht...",
+    "editSpeakerProfile": "Sprecher-Profil bearbeiten",
+    "createNewSpeaker": "Neuen Sprecher erstellen",
+    "form": {
+      "username": "Sprecher suchen",
+      "usernameHelp": "Geben Sie den Benutzernamen des Sprechers ein",
+      "presentationTitle": "Präsentationstitel",
+      "presentationAbstract": "Präsentationszusammenfassung",
+      "charactersRemaining": "Zeichen verbleibend"
+    },
+    "errors": {
+      "usernameRequired": "Sprecher ist erforderlich",
+      "titleRequired": "Präsentationstitel ist erforderlich",
+      "abstractRequired": "Präsentationszusammenfassung ist erforderlich",
+      "abstractTooLong": "Zusammenfassung darf maximal {{max}} Zeichen lang sein",
+      "submitFailed": "Inhalt konnte nicht eingereicht werden. Bitte versuchen Sie es erneut."
+    }
   }
 }
