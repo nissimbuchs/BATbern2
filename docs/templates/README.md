@@ -68,32 +68,32 @@ public EngagementScore calculateEngagement(Partner partner) {
 
 ### Backend Templates
 
-| Template | Description | Lines | Used in Stories |
-|----------|-------------|-------|-----------------|
-| [spring-boot-service-foundation.md](backend/spring-boot-service-foundation.md) | Package structure, JPA entities, repositories, service layer | 400 | 2.2, 2.7, 2.8 |
-| [jwt-propagation-pattern.md](backend/jwt-propagation-pattern.md) | RestTemplate/WebClient with JWT interceptors for cross-service calls | 200 | 2.7, 2.8.1, 2.8.2 |
-| [flyway-migration-pattern.md](backend/flyway-migration-pattern.md) | PostgreSQL migration patterns (ADR-003 compliance) | 200 | 2.2, 2.7 |
-| [integration-test-pattern.md](backend/integration-test-pattern.md) | Testcontainers PostgreSQL setup, MockMvc, test structure | 300 | 2.8.1, 2.8.2 |
-| [exception-handling-pattern.md](backend/exception-handling-pattern.md) | Global exception handler, standard error responses | 150 | 2.7, 2.8.1 |
-| [openapi-code-generation-pattern.md](backend/openapi-code-generation-pattern.md) | Hybrid contract-first API approach with OpenAPI Generator | 250 | 2.7, 2.8 |
+| Template | Description | Lines | Used in Stories | Status |
+|----------|-------------|-------|-----------------|--------|
+| [spring-boot-service-foundation.md](backend/spring-boot-service-foundation.md) | Package structure, JPA entities, repositories, service layer | 400 | 2.2, 2.7, 2.8 | ✅ Available |
+| [jwt-propagation-pattern.md](backend/jwt-propagation-pattern.md) | RestTemplate with JWT interceptors for cross-service calls | 220 | 2.7, 2.8.1 | ✅ Available |
+| [integration-test-pattern.md](backend/integration-test-pattern.md) | Testcontainers PostgreSQL setup, MockMvc, test structure | 320 | 2.8.1, all API stories | ✅ Available |
+| [flyway-migration-pattern.md](backend/flyway-migration-pattern.md) | PostgreSQL migration patterns (ADR-003 compliance) | 200 | 2.2, 2.7 | 📋 Planned |
+| [exception-handling-pattern.md](backend/exception-handling-pattern.md) | Global exception handler, standard error responses | 150 | 2.7, 2.8.1 | 📋 Planned |
+| [openapi-code-generation-pattern.md](backend/openapi-code-generation-pattern.md) | Hybrid contract-first API approach with OpenAPI Generator | 250 | 2.7, 2.8 | 📋 Planned |
 
 ### Frontend Templates
 
-| Template | Description | Lines | Used in Stories |
-|----------|-------------|-------|-----------------|
-| [react-query-caching-pattern.md](frontend/react-query-caching-pattern.md) | React Query hooks for server state management with caching | 250 | 2.5.3, 2.8.1, 2.8.2 |
-| [zustand-store-pattern.md](frontend/zustand-store-pattern.md) | Zustand store for UI state (filters, view mode, selections) | 200 | 2.5.3, 2.8.1 |
-| [react-component-pattern.md](frontend/react-component-pattern.md) | Atomic design structure, props, Material-UI integration | 300 | 2.5.3, 2.8.1 |
-| [form-validation-pattern.md](frontend/form-validation-pattern.md) | React Hook Form + Zod validation patterns | 200 | Various |
-| [i18n-pattern.md](frontend/i18n-pattern.md) | react-i18next setup, translation files, key structure | 150 | 2.5.3 |
-| [api-service-pattern.md](frontend/api-service-pattern.md) | Axios client with interceptors, error handling | 200 | All frontend stories |
+| Template | Description | Lines | Used in Stories | Status |
+|----------|-------------|-------|-----------------|--------|
+| [react-query-caching-pattern.md](frontend/react-query-caching-pattern.md) | React Query hooks for server state management with caching | 280 | 2.5.3, 2.8.1 | ✅ Available |
+| [zustand-store-pattern.md](frontend/zustand-store-pattern.md) | Zustand store for UI state (filters, view mode, selections) | 240 | 2.5.3, 2.8.1 | ✅ Available |
+| [react-component-pattern.md](frontend/react-component-pattern.md) | Atomic design structure, props, Material-UI integration | 300 | 2.5.3, 2.8.1 | 📋 Planned |
+| [form-validation-pattern.md](frontend/form-validation-pattern.md) | React Hook Form + Zod validation patterns | 200 | Various | 📋 Planned |
+| [i18n-pattern.md](frontend/i18n-pattern.md) | react-i18next setup, translation files, key structure | 150 | 2.5.3 | 📋 Planned |
+| [api-service-pattern.md](frontend/api-service-pattern.md) | Axios client with interceptors, error handling | 200 | All frontend stories | 📋 Planned |
 
 ### Infrastructure Templates
 
-| Template | Description | Lines | Used in Stories |
-|----------|-------------|-------|-----------------|
-| [aws-cdk-service-stack.md](infrastructure/aws-cdk-service-stack.md) | CDK stack for microservices (ECS Fargate, RDS, VPC) | 300 | Infrastructure stories |
-| [github-actions-ci-pattern.md](infrastructure/github-actions-ci-pattern.md) | CI/CD pipeline for Java + Node.js monorepo | 200 | DevOps stories |
+| Template | Description | Lines | Used in Stories | Status |
+|----------|-------------|-------|-----------------|--------|
+| [aws-cdk-service-stack.md](infrastructure/aws-cdk-service-stack.md) | CDK stack for microservices (ECS Fargate, RDS, VPC) | 300 | Infrastructure stories | 📋 Planned |
+| [github-actions-ci-pattern.md](infrastructure/github-actions-ci-pattern.md) | CI/CD pipeline for Java + Node.js monorepo | 200 | DevOps stories | 📋 Planned |
 
 ---
 
@@ -170,9 +170,13 @@ Update a template when:
 
 Track major template changes in this section:
 
-- **2025-01-20**: Initial template library created (8 templates)
-  - Extracted from stories 2.2, 2.5.3, 2.7, 2.8.1, 2.8.2
-  - Focus: Backend service patterns, React Query, Zustand
+- **2025-01-20**: Phase 1 template extraction completed (5 templates available)
+  - ✅ **Backend**: spring-boot-service-foundation.md (extracted from docs/guides/, Story 2.2, 2.7)
+  - ✅ **Backend**: jwt-propagation-pattern.md (extracted from docs/guides/microservices-http-clients.md, Story 2.7)
+  - ✅ **Backend**: integration-test-pattern.md (extracted from docs/architecture/coding-standards.md, Story 2.8.1)
+  - ✅ **Frontend**: react-query-caching-pattern.md (extracted from Story 2.5.3, 2.8.1)
+  - ✅ **Frontend**: zustand-store-pattern.md (extracted from Story 2.5.3, 2.8.1)
+  - 📋 **Remaining**: 9 templates planned for future extraction
 
 ---
 
