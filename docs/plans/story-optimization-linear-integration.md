@@ -37,28 +37,44 @@
 - ✅ Updated `.bmad-core/tasks/apply-qa-fixes.md` (added Linear comment reading + fix summary posting)
 - ✅ Updated `.bmad-core/core-config.yaml` with Linear integration and template library settings
 
-**Phase 4 Status** (Ready for Execution):
+**Phase 4 Status** (In Progress - 2/6 Stories Completed):
 
-**Approach**: Phase 4 should be executed through BMAD task automation rather than manual refactoring due to:
-- Story complexity (BAT-5 is 2,583 lines with 1,625+ line Dev Notes section)
-- Pattern detection logic built into `extract-templates-from-story` task
-- Consistency requirements across 6 stories
-- Automatic template index updates
+**Completed Extractions**:
+- ✅ Story 2.5.3 (Event Management Frontend)
+  - Before: 2,583 lines, 14,256 words
+  - After: 2,097 lines, 13,770 words
+  - Savings: 486 lines (18.8% reduction)
+  - Templates created: 3 new (api-service-pattern, form-validation-pattern, i18n-pattern)
+  - Templates referenced: 2 existing (react-query-caching-pattern, zustand-store-pattern)
 
-**Execution Plan**:
-1. Run `extract-templates-from-story` for each of 6 stories (BAT-5 through BAT-10)
-2. Validate word count reduction: 14,259 → ~2,000 words (86% target)
-3. Test Linear workflow end-to-end with one story
-4. Verify all template references are valid
-5. Commit refactored stories
+- ✅ Story 2.8.1 (Partner Directory)
+  - Before: 1,484 lines, 8,809 words
+  - After: 1,364 lines, 8,540 words
+  - Savings: 120 lines (8.1% reduction)
+  - Templates referenced: 3 existing (api-service-pattern, react-query-caching-pattern, zustand-store-pattern)
+
+- ✅ Dev Agent Integration
+  - Added `*extract-templates` command to dev agent
+  - Added `*sync-to-linear` command to dev agent
+  - Both tasks now available in BMAD workflow
+
+**Remaining Work**:
+1. ⏸️ Extract templates from 4 remaining stories:
+   - BAT-6: 1.18.codebase-structure-consolidation.md
+   - BAT-7: 1.15a.10.notifications-api-consolidation.md
+   - BAT-8: 1.15a.11.remaining-resources-consolidation.md
+   - BAT-9: 1.15a.8.organizers-api-consolidation.md
+2. ⏸️ Test Linear workflow end-to-end with one story
+3. ⏸️ Verify all template references are valid
+4. ⏸️ Commit refactored stories
 
 **Infrastructure Ready**:
-- ✅ Templates available (React Query, Zustand patterns)
-- ✅ BMAD tasks created and tested
+- ✅ Templates available (8/14 templates, 57% complete)
+- ✅ BMAD tasks created and integrated into dev agent
 - ✅ Linear integration configured
 - ✅ Core config updated
 
-**Recommended Next Action**: Execute `/BMad:tasks:extract-templates-from-story` on BAT-5 first, validate results, then process remaining 5 stories.
+**Recommended Next Action**: Continue template extraction for remaining 4 stories OR test Linear workflow end-to-end.
 
 ---
 
