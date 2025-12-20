@@ -4,15 +4,20 @@
 
 **Branch**: `feature/story-optimization-linear-integration`
 
-**Completed**:
+**Phase 1 Completed** ✅:
 - ✅ Template directory structure created (`docs/templates/{backend,frontend,infrastructure}`)
 - ✅ Template README.md with comprehensive index and usage guide
-- ✅ First backend template: `spring-boot-service-foundation.md` (extracted from existing guide)
+- ✅ Backend template: `spring-boot-service-foundation.md` (extracted from existing guide)
+- ✅ Backend template: `jwt-propagation-pattern.md` (220 lines, Story 2.7, 2.8.1)
+- ✅ Backend template: `integration-test-pattern.md` (320 lines, Story 2.8.1)
+- ✅ Frontend template: `react-query-caching-pattern.md` (280 lines, Story 2.5.3, 2.8.1)
+- ✅ Frontend template: `zustand-store-pattern.md` (240 lines, Story 2.5.3, 2.8.1)
+- ✅ Updated README.md with status indicators (✅ Available / 📋 Planned)
 - ✅ Plan documented in `docs/plans/story-optimization-linear-integration.md`
 - ✅ Committed: [be475ac] feat(templates): create template library foundation
+- ✅ Committed: [a8a3c1b] feat(templates): complete Phase 1 template extraction
 
-**Next Steps**:
-- [ ] Extract remaining priority templates (jwt-propagation, react-query-caching, zustand-store, integration-test)
+**Next Steps** (Phase 2):
 - [ ] Set up Linear labels, projects, and issues for 6 active stories
 - [ ] Create BMAD tasks (sync-story-to-linear, extract-templates-from-story)
 - [ ] Update core-config.yaml with Linear integration settings
