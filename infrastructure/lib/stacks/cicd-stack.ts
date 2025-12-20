@@ -234,6 +234,7 @@ export class CICDStack extends cdk.Stack {
         'cloudformation:GetTemplate',
         'cloudformation:ListStacks',
         'cloudformation:ListStackResources',
+        'cloudformation:ListExports',
         'cloudformation:ValidateTemplate',
         'cloudformation:CreateChangeSet',
         'cloudformation:DescribeChangeSet',
