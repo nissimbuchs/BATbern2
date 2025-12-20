@@ -1,8 +1,6 @@
 # BATbern Project TODO
 
 ## Errors:
-- cannot see the results of 5.4
-- 5.4 mentions speacker coordianation service, but there we do all in event ,anagement service
 - as ux epert to help with eventdetail and eventdetaildit pages and where to put all the session pages. use tabs?
 - update prd with new flow
 - ask ux expert to reorganize better the user-guide.
