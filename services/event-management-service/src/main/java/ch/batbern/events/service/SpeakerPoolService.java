@@ -7,6 +7,7 @@ import ch.batbern.events.dto.SpeakerPoolResponse;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
  * Handles business logic for adding potential speakers, assigning organizers for outreach,
  * and tracking speaker status.
  */
+@Slf4j
 @Service
 public class SpeakerPoolService {
 
@@ -51,7 +53,7 @@ public class SpeakerPoolService {
             throw new IllegalArgumentException("Speaker name is required");
         }
 
-        // Create speaker pool entry
+        // Create speaker pool entry (BUG FIX: Session will be created later when status = ACCEPTED)
         SpeakerPool speakerPool = new SpeakerPool();
         speakerPool.setEventId(event.getId());
         speakerPool.setSpeakerName(request.getSpeakerName());
@@ -61,9 +63,12 @@ public class SpeakerPoolService {
         speakerPool.setNotes(request.getNotes());
         // AC13: Initial status = 'identified'
         speakerPool.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.IDENTIFIED);
+        // Session will be created when speaker accepts (status = ACCEPTED)
+        speakerPool.setSessionId(null);
 
         // Persist speaker pool entry (AC18)
         SpeakerPool saved = speakerPoolRepository.save(speakerPool);
+        log.info("Added speaker {} to pool (status: IDENTIFIED, no session yet)", saved.getSpeakerName());
 
         // TODO: Publish SpeakerAddedToPoolEvent (AC21) when domain events are implemented
 

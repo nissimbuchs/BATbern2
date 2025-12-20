@@ -32,6 +32,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useTopics, useTopic } from '@/hooks/useTopics';
 import { useEvent, useEvents } from '@/hooks/useEvents';
+import { useUserList } from '@/hooks/useUserManagement/useUserList';
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs';
 import type { Event } from '@/types/event.types';
 import { TopicFilterPanel } from './TopicFilterPanel';
@@ -77,6 +78,12 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
   // Fetch pre-assigned topic if event has topicId (Story 5.2 - Topic preselection)
   const { data: preassignedTopic } = useTopic(eventData?.topicId || '', 'history');
 
+  // Fetch organizer users for speaker assignment (Story 5.2)
+  const { data: organizersData } = useUserList({
+    filters: { role: ['ORGANIZER'] },
+    pagination: { page: 1, limit: 100 },
+  });
+
   // Preselect topic when event loads with topicId
   useEffect(() => {
     if (preassignedTopic && !selectedTopic) {
@@ -105,6 +112,15 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
     }
     return map;
   }, [allEventsData]);
+
+  // Transform organizers from API to format needed by SpeakerBrainstormingPanel
+  const organizers = useMemo(() => {
+    if (!organizersData?.data) return [];
+    return organizersData.data.map((user) => ({
+      id: user.id,
+      name: `${user.firstName} ${user.lastName}`.trim() || user.id,
+    }));
+  }, [organizersData]);
 
   // Build breadcrumb items based on context (memoized to prevent re-renders)
   // Must be called after all hooks but before handlers/returns
@@ -315,7 +331,7 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
           <Grid size={{ xs: 12, md: 3 }}>
             <SpeakerBrainstormingPanel
               eventCode={eventCode}
-              organizers={[]} // Can fetch from event details if needed
+              organizers={organizers}
               onContinue={handleSpeakerBrainstormComplete}
             />
           </Grid>

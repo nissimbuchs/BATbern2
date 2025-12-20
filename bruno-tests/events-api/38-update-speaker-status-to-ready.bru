@@ -1,0 +1,47 @@
+meta {
+  name: Update Speaker Status To Ready
+  type: http
+  seq: 38
+}
+
+put {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/{{createdSpeakerPoolId}}/status
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "newStatus": "READY",
+    "reason": "Speaker confirmed availability and submitted initial content outline"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.currentStatus: eq READY
+  res.body.previousStatus: eq CONTACTED
+}
+
+tests {
+  test("should return 200 status - Story 5.4 AC1", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should update speaker status to READY - Story 5.4 AC1, AC12", function() {
+    const response = res.getBody();
+    expect(response.currentStatus).to.equal('READY');
+    expect(response.previousStatus).to.equal('CONTACTED');
+    expect(response.changedByUsername).to.equal(bru.getVar("organizerUsername"));
+  });
+
+  test("should validate transition CONTACTED → READY - Story 5.4 AC12", function() {
+    const response = res.getBody();
+    // Valid transition per workflow: CONTACTED → READY
+    expect(response.currentStatus).to.equal('READY');
+  });
+}

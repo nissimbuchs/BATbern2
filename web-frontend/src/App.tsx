@@ -56,6 +56,7 @@ const UserAccountPage = React.lazy(() => import('@pages/UserAccountPage/UserAcco
 const EventManagementDashboard = React.lazy(() => import('@pages/EventManagementDashboard'));
 const EventCreate = React.lazy(() => import('@pages/EventCreate'));
 const EventTimeline = React.lazy(() => import('@pages/EventTimeline'));
+const EventDetail = React.lazy(() => import('@pages/EventDetail')); // View page with Speaker Status Dashboard (Story 5.4)
 const EventDetailEdit = React.lazy(() => import('@pages/EventDetailEdit')); // Comprehensive edit page with Tasks 9-13
 const EventTypeConfigurationAdmin = React.lazy(
   () => import('@pages/organizer/EventTypeConfigurationAdmin')
@@ -337,6 +338,16 @@ function App() {
                   />
                   <Route
                     path="/organizer/events/:eventCode"
+                    element={
+                      <ProtectedRoute>
+                        <AuthLayout>
+                          <EventDetail />
+                        </AuthLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/organizer/events/:eventCode/edit"
                     element={
                       <ProtectedRoute>
                         <AuthLayout>

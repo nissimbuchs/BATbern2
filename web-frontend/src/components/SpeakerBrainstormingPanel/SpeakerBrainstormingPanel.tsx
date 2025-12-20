@@ -239,7 +239,7 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
                           <Chip
                             label={speaker.status}
                             size="small"
-                            color={speaker.status === 'identified' ? 'default' : 'primary'}
+                            color={speaker.status === 'IDENTIFIED' ? 'default' : 'primary'}
                           />
                         )}
                       </Box>

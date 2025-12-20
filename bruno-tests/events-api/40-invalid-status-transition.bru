@@ -1,0 +1,47 @@
+meta {
+  name: Invalid Status Transition (ACCEPTED → DECLINED)
+  type: http
+  seq: 40
+}
+
+put {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/{{createdSpeakerPoolId}}/status
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "newStatus": "DECLINED",
+    "reason": "Attempting invalid transition for testing"
+  }
+}
+
+assert {
+  res.status: eq 422
+  res.body.error: isDefined
+}
+
+tests {
+  test("should return 422 status for invalid transition - Story 5.4 AC12", function() {
+    expect(res.getStatus()).to.equal(422);
+  });
+
+  test("should return error message for invalid state transition - Story 5.4 AC12", function() {
+    const error = res.getBody();
+    expect(error.error).to.be.a('string');
+    expect(error.message).to.include('transition');
+    expect(error.message).to.include('ACCEPTED');
+    expect(error.message).to.include('DECLINED');
+  });
+
+  test("should prevent ACCEPTED → DECLINED transition - Story 5.4 AC12", function() {
+    const error = res.getBody();
+    // Invalid transition per workflow rules: cannot un-accept
+    expect(error.error).to.equal('InvalidStateTransitionException');
+  });
+}

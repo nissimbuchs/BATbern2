@@ -23,7 +23,19 @@
 | Company Entities | - | CompanyEntity | `CompanyEntity.java` |
 | Domain Events | - | PascalCase + Event | `EventCreatedEvent.java` |
 | Element | Frontend | Backend | Example |
-| Enums | UPPER_CASE | UPPER_CASE (Java) → lowercase_snake_case (DB via AttributeConverter) | `RegistrationStatus.CONFIRMED` → `'confirmed'` |
+| Enums | UPPER_CASE | UPPER_CASE (Java/API) → lowercase_snake_case (DB via AttributeConverter) | `RegistrationStatus.CONFIRMED` → `'confirmed'` |
+
+**Enum Value Flow (Important!):**
+- **Database Storage**: `lowercase_snake_case` (e.g., `'confirmed'`, `'speaker_brainstorming'`)
+- **Java Code**: `UPPER_CASE` (e.g., `RegistrationStatus.CONFIRMED`, `EventWorkflowState.SPEAKER_BRAINSTORMING`)
+- **JSON/API Request/Response**: `UPPER_CASE` (e.g., `"CONFIRMED"`, `"SPEAKER_BRAINSTORMING"`)
+- **Frontend TypeScript**: `UPPER_CASE` (e.g., `RegistrationStatus.CONFIRMED`)
+- **Conversion**: JPA `@Converter` (AttributeConverter) handles Java ↔ Database. Jackson uses default serialization (UPPER_CASE).
+
+**Why this pattern?**
+- Keeps API consistent with Java enums (no transformation needed for JSON)
+- Database uses lowercase for PostgreSQL conventions and readability
+- Single conversion point (AttributeConverter) instead of multiple transformers
 
 ## Git Workflow
 

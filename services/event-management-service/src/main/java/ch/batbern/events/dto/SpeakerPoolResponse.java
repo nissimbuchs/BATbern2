@@ -17,6 +17,7 @@ public class SpeakerPoolResponse {
     private String expertise;
     private String assignedOrganizerId;
     private String status;
+    private UUID sessionId;
     private String notes;
     private Instant createdAt;
     private Instant updatedAt;
@@ -28,7 +29,7 @@ public class SpeakerPoolResponse {
 
     public SpeakerPoolResponse(UUID id, UUID eventId, String speakerName, String company,
                                String expertise, String assignedOrganizerId, String status,
-                               String notes, Instant createdAt, Instant updatedAt) {
+                               UUID sessionId, String notes, Instant createdAt, Instant updatedAt) {
         this.id = id;
         this.eventId = eventId;
         this.speakerName = speakerName;
@@ -36,6 +37,7 @@ public class SpeakerPoolResponse {
         this.expertise = expertise;
         this.assignedOrganizerId = assignedOrganizerId;
         this.status = status;
+        this.sessionId = sessionId;
         this.notes = notes;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -55,7 +57,8 @@ public class SpeakerPoolResponse {
                 speakerPool.getCompany(),
                 speakerPool.getExpertise(),
                 speakerPool.getAssignedOrganizerId(),
-                speakerPool.getStatus() != null ? speakerPool.getStatus().name().toLowerCase() : null,
+                speakerPool.getStatus() != null ? speakerPool.getStatus().name() : null,
+                speakerPool.getSessionId(),
                 speakerPool.getNotes(),
                 speakerPool.getCreatedAt(),
                 speakerPool.getUpdatedAt()
@@ -118,6 +121,14 @@ public class SpeakerPoolResponse {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public UUID getSessionId() {
+        return sessionId;
+    }
+
+    public void setSessionId(UUID sessionId) {
+        this.sessionId = sessionId;
     }
 
     public String getNotes() {

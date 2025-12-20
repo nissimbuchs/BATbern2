@@ -3,7 +3,7 @@ package ch.batbern.events.service;
 import ch.batbern.events.AbstractIntegrationTest;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.dto.generated.EventType;
-import ch.batbern.events.exception.InvalidStateTransitionException;
+import ch.batbern.shared.exception.InvalidStateTransitionException;
 import ch.batbern.events.exception.WorkflowValidationException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.shared.types.EventWorkflowState;

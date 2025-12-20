@@ -70,6 +70,9 @@ public class SpeakerPool {
     @Convert(converter = SpeakerWorkflowStateConverter.class)
     private SpeakerWorkflowState status = SpeakerWorkflowState.IDENTIFIED;
 
+    @Column(name = "session_id", columnDefinition = "UUID")
+    private UUID sessionId;
+
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
 
@@ -142,6 +145,14 @@ public class SpeakerPool {
 
     public void setStatus(SpeakerWorkflowState status) {
         this.status = status;
+    }
+
+    public UUID getSessionId() {
+        return sessionId;
+    }
+
+    public void setSessionId(UUID sessionId) {
+        this.sessionId = sessionId;
     }
 
     public String getNotes() {

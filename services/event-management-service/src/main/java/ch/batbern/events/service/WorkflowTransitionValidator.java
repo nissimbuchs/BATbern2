@@ -1,7 +1,7 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
-import ch.batbern.events.exception.InvalidStateTransitionException;
+import ch.batbern.shared.exception.InvalidStateTransitionException;
 import ch.batbern.shared.types.EventWorkflowState;
 import org.springframework.stereotype.Component;
 
@@ -142,11 +142,11 @@ public class WorkflowTransitionValidator {
         if (allowedTargets == null || !allowedTargets.contains(toState)) {
             // Special error message for terminal state
             if (fromState == EventWorkflowState.ARCHIVED && toState != EventWorkflowState.ARCHIVED) {
-                throw new InvalidStateTransitionException(fromState, toState,
+                throw new InvalidStateTransitionException(
                         "Cannot transition from terminal state ARCHIVED");
             }
 
-            throw new InvalidStateTransitionException(fromState, toState);
+            throw new InvalidStateTransitionException(fromState.name(), toState.name());
         }
 
         // Transition is valid

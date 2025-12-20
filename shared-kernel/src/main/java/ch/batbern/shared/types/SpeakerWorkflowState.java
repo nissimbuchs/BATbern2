@@ -14,10 +14,10 @@ package ch.batbern.shared.types;
  * 5. Finalization (CONFIRMED - speaker locked in final agenda)
  * 6. Special States (WITHDREW - speaker backed out, OVERFLOW - too many speakers)
  *
- * Database Storage Pattern (per coding-standards.md):
- * - Java: SpeakerWorkflowState.CONTACTED (UPPER_CASE with underscores)
- * - Database: 'contacted' (lowercase with underscores)
- * - Converter: SpeakerWorkflowStateConverter handles automatic conversion
+ * Enum Value Flow (per coding-standards.md):
+ * - Java/JSON/API: CONTACTED (UPPER_CASE)
+ * - Database: 'contacted' (lowercase_snake_case via AttributeConverter)
+ * - Converter: SpeakerWorkflowStateConverter handles Java ↔ Database conversion
  *
  * Note: Stored in speaker_pool.status column (event-management-service database)
  *
