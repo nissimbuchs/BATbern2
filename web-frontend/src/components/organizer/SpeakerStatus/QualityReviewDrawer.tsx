@@ -134,21 +134,31 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
         },
         {
           label: t('qualityReview.criteria.lessonsLearned'),
-          passed: /lessons?\s+learned/i.test(content.presentationAbstract),
-          value: /lessons?\s+learned/i.test(content.presentationAbstract)
+          // English: lessons learned, lesson learned
+          // German: Erkenntnisse, Lerneffekte, Erfahrungen, Lehren
+          passed: /lessons?\s+learned|erkenntnisse|lerneffekte?|erfahrungen|lehren/i.test(
+            content.presentationAbstract
+          ),
+          value: /lessons?\s+learned|erkenntnisse|lerneffekte?|erfahrungen|lehren/i.test(
+            content.presentationAbstract
+          )
             ? t('qualityReview.detected')
             : t('qualityReview.notDetected'),
         },
         {
           label: t('qualityReview.criteria.noPromotion'),
-          passed: !/buy|purchase|discount|sale|order now|contact us/i.test(
-            content.presentationAbstract
-          ),
-          value: !/buy|purchase|discount|sale|order now|contact us/i.test(
-            content.presentationAbstract
-          )
-            ? t('qualityReview.passed')
-            : t('qualityReview.promotionDetected'),
+          // English: buy, purchase, discount, sale, order now, contact us
+          // German: kaufen, erwerben, bestellen, rabatt, ermäßigung, verkauf, angebot, jetzt bestellen, kontaktieren
+          passed:
+            !/buy|purchase|discount|sale|order\s+now|contact\s+us|kaufen|erwerben|bestellen|rabatt|ermäßigung|verkauf|angebot|jetzt\s+bestellen|kontaktieren\s+sie/i.test(
+              content.presentationAbstract
+            ),
+          value:
+            !/buy|purchase|discount|sale|order\s+now|contact\s+us|kaufen|erwerben|bestellen|rabatt|ermäßigung|verkauf|angebot|jetzt\s+bestellen|kontaktieren\s+sie/i.test(
+              content.presentationAbstract
+            )
+              ? t('qualityReview.passed')
+              : t('qualityReview.promotionDetected'),
         },
       ]
     : [];

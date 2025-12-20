@@ -144,6 +144,11 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
       if (newStatus === 'CONTENT_SUBMITTED') {
         setCurrentSpeaker(speaker);
         setContentDrawerOpen(true);
+      }
+      // Special handling for QUALITY_REVIEWED - open quality review drawer (Story 5.5 Phase 4)
+      else if (newStatus === 'QUALITY_REVIEWED') {
+        setReviewSpeaker(speaker);
+        setReviewDrawerOpen(true);
       } else {
         // Open confirmation dialog for other status changes
         setDialogState({

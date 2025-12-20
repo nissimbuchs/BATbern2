@@ -292,5 +292,35 @@
       "abstractTooLong": "Abstract must be {{max}} characters or less",
       "submitFailed": "Failed to submit content. Please try again."
     }
+  },
+  "qualityReview": {
+    "title": "Quality Review",
+    "speaker": "Speaker",
+    "presentationTitle": "Presentation Title",
+    "abstract": "Abstract",
+    "qualityCriteria": "Quality Criteria",
+    "characters": "characters",
+    "detected": "Detected",
+    "notDetected": "Not detected",
+    "passed": "Passed",
+    "promotionDetected": "Promotion detected",
+    "approve": "Approve",
+    "reject": "Reject",
+    "approving": "Approving...",
+    "submitting": "Submitting...",
+    "confirmReject": "Confirm Rejection",
+    "rejectInstructions": "Please provide feedback on why the content is being rejected.",
+    "feedbackLabel": "Feedback",
+    "feedbackPlaceholder": "Explain what needs to be improved...",
+    "noContent": "No content available",
+    "criteria": {
+      "abstractLength": "Abstract Length",
+      "lessonsLearned": "Contains \"Lessons Learned\"",
+      "noPromotion": "No Product Promotion"
+    },
+    "errors": {
+      "feedbackRequired": "Feedback is required",
+      "unknown": "An unknown error occurred"
+    }
   }
 }

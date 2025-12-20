@@ -14,3 +14,4 @@ export { EventForm } from './EventForm';
 export { VenueLogistics } from './VenueLogistics';
 export { TopicsList } from './TopicsList';
 export { SpeakersSessionsTable } from './SpeakersSessionsTable';
+export { SessionEditModal } from './SessionEditModal';

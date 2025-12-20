@@ -16,7 +16,7 @@ import { useEvent } from '@/hooks/useEvents';
 
 const SpeakerOutreachPage: React.FC = () => {
   const { eventCode } = useParams<{ eventCode: string }>();
-  const { t } = useTranslation('events');
+  const { t } = useTranslation(['events', 'organizer', 'common']);
 
   // Fetch event data to get the title for breadcrumbs
   const { data: event } = useEvent(eventCode);
@@ -24,12 +24,12 @@ const SpeakerOutreachPage: React.FC = () => {
   // Build breadcrumb items (memoized to prevent re-renders)
   const breadcrumbItems: BreadcrumbItem[] = useMemo(
     () => [
-      { label: t('navigation.events', 'Events'), path: '/organizer/events' },
+      { label: t('events:navigation.events', 'Events'), path: '/organizer/events' },
       {
-        label: event?.title || t('common.loading', 'Loading...'),
+        label: event?.title || t('common:loading', 'Loading...'),
         path: `/organizer/events/${eventCode}`,
       },
-      { label: t('navigation.speakerOutreach', 'Speaker Outreach') },
+      { label: t('organizer:speakerOutreach.breadcrumbs.speakerOutreach') },
     ],
     [event?.title, eventCode, t]
   );

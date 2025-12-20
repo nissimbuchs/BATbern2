@@ -493,6 +493,19 @@
       "networking": "Networking",
       "break": "Pause",
       "lunch": "Mittagessen"
+    },
+    "sessionEdit": {
+      "title": "Session bearbeiten",
+      "titleLabel": "Session-Titel",
+      "abstractLabel": "Session-Zusammenfassung",
+      "charactersRemaining": "{{count}} Zeichen verbleibend",
+      "durationLabel": "Dauer (Minuten)",
+      "errors": {
+        "titleRequired": "Titel ist erforderlich",
+        "abstractTooLong": "Zusammenfassung darf maximal {{max}} Zeichen lang sein",
+        "invalidDuration": "Dauer muss zwischen 1 und 480 Minuten liegen",
+        "saveFailed": "Session konnte nicht gespeichert werden"
+      }
     }
   }
 }

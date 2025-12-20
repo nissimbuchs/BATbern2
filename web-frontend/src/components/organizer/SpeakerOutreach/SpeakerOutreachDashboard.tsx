@@ -11,7 +11,7 @@
  * - Bulk actions
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -42,10 +42,7 @@ import {
 import { Add as AddIcon, ChevronRight, Delete as DeleteIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useSpeakerPool, useDeleteSpeakerFromPool } from '../../../hooks/useSpeakerPool';
-import { useEvent } from '../../../hooks/useEvents';
 import { useUserList } from '../../../hooks/useUserManagement/useUserList';
-import { Breadcrumbs } from '../../shared/Breadcrumbs';
-import type { BreadcrumbItem } from '../../shared/Breadcrumbs';
 import { SpeakerBrainstormingPanel } from '../../SpeakerBrainstormingPanel/SpeakerBrainstormingPanel';
 import MarkContactedModal from './MarkContactedModal';
 import SpeakerOutreachDetailsDrawer from './SpeakerOutreachDetailsDrawer';
@@ -59,7 +56,6 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
   const { t } = useTranslation('organizer');
   const navigate = useNavigate();
   const { data: speakerPool, isLoading, isError } = useSpeakerPool(eventCode);
-  const { data: eventData } = useEvent(eventCode);
 
   // Fetch users with ORGANIZER role
   const { data: organizersData } = useUserList({
@@ -102,21 +98,6 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
     if (selectedOrganizer === 'all') return speakerPool;
     return speakerPool.filter((s) => s.assignedOrganizerId === selectedOrganizer);
   }, [speakerPool, selectedOrganizer]);
-
-  // Build breadcrumb items
-  const breadcrumbItems: BreadcrumbItem[] = useMemo(() => {
-    if (eventData) {
-      return [
-        { label: t('speakerOutreach.breadcrumbs.home'), path: '/organizer/events' },
-        { label: eventData.title, path: `/organizer/events/${eventCode}` },
-        { label: t('speakerOutreach.breadcrumbs.speakerOutreach') },
-      ];
-    }
-    return [
-      { label: t('speakerOutreach.breadcrumbs.home'), path: '/organizer/events' },
-      { label: t('speakerOutreach.breadcrumbs.speakerOutreach') },
-    ];
-  }, [eventData, eventCode, t]);
 
   // Handle mark contacted button click
   const handleMarkContacted = (speaker: SpeakerPoolEntry, event: React.MouseEvent) => {
@@ -174,7 +155,6 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
   if (!speakerPool || speakerPool.length === 0) {
     return (
       <Box data-testid="speaker-outreach-dashboard">
-        <Breadcrumbs items={breadcrumbItems} />
         <Box sx={{ p: 3, textAlign: 'center' }}>
           <Alert severity="info" sx={{ mb: 2 }}>
             {t(
@@ -202,9 +182,6 @@ const SpeakerOutreachDashboard: React.FC<SpeakerOutreachDashboardProps> = ({ eve
 
   return (
     <Box data-testid="speaker-outreach-dashboard">
-      {/* Breadcrumbs */}
-      <Breadcrumbs items={breadcrumbItems} />
-
       <Grid container spacing={3}>
         {/* Main Content Area */}
         <Grid size={{ xs: 12, md: showBrainstormPanel ? 8 : 12 }}>

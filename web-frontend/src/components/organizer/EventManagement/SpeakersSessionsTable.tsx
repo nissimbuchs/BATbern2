@@ -42,7 +42,6 @@ import {
   useTheme,
 } from '@mui/material';
 import {
-  Visibility as ViewIcon,
   Edit as EditIcon,
   Folder as FolderIcon,
   CheckCircle as CheckIcon,
@@ -54,18 +53,19 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { UserAvatar } from '@/components/shared/UserAvatar';
+import { SessionEditModal, type SessionUpdateData } from './SessionEditModal';
 import type { SessionUI } from '@/types/event.types';
 
 interface SpeakersSessionsTableProps {
   sessions: SessionUI[];
   eventCode: string;
-  onViewDetails: (sessionId: string) => void;
   onEditSlot: (sessionId: string) => void;
   onViewMaterials: (sessionId: string) => void;
   onViewFullAgenda: (eventCode: string) => void;
   onManageSpeakerAssignments: (eventCode: string) => void;
   onManageSpeakerOutreach?: (eventCode: string) => void;
   onAutoAssignSpeakers: (eventCode: string) => void;
+  onSessionUpdate: (sessionSlug: string, updates: SessionUpdateData) => Promise<void>;
   isLoading?: boolean;
   error?: string;
 }
@@ -73,13 +73,13 @@ interface SpeakersSessionsTableProps {
 export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
   sessions,
   eventCode,
-  onViewDetails,
   onEditSlot,
   onViewMaterials,
   onViewFullAgenda,
   onManageSpeakerAssignments,
   onManageSpeakerOutreach,
   onAutoAssignSpeakers,
+  onSessionUpdate,
   isLoading = false,
   error,
 }) => {
@@ -87,6 +87,8 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [autoAssignDialogOpen, setAutoAssignDialogOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedSession, setSelectedSession] = useState<SessionUI | null>(null);
 
   // Format ISO 8601 timestamp or simple time string (HH:mm) to localized time string
   const formatTime = (isoTimestamp: string): string => {
@@ -179,6 +181,16 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
     setAutoAssignDialogOpen(false);
   };
 
+  const handleRowClick = (session: SessionUI) => {
+    setSelectedSession(session);
+    setEditModalOpen(true);
+  };
+
+  const handleEditModalClose = () => {
+    setEditModalOpen(false);
+    setSelectedSession(null);
+  };
+
   // Loading state
   if (isLoading) {
     return (
@@ -259,8 +271,9 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
         {sessions.map((session) => (
           <Card
             key={session.sessionSlug}
-            sx={{ mb: 2 }}
+            sx={{ mb: 2, cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' } }}
             data-testid={`session-card-${session.slotNumber || 0}`}
+            onClick={() => handleRowClick(session)}
           >
             <CardContent>
               <Stack spacing={1}>
@@ -322,15 +335,11 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
             <CardActions>
               <Button
                 size="small"
-                startIcon={<ViewIcon />}
-                onClick={() => onViewDetails(session.sessionSlug)}
-              >
-                {t('speakers.viewDetails')}
-              </Button>
-              <Button
-                size="small"
                 startIcon={<EditIcon />}
-                onClick={() => onEditSlot(session.sessionSlug)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEditSlot(session.sessionSlug);
+                }}
               >
                 {t('speakers.editSlot')}
               </Button>
@@ -338,7 +347,10 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
                 <Button
                   size="small"
                   startIcon={<FolderIcon />}
-                  onClick={() => onViewMaterials(session.sessionSlug)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onViewMaterials(session.sessionSlug);
+                  }}
                 >
                   {t('speakers.materials')}
                 </Button>
@@ -434,6 +446,8 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
                 key={session.sessionSlug}
                 data-testid={`session-row-${session.slotNumber || 0}`}
                 hover
+                onClick={() => handleRowClick(session)}
+                sx={{ cursor: 'pointer' }}
               >
                 <TableCell>
                   <Typography variant="body2" fontWeight="bold">
@@ -502,15 +516,11 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
                   <Stack direction="row" spacing={0.5} justifyContent="flex-end">
                     <Button
                       size="small"
-                      startIcon={<ViewIcon />}
-                      onClick={() => onViewDetails(session.sessionSlug)}
-                    >
-                      {t('speakers.viewDetails')}
-                    </Button>
-                    <Button
-                      size="small"
                       startIcon={<EditIcon />}
-                      onClick={() => onEditSlot(session.sessionSlug)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEditSlot(session.sessionSlug);
+                      }}
                     >
                       {t('speakers.editSlot')}
                     </Button>
@@ -518,7 +528,10 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
                       <Button
                         size="small"
                         startIcon={<FolderIcon />}
-                        onClick={() => onViewMaterials(session.sessionSlug)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onViewMaterials(session.sessionSlug);
+                        }}
                       >
                         {t('speakers.materials')}
                       </Button>
@@ -585,6 +598,14 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Session Edit Modal */}
+      <SessionEditModal
+        open={editModalOpen}
+        onClose={handleEditModalClose}
+        session={selectedSession}
+        onSave={onSessionUpdate}
+      />
     </Box>
   );
 };

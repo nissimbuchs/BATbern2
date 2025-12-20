@@ -1,9 +1,12 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.EventTask;
 import ch.batbern.events.domain.TaskTemplate;
+import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.EventTaskRepository;
 import ch.batbern.events.repository.TaskTemplateRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -12,8 +15,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Service for event task management and auto-creation (Story 5.5 AC19-27).
@@ -46,6 +52,54 @@ public class EventTaskService {
 
     private final EventTaskRepository eventTaskRepository;
     private final TaskTemplateRepository taskTemplateRepository;
+    private final EventRepository eventRepository;
+
+    /**
+     * Create tasks for an event from a list of templates (AC21, AC23).
+     *
+     * Used during event creation to generate tasks with status="pending".
+     * Idempotent - safe to call multiple times (AC36).
+     *
+     * @param eventId the event ID
+     * @param templates list of task templates to create tasks from
+     * @return list of created tasks
+     */
+    @Transactional
+    public List<EventTask> createTasksForEvent(UUID eventId, List<TaskTemplate> templates) {
+        log.info("Creating {} tasks for event {}", templates.size(), eventId);
+
+        // Get event to access date for due date calculation
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new EntityNotFoundException("Event not found: " + eventId));
+
+        List<EventTask> createdTasks = new ArrayList<>();
+
+        for (TaskTemplate template : templates) {
+            // Idempotency check (AC36)
+            if (eventTaskRepository.existsByEventIdAndTemplateId(eventId, template.getId())) {
+                log.debug("Task already exists for event {} and template {}, skipping",
+                        eventId, template.getId());
+                continue;
+            }
+
+            // Create task
+            EventTask task = new EventTask();
+            task.setEventId(eventId);
+            task.setTemplateId(template.getId());
+            task.setTaskName(template.getName());
+            task.setTriggerState(template.getTriggerState());
+            task.setDueDate(calculateDueDate(template, event.getDate()));
+            task.setStatus("pending"); // AC21 - tasks start as pending
+            task.setAssignedOrganizerUsername(null); // No default assignment
+
+            EventTask saved = eventTaskRepository.save(task);
+            createdTasks.add(saved);
+            log.debug("Created task {} from template {}", saved.getId(), template.getId());
+        }
+
+        log.info("Created {} tasks for event {}", createdTasks.size(), eventId);
+        return createdTasks;
+    }
 
     /**
      * Auto-create tasks for an event when it transitions to a workflow state.
@@ -83,15 +137,15 @@ public class EventTaskService {
      * Calculate due date for a task based on template configuration.
      *
      * @param template the task template
-     * @param eventDate the event date
+     * @param eventDate the event date (Instant)
      * @return the calculated due date
      */
-    private Instant calculateDueDate(TaskTemplate template, LocalDateTime eventDate) {
+    private Instant calculateDueDate(TaskTemplate template, Instant eventDate) {
         return switch (template.getDueDateType()) {
             case "immediate" -> Instant.now();
             case "relative_to_event" -> {
-                LocalDateTime dueDateTime = eventDate.plusDays(template.getDueDateOffsetDays());
-                yield dueDateTime.atZone(ZoneId.systemDefault()).toInstant();
+                int offsetDays = template.getDueDateOffsetDays() != null ? template.getDueDateOffsetDays() : 0;
+                yield eventDate.plus(offsetDays, ChronoUnit.DAYS);
             }
             case "absolute" -> {
                 // For absolute dates, would need absolute_due_date field in template
@@ -128,7 +182,7 @@ public class EventTaskService {
     }
 
     /**
-     * Mark a task as complete.
+     * Mark a task as complete (AC25).
      *
      * @param taskId the task ID
      * @param completedByUsername the username of the organizer completing the task
@@ -140,15 +194,80 @@ public class EventTaskService {
     public EventTask completeTask(UUID taskId, String completedByUsername, String notes) {
         log.info("Completing task: {} by user: {}", taskId, completedByUsername);
 
-        // TODO: Implement task completion (Phase 5)
-        // 1. Find task by ID
-        // 2. Update status='completed'
-        // 3. Set completed_date=now
-        // 4. Set completed_by_username
-        // 5. Update notes if provided
-        // 6. Save and return (AC25)
+        // Find task
+        EventTask task = eventTaskRepository.findById(taskId)
+                .orElseThrow(() -> new EntityNotFoundException("Task not found: " + taskId));
 
-        throw new UnsupportedOperationException("Task completion not yet implemented");
+        // Update completion details
+        task.setStatus("completed");
+        task.setCompletedDate(Instant.now());
+        task.setCompletedByUsername(completedByUsername);
+        if (notes != null && !notes.trim().isEmpty()) {
+            task.setNotes(notes);
+        }
+
+        EventTask updated = eventTaskRepository.save(task);
+        log.info("Task {} marked as completed by {}", taskId, completedByUsername);
+
+        return updated;
+    }
+
+    /**
+     * Get all tasks assigned to an organizer (AC24).
+     *
+     * @param username the organizer's username
+     * @return list of tasks assigned to this organizer
+     */
+    public List<EventTask> getTasksForOrganizer(String username) {
+        log.debug("Fetching tasks for organizer: {}", username);
+        return eventTaskRepository.findByAssignedOrganizerUsername(username);
+    }
+
+    /**
+     * Get critical tasks for an organizer (overdue + due soon < 3 days) (AC24).
+     *
+     * @param username the organizer's username
+     * @return list of critical tasks
+     */
+    public List<EventTask> getCriticalTasksForOrganizer(String username) {
+        log.debug("Fetching critical tasks for organizer: {}", username);
+
+        // Get all active tasks for organizer
+        List<EventTask> allTasks = eventTaskRepository.findByAssignedOrganizerUsernameAndStatus(username, "todo");
+
+        // Filter for overdue or due soon (< 3 days)
+        Instant now = Instant.now();
+        Instant dueSoonThreshold = now.plus(3, ChronoUnit.DAYS);
+
+        return allTasks.stream()
+                .filter(task -> task.getDueDate() != null)
+                .filter(task -> task.getDueDate().isBefore(dueSoonThreshold))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Reassign a task to a different organizer (AC27).
+     *
+     * @param taskId the task ID
+     * @param newOrganizerUsername the new organizer's username
+     * @return the updated task
+     * @throws jakarta.persistence.EntityNotFoundException if task not found
+     */
+    @Transactional
+    public EventTask reassignTask(UUID taskId, String newOrganizerUsername) {
+        log.info("Reassigning task {} to organizer: {}", taskId, newOrganizerUsername);
+
+        // Find task
+        EventTask task = eventTaskRepository.findById(taskId)
+                .orElseThrow(() -> new EntityNotFoundException("Task not found: " + taskId));
+
+        // Update assignee
+        task.setAssignedOrganizerUsername(newOrganizerUsername);
+
+        EventTask updated = eventTaskRepository.save(task);
+        log.info("Task {} reassigned to {}", taskId, newOrganizerUsername);
+
+        return updated;
     }
 
     /**

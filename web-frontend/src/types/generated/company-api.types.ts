@@ -151,7 +151,7 @@ export interface paths {
      *
      *     **Caching**:
      *     - Caffeine in-memory cache with 15-minute TTL
-     *     - Cache key includes both query and limit
+     *     - Cache key includes query, limit, and include parameters
      *     - Automatic cache invalidation on company updates
      *
      *     **Performance**:
@@ -159,6 +159,9 @@ export interface paths {
      *     - Cache miss: <100ms (P95)
      *
      *     **Default Results**: 20 companies (configurable via limit parameter)
+     *
+     *     **Resource Expansion**:
+     *     - Logo: `?include=logo` (logoUrl field included in response)
      */
     get: operations['searchCompanies'];
     put?: never;
@@ -332,6 +335,7 @@ export interface components {
       industry?: string;
       /** @example true */
       isVerified: boolean;
+      logo?: components['schemas']['CompanyLogo'];
     };
     CreateCompanyRequest: {
       /**
@@ -687,6 +691,8 @@ export interface operations {
         query: string;
         /** @description Maximum number of results (default 20) */
         limit?: number;
+        /** @description Comma-separated list of resources to include (e.g., logo) */
+        include?: string;
       };
       header?: never;
       path?: never;

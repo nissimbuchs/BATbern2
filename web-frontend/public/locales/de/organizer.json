@@ -292,5 +292,35 @@
       "abstractTooLong": "Zusammenfassung darf maximal {{max}} Zeichen lang sein",
       "submitFailed": "Inhalt konnte nicht eingereicht werden. Bitte versuchen Sie es erneut."
     }
+  },
+  "qualityReview": {
+    "title": "Qualitätsprüfung",
+    "speaker": "Sprecher",
+    "presentationTitle": "Präsentationstitel",
+    "abstract": "Zusammenfassung",
+    "qualityCriteria": "Qualitätskriterien",
+    "characters": "Zeichen",
+    "detected": "Erkannt",
+    "notDetected": "Nicht erkannt",
+    "passed": "Bestanden",
+    "promotionDetected": "Werbung erkannt",
+    "approve": "Genehmigen",
+    "reject": "Ablehnen",
+    "approving": "Wird genehmigt...",
+    "submitting": "Wird eingereicht...",
+    "confirmReject": "Ablehnung bestätigen",
+    "rejectInstructions": "Bitte geben Sie Feedback an, warum der Inhalt abgelehnt wird.",
+    "feedbackLabel": "Feedback",
+    "feedbackPlaceholder": "Erklären Sie, was verbessert werden muss...",
+    "noContent": "Kein Inhalt verfügbar",
+    "criteria": {
+      "abstractLength": "Zusammenfassung Länge",
+      "lessonsLearned": "Enthält \"Lessons Learned\"",
+      "noPromotion": "Keine Produktwerbung"
+    },
+    "errors": {
+      "feedbackRequired": "Feedback ist erforderlich",
+      "unknown": "Ein unbekannter Fehler ist aufgetreten"
+    }
   }
 }

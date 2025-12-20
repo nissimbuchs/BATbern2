@@ -2,13 +2,18 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.TaskTemplate;
 import ch.batbern.events.repository.TaskTemplateRepository;
+import ch.batbern.shared.types.EventWorkflowState;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Service for task template management (Story 5.5 AC19-27).
@@ -35,12 +40,24 @@ public class TaskTemplateService {
 
     private final TaskTemplateRepository taskTemplateRepository;
 
+    // Valid event workflow states for trigger (lowercase_snake_case per coding-standards.md)
+    private static final Set<String> VALID_TRIGGER_STATES = Arrays.stream(EventWorkflowState.values())
+            .map(state -> state.name().toLowerCase())
+            .collect(Collectors.toSet());
+
+    // Valid due date types
+    private static final Set<String> VALID_DUE_DATE_TYPES = Set.of(
+            "immediate",
+            "relative_to_event",
+            "absolute"
+    );
+
     /**
      * Get all task templates (default + custom).
      *
      * @return list of all templates (AC26)
      */
-    public List<TaskTemplate> getAllTemplates() {
+    public List<TaskTemplate> listAllTemplates() {
         log.debug("Fetching all task templates");
         return taskTemplateRepository.findAll();
     }
@@ -52,7 +69,7 @@ public class TaskTemplateService {
      *
      * @return list of default templates (AC26)
      */
-    public List<TaskTemplate> getDefaultTemplates() {
+    public List<TaskTemplate> listDefaultTemplates() {
         log.debug("Fetching default task templates");
         return taskTemplateRepository.findByIsDefaultTrue();
     }
@@ -90,14 +107,25 @@ public class TaskTemplateService {
     ) {
         log.info("Creating custom task template: {} by user: {}", name, createdByUsername);
 
-        // TODO: Implement template creation (Phase 5)
-        // 1. Validate name is provided
-        // 2. Validate trigger state is valid event workflow state
-        // 3. Validate due date type is 'immediate', 'relative_to_event', or 'absolute'
-        // 4. Create template with is_default=false
-        // 5. Save and return
+        // Validation
+        validateTemplateName(name);
+        validateTriggerState(triggerState);
+        validateDueDateType(dueDateType);
+        validateOffsetDays(dueDateType, dueDateOffsetDays);
 
-        throw new UnsupportedOperationException("Template creation not yet implemented");
+        // Create template
+        TaskTemplate template = new TaskTemplate();
+        template.setName(name);
+        template.setTriggerState(triggerState);
+        template.setDueDateType(dueDateType);
+        template.setDueDateOffsetDays(dueDateOffsetDays);
+        template.setIsDefault(false);
+        template.setCreatedByUsername(createdByUsername);
+
+        TaskTemplate saved = taskTemplateRepository.save(template);
+        log.info("Created custom task template with ID: {}", saved.getId());
+
+        return saved;
     }
 
     /**
@@ -124,13 +152,31 @@ public class TaskTemplateService {
     ) {
         log.info("Updating custom task template: {}", templateId);
 
-        // TODO: Implement template update (Phase 5)
-        // 1. Find template by ID
-        // 2. Check if is_default=true → throw exception (read-only)
-        // 3. Update fields
-        // 4. Save and return
+        // Find template
+        TaskTemplate template = taskTemplateRepository.findById(templateId)
+                .orElseThrow(() -> new EntityNotFoundException("Template not found: " + templateId));
 
-        throw new UnsupportedOperationException("Template update not yet implemented");
+        // Prevent modification of default templates
+        if (template.getIsDefault()) {
+            throw new IllegalStateException("Cannot modify default template: " + templateId);
+        }
+
+        // Validation
+        validateTemplateName(name);
+        validateTriggerState(triggerState);
+        validateDueDateType(dueDateType);
+        validateOffsetDays(dueDateType, dueDateOffsetDays);
+
+        // Update fields
+        template.setName(name);
+        template.setTriggerState(triggerState);
+        template.setDueDateType(dueDateType);
+        template.setDueDateOffsetDays(dueDateOffsetDays);
+
+        TaskTemplate updated = taskTemplateRepository.save(template);
+        log.info("Updated custom task template: {}", templateId);
+
+        return updated;
     }
 
     /**
@@ -146,12 +192,17 @@ public class TaskTemplateService {
     public void deleteTemplate(UUID templateId) {
         log.info("Deleting custom task template: {}", templateId);
 
-        // TODO: Implement template deletion (Phase 5)
-        // 1. Find template by ID
-        // 2. Check if is_default=true → throw exception (read-only)
-        // 3. Delete template
+        // Find template
+        TaskTemplate template = taskTemplateRepository.findById(templateId)
+                .orElseThrow(() -> new EntityNotFoundException("Template not found: " + templateId));
 
-        throw new UnsupportedOperationException("Template deletion not yet implemented");
+        // Prevent deletion of default templates
+        if (template.getIsDefault()) {
+            throw new IllegalStateException("Cannot delete default template: " + templateId);
+        }
+
+        taskTemplateRepository.delete(template);
+        log.info("Deleted custom task template: {}", templateId);
     }
 
     /**
@@ -164,7 +215,37 @@ public class TaskTemplateService {
     public TaskTemplate getTemplateById(UUID templateId) {
         log.debug("Fetching task template: {}", templateId);
         return taskTemplateRepository.findById(templateId)
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
+                .orElseThrow(() -> new EntityNotFoundException(
                         "Template not found: " + templateId));
+    }
+
+    // === Validation Helper Methods ===
+
+    private void validateTemplateName(String name) {
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("Template name is required");
+        }
+    }
+
+    private void validateTriggerState(String triggerState) {
+        if (triggerState == null || !VALID_TRIGGER_STATES.contains(triggerState)) {
+            throw new IllegalArgumentException(
+                    "Invalid trigger state: " + triggerState + ". Must be one of: " + VALID_TRIGGER_STATES
+            );
+        }
+    }
+
+    private void validateDueDateType(String dueDateType) {
+        if (dueDateType == null || !VALID_DUE_DATE_TYPES.contains(dueDateType)) {
+            throw new IllegalArgumentException(
+                    "Invalid due date type: " + dueDateType + ". Must be one of: " + VALID_DUE_DATE_TYPES
+            );
+        }
+    }
+
+    private void validateOffsetDays(String dueDateType, Integer offsetDays) {
+        if ("relative_to_event".equals(dueDateType) && offsetDays == null) {
+            throw new IllegalArgumentException("Offset days required for relative_to_event type");
+        }
     }
 }
