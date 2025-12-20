@@ -340,8 +340,9 @@ jobs:
 
           echo "🎉 Fast-path deployment complete (2-5 min vs 30-40 min with CloudFormation)"
 
-      - name: Deploy infrastructure to staging
+      - name: Prepare deployment
         if: steps.deployment-strategy.outputs.code_only != 'true'
+        id: prepare-deployment
         working-directory: ./infrastructure
         run: |
           if [ ! -f "package.json" ]; then
@@ -415,13 +416,189 @@ jobs:
             STACKS_TO_DEPLOY="$STACKS_TO_DEPLOY BATbern-staging-Frontend"
           fi
 
-          # Deploy the selected stacks
-          if [ "$USE_LAYER_DEPLOYMENT" = "true" ]; then
-            echo ""
-            echo "🏗️  Deploying all layers sequentially (maximum parallelization per layer)"
-            npm run deploy:staging:all-layers \
-              --context version=${{ github.sha }}
-          elif [ -n "$STACKS_TO_DEPLOY" ]; then
+          # Output deployment strategy
+          echo "use_layer_deployment=$USE_LAYER_DEPLOYMENT" >> $GITHUB_OUTPUT
+          echo "stacks_to_deploy=$STACKS_TO_DEPLOY" >> $GITHUB_OUTPUT
+        env:
+          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+
+      # Layer-based deployment with token refresh between layers
+      - name: Deploy Layer 0 - Foundation
+        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        working-directory: ./infrastructure
+        run: |
+          echo "🏗️  Layer 0: Foundation (CICD, DNS, Monitoring, SES)"
+          npm run deploy:staging:layer0-foundation --context version=${{ github.sha }}
+        env:
+          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+
+      - name: Re-authenticate after Layer 0
+        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy Layer 1 - Infrastructure
+        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        working-directory: ./infrastructure
+        run: |
+          echo "🏗️  Layer 1: Infrastructure (Network, Secrets, EventBus)"
+          npm run deploy:staging:layer1-infrastructure --context version=${{ github.sha }}
+        env:
+          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+
+      - name: Re-authenticate after Layer 1
+        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy Layer 2 - Data
+        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        working-directory: ./infrastructure
+        run: |
+          echo "🏗️  Layer 2: Data (Database, Storage, Bastion)"
+          npm run deploy:staging:layer2-data --context version=${{ github.sha }}
+        env:
+          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+
+      - name: Re-authenticate after Layer 2
+        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy Layer 3 - Application
+        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        working-directory: ./infrastructure
+        run: |
+          echo "🏗️  Layer 3: Application (Cognito, Cluster)"
+          npm run deploy:staging:layer3-application --context version=${{ github.sha }}
+        env:
+          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+
+      - name: Re-authenticate after Layer 3
+        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy Layer 4.1 - Company Management Service
+        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        working-directory: ./infrastructure
+        run: |
+          echo "🏗️  Layer 4.1: Company Management Service"
+          npm run deploy:staging:layer4-company-management --context version=${{ github.sha }}
+        env:
+          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+
+      - name: Re-authenticate after Company Management
+        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy Layer 4.2 - Event Management Service
+        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        working-directory: ./infrastructure
+        run: |
+          echo "🏗️  Layer 4.2: Event Management Service"
+          npm run deploy:staging:layer4-event-management --context version=${{ github.sha }}
+        env:
+          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+
+      - name: Re-authenticate after Event Management
+        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy Layer 4.3 - Speaker Coordination Service
+        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        working-directory: ./infrastructure
+        run: |
+          echo "🏗️  Layer 4.3: Speaker Coordination Service"
+          npm run deploy:staging:layer4-speaker-coordination --context version=${{ github.sha }}
+        env:
+          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+
+      - name: Re-authenticate after Speaker Coordination
+        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy Layer 4.4 - Partner Coordination Service
+        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        working-directory: ./infrastructure
+        run: |
+          echo "🏗️  Layer 4.4: Partner Coordination Service"
+          npm run deploy:staging:layer4-partner-coordination --context version=${{ github.sha }}
+        env:
+          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+
+      - name: Re-authenticate after Partner Coordination
+        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy Layer 4.5 - Attendee Experience Service
+        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        working-directory: ./infrastructure
+        run: |
+          echo "🏗️  Layer 4.5: Attendee Experience Service"
+          npm run deploy:staging:layer4-attendee-experience --context version=${{ github.sha }}
+        env:
+          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+
+      - name: Re-authenticate after Attendee Experience
+        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy Layer 4.6 - API Gateway Service
+        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        working-directory: ./infrastructure
+        run: |
+          echo "🏗️  Layer 4.6: API Gateway Service"
+          npm run deploy:staging:layer4-api-gateway-service --context version=${{ github.sha }}
+        env:
+          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+
+      - name: Re-authenticate after Layer 4
+        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy Layer 5 - Gateway
+        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        working-directory: ./infrastructure
+        run: |
+          echo "🏗️  Layer 5: Gateway (API Gateway, Frontend)"
+          npm run deploy:staging:layer5-gateway --context version=${{ github.sha }}
+        env:
+          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+
+      - name: Deploy infrastructure to staging (selective)
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true'
+        working-directory: ./infrastructure
+        run: |
+          STACKS_TO_DEPLOY="${{ steps.prepare-deployment.outputs.stacks_to_deploy }}"
+
+          if [ -n "$STACKS_TO_DEPLOY" ]; then
             echo ""
             echo "Deploying stacks: $STACKS_TO_DEPLOY"
 
